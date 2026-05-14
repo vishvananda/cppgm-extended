@@ -33,11 +33,12 @@ make test-paN
 make test-report-through-paN
 ```
 
-The exit criterion is a clean root `make test-report-through-paN`. Do not move
-on after only running `make test-paN`.
+For PA1 through PA36, the exit criterion for each assignment is a clean root
+`make test-report-through-paN`. Do not move on after only running
+`make test-paN`.
 
-Use `make test-report` for broad keep-going reports, `make test-strict` for
-strict later-assignment comparisons, and `make inception` for PA37.
+PA37 uses inception instead: run root `make inception`, which is wired to the
+PA37 `compare-cppgm++-inception` path.
 
 ## References
 
@@ -48,15 +49,3 @@ regeneration only.
 Do not edit tests or `.ref` files to hide incomplete behavior. Ref regeneration
 must use the provided `*-ref` binaries through the documented `ref-test`
 targets.
-
-## Debugging Pattern
-
-When a large case fails, reduce it to the smallest source that preserves the
-failure, then add that as a regression in the earliest appropriate PA.
-
-Treat crashes, assertions, timeouts, and infinite recursion as compiler bugs to
-fix directly. Do not rewrite tests around them.
-
-PA37 is inception: build `cppgm++` with `cppgm++` and match the host-built
-result. If PA37 fails, reduce the underlying compiler bug and add the
-regression to the appropriate earlier PA before retrying the self-host ladder.
