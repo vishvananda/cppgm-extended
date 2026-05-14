@@ -211,7 +211,6 @@ dev_support_headers=(
 copy_tracked_paths \
   .gitignore \
   Makefile \
-  ROADMAP.md \
   doc \
   cppgm.tests \
   "${pa_dirs[@]}" \
