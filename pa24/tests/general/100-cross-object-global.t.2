@@ -1,0 +1,7 @@
+declare global @g : i64
+
+function @main() -> i64 {
+  block ^entry:
+    %0 = load i64 @g
+    return i64 %0
+}

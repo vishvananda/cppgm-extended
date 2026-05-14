@@ -1,0 +1,11 @@
+cppeh
+cpplink
+cpplink-debug
+lowir2obj
+lowir2obj-debug
+objlink
+objlink-debug
+tests/**/*.my*
+testout
+.test_failed
+*.dSYM

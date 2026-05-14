@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa19/tests/spec/100-integral-function-nontype-parameter.t:12:10
+    callee f
+    selected instantiation
+    bind #1 = 3 source=explicit
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

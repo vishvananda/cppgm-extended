@@ -1,0 +1,61 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @mix
+  abi
+    param %a -> rdi : i64
+    param %b -> xmm0 : f64
+    param %c -> rsi : i64
+    param %d -> xmm1 : f64
+    return i64 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 48
+    preserve rbx r12 r13
+    param-slot %b -> [rbp-8] : f64
+    param-slot %d -> [rbp-16] : f64
+
+  block ^entry
+    fmov.f64 [rbp-8], xmm0
+    fmov.f64 [rbp-16], xmm1
+    mov rbx, rsi
+    fptosi.f64.i64 r9, [rbp-8]
+    fptosi.f64.i64 r12, [rbp-16]
+    mov r13, rdi
+    add r13, rbx
+    add r9, r12
+    add r13, r9
+    mov rax, r13
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 48
+    preserve rbx
+
+  block ^entry
+    mov r8, 4
+    add r8, 6
+    mov r9, 8
+    add r9, 12
+    sitofp.i64.f64 xmm0, r8
+    sitofp.i64.f64 xmm1, r9
+    mov rdi, r8
+    fmov.f64 xmm0, xmm0
+    mov rsi, r9
+    fmov.f64 xmm1, xmm1
+    call @mix
+    mov rbx, rax
+    mov rdx, 50
+    cmp.i64 rbx, rdx
+    sete rbx
+    movzx rbx, rbx
+    mov rax, rbx
+    ret rax

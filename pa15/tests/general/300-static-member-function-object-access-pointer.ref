@@ -1,0 +1,37 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : obj<1x1>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $s
+    %t2 = addr @stream__xalloc
+    %t3 = unary decay ptr %t2
+    %t4 = call i32 @get_xalloc_index(%t3)
+    %t5 = cmp eq i32 %t4, 7
+    branch %t5, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t6 = load i32 $cond__1
+    return i32 %t6
+}
+function @get_xalloc_index(%xalloc : ptr) -> i32 [binding=weak, object=_Z16get_xalloc_indexIiEiPFivE] {
+  slot $xalloc : ptr
+
+  block ^entry:
+    store ptr %xalloc, $xalloc
+    %t1 = load ptr $xalloc
+    %t2 = call i32 %t1() as () -> i32
+    return i32 %t2
+}
+function @stream__xalloc() -> i32 [binding=weak, object=_ZN6stream6xallocEv] {
+  block ^entry:
+    return i32 7
+}

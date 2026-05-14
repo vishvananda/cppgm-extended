@@ -1,0 +1,13 @@
+#include <tuple>
+
+struct S {
+  int v;
+};
+
+int main()
+{
+  S s{7};
+  auto t = std::forward_as_tuple(static_cast<S &&>(s));
+  S * p = &std::get<0>(t);
+  return (p == &s && std::get<0>(t).v == 7) ? 0 : 1;
+}

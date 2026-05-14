@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa18/tests/general/100-class-template-method.t:4:14
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity Box<int>::get
+  function-instantiation
+    entity Box<int>::get
+  require-definition
+    entity Box<int>::get

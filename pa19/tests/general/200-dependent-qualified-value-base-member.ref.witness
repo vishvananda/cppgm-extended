@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa19/tests/general/200-dependent-qualified-value-base-member.t:17:10
+    callee read_value
+    selected instantiation
+    bind #1 = TrueValue source=explicit
+template-closure-events
+  ensure-definition
+    entity read_value
+  function-instantiation
+    entity read_value
+  require-definition
+    entity read_value

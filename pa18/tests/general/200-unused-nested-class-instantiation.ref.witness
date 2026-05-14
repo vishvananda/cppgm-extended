@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa18/tests/general/200-unused-nested-class-instantiation.t:12:3
+    template Holder
+    selected primary
+    bind #1 = Node source=explicit

@@ -1,0 +1,28 @@
+translation-unit
+  class-use at pa22/tests/general/400-dependent-reference-alias-default-nontype.t:29:21
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa22/tests/general/400-dependent-reference-alias-default-nontype.t:29:37
+    template Block
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa22/tests/general/400-dependent-reference-alias-default-nontype.t:32:3
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity Box<int>::get
+  function-instantiation
+    entity Box<int>::get
+  require-definition
+    entity Box<int>::get
+  variable-instantiation
+    entity Block<int>::value
+  variable-instantiation
+    entity Box<int>::count
+  variable-instantiation
+    entity Iter<int>::value
+  variable-instantiation
+    entity Rev<Iter<int>>::value

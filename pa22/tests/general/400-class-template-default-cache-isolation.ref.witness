@@ -1,0 +1,11 @@
+translation-unit
+  class-use at pa22/tests/general/400-class-template-default-cache-isolation.t:20:3
+    template first_like
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = int * source=defaulted
+  class-use at pa22/tests/general/400-class-template-default-cache-isolation.t:21:3
+    template second_like
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = const int * source=defaulted

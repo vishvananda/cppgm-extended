@@ -1,0 +1,21 @@
+global @b [binding=strong, object=_Z1b] = {
+  zero 1
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = addr @b
+    call void @box_int__int___f(%t1)
+    return i32 0
+}
+function @box_int__int___f(%this : ptr) -> void [binding=weak, object=_ZN3boxIiiE1fEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
+}

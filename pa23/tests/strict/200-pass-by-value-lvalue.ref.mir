@@ -1,0 +1,71 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @Y__Y
+  abi
+    param %this -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+
+  block ^entry
+    ret
+
+function @Y___Y
+  abi
+    param %this -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+
+  block ^entry
+    ret
+
+function @id
+  abi
+    param %y -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    slot $y__0 -> [rbp-8] : i64
+
+  block ^entry
+    mov r8, rdi
+    lea rdi, [rbp-8]
+    mov rsi, r8
+    copy_bytes 4x1, rdi, rsi
+    lea rcx, [rbp-8]
+    load.i32 r9, [rcx]
+    sext.i32 r9
+    mov rax, r9
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve rbx
+    slot $a__0 -> [rbp-8] : i64
+
+  block ^entry
+    lea rdi, [rbp-8]
+    call @Y__Y
+    mov rax, 8
+    lea rcx, [rbp-8]
+    store.i32 [rcx], rax
+    lea rdi, [rbp-8]
+    call @id
+    mov rbx, rax
+    lea rdi, [rbp-8]
+    call @Y___Y
+    mov rax, rbx
+    ret rax

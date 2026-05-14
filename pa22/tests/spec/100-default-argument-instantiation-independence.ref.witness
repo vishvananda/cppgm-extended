@@ -1,0 +1,22 @@
+translation-unit
+  function-call at pa22/tests/spec/100-default-argument-instantiation-independence.t:24:10
+    callee sum
+    selected instantiation
+    bind #1 = int source=deduced
+  function-call at pa22/tests/spec/100-default-argument-instantiation-independence.t:24:28
+    callee sum
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity sum
+  ensure-definition
+    entity zdef
+  function-instantiation
+    entity sum
+  function-instantiation
+    entity zdef
+  require-definition
+    entity sum
+  require-definition
+    entity zdef

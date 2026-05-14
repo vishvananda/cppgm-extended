@@ -1,0 +1,69 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $b : obj<4x4>
+  slot $tmpobj__1 : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $b
+    %t2 = addr $b
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = unary decay ptr %t3
+    %t5 = index i32 [projection=array_element] %t4, 0
+    store i32 0, %t5
+    %t6 = addr $tmpobj__1
+    %t7 = addr $b
+    %t8 = call obj<8x8> @Box__operator__(%t7, 0)
+    copyobj 8x8 %t8, %t6
+    %t9 = call ptr @Proxy__operator_(%t6, 7)
+    %t10 = addr $b
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = unary decay ptr %t11
+    %t13 = index i32 [projection=array_element] %t12, 0
+    %t14 = load i32 %t13
+    %t15 = binary sub i32 %t14, 7
+    return i32 %t15
+}
+function @Proxy__operator_(%this : ptr, %value : i32) -> ptr [binding=weak, object=_ZN5ProxyaSEi] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr %t3
+    store i32 %t1, %t4
+    %t5 = load ptr $this
+    return ptr %t5
+}
+function @Box__operator__(%this : ptr, %i : i32) -> obj<8x8> [binding=weak, object=_ZN3BoxixEi] {
+  slot $this : ptr
+  slot $i : i32
+  slot $retobj__1 : obj<8x8>
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %i, $i
+    %t1 = addr $retobj__1
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = unary decay ptr %t3
+    %t5 = load i32 $i
+    %t6 = index i32 [projection=array_element] %t4, %t5
+    call void @Proxy__Proxy(%t1, %t6)
+    return obj<8x8> $retobj__1
+}
+function @Proxy__Proxy(%this : ptr, %q : ptr) -> void [binding=weak, object=_ZN5ProxyC1EPi] {
+  slot $this : ptr
+  slot $q : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %q, $q
+    %t1 = load ptr $q
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}

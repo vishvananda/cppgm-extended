@@ -1,0 +1,89 @@
+function @forward(%ret : ptr [pass=indirect_result], %it : ptr [pass=by_address]) -> void [binding=strong, object=_Z7forward8PairIter] {
+  slot $it : obj<24x8>
+
+  block ^entry:
+    %t1 = addr $it
+    copyobj 24x8 %it, %t1
+    %t2 = addr $it
+    copyobj 24x8 %t2, %ret
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : i32
+  slot $a : obj<24x8>
+  slot $b : obj<24x8>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+
+  block ^entry:
+    store i32 0, $x
+    %t1 = addr $a
+    %t2 = addr $x
+    %t3 = addr $a
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    %t5 = addr $x
+    %t6 = addr $a
+    %t7 = index i8 [projection=field] %t6, 8
+    store ptr %t5, %t7
+    %t8 = addr $a
+    %t9 = index i8 [projection=field] %t8, 16
+    store i64 7, %t9
+    %t10 = addr $b
+    %t11 = addr $a
+    call void @forward(%t10, %t11)
+    %t12 = addr $b
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load ptr %t13
+    %t15 = addr $x
+    %t16 = cmp eq ptr %t14, %t15
+    branch %t16, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t17 = addr $b
+    %t18 = index i8 [projection=field] %t17, 8
+    %t19 = load ptr %t18
+    %t20 = addr $x
+    %t21 = cmp eq ptr %t19, %t20
+    %t22 = cmp ne i64 %t21, 0
+    store i64 %t22, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t23 = load i64 $land__3
+    branch %t23, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t24 = addr $b
+    %t25 = index i8 [projection=field] %t24, 16
+    %t26 = load i64 %t25
+    %t27 = cmp eq i64 %t26, 7
+    %t28 = cmp ne i64 %t27, 0
+    store i64 %t28, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t29 = load i64 $land__2
+    branch %t29, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t30 = load i32 $cond__1
+    return i32 %t30
+}

@@ -1,0 +1,22 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+global @gx : i32 [binding=strong, object=_Z2gx] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $p : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $p
+    %t2 = addr $p
+    call void @YP___YP(%t2)
+    return i32 3
+}
+function @YP___YP(%this : ptr) -> void [binding=weak, object=_ZN2YPD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 9, @gx
+    return void
+}

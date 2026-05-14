@@ -1,0 +1,20 @@
+translation-unit
+  class-use at pa21/tests/general/400-dependent-functional-template-id-hides-outer-function.t:40:17
+    template outer::inner::box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity outer::inner::box<int>::set
+  function-instantiation
+    entity outer::inner::box<int>::set
+  function-instantiation
+    entity outer::inner::range<int>::range
+  function-instantiation
+    entity outer::inner::sink
+  require-definition
+    entity outer::inner::box<int>::set
+  require-definition
+    entity outer::inner::range<int>::range
+  require-definition
+    entity outer::inner::sink

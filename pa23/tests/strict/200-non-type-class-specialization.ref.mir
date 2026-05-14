@@ -1,0 +1,60 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve rbx
+    slot $b__0 -> [rbp-8] : i64
+
+  block ^entry
+    lea rdi, [rbp-8]
+    call @Box_3___Box
+    lea rdi, [rbp-8]
+    call @Box_3___get
+    mov rbx, rax
+    lea rdi, [rbp-8]
+    call @Box_3____Box
+    mov rax, rbx
+    ret rax
+
+function @Box_3___get
+  abi
+    param %this -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+
+  block ^entry
+    mov rax, 5
+    ret rax
+
+function @Box_3___Box
+  abi
+    param %this -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+
+  block ^entry
+    ret
+
+function @Box_3____Box
+  abi
+    param %this -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+
+  block ^entry
+    ret

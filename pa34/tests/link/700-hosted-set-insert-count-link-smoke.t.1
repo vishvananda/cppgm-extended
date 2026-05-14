@@ -1,0 +1,8 @@
+#include <set>
+
+int main()
+{
+  std::set<int> seen;
+  seen.insert(1);
+  return seen.count(1) == 1 ? 0 : 1;
+}

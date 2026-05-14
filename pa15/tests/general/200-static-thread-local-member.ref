@@ -1,0 +1,8 @@
+global @X__n : i32 [storage=thread_local, binding=strong, object=_ZN1X1nE] = 1
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load i32 @X__n
+    %t2 = binary sub i32 %t1, 1
+    return i32 %t2
+}

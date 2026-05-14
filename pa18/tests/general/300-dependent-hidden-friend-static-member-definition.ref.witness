@@ -1,0 +1,18 @@
+translation-unit
+  class-use at pa18/tests/general/300-dependent-hidden-friend-static-member-definition.t:15:3
+    template Iter
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = long source=explicit
+  class-use at pa18/tests/general/300-dependent-hidden-friend-static-member-definition.t:16:3
+    template Iter
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = long source=explicit
+template-closure-events
+  ensure-definition
+    entity operator+
+  function-instantiation
+    entity operator+
+  require-definition
+    entity operator+

@@ -1,0 +1,22 @@
+translation-unit
+  class-use at pa18/tests/spec/100-local-lambda-function-template-concrete-type.t:24:5
+    template box
+    selected primary
+    bind #1 = local source=explicit
+  function-call at pa18/tests/spec/100-local-lambda-function-template-concrete-type.t:25:12
+    callee use
+    selected instantiation
+    bind #1 = local source=deduced
+template-closure-events
+  ensure-definition
+    entity box<local>::~box
+  ensure-definition
+    entity use
+  function-instantiation
+    entity box<local>::~box
+  function-instantiation
+    entity use
+  require-definition
+    entity box<local>::~box
+  require-definition
+    entity use

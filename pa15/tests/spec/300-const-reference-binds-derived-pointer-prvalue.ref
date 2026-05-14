@@ -1,0 +1,51 @@
+global @object [binding=strong, object=_Z6object] = {
+  zero 8
+}
+global @saved : ptr [binding=strong, object=_Z5saved] = zero
+
+function @get() -> ptr [binding=strong, object=_Z3getv] {
+  block ^entry:
+    %t1 = addr @object
+    return ptr %t1
+}
+function @push(%p : ptr [pass=reference]) -> void [binding=strong, object=_Z4pushRKP4Base] {
+  slot $p : ptr
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = load ptr $p
+    %t2 = load ptr %t1
+    store ptr %t2, @saved
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $refarg__1 : ptr
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = call ptr @get()
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    store ptr %t2, $refarg__1
+    %t3 = addr $refarg__1
+    call void @push(%t3)
+    %t4 = load ptr @saved
+    %t5 = addr @object
+    %t6 = cmp eq ptr %t4, %t5
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__2
+    return i32 %t7
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
+}

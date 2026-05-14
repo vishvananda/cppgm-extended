@@ -1,0 +1,9 @@
+template_kernel_v1
+
+# Reduced from validation/tests/037-pointer-qualification-deduction.cpp
+
+function_template probe ptr <type T> params (type const T*) return int
+
+query deduce_call probe args (type int*)
+query deduce_call probe args (type const int*)
+query deduce_call probe args (type const volatile int*)

@@ -1,0 +1,11 @@
+.cproject
+.project
+tests/*.my*
+ctrlexpr
+ctrlexpr-fast
+ctrlexpr-self-fast
+ctrlexpr-debug
+*.dSYM
+testin
+testout
+.test_failed

@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa22/tests/general/400-class-template-alias-out-of-class-ctor.t:12:3
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity Box<int>::Box
+  function-instantiation
+    entity Box<int>::Box
+  require-definition
+    entity Box<int>::Box

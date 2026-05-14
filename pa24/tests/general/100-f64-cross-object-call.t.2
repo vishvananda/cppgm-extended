@@ -1,0 +1,9 @@
+function @main() -> i64 {
+  block ^entry:
+    %a = const f64 1.5
+    %b = const f64 2.25
+    %r = call f64 @add(%a, %b)
+    %e = const f64 3.75
+    %ok = cmp eq f64 %r, %e
+    return i64 %ok
+}

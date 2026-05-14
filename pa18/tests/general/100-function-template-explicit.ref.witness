@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa18/tests/general/100-function-template-explicit.t:4:21
+    callee id
+    selected instantiation
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity id
+  function-instantiation
+    entity id
+  require-definition
+    entity id

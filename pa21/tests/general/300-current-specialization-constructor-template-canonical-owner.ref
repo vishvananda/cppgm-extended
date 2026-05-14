@@ -1,0 +1,60 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $src : obj<8x8>
+  slot $dst : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $src
+    call void @duration_like_long_long_int___duration_like__ov3(%t1, 7)
+    %t2 = addr $dst
+    %t3 = addr $src
+    %t4 = call obj<4x4> @duration_like_int___cast(%t3)
+    copyobj 4x4 %t4, %t2
+    %t5 = addr $dst
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load i32 %t6
+    %t8 = binary sub i32 %t7, 7
+    return i32 %t8
+}
+function @duration_like_long_long_int___duration_like__ov3(%this : ptr, %r : i64) -> void [binding=weak, object=_ZN13duration_likeIxEC1IxEET_] {
+  slot $this : ptr
+  slot $r : i64
+
+  block ^entry:
+    store ptr %this, $this
+    store i64 %r, $r
+    %t1 = load i64 $r
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i64 %t1, %t3
+    return void
+}
+function @duration_like_int___cast(%other : ptr [pass=reference]) -> obj<4x4> [binding=weak, object=_ZN13duration_likeIiE4castIxEES0_RKS_IT_E] {
+  slot $other : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store ptr %other, $other
+    %t1 = addr $retobj__1
+    %t2 = load ptr $other
+    call void @duration_like_int___duration_like__ov4(%t1, %t2)
+    return obj<4x4> $retobj__1
+}
+function @duration_like_int___duration_like__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxvEERKS_IT_E] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i64 %t2
+    %t4 = convert trunc i32 i64 %t3
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    store i32 %t4, %t6
+    return void
+}

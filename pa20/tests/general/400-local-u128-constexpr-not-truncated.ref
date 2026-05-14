@@ -1,0 +1,34 @@
+function @local_high_digits_39() -> i64 [binding=strong, object=_Z20local_high_digits_39v] {
+  slot $digits_39 : u128
+
+  block ^entry:
+    %t1 = convert zext u128 i64 10000000000000000000
+    %t2 = convert zext u128 i64 10000000000000000000
+    %t3 = binary mul u128 %t1, %t2
+    store u128 %t3, $digits_39
+    %t4 = load u128 $digits_39
+    %t5 = convert sext u128 i32 64
+    %t6 = binary ushr u128 %t4, %t5
+    %t7 = convert trunc i64 u128 %t6
+    return i64 %t7
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = call i64 @local_high_digits_39()
+    %t2 = cmp eq i64 %t1, 5421010862427522170
+    branch %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t3 = load i32 $cond__1
+    return i32 %t3
+}

@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/300-class-member-forward-template-alias-no-eager-complete.t:9:1
+    template B
+    selected primary
+    bind #1 = int source=explicit

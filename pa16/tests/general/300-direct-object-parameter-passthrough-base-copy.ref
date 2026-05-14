@@ -1,0 +1,125 @@
+global @seen : i32 [binding=strong, object=_Z4seen] = 0
+
+function @use(%value : ptr [pass=reference]) -> void [binding=strong, object=_Z3useRK4Pair] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr %t3
+    %t5 = cmp eq ptr %t4, 0
+    branch %t5, ^land_rhs_4, ^if_else_2
+
+  block ^land_rhs_4:
+    %t6 = load ptr $value
+    %t7 = index i8 [projection=base_subobject] %t6, 0
+    %t8 = index i8 [projection=field] %t7, 8
+    %t9 = load ptr %t8
+    %t10 = copy ptr 16
+    %t11 = cmp eq ptr %t9, %t10
+    branch %t11, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    store i32 1, @seen
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    return void
+}
+function @check(%value : obj<16x8>) -> void [binding=strong, object=_Z5check4Pair] {
+  slot $value : obj<16x8>
+  slot $copy : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $value
+    copyobj 16x8 %value, %t1
+    %t2 = addr $copy
+    %t3 = addr $value
+    call void @Pair__Pair__ov2(%t2, %t3)
+    %t4 = addr $copy
+    call void @use(%t4)
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $input : obj<16x8>
+  slot $argobj__1 : obj<16x8>
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = addr $input
+    %t2 = copy ptr 16
+    call void @Pair__Pair(%t1, 0, %t2)
+    %t3 = addr $argobj__1
+    %t4 = addr $input
+    call void @Pair__Pair__ov2(%t3, %t4)
+    call void @check($argobj__1)
+    %t5 = load i32 @seen
+    %t6 = cmp eq i32 %t5, 1
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__2
+    return i32 %t7
+}
+function @Pair__Pair(%this : ptr, %first : ptr, %second : ptr) -> void [binding=weak, object=_ZN4PairC1EPvS0_] {
+  slot $this : ptr
+  slot $first : ptr
+  slot $second : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %first, $first
+    store ptr %second, $second
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = load ptr $first
+    %t4 = load ptr $second
+    call void @Base__Base__base_entry(%t2, %t3, %t4)
+    return void
+}
+function @Pair__Pair__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4PairC1ERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = load ptr $other
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    copyobj 16x8 %t4, %t2
+    return void
+}
+function @Base__Base__base_entry(%this : ptr, %first : ptr, %second : ptr) -> void [binding=weak, object=_ZN4BaseC2EPvS0_] {
+  slot $this : ptr
+  slot $first : ptr
+  slot $second : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %first, $first
+    store ptr %second, $second
+    %t1 = load ptr $first
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $second
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store ptr %t4, %t6
+    return void
+}

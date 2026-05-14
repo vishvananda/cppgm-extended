@@ -1,0 +1,40 @@
+global @header_init [binding=internal, object=_Z11header_init] = {
+  zero 1
+}
+global @counter : i32 [binding=strong, object=_Z7counter] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load i32 @counter
+    return i32 %t1
+}
+function @HeaderInit___HeaderInit(%this : ptr) -> void [binding=weak, object=_ZN10HeaderInitD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @counter
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @counter
+    return void
+}
+function @HeaderInit__HeaderInit(%this : ptr) -> void [binding=weak, object=_ZN10HeaderInitC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 7, @counter
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @header_init
+    call void @HeaderInit__HeaderInit(%t1)
+    return void
+}
+function @__cppgm_fini() -> void [role=fini, binding=internal] {
+  block ^entry:
+    %t1 = addr @header_init
+    call void @HeaderInit___HeaderInit(%t1)
+    return void
+}

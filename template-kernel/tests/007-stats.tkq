@@ -1,0 +1,10 @@
+template_kernel_v1
+
+class_template Box <type T, type U = type T>
+alias_template Ptr <type T = type int> = type T*
+function_template same pair <type T> params (type T, type nondeduced<T>) return int
+
+query bind_defaults class Box <type int>
+query expand_alias Ptr <>
+query deduce_call same args (type int, type int)
+query stats

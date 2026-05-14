@@ -1,0 +1,10 @@
+translation-unit
+  variable-use at pa21/tests/general/100-shared-partial-specialization-variable-selection.t:12:10
+    template pick_v
+    selected partial
+    bind #1 = int source=deduced
+    bind #2 = int * source=deduced
+    specialize #1 = int source=deduced
+template-closure-events
+  variable-instantiation
+    entity pick_v

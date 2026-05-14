@@ -1,0 +1,11 @@
+.cproject
+.project
+tests/*.my*
+recog
+recog-fast
+recog-self-fast
+recog-debug
+*.dSYM
+tests/testin
+testout
+.test_failed

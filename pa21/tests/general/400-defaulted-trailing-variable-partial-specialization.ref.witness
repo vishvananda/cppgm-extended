@@ -1,0 +1,11 @@
+translation-unit
+  variable-use at pa21/tests/general/400-defaulted-trailing-variable-partial-specialization.t:7:15
+    template same_v
+    selected partial
+    bind #1 = char source=deduced
+    bind #2 = char source=deduced
+    bind #3 = void source=defaulted
+    specialize #1 = char source=deduced
+template-closure-events
+  variable-instantiation
+    entity same_v

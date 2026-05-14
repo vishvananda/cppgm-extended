@@ -1,0 +1,60 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @make(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z4makev] {
+  block ^entry:
+    %t1 = index i8 [projection=field] %ret, 0
+    store i32 0, %t1
+    %t2 = index i8 [projection=field] %ret, 0
+    store i64 7, %t2
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : obj<8x8>
+  slot $arg__1 : obj<8x8>
+  slot $b : obj<8x8>
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = addr $a
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 0, %t3
+    %t4 = addr $a
+    %t5 = addr $arg__1
+    call void @make(%t5)
+    %t6 = call ptr @Payload__operator___ov2(%t4, %t5)
+    %t7 = addr $b
+    %t8 = addr $a
+    copyobj 8x8 %t8, %t7
+    %t9 = addr $b
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = load i64 %t10
+    %t12 = cmp eq i64 %t11, 7
+    branch %t12, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t13 = load i32 $cond__2
+    return i32 %t13
+}
+function @Payload__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN7PayloadaSEOS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = load ptr $other
+    copyobj 8x8 %t2, %t1
+    %t3 = load ptr $this
+    return ptr %t3
+}

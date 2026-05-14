@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa22/tests/spec/100-dependent-base-member-this.t:24:3
+    template derived
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity derived<int>::run
+  function-instantiation
+    entity base<int>::value
+  function-instantiation
+    entity derived<int>::run
+  require-definition
+    entity base<int>::value
+  require-definition
+    entity derived<int>::run

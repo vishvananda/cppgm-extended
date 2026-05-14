@@ -1,0 +1,23 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+
+  block ^entry
+    mov r8, 1
+    mov rdx, 2
+    cmp.u32 r8, rdx
+    setb r8
+    movzx r8, r8
+    add r8, r8
+    mov rax, r8
+    ret rax

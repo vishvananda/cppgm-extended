@@ -1,0 +1,10 @@
+global @__strlit__1 [binding=internal] = {
+  i8 122
+  i8 0
+}
+global @first : ptr [binding=internal, object=_Z5first] = addr @__strlit__1
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

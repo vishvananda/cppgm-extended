@@ -1,0 +1,10 @@
+cppeh
+cppeh-debug
+lowir2ehobj
+lowir2ehobj-debug
+ehlink
+ehlink-debug
+tests/**/*.my*
+testout
+.test_failed
+*.dSYM

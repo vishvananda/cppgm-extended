@@ -1,0 +1,7 @@
+global @k : i32 [binding=internal, object=_Z1k] = 6
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = binary sub i32 6, 6
+    return i32 %t1
+}

@@ -1,0 +1,3 @@
+defined_symbol_canonical 1 _main
+defined_symbol_canonical 1 _ZN3BoxIiE5Cache6detachEPS0_
+absent_defined_symbol_canonical 1 _ZN3BoxIiE5Cache6detachB9nqe220100EPS0_

@@ -1,0 +1,13 @@
+translation-unit
+  function-call at pa22/tests/general/400-function-pointer-vs-const-ref-partial-order.t:23:10
+    callee pick
+    selected instantiation
+    bind #1 = int (unsigned long) source=deduced
+    drop pick reason=better_candidate_selected
+template-closure-events
+  ensure-definition
+    entity pick
+  function-instantiation
+    entity pick
+  require-definition
+    entity pick

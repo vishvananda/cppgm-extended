@@ -1,0 +1,59 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $h : obj<1x1>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $h
+    %t2 = addr $h
+    %t3 = call i32 @N__Holder_int___run(%t2)
+    %t4 = cmp eq i32 %t3, 5
+    branch %t4, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load i32 $cond__1
+    return i32 %t5
+}
+function @N__Holder_int___run(%this : ptr) -> i32 [binding=weak, object=_ZN1N6HolderIiE3runEv] {
+  slot $this : ptr
+  slot $refarg__1 : i32
+  slot $refarg__2 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    store i32 1, $refarg__1
+    %t2 = addr $refarg__1
+    store i32 2, $refarg__2
+    %t3 = addr $refarg__2
+    %t4 = call i32 @N__Holder_int___make(%t1, 3, %t2, %t3)
+    return i32 %t4
+}
+function @N__Holder_int___make(%this : ptr, %h : i32, %args : ptr [pass=reference], %args__pack2 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1N6HolderIiE4makeIJiiEEEiiDpOT_] {
+  slot $this : ptr
+  slot $h : i32
+  slot $args : ptr
+  slot $args__pack2 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %h, $h
+    store ptr %args, $args
+    store ptr %args__pack2, $args__pack2
+    %t1 = load i32 $h
+    %t2 = const i64 2
+    %t3 = convert sext i64 i32 %t1
+    %t4 = binary add i64 %t3, %t2
+    %t5 = convert trunc i32 i64 %t4
+    return i32 %t5
+}

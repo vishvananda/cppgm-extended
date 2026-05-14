@@ -1,0 +1,21 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $t : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $t
+    %t2 = addr $t
+    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t4 = call ptr @ns__helper(%t3)
+    %t5 = load i32 %t4
+    return i32 0
+}
+function @ns__helper(%__param0 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2ns6helperILm1EiJEEERT0_RNS_4implIXT_EJS1_DpT1_EEE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return ptr 0
+}

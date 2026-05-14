@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa18/tests/general/100-unused-class-template-hidden-friend-body.t:21:1
+    template vec
+    selected primary
+    bind #1 = X source=explicit

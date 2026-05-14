@@ -1,0 +1,8 @@
+#include "700-hosted-namespaced-out-of-class-member-linkage-link-smoke.shared.h"
+
+int main()
+{
+  ns::LinkSmoke value;
+  value.set();
+  return value.value == 7 ? 0 : 1;
+}

@@ -1,0 +1,17 @@
+translation-unit
+  class-use at pa21/tests/general/400-unevaluated-sizeof-call-surrogates.t:19:1
+    template box
+    selected primary
+    bind #1 = 1 source=explicit
+  class-use at pa21/tests/general/400-unevaluated-sizeof-call-surrogates.t:26:1
+    template box
+    selected primary
+    bind #1 = 1 source=explicit
+  class-use at pa21/tests/general/400-unevaluated-sizeof-call-surrogates.t:32:10
+    template box
+    selected primary
+    bind #1 = 1 source=explicit
+  class-use at pa21/tests/general/400-unevaluated-sizeof-call-surrogates.t:33:10
+    template box
+    selected primary
+    bind #1 = 1 source=explicit

@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/300-forward-template-alias-no-output-shell.t:2:16
+    template Box
+    selected primary
+    bind #1 = int source=explicit

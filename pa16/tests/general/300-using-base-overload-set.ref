@@ -1,0 +1,59 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<1x1>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = addr $d
+    %t2 = addr $d
+    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t4 = call i32 @Base__f(%t3, 1)
+    %t5 = cmp eq i32 %t4, 1
+    branch %t5, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t6 = addr $d
+    %t7 = call i32 @Derived__f(%t6, 1.5)
+    %t8 = cmp eq i32 %t7, 2
+    %t9 = cmp ne i64 %t8, 0
+    store i64 %t9, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t10 = load i64 $land__2
+    branch %t10, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t11 = load i32 $cond__1
+    return i32 %t11
+}
+function @Base__f(%this : ptr, %__param1 : i32) -> i32 [binding=weak, object=_ZN4Base1fEi] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    return i32 1
+}
+function @Derived__f(%this : ptr, %__param1 : f64) -> i32 [binding=weak, object=_ZN7Derived1fEd] {
+  slot $this : ptr
+  slot $__param1 : f64
+
+  block ^entry:
+    store ptr %this, $this
+    store f64 %__param1, $__param1
+    return i32 2
+}

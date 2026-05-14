@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa34/tests/link/600-hosted-using-namespace-vector-definition-link-smoke.t.1:5:21
+    template helper_inline_ns::vec
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity helper_inline_ns::vec<int>::vec
+  function-instantiation
+    entity helper_inline_ns::vec<int>::vec
+  require-definition
+    entity helper_inline_ns::vec<int>::vec

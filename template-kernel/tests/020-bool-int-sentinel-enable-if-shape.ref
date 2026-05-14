@@ -1,0 +1,17 @@
+template_kernel_output_v1
+
+query 1 deduce_call construct(constructible<true>)
+status ok
+selected function_template enabled
+bind Can = true
+bind Gate = 0
+default Gate = 0
+drop disabled reason requirement_not_satisfied Can=true vs false
+
+query 2 deduce_call construct(constructible<false>)
+status ok
+selected function_template disabled
+bind Can = false
+bind Gate = 0
+default Gate = 0
+drop enabled reason requirement_not_satisfied Can=false vs true

@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa18/tests/general/200-out-of-class-member-alias-return-signature.t:41:3
+    template tree
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity tree<int>::call
+  function-instantiation
+    entity tree<int>::call
+  function-instantiation
+    entity tree<int>::get
+  require-definition
+    entity tree<int>::call
+  require-definition
+    entity tree<int>::get

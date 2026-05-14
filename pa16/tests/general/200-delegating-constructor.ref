@@ -1,0 +1,33 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $a
+    call void @Y__Y(%t1)
+    %t2 = addr $a
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    return i32 %t4
+}
+function @Y__Y(%this : ptr) -> void [binding=weak, object=_ZN1YC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    call void @Y__Y__ov2(%t1, 3)
+    return void
+}
+function @Y__Y__ov2(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1YC1Ei] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}

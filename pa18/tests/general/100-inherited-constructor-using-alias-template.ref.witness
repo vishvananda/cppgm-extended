@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa18/tests/general/100-inherited-constructor-using-alias-template.t:25:3
+    template YHolder
+    selected primary
+    bind #1 = YTraits source=explicit
+template-closure-events
+  ensure-definition
+    entity YHolder<YTraits>::YHolder
+  function-instantiation
+    entity YBase<YTraits, true>::YBase
+  function-instantiation
+    entity YHolder<YTraits>::YHolder
+  require-definition
+    entity YBase<YTraits, true>::YBase
+  require-definition
+    entity YHolder<YTraits>::YHolder

@@ -1,0 +1,13 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type A enum class A
+    type B enum class B
+    scope enum A
+      enumerator X enum class A 1
+      enumerator Y enum class A 2
+    scope enum B
+      enumerator X enum class B 1
+      enumerator Y enum class B 2
+end translation unit

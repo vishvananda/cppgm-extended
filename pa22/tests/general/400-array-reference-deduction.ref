@@ -1,0 +1,37 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $values : obj<16x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $values
+    store i32 0, %t1
+    %t2 = index i8 %t1, 4
+    store i32 1, %t2
+    %t3 = index i8 %t1, 8
+    store i32 2, %t3
+    %t4 = index i8 %t1, 12
+    store i32 3, %t4
+    %t5 = addr $values
+    %t6 = call i32 @length(%t5)
+    %t7 = cmp eq i32 %t6, 4
+    branch %t7, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t8 = load i32 $cond__1
+    return i32 %t8
+}
+function @length(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z6lengthIiLi4EEiRAT0__T_] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 4
+}

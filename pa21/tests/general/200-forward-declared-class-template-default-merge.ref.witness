@@ -1,0 +1,6 @@
+translation-unit
+  class-use at pa21/tests/general/200-forward-declared-class-template-default-merge.t:7:9
+    template duration
+    selected primary
+    bind #1 = long long source=explicit
+    bind #2 = int source=defaulted

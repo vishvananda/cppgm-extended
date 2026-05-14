@@ -1,0 +1,242 @@
+declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+
+global @__typeinfo_name__struct_D [storage=readonly, binding=weak, object=_ZTS1D] = {
+  i8 49
+  i8 68
+  i8 0
+}
+global @__typeinfo_name__struct_B [storage=readonly, binding=weak, object=_ZTS1B] = {
+  i8 49
+  i8 66
+  i8 0
+}
+global @__typeinfo_name__struct_V [storage=readonly, binding=weak, object=_ZTS1V] = {
+  i8 49
+  i8 86
+  i8 0
+}
+global @__rtti_struct_V [storage=readonly, binding=weak, object=_ZTI1V] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_V
+}
+global @__rtti_struct_B [storage=readonly, binding=weak, object=_ZTI1B] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_B
+  i32 0
+  i32 1
+  ptr addr @__rtti_struct_V
+  i64 -6141
+}
+global @__rtti_struct_D [storage=readonly, binding=weak, object=_ZTI1D] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_D
+  ptr addr @__rtti_struct_B
+}
+global @D__vtable [storage=readonly, binding=weak, object=_ZTV1D] = {
+  i64 80
+  i64 0
+  ptr addr @__rtti_struct_D
+  ptr addr @B__banchor
+  i64 0
+  ptr addr @D__danchor
+  i64 0
+}
+global @D____view__V__80__vtable [storage=readonly, binding=weak, object=@D____view__V__80__vtable] = {
+  i64 0
+  i64 -80
+  ptr addr @__rtti_struct_D
+  ptr addr @V__anchor
+}
+global @D____construction__B__0__vtable [storage=readonly, binding=weak, object=_ZTC1D0_1B] = {
+  i64 80
+  i64 0
+  ptr addr @__rtti_struct_B
+  ptr addr @B__banchor
+  i64 0
+}
+global @D____vtt [storage=readonly, binding=weak, object=_ZTT1D] = {
+  ptr addr @D__vtable + 24
+  ptr addr @D____construction__B__0__vtable + 24
+  ptr addr @D____view__V__80__vtable + 24
+  ptr addr @D____view__V__80__vtable + 24
+}
+global @B__vtable [storage=readonly, binding=weak, object=_ZTV1B] = {
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct_B
+  ptr addr @B__banchor
+  i64 0
+}
+global @B____view__V__16__vtable [storage=readonly, binding=weak, object=@B____view__V__16__vtable] = {
+  i64 0
+  i64 -16
+  ptr addr @__rtti_struct_B
+  ptr addr @V__anchor
+}
+global @B____vtt [storage=readonly, binding=weak, object=_ZTT1B] = {
+  ptr addr @B__vtable + 24
+  ptr addr @B____view__V__16__vtable + 24
+}
+global @V__vtable [storage=readonly, binding=weak, object=_ZTV1V] = {
+  i64 0
+  ptr addr @__rtti_struct_V
+  ptr addr @V__anchor
+}
+
+function @read_value(%b : ptr [pass=reference], %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z10read_valueR1B] {
+  slot $b : ptr
+  slot $b__pvb0 : ptr
+
+  block ^entry:
+    store ptr %b, $b
+    store ptr %__pvbptr0, $b__pvb0
+    %t1 = load ptr $b__pvb0
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 8
+    %t4 = load i32 %t3
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<96x8>
+  slot $h : obj<8x8>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $d
+    call void @D__D(%t1)
+    %t2 = addr $d
+    %t3 = load ptr %t2
+    %t4 = index i8 %t3, -24
+    %t5 = load i64 %t4
+    %t6 = index i8 %t2, %t5
+    %t7 = index i8 [projection=base_subobject] %t6, 0
+    %t8 = index i8 [projection=field] %t7, 8
+    store i32 7, %t8
+    %t9 = addr $h
+    %t10 = addr $d
+    %t11 = index i8 [projection=base_subobject] %t10, 0
+    %t12 = addr $d
+    %t13 = index i8 %t12, 80
+    call void @Holder__Holder(%t9, %t11, %t13)
+    %t14 = addr $h
+    %t15 = call i32 @Holder__read(%t14)
+    %t16 = cmp eq i32 %t15, 7
+    branch %t16, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t17 = load i32 $cond__1
+    return i32 %t17
+}
+function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 80
+    call void @V__V__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t5 = addr @D____vtt
+    %t6 = index i8 %t5, 8
+    %t7 = load ptr $this
+    %t8 = index i8 %t7, 80
+    call void @B__B__base_entry(%t4, %t6, %t8)
+    %t9 = load ptr $this
+    %t10 = addr @D__vtable
+    %t11 = index i8 %t10, 24
+    store ptr %t11, %t9
+    %t12 = load ptr $this
+    %t13 = index i8 [projection=base_subobject] %t12, 80
+    %t14 = addr @D____view__V__80__vtable
+    %t15 = index i8 %t14, 24
+    store ptr %t15, %t13
+    return void
+}
+function @D__danchor(%this : ptr, %__vbptr0 : ptr) -> i32 [binding=weak, object=_ZN1D7danchorEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 3
+}
+function @Holder__Holder(%this : ptr, %b : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN6HolderC1ER1B] {
+  slot $this : ptr
+  slot $b : ptr
+  slot $b__pvb0 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %b, $b
+    store ptr %__pvbptr0, $b__pvb0
+    %t1 = load ptr $b
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
+function @Holder__read(%this : ptr) -> i32 [binding=weak, object=_ZN6Holder4readEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr %t3
+    %t5 = index i8 %t4, -24
+    %t6 = load i64 %t5
+    %t7 = index i8 %t3, %t6
+    %t8 = call i32 @read_value(%t3, %t7)
+    return i32 %t8
+}
+function @B__banchor(%this : ptr, %__vbptr0 : ptr) -> i32 [binding=weak, object=_ZN1B7banchorEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 2
+}
+function @V__anchor(%this : ptr) -> i32 [binding=weak, object=_ZN1V6anchorEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 1
+}
+function @B__B__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = load ptr %__vtt
+    store ptr %t2, %t1
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 16
+    %t5 = index i8 %__vtt, 8
+    %t6 = load ptr %t5
+    store ptr %t6, %t4
+    return void
+}
+function @V__V__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @V__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}

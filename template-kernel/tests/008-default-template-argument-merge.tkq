@@ -1,0 +1,9 @@
+template_kernel_v1
+
+# Reduced from validation/tests/014-default-template-argument-merge.cpp
+# Reduced from pa21/tests/spec/200-forward-declared-class-template-default-merge.t
+
+class_template duration <type T, type U = type int>
+class_template duration <type T, type U>
+
+query bind_defaults class duration <type long_long>

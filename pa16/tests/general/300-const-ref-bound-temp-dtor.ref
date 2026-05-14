@@ -1,0 +1,122 @@
+function @make_hooks(%ret : ptr [pass=indirect_result], %p : ptr) -> void [binding=strong, object=_Z10make_hooksPi] {
+  slot $p : ptr
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = load ptr $p
+    call void @Hooks__Hooks(%ret, %t1)
+    return void
+}
+function @read(%h : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4readRK5Hooks] {
+  slot $h : ptr
+
+  block ^entry:
+    store ptr %h, $h
+    %t1 = load ptr $h
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr %t3
+    %t5 = load i32 %t4
+    return i32 %t5
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $destroyed : i32
+  slot $before : i32
+  slot $arg__1 : obj<8x8>
+  slot $after : i32
+  slot $cond__2 : i32
+  slot $land__3 : i64
+
+  block ^entry:
+    store i32 0, $destroyed
+    %t1 = addr $arg__1
+    %t2 = addr $destroyed
+    call void @make_hooks(%t1, %t2)
+    %t3 = call i32 @read(%t1)
+    store i32 %t3, $before
+    call void @Hooks___Hooks(%t1)
+    %t4 = load i32 $destroyed
+    store i32 %t4, $after
+    %t5 = load i32 $before
+    %t6 = cmp eq i32 %t5, 0
+    branch %t6, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t7 = load i32 $after
+    %t8 = cmp eq i32 %t7, 1
+    %t9 = cmp ne i64 %t8, 0
+    store i64 %t9, $land__3
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__3
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t10 = load i64 $land__3
+    branch %t10, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t11 = load i32 $cond__2
+    return i32 %t11
+}
+function @Hooks__Hooks(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN5HooksC1EPi] {
+  slot $this : ptr
+  slot $p : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %p, $p
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $p
+    call void @Counter__Counter(%t2, %t3)
+    return void
+}
+function @Counter__Counter(%this : ptr, %q : ptr) -> void [binding=weak, object=_ZN7CounterC1EPi] {
+  slot $this : ptr
+  slot $q : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %q, $q
+    %t1 = load ptr $q
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
+function @Counter___Counter(%this : ptr) -> void [binding=weak, object=_ZN7CounterD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load i32 %t3
+    %t5 = binary add i32 %t4, 1
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = load ptr %t7
+    store i32 %t5, %t8
+    return void
+}
+function @Hooks___Hooks(%this : ptr) -> void [binding=weak, object=_ZN5HooksD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @Counter___Counter(%t2)
+    return void
+}

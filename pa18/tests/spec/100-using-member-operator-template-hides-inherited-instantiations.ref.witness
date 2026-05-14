@@ -1,0 +1,63 @@
+translation-unit
+  class-use at pa18/tests/spec/100-using-member-operator-template-hides-inherited-instantiations.t:20:16
+    template comma_base
+    selected primary
+    bind #1 = first source=explicit
+  class-use at pa18/tests/spec/100-using-member-operator-template-hides-inherited-instantiations.t:59:3
+    template combine
+    selected primary
+    bind #1 = fourth source=explicit
+    bind #2 = combine<third, combine<second, first>> source=explicit
+  class-use at pa18/tests/spec/100-using-member-operator-template-hides-inherited-instantiations.t:59:19
+    template combine
+    selected primary
+    bind #1 = third source=explicit
+    bind #2 = combine<second, first> source=explicit
+  class-use at pa18/tests/spec/100-using-member-operator-template-hides-inherited-instantiations.t:59:34
+    template combine
+    selected primary
+    bind #1 = second source=explicit
+    bind #2 = first source=explicit
+  function-call at pa18/tests/spec/100-using-member-operator-template-hides-inherited-instantiations.t:60:9
+    callee comma_base<first>::operator,
+    selected instantiation
+    bind #1 = second source=deduced
+  function-call at pa18/tests/spec/100-using-member-operator-template-hides-inherited-instantiations.t:60:12
+    callee comma_base<combine<second, first>>::operator,
+    selected instantiation
+    bind #1 = third source=deduced
+  function-call at pa18/tests/spec/100-using-member-operator-template-hides-inherited-instantiations.t:60:15
+    callee comma_base<combine<third, combine<second, first>>>::operator,
+    selected instantiation
+    bind #1 = fourth source=deduced
+template-closure-events
+  ensure-definition
+    entity comma_base<combine<second, first>>::operator,
+  ensure-definition
+    entity comma_base<combine<third, combine<second, first>>>::operator,
+  ensure-definition
+    entity comma_base<first>::operator,
+  function-instantiation
+    entity combine<fourth, combine<third, combine<second, first>>>::combine
+  function-instantiation
+    entity combine<second, first>::combine
+  function-instantiation
+    entity combine<third, combine<second, first>>::combine
+  function-instantiation
+    entity comma_base<combine<second, first>>::operator,
+  function-instantiation
+    entity comma_base<combine<third, combine<second, first>>>::operator,
+  function-instantiation
+    entity comma_base<first>::operator,
+  require-definition
+    entity combine<fourth, combine<third, combine<second, first>>>::combine
+  require-definition
+    entity combine<second, first>::combine
+  require-definition
+    entity combine<third, combine<second, first>>::combine
+  require-definition
+    entity comma_base<combine<second, first>>::operator,
+  require-definition
+    entity comma_base<combine<third, combine<second, first>>>::operator,
+  require-definition
+    entity comma_base<first>::operator,

@@ -1,0 +1,17 @@
+translation-unit
+  class-use at pa21/tests/general/400-explicit-specialization-out-of-class-ctor-replay.t:21:1
+    template S
+    selected explicit
+    bind #1 = int source=explicit
+  class-use at pa21/tests/general/400-explicit-specialization-out-of-class-ctor-replay.t:23:1
+    template S
+    selected explicit
+    bind #1 = int source=explicit
+  class-use at pa21/tests/general/400-explicit-specialization-out-of-class-ctor-replay.t:26:3
+    template S
+    selected explicit
+    bind #1 = int source=explicit
+  class-use at pa21/tests/general/400-explicit-specialization-out-of-class-ctor-replay.t:27:3
+    template S
+    selected explicit
+    bind #1 = int source=explicit

@@ -1,0 +1,13 @@
+machine_ir x86_64 macos
+
+function @helper
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+
+  block ^entry
+    mov r8, 7
+    mov rax, r8
+    ret rax

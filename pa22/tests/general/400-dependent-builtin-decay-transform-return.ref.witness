@@ -1,0 +1,18 @@
+translation-unit
+  alias-use at pa22/tests/general/400-dependent-builtin-decay-transform-return.t:5:1
+    template decay_t
+    bind #1 = T source=explicit
+  alias-use at pa22/tests/general/400-dependent-builtin-decay-transform-return.t:6:10
+    template decay_t
+    bind #1 = T source=explicit
+  function-call at pa22/tests/general/400-dependent-builtin-decay-transform-return.t:15:3
+    callee decay_copy
+    selected instantiation
+    bind #1 = G source=deduced
+template-closure-events
+  ensure-definition
+    entity decay_copy
+  function-instantiation
+    entity decay_copy
+  require-definition
+    entity decay_copy

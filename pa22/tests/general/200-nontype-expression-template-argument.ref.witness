@@ -1,0 +1,6 @@
+translation-unit
+  class-use at pa22/tests/general/200-nontype-expression-template-argument.t:7:11
+    template integral_constant
+    selected primary
+    bind #1 = unsigned long source=explicit
+    bind #2 = 9223372036854775808 source=explicit

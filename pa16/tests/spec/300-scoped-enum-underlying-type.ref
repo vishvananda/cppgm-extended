@@ -1,0 +1,24 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $f : i16
+  slot $cond__1 : i32
+
+  block ^entry:
+    store i16 2, $f
+    %t1 = load i16 $f
+    %t2 = copy u16 %t1
+    %t3 = convert zext i32 u16 %t2
+    %t4 = cmp eq i32 %t3, 2
+    branch %t4, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load i32 $cond__1
+    return i32 %t5
+}

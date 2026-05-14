@@ -1,0 +1,20 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $f : ptr
+
+  block ^entry:
+    %t1 = addr @__lambda_main_t10_12
+    %t2 = unary decay ptr %t1
+    store ptr %t2, $f
+    %t3 = load ptr $f
+    %t4 = call i32 %t3() as () -> i32
+    %t5 = binary sub i32 %t4, 1
+    return i32 %t5
+}
+function @__lambda_main_t10_12() -> i32 [binding=internal] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 1, $x
+    %t1 = load i32 $x
+    return i32 %t1
+}

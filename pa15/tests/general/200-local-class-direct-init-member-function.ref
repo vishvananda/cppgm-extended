@@ -1,0 +1,61 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $s
+    call void @AssocState__AssocState(%t1)
+    %t2 = addr $s
+    %t3 = call i32 @AssocState__attach(%t2)
+    return i32 %t3
+}
+function @AssocState__AssocState(%this : ptr) -> void [binding=weak, object=_ZN10AssocStateC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @M__M(%t2)
+    return void
+}
+function @AssocState__attach(%this : ptr) -> i32 [binding=weak, object=_ZN10AssocState6attachEv] {
+  slot $this : ptr
+  slot $lk : obj<4x4>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $lk
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    call void @Lock__Lock(%t1, %t3)
+    %t4 = addr $lk
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load i32 %t5
+    %t7 = binary sub i32 %t6, 5
+    return i32 %t7
+}
+function @M__M(%this : ptr) -> void [binding=weak, object=_ZN1MC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 5, %t2
+    return void
+}
+function @Lock__Lock(%this : ptr, %m : ptr [pass=reference]) -> void [binding=weak, object=_ZN4LockC1ER1M] {
+  slot $this : ptr
+  slot $m : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %m, $m
+    %t1 = load ptr $m
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 %t3, %t5
+    return void
+}

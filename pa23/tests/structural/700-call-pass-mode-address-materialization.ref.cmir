@@ -1,0 +1,52 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @copy_ref
+  abi
+    param %ret -> rdi : ptr
+    param %src -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve <gpr0>
+
+  block ^entry
+    mov r8, rdi
+    mov r9, rsi
+    load.i64 rax, [r9]
+    store.i64 [r8], rax
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    slot $src -> [rbp-<off0>] : i64
+    slot $dst -> [rbp-<off1>] : i64
+
+  block ^entry
+    mov rax, 7
+    store.i64 [rbp-<off0>], rax
+    mov rax, 0
+    store.i64 [rbp-<off1>], rax
+    lea rdi, [rbp-<off1>]
+    lea rsi, [rbp-<off0>]
+    call @copy_ref
+    load.i64 r8, [rbp-<off1>]
+    mov rdx, 7
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rdx, 0
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rax, r8
+    ret rax

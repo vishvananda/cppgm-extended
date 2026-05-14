@@ -1,0 +1,8 @@
+translation-unit
+  class-use at pa21/tests/general/100-pack-base-expansion.t:12:3
+    template X
+    selected partial
+    bind #1 = <int, int, int> source=explicit
+    specialize #1 = int source=deduced
+    specialize #2 = int source=deduced
+    specialize #3 = <int> source=deduced

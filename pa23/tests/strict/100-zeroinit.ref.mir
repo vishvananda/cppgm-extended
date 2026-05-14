@@ -1,0 +1,30 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @dst
+  storage data
+  item i64 7
+  item i64 8
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve rbx
+
+  block ^entry
+    mov r8, @dst
+    mov rdi, r8
+    zero_bytes 16x8, rdi
+    load.i64 r9, @dst
+    lea r8, [r8+8]
+    load.i64 rbx, [r8]
+    add r9, rbx
+    mov rax, r9
+    ret rax

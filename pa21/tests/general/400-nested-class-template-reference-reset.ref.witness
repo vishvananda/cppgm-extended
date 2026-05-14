@@ -1,0 +1,20 @@
+translation-unit
+  function-call at pa21/tests/general/400-nested-class-template-reference-reset.t:49:9
+    callee interpreter::register_function
+    selected instantiation
+    bind #1 = void (*)() source=explicit
+template-closure-events
+  ensure-definition
+    entity interpreter::register_function
+  function-instantiation
+    entity interpreter::invoker<void (*)(), long, long>::apply
+  function-instantiation
+    entity interpreter::invoker<void (*)()>::apply
+  function-instantiation
+    entity interpreter::register_function
+  require-definition
+    entity interpreter::invoker<void (*)(), long, long>::apply
+  require-definition
+    entity interpreter::invoker<void (*)()>::apply
+  require-definition
+    entity interpreter::register_function

@@ -1,0 +1,33 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+global @bool__false___value : u8 [binding=weak, object=_ZN5bool_ILb0EE5valueE] = 0
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $h : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $h
+    call void @holder_int___holder(%t1)
+    return i32 0
+}
+function @holder_int___holder(%this : ptr) -> void [binding=weak, object=_ZN6holderIiEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr @holder_int___good
+    %t2 = copy i64 %t1
+    %t3 = convert zext i128 i64 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i128 %t3, %t5
+    return void
+}
+function @holder_int___good(%this : ptr) -> i32 [binding=weak, object=_ZNK6holderIiE4goodEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 0
+}

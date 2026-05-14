@@ -1,0 +1,45 @@
+global @ns__helper [storage=thread_local, binding=strong, object=_ZN2ns6helperE] = {
+  zero 1
+}
+global @ns__helper__tls_guard : i64 [storage=thread_local, binding=internal] = zero
+
+function @ns__anchor() -> i32 [binding=strong, object=_ZN2ns6anchorEv] {
+  block ^entry:
+    %t1 = call i32 @ns__force(1)
+    return i32 %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @ns__anchor()
+    return i32 %t1
+}
+function @ns__force(%value : i32) -> i32 [binding=weak, object=_ZN2ns5forceIiEEiT_] {
+  slot $value : i32
+
+  block ^entry:
+    store i32 %value, $value
+    %t1 = load i32 $value
+    return i32 %t1
+}
+function @ns__Helper_int___Helper(%this : ptr) -> void [binding=weak, object=_ZN2ns6HelperIiEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @ns__helper__tls_init() -> void [binding=internal] {
+  block ^entry:
+    %t1 = load i64 @ns__helper__tls_guard
+    %t2 = cmp ne i64 %t1, 0
+    branch %t2, ^local_static_ctor_done_2, ^local_static_ctor_run_1
+
+  block ^local_static_ctor_run_1:
+    %t3 = addr @ns__helper
+    call void @ns__Helper_int___Helper(%t3)
+    store i64 1, @ns__helper__tls_guard
+    jump ^local_static_ctor_done_2
+
+  block ^local_static_ctor_done_2:
+    return void
+}

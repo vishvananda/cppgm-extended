@@ -1,0 +1,23 @@
+function @f() -> i32 [binding=strong, object=_Z1fv] {
+  slot $a : obj<12x4>
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = unary decay ptr %t1
+    %t3 = index i32 [projection=array_element] %t2, 1
+    store i32 5, %t3
+    %t4 = addr $a
+    %t5 = unary decay ptr %t4
+    %t6 = index i32 [projection=array_element] %t5, 1
+    %t7 = load i32 %t6
+    %t8 = const i64 12
+    %t9 = convert sext i64 i32 %t7
+    %t10 = binary add i64 %t9, %t8
+    %t11 = convert trunc i32 i64 %t10
+    return i32 %t11
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @f()
+    return i32 %t1
+}

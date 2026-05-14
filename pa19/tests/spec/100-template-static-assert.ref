@@ -1,0 +1,39 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+global @K : i32 [binding=internal, object=_Z1K] = 3
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $b : obj<16x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $b
+    %t2 = addr $b
+    %t3 = call i32 @box_4___get(%t2)
+    %t4 = binary add i32 3, 1
+    %t5 = binary mul i32 4, %t4
+    %t6 = cmp eq i32 %t3, %t5
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @box_4___get(%this : ptr) -> i32 [binding=weak, object=_ZN3boxILi4EE3getEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = const i64 16
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
+}

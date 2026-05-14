@@ -1,0 +1,86 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $box : obj<1x1>
+  slot $refarg__1 : i32
+
+  block ^entry:
+    %t1 = addr $box
+    %t2 = addr $box
+    store i32 0, $refarg__1
+    %t3 = addr $refarg__1
+    %t4 = call i32 @LambdaBox_int___run(%t2, %t3)
+    %t5 = binary sub i32 %t4, 1
+    return i32 %t5
+}
+function @LambdaBox_int___run(%this : ptr, %args : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN9LambdaBoxIiE3runIJiEEEiDpOT_] {
+  slot $this : ptr
+  slot $args : ptr
+  slot $value : i32
+  slot $argobj__1 : obj<8x8>
+  slot $argobj__2 : obj<8x8>
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %args, $args
+    store i32 0, $value
+    %t1 = addr $argobj__1
+    %t2 = addr $value
+    store ptr %t2, %t1
+    %t3 = addr $argobj__2
+    %t4 = addr $value
+    store ptr %t4, %t3
+    call void @std__helper(1, $argobj__1, $argobj__2)
+    %t5 = load i32 $value
+    return i32 %t5
+}
+function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> void [binding=weak, object=_ZSt6helperIZN9LambdaBoxIiE3runIJiEEEiDpOT_EUlvE_ZN9LambdaBoxIiE3runIJiEEEiDpOT_EUlvE0_EvbS3_T0_] {
+  slot $cond : u8
+  slot $if_fn : obj<8x8>
+  slot $else_fn : obj<8x8>
+
+  block ^entry:
+    store u8 %cond, $cond
+    %t1 = addr $if_fn
+    copyobj 8x8 %if_fn, %t1
+    %t2 = addr $else_fn
+    copyobj 8x8 %else_fn, %t2
+    %t3 = load u8 $cond
+    branch %t3, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t4 = addr $if_fn
+    call void @LambdaBox_int_____lambda_LambdaBox_int___run__int_t65_65__operator__(%t4)
+    jump ^if_end_3
+
+  block ^if_else_2:
+    %t5 = addr $else_fn
+    call void @LambdaBox_int_____lambda_LambdaBox_int___run__int_t65_65_n1__operator__(%t5)
+    jump ^if_end_3
+
+  block ^if_end_3:
+    return void
+}
+function @LambdaBox_int_____lambda_LambdaBox_int___run__int_t65_65__operator__(%this : ptr) -> void [binding=weak, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_ENKUlvE_clEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t3 = load ptr %t2
+    store i32 1, %t3
+    return void
+}
+function @LambdaBox_int_____lambda_LambdaBox_int___run__int_t65_65_n1__operator__(%this : ptr) -> void [binding=weak, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_ENKUlvE0_clEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t3 = load ptr %t2
+    store i32 2, %t3
+    return void
+}

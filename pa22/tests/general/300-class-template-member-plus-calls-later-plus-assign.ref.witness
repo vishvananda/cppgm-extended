@@ -1,0 +1,22 @@
+translation-unit
+  class-use at pa22/tests/general/300-class-template-member-plus-calls-later-plus-assign.t:22:3
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity Box<int>::Box
+  ensure-definition
+    entity Box<int>::operator+
+  function-instantiation
+    entity Box<int>::Box
+  function-instantiation
+    entity Box<int>::operator+
+  function-instantiation
+    entity Box<int>::operator+=
+  require-definition
+    entity Box<int>::Box
+  require-definition
+    entity Box<int>::operator+
+  require-definition
+    entity Box<int>::operator+=

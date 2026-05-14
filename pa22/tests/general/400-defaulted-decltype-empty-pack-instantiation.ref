@@ -1,0 +1,38 @@
+declare function @operatornew(%arg0 : i64, %arg1 : ptr) -> ptr [binding=strong, object=_ZnwmPv]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $storage : obj<4x1>
+  slot $box : ptr
+
+  block ^entry:
+    %t1 = addr $storage
+    %t2 = unary decay ptr %t1
+    %t3 = call ptr @construct_at(%t2)
+    store ptr %t3, $box
+    %t4 = load ptr $box
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load i32 %t5
+    %t7 = binary sub i32 %t6, 7
+    return i32 %t7
+}
+function @construct_at(%ptr : ptr) -> ptr [binding=weak, object=_Z12construct_atI3BoxJEPS0_EPT_S3_DpOT0_] {
+  slot $ptr : ptr
+
+  block ^entry:
+    store ptr %ptr, $ptr
+    %t1 = convert sext i64 i32 4
+    %t2 = load ptr $ptr
+    %t3 = call ptr @operatornew(%t1, %t2)
+    call void @Box__Box(%t3)
+    return ptr %t3
+}
+function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}

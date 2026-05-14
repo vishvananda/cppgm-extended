@@ -1,0 +1,21 @@
+#include <map>
+#include <string>
+
+struct NamedValues
+{
+  std::map<std::string, int> values;
+};
+
+int sum_named_values(const NamedValues & named)
+{
+  int sum = 0;
+  for(const auto & entry : named.values) {
+    sum += entry.second;
+  }
+  return sum;
+}
+
+int main()
+{
+  return 0;
+}

@@ -1,0 +1,13 @@
+#include <map>
+
+struct V {
+  int x;
+  V() : x(0) {}
+};
+
+int main() {
+  std::map<unsigned char, V> m;
+  unsigned char k = 1;
+  m[k].x = 3;
+  return m[k].x == 3 ? 0 : 1;
+}

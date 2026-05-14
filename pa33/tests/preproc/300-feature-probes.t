@@ -1,0 +1,20 @@
+#if __has_feature(modules)
+bad
+#else
+modules_off
+#endif
+#if __has_extension(blocks)
+bad
+#else
+blocks_off
+#endif
+#if __has_attribute(always_inline)
+bad
+#else
+attr_off
+#endif
+#if __has_cpp_attribute(nodiscard)
+bad
+#else
+cppattr_off
+#endif

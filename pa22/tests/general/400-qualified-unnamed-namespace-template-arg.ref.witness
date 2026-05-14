@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/400-qualified-unnamed-namespace-template-arg.t:9:3
+    template W
+    selected primary
+    bind #1 = const ns::E source=explicit

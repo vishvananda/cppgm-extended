@@ -1,0 +1,11 @@
+global @__strlit__1 [binding=internal] = {
+  u32 97
+  u32 98
+  u32 0
+}
+global @wide : ptr [binding=internal, object=_Z4wide] = addr @__strlit__1
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

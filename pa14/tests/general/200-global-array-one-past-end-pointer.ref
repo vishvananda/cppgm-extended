@@ -1,0 +1,29 @@
+global @data [binding=strong, object=_Z4data] = {
+  zero 800
+}
+global @dpa : ptr [binding=strong, object=_Z3dpa] = addr @data
+global @dpb : ptr [binding=strong, object=_Z3dpb] = addr @data + 800
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = load ptr @dpb
+    %t2 = load ptr @dpa
+    %t3 = binary sub ptr %t1, %t2
+    %t4 = binary div i64 %t3, 8
+    %t5 = cmp eq i64 %t4, 100
+    branch %t5, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t6 = load i32 $cond__1
+    return i32 %t6
+}

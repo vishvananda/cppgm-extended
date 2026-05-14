@@ -1,0 +1,18 @@
+template <class T>
+struct Box {
+  template <int N>
+  __attribute__((__abi_tag__("nqe220100"))) void touch();
+};
+
+template <class T>
+template <int N>
+void Box<T>::touch()
+{
+}
+
+int main()
+{
+  Box<int> box;
+  box.touch<1>();
+  return 0;
+}

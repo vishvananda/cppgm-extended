@@ -1,0 +1,62 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr @Logger__set_stream
+    %t2 = copy i64 %t1
+    %t3 = convert zext i128 i64 %t2
+    %t4 = call i32 @bind(%t3)
+    %t5 = cmp eq i32 %t4, 7
+    branch %t5, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t6 = load i32 $cond__1
+    return i32 %t6
+}
+function @bind(%f : i128) -> i32 [binding=weak, object=_Z4bindIv6LoggerR6StreamEiMS0_FvS2_E] {
+  slot $f : i128
+
+  block ^entry:
+    store i128 %f, $f
+    %t1 = load i128 $f
+    %t2 = call i32 @mem_fn(%t1)
+    return i32 %t2
+}
+function @mem_fn(%pmf : i128) -> i32 [binding=weak, object=_Z6mem_fnIv6LoggerJR6StreamEEiMS0_FvS2_E] {
+  slot $pmf : i128
+  slot $cond__1 : i32
+
+  block ^entry:
+    store i128 %pmf, $pmf
+    %t1 = load i128 $pmf
+    branch %t1, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 7, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t2 = load i32 $cond__1
+    return i32 %t2
+}
+function @Logger__set_stream(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6Logger10set_streamER6Stream] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}

@@ -1,0 +1,180 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $e : obj<8x4>
+  slot $b : ptr
+  slot $w : obj<12x4>
+  slot $wb : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $e
+    call void @E__E(%t1)
+    %t2 = addr $e
+    %t3 = index i8 [projection=base_subobject] %t2, 4
+    store ptr %t3, $b
+    %t4 = load ptr $b
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 9, %t5
+    %t6 = addr $w
+    %t7 = addr $e
+    %t8 = index i8 %t7, 1
+    %t9 = index i8 %t7, 4
+    call void @W__W(%t6, %t7, %t8, %t9)
+    %t10 = addr $w
+    %t11 = index i8 [projection=base_subobject] %t10, 8
+    store ptr %t11, $wb
+    %t12 = load ptr $wb
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load i32 %t13
+    %t15 = cmp eq i32 %t14, 9
+    branch %t15, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    %t16 = load ptr $wb
+    %t17 = index i8 [projection=field] %t16, 0
+    %t18 = load i32 %t17
+    store i32 %t18, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t19 = load i32 $cond__1
+    return i32 %t19
+}
+function @E__E(%this : ptr) -> void [binding=weak, object=_ZN1EC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 1
+    %t3 = load ptr $this
+    %t4 = index i8 %t3, 4
+    call void @H__H__base_entry(%t2, %t4)
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=base_subobject] %t5, 4
+    call void @B__B__base_entry(%t6)
+    return void
+}
+function @W__W(%this : ptr, %e : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr) -> void [binding=weak, object=_ZN1WC1ERK1E] {
+  slot $this : ptr
+  slot $e : ptr
+  slot $e__pvb0 : ptr
+  slot $e__pvb1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %e, $e
+    store ptr %__pvbptr1, $e__pvb1
+    store ptr %__pvbptr0, $e__pvb0
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    %t3 = load ptr $this
+    %t4 = index i8 %t3, 8
+    call void @H__H__base_entry(%t2, %t4)
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=base_subobject] %t5, 8
+    call void @B__B__base_entry(%t6)
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=base_subobject] %t7, 0
+    %t9 = load ptr $e
+    %t10 = load ptr $this
+    %t11 = index i8 %t10, 4
+    %t12 = load ptr $this
+    %t13 = index i8 %t12, 8
+    call void @E__E__ov2__base_entry(%t8, %t9, %t11, %t13)
+    %t14 = load ptr $this
+    %t15 = load ptr $e__pvb0
+    %t16 = index i8 [projection=base_subobject] %t15, 4
+    %t17 = index i8 [projection=base_subobject] %t16, 0
+    %t18 = load ptr $this
+    %t19 = index i8 %t18, 4
+    %t20 = load ptr $this
+    %t21 = index i8 %t20, 8
+    call void @W__copy_from__ov2(%t14, %t17, %t19, %t21)
+    return void
+}
+function @W__copy_from__ov2(%this : ptr, %p : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN1W9copy_fromEPK1B] {
+  slot $this : ptr
+  slot $p : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %p, $p
+    %t1 = index i8 [projection=base_subobject] %__vbptr0, 4
+    %t2 = load ptr $p
+    %t3 = call ptr @B__operator_(%t1, %t2)
+    return void
+}
+function @H__H__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1HC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @B__B__base_entry(%this : ptr) -> void [binding=weak, object=_ZN1BC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+function @B__B(%this : ptr) -> void [binding=weak, object=_ZN1BC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+function @E__E__ov2__base_entry(%this : ptr, %other : ptr [pass=reference], %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN1EC2ERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+  slot $other__pvb0 : ptr
+  slot $other__pvb1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = index i8 %other, 4
+    store ptr %t1, $other__pvb1
+    %t2 = index i8 %other, 1
+    store ptr %t2, $other__pvb0
+    return void
+}
+function @B__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN1BaSERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 %t3, %t5
+    %t6 = load ptr $this
+    return ptr %t6
+}
+function @H__H__ov2__base_entry(%this : ptr, %other : ptr [pass=reference], %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1HC2ERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+  slot $other__pvb0 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = index i8 %other, 4
+    store ptr %t1, $other__pvb0
+    return void
+}

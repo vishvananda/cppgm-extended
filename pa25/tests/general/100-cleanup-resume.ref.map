@@ -1,0 +1,12 @@
+link_map x86_64 macos
+startup_size 22
+code_size 537
+data_size 584
+object 0 code_offset 64 data_offset 576
+symbol @__cppgm_eh_top data 544
+symbol @__cppgm_eh_type data 560
+symbol @__cppgm_eh_unhandled code 32
+symbol @__cppgm_eh_value data 552
+symbol @f code 64
+symbol @g data 576
+symbol @main code 352

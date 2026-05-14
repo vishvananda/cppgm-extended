@@ -1,0 +1,14 @@
+translation-unit
+  class-use at pa22/tests/general/400-out-of-class-nested-template-owner-constructor.t:13:3
+    template outer
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  class-instantiation
+    entity outer<int>::inner
+  ensure-definition
+    entity outer<int>::inner::inner
+  function-instantiation
+    entity outer<int>::inner::inner
+  require-definition
+    entity outer<int>::inner::inner

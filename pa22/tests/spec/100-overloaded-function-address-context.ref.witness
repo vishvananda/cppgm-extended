@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/spec/100-overloaded-function-address-context.t:22:10
+    callee apply
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity apply
+  function-instantiation
+    entity apply
+  require-definition
+    entity apply

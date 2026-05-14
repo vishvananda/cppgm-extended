@@ -1,0 +1,98 @@
+template_kernel_output_v1
+
+query 1 bind_defaults class Box<int>
+status ok
+resolved class Box<int, int>
+bind T = int
+bind U = int
+default U = int
+
+query 2 bind_defaults class Box<char>
+status ok
+resolved class Box<char, char>
+bind T = char
+bind U = char
+default U = char
+
+query 3 bind_defaults class Box<long_long>
+status ok
+resolved class Box<long_long, long_long>
+bind T = long_long
+bind U = long_long
+default U = long_long
+
+query 4 expand_alias Ptr<>
+status ok
+resolved alias Ptr<int>
+bind T = int
+default T = int
+expanded type int*
+
+query 5 expand_alias Ptr<>
+status ok
+resolved alias Ptr<int>
+bind T = int
+default T = int
+expanded type int*
+
+query 6 expand_alias Ptr<>
+status ok
+resolved alias Ptr<int>
+bind T = int
+default T = int
+expanded type int*
+
+query 7 deduce_call keep(int)
+status ok
+selected function_template only
+bind T = int
+
+query 8 deduce_call keep(int)
+status ok
+selected function_template only
+bind T = int
+
+query 9 deduce_call keep(int)
+status ok
+selected function_template only
+bind T = int
+
+query 10 select_class Box<char>
+status ok
+selected partial_class same
+resolved class Box<char, char>
+bind T = char
+bind U = char
+default U = char
+specialize A = char
+
+query 11 select_class Box<char>
+status ok
+selected partial_class same
+resolved class Box<char, char>
+bind T = char
+bind U = char
+default U = char
+specialize A = char
+
+query 12 select_class Box<char>
+status ok
+selected partial_class same
+resolved class Box<char, char>
+bind T = char
+bind U = char
+default U = char
+specialize A = char
+
+query 13 stats
+status ok
+queries_executed 13
+stats_queries 1
+class_select_queries 3
+variable_select_queries 0
+alias_expand_queries 3
+default_binding_queries 3
+function_deduction_queries 3
+candidate_evaluations 6
+defaults_applied 9
+text_fallbacks 0

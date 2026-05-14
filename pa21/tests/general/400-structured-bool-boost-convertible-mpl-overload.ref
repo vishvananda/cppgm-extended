@@ -1,0 +1,8 @@
+global @integral_constant_bool__false___value : u8 [binding=weak, object=_ZN17integral_constantIbLb0EE5valueE] = 0
+global @bool__false___value : u8 [binding=weak, object=_ZN5bool_ILb0EE5valueE] = 0
+global @bool__true___value : u8 [binding=weak, object=_ZN5bool_ILb1EE5valueE] = 1
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

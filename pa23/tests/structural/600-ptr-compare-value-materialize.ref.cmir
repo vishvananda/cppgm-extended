@@ -1,0 +1,34 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @cells
+  storage data
+  item i64 11
+  item i64 13
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve <gpr0>
+
+  block ^entry
+    mov r8, @cells
+    mov r9, r8
+    lea r9, [r9+<off0>]
+    mov <gpr0>, r9
+    cmp.ptr <gpr0>, r9
+    sete <gpr0>
+    movzx <gpr0>, <gpr0>
+    cmp.ptr r9, r8
+    setne r9
+    movzx r9, r9
+    add <gpr0>, r9
+    mov rax, <gpr0>
+    ret rax

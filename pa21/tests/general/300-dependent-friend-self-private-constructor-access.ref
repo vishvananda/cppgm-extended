@@ -1,0 +1,58 @@
+function @main() -> i64 {
+  slot $b__0 : i64
+  slot $discard__1 : i64
+
+  block ^entry:
+    %t1 = addr $b__0
+    call void @Box__Box(%t1)
+    %t2 = addr $discard__1
+    %t3 = addr $b__0
+    call void @Box__make(%t2, %t3)
+    call void @Ref_Box____Ref(%t2)
+    %t4 = addr $b__0
+    call void @Box___Box(%t4)
+    return i64 0
+}
+function @Ref_Box____Ref(%this : ptr) -> void {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Box__Box(%this : ptr) -> void {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Box__make(%ret : ptr, %this : ptr) -> void {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 0, $x
+    %t1 = addr $x
+    call void @Ref_Box___Ref(%ret, %t1, 1)
+    return void
+}
+function @Box___Box(%this : ptr) -> void {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Ref_Box___Ref(%this : ptr, %__param1 : ptr, %__param2 : i64) -> void {
+  slot $this : ptr
+  slot $__param1 : ptr
+  slot $__param2 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    store i32 %__param2, $__param2
+    return void
+}

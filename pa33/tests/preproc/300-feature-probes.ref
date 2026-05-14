@@ -1,0 +1,7 @@
+preproc 1
+sof tests/preproc/300-feature-probes.t
+identifier modules_off
+identifier blocks_off
+identifier attr_off
+identifier cppattr_off
+eof

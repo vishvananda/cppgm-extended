@@ -1,0 +1,31 @@
+function @make(%ret : ptr, %s : ptr) -> void {
+  slot $s__0 : i64
+
+  block ^entry:
+    %t1 = addr $s__0
+    %t2 = addr $s__0
+    call void @S_char__traits_char___int___operatorSelfView(%ret, %t2)
+    return void
+}
+function @S_char__traits_char___int___operatorSelfView(%ret : ptr, %this : ptr) -> void {
+  slot $this : ptr
+  slot $tmpobj__1 : i64
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $tmpobj__1
+    call void @V_char__traits_char____Tag__Tag(%t1)
+    %t2 = load ptr $this
+    %t3 = call ptr @S_char__traits_char___int___data(%t2)
+    %t4 = load ptr $this
+    %t5 = call i64 @S_char__traits_char___int___size(%t4)
+    call void @V_char__traits_char____V(%ret, %t1, %t3, %t5)
+    return void
+}
+function @V_char__traits_char____Tag__Tag(%this : ptr) -> void {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}

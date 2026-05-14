@@ -1,0 +1,8 @@
+declare global @g : i64
+
+function @__cppgm_init() -> void {
+  block ^entry:
+    %0 = const i64 5
+    store i64 %0, @g
+    return void
+}

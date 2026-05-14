@@ -1,0 +1,60 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item ptr addr @mix
+
+function @mix
+  abi
+    param %a -> rdi : i64
+    param %b -> xmm0 : f64
+    param %c -> rsi : i64
+    param %d -> xmm1 : f64
+    return i64 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 48
+    preserve <gpr0> <gpr1> <gpr2>
+    param-slot %b -> [rbp-<off0>] : f64
+    param-slot %d -> [rbp-<off1>] : f64
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fmov.f64 [rbp-<off1>], xmm1
+    mov <gpr0>, rsi
+    fptosi.f64.i64 r9, [rbp-<off0>]
+    fptosi.f64.i64 <gpr1>, [rbp-<off1>]
+    mov <gpr2>, rdi
+    add <gpr2>, <gpr0>
+    add r9, <gpr1>
+    add <gpr2>, r9
+    mov rax, <gpr2>
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 48
+
+  block ^entry
+    load.ptr r8, @table
+    mov <gpr3>, r8
+    mov rdi, 10
+    fmov.f64 xmm0, 1.5
+    mov rsi, 20
+    fmov.f64 xmm1, 2.5
+    call *<gpr3>
+    mov r9, rax
+    mov rdx, 33
+    cmp.i64 r9, rdx
+    sete r9
+    movzx r9, r9
+    mov rax, r9
+    ret rax

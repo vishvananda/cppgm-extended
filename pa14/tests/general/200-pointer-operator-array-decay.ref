@@ -1,0 +1,68 @@
+function @add_one(%p : ptr) -> ptr [binding=strong, object=_Z7add_onePi] {
+  slot $p : ptr
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = load ptr $p
+    %t2 = binary mul i64 1, 4
+    %t3 = index i8 %t1, %t2
+    return ptr %t3
+}
+function @diff(%a : ptr, %b : ptr) -> i64 [binding=strong, object=_Z4diffPiS_] {
+  slot $a : ptr
+  slot $b : ptr
+
+  block ^entry:
+    store ptr %a, $a
+    store ptr %b, $b
+    %t1 = load ptr $a
+    %t2 = load ptr $b
+    %t3 = binary sub ptr %t1, %t2
+    %t4 = binary div i64 %t3, 4
+    return i64 %t4
+}
+function @from_array() -> ptr [binding=strong, object=_Z10from_arrayv] {
+  slot $a : obj<16x4>
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = unary decay ptr %t1
+    %t3 = binary mul i64 1, 4
+    %t4 = index i8 %t2, %t3
+    return ptr %t4
+}
+function @prefix_ref(%p : ptr) -> i32 [binding=strong, object=_Z10prefix_refPi] {
+  slot $p : ptr
+  slot $r : ptr
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = load ptr $p
+    %t2 = binary add ptr %t1, 1
+    store ptr %t2, $p
+    store ptr $p, $r
+    %t3 = load ptr $r
+    %t4 = load ptr %t3
+    %t5 = load ptr $p
+    %t6 = cmp eq ptr %t4, %t5
+    %t7 = convert zext i32 u8 %t6
+    return i32 %t7
+}
+function @array_eq() -> i32 [binding=strong, object=_Z8array_eqv] {
+  slot $a : obj<16x4>
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = unary decay ptr %t1
+    %t3 = binary mul i64 1, 4
+    %t4 = index i8 %t2, %t3
+    %t5 = addr $a
+    %t6 = unary decay ptr %t5
+    %t7 = cmp eq ptr %t4, %t6
+    %t8 = convert zext i32 u8 %t7
+    return i32 %t8
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

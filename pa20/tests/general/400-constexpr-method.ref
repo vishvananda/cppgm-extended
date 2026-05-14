@@ -1,0 +1,38 @@
+global @v [binding=internal, object=_Z1v] = {
+  zero 8
+}
+global @w [binding=internal, object=_Z1w] = {
+  zero 8
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @Vec2__Vec2(%this : ptr, %a : i32, %b : i32) -> void [binding=weak, object=_ZN4Vec2C1Eii] {
+  slot $this : ptr
+  slot $a : i32
+  slot $b : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %a, $a
+    store i32 %b, $b
+    %t1 = load i32 $a
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load i32 $b
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store i32 %t4, %t6
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @v
+    call void @Vec2__Vec2(%t1, 3, 4)
+    %t2 = addr @w
+    call void @Vec2__Vec2(%t2, 1, 2)
+    return void
+}

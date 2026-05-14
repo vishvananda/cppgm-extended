@@ -1,0 +1,20 @@
+translation-unit
+  function-call at pa21/tests/general/400-nested-member-partial-specialization-apply-scope.t:50:9
+    callee example::interpreter::register_function
+    selected instantiation
+    bind #1 = void (*)() source=explicit
+template-closure-events
+  ensure-definition
+    entity example::interpreter::register_function
+  function-instantiation
+    entity example::interpreter::invoker<void (*)(), example::interpreter::last>::apply
+  function-instantiation
+    entity example::interpreter::invoker<void (*)()>::apply
+  function-instantiation
+    entity example::interpreter::register_function
+  require-definition
+    entity example::interpreter::invoker<void (*)(), example::interpreter::last>::apply
+  require-definition
+    entity example::interpreter::invoker<void (*)()>::apply
+  require-definition
+    entity example::interpreter::register_function

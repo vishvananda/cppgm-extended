@@ -1,0 +1,32 @@
+translation-unit
+  class-use at pa34/tests/link/600-template-inline-constructor-return-link-smoke.t.1:25:3
+    template allocation_result
+    selected primary
+    bind #1 = int source=explicit
+  function-call at pa34/tests/link/600-template-inline-constructor-return-link-smoke.t.1:25:33
+    callee allocate_at_least
+    selected instantiation
+    bind #1 = int source=deduced
+  class-use at pa34/tests/link/600-template-inline-constructor-return-link-smoke.t.1:26:3
+    template allocation_result
+    selected primary
+    bind #1 = Node source=explicit
+  function-call at pa34/tests/link/600-template-inline-constructor-return-link-smoke.t.1:26:35
+    callee allocate_at_least
+    selected instantiation
+    bind #1 = Node source=deduced
+template-closure-events
+  ensure-definition
+    entity allocate_at_least
+  function-instantiation
+    entity allocate_at_least
+  function-instantiation
+    entity allocation_result<Node>::allocation_result
+  function-instantiation
+    entity allocation_result<int>::allocation_result
+  require-definition
+    entity allocate_at_least
+  require-definition
+    entity allocation_result<Node>::allocation_result
+  require-definition
+    entity allocation_result<int>::allocation_result

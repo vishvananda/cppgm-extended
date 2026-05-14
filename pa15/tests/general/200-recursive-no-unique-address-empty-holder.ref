@@ -1,0 +1,15 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $o : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $o
+    %t2 = addr $o
+    %t3 = index i8 [projection=field] %t2, 0
+    store i64 0, %t3
+    %t4 = addr $o
+    %t5 = index i8 [projection=field] %t4, 0
+    store i64 7, %t5
+    %t6 = const i64 8
+    %t7 = convert trunc i32 i64 %t6
+    return i32 %t7
+}

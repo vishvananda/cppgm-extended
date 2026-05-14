@@ -1,0 +1,8 @@
+global @b [binding=strong, object=_Z1b] = {
+  zero 1
+}
+
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
+}

@@ -1,0 +1,6 @@
+translation-unit
+  class-use at pa18/tests/spec/100-forward-owner-default-member-type.t:10:9
+    template String
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = Alloc<int> source=defaulted

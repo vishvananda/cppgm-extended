@@ -1,0 +1,17 @@
+tests/012-explicit-instantiation-function.cpp
+tests/013-explicit-instantiation-class.cpp
+tests/034-explicit-specialization-member-definition-after-forward-use.cpp
+tests/035-explicit-specialization-out-of-class-ctor-replay.cpp
+tests/042-explicit-specialization-cross-converting-ctor-body.cpp
+tests/043-cross-specialization-converting-ctor-operator-template.cpp
+tests/047-function-signature-partial-specialization-functor-assignment.cpp
+tests/049-pointer-traits-alias-chain-core.cpp
+tests/080-qualified-member-alias-template.cpp
+tests/081-variable-template-specialization-selection.cpp
+tests/082-extern-template-class-declaration.cpp
+tests/083-extern-template-member-function-declaration.cpp
+tests/084-extern-template-static-data-declaration.cpp
+tests/100-extern-template-constructor-declaration.cpp
+tests/101-extern-template-operator-function-declaration.cpp
+tests/102-shared-partial-specialization-variable-selection.cpp
+tests/103-partial-specialization-uses-primary-default-argument.cpp

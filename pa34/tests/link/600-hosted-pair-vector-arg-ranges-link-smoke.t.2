@@ -1,0 +1,11 @@
+#include "600-hosted-pair-vector-arg-ranges-link-smoke.shared.h"
+
+using namespace helper_inline_ns::v1;
+
+int main()
+{
+  vec<pair<unsigned long, unsigned long> > ranges;
+  ranges.value.first = 1;
+  ranges.value.second = 2;
+  return accept_arg_ranges(ranges) ? 0 : 1;
+}

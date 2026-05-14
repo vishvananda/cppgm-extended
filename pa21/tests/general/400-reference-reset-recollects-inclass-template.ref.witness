@@ -1,0 +1,39 @@
+translation-unit
+  class-use at pa21/tests/general/400-reference-reset-recollects-inclass-template.t:40:14
+    template example::vtable_entry
+    selected primary
+    bind #1 = interface_x::vtable::info<> source=explicit
+  class-use at pa21/tests/general/400-reference-reset-recollects-inclass-template.t:40:27
+    template interface_x::vtable::info
+    selected primary
+    bind #1 = void * source=defaulted
+  class-use at pa21/tests/general/400-reference-reset-recollects-inclass-template.t:65:40
+    template interface_x::holder
+    selected primary
+    bind #1 = target source=explicit
+  class-use at pa21/tests/general/400-reference-reset-recollects-inclass-template.t:66:13
+    template example::member
+    selected primary
+    bind #1 = interface_x::vtable::info<target> source=explicit
+  class-use at pa21/tests/general/400-reference-reset-recollects-inclass-template.t:66:41
+    template interface_x::vtable::info
+    selected primary
+    bind #1 = target source=explicit
+  function-call at pa21/tests/general/400-reference-reset-recollects-inclass-template.t:76:15
+    callee interface_x::interface_x
+    selected instantiation
+    bind #1 = target source=deduced
+    drop interface_x::interface_x reason=worse_conversion
+template-closure-events
+  ensure-definition
+    entity interface_x::interface_x
+  function-instantiation
+    entity example::member<interface_x::vtable::info<target>>::wrap
+  function-instantiation
+    entity interface_x::interface_x
+  require-definition
+    entity example::member<interface_x::vtable::info<target>>::wrap
+  require-definition
+    entity interface_x::interface_x
+  variable-instantiation
+    entity interface_x::holder<target>::table

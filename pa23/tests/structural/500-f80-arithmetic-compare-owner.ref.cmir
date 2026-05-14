@@ -1,0 +1,23 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 48
+    temp %a -> [rbp-<off0>] : f80
+    temp %b -> [rbp-<off1>] : f80
+    temp %sum -> [rbp-<off2>] : f80
+
+  block ^entry
+    fmov.f80 [rbp-<off0>], 1.25L
+    fmov.f80 [rbp-<off1>], 2.5L
+    fadd.f80 [rbp-<off2>], [rbp-<off0>], [rbp-<off1>]
+    feq.f80 rax, [rbp-<off2>], 3.75L
+    ret rax

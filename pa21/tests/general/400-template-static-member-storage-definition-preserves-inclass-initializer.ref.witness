@@ -1,0 +1,18 @@
+translation-unit
+  class-use at pa21/tests/general/400-template-static-member-storage-definition-preserves-inclass-initializer.t:11:11
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa21/tests/general/400-template-static-member-storage-definition-preserves-inclass-initializer.t:14:3
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity Box<int>::get
+  function-instantiation
+    entity Box<int>::get
+  require-definition
+    entity Box<int>::get
+  variable-instantiation
+    entity Box<int>::value

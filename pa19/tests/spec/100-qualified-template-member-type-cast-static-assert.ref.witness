@@ -1,0 +1,9 @@
+translation-unit
+  class-use at pa19/tests/spec/100-qualified-template-member-type-cast-static-assert.t:16:26
+    template meta::make_unsigned
+    selected primary
+    bind #1 = unsigned int source=explicit
+  class-use at pa19/tests/spec/100-qualified-template-member-type-cast-static-assert.t:22:17
+    template meta::make_unsigned
+    selected primary
+    bind #1 = unsigned int source=explicit

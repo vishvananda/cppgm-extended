@@ -1,0 +1,84 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+global @__strlit__1 [binding=internal] = {
+  i8 120
+  i8 0
+}
+global @__strlit__2 [binding=internal] = {
+  i8 121
+  i8 0
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $arr : obj<32x8>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = addr $arr
+    %t2 = addr @__strlit__1
+    call void @Pair__Pair__ov2(%t1, %t2, 0)
+    %t3 = index i8 %t1, 16
+    %t4 = addr @__strlit__2
+    call void @Pair__Pair__ov2(%t3, %t4, 1)
+    %t5 = addr $arr
+    %t6 = unary decay ptr %t5
+    %t7 = binary mul i64 0, 16
+    %t8 = index i8 [projection=array_element] %t6, %t7
+    %t9 = index i8 [projection=field] %t8, 8
+    %t10 = load i32 %t9
+    %t11 = cmp eq i32 %t10, 0
+    branch %t11, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t12 = addr $arr
+    %t13 = unary decay ptr %t12
+    %t14 = binary mul i64 1, 16
+    %t15 = index i8 [projection=array_element] %t13, %t14
+    %t16 = index i8 [projection=field] %t15, 8
+    %t17 = load i32 %t16
+    %t18 = cmp eq i32 %t17, 1
+    %t19 = cmp ne i64 %t18, 0
+    store i64 %t19, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t20 = load i64 $land__2
+    branch %t20, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t21 = load i32 $cond__1
+    return i32 %t21
+}
+function @Pair__Pair__ov2(%this : ptr, %prefix : ptr, %kind : i32) -> void [unwind=no, binding=weak, object=_ZN4PairC1EPKc1E] {
+  slot $this : ptr
+  slot $prefix : ptr
+  slot $kind : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %prefix, $prefix
+    store i32 %kind, $kind
+    %t1 = load ptr $prefix
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load i32 $kind
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store i32 %t4, %t6
+    return void
+}

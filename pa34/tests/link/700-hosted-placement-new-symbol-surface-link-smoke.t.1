@@ -1,0 +1,8 @@
+#include <new>
+
+int main()
+{
+  alignas(int) unsigned char storage[sizeof(int)];
+  int * value = new (storage) int(7);
+  return *value == 7 ? 0 : 1;
+}

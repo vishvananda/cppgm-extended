@@ -1,0 +1,88 @@
+start:
+	move64 bp sp;
+	call fn__main;
+	syscall1 t64 60 x64;
+
+fn__make_pair:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 56;
+	move64 [bp-8] x64;
+	move64 [bp-16] y64;
+	move64 [bp-24] z64;
+fn__make_pair__entry:
+	isub64 x64 bp 40;
+	move64 [bp-48] x64;
+	move64 x64 [bp-16];
+	move64 y64 [bp-48];
+	move64 [y64] x64;
+	move64 y64 [bp-48];
+	move64 x64 1;
+	move64 z64 8;
+	smul64 x64 x64 z64;
+	iadd64 x64 y64 x64;
+	move64 [bp-56] x64;
+	move64 x64 [bp-24];
+	move64 y64 [bp-56];
+	move64 [y64] x64;
+	isub64 x64 bp 40;
+	move64 y64 [bp-8];
+	move64 z64 [x64];
+	move64 [y64] z64;
+	move64 z64 [x64+8];
+	move64 [y64+8] z64;
+	jump fn__make_pair__epilogue;
+fn__make_pair__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+fn__main:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 56;
+fn__main__entry:
+	isub64 x64 bp 16;
+	move64 x64 x64;
+	move64 y64 4;
+	move64 z64 5;
+	call fn__make_pair;
+	move64 x64 g__out;
+	move64 [bp-24] x64;
+	move64 x64 [bp-24];
+	isub64 y64 bp 16;
+	move64 z64 [y64];
+	move64 [x64] z64;
+	iadd64 x64 x64 8;
+	iadd64 y64 y64 8;
+	move64 z64 [y64];
+	move64 [x64] z64;
+	move64 x64 [g__out];
+	move64 [bp-32] x64;
+	move64 y64 [bp-24];
+	move64 x64 1;
+	move64 z64 8;
+	smul64 x64 x64 z64;
+	iadd64 x64 y64 x64;
+	move64 [bp-40] x64;
+	move64 x64 [bp-40];
+	move64 x64 [x64];
+	move64 [bp-48] x64;
+	move64 y64 [bp-32];
+	move64 x64 [bp-48];
+	iadd64 x64 y64 x64;
+	move64 [bp-56] x64;
+	move64 x64 [bp-56];
+	jump fn__main__epilogue;
+fn__main__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+g__out:
+	data64 0;
+	data64 0;

@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa18/tests/spec/100-repeated-implicit-function-template-call.t:15:10
+    callee f
+    selected instantiation
+    bind #1 = token source=deduced
+  function-call at pa18/tests/spec/100-repeated-implicit-function-template-call.t:15:17
+    callee f
+    selected instantiation
+    bind #1 = token source=deduced
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

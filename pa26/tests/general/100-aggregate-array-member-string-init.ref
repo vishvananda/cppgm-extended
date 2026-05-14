@@ -1,0 +1,68 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : obj<4x1>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = addr $s
+    %t2 = addr $s
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = unary decay ptr %t3
+    %t5 = index i8 [projection=array_element] %t4, 0
+    store i8 97, %t5
+    %t6 = addr $s
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = unary decay ptr %t7
+    %t9 = index i8 [projection=array_element] %t8, 1
+    store i8 98, %t9
+    %t10 = addr $s
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = unary decay ptr %t11
+    %t13 = index i8 [projection=array_element] %t12, 2
+    store i8 99, %t13
+    %t14 = addr $s
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = unary decay ptr %t15
+    %t17 = index i8 [projection=array_element] %t16, 3
+    store i8 0, %t17
+    %t18 = addr $s
+    %t19 = index i8 [projection=field] %t18, 0
+    %t20 = unary decay ptr %t19
+    %t21 = index i8 [projection=array_element] %t20, 2
+    %t22 = load i8 %t21
+    %t23 = convert sext i32 i8 %t22
+    %t24 = cmp eq i32 %t23, 99
+    branch %t24, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t25 = addr $s
+    %t26 = index i8 [projection=field] %t25, 0
+    %t27 = unary decay ptr %t26
+    %t28 = index i8 [projection=array_element] %t27, 3
+    %t29 = load i8 %t28
+    %t30 = convert sext i32 i8 %t29
+    %t31 = cmp eq i32 %t30, 0
+    %t32 = cmp ne i64 %t31, 0
+    store i64 %t32, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t33 = load i64 $land__2
+    branch %t33, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t34 = load i32 $cond__1
+    return i32 %t34
+}

@@ -1,0 +1,31 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @g thread_local
+  storage scalar i64
+  init i64 0
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve rbx r12
+
+  block ^entry
+    mov rbx, 7
+    mov r12, rbx
+    tls_addr r11, @g__tls_wrapper
+    store.i64 [r11], r12
+    tls_addr r11, @g__tls_wrapper
+    load.i64 r8, [r11]
+    mov rdx, 4294967295
+    and r8, rdx
+    sext.i32 r8
+    mov rax, r8
+    ret rax

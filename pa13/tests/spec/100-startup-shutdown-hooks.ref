@@ -1,0 +1,63 @@
+start:
+	move64 bp sp;
+	call fn__boot;
+	call fn__user_entry;
+	isub64 sp sp 8;
+	move64 [sp] x64;
+	call fn__shutdown;
+	move64 x64 [sp];
+	iadd64 sp sp 8;
+	syscall1 t64 60 x64;
+
+fn__boot:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 8;
+fn__boot__entry:
+	move64 x64 5;
+	move64 [bp-8] x64;
+	move64 x64 [bp-8];
+	move64 [g__g] x64;
+	jump fn__boot__epilogue;
+fn__boot__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+fn__shutdown:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 8;
+fn__shutdown__entry:
+	move64 x64 9;
+	move64 [bp-8] x64;
+	move64 x64 [bp-8];
+	move64 [g__g] x64;
+	jump fn__shutdown__epilogue;
+fn__shutdown__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+fn__user_entry:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 8;
+fn__user_entry__entry:
+	move64 x64 [g__g];
+	move64 [bp-8] x64;
+	move64 x64 [bp-8];
+	jump fn__user_entry__epilogue;
+fn__user_entry__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+g__g:
+	data64 0;

@@ -1,0 +1,61 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $src : obj<4x4>
+  slot $dst : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $src
+    call void @wrap_int___wrap(%t1, 3)
+    %t2 = addr $dst
+    %t3 = addr $src
+    call void @wrap_long_int___wrap__ov4(%t2, %t3)
+    %t4 = addr $dst
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load i32 %t5
+    %t7 = cmp eq i32 %t6, 13
+    branch %t7, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t8 = load i32 $cond__1
+    return i32 %t8
+}
+function @wrap_int___wrap(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4wrapIiEC1Ei] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @wrap_long_int___wrap__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4wrapIlEC1IiEERKS_IT_E] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = binary add i32 %t3, 10
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    store i32 %t4, %t6
+    return void
+}

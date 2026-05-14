@@ -1,0 +1,7 @@
+#include "700-hosted-special-member-cross-tu-linkage-link-smoke.shared.h"
+
+int main()
+{
+  HostedCtorLinkSmoke value;
+  return value.value == 7 ? 0 : 1;
+}

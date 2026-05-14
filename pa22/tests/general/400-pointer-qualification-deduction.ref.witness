@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/general/400-pointer-qualification-deduction.t:10:10
+    callee probe
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity probe
+  function-instantiation
+    entity probe
+  require-definition
+    entity probe

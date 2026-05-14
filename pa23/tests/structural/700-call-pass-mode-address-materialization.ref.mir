@@ -1,0 +1,52 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @copy_ref
+  abi
+    param %ret -> rdi : ptr
+    param %src -> rsi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve rbx
+
+  block ^entry
+    mov r8, rdi
+    mov r9, rsi
+    load.i64 rax, [r9]
+    store.i64 [r8], rax
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    slot $src -> [rbp-8] : i64
+    slot $dst -> [rbp-16] : i64
+
+  block ^entry
+    mov rax, 7
+    store.i64 [rbp-8], rax
+    mov rax, 0
+    store.i64 [rbp-16], rax
+    lea rdi, [rbp-16]
+    lea rsi, [rbp-8]
+    call @copy_ref
+    load.i64 r8, [rbp-16]
+    mov rdx, 7
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rdx, 0
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rax, r8
+    ret rax

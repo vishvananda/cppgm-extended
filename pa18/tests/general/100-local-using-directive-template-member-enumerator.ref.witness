@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa18/tests/general/100-local-using-directive-template-member-enumerator.t:27:10
+    template Compiler
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity Compiler<int>::validate
+  function-instantiation
+    entity Compiler<int>::validate
+  require-definition
+    entity Compiler<int>::validate

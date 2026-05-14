@@ -1,0 +1,51 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $c : obj<1x1>
+  slot $values : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $c
+    %t2 = addr $values
+    store i32 0, %t2
+    %t3 = addr $c
+    %t4 = addr $values
+    %t5 = unary decay ptr %t4
+    %t6 = addr $values
+    %t7 = unary decay ptr %t6
+    %t8 = binary mul i64 1, 4
+    %t9 = index i8 %t7, %t8
+    %t10 = call i32 @C_int___f(%t3, %t5, %t9)
+    return i32 %t10
+}
+function @C_int___f(%this : ptr, %first : ptr, %last : ptr) -> i32 [binding=weak, object=_ZN1CIiE1fIPiEEiT_S3_] {
+  slot $this : ptr
+  slot $first : ptr
+  slot $last : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %first, $first
+    store ptr %last, $last
+    %t1 = load ptr $this
+    %t2 = load ptr $first
+    %t3 = load ptr $last
+    %t4 = call i32 @C_int___g__ov2(%t1, %t2, %t3, 1)
+    return i32 %t4
+}
+function @C_int___g__ov2(%this : ptr, %first : ptr, %last : ptr, %n : i32) -> i32 [binding=weak, object=_ZN1CIiE1gIPiEEiT_S3_i] {
+  slot $this : ptr
+  slot $first : ptr
+  slot $last : ptr
+  slot $n : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %first, $first
+    store ptr %last, $last
+    store i32 %n, $n
+    %t1 = load ptr $first
+    %t2 = load i32 %t1
+    return i32 %t2
+}

@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa19/tests/general/100-sizeof-function-parameter-pack.t:6:21
+    callee g
+    selected instantiation
+    bind #1 = <int, char> source=deduced
+template-closure-events
+  ensure-definition
+    entity g
+  function-instantiation
+    entity g
+  require-definition
+    entity g

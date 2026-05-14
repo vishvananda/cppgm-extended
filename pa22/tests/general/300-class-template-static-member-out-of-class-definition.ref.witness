@@ -1,0 +1,20 @@
+translation-unit
+  class-use at pa22/tests/general/300-class-template-static-member-out-of-class-definition.t:10:12
+    template D
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa22/tests/general/300-class-template-static-member-out-of-class-definition.t:13:10
+    template D
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  class-instantiation
+    entity D<int>::R
+  ensure-definition
+    entity D<int>::R::f
+  function-instantiation
+    entity D<int>::R::f
+  require-definition
+    entity D<int>::R::f
+  variable-instantiation
+    entity D<int>::k

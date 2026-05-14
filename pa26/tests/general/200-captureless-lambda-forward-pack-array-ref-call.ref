@@ -1,0 +1,83 @@
+global @__strlit__1 [binding=internal] = {
+  i8 120
+  i8 0
+}
+
+function @sink(%text : ptr [pass=reference], %value : i32) -> i32 [binding=strong, object=_Z4sinkRA2_Kci] {
+  slot $text : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %text, $text
+    store i32 %value, $value
+    %t1 = load ptr $text
+    %t2 = unary decay ptr %t1
+    %t3 = index i8 [projection=array_element] %t2, 0
+    %t4 = load i8 %t3
+    %t5 = load i32 $value
+    %t6 = convert sext i32 i8 %t4
+    %t7 = binary add i32 %t6, %t5
+    return i32 %t7
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $refarg__1 : i32
+
+  block ^entry:
+    %t1 = addr @__strlit__1
+    store i32 1, $refarg__1
+    %t2 = addr $refarg__1
+    %t3 = call i32 @run(%t1, %t2)
+    %t4 = binary add i32 120, 1
+    %t5 = binary sub i32 %t3, %t4
+    return i32 %t5
+}
+function @run(%args : ptr [pass=reference], %args__pack2 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3runIJRA2_KciEEiDpOT_] {
+  slot $args : ptr
+  slot $args__pack2 : ptr
+  slot $lambda : ptr
+
+  block ^entry:
+    store ptr %args, $args
+    store ptr %args__pack2, $args__pack2
+    %t1 = addr @__lambda_run__char_const_____2__int_t162_168
+    %t2 = unary decay ptr %t1
+    store ptr %t2, $lambda
+    %t3 = load ptr $args
+    %t4 = call ptr @std__forward(%t3)
+    %t5 = load ptr $args__pack2
+    %t6 = call ptr @std__forward__ov3(%t5)
+    %t7 = load ptr $lambda
+    %t8 = call i32 %t7(%t4, %t6) as (%arg0 : ptr [pass=reference], %arg1 : ptr [pass=reference]) -> i32
+    return i32 %t8
+}
+function @std__forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIRA2_KcEOT_RNSt16remove_referenceIS3_E4typeE] {
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %t, $t
+    %t1 = load ptr $t
+    return ptr %t1
+}
+function @std__forward__ov3(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIiEOT_RNSt16remove_referenceIS0_E4typeE] {
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %t, $t
+    %t1 = load ptr $t
+    return ptr %t1
+}
+function @__lambda_run__char_const_____2__int_t162_168(%args2 : ptr [pass=reference], %args2__pack2 : ptr [pass=reference]) -> i32 [binding=internal] {
+  slot $args2 : ptr
+  slot $args2__pack2 : ptr
+
+  block ^entry:
+    store ptr %args2, $args2
+    store ptr %args2__pack2, $args2__pack2
+    %t1 = load ptr $args2
+    %t2 = call ptr @std__forward(%t1)
+    %t3 = load ptr $args2__pack2
+    %t4 = call ptr @std__forward__ov3(%t3)
+    %t5 = load i32 %t4
+    %t6 = call i32 @sink(%t2, %t5)
+    return i32 %t6
+}

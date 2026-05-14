@@ -1,0 +1,100 @@
+start:
+	move64 bp sp;
+	call fn__main;
+	syscall1 t64 60 x64;
+
+fn__main:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 40;
+fn__main__entry:
+	isub64 sp sp 32;
+	move64 z64 [g____cppgm_eh_top];
+	move64 [sp] z64;
+	move64 z64 fn__main__handler;
+	move64 [sp+8] z64;
+	move64 [sp+16] bp;
+	move64 z64 sp;
+	iadd64 z64 z64 32;
+	move64 [sp+24] z64;
+	move64 z64 sp;
+	move64 [g____cppgm_eh_top] z64;
+	isub64 sp sp 32;
+	move64 z64 [g____cppgm_eh_top];
+	move64 [sp] z64;
+	move64 z64 fn__main__cleanup;
+	move64 [sp+8] z64;
+	move64 [sp+16] bp;
+	move64 z64 sp;
+	iadd64 z64 z64 32;
+	move64 [sp+24] z64;
+	move64 z64 sp;
+	move64 [g____cppgm_eh_top] z64;
+	move64 x64 10;
+	move64 [bp-8] x64;
+	move64 x64 [bp-8];
+	move64 [g____cppgm_eh_value] x64;
+	move64 x64 [g____cppgm_eh_top];
+	ieq64 z8 x64 0;
+	jumpif z8 __eh_unhandled__1;
+__eh_handler__0:
+	move64 y64 [x64];
+	move64 [g____cppgm_eh_top] y64;
+	move64 z64 [x64+8];
+	move64 bp [x64+16];
+	move64 sp [x64+24];
+	jump z64;
+__eh_unhandled__1:
+	move64 x64 [g____cppgm_eh_value];
+	call fn____cppgm_eh_unhandled;
+	syscall1 t64 60 x64;
+
+fn__main__cleanup:
+	move64 x64 4;
+	move64 [bp-16] x64;
+	move64 x64 [bp-16];
+	move64 [g__g] x64;
+	move64 x64 [g____cppgm_eh_top];
+	ieq64 z8 x64 0;
+	jumpif z8 __eh_unhandled__3;
+__eh_handler__2:
+	move64 y64 [x64];
+	move64 [g____cppgm_eh_top] y64;
+	move64 z64 [x64+8];
+	move64 bp [x64+16];
+	move64 sp [x64+24];
+	jump z64;
+__eh_unhandled__3:
+	move64 x64 [g____cppgm_eh_value];
+	call fn____cppgm_eh_unhandled;
+	syscall1 t64 60 x64;
+
+fn__main__handler:
+	move64 x64 [g__g];
+	move64 [bp-24] x64;
+	move64 x64 [g____cppgm_eh_value];
+	move64 [bp-32] x64;
+	move64 y64 [bp-24];
+	move64 x64 [bp-32];
+	iadd64 x64 y64 x64;
+	move64 [bp-40] x64;
+	move64 x64 [bp-40];
+	jump fn__main__epilogue;
+fn__main__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+fn____cppgm_eh_unhandled:
+	syscall1 t64 60 x64;
+
+g__g:
+	data64 0;
+
+g____cppgm_eh_top:
+	data64 0;
+
+g____cppgm_eh_value:
+	data64 0;

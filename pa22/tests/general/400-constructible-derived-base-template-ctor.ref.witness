@@ -1,0 +1,9 @@
+translation-unit
+  class-use at pa22/tests/general/400-constructible-derived-base-template-ctor.t:15:34
+    template Target
+    selected primary
+    bind #1 = const X source=explicit
+  class-use at pa22/tests/general/400-constructible-derived-base-template-ctor.t:15:51
+    template Derived
+    selected primary
+    bind #1 = X source=explicit

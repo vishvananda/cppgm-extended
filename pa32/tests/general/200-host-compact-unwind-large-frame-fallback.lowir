@@ -1,0 +1,12 @@
+declare function @touch(%p : ptr) -> i64 [linkage=c, binding=strong, object=touch]
+
+function @victim() -> i64 [binding=strong, object=victim] {
+  slot $big : obj<4096x16>
+
+  block ^entry:
+    %p = addr $big
+    %keep = const i64 7
+    %call = call i64 @touch(%p)
+    %sum = binary add i64 %keep, %call
+    return i64 %sum
+}

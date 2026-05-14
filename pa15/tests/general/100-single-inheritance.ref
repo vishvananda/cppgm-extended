@@ -1,0 +1,48 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $x
+    call void @YB__YB(%t1)
+    %t2 = addr $x
+    %t3 = call i32 @YB__sum(%t2)
+    return i32 %t3
+}
+function @YB__YB(%this : ptr) -> void [binding=weak, object=_ZN2YBC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @YA__YA__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    store i32 2, %t4
+    return void
+}
+function @YB__sum(%this : ptr) -> i32 [binding=weak, object=_ZN2YB3sumEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    %t7 = load i32 %t6
+    %t8 = binary add i32 %t4, %t7
+    return i32 %t8
+}
+function @YA__YA__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2YAC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 1, %t2
+    return void
+}

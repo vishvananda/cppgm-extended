@@ -1,0 +1,13 @@
+template_kernel_output_v1
+
+query 1 bind_defaults class Box<long_long>
+status ok
+resolved class Box<long_long, int>
+bind T = long_long
+bind U = int
+default U = int
+
+query 2 deduce_call unwrap(Box<long_long>)
+status ok
+selected function_template selected
+bind T = long_long

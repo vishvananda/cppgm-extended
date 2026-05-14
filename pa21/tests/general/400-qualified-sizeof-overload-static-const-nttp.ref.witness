@@ -1,0 +1,8 @@
+translation-unit
+  class-use at pa21/tests/general/400-qualified-sizeof-overload-static-const-nttp.t:69:33
+    template boost::iterator_range_detail::pure_iterator_traversal
+    selected primary
+    bind #1 = int * source=explicit
+template-closure-events
+  variable-instantiation
+    entity boost::iterator_range_detail::pure_iterator_traversal<int *>::traversal_i

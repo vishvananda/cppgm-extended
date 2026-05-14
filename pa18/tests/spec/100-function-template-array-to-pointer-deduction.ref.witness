@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa18/tests/spec/100-function-template-array-to-pointer-deduction.t:12:10
+    callee first
+    selected instantiation
+    bind #1 = char source=deduced
+template-closure-events
+  ensure-definition
+    entity first
+  function-instantiation
+    entity first
+  require-definition
+    entity first

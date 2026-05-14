@@ -1,0 +1,9 @@
+#include "600-hosted-abi-tag-member-link-smoke.shared.h"
+
+int main()
+{
+  AbiTagBuffer buffer;
+  buffer.setstate(3u);
+  AbiTagBuffer copy(buffer);
+  return copy.gptr() == 3 && copy.egptr() == 4 ? 0 : 1;
+}

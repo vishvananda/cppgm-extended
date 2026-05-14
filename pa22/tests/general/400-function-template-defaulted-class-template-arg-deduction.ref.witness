@@ -1,0 +1,17 @@
+translation-unit
+  class-use at pa22/tests/general/400-function-template-defaulted-class-template-arg-deduction.t:12:3
+    template Box
+    selected primary
+    bind #1 = long source=explicit
+    bind #2 = int source=defaulted
+  function-call at pa22/tests/general/400-function-template-defaulted-class-template-arg-deduction.t:13:10
+    callee unwrap
+    selected instantiation
+    bind #1 = long source=deduced
+template-closure-events
+  ensure-definition
+    entity unwrap
+  function-instantiation
+    entity unwrap
+  require-definition
+    entity unwrap

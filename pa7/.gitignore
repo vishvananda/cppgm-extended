@@ -1,0 +1,11 @@
+.cproject
+.project
+tests/*.my*
+nsdecl
+nsdecl-fast
+nsdecl-self-fast
+nsdecl-debug
+*.dSYM
+tests/testin
+testout
+.test_failed

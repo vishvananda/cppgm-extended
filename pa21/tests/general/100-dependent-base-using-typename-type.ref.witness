@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa21/tests/general/100-dependent-base-using-typename-type.t:11:1
+    template box
+    selected primary
+    bind #1 = char source=explicit

@@ -1,0 +1,33 @@
+function @make(%a : i32, %b : i32) -> obj<8x4> [binding=strong, object=_Z4makeii] {
+  slot $a : i32
+  slot $b : i32
+  slot $retobj__1 : obj<8x4>
+
+  block ^entry:
+    store i32 %a, $a
+    store i32 %b, $b
+    %t1 = addr $retobj__1
+    %t2 = load i32 $a
+    %t3 = load i32 $b
+    call void @pair_int___pair__ov2(%t1, %t2, %t3)
+    return obj<8x4> $retobj__1
+}
+function @pair_int___pair__ov2(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=weak, object=_ZN4pairIiEC1Eii] {
+  slot $this : ptr
+  slot $first : i32
+  slot $second : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %first, $first
+    store i32 %second, $second
+    %t1 = load i32 $first
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load i32 $second
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store i32 %t4, %t6
+    return void
+}

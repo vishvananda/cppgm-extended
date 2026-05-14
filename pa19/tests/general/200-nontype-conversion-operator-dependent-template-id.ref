@@ -1,0 +1,9 @@
+global @value [binding=strong, object=_Z5value] = {
+  zero 1
+}
+global @boost__integral_constant_int__7___value : i32 [binding=weak, object=_ZN5boost17integral_constantIiLi7EE5valueE] = 7
+
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
+}

@@ -1,0 +1,28 @@
+template<class T>
+struct Box {
+  typedef T value_type;
+
+  struct Cache {
+    __attribute__((__abi_tag__("nqe220100"))) static value_type * detach(Box * box);
+
+    value_type * ptr;
+    Cache(Box * box) : ptr(detach(box)) {}
+  };
+
+  value_type value;
+};
+
+template<class T>
+typename Box<T>::value_type *
+Box<T>::Cache::detach(Box<T> * box)
+{
+  return &box->value;
+}
+
+int main()
+{
+  Box<int> box;
+  box.value = 7;
+  Box<int>::Cache cache(&box);
+  return *cache.ptr == 7 ? 0 : 1;
+}

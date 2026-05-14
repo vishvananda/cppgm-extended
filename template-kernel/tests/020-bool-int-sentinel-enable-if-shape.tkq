@@ -1,0 +1,9 @@
+template_kernel_v1
+
+# Reduced from pa22/tests/spec/479-dependent-variable-template-empty-pack-enable-if-selection.t
+
+function_template construct enabled <value bool Can, value int Gate = value 0> params (type constructible<Can>) return int when same(Can, true)
+function_template construct disabled <value bool Can, value int Gate = value 0> params (type constructible<Can>) return int when same(Can, false)
+
+query deduce_call construct args (type constructible<true>)
+query deduce_call construct args (type constructible<false>)

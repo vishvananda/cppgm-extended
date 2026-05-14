@@ -1,0 +1,14 @@
+struct Less {
+  template <class T, class U>
+  __attribute__((__abi_tag__("nqe220100"))) bool operator()(const T &, const U &) const
+  {
+    return true;
+  }
+};
+
+int main()
+{
+  unsigned long a = 1;
+  unsigned long b = 2;
+  return Less()(a, b) ? 0 : 1;
+}

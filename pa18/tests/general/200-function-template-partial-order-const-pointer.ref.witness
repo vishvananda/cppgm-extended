@@ -1,0 +1,14 @@
+translation-unit
+  function-call at pa18/tests/general/200-function-template-partial-order-const-pointer.t:8:10
+    callee f
+    selected instantiation
+    bind #1 = int source=deduced
+    drop f reason=better_candidate_selected
+    drop f reason=better_candidate_selected
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

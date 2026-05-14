@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa22/tests/spec/500-unqualified-call-skips-dependent-base.t:30:3
+    template two_phase_derived
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity two_phase_derived<int>::run
+  function-instantiation
+    entity two_phase_derived<int>::run
+  require-definition
+    entity two_phase_derived<int>::run

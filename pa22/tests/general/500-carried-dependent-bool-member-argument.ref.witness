@@ -1,0 +1,27 @@
+translation-unit
+  alias-use at pa22/tests/general/500-carried-dependent-bool-member-argument.t:38:21
+    template void_t
+    bind #1 = typename T::template rebind<U>::other source=explicit
+  alias-use at pa22/tests/general/500-carried-dependent-bool-member-argument.t:70:17
+    template alloc_rebind
+    bind #1 = Alloc source=explicit
+    bind #2 = hash_node<V, Traits::hash_cached::value> source=explicit
+  class-use at pa22/tests/general/500-carried-dependent-bool-member-argument.t:77:3
+    template table
+    selected primary
+    bind #1 = alloc source=explicit
+    bind #2 = int source=explicit
+    bind #3 = traits<true> source=explicit
+  class-use at pa22/tests/general/500-carried-dependent-bool-member-argument.t:77:21
+    template traits
+    selected primary
+    bind #1 = true source=explicit
+template-closure-events
+  ensure-definition
+    entity table<alloc, int, traits<true>>::table
+  function-instantiation
+    entity table<alloc, int, traits<true>>::table
+  require-definition
+    entity table<alloc, int, traits<true>>::table
+  variable-instantiation
+    entity bool_constant<true>::value

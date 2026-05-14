@@ -1,0 +1,38 @@
+global @p [binding=internal, object=_Z1p] = {
+  zero 4
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @square(%x : i32) -> i32 [binding=weak, object=_Z6squarei] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = load i32 $x
+    %t3 = binary mul i32 %t1, %t2
+    return i32 %t3
+}
+function @Point__Point(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN5PointC1Ei] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @p
+    %t2 = call i32 @square(3)
+    call void @Point__Point(%t1, %t2)
+    return void
+}

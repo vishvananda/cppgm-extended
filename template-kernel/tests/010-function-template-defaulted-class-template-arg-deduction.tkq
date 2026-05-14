@@ -1,0 +1,9 @@
+template_kernel_v1
+
+# Reduced from pa22/tests/spec/438-function-template-defaulted-class-template-arg-deduction.t
+
+class_template Box <type T, type U = type int>
+function_template unwrap selected <type T> params (type Box<T>) return T
+
+query bind_defaults class Box <type long_long>
+query deduce_call unwrap args (type Box<long_long>)

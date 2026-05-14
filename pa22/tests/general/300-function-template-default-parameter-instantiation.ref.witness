@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/general/300-function-template-default-parameter-instantiation.t:7:10
+    callee add
+    selected instantiation
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity add
+  function-instantiation
+    entity add
+  require-definition
+    entity add

@@ -1,0 +1,36 @@
+declare function @dep__resolve(%arg0 : ptr [pass=reference], %arg1 : obj<8x8>, %arg2 : ptr [pass=reference], %arg3 : ptr [pass=reference]) -> u8 [binding=strong, object=_ZN3dep7resolveERN3api8ServicesENS0_6HandleERK3BoxI4TypeERS6_]
+
+function @wrapper(%services : ptr [pass=reference], %raw_scope : ptr [pass=reference], %type : ptr [pass=reference], %out : ptr [pass=reference]) -> u8 [binding=strong, object=_Z7wrapperRN3api8ServicesER5ScopeRK3BoxI4TypeERS6_] {
+  slot $services : ptr
+  slot $raw_scope : ptr
+  slot $type : ptr
+  slot $out : ptr
+  slot $argobj__1 : obj<8x8>
+
+  block ^entry:
+    store ptr %services, $services
+    store ptr %raw_scope, $raw_scope
+    store ptr %type, $type
+    store ptr %out, $out
+    %t1 = load ptr $services
+    %t2 = addr $argobj__1
+    %t3 = load ptr $raw_scope
+    call void @api__Handle__Handle__ov2(%t2, %t3)
+    %t4 = load ptr $type
+    %t5 = load ptr $out
+    %t6 = call u8 @dep__resolve(%t1, $argobj__1, %t4, %t5)
+    return u8 %t6
+}
+function @api__Handle__Handle__ov2(%this : ptr, %scope_in : ptr [pass=reference]) -> void [binding=weak, object=_ZN3api6HandleC1ER5Scope] {
+  slot $this : ptr
+  slot $scope_in : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %scope_in, $scope_in
+    %t1 = load ptr $scope_in
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}

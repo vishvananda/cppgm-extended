@@ -1,0 +1,8 @@
+template_kernel_v1
+
+variable_template rank <type T>
+partial_variable rank ptr <type U> args <type U*>
+explicit_variable rank int_ptr args <type int*>
+
+query select_variable rank <type char*>
+query select_variable rank <type int*>

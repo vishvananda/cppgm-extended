@@ -1,0 +1,13 @@
+template<class T>
+struct box {
+  T value;
+};
+
+template<template<class> class TT>
+void use(TT<int>) {}
+
+int main() {
+  box<int> arg = {0};
+  use<box>(arg);
+  return 0;
+}

@@ -1,0 +1,7 @@
+declare function @helper() -> i64
+
+function @main() -> i64 {
+  block ^entry:
+    %0 = call i64 @helper()
+    return i64 %0
+}

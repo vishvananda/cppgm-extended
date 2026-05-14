@@ -1,0 +1,61 @@
+function @target() -> void [binding=strong, object=_Z6targetv] {
+  block ^entry:
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr $value
+    %t3 = addr @target
+    call void @example__interpreter__register_function(%t2, %t3)
+    return i32 0
+}
+function @example__interpreter__register_function(%this : ptr, %f : ptr) -> void [binding=weak, object=_ZN7example11interpreter17register_functionIPFvvEEEvT_] {
+  slot $this : ptr
+  slot $f : ptr
+  slot $p : ptr
+  slot $state : obj<1x1>
+  slot $refarg__1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %f, $f
+    %t1 = addr @example__interpreter__invoker_void________example__interpreter__first__example__interpreter__last___apply
+    store ptr %t1, $p
+    %t2 = addr $state
+    %t3 = load ptr $f
+    %t4 = addr $state
+    store i32 0, $refarg__1
+    %t5 = addr $refarg__1
+    %t6 = load ptr $p
+    call void %t6(%t3, %t4, %t5) as (%arg0 : ptr, %arg1 : ptr [pass=reference], %arg2 : ptr [pass=reference]) -> void
+    return void
+}
+function @example__interpreter__invoker_void________example__interpreter__first__example__interpreter__last___apply(%f : ptr, %p : ptr [pass=reference], %args : ptr [pass=reference]) -> void [binding=weak, object=_ZN7example11interpreter7invokerIPFvvENS0_5firstENS0_4lastEE5applyIiEEvS3_RNS0_12token_parserERKT_] {
+  slot $f : ptr
+  slot $p : ptr
+  slot $args : ptr
+
+  block ^entry:
+    store ptr %f, $f
+    store ptr %p, $p
+    store ptr %args, $args
+    %t1 = load ptr $f
+    %t2 = load ptr $p
+    %t3 = load ptr $args
+    call void @example__interpreter__invoker_void________example__interpreter__last__example__interpreter__last___apply(%t1, %t2, %t3)
+    return void
+}
+function @example__interpreter__invoker_void________example__interpreter__last__example__interpreter__last___apply(%__param0 : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN7example11interpreter7invokerIPFvvENS0_4lastES4_E5applyIiEEvS3_RNS0_12token_parserERKT_] {
+  slot $__param0 : ptr
+  slot $__param1 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %__param1, $__param1
+    store ptr %__param2, $__param2
+    return void
+}

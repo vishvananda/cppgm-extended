@@ -1,0 +1,101 @@
+template<bool B, class T = void>
+struct EnableIf
+{
+};
+
+template<class T>
+struct EnableIf<true, T>
+{
+  typedef T type;
+};
+
+template<bool B, class T = void>
+using EnableIfT = typename EnableIf<B, T>::type;
+
+template<class T, class U>
+struct IsConstructible
+{
+  static const bool value = __is_constructible(T, U);
+};
+
+template<class T1, class T2>
+struct CheckPair
+{
+  template<class U1, class U2>
+  static constexpr bool ok()
+  {
+    return IsConstructible<T1, U1>::value &&
+           IsConstructible<T2, U2>::value;
+  }
+};
+
+template<class T1, class T2>
+struct Pair
+{
+  T1 first;
+  T2 second;
+
+  Pair()
+    : first(),
+      second()
+  {
+  }
+
+  Pair(T1 first_value, T2 second_value)
+    : first(first_value),
+      second(second_value)
+  {
+  }
+
+  template<class U1,
+           class U2,
+           EnableIfT<CheckPair<T1, T2>::template ok<U1, U2>(), int> = 0>
+  Pair(Pair<U1, U2> && other)
+    : first(other.first),
+      second(other.second)
+  {
+  }
+};
+
+struct Iterator
+{
+  int value;
+
+  Iterator()
+    : value(0)
+  {
+  }
+};
+
+struct ConstIterator
+{
+  int value;
+
+  ConstIterator()
+    : value(0)
+  {
+  }
+
+  ConstIterator(Iterator it)
+    : value(it.value)
+  {
+  }
+};
+
+Pair<Iterator, bool> make_pair()
+{
+  Iterator it;
+  it.value = 7;
+  return Pair<Iterator, bool>(it, true);
+}
+
+Pair<ConstIterator, bool> convert_pair()
+{
+  return make_pair();
+}
+
+int main()
+{
+  Pair<ConstIterator, bool> p = convert_pair();
+  return p.first.value == 7 && p.second ? 0 : 1;
+}

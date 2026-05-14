@@ -1,0 +1,54 @@
+function @square(%x : i32) -> i32 [binding=strong, object=_Z6squarei] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = load i32 $x
+    %t3 = binary mul i32 %t1, %t2
+    return i32 %t3
+}
+function @square__ov2(%x : f64) -> f64 [binding=strong, object=_Z6squared] {
+  slot $x : f64
+
+  block ^entry:
+    store f64 %x, $x
+    %t1 = load f64 $x
+    %t2 = load f64 $x
+    %t3 = binary mul f64 %t1, %t2
+    return f64 %t3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr @square
+    %t2 = unary decay ptr %t1
+    %t3 = call i32 @apply(%t2, 4)
+    %t4 = cmp eq i32 %t3, 16
+    branch %t4, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load i32 $cond__1
+    return i32 %t5
+}
+function @apply(%fn : ptr, %value : i32) -> i32 [binding=weak, object=_Z5applyIiET_PFS0_S0_ES0_] {
+  slot $fn : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %fn, $fn
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $fn
+    %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
+    return i32 %t3
+}

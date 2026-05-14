@@ -1,0 +1,6 @@
+global @g : f64 [binding=internal, object=_Z1g] = 3
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

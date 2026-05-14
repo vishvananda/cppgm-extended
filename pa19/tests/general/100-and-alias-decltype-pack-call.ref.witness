@@ -1,0 +1,10 @@
+translation-unit
+  class-use at pa19/tests/general/100-and-alias-decltype-pack-call.t:16:1
+    template outer
+    selected primary
+    bind #1 = char source=explicit
+  class-use at pa19/tests/general/100-and-alias-decltype-pack-call.t:16:1
+    template integral_constant
+    selected primary
+    bind #1 = bool source=deduced
+    bind #2 = true source=deduced

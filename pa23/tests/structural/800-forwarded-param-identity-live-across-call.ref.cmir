@@ -1,0 +1,85 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @cell
+  storage data
+  item i64 41
+
+function @touch
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    param-slot %p -> [rbp-<off0>] : ptr
+
+  block ^entry
+    store.ptr [rbp-<off0>], rdi
+    mov rax, rsi
+    ret rax
+
+function @load_value
+  abi
+    param %p -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+
+  block ^entry
+    mov r8, rdi
+    load.i64 rax, [r8]
+    ret rax
+
+function @read_after_call
+  abi
+    param %this -> rdi : ptr
+    param %n -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve <gpr0>
+
+  block ^entry
+    mov <gpr0>, rdi
+    mov r8, rsi
+    mov rdi, <gpr0>
+    mov rsi, r8
+    call @touch
+    mov rdi, <gpr0>
+    call @load_value
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve <gpr0>
+
+  block ^entry
+    mov r8, @cell
+    mov r9, 7
+    mov rdi, r8
+    mov rsi, r9
+    call @read_after_call
+    mov <gpr0>, rax
+    cmp.i64 <gpr0>, 41
+    je ^good
+    jmp ^bad
+
+  block ^good
+    mov rax, 0
+    ret rax
+
+  block ^bad
+    mov rax, 1
+    ret rax

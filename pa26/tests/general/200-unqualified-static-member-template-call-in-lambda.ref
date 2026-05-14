@@ -1,0 +1,42 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $box : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $box
+    %t2 = addr $box
+    %t3 = call i32 @Box__run(%t2, 3)
+    %t4 = binary sub i32 %t3, 6
+    return i32 %t4
+}
+function @Box__run(%this : ptr, %v : i32) -> i32 [binding=weak, object=_ZN3Box3runEi] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = addr @__lambda_Box__run_t32_38
+    %t3 = unary decay ptr %t2
+    %t4 = call i32 %t3(%t1) as (%arg0 : i32) -> i32
+    return i32 %t4
+}
+function @__lambda_Box__run_t32_38(%x : i32) -> i32 [binding=internal] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = call i32 @Box__twice(%t1)
+    return i32 %t2
+}
+function @Box__twice(%x : i32) -> i32 [binding=weak, object=_ZN3Box5twiceIiEEiT_] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = load i32 $x
+    %t3 = binary add i32 %t1, %t2
+    return i32 %t3
+}

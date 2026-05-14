@@ -1,0 +1,12 @@
+#include <utility>
+
+int sink(int&& value)
+{
+  return value;
+}
+
+int main()
+{
+  int value = 4;
+  return sink(std::forward<int>(value)) == 4 ? 0 : 1;
+}

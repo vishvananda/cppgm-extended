@@ -1,0 +1,18 @@
+translation-unit
+  function-call at pa19/tests/general/200-defaulted-dependent-nontype-expression-syntax.t:32:10
+    callee wrapper
+    selected instantiation
+    bind #1 = unsigned int source=deduced
+template-closure-events
+  ensure-definition
+    entity wrapper
+  function-instantiation
+    entity convert_to_integral
+  function-instantiation
+    entity wrapper
+  require-definition
+    entity convert_to_integral
+  require-definition
+    entity wrapper
+  variable-instantiation
+    entity integral_constant<bool, false>::value

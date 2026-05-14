@@ -1,0 +1,10 @@
+template_kernel_v1
+
+# Reduced from validation/tests/035-partial-ordering-ref-vs-const-ref.cpp
+
+function_template pick by_ref <type T> params (type T&) return int
+function_template pick by_const_ref <type T> params (type const T&) return int
+
+query deduce_call pick args (type int&)
+query deduce_call pick args (type const int&)
+query deduce_call pick args (type int&&)

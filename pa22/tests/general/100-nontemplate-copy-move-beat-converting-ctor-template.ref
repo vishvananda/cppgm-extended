@@ -1,0 +1,15 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+declare function @h(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z1hv]
+
+global @which : i32 [binding=strong, object=_Z5which] = zero
+
+function @g() -> i32 [binding=strong, object=_Z1gv] {
+  slot $a : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $a
+    call void @h(%t1)
+    %t2 = load i32 @which
+    return i32 %t2
+}

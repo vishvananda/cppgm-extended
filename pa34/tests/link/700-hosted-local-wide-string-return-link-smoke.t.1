@@ -1,0 +1,18 @@
+#include <string>
+
+std::u16string make_u16()
+{
+  std::u16string value;
+  return value;
+}
+
+std::u32string make_u32()
+{
+  std::u32string value;
+  return value;
+}
+
+int main()
+{
+  return static_cast<int>(make_u16().size() + make_u32().size());
+}

@@ -1,0 +1,25 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @g()
+    return i32 %t1
+}
+function @g() -> i32 [binding=weak, object=_Z1gIJicEEiv] {
+  slot $f : ptr
+
+  block ^entry:
+    %t1 = addr @__lambda_g__int_char_t16_21
+    %t2 = unary decay ptr %t1
+    store ptr %t2, $f
+    %t3 = load ptr $f
+    return i32 0
+}
+function @__lambda_g__int_char_t16_21(%args2 : i32, %args2__pack2 : i8) -> i64 [binding=internal] {
+  slot $args2 : i32
+  slot $args2__pack2 : i8
+
+  block ^entry:
+    store i32 %args2, $args2
+    store i8 %args2__pack2, $args2__pack2
+    %t1 = const i64 2
+    return i64 %t1
+}

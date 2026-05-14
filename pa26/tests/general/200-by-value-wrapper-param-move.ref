@@ -1,0 +1,39 @@
+declare function @CopyBox___CopyBox(%arg0 : ptr) -> void [binding=strong, object=_ZN7CopyBoxD1Ev]
+declare function @CopyMember__CopyMember__ov2(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=strong, object=_ZN10CopyMemberC1ERKS_]
+declare function @MoveBox__MoveBox__ov2(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=strong, object=_ZN7MoveBoxC1ERKS_]
+declare function @MoveBox___MoveBox(%arg0 : ptr) -> void [binding=strong, object=_ZN7MoveBoxD1Ev]
+
+function @take_move_box(%box : ptr [pass=by_address]) -> i32 [binding=strong, object=_Z13take_move_box7MoveBox] {
+  slot $box : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $box
+    call void @MoveBox__MoveBox__ov2(%t1, %box)
+    %t2 = addr $box
+    call void @MoveBox___MoveBox(%t2)
+    return i32 1
+}
+function @take_copy_box(%box : ptr [pass=by_address]) -> i32 [binding=strong, object=_Z13take_copy_box7CopyBox] {
+  slot $box : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $box
+    call void @CopyBox__CopyBox__ov2(%t1, %box)
+    %t2 = addr $box
+    call void @CopyBox___CopyBox(%t2)
+    return i32 2
+}
+function @CopyBox__CopyBox__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN7CopyBoxC1ERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $other
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @CopyMember__CopyMember__ov2(%t2, %t4)
+    return void
+}

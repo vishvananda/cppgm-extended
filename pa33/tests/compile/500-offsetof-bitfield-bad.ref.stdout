@@ -1,0 +1,1 @@
+ERROR: __builtin_offsetof on bit-field unsupported

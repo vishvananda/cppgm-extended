@@ -1,0 +1,92 @@
+global @__strlit__1 [binding=internal] = {
+  i8 120
+  i8 0
+}
+
+function @ns__make(%w : ptr [pass=reference]) -> void [binding=strong, object=_ZN2ns4makeERKNS_7wrapperE] {
+  slot $w : ptr
+  slot $arg__1 : obj<8x8>
+  slot $arg__2 : obj<4x4>
+
+  block ^entry:
+    store ptr %w, $w
+    %t1 = load ptr $w
+    %t2 = addr $arg__1
+    %t3 = addr @__strlit__1
+    call void @ns__error_info_ns__detail__file_tag__char_const_____error_info(%t2, %t3)
+    %t4 = call ptr @ns__detail__set_info(%t1, %t2)
+    %t5 = load ptr $w
+    %t6 = addr $arg__2
+    call void @ns__error_info_ns__detail__line_tag__int___error_info(%t6, 7)
+    %t7 = call ptr @ns__detail__set_info__ov2(%t5, %t6)
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $w : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $w
+    %t2 = addr $w
+    call void @ns__make(%t2)
+    return i32 0
+}
+function @ns__error_info_ns__detail__file_tag__char_const_____error_info(%this : ptr, %v : ptr) -> void [binding=weak, object=_ZN2ns10error_infoINS_6detail8file_tagEPKcEC1ES4_] {
+  slot $this : ptr
+  slot $v : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %v, $v
+    %t1 = load ptr $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
+function @ns__error_info_ns__detail__line_tag__int___error_info(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN2ns10error_infoINS_6detail8line_tagEiEC1Ei] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @ns__detail__set_info(%x : ptr [pass=reference], %y : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2ns6detail8set_infoINS_7wrapperEEERKT_S5_RKNS_10error_infoINS0_8file_tagEPKcEE] {
+  slot $x : ptr
+  slot $y : ptr
+
+  block ^entry:
+    store ptr %x, $x
+    store ptr %y, $y
+    %t1 = load ptr $y
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $x
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t6 = index i8 [projection=field] %t5, 0
+    store ptr %t3, %t6
+    %t7 = load ptr $x
+    return ptr %t7
+}
+function @ns__detail__set_info__ov2(%x : ptr [pass=reference], %y : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2ns6detail8set_infoINS_7wrapperEEERKT_S5_RKNS_10error_infoINS0_8line_tagEiEE] {
+  slot $x : ptr
+  slot $y : ptr
+
+  block ^entry:
+    store ptr %x, $x
+    store ptr %y, $y
+    %t1 = load ptr $y
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load ptr $x
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t6 = index i8 [projection=field] %t5, 8
+    store i32 %t3, %t6
+    %t7 = load ptr $x
+    return ptr %t7
+}

@@ -1,0 +1,22 @@
+translation-unit
+  function-call at pa18/tests/general/100-namespace-template-function-before-tls-object.t:14:10
+    callee ns::force
+    selected instantiation
+    bind #1 = int source=deduced
+  class-use at pa18/tests/general/100-namespace-template-function-before-tls-object.t:17:14
+    template ns::Helper
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity ns::Helper<int>::Helper
+  ensure-definition
+    entity ns::force
+  function-instantiation
+    entity ns::Helper<int>::Helper
+  function-instantiation
+    entity ns::force
+  require-definition
+    entity ns::Helper<int>::Helper
+  require-definition
+    entity ns::force

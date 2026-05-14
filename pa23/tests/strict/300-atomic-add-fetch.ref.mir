@@ -1,0 +1,34 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @g
+  storage scalar i64
+  init i64 7
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve rbx
+
+  block ^entry
+    mov r8, @g
+    mov r9, 5
+    mov rcx, r8
+    mov rdx, r9
+    mov rax, r9
+    lock_xadd.i64 [rcx], rax
+    add rax, rdx
+    mov rbx, rax
+    mov r8, 12
+    cmp.i64 rbx, r8
+    sete rbx
+    movzx rbx, rbx
+    mov rax, rbx
+    ret rax

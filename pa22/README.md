@@ -1,0 +1,170 @@
+## CPPGM Programming Assignment 22 (`cppgm++ --emit-lowir`)
+
+### Overview
+
+Write a C++ application called `cppgm++` that takes as input a set of C++
+source files, executes translation phases 1 through 7, parses them as PA10/PA22
+translation units, reuses the PA11-PA21 semantic foundation, builds on the
+PA14-PA21 LowIR lowering path, and writes LowIR text.
+
+PA22 is the second half of template completion. Its job is to finish the
+remaining deduction/substitution behavior so ordinary generic C++11 code stops
+depending on a pragmatic template subset.
+
+PA22 still produces LowIR. It does not introduce a new output format.
+
+### Prerequisites
+
+You should complete Programming Assignment 21 before starting this assignment.
+
+You will want to reuse:
+
+- the preprocessing and tokenization pipeline from PA1-PA6
+- the PA10 AST as the syntax boundary
+- the PA11-PA12 semantic foundation
+- the PA14-PA21 LowIR lowering path
+- the PA13 LowIR contract
+- the PA18-PA21 template machinery
+- the PA20 full constant-evaluation layer
+
+### Starter Kit
+
+The starter kit contains:
+
+- a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
+  in `../dev/cppgm++.cpp`
+- the standard assignment `Makefile` and harness scripts
+- the PA22 deduction/substitution regression subset under `tests/`
+
+In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
+the `cppgm++` scaffold and is the file you extend for this assignment.
+
+Unlike PA1-PA9, there is no external reference binary for PA22. The checked-in
+`.ref` files are the default oracle.
+
+### Input / Command-Line Arguments
+
+The PA22 invocation is the unoptimized LowIR mode:
+
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+
+Behaviour is undefined unless the command-line arguments match that shape, with
+the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
+milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
+not part of PA22.
+
+### Output Format
+
+On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
+`EXIT_SUCCESS`.
+
+The authoritative LowIR definition is `../pa13/lowir.md`. PA22 extends the
+PA21 lowering surface only by making more of the C++ source language lower into
+the already-defined LowIR family.
+
+The test harness checks that the generated LowIR is well formed and matches the
+checked-in `.ref` files after canonicalizing presentation details that are not
+part of the assignment contract. Exact textual LowIR matching is not a PA22
+grading requirement.
+
+### Error Handling
+
+If an error occurs during preprocessing, tokenization, parsing, semantic
+analysis, or LowIR generation, `cppgm++` shall `EXIT_FAILURE`.
+
+The output file is not required to be meaningful on failure.
+Diagnostics are not part of the grading contract.
+
+### Standard Output / Error
+
+Standard output and standard error are ignored for automated testing of
+`cppgm++`.
+
+You are free to use them for debugging, tracing, or diagnostic messages.
+
+### Testing
+
+PA22 tests live under `tests/`. The suite is split by test role:
+
+- `tests/spec/` contains N3485/spec-anchored deduction, substitution, and
+  SFINAE tests. Each provided C++ language test in this bucket starts with a
+  leading comment of the form `// N3485 focus: 14.x.y [clause.name] ...` so a
+  reviewer can find the governing text in `../doc/n3485.txt`.
+- `tests/general/` contains broader LowIR regressions, cross-feature
+  combinations, implementation reducers, stress/sentinel cases, and realistic
+  generic-program examples that are useful for PA22 but are not one-rule spec
+  probes.
+
+The `make test` target runs both buckets through the LowIR validator. For
+successful tests, the validator checks the reference LowIR and your generated
+LowIR for basic structural correctness, then compares the canonicalized LowIR
+against the checked-in reference. For rejected tests, the exit status is the
+checked result; exact diagnostic text is not checked.
+
+Template witness sidecars, when present, are additional validation artifacts.
+They are not part of the PA22 oracle unless this README explicitly requires
+them.
+
+This split assignment intentionally focuses on the deduction/substitution half
+of template completion:
+
+- full function-template deduction
+- non-deduced contexts and array-bound/conversion deduction corners
+- SFINAE and substitution failure
+- no-eager-instantiation timing and dependent-call behavior
+
+### PA22 Syntax Boundary
+
+PA22 does not ship a new grammar file. It inherits the PA19 source-language
+syntax boundary, the PA20 constant-evaluation semantics, and the PA21 template
+entity/specialization model. PA22 is a deduction, substitution, and SFINAE
+assignment: parsing a construct does not by itself make that construct required
+unless it is inside the PA22 boundary below.
+
+### Optional Student Test Ideas
+
+When adding your own tests, useful PA22 themes include explicit template
+arguments mixed with deduced ones, function-address deduction, conversion
+function template deduction, constructor-template participation, richer
+non-deduced contexts, and compact `enable_if` / `void_t` / detector patterns.
+Hosted or STL-facing sentinels belong in `tests/general/`.
+
+### Assignment Boundary
+
+PA22 owns the remainder of the standard template language over the implemented
+surface, including:
+
+- full function-template deduction over the intended C++11 subset
+- substitution behavior and candidate dropping
+- `enable_if`, `void_t`, and detected-idiom style SFINAE behavior
+- non-deduced contexts and explicit template-id deduction edge cases
+- the remaining dependent-call, dependent-alias, and no-eager-instantiation
+  behavior needed for full template usability
+
+The intended student proof here is:
+
+- "generic code no longer depends on a pragmatic template subset"
+
+### Out Of Scope
+
+The following are explicitly out of scope for PA22:
+
+- hosted/vendor-only extensions that happen to use templates
+- post-C++11 template-language features
+- backend/toolchain ownership that belongs to the later native and toolchain
+  milestones
+
+Inputs that rely on those features have undefined behaviour for this milestone.
+
+### Stage Handoff
+
+The intended next stage is PA23, which retargets the now-language-complete
+front-end from the CY86 scaffold path to the real native backend.
+
+So PA22 should leave behind:
+
+- a complete standard template semantic layer
+- instantiated declarations that lower through the ordinary LowIR path without
+  template subset special-casing
+- no remaining "finish template language later" gap before backend/toolchain
+  work

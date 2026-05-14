@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "description": "Maximum tracked text-reparse debt counts. Lower these limits in the same commit that removes sites.",
+  "root": "dev/src",
+  "limits": {
+    "qualified_name_string_parse": 0,
+    "template_id_string_parse": 0,
+    "expression_fragment_parse": 0,
+    "type_fragment_parse": 0,
+    "semantic_type_text_bridge": 0,
+    "translation_unit_fragment_parse": 0,
+    "ast_text_rebuild": 0,
+    "source_line_recovery": 0
+  }
+}

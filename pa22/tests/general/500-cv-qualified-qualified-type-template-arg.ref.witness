@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/500-cv-qualified-qualified-type-template-arg.t:15:7
+    template ns::box
+    selected primary
+    bind #1 = const ns::S source=explicit

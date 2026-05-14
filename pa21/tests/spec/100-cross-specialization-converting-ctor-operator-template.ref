@@ -1,0 +1,13 @@
+function @box_float___box(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN3boxIfEC1ERKS_IdE] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

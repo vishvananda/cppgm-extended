@@ -1,0 +1,20 @@
+translation-unit
+  class-use at pa22/tests/general/400-stale-function-template-instantiation-lookup.t:22:3
+    template node
+    selected primary
+    bind #1 = int source=explicit
+  function-call at pa22/tests/general/400-stale-function-template-instantiation-lookup.t:24:10
+    callee descend
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity descend
+  function-instantiation
+    entity addrof
+  function-instantiation
+    entity descend
+  require-definition
+    entity addrof
+  require-definition
+    entity descend

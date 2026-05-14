@@ -1,0 +1,6 @@
+invalid #
+identifier define
+identifier FOO
+literal 1 int 01000000
+identifier FOO
+eof

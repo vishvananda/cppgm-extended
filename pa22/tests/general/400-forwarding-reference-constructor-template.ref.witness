@@ -1,0 +1,17 @@
+translation-unit
+  class-use at pa22/tests/general/400-forwarding-reference-constructor-template.t:11:3
+    template RefBox
+    selected primary
+    bind #1 = int & source=explicit
+  function-call at pa22/tests/general/400-forwarding-reference-constructor-template.t:11:16
+    callee RefBox<int &>::RefBox
+    selected instantiation
+    bind #1 = int & source=deduced
+    drop RefBox<int &>::RefBox reason=worse_conversion
+template-closure-events
+  ensure-definition
+    entity RefBox<int &>::RefBox
+  function-instantiation
+    entity RefBox<int &>::RefBox
+  require-definition
+    entity RefBox<int &>::RefBox

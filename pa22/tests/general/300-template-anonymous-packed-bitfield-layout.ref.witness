@@ -1,0 +1,10 @@
+translation-unit
+  class-use at pa22/tests/general/300-template-anonymous-packed-bitfield-layout.t:20:3
+    template Box
+    selected primary
+    bind #1 = char source=explicit
+template-closure-events
+  class-instantiation
+    entity Box<char>::Short
+  class-instantiation
+    entity Box<char>::Short::(anonymous struct at 9:5)

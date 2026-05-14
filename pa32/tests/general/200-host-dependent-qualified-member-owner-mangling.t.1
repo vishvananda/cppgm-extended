@@ -1,0 +1,20 @@
+namespace ns {
+
+template<class T>
+struct Id {
+  typedef T type;
+};
+
+}
+
+template<class T>
+void f(typename ns::Id<T>::type *)
+{
+}
+
+int main()
+{
+  int value = 0;
+  f<int>(&value);
+  return 0;
+}

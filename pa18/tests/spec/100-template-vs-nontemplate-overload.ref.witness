@@ -1,0 +1,13 @@
+translation-unit
+  function-call at pa18/tests/spec/100-template-vs-nontemplate-overload.t:17:28
+    callee choose
+    selected instantiation
+    bind #1 = long source=deduced
+    drop choose reason=worse_conversion
+template-closure-events
+  ensure-definition
+    entity choose
+  function-instantiation
+    entity choose
+  require-definition
+    entity choose

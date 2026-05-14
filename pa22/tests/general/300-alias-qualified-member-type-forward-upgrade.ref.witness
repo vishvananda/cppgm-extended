@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/300-alias-qualified-member-type-forward-upgrade.t:2:15
+    template Base
+    selected primary
+    bind #1 = int source=explicit

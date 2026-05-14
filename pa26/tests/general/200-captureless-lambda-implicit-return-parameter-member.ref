@@ -1,0 +1,45 @@
+function @get(%u : ptr [pass=reference]) -> i32 [binding=strong, object=_Z3getR1U] {
+  slot $u : ptr
+
+  block ^entry:
+    store ptr %u, $u
+    %t1 = load ptr $u
+    %t2 = addr @__lambda_get_t31_36
+    %t3 = unary decay ptr %t2
+    %t4 = call i32 %t3(%t1) as (%arg0 : ptr [pass=reference]) -> i32
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $u : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $u
+    call void @U__U(%t1, 7)
+    %t2 = addr $u
+    %t3 = call i32 @get(%t2)
+    %t4 = binary sub i32 %t3, 7
+    return i32 %t4
+}
+function @__lambda_get_t31_36(%x : ptr [pass=reference]) -> i32 [binding=internal] {
+  slot $x : ptr
+
+  block ^entry:
+    store ptr %x, $x
+    %t1 = load ptr $x
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    return i32 %t3
+}
+function @U__U(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1UC1Ei] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}

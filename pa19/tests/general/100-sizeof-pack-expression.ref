@@ -1,0 +1,13 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @X_int__char___size()
+    %t2 = cmp ne i32 %t1, 2
+    %t3 = convert zext i32 u8 %t2
+    return i32 %t3
+}
+function @X_int__char___size() -> i32 [unwind=no, binding=weak, object=_ZN1XIJicEE4sizeEv] {
+  block ^entry:
+    %t1 = const i64 2
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
+}

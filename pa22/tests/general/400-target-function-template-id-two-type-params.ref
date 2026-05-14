@@ -1,0 +1,30 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @call(%f : ptr) -> void [binding=strong, object=_Z4callPFR6StreamI4Char6TraitsES3_E] {
+  slot $f : ptr
+  slot $s : obj<1x1>
+
+  block ^entry:
+    store ptr %f, $f
+    %t1 = addr $s
+    %t2 = addr $s
+    %t3 = load ptr $f
+    %t4 = call ptr %t3(%t2) as (%arg0 : ptr [pass=reference]) -> ptr
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = addr @manip
+    %t2 = unary decay ptr %t1
+    call void @call(%t2)
+    return i32 0
+}
+function @manip(%s : ptr [pass=reference]) -> ptr [binding=weak, object=_Z5manipI4Char6TraitsER6StreamIT_T0_ES6_] {
+  slot $s : ptr
+
+  block ^entry:
+    store ptr %s, $s
+    %t1 = load ptr $s
+    return ptr %t1
+}

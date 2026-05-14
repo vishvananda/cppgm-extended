@@ -1,0 +1,9 @@
+struct Box {
+  bool operator!() const;
+};
+
+int main()
+{
+  Box box;
+  return !box ? 0 : 1;
+}

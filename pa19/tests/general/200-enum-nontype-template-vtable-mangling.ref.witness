@@ -1,0 +1,19 @@
+translation-unit
+  class-use at pa19/tests/general/200-enum-nontype-template-vtable-mangling.t:21:3
+    template Control
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = P2 source=explicit
+template-closure-events
+  ensure-definition
+    entity Control<int, P2>::value
+  ensure-definition
+    entity Control<int, P2>::~Control
+  function-instantiation
+    entity Control<int, P2>::value
+  function-instantiation
+    entity Control<int, P2>::~Control
+  require-definition
+    entity Control<int, P2>::value
+  require-definition
+    entity Control<int, P2>::~Control

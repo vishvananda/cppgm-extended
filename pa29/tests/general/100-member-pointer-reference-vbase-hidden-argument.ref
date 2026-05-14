@@ -1,0 +1,130 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $ss : obj<8x4>
+  slot $writer : obj<1x1>
+  slot $member : i128
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $ss
+    call void @StringStream__StringStream(%t1)
+    %t2 = addr $writer
+    %t3 = addr @Writer__mark
+    %t4 = copy i64 %t3
+    %t5 = convert zext i128 i64 %t4
+    store i128 %t5, $member
+    %t6 = addr $writer
+    %t7 = addr $ss
+    %t8 = index i8 [projection=base_subobject] %t7, 0
+    %t9 = addr $ss
+    %t10 = index i8 %t9, 4
+    %t11 = load i128 $member
+    %t12 = convert trunc i64 i128 %t11
+    %t13 = copy ptr %t12
+    call void %t13(%t6, %t8, %t10) as (%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> void
+    %t14 = addr $ss
+    %t15 = index i8 [projection=base_subobject] %t14, 4
+    %t16 = call i32 @IOS__get(%t15)
+    %t17 = cmp eq i32 %t16, 9
+    branch %t17, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t18 = load i32 $cond__1
+    return i32 %t18
+}
+function @IOS__get(%this : ptr) -> i32 [binding=weak, object=_ZNK3IOS3getEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    return i32 %t3
+}
+function @StringStream__StringStream(%this : ptr) -> void [binding=weak, object=_ZN12StringStreamC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    call void @IOS__IOS__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t5 = load ptr $this
+    %t6 = index i8 %t5, 4
+    call void @OStream__OStream__base_entry(%t4, %t6)
+    return void
+}
+function @Writer__mark(%this : ptr, %os : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZNK6Writer4markER7OStream] {
+  slot $this : ptr
+  slot $os : ptr
+  slot $os__pvb0 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %os, $os
+    store ptr %__pvbptr0, $os__pvb0
+    %t1 = load ptr $os__pvb0
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @IOS__set(%t2, 9)
+    return void
+}
+function @OStream__OStream__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN7OStreamC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @OStream__OStream(%this : ptr) -> void [binding=weak, object=_ZN7OStreamC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    call void @IOS__IOS__base_entry(%t2)
+    return void
+}
+function @IOS__IOS__base_entry(%this : ptr) -> void [binding=weak, object=_ZN3IOSC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @IOS__set(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3IOS3setEi] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}

@@ -1,0 +1,32 @@
+#include <exception>
+
+struct derived_error : std::exception {};
+
+struct thrower {
+  void operator()()
+  {
+    throw derived_error();
+  }
+};
+
+template<class F>
+int run(F f)
+{
+  int result = 0;
+  do {
+    try {
+      f();
+      result = 1;
+    } catch(std::exception const &) {
+      result = 0;
+    } catch(...) {
+      result = 2;
+    }
+  } while(false);
+  return result;
+}
+
+int main()
+{
+  return run(thrower());
+}

@@ -1,0 +1,21 @@
+translation-unit
+  class-use at pa18/tests/general/100-function-template-local-static-per-specialization.t:49:3
+    template function_n
+    selected primary
+    bind #1 = void source=explicit
+    bind #2 = <> source=deduced
+  function-call at pa18/tests/general/100-function-template-local-static-per-specialization.t:50:14
+    callee function_n<void>::assign_to
+    selected instantiation
+    bind #1 = log_functor source=deduced
+  function-call at pa18/tests/general/100-function-template-local-static-per-specialization.t:51:14
+    callee function_n<void>::assign_to
+    selected instantiation
+    bind #1 = init_functor source=deduced
+template-closure-events
+  ensure-definition
+    entity function_n<void>::assign_to
+  function-instantiation
+    entity function_n<void>::assign_to
+  require-definition
+    entity function_n<void>::assign_to

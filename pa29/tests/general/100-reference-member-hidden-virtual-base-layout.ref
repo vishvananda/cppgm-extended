@@ -1,0 +1,82 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<12x4>
+  slot $h : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $d
+    call void @D__D(%t1)
+    %t2 = addr $d
+    %t3 = index i8 [projection=base_subobject] %t2, 8
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 7, %t4
+    %t5 = addr $h
+    %t6 = addr $d
+    %t7 = index i8 [projection=base_subobject] %t6, 0
+    %t8 = addr $d
+    %t9 = index i8 %t8, 8
+    call void @Holder__Holder(%t5, %t7, %t9)
+    %t10 = addr $h
+    %t11 = call i32 @Holder__f(%t10)
+    %t12 = cmp ne i32 %t11, 7
+    %t13 = convert zext i32 u8 %t12
+    return i32 %t13
+}
+function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = load ptr $this
+    %t4 = index i8 %t3, 8
+    call void @B__B__base_entry(%t2, %t4)
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=base_subobject] %t5, 4
+    %t7 = load ptr $this
+    %t8 = index i8 %t7, 8
+    call void @C__C__base_entry(%t6, %t8)
+    return void
+}
+function @Holder__Holder(%this : ptr, %b : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN6HolderC1ER1B] {
+  slot $this : ptr
+  slot $b : ptr
+  slot $b__pvb0 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %b, $b
+    store ptr %__pvbptr0, $b__pvb0
+    %t1 = load ptr $b
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
+function @Holder__f(%this : ptr) -> i32 [binding=weak, object=_ZN6Holder1fEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = index i8 [projection=base_subobject] %t3, 4
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load i32 %t5
+    return i32 %t6
+}
+function @B__B__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @C__C__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1CC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}

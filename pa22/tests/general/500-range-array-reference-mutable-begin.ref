@@ -1,0 +1,85 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $data : obj<20x4>
+  slot $first : ptr
+  slot $refarg__1 : i32
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = addr $data
+    store i32 1, %t1
+    %t2 = index i8 %t1, 4
+    store i32 2, %t2
+    %t3 = index i8 %t1, 8
+    store i32 3, %t3
+    %t4 = index i8 %t1, 12
+    store i32 4, %t4
+    %t5 = index i8 %t1, 16
+    store i32 5, %t5
+    %t6 = addr $data
+    store i32 0, $refarg__1
+    %t7 = addr $refarg__1
+    %t8 = call ptr @find_not(%t6, %t7)
+    store ptr %t8, $first
+    %t9 = load ptr $first
+    %t10 = addr $data
+    %t11 = unary decay ptr %t10
+    %t12 = cmp eq ptr %t9, %t11
+    branch %t12, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t13 = load i32 $cond__2
+    return i32 %t13
+}
+function @find_not(%r : ptr [pass=reference], %x : ptr [pass=reference]) -> ptr [binding=weak, object=_Z8find_notIA5_iiEN14range_iteratorIT_E4typeERS2_RKT0_] {
+  slot $r : ptr
+  slot $x : ptr
+
+  block ^entry:
+    store ptr %r, $r
+    store ptr %x, $x
+    %t1 = load ptr $r
+    %t2 = call ptr @begin(%t1)
+    %t3 = load ptr $r
+    %t4 = call ptr @begin(%t3)
+    %t5 = load ptr $x
+    %t6 = call ptr @find_first(%t2, %t4, %t5)
+    return ptr %t6
+}
+function @begin(%r : ptr [pass=reference]) -> ptr [binding=weak, object=_Z5beginIA5_iEN14range_iteratorIT_E4typeERS2_] {
+  slot $r : ptr
+
+  block ^entry:
+    store ptr %r, $r
+    %t1 = load ptr $r
+    %t2 = call ptr @range_begin(%t1)
+    return ptr %t2
+}
+function @find_first(%first : ptr, %__param1 : ptr, %__param2 : ptr [pass=reference]) -> ptr [binding=weak, object=_Z10find_firstIPiS0_iET_S1_T0_RKT1_] {
+  slot $first : ptr
+  slot $__param1 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %first, $first
+    store ptr %__param1, $__param1
+    store ptr %__param2, $__param2
+    %t1 = load ptr $first
+    return ptr %t1
+}
+function @range_begin(%a : ptr [pass=reference]) -> ptr [binding=weak, object=_Z11range_beginIiLm5EEPT_RAT0__S0_] {
+  slot $a : ptr
+
+  block ^entry:
+    store ptr %a, $a
+    %t1 = load ptr $a
+    %t2 = unary decay ptr %t1
+    return ptr %t2
+}

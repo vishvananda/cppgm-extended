@@ -1,0 +1,69 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : i32
+  slot $h : obj<8x8>
+  slot $y : obj<8x8>
+
+  block ^entry:
+    store i32 7, $x
+    %t1 = addr $h
+    call void @Holder__Holder(%t1)
+    %t2 = addr $x
+    %t3 = addr $h
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = index i8 [projection=field] %t4, 0
+    store ptr %t2, %t5
+    %t6 = addr $y
+    %t7 = addr $h
+    call void @Holder__get(%t6, %t7)
+    %t8 = addr $y
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load ptr %t9
+    %t11 = load i32 %t10
+    %t12 = binary sub i32 %t11, 7
+    return i32 %t12
+}
+function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @Inner__Inner(%t2)
+    return void
+}
+function @Holder__get(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZNK6Holder3getEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @Inner__Inner__ov2(%ret, %t2)
+    return void
+}
+function @Inner__Inner(%this : ptr) -> void [binding=weak, object=_ZN5InnerC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store ptr 0, %t2
+    return void
+}
+function @Inner__Inner__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5InnerC1ERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store ptr %t3, %t5
+    return void
+}

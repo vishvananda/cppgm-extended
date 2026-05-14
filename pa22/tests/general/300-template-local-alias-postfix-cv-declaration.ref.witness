@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/general/300-template-local-alias-postfix-cv-declaration.t:12:18
+    callee f
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

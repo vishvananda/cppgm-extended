@@ -1,0 +1,17 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $x
+    %t2 = binary and i32 7, 3
+    %t3 = addr $x
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    %t5 = addr $x
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load i32 %t6
+    %t8 = binary and i32 %t7, 7
+    %t9 = cmp ne i32 %t8, 3
+    %t10 = convert zext i32 u8 %t9
+    return i32 %t10
+}

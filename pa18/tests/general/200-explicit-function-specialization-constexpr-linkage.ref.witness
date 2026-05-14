@@ -1,0 +1,9 @@
+translation-unit
+  function-call at pa18/tests/general/200-explicit-function-specialization-constexpr-linkage.t:9:10
+    callee cexpr
+    selected explicit_specialization
+    bind #1 = int source=explicit
+  function-call at pa18/tests/general/200-explicit-function-specialization-constexpr-linkage.t:9:25
+    callee strong_primary
+    selected explicit_specialization
+    bind #1 = int source=explicit

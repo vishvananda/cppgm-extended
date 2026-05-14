@@ -1,0 +1,27 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : i32
+  slot $f : obj<4x4>
+
+  block ^entry:
+    store i32 3, $x
+    %t1 = addr $f
+    %t2 = load i32 $x
+    store i32 %t2, %t1
+    %t3 = addr $f
+    %t4 = call i32 @__lambda_main_t16_22__operator__(%t3, 4)
+    return i32 %t4
+}
+function @__lambda_main_t16_22__operator__(%this : ptr, %y : i32) -> i32 [binding=weak, object=_ZZ4mainvENK3$_0clEi] {
+  slot $this : ptr
+  slot $y : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %y, $y
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load i32 $y
+    %t5 = binary add i32 %t3, %t4
+    return i32 %t5
+}

@@ -1,0 +1,56 @@
+function @use(%w : ptr [pass=reference]) -> i32 [binding=strong, object=_Z3useRK7Wrapper] {
+  slot $w : ptr
+
+  block ^entry:
+    store ptr %w, $w
+    %t1 = load ptr $w
+    %t2 = call i32 @Wrapper__operator__(%t1, 4)
+    return i32 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $arg__1 : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $arg__1
+    %t2 = addr @__lambda_main_t75_79
+    %t3 = unary decay ptr %t2
+    call void @Wrapper__Wrapper(%t1, %t3)
+    %t4 = call i32 @use(%t1)
+    return i32 %t4
+}
+function @__lambda_main_t75_79(%x : i32) -> i32 [binding=internal] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
+}
+function @Wrapper__Wrapper(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN7WrapperC1EPFiiE] {
+  slot $this : ptr
+  slot $p : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %p, $p
+    %t1 = load ptr $p
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
+function @Wrapper__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZNK7WrapperclEi] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr %t3
+    %t5 = call i32 %t4(%t1) as (%arg0 : i32) -> i32
+    return i32 %t5
+}

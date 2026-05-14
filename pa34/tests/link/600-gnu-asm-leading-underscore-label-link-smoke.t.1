@@ -1,0 +1,16 @@
+#if defined(__APPLE__) && defined(__MACH__)
+#define CPPGM_PA34_ASM_LABEL_PREFIX _
+#else
+#define CPPGM_PA34_ASM_LABEL_PREFIX
+#endif
+
+#define CPPGM_PA34_STRINGIZE_IMPL(x) #x
+#define CPPGM_PA34_STRINGIZE(x) CPPGM_PA34_STRINGIZE_IMPL(x)
+
+extern "C" int probe(void)
+    __asm(CPPGM_PA34_STRINGIZE(CPPGM_PA34_ASM_LABEL_PREFIX) "probe");
+
+int main()
+{
+  return probe() - 7;
+}

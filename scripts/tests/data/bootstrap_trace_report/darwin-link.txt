@@ -1,0 +1,4 @@
+    "__ZN3foo3barEv", referenced from:
+      _main in a.o
+    "__ZN3baz3quxEi", referenced from:
+      _helper in b.o

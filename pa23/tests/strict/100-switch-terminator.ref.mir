@@ -1,0 +1,39 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve rbx
+
+  block ^entry
+    mov r8, 1
+    mov r9, 0
+    mov rbx, 1
+    mov rax, r8
+    mov rcx, r9
+    cmp.i64 rax, rcx
+    je ^zero
+    mov rcx, rbx
+    cmp.i64 rax, rcx
+    je ^one
+    jmp ^miss
+
+  block ^zero
+    mov rax, 5
+    ret rax
+
+  block ^one
+    mov rax, 7
+    ret rax
+
+  block ^miss
+    mov rax, 9
+    ret rax

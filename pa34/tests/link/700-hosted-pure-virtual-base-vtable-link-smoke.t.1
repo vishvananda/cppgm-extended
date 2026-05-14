@@ -1,0 +1,12 @@
+struct B {
+  virtual int f() = 0;
+};
+
+struct D : B {
+  int f() { return 5; }
+};
+
+int main() {
+  D d;
+  return d.f() == 5 ? 0 : 1;
+}

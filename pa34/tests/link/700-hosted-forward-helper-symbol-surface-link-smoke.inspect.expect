@@ -1,0 +1,3 @@
+defined_symbol_canonical 1 _main
+defined_symbol_canonical 1 _Z4sinkOi
+absent_defined_symbol_canonical 1 _ZNSt3__17forwardIiEEOT_Ru20__remove_reference_tIS1_E

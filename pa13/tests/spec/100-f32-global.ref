@@ -1,0 +1,31 @@
+start:
+	move64 bp sp;
+	call fn__main;
+	syscall1 t64 60 x64;
+
+fn__main:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 24;
+fn__main__entry:
+	move32 x32 [g__g];
+	move32 [bp-8] x32;
+	move32 x32 1.5f;
+	move32 [bp-16] x32;
+	move32 y32 [bp-8];
+	move32 x32 [bp-16];
+	feq32 z8 y32 x32;
+	move64 x64 0;
+	move8 x8 z8;
+	move32 [bp-24] x32;
+	move32 x32 [bp-24];
+	jump fn__main__epilogue;
+fn__main__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;
+
+g__g:
+	data32 1.5f;

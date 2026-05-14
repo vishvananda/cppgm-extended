@@ -1,0 +1,13 @@
+translation-unit
+  function-call at pa18/tests/general/100-template-overload-fallback.t:6:32
+    callee pick
+    selected instantiation
+    bind #1 = int source=deduced
+    drop pick reason=bad_conversion
+template-closure-events
+  ensure-definition
+    entity pick
+  function-instantiation
+    entity pick
+  require-definition
+    entity pick

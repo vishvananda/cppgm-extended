@@ -1,0 +1,3 @@
+frame function=add1 file=source.cpp line=3
+var x=41
+var y=42

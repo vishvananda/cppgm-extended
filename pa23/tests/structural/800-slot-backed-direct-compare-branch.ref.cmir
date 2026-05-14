@@ -1,0 +1,29 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    slot $op -> [rbp-<off0>] : i32
+
+  block ^entry
+    mov rax, 6
+    store.i32 [rbp-<off0>], rax
+    cmp.i32 [rbp-<off0>], 6
+    je ^ok
+    jmp ^bad
+
+  block ^bad
+    mov rax, 1
+    ret rax
+
+  block ^ok
+    mov rax, 0
+    ret rax

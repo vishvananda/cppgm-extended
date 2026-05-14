@@ -1,0 +1,40 @@
+function @f(%a : ptr) -> u8 [binding=strong, object=_Z1fPKV1A] {
+  slot $a : ptr
+
+  block ^entry:
+    store ptr %a, $a
+    %t1 = load ptr $a
+    %t2 = call u8 @A__test(%t1, 0)
+    return u8 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : obj<1x1>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = addr $a
+    %t3 = call u8 @f(%t2)
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = load i32 $cond__1
+    return i32 %t4
+}
+function @A__test(%this : ptr, %__param1 : i32) -> u8 [binding=weak, object=_ZNKV1A4testEi] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    return u8 1
+}

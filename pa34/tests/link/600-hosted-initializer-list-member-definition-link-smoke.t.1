@@ -1,0 +1,7 @@
+#include "600-hosted-initializer-list-member-definition-link-smoke.shared.h"
+
+int main()
+{
+  InitializerListMemberLinkSmoke value;
+  return value.total({1, 2, 3}) == 6 ? 0 : 1;
+}

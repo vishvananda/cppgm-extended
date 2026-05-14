@@ -1,0 +1,17 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $p : ptr
+
+  block ^entry:
+    store ptr 0, $p
+    %t1 = load ptr $p
+    %t2 = call i32 @f__ov3(%t1)
+    %t3 = binary sub i32 %t2, 3
+    return i32 %t3
+}
+function @f__ov3(%__param0 : ptr) -> i32 [binding=weak, object=_Z1fIiEiPKT_] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 3
+}

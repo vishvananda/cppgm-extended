@@ -1,0 +1,93 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<16x8>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+
+  block ^entry:
+    %t1 = addr $x
+    call void @X__X(%t1)
+    %t2 = addr $x
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i64 %t4
+    %t6 = cmp eq i64 %t5, 1
+    branch %t6, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t7 = addr $x
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = index i8 [projection=field] %t8, 8
+    %t10 = unary decay ptr %t9
+    %t11 = index i8 [projection=array_element] %t10, 0
+    %t12 = load i8 %t11
+    %t13 = convert sext i32 i8 %t12
+    %t14 = cmp eq i32 %t13, 0
+    %t15 = cmp ne i64 %t14, 0
+    store i64 %t15, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t16 = load i64 $land__3
+    branch %t16, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t17 = addr $x
+    %t18 = index i8 [projection=field] %t17, 0
+    %t19 = index i8 [projection=field] %t18, 8
+    %t20 = unary decay ptr %t19
+    %t21 = index i8 [projection=array_element] %t20, 1
+    %t22 = load i8 %t21
+    %t23 = convert sext i32 i8 %t22
+    %t24 = cmp eq i32 %t23, 0
+    %t25 = cmp ne i64 %t24, 0
+    store i64 %t25, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t26 = load i64 $land__2
+    branch %t26, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t27 = load i32 $cond__1
+    return i32 %t27
+}
+function @X__X(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1XC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    store i64 1, %t3
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = index i8 [projection=field] %t5, 8
+    %t7 = unary decay ptr %t6
+    %t8 = index i8 [projection=array_element] %t7, 0
+    store i8 0, %t8
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = index i8 [projection=field] %t10, 8
+    %t12 = unary decay ptr %t11
+    %t13 = index i8 [projection=array_element] %t12, 1
+    store i8 0, %t13
+    return void
+}

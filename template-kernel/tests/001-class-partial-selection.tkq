@@ -1,0 +1,7 @@
+template_kernel_v1
+
+class_template Pair <type A, type B>
+partial_class Pair same <type T> args <type T, type T>
+
+query select_class Pair <type int, type int>
+query select_class Pair <type int, type char>

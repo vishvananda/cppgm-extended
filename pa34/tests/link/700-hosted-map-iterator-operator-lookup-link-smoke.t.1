@@ -1,0 +1,20 @@
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+
+using namespace std;
+
+typedef map<string, shared_ptr<int> > Table;
+
+bool missing(Table & table, const string & key)
+{
+  Table::const_iterator found = table.find(key);
+  return found == table.end();
+}
+
+int main()
+{
+  Table table;
+  return missing(table, "x") ? 0 : 1;
+}

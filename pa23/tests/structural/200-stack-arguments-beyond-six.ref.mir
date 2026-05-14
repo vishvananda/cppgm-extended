@@ -1,0 +1,87 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @sum8
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    param %d -> rcx : i64
+    param %e -> r8 : i64
+    param %f -> r9 : i64
+    param %g -> [rbp+16] : i64
+    param %h -> [rbp+24] : i64
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    preserve rbx r12 r13 r14 r15
+    param-slot %g -> [rbp-8] : i64
+    param-slot %h -> [rbp-16] : i64
+
+  block ^entry
+    load.i64 rax, [rbp+16]
+    store.i64 [rbp-8], rax
+    load.i64 rax, [rbp+24]
+    store.i64 [rbp-16], rax
+    mov rbx, rdx
+    mov r12, rcx
+    mov r13, r8
+    mov r14, r9
+    mov r9, rsi
+    mov r15, rdi
+    add r15, r9
+    add r15, rbx
+    add r15, r12
+    add r15, r13
+    add r15, r14
+    load.i64 rdx, [rbp-8]
+    add r15, rdx
+    load.i64 rdx, [rbp-16]
+    add r15, rdx
+    mov rax, r15
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 80
+    scratch_bytes 0
+    preserve rbx r12 r13 r14 r15
+    temp %h -> [rbp-8] : i64
+    temp %r -> [rbp-16] : i64
+
+  block ^entry
+    mov r8, 1
+    mov r9, 2
+    mov rbx, 3
+    mov r12, 4
+    mov r13, 5
+    mov r14, 6
+    mov r15, 7
+    mov rax, 8
+    store.i64 [rbp-8], rax
+    store.i64 [rbp-24], r8
+    store.i64 [rbp-32], r9
+    sub rsp, 16
+    load.i64 rdi, [rbp-24]
+    load.i64 rsi, [rbp-32]
+    mov rdx, rbx
+    mov rcx, r12
+    mov r8, r13
+    mov r9, r14
+    store.i64 [rsp], r15
+    load.i64 r11, [rbp-8]
+    store.i64 [rsp+8], r11
+    call @sum8
+    add rsp, 16
+    store.i64 [rbp-16], rax
+    load.i64 r8, [rbp-16]
+    sub r8, 36
+    mov rax, r8
+    ret rax

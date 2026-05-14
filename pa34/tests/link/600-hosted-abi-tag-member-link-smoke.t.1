@@ -1,0 +1,24 @@
+#include "600-hosted-abi-tag-member-link-smoke.shared.h"
+
+AbiTagBuffer::AbiTagBuffer() : value(0)
+{
+}
+
+AbiTagBuffer::AbiTagBuffer(const AbiTagBuffer & other) : value(other.value)
+{
+}
+
+int AbiTagBuffer::gptr() const
+{
+  return value;
+}
+
+int AbiTagBuffer::egptr() const
+{
+  return value + 1;
+}
+
+void AbiTagBuffer::setstate(unsigned int state)
+{
+  value = static_cast<int>(state);
+}

@@ -1,0 +1,35 @@
+#include <stdexcept>
+
+int destroyed = 0;
+
+struct Guard
+{
+  ~Guard()
+  {
+    ++destroyed;
+  }
+};
+
+void boom()
+{
+  throw std::logic_error("resume");
+}
+
+void middle()
+{
+  Guard guard;
+  boom();
+}
+
+int main()
+{
+  try
+  {
+    middle();
+  }
+  catch (const std::logic_error &)
+  {
+    return destroyed == 1 ? 0 : 2;
+  }
+  return 1;
+}

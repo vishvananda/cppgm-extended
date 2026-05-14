@@ -1,0 +1,77 @@
+declare function @Log__set_stream(%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=strong, object=_ZN3Log10set_streamER7OStream]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $os : obj<8x4>
+  slot $holder : obj<8x8>
+  slot $log : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $os
+    call void @OStream__OStream(%t1)
+    %t2 = addr $holder
+    %t3 = addr $os
+    %t4 = index i8 %t3, 4
+    call void @Holder__Holder(%t2, %t3, %t4)
+    %t5 = addr $log
+    %t6 = addr $log
+    %t7 = addr $holder
+    %t8 = call ptr @Holder__ref(%t7)
+    %t9 = index i8 %t8, 4
+    call void @Log__set_stream(%t6, %t8, %t9)
+    return i32 0
+}
+function @OStream__OStream(%this : ptr) -> void [binding=weak, object=_ZN7OStreamC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    call void @IOS__IOS__base_entry(%t2)
+    return void
+}
+function @Holder__Holder(%this : ptr, %os : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN6HolderC1ER7OStream] {
+  slot $this : ptr
+  slot $os : ptr
+  slot $os__pvb0 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %os, $os
+    store ptr %__pvbptr0, $os__pvb0
+    %t1 = load ptr $os
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
+function @Holder__ref(%this : ptr) -> ptr [binding=weak, object=_ZNK6Holder3refEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    return ptr %t3
+}
+function @IOS__IOS__base_entry(%this : ptr) -> void [binding=weak, object=_ZN3IOSC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}

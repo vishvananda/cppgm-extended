@@ -1,0 +1,68 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = addr $a
+    %t3 = call i32 @Analyzer__f(%t2)
+    return i32 %t3
+}
+function @Analyzer__f(%this : ptr) -> i32 [binding=weak, object=_ZN8Analyzer1fEv] {
+  slot $this : ptr
+  slot $helper : ptr
+  slot $outer : obj<8x8>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr @__lambda_Analyzer__f_t13_19
+    %t2 = unary decay ptr %t1
+    store ptr %t2, $helper
+    %t3 = addr $outer
+    %t4 = addr $helper
+    store ptr %t4, %t3
+    %t5 = addr $outer
+    %t6 = call i32 @Analyzer____lambda_Analyzer__f_t33_39__operator__(%t5, 4)
+    return i32 %t6
+}
+function @Analyzer____lambda_Analyzer__f_t33_39__operator__(%this : ptr, %z : i32) -> i32 [binding=weak, object=_ZZN8Analyzer1fEvENKUliE_clEi] {
+  slot $this : ptr
+  slot $z : i32
+  slot $inner : obj<8x8>
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %z, $z
+    %t1 = addr $inner
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=reference_field] %t2, 0
+    %t4 = load ptr %t3
+    store ptr %t4, %t1
+    %t5 = addr $inner
+    %t6 = load i32 $z
+    %t7 = call i32 @Analyzer____lambda_Analyzer__f_t33_39____lambda_Analyzer____lambda_Analyzer__f_t33_39__operator___t46_52__operator__(%t5, %t6)
+    return i32 %t7
+}
+function @Analyzer____lambda_Analyzer__f_t33_39____lambda_Analyzer____lambda_Analyzer__f_t33_39__operator___t46_52__operator__(%this : ptr, %y : i32) -> i32 [binding=weak, object=_ZZZN8Analyzer1fEvENKUliE_clEiENKUliE_clEi] {
+  slot $this : ptr
+  slot $y : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %y, $y
+    %t1 = load i32 $y
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=reference_field] %t2, 0
+    %t4 = load ptr %t3
+    %t5 = load ptr %t4
+    %t6 = call i32 %t5(%t1) as (%arg0 : i32) -> i32
+    return i32 %t6
+}
+function @__lambda_Analyzer__f_t13_19(%x : i32) -> i32 [binding=internal] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
+}

@@ -1,0 +1,51 @@
+function @f() -> void [binding=strong, object=_Z1fv] {
+  slot $a : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = unary decay ptr %t1
+    call void @sift(%t2)
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @sift(%p : ptr) -> void [binding=weak, object=_Z4siftI33Local__local_16583248074186681365EvPT_] {
+  slot $p : ptr
+  slot $top : obj<1x1>
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = addr $top
+    %t2 = load ptr $p
+    %t3 = call ptr @Ops_Policy___iter_move(%t2)
+    call void @Local__local_16583248074186681365__Local__ov3(%t1, %t3)
+    return void
+}
+function @Ops_Policy___iter_move(%i : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3OpsI6PolicyE9iter_moveI33Local__local_16583248074186681365EEOT_RS4_] {
+  slot $i : ptr
+
+  block ^entry:
+    store ptr %i, $i
+    %t1 = load ptr $i
+    %t2 = call ptr @move_like(%t1)
+    return ptr %t2
+}
+function @move_like(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z9move_likeI33Local__local_16583248074186681365EOT_RS1_] {
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %t, $t
+    %t1 = load ptr $t
+    return ptr %t1
+}
+function @Local__local_16583248074186681365__Local__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN33Local__local_16583248074186681365C1EOS_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}

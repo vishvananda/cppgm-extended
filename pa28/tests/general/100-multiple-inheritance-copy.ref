@@ -1,0 +1,68 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $c : obj<8x4>
+  slot $d : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $c
+    call void @YC__YC(%t1)
+    %t2 = addr $d
+    %t3 = addr $c
+    copyobj 8x4 %t3, %t2
+    %t4 = addr $d
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t6 = index i8 [projection=field] %t5, 0
+    store i32 4, %t6
+    %t7 = addr $c
+    %t8 = index i8 [projection=base_subobject] %t7, 0
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load i32 %t9
+    %t11 = addr $c
+    %t12 = index i8 [projection=base_subobject] %t11, 4
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load i32 %t13
+    %t15 = binary add i32 %t10, %t14
+    %t16 = addr $d
+    %t17 = index i8 [projection=base_subobject] %t16, 0
+    %t18 = index i8 [projection=field] %t17, 0
+    %t19 = load i32 %t18
+    %t20 = binary add i32 %t15, %t19
+    %t21 = addr $d
+    %t22 = index i8 [projection=base_subobject] %t21, 4
+    %t23 = index i8 [projection=field] %t22, 0
+    %t24 = load i32 %t23
+    %t25 = binary add i32 %t20, %t24
+    return i32 %t25
+}
+function @YC__YC(%this : ptr) -> void [binding=weak, object=_ZN2YCC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @YA__YA__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 4
+    call void @YB__YB__base_entry(%t4)
+    return void
+}
+function @YA__YA__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2YAC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 1, %t2
+    return void
+}
+function @YB__YB__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2YBC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 2, %t2
+    return void
+}

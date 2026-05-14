@@ -1,0 +1,12 @@
+global @g : ptr [binding=strong, object=_Z1g] = addr @__lambda_t5_9
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = addr @g
+    %t2 = call i32 %t1() as () -> i32
+    return i32 %t2
+}
+function @__lambda_t5_9() -> i32 [binding=internal] {
+  block ^entry:
+    return i32 7
+}

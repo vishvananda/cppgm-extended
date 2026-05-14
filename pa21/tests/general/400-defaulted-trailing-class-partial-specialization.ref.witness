@@ -1,0 +1,11 @@
+translation-unit
+  class-use at pa21/tests/general/400-defaulted-trailing-class-partial-specialization.t:11:15
+    template same
+    selected partial
+    bind #1 = char source=explicit
+    bind #2 = char source=explicit
+    bind #3 = void source=defaulted
+    specialize #1 = char source=deduced
+template-closure-events
+  variable-instantiation
+    entity same<char, char>::value

@@ -1,0 +1,13 @@
+translation-unit
+  function-call at pa22/tests/general/400-function-reference-deduction.t:14:10
+    callee apply
+    selected instantiation
+    bind #1 = int source=deduced
+    bind #2 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity apply
+  function-instantiation
+    entity apply
+  require-definition
+    entity apply

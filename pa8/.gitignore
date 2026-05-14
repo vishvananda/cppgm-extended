@@ -1,0 +1,11 @@
+.cproject
+.project
+tests/*.my*
+nsinit
+nsinit-fast
+nsinit-self-fast
+nsinit-debug
+*.dSYM
+tests/testin
+testout
+.test_failed

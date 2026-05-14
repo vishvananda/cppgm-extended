@@ -1,0 +1,19 @@
+translation-unit
+  class-use at pa19/tests/general/200-dependent-nontype-vtable-redecl-owned-syntax.t:17:3
+    template Control
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = 7 source=explicit
+template-closure-events
+  ensure-definition
+    entity Control<int, 7>::value
+  ensure-definition
+    entity Control<int, 7>::~Control
+  function-instantiation
+    entity Control<int, 7>::value
+  function-instantiation
+    entity Control<int, 7>::~Control
+  require-definition
+    entity Control<int, 7>::value
+  require-definition
+    entity Control<int, 7>::~Control

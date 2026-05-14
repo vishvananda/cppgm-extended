@@ -1,0 +1,87 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @sum8
+  abi
+    param %a -> rdi : i64
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    param %d -> rcx : i64
+    param %e -> r8 : i64
+    param %f -> r9 : i64
+    param %g -> [rbp+<off0>] : i64
+    param %h -> [rbp+<off1>] : i64
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    param-slot %g -> [rbp-<off0>] : i64
+    param-slot %h -> [rbp-<off1>] : i64
+
+  block ^entry
+    load.i64 rax, [rbp+<off0>]
+    store.i64 [rbp-<off0>], rax
+    load.i64 rax, [rbp+<off1>]
+    store.i64 [rbp-<off1>], rax
+    mov <gpr0>, rdx
+    mov <gpr1>, rcx
+    mov <gpr2>, r8
+    mov <gpr3>, r9
+    mov r9, rsi
+    mov <gpr4>, rdi
+    add <gpr4>, r9
+    add <gpr4>, <gpr0>
+    add <gpr4>, <gpr1>
+    add <gpr4>, <gpr2>
+    add <gpr4>, <gpr3>
+    load.i64 rdx, [rbp-<off0>]
+    add <gpr4>, rdx
+    load.i64 rdx, [rbp-<off1>]
+    add <gpr4>, rdx
+    mov rax, <gpr4>
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 80
+    scratch_bytes 0
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    temp %h -> [rbp-<off0>] : i64
+    temp %r -> [rbp-<off1>] : i64
+
+  block ^entry
+    mov r8, 1
+    mov r9, 2
+    mov <gpr0>, 3
+    mov <gpr1>, 4
+    mov <gpr2>, 5
+    mov <gpr3>, 6
+    mov <gpr4>, 7
+    mov rax, 8
+    store.i64 [rbp-<off0>], rax
+    store.i64 [rbp-<off2>], r8
+    store.i64 [rbp-<off3>], r9
+    sub rsp, 16
+    load.i64 rdi, [rbp-<off2>]
+    load.i64 rsi, [rbp-<off3>]
+    mov rdx, <gpr0>
+    mov rcx, <gpr1>
+    mov r8, <gpr2>
+    mov r9, <gpr3>
+    store.i64 [rsp], <gpr4>
+    load.i64 <gpr5>, [rbp-<off0>]
+    store.i64 [rsp+<off0>], <gpr5>
+    call @sum8
+    add rsp, 16
+    store.i64 [rbp-<off1>], rax
+    load.i64 r8, [rbp-<off1>]
+    sub r8, 36
+    mov rax, r8
+    ret rax

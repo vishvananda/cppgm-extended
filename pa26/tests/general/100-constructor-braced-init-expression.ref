@@ -1,0 +1,21 @@
+function @f() -> obj<4x4> [binding=strong, object=_Z1fv] {
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    call void @S__S(%t1, 3)
+    return obj<4x4> $retobj__1
+}
+function @S__S(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1SC1Ei] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}

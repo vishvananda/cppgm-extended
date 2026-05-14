@@ -1,0 +1,11 @@
+template<class T>
+__attribute__((noinline)) int g() { return sizeof(T); }
+
+int f() {
+  struct X { int a; };
+  return g<X>();
+}
+
+int main() {
+  return f() == 4 ? 0 : 1;
+}

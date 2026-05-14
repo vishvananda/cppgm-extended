@@ -1,0 +1,64 @@
+function @execute(%__param0 : ptr [pass=reference], %__param1 : i64) -> void [binding=strong, object=_Z7executeRK8Functionm] {
+  slot $__param0 : ptr
+  slot $__param1 : i64
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store i64 %__param1, $__param1
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $p_mut : obj<4x4>
+  slot $p : ptr
+
+  block ^entry:
+    %t1 = addr $p_mut
+    call void @ReadonlyProperty__ReadonlyProperty(%t1)
+    %t2 = addr $p_mut
+    store ptr %t2, $p
+    %t3 = load ptr $p
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t5 = call ptr @PropertyBase__operatorconstFunction_(%t4)
+    %t6 = convert sext i64 i32 0
+    call void @execute(%t5, %t6)
+    return i32 0
+}
+function @ReadonlyProperty__ReadonlyProperty(%this : ptr) -> void [binding=weak, object=_ZN16ReadonlyPropertyC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @PropertyBase__PropertyBase__base_entry(%t2)
+    return void
+}
+function @PropertyBase__PropertyBase__base_entry(%this : ptr) -> void [binding=weak, object=_ZN12PropertyBaseC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @Function__Function(%t2)
+    return void
+}
+function @PropertyBase__operatorconstFunction_(%this : ptr) -> ptr [binding=weak, object=_ZNK12PropertyBasecvRK8FunctionEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+function @Function__Function(%this : ptr) -> void [binding=weak, object=_ZN8FunctionC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}

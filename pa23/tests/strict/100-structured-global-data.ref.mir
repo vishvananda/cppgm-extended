@@ -1,0 +1,35 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item ptr addr @ret3
+
+function @ret3
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+
+  block ^entry
+    mov r8, 3
+    mov rax, r8
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+
+  block ^entry
+    load.ptr r8, @table
+    mov r10, r8
+    call *r10
+    ret rax

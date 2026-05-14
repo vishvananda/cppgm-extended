@@ -1,0 +1,17 @@
+translation-unit
+  function-call at pa22/tests/general/300-explicit-type-argument-class-layout-completion.t:10:3
+    callee check
+    selected instantiation
+    bind #1 = Pair<unsigned long, const char *> source=explicit
+  class-use at pa22/tests/general/300-explicit-type-argument-class-layout-completion.t:10:9
+    template Pair
+    selected primary
+    bind #1 = unsigned long source=explicit
+    bind #2 = const char * source=explicit
+template-closure-events
+  ensure-definition
+    entity check
+  function-instantiation
+    entity check
+  require-definition
+    entity check

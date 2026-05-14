@@ -1,0 +1,70 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @s_int___s__base_entry(%this : ptr) -> void [binding=strong, object=_ZN1sIiEC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 2, %t2
+    return void
+}
+function @s_int___s(%this : ptr) -> void [binding=strong, object=_ZN1sIiEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 2, %t2
+    return void
+}
+function @s_int___s__ov2__base_entry(%this : ptr, %x : i32) -> void [binding=strong, object=_ZN1sIiEC2Ei] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 10
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    return void
+}
+function @s_int___s__ov2(%this : ptr, %x : i32) -> void [binding=strong, object=_ZN1sIiEC1Ei] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 10
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $b : obj<4x4>
+  slot $c : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $b
+    call void @s_int___s(%t1)
+    %t2 = addr $c
+    call void @s_int___s__ov2(%t2, 5)
+    %t3 = addr $b
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    %t6 = addr $c
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = load i32 %t7
+    %t9 = binary add i32 %t5, %t8
+    %t10 = binary sub i32 %t9, 17
+    return i32 %t10
+}

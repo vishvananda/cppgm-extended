@@ -1,0 +1,20 @@
+global @N__K : i32 [binding=internal, object=_ZN1N1KE] = 3
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $x
+    %t2 = addr $x
+    %t3 = call i32 @X__g(%t2)
+    %t4 = binary sub i32 %t3, 4
+    return i32 %t4
+}
+function @X__g(%this : ptr) -> i32 [binding=weak, object=_ZN1X1gEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = binary add i32 3, 1
+    return i32 %t1
+}

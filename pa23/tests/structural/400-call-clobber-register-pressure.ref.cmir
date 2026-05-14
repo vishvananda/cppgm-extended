@@ -1,0 +1,40 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @add1
+  abi
+    param %x -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+
+  block ^entry
+    mov r9, rdi
+    add r9, 1
+    mov rax, r9
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve <gpr0>
+
+  block ^entry
+    mov r8, 7
+    mov r9, 8
+    mov <gpr0>, r8
+    add <gpr0>, r9
+    mov rdi, 20
+    call @add1
+    mov r8, rax
+    add <gpr0>, r8
+    mov rax, <gpr0>
+    ret rax

@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa22/tests/general/400-derived-base-template-deduction.t:19:3
+    template D
+    selected primary
+    bind #1 = int source=explicit
+  function-call at pa22/tests/general/400-derived-base-template-deduction.t:20:10
+    callee probe
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity probe
+  function-instantiation
+    entity probe
+  require-definition
+    entity probe

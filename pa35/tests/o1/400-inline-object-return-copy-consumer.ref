@@ -1,0 +1,34 @@
+function @leaf(%p : ptr) -> obj<8x8> {
+  slot $p : ptr
+  slot $retobj__1 : obj<8x8>
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = addr $retobj__1
+    %t2 = load ptr $p
+    store ptr %t2, %t1
+    return obj<8x8> $retobj__1
+}
+function @wrap(%p : ptr) -> obj<8x8> {
+  slot $retobj__1 : obj<8x8>
+  slot $__o1inl0__retobj__1 : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    %__o1inl0__t1 = addr $__o1inl0__retobj__1
+    store ptr %p, %__o1inl0__t1
+    copyobj 8x8 $__o1inl0__retobj__1, %t1
+    return obj<8x8> $retobj__1
+}
+function @caller(%p : ptr, %out : ptr) -> void {
+  slot $__o1inl0__retobj__1 : obj<8x8>
+  slot $__o1inl0____o1inl0__retobj__1 : obj<8x8>
+
+  block ^entry:
+    %__o1inl0__t1 = addr $__o1inl0__retobj__1
+    %__o1inl0____o1inl0__t1 = addr $__o1inl0____o1inl0__retobj__1
+    store ptr %p, %__o1inl0____o1inl0__t1
+    copyobj 8x8 $__o1inl0____o1inl0__retobj__1, %__o1inl0__t1
+    copyobj 8x8 $__o1inl0__retobj__1, %out
+    return void
+}

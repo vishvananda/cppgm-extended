@@ -1,0 +1,23 @@
+function @make_one_enum() -> obj<4x4> [binding=strong, object=_Z13make_one_enumv] {
+  slot $out : obj<4x4>
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $out
+    %t2 = addr $retobj__1
+    %t3 = addr $out
+    call void @OneEnum__OneEnum__ov2(%t2, %t3)
+    return obj<4x4> $retobj__1
+}
+function @OneEnum__OneEnum__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN7OneEnumC1EOS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = load ptr $other
+    copyobj 4x4 %t2, %t1
+    return void
+}

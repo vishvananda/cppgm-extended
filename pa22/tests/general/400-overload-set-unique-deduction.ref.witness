@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/general/400-overload-set-unique-deduction.t:19:10
+    callee apply
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity apply
+  function-instantiation
+    entity apply
+  require-definition
+    entity apply

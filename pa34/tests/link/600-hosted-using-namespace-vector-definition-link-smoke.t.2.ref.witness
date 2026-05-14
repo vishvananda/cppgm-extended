@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa34/tests/link/600-hosted-using-namespace-vector-definition-link-smoke.t.2:7:17
+    template helper_inline_ns::vec
+    selected primary
+    bind #1 = int source=explicit

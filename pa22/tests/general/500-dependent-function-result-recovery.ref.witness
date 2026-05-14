@@ -1,0 +1,62 @@
+translation-unit
+  alias-use at pa22/tests/general/500-dependent-function-result-recovery.t:15:1
+    template lib::remove_reference_t
+    bind #1 = T source=explicit
+  alias-use at pa22/tests/general/500-dependent-function-result-recovery.t:16:22
+    template lib::remove_reference_t
+    bind #1 = T source=explicit
+  function-call at pa22/tests/general/500-dependent-function-result-recovery.t:83:3
+    callee lib::copy_unwrap_iters
+    selected instantiation
+    bind #1 = lib::copy_impl source=explicit
+    bind #2 = int * source=deduced
+    bind #3 = int * source=deduced
+    bind #4 = int * source=deduced
+    bind #5 = 0 source=defaulted
+template-closure-events
+  ensure-definition
+    entity lib::copy_unwrap_iters
+  function-instantiation
+    entity lib::copy_impl::operator()
+  function-instantiation
+    entity lib::copy_unwrap_iters
+  function-instantiation
+    entity lib::make_pair
+  function-instantiation
+    entity lib::move
+  function-instantiation
+    entity lib::pair<int *, int *>::pair
+  function-instantiation
+    entity lib::rewrap_iter
+  function-instantiation
+    entity lib::rewrap_range
+  function-instantiation
+    entity lib::unwrap_iter
+  function-instantiation
+    entity lib::unwrap_iter_impl<int *>::rewrap
+  function-instantiation
+    entity lib::unwrap_iter_impl<int *>::unwrap
+  function-instantiation
+    entity lib::unwrap_range
+  require-definition
+    entity lib::copy_impl::operator()
+  require-definition
+    entity lib::copy_unwrap_iters
+  require-definition
+    entity lib::make_pair
+  require-definition
+    entity lib::move
+  require-definition
+    entity lib::pair<int *, int *>::pair
+  require-definition
+    entity lib::rewrap_iter
+  require-definition
+    entity lib::rewrap_range
+  require-definition
+    entity lib::unwrap_iter
+  require-definition
+    entity lib::unwrap_iter_impl<int *>::rewrap
+  require-definition
+    entity lib::unwrap_iter_impl<int *>::unwrap
+  require-definition
+    entity lib::unwrap_range

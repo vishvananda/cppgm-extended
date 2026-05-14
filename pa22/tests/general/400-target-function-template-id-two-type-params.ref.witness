@@ -1,0 +1,18 @@
+translation-unit
+  class-use at pa22/tests/general/400-target-function-template-id-two-type-params.t:12:18
+    template Stream
+    selected primary
+    bind #1 = Char source=explicit
+    bind #2 = Traits source=explicit
+  class-use at pa22/tests/general/400-target-function-template-id-two-type-params.t:15:3
+    template Stream
+    selected primary
+    bind #1 = Char source=deduced
+    bind #2 = Traits source=deduced
+template-closure-events
+  ensure-definition
+    entity manip
+  function-instantiation
+    entity manip
+  require-definition
+    entity manip

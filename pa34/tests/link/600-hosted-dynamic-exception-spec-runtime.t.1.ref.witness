@@ -1,0 +1,14 @@
+translation-unit
+template-closure-events
+  ensure-definition
+    entity std::__1::swap
+  function-instantiation
+    entity std::__1::swap
+  require-definition
+    entity std::__1::swap
+  require-definition
+    entity std::move
+  variable-instantiation
+    entity std::integral_constant<bool, true>::value
+  variable-instantiation
+    entity std::integral_constant<unsigned long, 9223372036854775808>::value

@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa18/tests/general/200-template-body-inherited-enumerator.t:11:3
+    template derived
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity derived<int>::f
+  function-instantiation
+    entity derived<int>::f
+  require-definition
+    entity derived<int>::f

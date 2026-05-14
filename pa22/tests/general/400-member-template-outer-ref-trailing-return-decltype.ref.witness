@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa22/tests/general/400-member-template-outer-ref-trailing-return-decltype.t:14:10
+    template S
+    selected primary
+    bind #1 = int (&)() source=explicit
+  function-call at pa22/tests/general/400-member-template-outer-ref-trailing-return-decltype.t:14:10
+    callee S<int (&)()>::g
+    selected instantiation
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity S<int (&)()>::g
+  function-instantiation
+    entity S<int (&)()>::g
+  require-definition
+    entity S<int (&)()>::g

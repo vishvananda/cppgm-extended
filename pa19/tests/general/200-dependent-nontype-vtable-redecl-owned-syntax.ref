@@ -1,0 +1,119 @@
+declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+declare function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+
+global @__typeinfo_name__struct_Control_int__7_ [storage=readonly, binding=weak, object=_ZTS7ControlIiLi7EE] = {
+  i8 55
+  i8 67
+  i8 111
+  i8 110
+  i8 116
+  i8 114
+  i8 111
+  i8 108
+  i8 73
+  i8 105
+  i8 76
+  i8 105
+  i8 55
+  i8 69
+  i8 69
+  i8 0
+}
+global @__rtti_struct_Control_int__7_ [storage=readonly, binding=weak, object=_ZTI7ControlIiLi7EE] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Control_int__7_
+}
+global @Control_int__7___vtable [storage=readonly, binding=weak, object=_ZTV7ControlIiLi7EE] = {
+  i64 0
+  ptr addr @__rtti_struct_Control_int__7_
+  ptr addr @Control_int__7____Control
+  ptr addr @Control_int__7____Control__deleting_entry
+  ptr addr @Control_int__7___value
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $control : obj<8x8>
+  slot $cond__1 : i32
+  slot $call__2 : i32
+
+  block ^entry:
+    %t1 = addr $control
+    call void @Control_int__7___Control(%t1)
+    eh_try ^call_unwind_dispatch_4
+    %t2 = addr $control
+    %t3 = load ptr %t2
+    %t4 = index i8 %t3, 16
+    %t5 = load ptr %t4
+    %t6 = call i32 %t5(%t2) as (%arg0 : ptr) -> i32
+    store i32 %t6, $call__2
+    %t7 = load i32 $call__2
+    %t8 = cmp eq i32 %t7, 7
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^call_unwind_dispatch_4:
+    %t9 = addr $control
+    call void @Control_int__7____Control(%t9)
+    resume
+
+  block ^call_unwind_end_5:
+    branch %t8, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t10 = load i32 $cond__1
+    %t11 = addr $control
+    call void @Control_int__7____Control(%t11)
+    return i32 %t10
+}
+function @Control_int__7____Control__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7ControlIiLi7EED0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Control_int__7___vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    call void @operator_delete(%t4)
+    return void
+}
+function @Control_int__7____Control(%this : ptr) -> void [binding=weak, object=_ZN7ControlIiLi7EED1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Control_int__7___vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @Control_int__7___value(%this : ptr) -> i32 [binding=weak, object=_ZN7ControlIiLi7EE5valueEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 7
+}
+function @Control_int__7___Control(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7ControlIiLi7EEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Control_int__7___vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}

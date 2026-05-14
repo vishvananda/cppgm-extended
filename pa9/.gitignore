@@ -1,0 +1,13 @@
+.cproject
+.project
+tests/*.my*
+tests/*.host*
+cy86
+cy86-fast
+cy86-self-fast
+cy86-linux
+cy86-debug
+*.dSYM
+tests/testin
+testout
+.test_failed

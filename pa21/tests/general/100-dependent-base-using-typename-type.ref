@@ -1,0 +1,7 @@
+global @x : i32 [binding=strong, object=_Z1x] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load i32 @x
+    return i32 %t1
+}

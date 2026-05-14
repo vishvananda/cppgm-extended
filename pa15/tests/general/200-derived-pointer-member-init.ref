@@ -1,0 +1,26 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $node : obj<1x1>
+  slot $iter : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $node
+    %t2 = addr $iter
+    %t3 = addr $node
+    call void @Iter__Iter(%t2, %t3)
+    %t4 = addr $iter
+    return i32 0
+}
+function @Iter__Iter(%this : ptr, %node : ptr) -> void [binding=weak, object=_ZN4IterC1EP4Node] {
+  slot $this : ptr
+  slot $node : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %node, $node
+    %t1 = load ptr $node
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    return void
+}

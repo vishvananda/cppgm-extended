@@ -1,0 +1,26 @@
+#include <vector>
+
+namespace real {
+struct Function
+{
+  int value;
+};
+}
+
+namespace outer {
+namespace alias = real;
+
+namespace {
+std::vector<const alias::Function *> functions;
+}
+
+int check()
+{
+  return functions.empty() ? 0 : 1;
+}
+}
+
+int main()
+{
+  return outer::check();
+}

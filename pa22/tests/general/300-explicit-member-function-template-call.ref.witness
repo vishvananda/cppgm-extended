@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa22/tests/general/300-explicit-member-function-template-call.t:10:3
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+  function-call at pa22/tests/general/300-explicit-member-function-template-call.t:11:12
+    callee Box<int>::count
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity Box<int>::count
+  function-instantiation
+    entity Box<int>::count
+  require-definition
+    entity Box<int>::count

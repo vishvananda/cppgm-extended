@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa22/tests/general/400-default-template-argument-merge.t:15:3
+    template box
+    selected primary
+    bind #1 = int source=defaulted
+  class-use at pa22/tests/general/400-default-template-argument-merge.t:17:10
+    template box
+    selected primary
+    bind #1 = int source=defaulted
+template-closure-events
+  variable-instantiation
+    entity box<>::value

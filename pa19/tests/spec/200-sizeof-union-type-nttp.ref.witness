@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa19/tests/spec/200-sizeof-union-type-nttp.t:30:27
+    template padding_size_selector
+    selected explicit
+    bind #1 = 8 source=explicit

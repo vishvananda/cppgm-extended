@@ -1,0 +1,39 @@
+declare function @operator_delete__(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete_array]
+declare function @operator_new__(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new_array]
+
+function @count() -> i64 [binding=strong, object=_Z5countv] {
+  block ^entry:
+    %t1 = convert sext i64 i32 4
+    return i64 %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $p : ptr
+  slot $array_new_size__1 : i64
+  slot $zeroinit_offset__2 : i64
+
+  block ^entry:
+    %t1 = call i64 @count()
+    store i64 %t1, $array_new_size__1
+    %t2 = call ptr @operator_new__(%t1)
+    %t3 = load i64 $array_new_size__1
+    store i64 0, $zeroinit_offset__2
+    jump ^zeroinit_cond_1
+
+  block ^zeroinit_cond_1:
+    %t4 = load i64 $zeroinit_offset__2
+    %t5 = cmp ult i64 %t4, %t3
+    branch %t5, ^zeroinit_body_2, ^zeroinit_end_3
+
+  block ^zeroinit_body_2:
+    %t6 = index i8 %t2, %t4
+    store i8 0, %t6
+    %t7 = binary add i64 %t4, 1
+    store i64 %t7, $zeroinit_offset__2
+    jump ^zeroinit_cond_1
+
+  block ^zeroinit_end_3:
+    store ptr %t2, $p
+    %t8 = load ptr $p
+    call void @operator_delete__(%t8)
+    return i32 0
+}

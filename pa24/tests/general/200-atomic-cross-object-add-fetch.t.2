@@ -1,0 +1,7 @@
+function @main() -> i64 {
+  block ^entry:
+    %value = call i64 @bump()
+    %twelve = const i64 12
+    %ok = cmp eq i64 %value, %twelve
+    return i64 %ok
+}

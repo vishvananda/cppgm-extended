@@ -1,0 +1,18 @@
+translation-unit
+  class-use at pa22/tests/general/400-function-template-ref-cv-sfinae-overload.t:51:10
+    template caller
+    selected primary
+    bind #1 = const int source=explicit
+template-closure-events
+  ensure-definition
+    entity caller<const int>::call
+  function-instantiation
+    entity caller<const int>::call
+  function-instantiation
+    entity pick
+  require-definition
+    entity caller<const int>::call
+  require-definition
+    entity pick
+  variable-instantiation
+    entity constis_<const int>::value

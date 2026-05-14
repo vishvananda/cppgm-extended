@@ -1,0 +1,26 @@
+1 translation units
+start translation unit 1
+translation-unit
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier f
+      parameter-clause
+    compound-statement
+      simple-declaration
+        decl-specifier-seq
+          decl-specifier KW_INT:int
+        init-declarator-list
+          init-declarator
+            declarator
+              nested-declarator
+                declarator
+                  identifier a
+      expression-statement
+        assignment-expression OP_ASS:=
+          id-expression a
+          literal 1
+      return-statement
+        id-expression a
+end translation unit

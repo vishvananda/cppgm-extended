@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/general/400-function-template-elaborated-top-cv-deduction.t:13:10
+    callee pick_first
+    selected instantiation
+    bind #1 = Foo source=deduced
+template-closure-events
+  ensure-definition
+    entity pick_first
+  function-instantiation
+    entity pick_first
+  require-definition
+    entity pick_first

@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa18/tests/general/100-local-using-alias-template-member-body.t:17:3
+    template box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity box<int>::f
+  function-instantiation
+    entity box<int>::f
+  require-definition
+    entity box<int>::f

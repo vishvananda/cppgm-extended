@@ -1,0 +1,7 @@
+template_kernel_v1
+
+alias_template PtrOr <type T = type int> = type T*
+
+query bind_defaults alias PtrOr <>
+query expand_alias PtrOr <>
+query expand_alias PtrOr <type char>

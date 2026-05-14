@@ -1,0 +1,10 @@
+translation-unit
+  function-call at pa21/tests/spec/100-explicit-instantiation-function.t:15:10
+    callee plus_one
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity plus_one
+  function-instantiation
+    entity plus_one

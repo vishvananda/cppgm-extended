@@ -1,0 +1,18 @@
+{
+  "result": "link-failed",
+  "active_frontier": "dev/src/example.cpp",
+  "stages": [
+    {
+      "stage": "compile",
+      "source": "dev/src/example.cpp",
+      "object": "/tmp/bootstrap-selfhost-frontier-cluster.build/000-example.o",
+      "returncode": 0,
+      "stdout": ""
+    },
+    {
+      "stage": "link",
+      "returncode": 1,
+      "stdout": "    \"__ZN3foo3barEv\", referenced from:\n      _main in 000-example.o\n"
+    }
+  ]
+}

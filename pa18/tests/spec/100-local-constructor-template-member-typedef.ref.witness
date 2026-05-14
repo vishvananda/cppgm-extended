@@ -1,0 +1,37 @@
+translation-unit
+  class-use at pa18/tests/spec/100-local-constructor-template-member-typedef.t:106:3
+    template mini_vec
+    selected primary
+    bind #1 = local source=explicit
+  class-use at pa18/tests/spec/100-local-constructor-template-member-typedef.t:106:3
+    template wrap
+    selected primary
+    bind #1 = local * source=deduced
+  class-use at pa18/tests/spec/100-local-constructor-template-member-typedef.t:107:3
+    template mini_vec
+    selected primary
+    bind #1 = local source=explicit
+  class-use at pa18/tests/spec/100-local-constructor-template-member-typedef.t:107:3
+    template wrap
+    selected primary
+    bind #1 = const local * source=deduced
+  function-call at pa18/tests/spec/100-local-constructor-template-member-typedef.t:107:35
+    callee wrap<const local *>::wrap
+    selected instantiation
+    bind #1 = local * source=deduced
+    bind #2 = 0 source=defaulted
+    drop wrap<const local *>::wrap reason=too_many_arguments
+    drop wrap<const local *>::wrap reason=worse_conversion
+template-closure-events
+  ensure-definition
+    entity wrap<const local *>::wrap
+  ensure-definition
+    entity wrap<local *>::wrap
+  function-instantiation
+    entity wrap<const local *>::wrap
+  function-instantiation
+    entity wrap<local *>::wrap
+  require-definition
+    entity wrap<const local *>::wrap
+  require-definition
+    entity wrap<local *>::wrap

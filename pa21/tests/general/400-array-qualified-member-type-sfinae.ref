@@ -1,0 +1,39 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $text : obj<4x1>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $text
+    store i8 97, %t1
+    %t2 = index i8 %t1, 1
+    store i8 98, %t2
+    %t3 = index i8 %t1, 2
+    store i8 99, %t3
+    %t4 = index i8 %t1, 3
+    store i8 0, %t4
+    %t5 = addr $text
+    %t6 = call i64 @boost__size(%t5)
+    %t7 = convert sext i64 i32 4
+    %t8 = cmp eq i64 %t6, %t7
+    branch %t8, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t9 = load i32 $cond__1
+    return i32 %t9
+}
+function @boost__size(%__param0 : ptr [pass=reference]) -> i64 [binding=weak, object=_ZN5boost4sizeIA4_cEENS_10range_sizeIKT_E4typeERS4_] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    %t1 = convert sext i64 i32 4
+    return i64 %t1
+}

@@ -1,0 +1,22 @@
+template_kernel_v1
+
+# Synthetic scale case for the template-kernel stats surface.
+
+class_template Box <type T, type U = type T>
+partial_class Box same <type A> args <type A, type A>
+alias_template Ptr <type T = type int> = type T*
+function_template keep only <type T> params (type T) return int
+
+query bind_defaults class Box <type int>
+query bind_defaults class Box <type char>
+query bind_defaults class Box <type long_long>
+query expand_alias Ptr <>
+query expand_alias Ptr <>
+query expand_alias Ptr <>
+query deduce_call keep args (type int)
+query deduce_call keep args (type int)
+query deduce_call keep args (type int)
+query select_class Box <type char>
+query select_class Box <type char>
+query select_class Box <type char>
+query stats

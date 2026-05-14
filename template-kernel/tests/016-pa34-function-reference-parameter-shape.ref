@@ -1,0 +1,6 @@
+template_kernel_output_v1
+
+query 1 deduce_call apply(int, fn<int, int>&)
+status ok
+selected function_template hosted_fn_ref
+bind Fn = fn<int, int>

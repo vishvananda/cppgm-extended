@@ -1,0 +1,226 @@
+## CPPGM Programming Assignment 29 (`cppgm++ --emit-lowir`)
+
+### Overview
+
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source
+Files, executes translation phases 1 through 7, parses them as PA10/PA29 translation units,
+reuses the PA11-PA12 semantic foundation, builds on the PA14-PA28 LowIR lowering path,
+adds the PA29 multi-vtable / virtual-base ABI slice, and writes LowIR text.
+
+PA29 extends PA28 with the first supported object layouts that require more than the
+earlier single-vptr, non-virtual-base ABI:
+
+- virtual inheritance for shared base-subobject layout and access
+- polymorphic multiple inheritance with more than one active vtable view
+- pointer-form `dynamic_cast` across sibling polymorphic bases
+- RTTI / `typeid` through non-primary polymorphic base views
+
+PA29 still produces LowIR. It does not introduce a new output format.
+
+### Prerequisites
+
+You should complete Programming Assignment 28 before starting this assignment.
+
+You will want to reuse:
+
+- the preprocessing and tokenization pipeline from PA1-PA6
+- the PA10 AST as the syntax boundary
+- the PA11-PA12 semantic foundation
+- the PA14-PA28 LowIR lowering path
+- the PA13 LowIR contract
+- the PA23 native validation path
+- the PA13 LowIR -> CY86 path as an optional secondary scaffold
+
+### Starter Kit
+
+The starter kit contains:
+
+- `pa29/README.md`, `pa29/Makefile`, and the test scripts in `pa29/scripts/`
+- a student-editable `dev/cppgm++.cpp` starter scaffold
+- the `pa29/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
+- shared support sources and headers under `dev/src/`
+- a local test suite under `pa29/tests/`
+- the grammar for this assignment called `pa29.gram`
+- an HTML grammar explorer of `pa29.gram` in the sub-directory `grammar/`
+- a checked-in local regression suite under `tests/`
+
+Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
+student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
+test fixtures, comparison scripts, and checked-in reference outputs are support
+files, not implementation files to edit for normal solutions. The shared support files
+provide reusable infrastructure and earlier assignment machinery; they do not implement the
+new PA29 source-to-LowIR ABI slice for you.
+
+Unlike PA1-PA9, there is no external reference binary for PA29. The checked-in `.ref`
+files are the default oracle.
+
+### Input / Command-Line Arguments
+
+Behaviour is undefined unless the command-line arguments match:
+
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+
+`-O0` is the PA29 test mode. Other optimization levels are later optimizer work and
+are not required for this milestone.
+
+### Output Format
+
+`cppgm++` shall write LowIR text to `<outfile>`.
+
+The authoritative LowIR definition is `../pa13/lowir.md`. PA29 extends the PA28 lowering
+surface only by making more of the C++ source language lower into the already-defined LowIR
+family.
+
+The generated LowIR must be well-formed and must match the checked-in `.ref` files under
+the relaxed LowIR comparison used by the harness. That comparison still checks the
+semantic LowIR shape and required IR facts, but it does not make helper metadata
+presentation or other non-semantic text details part of the student contract.
+
+### Error Handling
+
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
+
+The output file is not required to be meaningful on failure.
+
+### Standard Output / Error
+
+Standard output and standard error are ignored for automated testing of `cppgm++`.
+
+You are free to use them for debugging, tracing, or diagnostic messages.
+
+### Testing
+
+Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
+`cppgm++` with `--emit-lowir -O0`.
+
+The local checked-in tests live in `tests/general/`. This bucket is for PA29 source-to-LowIR
+regressions over virtual inheritance, non-primary polymorphic views, sibling
+`dynamic_cast`, and RTTI through adjusted base views. PA29 currently has no `tests/spec/`
+bucket. Future tests that are intended to be clause-by-clause C++ standard checks should
+live in `tests/spec/` and start with a leading comment in this form:
+
+    // N3485 focus: 10.1 [class.mi] ...
+
+The citation must name the specific N3485 subclause being tested so a reviewer can find the
+relevant text in `../doc/n3485.txt`.
+
+For each test case `x`:
+
+- `cppgm++` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is compared against `x.ref`
+- `x.my.exit_status` is compared against `x.ref.exit_status`
+
+PA29 is tested against generated LowIR text using the relaxed LowIR comparator described
+above. A useful manual validation path is:
+
+- feed that LowIR into PA23 `lowir2native`
+- optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
+- then feed the generated CY86 into PA9 `cy86 --target linux`
+
+The shipped PA29 tests are the contract for this milestone. Additional course tests
+should stay within the PA29 source-to-LowIR boundary defined above.
+
+### PA29 Syntax Spec
+
+The authoritative source-language syntax boundary for PA29 is `pa29.gram`.
+
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
+`.ref` files.
+
+PA29 inherits the PA28 syntax boundary and does not add a new source-language grammar file
+format. It instead enables more of the already-accepted C++11 syntax to participate in
+semantic analysis and lowering.
+
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa29.gram` as the source of truth.
+
+`pa29.gram` uses the same token vocabulary and the same extended BNF operators as
+`../pa6/pa6.gram`.
+
+If this README and `pa29.gram` appear to disagree about source syntax, treat `pa29.gram`
+as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA29 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+
+### Assignment Boundary
+
+PA29 supports the following in addition to the PA28 subset:
+
+- virtual inheritance for shared base-subobject layout in complete objects
+- field access through shared virtual bases
+- supported constructor and hidden-argument forwarding cases that carry virtual-base
+  subobject addresses through existing value-semantics machinery
+- polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
+  bases
+- virtual dispatch through non-primary polymorphic base pointers and references
+- pointer-form `dynamic_cast<T*>` across sibling polymorphic bases in the supported object
+  model
+- `typeid(expr)` through supported non-primary polymorphic base lvalue views
+
+Within this milestone, PA29 should produce valid LowIR for ordinary source programs over
+that subset. That LowIR should be accepted by PA23 `lowir2native` for the supported cases.
+PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
+
+The most important PA29 goals are therefore:
+
+1. Shared virtual-base layout.
+   Complete objects with a virtual diamond should expose one shared base-subobject at a
+   deterministic offset. The core oracle for this is `100-virtual-inheritance-fields`.
+
+2. Non-primary polymorphic dispatch.
+   Calling a virtual through a later polymorphic base must lower through the correct vtable
+   view and apply the required `this` adjustment. The core oracle for this is
+   `100-nonprimary-virtual-dispatch`.
+
+3. Sibling cross-cast support.
+   Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the
+   supported RTTI / vtable-view scan. The core oracle for this is
+   `100-sibling-dynamic-cast`.
+
+4. RTTI through non-primary views.
+   `typeid(expr)` should observe the dynamic type through a supported non-primary
+   polymorphic base reference. The core oracle for this is `100-typeid-nonprimary-view`.
+
+### Out Of Scope
+
+The following are explicitly out of scope for PA29:
+
+- virtual-base constructor, copy, assignment, and destructor sequencing beyond the already
+  supported simple generated cases
+- polymorphic multiple inheritance with virtual destructors
+- reference-form `dynamic_cast`
+- `dynamic_cast` and RTTI cases that require `bad_cast` / `bad_typeid`
+- virtual inheritance combined with the unsupported special-member or exception cases
+- toolchain-driver and host-linker integration
+
+Inputs that rely on those features have undefined behaviour for this milestone.
+
+### Stage Handoff
+
+The intended next stage is PA30, which turns the completed language/lowering pipeline into
+a practical `cppgm++` toolchain driver and standard object-output flow.
+
+So PA29 should leave behind:
+
+- a stable multi-vtable / virtual-base LowIR lowering path
+- deterministic lowering for the supported sibling-cast and RTTI-view cases
+- explicit remaining deferrals only where the practical toolchain and remaining ABI/runtime
+  work need to take over
+- enough stable source behavior that PA30 can start carrying simple PA9-style complete
+  programs as C++ end-to-end tests through the practical driver/link path
+
+### Design Notes (Non-Normative)
+
+PA29 should extend the existing object-model and RTTI lowering path, not replace it.
+
+The same monotonic-extension rule applies here:
+
+- PA29 should add its new behavior only when the source actually uses the supported PA29
+  feature set
+- it should not perturb PA28 outputs for programs that remain entirely within the PA28
+  subset
+- in practice, the richer vtable / RTTI layout should stay source-driven rather than
+  changing earlier single-vptr cases unnecessarily

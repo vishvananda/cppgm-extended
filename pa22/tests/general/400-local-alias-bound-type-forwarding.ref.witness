@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa22/tests/general/400-local-alias-bound-type-forwarding.t:24:12
+    template Outer
+    selected primary
+    bind #1 = int * source=explicit
+  function-call at pa22/tests/general/400-local-alias-bound-type-forwarding.t:24:12
+    callee Outer<int *>::mv
+    selected instantiation
+    bind #1 = int **& source=deduced
+template-closure-events
+  ensure-definition
+    entity Outer<int *>::mv
+  function-instantiation
+    entity Outer<int *>::mv
+  require-definition
+    entity Outer<int *>::mv

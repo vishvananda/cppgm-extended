@@ -1,0 +1,118 @@
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+declare function @std__terminate() -> void [effects=readnone, unwind=no, return=noreturn, binding=strong, object=_ZSt9terminatev]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lhs : obj<2x2>
+  slot $rhs : obj<2x2>
+
+  block ^entry:
+    %t1 = addr $lhs
+    store u16 0, %t1
+    %t2 = addr $rhs
+    store u16 0, %t2
+    %t3 = addr $lhs
+    %t4 = unary decay ptr %t3
+    %t5 = addr $rhs
+    %t6 = unary decay ptr %t5
+    %t7 = convert sext i64 i32 1
+    %t8 = call i32 @lib__traits_char16_t___compare(%t4, %t6, %t7)
+    return i32 %t8
+}
+function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i32 [unwind=no, binding=weak, object=_ZN3lib6traitsIDsE7compareEPKDsS3_m] {
+  slot $lhs : ptr
+  slot $rhs : ptr
+  slot $n : i64
+
+  block ^entry:
+    store ptr %lhs, $lhs
+    store ptr %rhs, $rhs
+    store i64 %n, $n
+    eh_try ^function_noexcept_dispatch_1
+    jump ^for_cond_4
+
+  block ^for_cond_4:
+    %t1 = load i64 $n
+    branch %t1, ^for_body_5, ^for_end_7
+
+  block ^for_body_5:
+    %t2 = load ptr $lhs
+    %t3 = load u16 %t2
+    %t4 = load ptr $rhs
+    %t5 = load u16 %t4
+    %t6 = call u8 @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%t3, %t5)
+    branch %t6, ^if_then_8, ^if_else_9
+
+  block ^if_then_8:
+    %t7 = unary neg i32 1
+    eh_end
+    return i32 %t7
+
+  block ^if_else_9:
+    jump ^if_end_10
+
+  block ^if_end_10:
+    %t8 = load ptr $rhs
+    %t9 = load u16 %t8
+    %t10 = load ptr $lhs
+    %t11 = load u16 %t10
+    %t12 = call u8 @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%t9, %t11)
+    branch %t12, ^if_then_11, ^if_else_12
+
+  block ^if_then_11:
+    eh_end
+    return i32 1
+
+  block ^if_else_12:
+    jump ^if_end_13
+
+  block ^if_end_13:
+    jump ^for_iter_6
+
+  block ^for_iter_6:
+    %t13 = load i64 $n
+    %t14 = binary sub i64 %t13, 1
+    store i64 %t14, $n
+    %t15 = load ptr $lhs
+    %t16 = binary mul i64 1, 2
+    %t17 = index i8 %t15, %t16
+    store ptr %t17, $lhs
+    %t18 = load ptr $rhs
+    %t19 = binary mul i64 1, 2
+    %t20 = index i8 %t18, %t19
+    store ptr %t20, $rhs
+    jump ^for_cond_4
+
+  block ^for_end_7:
+    eh_end
+    return i32 0
+
+  block ^function_noexcept_dispatch_1:
+    eh_catch_all
+    jump ^function_noexcept_entry_2
+
+  block ^function_noexcept_entry_2:
+    %t21 = exception ptr
+    call void @cppgm_call_terminate(%t21)
+    return i32 0
+}
+function @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%lhs : u16, %rhs : u16) -> u8 [binding=weak, object=_ZN3lib11traits_baseIDstLt65535EE2ltEDsDs] {
+  slot $lhs : u16
+  slot $rhs : u16
+
+  block ^entry:
+    store u16 %lhs, $lhs
+    store u16 %rhs, $rhs
+    %t1 = load u16 $lhs
+    %t2 = load u16 $rhs
+    %t3 = convert zext i32 u16 %t1
+    %t4 = convert zext i32 u16 %t2
+    %t5 = cmp lt i32 %t3, %t4
+    return u8 %t5
+}
+function @cppgm_call_terminate(%exception : ptr) -> void [effects=readnone, unwind=no, return=noreturn, binding=weak] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception)
+    call void @std__terminate()
+    return void
+}

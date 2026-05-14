@@ -1,0 +1,10 @@
+translation-unit
+  alias-use at pa22/tests/general/300-elaborated-type-template-arg-true-branch.t:16:3
+    template If
+    bind #1 = B source=explicit
+    bind #2 = struct PrivateNat source=explicit
+    bind #3 = int source=explicit
+  class-use at pa22/tests/general/300-elaborated-type-template-arg-true-branch.t:20:3
+    template Holder
+    selected primary
+    bind #1 = true source=explicit

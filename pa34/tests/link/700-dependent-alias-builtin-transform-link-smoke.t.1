@@ -1,0 +1,72 @@
+namespace std {
+namespace __1 {
+
+template<class I>
+struct iterator_traits
+{
+  typedef long difference_type;
+};
+
+template<class T>
+using __remove_cvref_t = __remove_cvref(T);
+
+struct _ClassicAlgPolicy
+{
+};
+
+struct Iter
+{
+  int x;
+};
+
+template<class _AlgPolicy>
+struct _IterOps;
+
+template<>
+struct _IterOps<_ClassicAlgPolicy>
+{
+  template<class _Iter>
+  static long distance(_Iter, _Iter)
+  {
+    return 4;
+  }
+
+  template<class _Iterator>
+  static _Iterator next(_Iterator, _Iterator __last)
+  {
+    return __last;
+  }
+
+  template<class _Iter>
+  static __remove_cvref_t<_Iter> next(
+      _Iter&& __it,
+      typename iterator_traits<__remove_cvref_t<_Iter> >::difference_type __n = 1)
+  {
+    return __it;
+  }
+};
+
+template<class _AlgPolicy, class _Iter, class _Sent>
+_Iter upper_bound_like(_Iter __first, _Sent __last)
+{
+  auto __len = _IterOps<_AlgPolicy>::distance(__first, __last);
+  auto __half_len = __len / 2;
+  auto __mid = _IterOps<_AlgPolicy>::next(__first, __half_len);
+  return __mid;
+}
+
+Iter call(Iter it)
+{
+  return upper_bound_like<_ClassicAlgPolicy>(it, it);
+}
+
+}
+}
+
+int main()
+{
+  std::__1::Iter it;
+  it.x = 3;
+  std::__1::Iter out = std::__1::call(it);
+  return out.x == 3 ? 0 : 1;
+}

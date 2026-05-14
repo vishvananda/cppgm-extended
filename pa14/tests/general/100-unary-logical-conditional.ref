@@ -1,0 +1,69 @@
+function @f() -> i32 [binding=strong, object=_Z1fv] {
+  slot $x : i32
+  slot $y : i32
+  slot $b : u8
+  slot $lor__1 : i64
+  slot $land__2 : i64
+  slot $cond__3 : i32
+
+  block ^entry:
+    store i32 0, $x
+    store i32 1, $y
+    %t1 = load i32 $x
+    %t2 = cmp eq i64 %t1, 0
+    branch %t2, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t3 = load i32 $y
+    branch %t3, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t4 = cmp ne i64 1, 0
+    store i64 %t4, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t5 = load i64 $land__2
+    %t6 = cmp ne i64 %t5, 0
+    store i64 %t6, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t7 = load i64 $lor__1
+    store u8 %t7, $b
+    %t8 = load i32 $x
+    %t9 = binary add i32 %t8, 1
+    store i32 %t9, $x
+    %t10 = load i32 $y
+    %t11 = binary add i32 %t10, 1
+    store i32 %t11, $y
+    %t12 = load u8 $b
+    branch %t12, ^cond_then_7, ^cond_else_8
+
+  block ^cond_then_7:
+    %t13 = load i32 $x
+    store i32 %t13, $cond__3
+    jump ^cond_end_9
+
+  block ^cond_else_8:
+    %t14 = load i32 $y
+    store i32 %t14, $cond__3
+    jump ^cond_end_9
+
+  block ^cond_end_9:
+    %t15 = load i32 $cond__3
+    return i32 %t15
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @f()
+    return i32 %t1
+}

@@ -1,0 +1,51 @@
+declare global @interface_x__holder_target___table [binding=weak, object=_ZN11interface_x6holderI6targetE5tableE]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<1x1>
+  slot $iface : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr $iface
+    %t3 = addr $value
+    call void @interface_x__interface_x__ov3(%t2, %t3)
+    %t4 = addr $iface
+    call void @interface_x__call(%t4, 1)
+    return i32 0
+}
+function @interface_x__interface_x__ov3(%this : ptr, %that : ptr [pass=reference]) -> void [binding=weak, object=_ZN11interface_xC1I6targetEERT_] {
+  slot $this : ptr
+  slot $that : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %that, $that
+    %t1 = addr @interface_x__holder_target___table
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $that
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store ptr %t4, %t6
+    return void
+}
+function @interface_x__call(%this : ptr, %value : i32) -> void [binding=weak, object=_ZNK11interface_x4callEi] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load ptr %t2
+    %t4 = load i32 $value
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load ptr %t6
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = load ptr %t8
+    call void %t9(%t3, %t4) as (%arg0 : ptr, %arg1 : i32) -> void
+    return void
+}

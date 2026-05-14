@@ -1,0 +1,50 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $box : obj<1x1>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $box
+    %t2 = addr $box
+    %t3 = call i32 @Box_int___run(%t2)
+    %t4 = cmp eq i32 %t3, 5
+    branch %t4, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load i32 $cond__1
+    return i32 %t5
+}
+function @Box_int___run(%this : ptr) -> i32 [binding=weak, object=_ZNK3BoxIiE3runEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr @__lambda_Box_int___run_t42_44
+    %t2 = unary decay ptr %t1
+    %t3 = call i32 %t2() as () -> i32
+    return i32 %t3
+}
+function @Box_int___cast(%value : i32) -> i32 [binding=weak, object=_ZN3BoxIiE4castIiEEiT_] {
+  slot $value : i32
+
+  block ^entry:
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
+}
+function @__lambda_Box_int___run_t42_44() -> i32 [binding=internal] {
+  block ^entry:
+    %t1 = call i32 @Box_int___cast(4)
+    return i32 %t1
+}

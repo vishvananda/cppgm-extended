@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/300-template-specialization-member-object-access.t:2:17
+    template Wrap
+    selected primary
+    bind #1 = int source=explicit

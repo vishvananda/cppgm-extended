@@ -1,0 +1,89 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @cell
+  storage data
+  item i64 41
+
+function @touch
+  abi
+    param %p -> rdi : ptr
+    param %n -> rsi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    param-slot %p -> [rbp-<off0>] : ptr
+
+  block ^entry
+    store.ptr [rbp-<off0>], rdi
+    mov rax, rsi
+    ret rax
+
+function @dispatch
+  abi
+    param %which -> rdi : i64
+    param %this -> rsi : ptr
+    param %n -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    preserve <gpr0> <gpr1>
+
+  block ^entry
+    mov r9, rdi
+    mov <gpr1>, rsi
+    mov <gpr0>, rdx
+    mov r8, 1
+    mov rax, rdi
+    mov rcx, r8
+    cmp.i64 rax, rcx
+    je ^case
+    jmp ^miss
+
+  block ^case
+    mov rdi, <gpr1>
+    mov rsi, <gpr0>
+    call @touch
+    mov rdi, <gpr1>
+    mov rsi, <gpr0>
+    call @touch
+    ret rax
+
+  block ^miss
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve <gpr0> <gpr1>
+
+  block ^entry
+    mov r8, @cell
+    mov r9, 1
+    mov <gpr0>, 7
+    mov rdi, r9
+    mov rsi, r8
+    mov rdx, <gpr0>
+    call @dispatch
+    mov <gpr1>, rax
+    cmp.i64 <gpr1>, 7
+    je ^good
+    jmp ^bad
+
+  block ^good
+    mov rax, 0
+    ret rax
+
+  block ^bad
+    mov rax, 1
+    ret rax

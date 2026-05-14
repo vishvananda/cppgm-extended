@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa19/tests/spec/200-static-constexpr-array-template-member-odr-use.t:11:15
+    template tables
+    selected primary
+    bind #1 = void source=explicit
+  class-use at pa19/tests/spec/200-static-constexpr-array-template-member-odr-use.t:13:17
+    template tables
+    selected primary
+    bind #1 = void source=explicit
+template-closure-events
+  variable-instantiation
+    entity tables<void>::data

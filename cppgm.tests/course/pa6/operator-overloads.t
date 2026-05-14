@@ -1,0 +1,37 @@
+int main()
+{
+	operator+;
+	operator-;
+	operator*;
+	operator/;
+	operator%;
+	operator^;
+	operator&;
+	operator|;
+	operator~;
+	operator!;
+	operator=;
+	operator<;
+	operator>;
+	operator+=;
+	operator-=;
+	operator*=;
+	operator/=;
+	operator^=;
+	operator&=;
+	operator|=;
+	operator>>=;
+	operator<<=;
+	operator==;
+	operator!=;
+	operator<=;
+	operator>=;
+	operator&&;
+	operator||;
+	operator++;
+	operator--;
+	operator,;
+	operator->*;
+	operator->;
+	operator>>;
+}

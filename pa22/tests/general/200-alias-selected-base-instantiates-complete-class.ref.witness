@@ -1,0 +1,10 @@
+translation-unit
+  alias-use at pa22/tests/general/200-alias-selected-base-instantiates-complete-class.t:9:17
+    template conditional_t
+    bind #1 = true source=explicit
+    bind #2 = imp<T> source=explicit
+    bind #3 = void source=explicit
+  class-use at pa22/tests/general/200-alias-selected-base-instantiates-complete-class.t:11:9
+    template holder
+    selected primary
+    bind #1 = int source=explicit

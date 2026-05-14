@@ -1,0 +1,9 @@
+1 translation units
+start translation unit 1
+translation-unit
+  scope namespace <global>
+    type-alias Y int
+    variable x int
+    scope namespace N
+      type-alias Y int
+end translation unit

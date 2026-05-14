@@ -1,0 +1,8 @@
+function @std____1__endl(%__os : ptr) -> ptr {
+  block ^entry:
+    %t1 = load ptr $__os
+    %t4 = call i64 @std____1__basic_ios_char__std____1__char_traits_char____widen(%t3, 10)
+    %t5 = call ptr @std____1__basic_ostream_char__std____1__char_traits_char____put(%t1, %t4)
+    %t7 = call ptr @std____1__basic_ostream_char__std____1__char_traits_char____flush(%t6)
+    return ptr %t8
+}

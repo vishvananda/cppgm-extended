@@ -1,0 +1,31 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<4x4>
+  slot $refarg__1 : i32
+
+  block ^entry:
+    %t1 = addr $x
+    store i32 1, $refarg__1
+    %t2 = addr $refarg__1
+    call void @duration_like_int___duration_like__ov3(%t1, %t2)
+    %t3 = addr $x
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    return i32 %t5
+}
+function @duration_like_int___duration_like__ov3(%this : ptr, %r : ptr [pass=reference]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IiTnN9enable_ifIXsr7is_sameIT_iEE5valueEiE4typeELi0EEERKS3_] {
+  slot $this : ptr
+  slot $r : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %r, $r
+    %t1 = load ptr $r
+    %t2 = load i32 %t1
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    return void
+}

@@ -1,0 +1,51 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $src : obj<8x8>
+  slot $refarg__1 : i64
+  slot $dst : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $src
+    store i64 7, $refarg__1
+    %t2 = addr $refarg__1
+    call void @duration_like_long_long_int___duration_like__ov3(%t1, %t2)
+    %t3 = addr $dst
+    %t4 = addr $src
+    call void @duration_like_int___duration_like__ov3(%t3, %t4)
+    %t5 = addr $dst
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load i32 %t6
+    return i32 %t7
+}
+function @duration_like_long_long_int___duration_like__ov3(%this : ptr, %r : ptr [pass=reference]) -> void [binding=weak, object=_ZN13duration_likeIxEC1IxTnN9enable_ifIXsr14is_convertibleIRKT_xEE5valueEiE4typeELi0EEES5_] {
+  slot $this : ptr
+  slot $r : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %r, $r
+    %t1 = load ptr $r
+    %t2 = load i64 %t1
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i64 %t2, %t4
+    return void
+}
+function @duration_like_int___duration_like__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxTnN9enable_ifIXntsr14is_convertibleIRKS_IT_EiEE5valueEiE4typeELi0EEES6_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i64 %t2
+    %t4 = convert trunc i32 i64 %t3
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    store i32 %t4, %t6
+    return void
+}

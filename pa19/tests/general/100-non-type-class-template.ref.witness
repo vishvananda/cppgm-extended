@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa19/tests/general/100-non-type-class-template.t:7:3
+    template Box
+    selected primary
+    bind #1 = 3 source=explicit
+template-closure-events
+  ensure-definition
+    entity Box<3>::get
+  function-instantiation
+    entity Box<3>::get
+  require-definition
+    entity Box<3>::get

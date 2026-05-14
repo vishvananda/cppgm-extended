@@ -1,0 +1,10 @@
+template <class T>
+__attribute__((__abi_tag__("nqe220100"))) T tagged_template(T value)
+{
+  return value + 1;
+}
+
+int main()
+{
+  return tagged_template<int>(1) == 2 ? 0 : 1;
+}

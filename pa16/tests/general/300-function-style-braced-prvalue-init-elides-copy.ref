@@ -1,0 +1,31 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $mask : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $mask
+    call void @value__value__ov2(%t1, 1, 0)
+    %t2 = addr $mask
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    %t5 = binary sub i32 %t4, 1
+    return i32 %t5
+}
+function @value__value__ov2(%this : ptr, %high_ : i32, %low_ : i32) -> void [binding=weak, object=_ZN5valueC1Eii] {
+  slot $this : ptr
+  slot $high_ : i32
+  slot $low_ : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %high_, $high_
+    store i32 %low_, $low_
+    %t1 = load i32 $high_
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load i32 $low_
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store i32 %t4, %t6
+    return void
+}

@@ -1,0 +1,12 @@
+global @f : f32 [binding=internal, object=_Z1f] = 1
+global @d : f64 [binding=internal, object=_Z1d] = 2
+global @ld : f80 [binding=internal, object=_Z2ld] = 3
+global @arr [binding=internal, object=_Z3arr] = {
+  f80 1e0L
+  f80 1e1L
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

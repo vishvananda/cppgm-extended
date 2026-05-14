@@ -1,0 +1,42 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $str : obj<1x1>
+  slot $what : obj<1x1>
+  slot $rex : i32
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $what
+    store i32 0, $rex
+    %t2 = addr $str
+    %t3 = addr $what
+    %t4 = addr $rex
+    %t5 = call i32 @regex_search__ov2(%t2, %t3, %t4)
+    %t6 = cmp eq i32 %t5, 2
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @regex_search__ov2(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z12regex_searchI11string_type8iteratorEiRKT_R13match_resultsIT0_ERKN11regex_aliasIS6_E4typeE] {
+  slot $__param0 : ptr
+  slot $__param1 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %__param1, $__param1
+    store ptr %__param2, $__param2
+    return i32 2
+}

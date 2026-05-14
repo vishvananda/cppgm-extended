@@ -1,0 +1,13 @@
+translation-unit
+  function-call at pa22/tests/general/200-explicit-function-template-id-deduction.t:12:10
+    callee chrono::duration_cast
+    selected instantiation
+    bind #1 = chrono::seconds source=explicit
+    bind #2 = chrono::nanoseconds source=deduced
+template-closure-events
+  ensure-definition
+    entity chrono::duration_cast
+  function-instantiation
+    entity chrono::duration_cast
+  require-definition
+    entity chrono::duration_cast

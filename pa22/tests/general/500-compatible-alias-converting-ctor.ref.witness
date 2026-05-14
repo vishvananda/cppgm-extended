@@ -1,0 +1,44 @@
+translation-unit
+  class-use at pa22/tests/general/500-compatible-alias-converting-ctor.t:12:9
+    template integral_constant
+    selected primary
+    bind #1 = bool source=explicit
+    bind #2 = false source=explicit
+  alias-use at pa22/tests/general/500-compatible-alias-converting-ctor.t:55:26
+    template Or
+    bind #1 = is_convertible<Y *, T *> source=explicit
+  alias-use at pa22/tests/general/500-compatible-alias-converting-ctor.t:80:21
+    template enable_if_t
+    bind #1 = compatible_with<U, T>::value source=explicit
+    bind #2 = int source=explicit
+  class-use at pa22/tests/general/500-compatible-alias-converting-ctor.t:91:3
+    template Ptr
+    selected primary
+    bind #1 = Base source=explicit
+  class-use at pa22/tests/general/500-compatible-alias-converting-ctor.t:99:3
+    template Holder
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa22/tests/general/500-compatible-alias-converting-ctor.t:100:3
+    template Ptr
+    selected primary
+    bind #1 = Base source=explicit
+template-closure-events
+  ensure-definition
+    entity Holder<int>::get
+  ensure-definition
+    entity Ptr<Derived<int>>::Ptr
+  function-instantiation
+    entity Holder<int>::get
+  function-instantiation
+    entity Ptr<Base>::Ptr
+  function-instantiation
+    entity Ptr<Derived<int>>::Ptr
+  require-definition
+    entity Holder<int>::get
+  require-definition
+    entity Ptr<Base>::Ptr
+  require-definition
+    entity Ptr<Derived<int>>::Ptr
+  variable-instantiation
+    entity integral_constant<bool, true>::value

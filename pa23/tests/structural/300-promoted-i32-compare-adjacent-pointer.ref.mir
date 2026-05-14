@@ -1,0 +1,44 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    preserve rbx
+    slot $a -> [rbp-4] : i32
+    slot $b -> [rbp-8] : i32
+
+  block ^entry
+    mov rax, 0
+    store.i32 [rbp-4], rax
+    mov rax, 2
+    store.i32 [rbp-8], rax
+    jmp ^cond
+
+  block ^cond
+    load.i32 r8, [rbp-4]
+    sext.i32 r8
+    load.i32 r9, [rbp-8]
+    sext.i32 r9
+    cmp.i64 r8, r9
+    jne ^body
+    jmp ^end
+
+  block ^body
+    load.i32 r8, [rbp-4]
+    sext.i32 r8
+    add r8, 1
+    sext.i32 r8
+    store.i32 [rbp-4], r8
+    jmp ^cond
+
+  block ^end
+    mov rax, 0
+    ret rax

@@ -1,0 +1,30 @@
+struct S {
+  int * destroys;
+
+  S(int * d)
+    : destroys(d)
+  {
+  }
+
+  S(const S & other)
+    : destroys(other.destroys)
+  {
+  }
+
+  ~S()
+  {
+    ++*destroys;
+  }
+};
+
+bool f(S in)
+{
+  return true;
+}
+
+int main()
+{
+  int destroys = 0;
+  S s(&destroys);
+  return f(s) && destroys == 1 ? 0 : 1;
+}

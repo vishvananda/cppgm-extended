@@ -1,0 +1,18 @@
+translation-unit
+  function-call at pa22/tests/general/400-defaulted-decltype-empty-pack-instantiation.t:14:34
+    callee declval
+    selected instantiation
+    bind #1 = void * source=explicit
+  function-call at pa22/tests/general/400-defaulted-decltype-empty-pack-instantiation.t:23:15
+    callee construct_at
+    selected instantiation
+    bind #1 = Box source=deduced
+    bind #2 = <> source=deduced
+    bind #3 = Box * source=defaulted
+template-closure-events
+  ensure-definition
+    entity construct_at
+  function-instantiation
+    entity construct_at
+  require-definition
+    entity construct_at

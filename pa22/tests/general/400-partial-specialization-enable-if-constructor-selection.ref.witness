@@ -1,0 +1,54 @@
+translation-unit
+  class-use at pa22/tests/general/400-partial-specialization-enable-if-constructor-selection.t:14:9
+    template bool_constant
+    selected primary
+    bind #1 = true source=explicit
+  class-use at pa22/tests/general/400-partial-specialization-enable-if-constructor-selection.t:15:9
+    template bool_constant
+    selected primary
+    bind #1 = false source=explicit
+  class-use at pa22/tests/general/400-partial-specialization-enable-if-constructor-selection.t:89:3
+    template wrap
+    selected partial
+    bind #1 = <const int &> source=explicit
+    specialize #1 = const int & source=deduced
+  function-call at pa22/tests/general/400-partial-specialization-enable-if-constructor-selection.t:89:20
+    callee wrap<const int &>::wrap
+    selected instantiation
+    bind #1 = <int &&> source=deduced
+    bind #2 = 0 source=defaulted
+    drop wrap<const int &>::wrap reason=worse_conversion
+    drop wrap<const int &>::wrap reason=substitution_failure
+  class-use at pa22/tests/general/400-partial-specialization-enable-if-constructor-selection.t:89:22
+    template wrap
+    selected partial
+    bind #1 = <int &&> source=explicit
+    specialize #1 = int && source=deduced
+  function-call at pa22/tests/general/400-partial-specialization-enable-if-constructor-selection.t:89:22
+    callee wrap<int &&>::wrap
+    selected instantiation
+    bind #1 = <int> source=deduced
+    bind #2 = 0 source=defaulted
+    drop wrap<int &&>::wrap reason=worse_conversion
+    drop wrap<int &&>::wrap reason=non_deduced_mismatch
+template-closure-events
+  ensure-definition
+    entity wrap<const int &>::wrap
+  ensure-definition
+    entity wrap<int &&>::wrap
+  function-instantiation
+    entity wrap<const int &>::wrap
+  function-instantiation
+    entity wrap<int &&>::wrap
+  require-definition
+    entity wrap<const int &>::wrap
+  require-definition
+    entity wrap<int &&>::wrap
+  variable-instantiation
+    entity bool_constant<false>::value
+  variable-instantiation
+    entity bool_constant<true>::value
+  variable-instantiation
+    entity is_convertible<int, int &&>::value
+  variable-instantiation
+    entity is_convertible<wrap<int &&>, const int &>::value

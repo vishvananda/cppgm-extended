@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa18/tests/spec/100-namespace-qualified-template-id-static-call.t:24:10
+    callee call_pointer_to
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity call_pointer_to
+  function-instantiation
+    entity api::traits<int>::pointer_to
+  function-instantiation
+    entity call_pointer_to
+  require-definition
+    entity api::traits<int>::pointer_to
+  require-definition
+    entity call_pointer_to

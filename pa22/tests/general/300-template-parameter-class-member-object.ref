@@ -1,0 +1,37 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @f() -> i64 [binding=strong, object=_Z1fv] {
+  slot $x : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $x
+    call void @R_Iter_int____R(%t1)
+    %t2 = addr $x
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load ptr %t4
+    %t6 = cmp eq ptr %t5, 0
+    %t7 = convert zext i64 u8 %t6
+    return i64 %t7
+}
+function @R_Iter_int____R(%this : ptr) -> void [binding=weak, object=_ZN1RI4IterIiEEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @Iter_int___Iter(%t2)
+    return void
+}
+function @Iter_int___Iter(%this : ptr) -> void [binding=weak, object=_ZN4IterIiEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store ptr 0, %t2
+    return void
+}

@@ -1,0 +1,31 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 80
+    scratch_bytes 48
+    preserve rbx
+    temp %2 -> [rbp-16] : f80
+
+  block ^entry
+    fpext.f32.f64 xmm0, 1.5f
+    feq.f64 rax, xmm0, 1.5
+    mov r8, rax
+    fpext.f64.f80 [rbp-16], xmm0
+    fptrunc.f80.f32 xmm0, [rbp-16]
+    feq.f32 rax, xmm0, 1.5f
+    mov r9, rax
+    fptrunc.f80.f64 xmm0, [rbp-16]
+    feq.f64 rax, xmm0, 1.5
+    mov rbx, rax
+    add r8, r9
+    add r8, rbx
+    mov rax, r8
+    ret rax

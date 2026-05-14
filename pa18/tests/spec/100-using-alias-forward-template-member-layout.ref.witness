@@ -1,0 +1,6 @@
+translation-unit
+  class-use at pa18/tests/spec/100-using-alias-forward-template-member-layout.t:12:19
+    template String
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = Alloc<int> source=defaulted

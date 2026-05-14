@@ -1,0 +1,30 @@
+translation-unit
+  class-use at pa19/tests/general/200-defaulted-nontype-expression-syntax-rewrite.t:33:3
+    template holder
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = int source=explicit
+  class-use at pa19/tests/general/200-defaulted-nontype-expression-syntax-rewrite.t:34:20
+    template holder
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = int source=explicit
+  class-use at pa19/tests/general/200-defaulted-nontype-expression-syntax-rewrite.t:35:20
+    template holder
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = int source=explicit
+  class-use at pa19/tests/general/200-defaulted-nontype-expression-syntax-rewrite.t:36:20
+    template holder
+    selected primary
+    bind #1 = int source=explicit
+    bind #2 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity holder<int, int>::move_and_check
+  function-instantiation
+    entity holder<int, int>::move_and_check
+  require-definition
+    entity holder<int, int>::move_and_check
+  variable-instantiation
+    entity block_size<int, long>::value

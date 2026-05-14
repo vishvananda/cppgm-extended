@@ -1,0 +1,20 @@
+translation-unit
+  class-use at pa22/tests/general/200-member-template-constexpr-static-assert.t:13:5
+    template check_pair_construction
+    selected primary
+    bind #1 = unsigned long source=explicit
+    bind #2 = unsigned long source=explicit
+  function-call at pa22/tests/general/200-member-template-constexpr-static-assert.t:13:5
+    callee check_pair_construction<unsigned long, unsigned long>::is_pair_constructible
+    selected instantiation
+    bind #1 = unsigned long source=explicit
+    bind #2 = unsigned long source=explicit
+template-closure-events
+  ensure-definition
+    entity check_pair_construction<unsigned long, unsigned long>::is_pair_constructible
+  function-instantiation
+    entity check_pair_construction<unsigned long, unsigned long>::is_pair_constructible
+  require-definition
+    entity check_pair_construction<unsigned long, unsigned long>::is_pair_constructible
+  variable-instantiation
+    entity same<unsigned long, unsigned long>::value

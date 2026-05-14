@@ -1,0 +1,16 @@
+function @thrower() -> i64 {
+  block ^entry:
+    throw i64 5
+}
+
+function @main() -> i64 {
+  block ^entry:
+    eh_try ^catch
+    %0 = call i64 @thrower()
+    eh_end
+    return i64 %0
+
+  block ^catch:
+    %1 = exception i64
+    return i64 %1
+}

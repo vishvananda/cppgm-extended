@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa34/tests/link/700-hosted-local-class-template-mangling-link-smoke.t.1:6:10
+    callee g
+    selected instantiation
+    bind #1 = X source=explicit
+template-closure-events
+  ensure-definition
+    entity g
+  function-instantiation
+    entity g
+  require-definition
+    entity g

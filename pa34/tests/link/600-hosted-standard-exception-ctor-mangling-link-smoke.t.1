@@ -1,0 +1,17 @@
+#include <stdexcept>
+#include <string>
+
+int main()
+{
+  try {
+    throw std::logic_error(std::string("logic"));
+  } catch(std::logic_error) {
+  }
+
+  try {
+    throw std::runtime_error(std::string("runtime"));
+  } catch(const std::runtime_error &) {
+  }
+
+  return 0;
+}

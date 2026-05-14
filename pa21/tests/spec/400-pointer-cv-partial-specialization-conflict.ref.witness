@@ -1,0 +1,10 @@
+translation-unit
+  class-use at pa21/tests/spec/400-pointer-cv-partial-specialization-conflict.t:23:10
+    template Match
+    selected partial
+    bind #1 = const P * source=explicit
+    bind #2 = const P * source=explicit
+    specialize #1 = const P source=deduced
+template-closure-events
+  variable-instantiation
+    entity Match<const P *, const P *>::value

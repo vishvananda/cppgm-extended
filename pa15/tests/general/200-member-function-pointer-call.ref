@@ -1,0 +1,46 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<4x4>
+  slot $p : i128
+
+  block ^entry:
+    %t1 = addr $x
+    call void @X__X(%t1)
+    %t2 = addr $x
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 3, %t3
+    %t4 = addr @X__add
+    %t5 = copy i64 %t4
+    %t6 = convert zext i128 i64 %t5
+    store i128 %t6, $p
+    %t7 = addr $x
+    %t8 = load i128 $p
+    %t9 = convert trunc i64 i128 %t8
+    %t10 = copy ptr %t9
+    %t11 = call i32 %t10(%t7, 4) as (%arg0 : ptr, %arg1 : i32) -> i32
+    %t12 = binary sub i32 %t11, 7
+    return i32 %t12
+}
+function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @X__add(%this : ptr, %y : i32) -> i32 [binding=weak, object=_ZN1X3addEi] {
+  slot $this : ptr
+  slot $y : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %y, $y
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load i32 $y
+    %t5 = binary add i32 %t3, %t4
+    return i32 %t5
+}

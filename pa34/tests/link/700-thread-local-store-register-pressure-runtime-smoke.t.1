@@ -1,0 +1,25 @@
+thread_local long g = 0;
+
+extern long ext(long);
+
+long f(long a, long b, long c, long d, long e, long x)
+{
+  long t1 = a + 1;
+  long t2 = b + 2;
+  long t3 = c + 3;
+  long t4 = d + 4;
+  long t5 = e + 5;
+  long z = ext(x);
+  g = z;
+  return t1 + t2 + t3 + t4 + t5 + z;
+}
+
+long ext(long x)
+{
+  return x + 1;
+}
+
+int main()
+{
+  return (int)f(1, 2, 3, 4, 5, 6);
+}

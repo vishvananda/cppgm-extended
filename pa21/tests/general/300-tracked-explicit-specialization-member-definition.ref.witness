@@ -1,0 +1,9 @@
+translation-unit
+  class-use at pa21/tests/general/300-tracked-explicit-specialization-member-definition.t:7:1
+    template S
+    selected explicit
+    bind #1 = char source=explicit
+  class-use at pa21/tests/general/300-tracked-explicit-specialization-member-definition.t:17:3
+    template S
+    selected explicit
+    bind #1 = char source=explicit

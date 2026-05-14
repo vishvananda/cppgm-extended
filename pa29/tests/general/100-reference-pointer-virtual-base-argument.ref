@@ -1,0 +1,109 @@
+function @read(%out : ptr, %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z4readP7OStream] {
+  slot $out : ptr
+
+  block ^entry:
+    store ptr %out, $out
+    %t1 = index i8 [projection=base_subobject] %__pvbptr0, 4
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    return i32 %t4
+}
+function @call(%ptr : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr) -> i32 [binding=strong, object=_Z4callRKP12StringStream] {
+  slot $ptr : ptr
+
+  block ^entry:
+    store ptr %ptr, $ptr
+    %t1 = load ptr $ptr
+    %t2 = load ptr %t1
+    %t3 = index i8 [projection=base_subobject] %t2, 4
+    %t4 = call i32 @read(%t3, %__pvbptr0)
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $stream : obj<16x4>
+  slot $ptr : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $stream
+    call void @StringStream__StringStream(%t1)
+    %t2 = addr $stream
+    store ptr %t2, $ptr
+    %t3 = addr $ptr
+    %t4 = load ptr %t3
+    %t5 = index i8 %t4, 8
+    %t6 = index i8 %t4, 12
+    %t7 = call i32 @call(%t3, %t5, %t6)
+    %t8 = cmp eq i32 %t7, 7
+    branch %t8, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t9 = load i32 $cond__1
+    return i32 %t9
+}
+function @StringStream__StringStream(%this : ptr) -> void [binding=weak, object=_ZN12StringStreamC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 8
+    %t3 = load ptr $this
+    %t4 = index i8 %t3, 12
+    call void @BasicIOS__BasicIOS__base_entry(%t2, %t4)
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t7 = load ptr $this
+    %t8 = index i8 %t7, 8
+    %t9 = load ptr $this
+    %t10 = index i8 %t9, 12
+    call void @IOStream__IOStream__base_entry(%t6, %t8, %t10)
+    %t11 = load ptr $this
+    %t12 = index i8 [projection=base_subobject] %t11, 12
+    %t13 = index i8 [projection=field] %t12, 0
+    store i32 7, %t13
+    return void
+}
+function @IOStream__IOStream__base_entry(%this : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN8IOStreamC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @IStream__IStream__base_entry(%t2, %__vbptr0, %__vbptr1)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 4
+    call void @OStream__OStream__base_entry(%t4, %__vbptr0, %__vbptr1)
+    return void
+}
+function @BasicIOS__BasicIOS__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN8BasicIOSC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @IStream__IStream__base_entry(%this : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7IStreamC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @OStream__OStream__base_entry(%this : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7OStreamC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}

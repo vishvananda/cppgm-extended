@@ -1,0 +1,23 @@
+function @f() -> i32 [binding=strong, object=_Z1fv] {
+  block ^entry:
+    return i32 7
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $refarg__1 : i32
+
+  block ^entry:
+    %t1 = addr @f
+    store i32 0, $refarg__1
+    %t2 = addr $refarg__1
+    %t3 = call i32 @S_int_________g(%t1, %t2)
+    return i32 %t3
+}
+function @S_int_________g(%t : ptr [pass=reference], %u : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1SIRFivEE1gIiEEDTcmcmscS0_fp_scT_fp0_cvi_EES1_OS4_] {
+  slot $t : ptr
+  slot $u : ptr
+
+  block ^entry:
+    store ptr %t, $t
+    store ptr %u, $u
+    return i32 0
+}

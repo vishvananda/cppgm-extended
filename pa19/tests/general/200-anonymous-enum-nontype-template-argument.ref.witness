@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa19/tests/general/200-anonymous-enum-nontype-template-argument.t:9:3
+    template Box
+    selected primary
+    bind #1 = 1 source=explicit
+template-closure-events
+  ensure-definition
+    entity Box<1>::get
+  function-instantiation
+    entity Box<1>::get
+  require-definition
+    entity Box<1>::get

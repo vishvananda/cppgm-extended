@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa18/tests/spec/100-template-static-object-member-definition.t:11:3
+    template static_constant
+    selected primary
+    bind #1 = keyword source=explicit
+  class-use at pa18/tests/spec/100-template-static-object-member-definition.t:20:11
+    template static_constant
+    selected primary
+    bind #1 = keyword source=explicit
+template-closure-events
+  variable-instantiation
+    entity static_constant<keyword>::value

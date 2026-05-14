@@ -1,0 +1,8 @@
+translation-unit
+  class-use at pa22/tests/general/300-dependent-static-assert-sizeof-nested-class.t:11:3
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  class-instantiation
+    entity Box<int>::Inner

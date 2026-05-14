@@ -1,0 +1,15 @@
+translation-unit
+  class-use at pa21/tests/general/400-variable-template-specialization-empty-template-id-argument.t:8:24
+    template less
+    selected primary
+    bind #1 = void source=defaulted
+    bind #2 = void source=defaulted
+  variable-use at pa21/tests/general/400-variable-template-specialization-empty-template-id-argument.t:10:15
+    template flag
+    selected explicit
+    bind #1 = less<> source=explicit
+  class-use at pa21/tests/general/400-variable-template-specialization-empty-template-id-argument.t:10:20
+    template less
+    selected primary
+    bind #1 = void source=defaulted
+    bind #2 = void source=defaulted

@@ -1,0 +1,20 @@
+function @semantic_expression__f() -> i32 [binding=strong, object=_ZN19semantic_expression1fEv] {
+  slot $fn : ptr
+
+  block ^entry:
+    %t1 = addr @__lambda_semantic_expression__f_t122_124
+    %t2 = unary decay ptr %t1
+    store ptr %t2, $fn
+    %t3 = load ptr $fn
+    %t4 = call i32 %t3() as () -> i32
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @semantic_expression__f()
+    return i32 %t1
+}
+function @__lambda_semantic_expression__f_t122_124() -> i32 [binding=internal] {
+  block ^entry:
+    return i32 0
+}

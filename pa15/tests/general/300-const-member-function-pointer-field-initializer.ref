@@ -1,0 +1,31 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $h : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $h
+    %t2 = addr @const_member_function_pointer_field_initializer__tester__foo
+    %t3 = copy i64 %t2
+    %t4 = convert zext i128 i64 %t3
+    call void @const_member_function_pointer_field_initializer__holder__holder(%t1, %t4)
+    return i32 0
+}
+function @const_member_function_pointer_field_initializer__tester__foo(%this : ptr) -> void [binding=weak, object=_ZNK47const_member_function_pointer_field_initializer6tester3fooEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @const_member_function_pointer_field_initializer__holder__holder(%this : ptr, %p : i128) -> void [binding=weak, object=_ZN47const_member_function_pointer_field_initializer6holderC1EMNS_6testerEFvvE] {
+  slot $this : ptr
+  slot $p : i128
+
+  block ^entry:
+    store ptr %this, $this
+    store i128 %p, $p
+    %t1 = load i128 $p
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i128 %t1, %t3
+    return void
+}

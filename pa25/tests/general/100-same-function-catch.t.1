@@ -1,0 +1,9 @@
+function @main() -> i64 {
+  block ^entry:
+    eh_try ^catch
+    throw i64 7
+
+  block ^catch:
+    %0 = exception i64
+    return i64 %0
+}

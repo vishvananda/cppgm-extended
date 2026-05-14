@@ -1,0 +1,27 @@
+#include <cstdio>
+#include <functional>
+
+struct Scope {
+  int value;
+};
+
+struct Analyzer {
+  int lookup_functions(int base) {
+    int result = 0;
+    auto collect = [&]() {
+      std::function<void(Scope &)> visit = [&](Scope & current) {
+        result = base + current.value;
+      };
+      Scope s{5};
+      visit(s);
+    };
+    collect();
+    return result;
+  }
+};
+
+int main() {
+  Analyzer a;
+  std::printf("%d\n", a.lookup_functions(7));
+  return 0;
+}

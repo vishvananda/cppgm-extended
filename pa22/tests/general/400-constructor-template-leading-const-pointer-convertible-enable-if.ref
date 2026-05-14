@@ -1,0 +1,39 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : i32
+  slot $p : ptr
+  slot $pp : ptr
+  slot $b : obj<8x8>
+
+  block ^entry:
+    store i32 0, $x
+    %t1 = addr $x
+    store ptr %t1, $p
+    %t2 = addr $p
+    store ptr %t2, $pp
+    %t3 = addr $b
+    %t4 = addr $pp
+    call void @box_int___const_____box__ov3(%t3, %t4)
+    %t5 = addr $b
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load ptr %t6
+    %t8 = cmp eq ptr %t7, 0
+    %t9 = convert zext i32 u8 %t8
+    return i32 %t9
+}
+function @box_int___const_____box__ov3(%this : ptr, %r : ptr [pass=reference]) -> void [binding=weak, object=_ZN3boxIPKPiEC1IPS0_TnN9enable_ifIXu16__is_convertibleRKT_S2_EEiE4typeELi0EEES9_] {
+  slot $this : ptr
+  slot $r : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %r, $r
+    %t1 = load ptr $r
+    %t2 = load ptr %t1
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    return void
+}

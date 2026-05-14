@@ -1,0 +1,5 @@
+host_unwind_section 1 1
+undefined_symbol 1 cxa_allocate_exception 1
+undefined_symbol 1 cxa_throw 1
+undefined_symbol 1 gxx_personality 1
+absent_defined_symbol_substring 1 cppgm_eh_ 0

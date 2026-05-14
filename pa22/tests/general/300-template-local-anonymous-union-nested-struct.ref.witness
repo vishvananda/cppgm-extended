@@ -1,0 +1,20 @@
+translation-unit
+  class-use at pa22/tests/general/300-template-local-anonymous-union-nested-struct.t:20:3
+    template H
+    selected primary
+    bind #1 = P source=explicit
+template-closure-events
+  class-finalization
+    entity (unnamed union at 4:5)
+  class-finalization
+    entity H<P>::f(P)::(unnamed union)::(unnamed struct at 6:7)
+  class-instantiation
+    entity (unnamed union at 4:5)
+  class-instantiation
+    entity H<P>::f(P)::(unnamed union)::(unnamed struct at 6:7)
+  ensure-definition
+    entity H<P>::f
+  function-instantiation
+    entity H<P>::f
+  require-definition
+    entity H<P>::f

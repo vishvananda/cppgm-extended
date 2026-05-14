@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/spec/100-conversion-operator-qualified-template-result.t:21:3
+    template Lazy
+    selected primary
+    bind #1 = int source=explicit

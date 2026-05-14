@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa18/tests/general/100-namespace-template-function.t:6:21
+    callee N::id
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity N::id
+  function-instantiation
+    entity N::id
+  require-definition
+    entity N::id

@@ -1,0 +1,18 @@
+translation-unit
+  class-use at pa18/tests/general/200-out-of-class-member-nested-trailing-return.t:27:3
+    template Holder
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  class-instantiation
+    entity Holder<int>::Location
+  ensure-definition
+    entity Holder<int>::read
+  function-instantiation
+    entity Holder<int>::locate
+  function-instantiation
+    entity Holder<int>::read
+  require-definition
+    entity Holder<int>::locate
+  require-definition
+    entity Holder<int>::read

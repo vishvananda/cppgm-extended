@@ -1,0 +1,116 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<16x4>
+  slot $w : obj<16x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $d
+    call void @D__D(%t1)
+    %t2 = addr $d
+    %t3 = index i8 [projection=base_subobject] %t2, 4
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 7, %t4
+    %t5 = addr $w
+    %t6 = addr $d
+    %t7 = addr $d
+    %t8 = index i8 [projection=base_subobject] %t7, 4
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = index i8 %t6, 4
+    %t11 = index i8 %t6, 8
+    %t12 = index i8 %t6, 12
+    call void @make_wrap(%t5, %t6, %t9, %t10, %t11, %t12)
+    %t13 = addr $w
+    %t14 = index i8 [projection=base_subobject] %t13, 4
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = load i32 %t15
+    %t17 = cmp eq i32 %t16, 7
+    branch %t17, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t18 = load i32 $cond__1
+    return i32 %t18
+}
+function @make_wrap(%ret : ptr [pass=indirect_result], %e : ptr [pass=reference], %loc : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr, %__pvbptr2 : ptr) -> void [binding=weak, object=_Z9make_wrapI1DE1WIT_ERKS2_RKi] {
+  slot $e : ptr
+  slot $e__pvb0 : ptr
+  slot $e__pvb1 : ptr
+  slot $e__pvb2 : ptr
+  slot $loc : ptr
+
+  block ^entry:
+    store ptr %e, $e
+    store ptr %__pvbptr0, $e__pvb0
+    store ptr %__pvbptr1, $e__pvb1
+    store ptr %__pvbptr2, $e__pvb2
+    store ptr %loc, $loc
+    %t1 = load ptr $e
+    %t2 = load ptr $loc
+    %t3 = load ptr $e__pvb0
+    %t4 = load ptr $e__pvb1
+    %t5 = load ptr $e__pvb2
+    call void @W_D___W(%ret, %t1, %t2, %t3, %t4, %t5)
+    return void
+}
+function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @W_D___W(%this : ptr, %e : ptr [pass=reference], %__param2 : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr, %__pvbptr2 : ptr) -> void [binding=weak, object=_ZN1WI1DEC1ERKS0_RKi] {
+  slot $this : ptr
+  slot $e : ptr
+  slot $e__pvb0 : ptr
+  slot $e__pvb1 : ptr
+  slot $e__pvb2 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %e, $e
+    store ptr %__pvbptr0, $e__pvb0
+    store ptr %__pvbptr1, $e__pvb1
+    store ptr %__pvbptr2, $e__pvb2
+    store ptr %__param2, $__param2
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = load ptr $e
+    %t4 = load ptr $this
+    %t5 = index i8 %t4, 4
+    %t6 = load ptr $this
+    %t7 = index i8 %t6, 8
+    %t8 = load ptr $this
+    %t9 = index i8 %t8, 12
+    call void @D__D__ov2__base_entry(%t2, %t3, %t5, %t7, %t9)
+    return void
+}
+function @D__D__ov2__base_entry(%this : ptr, %other : ptr [pass=reference], %__vbptr0 : ptr, %__vbptr1 : ptr, %__vbptr2 : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC2ERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+  slot $other__pvb0 : ptr
+  slot $other__pvb1 : ptr
+  slot $other__pvb2 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = index i8 %other, 4
+    store ptr %t1, $other__pvb0
+    %t2 = index i8 %other, 8
+    store ptr %t2, $other__pvb1
+    %t3 = index i8 %other, 12
+    store ptr %t3, $other__pvb2
+    return void
+}

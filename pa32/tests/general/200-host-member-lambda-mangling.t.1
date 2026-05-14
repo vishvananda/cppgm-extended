@@ -1,0 +1,13 @@
+struct LambdaHostMangle {
+  int apply(int base)
+  {
+    auto add = [base](int delta) { return base + delta; };
+    return add(5);
+  }
+};
+
+int main()
+{
+  LambdaHostMangle value;
+  return value.apply(7) == 12 ? 0 : 1;
+}

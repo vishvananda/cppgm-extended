@@ -1,0 +1,13 @@
+translation-unit
+  function-call at pa22/tests/general/400-array-reference-deduction.t:10:10
+    callee length
+    selected instantiation
+    bind #1 = int source=deduced
+    bind #2 = 4 source=deduced
+template-closure-events
+  ensure-definition
+    entity length
+  function-instantiation
+    entity length
+  require-definition
+    entity length

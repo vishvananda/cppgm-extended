@@ -1,0 +1,311 @@
+declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+declare function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @__cxa_pure_virtual(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [effects=readnone, unwind=no, return=noreturn, binding=strong]
+
+global @__typeinfo_name__struct_dynamic_matcher_ [storage=readonly, binding=weak, object=_ZTS7dynamicI7matcherE] = {
+  i8 55
+  i8 100
+  i8 121
+  i8 110
+  i8 97
+  i8 109
+  i8 105
+  i8 99
+  i8 73
+  i8 55
+  i8 109
+  i8 97
+  i8 116
+  i8 99
+  i8 104
+  i8 101
+  i8 114
+  i8 69
+  i8 0
+}
+global @__typeinfo_name__struct_matcher [storage=readonly, binding=weak, object=_ZTS7matcher] = {
+  i8 55
+  i8 109
+  i8 97
+  i8 116
+  i8 99
+  i8 104
+  i8 101
+  i8 114
+  i8 0
+}
+global @__rtti_struct_matcher [storage=readonly, binding=weak, object=_ZTI7matcher] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_matcher
+}
+global @__typeinfo_name__struct_iface [storage=readonly, binding=weak, object=_ZTS5iface] = {
+  i8 53
+  i8 105
+  i8 102
+  i8 97
+  i8 99
+  i8 101
+  i8 0
+}
+global @__rtti_struct_iface [storage=readonly, binding=weak, object=_ZTI5iface] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_iface
+}
+global @__rtti_struct_dynamic_matcher_ [storage=readonly, binding=weak, object=_ZTI7dynamicI7matcherE] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_dynamic_matcher_
+  i32 0
+  i32 2
+  ptr addr @__rtti_struct_matcher
+  i64 2
+  ptr addr @__rtti_struct_iface
+  i64 2050
+}
+global @dynamic_matcher___vtable [storage=readonly, binding=weak, object=_ZTV7dynamicI7matcherE] = {
+  i64 0
+  ptr addr @__rtti_struct_dynamic_matcher_
+  ptr addr @dynamic_matcher____dynamic
+  ptr addr @dynamic_matcher____dynamic__deleting_entry
+  ptr addr @dynamic_matcher___peek
+}
+global @dynamic_matcher_____view__iface__8__vtable [storage=readonly, binding=weak, object=@dynamic_matcher_____view__iface__8__vtable] = {
+  ptr addr @_dynamic_matcher____dynamic__vtable_return_adjust
+  ptr addr @_dynamic_matcher____dynamic__deleting_entry__vtable_return_adjust
+  ptr addr @_dynamic_matcher___peek__vtable_return_adjust
+}
+global @iface__vtable [storage=readonly, binding=weak, object=_ZTV5iface] = {
+  i64 0
+  ptr addr @__rtti_struct_iface
+  ptr addr @iface___iface
+  ptr addr @iface___iface__deleting_entry
+  ptr addr @__cxa_pure_virtual
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<24x8>
+  slot $arg__1 : obj<4x4>
+  slot $p : ptr
+  slot $out : obj<4x4>
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = addr $d
+    %t2 = addr $arg__1
+    call void @matcher__matcher(%t2, 42)
+    call void @dynamic_matcher___dynamic(%t1, %t2)
+    %t3 = addr $d
+    %t4 = index i8 [projection=base_subobject] %t3, 8
+    store ptr %t4, $p
+    %t5 = addr $out
+    %t6 = addr $out
+    %t7 = index i8 [projection=field] %t6, 0
+    store i32 0, %t7
+    eh_try ^call_unwind_dispatch_1
+    %t8 = load ptr $p
+    %t9 = addr $out
+    %t10 = load ptr %t8
+    %t11 = index i8 %t10, 16
+    %t12 = load ptr %t11
+    call void %t12(%t8, %t9) as (%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^call_unwind_dispatch_1:
+    %t13 = addr $d
+    call void @dynamic_matcher____dynamic(%t13)
+    resume
+
+  block ^call_unwind_end_2:
+    %t14 = addr $out
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = load i32 %t15
+    %t17 = cmp eq i32 %t16, 42
+    branch %t17, ^cond_then_3, ^cond_else_4
+
+  block ^cond_then_3:
+    store i32 0, $cond__2
+    jump ^cond_end_5
+
+  block ^cond_else_4:
+    store i32 1, $cond__2
+    jump ^cond_end_5
+
+  block ^cond_end_5:
+    %t18 = load i32 $cond__2
+    %t19 = addr $d
+    call void @dynamic_matcher____dynamic(%t19)
+    return i32 %t18
+}
+function @dynamic_matcher___dynamic(%this : ptr, %m : ptr [pass=reference]) -> void [binding=weak, object=_ZN7dynamicI7matcherEC1ERKS0_] {
+  slot $this : ptr
+  slot $m : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %m, $m
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = load ptr $m
+    copyobj 4x4 %t3, %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 8
+    call void @iface__iface__base_entry(%t5)
+    %t6 = load ptr $this
+    %t7 = addr @dynamic_matcher___vtable
+    %t8 = index i8 %t7, 16
+    store ptr %t8, %t6
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=base_subobject] %t9, 8
+    %t11 = addr @dynamic_matcher_____view__iface__8__vtable
+    store ptr %t11, %t10
+    %t12 = load ptr $this
+    %t13 = index i8 [projection=field] %t12, 16
+    store i32 9, %t13
+    return void
+}
+function @dynamic_matcher___peek(%this : ptr, %out : ptr [pass=reference]) -> void [binding=weak, object=_ZNK7dynamicI7matcherE4peekER4sink] {
+  slot $this : ptr
+  slot $out : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %out, $out
+    %t1 = load ptr $out
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @sink__accept(%t1, %t4)
+    return void
+}
+function @dynamic_matcher____dynamic__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7dynamicI7matcherED0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @dynamic_matcher___vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 8
+    %t6 = addr @dynamic_matcher_____view__iface__8__vtable
+    store ptr %t6, %t5
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=base_subobject] %t7, 8
+    call void @iface___iface__base_entry(%t8)
+    %t9 = load ptr $this
+    call void @operator_delete(%t9)
+    return void
+}
+function @dynamic_matcher____dynamic(%this : ptr) -> void [binding=weak, object=_ZN7dynamicI7matcherED1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @dynamic_matcher___vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 8
+    %t6 = addr @dynamic_matcher_____view__iface__8__vtable
+    store ptr %t6, %t5
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=base_subobject] %t7, 8
+    call void @iface___iface__base_entry(%t8)
+    return void
+}
+function @sink__accept(%this : ptr, %x : ptr [pass=reference]) -> void [binding=weak, object=_ZN4sink6acceptERKi] {
+  slot $this : ptr
+  slot $x : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %x, $x
+    %t1 = load ptr $x
+    %t2 = load i32 %t1
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    return void
+}
+function @matcher__matcher(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN7matcherC1Ei] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @iface__iface__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5ifaceC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @iface__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @iface___iface__base_entry(%this : ptr) -> void [binding=weak, object=_ZN5ifaceD2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @iface__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @iface___iface__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN5ifaceD0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @iface__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    call void @operator_delete(%t4)
+    return void
+}
+function @iface___iface(%this : ptr) -> void [binding=weak, object=_ZN5ifaceD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @iface__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @_dynamic_matcher____dynamic__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N7dynamicI7matcherED0Ev] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @dynamic_matcher____dynamic__deleting_entry(%t1)
+    return void
+}
+function @_dynamic_matcher____dynamic__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N7dynamicI7matcherED1Ev] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @dynamic_matcher____dynamic(%t1)
+    return void
+}
+function @_dynamic_matcher___peek__vtable_return_adjust(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=weak, object=_ZThn8_NK7dynamicI7matcherE4peekER4sink] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @dynamic_matcher___peek(%t1, %arg1)
+    return void
+}

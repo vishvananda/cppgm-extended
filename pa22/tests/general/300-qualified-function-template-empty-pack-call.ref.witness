@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/general/300-qualified-function-template-empty-pack-call.t:9:10
+    callee N::make
+    selected instantiation
+    bind #1 = <> source=deduced
+template-closure-events
+  ensure-definition
+    entity N::make
+  function-instantiation
+    entity N::make
+  require-definition
+    entity N::make

@@ -1,0 +1,3 @@
+defined_symbol_canonical 1 _main
+defined_symbol_canonical 1 _ZN3BoxIiE5touchILi1EEEvv
+absent_defined_symbol_canonical 1 _ZN3BoxIiE5touchB9nqe220100ILi1EEEvv

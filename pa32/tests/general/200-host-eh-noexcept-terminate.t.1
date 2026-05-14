@@ -1,0 +1,33 @@
+#include <exception>
+
+extern "C" void _Exit(int);
+
+void mark_terminate()
+{
+  _Exit(7);
+}
+
+void throw_int()
+{
+  throw 1;
+}
+
+void no_escape() noexcept
+{
+  throw_int();
+}
+
+int main()
+{
+  std::set_terminate(mark_terminate);
+  void (*p)() = no_escape;
+  try
+  {
+    p();
+  }
+  catch (...)
+  {
+    return 4;
+  }
+  return 3;
+}

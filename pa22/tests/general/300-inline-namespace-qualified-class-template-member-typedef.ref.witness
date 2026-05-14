@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/300-inline-namespace-qualified-class-template-member-typedef.t:25:6
+    template ns::match_any_but_newline
+    selected primary
+    bind #1 = char source=explicit

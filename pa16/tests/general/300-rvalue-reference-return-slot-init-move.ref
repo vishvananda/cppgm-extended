@@ -1,0 +1,134 @@
+global @copies : i32 [binding=strong, object=_Z6copies] = 0
+global @moves : i32 [binding=strong, object=_Z5moves] = 0
+
+function @get(%ret : ptr [pass=indirect_result], %source : ptr [pass=reference]) -> void [binding=strong, object=_Z3getR3Box] {
+  slot $source : ptr
+
+  block ^entry:
+    store ptr %source, $source
+    %t1 = load ptr $source
+    %t2 = call ptr @my_move(%t1)
+    call void @Box__Box__ov3(%ret, %t2)
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $source : obj<4x4>
+  slot $result : obj<4x4>
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $land__4 : i64
+
+  block ^entry:
+    %t1 = addr $source
+    call void @Box__Box(%t1, 7)
+    %t2 = addr $result
+    %t3 = addr $source
+    call void @get(%t2, %t3)
+    %t4 = addr $result
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load i32 %t5
+    %t7 = cmp eq i32 %t6, 7
+    branch %t7, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t8 = addr $source
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load i32 %t9
+    %t11 = cmp eq i32 %t10, 0
+    %t12 = cmp ne i64 %t11, 0
+    store i64 %t12, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t13 = load i64 $land__4
+    branch %t13, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t14 = load i32 @moves
+    %t15 = cmp eq i32 %t14, 1
+    %t16 = cmp ne i64 %t15, 0
+    store i64 %t16, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t17 = load i64 $land__3
+    branch %t17, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t18 = load i32 @copies
+    %t19 = cmp eq i32 %t18, 0
+    %t20 = cmp ne i64 %t19, 0
+    store i64 %t20, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t21 = load i64 $land__2
+    branch %t21, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t22 = load i32 $cond__1
+    return i32 %t22
+}
+function @my_move(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7my_moveI3BoxEOT_RS1_] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}
+function @Box__Box(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3BoxC1Ei] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @Box__Box__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN3BoxC1EOS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 %t3, %t5
+    %t6 = load i32 @moves
+    %t7 = binary add i32 %t6, 1
+    store i32 %t7, @moves
+    %t8 = load ptr $other
+    %t9 = index i8 [projection=field] %t8, 0
+    store i32 0, %t9
+    return void
+}

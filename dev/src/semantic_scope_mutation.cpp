@@ -1,0 +1,331 @@
+#include "semantic_scope_mutation.h"
+
+#include <algorithm>
+
+#include "semantic_lookup.h"
+#include "template_api.h"
+
+namespace semantic_scope_mutation {
+
+namespace {
+
+bool add_using_directive_raw(semantic_model::Scope & scope,
+                             semantic_model::Scope & target)
+{
+  if(std::find(scope.using_directives.begin(), scope.using_directives.end(), &target) !=
+     scope.using_directives.end()) {
+    return false;
+  }
+  scope.using_directives.push_back(&target);
+  return true;
+}
+
+}  // namespace
+
+void note_binding_mutation(semantic_model::Scope & scope)
+{
+  template_api::bump_scope_template_binding_fingerprint_epoch(scope);
+}
+
+void bind_named_type(semantic_model::Scope & scope,
+                     const std::string & name,
+                     const cpp_decl::TypePtr & type)
+{
+  scope.named_types[name] = type;
+  note_binding_mutation(scope);
+}
+
+void bind_named_type_with_access(semantic_model::Scope & scope,
+                                 const std::string & name,
+                                 const cpp_decl::TypePtr & type,
+                                 semantic_model::MemberAccess access)
+{
+  scope.named_types[name] = type;
+  scope.named_type_access[name] = access;
+  note_binding_mutation(scope);
+}
+
+void bind_template_named_type(semantic_model::Scope & scope,
+                              const std::string & name,
+                              const cpp_decl::TypePtr & type)
+{
+  template_api::binding::bind_named_type(scope, name, type);
+}
+
+void ensure_template_named_type(semantic_model::Scope & scope,
+                                const std::string & name,
+                                const cpp_decl::TypePtr & type)
+{
+  bool changed = false;
+  if(scope.named_types.count(name) == 0) {
+    scope.named_types[name] = type;
+    changed = true;
+  }
+  changed = scope.template_bound_type_names.insert(name).second || changed;
+  if(changed) {
+    note_binding_mutation(scope);
+  }
+}
+
+void bind_template_named_type_with_access(semantic_model::Scope & scope,
+                                          const std::string & name,
+                                          const cpp_decl::TypePtr & type,
+                                          semantic_model::MemberAccess access)
+{
+  bind_template_named_type(scope, name, type);
+  scope.named_type_access[name] = access;
+  note_binding_mutation(scope);
+}
+
+void bind_namespace(semantic_model::Scope & scope,
+                    const std::string & name,
+                    semantic_model::Scope * target)
+{
+  scope.namespace_bindings[name] = target;
+  note_binding_mutation(scope);
+}
+
+void add_using_directive_if_needed(semantic_model::Scope & scope,
+                                   semantic_model::Scope & target)
+{
+  if(add_using_directive_raw(scope, target)) {
+    note_binding_mutation(scope);
+  }
+}
+
+void import_inline_namespace_members(semantic_model::Scope & scope,
+                                     semantic_model::Scope & target)
+{
+  bool changed = false;
+  for(std::map<std::string, semantic_model::Scope *>::iterator it =
+          target.namespace_bindings.begin();
+      it != target.namespace_bindings.end(); ++it) {
+    scope.namespace_bindings[it->first] = it->second;
+    changed = true;
+  }
+
+  for(std::map<std::string, cpp_decl::TypePtr>::iterator it = target.named_types.begin();
+      it != target.named_types.end(); ++it) {
+    if(scope.named_types.count(it->first) == 0) {
+      scope.named_types[it->first] = it->second;
+      changed = true;
+    }
+  }
+
+  for(std::map<std::string, semantic_model::ValueBinding>::iterator it =
+          target.values.begin();
+      it != target.values.end(); ++it) {
+    if(scope.values.count(it->first) == 0) {
+      scope.values[it->first] = it->second;
+      changed = true;
+    }
+  }
+
+  for(std::map<std::string, std::vector<semantic_model::FunctionBinding *> >::iterator it =
+          target.function_sets.begin();
+      it != target.function_sets.end(); ++it) {
+    std::vector<semantic_model::FunctionBinding *> & slot =
+        semantic_lookup::direct_function_set_slot(scope, it->first);
+    for(std::size_t i = 0; i < it->second.size(); ++i) {
+      bool duplicate = std::find(slot.begin(), slot.end(), it->second[i]) != slot.end();
+      if(!duplicate) {
+        for(std::size_t j = 0; j < slot.size(); ++j) {
+          if(cpp_decl::type_equals(slot[j]->type, it->second[i]->type)) {
+            duplicate = true;
+            break;
+          }
+        }
+      }
+      if(!duplicate) {
+        slot.push_back(it->second[i]);
+        changed = true;
+      }
+    }
+  }
+
+  for(std::map<std::string, semantic_model::ClassTemplateDecl *>::iterator it =
+          target.class_templates.begin();
+      it != target.class_templates.end(); ++it) {
+    if(scope.class_templates.count(it->first) == 0) {
+      scope.class_templates[it->first] = it->second;
+      changed = true;
+    }
+  }
+
+  for(std::map<std::string, std::vector<semantic_model::FunctionTemplateDecl *> >::iterator it =
+          target.function_templates.begin();
+      it != target.function_templates.end(); ++it) {
+    std::vector<semantic_model::FunctionTemplateDecl *> & slot =
+        semantic_lookup::direct_function_template_slot(scope, it->first);
+    for(std::size_t i = 0; i < it->second.size(); ++i) {
+      if(std::find(slot.begin(), slot.end(), it->second[i]) == slot.end()) {
+        slot.push_back(it->second[i]);
+        changed = true;
+      }
+    }
+  }
+
+  for(std::map<std::string, semantic_model::AliasTemplateDecl *>::iterator it =
+          target.alias_templates.begin();
+      it != target.alias_templates.end(); ++it) {
+    if(scope.alias_templates.count(it->first) == 0) {
+      scope.alias_templates[it->first] = it->second;
+      changed = true;
+    }
+  }
+
+  for(std::map<std::string, semantic_model::VariableTemplateDecl *>::iterator it =
+          target.variable_templates.begin();
+      it != target.variable_templates.end(); ++it) {
+    if(scope.variable_templates.count(it->first) == 0) {
+      scope.variable_templates[it->first] = it->second;
+      changed = true;
+    }
+  }
+
+  changed = add_using_directive_raw(scope, target) || changed;
+  if(changed) {
+    note_binding_mutation(scope);
+  }
+}
+
+void bind_value(semantic_model::Scope & scope,
+                const std::string & name,
+                const semantic_model::ValueBinding & binding)
+{
+  scope.values[name] = binding;
+  note_binding_mutation(scope);
+}
+
+void bind_values(semantic_model::Scope & scope,
+                 const std::vector<semantic_model::ValueBinding> & bindings)
+{
+  if(bindings.empty()) {
+    return;
+  }
+  for(std::size_t i = 0; i < bindings.size(); ++i) {
+    scope.values[bindings[i].name] = bindings[i];
+  }
+  note_binding_mutation(scope);
+}
+
+void bind_value_aliases(semantic_model::Scope & scope,
+                        const std::string & primary_name,
+                        const std::string & alias_name,
+                        const semantic_model::ValueBinding & binding)
+{
+  scope.values[primary_name] = binding;
+  if(!alias_name.empty() && alias_name != primary_name) {
+    scope.values[alias_name] = binding;
+  }
+  note_binding_mutation(scope);
+}
+
+void bind_named_pack_size(semantic_model::Scope & scope,
+                          const std::string & name,
+                          std::size_t size)
+{
+  scope.named_pack_sizes[name] = size;
+  note_binding_mutation(scope);
+}
+
+void bind_value_pack(semantic_model::Scope & scope,
+                     const std::string & name,
+                     const std::vector<semantic_model::ValueBinding> & bindings)
+{
+  std::vector<semantic_model::ValueBinding> stored;
+  stored.reserve(bindings.size());
+  for(std::size_t i = 0; i < bindings.size(); ++i) {
+    scope.values[bindings[i].name] = bindings[i];
+    stored.push_back(scope.values[bindings[i].name]);
+  }
+  scope.named_value_packs[name] = stored;
+  note_binding_mutation(scope);
+}
+
+void bind_class_template(semantic_model::Scope & scope,
+                         const std::string & name,
+                         semantic_model::ClassTemplateDecl * decl)
+{
+  scope.class_templates[name] = decl;
+  note_binding_mutation(scope);
+}
+
+void bind_alias_template(semantic_model::Scope & scope,
+                         const std::string & name,
+                         semantic_model::AliasTemplateDecl * decl)
+{
+  scope.alias_templates[name] = decl;
+  note_binding_mutation(scope);
+}
+
+void bind_variable_template(semantic_model::Scope & scope,
+                            const std::string & name,
+                            semantic_model::VariableTemplateDecl * decl)
+{
+  scope.variable_templates[name] = decl;
+  note_binding_mutation(scope);
+}
+
+void bind_template_template_parameter(semantic_model::Scope & scope,
+                                      const std::string & name,
+                                      semantic_model::ClassTemplateDecl * decl)
+{
+  scope.class_templates[name] = decl;
+  scope.template_bound_template_names.insert(name);
+  note_binding_mutation(scope);
+}
+
+void bind_dependent_template_value(semantic_model::Scope & scope,
+                                   const std::string & name,
+                                   const cpp_decl::TypePtr & type)
+{
+  semantic_model::ValueBinding binding(semantic_model::ValueBinding::VK_VARIABLE, name, type);
+  binding.dependent_template_value = true;
+  scope.values[name] = binding;
+  scope.template_bound_value_names.insert(name);
+  note_binding_mutation(scope);
+}
+
+void append_function_bindings(semantic_model::Scope & scope,
+                              const std::string & name,
+                              const std::vector<semantic_model::FunctionBinding *> & functions,
+                              semantic_model::MemberAccess access)
+{
+  if(functions.empty()) {
+    return;
+  }
+  std::vector<semantic_model::FunctionBinding *> & slot =
+      semantic_lookup::direct_function_set_slot(scope, name);
+  slot.insert(slot.end(), functions.begin(), functions.end());
+  if(scope.class_info) {
+    for(std::size_t i = 0; i < functions.size(); ++i) {
+      semantic_lookup::set_direct_function_access_override(scope, name, functions[i], access);
+    }
+  }
+  note_binding_mutation(scope);
+}
+
+void append_unique_function_templates(
+    semantic_model::Scope & scope,
+    const std::string & name,
+    const std::vector<semantic_model::FunctionTemplateDecl *> & templates)
+{
+  if(templates.empty()) {
+    return;
+  }
+  std::vector<semantic_model::FunctionTemplateDecl *> & slot =
+      semantic_lookup::direct_function_template_slot(scope, name);
+  bool changed = false;
+  for(std::size_t i = 0; i < templates.size(); ++i) {
+    if(std::find(slot.begin(), slot.end(), templates[i]) == slot.end()) {
+      slot.push_back(templates[i]);
+      changed = true;
+    }
+  }
+  if(changed) {
+    note_binding_mutation(scope);
+  }
+}
+
+}  // namespace semantic_scope_mutation

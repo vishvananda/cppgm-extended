@@ -1,0 +1,6 @@
+link_map x86_64 macos
+startup_size 22
+code_size 86
+data_size 96
+object 0 code_offset 32 data_offset 96
+symbol @main code 32

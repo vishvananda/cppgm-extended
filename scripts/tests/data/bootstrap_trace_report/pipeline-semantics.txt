@@ -1,0 +1,9 @@
+function-definition std::__1::endl function of (lvalue-reference to class std::__1::basic_ostream<char, std::__1::char_traits<char>>) returning lvalue-reference to class std::__1::basic_ostream<char, std::__1::char_traits<char>>
+  parameter __os lvalue-reference to class std::__1::basic_ostream<char, std::__1::char_traits<char>>
+  compound-statement
+    expression-statement
+      call-expression lvalue lvalue-reference to class std::__1::basic_ostream<char, std::__1::char_traits<char>>
+        callee std::__1::basic_ostream<char, std::__1::char_traits<char>>::put function of (pointer to class std::__1::basic_ostream<char, std::__1::char_traits<char>>, char) returning lvalue-reference to class std::__1::basic_ostream<char, std::__1::char_traits<char>>
+    expression-statement
+      call-expression lvalue lvalue-reference to class std::__1::basic_ostream<char, std::__1::char_traits<char>>
+        callee std::__1::basic_ostream<char, std::__1::char_traits<char>>::flush function of (pointer to class std::__1::basic_ostream<char, std::__1::char_traits<char>>) returning lvalue-reference to class std::__1::basic_ostream<char, std::__1::char_traits<char>>

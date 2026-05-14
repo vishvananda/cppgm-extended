@@ -1,0 +1,7 @@
+template_kernel_output_v1
+
+query 1 deduce_call apply(fn<int, int>&, int)
+status ok
+selected function_template exact
+bind R = int
+bind A = int

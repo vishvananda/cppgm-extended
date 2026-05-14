@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa21/tests/general/300-function-type-partial-specialization-pack-member-function.t:22:1
+    template Value
+    selected explicit
+    bind #1 = type-parameter-0-0 (type-parameter-0-1...) source=explicit

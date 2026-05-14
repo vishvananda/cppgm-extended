@@ -1,0 +1,15 @@
+template<class T>
+struct Box {
+  template<bool Flag>
+  int probe() const
+  {
+    return Flag ? 41 : 1;
+  }
+};
+
+int main()
+{
+  Box<int> box;
+  return box.probe<false>() + box.probe<true>() == 42 ? 0 : 1;
+}
+

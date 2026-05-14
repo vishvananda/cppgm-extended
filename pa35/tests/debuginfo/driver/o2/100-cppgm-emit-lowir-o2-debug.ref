@@ -1,0 +1,6 @@
+function @f(%x : i32) -> i32 [binding=strong, object=_Z1fi] !dbg(tests/debuginfo/driver/o2/100-cppgm-emit-lowir-o2-debug.t, 1, 1) {
+  block ^entry:
+    %t2 = binary add i32 %x, 1 !dbg(tests/debuginfo/driver/o2/100-cppgm-emit-lowir-o2-debug.t, 2, 11)
+    %dbg_y__1 = copy i32 %t2 !dbg(tests/debuginfo/driver/o2/100-cppgm-emit-lowir-o2-debug.t, 2, 3)
+    return i32 %dbg_y__1 !dbg(tests/debuginfo/driver/o2/100-cppgm-emit-lowir-o2-debug.t, 3, 3)
+}

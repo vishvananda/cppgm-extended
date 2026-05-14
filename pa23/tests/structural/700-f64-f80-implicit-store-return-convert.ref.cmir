@@ -1,0 +1,44 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @roundtrip
+  abi
+    param %x -> xmm0 : f64
+    return f64 -> xmm0
+  frame
+    stack_size 96
+    scratch_bytes 48
+    param-slot %x -> [rbp-<off0>] : f64
+    slot $y -> [rbp-<off1>] : f80
+    temp %t -> [rbp-<off2>] : f80
+
+  block ^entry
+    fmov.f64 [rbp-<off0>], xmm0
+    fpext.f64.f80 [rbp-<off1>], [rbp-<off0>]
+    fmov.f80 [rbp-<off2>], [rbp-<off1>]
+    fptrunc.f80.f64 xmm0, [rbp-<off2>]
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 48
+
+  block ^entry
+    fmov.f64 xmm0, 2.0
+    call @roundtrip
+    fmov.f64 xmm0, xmm0
+    feq.f64 rax, xmm0, 2.0
+    mov r8, rax
+    mov rdx, 0
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rax, r8
+    ret rax

@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/300-derived-layout-completes-template-base.t:2:18
+    template Base
+    selected primary
+    bind #1 = int source=explicit

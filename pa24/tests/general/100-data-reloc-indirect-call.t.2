@@ -1,0 +1,12 @@
+declare function @helper() -> i64
+
+global @table = {
+  ptr addr @helper
+}
+
+function @main() -> i64 {
+  block ^entry:
+    %0 = load ptr @table
+    %1 = call i64 %0() as () -> i64
+    return i64 %1
+}

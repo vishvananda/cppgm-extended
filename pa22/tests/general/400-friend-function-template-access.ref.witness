@@ -1,0 +1,22 @@
+translation-unit
+  class-use at pa22/tests/general/400-friend-function-template-access.t:24:3
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+  function-call at pa22/tests/general/400-friend-function-template-access.t:25:10
+    callee read
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity Box<int>::Box
+  ensure-definition
+    entity read
+  function-instantiation
+    entity Box<int>::Box
+  function-instantiation
+    entity read
+  require-definition
+    entity Box<int>::Box
+  require-definition
+    entity read

@@ -1,0 +1,15 @@
+translation-unit
+  class-use at pa21/tests/general/100-pack-partial-specialization-instantiation.t:11:3
+    template Box
+    selected partial
+    bind #1 = <int, int, int> source=explicit
+    specialize #1 = int source=deduced
+    specialize #2 = int source=deduced
+    specialize #3 = <int> source=deduced
+template-closure-events
+  ensure-definition
+    entity Box<int, int, int>::get
+  function-instantiation
+    entity Box<int, int, int>::get
+  require-definition
+    entity Box<int, int, int>::get

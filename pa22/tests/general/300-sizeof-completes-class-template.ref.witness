@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa22/tests/general/300-sizeof-completes-class-template.t:2:22
+    template Box
+    selected primary
+    bind #1 = int source=explicit

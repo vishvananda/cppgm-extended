@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa22/tests/general/400-forwarding-reference-deduction.t:27:10
+    callee classify
+    selected instantiation
+    bind #1 = int & source=deduced
+  function-call at pa22/tests/general/400-forwarding-reference-deduction.t:27:30
+    callee classify
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity classify
+  function-instantiation
+    entity classify
+  require-definition
+    entity classify

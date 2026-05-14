@@ -1,0 +1,1040 @@
+translation-unit
+template-closure-events
+  class-finalization
+    entity (unnamed union at 283:5)
+  class-finalization
+    entity std::__scalar_hash<std::_PairT>::operator()(std::_PairT)::(unnamed union)::(unnamed struct at 285:7)
+  class-instantiation
+    entity (unnamed union at 283:5)
+  class-instantiation
+    entity std::__scalar_hash<std::_PairT>::operator()(std::_PairT)::(unnamed union)::(unnamed struct at 285:7)
+  class-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage
+  class-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::_Data
+  class-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::_Data::(anonymous struct at 198:7)
+  class-instantiation
+    entity std::basic_string<char>::(anonymous struct at 917:3)
+  class-instantiation
+    entity std::basic_string<char>::__long
+  class-instantiation
+    entity std::basic_string<char>::__long::(anonymous struct at 884:5)
+  class-instantiation
+    entity std::basic_string<char>::__rep
+  class-instantiation
+    entity std::basic_string<char>::__short
+  class-instantiation
+    entity std::basic_string<char>::__short::(anonymous struct at 895:5)
+  class-instantiation
+    entity std::basic_string<wchar_t>::(anonymous struct at 917:3)
+  class-instantiation
+    entity std::basic_string<wchar_t>::__long
+  class-instantiation
+    entity std::basic_string<wchar_t>::__long::(anonymous struct at 884:5)
+  class-instantiation
+    entity std::basic_string<wchar_t>::__rep
+  class-instantiation
+    entity std::basic_string<wchar_t>::__short
+  class-instantiation
+    entity std::basic_string<wchar_t>::__short::(anonymous struct at 895:5)
+  class-instantiation
+    entity std::uniform_int_distribution<long>::param_type
+  ensure-definition
+    entity std::__1::swap
+  ensure-definition
+    entity std::__allocate_at_least
+  ensure-definition
+    entity std::__allocation_result<char *>::__allocation_result
+  ensure-definition
+    entity std::__char_traits_base<char16_t, unsigned short, 65535>::eq
+  ensure-definition
+    entity std::__char_traits_base<char16_t, unsigned short, 65535>::lt
+  ensure-definition
+    entity std::__char_traits_base<char32_t, unsigned, 4294967295>::eq
+  ensure-definition
+    entity std::__char_traits_base<char32_t, unsigned, 4294967295>::lt
+  ensure-definition
+    entity std::__check_pair_construction<unsigned long, unsigned long>::__is_implicit
+  ensure-definition
+    entity std::__check_pair_construction<unsigned long, unsigned long>::__is_pair_constructible
+  ensure-definition
+    entity std::__constexpr_memchr
+  ensure-definition
+    entity std::__constexpr_memmove
+  ensure-definition
+    entity std::__constexpr_strlen
+  ensure-definition
+    entity std::__constexpr_wmemchr
+  ensure-definition
+    entity std::__convert_to_timespec
+  ensure-definition
+    entity std::__countr_zero
+  ensure-definition
+    entity std::__cxx_atomic_base_impl<bool>::__cxx_atomic_base_impl
+  ensure-definition
+    entity std::__cxx_atomic_exchange
+  ensure-definition
+    entity std::__cxx_atomic_impl<bool>::__cxx_atomic_impl
+  ensure-definition
+    entity std::__cxx_atomic_load
+  ensure-definition
+    entity std::__cxx_atomic_store
+  ensure-definition
+    entity std::__find
+  ensure-definition
+    entity std::__identity::operator()
+  ensure-definition
+    entity std::__invoke
+  ensure-definition
+    entity std::__libcpp_atomic_refcount_decrement
+  ensure-definition
+    entity std::__libcpp_atomic_refcount_increment
+  ensure-definition
+    entity std::__libcpp_numeric_limits<long>::max
+  ensure-definition
+    entity std::__libcpp_numeric_limits<unsigned long>::max
+  ensure-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::operator()
+  ensure-definition
+    entity std::__scalar_hash<std::_PairT>::operator()
+  ensure-definition
+    entity std::__to_address
+  ensure-definition
+    entity std::basic_string<char>::__fits_in_sso
+  ensure-definition
+    entity std::basic_string<char>::size
+  ensure-definition
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long>>::operator()
+  ensure-definition
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  ensure-definition
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  ensure-definition
+    entity std::chrono::__duration_cast<std::chrono::duration<long long>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  ensure-definition
+    entity std::chrono::__duration_eq<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  ensure-definition
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  ensure-definition
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  ensure-definition
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  ensure-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::count
+  ensure-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::duration
+  ensure-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::zero
+  ensure-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000>>::count
+  ensure-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000>>::duration
+  ensure-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000>>::count
+  ensure-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000>>::duration
+  ensure-definition
+    entity std::chrono::duration<long long>::count
+  ensure-definition
+    entity std::chrono::duration<long long>::duration
+  ensure-definition
+    entity std::chrono::duration_cast
+  ensure-definition
+    entity std::chrono::duration_values<long long>::zero
+  ensure-definition
+    entity std::chrono::operator!=
+  ensure-definition
+    entity std::chrono::operator-
+  ensure-definition
+    entity std::chrono::operator/
+  ensure-definition
+    entity std::chrono::operator<
+  ensure-definition
+    entity std::chrono::operator==
+  ensure-definition
+    entity std::chrono::operator>
+  ensure-definition
+    entity std::fill_n
+  ensure-definition
+    entity std::make_shared
+  ensure-definition
+    entity std::numeric_limits<long>::max
+  ensure-definition
+    entity std::numeric_limits<unsigned long>::max
+  ensure-definition
+    entity std::shared_ptr<std::string>::operator->
+  ensure-definition
+    entity std::shared_ptr<std::string>::shared_ptr
+  ensure-definition
+    entity std::shared_ptr<std::string>::~shared_ptr
+  function-instantiation
+    entity std::__1::swap
+  function-instantiation
+    entity std::__allocate_at_least
+  function-instantiation
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::__allocation_guard
+  function-instantiation
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::__destroy
+  function-instantiation
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::__get
+  function-instantiation
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::__release_ptr
+  function-instantiation
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::~__allocation_guard
+  function-instantiation
+    entity std::__allocation_result<char *>::__allocation_result
+  function-instantiation
+    entity std::__char_traits_base<char16_t, unsigned short, 65535>::eq
+  function-instantiation
+    entity std::__char_traits_base<char16_t, unsigned short, 65535>::lt
+  function-instantiation
+    entity std::__char_traits_base<char32_t, unsigned, 4294967295>::eq
+  function-instantiation
+    entity std::__char_traits_base<char32_t, unsigned, 4294967295>::lt
+  function-instantiation
+    entity std::__check_pair_construction<unsigned long, unsigned long>::__is_implicit
+  function-instantiation
+    entity std::__check_pair_construction<unsigned long, unsigned long>::__is_pair_constructible
+  function-instantiation
+    entity std::__constexpr_memchr
+  function-instantiation
+    entity std::__constexpr_memmove
+  function-instantiation
+    entity std::__constexpr_strlen
+  function-instantiation
+    entity std::__constexpr_wmemchr
+  function-instantiation
+    entity std::__construct_at
+  function-instantiation
+    entity std::__convert_to_timespec
+  function-instantiation
+    entity std::__countr_zero
+  function-instantiation
+    entity std::__cxx_atomic_base_impl<bool>::__cxx_atomic_base_impl
+  function-instantiation
+    entity std::__cxx_atomic_exchange
+  function-instantiation
+    entity std::__cxx_atomic_impl<bool>::__cxx_atomic_impl
+  function-instantiation
+    entity std::__cxx_atomic_load
+  function-instantiation
+    entity std::__cxx_atomic_store
+  function-instantiation
+    entity std::__fill_n
+  function-instantiation
+    entity std::__find
+  function-instantiation
+    entity std::__find_loop
+  function-instantiation
+    entity std::__identity::operator()
+  function-instantiation
+    entity std::__invoke
+  function-instantiation
+    entity std::__libcpp_allocate
+  function-instantiation
+    entity std::__libcpp_atomic_refcount_decrement
+  function-instantiation
+    entity std::__libcpp_atomic_refcount_increment
+  function-instantiation
+    entity std::__libcpp_deallocate
+  function-instantiation
+    entity std::__libcpp_numeric_limits<long>::max
+  function-instantiation
+    entity std::__libcpp_numeric_limits<unsigned long>::max
+  function-instantiation
+    entity std::__loadword
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__hash_len_0_to_16
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__hash_len_16
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__hash_len_17_to_32
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__hash_len_33_to_64
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__rotate
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__rotate_by_at_least_1
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__shift_mix
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__weak_hash_len_32_with_seeds
+  function-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::operator()
+  function-instantiation
+    entity std::__scalar_hash<std::_PairT>::operator()
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::_Storage
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::__get_alloc
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::__get_elem
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::~_Storage
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__get_alloc
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__get_elem
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__on_zero_shared
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__on_zero_shared_impl
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__on_zero_shared_weak
+  function-instantiation
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__shared_ptr_emplace
+  function-instantiation
+    entity std::__to_address
+  function-instantiation
+    entity std::allocate_shared
+  function-instantiation
+    entity std::allocator<char>::allocate
+  function-instantiation
+    entity std::allocator<char>::deallocate
+  function-instantiation
+    entity std::allocator<char>::max_size
+  function-instantiation
+    entity std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>::allocate
+  function-instantiation
+    entity std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>::allocator
+  function-instantiation
+    entity std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>::deallocate
+  function-instantiation
+    entity std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>::max_size
+  function-instantiation
+    entity std::allocator<std::string>::construct
+  function-instantiation
+    entity std::allocator<std::string>::destroy
+  function-instantiation
+    entity std::allocator_traits<std::allocator<char>>::deallocate
+  function-instantiation
+    entity std::allocator_traits<std::allocator<char>>::max_size
+  function-instantiation
+    entity std::allocator_traits<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::allocate
+  function-instantiation
+    entity std::allocator_traits<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::deallocate
+  function-instantiation
+    entity std::allocator_traits<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::max_size
+  function-instantiation
+    entity std::allocator_traits<std::allocator<std::string>>::construct
+  function-instantiation
+    entity std::allocator_traits<std::allocator<std::string>>::destroy
+  function-instantiation
+    entity std::basic_string<char>::__align_allocation_size
+  function-instantiation
+    entity std::basic_string<char>::__align_it
+  function-instantiation
+    entity std::basic_string<char>::__allocate_long_buffer
+  function-instantiation
+    entity std::basic_string<char>::__annotate_contiguous_container
+  function-instantiation
+    entity std::basic_string<char>::__annotate_delete
+  function-instantiation
+    entity std::basic_string<char>::__annotate_new
+  function-instantiation
+    entity std::basic_string<char>::__fits_in_sso
+  function-instantiation
+    entity std::basic_string<char>::__get_long_cap
+  function-instantiation
+    entity std::basic_string<char>::__get_long_pointer
+  function-instantiation
+    entity std::basic_string<char>::__get_long_size
+  function-instantiation
+    entity std::basic_string<char>::__get_pointer
+  function-instantiation
+    entity std::basic_string<char>::__get_short_pointer
+  function-instantiation
+    entity std::basic_string<char>::__get_short_size
+  function-instantiation
+    entity std::basic_string<char>::__init
+  function-instantiation
+    entity std::basic_string<char>::__init_internal_buffer
+  function-instantiation
+    entity std::basic_string<char>::__is_long
+  function-instantiation
+    entity std::basic_string<char>::__long::__long
+  function-instantiation
+    entity std::basic_string<char>::__rep::__rep
+  function-instantiation
+    entity std::basic_string<char>::__reset_internal_buffer
+  function-instantiation
+    entity std::basic_string<char>::__set_short_size
+  function-instantiation
+    entity std::basic_string<char>::__throw_length_error
+  function-instantiation
+    entity std::basic_string<char>::basic_string
+  function-instantiation
+    entity std::basic_string<char>::capacity
+  function-instantiation
+    entity std::basic_string<char>::data
+  function-instantiation
+    entity std::basic_string<char>::max_size
+  function-instantiation
+    entity std::basic_string<char>::size
+  function-instantiation
+    entity std::basic_string<char>::~basic_string
+  function-instantiation
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long>>::operator()
+  function-instantiation
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  function-instantiation
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  function-instantiation
+    entity std::chrono::__duration_cast<std::chrono::duration<long long>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  function-instantiation
+    entity std::chrono::__duration_eq<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  function-instantiation
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  function-instantiation
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  function-instantiation
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  function-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::count
+  function-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::duration
+  function-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::zero
+  function-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000>>::count
+  function-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000>>::duration
+  function-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000>>::count
+  function-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000>>::duration
+  function-instantiation
+    entity std::chrono::duration<long long>::count
+  function-instantiation
+    entity std::chrono::duration<long long>::duration
+  function-instantiation
+    entity std::chrono::duration_cast
+  function-instantiation
+    entity std::chrono::duration_values<long long>::zero
+  function-instantiation
+    entity std::chrono::operator!=
+  function-instantiation
+    entity std::chrono::operator-
+  function-instantiation
+    entity std::chrono::operator/
+  function-instantiation
+    entity std::chrono::operator<
+  function-instantiation
+    entity std::chrono::operator==
+  function-instantiation
+    entity std::chrono::operator>
+  function-instantiation
+    entity std::fill_n
+  function-instantiation
+    entity std::make_shared
+  function-instantiation
+    entity std::numeric_limits<long>::max
+  function-instantiation
+    entity std::numeric_limits<unsigned long>::max
+  function-instantiation
+    entity std::pair<unsigned long, unsigned long>::operator=
+  function-instantiation
+    entity std::pair<unsigned long, unsigned long>::pair
+  function-instantiation
+    entity std::pointer_traits<char *>::pointer_to
+  function-instantiation
+    entity std::pointer_traits<const char *>::pointer_to
+  function-instantiation
+    entity std::pointer_traits<std::__shared_ptr_emplace<std::string, std::allocator<std::string>> *>::pointer_to
+  function-instantiation
+    entity std::shared_ptr<std::string>::__create_with_control_block
+  function-instantiation
+    entity std::shared_ptr<std::string>::__enable_weak_this
+  function-instantiation
+    entity std::shared_ptr<std::string>::operator->
+  function-instantiation
+    entity std::shared_ptr<std::string>::shared_ptr
+  function-instantiation
+    entity std::shared_ptr<std::string>::~shared_ptr
+  require-definition
+    entity std::__1::swap
+  require-definition
+    entity std::__allocate_at_least
+  require-definition
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::__allocation_guard
+  require-definition
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::__destroy
+  require-definition
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::__get
+  require-definition
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::__release_ptr
+  require-definition
+    entity std::__allocation_guard<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::~__allocation_guard
+  require-definition
+    entity std::__allocation_result<char *>::__allocation_result
+  require-definition
+    entity std::__char_traits_base<char16_t, unsigned short, 65535>::eq
+  require-definition
+    entity std::__char_traits_base<char16_t, unsigned short, 65535>::lt
+  require-definition
+    entity std::__char_traits_base<char32_t, unsigned, 4294967295>::eq
+  require-definition
+    entity std::__char_traits_base<char32_t, unsigned, 4294967295>::lt
+  require-definition
+    entity std::__check_pair_construction<unsigned long, unsigned long>::__is_implicit
+  require-definition
+    entity std::__check_pair_construction<unsigned long, unsigned long>::__is_pair_constructible
+  require-definition
+    entity std::__constexpr_memchr
+  require-definition
+    entity std::__constexpr_memmove
+  require-definition
+    entity std::__constexpr_strlen
+  require-definition
+    entity std::__constexpr_wmemchr
+  require-definition
+    entity std::__construct_at
+  require-definition
+    entity std::__convert_to_timespec
+  require-definition
+    entity std::__countr_zero
+  require-definition
+    entity std::__cxx_atomic_base_impl<bool>::__cxx_atomic_base_impl
+  require-definition
+    entity std::__cxx_atomic_exchange
+  require-definition
+    entity std::__cxx_atomic_impl<bool>::__cxx_atomic_impl
+  require-definition
+    entity std::__cxx_atomic_load
+  require-definition
+    entity std::__cxx_atomic_store
+  require-definition
+    entity std::__fill_n
+  require-definition
+    entity std::__find
+  require-definition
+    entity std::__find_loop
+  require-definition
+    entity std::__identity::operator()
+  require-definition
+    entity std::__invoke
+  require-definition
+    entity std::__libcpp_allocate
+  require-definition
+    entity std::__libcpp_atomic_refcount_decrement
+  require-definition
+    entity std::__libcpp_atomic_refcount_increment
+  require-definition
+    entity std::__libcpp_deallocate
+  require-definition
+    entity std::__libcpp_numeric_limits<long>::max
+  require-definition
+    entity std::__libcpp_numeric_limits<unsigned long>::max
+  require-definition
+    entity std::__loadword
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::__hash_len_0_to_16
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::__hash_len_16
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::__hash_len_17_to_32
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::__hash_len_33_to_64
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::__rotate
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::__rotate_by_at_least_1
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::__shift_mix
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::__weak_hash_len_32_with_seeds
+  require-definition
+    entity std::__murmur2_or_cityhash<unsigned long>::operator()
+  require-definition
+    entity std::__scalar_hash<std::_PairT>::operator()
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::_Storage
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::__get_alloc
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::__get_elem
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::_Storage::~_Storage
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__get_alloc
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__get_elem
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__on_zero_shared
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__on_zero_shared_impl
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__on_zero_shared_weak
+  require-definition
+    entity std::__shared_ptr_emplace<std::string, std::allocator<std::string>>::__shared_ptr_emplace
+  require-definition
+    entity std::__to_address
+  require-definition
+    entity std::addressof
+  require-definition
+    entity std::allocate_shared
+  require-definition
+    entity std::allocator<char>::allocate
+  require-definition
+    entity std::allocator<char>::deallocate
+  require-definition
+    entity std::allocator<char>::max_size
+  require-definition
+    entity std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>::allocate
+  require-definition
+    entity std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>::allocator
+  require-definition
+    entity std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>::deallocate
+  require-definition
+    entity std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>::max_size
+  require-definition
+    entity std::allocator<std::string>::construct
+  require-definition
+    entity std::allocator<std::string>::destroy
+  require-definition
+    entity std::allocator_traits<std::allocator<char>>::deallocate
+  require-definition
+    entity std::allocator_traits<std::allocator<char>>::max_size
+  require-definition
+    entity std::allocator_traits<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::allocate
+  require-definition
+    entity std::allocator_traits<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::deallocate
+  require-definition
+    entity std::allocator_traits<std::allocator<std::__shared_ptr_emplace<std::string, std::allocator<std::string>>>>::max_size
+  require-definition
+    entity std::allocator_traits<std::allocator<std::string>>::construct
+  require-definition
+    entity std::allocator_traits<std::allocator<std::string>>::destroy
+  require-definition
+    entity std::basic_string<char>::__align_allocation_size
+  require-definition
+    entity std::basic_string<char>::__align_it
+  require-definition
+    entity std::basic_string<char>::__allocate_long_buffer
+  require-definition
+    entity std::basic_string<char>::__annotate_contiguous_container
+  require-definition
+    entity std::basic_string<char>::__annotate_delete
+  require-definition
+    entity std::basic_string<char>::__annotate_new
+  require-definition
+    entity std::basic_string<char>::__fits_in_sso
+  require-definition
+    entity std::basic_string<char>::__get_long_cap
+  require-definition
+    entity std::basic_string<char>::__get_long_pointer
+  require-definition
+    entity std::basic_string<char>::__get_long_size
+  require-definition
+    entity std::basic_string<char>::__get_pointer
+  require-definition
+    entity std::basic_string<char>::__get_short_pointer
+  require-definition
+    entity std::basic_string<char>::__get_short_size
+  require-definition
+    entity std::basic_string<char>::__init
+  require-definition
+    entity std::basic_string<char>::__init_internal_buffer
+  require-definition
+    entity std::basic_string<char>::__is_long
+  require-definition
+    entity std::basic_string<char>::__long::__long
+  require-definition
+    entity std::basic_string<char>::__rep::__rep
+  require-definition
+    entity std::basic_string<char>::__reset_internal_buffer
+  require-definition
+    entity std::basic_string<char>::__set_short_size
+  require-definition
+    entity std::basic_string<char>::__throw_length_error
+  require-definition
+    entity std::basic_string<char>::basic_string
+  require-definition
+    entity std::basic_string<char>::capacity
+  require-definition
+    entity std::basic_string<char>::data
+  require-definition
+    entity std::basic_string<char>::max_size
+  require-definition
+    entity std::basic_string<char>::size
+  require-definition
+    entity std::basic_string<char>::~basic_string
+  require-definition
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long>>::operator()
+  require-definition
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  require-definition
+    entity std::chrono::__duration_cast<std::chrono::duration<long long, std::ratio<1, 1000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  require-definition
+    entity std::chrono::__duration_cast<std::chrono::duration<long long>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  require-definition
+    entity std::chrono::__duration_eq<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  require-definition
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  require-definition
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  require-definition
+    entity std::chrono::__duration_lt<std::chrono::duration<long long, std::ratio<1, 1000>>, std::chrono::duration<long long, std::ratio<1, 1000000000>>>::operator()
+  require-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::count
+  require-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::duration
+  require-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::zero
+  require-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000>>::count
+  require-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000000>>::duration
+  require-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000>>::count
+  require-definition
+    entity std::chrono::duration<long long, std::ratio<1, 1000>>::duration
+  require-definition
+    entity std::chrono::duration<long long>::count
+  require-definition
+    entity std::chrono::duration<long long>::duration
+  require-definition
+    entity std::chrono::duration_cast
+  require-definition
+    entity std::chrono::duration_values<long long>::zero
+  require-definition
+    entity std::chrono::operator!=
+  require-definition
+    entity std::chrono::operator-
+  require-definition
+    entity std::chrono::operator/
+  require-definition
+    entity std::chrono::operator<
+  require-definition
+    entity std::chrono::operator==
+  require-definition
+    entity std::chrono::operator>
+  require-definition
+    entity std::fill_n
+  require-definition
+    entity std::forward
+  require-definition
+    entity std::make_shared
+  require-definition
+    entity std::move
+  require-definition
+    entity std::numeric_limits<long>::max
+  require-definition
+    entity std::numeric_limits<unsigned long>::max
+  require-definition
+    entity std::pair<unsigned long, unsigned long>::operator=
+  require-definition
+    entity std::pair<unsigned long, unsigned long>::pair
+  require-definition
+    entity std::pointer_traits<char *>::pointer_to
+  require-definition
+    entity std::pointer_traits<const char *>::pointer_to
+  require-definition
+    entity std::pointer_traits<std::__shared_ptr_emplace<std::string, std::allocator<std::string>> *>::pointer_to
+  require-definition
+    entity std::shared_ptr<std::string>::__create_with_control_block
+  require-definition
+    entity std::shared_ptr<std::string>::__enable_weak_this
+  require-definition
+    entity std::shared_ptr<std::string>::operator->
+  require-definition
+    entity std::shared_ptr<std::string>::shared_ptr
+  require-definition
+    entity std::shared_ptr<std::string>::~shared_ptr
+  variable-instantiation
+    entity std::__can_be_converted_to_string_view_v
+  variable-instantiation
+    entity std::__datasizeof_v
+  variable-instantiation
+    entity std::__has_construct_impl
+  variable-instantiation
+    entity std::__has_construct_v
+  variable-instantiation
+    entity std::__has_destroy_v
+  variable-instantiation
+    entity std::__has_max_size_v
+  variable-instantiation
+    entity std::__has_rebind_other_v
+  variable-instantiation
+    entity std::__has_specialization_v
+  variable-instantiation
+    entity std::__is_allocator_v
+  variable-instantiation
+    entity std::__is_always_bitcastable<const char, char>::value
+  variable-instantiation
+    entity std::__is_equality_comparable_v
+  variable-instantiation
+    entity std::__is_final_v
+  variable-instantiation
+    entity std::__is_floating_point_impl
+  variable-instantiation
+    entity std::__is_ratio_v
+  variable-instantiation
+    entity std::__is_reference_or_unpadded_object
+  variable-instantiation
+    entity std::__is_segmented_iterator_v
+  variable-instantiation
+    entity std::__is_trivially_equality_comparable_impl
+  variable-instantiation
+    entity std::__is_trivially_equality_comparable_v
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<long>::__max
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<long>::__min
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<long>::digits
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<long>::is_signed
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<unsigned long long>::__min
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<unsigned long long>::digits
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<unsigned long long>::is_signed
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<unsigned long>::__max
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<unsigned long>::__min
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<unsigned long>::digits
+  variable-instantiation
+    entity std::__libcpp_numeric_limits<unsigned long>::is_signed
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000000>::__a_x
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000000>::__a_y
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000000>::max
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000000>::min
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000000>::nan
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000000>::value
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000>::__a_x
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000>::__a_y
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000>::max
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000>::min
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000>::nan
+  variable-instantiation
+    entity std::__ll_mul<1, 1000000>::value
+  variable-instantiation
+    entity std::__ll_mul<1, 1000>::__a_x
+  variable-instantiation
+    entity std::__ll_mul<1, 1000>::__a_y
+  variable-instantiation
+    entity std::__ll_mul<1, 1000>::max
+  variable-instantiation
+    entity std::__ll_mul<1, 1000>::min
+  variable-instantiation
+    entity std::__ll_mul<1, 1000>::nan
+  variable-instantiation
+    entity std::__ll_mul<1, 1000>::value
+  variable-instantiation
+    entity std::__ll_mul<1, 1>::__a_x
+  variable-instantiation
+    entity std::__ll_mul<1, 1>::__a_y
+  variable-instantiation
+    entity std::__ll_mul<1, 1>::max
+  variable-instantiation
+    entity std::__ll_mul<1, 1>::min
+  variable-instantiation
+    entity std::__ll_mul<1, 1>::nan
+  variable-instantiation
+    entity std::__ll_mul<1, 1>::value
+  variable-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__k0
+  variable-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__k1
+  variable-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__k2
+  variable-instantiation
+    entity std::__murmur2_or_cityhash<unsigned long>::__k3
+  variable-instantiation
+    entity std::__ratio_divide<std::ratio<1, 1000000000>, std::ratio<1>>::__gcd_d1_d2
+  variable-instantiation
+    entity std::__ratio_divide<std::ratio<1, 1000000000>, std::ratio<1>>::__gcd_n1_n2
+  variable-instantiation
+    entity std::__ratio_divide<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__gcd_d1_d2
+  variable-instantiation
+    entity std::__ratio_divide<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__gcd_n1_n2
+  variable-instantiation
+    entity std::__ratio_divide<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__gcd_d1_d2
+  variable-instantiation
+    entity std::__ratio_divide<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__gcd_n1_n2
+  variable-instantiation
+    entity std::__ratio_divide<std::ratio<1>, std::ratio<1, 1000000000>>::__gcd_d1_d2
+  variable-instantiation
+    entity std::__ratio_divide<std::ratio<1>, std::ratio<1, 1000000000>>::__gcd_n1_n2
+  variable-instantiation
+    entity std::__specialized_algorithm<std::_Algorithm::__fill_n, std::__single_iterator<char *>>::__has_algorithm
+  variable-instantiation
+    entity std::__static_abs
+  variable-instantiation
+    entity std::__static_gcd
+  variable-instantiation
+    entity std::__static_lcm
+  variable-instantiation
+    entity std::__static_sign
+  variable-instantiation
+    entity std::basic_string<char>::__endian_factor
+  variable-instantiation
+    entity std::chrono::__is_duration_v
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__d1
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__d2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__gcd_d1_d2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__gcd_n1_n2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__mul<1, 1, false>::value
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__mul<1, 1000, false>::value
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__n1
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::__n2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::max
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000000>, std::ratio<1, 1000000000>>::value
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__d1
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__d2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__gcd_d1_d2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__gcd_n1_n2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__mul<1, 1, false>::value
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__mul<1, 1000000, false>::value
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__n1
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::__n2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::max
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1, 1000>, std::ratio<1, 1000000000>>::value
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::__d1
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::__d2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::__gcd_d1_d2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::__gcd_n1_n2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::__mul<1, 1, false>::value
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::__mul<1, 1000000000, false>::value
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::__n1
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::__n2
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::max
+  variable-instantiation
+    entity std::chrono::duration<long long, std::ratio<1, 1000000000>>::__no_overflow<std::ratio<1>, std::ratio<1, 1000000000>>::value
+  variable-instantiation
+    entity std::integral_constant<bool, false>::value
+  variable-instantiation
+    entity std::integral_constant<bool, true>::value
+  variable-instantiation
+    entity std::integral_constant<unsigned long, 9223372036854775808>::value
+  variable-instantiation
+    entity std::numeric_limits<unsigned long long>::digits
+  variable-instantiation
+    entity std::ratio<1, 1000000000>::__da
+  variable-instantiation
+    entity std::ratio<1, 1000000000>::__gcd
+  variable-instantiation
+    entity std::ratio<1, 1000000000>::__na
+  variable-instantiation
+    entity std::ratio<1, 1000000000>::__s
+  variable-instantiation
+    entity std::ratio<1, 1000000000>::den
+  variable-instantiation
+    entity std::ratio<1, 1000000000>::num
+  variable-instantiation
+    entity std::ratio<1, 1000000>::__da
+  variable-instantiation
+    entity std::ratio<1, 1000000>::__gcd
+  variable-instantiation
+    entity std::ratio<1, 1000000>::__na
+  variable-instantiation
+    entity std::ratio<1, 1000000>::__s
+  variable-instantiation
+    entity std::ratio<1, 1000000>::den
+  variable-instantiation
+    entity std::ratio<1, 1000000>::num
+  variable-instantiation
+    entity std::ratio<1, 1000>::__da
+  variable-instantiation
+    entity std::ratio<1, 1000>::__gcd
+  variable-instantiation
+    entity std::ratio<1, 1000>::__na
+  variable-instantiation
+    entity std::ratio<1, 1000>::__s
+  variable-instantiation
+    entity std::ratio<1, 1000>::den
+  variable-instantiation
+    entity std::ratio<1, 1000>::num
+  variable-instantiation
+    entity std::ratio<1000000000>::__da
+  variable-instantiation
+    entity std::ratio<1000000000>::__gcd
+  variable-instantiation
+    entity std::ratio<1000000000>::__na
+  variable-instantiation
+    entity std::ratio<1000000000>::__s
+  variable-instantiation
+    entity std::ratio<1000000000>::den
+  variable-instantiation
+    entity std::ratio<1000000000>::num
+  variable-instantiation
+    entity std::ratio<1000000>::__da
+  variable-instantiation
+    entity std::ratio<1000000>::__gcd
+  variable-instantiation
+    entity std::ratio<1000000>::__na
+  variable-instantiation
+    entity std::ratio<1000000>::__s
+  variable-instantiation
+    entity std::ratio<1000000>::den
+  variable-instantiation
+    entity std::ratio<1000000>::num
+  variable-instantiation
+    entity std::ratio<1000>::__da
+  variable-instantiation
+    entity std::ratio<1000>::__gcd
+  variable-instantiation
+    entity std::ratio<1000>::__na
+  variable-instantiation
+    entity std::ratio<1000>::__s
+  variable-instantiation
+    entity std::ratio<1000>::den
+  variable-instantiation
+    entity std::ratio<1000>::num
+  variable-instantiation
+    entity std::ratio<1>::__da
+  variable-instantiation
+    entity std::ratio<1>::__gcd
+  variable-instantiation
+    entity std::ratio<1>::__na
+  variable-instantiation
+    entity std::ratio<1>::__s
+  variable-instantiation
+    entity std::ratio<1>::den
+  variable-instantiation
+    entity std::ratio<1>::num

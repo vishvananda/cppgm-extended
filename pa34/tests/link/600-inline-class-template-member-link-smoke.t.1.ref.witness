@@ -1,0 +1,31 @@
+translation-unit
+  class-use at pa34/tests/link/600-inline-class-template-member-link-smoke.t.1:28:3
+    template allocator
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa34/tests/link/600-inline-class-template-member-link-smoke.t.1:29:3
+    template allocation_result
+    selected primary
+    bind #1 = int * source=explicit
+    bind #2 = unsigned long source=defaulted
+  class-use at pa34/tests/link/600-inline-class-template-member-link-smoke.t.1:30:7
+    template allocator_traits
+    selected primary
+    bind #1 = allocator<int> source=explicit
+  class-use at pa34/tests/link/600-inline-class-template-member-link-smoke.t.1:30:24
+    template allocator
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity allocator<int>::allocate_at_least
+  ensure-definition
+    entity allocator_traits<allocator<int>>::allocate_at_least
+  function-instantiation
+    entity allocator<int>::allocate_at_least
+  function-instantiation
+    entity allocator_traits<allocator<int>>::allocate_at_least
+  require-definition
+    entity allocator<int>::allocate_at_least
+  require-definition
+    entity allocator_traits<allocator<int>>::allocate_at_least

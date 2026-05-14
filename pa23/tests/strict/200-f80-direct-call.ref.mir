@@ -1,0 +1,48 @@
+machine_ir x86_64 macos
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @addl
+  abi
+    param %a -> [rbp+16] : f80
+    param %b -> [rbp+32] : f80
+    return f80 -> st0
+  frame
+    stack_size 96
+    scratch_bytes 48
+    param-slot %a -> [rbp-16] : f80
+    param-slot %b -> [rbp-32] : f80
+    temp %sum -> [rbp-48] : f80
+
+  block ^entry
+    fmov.f80 [rbp-16], [rbp+16]
+    fmov.f80 [rbp-32], [rbp+32]
+    fadd.f80 [rbp-48], [rbp-16], [rbp-32]
+    fret.f80 [rbp-48]
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 112
+    scratch_bytes 48
+    temp %a -> [rbp-16] : f80
+    temp %b -> [rbp-32] : f80
+    temp %r -> [rbp-48] : f80
+    temp %e -> [rbp-64] : f80
+
+  block ^entry
+    fmov.f80 [rbp-16], 1.5L
+    fmov.f80 [rbp-32], 2.25L
+    sub rsp, 32
+    fmov.f80 [rsp], [rbp-16]
+    fmov.f80 [rsp+16], [rbp-32]
+    call @addl
+    add rsp, 32
+    fstp.f80 [rbp-48]
+    fmov.f80 [rbp-64], 3.75L
+    feq.f80 rax, [rbp-48], [rbp-64]
+    ret rax

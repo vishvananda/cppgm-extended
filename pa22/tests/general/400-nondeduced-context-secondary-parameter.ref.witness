@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/general/400-nondeduced-context-secondary-parameter.t:15:10
+    callee choose
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity choose
+  function-instantiation
+    entity choose
+  require-definition
+    entity choose

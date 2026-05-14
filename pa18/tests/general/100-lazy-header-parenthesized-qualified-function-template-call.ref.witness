@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa18/tests/general/100-lazy-header-parenthesized-qualified-function-template-call.t:5:13
+    template H::Box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity H::Box<int>::f
+  function-instantiation
+    entity H::Box<int>::f
+  function-instantiation
+    entity H::min
+  require-definition
+    entity H::Box<int>::f
+  require-definition
+    entity H::min

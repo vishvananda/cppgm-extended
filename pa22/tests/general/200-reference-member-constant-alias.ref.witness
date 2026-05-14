@@ -1,0 +1,9 @@
+translation-unit
+  class-use at pa22/tests/general/200-reference-member-constant-alias.t:12:9
+    template duration1
+    selected primary
+    bind #1 = ratio1<7> source=explicit
+  class-use at pa22/tests/general/200-reference-member-constant-alias.t:12:19
+    template ratio1
+    selected primary
+    bind #1 = 7 source=explicit

@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa22/tests/general/500-defaulted-class-template-arg-deduction.t:25:10
+    callee walk
+    selected instantiation
+    bind #1 = Info * source=deduced
+template-closure-events
+  ensure-definition
+    entity walk
+  function-instantiation
+    entity push
+  function-instantiation
+    entity walk
+  require-definition
+    entity push
+  require-definition
+    entity walk

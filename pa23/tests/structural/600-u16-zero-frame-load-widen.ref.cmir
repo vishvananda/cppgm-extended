@@ -1,0 +1,27 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    slot $x -> [rbp-2] : u16
+
+  block ^entry
+    mov rax, 65535
+    store.u16 [rbp-2], rax
+    lea rcx, [rbp-2]
+    load.u16 r8, [rcx]
+    zext.i16 r8
+    mov rdx, 65535
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rax, r8
+    ret rax

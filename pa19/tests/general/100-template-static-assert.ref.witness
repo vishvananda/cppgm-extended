@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa19/tests/general/100-template-static-assert.t:12:3
+    template Box
+    selected primary
+    bind #1 = 4 source=explicit
+template-closure-events
+  ensure-definition
+    entity Box<4>::get
+  function-instantiation
+    entity Box<4>::get
+  require-definition
+    entity Box<4>::get

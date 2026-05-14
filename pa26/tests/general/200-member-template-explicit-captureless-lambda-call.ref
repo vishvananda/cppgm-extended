@@ -1,0 +1,64 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : i32
+  slot $y : i32
+  slot $c : obj<1x1>
+
+  block ^entry:
+    store i32 0, $x
+    store i32 1, $y
+    %t1 = addr $c
+    %t2 = addr $c
+    %t3 = addr $x
+    %t4 = addr $y
+    %t5 = call i32 @C__g(%t2, %t3, %t4)
+    %t6 = binary sub i32 %t5, 3
+    return i32 %t6
+}
+function @C__g(%this : ptr, %target : ptr [pass=reference], %name : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1C1gERiRKi] {
+  slot $this : ptr
+  slot $target : ptr
+  slot $name : ptr
+  slot $arg__1 : obj<1x1>
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %target, $target
+    store ptr %name, $name
+    %t1 = load ptr $this
+    %t2 = load ptr $target
+    %t3 = load ptr $name
+    %t4 = addr $arg__1
+    %t5 = call i32 @C__lookup(%t1, %t2, %t3, %t4)
+    return i32 %t5
+}
+function @C__lookup(%this : ptr, %target : ptr [pass=reference], %name : ptr [pass=reference], %f : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1C6lookupIiZN1C1gERiRKiEUlS1_S3_E_EET_S1_S3_RKT0_] {
+  slot $this : ptr
+  slot $target : ptr
+  slot $name : ptr
+  slot $f : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %target, $target
+    store ptr %name, $name
+    store ptr %f, $f
+    %t1 = load ptr $f
+    %t2 = load ptr $target
+    %t3 = load ptr $name
+    %t4 = call i32 @C____lambda_C__g_t63_74__operator__(%t1, %t2, %t3)
+    return i32 %t4
+}
+function @C____lambda_C__g_t63_74__operator__(%this : ptr, %__param1 : ptr [pass=reference], %x : ptr [pass=reference]) -> i32 [binding=weak, object=_ZZN1C1gERiRKiENKUlS0_S2_E_clES0_S2_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+  slot $x : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    store ptr %x, $x
+    %t1 = load ptr $x
+    %t2 = load i32 %t1
+    %t3 = binary add i32 %t2, 2
+    return i32 %t3
+}

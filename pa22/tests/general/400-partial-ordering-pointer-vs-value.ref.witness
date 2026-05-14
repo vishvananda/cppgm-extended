@@ -1,0 +1,18 @@
+translation-unit
+  function-call at pa22/tests/general/400-partial-ordering-pointer-vs-value.t:16:10
+    callee pick
+    selected instantiation
+    bind #1 = int source=deduced
+    drop pick reason=non_deduced_mismatch
+  function-call at pa22/tests/general/400-partial-ordering-pointer-vs-value.t:16:30
+    callee pick
+    selected instantiation
+    bind #1 = int source=deduced
+    drop pick reason=better_candidate_selected
+template-closure-events
+  ensure-definition
+    entity pick
+  function-instantiation
+    entity pick
+  require-definition
+    entity pick

@@ -1,0 +1,68 @@
+start:
+	move64 bp sp;
+	call fn__main;
+	syscall1 t64 60 x64;
+
+fn__main:
+	isub64 sp sp 8;
+	move64 [sp] bp;
+	move64 bp sp;
+	isub64 sp sp 88;
+fn__main__entry:
+	move64 x64 4660;
+	move16 [bp-8] x16;
+	move64 x64 0;
+	move16 x16 [bp-8];
+	bswap16 x16 x16;
+	move16 [bp-16] x16;
+	move64 y64 0;
+	move16 y16 [bp-16];
+	move64 x64 13330;
+	ieq16 z8 y16 x16;
+	move64 x64 0;
+	move8 x8 z8;
+	move16 [bp-24] x16;
+	move64 x64 287454020;
+	move32 [bp-32] x32;
+	move32 x32 [bp-32];
+	bswap32 x32 x32;
+	move32 [bp-40] x32;
+	move32 y32 [bp-40];
+	move64 x64 1144201745;
+	ieq32 z8 y32 x32;
+	move64 x64 0;
+	move8 x8 z8;
+	move32 [bp-48] x32;
+	move64 x64 72623859790382856;
+	move64 [bp-56] x64;
+	move64 x64 [bp-56];
+	bswap64 x64 x64;
+	move64 [bp-64] x64;
+	move64 y64 [bp-64];
+	move64 x64 578437695752307201;
+	ieq64 z8 y64 x64;
+	move64 x64 0;
+	move8 x8 z8;
+	move64 [bp-72] x64;
+	move64 y64 0;
+	move16 y16 [bp-24];
+	move8 t8 48;
+	lshift64 y64 y64 t8;
+	srshift64 y64 y64 t8;
+	move32 x32 [bp-48];
+	move8 t8 32;
+	lshift64 x64 x64 t8;
+	srshift64 x64 x64 t8;
+	iadd64 x64 y64 x64;
+	move64 [bp-80] x64;
+	move64 y64 [bp-80];
+	move64 x64 [bp-72];
+	iadd64 x64 y64 x64;
+	move64 [bp-88] x64;
+	move64 x64 [bp-88];
+	jump fn__main__epilogue;
+fn__main__epilogue:
+	move64 sp bp;
+	move64 bp [sp];
+	iadd64 sp sp 8;
+	ret;

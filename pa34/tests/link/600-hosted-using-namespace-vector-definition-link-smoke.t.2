@@ -1,0 +1,12 @@
+#include "600-hosted-using-namespace-vector-definition-link-smoke.shared.h"
+
+using namespace helper_inline_ns;
+
+namespace using_namespace_vector_link {
+
+int total(const vec<int> & value)
+{
+  return value.value;
+}
+
+}  // namespace using_namespace_vector_link

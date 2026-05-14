@@ -1,0 +1,11 @@
+.cproject
+.project
+tests/*.my*
+macro
+macro-fast
+macro-self-fast
+macro-debug
+*.dSYM
+testin
+testout
+.test_failed

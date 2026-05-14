@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa22/tests/general/400-template-hidden-friend-adl.t:17:3
+    template Box
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity get
+  function-instantiation
+    entity get
+  require-definition
+    entity get

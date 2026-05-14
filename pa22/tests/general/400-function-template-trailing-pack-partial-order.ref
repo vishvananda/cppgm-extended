@@ -1,0 +1,27 @@
+function @g() -> i32 [binding=strong, object=_Z1gv] {
+  block ^entry:
+    return i32 7
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $fp : ptr
+
+  block ^entry:
+    %t1 = addr @g
+    %t2 = unary decay ptr %t1
+    store ptr %t2, $fp
+    %t3 = addr $fp
+    %t4 = call i32 @invoke__ov2(%t3)
+    %t5 = cmp ne i32 %t4, 7
+    %t6 = convert zext i32 u8 %t5
+    return i32 %t6
+}
+function @invoke__ov2(%f : ptr [pass=reference]) -> i32 [binding=weak, object=_Z6invokeIRPFivEJEEDTclfp_spfp0_EEOT_DpOT0_] {
+  slot $f : ptr
+
+  block ^entry:
+    store ptr %f, $f
+    %t1 = load ptr $f
+    %t2 = load ptr %t1
+    %t3 = call i32 %t2() as () -> i32
+    return i32 %t3
+}

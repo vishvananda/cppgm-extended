@@ -1,0 +1,153 @@
+#pragma once
+
+#include <map>
+#include <memory>
+#include <utility>
+#include <string>
+#include <vector>
+
+#include "cpp_decl_model.h"
+#include "template_model.h"
+
+namespace semantic_model {
+struct ClassInfo;
+struct Scope;
+}
+
+struct CppAstNode;
+
+namespace symbol_linkage {
+
+enum SymbolLinkage
+{
+  SL_INTERNAL,
+  SL_EXTERNAL,
+  SL_WEAK
+};
+
+enum FunctionRefQualifier
+{
+  FRQ_NONE,
+  FRQ_LVALUE,
+  FRQ_RVALUE
+};
+
+enum SpecialMemberEntryPointKind
+{
+  SMEK_COMPLETE,
+  SMEK_BASE,
+  SMEK_DELETING
+};
+
+struct FunctionSymbolOptions
+{
+  struct OwnerTemplateComponent
+  {
+    std::string template_name;
+    const std::vector<template_model::TemplateParameterInfo> * parameters = nullptr;
+    const std::vector<template_model::TemplateArgument> * arguments = nullptr;
+  };
+
+  bool is_member_function = false;
+  bool has_implicit_object_parameter = false;
+  bool is_const_method = false;
+  bool is_volatile_method = false;
+  FunctionRefQualifier ref_qualifier = FRQ_NONE;
+  std::vector<std::string> abi_tags;
+  bool is_constructor = false;
+  bool is_destructor = false;
+  SpecialMemberEntryPointKind special_member_entry_point_kind = SMEK_COMPLETE;
+  cpp_decl::TypePtr function_type_pattern;
+  const std::vector<template_model::TemplateParameterInfo> * template_parameters = nullptr;
+  const std::vector<template_model::TemplateArgument> * template_arguments = nullptr;
+  const std::map<std::string, std::size_t> * template_argument_pack_sizes = nullptr;
+  const std::vector<template_model::TemplateParameterInfo> * owner_template_parameters = nullptr;
+  const std::vector<template_model::TemplateArgument> * owner_template_arguments = nullptr;
+  std::string owner_template_name;
+  std::vector<OwnerTemplateComponent> owner_template_components;
+  const std::vector<std::pair<std::string, cpp_decl::TypePtr> > * parameter_pattern = nullptr;
+  const CppAstNode * result_type_pattern = nullptr;
+  const std::vector<const CppAstNode *> * parameter_declarations_pattern = nullptr;
+  bool has_trailing_function_parameter_pack = false;
+  bool suppress_template_argument_pack_grouping = false;
+  const semantic_model::Scope * lookup_scope = nullptr;
+  cpp_decl::TypePtr lambda_closure_type;
+};
+
+std::shared_ptr<void> make_lambda_context_function_symbol_options(
+    const FunctionSymbolOptions & options);
+
+struct SymbolIdentity
+{
+  std::string internal_symbol;
+  std::string object_symbol;
+  bool keep_internal_alias = false;
+  bool prefer_local_object_binding = false;
+  SymbolLinkage linkage = SL_EXTERNAL;
+};
+
+bool has_object_symbol(const SymbolIdentity & symbol);
+bool has_exported_object_symbol(const SymbolIdentity & symbol);
+std::string exported_object_symbol(const SymbolIdentity & symbol);
+bool has_weak_linkage(const SymbolIdentity & symbol);
+std::string mangle_symbol_name(const std::string & text);
+std::string internal_symbol_from_name(const std::string & name);
+std::string thread_local_wrapper_internal_symbol(const std::string & variable_internal_symbol);
+std::string thread_local_guard_internal_symbol(const std::string & variable_internal_symbol);
+std::string thread_local_wrapper_object_symbol_from_object_symbol(
+    const std::string & object_symbol);
+std::string typeinfo_symbol_for_type(const cpp_decl::TypePtr & type);
+std::string vtable_object_symbol_for_type(const cpp_decl::TypePtr & type);
+bool mangle_itanium_type_encoding(const cpp_decl::TypePtr & type,
+                                  std::string & out);
+std::string virtual_override_thunk_object_symbol(const std::string & target_object_symbol,
+                                                 long long this_adjust,
+                                                 bool has_result_adjust = false,
+                                                 long long result_adjust = 0);
+std::string virtual_base_override_thunk_object_symbol(const std::string & target_object_symbol,
+                                                      long long vcall_offset);
+bool special_member_entry_point_object_symbol_from_complete_object_symbol(
+    const std::string & complete_object_symbol,
+    bool is_constructor,
+    SpecialMemberEntryPointKind entry_point_kind,
+    std::string & out);
+bool special_member_entry_point_object_symbol_from_object_symbol(
+    const std::string & object_symbol,
+    bool is_constructor,
+    SpecialMemberEntryPointKind entry_point_kind,
+    std::string & out);
+std::vector<std::string> implicit_special_member_object_aliases(
+    const std::string & object_symbol);
+std::string construction_vtable_object_symbol(const semantic_model::ClassInfo & dynamic_class,
+                                              unsigned long long base_offset,
+                                              const semantic_model::ClassInfo & base_class);
+std::string vtt_object_symbol_for_type(const cpp_decl::TypePtr & type);
+std::string vtt_object_symbol(const semantic_model::ClassInfo & class_info);
+SymbolIdentity make_c_function_symbol_identity(const std::string & name,
+                                               SymbolLinkage linkage = SL_EXTERNAL);
+SymbolIdentity make_function_symbol_identity(const cpp_decl::QualifiedName & qualified_name,
+                                             const std::string & display_name,
+                                             bool is_c_linkage,
+                                             const cpp_decl::TypePtr & type,
+                                             const FunctionSymbolOptions & options =
+                                                 FunctionSymbolOptions(),
+                                             const std::string & symbol_key = std::string(),
+                                             SymbolLinkage linkage = SL_EXTERNAL);
+SymbolIdentity make_internal_symbol_identity(const std::string & internal_symbol,
+                                             SymbolLinkage linkage = SL_EXTERNAL);
+SymbolIdentity make_object_symbol_identity(const std::string & internal_symbol,
+                                           const std::string & object_symbol,
+                                           SymbolLinkage linkage = SL_EXTERNAL);
+SymbolIdentity make_scoped_variable_symbol_identity(
+    const semantic_model::Scope & scope,
+    const std::string & name,
+    bool is_c_linkage,
+    SymbolLinkage linkage = SL_EXTERNAL);
+SymbolIdentity make_static_member_variable_symbol_identity(
+    const semantic_model::ClassInfo & owner_class,
+    const std::string & member_name,
+    bool is_c_linkage,
+    SymbolLinkage linkage = SL_EXTERNAL);
+bool has_external_vtable_symbol_candidate(const cpp_decl::TypePtr & type);
+
+}  // namespace symbol_linkage

@@ -1,0 +1,189 @@
+# PA24 LowIR syntax specification
+#
+# This file uses the same token-style EBNF conventions as the earlier `.gram` files:
+#
+#   foo?       means 0 or 1 foo in sequence
+#   foo*       means 0 or more foo
+#   foo+       means 1 or more foo
+#   (foo)      groups symbols together for application of the above operators
+#
+# PA24 reuses the same LowIR language as PA23. The grammar is unchanged; the milestone
+# changes the toolchain stage from single-file native output to separate compilation and
+# linking over multiple LowIR source files.
+
+program:
+	global-definition* function-definition* ST_EOF
+
+global-definition:
+	scalar-global-definition
+	structured-global-definition
+
+scalar-global-definition:
+	KW_GLOBAL global-name OP_COLON type OP_ASS global-initializer
+
+structured-global-definition:
+	KW_GLOBAL global-name OP_ASS OP_LCURLY global-data-item+ OP_RCURLY
+
+global-name:
+	LOW_GLOBAL_NAME
+
+function-definition:
+	KW_FUNCTION function-name OP_LPAREN parameter-list OP_RPAREN OP_ARROW type
+	OP_LCURLY function-item* OP_RCURLY
+
+function-name:
+	LOW_FUNCTION_NAME
+
+parameter-list:
+	parameter-declaration-list?
+
+parameter-declaration-list:
+	parameter-declaration (OP_COMMA parameter-declaration)*
+
+parameter-declaration:
+	temporary-name OP_COLON type
+
+function-item:
+	slot-declaration
+	block-definition
+	instruction
+
+slot-declaration:
+	KW_SLOT slot-name OP_COLON type
+
+block-definition:
+	KW_BLOCK block-name OP_COLON
+
+instruction:
+	assign-instruction
+	store-instruction
+	atomic-store-instruction
+	atomic-fence-instruction
+	call-void-instruction
+	copyobj-instruction
+	zeroinit-instruction
+	jump-instruction
+	branch-instruction
+	return-instruction
+
+assign-instruction:
+	temporary-name OP_ASS rvalue-instruction
+
+rvalue-instruction:
+	KW_CONST type integer-literal
+	KW_COPY type value
+	KW_ADDR addressable
+	KW_LOAD type storage
+	KW_ATOMIC_LOAD type value OP_COMMA integer-literal
+	KW_INDEX type value OP_COMMA value
+	KW_UNARY unary-operator type value
+	KW_BINARY binary-operator type value OP_COMMA value
+	KW_CMP compare-predicate type value OP_COMMA value
+	KW_ATOMIC_ADD_FETCH type value OP_COMMA value OP_COMMA integer-literal
+	KW_CALL type callee OP_LPAREN argument-list OP_RPAREN
+
+store-instruction:
+	KW_STORE type value OP_COMMA storage
+
+atomic-store-instruction:
+	KW_ATOMIC_STORE type value OP_COMMA value OP_COMMA integer-literal
+
+atomic-fence-instruction:
+	KW_ATOMIC_THREAD_FENCE integer-literal
+	KW_ATOMIC_SIGNAL_FENCE integer-literal
+
+call-void-instruction:
+	KW_CALL KW_VOID callee OP_LPAREN argument-list OP_RPAREN
+
+copyobj-instruction:
+	KW_COPYOBJ integer-literal value OP_COMMA value
+
+zeroinit-instruction:
+	KW_ZEROINIT integer-literal value
+
+jump-instruction:
+	KW_JUMP block-name
+
+branch-instruction:
+	KW_BRANCH value OP_COMMA block-name OP_COMMA block-name
+
+return-instruction:
+	KW_RETURN type? value?
+
+argument-list:
+	(value (OP_COMMA value)*)?
+
+global-initializer:
+	KW_ZERO
+	integer-literal
+	KW_ADDR global-name
+	KW_ADDR function-name
+
+global-data-item:
+	type integer-literal
+	KW_PTR KW_ADDR global-name
+	KW_PTR KW_ADDR function-name
+	KW_ZERO integer-literal
+
+type:
+	KW_VOID
+	LOW_TYPE
+
+value:
+	temporary-name
+	slot-name
+	global-name
+	integer-literal
+
+storage:
+	temporary-name
+	slot-name
+	global-name
+
+callee:
+	function-name
+	temporary-name
+	global-name
+
+addressable:
+	slot-name
+	global-name
+	function-name
+
+temporary-name:
+	LOW_TEMP_NAME
+
+slot-name:
+	LOW_SLOT_NAME
+
+block-name:
+	LOW_BLOCK_NAME
+
+integer-literal:
+	TT_LITERAL
+	OP_MINUS TT_LITERAL
+
+unary-operator:
+	KW_NEG
+	KW_NOT
+	KW_BITNOT
+
+binary-operator:
+	KW_ADD
+	KW_SUB
+	KW_MUL
+	KW_DIV
+	KW_MOD
+	KW_AND
+	KW_OR
+	KW_XOR
+	KW_SHL
+	KW_SHR
+
+compare-predicate:
+	KW_EQ
+	KW_NE
+	KW_LT
+	KW_LE
+	KW_GT
+	KW_GE

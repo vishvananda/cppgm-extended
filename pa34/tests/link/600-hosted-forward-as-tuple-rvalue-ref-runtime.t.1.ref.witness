@@ -1,0 +1,90 @@
+translation-unit
+  class-use at pa34/tests/link/600-hosted-forward-as-tuple-rvalue-ref-runtime.t.1:10:3
+    template std::tuple
+    selected primary
+    bind #1 = <S &&> source=deduced
+  function-call at pa34/tests/link/600-hosted-forward-as-tuple-rvalue-ref-runtime.t.1:10:12
+    callee std::forward_as_tuple
+    selected instantiation
+    bind #1 = <S> source=deduced
+  function-call at pa34/tests/link/600-hosted-forward-as-tuple-rvalue-ref-runtime.t.1:11:12
+    callee std::get
+    selected instantiation
+    bind #1 = 0 source=explicit
+    bind #2 = <S &&> source=deduced
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=worse_conversion
+    drop std::get reason=bad_conversion
+    drop std::get reason=bad_conversion
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+  function-call at pa34/tests/link/600-hosted-forward-as-tuple-rvalue-ref-runtime.t.1:12:22
+    callee std::get
+    selected instantiation
+    bind #1 = 0 source=explicit
+    bind #2 = <S &&> source=deduced
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=worse_conversion
+    drop std::get reason=bad_conversion
+    drop std::get reason=bad_conversion
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+    drop std::get reason=non_deduced_mismatch
+template-closure-events
+  ensure-definition
+    entity std::__1::swap
+  ensure-definition
+    entity std::forward_as_tuple
+  ensure-definition
+    entity std::get
+  function-instantiation
+    entity std::__1::swap
+  function-instantiation
+    entity std::__tuple_impl<std::__integer_sequence<unsigned long, 0>, S &&>::__tuple_impl
+  function-instantiation
+    entity std::__tuple_leaf<0, S &&>::__tuple_leaf
+  function-instantiation
+    entity std::__tuple_leaf<0, S &&>::get
+  function-instantiation
+    entity std::forward_as_tuple
+  function-instantiation
+    entity std::get
+  function-instantiation
+    entity std::tuple<S &&>::tuple
+  require-definition
+    entity std::__1::swap
+  require-definition
+    entity std::__tuple_impl<std::__integer_sequence<unsigned long, 0>, S &&>::__tuple_impl
+  require-definition
+    entity std::__tuple_leaf<0, S &&>::__tuple_leaf
+  require-definition
+    entity std::__tuple_leaf<0, S &&>::get
+  require-definition
+    entity std::forward
+  require-definition
+    entity std::forward_as_tuple
+  require-definition
+    entity std::get
+  require-definition
+    entity std::move
+  require-definition
+    entity std::tuple<S &&>::tuple
+  variable-instantiation
+    entity std::__is_final_v
+  variable-instantiation
+    entity std::__reference_constructs_from_temporary_v
+  variable-instantiation
+    entity std::integral_constant<bool, false>::value
+  variable-instantiation
+    entity std::integral_constant<bool, true>::value
+  variable-instantiation
+    entity std::integral_constant<unsigned long, 9223372036854775808>::value

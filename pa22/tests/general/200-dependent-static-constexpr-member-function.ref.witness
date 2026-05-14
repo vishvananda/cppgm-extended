@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa22/tests/general/200-dependent-static-constexpr-member-function.t:7:10
+    template duration_values
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity duration_values<int>::max
+  function-instantiation
+    entity duration_values<int>::max
+  require-definition
+    entity duration_values<int>::max

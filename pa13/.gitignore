@@ -1,0 +1,9 @@
+lowir2cy86
+lowir2cy86-debug
+tests/**/*.my*
+tests/**/*.stdout
+!tests/**/*.ref.stdout
+tests/spec/100-structured-global-data
+testout
+.test_failed
+*.dSYM

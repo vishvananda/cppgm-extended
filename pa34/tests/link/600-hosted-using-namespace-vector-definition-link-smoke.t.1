@@ -1,0 +1,7 @@
+#include "600-hosted-using-namespace-vector-definition-link-smoke.shared.h"
+
+int main()
+{
+  helper_inline_ns::vec<int> value(6);
+  return using_namespace_vector_link::total(value) == 6 ? 0 : 1;
+}

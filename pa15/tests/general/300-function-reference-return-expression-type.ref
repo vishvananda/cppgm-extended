@@ -1,0 +1,64 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $holder : obj<8x8>
+  slot $owner : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $holder
+    %t2 = addr $owner
+    call void @Owner__Owner(%t2)
+    %t3 = addr $owner
+    %t4 = addr $holder
+    call void @Owner__assign(%t3, %t4)
+    %t5 = addr $holder
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load ptr %t6
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = load i32 %t8
+    %t10 = binary sub i32 %t9, 3
+    return i32 %t10
+}
+function @Owner__Owner(%this : ptr) -> void [binding=weak, object=_ZN5OwnerC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store ptr %t4, %t6
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = index i8 [projection=base_subobject] %t8, 0
+    %t10 = index i8 [projection=field] %t9, 0
+    store i32 3, %t10
+    return void
+}
+function @Owner__assign(%this : ptr, %holder : ptr [pass=reference]) -> void [binding=weak, object=_ZN5Owner6assignER6Holder] {
+  slot $this : ptr
+  slot $holder : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %holder, $holder
+    %t1 = load ptr $this
+    %t2 = call ptr @Owner__get(%t1)
+    %t3 = load ptr %t2
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t5 = load ptr $holder
+    %t6 = index i8 [projection=field] %t5, 0
+    store ptr %t4, %t6
+    return void
+}
+function @Owner__get(%this : ptr) -> ptr [binding=weak, object=_ZN5Owner3getEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    return ptr %t2
+}

@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/general/300-function-template-trailing-type-pack-empty-deduction.t:7:10
+    callee f
+    selected instantiation
+    bind #1 = <> source=deduced
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

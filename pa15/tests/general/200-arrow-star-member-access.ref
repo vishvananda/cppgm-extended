@@ -1,0 +1,74 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : obj<4x4>
+  slot $p : ptr
+  slot $data : i64
+  slot $method : i128
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = addr $s
+    %t2 = addr $s
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 3, %t3
+    %t4 = addr $s
+    store ptr %t4, $p
+    %t5 = const i64 1
+    store i64 %t5, $data
+    %t6 = addr @S__plus
+    %t7 = copy i64 %t6
+    %t8 = convert zext i128 i64 %t7
+    store i128 %t8, $method
+    %t9 = load ptr $p
+    %t10 = load i64 $data
+    %t11 = binary sub i64 %t10, 1
+    %t12 = index i8 [projection=field] %t9, %t11
+    %t13 = load i32 %t12
+    %t14 = cmp eq i32 %t13, 3
+    branch %t14, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t15 = load ptr $p
+    %t16 = load i128 $method
+    %t17 = convert trunc i64 i128 %t16
+    %t18 = copy ptr %t17
+    %t19 = call i32 %t18(%t15, 4) as (%arg0 : ptr, %arg1 : i32) -> i32
+    %t20 = cmp eq i32 %t19, 7
+    %t21 = cmp ne i64 %t20, 0
+    store i64 %t21, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t22 = load i64 $land__2
+    branch %t22, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t23 = load i32 $cond__1
+    return i32 %t23
+}
+function @S__plus(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZN1S4plusEi] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load i32 $x
+    %t5 = binary add i32 %t3, %t4
+    return i32 %t5
+}

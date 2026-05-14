@@ -1,0 +1,24 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @call() -> i32 [binding=strong, object=_Z4callv] {
+  block ^entry:
+    return i32 0
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $d
+    %t2 = addr $d
+    %t3 = call i32 @two_phase_derived_int___run(%t2)
+    return i32 %t3
+}
+function @two_phase_derived_int___run(%this : ptr) -> i32 [binding=weak, object=_ZN17two_phase_derivedIiE3runEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = call i32 @call()
+    return i32 %t1
+}

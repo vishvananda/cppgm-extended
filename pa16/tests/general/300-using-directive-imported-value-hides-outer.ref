@@ -1,0 +1,13 @@
+global @A__i : i32 [binding=internal, object=_ZN1A1iE] = 1
+global @A__B__C__i : i32 [binding=internal, object=_ZN1A1B1C1iE] = 2
+
+function @A__B__f() -> i32 [binding=strong, object=_ZN1A1B1fEv] {
+  block ^entry:
+    return i32 2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @A__B__f()
+    %t2 = binary sub i32 %t1, 2
+    return i32 %t2
+}
