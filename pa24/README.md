@@ -192,11 +192,12 @@ You are free to use them for debugging, tracing, or diagnostics.
 
 PA24 tests are source-driven.
 
-The local checked-in tests live in `tests/general/`. This bucket is for the PA24
-separate-compilation and link/runtime regression surface: LowIR companion source files,
-checked-in link-map references, expected program behavior, and deterministic link-error
-owners. PA24 currently has no `tests/spec/` bucket because the contract here is the
-compiler-owned object/link pipeline, not a directly cited N3485 C++ source-language clause.
+The local checked-in tests live in `tests/general/`. That directory contains
+LowIR companion source files, checked-in link-map references, expected program
+behavior, and deterministic link-error cases for the PA24 separate-compilation
+and link/runtime surface. PA24 has no `tests/spec/` directory because the
+contract here is the compiler-owned object/link pipeline, not a directly cited
+N3485 C++ source-language clause.
 
 For each test anchor `x.t`, the real LowIR inputs are the companion files:
 
@@ -237,8 +238,7 @@ For implementers, this means the stable externally visible contracts are:
 - `cpplink --dump-link-map` emits the required textual link-map format
 - the final linked executable behaves correctly
 
-The shipped PA24 tests are the contract for this milestone. Additional course tests
-should stay within the separate-compilation and LowIR object/link boundary defined above.
+The shipped PA24 tests are the contract for this milestone.
 
 ### PA24 Syntax Spec
 
@@ -262,7 +262,7 @@ PA13 and used by PA14-PA23, including:
 - direct and indirect calls
 - startup/shutdown hooks
 - direct cross-object data references
-- bulk memory operations already lowered by later milestones
+- bulk memory operations defined in LowIR
 
 Within the supported subset, PA24 should:
 
@@ -284,29 +284,25 @@ compiled objects still preserve enough symbol and relocation information for the
 - preserve startup/shutdown hooks across object boundaries
 - produce a deterministic link map
 
-The most important PA24 goals are therefore:
+To complete PA24, implement these goals:
 
 1. Separate compilation from source.
-   Source files are compiled independently to objects before linking. The core oracle for
-   this is the entire PA24 harness, and especially `100-two-object-call`.
+   Source files are compiled independently to objects before linking.
 
 2. Cross-object direct call resolution.
-   The linker must resolve direct calls between separately compiled units. The core oracle
-   for this is `100-two-object-call`.
+   The linker must resolve direct calls between separately compiled units.
 
 3. Cross-object data resolution.
    The linker must resolve globals and address-bearing data across separately compiled
-   units. The core oracles for this are `100-cross-object-global` and
-   `100-data-reloc-indirect-call`.
+   units.
 
 4. Startup and shutdown aggregation.
    The linker must discover and wire `@__cppgm_init`, `@main`, and `@__cppgm_fini` across
-   multiple objects. The core oracle for this is `100-startup-hooks-across-objects`.
+   multiple objects.
 
 5. Link-time error handling.
    Duplicate global definitions, unresolved externals, and missing `@main` must be
-   rejected at the correct stage. The core oracles for this are `100-missing-main-bad`,
-   `100-duplicate-global-bad`, and `100-unresolved-symbol-bad`.
+   rejected at the correct stage.
 
 ### Out Of Scope
 

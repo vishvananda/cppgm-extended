@@ -186,7 +186,7 @@ for testing is still this textual machine-IR form:
 The raw `.mir` file is still checked in because it is the debugging-oriented dump students
 see directly from `--dump-machine-ir`.
 
-For testing, `PA23` uses two explicit MIR-oracle buckets, split by directory:
+For testing, PA23 uses two explicit MIR comparison modes, split by directory:
 
 1. `tests/strict/` compares the raw checked-in `.ref.mir` against the generated `.my.mir`,
    after only normalizing the host-target tag in the `machine_ir x86_64 <target>` header.
@@ -236,12 +236,10 @@ only need to implement `--dump-machine-ir` and produce raw `.mir`.
 - `tests/strict/`
 - `tests/structural/`
 
-These buckets are PA23-specific oracle buckets, not source-standard buckets. PA23 currently
-has no `tests/spec/` directory because the tested contract is the compiler-owned LowIR to
-native backend surface rather than an N3485 C++ source-language clause. New tests should go
-in `tests/strict/` when exact raw MIR is intentionally part of the oracle, and in
-`tests/structural/` when the important contract is the canonical backend shape plus runtime
-behavior.
+These directories contain PA23-specific backend oracle tests, not source-standard tests.
+PA23 has no `tests/spec/` directory because the tested contract is the
+compiler-owned LowIR-to-native backend surface rather than an N3485 C++ source-language
+clause.
 
 The PA23 suite is intentionally mixed:
 
@@ -251,7 +249,7 @@ The PA23 suite is intentionally mixed:
 That ensures PA23 is tested both on the core LowIR forms and on the richer LowIR that later
 lowering assignments now produce.
 
-The current owner surface exercised by those tests includes:
+The PA23 test suite exercises:
 
 - startup/lowering correctness for simple programs, globals, direct calls, and indirect calls
 - register and stack calling-convention handling for:
@@ -269,9 +267,7 @@ The current owner surface exercised by those tests includes:
 - atomic load/store, exchange, compare-exchange, fetch-add, and fence operations across
   multiple scalar widths
 
-The shipped PA23 tests are the contract for this milestone. Additional course tests
-should choose the strict or structural bucket based on whether exact raw MIR or canonical
-machine shape is the intended oracle.
+The shipped PA23 tests are the contract for this milestone.
 
 ### PA23 Syntax Spec
 
@@ -322,10 +318,10 @@ PA14-PA22, including:
 - bulk memory operations:
   - `copyobj`
   - `zeroinit`
-- object-lowered ABI forms already present in later assignments:
+- object-lowered ABI forms emitted by source-to-LowIR assignments:
   - hidden destination-pointer returns
   - lowered object parameters carried as `ptr`
-- structured vtable/global table data emitted by later lowering milestones
+- structured vtable/global table data emitted by source-to-LowIR lowering
 
 Within this milestone, PA23 should successfully compile the LowIR emitted by PA14-PA22 into
 host-native executables, without requiring CY86 as the primary output format.
@@ -354,24 +350,22 @@ Within the supported subset, PA23 should lower:
   - float-width extension and truncation operations
   - `f32`/`f64`/`f80` arithmetic and comparison behavior
 
-The most important PA23 goals are therefore:
+To complete PA23, implement these goals:
 
 1. Direct control-flow lowering.
    LowIR branches, first-class `switch` dispatch, and direct calls should become
    first-class machine-IR branches and direct calls, not a normalized CY86-style
-   fallback. The core oracles for this are the `100-direct-call-branch` family and the
-   direct LowIR `switch` owners.
+   fallback.
 
 2. Direct startup/runtime wiring.
    The startup path should call `@__cppgm_init`, `@main`, and `@__cppgm_fini` as direct
-   machine-IR call sites where those hooks exist. The core oracle for this is the
-   `100-startup-shutdown-hooks` family.
+   machine-IR call sites where those hooks exist.
 
 3. First-class bulk object-memory lowering.
    `copyobj <bytes>x<align>` and `zeroinit <bytes>x<align>` should survive as meaningful
    machine-IR operations such as `copy_bytes <bytes>x<align>` and
    `zero_bytes <bytes>x<align>`, rather than being expanded only through the old CY86
-   lowering path. The core oracles for this are `100-copyobj` and `100-zeroinit`.
+   lowering path.
 
 4. Preserve the distinction between direct and indirect calls.
    The direct backend should still emit indirect machine-IR calls for truly indirect LowIR
@@ -379,12 +373,10 @@ The most important PA23 goals are therefore:
    That includes pointer-valued global cells: if a call target comes from a scalar `ptr`
    global, PA23 should call through the pointer stored in that global, not through the
    address of the global storage itself.
-   The core oracle for this is the `200-virtual-base-reference` family.
 
 5. Preserve richer LowIR data layout.
    Structured global data and later vtable-like globals should remain structured in the
-   direct backend rather than being forced through a scalarized compatibility path. The
-   core oracle for this is the `100-structured-global-data` family.
+   direct backend rather than being forced through a scalarized compatibility path.
 
 6. Exercise backend-owned execution behavior directly.
    PA23 is the right home for LowIR-native execution tests that validate the basic machine
@@ -400,21 +392,18 @@ The most important PA23 goals are therefore:
 7. Preserve direct compare-fed branch lowering for ordinary scalar cases.
    When a compare result feeds exactly one branch, PA23 should lower that as a direct
    machine compare plus conditional branch rather than materializing a boolean temporary
-   and branching on that temporary afterward. The core oracles for this are the compare
-   branch families over `i32`, `u32`, `f32`, and `f64`. If the compared scalar already
+   and branching on that temporary afterward. If the compared scalar already
    lives in one obvious home slot, PA23 may also compare that slot directly against the
    branch literal instead of first reloading the value into a scratch register solely to
    perform the compare.
 
 8. Keep trivial leaf scalar temps register-resident by default.
    In small leaf functions, ordinary scalar temps should not be frame-backed unless
-   pressure or ABI boundaries require it. The core oracles for this are the simple
-   integer-chain and compare-as-value families.
+   pressure or ABI boundaries require it.
 
 9. Keep ordinary `f32` and `f64` work on the floating register path.
    Simple leaf floating arithmetic and floating copies should stay in XMM-backed MIR
-   rather than degrading into integer-side or stack-first lowering by default. The core
-   oracles for this are the leaf floating-chain and floating-copy families.
+   rather than degrading into integer-side or stack-first lowering by default.
 
 10. Keep ABI-pressure behavior intentional rather than blanket stackified.
    Values that stay live across a call may move or spill when the calling convention
@@ -446,28 +435,22 @@ The most important PA23 goals are therefore:
    When a
    scalar value is already in the register that a nearby
    `load` result, store sink, or outgoing ABI argument actually wants, PA23 may also use
-   that final register directly instead of forcing an extra `mov` shell first. The core
-   oracles for this are the call-clobber pressure family, the call-setup forwarding
-   family, the trivial parameter-slot promotion family, the object-parameter slot-alias
-   family, the direct object call-result slot-alias family, and the call-pass-mode
-   address-materialization family.
+   that final register directly instead of forcing an extra `mov` shell first.
 
 11. Keep mixed-width conversion and floating-bool materialization explicit.
    Mixed integer/float conversion chains should keep their conversion family and width
    visible in MIR, and floating compare results used as values may materialize booleans
-   in registers without an unnecessary stack round-trip. The core oracles for this are
-   the conversion-chain and floating-compare-as-value families.
+   in registers without an unnecessary stack round-trip.
 
 12. Preserve narrow integer width behavior in MIR.
    Ordinary `i8`/`u16` compare-fed branches should stay visibly narrow, and small signed
    or unsigned integer arithmetic should show the expected post-operation normalization
-   instead of silently widening into an untyped 64-bit path. The core oracles for this
-   are the narrow-compare and narrow-normalization families.
+   instead of silently widening into an untyped 64-bit path.
 
 13. Keep the conservative `f80` path explicit rather than implicit.
    PA23 does not need to treat `f80` like ordinary XMM-resident `f32`/`f64`, but its
    conversions and truncation/extension path should still stay visible and testable in
-   MIR. The core oracles for this are the `390` and `400` floating-conversion families.
+   MIR.
 
 14. Cover direct compare-fed branch lowering at ordinary 64-bit integer width too.
    The direct compare/branch quality rule is not limited to `i32` and `u32`. PA23 should
@@ -476,33 +459,28 @@ The most important PA23 goals are therefore:
 
 15. Keep pointer/null comparisons on the direct machine compare/branch path.
    Ordinary pointer/null tests should remain visibly pointer-typed in MIR and branch
-   directly rather than degrading into a less explicit scalarized path. The core oracle for
-   this is the `500-ptr-null-direct-compare-branch` family, including null values first
-   introduced through `const ptr 0`.
+   directly rather than degrading into a less explicit scalarized path, including
+   null values first introduced through `const ptr 0`.
 
 16. Keep pointer/index address calculation visible as pointer arithmetic.
    Pointer indexing and pointer-difference behavior should stay structurally visible in MIR
-   rather than being hidden behind an unrelated compatibility path. The core oracle for
-   this is the `500-ptr-index-arithmetic` family, and dead base-pointer temps should be
-   allowed to flow directly into the indexed destination rather than forcing an extra
-   scratch copy first.
+   rather than being hidden behind an unrelated compatibility path, and dead base-pointer
+   temps should be allowed to flow directly into the indexed destination rather than
+   forcing an extra scratch copy first.
 
 17. Preserve mixed integer/floating call ABI classification.
    Calls that mix GPR and XMM arguments should keep that classification visible in MIR so
-   students can tell whether the backend is respecting the native calling convention. The
-   core oracle for this is the `500-mixed-gpr-xmm-call-abi` family.
+   students can tell whether the backend is respecting the native calling convention.
 
 18. Keep ordinary `f80` arithmetic and comparison behavior executable and visible.
    Even though `f80` remains the conservative floating special case, simple `f80`
-   arithmetic and `cmp` behavior should still run correctly and remain explicit in MIR. The
-   core oracle for this is the `500-f80-arithmetic-compare-owner` family.
+   arithmetic and `cmp` behavior should still run correctly and remain explicit in MIR.
 
 19. Exercise non-64-bit atomic widths explicitly.
-   The PA23 atomic contract is not only about `i64`. At least one smaller-width atomic
-   owner should prove that ordinary byte-width atomic load/store behavior survives through
-   the direct native backend, including direct dereference of a register-backed pointer
-   temp rather than an unnecessary scratch-register bounce first. The core oracle for this
-   is the `600-atomic-i8-load-store` family.
+   The PA23 atomic contract is not only about `i64`; smaller-width atomic load/store
+   behavior should survive through the direct native backend, including direct dereference
+   of a register-backed pointer temp rather than an unnecessary scratch-register bounce
+   first.
 
 The PA23 tests intentionally include all of those cases so students can tell whether they
 have actually implemented a direct `LowIR -> machine IR -> native` path, rather than only

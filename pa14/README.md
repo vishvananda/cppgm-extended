@@ -27,7 +27,6 @@ You will want to reuse:
 - the PA12 procedural semantic analysis as the source of truth for resolved functions,
   locals, and expressions
 - the PA13 LowIR contract
-- the PA23 `lowir2native` validation path
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
 
 The intended direction is:
@@ -49,7 +48,7 @@ The starter kit contains:
 - the grammar for this assignment called `pa14.gram`
 - an HTML grammar explorer of `pa14.gram` in the sub-directory `grammar/`
 - checked-in golden output files under `tests/`
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 The provided scaffold and shared support files establish the driver shape and previous
 frontend modes. They do not implement the PA14 source-to-LowIR lowering work.
@@ -113,7 +112,7 @@ helpers, or class-lifetime startup/shutdown hooks. Tests that require those belo
 or later.
 
 The checked-in `.ref` files define the required LowIR facts for the tests. The
-The test harness checks exit status, LowIR well-formedness, and the
+test harness checks exit status, LowIR well-formedness, and the
 course-defined normalized LowIR output rather than requiring students to match every
 non-semantic helper spelling or presentation choice.
 
@@ -126,18 +125,18 @@ the expected LowIR shape is direct short-circuit control flow. In that condition
 the compiler should branch through the operand blocks rather than first materializing a
 separate `land__*` / `lor__*` boolean slot.
 
-The generated LowIR should be runnable through the PA23 `lowir2native` validation path:
+The generated LowIR is intended to become input for the later PA23
+`lowir2native` backend. That future native path is not the PA14 grading
+contract, but PA14 should avoid emitting LowIR that only works for this one
+text comparison.
 
-    cppgm++ --emit-lowir -> LowIR
-    lowir2native -> native executable
-
-The PA13 scaffold path is still useful as a secondary backend cross-check:
+The PA13 scaffold path is useful as an optional manual execution check:
 
     cppgm++ --emit-lowir -> LowIR
     lowir2cy86 -> CY86
     cy86 -> executable
 
-That runnable path is a validation aid, not the primary PA14 output contract.
+That runnable path is a debugging aid, not the primary PA14 output contract.
 
 ### Error Handling
 
@@ -167,26 +166,13 @@ For each test case `x`:
 `make test` runs the checked-in local suite under `tests/` and supplies
 `--emit-lowir -O0` through the harness.
 
-The tracked PA14 test suite currently uses:
+The PA14 test suite uses:
 
 - `tests/general/`: the default PA14 LowIR oracle suite. These tests cover the procedural
-  lowering contract, later implementation regressions, boundary reducers, and integration
-  cases that are validated by generated LowIR text and exit status.
+  lowering contract and integration cases that are validated by generated LowIR
+  text and exit status.
 
-There are no tracked PA14 `tests/spec/` cases at this point. Keep `tests/spec/` reserved
-for tests that directly exercise a specific C++ standard contract rather than a CPPGM LowIR
-shape or implementation regression. Any future C++ language test added there should start
-with a comment of the form:
-
-    // N3485 focus: <clause> [<stable-name>] <short topic>
-
-Do not use `tests/derived/` for PA14; it was an older buildout artifact and has no test role in this assignment.
-
-PA14 is tested against the generated LowIR text. A useful manual debugging path is:
-
-- feed that LowIR into PA23 `lowir2native`
-- optionally cross-check with PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+PA14 is tested against the generated LowIR text.
 
 ### PA14 Syntax Spec
 
@@ -248,9 +234,9 @@ This PA14 milestone supports the following:
   - built-in arithmetic, bitwise, shift, logical, comparison, conditional, comma, and
     subscript forms from the PA12 procedural subset
 
-The generated LowIR should be accepted by PA23 `lowir2native` for this supported subset.
-PA13 `lowir2cy86` remains a useful secondary scaffold backend, not the primary validation
-path.
+The generated LowIR for this supported subset is intended to be accepted by the
+later PA23 `lowir2native` backend. PA13 `lowir2cy86` remains a useful optional
+execution scaffold, not the primary validation path.
 
 ### Out Of Scope
 
@@ -295,4 +281,4 @@ Useful intermediate representations include:
 
 - a resolved procedural tree shared with PA12
 - explicit local slot/layout information
-- a stable mapping from resolved expressions to CY86 values and stack locations
+- a stable mapping from resolved expressions to LowIR values and stack locations

@@ -126,7 +126,7 @@ To run one test through the shared check target:
 make check TEST=tests/general/100-host-main-argv.t
 ```
 
-The test bucket is `tests/general/`. These tests cover host object
+The local tests live in `tests/general/`. They cover host object
 interoperability, host final-link behavior, symbol spelling/coalescing, and
 object inspection where the object surface is part of the contract. They are
 not direct N3485 clause tests.
@@ -183,7 +183,7 @@ Reference:
 
 PA31 owns ordinary host-toolchain interoperability of emitted object files.
 
-Within the supported subset, PA31 should:
+To complete PA31, implement this behavior within the supported subset:
 
 1. Emit host-linker-compatible relocatable objects.
 2. Expose a hosted entrypoint through the host CRT.

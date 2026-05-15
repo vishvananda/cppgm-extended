@@ -215,11 +215,12 @@ You are free to use them for debugging, tracing, or diagnostics.
 
 PA25 tests are source-driven.
 
-The local checked-in tests live in `tests/general/`. This bucket is for the PA25 private
-exception/runtime ABI regression surface: LowIR companion source files, checked-in link-map
-references, expected program behavior, and deterministic private-EH runtime outcomes. PA25
-currently has no `tests/spec/` bucket because the tested contract is the compiler-private
-`cppeh` runtime path rather than a directly cited N3485 C++ source-language clause.
+The local checked-in tests live in `tests/general/`. That directory contains
+LowIR companion source files, checked-in link-map references, expected program
+behavior, and deterministic private-EH runtime outcomes for the PA25 private
+exception/runtime ABI surface. PA25 has no `tests/spec/` directory because the
+tested contract is the compiler-private `cppeh` runtime path rather than a
+directly cited N3485 C++ source-language clause.
 
 For each test anchor `x.t`, the real LowIR inputs are the companion files:
 
@@ -321,25 +322,22 @@ PA25's job is not:
 - host C++ ABI compatibility for RTTI, vtables, or foreign-library interop
 - hosted-header or vendor-extension compatibility
 
-The most important PA25 goals are therefore:
+To complete PA25, implement these goals:
 
 1. Catch-style handler transfer.
    A thrown value must transfer control to the nearest active `eh_try` target and make the
-   current exception value visible through `exception`. The core oracles for this are
-   `100-same-function-catch` and `100-cross-function-catch`.
+   current exception value visible through `exception`.
 
 2. Cross-object exception transfer.
-   An exception thrown in one separately compiled object must be catchable in another. The
-   core oracle for this is `100-cross-object-catch`.
+   An exception thrown in one separately compiled object must be catchable in another.
 
 3. Cleanup-and-resume behaviour.
    Cleanup handlers must run during unwinding and `resume` must continue the in-flight
-   exception rather than creating a new one. The core oracle for this is
-   `100-cleanup-resume`.
+   exception rather than creating a new one.
 
 4. Deterministic unhandled-exception behaviour.
    Unhandled exceptions must follow one documented runtime path with deterministic program
-   behaviour. The core oracle for this is `100-unhandled-throw`.
+   behaviour.
 
 5. Link-map stability.
    Even if the implementation injects internal runtime support while linking, the visible

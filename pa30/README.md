@@ -199,9 +199,9 @@ To run one test through the shared check target:
 make check TEST=tests/general/100-two-source-call.t
 ```
 
-The test bucket is `tests/general/`. These are practical compiler-driver,
-separate-compilation, link, runtime, and regression tests. They are not direct
-N3485 clause tests.
+The local tests live in `tests/general/`. They exercise practical
+compiler-driver, separate-compilation, link, runtime, and consistency behavior.
+They are not direct N3485 clause tests.
 
 For each test anchor `x.t`, companion C++ sources are named:
 
@@ -267,7 +267,7 @@ Within that supported subset, PA30 should:
   host-compatible objects with delegation to the host toolchain, as long as the
   `cppgm++` behavior matches the contract
 
-The core PA30 goals are:
+To complete PA30, implement these goals:
 
 1. Separate compilation from C++ source.
 2. Direct source-link parity.

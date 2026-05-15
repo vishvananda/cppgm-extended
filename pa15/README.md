@@ -30,7 +30,6 @@ You will want to reuse:
 - the PA11 declarator/type model and class syntax preservation
 - the PA12/PA14 resolved procedural and LowIR lowering path
 - the PA13 LowIR contract
-- the PA23 `lowir2native` validation path
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
 
 The intended direction is:
@@ -56,7 +55,7 @@ The starter kit contains:
 - a local test suite
 - the grammar for this assignment called `pa15.gram`
 - an HTML grammar explorer of `pa15.gram` in the sub-directory `grammar/`
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 The provided scaffold and shared support files establish the driver shape and previous
 frontend modes. They do not implement the PA15 object-model LowIR lowering work.
@@ -88,11 +87,9 @@ subset of that IR with the object-model lowering needed by this milestone.
 
 When PA15 emits function-boundary metadata such as `unwind=no`, treat that as a
 truthful emitted fact, not as a promise that every semantically equivalent C++
-exception specification is normalized today. The current emit path recognizes
-cheap explicit forms such as bare `noexcept`, `throw()`, and trivial boolean
-`noexcept(...)` expressions. More general explicit `noexcept(expr)` currently
-may still lower conservatively without `unwind=no` until that semantic path is
-made cheaper.
+exception specification is normalized. PA15 requires only the explicit
+exception-specification forms covered by the tests; other explicit
+`noexcept(expr)` forms may lower conservatively without `unwind=no`.
 
 PA15 writes a single concatenated LowIR program consisting of:
 
@@ -115,11 +112,13 @@ In practice, PA15 only needs ctor/dtor helpers for the supported declaration-tim
 initializer, recursive subobject, and namespace-scope lifetime paths. Copy/value helpers do
 not belong in PA15 output.
 
-The PA23 `lowir2native` validation path is expected to execute those around `@main`.
-PA13 `lowir2cy86` remains useful as a secondary scaffold cross-check.
+The generated LowIR is intended to become input for the later PA23
+`lowir2native` backend, which will execute these helpers around `@main`. That
+future native path is not the PA15 grading contract. PA13 `lowir2cy86` remains
+useful as an optional execution scaffold.
 
 The checked-in `.ref` files define the required LowIR facts for the tests. The
-The test harness checks exit status, LowIR well-formedness, and the
+test harness checks exit status, LowIR well-formedness, and the
 course-defined normalized LowIR output rather than requiring students to match every
 non-semantic helper spelling or presentation choice.
 
@@ -151,28 +150,20 @@ For each test case `x`:
 `make test` runs the checked-in local suite under `tests/` and supplies
 `--emit-lowir -O0` through the harness.
 
-The tracked PA15 suite is split by test role:
+The PA15 suite is split by test role:
 
 - `tests/general/`: the default PA15 LowIR oracle suite. These tests cover object-model
-  lowering, class layout, lifetime, helper emission, implementation regressions, and
-  cross-feature cases whose primary contract is the generated LowIR plus exit status.
+  lowering, class layout, lifetime, helper emission, and cross-feature cases
+  whose primary contract is the generated LowIR plus exit status.
 - `tests/spec/`: focused C++ language-contract cases that cite a specific N3485 clause.
-  Each source test in this bucket should start with a comment of the form:
+  Each source test in this directory starts with a comment of the form:
 
     // N3485 focus: <clause> [<stable-name>] <short topic>
 
-The current `tests/spec/` bucket covers aggregate/list/reference initialization,
-pointer-to-member conversion, conversion functions, and static assertions. Keep broader
-object-model reducers and LowIR-shape checks in `tests/general/` unless they can honestly
-cite a specific standard clause.
-
-Do not use `tests/derived/` for PA15; it was an older buildout artifact and has no test role in this assignment.
-
-PA15 is tested against the generated LowIR text. A useful manual debugging path is:
-
-- feed that LowIR into PA23 `lowir2native`
-- optionally cross-check with PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+`tests/spec/` covers aggregate/list/reference initialization, pointer-to-member
+conversion, conversion functions, and static assertions. `tests/general/`
+covers object-model and LowIR-shape cases that are not tied to one specific
+C++11 clause.
 
 ### PA15 Syntax Spec
 
@@ -251,10 +242,11 @@ PA15 supports the following in addition to the PA14 procedural subset:
   - local object declarations
   - namespace-scope object declarations
 
-Within this milestone, PA15 should produce valid LowIR for ordinary non-polymorphic class
-code over the supported procedural subset. That LowIR should be accepted by PA23
-`lowir2native` for the supported cases. PA13 `lowir2cy86` remains a secondary validation
-path, not the primary backend target.
+Within this milestone, PA15 should produce valid LowIR for ordinary
+non-polymorphic class code over the supported procedural subset. That LowIR is
+intended to be accepted by the later PA23 `lowir2native` backend for the
+supported cases. PA13 `lowir2cy86` remains an optional execution scaffold, not
+the primary backend target.
 
 ### Out Of Scope
 
@@ -273,7 +265,7 @@ The following are explicitly out of scope for PA15:
 - bit-field member access, assignment, and initializer lowering
 - multiple inheritance
 - out-of-class constructor and destructor definitions
-  - the current PA15 syntax contract does not include those forms
+  - the PA15 syntax contract does not include those forms
 - broader C++ object-model corners such as conversion operators and advanced special-member
   generation rules
 

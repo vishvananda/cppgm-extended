@@ -14,7 +14,7 @@ assignments:
 - PA33 is about preprocessing, parsing, semantic analysis, and lowering
   compatibility for hosted source/header inputs.
 
-The most important PA33 goals are:
+To complete PA33, implement these goals:
 
 - hosted preprocessor compatibility
 - GNU/Clang parser concessions used by the selected hosted headers
@@ -157,7 +157,7 @@ make check TEST=tests/preproc/300-has-include.t
 make check TEST=tests/compile/500-builtin-transforms-and-traits.t
 ```
 
-PA33 has two test buckets:
+PA33 has two test directories:
 
 - `tests/preproc/`: hosted preprocessor compatibility. The oracle is the
   PA5-style structured preprocessor stream plus exit status.
@@ -165,9 +165,9 @@ PA33 has two test buckets:
   object emission, compile exit status, and any stdout/reference sidecars used
   by the harness.
 
-PA33 does not currently use `tests/spec/`. The checked-in tests are
-hosted/vendor compatibility cases, standard-library sentinels, reducers, and
-bootstrap-facing compile smokes rather than direct N3485 clause tests.
+The checked-in tests are hosted/vendor compatibility cases, standard-library
+sentinels, reducers, and bootstrap-facing compile smokes rather than direct
+N3485 clause tests.
 
 Optional sidecars include:
 

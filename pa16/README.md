@@ -32,7 +32,6 @@ You will want to reuse:
 - the PA12 call-resolution layer
 - the PA14/PA15 LowIR lowering path
 - the PA13 LowIR contract
-- the PA23 `lowir2native` validation path
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
 - the PA15 class metadata, constructor/destructor machinery, and lifetime lowering
 
@@ -55,7 +54,7 @@ The starter kit contains:
 - a local test suite
 - the grammar for this assignment called `pa16.gram`
 - an HTML grammar explorer of `pa16.gram` in the sub-directory `grammar/`
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 The provided scaffold and shared support files establish the driver shape and previous
 frontend modes. They do not implement the PA16 value-semantics LowIR lowering work.
@@ -125,7 +124,7 @@ For supported synthesized destructors, trivial union subobject destructor steps 
 omitted from enclosing synthesized destructors.
 
 The checked-in `.ref` files define the required LowIR facts for the tests. The
-The test harness checks exit status, LowIR well-formedness, and the
+test harness checks exit status, LowIR well-formedness, and the
 course-defined normalized LowIR output rather than requiring students to match every
 non-semantic helper spelling or presentation choice.
 
@@ -157,33 +156,23 @@ For each test case `x`:
 `make test` runs the checked-in local suite under `tests/` and supplies
 `--emit-lowir -O0` through the harness.
 
-The tracked PA16 suite is split by test role:
+The PA16 suite is split by test role:
 
 - `tests/general/`: the default PA16 LowIR oracle suite. These tests cover value-semantics
-  lowering, copy/value helper emission, temporary-materialization regressions, ABI-shape
-  reducers, and cross-feature cases whose primary contract is generated LowIR plus exit
-  status.
+  lowering, copy/value helper emission, temporary materialization, ABI-shape
+  cases, and cross-feature cases whose primary contract is generated LowIR plus
+  exit status.
 - `tests/spec/`: focused C++ language-contract cases that cite a specific N3485 clause.
-  Each source test in this bucket should start with a comment of the form:
+  Each source test in this directory starts with a comment of the form:
 
     // N3485 focus: <clause> [<stable-name>] <short topic>
 
-The current `tests/spec/` bucket covers range-for, lambda capture, scoped enums,
-defaulted/deleted functions, and copy/move special-member rules. Keep broader
-value-semantics reducers and LowIR-shape checks in `tests/general/` unless they can
-honestly cite a specific standard clause.
+`tests/spec/` covers range-for, lambda capture, scoped enums, defaulted/deleted
+functions, and copy/move special-member rules. `tests/general/` covers
+value-semantics and LowIR-shape cases that are not tied to one specific C++11
+clause.
 
-Do not use `tests/derived/` for PA16; it was an older buildout artifact and has no test role in this assignment.
-
-The PA16 suite is focused on value-semantics behavior introduced in this
-milestone. Earlier PA15 regressions are expected to stay covered by the PA15 suite rather
-than being duplicated here.
-
-PA16 is tested against the generated LowIR text. A useful manual debugging path is:
-
-- feed that LowIR into PA23 `lowir2native`
-- optionally cross-check with PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+PA16 is tested against the generated LowIR text.
 
 ### PA16 Syntax Spec
 
@@ -246,9 +235,10 @@ PA16 supports the following in addition to the PA15 subset:
 - out-of-class destructor definitions
 
 Within this milestone, PA16 should produce valid LowIR for ordinary non-polymorphic value
-types over the supported PA15 procedural/class subset. That LowIR should be accepted by
-PA23 `lowir2native` for the supported cases. PA13 `lowir2cy86` remains a secondary scaffold
-backend, not the primary validation path.
+types over the supported PA15 procedural/class subset. That LowIR is intended
+to be accepted by the later PA23 `lowir2native` backend for the supported
+cases. PA13 `lowir2cy86` remains an optional execution scaffold, not the
+primary validation path.
 
 ### Out Of Scope
 

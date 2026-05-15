@@ -33,7 +33,7 @@ The starter kit supplies:
 - `pa36/lowir2native.cpp`, linked to the editable `dev/lowir2native.cpp`
 - a `dev/lowir2native.cpp` scaffold based on `dev/lowir2native-scaffold.cpp`
 - shared machine-IR and native backend support under `dev/src/`
-- test buckets under `pa36/tests/`
+- test directories under `pa36/tests/`
 - harness scripts under `pa36/scripts/`
 - checked-in machine-IR and generated-program oracle sidecars
 
@@ -99,6 +99,8 @@ contract. Output files after a failed run are undefined.
 
 ### Optimization Levels
 
+To complete PA36, implement these backend optimization levels:
+
 `-O1` is the local machine-improvement level. It must include these
 semantic-preserving rewrites where safe:
 
@@ -160,8 +162,8 @@ make test-debuginfo
 - `tests/debuginfo/o1`
 - `tests/debuginfo/o2`
 
-These buckets are backend role buckets, not N3485 source-language
-specification buckets.
+These directories are organized by backend role and validation mode, not by
+N3485 source-language clauses.
 
 - `tests/o1` runs `lowir2native -O1` over LowIR inputs and checks local
   backend cleanup.
@@ -180,8 +182,8 @@ succeeds, and compares:
 - generated-program standard output, when relevant
 
 Failed reference builds are judged by implementation exit status. Successful
-reference builds are judged by the bucket's structural machine-IR validation
-and generated-program behavior.
+reference builds are judged by the test directory's structural machine-IR
+validation and generated-program behavior.
 
 ### Out Of Scope
 

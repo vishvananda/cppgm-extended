@@ -121,10 +121,10 @@ To run one test through the shared check target:
 make check TEST=tests/general/100-host-eh-same-tu-throw-catch.t
 ```
 
-The test bucket is `tests/general/`. These tests cover host C++
-ABI/runtime behavior, host-linked exception handling, RTTI, vtables, thunks,
-object inspection, and regression smokes around those host-runtime surfaces.
-They are not direct N3485 clause tests.
+The local tests live in `tests/general/`. They cover host C++ ABI/runtime
+behavior, host-linked exception handling, RTTI, vtables, thunks, and object
+inspection around those host-runtime surfaces. They are not direct N3485 clause
+tests.
 
 For each test anchor `x.t`, companion C++ sources are named:
 
@@ -160,7 +160,7 @@ The checked-in PA32 tests cover:
 
 PA32 owns practical host-linked C++ ABI/runtime behavior.
 
-Within the supported subset, PA32 should preserve:
+To complete PA32, preserve this behavior within the supported subset:
 
 - virtual dispatch and imported/exported vtable ownership
 - RTTI-driven `dynamic_cast` / `typeid`

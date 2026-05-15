@@ -29,7 +29,7 @@ The starter kit supplies:
 - `pa35/lowiropt.cpp`, linked to the editable `dev/lowiropt.cpp`
 - a `dev/lowiropt.cpp` scaffold based on `dev/lowiropt-scaffold.cpp`
 - shared compiler support under `dev/src/`
-- test buckets under `pa35/tests/`
+- test directories under `pa35/tests/`
 - harness scripts under `pa35/scripts/`
 - checked-in `.ref` and `.ref.exit_status` files for the tests
 
@@ -101,6 +101,8 @@ output file after a failed run are undefined.
 
 ### Optimization Levels
 
+To complete PA35, implement these optimization levels:
+
 `-O0` is the baseline canonicalization mode. It should parse the input program,
 preserve all semantic content, and write the canonical LowIR dump without
 running optimizing transforms.
@@ -162,8 +164,8 @@ make test
 - `tests/driver/o1`
 - `tests/driver/o2`
 
-The buckets are role and oracle buckets, not N3485 source-language
-specification buckets.
+These directories are organized by tool mode and validation mode, not by N3485
+source-language clauses.
 
 - `tests/o0` runs `lowiropt -O0` on handwritten LowIR.
 - `tests/o1` runs `lowiropt -O1` on handwritten LowIR.
@@ -184,15 +186,15 @@ make test-debuginfo
 - `tests/debuginfo/driver/o1`
 - `tests/debuginfo/driver/o2`
 
-The direct debug-info buckets run `lowiropt -O*` over LowIR containing
-`!dbg(...)` metadata. The driver debug-info buckets run
+The direct debug-info tests run `lowiropt -O*` over LowIR containing
+`!dbg(...)` metadata. The driver debug-info tests run
 `cppgm++ --emit-lowir -gline-tables-only -O*` and check that source locations
 survive the source-to-LowIR optimizer path.
 
 For each `.t` test, the harness records the tool exit status and compares the
-generated output against the oracle for that bucket. Failed reference
+generated output against the oracle for that test directory. Failed reference
 cases are judged by exit status; successful reference cases are judged by the
-bucket's LowIR validation mode.
+directory's LowIR validation mode.
 
 ### Out Of Scope
 

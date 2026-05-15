@@ -42,7 +42,7 @@ The starter kit contains:
 - a local test suite under `pa27/tests/`
 - the grammar for this assignment called `pa27.gram`
 - an HTML grammar explorer of `pa27.gram` in the sub-directory `grammar/`
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
@@ -94,16 +94,11 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
 `cppgm++` with `--emit-lowir -O0`.
 
-The local checked-in tests live in `tests/general/`. This bucket is for PA27 source-to-LowIR
-regressions over capturing lambdas, initializer-list interoperation, RTTI, `typeid`,
-`dynamic_cast`, and exception-source lowering interactions. PA27 currently has no
-`tests/spec/` bucket. Future tests that are intended to be clause-by-clause C++ standard
-checks should live in `tests/spec/` and start with a leading comment in this form:
-
-    // N3485 focus: 5.1.2 [expr.prim.lambda] ...
-
-The citation must name the specific N3485 subclause being tested so a reviewer can find the
-relevant text in `../doc/n3485.txt`.
+The local checked-in tests live in `tests/general/`. That directory contains
+PA27 source-to-LowIR tests for capturing lambdas, initializer-list
+interoperation, RTTI, `typeid`, `dynamic_cast`, and exception-source lowering
+interactions. PA27 has no `tests/spec/` directory because these tests focus on
+the combined language-to-LowIR contract.
 
 For each test case `x`:
 
@@ -119,8 +114,7 @@ above. A useful manual validation path is:
 - optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
 - then feed the generated CY86 into PA9 `cy86 --target linux`
 
-The shipped PA27 tests are the contract for this milestone. Additional course tests
-should stay within the PA27 source-to-LowIR boundary defined above.
+The shipped PA27 tests are the contract for this milestone.
 
 ### PA27 Syntax Spec
 
@@ -162,27 +156,24 @@ Within this milestone, PA27 should produce valid LowIR for ordinary source progr
 that subset. That LowIR should be accepted by PA23 `lowir2native` for the supported cases.
 PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
-The most important PA27 goals are therefore:
+To complete PA27, implement these goals:
 
 1. Capturing lambda lowering.
    Explicit by-copy captures should materialize deterministic closure-object LowIR and the
    resulting closure object should be callable through the existing class/method lowering
-   path. The core oracle for this is `100-capturing-lambda-local`.
+   path.
 
 2. `std::initializer_list` interoperation.
    Supported braced-list calls should materialize deterministic lowered storage and expose
-   the expected `__begin` / `__size` semantics to later range-for lowering. The core
-   oracle for this is `100-initializer-list-call`.
+   the expected `__begin` / `__size` semantics to range-for lowering.
 
 3. RTTI and `typeid`.
    The compiler should emit deterministic RTTI globals and lower both static and dynamic
-   `typeid` queries into ordinary LowIR address/load/branch operations. The core oracles
-   for this are `100-typeid-type` and `100-typeid-polymorphic`.
+   `typeid` queries into ordinary LowIR address/load/branch operations.
 
 4. Pointer-form `dynamic_cast`.
    The compiler should lower supported polymorphic single-inheritance pointer casts into
-   ordinary LowIR control flow without introducing new IR operations. The core oracles for
-   this are `100-dynamic-cast-success` and `100-dynamic-cast-fail`.
+   ordinary LowIR control flow without introducing new IR operations.
 
 ### Out Of Scope
 

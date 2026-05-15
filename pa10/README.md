@@ -39,7 +39,7 @@ The PA10 starter kit contains:
 - `scripts/run_all_tests.pl`, `scripts/run_one_test.sh`, and
   `scripts/compare_results.pl`
 - `tests/spec/`, clause-anchored syntax tests
-- `tests/general/`, broader parser regression tests
+- `tests/general/`, broader parser tests
 - checked-in `.ref` and `.ref.exit_status` files used as the oracle
 
 Your main editable file is `dev/cppgm++.cpp`. You may add or change other
@@ -241,11 +241,8 @@ The local suite is split by role:
 
 - `tests/spec/` contains small tests tied to specific C++11 syntax clauses.
   These files begin with an `N3485 focus` comment.
-- `tests/general/` contains broader parser regressions, cross-feature syntax
-  combinations, implementation reducers, and useful intake cases that are not a
-  single-clause oracle.
-
-There is no active `tests/derived/` PA10 suite.
+- `tests/general/` contains broader parser tests, cross-feature syntax
+  combinations, and useful intake cases that are not a single-clause oracle.
 
 ### Design Notes (Non-Normative)
 

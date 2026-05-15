@@ -43,7 +43,7 @@ The PA12 starter kit contains:
 - `scripts/run_all_tests.pl`, `scripts/run_one_test.sh`, and
   `scripts/compare_results.pl`
 - `tests/spec/`, clause-anchored call/conversion/control-flow tests
-- `tests/general/`, broader semantic regression tests
+- `tests/general/`, broader call-semantics tests
 - checked-in `.ref` and `.ref.exit_status` files used as the oracle
 
 Your main editable file is `dev/cppgm++.cpp`. You may add or change other
@@ -298,11 +298,9 @@ The local suite is split by role:
 - `tests/spec/` contains small tests tied to specific C++11 calls,
   conversions, initialization, overload-resolution, or control-flow clauses.
   These files begin with an `N3485 focus` comment.
-- `tests/general/` contains broader PA12 regressions, cross-feature semantic
-  combinations, implementation reducers, and useful intake cases that are not a
+- `tests/general/` contains broader PA12 call-semantics tests,
+  cross-feature semantic combinations, and useful intake cases that are not a
   single-clause oracle.
-
-There is no active `tests/derived/` PA12 suite.
 
 ### Design Notes (Non-Normative)
 

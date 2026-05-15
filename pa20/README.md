@@ -12,7 +12,7 @@ constant-evaluation milestone. Its job is to make `constexpr` semantics a first-
 of the compiler rather than leaving constant evaluation as only the small pragmatic subset
 needed by PA19 template arguments and `static_assert`.
 
-The most important PA20 goals are:
+To complete PA20, implement these goals:
 
 - `constexpr` function evaluation
 - `constexpr` constructors, member functions, and variables
@@ -42,7 +42,7 @@ The starter kit contains:
 - a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
   in `../dev/cppgm++.cpp`
 - the standard assignment `Makefile` and harness scripts
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
 the `cppgm++` scaffold and is the file you extend for this assignment.
@@ -94,19 +94,18 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 PA20 tests live under `tests/`. The suite is split by test role:
 
 - `tests/spec/` contains N3485/spec-anchored constant-evaluation tests. Each
-  provided C++ language test in this bucket starts with a leading comment of the
+  provided C++ language test in this directory starts with a leading comment of the
   form `// N3485 focus: 7.1.5 [dcl.constexpr] ...` or another exact governing
   clause so a reviewer can find the text in `../doc/n3485.txt`.
-- `tests/general/` contains broader constexpr regressions, cross-feature
-  combinations, implementation reducers, stress/sentinel cases, and realistic
+- `tests/general/` contains broader constexpr cross-feature and realistic
   constant-evaluation examples that are useful for PA20 but are not one-rule
   spec probes.
 
-The `make test` target runs both buckets through the LowIR validator. For
+The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
 LowIR for basic structural correctness, then compares the canonicalized LowIR
 against the checked-in reference. For rejected tests, the exit status is the
-checked result; exact diagnostic text is not checked. PA20 does not ship a template-witness oracle.
+checked result; exact diagnostic text is not checked.
 
 ### PA20 Syntax Boundary
 

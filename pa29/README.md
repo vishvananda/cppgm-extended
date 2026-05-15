@@ -42,7 +42,7 @@ The starter kit contains:
 - a local test suite under `pa29/tests/`
 - the grammar for this assignment called `pa29.gram`
 - an HTML grammar explorer of `pa29.gram` in the sub-directory `grammar/`
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
@@ -94,16 +94,9 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
 `cppgm++` with `--emit-lowir -O0`.
 
-The local checked-in tests live in `tests/general/`. This bucket is for PA29 source-to-LowIR
-regressions over virtual inheritance, non-primary polymorphic views, sibling
-`dynamic_cast`, and RTTI through adjusted base views. PA29 currently has no `tests/spec/`
-bucket. Future tests that are intended to be clause-by-clause C++ standard checks should
-live in `tests/spec/` and start with a leading comment in this form:
-
-    // N3485 focus: 10.1 [class.mi] ...
-
-The citation must name the specific N3485 subclause being tested so a reviewer can find the
-relevant text in `../doc/n3485.txt`.
+The local checked-in tests live in `tests/general/`. They exercise PA29
+source-to-LowIR behavior over virtual inheritance, non-primary polymorphic
+views, sibling `dynamic_cast`, and RTTI through adjusted base views.
 
 For each test case `x`:
 
@@ -113,14 +106,14 @@ For each test case `x`:
 - `x.my.exit_status` is compared against `x.ref.exit_status`
 
 PA29 is tested against generated LowIR text using the relaxed LowIR comparator described
-above. A useful manual validation path is:
+above. The generated LowIR is also intended to remain acceptable to the already-completed
+backend paths:
 
 - feed that LowIR into PA23 `lowir2native`
 - optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
 - then feed the generated CY86 into PA9 `cy86 --target linux`
 
-The shipped PA29 tests are the contract for this milestone. Additional course tests
-should stay within the PA29 source-to-LowIR boundary defined above.
+The shipped PA29 tests are the contract for this milestone.
 
 ### PA29 Syntax Spec
 
@@ -164,25 +157,23 @@ Within this milestone, PA29 should produce valid LowIR for ordinary source progr
 that subset. That LowIR should be accepted by PA23 `lowir2native` for the supported cases.
 PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
-The most important PA29 goals are therefore:
+To complete PA29, implement these goals:
 
 1. Shared virtual-base layout.
    Complete objects with a virtual diamond should expose one shared base-subobject at a
-   deterministic offset. The core oracle for this is `100-virtual-inheritance-fields`.
+   deterministic offset.
 
 2. Non-primary polymorphic dispatch.
    Calling a virtual through a later polymorphic base must lower through the correct vtable
-   view and apply the required `this` adjustment. The core oracle for this is
-   `100-nonprimary-virtual-dispatch`.
+   view and apply the required `this` adjustment.
 
 3. Sibling cross-cast support.
    Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the
-   supported RTTI / vtable-view scan. The core oracle for this is
-   `100-sibling-dynamic-cast`.
+   supported RTTI / vtable-view scan.
 
 4. RTTI through non-primary views.
    `typeid(expr)` should observe the dynamic type through a supported non-primary
-   polymorphic base reference. The core oracle for this is `100-typeid-nonprimary-view`.
+   polymorphic base reference.
 
 ### Out Of Scope
 

@@ -2,7 +2,7 @@
 
 ### Overview
 
-PA37 is the inception assignment. The final goal is to build `cppgm++` with
+PA37 is the inception assignment. To complete PA37, make `cppgm++` build
 `cppgm++` and have that rebuilt compiler match the host-seeded build. In
 Makefile terms, the main target is:
 
@@ -161,17 +161,17 @@ A useful workflow is:
 1. Find the first failing checkpoint, source file, or preservation test.
 2. Reduce the failure to the smallest source that still fails.
 3. Identify the earliest assignment surface that owns that behavior.
-4. Add the reducer as a regression test under the matching
-   `cppgm.tests/course/paN` bucket while you work on the fix.
+4. Add the reducer as a focused test under the matching
+   `cppgm.tests/course/paN` directory while you work on the fix.
 5. Fix the underlying compiler bug and rerun the narrow stage before returning
    to the broader `test-through-*` or inception target.
 
 For example, if `cppgm++-self` fails because a construct in `dev/src/*.cpp` is
-miscompiled, reduce that construct and place the regression in the earliest
+miscompiled, reduce that construct and place the focused test in the earliest
 `cppgm.tests/course/paN` directory that should have covered it. If
 `compare-cppgm++-inception` builds both compilers but the bytes differ, look for
 reproducibility issues such as unstable output order, generated configuration
 drift, embedded paths, timestamps, or linker determinism.
 
 The best PA37 fixes usually improve an earlier assignment surface and leave a
-small regression test behind.
+small focused test behind.

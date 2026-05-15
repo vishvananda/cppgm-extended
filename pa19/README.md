@@ -48,7 +48,7 @@ The starter kit contains:
 - the standard assignment `Makefile` and harness scripts
 - the grammar for this assignment called `pa19.gram`
 - an HTML grammar explorer of `pa19.gram` in the sub-directory `grammar/`
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from the
 `cppgm++` scaffold and is the file you extend for this assignment.
@@ -109,38 +109,29 @@ For each test case `x`:
 by test role:
 
 - `tests/spec/` contains N3485/spec-anchored PA19 metaprogramming tests. Each
-  provided C++ language test in this bucket starts with a leading comment of the
+  provided C++ language test in this directory starts with a leading comment of the
   form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
   governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader LowIR regressions, cross-feature
-  combinations, implementation reducers, stress/sentinel cases, and realistic
-  metaprogramming examples that are useful for PA19 but are not one-rule spec
+- `tests/general/` contains broader cross-feature and realistic
+  metaprogramming tests that are useful for PA19 but are not one-rule spec
   probes.
 
-The `make test` target runs both buckets through the LowIR validator. For
+The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
 LowIR for basic structural correctness, then compares the canonicalized LowIR
 against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
 
-Template witness sidecars, when present, are additional validation artifacts.
-They are not part of the PA19 oracle unless this README explicitly requires
-them.
-
-PA19 is tested against generated LowIR text. Once later tools are available, a
-useful manual validation path is:
-
-- feed that LowIR into PA23 `lowir2native`
-- optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+PA19 is tested against generated LowIR text. That LowIR is intended to become
+input for the later PA23 `lowir2native` backend, but that future native path is
+not the PA19 grading contract.
 
 ### Optional Student Test Ideas
 
 When adding your own tests, useful PA19 themes include explicit specialization
 ordering and visibility, integral non-type argument equivalence, dependent
 non-type parameter types, and static data member specialization. Keep larger
-metaprogramming reducers separate from one-rule spec probes by using
-`tests/general/` for broad integration cases.
+metaprogramming integration cases under `tests/general/`.
 
 ### PA19 Syntax Spec
 
@@ -201,9 +192,9 @@ PA19 supports the following in addition to the PA18 subset:
   including conditions that remain template-dependent until instantiation
 
 Within this milestone, PA19 should produce valid LowIR for ordinary metaprogramming code
-over the supported PA18 language subset. That LowIR should be accepted by PA23
-`lowir2native` for the supported cases. PA13 `lowir2cy86` remains a secondary scaffold
-backend for cross-checking.
+over the supported PA18 language subset. That LowIR is intended to be accepted
+by the later PA23 `lowir2native` backend for the supported cases. PA13
+`lowir2cy86` remains an optional execution scaffold.
 
 ### Out Of Scope
 

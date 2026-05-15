@@ -38,7 +38,7 @@ The starter kit contains:
 - a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
   in `../dev/cppgm++.cpp`
 - the standard assignment `Makefile` and harness scripts
-- the PA21 specialization/entity regression subset under `tests/`
+- the PA21 specialization/entity test suite under `tests/`
 
 In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
 the `cppgm++` scaffold and is the file you extend for this assignment.
@@ -91,23 +91,18 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 PA21 tests live under `tests/`. The suite is split by test role:
 
 - `tests/spec/` contains N3485/spec-anchored specialization/entity tests. Each
-  provided C++ language test in this bucket starts with a leading comment of the
+  provided C++ language test in this directory starts with a leading comment of the
   form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
   governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader LowIR regressions, cross-feature
-  combinations, implementation reducers, stress/sentinel cases, and realistic
+- `tests/general/` contains broader cross-feature and realistic
   template-entity examples that are useful for PA21 but are not one-rule spec
   probes.
 
-The `make test` target runs both buckets through the LowIR validator. For
+The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
 LowIR for basic structural correctness, then compares the canonicalized LowIR
 against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
-
-Template witness sidecars, when present, are additional validation artifacts.
-They are not part of the PA21 oracle unless this README explicitly requires
-them.
 
 This split assignment intentionally focuses on the specialization/entity half of
 template completion:
@@ -129,8 +124,8 @@ itself make that construct required unless it is inside the PA21 boundary below.
 When adding your own tests, useful PA21 themes include alias/variable template
 entities, class and function partial specialization selection,
 explicit-instantiation ownership, constructor/member-template specialization
-ownership, and partial ordering boundaries. Larger generic-library reductions
-belong in `tests/general/`.
+ownership, and partial ordering boundaries. Larger generic-library integration
+cases can go in `tests/general/`.
 
 ### Assignment Boundary
 

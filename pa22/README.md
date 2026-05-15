@@ -34,7 +34,7 @@ The starter kit contains:
 - a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
   in `../dev/cppgm++.cpp`
 - the standard assignment `Makefile` and harness scripts
-- the PA22 deduction/substitution regression subset under `tests/`
+- the PA22 deduction/substitution test suite under `tests/`
 
 In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
 the `cppgm++` scaffold and is the file you extend for this assignment.
@@ -87,23 +87,18 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 PA22 tests live under `tests/`. The suite is split by test role:
 
 - `tests/spec/` contains N3485/spec-anchored deduction, substitution, and
-  SFINAE tests. Each provided C++ language test in this bucket starts with a
+  SFINAE tests. Each provided C++ language test in this directory starts with a
   leading comment of the form `// N3485 focus: 14.x.y [clause.name] ...` so a
   reviewer can find the governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader LowIR regressions, cross-feature
-  combinations, implementation reducers, stress/sentinel cases, and realistic
+- `tests/general/` contains broader cross-feature and realistic
   generic-program examples that are useful for PA22 but are not one-rule spec
   probes.
 
-The `make test` target runs both buckets through the LowIR validator. For
+The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
 LowIR for basic structural correctness, then compares the canonicalized LowIR
 against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
-
-Template witness sidecars, when present, are additional validation artifacts.
-They are not part of the PA22 oracle unless this README explicitly requires
-them.
 
 This split assignment intentionally focuses on the deduction/substitution half
 of template completion:
@@ -127,7 +122,7 @@ When adding your own tests, useful PA22 themes include explicit template
 arguments mixed with deduced ones, function-address deduction, conversion
 function template deduction, constructor-template participation, richer
 non-deduced contexts, and compact `enable_if` / `void_t` / detector patterns.
-Hosted or STL-facing sentinels belong in `tests/general/`.
+Broader template integration cases can go in `tests/general/`.
 
 ### Assignment Boundary
 

@@ -54,7 +54,7 @@ The starter kit contains:
 - a local test suite under `pa26/tests/`
 - the grammar for this assignment called `pa26.gram`
 - an HTML grammar explorer of `pa26.gram` in the sub-directory `grammar/`
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
@@ -106,16 +106,10 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
 `cppgm++` with `--emit-lowir -O0`.
 
-The local checked-in tests live in `tests/general/`. This bucket is for PA26 source-to-LowIR
-regressions, cross-feature combinations, implementation bug reducers, and boundary cases over
-the broad core-language closure slice. PA26 currently has no `tests/spec/` bucket. Future
-tests that are intended to be clause-by-clause C++ standard checks should live in
-`tests/spec/` and start with a leading comment in this form:
-
-    // N3485 focus: 7.1.6.4 [dcl.spec.auto] ...
-
-The citation must name the specific N3485 subclause being tested so a reviewer can find the
-relevant text in `../doc/n3485.txt`.
+The local checked-in tests live in `tests/general/`. That directory contains
+PA26 source-to-LowIR tests, cross-feature combinations, and boundary cases over
+the broad core-language closure slice. PA26 has no `tests/spec/` directory
+because these tests focus on the combined language-to-LowIR contract.
 
 For each test case `x`:
 
@@ -131,8 +125,7 @@ above. A useful manual validation path is:
 - optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
 - then feed the generated CY86 into PA9 `cy86 --target linux`
 
-The shipped PA26 tests are the contract for this milestone. Additional course tests
-should stay within the PA26 source-to-LowIR boundary defined above.
+The shipped PA26 tests are the contract for this milestone.
 
 ### PA26 Syntax Spec
 
@@ -186,31 +179,26 @@ Within this milestone, PA26 should produce valid LowIR for ordinary source progr
 that subset. That LowIR should be accepted by PA23 `lowir2native` for the supported cases.
 PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
-The most important PA26 goals are therefore:
+To complete PA26, implement these goals:
 
 1. `auto` variable deduction.
    The compiler should deduce the declared type from the initializer and lower the resulting
    variable just like an equivalent explicit declaration, including ordinary pointer and
-   reference declarators such as `auto*`, `auto&`, and `auto&&`. The core oracles for this
-   are `100-auto-local` and `100-auto-global`.
+   reference declarators such as `auto*`, `auto&`, and `auto&&`.
 
 2. Direct braced initialization.
    Supported scalar and array declarations should lower cleanly from `{...}` source forms,
-   not only from `=` initializer syntax. The core oracles for this are `100-brace-scalar`
-   and `100-array-brace-init`.
+   not only from `=` initializer syntax.
 
 3. Captureless lambda lowering.
    Captureless lambdas should become callable lowered entities with deterministic LowIR.
-   The core oracles for this are `100-lambda-local` and `100-lambda-global`.
 
 4. Range-for lowering.
    Range-for over arrays, braced-init lists, and supported user-defined `begin` / `end`
    ranges should lower into ordinary loop/control-flow structure in LowIR, including
-   ordinary reference loop declarations such as `const int&` and `const auto&`. The core
-   oracles for this are `100-range-for-array`, `100-range-for-braced-list`,
-   `200-range-for-member-begin-end`, and `200-range-for-adl-begin-end`.
+   ordinary reference loop declarations such as `const int&` and `const auto&`.
 
-The trusted suite also exercises a small remaining ordinary-language closure cluster here:
+The test suite also exercises a small remaining ordinary-language closure cluster here:
 direct braced-init expressions, direct aggregate construction, supported integral / enum
 functional casts, and pointer / integer `reinterpret_cast`.
 

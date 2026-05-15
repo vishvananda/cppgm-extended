@@ -172,9 +172,9 @@ To run one test through the shared check target:
 make check TEST=tests/link/600-hosted-std-function-call-link-smoke.t
 ```
 
-PA34 uses one test bucket, `tests/link/`. The bucket name is intentional:
-the oracle is hosted compile plus host final link/run, with optional object
-inspection for symbol ownership and unresolved-symbol checks.
+The local tests live in `tests/link/`. The directory name reflects the oracle:
+hosted compile plus host final link/run, with optional object inspection for
+symbol ownership and unresolved-symbol checks.
 
 For each test anchor `x.t`, companion C++ sources are named:
 
@@ -197,13 +197,12 @@ These checks verify both positive ownership, such as a needed inline/template
 definition being present, and negative ownership, such as an unused hosted helper
 remaining absent from the defined-symbol table.
 
-PA34 does not currently use `tests/spec/`. The checked-in tests are hosted
-link/runtime smokes, ABI spelling checks, object-inspection checks, and
-regressions rather than direct N3485 clause tests.
+The checked-in tests are hosted link/runtime smokes, ABI spelling checks, and
+object-inspection checks rather than direct N3485 clause tests.
 
 ### Assignment Boundary
 
-PA34 owns hosted link/runtime behavior whose main questions are:
+To complete PA34, implement hosted link/runtime behavior for:
 
 - emitted inline/template/header definitions from hosted headers
 - demand-driven emission of only the hosted inline/template/header definitions

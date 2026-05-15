@@ -42,7 +42,7 @@ The starter kit contains:
 - a local test suite under `pa28/tests/`
 - the grammar for this assignment called `pa28.gram`
 - an HTML grammar explorer of `pa28.gram` in the sub-directory `grammar/`
-- a checked-in local regression suite under `tests/`
+- a checked-in local test suite under `tests/`
 
 Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
@@ -95,16 +95,11 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
 `cppgm++` with `--emit-lowir -O0`.
 
-The local checked-in tests live in `tests/general/`. This bucket is for PA28 source-to-LowIR
-regressions over non-virtual multiple inheritance, multi-base generated members,
-`dynamic_cast<void*>`, and ambiguity rejection. PA28 currently has no `tests/spec/` bucket.
-Future tests that are intended to be clause-by-clause C++ standard checks should live in
-`tests/spec/` and start with a leading comment in this form:
-
-    // N3485 focus: 10.2 [class.member.lookup] ...
-
-The citation must name the specific N3485 subclause being tested so a reviewer can find the
-relevant text in `../doc/n3485.txt`.
+The local checked-in tests live in `tests/general/`. That directory contains
+PA28 source-to-LowIR tests over non-virtual multiple inheritance, multi-base
+generated members, `dynamic_cast<void*>`, and ambiguity rejection. PA28 has no
+`tests/spec/` directory because these tests focus on the combined
+language-to-LowIR contract.
 
 For each test case `x`:
 
@@ -120,8 +115,7 @@ above. A useful manual validation path is:
 - optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
 - then feed the generated CY86 into PA9 `cy86 --target linux`
 
-The shipped PA28 tests are the contract for this milestone. Additional course tests
-should stay within the PA28 source-to-LowIR boundary defined above.
+The shipped PA28 tests are the contract for this milestone.
 
 ### PA28 Syntax Spec
 
@@ -161,30 +155,26 @@ Within this milestone, PA28 should produce valid LowIR for ordinary source progr
 that subset. That LowIR should be accepted by PA23 `lowir2native` for the supported cases.
 PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
-The most important PA28 goals are therefore:
+To complete PA28, implement these goals:
 
 1. Multiple-base layout and field access.
    Distinct base subobjects should have deterministic offsets, and member access should lower
-   through those offsets correctly. The core oracle for this is
-   `100-multiple-inheritance-fields`.
+   through those offsets correctly.
 
 2. Base-method lookup and `this` adjustment.
    Calling a method inherited from a later base must lower the implicit object argument to the
-   correct base-subobject address. The core oracle for this is
-   `100-multiple-inheritance-method-call`.
+   correct base-subobject address.
 
 3. Generated special members across multiple bases.
    Synthesized construction, copy, assignment, and destruction should sequence the supported
-   non-virtual bases correctly. The core oracle for this is `100-multiple-inheritance-copy`.
+   non-virtual bases correctly.
 
 4. Remaining single-vptr RTTI case.
    `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI
-   without introducing new LowIR operations. The core oracle for this is
-   `100-dynamic-cast-void`.
+   without introducing new LowIR operations.
 
 5. Ambiguity handling.
-   Ambiguous inherited member names must not silently resolve. The core oracle for this is
-   `100-bad-ambiguous-member`.
+   Ambiguous inherited member names must not silently resolve.
 
 ### Out Of Scope
 

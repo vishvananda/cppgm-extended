@@ -55,11 +55,6 @@ translation as the assignment work.
 There is no required `lowir2cy86-ref` binary for PA13. The checked-in
 reference files under `tests/spec/` are the grading oracle.
 
-Some repository snapshots also contain `tests/debuginfo/` and helper scripts
-for source-to-LowIR, optimizer, native-object, `dwarfdump`, or LLDB validation.
-Those are not part of PA13 unless course staff assigns them explicitly. The PA13
-test command is `make test`, which runs `tests/spec/`.
-
 ### Build And Test Commands
 
 From the `pa13/` directory:
@@ -226,7 +221,7 @@ Reject structurally malformed LowIR, including:
 
 Diagnostics are not graded, but the exit status is.
 
-### Later And Instructor-Only Material
+### LowIR Family Context
 
 `lowir.md` also describes LowIR facts that become important for later
 assignments, including object ABI metadata, exception/runtime roles, optional
