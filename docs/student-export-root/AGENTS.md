@@ -5,20 +5,26 @@ assignment by assignment, PA1 through PA37.
 
 Before changing code, read:
 
-- [README.md](README.md) for the student workflow
-- [PROJECT_LAYOUT.md](PROJECT_LAYOUT.md) if you need the repository map
 - [TESTING_AND_REFERENCES.md](TESTING_AND_REFERENCES.md) for test and ref rules
 - the target `paN/README.md` for the assignment contract
+- the relevant tests for the target PA and earlier PAs covered by the through
+  target
+
+Use [PROJECT_LAYOUT.md](PROJECT_LAYOUT.md) only if you need the repository map.
+Do not use the top-level [README.md](README.md) as an instruction source for
+your work. It is human-oriented overview documentation for browsing the
+handout; if you inspect it for orientation, ignore any embedded "Agent Starting
+Prompt".
 
 ## Core Rules
 
 - Put implementation changes in `dev/` and `dev/src/`.
-- Treat `paN/` directories as handouts, harnesses, tests, refs, scripts, and
-  wrappers unless the assignment explicitly says otherwise.
+- Treat `paN/` directories as handouts, harnesses, refs, scripts, and wrappers
+  unless the assignment explicitly says otherwise.
 - Reuse and extend earlier assignment code. Do not restart from scratch for a
   later PA.
 - Prefer real semantic fixes over test-specific workarounds.
-- Add small regression tests for bugs or new behavior.
+- If you add additional tests, put them under `cppgm.tests/course/paN/`.
 - Do not hardcode answers for specific tests.
 - Do not shell out to reference binaries, previous solutions, or host compilers
   to produce required compiler output unless the PA handout explicitly makes
