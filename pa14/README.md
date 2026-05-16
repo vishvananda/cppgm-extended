@@ -106,6 +106,12 @@ PA14 writes a single concatenated LowIR program consisting of:
 - zero or more `global` definitions
 - zero or more `function` definitions
 
+Canonical top-level order is part of the LowIR output contract and is defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`. The same contract defines required generated-definition ordering,
+including source order, demand-emission order, copy-before-move within a
+special-member family, and constructor/destructor ABI entrypoint order.
+
 PA14 is still a purely procedural lowering stage. Its LowIR output should not include
 class/object-model helper definitions such as synthesized constructors, destructors, copy
 helpers, or class-lifetime startup/shutdown hooks. Tests that require those belong in PA15

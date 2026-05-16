@@ -73,6 +73,12 @@ and `-O2` and use the same LowIR optimization level before object generation.
 `lowiropt` writes LowIR text to `<outfile>`. The output must remain valid LowIR
 and must preserve the behavior of every defined input program.
 
+Canonical top-level order is part of the LowIR output contract and is defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`. The same contract defines required generated-definition ordering,
+including source order, demand-emission order, copy-before-move within a
+special-member family, and constructor/destructor ABI entrypoint order.
+
 For successful runs:
 
 - `-O0` performs a deterministic parse/dump round trip.

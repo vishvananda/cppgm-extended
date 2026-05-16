@@ -67,6 +67,50 @@ storage. It is still not a general-purpose structured global-data item type.
 ## Program Structure
 
 A LowIR program is a sequence of top-level declarations and definitions.
+Canonical LowIR output uses this top-level order:
+
+1. `declare global`
+2. `declare function`
+3. `global`
+4. `function`
+
+No later phase may be followed by an earlier phase. For example, all global
+definitions appear before all function definitions, and all declarations appear
+before definitions.
+
+Within each phase, output order must be deterministic for the same input and
+command line. Source-owned top-level entries are ordered by command-line
+translation-unit order and then source/declaration order within each translation
+unit. Generated top-level entries, including helper globals, helper functions,
+init/fini functions, thunks, and runtime-support entries, must use a stable
+deterministic order.
+
+For C++ source-to-LowIR output, the following generated-definition ordering is
+part of the canonical text contract even when another order would have the same
+execution behavior:
+
+- Source-owned non-mergeable function definitions appear in command-line
+  translation-unit order and then source/declaration order.
+- Demand-emitted definitions, such as inline, template-instantiated, weak, or
+  synthesized helper definitions, appear after the source-owned definitions that
+  make them required. If one emitted helper requires another helper, the newly
+  required helper appears later in the same `function` phase.
+- For one class, generated copy forms precede generated move forms within the
+  same special-member family: copy constructor before move constructor, and copy
+  assignment before move assignment.
+- Constructor ABI entry points for the same constructor appear as base entry
+  before complete entry. Destructor ABI entry points for the same destructor
+  appear as base entry, deleting entry, then complete entry.
+- Generated construction helpers for base and member subobjects follow C++
+  lifetime order. Generated destruction helpers follow the corresponding reverse
+  lifetime order.
+- Global initialization helpers appear before global finalization helpers.
+  Initialization actions follow declaration order; finalization actions follow
+  reverse declaration order.
+
+Top-level definitions and declarations may refer to symbols that are emitted
+later in the same LowIR program. The canonical order is a stable presentation
+contract, not a dependency sort.
 
 The declaration/definition split is explicit:
 
@@ -81,12 +125,14 @@ declare function @legacy() -> i64 [arity=prototype_relaxed]
 Top-level declarations and definitions may also carry explicit symbol metadata:
 
 ```text
-declare function @user_entry() -> i64 [role=entry]
-declare function @puts(%fmt : ptr [pass=decay]) -> i32 [arity=variadic, linkage=c]
 declare global @shared_state : ptr [binding=weak]
 declare global @__external_rtti__int : ptr [binding=strong, object=_ZTIi]
 declare global @ro_table : ptr [storage=readonly]
 declare global @tls_state : i64 [storage=thread_local]
+declare function @user_entry() -> i64 [role=entry]
+declare function @puts(%fmt : ptr [pass=decay]) -> i32 [arity=variadic, linkage=c]
+global @exc_top : ptr [role=eh_top, storage=readonly] = zero
+global @tls_counter : i64 [storage=thread_local] = 7
 function @main() -> i64 [role=entry, binding=strong, keep_alias=yes] {
   ...
 }
@@ -96,8 +142,6 @@ function @helper() -> i64 [binding=strong, object=_ZL6helperv, prefer_local=yes]
 function @boot() -> void [role=init, binding=strong] {
   ...
 }
-global @exc_top : ptr [role=eh_top, storage=readonly] = zero
-global @tls_counter : i64 [storage=thread_local] = 7
 ```
 
 The currently defined top-level metadata keys are `role`, `linkage`, `binding`, `object`,

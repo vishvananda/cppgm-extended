@@ -87,6 +87,12 @@ PA17 writes a single concatenated LowIR program consisting of:
 - zero or more `global` definitions
 - zero or more `function` definitions
 
+Canonical top-level order is part of the LowIR output contract and is defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`. The same contract defines required generated-definition ordering,
+including source order, demand-emission order, copy-before-move within a
+special-member family, and constructor/destructor ABI entrypoint order.
+
 For supported polymorphic classes, PA17 extends the PA16 lowering convention by introducing:
 
 - emitted LowIR global entries that represent vtable slots

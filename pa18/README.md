@@ -86,6 +86,12 @@ PA18 writes a single concatenated LowIR program consisting of:
 - zero or more `global` definitions
 - zero or more `function` definitions
 
+Canonical top-level order is part of the LowIR output contract and is defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`. The same contract defines required generated-definition ordering,
+including source order, demand-emission order, copy-before-move within a
+special-member family, and constructor/destructor ABI entrypoint order.
+
 Template instantiation in PA18 should produce ordinary instantiated declarations which then
 lower through the existing PA14-PA17 LowIR conventions.
 

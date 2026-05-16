@@ -71,6 +71,12 @@ The authoritative LowIR definition is `../pa13/lowir.md`. PA27 extends the PA26 
 surface only by making more of the C++ source language lower into the already-defined LowIR
 family.
 
+Canonical top-level order is part of the LowIR output contract and is defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`. The same contract defines required generated-definition ordering,
+including source order, demand-emission order, copy-before-move within a
+special-member family, and constructor/destructor ABI entrypoint order.
+
 The generated LowIR must be well-formed and must match the checked-in `.ref` files under
 the relaxed LowIR comparison used by the harness. That comparison still checks the
 semantic LowIR shape and required IR facts, but it does not make helper metadata

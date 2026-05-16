@@ -62,6 +62,12 @@ The authoritative LowIR definition is `../pa13/lowir.md`. PA22 extends the
 PA21 lowering surface only by making more of the C++ source language lower into
 the already-defined LowIR family.
 
+Canonical top-level order is part of the LowIR output contract and is defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`. The same contract defines required generated-definition ordering,
+including source order, demand-emission order, copy-before-move within a
+special-member family, and constructor/destructor ABI entrypoint order.
+
 The test harness checks that the generated LowIR is well formed and matches the
 checked-in `.ref` files after canonicalizing presentation details that are not
 part of the assignment contract. Exact textual LowIR matching is not a PA22

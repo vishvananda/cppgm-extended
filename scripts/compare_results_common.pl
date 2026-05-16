@@ -1403,6 +1403,212 @@ sub validate_lowir_structure
 	return @errors;
 }
 
+sub lowir_top_level_order_kind
+{
+	my ($line) = @_;
+	return ('declare global', 0, $1)
+		if $line =~ /^declare global @([A-Za-z0-9_]+)\b/;
+	return ('declare function', 1, $1)
+		if $line =~ /^declare function @([A-Za-z0-9_]+)\b/;
+	return ('global', 2, $1)
+		if $line =~ /^global @([A-Za-z0-9_]+)\b/;
+	return ('function', 3, $1)
+		if $line =~ /^function @([A-Za-z0-9_]+)\b/;
+	return undef;
+}
+
+sub validate_lowir_top_level_order
+{
+	my ($data) = @_;
+	my @errors;
+	my @lines = split(/\n/, $data);
+	my $last_rank = -1;
+	my $last_kind = 'start of file';
+	my $last_symbol = '';
+	my $expected =
+		'declare global, declare function, global, function';
+
+	for (my $i = 0; $i < scalar(@lines); ++$i)
+	{
+		my ($kind, $rank, $symbol) = lowir_top_level_order_kind($lines[$i]);
+		next if !defined($kind);
+		if ($rank < $last_rank)
+		{
+			my $previous = $last_kind;
+			$previous .= " \@$last_symbol" if $last_symbol ne '';
+			push @errors, "top-level LowIR order violation at line " . ($i + 1) .
+				": $kind \@$symbol appears after $previous; expected order is $expected";
+		}
+		$last_rank = $rank if $rank > $last_rank;
+		$last_kind = $kind;
+		$last_symbol = $symbol;
+	}
+
+	return @errors;
+}
+
+sub lowir_special_member_order_keys
+{
+	my ($object_symbol) = @_;
+	return () if !defined($object_symbol) || $object_symbol eq '';
+
+	if ($object_symbol =~ /^(.*)C([12])([^ ]*)$/)
+	{
+		my ($owner, $entry, $suffix) = ($1, $2, $3);
+		my @keys;
+		my $constructor_kind = '';
+		if ($suffix =~ /^ERK/)
+		{
+			$constructor_kind = 'copy constructor';
+			push @keys, {
+				group => "$owner constructor copy-move",
+				rank => 0,
+				description => 'copy constructor',
+				expectation => 'copy constructors must precede move constructors',
+			};
+		}
+		elsif ($suffix =~ /^EO/)
+		{
+			$constructor_kind = 'move constructor';
+			push @keys, {
+				group => "$owner constructor copy-move",
+				rank => 1,
+				description => 'move constructor',
+				expectation => 'copy constructors must precede move constructors',
+			};
+		}
+		else
+		{
+			$constructor_kind = 'constructor';
+		}
+		my $entry_rank = $entry eq '2' ? 0 : 1;
+		my $entry_description = $entry eq '2' ? 'base entry' : 'complete entry';
+		push @keys, {
+			group => "$owner constructor entry $suffix",
+			rank => $entry_rank,
+			description => "$constructor_kind $entry_description",
+			expectation => 'constructor base entries must precede complete entries',
+		};
+		return @keys;
+	}
+
+	if ($object_symbol =~ /^(.*)aS([^ ]*)$/)
+	{
+		my ($owner, $suffix) = ($1, $2);
+		if ($suffix =~ /^ERK/)
+		{
+			return {
+				group => "$owner assignment copy-move",
+				rank => 30,
+				description => 'copy assignment',
+				expectation => 'copy assignments must precede move assignments',
+			};
+		}
+		if ($suffix =~ /^EO/)
+		{
+			return {
+				group => "$owner assignment copy-move",
+				rank => 40,
+				description => 'move assignment',
+				expectation => 'copy assignments must precede move assignments',
+			};
+		}
+		return ();
+	}
+
+	if ($object_symbol =~ /^(.*)D([012])(?:Ev|E.*)$/)
+	{
+		my ($owner, $entry) = ($1, $2);
+		my %rank = (
+			2 => 50,
+			0 => 51,
+			1 => 52,
+		);
+		my %description = (
+			2 => 'destructor base entry',
+			0 => 'destructor deleting entry',
+			1 => 'destructor complete entry',
+		);
+		return {
+			group => "$owner destructor entry",
+			rank => $rank{$entry},
+			description => $description{$entry},
+			expectation => 'destructor entries must be ordered base, deleting, complete',
+		};
+	}
+
+	return ();
+}
+
+sub validate_lowir_special_member_order
+{
+	my ($data) = @_;
+	my @errors;
+	my %last_by_group;
+	my $type_pattern = lowir_type_pattern();
+	my @lines = split(/\n/, $data);
+
+	for (my $i = 0; $i < scalar(@lines); ++$i)
+	{
+		my $line = $lines[$i];
+		next if $line !~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*) \{$/;
+		my ($symbol, $metadata_suffix) = ($1, $4);
+		my ($ok, $metadata_or_error) = parse_lowir_function_metadata_suffix($metadata_suffix);
+		next if !$ok;
+		my @keys = lowir_special_member_order_keys($metadata_or_error->{object});
+		for my $key (@keys)
+		{
+			my $group = $key->{group};
+			if (exists($last_by_group{$group}) &&
+			    $key->{rank} < $last_by_group{$group}{rank})
+			{
+				push @errors, "special member LowIR order violation at line " . ($i + 1) .
+					": function \@$symbol ($key->{description}) appears after " .
+					"$last_by_group{$group}{description}; $key->{expectation}";
+			}
+			$last_by_group{$group} = {
+				rank => $key->{rank},
+				description => $key->{description},
+			};
+		}
+	}
+
+	return @errors;
+}
+
+sub validate_lowir_function_role_order
+{
+	my ($data) = @_;
+	my @errors;
+	my $seen_fini = 0;
+	my $fini_symbol = '';
+	my $type_pattern = lowir_type_pattern();
+	my @lines = split(/\n/, $data);
+
+	for (my $i = 0; $i < scalar(@lines); ++$i)
+	{
+		my $line = $lines[$i];
+		next if $line !~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*) \{$/;
+		my ($symbol, $metadata_suffix) = ($1, $4);
+		my ($ok, $metadata_or_error) = parse_lowir_function_metadata_suffix($metadata_suffix);
+		next if !$ok;
+		next if !exists($metadata_or_error->{role});
+		if ($metadata_or_error->{role} eq 'fini')
+		{
+			$seen_fini = 1;
+			$fini_symbol = $symbol;
+			next;
+		}
+		if ($metadata_or_error->{role} eq 'init' && $seen_fini)
+		{
+			push @errors, "LowIR role order violation at line " . ($i + 1) .
+				": init function \@$symbol appears after fini function \@$fini_symbol";
+		}
+	}
+
+	return @errors;
+}
+
 sub lowir_role_owner_kind
 {
 	my ($role) = @_;
@@ -1507,6 +1713,9 @@ sub validate_lowir_text
 	}
 	my @duplicates = sort grep { $top_count{$_} > 1 } keys(%top_count);
 	push @errors, "duplicate LowIR symbol entries: " . join(', ', @duplicates) if scalar(@duplicates) > 0;
+	push @errors, validate_lowir_top_level_order($data);
+	push @errors, validate_lowir_special_member_order($data);
+	push @errors, validate_lowir_function_role_order($data);
 
 	my %all_symbols;
 	my %function_symbols;
