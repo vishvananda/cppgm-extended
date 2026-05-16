@@ -347,7 +347,7 @@ sub compare_text
 	push @missing_status, "$my.exit_status" if !defined($my_status);
 	return (0, "ERROR: missing exit status output (" . join(', ', @missing_status) . ")")
 		if scalar(@missing_status) != 0;
-	return (0, "ERROR: exit status mismatch (expected $ref_status, got $my_status)")
+	return (0, status_mismatch_message("tool", $ref_status, $my_status))
 		if $ref_status ne $my_status;
 	return (1, undef) if $ref_status ne 'EXIT_SUCCESS';
 	my $ref_data = getdata($ref);
@@ -1673,7 +1673,7 @@ sub compare_lowir_text
 	push @missing_status, "$my.exit_status" if !defined($my_status);
 	return (0, "ERROR: missing exit status output (" . join(', ', @missing_status) . ")")
 		if scalar(@missing_status) != 0;
-	return (0, "ERROR: exit status mismatch (expected $ref_status, got $my_status)")
+	return (0, status_mismatch_message("tool", $ref_status, $my_status))
 		if $ref_status ne $my_status;
 	return (1, undef) if $ref_status ne 'EXIT_SUCCESS';
 
@@ -1767,6 +1767,26 @@ sub format_exit_status
 	return "$canonical ($status)";
 }
 
+sub status_mismatch_message
+{
+	my ($label, $expected_raw, $got_raw) = @_;
+	my $expected = canonical_exit_status($expected_raw);
+	my $got = canonical_exit_status($got_raw);
+	my $expected_text = format_exit_status($expected_raw);
+	my $got_text = format_exit_status($got_raw);
+	if (defined($got) && $got eq 'EXIT_TIMEOUT' &&
+	    (!defined($expected) || $expected ne 'EXIT_TIMEOUT'))
+	{
+		return "ERROR: $label timed out (expected $expected_text, got $got_text)";
+	}
+	if (defined($expected) && $expected eq 'EXIT_TIMEOUT' &&
+	    (!defined($got) || $got ne 'EXIT_TIMEOUT'))
+	{
+		return "ERROR: $label did not time out as expected (expected $expected_text, got $got_text)";
+	}
+	return "ERROR: $label exit status mismatch (expected $expected_text, got $got_text)";
+}
+
 sub compare_program_outputs
 {
 	my ($ref_prefix, $my_prefix, $label, $allow_missing_stdout) = @_;
@@ -1775,8 +1795,7 @@ sub compare_program_outputs
 	my $my_impl_raw = getdata("$my_prefix.impl.exit_status");
 	my $ref_impl = canonical_exit_status($ref_impl_raw);
 	my $my_impl = canonical_exit_status($my_impl_raw);
-	return (0, "ERROR: implementation exit statuses do not match (expected " .
-		format_exit_status($ref_impl_raw) . ", got " . format_exit_status($my_impl_raw) . ")")
+	return (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
 		if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
 	return (1, undef) if $ref_impl ne 'EXIT_SUCCESS';
 	my $ref_program_status = getdata("$ref_prefix.program.exit_status");
@@ -1791,18 +1810,19 @@ sub compare_program_outputs
 	my @missing_program = ();
 	push @missing_program, "$ref_prefix.program.exit_status" if !defined($ref_program_status);
 	push @missing_program, "$my_prefix.program.exit_status" if !defined($my_program_status);
+	return (0, "ERROR: missing program output (" . join(', ', @missing_program) . ")")
+		if scalar(@missing_program) != 0;
+	my $ref_program = canonical_exit_status($ref_program_status);
+	my $my_program = canonical_exit_status($my_program_status);
+	return (0, status_mismatch_message("$label program", $ref_program_status, $my_program_status))
+		if !defined($ref_program) || !defined($my_program) || $ref_program ne $my_program;
+	@missing_program = ();
 	push @missing_program, "$ref_prefix.program.stdout" if !defined($ref_program_stdout);
 	push @missing_program, "$my_prefix.program.stdout" if !defined($my_program_stdout);
 	return (0, "ERROR: missing program output (" . join(', ', @missing_program) . ")")
 		if scalar(@missing_program) != 0;
 	return (1, undef)
-		if ($ref_program_status eq $my_program_status) &&
-		   ($ref_program_stdout eq $my_program_stdout);
-	return (0, "ERROR: $label program exit status and stdout do not match reference")
-		if $ref_program_status ne $my_program_status &&
-		   $ref_program_stdout ne $my_program_stdout;
-	return (0, "ERROR: $label program exit status does not match reference")
-		if $ref_program_status ne $my_program_status;
+		if ($ref_program_stdout eq $my_program_stdout);
 	return (0, "ERROR: $label program stdout does not match reference");
 }
 
@@ -2039,8 +2059,7 @@ for my $test (@tests)
 			my $my_impl_raw = getdata("$my.impl.exit_status");
 			my $ref_impl = canonical_exit_status($ref_impl_raw);
 			my $my_impl = canonical_exit_status($my_impl_raw);
-			($ok, $message) = (0, "ERROR: implementations exit statuses do not match (.impl.exit_status: expected " .
-				format_exit_status($ref_impl_raw) . ", got " . format_exit_status($my_impl_raw) . ")")
+			($ok, $message) = (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
 				if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
 			if (!defined($ok))
 			{
@@ -2071,8 +2090,7 @@ for my $test (@tests)
 			my $my_impl_raw = getdata("$my.impl.exit_status");
 			my $ref_impl = canonical_exit_status($ref_impl_raw);
 			my $my_impl = canonical_exit_status($my_impl_raw);
-			($ok, $message) = (0, "ERROR: implementations exit statuses do not match (.impl.exit_status: expected " .
-				format_exit_status($ref_impl_raw) . ", got " . format_exit_status($my_impl_raw) . ")")
+			($ok, $message) = (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
 				if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
 			if (!defined($ok))
 			{
@@ -2104,8 +2122,7 @@ for my $test (@tests)
 			my $my_impl_raw = getdata("$my.impl.exit_status");
 			my $ref_impl = canonical_exit_status($ref_impl_raw);
 			my $my_impl = canonical_exit_status($my_impl_raw);
-			($ok, $message) = (0, "ERROR: implementations exit statuses do not match (.impl.exit_status: expected " .
-				format_exit_status($ref_impl_raw) . ", got " . format_exit_status($my_impl_raw) . ")")
+			($ok, $message) = (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
 				if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
 			if (!defined($ok))
 			{
@@ -2137,8 +2154,7 @@ for my $test (@tests)
 			my $my_impl_raw = getdata("$my.impl.exit_status");
 			my $ref_impl = canonical_exit_status($ref_impl_raw);
 			my $my_impl = canonical_exit_status($my_impl_raw);
-			($ok, $message) = (0, "ERROR: implementation exit statuses do not match (expected " .
-				format_exit_status($ref_impl_raw) . ", got " . format_exit_status($my_impl_raw) . ")")
+			($ok, $message) = (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
 				if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
 			if (!defined($ok))
 			{
@@ -2168,8 +2184,7 @@ for my $test (@tests)
 			my $my_impl_raw = getdata("$my.impl.exit_status");
 			my $ref_impl = canonical_exit_status($ref_impl_raw);
 			my $my_impl = canonical_exit_status($my_impl_raw);
-			($ok, $message) = (0, "ERROR: implementation exit statuses do not match (expected " .
-				format_exit_status($ref_impl_raw) . ", got " . format_exit_status($my_impl_raw) . ")")
+			($ok, $message) = (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
 				if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
 			if (!defined($ok))
 			{

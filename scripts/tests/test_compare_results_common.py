@@ -877,6 +877,35 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("indirect call requires explicit call signature", result.stdout + result.stderr)
 
+    def test_program_compare_reports_implementation_timeout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa9"
+            testbase = root / "tests" / "100"
+            write_text(pathlib.Path(str(testbase) + ".t.1"), "noop\n")
+            write_text(pathlib.Path(str(testbase) + ".ref.impl.exit_status"), "0\n")
+            write_text(pathlib.Path(str(testbase) + ".my.impl.exit_status"), "124\n")
+            result = run_compare("program_t1", root, "tests")
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("implementation timed out", output)
+
+    def test_program_compare_reports_program_timeout_before_stdout_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa9"
+            testbase = root / "tests" / "110"
+            write_text(pathlib.Path(str(testbase) + ".t.1"), "noop\n")
+            write_text(pathlib.Path(str(testbase) + ".ref.impl.exit_status"), "0\n")
+            write_text(pathlib.Path(str(testbase) + ".my.impl.exit_status"), "0\n")
+            write_text(pathlib.Path(str(testbase) + ".ref.program.exit_status"), "0\n")
+            write_text(pathlib.Path(str(testbase) + ".my.program.exit_status"), "124\n")
+            write_text(pathlib.Path(str(testbase) + ".ref.program.stdout"), "finished\n")
+            write_text(pathlib.Path(str(testbase) + ".my.program.stdout"), "")
+            result = run_compare("program_t1", root, "tests")
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("generated program timed out", output)
+            self.assertNotIn("exit status and stdout do not match", output)
+
     def test_normalize_machine_ir_only_normalizes_header(self) -> None:
         raw = textwrap.dedent(
             """\
