@@ -201,10 +201,11 @@ dev_public=(
   dev/gen_builtin_host_config.pl
 )
 
-dev_support_headers=(
+dev_support_files=(
   dev/src/DebugPPTokenStream.h
   dev/src/IPPTokenStream.h
   dev/src/exceptions.h
+  dev/src/test_runner.cpp
   dev/src/tool_help_text.h
 )
 
@@ -216,7 +217,7 @@ copy_tracked_paths \
   "${pa_dirs[@]}" \
   "${shared_scripts[@]}" \
   "${dev_public[@]}" \
-  "${dev_support_headers[@]}"
+  "${dev_support_files[@]}"
 
 for root_doc in "$repo_root"/docs/student-export-root/*.md; do
   install -m 0644 "$root_doc" "$dest/$(basename "$root_doc")"
@@ -273,22 +274,32 @@ TARGETS = \
 	cy86
 
 CXX ?= g++
+CPPGM_TEST_RUNNER ?= 1
 CPPGM_STDLIB_FLAGS ?=
 CC_FLAGS ?= -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS)
+TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
+TEST_RUNNER_ENTRY_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
+ENTRY_CC_FLAGS = $(CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
 SRC = src
 OBJ ?= ../obj
-COMMON_SRC = $(wildcard $(SRC)/*.cpp) $(wildcard $(SRC)/*/*.cpp)
+COMMON_SRC = $(filter-out $(SRC)/test_runner.cpp,$(wildcard $(SRC)/*.cpp) $(wildcard $(SRC)/*/*.cpp))
 COMMON_OBJ = $(patsubst $(SRC)/%.cpp,$(OBJ)/student/%.o,$(COMMON_SRC))
+RUNNER_OBJ = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),$(OBJ)/student/test_runner_enabled.o)
+LINK_OBJ = $(COMMON_OBJ) $(RUNNER_OBJ)
 INC = -I$(SRC)
 
 all: $(TARGETS)
 
-$(TARGETS): %: %.cpp $(COMMON_OBJ)
-	$(CXX) $(CC_FLAGS) $(INC) -o $@ $< $(COMMON_OBJ)
+$(TARGETS): %: %.cpp $(LINK_OBJ)
+	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $@ $< $(LINK_OBJ)
 
 $(OBJ)/student/%.o: $(SRC)/%.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CC_FLAGS) $(INC) -c -o $@ $<
+
+$(OBJ)/student/test_runner_enabled.o: $(SRC)/test_runner.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -o $@ $<
 
 clean:
 	-rm -f $(TARGETS)
@@ -297,7 +308,6 @@ clean:
 .PHONY: all clean
 EOF
 
-perl -0pi -e 's/export CPPGM_TEST_RUNNER \?= 1/export CPPGM_TEST_RUNNER ?= 0/' "$dest/Makefile"
 sanitize_student_makefile_defaults \
   "$dest/Makefile" \
   "$dest"/pa33/Makefile \
@@ -310,9 +320,8 @@ sanitize_linux_student_scripts
 for pa_makefile in "$dest"/pa{1..36}/Makefile; do
   [ -f "$pa_makefile" ] || continue
   perl -0pi -e '
-    s/^CPPGM_TEST_RUNNER \?= 1$/CPPGM_TEST_RUNNER ?= 0/mg;
     s/^include \.\.\/dev\/frontend_source_sets\.mk\n//mg;
-    s/^common_obj_basenames = \$\(FRONTEND_OBJ_BASENAMES_\$\(TARGET\)\)$/common_obj_basenames = \$(patsubst ..\/dev\/src\/%.cpp,%,\$(wildcard ..\/dev\/src\/*.cpp) \$(wildcard ..\/dev\/src\/*\/*.cpp))/mg;
+    s/^common_obj_basenames = \$\(FRONTEND_OBJ_BASENAMES_\$\(TARGET\)\)$/common_obj_basenames = \$(patsubst ..\/dev\/src\/%.cpp,%,\$(filter-out ..\/dev\/src\/test_runner.cpp,\$(wildcard ..\/dev\/src\/*.cpp) \$(wildcard ..\/dev\/src\/*\/*.cpp)))/mg;
   ' "$pa_makefile"
 done
 
@@ -402,17 +411,17 @@ make -s -C "$dest" ref-test \
   CXX="${CXX:-g++}" \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
-  CPPGM_TEST_RUNNER=0
+  CPPGM_TEST_RUNNER=1
 make -s -C "$dest" ref-test-strict \
   CXX="${CXX:-g++}" \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
-  CPPGM_TEST_RUNNER=0
+  CPPGM_TEST_RUNNER=1
 make -s -C "$dest" ref-test-debuginfo \
   CXX="${CXX:-g++}" \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
-  CPPGM_TEST_RUNNER=0
+  CPPGM_TEST_RUNNER=1
 
 (
   cd "$dest"
