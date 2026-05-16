@@ -19,6 +19,8 @@ Prompt".
 ## Core Rules
 
 - Put implementation changes in `dev/` and `dev/src/`.
+- If you add a new `dev/src/*.cpp` file, add it to the appropriate per-tool
+  list in `dev/frontend_source_sets.mk`.
 - Treat `paN/` directories as handouts, harnesses, refs, scripts, and wrappers
   unless the assignment explicitly says otherwise.
 - Reuse and extend earlier assignment code. Do not restart from scratch for a

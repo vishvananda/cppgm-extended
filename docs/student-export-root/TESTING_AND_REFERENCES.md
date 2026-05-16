@@ -78,7 +78,7 @@ make -C paN ref-test
 ```
 
 These targets intentionally fail if the needed reference binary is missing.
-There is no fallback to the student compiler.
+There is no fallback to the implementation under test.
 
 ## Strict And Debug Fixtures
 

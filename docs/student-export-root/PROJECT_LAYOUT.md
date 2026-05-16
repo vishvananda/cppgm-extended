@@ -6,8 +6,10 @@ assignment harnesses.
 ## Repository Layout
 
 - `Makefile`: root build, test, report, strict, reference, and inception targets
-- `dev/`: student-editable compiler entry points
+- `dev/`: compiler entry points
 - `dev/src/`: shared compiler implementation files and support headers
+- `dev/frontend_source_sets.mk`: per-tool lists of `dev/src/*.cpp` files to
+  link into each compiler binary
 - `pa1/` through `pa37/`: assignment handouts, Makefiles, tests, scripts, and
   reference fixtures
 - `cppgm.tests/`: shared course tests used by assignment harnesses
@@ -18,6 +20,11 @@ assignment harnesses.
 Most `paN/` directories are thin wrappers around the shared implementation.
 They define the milestone contract and test surface; production compiler code
 should stay in `dev/` and `dev/src/`.
+
+When you add a new implementation source file under `dev/src/`, also add its
+basename to each tool that needs it in `dev/frontend_source_sets.mk`. Use the
+path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
+`parser/foo`.
 
 ## Assignment Arc
 
