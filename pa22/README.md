@@ -110,7 +110,9 @@ This split assignment intentionally focuses on the deduction/substitution half
 of template completion:
 
 - full function-template deduction
-- non-deduced contexts and array-bound/conversion deduction corners
+- function-template partial ordering
+- non-deduced contexts and braced-init, array-bound, and conversion deduction
+  corners
 - SFINAE and substitution failure
 - no-eager-instantiation timing and dependent-call behavior
 
@@ -136,20 +138,25 @@ PA22 owns the remainder of the standard template language over the implemented
 surface, including:
 
 - full function-template deduction over the intended C++11 subset
+- function-template partial ordering
 - substitution behavior and candidate dropping
 - `enable_if`, `void_t`, and detected-idiom style SFINAE behavior
+- conversion function template deduction
+- constructor template deduction and overload participation
 - non-deduced contexts and explicit template-id deduction edge cases
+- braced-init deduction in the supported template-call subset
+- pointer, reference, enum, and static-member non-type template argument values
+  over the supported constant-expression subset
 - the remaining dependent-call, dependent-alias, and no-eager-instantiation
   behavior needed for full template usability
-
-The intended student proof here is:
-
-- "generic code no longer depends on a pragmatic template subset"
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA22:
 
+- `std::initializer_list` library semantics and initializer-list overload
+  machinery
+- member-pointer template behavior that depends on later member-pointer support
 - hosted/vendor-only extensions that happen to use templates
 - post-C++11 template-language features
 - backend/toolchain ownership that belongs to the later native and toolchain
@@ -169,3 +176,21 @@ So PA22 should leave behind:
   template subset special-casing
 - no remaining "finish template language later" gap before backend/toolchain
   work
+
+### Design Notes (Non-Normative)
+
+The useful shape for PA22 is a typed substitution and deduction engine that
+works on semantic declarations, types, expressions, and template arguments. A
+substitution failure should be represented as candidate state during overload
+resolution rather than as a diagnostic unless no viable candidate remains.
+
+Useful intermediate representations include:
+
+- deduction bindings that record which template parameter each typed argument
+  constrained
+- explicit non-deduced-context markers in the type/expression forms that need
+  them
+- a substitution result type that can carry success, SFINAE discard, or hard
+  error
+- deferred instantiation records for dependent calls and bodies that must not be
+  forced before their template arguments are known

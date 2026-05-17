@@ -166,10 +166,12 @@ The PA15 suite is split by test role:
 
     // N3485 focus: <clause> [<stable-name>] <short topic>
 
-`tests/spec/` covers aggregate/list/reference initialization, pointer-to-member
-conversion, conversion functions, and static assertions. `tests/general/`
-covers object-model and LowIR-shape cases that are not tied to one specific
-C++11 clause.
+`tests/spec/` covers the PA15 class/object contract: class layout, access
+control, nested names, static members, aggregate and reference initialization,
+friends/ADL, single inheritance, lifetime, bit-fields, pseudo-destructors,
+ordinary non-template operators, standard `alignas` / `alignof`, and inheriting
+constructors. `tests/general/` covers object-model and LowIR-shape cases that
+are not tied to one specific C++11 clause.
 
 ### PA15 Syntax Spec
 
@@ -204,6 +206,11 @@ treat `lowir.md` as authoritative. If they disagree about the PA15 lowering slic
 PA15 supports the following in addition to the PA14 procedural subset:
 
 - namespace-scope and nested-namespace class/struct definitions and forward declarations
+- access control for classes, fields, methods, nested types, and static members
+  in the current non-virtual class model
+- nested class/type declarations and lookup
+- static data members and static member functions over the supported scalar and
+  class subset
 - complete object layout for non-static data members in declaration order, including:
   - empty classes
   - alignment and padding
@@ -211,8 +218,6 @@ PA15 supports the following in addition to the PA14 procedural subset:
   - self-referential pointer members
   - previously completed class-type members
 - single inheritance with the direct base subobject at offset `0`
-- access control for fields and methods (`public`, `protected`, `private`) within the current
-  single-inheritance model
 - member lookup for:
   - direct fields
   - inherited fields
@@ -238,10 +243,18 @@ PA15 supports the following in addition to the PA14 procedural subset:
 - non-static default member initializers for the supported scalar and supported
   class/aggregate subobject construction forms, with explicit constructor member-initializers
   taking precedence
+- aggregate initialization for the supported PA15 object subset
 - local and namespace-scope class object lifetime:
   - constructor execution at declaration time / program startup
   - destructor execution at block exit, `return`, loop exit, and program shutdown
 - recursive member/base construction and destruction for supported class-type subobjects
+- anonymous struct/union members, including injected member lookup and layout in
+  the supported class subset
+- bit-field member access, assignment, and initializer lowering
+- pseudo-destructor and explicit destructor-name syntax over supported scalar
+  and class expressions
+- standard `alignas` and `alignof`
+- inheriting constructors through `using Base::Base`
 - use of complete class types in:
   - `sizeof(type-id)`
   - `sizeof(expr)`
@@ -267,13 +280,14 @@ The following are explicitly out of scope for PA15:
 - operator overloads that require later value semantics, especially by-value class transfer and
   copy/move assignment operators
 - template-backed operator overloads
-- broader aggregate initialization
-- bit-field member access, assignment, and initializer lowering
 - multiple inheritance
+- member pointers
 - out-of-class constructor and destructor definitions
   - the PA15 syntax contract does not include those forms
-- broader C++ object-model corners such as conversion operators and advanced special-member
-  generation rules
+- conversion operators
+- static assertions and constexpr metaprogramming
+- hosted/vendor-only attributes such as `[[no_unique_address]]`
+- broader C++ object-model corners such as advanced special-member generation rules
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
@@ -305,8 +319,13 @@ rather than building a second backend just for classes.
 Useful intermediate representations include:
 
 - complete named types with stable size/alignment metadata
-- class metadata that preserves fields, direct base, and member-function bindings
+- class metadata that preserves fields, direct base, access, nested names, static
+  members, friends, and member-function bindings
+- one shared layout service for ordinary fields, bit-fields, anonymous members,
+  and alignment directives
 - resolved member expressions and method calls over the same call-semantics IR shape used by
   PA12/PA14
 - explicit constructor/destructor actions attached to declarations or generated function bodies
   so lifetime can be lowered incrementally instead of requiring a separate runtime model
+- demand-driven helper emission keyed by semantic entities rather than source
+  spelling, so unused constructors/destructors do not perturb earlier outputs

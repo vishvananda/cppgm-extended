@@ -176,7 +176,10 @@ The PA14 test suite uses:
 
 - `tests/general/`: the default PA14 LowIR oracle suite. These tests cover the procedural
   lowering contract and integration cases that are validated by generated LowIR
-  text and exit status.
+  text and exit status. The covered source features are namespace functions and
+  globals, procedural statements, condition declarations, scalar expressions,
+  references, arrays, pointer operations, enums, built-in casts, and resolved
+  calls over the PA12 semantic subset.
 
 PA14 is tested against the generated LowIR text.
 
@@ -223,6 +226,8 @@ This PA14 milestone supports the following:
 - expression statements
 - `return`
 - `if` / `else`
+- condition declarations in `if` and `switch`, including the lifetime of the
+  condition-scope binding
 - `switch`
 - `while`
 - `do`
@@ -230,6 +235,14 @@ This PA14 milestone supports the following:
 - `break` / `continue`
 - direct calls to resolved non-template namespace-scope functions
 - calls through function pointers and function references in the PA12 subset
+- lvalue references, including reference parameters, reference locals, reference
+  returns, and aliasing through supported calls
+- array-to-pointer decay, subscript expressions, pointer arithmetic, one-past
+  pointer values, and pointer compound assignment with element-size scaling
+- scoped and unscoped enums, enum constants, enum promotion/comparison, and
+  enum lowering
+- built-in casts over the supported scalar, function, reference, and pointer
+  types, including C-style casts, `static_cast`, and `const_cast`
 - expressions:
   - integer literals and `true` / `false`
   - id-expressions naming supported locals, globals, and resolved functions
@@ -252,11 +265,14 @@ The following are explicitly out of scope for this PA14 milestone:
 - global or local initialization forms that require a richer constant-evaluation or aggregate
   initialization layer than PA12 currently provides
 - floating-point code generation
+- function-local static objects and guard variables
 - class/object semantics
 - synthesized class helper output of any kind
 - template code generation
 - exception-aware control flow
 - fully general shadowing-sensitive lowering of same-name local bindings
+- backend/runtime parity for floating-point conversions and variadic promotions
+- hosted or vendor integer extensions such as 128-bit integer types
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
@@ -286,5 +302,8 @@ PA14.
 Useful intermediate representations include:
 
 - a resolved procedural tree shared with PA12
+- explicit object identities for globals, locals, references, arrays, and
+  function objects
 - explicit local slot/layout information
+- a centralized type-to-LowIR lowering and conversion layer
 - a stable mapping from resolved expressions to LowIR values and stack locations

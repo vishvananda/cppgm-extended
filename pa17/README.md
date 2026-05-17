@@ -191,15 +191,21 @@ PA17 supports the following in addition to the PA16 subset:
   vpointer at offset `0`
 - virtual member functions in the ordinary non-template class cases
 - overriding of inherited virtual members by exact signature match in the current class model
+- covariant pointer/reference return overrides when the class hierarchy is in
+  the supported single-inheritance subset
 - `override` checking for the supported virtual subset
 - method-level `final` checking for the supported virtual subset
+- pure virtual declarations and pure-virtual vtable entries
 - dynamic dispatch for ordinary member calls through:
   - object expressions of polymorphic class type
   - pointers to polymorphic class type
   - references to polymorphic class type
+- explicit base qualification suppressing virtual dispatch for supported calls
 - virtual destructors as part of the supported virtual set
 - emitted vtable data for supported polymorphic classes
 - constructor/destructor vpointer writes for supported polymorphic classes
+- deterministic vtable order, including declaration order for ordinary virtual
+  functions and the destructor slot order used by the checked references
 
 Within this milestone, PA17 should produce valid LowIR for ordinary single-inheritance
 polymorphic code over the supported PA16 subset. That LowIR is intended to be
@@ -215,7 +221,7 @@ The following are explicitly out of scope for PA17:
 - RTTI and `dynamic_cast`
 - pointer-adjusting thunks or any ABI that requires base-subobject pointer adjustment
 - class-level `final`
-- pure virtual functions and abstract-class enforcement
+- full abstract-class enforcement beyond the pure-declaration/vtable cases above
 - deleting destructors, `delete`, and exception-aware virtual cleanup
 - generalized operator overloading beyond the supported PA16 value-semantics paths
 - template-aware virtual dispatch
@@ -255,6 +261,8 @@ Useful intermediate representations include:
 - class metadata that distinguishes ordinary methods, constructors, destructors, and
   virtual slots
 - explicit vtable/vpointer metadata separate from the source syntax tree
+- vtable layout derived deterministically from semantic class metadata rather
+  than source-text scans
 - explicit constructor/destructor/vpointer actions attached to the lowered function bodies
 - a direct-call vs. virtual-call distinction in the semantic IR so codegen does not have to
   rediscover polymorphism from source syntax

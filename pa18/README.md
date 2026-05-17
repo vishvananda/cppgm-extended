@@ -14,7 +14,7 @@ polymorphic compiler. It extends PA17 with:
 - class templates
 - type template parameters
 - template-template type parameters
-- template argument deduction for the supported function-template cases
+- basic function-template argument deduction for direct calls
 - on-demand template instantiation for the supported class/function cases
 - template-backed operator overloads and templated member operators where the non-template
   PA15-PA17 machinery already exists
@@ -150,9 +150,10 @@ path is not the PA18 grading contract.
 
 When adding your own tests, useful PA18 themes include template-template
 parameter matching, member-template redeclarations, friend templates, dependent
-versus non-dependent lookup, and pack/forwarding deduction. Keep any such tests
-within the PA18 boundary below; later metaprogramming and SFINAE behavior belongs
-to later assignments.
+versus non-dependent lookup, and pack expansion in the PA18 subset. Keep any
+such tests within the PA18 boundary below; non-type template arguments,
+partial specialization, full deduction, and SFINAE behavior belong to later
+assignments.
 
 ### PA18 Syntax Spec
 
@@ -195,10 +196,18 @@ PA18 supports the following in addition to the PA17 subset:
   - template-template type parameters when they are supplied explicitly
 - default template arguments for the supported type / template-template parameter forms,
   including defaults that refer to earlier parameters in the same template head
+- dependent type/value names in the supported declaration and expression forms
+- current-instantiation lookup in the supported class-template cases
+- `typename` and `template` disambiguators where they are needed by the PA18
+  dependent-name subset
 - explicit template-id use for supported class templates and function templates
-- template argument deduction for supported function-template calls from ordinary argument
-  types
+- basic template argument deduction for direct supported function-template calls
+  from ordinary argument types, without function-template partial ordering or
+  SFINAE
 - on-demand instantiation of the supported class-template and function-template cases
+- friend templates in the supported class-template/function-template subset
+- template parameter packs and pack expansions in the supported declaration,
+  call, and instantiated body shapes
 - member templates and templated member operators, including templated call operators, when
   their bodies stay within the already supported PA15-PA17 class/value/polymorphic
   machinery
@@ -224,9 +233,12 @@ The following are explicitly out of scope for PA18:
 - non-type template parameters and non-type template arguments
 - partial specialization
 - explicit specialization
-- two-phase lookup
-- SFINAE-heavy metaprogramming
+- full standard two-phase lookup
+- function-template partial ordering
+- substitution-failure candidate dropping and SFINAE
 - full `constexpr` evaluation
+- alias templates and variable templates
+- hosted/vendor-only template traits and intrinsics
 - template-aware virtual dispatch beyond ordinary instantiated class reuse
 - templates whose definitions rely on unsupported PA15-PA17 class/value/polymorphic features
 
@@ -243,7 +255,7 @@ of the basic PA18 template machinery:
 - `static_assert`-style metaprogramming support
 
 So PA18 should leave behind a clean first-tier instantiation layer rather than trying to
-solve the full template language at once. Partial specialization, SFINAE-heavy
+solve the full template language at once. Partial specialization, SFINAE
 metaprogramming, and full `constexpr` evaluation remain later work.
 
 ### Design Notes (Non-Normative)
@@ -268,6 +280,7 @@ Useful intermediate representations include:
 - explicit template declarations stored separately from ordinary instantiated declarations
 - template-parameter scopes that can be rebound during instantiation
 - instantiated class/function records that reuse the ordinary PA15-PA17 metadata/lowering
+- typed template arguments and bindings rather than source-text template replay
 - a clear separation between:
   - parsing template syntax
   - collecting template declarations

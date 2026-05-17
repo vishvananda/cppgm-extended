@@ -139,6 +139,7 @@ surface inherited from PA19, including:
 - `constexpr` constructors and member functions
 - `constexpr` variables and constant initialization
 - floating-point `constexpr` evaluation over the implemented scalar language surface
+- `noexcept` constant expressions over the supported call/expression subset
 - object-valued, pointer-valued, and reference-valued constant evaluation where the earlier
   language/object-model milestones already define the underlying semantics
 - reuse of the constant evaluator for ordinary language semantics, template arguments, and
@@ -170,6 +171,9 @@ C++11 `constexpr` forms that later template and library code expect:
   the implemented object model already defines the underlying semantics
 - lookup and reuse of previously computed constant values, including qualified lookup and
   static data members
+- function-local static objects over the supported LowIR subset:
+  - constant initialization when the initializer is a constant expression
+  - dynamic class-object local statics with the required guard/check behavior
 
 PA20 also owns the semantic validation side of C++11 `constexpr`, not just evaluation. In
 particular, the compiler should enforce the C++11-facing rules that matter for the
@@ -212,3 +216,20 @@ So PA20 should leave behind:
   shortcuts
 - a clear boundary where the remaining template-language work can build on real `constexpr`
   support rather than special-casing it
+
+### Design Notes (Non-Normative)
+
+The useful shape for PA20 is one typed constant-evaluation layer shared by
+`constexpr`, template arguments, `static_assert`, constant initialization, and
+ordinary semantic checks.
+
+Useful intermediate representations include:
+
+- typed constant values for scalars, enums, pointers, references, arrays, and
+  class objects
+- a distinction between checking whether a declaration is valid `constexpr` and
+  evaluating an expression in a constant-evaluation context
+- reusable evaluated-value storage for bindings whose constant value is needed
+  by lookup, template arguments, and later LowIR lowering
+- local-static initialization metadata that records whether LowIR lowering can
+  emit a constant initializer or must emit guarded dynamic initialization

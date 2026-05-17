@@ -173,8 +173,10 @@ The PA16 suite is split by test role:
 
     // N3485 focus: <clause> [<stable-name>] <short topic>
 
-`tests/spec/` covers range-for, lambda capture, scoped enums, defaulted/deleted
-functions, and copy/move special-member rules. `tests/general/` covers
+`tests/spec/` covers the PA16 value-semantics contract: defaulted/deleted
+special members, copy/move construction and assignment, ref-qualified member
+functions, delegating constructors, allocation expressions, unions, conversion
+operators, and class value ABI behavior. `tests/general/` covers
 value-semantics and LowIR-shape cases that are not tied to one specific C++11
 clause.
 
@@ -236,9 +238,17 @@ PA16 supports the following in addition to the PA15 subset:
   - return forwarding through the supported value paths
 - direct reuse of the indirect return destination for supported `return local;` cases when
   the named local is the returned complete object
+- ref-qualified member functions and out-of-class definitions of ref-qualified
+  members
 - delegating constructors
 - out-of-class constructor definitions
 - out-of-class destructor definitions
+- scalar `new` / `delete` expressions over the supported object subset
+- array `new` / `delete[]` expressions over the supported object subset
+- union definitions and union object lifetime in the supported non-template
+  class subset
+- non-template conversion operators that participate in the existing overload
+  and conversion machinery
 
 Within this milestone, PA16 should produce valid LowIR for ordinary non-polymorphic value
 types over the supported PA15 procedural/class subset. That LowIR is intended
@@ -253,12 +263,15 @@ The following are explicitly out of scope for PA16:
 - virtual functions, vpointers, and vtables
 - RTTI and `dynamic_cast`
 - multiple inheritance
+- member pointers
 - generalized operator overloading beyond the supported value-semantics paths
 - copy-elision perfection and the full set of standard temporary-materialization rules
 - advanced move-generation rules beyond the common supported field-wise/base-wise cases
   above, and the full standard move-semantics corner cases
 - exception-aware cleanup during value transfers
 - template-aware value semantics
+- lambda expressions, range-for, and later general convenience syntax that is not
+  needed by the PA16 value-semantics tests
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
@@ -304,3 +317,7 @@ Useful intermediate representations include:
   source-level semantic types
 - a stable way to identify the supported temporary-materialization points without requiring
   a fully general temporary lifetime model yet
+- allocation expressions lowered as ordinary construction/destruction actions
+  over explicit storage, rather than as a separate object model
+- conversion operators represented through the same typed overload-resolution
+  and conversion machinery used for ordinary calls

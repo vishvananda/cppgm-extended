@@ -189,6 +189,8 @@ PA19 supports the following in addition to the PA18 subset:
   - supported cast expressions that fold to integral constant values
 - explicit specialization of supported class templates
 - explicit specialization of supported function templates
+- late explicit-specialization visibility and stale-primary refresh in the
+  supported class/function template cases
 - constant-valued template bindings over the supported subset, including class-scope
   `static const` / `static constexpr` members and other ordinary metaprogramming helper
   bindings that feed lookup, template arguments, or `static_assert`
@@ -207,10 +209,15 @@ by the later PA23 `lowir2native` backend for the supported cases. PA13
 The following are explicitly out of scope for PA19:
 
 - partial specialization
-- SFINAE-heavy metaprogramming
+- pointer, reference, member-pointer, class-type, and other non-integral
+  non-type template parameters
+- SFINAE and substitution-failure candidate dropping
 - full standard-conforming two-phase lookup
 - constexpr function evaluation
 - function-template deduction of non-type arguments
+- full function-template deduction and partial ordering
+- alias templates and variable templates
+- hosted/vendor-only template traits and intrinsics
 - template metaprogramming that depends on unsupported PA14-PA18 language features
 
 Inputs that rely on those features have undefined behaviour for this milestone.
@@ -249,5 +256,8 @@ Useful intermediate representations include:
 - template parameters that distinguish type, template-template, and integral value slots
 - template arguments that carry canonical constant values rather than only source text
 - explicit-specialization tables that plug into the existing instantiation machinery
+- a specialization lookup step that runs before instantiation so late visible
+  specializations replace stale primary-template instantiations in the supported
+  cases
 - compile-time constant bindings that can be reused by both `static_assert` and template
   argument resolution

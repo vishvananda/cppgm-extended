@@ -113,7 +113,7 @@ checked result; exact diagnostic text is not checked.
 This split assignment intentionally focuses on the specialization/entity half of
 template completion:
 
-- partial specialization and specialization selection
+- class partial specialization and specialization selection
 - alias and variable template entity modeling
 - explicit specialization and explicit-instantiation ownership
 - the declaration/instantiation behavior required to make that model coherent
@@ -128,7 +128,7 @@ itself make that construct required unless it is inside the PA21 boundary below.
 ### Optional Student Test Ideas
 
 When adding your own tests, useful PA21 themes include alias/variable template
-entities, class and function partial specialization selection,
+entities, class partial specialization selection,
 explicit-instantiation ownership, constructor/member-template specialization
 ownership, and partial ordering boundaries. Larger generic-library integration
 cases can go in `tests/general/`.
@@ -140,27 +140,27 @@ implemented language surface, including:
 
 - alias templates
 - variable templates
-- class and function partial specialization
-- partial ordering and specialization selection
-- explicit specialization declarations/definitions
-- explicit-instantiation declarations over the supported surface
+- class partial specialization
+- partial-specialization ordering and specialization selection
+- current-specialization identity in the supported class-template and
+  specialization cases
+- explicit-instantiation declarations and definitions over the supported surface
+- integration with PA19 explicit specialization declarations/definitions when
+  they interact with the PA21 specialization graph
 - collection/ownership behavior for constructor/member-template specializations
 - the dependent-name and instantiation behavior strictly required to make the
   specialization model work
-
-The intended student proof here is:
-
-- "the compiler builds the right template/specialization graph and selects the
-  right specialization"
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA21:
 
 - full function-template deduction over the intended language surface
+- function-template partial ordering
 - SFINAE and substitution-failure completion
 - the remaining no-eager-instantiation / dependent-call timing work that is
   better framed as substitution behavior
+- initializer-list template behavior
 - hosted/vendor-only extensions that happen to use templates
 - post-C++11 template-language features
 
@@ -178,3 +178,18 @@ So PA21 should leave behind:
 - specialization ownership that lowers through the ordinary LowIR path
 - no remaining "template entity model later" gap before full template
   completion
+
+### Design Notes (Non-Normative)
+
+The useful shape for PA21 is a canonical template-entity graph. Alias templates,
+variable templates, primary class templates, partial specializations, explicit
+instantiations, and PA19 explicit specializations should refer to the same
+semantic entities instead of being tracked as unrelated source-text forms.
+
+Useful intermediate representations include:
+
+- canonical specialization keys built from typed template arguments
+- an ordered partial-specialization candidate set with deterministic selection
+- explicit ownership links from constructor/member-template specializations back
+  to the class or namespace entity that owns the generated declaration
+- reuse of PA20 constant values for value-dependent specialization keys
