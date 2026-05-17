@@ -48,6 +48,11 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
                                         const cpp_decl::TypePtr & lhs,
                                         const cpp_decl::TypePtr & rhs,
                                         long long & out);
+bool evaluate_builtin_type_trait(SemanticContext & ctx,
+                                 semantic_model::Scope & scope,
+                                 const std::string & name,
+                                 const std::vector<cpp_decl::TypePtr> & types,
+                                 long long & out);
 bool is_supported_builtin_type_trait_name(const std::string & name);
 cpp_decl::TypePtr builtin_type_trait_result_type(const std::string & name);
 

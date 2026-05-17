@@ -18823,6 +18823,9 @@ bool evaluate_builtin_type_trait(template_api::TemplateServices & services,
          evaluate_destructibility_builtin_type_trait(type_system, name, types, out) ||
          evaluate_builtin_conversion_leaf_type_trait(name, types, out) ||
          evaluate_class_info_builtin_type_trait(type_system, name, types, out) ||
+         (services.semantic_context &&
+          semantic_builtins::evaluate_builtin_type_trait(
+              *services.semantic_context, scope, name, types, out)) ||
          (classify_semantic_builtin_type_trait(name, trait) &&
           (request.trait = trait, true) &&
           service_evaluate_semantic_builtin_type_trait(services, request, out));

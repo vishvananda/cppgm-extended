@@ -526,6 +526,41 @@ bool try_direct_class_construction_for_trait(
   }
 }
 
+bool try_direct_class_construction_for_trait(
+    SemanticContext & ctx,
+    Scope & scope,
+    const TypePtr & target,
+    const std::vector<ExprInfo> & args,
+    constructor_lifecycle_service::ConstructorSelectionResult & selection)
+{
+  TypePtr target_base = strip_top_level_cv(target);
+  if(!target_base || is_reference_type(target_base) || target_base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.complete_class_type(target_base);
+  if(!info || !info->complete) {
+    return false;
+  }
+
+  ConstructorSelectionOptions options =
+      constructor_lifecycle_service::selection_options_for(
+          constructor_lifecycle_service::direct_initialization_profile(
+              "__is_constructible"));
+  options.instantiate_bodies = false;
+  try
+  {
+    constructor_lifecycle_service::select_constructor_from_exprs_into(
+        ctx, scope, *info, args, selection, options);
+    return true;
+  }
+  catch(const std::logic_error &)
+  {
+    selection = constructor_lifecycle_service::ConstructorSelectionResult();
+    return true;
+  }
+}
+
 bool parse_unary_type_transform_text(const std::string & text,
                                      std::string & name,
                                      std::string & arg_text)
@@ -2762,6 +2797,89 @@ bool evaluate_builtin_binary_type_trait(SemanticContext & ctx,
   }
 
   return false;
+}
+
+bool evaluate_builtin_type_trait(SemanticContext & ctx,
+                                 Scope & scope,
+                                 const std::string & name,
+                                 const std::vector<TypePtr> & types,
+                                 long long & out)
+{
+  if(types.empty()) {
+    return false;
+  }
+
+  if(types.size() == 1) {
+    return evaluate_builtin_type_trait(ctx, scope, name, types[0], out);
+  }
+
+  if(types.size() == 2) {
+    return evaluate_builtin_binary_type_trait(
+        ctx, scope, name, types[0], types[1], out);
+  }
+
+  if(name != "__is_constructible" && name != "__is_nothrow_constructible") {
+    return false;
+  }
+
+  TypePtr target = strip_top_level_cv(types[0]);
+  if(!target) {
+    return false;
+  }
+  if(is_reference_type(target) ||
+     target->kind == Type::TK_FUNCTION ||
+     is_void_type(target) ||
+     target->kind == Type::TK_ARRAY) {
+    out = 0;
+    return true;
+  }
+  if(target->kind != Type::TK_NAMED) {
+    out = 0;
+    return true;
+  }
+
+  std::vector<ExprInfo> args;
+  args.reserve(types.size() - 1);
+  for(size_t i = 1; i < types.size(); ++i) {
+    TypePtr arg_type = strip_top_level_cv(types[i]);
+    if(!arg_type) {
+      return false;
+    }
+    args.push_back(make_builtin_trait_expr_info(types[i]));
+  }
+
+  constructor_lifecycle_service::ConstructorSelectionResult direct_selection;
+  if(!try_direct_class_construction_for_trait(
+         ctx, scope, target, args, direct_selection)) {
+    return false;
+  }
+  if(!direct_selection.ctor) {
+    out = 0;
+    return true;
+  }
+
+  if(name == "__is_nothrow_constructible") {
+    std::set<FunctionBinding *> visiting;
+    bool can_throw = false;
+    for(size_t i = 0; i < direct_selection.converted_args.size(); ++i) {
+      if(ctx.callsem_node_can_throw(scope,
+                                    direct_selection.converted_args[i].node,
+                                    visiting)) {
+        can_throw = true;
+        break;
+      }
+    }
+    if(!can_throw) {
+      can_throw = !function_binding_is_nothrow(ctx,
+                                               scope,
+                                               *direct_selection.ctor,
+                                               visiting);
+    }
+    out = can_throw ? 0 : 1;
+  } else {
+    out = 1;
+  }
+  return true;
 }
 
 bool try_parse_builtin_type_trait_call_arg(SemanticContext & ctx,
