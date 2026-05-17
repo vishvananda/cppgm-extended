@@ -211,10 +211,50 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("special member LowIR order violation", output)
 
-    def test_lowir_compare_rejects_init_after_fini(self) -> None:
+    def test_lowir_compare_rejects_vtable_deleting_destructor_before_complete_slot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
             testbase = root / "tests" / "105"
+            write_text(testbase.with_suffix(".t"), "struct Box; int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            lowir = textwrap.dedent(
+                """\
+                global @rtti : i64 = zero
+                global @Box__vtable [storage=readonly] = {
+                  i64 0
+                  ptr addr @rtti
+                  ptr addr @Box_dtor_deleting
+                  ptr addr @Box_dtor_complete
+                }
+
+                function @Box_dtor_deleting(%this : ptr) -> void [object=_ZN3BoxD0Ev] {
+                  block ^entry:
+                    return void
+                }
+
+                function @Box_dtor_complete(%this : ptr) -> void [object=_ZN3BoxD1Ev] {
+                  block ^entry:
+                    return void
+                }
+
+                function @main() -> i64 {
+                  block ^entry:
+                    return i64 0
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), lowir)
+            write_text(testbase.with_suffix(".my"), lowir)
+            result = run_compare("lowir_t", root, "tests")
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("vtable destructor slot order violation", output)
+
+    def test_lowir_compare_rejects_init_after_fini(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "106"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
             write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")

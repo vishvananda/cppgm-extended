@@ -49,7 +49,7 @@ global @YC__vtable [storage=readonly, binding=weak, object=_ZTV2YC] = {
 }
 global @YC____view__YB__8__vtable [storage=readonly, binding=weak, object=@YC____view__YB__8__vtable] = {
   ptr addr @_YC___YC__vtable_return_adjust
-  ptr addr @_YC___YC__vtable_return_adjust
+  ptr addr @_YC___YC__deleting_entry__vtable_return_adjust
 }
 global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
   i64 0
@@ -237,6 +237,12 @@ function @YA___YA(%this : ptr) -> void [binding=weak, object=_ZN2YAD1Ev] {
     %t2 = addr @YA__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
+    return void
+}
+function @_YC___YC__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N2YCD0Ev] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @YC___YC__deleting_entry(%t1)
     return void
 }
 function @_YC___YC__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N2YCD1Ev] {

@@ -403,14 +403,17 @@ symbol_linkage::SymbolIdentity function_entry_point_symbol(const FunctionBinding
 }
 
 bool is_secondary_virtual_destructor_slot(const FunctionBinding & binding,
+                                          const FunctionBinding * slot_model,
                                           size_t slot_index)
 {
-  return binding.is_destructor &&
-         binding.has_virtual_slot &&
-         slot_index == binding.virtual_slot + 1;
+  const FunctionBinding & slot_binding = slot_model ? *slot_model : binding;
+  return slot_binding.is_destructor &&
+         slot_binding.has_virtual_slot &&
+         slot_index == slot_binding.virtual_slot + 1;
 }
 
 symbol_linkage::SymbolIdentity emitted_vtable_entry_symbol(const FunctionBinding & binding,
+                                                           const FunctionBinding * slot_model,
                                                            size_t slot_index)
 {
   if(binding.name.empty()) {
@@ -419,7 +422,7 @@ symbol_linkage::SymbolIdentity emitted_vtable_entry_symbol(const FunctionBinding
   if(binding.is_destructor && binding.owner_class && binding.owner_class->is_polymorphic) {
     return function_entry_point_symbol(
         binding,
-        is_secondary_virtual_destructor_slot(binding, slot_index) ?
+        is_secondary_virtual_destructor_slot(binding, slot_model, slot_index) ?
             symbol_linkage::SMEK_DELETING :
             symbol_linkage::SMEK_COMPLETE);
   }
@@ -4292,7 +4295,9 @@ void append_vtable_output_node(SemanticContext & ctx,
           entry_node,
           symbol_linkage::make_c_function_symbol_identity("__cxa_pure_virtual"));
     } else {
-      set_dump_symbol(entry_node, emitted_vtable_entry_symbol(*slot_function, i));
+      set_dump_symbol(entry_node, emitted_vtable_entry_symbol(*slot_function,
+                                                              base_virtual,
+                                                              i));
     }
     set_callsem_uint_value(entry_node, i);
     if(table_node.uses_extended_vtable_layout || slot.this_adjust != 0) {

@@ -1576,6 +1576,98 @@ sub validate_lowir_special_member_order
 	return @errors;
 }
 
+sub lowir_destructor_entry_from_object_symbol
+{
+	my ($object_symbol) = @_;
+	return undef if !defined($object_symbol) || $object_symbol eq '';
+	return undef if $object_symbol !~ /^(.*)D([012])(?:Ev|E.*)$/;
+	return {
+		owner => $1,
+		entry => $2,
+	};
+}
+
+sub validate_lowir_vtable_destructor_slot_order
+{
+	my ($data) = @_;
+	my @errors;
+	my %function_object;
+	my $type_pattern = lowir_type_pattern();
+	my @lines = split(/\n/, $data);
+
+	for (my $i = 0; $i < scalar(@lines); ++$i)
+	{
+		my $line = $lines[$i];
+		next if $line !~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*) \{$/;
+		my ($symbol, $metadata_suffix) = ($1, $4);
+		my ($ok, $metadata_or_error) = parse_lowir_function_metadata_suffix($metadata_suffix);
+		next if !$ok;
+		next if !exists($metadata_or_error->{object});
+		$function_object{$symbol} = $metadata_or_error->{object};
+	}
+
+	for (my $i = 0; $i < scalar(@lines); ++$i)
+	{
+		next if $lines[$i] !~ /^global @([A-Za-z0-9_]+)\b.*=\s*\{$/;
+		my $global = $1;
+		next if $global !~ /vtable/;
+
+		my @slots;
+		for (++$i; $i < scalar(@lines); ++$i)
+		{
+			last if $lines[$i] =~ /^\}$/;
+			next if $lines[$i] !~ /^\s*ptr addr @([A-Za-z0-9_]+)(?:\s|$)/;
+			my $target = $1;
+			my $object = $function_object{$target};
+			my $entry = lowir_destructor_entry_from_object_symbol($object);
+			push @slots, {
+				symbol => $target,
+				object => $object,
+				owner => defined($entry) ? $entry->{owner} : '',
+				entry => defined($entry) ? $entry->{entry} : '',
+			};
+		}
+
+		for (my $slot = 0; $slot < scalar(@slots); ++$slot)
+		{
+			my $entry = $slots[$slot]{entry};
+			next if $entry eq '';
+			if ($entry eq '2')
+			{
+				push @errors, "vtable destructor slot order violation in \@$global: " .
+					"function \@$slots[$slot]{symbol} is a base destructor entry; " .
+					"vtable destructor slots must be complete, deleting";
+				next;
+			}
+			if ($entry eq '1')
+			{
+				if ($slot + 1 >= scalar(@slots) ||
+				    $slots[$slot + 1]{owner} ne $slots[$slot]{owner} ||
+				    $slots[$slot + 1]{entry} ne '0')
+				{
+					push @errors, "vtable destructor slot order violation in \@$global: " .
+						"function \@$slots[$slot]{symbol} (complete destructor entry) " .
+						"must be immediately followed by the matching deleting destructor entry";
+				}
+				next;
+			}
+			if ($entry eq '0')
+			{
+				if ($slot == 0 ||
+				    $slots[$slot - 1]{owner} ne $slots[$slot]{owner} ||
+				    $slots[$slot - 1]{entry} ne '1')
+				{
+					push @errors, "vtable destructor slot order violation in \@$global: " .
+						"function \@$slots[$slot]{symbol} (deleting destructor entry) " .
+						"must appear immediately after the matching complete destructor entry";
+				}
+			}
+		}
+	}
+
+	return @errors;
+}
+
 sub validate_lowir_function_role_order
 {
 	my ($data) = @_;
@@ -1715,6 +1807,7 @@ sub validate_lowir_text
 	push @errors, "duplicate LowIR symbol entries: " . join(', ', @duplicates) if scalar(@duplicates) > 0;
 	push @errors, validate_lowir_top_level_order($data);
 	push @errors, validate_lowir_special_member_order($data);
+	push @errors, validate_lowir_vtable_destructor_slot_order($data);
 	push @errors, validate_lowir_function_role_order($data);
 
 	my %all_symbols;

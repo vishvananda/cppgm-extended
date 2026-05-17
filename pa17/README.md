@@ -99,6 +99,10 @@ For supported polymorphic classes, PA17 extends the PA16 lowering convention by 
 - explicit vpointer stores in constructors and destructors
 - indirect LowIR calls for supported virtual dispatch sites
 
+The vtable global order and vtable slot order, including the complete-then-deleting
+virtual destructor slot pair, are part of the canonical LowIR contract in
+`../pa13/lowir.md`.
+
 The checked-in `.ref` files define the required LowIR facts for the tests. The
 test harness checks exit status, LowIR well-formedness, and the
 course-defined normalized LowIR output rather than requiring students to match every

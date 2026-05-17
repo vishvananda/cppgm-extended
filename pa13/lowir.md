@@ -101,6 +101,17 @@ execution behavior:
 - Constructor ABI entry points for the same constructor appear as base entry
   before complete entry. Destructor ABI entry points for the same destructor
   appear as base entry, deleting entry, then complete entry.
+- Vtable-related global definitions appear in the `global` phase. For one
+  polymorphic class, the primary vtable appears before secondary/view vtables,
+  secondary/view vtables follow complete-object subobject layout order, and
+  any VTT appears after the vtables it references.
+- Vtable slots follow virtual-slot order. Inherited primary-base slots precede
+  slots newly introduced by the class, newly introduced slots follow source
+  declaration order, and an override keeps the slot of the function it
+  overrides. A virtual destructor occupies two adjacent vtable slots: complete
+  destructor entry first, then deleting destructor entry. The base destructor
+  entry is not a vtable slot. This vtable slot order is intentionally different
+  from the function-definition order above.
 - Generated construction helpers for base and member subobjects follow C++
   lifetime order. Generated destruction helpers follow the corresponding reverse
   lifetime order.
