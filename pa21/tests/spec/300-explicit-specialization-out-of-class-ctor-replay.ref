@@ -1,6 +1,3 @@
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
-
 function @s_int___s__base_entry(%this : ptr) -> void [binding=strong, object=_ZN1sIiEC2Ev] {
   slot $this : ptr
 

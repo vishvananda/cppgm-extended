@@ -1,6 +1,3 @@
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
-
 global @outer___GLOBAL__N_1__max_tokens [binding=internal, object=_ZN5outer12_GLOBAL__N_110max_tokensE] = {
   zero 1
 }

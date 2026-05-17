@@ -1,6 +1,3 @@
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
-
 function @make(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z4makev] {
   block ^entry:
     %t1 = index i8 [projection=field] %ret, 0

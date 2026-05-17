@@ -30,6 +30,7 @@ endif
 export CPPGM_HOST_CXX
 CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
+REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
 CPPGM_TEST_APP ?= ../dev/$(TARGET)
 REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
 TEST_DEPS ?= dev-shared-target
@@ -122,7 +123,7 @@ define run_link_course_bucket
 		perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my "$(1)"; \
 		scripts/compare_results.pl ref my "$(1)"; \
 	else \
-		echo "$(TARGET) $(1): no tests"; \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
 	fi
 endef
 

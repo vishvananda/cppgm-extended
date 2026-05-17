@@ -1,5 +1,3 @@
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
 declare function @mangle_outer_int___inner_int_____member(%arg0 : ptr) -> void [binding=weak, object=_ZN12mangle_outerIiE5innerIRiE6memberEv]
 declare function @mangle_outer_int___inner_int_const_____member(%arg0 : ptr) -> void [binding=weak, object=_ZN12mangle_outerIiE5innerIRKiE6memberEv]
 

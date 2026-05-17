@@ -26,6 +26,7 @@ ifeq ($(origin CXX), default)
 CXX := $(HOST_CXX_DEFAULT)
 endif
 CPPGM_STDLIB_FLAGS ?=
+REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
 CC_FLAGS = -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS)
 SRC = ../dev/src
 GENERATED = ../obj/generated
@@ -79,7 +80,7 @@ define run_native_bucket
 		CPPGM_APP_ARGS='$(2)' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_APP) my $(1); \
 		scripts/compare_results.pl ref my $(1); \
 	else \
-		echo "$(TARGET) $(1): no tests"; \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
 	fi
 endef
 
@@ -87,7 +88,7 @@ define run_native_bucket_ref
 	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
 		CPPGM_APP_ARGS='$(2)' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref $(1); \
 	else \
-		echo "$(TARGET) $(1): no tests"; \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
 	fi
 endef
 

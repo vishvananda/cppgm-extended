@@ -1,6 +1,3 @@
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
-
 function @operator__(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> u8 [binding=weak, object=_ZeqRK6HandleS1_] {
   slot $a : ptr
   slot $b : ptr

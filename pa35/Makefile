@@ -31,6 +31,7 @@ CXX := $(HOST_CXX_DEFAULT)
 endif
 CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
+REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
 O0_TEST_ROOT ?= tests/o0
 O1_TEST_ROOT ?= tests/o1
 O2_TEST_ROOT ?= tests/o2
@@ -114,7 +115,7 @@ define run_text_course_bucket
 		CPPGM_APP_ARGS='$(1)' scripts/run_all_tests.pl $(2) my "$(3)"; \
 		scripts/compare_results.pl ref my "$(3)"; \
 	else \
-		echo "$(TARGET) $(3): no tests"; \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(3): no tests"; fi; \
 	fi
 endef
 

@@ -15507,33 +15507,15 @@ private:
                         node.text);
   }
 
-  TypePtr destructible_cleanup_type(const TypePtr & type) const
+  bool subtree_contains_nontrivial_destructor_action(const CallSemNode & node) const
   {
-    TypePtr base = strip_top_level_cv(type);
-    if(base && base->kind == Type::TK_ARRAY) {
-      base = strip_top_level_cv(base->inner);
-    }
-    if(!base || !is_complete_class_value_type(base)) {
-      return TypePtr();
-    }
-    if(destructor_symbol(base).empty()) {
-      return TypePtr();
-    }
-    return base;
-  }
-
-  bool subtree_contains_destructible_local(const CallSemNode & node) const
-  {
-    if(node.kind == CallSemKind::variable &&
-       !node.is_extern_declaration &&
-       !node.is_static_storage &&
-       destructible_cleanup_type(node.semantic_type)) {
+    if(node.kind == CallSemKind::destructor_action && !node.trivial_lifecycle) {
       return true;
     }
     vector<const CallSemNode *> children;
     append_callsem_recursive_input_children(node, children);
     for(size_t i = 0; i < children.size(); ++i) {
-      if(subtree_contains_destructible_local(*children[i])) {
+      if(subtree_contains_nontrivial_destructor_action(*children[i])) {
         return true;
       }
     }
@@ -17300,6 +17282,11 @@ private:
 
   void collect_exception_support(const CallSemNode & node)
   {
+    if(node.kind == CallSemKind::function_definition &&
+       should_skip_unreferenced_output_on_use_function(node)) {
+      return;
+    }
+
     if(!emit_runtime_support_ &&
        (node.kind == CallSemKind::throw_statement ||
         node.kind == CallSemKind::try_statement ||
@@ -17316,8 +17303,8 @@ private:
           subtree_contains_kind(node, CallSemKind::throw_statement);
       const bool has_call_expression =
           subtree_contains_kind(node, CallSemKind::call_expression);
-      const bool has_destructible_local =
-          subtree_contains_destructible_local(node);
+      const bool has_unwind_cleanup =
+          subtree_contains_nontrivial_destructor_action(node);
 
       if(has_try_statement) {
         note_external_runtime_function("__gxx_personality_v0");
@@ -17326,14 +17313,14 @@ private:
       if(node.has_dynamic_exception_spec) {
         note_external_runtime_function("__gxx_personality_v0");
       }
-      if(has_throw_statement && has_destructible_local) {
+      if(has_throw_statement && has_unwind_cleanup) {
         note_external_runtime_function("__gxx_personality_v0");
         note_external_runtime_function("_Unwind_Resume");
       }
       if(has_throw_statement) {
         note_external_runtime_function("__gxx_personality_v0");
       }
-      if(has_call_expression && has_destructible_local) {
+      if(has_call_expression && has_unwind_cleanup) {
         note_external_runtime_function("__gxx_personality_v0");
         note_external_runtime_function("_Unwind_Resume");
       }

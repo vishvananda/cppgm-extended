@@ -1,6 +1,3 @@
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
-
 global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__stored__tokens279_292 [binding=internal, object=@__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__stored__tokens279_292] = {
   zero 16
 }
