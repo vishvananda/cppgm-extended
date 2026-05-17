@@ -22211,6 +22211,227 @@ private:
       Scope & rhs_scope,
       const vector<TemplateParameterInfo> & rhs) const override
   {
+    auto template_parameter_payload_index =
+        [](const TypePtr & type, size_t & index) -> bool
+        {
+          TypePtr base = strip_top_level_cv(type);
+          if(!base || base->kind != Type::TK_NAMED ||
+             !named_type_is_template_parameter(base)) {
+            return false;
+          }
+          const string payload = named_type_semantic_payload(base);
+          const size_t hash = payload.rfind('#');
+          if(hash == string::npos || hash + 1 >= payload.size()) {
+            index = 0;
+            return true;
+          }
+          size_t parsed = 0;
+          for(size_t i = hash + 1; i < payload.size(); ++i) {
+            if(!std::isdigit(static_cast<unsigned char>(payload[i]))) {
+              return false;
+            }
+            parsed = parsed * 10 + static_cast<size_t>(payload[i] - '0');
+          }
+          index = parsed;
+          return true;
+        };
+    auto direct_template_parameter_binding =
+        [&](const string & name,
+            const TypePtr & type,
+            size_t & index,
+            string & key) -> bool
+        {
+          TypePtr base = strip_top_level_cv(type);
+          if(name.empty() ||
+             !base ||
+             base->kind != Type::TK_NAMED ||
+             !named_type_is_template_parameter(base)) {
+            return false;
+          }
+          string display = trim_space(base->named_display);
+          const string typename_prefix = "typename ";
+          if(display.compare(0, typename_prefix.size(), typename_prefix) == 0) {
+            display = trim_space(display.substr(typename_prefix.size()));
+          }
+          const string payload = named_type_semantic_payload(base);
+          const size_t hash = payload.rfind('#');
+          const string payload_name =
+              hash == string::npos ? payload : payload.substr(0, hash);
+          if(name != display && name != payload_name) {
+            return false;
+          }
+          if(!template_parameter_payload_index(base, index)) {
+            index = 0;
+          }
+          key = base->named_key;
+          return !key.empty();
+        };
+    auto canonicalize_scope_template_parameter_text =
+        [&](Scope & scope,
+            const vector<TemplateParameterInfo> & parameters,
+            const string & text) -> string
+        {
+          if(text.empty()) {
+            return text;
+          }
+
+          vector<Scope *> chain;
+          for(Scope * current = &scope; current; current = current->parent) {
+            if(current->namespace_scope || current->parent == nullptr) {
+              break;
+            }
+            chain.push_back(current);
+          }
+
+          struct DirectParameterBinding
+          {
+            size_t scope_index;
+            size_t parameter_index;
+            string key;
+          };
+          vector<DirectParameterBinding> direct_bindings;
+          for(size_t depth = chain.size(); depth > 0; --depth) {
+            Scope * current = chain[depth - 1];
+            vector<DirectParameterBinding> local_bindings;
+            for(map<string, TypePtr>::const_iterator it = current->named_types.begin();
+                it != current->named_types.end();
+                ++it) {
+              size_t parameter_index = 0;
+              string key;
+              if(!direct_template_parameter_binding(it->first,
+                                                    it->second,
+                                                    parameter_index,
+                                                    key)) {
+                continue;
+              }
+              DirectParameterBinding binding;
+              binding.scope_index = chain.size() - depth;
+              binding.parameter_index = parameter_index;
+              binding.key = key;
+              local_bindings.push_back(binding);
+            }
+            sort(local_bindings.begin(),
+                 local_bindings.end(),
+                 [](const DirectParameterBinding & lhs,
+                    const DirectParameterBinding & rhs)
+                 {
+                   if(lhs.parameter_index != rhs.parameter_index) {
+                     return lhs.parameter_index < rhs.parameter_index;
+                   }
+                   return lhs.key < rhs.key;
+                 });
+            direct_bindings.insert(direct_bindings.end(),
+                                   local_bindings.begin(),
+                                   local_bindings.end());
+          }
+
+          map<string, string> template_parameter_placeholders;
+          for(size_t i = 0; i < direct_bindings.size(); ++i) {
+            if(template_parameter_placeholders.count(direct_bindings[i].key) != 0) {
+              continue;
+            }
+            template_parameter_placeholders[direct_bindings[i].key] =
+                string("__cppgm_scope_tparam_") +
+                to_string(template_parameter_placeholders.size());
+          }
+
+          function<string(const TypePtr &)> canonical_type_text =
+              [&](const TypePtr & type) -> string
+              {
+                if(!type) {
+                  return string();
+                }
+                TypePtr base = strip_top_level_cv(type);
+                if(base &&
+                   base->kind == Type::TK_NAMED &&
+                   named_type_is_template_parameter(base)) {
+                  map<string, string>::const_iterator found =
+                      template_parameter_placeholders.find(base->named_key);
+                  if(found != template_parameter_placeholders.end()) {
+                    return found->second;
+                  }
+                }
+                switch(type->kind) {
+                case Type::TK_FUNDAMENTAL:
+                  return describe_type(type);
+                case Type::TK_NAMED:
+                  return trim_space(normalize_type_lookup_name(type->named_display));
+                case Type::TK_CV:
+                {
+                  string out = canonical_type_text(type->inner);
+                  if(type->cv_const) {
+                    out = string("const ") + out;
+                  }
+                  if(type->cv_volatile) {
+                    out = string("volatile ") + out;
+                  }
+                  return out;
+                }
+                case Type::TK_POINTER:
+                  return canonical_type_text(type->inner) + " *";
+                case Type::TK_LVALUE_REFERENCE:
+                  return canonical_type_text(type->inner) + " &";
+                case Type::TK_RVALUE_REFERENCE:
+                  return canonical_type_text(type->inner) + " &&";
+                case Type::TK_MEMBER_POINTER:
+                  return canonical_type_text(type->owner) + "::* " +
+                         canonical_type_text(type->inner);
+                case Type::TK_BLOCK_POINTER:
+                  return canonical_type_text(type->inner) + " ^";
+                case Type::TK_ARRAY:
+                  return canonical_type_text(type->inner) + "[]";
+                case Type::TK_ATOMIC:
+                  return string("_Atomic(") + canonical_type_text(type->inner) + ")";
+                case Type::TK_FUNCTION:
+                  return describe_type(type);
+                }
+                return describe_type(type);
+              };
+
+          string out =
+              canonicalize_template_parameter_redeclaration_text(parameters, text);
+          vector<pair<string, string> > replacements;
+          set<string> seen_names;
+          for(size_t depth = 0; depth < chain.size(); ++depth) {
+            Scope * current = chain[depth];
+            for(map<string, TypePtr>::const_iterator it = current->named_types.begin();
+                it != current->named_types.end();
+                ++it) {
+              const string & name = it->first;
+              if(name.empty() ||
+                 seen_names.count(name) != 0 ||
+                 !contains_identifier_token(out, name) ||
+                 (!named_type_is_template_parameter(it->second) &&
+                  !type_depends_on_template_parameter(it->second))) {
+                seen_names.insert(name);
+                continue;
+              }
+              const string replacement = canonical_type_text(it->second);
+              seen_names.insert(name);
+              if(replacement.empty() || replacement == name) {
+                continue;
+              }
+              replacements.push_back(make_pair(name, replacement));
+            }
+          }
+          for(size_t i = 0; i < replacements.size(); ++i) {
+            bool changed = false;
+            out = replace_identifier_token_text(
+                out,
+                replacements[i].first,
+                string("__cppgm_scope_alias_") + to_string(i) + "__",
+                changed);
+          }
+          for(size_t i = 0; i < replacements.size(); ++i) {
+            bool changed = false;
+            out = replace_identifier_token_text(
+                out,
+                string("__cppgm_scope_alias_") + to_string(i) + "__",
+                replacements[i].second,
+                changed);
+          }
+          return out;
+        };
     auto non_type_decl_specifier_text =
         [](const TemplateParameterInfo & parameter) -> string
         {
@@ -22247,30 +22468,38 @@ private:
         continue;
       }
 
+      const bool value_types_match =
+          lhs[i].value_type &&
+          rhs[i].value_type &&
+          semantic_lookup::same_function_template_entity_type(
+              lhs[i].value_type,
+              lhs,
+              rhs[i].value_type,
+              rhs);
       const string lhs_specifier_text = non_type_parameter_discriminator_text(lhs[i]);
       const string rhs_specifier_text = non_type_parameter_discriminator_text(rhs[i]);
-      if(!lhs_specifier_text.empty() &&
+      bool specifier_texts_match = false;
+      if(!value_types_match &&
+         !lhs_specifier_text.empty() &&
          !rhs_specifier_text.empty()) {
         const string lhs_normalized =
             remove_space_chars(normalize_type_lookup_name(
-                canonicalize_template_parameter_redeclaration_text(
-                    lhs, lhs_specifier_text)));
+                canonicalize_scope_template_parameter_text(
+                    lhs_scope, lhs, lhs_specifier_text)));
         const string rhs_normalized =
             remove_space_chars(normalize_type_lookup_name(
-                canonicalize_template_parameter_redeclaration_text(
-                    rhs, rhs_specifier_text)));
+                canonicalize_scope_template_parameter_text(
+                    rhs_scope, rhs, rhs_specifier_text)));
         if(lhs_normalized != rhs_normalized) {
           return false;
         }
+        specifier_texts_match = true;
       }
 
       if(lhs[i].value_type &&
          rhs[i].value_type &&
-         !out_of_class_special_member_template_param_types_match(
-             lhs[i].value_type,
-             lhs,
-             rhs[i].value_type,
-             rhs)) {
+         !value_types_match &&
+         !specifier_texts_match) {
         return false;
       }
 
@@ -22285,8 +22514,6 @@ private:
         }
       }
     }
-    (void)lhs_scope;
-    (void)rhs_scope;
     return true;
   }
 

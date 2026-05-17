@@ -369,6 +369,13 @@ inline bool is_escape_character(int value)
   }
 }
 
+inline bool is_hex_digit(int value)
+{
+  return (value >= '0' && value <= '9') ||
+         (value >= 'A' && value <= 'F') ||
+         (value >= 'a' && value <= 'f');
+}
+
 Normalizer::Normalizer(streambuf * buf) :
   CodePointIterator(1, 1),
   buf(buf)
@@ -768,14 +775,24 @@ inline void FullTranslator::translate_trigraph_ucn_splice()
   while (value == '\\') {
     int next = peek(1);
     if (next == 'u' || next == 'U') {
-      ++*this;
-      ++*this;
       int num = next == 'u' ? 4 : 8;
+      bool valid_ucn = true;
+      for(int i = 0; i < num; ++i) {
+        int digit = peek(i + 2);
+        if (digit == EndOfFile)
+          throw logic_error("Unterminated unicode escape");
+        if (!is_hex_digit(digit)) {
+          valid_ucn = false;
+          break;
+        }
+      }
+      if(!valid_ucn)
+        break;
+      ++*this;
+      ++*this;
       value = 0;
       for(int i = 0; i < num; ++i) {
         next = pop();
-        if (next == EndOfFile)
-          throw logic_error("Unterminated unicode escape");
         value = (value << 4) + hex_to_value(next);
       }
       buffer.push_front(value);

@@ -642,7 +642,8 @@ size_t skip_whitespace_tokens(const vector<EPPToken> & tokens, size_t i)
 
 bool is_zero_builtin_query(const string & id)
 {
-  return id == "__has_cpp_attribute";
+  return id == "__has_cpp_attribute" ||
+         id == "__building_module";
 }
 
 bool is_supported_attribute_query(const string & name)
@@ -659,6 +660,7 @@ bool is_predefined_builtin_probe_name(const string & name)
          name == "__has_attribute" ||
          name == "__has_cpp_attribute" ||
          name == "__has_builtin" ||
+         name == "__building_module" ||
          name == "__has_include" ||
          name == "__has_include_next";
 }

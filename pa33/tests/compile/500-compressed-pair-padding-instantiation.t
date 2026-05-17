@@ -3,7 +3,11 @@
 
 struct Alloc {};
 
+#if defined(_LIBCPP_VERSION) && _LIBCPP_VERSION < 210000
+::std::__compressed_pair<Alloc, int> pad;
+#else
 ::std::__compressed_pair_padding<Alloc> pad;
+#endif
 #elif __has_include(<bits/shared_ptr_base.h>)
 #include <bits/shared_ptr_base.h>
 

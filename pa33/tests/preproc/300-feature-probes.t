@@ -18,3 +18,8 @@ bad
 #else
 cppattr_off
 #endif
+#if __building_module(_Builtin_stddef)
+bad
+#else
+building_module_off
+#endif

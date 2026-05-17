@@ -4,4 +4,5 @@ identifier modules_off
 identifier blocks_off
 identifier attr_off
 identifier cppattr_off
+identifier building_module_off
 eof
