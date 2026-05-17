@@ -1,5 +1,0 @@
-translation-unit
-  class-use at pa21/tests/general/100-template-specialization-qualified-destructor-attribute-declaration.t:7:40
-    template S
-    selected primary
-    bind #1 = int source=explicit

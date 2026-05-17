@@ -1,8 +1,0 @@
-translation-unit
-  class-use at pa18/tests/general/200-static-assert-builtin-trait-non-type-argument.t:14:1
-    template A
-    selected primary
-    bind #1 = long long source=explicit
-template-closure-events
-  variable-instantiation
-    entity integral_constant<bool, true>::value

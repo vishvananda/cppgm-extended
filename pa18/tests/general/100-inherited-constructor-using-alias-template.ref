@@ -22,10 +22,10 @@ function @YHolder_YTraits___YHolder(%this : ptr, %t : ptr [pass=reference]) -> v
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr $t
-    call void @YDerived_YTraits__true___YDerived(%t2, %t3)
+    call void @YDerived_YTraits___YDerived(%t2, %t3)
     return void
 }
-function @YDerived_YTraits__true___YDerived(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8YDerivedI7YTraitsLb1EEC1ERKS0_] {
+function @YDerived_YTraits___YDerived(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8YDerivedI7YTraitsEC1ERKS0_] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -35,10 +35,10 @@ function @YDerived_YTraits__true___YDerived(%this : ptr, %__param1 : ptr [pass=r
     %t1 = load ptr $this
     %t2 = index i8 [projection=base_subobject] %t1, 0
     %t3 = load ptr $__param1
-    call void @YBase_YTraits__true___YBase__base_entry(%t2, %t3)
+    call void @YBase_YTraits___YBase__base_entry(%t2, %t3)
     return void
 }
-function @YBase_YTraits__true___YBase__base_entry(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5YBaseI7YTraitsLb1EEC2ERKS0_] {
+function @YBase_YTraits___YBase__base_entry(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5YBaseI7YTraitsEC2ERKS0_] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -47,7 +47,7 @@ function @YBase_YTraits__true___YBase__base_entry(%this : ptr, %__param1 : ptr [
     store ptr %__param1, $__param1
     return void
 }
-function @YBase_YTraits__true___YBase(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5YBaseI7YTraitsLb1EEC1ERKS0_] {
+function @YBase_YTraits___YBase(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5YBaseI7YTraitsEC1ERKS0_] {
   slot $this : ptr
   slot $__param1 : ptr
 

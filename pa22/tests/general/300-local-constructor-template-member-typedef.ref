@@ -1,0 +1,40 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $it : obj<8x8>
+  slot $cit : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $it
+    call void @Wrap_ActiveInterval__local_15653610362259474173_____Wrap(%t1)
+    %t2 = addr $cit
+    %t3 = addr $it
+    call void @Wrap_ActiveInterval__local_15653610362259474173_const_____Wrap__ov4(%t2, %t3)
+    return i32 0
+}
+function @Wrap_ActiveInterval__local_15653610362259474173_____Wrap(%this : ptr) -> void [binding=weak, object=_ZN4WrapIP42ActiveInterval__local_15653610362259474173EC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store ptr 0, %t2
+    return void
+}
+function @Wrap_ActiveInterval__local_15653610362259474173_const_____Wrap__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4WrapIPK42ActiveInterval__local_15653610362259474173EC1IPS0_EERKS_IT_E] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store ptr %t3, %t5
+    return void
+}

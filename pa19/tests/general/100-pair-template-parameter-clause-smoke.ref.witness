@@ -1,4 +1,0 @@
-translation-unit
-  alias-use at pa19/tests/general/100-pair-template-parameter-clause-smoke.t:15:13
-    template __enable_if_t
-    bind #1 = __is_same(U1, U1) && __is_same(U2, U2) source=explicit

@@ -6,7 +6,7 @@ T __declval(long);
 
 template<class T>
 decltype(__declval<T>(0)) declval() {
-  static_assert(!__is_same(T, T), "declval body");
+  static_assert(sizeof(T) == 0, "declval body");
 }
 
 template<class T, class U>

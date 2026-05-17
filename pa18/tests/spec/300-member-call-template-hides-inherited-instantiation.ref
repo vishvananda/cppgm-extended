@@ -17,15 +17,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $base
     %t6 = addr $it
     %t7 = addr $base
-    call void @unrolled_1___call(%t6, %t7)
+    call void @unrolled_void___call(%t6, %t7)
     %t8 = addr $derived
     %t9 = addr $it
     %t10 = addr $derived
-    call void @unrolled_1___call__ov2(%t9, %t10)
+    call void @unrolled_void___call__ov2(%t9, %t10)
     %t11 = load i32 $value
     return i32 %t11
 }
-function @unrolled_1___call(%i0 : ptr [pass=reference], %fn : ptr [pass=reference]) -> void [binding=weak, object=_ZN8unrolledILi1EE4callI4iterIiE7base_fnEEvRKT_RT0_] {
+function @unrolled_void___call(%i0 : ptr [pass=reference], %fn : ptr [pass=reference]) -> void [binding=weak, object=_ZN8unrolledIvE4callI4iterIiE7base_fnEEvRKT_RT0_] {
   slot $i0 : ptr
   slot $fn : ptr
 
@@ -38,7 +38,7 @@ function @unrolled_1___call(%i0 : ptr [pass=reference], %fn : ptr [pass=referenc
     call void @base_fn__operator__(%t1, %t3)
     return void
 }
-function @unrolled_1___call__ov2(%i0 : ptr [pass=reference], %fn : ptr [pass=reference]) -> void [binding=weak, object=_ZN8unrolledILi1EE4callI4iterIiE10derived_fnEEvRKT_RT0_] {
+function @unrolled_void___call__ov2(%i0 : ptr [pass=reference], %fn : ptr [pass=reference]) -> void [binding=weak, object=_ZN8unrolledIvE4callI4iterIiE10derived_fnEEvRKT_RT0_] {
   slot $i0 : ptr
   slot $fn : ptr
 

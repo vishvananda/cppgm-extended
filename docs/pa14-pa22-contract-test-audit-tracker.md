@@ -30,30 +30,30 @@ Current source-test counts:
 
 | PA | Local tests | Course tests | Total |
 | --- | ---: | ---: | ---: |
-| `pa14` | 50 | 1 | 51 |
-| `pa15` | 131 | 0 | 131 |
+| `pa14` | 48 | 1 | 49 |
+| `pa15` | 128 | 0 | 128 |
 | `pa16` | 123 | 0 | 123 |
 | `pa17` | 21 | 0 | 21 |
-| `pa18` | 164 | 0 | 164 |
-| `pa19` | 107 | 0 | 107 |
+| `pa18` | 151 | 0 | 151 |
+| `pa19` | 97 | 0 | 97 |
 | `pa20` | 66 | 0 | 66 |
-| `pa21` | 168 | 0 | 168 |
-| `pa22` | 388 | 0 | 388 |
-| **total** | **1,218** | **1** | **1,219** |
+| `pa21` | 161 | 0 | 161 |
+| `pa22` | 390 | 0 | 390 |
+| **total** | **1,185** | **1** | **1,186** |
 
 ## Per-PA Audit Status
 
 | PA | Contract Audit | Test Audit | Auditor Coverage | README Update | Test Moves | Validation | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `pa14` | pending | pending | drafted | pending | in_progress | pending | Mechanical local-static/class-owner moves done. Floating/backend, variadic, u128, and one course test remain deferred. |
-| `pa15` | pending | pending | drafted | pending | in_progress | pending | Mechanical inheritance/operator/bitfield/conversion/member-pointer moves done. Attribute/no-unique-address splits remain. |
+| `pa14` | pending | pending | drafted | pending | in_progress | pending | Mechanical local-static/class-owner moves done. Extended-integer cases moved to PA33. Floating/backend, variadic, and one course test remain deferred. |
+| `pa15` | pending | pending | drafted | pending | in_progress | pending | Mechanical inheritance/operator/bitfield/conversion/member-pointer moves done. No-unique-address hosted cases moved to PA33. |
 | `pa16` | pending | pending | drafted | pending | in_progress | pending | Mechanical value/allocation/conversion/lambda/range-for/inheriting-constructor moves done. `using` overload split remains. |
 | `pa17` | pending | pending | drafted | pending | in_progress | pending | PA17 course tests moved out of `cppgm.tests/course`; multi-base pointer-adjustment cases moved to PA29. |
-| `pa18` | pending | pending | drafted | pending | in_progress | pending | Mechanical dependent-name/pack/template-deduction moves done. Inheriting-constructor template reduction and one owner recheck remain. |
-| `pa19` | pending | pending | drafted | pending | in_progress | pending | Mechanical explicit-specialization, timing, alias/variable-template, SFINAE, and member-pointer moves done. PA33 builtin-trait rewrites remain. |
-| `pa20` | pending | pending | drafted | pending | in_progress | pending | Mechanical constexpr object/static-member renumbers done. Noexcept/template split and u128 rewrite remain. |
-| `pa21` | pending | pending | drafted | pending | in_progress | pending | Mechanical variable-template, explicit-instantiation, partial-ordering, SFINAE, and member-pointer moves done. Split/reduce items remain. |
-| `pa22` | pending | pending | drafted | pending | in_progress | pending | Mechanical PA22 cluster renumbers and PA26/PA27/PA28 support-feature moves done. Auto-local, attribute, and builtin-trait reductions remain. |
+| `pa18` | pending | pending | drafted | pending | in_progress | pending | Mechanical dependent-name/pack/template-deduction moves done. Hosted builtin-trait case moved to PA33. Inheriting-constructor template reduction and one owner recheck remain. |
+| `pa19` | pending | pending | drafted | pending | in_progress | pending | Mechanical explicit-specialization, timing, alias/variable-template, SFINAE, and member-pointer moves done. Hosted builtin-trait cases moved to PA33. |
+| `pa20` | pending | pending | drafted | pending | in_progress | pending | Mechanical constexpr object/static-member renumbers done. Extended-integer hosted case moved to PA33. Noexcept/template split remains. |
+| `pa21` | pending | pending | drafted | pending | in_progress | pending | Mechanical variable-template, explicit-instantiation, partial-ordering, SFINAE, and member-pointer moves done. Hosted attribute cases moved to PA33; one nodebug-attribute fixture reduced. |
+| `pa22` | pending | pending | drafted | pending | in_progress | pending | Mechanical PA22 cluster renumbers and PA26/PA27/PA28 support-feature moves done. Hosted builtin/attribute cases moved to PA33; declval body sentinels reduced. Auto-local reductions remain. |
 
 ## Move Results Log
 
@@ -66,20 +66,27 @@ logs were intentionally not moved.
 | 1 | PA14-PA17 plus first PA20/PA26/PA28/PA29 support moves | 97 | 386 | Completed. A sidecar-rotation bug in the first script was repaired immediately; every moved file was byte-checked against its original content. |
 | 2 | PA18 and PA19 renumbers/moves through PA20/PA22/PA26-PA29 destinations | 187 | 921 | Completed with pre-move collision checks and post-move byte verification. |
 | 3 | PA20-PA22 renumbers/moves through PA18/PA19/PA26-PA28 destinations | 155 | 770 | Completed with pre-move collision checks and post-move byte verification. |
-| **total** |  | **439** | **2,077** |  |
+| 4 | Hosted compatibility moves to PA33 plus sentinel reductions in PA21/PA22 | 25 | 218 | Completed. Original hosted builtin/attribute/extended-integer/no-unique-address tests moved to PA33 compile coverage; three PA22 no-body sentinel tests and one PA21 alias test were reduced in place. |
+| **total** |  | **464** | **2,295** |  |
 
 Post-move scanner refresh over PA14-PA22 plus PA26-PA29:
 
-- tests scanned: 1,403
-- tests needing review: 447
-- placement findings: 876
-- semantic-owner notes: 224
+- tests scanned: 1,377
+- tests needing review: 86
+- placement findings: 90
+- semantic-owner notes: 222
 - detector gaps: 0
+- placement violations: 0
+- cluster-early findings: 0
 
 Move validation:
 
 - `make test-report ACTIVE_TEST_REPORT_PAS='pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa26 pa27 pa28 pa29' ORDERED=false`
   passed: 1,403 / 1,403.
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa33' ORDERED=false`
+  passed: 291 / 291.
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa14 pa15 pa18 pa19 pa20 pa21 pa22' ORDERED=false`
+  passed: 1,042 / 1,042.
 
 Remaining PA10+ course placement:
 
@@ -91,11 +98,7 @@ Deferred split/rewrite items:
 
 - PA23 backend/source-to-LowIR split: PA14 floating return/reference,
   variadic float promotion, and optional floating namespace-symbol coverage.
-- PA33 harness rewrite: PA14/PA20 extended integer tests, PA15/PA21/PA22
-  attribute/no-unique-address cases, and PA19/PA22 builtin-trait/intrinsic
-  variants.
-- PA15/PA16 reductions: anonymous/no-unique-address mixed layout tests and
-  `pa16/tests/general/300-using-base-overload-set.t`.
+- PA16 reduction: `pa16/tests/general/300-using-base-overload-set.t`.
 - PA18 owner recheck/reduction:
   `pa18/tests/general/100-inherited-constructor-using-alias-template.t` and
   `pa18/tests/spec/100-member-template-cache-hit-concrete-scope.t`.
@@ -426,7 +429,43 @@ Fill this table as tests are audited. Do not move a test without an entry.
 
 | Test | Current PA | Current Cluster | Detected Features | N3485 Refs | Primary Assertion | Decision | Target PA | Target Cluster | Notes |
 | --- | --- | ---: | --- | --- | --- | --- | --- | ---: | --- |
-| _pending_ | | | | | | | | | |
+| `pa14/tests/general/200-u128-constant-runtime-init-not-truncated.t` | `pa14` | 200 | `lang.extended_integer` | N/A GNU extension | Extended integer lowering/constant arithmetic is hosted compatibility, not PA14 procedural LowIR. | Move original | `pa33` | 600 | Now `pa33/tests/compile/600-u128-constant-runtime-init-not-truncated.t`. |
+| `pa14/tests/general/200-unused-inline-u128-global.t` | `pa14` | 200 | `lang.extended_integer`, `constexpr.integral_subset` | N/A GNU extension | Inline constexpr `__uint128_t` globals are hosted compatibility. | Move original | `pa33` | 600 | Now `pa33/tests/compile/600-unused-inline-u128-global.t`. |
+| `pa15/tests/general/200-anonymous-helper-followed-by-nested-type-no-unique-address.t` | `pa15` | 200 | `class.attribute.no_unique_address`, `support.attribute` | N/A post-C++11 attribute | Primary assertion is `[[no_unique_address]]`/hosted layout. | Move original | `pa33` | 600 | Now `pa33/tests/compile/600-anonymous-helper-followed-by-nested-type-no-unique-address.t`. |
+| `pa15/tests/general/200-no-unique-address-empty-member-size.t` | `pa15` | 200 | `class.attribute.no_unique_address`, `support.attribute` | N/A post-C++11 attribute | Primary assertion is `[[no_unique_address]]` hosted layout. | Move original | `pa33` | 600 | Now `pa33/tests/compile/600-no-unique-address-empty-member-size.t`. |
+| `pa15/tests/general/200-recursive-no-unique-address-empty-holder.t` | `pa15` | 200 | `class.attribute.no_unique_address`, `template.builtin_traits` | N/A hosted | Primary assertion combines `[[no_unique_address]]` with builtin empty-trait behavior. | Move original | `pa33` | 600 | Now `pa33/tests/compile/600-recursive-no-unique-address-empty-holder.t`. |
+| `pa18/tests/general/200-static-assert-builtin-trait-non-type-argument.t` | `pa18` | 200 | `template.builtin_traits`, `static_assert` | N/A hosted trait probes | The useful shape is static assertion through a hosted builtin trait wrapper. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-static-assert-builtin-trait-non-type-argument.t`. |
+| `pa19/tests/general/100-pair-template-parameter-clause-smoke.t` | `pa19` | 100 | `template.builtin_traits` | N/A hosted trait probes | `__is_same` in an enable-if NTTP clause is hosted builtin compatibility. | Move original | `pa33` | 700 | Restored original `__is_same` expression; now `pa33/tests/compile/700-pair-template-parameter-clause-smoke.t`. |
+| `pa19/tests/spec/200-bool-alias-base-preserves-nontype-type.t` | `pa19` | 200 | `template.builtin_traits` | N/A hosted trait probes | `__is_constructible`/`__is_base_of` alias-base interaction is hosted builtin compatibility. | Move original | `pa33` | 700 | Restored original builtin expressions; now `pa33/tests/compile/700-bool-alias-base-preserves-nontype-type.t`. |
+| `pa19/tests/general/100-and-alias-decltype-pack-call.t` | `pa19` | 100 | `template.builtin_traits` | N/A hosted trait probes | Alias and decltype shape depends on `__is_assignable`. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-and-alias-decltype-pack-call.t`. |
+| `pa19/tests/general/100-is-assignable-deleted-special-member.t` | `pa19` | 100 | `template.builtin_traits` | N/A hosted trait probes | Direct `__is_assignable` special-member behavior is hosted builtin compatibility. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-is-assignable-deleted-special-member.t`. |
+| `pa19/tests/general/200-defaulted-dependent-nontype-expression-syntax.t` | `pa19` | 200 | `template.builtin_traits` | N/A hosted trait probes | Dependent NTTP default uses `__is_enum`; PA19 already has non-builtin default-expression coverage. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-defaulted-dependent-nontype-expression-syntax.t`. |
+| `pa20/tests/general/400-local-u128-constexpr-not-truncated.t` | `pa20` | 400 | `lang.extended_integer` | N/A GNU extension | Local constexpr `__uint128_t` arithmetic is hosted extended-integer compatibility. | Move original | `pa33` | 600 | Now `pa33/tests/compile/600-local-u128-constexpr-not-truncated.t`. |
+| `pa21/tests/general/100-template-specialization-qualified-constructor-attribute-declaration.t` | `pa21` | 100 | `support.attribute` | 7.6 `[dcl.attr]` / hosted GNU attribute | The attribute-bearing specialization declaration belongs to hosted compatibility. | Move original | `pa33` | 500 | Now `pa33/tests/compile/500-template-specialization-qualified-constructor-attribute-declaration.t`; non-attribute constructor specialization remains covered in PA21. |
+| `pa21/tests/general/100-template-specialization-qualified-destructor-attribute-declaration.t` | `pa21` | 100 | `support.attribute` | 7.6 `[dcl.attr]` / hosted GNU attribute | The attribute-bearing specialization declaration belongs to hosted compatibility. | Move original | `pa33` | 500 | Now `pa33/tests/compile/500-template-specialization-qualified-destructor-attribute-declaration.t`. |
+| `pa21/tests/general/400-alias-rebind-partial-specialization-shadow.t` | `pa21` | 400 | `support.attribute` | 14.5.5.2 `[temp.class.order]`, 14.5.7 `[temp.alias]` | Primary assertion is alias rebind partial-specialization selection; GNU `nodebug` attributes were incidental. | Reduce in place | `pa21` | 400 | Removed `[[__gnu__::__nodebug__]]` attributes. |
+| `pa22/tests/general/200-dependent-base-builtin-trait.t` | `pa22` | 200 | `template.builtin_traits` | N/A hosted trait probes | Dependent base using `__is_convertible` is hosted builtin compatibility. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-dependent-base-builtin-trait.t`. |
+| `pa22/tests/general/300-common-type-declval-no-body-instantiation.t` | `pa22` | 300 | `template.builtin_traits` | 14.6.4.1 `[temp.point]`, 14.7.1 `[temp.inst]` | Primary assertion is that the `declval` body is not instantiated; builtin was only a dependent false sentinel. | Reduce in place | `pa22` | 300 | Replaced `!__is_same(T, T)` with `sizeof(T) == 0`. |
+| `pa22/tests/general/300-common-type-recursive-declval-no-body-instantiation.t` | `pa22` | 300 | `template.builtin_traits` | 14.6.4.1 `[temp.point]`, 14.7.1 `[temp.inst]` | Recursive common-type variant of the no-body-instantiation sentinel. | Reduce in place | `pa22` | 300 | Replaced `!__is_same(T, T)` with `sizeof(T) == 0`. |
+| `pa22/tests/general/300-decltype-conditional-no-body-instantiation.t` | `pa22` | 300 | `template.builtin_traits` | 14.6.4.1 `[temp.point]`, 14.7.1 `[temp.inst]` | Conditional-decltype variant of the no-body-instantiation sentinel. | Reduce in place | `pa22` | 300 | Replaced `!__is_same(T, T)` with `sizeof(T) == 0`. |
+| `pa22/tests/general/300-template-anonymous-packed-bitfield-layout.t` | `pa22` | 300 | `class.attribute.no_unique_address`, `support.attribute` | N/A hosted attributes | Packed anonymous bitfield plus `[[no_unique_address]]` is hosted layout compatibility. | Move original | `pa33` | 600 | Now `pa33/tests/compile/600-template-anonymous-packed-bitfield-layout.t`. |
+| `pa22/tests/general/400-constructible-derived-base-template-ctor.t` | `pa22` | 400 | `template.builtin_traits` | N/A hosted trait probes | Direct `__is_constructible` assertion is hosted builtin compatibility. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-constructible-derived-base-template-ctor.t`. |
+| `pa22/tests/general/400-constructor-template-leading-const-pointer-convertible-enable-if.t` | `pa22` | 400 | `template.builtin_traits` | N/A hosted trait probes | Constructor-template enable-if depends on `__is_convertible`. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-constructor-template-leading-const-pointer-convertible-enable-if.t`. |
+| `pa22/tests/general/400-constructor-template-pointer-convertible-default-enable-if.t` | `pa22` | 400 | `template.builtin_traits` | N/A hosted trait probes | Constructor-template enable-if depends on `__is_convertible`. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-constructor-template-pointer-convertible-default-enable-if.t`. |
+| `pa22/tests/general/400-member-alias-assignable-rvalue-assignment.t` | `pa22` | 400 | `template.builtin_traits` | N/A hosted trait probes | Member alias assignment condition depends on `__is_assignable`. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-member-alias-assignable-rvalue-assignment.t`. |
+| `pa22/tests/general/400-partial-specialization-enable-if-constructor-selection.t` | `pa22` | 400 | `template.builtin_traits` | N/A hosted trait probes | Complex constructor-selection reducer depends on `__is_convertible`. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-partial-specialization-enable-if-constructor-selection.t`. |
+| `pa22/tests/general/500-bound-owner-inherited-member-type.t` | `pa22` | 500 | `template.builtin_traits` | N/A hosted trait probes | Inherited member-type check used `__is_same`; similar non-builtin PA22 coverage remains. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-bound-owner-inherited-member-type.t`. |
+| `pa22/tests/general/500-carried-dependent-bool-member-argument.t` | `pa22` | 500 | `template.builtin_traits` | N/A hosted trait probes | EBO/default-argument shape depends on `__is_final`/`__is_empty`. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-carried-dependent-bool-member-argument.t`. |
+| `pa22/tests/general/500-compatible-alias-converting-ctor.t` | `pa22` | 500 | `template.builtin_traits` | N/A hosted trait probes | Boost/libc++ compatibility reducer wraps `__is_convertible`. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-compatible-alias-converting-ctor.t`. |
+| `pa22/tests/general/500-defaulted-nontype-enable-if-constructible-ref.t` | `pa22` | 500 | `template.builtin_traits` | N/A hosted trait probes | Defaulted NTTP enable-if shape depends on hosted `__is_constructible`/`__is_same`. | Move original | `pa33` | 700 | Now `pa33/tests/compile/700-defaulted-nontype-enable-if-constructible-ref.t`. |
+| `pa18/tests/general/100-inherited-constructor-using-alias-template.t` | `pa18` | 100 | `template.nttp` | 14.1 `[temp.param]`, 14.3.2 `[temp.arg.nontype]` | Primary assertion is alias-template inherited-constructor lookup; bool NTTP was incidental. | Reduce in place | `pa18` | 100 | Removed the bool NTTP fixture. |
+| `pa18/tests/general/300-empty-base-pack-expansion-sizeof.t` | `pa18` | 300 | `static_assert` | 14.5.3 `[temp.variadic]` | Primary assertion is empty base pack expansion; static assertion was not required. | Reduce in place | `pa18` | 300 | Replaced `static_assert` with runtime return check. |
+| `pa18/tests/general/300-sizeof-pack-expression.t` | `pa18` | 300 | `constexpr.noexcept` | 14.5.3 `[temp.variadic]` | Primary assertion is `sizeof...`; constexpr/noexcept member was incidental. | Reduce in place | `pa18` | 300 | Replaced constexpr function with enum constant. |
+| `pa18/tests/spec/300-member-call-template-hides-inherited-instantiation.t` | `pa18` | 300 | `template.nttp` | 14.5.2 `[temp.mem]` | Primary assertion is member-call template hiding inherited instantiation; NTTP parameter was incidental. | Reduce in place | `pa18` | 300 | Replaced integer NTTP with type template parameter. |
+| `pa18/tests/general/200-local-constructor-template-member-typedef.t` | `pa18` | 200 | `template.builtin_traits`, `sfinae` | 14.8 `[temp.fct.spec]` | Local constructor-template member typedef assertion needs PA22 deduction; hosted builtin traits were incidental. | Move and reduce | `pa22` | 300 | Now `pa22/tests/general/300-local-constructor-template-member-typedef.t`; stripped hosted trait enable-if. |
+| `pa18/tests/general/200-local-member-call-constructor-template-instantiation.t` | `pa18` | 200 | `template.builtin_traits`, `sfinae` | 14.8 `[temp.fct.spec]` | Local member-call constructor-template assertion needs PA22 deduction; hosted builtin traits were incidental. | Move and reduce | `pa22` | 300 | Now `pa22/tests/general/300-local-member-call-constructor-template-instantiation.t`; stripped hosted trait enable-if. |
+| `pa18/tests/spec/100-local-constructor-template-member-typedef.t` | `pa18` | 100 | `template.builtin_traits`, `sfinae` | 14.8 `[temp.fct.spec]` | Spec twin of local constructor-template member typedef PA22 behavior. | Move and reduce | `pa22` | 300 | Now `pa22/tests/spec/300-local-constructor-template-member-typedef.t`; stripped hosted trait enable-if. |
+| `pa18/tests/spec/100-local-member-call-constructor-template-instantiation.t` | `pa18` | 100 | `template.builtin_traits`, `sfinae` | 14.8 `[temp.fct.spec]` | Spec twin of local member-call constructor-template PA22 behavior. | Move and reduce | `pa22` | 300 | Now `pa22/tests/spec/300-local-member-call-constructor-template-instantiation.t`; stripped hosted trait enable-if. |
 
 ## README Update Log
 

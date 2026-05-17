@@ -20,6 +20,5 @@ int main()
 {
   typedef tuple<> empty;
   typedef tuple<empty> nested;
-  static_assert(sizeof(nested) > 0, "empty base pack expands to no bases");
-  return 0;
+  return sizeof(nested) > 0 ? 0 : 1;
 }

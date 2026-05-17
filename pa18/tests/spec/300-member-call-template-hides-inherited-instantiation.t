@@ -29,7 +29,7 @@ struct iter
   }
 };
 
-template<int N>
+template<class Tag>
 struct unrolled
 {
   template<class I0, class F>
@@ -45,10 +45,10 @@ int main()
   iter<int> it = { &value };
 
   base_fn base;
-  unrolled<1>::call(it, base);
+  unrolled<void>::call(it, base);
 
   derived_fn derived;
-  unrolled<1>::call(it, derived);
+  unrolled<void>::call(it, derived);
 
   return value;
 }

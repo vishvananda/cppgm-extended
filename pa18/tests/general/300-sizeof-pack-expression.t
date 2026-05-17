@@ -1,7 +1,7 @@
 // HHC-126
 template<class... I>
 struct X {
-  static constexpr int size() noexcept { return sizeof...(I); }
+  enum { size = sizeof...(I) };
 };
 
-int main() { return X<int, char>::size() != 2; }
+int main() { return X<int, char>::size != 2; }

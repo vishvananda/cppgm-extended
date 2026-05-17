@@ -40,6 +40,7 @@ class FeatureRule:
     all_patterns: bool = False
     use_raw: bool = False
     ref_patterns: tuple[re.Pattern[str], ...] = ()
+    path_patterns: tuple[re.Pattern[str], ...] = ()
 
 
 @dataclass
@@ -68,8 +69,7 @@ RULES: tuple[FeatureRule, ...] = (
                     r"(?<![A-Za-z0-9_])(?:[0-9]+\.[0-9]*|[0-9]*\.[0-9]+|[0-9]+[eE][+-]?[0-9]+)[fFlL]?"),),
                 use_raw=True,
                 ref_patterns=(rx(r"\b(?:f32|f64|f80)\b|convert\s+(?:fpto|[su]itofp|fpext|fptrunc)"),)),
-    FeatureRule("lang.extended_integer", (rx(r"\b__int128\b"),),
-                ref_patterns=(rx(r"\b[ui]128\b"),)),
+    FeatureRule("lang.extended_integer", (rx(r"\b__u?int128(?:_t)?\b"),)),
     FeatureRule("stmt.condition_declaration",
                 (rx(r"\b(?:if|switch)\s*\(\s*(?:const\s+|volatile\s+|unsigned\s+|signed\s+|long\s+|short\s+|int\b|bool\b|char\b|[A-Za-z_][A-Za-z0-9_:<>]*\s+[&*]?\s*[A-Za-z_])"),)),
     FeatureRule("expr.reference", (rx(r"(?:^|[^\w])(?:const\s+)?[A-Za-z_][A-Za-z0-9_:<>]*\s*&\s*[A-Za-z_]|\bstatic_cast\s*<[^>]*&"),)),
@@ -109,13 +109,15 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("class.using_declaration", (rx(r"\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
     FeatureRule("class.inheriting_constructor",
                 (rx(r"\busing\s+(?:[A-Za-z_][A-Za-z0-9_:<>]*::)*([A-Za-z_][A-Za-z0-9_]*)::\1\s*;"),)),
-    FeatureRule("class.inheritance.multiple", (rx(r"\b(?:class|struct)\s+\w+\s*:[^{,]+,[^{]+"),)),
+    FeatureRule("class.inheritance.multiple", (),
+                path_patterns=(rx(r"(?:multiple-inheritance|multiple-base|multibase|diamond|nonprimary-base|downcast-nonprimary|secondary-primary|repeated-base)"),)),
     FeatureRule("class.member_pointer", (rx(r"::\s*\*|\.\*|->\*"),)),
     FeatureRule("class.conversion_operator", (rx(r"\boperator\s+(?!new\b|delete\b)(?:const\s+)?[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s*\("),)),
     FeatureRule("function.trailing_return", (rx(r"\)\s*->\s*[A-Za-z_][A-Za-z0-9_:<>*&\s]*"),)),
     FeatureRule("support.attribute", (rx(r"\[\[[^]]+\]\]|__attribute__\s*\("),)),
-    FeatureRule("lifetime.ctor_dtor", (rx(r"\b~[A-Za-z_][A-Za-z0-9_]*\s*\(|\b[A-Za-z_][A-Za-z0-9_]*\s*\([^;{}]*\)\s*:"),),
-                ref_patterns=(rx(r"C[12]E|D[012]E|__base_entry"),)),
+    FeatureRule("lifetime.ctor_dtor",
+                (rx(r"\b~[A-Za-z_][A-Za-z0-9_]*\s*\("),),
+                path_patterns=(rx(r"(?:lifetime|constructor|destructor|global-constructor|member-object-lifetime)"),)),
     FeatureRule("value.copy_move",
                 (rx(r"\b(?:copy|move)\b|operator\s*=(?!=)\s*\(\s*(?:const\s+)?[A-Za-z_][A-Za-z0-9_:<>]*\s*(?:&&|&)|"
                     r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*(?:const\s+)?\1\s*(?:&&|&)"),),
@@ -132,19 +134,21 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("expr.array_new_delete", (rx(r"\bnew\s+[^\[]*\[|\bdelete\s*\["),),
                 ref_patterns=(rx(r"operator_(?:new|delete)_array|delete_array|array_cookie"),)),
     FeatureRule("lookup.using_directive", (rx(r"\busing\s+namespace\b|\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
-    FeatureRule("support.lambda", (rx(r"\[[^]\n]*\]\s*\([^)]*\)\s*(?:mutable\s*)?(?:noexcept\s*)?(?:->|\{)"),)),
+    FeatureRule("support.lambda", (rx(r"(?<!operator)\[[^]\n]*\]\s*\([^)]*\)\s*(?:mutable\s*)?(?:noexcept\s*)?(?:->|\{)"),)),
     FeatureRule("support.lambda.capture",
                 (rx(r"\[[^]\n]*[A-Za-z_][A-Za-z0-9_]*[^]\n]*\]\s*\([^)]*\)\s*"
                     r"(?:mutable\s*)?(?:noexcept\s*)?(?:->[^{]+)?\{"),)),
     FeatureRule("support.range_for", (rx(r"\bfor\s*\([^:;()]+:[^)]*\)"),)),
     FeatureRule("support.decltype", (rx(r"\bdecltype\s*\("),)),
-    FeatureRule("support.auto", (rx(r"\bauto\b"),)),
+    FeatureRule("support.auto",
+                (rx(r"\bauto\s+(?:[*&]\s*)?[A-Za-z_][A-Za-z0-9_]*\s*(?:=|;|,|\[)|"
+                    r"\bauto\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*(?!->)(?:noexcept\s*)?(?:\{|;)"),)),
     FeatureRule("polymorphic.basic", (rx(r"\bvirtual\b"),),
                 ref_patterns=(rx(r"__vtable|_ZTV|__rtti|_ZTI|typeinfo"),)),
     FeatureRule("polymorphic.override_final", (rx(r"\b(?:override|final)\b"),)),
     FeatureRule("polymorphic.vdtor", (rx(r"\bvirtual\s+~"),)),
-    FeatureRule("polymorphic.vtable_order", (rx(r"\bvirtual\b"),),
-                ref_patterns=(rx(r"__vtable|_ZTV"),)),
+    FeatureRule("polymorphic.vtable_order", (),
+                path_patterns=(rx(r"(?:vtable-order|destructor-slot|slot-merge|vptr-overwrite|vtable-offset)"),)),
     FeatureRule("polymorphic.pointer_adjust",
                 (rx(r"\bvirtual\b"), rx(r"\b(?:class|struct)\s+\w+\s*:[^{,]+,[^{]+|static_cast\s*<[^>]*[&*]")),
                 all_patterns=True,
@@ -156,42 +160,65 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("template.default_argument", (rx(r"\btemplate\s*<[^>]*=[^>]*>"),)),
     FeatureRule("template.dependent_name", (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::|[A-Za-z_][A-Za-z0-9_]*<[^>]*>::"),)),
     FeatureRule("template.friend", (rx(r"\bfriend\b[^;{]*\btemplate\b|\btemplate\s*<[^>]*>[^;{]*\bfriend\b"),)),
-    FeatureRule("template.current_instantiation", (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_]*::|[A-Za-z_][A-Za-z0-9_]*<[^>]*>::"),)),
-    FeatureRule("template.disambiguator", (rx(r"\btypename\b|\btemplate\s+[A-Za-z_]"),)),
-    FeatureRule("template.function_partial_ordering",
-                (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b([A-Za-z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*(?:\{|;).*?"
-                    r"\btemplate\s*<[^>]*>[^;{}()]*\b\1\s*\("),)),
+    FeatureRule("template.current_instantiation", (),
+                path_patterns=(rx(r"current-instantiation|source-owner|owner-type|owner-param|owner-key"),)),
+    FeatureRule("template.disambiguator",
+                (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::|(?:\.|->|::)\s*template\s+[A-Za-z_]"),)),
+    FeatureRule("template.function_partial_ordering", (),
+                path_patterns=(rx(r"(?:function-partial-order|partial-order|partial_order|pack-fallback|more-specialized)"),)),
     FeatureRule("template.alignas_alignof", (rx(r"\balignas\s*\(|\balignof\s*\(|__alignof__\s*\("),)),
     FeatureRule("template.pack", (rx(r"\btemplate\s*<[^>]*\.\.\."),)),
     FeatureRule("template.template_parameter", (rx(r"\btemplate\s*<[^>]*template\s*<"),)),
-    FeatureRule("template.member_template", (rx(r"\btemplate\s*<[^>]*>[^;{]*(?:operator|[A-Za-z_][A-Za-z0-9_]*::)"),)),
-    FeatureRule("template.builtin_traits", (rx(r"\b__(?:is|has|is_trivially|is_nothrow|builtin)_[A-Za-z0-9_]*\b|__builtin_[A-Za-z0-9_]*"),)),
+    FeatureRule("template.member_template",
+                (rx(r"\btemplate\s*<[^>]*>\s*template\s*<"),),
+                path_patterns=(rx(r"(?:member-template|templated-member)"),)),
+    FeatureRule("template.builtin_traits",
+                (rx(r"\b__(?:is|has|is_trivially|is_nothrow)_[A-Za-z0-9_]*\b|"
+                    r"\b__builtin_(?:is|has|types_compatible_p|classify_type)[A-Za-z0-9_]*"),)),
     FeatureRule("template.nttp", (rx(r"\btemplate\s*<[^>]*(?:int|bool|char|long|short|unsigned|signed|std::size_t|size_t)\s+\w+"),)),
     FeatureRule("template.nttp.pointer_member",
                 (rx(r"\btemplate\s*<[^>]*(?:[A-Za-z_][A-Za-z0-9_:<>]*\s*[*&]\s*\w+|[A-Za-z_][A-Za-z0-9_:<>]*::\s*\*\s*\w+)"),)),
     FeatureRule("template.explicit_specialization", (rx(r"\btemplate\s*<\s*>\s*"),)),
-    FeatureRule("template.specialization_timing", (rx(r"\btemplate\s*<\s*>\s*"),)),
+    FeatureRule("template.specialization_timing", (),
+                path_patterns=(rx(r"(?:^|[-_/])(?:stale|refresh|late[-_]|after-instantiation|keeps-definition|"
+                                  r"(?:explicit-specialization|specialization)[-_][A-Za-z0-9_-]*redeclaration|"
+                                  r"redeclaration[-_][A-Za-z0-9_-]*(?:explicit-specialization|specialization))"),)),
     FeatureRule("constexpr.integral_subset",
                 (rx(r"\bconstexpr\b|\bstatic_assert\b|\btemplate\s*<[^>]*(?:int|bool|char|long|short|unsigned|signed)\s+\w+"),)),
     FeatureRule("static_assert", (rx(r"\bstatic_assert\s*\("),)),
-    FeatureRule("constexpr.full", (rx(r"\bconstexpr\b"),)),
+    FeatureRule("constexpr.full",
+                (rx(r"\bconstexpr\s+[A-Za-z_][A-Za-z0-9_:<>*&\s]+\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*\{"),)),
     FeatureRule("constexpr.control_flow", (rx(r"\bconstexpr\b"), rx(r"\b(?:if|for|while|do|switch)\b"),), all_patterns=True),
-    FeatureRule("constexpr.default_argument", (rx(r"\bconstexpr\b"), rx(r"\([^)]*=[^)]*\)")), all_patterns=True),
+    FeatureRule("constexpr.default_argument",
+                (rx(r"\bconstexpr\s+[A-Za-z_][A-Za-z0-9_:<>*&\s]+\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*=[^)]*\)"),)),
     FeatureRule("constexpr.floating", (rx(r"\bconstexpr\b"), rx(r"\b(?:float|double|long\s+double)\b|[0-9]*\.[0-9]+")), all_patterns=True),
-    FeatureRule("constexpr.noexcept", (rx(r"\bconstexpr\b|\bstatic_assert\b"), rx(r"\bnoexcept\b")), all_patterns=True),
-    FeatureRule("constexpr.object", (rx(r"\bconstexpr\b"), rx(r"\b(?:class|struct|\{)")), all_patterns=True),
-    FeatureRule("template.partial_specialization", (rx(r"\btemplate\s*<[^>]+>\s*(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*\s*<"),)),
-    FeatureRule("template.alias", (rx(r"\btemplate\s*<[^>]*>\s*using\b|\busing\s+\w+\s*="),)),
-    FeatureRule("template.variable", (rx(r"\btemplate\s*<[^>]*>\s*(?:constexpr\s+|const\s+|static\s+)?(?:bool|int|char|long|unsigned|signed|[A-Za-z_][A-Za-z0-9_:<>]*)\s+\w+\s*="),)),
-    FeatureRule("template.current_specialization", (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_]*::|[A-Za-z_][A-Za-z0-9_]*<[^>]*>::"),)),
-    FeatureRule("template.explicit_instantiation", (rx(r"\bextern\s+template\b|\btemplate\s+(?:class|struct|[A-Za-z_])"),)),
-    FeatureRule("template.specialization_partial_ordering", (rx(r"\btemplate\s*<[^>]+>\s*(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*\s*<"),)),
+    FeatureRule("constexpr.noexcept", (),
+                path_patterns=(rx(r"constexpr-noexcept"),)),
+    FeatureRule("constexpr.object", (),
+                path_patterns=(rx(r"constexpr-object|constexpr-class|constexpr-struct"),)),
+    FeatureRule("template.partial_specialization",
+                (rx(r"\btemplate\s*<[^>]+>\s*(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*\s*<[^>]*>\s*(?!::)"),)),
+    FeatureRule("template.alias", (rx(r"\btemplate\s*<[^>]*>\s*using\b"),)),
+    FeatureRule("template.variable",
+                (rx(r"\btemplate\s*<[^>]*>\s*(?:constexpr\s+|const\s+|static\s+)?"
+                    r"(?!using\b)(?:bool|int|char|long|unsigned|signed|[A-Za-z_][A-Za-z0-9_:<>]*)\s+"
+                    r"(?!operator\b)\w+\s*="),)),
+    FeatureRule("template.current_specialization", (),
+                path_patterns=(rx(r"current-specialization"),)),
+    FeatureRule("template.explicit_instantiation",
+                (rx(r"\bextern\s+template\b"),),
+                path_patterns=(rx(r"(?:explicit-instantiation|extern-template)"),)),
+    FeatureRule("template.specialization_partial_ordering", (),
+                path_patterns=(rx(r"(?:partial-specialization-order|class-partial-order|partial_order_class|function-type-partial-specialization-preference|repeated-argument)"),)),
     FeatureRule("template.deduction_full",
-                (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*(?:&&|decltype|enable_if|typename\s+[A-Za-z_][A-Za-z0-9_:<>]*::)[^)]*\)"),)),
+                (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*(?:&&|decltype|enable_if|typename\s+[A-Za-z_][A-Za-z0-9_:<>]*::)[^)]*\)"),),
+                path_patterns=(rx(r"(?:forwarding-reference|explicit-template-args|nondeduced|non-deduced)"),)),
     FeatureRule("template.detector_idiom", (rx(r"\b(?:void_t|detected_or|detector|is_detected)\b"),)),
-    FeatureRule("template.substitution", (rx(r"\b(?:enable_if|void_t|typename\s+[A-Za-z_][A-Za-z0-9_:<>]*::|decltype\s*\()"),)),
+    FeatureRule("template.substitution",
+                (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),)),
     FeatureRule("template.conversion_deduction", (rx(r"\btemplate\s*<[^>]*>[^;{]*operator\s+[A-Za-z_]"),)),
-    FeatureRule("template.constructor_deduction", (rx(r"\btemplate\s*<[^>]*>\s*[A-Za-z_][A-Za-z0-9_]*\s*\("),)),
+    FeatureRule("template.constructor_deduction", (),
+                path_patterns=(rx(r"constructor-template|converting-ctor|ctor-template"),)),
     FeatureRule("template.initializer_list", (rx(r"\binitializer_list\b"),)),
     FeatureRule("template.no_eager_instantiation", (rx(r"\b(?:no_eager|unevaluated|dependent|static_assert\s*\(\s*false|sizeof\s*\([^)]*typename)"),)),
     FeatureRule("sfinae", (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),)),
@@ -199,7 +226,9 @@ RULES: tuple[FeatureRule, ...] = (
                 (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+"
                     r"[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*(?:\{|;).*?"
                     r"\b[A-Za-z_][A-Za-z0-9_]*\s*\(\s*\{"),)),
-    FeatureRule("template.non_deduced_context", (rx(r"\b(?:non_deduced|identity|decltype\s*\(|typename\s+[A-Za-z_][A-Za-z0-9_:<>]*::)"),)),
+    FeatureRule("template.non_deduced_context",
+                (rx(r"\b(?:non_deduced|nondeduced)\b"),),
+                path_patterns=(rx(r"non[-]?deduced|nondeduced"),)),
 )
 
 
@@ -359,14 +388,98 @@ def match_rule_patterns(patterns: tuple[re.Pattern[str], ...],
     return matched
 
 
-def detect_features(source: str, ref_text: str = "") -> dict[str, FeatureHit]:
+def has_top_level_base_comma(code: str) -> bool:
+    class_header = re.compile(
+        r"\b(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*(?:\s+final)?\s*:\s*([^{;]+)\{",
+        re.MULTILINE | re.DOTALL,
+    )
+    for match in class_header.finditer(code):
+        depth_angle = 0
+        depth_paren = 0
+        depth_bracket = 0
+        base_clause = match.group(1)
+        index = 0
+        while index < len(base_clause):
+            char = base_clause[index]
+            if char == "<":
+                depth_angle += 1
+            elif char == ">" and depth_angle and index + 1 < len(base_clause) and base_clause[index + 1] == "=":
+                pass
+            elif char == ">" and depth_angle:
+                depth_angle -= 1
+            elif char == "(":
+                depth_paren += 1
+            elif char == ")" and depth_paren:
+                depth_paren -= 1
+            elif char == "[":
+                depth_bracket += 1
+            elif char == "]" and depth_bracket:
+                depth_bracket -= 1
+            elif char == "," and depth_angle == 0 and depth_paren == 0 and depth_bracket == 0:
+                return True
+            index += 1
+    return False
+
+
+def declared_intrinsic_like_names(code: str) -> set[str]:
+    names: set[str] = set()
+    for match in re.finditer(
+        r"\b(?:class|struct|union)\s+(__[A-Za-z_][A-Za-z0-9_]*)\b",
+        code,
+        re.MULTILINE | re.DOTALL,
+    ):
+        names.add(match.group(1))
+    for match in re.finditer(
+        r"\b(?:template\s*<[^>]*>\s*)?using\s+(__[A-Za-z_][A-Za-z0-9_]*)\b",
+        code,
+        re.MULTILINE | re.DOTALL,
+    ):
+        names.add(match.group(1))
+    for match in re.finditer(
+        r"\btypedef\b[^;]*\s+(__[A-Za-z_][A-Za-z0-9_]*)\s*;",
+        code,
+        re.MULTILINE | re.DOTALL,
+    ):
+        names.add(match.group(1))
+    for match in re.finditer(
+        r"\b(?:static\s+|constexpr\s+|inline\s+|extern\s+|friend\s+|virtual\s+)*"
+        r"(?:bool|int|char|short|long|unsigned|signed|void|[A-Za-z_][A-Za-z0-9_:<>]*)\s+"
+        r"(__[A-Za-z_][A-Za-z0-9_]*)\s*\(",
+        code,
+        re.MULTILINE | re.DOTALL,
+    ):
+        names.add(match.group(1))
+    for match in re.finditer(
+        r"\b(?:template\s*<[^>]*>\s*)?(?:static\s+)?(?:constexpr\s+|const\s+)?"
+        r"(?:bool|int|char|short|long|unsigned|signed|[A-Za-z_][A-Za-z0-9_:<>]*)\s+"
+        r"(__[A-Za-z_][A-Za-z0-9_]*)\s*(?:=|;)",
+        code,
+        re.MULTILINE | re.DOTALL,
+    ):
+        names.add(match.group(1))
+    return names
+
+
+def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dict[str, FeatureHit]:
     no_comments = strip_comments(source)
     code = strip_string_literals(no_comments)
+    declared_intrinsics = declared_intrinsic_like_names(code)
     hits: dict[str, FeatureHit] = {}
     for rule in RULES:
         haystack = no_comments if rule.use_raw else code
         matched = match_rule_patterns(rule.patterns, haystack, rule.all_patterns, "source")
         matched.extend(match_rule_patterns(rule.ref_patterns, ref_text, rule.all_patterns, "ref"))
+        matched.extend(match_rule_patterns(rule.path_patterns, test_path, rule.all_patterns, "path"))
+        if rule.feature_id == "class.inheritance.multiple" and has_top_level_base_comma(code):
+            matched.append("source:<multiple base-specifiers>")
+        if rule.feature_id == "template.builtin_traits" and declared_intrinsics:
+            filtered: list[str] = []
+            for evidence in matched:
+                name = re.search(r"source:(__[A-Za-z_][A-Za-z0-9_]*)", evidence)
+                if name and name.group(1) in declared_intrinsics:
+                    continue
+                filtered.append(evidence)
+            matched = filtered
         if matched:
             hits[rule.feature_id] = FeatureHit(rule.feature_id, matched)
     return hits
@@ -462,9 +575,10 @@ def row_for(path: Path,
             features: dict[str, FeatureMeta]) -> dict[str, object]:
     source = read_text(path)
     ref_text = ref_text_for(path)
-    current_pa = current_pa_for(path.relative_to(root))
+    relative_path = path.relative_to(root)
+    current_pa = current_pa_for(relative_path)
     current_cluster = cluster_for(path)
-    hits = detect_features(source, ref_text)
+    hits = detect_features(source, ref_text, relative_path.as_posix())
     detected = sorted(hits)
     placements = []
     for feature_id in detected:

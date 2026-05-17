@@ -21,7 +21,7 @@ namespace std
            bool = __has_rebind_other<_Tp, _Up>::value>
   struct __allocator_traits_rebind
   {
-    using type [[__gnu__::__nodebug__]] =
+    using type =
         typename _Tp::template rebind<_Up>::other;
   };
 
@@ -31,11 +31,11 @@ namespace std
            class _Up>
   struct __allocator_traits_rebind<_Alloc<_Tp, _Args...>, _Up, false>
   {
-    using type [[__gnu__::__nodebug__]] = _Alloc<_Up, _Args...>;
+    using type = _Alloc<_Up, _Args...>;
   };
 
   template<class _Alloc, class _Tp>
-  using __allocator_traits_rebind_t [[__gnu__::__nodebug__]] =
+  using __allocator_traits_rebind_t =
       typename __allocator_traits_rebind<_Alloc, _Tp>::type;
 
   template<class _Alloc>
@@ -45,7 +45,7 @@ namespace std
     using value_type = typename allocator_type::value_type;
 
     template<class _Tp>
-    using rebind_alloc [[__gnu__::__nodebug__]] =
+    using rebind_alloc =
         __allocator_traits_rebind_t<allocator_type, _Tp>;
   };
 }
