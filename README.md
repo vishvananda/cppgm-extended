@@ -1,5 +1,7 @@
 # cppgm
 
+[![Tests](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml/badge.svg)](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml)
+
 `cppgm` is a staged C++ compiler project. This repository contains the active
 compiler implementation, assignment directories, shared tests, validation
 scripts, and documentation used to maintain the self-hosting toolchain.

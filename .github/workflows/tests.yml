@@ -1,0 +1,62 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc + libstdc++
+            packages: build-essential
+            cxx: g++
+            host_cxx: g++
+            stdlib_flags: ""
+          - name: clang + libc++
+            packages: build-essential clang libc++-dev libc++abi-dev
+            cxx: clang++
+            host_cxx: clang++
+            stdlib_flags: -stdlib=libc++
+
+    env:
+      CXX: ${{ matrix.cxx }}
+      CPPGM_HOST_CXX: ${{ matrix.host_cxx }}
+      CPPGM_STDLIB_FLAGS: ${{ matrix.stdlib_flags }}
+      ORDERED: "false"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install host compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ${{ matrix.packages }}
+
+      - name: Show compiler configuration
+        run: |
+          "$CXX" --version
+          printf 'CXX=%s\n' "$CXX"
+          printf 'CPPGM_HOST_CXX=%s\n' "$CPPGM_HOST_CXX"
+          printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
+
+      - name: Run test-report
+        run: make test-report
+
+      - name: Run test-strict
+        env:
+          CPPGM_LOWIR_DIRECT_TEXT_COMPARE: "1"
+        run: make test-strict
