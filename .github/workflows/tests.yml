@@ -11,6 +11,34 @@ permissions:
   contents: read
 
 jobs:
+  test-placement:
+    name: test placement audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run PA feature placement audit
+        run: |
+          set +e
+          report="$RUNNER_TEMP/pa-feature-placement-audit.md"
+          python3 scripts/audit_pa_feature_placement.py \
+            --fail-on-early \
+            --markdown-out "$report"
+          status=$?
+          if [ "$status" -eq 0 ]; then
+            {
+              echo "### Test Placement Audit"
+              echo
+              echo "No tests use a detected feature before its owning PA/cluster."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
+
   test:
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04

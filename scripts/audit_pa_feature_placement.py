@@ -22,6 +22,7 @@ DEFAULT_PAS = tuple(f"pa{i}" for i in range(14, 23))
 SEMANTIC_ONLY_PA_MAX = 12
 LOWIR_SOURCE_PAS = set(range(14, 23)) | set(range(26, 30))
 BACKEND_ONLY_PAS = {23}
+EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
 
 
 @dataclass(frozen=True)
@@ -79,7 +80,8 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("call.variadic_promotions",
                 (rx(r"\b(?:int|void|char|short|long|float|double|signed|unsigned|[A-Za-z_][A-Za-z0-9_:<>*&\s]+)\s+"
                     r"[A-Za-z_][A-Za-z0-9_:]*\s*\([^)]*(?:,\s*)?\.\.\.\s*\)"),)),
-    FeatureRule("class.basic", (rx(r"(?<!enum )\b(?:class|struct)\s+[A-Za-z_]"),)),
+    FeatureRule("class.basic",
+                (rx(r"(?<!enum )\b(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*(?=\s*(?:final\s*)?(?:[:{;]))"),)),
     FeatureRule("class.access_control", (rx(r"\b(?:public|private|protected)\s*:"),)),
     FeatureRule("class.nested_type",
                 (rx(r"\b(?:typedef|using)\b[^;]*(?:::|class|struct)|\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::"),)),
@@ -717,6 +719,63 @@ def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
                 ])
 
 
+def early_placement_findings(rows: list[dict[str, object]]) -> list[tuple[dict[str, object], dict[str, object]]]:
+    findings: list[tuple[dict[str, object], dict[str, object]]] = []
+    for row in rows:
+        for placement in row["placements"]:  # type: ignore[index]
+            if placement["status"] in EARLY_PLACEMENT_STATUSES:
+                findings.append((row, placement))
+    return findings
+
+
+def github_escape_message(text: object) -> str:
+    return str(text).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
+def github_escape_property(text: object) -> str:
+    escaped = github_escape_message(text)
+    return escaped.replace(":", "%3A").replace(",", "%2C")
+
+
+def placement_label(pa: object, cluster: object) -> str:
+    if cluster is None:
+        return str(pa)
+    return f"{pa}:{cluster}"
+
+
+def emit_early_placement_errors(findings: list[tuple[dict[str, object], dict[str, object]]]) -> None:
+    count = len(findings)
+    plural = "" if count == 1 else "s"
+    print(
+        f"error: test placement audit found {count} feature use{plural} placed "
+        "before the owning PA/cluster.",
+        file=sys.stderr,
+    )
+    print(
+        "Move the test to the owner shown below, or reduce the test so it no "
+        "longer depends on the later feature.",
+        file=sys.stderr,
+    )
+    for row, placement in findings:
+        current = placement_label(row["current_pa"], row["current_cluster"])
+        owner = placement_label(placement.get("owner_pa", ""), placement.get("owner_cluster"))
+        evidence = "; ".join(placement.get("evidence", [])[:2])
+        message = (
+            f"{placement['feature']} belongs in {owner}, but this test is in "
+            f"{current}: {placement['reason']}. Evidence: {evidence}"
+        )
+        path = row["path"]
+        print(
+            "::error file={},title={}::{}".format(
+                github_escape_property(path),
+                github_escape_property("Test placed before owning feature"),
+                github_escape_message(message),
+            ),
+            file=sys.stderr,
+        )
+        print(f"- {path}: {message}", file=sys.stderr)
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
@@ -729,6 +788,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--csv-out", type=Path)
     parser.add_argument("--markdown-out", type=Path)
+    parser.add_argument(
+        "--fail-on-early",
+        action="store_true",
+        help="exit nonzero when a test uses a feature before its owning PA/cluster",
+    )
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
@@ -763,6 +827,11 @@ def main(argv: list[str]) -> int:
         out.write_text(report, encoding="utf-8")
     else:
         print(report, end="")
+    if args.fail_on_early:
+        early_findings = early_placement_findings(rows)
+        if early_findings:
+            emit_early_placement_errors(early_findings)
+            return 1
     return 0
 
 
