@@ -255,6 +255,18 @@ bool build_template_id_syntax(
     const qualified_name_parser::QualifiedNameParseResult & parsed,
     cpp_decl::TemplateIdSyntax & out,
     CppAstParser * parser_context);
+bool build_template_id_syntax_from_range(
+    IRecogTokenSequence & tokens,
+    const qualified_name_parser::NameLookup & lookup,
+    const std::pair<std::size_t, std::size_t> & range,
+    cpp_decl::TemplateIdSyntax & out,
+    CppAstParser * parser_context);
+void build_qualifier_template_id_syntaxes(
+    IRecogTokenSequence & tokens,
+    const qualified_name_parser::NameLookup & lookup,
+    const qualified_name_parser::QualifiedNameParseResult & parsed,
+    std::vector<cpp_decl::TemplateIdSyntax> & out,
+    CppAstParser * parser_context);
 bool build_qualified_id_expression_syntax_from_range(
     IRecogTokenSequence & tokens,
     const qualified_name_parser::NameLookup & lookup,
@@ -758,6 +770,190 @@ bool template_argument_range_fragment_mode(
   return false;
 }
 
+void attach_template_id_syntax_to_direct_type_id(
+    CppAstNode & type_id,
+    const cpp_decl::TemplateIdSyntax & template_id)
+{
+  if(type_id.kind != CppAstKind::type_id ||
+     type_id.children.empty() ||
+     type_id.children[0].kind != CppAstKind::type_specifier_seq) {
+    return;
+  }
+
+  CppAstNode & specifiers = type_id.children[0];
+  if(specifiers.children.size() != 1 ||
+     specifiers.children[0].kind != CppAstKind::type_name) {
+    return;
+  }
+
+  set_cppast_template_id_syntax(specifiers.children[0], template_id);
+}
+
+void attach_qualifier_template_id_syntaxes_to_direct_type_id(
+    CppAstNode & type_id,
+    const std::vector<cpp_decl::TemplateIdSyntax> & qualifier_template_ids)
+{
+  if(qualifier_template_ids.empty() ||
+     type_id.kind != CppAstKind::type_id ||
+     type_id.children.empty() ||
+     type_id.children[0].kind != CppAstKind::type_specifier_seq) {
+    return;
+  }
+
+  CppAstNode & specifiers = type_id.children[0];
+  if(specifiers.children.size() != 1 ||
+     specifiers.children[0].kind != CppAstKind::type_name) {
+    return;
+  }
+
+  set_cppast_qualifier_template_id_syntaxes(specifiers.children[0],
+                                            qualifier_template_ids);
+}
+
+CppAstNode make_template_id_expression_syntax_from_range(
+    IRecogTokenSequence & tokens,
+    const std::pair<std::size_t, std::size_t> & range,
+    const std::shared_ptr<cpp_decl::TemplateIdSyntax> & template_id,
+    const std::vector<cpp_decl::TemplateIdSyntax> & qualifier_template_ids,
+    const std::string & text)
+{
+  CppAstNode expression = make_node(CppAstKind::id_expression, text);
+  expression.token_start = range.first;
+  expression.token_end = range.second;
+  expression.source_location_id = tokens[range.first].location_id;
+  if(template_id) {
+    expression.qualified_name_syntax.reset(
+        new cpp_decl::QualifiedName(template_id->name));
+    expression.template_id_syntax = template_id;
+  }
+  if(!qualifier_template_ids.empty()) {
+    set_cppast_qualifier_template_id_syntaxes(expression,
+                                              qualifier_template_ids);
+  }
+  return expression;
+}
+
+void build_template_argument_syntax_from_range(
+    IRecogTokenSequence & tokens,
+    const qualified_name_parser::NameLookup & lookup,
+    const std::pair<std::size_t, std::size_t> & range,
+    CppAstParser * parser_context,
+    cpp_decl::TemplateArgumentSyntax & argument)
+{
+  argument = cpp_decl::TemplateArgumentSyntax();
+  argument.has_source_token_start = true;
+  argument.source_token_start = range.first;
+  argument.source_location_id = tokens[range.first].location_id;
+  argument.text =
+      template_angle::token_span_text_spaced(tokens, range.first, range.second);
+
+  cpp_decl::TemplateIdSyntax nested_template_id;
+  if(build_template_id_syntax_from_range(tokens,
+                                         lookup,
+                                         range,
+                                         nested_template_id,
+                                         parser_context)) {
+    argument.template_id.reset(
+        new cpp_decl::TemplateIdSyntax(std::move(nested_template_id)));
+    qualified_name_parser::QualifiedNameParseResult parsed;
+    const bool parsed_qualified_name =
+        qualified_name_parser::parse_qualified_name(
+            tokens,
+            range.first,
+            lookup,
+            qualified_name_parser::UnqualifiedNameOptions(),
+            parsed) &&
+        parsed.end == range.second;
+    std::vector<cpp_decl::TemplateIdSyntax> qualifier_template_ids;
+    if(parsed_qualified_name && !parsed.qualifiers.empty()) {
+      build_qualifier_template_id_syntaxes(tokens,
+                                           lookup,
+                                           parsed,
+                                           qualifier_template_ids,
+                                           parser_context);
+    }
+    argument.expression.reset(
+        new CppAstNode(
+            make_template_id_expression_syntax_from_range(tokens,
+                                                          range,
+                                                          argument.template_id,
+                                                          qualifier_template_ids,
+                                                          argument.text)));
+    const RecogToken & head = tokens.peek(range.first);
+    const bool value_only_template_id =
+        head.is_identifier() &&
+        (lookup.is_known_value_template_parameter_identifier(head) ||
+         lookup.is_known_value_name_identifier(head)) &&
+         !lookup.is_known_template_name_identifier(head) &&
+         !lookup.is_known_type_name_identifier(head);
+    if(!value_only_template_id) {
+      if(parser_context) {
+        cpp_decl::TemplateArgumentSyntax parsed_type_argument;
+        if(parser_context->parse_template_argument_fragment_syntax(
+               range.first,
+               range.second,
+               parsed_type_argument,
+               CppAstParser::TAF_PARSE_TYPE_ONLY,
+               true)) {
+          parsed_type_argument.text = argument.text;
+          parsed_type_argument.has_source_token_start = true;
+          parsed_type_argument.source_token_start = argument.source_token_start;
+          parsed_type_argument.source_location_id = argument.source_location_id;
+          parsed_type_argument.template_id = argument.template_id;
+          if(argument.expression && !parsed_type_argument.expression) {
+            parsed_type_argument.expression = argument.expression;
+          }
+          if(parsed_type_argument.type_id && argument.template_id) {
+            attach_template_id_syntax_to_direct_type_id(
+                *parsed_type_argument.type_id,
+                *argument.template_id);
+            attach_qualifier_template_id_syntaxes_to_direct_type_id(
+                *parsed_type_argument.type_id,
+                qualifier_template_ids);
+          }
+          argument = std::move(parsed_type_argument);
+        }
+      }
+      return;
+    }
+  }
+
+  CppAstNode qualified_id_expression;
+  if(build_qualified_id_expression_syntax_from_range(tokens,
+                                                     lookup,
+                                                     range,
+                                                     qualified_id_expression,
+                                                     parser_context)) {
+    argument.expression.reset(
+        new CppAstNode(std::move(qualified_id_expression)));
+  }
+
+  if(argument.type_id || argument.expression) {
+    return;
+  }
+
+  CppAstParser::TemplateArgumentFragmentMode fragment_mode =
+      CppAstParser::TAF_PARSE_BOTH;
+  if(parser_context &&
+     template_argument_range_fragment_mode(tokens,
+                                           lookup,
+                                           range,
+                                           parser_context,
+                                           fragment_mode)) {
+    cpp_decl::TemplateArgumentSyntax parsed_argument;
+    if(parser_context->parse_template_argument_fragment_syntax(range.first,
+                                                               range.second,
+                                                               parsed_argument,
+                                                               fragment_mode)) {
+      parsed_argument.text = argument.text;
+      parsed_argument.has_source_token_start = true;
+      parsed_argument.source_token_start = argument.source_token_start;
+      parsed_argument.source_location_id = argument.source_location_id;
+      argument = std::move(parsed_argument);
+    }
+  }
+}
+
 struct TemplateArgumentFragmentNameLookup : template_angle::NameLookup
 {
   TemplateArgumentFragmentNameLookup(
@@ -849,62 +1045,11 @@ bool build_template_id_syntax_from_range(
     out.source_location_id = tokens[range.first].location_id;
     for(size_t i = 0; i < arg_ranges.size(); ++i) {
       cpp_decl::TemplateArgumentSyntax argument;
-      argument.has_source_token_start = true;
-      argument.source_token_start = arg_ranges[i].first;
-      argument.source_location_id = tokens[arg_ranges[i].first].location_id;
-      argument.text =
-          template_angle::token_span_text_spaced(tokens,
-                                                 arg_ranges[i].first,
-                                                 arg_ranges[i].second);
-
-      cpp_decl::TemplateIdSyntax nested_template_id;
-      if(build_template_id_syntax_from_range(tokens,
-                                             lookup,
-                                             arg_ranges[i],
-                                             nested_template_id,
-                                             parser_context)) {
-        argument.template_id.reset(
-            new cpp_decl::TemplateIdSyntax(nested_template_id));
-      }
-
-      CppAstNode qualified_id_expression;
-      if(build_qualified_id_expression_syntax_from_range(tokens,
-                                                         lookup,
-                                                         arg_ranges[i],
-                                                         qualified_id_expression,
-                                                         parser_context)) {
-        argument.expression.reset(
-            new CppAstNode(std::move(qualified_id_expression)));
-      }
-
-      CppAstParser::TemplateArgumentFragmentMode fragment_mode =
-          CppAstParser::TAF_PARSE_BOTH;
-      if(parser_context &&
-         template_argument_range_fragment_mode(tokens,
-                                               lookup,
-                                               arg_ranges[i],
-                                               parser_context,
-                                               fragment_mode)) {
-        cpp_decl::TemplateArgumentSyntax parsed_argument;
-        if(parser_context->parse_template_argument_fragment_syntax(
-               arg_ranges[i].first,
-               arg_ranges[i].second,
-               parsed_argument,
-               fragment_mode)) {
-          parsed_argument.text = argument.text;
-          parsed_argument.has_source_token_start = true;
-          parsed_argument.source_token_start = argument.source_token_start;
-          parsed_argument.source_location_id = argument.source_location_id;
-          if(argument.template_id && !parsed_argument.template_id) {
-            parsed_argument.template_id = argument.template_id;
-          }
-          if(argument.expression && !parsed_argument.expression) {
-            parsed_argument.expression = argument.expression;
-          }
-          argument = parsed_argument;
-        }
-      }
-
+      build_template_argument_syntax_from_range(tokens,
+                                                lookup,
+                                                arg_ranges[i],
+                                                parser_context,
+                                                argument);
       out.arguments.push_back(argument.text);
       out.argument_syntaxes.push_back(argument);
     }
@@ -951,62 +1096,11 @@ bool build_template_id_syntax(
 
   for(size_t i = 0; i < parsed.name_template_arg_ranges.size(); ++i) {
     cpp_decl::TemplateArgumentSyntax argument;
-    argument.has_source_token_start = true;
-    argument.source_token_start = parsed.name_template_arg_ranges[i].first;
-    argument.source_location_id =
-        tokens[parsed.name_template_arg_ranges[i].first].location_id;
-    argument.text =
-        template_angle::token_span_text_spaced(
-            tokens,
-            parsed.name_template_arg_ranges[i].first,
-            parsed.name_template_arg_ranges[i].second);
-    cpp_decl::TemplateIdSyntax nested_template_id;
-    if(build_template_id_syntax_from_range(tokens,
-                                           lookup,
-                                           parsed.name_template_arg_ranges[i],
-                                           nested_template_id,
-                                           parser_context)) {
-      argument.template_id.reset(
-          new cpp_decl::TemplateIdSyntax(nested_template_id));
-    }
-    CppAstNode qualified_id_expression;
-    if(build_qualified_id_expression_syntax_from_range(
-           tokens,
-           lookup,
-           parsed.name_template_arg_ranges[i],
-           qualified_id_expression,
-           parser_context)) {
-      argument.expression.reset(
-          new CppAstNode(std::move(qualified_id_expression)));
-    }
-    CppAstParser::TemplateArgumentFragmentMode fragment_mode =
-        CppAstParser::TAF_PARSE_BOTH;
-    if(parser_context &&
-       template_argument_range_fragment_mode(
-           tokens,
-           lookup,
-           parsed.name_template_arg_ranges[i],
-           parser_context,
-           fragment_mode)) {
-      cpp_decl::TemplateArgumentSyntax parsed_argument;
-      if(parser_context->parse_template_argument_fragment_syntax(
-             parsed.name_template_arg_ranges[i].first,
-             parsed.name_template_arg_ranges[i].second,
-             parsed_argument,
-             fragment_mode)) {
-        parsed_argument.text = argument.text;
-        parsed_argument.has_source_token_start = true;
-        parsed_argument.source_token_start = argument.source_token_start;
-        parsed_argument.source_location_id = argument.source_location_id;
-        if(argument.template_id && !parsed_argument.template_id) {
-          parsed_argument.template_id = argument.template_id;
-        }
-        if(argument.expression && !parsed_argument.expression) {
-          parsed_argument.expression = argument.expression;
-        }
-        argument = parsed_argument;
-      }
-    }
+    build_template_argument_syntax_from_range(tokens,
+                                              lookup,
+                                              parsed.name_template_arg_ranges[i],
+                                              parser_context,
+                                              argument);
     out.arguments.push_back(argument.text);
     out.argument_syntaxes.push_back(argument);
   }
@@ -1048,62 +1142,12 @@ void build_qualifier_template_id_syntaxes(
                                                component.name_component.second);
     for(size_t arg_index = 0; arg_index < component.template_arg_ranges.size(); ++arg_index) {
       cpp_decl::TemplateArgumentSyntax argument;
-      argument.has_source_token_start = true;
-      argument.source_token_start = component.template_arg_ranges[arg_index].first;
-      argument.source_location_id =
-          tokens[component.template_arg_ranges[arg_index].first].location_id;
-      argument.text =
-          template_angle::token_span_text_spaced(
-              tokens,
-              component.template_arg_ranges[arg_index].first,
-              component.template_arg_ranges[arg_index].second);
-      cpp_decl::TemplateIdSyntax nested_template_id;
-      if(build_template_id_syntax_from_range(tokens,
-                                             lookup,
-                                             component.template_arg_ranges[arg_index],
-                                             nested_template_id,
-                                             parser_context)) {
-        argument.template_id.reset(
-            new cpp_decl::TemplateIdSyntax(nested_template_id));
-      }
-      CppAstNode qualified_id_expression;
-      if(build_qualified_id_expression_syntax_from_range(
-             tokens,
-             lookup,
-             component.template_arg_ranges[arg_index],
-             qualified_id_expression,
-             parser_context)) {
-        argument.expression.reset(
-            new CppAstNode(std::move(qualified_id_expression)));
-      }
-      CppAstParser::TemplateArgumentFragmentMode fragment_mode =
-          CppAstParser::TAF_PARSE_BOTH;
-      if(parser_context &&
-         template_argument_range_fragment_mode(
-             tokens,
-             lookup,
-             component.template_arg_ranges[arg_index],
-             parser_context,
-             fragment_mode)) {
-        cpp_decl::TemplateArgumentSyntax parsed_argument;
-        if(parser_context->parse_template_argument_fragment_syntax(
-               component.template_arg_ranges[arg_index].first,
-               component.template_arg_ranges[arg_index].second,
-               parsed_argument,
-               fragment_mode)) {
-          parsed_argument.text = argument.text;
-          parsed_argument.has_source_token_start = true;
-          parsed_argument.source_token_start = argument.source_token_start;
-          parsed_argument.source_location_id = argument.source_location_id;
-          if(argument.template_id && !parsed_argument.template_id) {
-            parsed_argument.template_id = argument.template_id;
-          }
-          if(argument.expression && !parsed_argument.expression) {
-            parsed_argument.expression = argument.expression;
-          }
-          argument = parsed_argument;
-        }
-      }
+      build_template_argument_syntax_from_range(
+          tokens,
+          lookup,
+          component.template_arg_ranges[arg_index],
+          parser_context,
+          argument);
       syntax.arguments.push_back(argument.text);
       syntax.argument_syntaxes.push_back(argument);
     }
@@ -9712,7 +9756,8 @@ bool CppAstParser::parse_template_argument_fragment_syntax(
     std::size_t start,
     std::size_t end,
     cpp_decl::TemplateArgumentSyntax & out,
-    TemplateArgumentFragmentMode mode)
+    TemplateArgumentFragmentMode mode,
+    bool suppress_nested_template_argument_syntax)
 {
   out = cpp_decl::TemplateArgumentSyntax();
   if(end <= start) {
@@ -9776,6 +9821,7 @@ bool CppAstParser::parse_template_argument_fragment_syntax(
     parser.borrowed_template_parameter_lookup = this;
     parser.external_name_lookup = &fragment_lookup;
     parser.suppress_template_argument_fragment_syntax =
+        suppress_nested_template_argument_syntax ||
         suppress_template_argument_fragment_syntax;
   };
 
@@ -10250,25 +10296,11 @@ void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
       template_id.source_location_id = tokens[start].location_id;
       for(size_t i = 0; i < arg_ranges.size(); ++i) {
         cpp_decl::TemplateArgumentSyntax argument;
-        argument.has_source_token_start = true;
-        argument.source_token_start = arg_ranges[i].first;
-        argument.source_location_id = tokens[arg_ranges[i].first].location_id;
-        argument.text =
-            template_angle::token_span_text_spaced(tokens,
-                                                   arg_ranges[i].first,
-                                                   arg_ranges[i].second);
-
-        cpp_decl::TemplateArgumentSyntax parsed_argument;
-        if(parse_template_argument_fragment_syntax(arg_ranges[i].first,
-                                                   arg_ranges[i].second,
-                                                   parsed_argument)) {
-          parsed_argument.text = argument.text;
-          parsed_argument.has_source_token_start = true;
-          parsed_argument.source_token_start = argument.source_token_start;
-          parsed_argument.source_location_id = argument.source_location_id;
-          argument = std::move(parsed_argument);
-        }
-
+        build_template_argument_syntax_from_range(tokens,
+                                                  lookup,
+                                                  arg_ranges[i],
+                                                  this,
+                                                  argument);
         template_id.arguments.push_back(argument.text);
         template_id.argument_syntaxes.push_back(std::move(argument));
       }

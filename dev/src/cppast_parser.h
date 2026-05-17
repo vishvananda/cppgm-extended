@@ -48,7 +48,8 @@ struct CppAstParser : RecogTokenCursor
       std::size_t start,
       std::size_t end,
       cpp_decl::TemplateArgumentSyntax & out,
-      TemplateArgumentFragmentMode mode = TAF_PARSE_BOTH);
+      TemplateArgumentFragmentMode mode = TAF_PARSE_BOTH,
+      bool suppress_nested_template_argument_syntax = false);
   bool is_template_type_parameter_name(const RecogToken & token) const;
 
 protected:

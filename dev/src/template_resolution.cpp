@@ -8564,18 +8564,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       return false;
     }
   }
-  if(!type && syntax && syntax->expression) {
-    attempted_structured_type_syntax = true;
-    template_argument_semantics::resolve_type_argument_expression_syntax(
-        services,
-        raw_argument_scope,
-        *syntax->expression,
-        true,
-        syntax_source_location,
-        type);
-    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-        services, argument_scope, type);
-  }
   if(!type && syntax && syntax->type_id) {
     attempted_structured_type_syntax = true;
     try {
@@ -8597,6 +8585,18 @@ bool resolve_template_argument(template_api::TemplateServices & services,
         services,
         raw_argument_scope,
         *syntax->template_id,
+        true,
+        syntax_source_location,
+        type);
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services, argument_scope, type);
+  }
+  if(!type && syntax && syntax->expression) {
+    attempted_structured_type_syntax = true;
+    template_argument_semantics::resolve_type_argument_expression_syntax(
+        services,
+        raw_argument_scope,
+        *syntax->expression,
         true,
         syntax_source_location,
         type);
