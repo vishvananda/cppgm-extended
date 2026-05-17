@@ -1,0 +1,94 @@
+name: PA37 Frontier
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-through-pa10:
+    name: pa37 test-through-pa10 (gcc + libstdc++, ubuntu 24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    env:
+      CXX: g++
+      CPPGM_HOST_CXX: g++
+      CPPGM_STDLIB_FLAGS: ""
+      ORDERED: "false"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install host compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential
+
+      - name: Show compiler configuration
+        run: |
+          "$CXX" --version
+          printf 'CXX=%s\n' "$CXX"
+          printf 'CPPGM_HOST_CXX=%s\n' "$CPPGM_HOST_CXX"
+          printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
+
+      - name: Build host compiler
+        run: make -C dev cppgm++
+
+      - name: Run PA37 through PA10
+        run: |
+          make -C pa37 test-through-pa10 \
+            CXX=../dev/cppgm++ \
+            CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
+            CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
+
+      - name: Package cppgm++ self compiler
+        run: |
+          set -euo pipefail
+          source_sha=$(git rev-parse HEAD)
+          bundle="$RUNNER_TEMP/pa37-cppgm-self"
+          upload="$RUNNER_TEMP/pa37-cppgm-self-upload"
+          mkdir -p "$bundle/bin" "$upload"
+          cp obj/pa37/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          chmod 755 "$bundle/bin/cppgm++-self"
+          {
+            printf 'source_sha=%s\n' "$source_sha"
+            printf 'source_ref=%s\n' "$GITHUB_REF"
+            printf 'source_repository=%s\n' "$GITHUB_REPOSITORY"
+            printf 'frontier_run_id=%s\n' "$GITHUB_RUN_ID"
+            printf 'runner_image=%s\n' 'ubuntu-24.04'
+            printf 'cxx=%s\n' "$CXX"
+            printf 'cppgm_host_cxx=%s\n' "$CPPGM_HOST_CXX"
+            printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
+          } > "$bundle/metadata.env"
+          (cd "$bundle" && sha256sum bin/cppgm++-self > SHA256SUMS)
+          tar -C "$bundle" -czf "$upload/pa37-cppgm-self.tar.gz" .
+          cp "$bundle/metadata.env" "$upload/metadata.env"
+          cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
+          {
+            echo "### PA37 self compiler artifact"
+            echo
+            echo "- Artifact: \`pa37-cppgm-self-ubuntu-24.04-gcc\`"
+            echo "- Frontier run id: \`$GITHUB_RUN_ID\`"
+            echo "- Source SHA: \`$source_sha\`"
+            echo
+            echo "Run manual inception with:"
+            echo
+            echo "\`\`\`sh"
+            echo "gh workflow run pa37-inception.yml -f frontier_run_id=$GITHUB_RUN_ID"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload cppgm++ self compiler
+        uses: actions/upload-artifact@v4
+        with:
+          name: pa37-cppgm-self-ubuntu-24.04-gcc
+          path: ${{ runner.temp }}/pa37-cppgm-self-upload/
+          if-no-files-found: error
+          retention-days: 14

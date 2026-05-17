@@ -306,6 +306,7 @@ pa37_binary_path = $(PA37_BIN_ROOT)/$(1)$(PA37_OUTPUT_SUFFIX)
 pa37_link_output_path = $(PA37_BIN_ROOT)/$(1)
 pa37_self_binary_path = $(PA37_BIN_ROOT_BASE)/selfhost/$(1)-self
 pa37_inception_binary_path = $(PA37_BIN_ROOT_BASE)/inception/$(1)-inception
+PA37_RESTORED_CPPGM_SELF ?= $(call pa37_self_binary_path,cppgm++)
 pa37_entry_object_path = $(call pa37_objdir,$(1))/$(call pa37_stem,$(PA37_ENTRY_$(1)))$(pa37_entry_suffix).o
 pa37_entry_depfile_path = $(call pa37_depdir,$(1))/$(call pa37_stem,$(PA37_ENTRY_$(1)))$(pa37_entry_suffix).d
 pa37_runner_object_path = $(PA37_SHARED_OBJDIR)/test_runner$(pa37_runner_suffix).o
@@ -330,6 +331,29 @@ inception: $(INCEPTION_TARGETS)
 compare-inception: $(INCEPTION_COMPARE_TARGETS)
 
 bitcmp: compare-inception
+
+cppgm++-inception-from-restored-self:
+	@if [ ! -x "$(PA37_RESTORED_CPPGM_SELF)" ]; then \
+		echo "missing restored self compiler: $(PA37_RESTORED_CPPGM_SELF)" >&2; \
+		exit 2; \
+	fi
+	$(MAKE) "$(call pa37_inception_binary_path,cppgm++)" \
+		PA37_COMPILER_FLAVOR=inception \
+		PA37_OUTPUT_SUFFIX=-inception \
+		PA37_OBJ_ROOT_BASE="$(PA37_OBJ_ROOT_BASE)" \
+		PA37_BIN_ROOT_BASE="$(PA37_BIN_ROOT_BASE)" \
+		PA37_SELFHOST_OPT_LEVEL="$(PA37_SELFHOST_OPT_LEVEL)" \
+		CXX="$(PA37_RESTORED_CPPGM_SELF)" \
+		CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
+		CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)" \
+		CPPGM_TEST_RUNNER="$(CPPGM_TEST_RUNNER)" \
+		PA37_DEFINES='$(PA37_DEFINES)'
+	@ln -sf $(call pa37_inception_binary_path,cppgm++) cppgm++-inception
+
+compare-cppgm++-inception-from-restored-self: cppgm++-inception-from-restored-self
+	@cmp -s "$(PA37_RESTORED_CPPGM_SELF)" "$(call pa37_inception_binary_path,cppgm++)" || \
+		(echo "mismatch: $(PA37_RESTORED_CPPGM_SELF) != $(call pa37_inception_binary_path,cppgm++)" >&2; exit 1)
+	@echo "MATCH cppgm++: $(call pa37_inception_binary_path,cppgm++)"
 
 compiler-ready:
 	@if [ -x "$(CXX)" ]; then \
@@ -492,6 +516,8 @@ clean:
 
 .PHONY: all test ladder preservation clean compiler-ready \
 	inception compare-inception bitcmp \
+	cppgm++-inception-from-restored-self \
+	compare-cppgm++-inception-from-restored-self \
 	$(TARGETS) $(INCEPTION_TARGETS) $(INCEPTION_COMPARE_TARGETS) \
 	$(TEST_TARGETS) $(THROUGH_TARGETS) $(TEST_THROUGH_TARGETS) \
 	$(PA_THROUGH_TARGETS) $(PA_TEST_THROUGH_TARGETS) $(PA_TEST_TARGETS) \

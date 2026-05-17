@@ -176,7 +176,7 @@ endef
 
 
 test: $(TEST_DEPS)
-	bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
+	@bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
 ifneq ($(CPPGM_BATCH_TESTS),)
 	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
 else
@@ -193,7 +193,7 @@ endif
 	$(call run_compile_course_bucket,$(COURSE_COMPILE_TEST_ROOT))
 
 test-batch: $(TEST_DEPS)
-	bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
+	@bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)

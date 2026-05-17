@@ -40,7 +40,7 @@ jobs:
           exit "$status"
 
   test:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.suite }} / ${{ matrix.name }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
 
@@ -48,12 +48,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: gcc + libstdc++ (ubuntu 24.04)
+          - suite: test-report
+            target: test-report
+            name: gcc + libstdc++ (ubuntu 24.04)
             packages: build-essential
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
-          - name: clang + libc++ (ubuntu 24.04)
+          - suite: test-strict
+            target: test-strict
+            name: gcc + libstdc++ (ubuntu 24.04)
+            packages: build-essential
+            cxx: g++
+            host_cxx: g++
+            stdlib_flags: ""
+          - suite: test-report
+            target: test-report
+            name: clang + libc++ (ubuntu 24.04)
+            packages: build-essential clang libc++-dev libc++abi-dev
+            cxx: clang++
+            host_cxx: clang++
+            stdlib_flags: -stdlib=libc++
+          - suite: test-strict
+            target: test-strict
+            name: clang + libc++ (ubuntu 24.04)
             packages: build-essential clang libc++-dev libc++abi-dev
             cxx: clang++
             host_cxx: clang++
@@ -82,14 +100,11 @@ jobs:
           printf 'CPPGM_HOST_CXX=%s\n' "$CPPGM_HOST_CXX"
           printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
 
-      - name: Run test-report
-        run: make test-report
-
-      - name: Run test-strict
-        run: make test-strict
+      - name: Run ${{ matrix.suite }}
+        run: make ${{ matrix.target }}
 
   test-ubuntu-26:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.suite }} / ${{ matrix.name }}
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:26.04
@@ -103,12 +118,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: gcc + libstdc++ (ubuntu 26.04)
+          - suite: test-report
+            target: test-report
+            name: gcc + libstdc++ (ubuntu 26.04)
             packages: build-essential
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
-          - name: clang + libc++ (ubuntu 26.04)
+          - suite: test-strict
+            target: test-strict
+            name: gcc + libstdc++ (ubuntu 26.04)
+            packages: build-essential
+            cxx: g++
+            host_cxx: g++
+            stdlib_flags: ""
+          - suite: test-report
+            target: test-report
+            name: clang + libc++ (ubuntu 26.04)
+            packages: build-essential clang libc++-dev libc++abi-dev
+            cxx: clang++
+            host_cxx: clang++
+            stdlib_flags: -stdlib=libc++
+          - suite: test-strict
+            target: test-strict
+            name: clang + libc++ (ubuntu 26.04)
             packages: build-essential clang libc++-dev libc++abi-dev
             cxx: clang++
             host_cxx: clang++
@@ -143,8 +176,5 @@ jobs:
           printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
           cat /etc/os-release
 
-      - name: Run test-report
-        run: make test-report
-
-      - name: Run test-strict
-        run: make test-strict
+      - name: Run ${{ matrix.suite }}
+        run: make ${{ matrix.target }}
