@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/spec/100-out-of-class-overloaded-member-template-definition.t:41:3
+  class-use at pa22/tests/spec/200-out-of-class-overloaded-member-template-definition.t:41:3
     template C
     selected primary
     bind #1 = int source=explicit
-  function-call at pa18/tests/spec/100-out-of-class-overloaded-member-template-definition.t:43:12
+  function-call at pa22/tests/spec/200-out-of-class-overloaded-member-template-definition.t:43:12
     callee C<int>::f
     selected instantiation
     bind #1 = int * source=deduced

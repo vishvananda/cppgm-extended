@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/general/200-nested-class-friend-template-namespace-scope.t:29:10
+  function-call at pa18/tests/general/300-nested-class-friend-template-namespace-scope.t:29:10
     callee try_use_facet
     selected instantiation
     bind #1 = Ctype source=explicit

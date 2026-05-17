@@ -1,25 +1,24 @@
 translation-unit
-  class-use at pa18/tests/general/200-local-constructor-template-member-typedef.t:103:3
+  class-use at pa22/tests/general/300-local-constructor-template-member-typedef.t:36:3
     template MiniVec
     selected primary
     bind #1 = ActiveInterval source=explicit
-  class-use at pa18/tests/general/200-local-constructor-template-member-typedef.t:103:3
+  class-use at pa22/tests/general/300-local-constructor-template-member-typedef.t:36:3
     template Wrap
     selected primary
     bind #1 = ActiveInterval * source=deduced
-  class-use at pa18/tests/general/200-local-constructor-template-member-typedef.t:104:3
+  class-use at pa22/tests/general/300-local-constructor-template-member-typedef.t:37:3
     template MiniVec
     selected primary
     bind #1 = ActiveInterval source=explicit
-  class-use at pa18/tests/general/200-local-constructor-template-member-typedef.t:104:3
+  class-use at pa22/tests/general/300-local-constructor-template-member-typedef.t:37:3
     template Wrap
     selected primary
     bind #1 = const ActiveInterval * source=deduced
-  function-call at pa18/tests/general/200-local-constructor-template-member-typedef.t:104:43
+  function-call at pa22/tests/general/300-local-constructor-template-member-typedef.t:37:43
     callee Wrap<const ActiveInterval *>::Wrap
     selected instantiation
     bind #1 = ActiveInterval * source=deduced
-    bind #2 = 0 source=defaulted
     drop Wrap<const ActiveInterval *>::Wrap reason=too_many_arguments
     drop Wrap<const ActiveInterval *>::Wrap reason=worse_conversion
 template-closure-events

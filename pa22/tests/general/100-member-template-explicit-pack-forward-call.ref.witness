@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/general/200-member-template-explicit-pack-forward-call.t:24:12
+  function-call at pa22/tests/general/100-member-template-explicit-pack-forward-call.t:24:12
     callee S::g
     selected instantiation
     bind #1 = <int> source=deduced

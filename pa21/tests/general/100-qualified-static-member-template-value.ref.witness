@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa19/tests/general/100-qualified-static-member-template-value.t:17:21
+  function-call at pa21/tests/general/100-qualified-static-member-template-value.t:17:21
     callee f
     selected instantiation
     bind #1 = int source=explicit

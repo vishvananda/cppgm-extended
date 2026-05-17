@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa21/tests/general/100-explicit-template-id-forward-losing-overload-body.t:17:10
+  function-call at pa22/tests/general/300-explicit-template-id-forward-losing-overload-body.t:17:10
     callee forward
     selected instantiation
     bind #1 = int & source=explicit

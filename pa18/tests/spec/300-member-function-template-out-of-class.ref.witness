@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/spec/100-member-function-template-out-of-class.t:20:10
+  class-use at pa18/tests/spec/300-member-function-template-out-of-class.t:20:10
     template box
     selected primary
     bind #1 = int source=explicit
-  function-call at pa18/tests/spec/100-member-function-template-out-of-class.t:20:10
+  function-call at pa18/tests/spec/300-member-function-template-out-of-class.t:20:10
     callee box<int>::cast
     selected instantiation
     bind #1 = int source=deduced

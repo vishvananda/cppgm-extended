@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa21/tests/general/100-pointer-traits-alias-chain-core.t:21:3
+  class-use at pa22/tests/general/300-pointer-traits-alias-chain-core.t:21:3
     template wrapper
     selected primary
     bind #1 = int * source=explicit
-  class-use at pa21/tests/general/100-pointer-traits-alias-chain-core.t:22:25
+  class-use at pa22/tests/general/300-pointer-traits-alias-chain-core.t:22:25
     template wrapper
     selected primary
     bind #1 = int * source=explicit

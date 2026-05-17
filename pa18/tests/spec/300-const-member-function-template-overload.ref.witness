@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/spec/100-const-member-function-template-overload.t:31:12
+  function-call at pa18/tests/spec/300-const-member-function-template-overload.t:31:12
     callee probe::find
     selected instantiation
     bind #1 = int source=deduced

@@ -1,9 +1,9 @@
 translation-unit
-  function-call at pa18/tests/spec/100-template-friend-inside-class-template.t:25:10
+  function-call at pa18/tests/spec/300-template-friend-inside-class-template.t:25:10
     callee read
     selected instantiation
     bind #1 = int source=deduced
-  class-use at pa18/tests/spec/100-template-friend-inside-class-template.t:25:15
+  class-use at pa18/tests/spec/300-template-friend-inside-class-template.t:25:15
     template box
     selected primary
     bind #1 = int source=explicit

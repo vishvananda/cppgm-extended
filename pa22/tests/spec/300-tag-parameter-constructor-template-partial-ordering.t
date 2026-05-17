@@ -33,7 +33,7 @@ struct Count
   {
   }
 };
-#line 35 "pa21/tests/spec/400-tag-parameter-constructor-template-partial-ordering.t"
+#line 35 "pa22/tests/spec/300-tag-parameter-constructor-template-partial-ordering.t"
 
 struct Deleter
 {

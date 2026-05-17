@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa19/tests/general/200-nontype-pack-comma-expression-syntax.t:22:10
+  class-use at pa21/tests/general/100-nontype-pack-comma-expression-syntax.t:22:10
     template all
     selected primary
     bind #1 = <true> source=explicit
-  class-use at pa19/tests/general/200-nontype-pack-comma-expression-syntax.t:22:31
+  class-use at pa21/tests/general/100-nontype-pack-comma-expression-syntax.t:22:31
     template all
     selected primary
     bind #1 = <false> source=explicit

@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa19/tests/spec/100-typename-qualified-type-construction-expression.t:35:10
+  function-call at pa22/tests/spec/400-typename-qualified-type-construction-expression.t:35:10
     callee f
     selected instantiation
     bind #1 = iter source=deduced

@@ -1,19 +1,19 @@
 translation-unit
-  class-use at pa22/tests/spec/100-qualified-template-id-function-template-use-scope.t:55:3
+  class-use at pa22/tests/spec/300-qualified-template-id-function-template-use-scope.t:55:3
     template alloc
     selected primary
     bind #1 = int source=explicit
-  class-use at pa22/tests/spec/100-qualified-template-id-function-template-use-scope.t:56:10
+  class-use at pa22/tests/spec/300-qualified-template-id-function-template-use-scope.t:56:10
     template traits
     selected primary
     bind #1 = alloc<int> source=explicit
-  function-call at pa22/tests/spec/100-qualified-template-id-function-template-use-scope.t:56:10
+  function-call at pa22/tests/spec/300-qualified-template-id-function-template-use-scope.t:56:10
     callee traits<alloc<int>>::destroy
     selected instantiation
     bind #1 = int source=deduced
     bind #2 = 0 source=defaulted
     drop traits<alloc<int>>::destroy reason=substitution_failure
-  class-use at pa22/tests/spec/100-qualified-template-id-function-template-use-scope.t:56:17
+  class-use at pa22/tests/spec/300-qualified-template-id-function-template-use-scope.t:56:17
     template alloc
     selected primary
     bind #1 = int source=explicit

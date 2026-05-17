@@ -7,10 +7,10 @@ template-closure-events
   ensure-definition
     entity YHolder<YTraits>::YHolder
   function-instantiation
-    entity YBase<YTraits, true>::YBase
+    entity YBase<YTraits>::YBase
   function-instantiation
     entity YHolder<YTraits>::YHolder
   require-definition
-    entity YBase<YTraits, true>::YBase
+    entity YBase<YTraits>::YBase
   require-definition
     entity YHolder<YTraits>::YHolder
