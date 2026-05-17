@@ -1,144 +1,148 @@
-#!/usr/bin/env python3
+#!/usr/bin/env perl
 
-import re
-import sys
+use strict;
+use warnings;
 
+sub usage
+{
+	print STDERR "portable rg fallback: unsupported arguments\n";
+	exit 2;
+}
 
-def usage():
-    sys.stderr.write("portable rg fallback: unsupported arguments\n")
-    return 2
+sub parse_args
+{
+	my @argv = @_;
+	my $quiet = 0;
+	my $fixed = 0;
+	my $show_line_numbers = 0;
+	my $max_count;
+	my @files;
+	my $pattern;
 
+	for(my $i = 0; $i < @argv; )
+	{
+		my $arg = $argv[$i];
+		if(defined $pattern)
+		{
+			push @files, $arg;
+			++$i;
+			next;
+		}
+		if($arg eq '--')
+		{
+			++$i;
+			usage() if $i >= @argv;
+			$pattern = $argv[$i++];
+			next;
+		}
+		if($arg !~ /^-/ || $arg eq '-')
+		{
+			$pattern = $arg;
+			++$i;
+			next;
+		}
+		if($arg eq '-q')
+		{
+			$quiet = 1;
+			++$i;
+			next;
+		}
+		if($arg eq '-F')
+		{
+			$fixed = 1;
+			++$i;
+			next;
+		}
+		if($arg eq '-n')
+		{
+			$show_line_numbers = 1;
+			++$i;
+			next;
+		}
+		if($arg =~ /^-m(.+)$/)
+		{
+			$max_count = 0 + $1;
+			++$i;
+			next;
+		}
+		if($arg eq '-m')
+		{
+			++$i;
+			usage() if $i >= @argv;
+			$max_count = 0 + $argv[$i++];
+			next;
+		}
+		if($arg =~ /^-[Fqn]+$/)
+		{
+			$quiet = 1 if index($arg, 'q') >= 0;
+			$fixed = 1 if index($arg, 'F') >= 0;
+			$show_line_numbers = 1 if index($arg, 'n') >= 0;
+			++$i;
+			next;
+		}
+		usage();
+	}
 
-def parse_args(argv):
-    quiet = False
-    fixed = False
-    show_line_numbers = False
-    max_count = None
-    files = []
-    pattern = None
-    i = 0
-    while i < len(argv):
-        arg = argv[i]
-        if pattern is not None:
-            files.append(arg)
-            i += 1
-            continue
-        if arg == "--":
-            i += 1
-            if i >= len(argv):
-                return None
-            pattern = argv[i]
-            i += 1
-            continue
-        if not arg.startswith("-") or arg == "-":
-            pattern = arg
-            i += 1
-            continue
-        if arg == "-q":
-            quiet = True
-            i += 1
-            continue
-        if arg == "-F":
-            fixed = True
-            i += 1
-            continue
-        if arg == "-n":
-            show_line_numbers = True
-            i += 1
-            continue
-        if arg.startswith("-m") and len(arg) > 2:
-            max_count = int(arg[2:])
-            i += 1
-            continue
-        if arg == "-m":
-            i += 1
-            if i >= len(argv):
-                return None
-            max_count = int(argv[i])
-            i += 1
-            continue
-        if arg.startswith("-") and len(arg) > 2 and all(c in "Fqn" for c in arg[1:]):
-            quiet = quiet or ("q" in arg[1:])
-            fixed = fixed or ("F" in arg[1:])
-            show_line_numbers = show_line_numbers or ("n" in arg[1:])
-            i += 1
-            continue
-        return None
-    if pattern is None:
-        return None
-    return quiet, fixed, show_line_numbers, max_count, pattern, files
+	usage() if !defined $pattern;
+	return ($quiet, $fixed, $show_line_numbers, $max_count, $pattern, @files);
+}
 
+sub line_matches
+{
+	my ($pattern, $fixed, $line) = @_;
+	return index($line, $pattern) >= 0 if $fixed;
+	return $line =~ /$pattern/;
+}
 
-def match_line(pattern, fixed, line):
-    if fixed:
-        return pattern in line
-    return re.search(pattern, line) is not None
+sub search_stream
+{
+	my ($fh, $quiet, $fixed, $show_line_numbers, $max_count, $pattern,
+	    $filename, $multi_file) = @_;
+	my $matches = 0;
+	my $line_number = 0;
+	while(my $line = <$fh>)
+	{
+		++$line_number;
+		next if !line_matches($pattern, $fixed, $line);
+		++$matches;
+		return $matches if $quiet;
+		my $prefix = '';
+		$prefix .= "$filename:" if $multi_file;
+		$prefix .= "$line_number:" if $show_line_numbers;
+		print $prefix, $line;
+		last if defined($max_count) && $matches >= $max_count;
+	}
+	return $matches;
+}
 
+my ($quiet, $fixed, $show_line_numbers, $max_count, $pattern, @files) =
+	parse_args(@ARGV);
 
-def emit(prefix, line, quiet):
-    if not quiet:
-        sys.stdout.write(f"{prefix}{line}")
+my $total_matches = 0;
+if(!@files)
+{
+	$total_matches += search_stream(\*STDIN, $quiet, $fixed,
+		$show_line_numbers, $max_count, $pattern, undef, 0);
+}
+else
+{
+	my $remaining = $max_count;
+	my $multi_file = @files > 1;
+	for my $filename (@files)
+	{
+		open(my $fh, '<', $filename) or die "$filename: $!\n";
+		my $matches = search_stream($fh, $quiet, $fixed,
+			$show_line_numbers, $remaining, $pattern, $filename,
+			$multi_file);
+		close($fh);
+		$total_matches += $matches;
+		exit 0 if $quiet && $total_matches > 0;
+		if(defined $remaining)
+		{
+			$remaining -= $matches;
+			last if $remaining <= 0;
+		}
+	}
+}
 
-
-def search_stream(stream, quiet, fixed, show_line_numbers, max_count, pattern, filename=None):
-    matches = 0
-    line_number = 0
-    multi_file = filename is not None
-    for raw_line in stream:
-        line_number += 1
-        if not match_line(pattern, fixed, raw_line):
-            continue
-        matches += 1
-        if quiet:
-            return matches
-        prefix = ""
-        if multi_file:
-            prefix += f"{filename}:"
-        if show_line_numbers:
-            prefix += f"{line_number}:"
-        emit(prefix, raw_line, quiet)
-        if max_count is not None and matches >= max_count:
-            break
-    return matches
-
-
-def main(argv):
-    parsed = parse_args(argv)
-    if parsed is None:
-        return usage()
-    quiet, fixed, show_line_numbers, max_count, pattern, files = parsed
-
-    total_matches = 0
-    if not files:
-        total_matches += search_stream(
-            sys.stdin,
-            quiet,
-            fixed,
-            show_line_numbers,
-            max_count,
-            pattern,
-        )
-    else:
-        remaining = max_count
-        for filename in files:
-            with open(filename, "r", encoding="utf-8", errors="replace") as fh:
-                total_matches += search_stream(
-                    fh,
-                    quiet,
-                    fixed,
-                    show_line_numbers,
-                    remaining,
-                    pattern,
-                    filename if len(files) > 1 else None,
-                )
-            if quiet and total_matches > 0:
-                return 0
-            if remaining is not None:
-                remaining -= total_matches
-                if remaining <= 0:
-                    break
-    return 0 if total_matches > 0 else 1
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+exit($total_matches > 0 ? 0 : 1);
