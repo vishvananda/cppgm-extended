@@ -57,17 +57,20 @@ Current source-test counts:
 
 ## Move Results Log
 
-Mechanical moves used `git mv` for each `.t` file and all tracked adjacent
-`.ref*` sidecars, including witness refs. Generated `.my*` files and local
-logs were intentionally not moved.
+Mechanical moves used `git mv` for each `.t` file and tracked adjacent `.ref*`
+sidecars. Generated `.my*` files and local logs were intentionally not moved.
+Witness refs are kept only when the destination remains in the strict PA set
+(`pa18`, `pa19`, `pa21`, `pa22`); strict-to-non-strict moves drop witness
+sidecars.
 
-| Batch | Scope | Tests moved | Tracked files moved | Result |
+| Batch | Scope | Tests moved | Tracked files changed | Result |
 | --- | --- | ---: | ---: | --- |
 | 1 | PA14-PA17 plus first PA20/PA26/PA28/PA29 support moves | 97 | 386 | Completed. A sidecar-rotation bug in the first script was repaired immediately; every moved file was byte-checked against its original content. |
 | 2 | PA18 and PA19 renumbers/moves through PA20/PA22/PA26-PA29 destinations | 187 | 921 | Completed with pre-move collision checks and post-move byte verification. |
 | 3 | PA20-PA22 renumbers/moves through PA18/PA19/PA26-PA28 destinations | 155 | 770 | Completed with pre-move collision checks and post-move byte verification. |
 | 4 | Hosted compatibility moves to PA33 plus sentinel reductions in PA21/PA22 | 25 | 218 | Completed. Original hosted builtin/attribute/extended-integer/no-unique-address tests moved to PA33 compile coverage; three PA22 no-body sentinel tests and one PA21 alias test were reduced in place. |
-| **total** |  | **464** | **2,295** |  |
+| 5 | Strict-to-non-strict witness cleanup | 0 | 9 | Removed stale `.ref.witness` sidecars from PA20, PA26, and PA28 destinations. No non-strict tests moved into the strict PA set. |
+| **total** |  | **464** | **2,304** |  |
 
 Post-move scanner refresh over PA14-PA22 plus PA26-PA29:
 
