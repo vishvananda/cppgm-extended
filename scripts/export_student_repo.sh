@@ -14,6 +14,10 @@ Environment:
   CXX                  Compiler used to build exported reference binaries.
   CPPGM_HOST_CXX       Host compiler recorded in cppgm++ defaults.
   CPPGM_STDLIB_FLAGS   Extra standard-library flags for the host compiler.
+  CPPGM_REFERENCE_BUNDLE_OUT
+                       Path where the reference-binary bundle should be written.
+  CPPGM_REFERENCE_BUNDLE_URL
+                       URL embedded in the student manifest for auto-download.
   CPPGM_EXPORT_ALLOW_NON_LINUX
                        Set to 1 for local smoke exports on non-Linux hosts.
 EOF
@@ -184,6 +188,7 @@ shared_scripts=(
   scripts/compare_results_common.pl
   scripts/compare_witness_results.pl
   scripts/cppgm-cmake-wrapper.sh
+  scripts/ensure_reference_binaries.pl
   scripts/pa_run_check_targets.mk
   scripts/run_all_tests_common.pl
   scripts/run_cpphostcompat_compile_worker.pl
@@ -192,6 +197,7 @@ shared_scripts=(
   scripts/run_cpptoolchain_tests_worker.pl
   scripts/run_lowir_link_tests_worker.pl
   scripts/run_lowir_native_tests_worker.pl
+  scripts/run_reference_binary.sh
   scripts/run_witness_tests.pl
   scripts/write_unresolved_symbol_report.pl
 )
@@ -389,6 +395,16 @@ perl -0pi -e '
   s/\$\(foreach checkpoint,\$\(CHECKPOINTS\),\$\(if \$\(strip \$\(FRONTEND_OBJ_BASENAMES_\$\(checkpoint\)\)\),,\$\(error missing FRONTEND_OBJ_BASENAMES_\$\(checkpoint\) in \.\.\/dev\/frontend_source_sets\.mk\)\)\)/\$(foreach checkpoint,\$(CHECKPOINTS),\$(if \$(filter undefined,\$(origin FRONTEND_OBJ_BASENAMES_\$(checkpoint))),\$(error missing FRONTEND_OBJ_BASENAMES_\$(checkpoint) in ..\/dev\/frontend_source_sets.mk),))/g;
 ' "$dest/pa37/Makefile"
 
+cat >> "$dest/Makefile" <<'EOF'
+
+reference-binaries:
+	@scripts/ensure_reference_binaries.pl
+
+setup: reference-binaries
+
+.PHONY: reference-binaries setup
+EOF
+
 reference_targets=(
   pptoken
   posttoken
@@ -464,6 +480,62 @@ pa_ref_pairs=(
   pa36:lowir2native
 )
 
+source_sha=$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || echo unknown)
+source_short_sha=$(git -C "$repo_root" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
+reference_bundle_name=${CPPGM_REFERENCE_BUNDLE_NAME:-cppgm-reference-binaries-linux-x86_64-${source_short_sha}.tar.gz}
+reference_bundle_url=${CPPGM_REFERENCE_BUNDLE_URL:-https://github.com/vishvananda/cppgm-extended/releases/download/reference-binaries/${reference_bundle_name}}
+reference_bundle_out=${CPPGM_REFERENCE_BUNDLE_OUT:-$repo_root/obj/export-reference-bundles/${reference_bundle_name}}
+
+write_reference_manifest() {
+  local bundle_sha target target_sha
+  bundle_sha=$(sha256sum "$reference_bundle_out" | awk '{print $1}')
+  {
+    printf '# cppgm reference binary manifest\n'
+    printf 'version\t1\n'
+    printf 'source_sha\t%s\n' "$source_sha"
+    printf 'platform\tlinux-x86_64\n'
+    printf 'bundle_name\t%s\n' "$reference_bundle_name"
+    printf 'bundle_url\t%s\n' "$reference_bundle_url"
+    printf 'bundle_sha256\t%s\n' "$bundle_sha"
+    for target in "${reference_targets[@]}"; do
+      target_sha=$(sha256sum "$dest/reference-binaries/$target" | awk '{print $1}')
+      printf 'binary\t%s\t%s\n' "$target" "$target_sha"
+    done
+  } > "$dest/reference-binaries/manifest.tsv"
+}
+
+finalize_reference_binaries() {
+  local pa target pair
+
+  echo "==> Packaging reference binaries"
+  mkdir -p "$(dirname "$reference_bundle_out")"
+  (
+    cd "$dest/reference-binaries"
+    tar -czf "$reference_bundle_out" "${reference_targets[@]}"
+  )
+  write_reference_manifest
+  cat > "$dest/reference-binaries/.gitignore" <<'EOF'
+*
+!.gitignore
+!manifest.tsv
+EOF
+
+  for target in "${reference_targets[@]}"; do
+    rm -f "$dest/reference-binaries/$target"
+    rm -f "$dest/dev/$target-ref"
+    ln -s "../scripts/run_reference_binary.sh" "$dest/dev/$target-ref"
+  done
+
+  for pair in "${pa_ref_pairs[@]}"; do
+    pa=${pair%%:*}
+    target=${pair#*:}
+    rm -f "$dest/$pa/$target-ref"
+    ln -s "../scripts/run_reference_binary.sh" "$dest/$pa/$target-ref"
+  done
+
+  echo "==> Wrote reference binary bundle to $reference_bundle_out"
+}
+
 for pair in "${pa_ref_pairs[@]}"; do
   pa=${pair%%:*}
   target=${pair#*:}
@@ -486,6 +558,8 @@ make -s -C "$dest" ref-test-debuginfo \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
   CPPGM_TEST_RUNNER=1
+
+finalize_reference_binaries
 
 (
   cd "$dest"

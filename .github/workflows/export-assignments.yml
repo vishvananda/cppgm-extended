@@ -1,0 +1,109 @@
+name: Export Assignments
+
+on:
+  workflow_run:
+    workflows:
+      - Tests
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    name: Export student repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Install export dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            curl \
+            git \
+            gzip \
+            perl \
+            rsync \
+            tar
+
+      - name: Check assignment push token
+        env:
+          ASSIGNMENTS_REPO_TOKEN: ${{ secrets.ASSIGNMENTS_REPO_TOKEN }}
+        run: |
+          if [ -z "${ASSIGNMENTS_REPO_TOKEN}" ]; then
+            echo "::error::Set ASSIGNMENTS_REPO_TOKEN so this workflow can push vishvananda/cppgm-assignments."
+            exit 1
+          fi
+
+      - name: Export assignments
+        id: export
+        run: |
+          set -euo pipefail
+          source_sha=$(git rev-parse HEAD)
+          short_sha=$(git rev-parse --short=12 HEAD)
+          bundle_name="cppgm-reference-binaries-linux-x86_64-${short_sha}.tar.gz"
+          bundle_path="${RUNNER_TEMP}/${bundle_name}"
+          bundle_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/reference-binaries/${bundle_name}"
+          export CPPGM_REFERENCE_BUNDLE_NAME="${bundle_name}"
+          export CPPGM_REFERENCE_BUNDLE_OUT="${bundle_path}"
+          export CPPGM_REFERENCE_BUNDLE_URL="${bundle_url}"
+          scripts/export_student_repo.sh --force "${RUNNER_TEMP}/cppgm-assignments-export"
+          {
+            printf 'source_sha=%s\n' "${source_sha}"
+            printf 'short_sha=%s\n' "${short_sha}"
+            printf 'bundle_name=%s\n' "${bundle_name}"
+            printf 'bundle_path=%s\n' "${bundle_path}"
+            printf 'export_path=%s\n' "${RUNNER_TEMP}/cppgm-assignments-export"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Publish reference binary bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! gh release view reference-binaries >/dev/null 2>&1; then
+            gh release create reference-binaries \
+              --title "Reference binaries" \
+              --notes "Linux x86_64 reference binary bundles for cppgm assignment exports."
+          fi
+          gh release upload reference-binaries \
+            "${{ steps.export.outputs.bundle_path }}#${{ steps.export.outputs.bundle_name }}" \
+            --clobber
+
+      - name: Check out assignments repository
+        uses: actions/checkout@v4
+        with:
+          repository: vishvananda/cppgm-assignments
+          path: cppgm-assignments
+          token: ${{ secrets.ASSIGNMENTS_REPO_TOKEN }}
+
+      - name: Push assignment export
+        run: |
+          set -euo pipefail
+          rsync -a --delete \
+            --exclude .git \
+            "${{ steps.export.outputs.export_path }}/" \
+            cppgm-assignments/
+          cd cppgm-assignments
+          git config user.name "cppgm export"
+          git config user.email "cppgm-export@example.invalid"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Assignment export is unchanged."
+            exit 0
+          fi
+          git commit -m "Export assignments from cppgm-extended ${{ steps.export.outputs.short_sha }}"
+          git push origin main

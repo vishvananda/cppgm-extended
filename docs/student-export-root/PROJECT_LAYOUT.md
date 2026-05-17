@@ -15,7 +15,8 @@ assignment harnesses.
 - `cppgm.tests/`: shared course tests used by assignment harnesses
 - `doc/`: public reference material, including `doc/n3485.txt`
 - `obj/`: generated build artifacts
-- `reference-binaries/`: reference tools generated during export
+- `reference-binaries/`: reference-binary manifest; the large binary payloads
+  download automatically when `*-ref` wrappers need them
 
 Most `paN/` directories are thin wrappers around the shared implementation.
 They define the milestone contract and test surface; production compiler code

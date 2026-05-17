@@ -70,6 +70,15 @@ Reference binaries such as `pptoken-ref` or `cppgm++-ref` are provided for
 observing expected behavior and regenerating reference fixtures. They must not
 be used by your compiler implementation.
 
+The repository does not store the large binary payloads in Git. The checked-in
+`*-ref` wrappers automatically download, verify, and unpack the pinned
+reference-binary bundle the first time a reference tool is needed. To fetch the
+bundle before running a ref target, use:
+
+```sh
+make reference-binaries
+```
+
 The ref regeneration targets use the provided reference binaries:
 
 ```sh
@@ -77,8 +86,8 @@ make ref-test-paN
 make -C paN ref-test
 ```
 
-These targets intentionally fail if the needed reference binary is missing.
-There is no fallback to the implementation under test.
+These targets intentionally fail if the needed reference binary cannot be
+downloaded or verified. There is no fallback to the implementation under test.
 
 ## Strict And Debug Fixtures
 

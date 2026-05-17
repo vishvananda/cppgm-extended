@@ -5,9 +5,9 @@ assignments start with preprocessing tokens and grow into a practical
 self-hosting compiler toolchain.
 
 This repository contains the starter sources, assignment handouts, tests,
-reference outputs, and reference binaries for PA1 through PA37. The assignment
-sequence is cumulative: later assignments build on earlier work, and most
-shared implementation work lives in `dev/` and `dev/src/`.
+reference outputs, and reference-binary wrappers for PA1 through PA37. The
+assignment sequence is cumulative: later assignments build on earlier work, and
+most shared implementation work lives in `dev/` and `dev/src/`.
 
 Start each assignment by reading its handout: `paN/README.md`.
 
@@ -36,7 +36,9 @@ You should have:
 - a C++ compiler with C++11 support, normally `g++`
 - Bash
 - Perl
+- `curl` or `wget` for automatic reference-binary downloads
 - common Unix tools such as `diff`, `grep`, `sed`, `awk`, and `xxd`
+- common archive/checksum tools such as `tar` and `sha256sum`
 - binutils tools such as `ar`, `nm`, `objdump`, and `readelf` for later
   native/toolchain assignments
 
@@ -68,6 +70,14 @@ make inception
 The exit criterion for PA N is a clean root `make test-report-through-paN`.
 That target runs the report suite through the milestone and catches regressions
 in earlier assignments before you move on.
+
+No separate setup is normally required. Reference binaries download
+automatically the first time a `*-ref` tool or ref regeneration target needs
+them. To fetch them eagerly, run:
+
+```sh
+make reference-binaries
+```
 
 See [TESTING_AND_REFERENCES.md](TESTING_AND_REFERENCES.md) for the complete
 testing workflow, reference-binary policy, and ref regeneration commands.
