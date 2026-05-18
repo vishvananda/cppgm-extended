@@ -1612,6 +1612,10 @@ Instruction parse_instruction(const LineInfo & line)
   }
 
   if(stream.consume("eh_cleanup")) {
+    if(stream.eof() || stream.peek() == "!dbg") {
+      instruction.kind = Instruction::IK_EH_CLEANUP_CLAUSE;
+      return finish_instruction();
+    }
     instruction.kind = Instruction::IK_EH_CLEANUP;
     instruction.first = parse_operand(stream, line);
     if(instruction.first.kind != Operand::OP_LABEL) {
@@ -2301,6 +2305,9 @@ void dump_instruction_line(const Instruction & instruction, ostringstream & out)
       return;
     case Instruction::IK_EH_CLEANUP:
       out << "eh_cleanup " << dump_operand(instruction.first);
+      return;
+    case Instruction::IK_EH_CLEANUP_CLAUSE:
+      out << "eh_cleanup";
       return;
     case Instruction::IK_EH_CATCH:
       out << "eh_catch " << dump_operand(instruction.first);

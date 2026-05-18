@@ -7458,6 +7458,7 @@ private:
        !host_eh_handler_nodes_.empty() &&
        host_eh_handler_nodes_.back()) {
       emit_host_eh_handler_metadata(*host_eh_handler_nodes_.back());
+      emit_line("eh_cleanup");
     }
     emit_call_unwind_dispatch_cleanups(include_constructor_unwind_cleanups,
                                        excluded_destroy_ptr);

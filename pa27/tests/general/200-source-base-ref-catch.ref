@@ -61,6 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_dispatch_4:
     eh_catch @__rtti_class_B, 1
+    eh_cleanup
     %t3 = addr $d
     call void @D___D(%t3)
     eh_end

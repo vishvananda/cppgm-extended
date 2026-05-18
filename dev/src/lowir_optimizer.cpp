@@ -1847,6 +1847,8 @@ bool rewrite_instruction_operands(const ValueEnvironment & environment,
                                                  fallback_debug_location,
                                                  track_debug_locations);
       break;
+    case lir::Instruction::IK_EH_CLEANUP_CLAUSE:
+      break;
     case lir::Instruction::IK_EH_FILTER:
       for(size_t i = 0; i < instruction.args.size(); ++i) {
         changed |= rewrite_operand_from_environment(environment,
@@ -1994,6 +1996,8 @@ bool rewrite_instruction_operands_no_debug(const ValueEnvironment & environment,
     case lir::Instruction::IK_THROW:
     case lir::Instruction::IK_JUMP:
       changed |= rewrite_operand_from_environment_no_debug(environment, instruction.first);
+      break;
+    case lir::Instruction::IK_EH_CLEANUP_CLAUSE:
       break;
     case lir::Instruction::IK_EH_FILTER:
       for(size_t i = 0; i < instruction.args.size(); ++i) {
@@ -3168,6 +3172,7 @@ bool instruction_is_eh_related(const lir::Instruction & instruction)
   switch(instruction.kind) {
     case lir::Instruction::IK_EH_TRY:
     case lir::Instruction::IK_EH_CLEANUP:
+    case lir::Instruction::IK_EH_CLEANUP_CLAUSE:
     case lir::Instruction::IK_EH_CATCH:
     case lir::Instruction::IK_EH_FILTER:
     case lir::Instruction::IK_EH_CATCH_ALL:
@@ -3414,6 +3419,8 @@ TempUseList instruction_temp_uses(const lir::Instruction & instruction)
     case lir::Instruction::IK_THROW:
     case lir::Instruction::IK_JUMP:
       collect_temp_uses(instruction.first, out);
+      break;
+    case lir::Instruction::IK_EH_CLEANUP_CLAUSE:
       break;
     case lir::Instruction::IK_EH_FILTER:
       for(size_t i = 0; i < instruction.args.size(); ++i) {
@@ -4014,6 +4021,7 @@ bool instruction_has_inline_unsupported_semantics(const lir::Instruction & instr
   switch(instruction.kind) {
     case lir::Instruction::IK_EH_TRY:
     case lir::Instruction::IK_EH_CLEANUP:
+    case lir::Instruction::IK_EH_CLEANUP_CLAUSE:
     case lir::Instruction::IK_EH_CATCH:
     case lir::Instruction::IK_EH_FILTER:
     case lir::Instruction::IK_EH_CATCH_ALL:

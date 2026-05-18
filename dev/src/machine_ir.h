@@ -243,6 +243,7 @@ struct HostEhClause
 {
   enum Kind
   {
+    HC_CLEANUP,
     HC_CATCH,
     HC_FILTER
   } kind = HC_CATCH;
