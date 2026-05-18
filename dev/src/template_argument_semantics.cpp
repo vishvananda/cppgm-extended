@@ -19136,6 +19136,177 @@ string normalize_template_template_argument_lookup_text(const string & text)
   return trim_space(out);
 }
 
+bool template_template_argument_matches_parameter_count(
+    const TemplateArgument & argument,
+    size_t expected_parameter_count)
+{
+  if(expected_parameter_count == static_cast<size_t>(-1)) {
+    return true;
+  }
+  if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE &&
+     argument.template_decl) {
+    return static_cast<AliasTemplateDecl *>(argument.template_decl)
+               ->parameters.size() == expected_parameter_count;
+  }
+  if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE &&
+     argument.template_decl) {
+    return static_cast<ClassTemplateDecl *>(argument.template_decl)
+               ->parameters.size() == expected_parameter_count;
+  }
+  return argument.dependent;
+}
+
+bool lookup_bound_template_template_argument(Scope & scope,
+                                             const string & name,
+                                             size_t expected_parameter_count,
+                                             bool allow_dependent_placeholders,
+                                             TemplateArgument & out)
+{
+  if(name.empty() ||
+     semantic_utils::top_level_scope_split(name) != string::npos) {
+    return false;
+  }
+  for(Scope * current = &scope; current; current = current->parent) {
+    map<string, TemplateArgument>::const_iterator found =
+        current->template_bound_template_arguments.find(name);
+    if(found != current->template_bound_template_arguments.end()) {
+      const TemplateArgument & argument = found->second;
+      if(argument.dependent && !allow_dependent_placeholders) {
+        return false;
+      }
+      if(!template_template_argument_matches_parameter_count(
+             argument, expected_parameter_count)) {
+        return false;
+      }
+      out = argument;
+      note_template_trace_if_enabled(
+          [&](ostringstream & trace)
+          {
+            trace << "template-template-arg text=" << name
+                  << " resolved=bound-"
+                  << (out.kind == TemplateArgument::TA_CLASS_TEMPLATE ?
+                          "class-template" :
+                          "alias-template");
+            if(!out.text.empty()) {
+              trace << " canonical=" << out.text;
+            }
+          });
+      return true;
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return false;
+}
+
+size_t remaining_non_pack_template_parameter_count(
+    const vector<TemplateParameterInfo> & parameters,
+    size_t start_index)
+{
+  size_t count = 0;
+  for(size_t i = start_index; i < parameters.size(); ++i) {
+    if(!parameters[i].parameter_pack) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+void annotate_type_template_argument_syntax(TemplateArgumentSyntax & syntax,
+                                            const TypePtr & type)
+{
+  if(!type) {
+    return;
+  }
+  syntax.resolved_type = type;
+  if(syntax.text.empty()) {
+    syntax.text = reparseable_type_argument_text(type);
+  }
+  if(!syntax.type_id && !syntax.template_id && !syntax.expression) {
+    syntax.type_id.reset(new CppAstNode(
+        make_substituted_type_id_node(type, syntax.text)));
+  }
+}
+
+void annotate_template_id_type_arguments_from_scope_bindings(
+    Scope & scope,
+    const ClassTemplateDecl & class_template,
+    TemplateIdSyntax & syntax)
+{
+  if(syntax.argument_syntaxes.size() != syntax.arguments.size()) {
+    syntax.argument_syntaxes.clear();
+    syntax.argument_syntaxes.reserve(syntax.arguments.size());
+    for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+      TemplateArgumentSyntax argument;
+      argument.text = syntax.arguments[i];
+      syntax.argument_syntaxes.push_back(argument);
+    }
+  }
+
+  size_t arg_index = 0;
+  for(size_t i = 0; i < class_template.parameters.size(); ++i) {
+    const TemplateParameterInfo & parameter = class_template.parameters[i];
+    if(parameter.parameter_pack) {
+      const size_t trailing_non_pack =
+          remaining_non_pack_template_parameter_count(class_template.parameters,
+                                                      i + 1);
+      if(syntax.argument_syntaxes.size() < arg_index + trailing_non_pack) {
+        return;
+      }
+      const size_t pack_count =
+          syntax.argument_syntaxes.size() - arg_index - trailing_non_pack;
+      if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
+        const vector<TypePtr> * pack = lookup_type_pack(scope, parameter.name);
+        size_t pack_offset = 0;
+        if(pack && pack->size() > pack_count) {
+          pack_offset = pack->size() - pack_count;
+        }
+        if(pack && pack->size() >= pack_count) {
+          for(size_t j = 0; j < pack_count; ++j) {
+            annotate_type_template_argument_syntax(
+                syntax.argument_syntaxes[arg_index + j],
+                (*pack)[pack_offset + j]);
+          }
+        }
+      }
+      arg_index += pack_count;
+      continue;
+    }
+
+    if(arg_index >= syntax.argument_syntaxes.size()) {
+      return;
+    }
+    if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
+      TypePtr type = lookup_exact_bound_type_name(scope, parameter.name);
+      annotate_type_template_argument_syntax(syntax.argument_syntaxes[arg_index],
+                                             type);
+    }
+    ++arg_index;
+  }
+}
+
+Scope & template_argument_binding_scope_for_class_template(
+    Scope & scope,
+    const ClassTemplateDecl & class_template)
+{
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->class_info && current->class_info->source_template) {
+      const ClassTemplateDecl * source_template =
+          current->class_info->source_template;
+      if(source_template == &class_template ||
+         (source_template->name == class_template.name &&
+          source_template->declaring_scope == class_template.declaring_scope)) {
+        return *current;
+      }
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return scope;
+}
+
 bool resolve_member_template_template_argument_text(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -19178,6 +19349,18 @@ bool resolve_member_template_template_argument_text(
         TemplateArgumentSyntax syntax;
         syntax.text = owner_args[i];
         owner_syntax.argument_syntaxes.push_back(syntax);
+      }
+      if(ClassTemplateDecl * owner_template =
+             lookup_class_template_impl(
+                 services,
+                 scope.require(),
+                 qualified_name_text_for_structured_lookup(owner_template_name))) {
+        Scope & binding_scope =
+            template_argument_binding_scope_for_class_template(scope.require(),
+                                                               *owner_template);
+        annotate_template_id_type_arguments_from_scope_bindings(binding_scope,
+                                                                *owner_template,
+                                                                owner_syntax);
       }
       resolve_template_id_syntax_type(
           services,
@@ -19296,6 +19479,15 @@ bool resolve_template_template_argument_text(
       semantic_utils::split_qualified_name_text(trimmed, qualified) &&
       (qualified.rooted || !qualified.qualifiers.empty());
 
+  if(!has_structured_qualified_name &&
+     lookup_bound_template_template_argument(scope,
+                                             trimmed,
+                                             expected_parameter_count,
+                                             allow_dependent_placeholders,
+                                             out)) {
+    return true;
+  }
+
   AliasTemplateDecl * alias_template = has_structured_qualified_name ?
       ctx.lookup_alias_template(scope, qualified) :
       ctx.lookup_alias_template(scope, trimmed);
@@ -19393,6 +19585,14 @@ bool resolve_template_template_argument_text(
   out = TemplateArgument();
   const string trimmed = normalize_template_template_argument_lookup_text(text);
   out.text = trimmed;
+
+  if(lookup_bound_template_template_argument(raw_scope,
+                                             trimmed,
+                                             expected_parameter_count,
+                                             allow_dependent_placeholders,
+                                             out)) {
+    return true;
+  }
 
   AliasTemplateDecl * alias_template = lookup_alias_template_impl(services, raw_scope, trimmed);
   if(alias_template &&
