@@ -4594,6 +4594,40 @@ std::string template_witness_value_binding_arg_text(
   return value_text;
 }
 
+bool type_is_array_with_cv_qualified_element(const cpp_decl::TypePtr & type)
+{
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(type);
+  while(base && base->kind == cpp_decl::Type::TK_ARRAY) {
+    cpp_decl::TypePtr element = base->inner;
+    if(element &&
+       element->kind == cpp_decl::Type::TK_CV &&
+       (element->cv_const || element->cv_volatile)) {
+      return true;
+    }
+    base = cpp_decl::strip_top_level_cv(element);
+  }
+  return false;
+}
+
+bool source_text_drops_array_cv(const cpp_decl::TypePtr & type,
+                                const std::string & source_text,
+                                const std::string & semantic_text)
+{
+  if(!type_is_array_with_cv_qualified_element(type)) {
+    return false;
+  }
+  const std::string source_key =
+      callsemantic_internal::remove_space_chars(source_text);
+  const std::string semantic_key =
+      callsemantic_internal::remove_space_chars(semantic_text);
+  return !semantic_key.empty() &&
+         source_key != semantic_key &&
+         ((semantic_key.find("const") != std::string::npos &&
+           source_key.find("const") == std::string::npos) ||
+          (semantic_key.find("volatile") != std::string::npos &&
+           source_key.find("volatile") == std::string::npos));
+}
+
 bool is_builtin_type_keyword_spelling(const std::string & text)
 {
   return text == "bool" ||
@@ -4691,6 +4725,14 @@ std::string template_witness_source_binding_arg_text(
       return witness_lookup_text_for_type_argument(ctx, arg.type);
     }
     const std::string source_text = semantic_utils::trim_space(explicit_text);
+    if(arg.kind == template_model::TemplateArgument::TA_TYPE && arg.type) {
+      const std::string semantic_text =
+          semantic_utils::trim_space(witness_lookup_text_for_type_argument(ctx,
+                                                                           arg.type));
+      if(source_text_drops_array_cv(arg.type, source_text, semantic_text)) {
+        return semantic_text;
+      }
+    }
     std::string resolved_typedef_text;
     if(explicit_type_argument_uses_typedef_spelling(ctx,
                                                     arg,

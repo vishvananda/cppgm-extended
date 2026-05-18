@@ -132,6 +132,10 @@ public:
       semantic_model::Scope & scope,
       const CppAstNode & node,
       semantic_source_use::SourceUseOwnership ownership) = 0;
+  virtual void emit_nested_class_use_source_events_from_template_arguments(
+      semantic_model::Scope & scope,
+      const std::vector<cpp_decl::TemplateArgumentSyntax> & syntaxes,
+      semantic_source_use::SourceUseOwnership ownership) = 0;
   virtual void emit_static_member_definition_class_use_source_events_from_ast_node(
       semantic_model::Scope & scope,
       const CppAstNode & node,
@@ -641,6 +645,15 @@ public:
   virtual bool resolve_out_of_class_method_binding(
       semantic_model::Scope & scope,
       const std::string & name,
+      const cpp_decl::TypePtr & type,
+      bool is_const_method,
+      bool is_volatile_method,
+      semantic_model::RefQualifier ref_qualifier,
+      semantic_model::FunctionBinding *& out) = 0;
+  virtual bool resolve_out_of_class_method_binding_from_declarator_syntax(
+      semantic_model::Scope & scope,
+      const std::string & name,
+      const CppAstNode * function_identifier,
       const cpp_decl::TypePtr & type,
       bool is_const_method,
       bool is_volatile_method,

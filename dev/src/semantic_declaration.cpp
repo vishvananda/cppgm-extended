@@ -1057,7 +1057,7 @@ void collect_declaration(SemanticContext & ctx,
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     TypePtr alias;
-    if(!ctx.parse_type_id(scope, prepared_type_id, alias)) {
+    if(!ctx.parse_type_id(scope, prepared_type_id, alias, true)) {
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     semantic_scope_mutation::bind_named_type(scope, effective_child.value, alias);

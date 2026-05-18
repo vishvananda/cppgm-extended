@@ -24,6 +24,13 @@ semantic_conversion::ExprInfo make_initializer_list_expression(
     const cpp_decl::TypePtr & initlist_type,
     const CppAstNode & node);
 
+bool try_analyze_array_braced_init_list_expression(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    const cpp_decl::TypePtr & expr_type,
+    const CppAstNode & node,
+    semantic_conversion::ExprInfo & out);
+
 semantic_conversion::ExprInfo analyze_this_expression(
     SemanticContext & ctx,
     semantic_model::Scope & scope,

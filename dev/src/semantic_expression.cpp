@@ -27,6 +27,7 @@
 #include "semantic_errors.h"
 #include "semantic_fallback_audit.h"
 #include "semantic_hotspot.h"
+#include "semantic_lifetime.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_overload.h"
@@ -1653,12 +1654,8 @@ bool try_overloaded_unary_operator(SemanticContext & ctx,
           return true;
         }
         if(node.value == "&") {
-          hard_fail_semantic_fallback(
-              ctx,
-              node,
-              "operator-overload-to-builtin",
-              "unary address-of overload attempt fell back to builtin [error " +
-                  std::string(error.what()) + "]");
+          // Built-in address-of remains viable after non-member operator&
+          // candidates from ordinary lookup or ADL are rejected.
           return true;
         }
         return false;
@@ -4000,6 +3997,66 @@ ExprInfo make_initializer_list_expression(SemanticContext & ctx,
     result.node.children.push_back(std::move(element.node));
   }
   return result;
+}
+
+bool try_analyze_array_braced_init_list_expression(SemanticContext & ctx,
+                                                   Scope & scope,
+                                                   const TypePtr & expr_type,
+                                                   const CppAstNode & node,
+                                                   ExprInfo & out)
+{
+  TypePtr expr_base = strip_top_level_cv(remove_reference_type(expr_type));
+  if(!expr_base || expr_base->kind != Type::TK_ARRAY || !expr_base->has_bound ||
+     node.kind != CppAstKind::braced_init_list ||
+     semantic_lifetime::has_designated_braced_init(node)) {
+    return false;
+  }
+
+  vector<unique_ptr<CppAstNode> > expanded_storage;
+  vector<const CppAstNode *> elements =
+      expand_braced_init_list_elements(ctx, scope, node, expanded_storage);
+  if(elements.size() > expr_base->bound) {
+    return false;
+  }
+
+  ExprInfo result;
+  result.type = expr_type;
+  result.category = VC_LVALUE;
+  result.node = make_dump_node(CallSemKind::braced_init_list);
+  set_expr_metadata(result.node, result.type, result.category);
+
+  try
+  {
+    for(size_t i = 0; i < expr_base->bound; ++i) {
+      ExprInfo element;
+      if(i < elements.size()) {
+        element = ctx.analyze_expression_for_target(scope, *elements[i], expr_base->inner);
+        if(!can_copy_initialize(ctx, expr_base->inner, element)) {
+          return false;
+        }
+      } else {
+        TypePtr element_base =
+            strip_top_level_cv(remove_reference_type(expr_base->inner));
+        if(element_base &&
+           (element_base->kind == Type::TK_ARRAY ||
+            ctx.complete_class_type(element_base))) {
+          CppAstNode empty;
+          empty.kind = CppAstKind::braced_init_list;
+          element = ctx.analyze_expression_for_target(scope, empty, expr_base->inner);
+        } else {
+          element = ctx.make_value_initialized_expr(expr_base->inner);
+        }
+      }
+      result.node.children.push_back(element.node);
+    }
+  }
+  catch(const std::logic_error &)
+  {
+    return false;
+  }
+
+  out = result;
+  return true;
 }
 
 ExprInfo analyze_braced_init_list_expression(SemanticContext & ctx,

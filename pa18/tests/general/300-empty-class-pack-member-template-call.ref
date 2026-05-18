@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 7
     return i32 %t5
 }
-function @callable____operator__(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK8callableclIRiEEiDpOT_] {
+function @callable____operator__(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK8callableclIRiEEiOT_] {
   slot $this : ptr
   slot $value : ptr
 

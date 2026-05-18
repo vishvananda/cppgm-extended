@@ -1,0 +1,16 @@
+#if !__has_builtin(__builtin_popcountg)
+#error missing popcountg builtin
+#endif
+
+int popcount_ulong(unsigned long value)
+{
+  return __builtin_popcountg(value);
+}
+
+int main()
+{
+  if(popcount_ulong(~0ul) != sizeof(unsigned long) * 8) {
+    return 1;
+  }
+  return popcount_ulong(0x31ul) == 3 ? 0 : 2;
+}

@@ -1131,6 +1131,12 @@ string describe_expression_for_diagnostic(const CppAstNode & node)
     if(node.kind == CppAstKind::call_expression && node.children.size() == 2 &&
        (node.children[1].kind == CppAstKind::argument_list ||
         node.children[1].kind == CppAstKind::paren_argument_list)) {
+      if(node.children[1].kind == CppAstKind::argument_list &&
+         node.children[1].children.size() == 1 &&
+         node.children[1].children[0].kind == CppAstKind::braced_init_list) {
+        return describe_expression_for_diagnostic(node.children[0]) +
+               describe_expression_for_diagnostic(node.children[1].children[0]);
+      }
       ostringstream out;
       out << describe_expression_for_diagnostic(node.children[0]) << "(";
       for(size_t i = 0; i < node.children[1].children.size(); ++i) {
@@ -1181,6 +1187,18 @@ string describe_expression_for_diagnostic(const CppAstNode & node)
     if(node.kind == CppAstKind::sizeof_pack_expression &&
        node.children.size() == 1) {
       return "sizeof...(" + describe_expression_for_diagnostic(node.children[0]) + ")";
+    }
+    if(node.kind == CppAstKind::braced_init_list) {
+      ostringstream out;
+      out << "{";
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        if(i != 0) {
+          out << ", ";
+        }
+        out << describe_expression_for_diagnostic(node.children[i]);
+      }
+      out << "}";
+      return out.str();
     }
     if(node.kind == CppAstKind::type_id) {
       return node_text(node);

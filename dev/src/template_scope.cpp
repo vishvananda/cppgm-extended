@@ -516,8 +516,10 @@ void bind_template_template_argument(Scope & scope,
                                      const TemplateArgument & argument)
 {
   if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
+    scope.class_templates.erase(name);
     bind_alias_template(scope, name, static_cast<AliasTemplateDecl *>(argument.template_decl));
   } else {
+    scope.alias_templates.erase(name);
     bind_class_template(scope, name, static_cast<ClassTemplateDecl *>(argument.template_decl));
   }
 }

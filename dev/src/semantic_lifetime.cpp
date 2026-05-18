@@ -1892,8 +1892,12 @@ void append_all_vptr_actions(SemanticContext & ctx,
                              symbol_linkage::SpecialMemberEntryPointKind entry_point_kind,
                              DumpNode & out)
 {
+  std::set<size_t> initialized_offsets;
   for(size_t i = 0; i < info.vtables.size(); ++i) {
     const VTableInfo & table = info.vtables[i];
+    if(!initialized_offsets.insert(table.view_offset).second) {
+      continue;
+    }
     ExprInfo object_ptr = table.view_offset == 0 ?
         this_expr :
         ctx.make_base_pointer_expr(this_expr, *table.view_type, table.view_offset);

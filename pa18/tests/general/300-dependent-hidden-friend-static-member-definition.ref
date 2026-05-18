@@ -10,6 +10,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $next
     return i32 0
 }
+function @hidden_friend_current_instantiation__compare() -> u8 [binding=strong, object=_ZN35hidden_friend_current_instantiation7compareEv] {
+  slot $begin : obj<1x1>
+  slot $end : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $begin
+    %t2 = addr $end
+    %t3 = addr $begin
+    %t4 = addr $end
+    %t5 = call u8 @hidden_friend_current_instantiation__operator____ov2(%t3, %t4)
+    return u8 %t5
+}
 function @operator_(%__param0 : i64, %__param1 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZpllRK4IterIilE] {
   slot $__param0 : i64
   slot $__param1 : ptr
@@ -28,4 +40,26 @@ function @Iter_int__long_int___Iter(%this : ptr) -> void [unwind=no, binding=wea
   block ^entry:
     store ptr %this, $this
     return void
+}
+function @hidden_friend_current_instantiation__operator____ov2(%left : ptr [pass=reference], %right : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN35hidden_friend_current_instantiationneERKNS_4iterIiEES3_] {
+  slot $left : ptr
+  slot $right : ptr
+
+  block ^entry:
+    store ptr %left, $left
+    store ptr %right, $right
+    %t1 = load ptr $left
+    %t2 = load ptr $right
+    %t3 = call u8 @hidden_friend_current_instantiation__operator__(%t1, %t2)
+    %t4 = cmp eq i64 %t3, 0
+    return u8 %t4
+}
+function @hidden_friend_current_instantiation__operator__(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN35hidden_friend_current_instantiationeqERKNS_4iterIiEES3_] {
+  slot $__param0 : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %__param1, $__param1
+    return u8 1
 }

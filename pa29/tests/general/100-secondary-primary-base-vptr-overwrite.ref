@@ -66,9 +66,9 @@ global @__rtti_struct_derived [storage=readonly, binding=weak, object=_ZTI7deriv
   i32 0
   i32 2
   ptr addr @__rtti_struct_tag
-  i64 2
-  ptr addr @__rtti_struct_mid
   i64 2050
+  ptr addr @__rtti_struct_mid
+  i64 2
 }
 global @derived__vtable [storage=readonly, binding=weak, object=_ZTV7derived] = {
   i64 0
@@ -77,17 +77,6 @@ global @derived__vtable [storage=readonly, binding=weak, object=_ZTV7derived] = 
   ptr addr @derived___derived__deleting_entry
   ptr addr @derived__f
   ptr addr @derived__g
-}
-global @derived____view__mid__8__vtable [storage=readonly, binding=weak, object=@derived____view__mid__8__vtable] = {
-  ptr addr @_derived___derived__vtable_return_adjust
-  ptr addr @_derived___derived__deleting_entry__vtable_return_adjust
-  ptr addr @_derived__f__vtable_return_adjust
-  ptr addr @_derived__g__vtable_return_adjust
-}
-global @derived____view__base__8__vtable [storage=readonly, binding=weak, object=@derived____view__base__8__vtable] = {
-  ptr addr @_derived___derived__vtable_return_adjust
-  ptr addr @_derived___derived__deleting_entry__vtable_return_adjust
-  ptr addr @_derived__f__vtable_return_adjust
 }
 global @base__vtable [storage=readonly, binding=weak, object=_ZTV4base] = {
   i64 0
@@ -107,7 +96,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     call void @derived__derived(%t1)
     %t2 = addr $d
-    %t3 = index i8 [projection=base_subobject] %t2, 8
+    %t3 = index i8 [projection=base_subobject] %t2, 0
     store ptr %t3, $p
     eh_try ^call_unwind_dispatch_4
     %t4 = load ptr $p
@@ -200,23 +189,15 @@ function @derived__derived(%this : ptr) -> void [binding=weak, object=_ZN7derive
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 [projection=base_subobject] %t1, 8
     call void @tag__tag__base_entry(%t2, 113)
     %t3 = load ptr $this
-    %t4 = index i8 [projection=base_subobject] %t3, 8
+    %t4 = index i8 [projection=base_subobject] %t3, 0
     call void @mid__mid__base_entry(%t4)
     %t5 = load ptr $this
     %t6 = addr @derived__vtable
     %t7 = index i8 %t6, 16
     store ptr %t7, %t5
-    %t8 = load ptr $this
-    %t9 = index i8 [projection=base_subobject] %t8, 8
-    %t10 = addr @derived____view__mid__8__vtable
-    store ptr %t10, %t9
-    %t11 = load ptr $this
-    %t12 = index i8 [projection=base_subobject] %t11, 8
-    %t13 = addr @derived____view__base__8__vtable
-    store ptr %t13, %t12
     return void
 }
 function @derived__f(%this : ptr) -> i32 [binding=weak, object=_ZNK7derived1fEv] {
@@ -243,18 +224,10 @@ function @derived___derived__deleting_entry(%this : ptr) -> void [binding=weak, 
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 8
-    %t6 = addr @derived____view__mid__8__vtable
-    store ptr %t6, %t5
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=base_subobject] %t7, 8
-    %t9 = addr @derived____view__base__8__vtable
-    store ptr %t9, %t8
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 8
-    call void @mid___mid__base_entry(%t11)
-    %t12 = load ptr $this
-    call void @operator_delete(%t12)
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @mid___mid__base_entry(%t5)
+    %t6 = load ptr $this
+    call void @operator_delete(%t6)
     return void
 }
 function @derived___derived(%this : ptr) -> void [binding=weak, object=_ZN7derivedD1Ev] {
@@ -267,16 +240,8 @@ function @derived___derived(%this : ptr) -> void [binding=weak, object=_ZN7deriv
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 8
-    %t6 = addr @derived____view__mid__8__vtable
-    store ptr %t6, %t5
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=base_subobject] %t7, 8
-    %t9 = addr @derived____view__base__8__vtable
-    store ptr %t9, %t8
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 8
-    call void @mid___mid__base_entry(%t11)
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @mid___mid__base_entry(%t5)
     return void
 }
 function @base___base__base_entry(%this : ptr) -> void [binding=weak, object=_ZN4baseD2Ev] {
@@ -351,28 +316,4 @@ function @base__base__base_entry(%this : ptr) -> void [unwind=no, binding=weak, 
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     return void
-}
-function @_derived___derived__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N7derivedD0Ev] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    call void @derived___derived__deleting_entry(%t1)
-    return void
-}
-function @_derived___derived__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N7derivedD1Ev] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    call void @derived___derived(%t1)
-    return void
-}
-function @_derived__f__vtable_return_adjust(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_NK7derived1fEv] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    %t2 = call i32 @derived__f(%t1)
-    return i32 %t2
-}
-function @_derived__g__vtable_return_adjust(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_NK7derived1gEv] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    %t2 = call i32 @derived__g(%t1)
-    return i32 %t2
 }
