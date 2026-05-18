@@ -2149,6 +2149,7 @@ struct CY86Translator
         emit_eh_push_record(function, inst.first.text);
         return;
       case Instruction::IK_EH_CATCH:
+      case Instruction::IK_EH_CLEANUP_CLAUSE:
       case Instruction::IK_EH_FILTER:
       case Instruction::IK_EH_CATCH_ALL:
         return;

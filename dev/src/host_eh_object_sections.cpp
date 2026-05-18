@@ -114,6 +114,9 @@ HostEhTypeTablePlan plan_host_eh_type_table(
       ++it) {
     for(size_t ci = 0; ci < it->second.size(); ++ci) {
       const mir::HostEhClause & clause = it->second[ci];
+      if(clause.kind == mir::HostEhClause::HC_CLEANUP) {
+        continue;
+      }
       if(clause.kind == mir::HostEhClause::HC_FILTER) {
         continue;
       }
@@ -149,6 +152,9 @@ HostEhTypeTablePlan plan_host_eh_type_table(
       ++it) {
     for(size_t ci = 0; ci < it->second.size(); ++ci) {
       const mir::HostEhClause & clause = it->second[ci];
+      if(clause.kind == mir::HostEhClause::HC_CLEANUP) {
+        continue;
+      }
       if(clause.kind == mir::HostEhClause::HC_FILTER) {
         for(size_t ti = 0; ti < clause.filter_type_symbols.size(); ++ti) {
           assign_fallback_selector(clause.filter_type_symbols[ti]);
@@ -563,7 +569,9 @@ void append_macho_host_eh_sections(const mir::Program & program,
       for(size_t ci = it->second.size(); ci-- > 0;) {
         const mir::HostEhClause & clause = it->second[ci];
         long long filter_value = 0;
-        if(clause.kind == mir::HostEhClause::HC_FILTER) {
+        if(clause.kind == mir::HostEhClause::HC_CLEANUP) {
+          filter_value = 0;
+        } else if(clause.kind == mir::HostEhClause::HC_FILTER) {
           vector<long long> filter_indices;
           for(size_t fi2 = 0; fi2 < clause.filter_type_symbols.size(); ++fi2) {
             map<string, long long>::const_iterator filter_found =
@@ -1002,7 +1010,9 @@ void append_linux_host_eh_sections(const mir::Program & program,
       for(size_t ci = it->second.size(); ci-- > 0;) {
         const mir::HostEhClause & clause = it->second[ci];
         long long filter_value = 0;
-        if(clause.kind == mir::HostEhClause::HC_FILTER) {
+        if(clause.kind == mir::HostEhClause::HC_CLEANUP) {
+          filter_value = 0;
+        } else if(clause.kind == mir::HostEhClause::HC_FILTER) {
           vector<long long> filter_indices;
           for(size_t fi2 = 0; fi2 < clause.filter_type_symbols.size(); ++fi2) {
             map<string, long long>::const_iterator filter_found =

@@ -269,6 +269,7 @@ struct Instruction
     IK_ZEROINIT,
     IK_EH_TRY,
     IK_EH_CLEANUP,
+    IK_EH_CLEANUP_CLAUSE,
     IK_EH_CATCH,
     IK_EH_FILTER,
     IK_EH_CATCH_ALL,

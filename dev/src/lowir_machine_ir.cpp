@@ -398,6 +398,12 @@ map<string, vector<mir::HostEhClause> > collect_host_eh_clauses(const lir::Funct
         clauses.push_back(item);
         continue;
       }
+      if(inst.kind == lir::Instruction::IK_EH_CLEANUP_CLAUSE) {
+        mir::HostEhClause item;
+        item.kind = mir::HostEhClause::HC_CLEANUP;
+        clauses.push_back(item);
+        continue;
+      }
       if(inst.kind == lir::Instruction::IK_EH_FILTER) {
         mir::HostEhClause item;
         item.kind = mir::HostEhClause::HC_FILTER;
@@ -6794,6 +6800,7 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
         return;
 
       case lir::Instruction::IK_EH_CATCH:
+      case lir::Instruction::IK_EH_CLEANUP_CLAUSE:
       case lir::Instruction::IK_EH_FILTER:
       case lir::Instruction::IK_EH_CATCH_ALL:
         return;
