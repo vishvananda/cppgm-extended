@@ -11182,6 +11182,84 @@ void record_direct_alias_template_source_use_if_needed(
       request.template_name);
 }
 
+bool alias_instantiation_scope_has_template_bound_name(const Scope & scope,
+                                                       const string & name)
+{
+  return !name.empty() &&
+         (scope.template_bound_type_names.count(name) != 0 ||
+          scope.template_bound_type_pack_names.count(name) != 0 ||
+          scope.template_bound_value_names.count(name) != 0 ||
+          scope.template_bound_template_names.count(name) != 0);
+}
+
+void bind_enclosing_alias_owner_template_arguments(
+    template_api::TemplateServices & services,
+    Scope & inst_scope,
+    const AliasTemplateDecl & decl)
+{
+  if(!decl.declaring_scope ||
+     !decl.declaring_scope->class_info ||
+     !decl.declaring_scope->class_info->source_template ||
+     decl.declaring_scope->class_info->instantiation_arguments.empty()) {
+    return;
+  }
+
+  ClassInfo & owner = *decl.declaring_scope->class_info;
+  if(owner.source_template->class_node &&
+     owner.template_output_node &&
+     owner.template_output_node != owner.source_template->class_node) {
+    return;
+  }
+
+  set<string> alias_parameter_names;
+  for(size_t i = 0; i < decl.parameters.size(); ++i) {
+    if(!decl.parameters[i].name.empty()) {
+      alias_parameter_names.insert(decl.parameters[i].name);
+    }
+    for(size_t j = 0; j < decl.parameters[i].alternate_names.size(); ++j) {
+      if(!decl.parameters[i].alternate_names[j].empty()) {
+        alias_parameter_names.insert(decl.parameters[i].alternate_names[j]);
+      }
+    }
+  }
+
+  for(size_t i = 0; i < owner.source_template->parameters.size(); ++i) {
+    const TemplateParameterInfo & parameter =
+        owner.source_template->parameters[i];
+    if(alias_parameter_names.count(parameter.name) != 0 &&
+       alias_instantiation_scope_has_template_bound_name(inst_scope,
+                                                         parameter.name)) {
+      return;
+    }
+    for(size_t j = 0; j < parameter.alternate_names.size(); ++j) {
+      if(alias_parameter_names.count(parameter.alternate_names[j]) != 0 &&
+         alias_instantiation_scope_has_template_bound_name(
+             inst_scope,
+             parameter.alternate_names[j])) {
+        return;
+      }
+    }
+  }
+
+  for(size_t i = 0; i < owner.source_template->parameters.size(); ++i) {
+    const TemplateParameterInfo & parameter =
+        owner.source_template->parameters[i];
+    template_scope::erase_template_parameter_binding(inst_scope,
+                                                     parameter.name);
+    for(size_t j = 0; j < parameter.alternate_names.size(); ++j) {
+      template_scope::erase_template_parameter_binding(
+          inst_scope,
+          parameter.alternate_names[j]);
+    }
+  }
+
+  template_instantiation::bind_template_arguments_into_scope(
+      services,
+      inst_scope,
+      owner.source_template->parameters,
+      owner.instantiation_arguments);
+}
+
 bool try_resolve_alias_template_id_locally(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -11499,6 +11577,9 @@ bool try_resolve_alias_template_id_locally(
         alias_template->declaring_scope,
         resolved_arguments,
         &excluded_names);
+    bind_enclosing_alias_owner_template_arguments(services,
+                                                  inst_scope,
+                                                  *alias_template);
     template_instantiation::bind_template_arguments_into_scope(
         services,
         inst_scope,
