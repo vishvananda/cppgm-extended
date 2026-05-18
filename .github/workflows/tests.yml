@@ -39,76 +39,12 @@ jobs:
           fi
           exit "$status"
 
-  test:
-    name: ${{ matrix.suite }} / ${{ matrix.name }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - suite: test-report
-            target: test-report
-            name: gcc + libstdc++ (ubuntu 24.04)
-            packages: build-essential
-            cxx: g++
-            host_cxx: g++
-            stdlib_flags: ""
-          - suite: test-strict
-            target: test-strict
-            name: gcc + libstdc++ (ubuntu 24.04)
-            packages: build-essential
-            cxx: g++
-            host_cxx: g++
-            stdlib_flags: ""
-          - suite: test-report
-            target: test-report
-            name: clang + libc++ (ubuntu 24.04)
-            packages: build-essential clang libc++-dev libc++abi-dev
-            cxx: clang++
-            host_cxx: clang++
-            stdlib_flags: -stdlib=libc++
-          - suite: test-strict
-            target: test-strict
-            name: clang + libc++ (ubuntu 24.04)
-            packages: build-essential clang libc++-dev libc++abi-dev
-            cxx: clang++
-            host_cxx: clang++
-            stdlib_flags: -stdlib=libc++
-
-    env:
-      CXX: ${{ matrix.cxx }}
-      CPPGM_HOST_CXX: ${{ matrix.host_cxx }}
-      CPPGM_STDLIB_FLAGS: ${{ matrix.stdlib_flags }}
-      CPPGM_LOWIR_DIRECT_TEXT_COMPARE: "1"
-      ORDERED: "false"
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v6
-
-      - name: Install host compiler
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ${{ matrix.packages }}
-
-      - name: Show compiler configuration
-        run: |
-          "$CXX" --version
-          printf 'CXX=%s\n' "$CXX"
-          printf 'CPPGM_HOST_CXX=%s\n' "$CPPGM_HOST_CXX"
-          printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
-
-      - name: Run ${{ matrix.suite }}
-        run: make ${{ matrix.target }}
-
-  test-ubuntu-26:
-    name: ${{ matrix.suite }} / ${{ matrix.name }}
+  build:
+    name: build / ${{ matrix.name }}
     runs-on: ubuntu-24.04
     container:
-      image: ubuntu:26.04
-    timeout-minutes: 120
+      image: ${{ matrix.image }}
+    timeout-minutes: 45
 
     defaults:
       run:
@@ -118,30 +54,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - suite: test-report
-            target: test-report
-            name: gcc + libstdc++ (ubuntu 26.04)
+          - id: ubuntu-24.04-gcc
+            name: gcc + libstdc++ (ubuntu 24.04)
+            image: ubuntu:24.04
             packages: build-essential
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
-          - suite: test-strict
-            target: test-strict
-            name: gcc + libstdc++ (ubuntu 26.04)
-            packages: build-essential
-            cxx: g++
-            host_cxx: g++
-            stdlib_flags: ""
-          - suite: test-report
-            target: test-report
-            name: clang + libc++ (ubuntu 26.04)
+          - id: ubuntu-24.04-clang-libcxx
+            name: clang + libc++ (ubuntu 24.04)
+            image: ubuntu:24.04
             packages: build-essential clang libc++-dev libc++abi-dev
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
-          - suite: test-strict
-            target: test-strict
+          - id: ubuntu-26.04-gcc
+            name: gcc + libstdc++ (ubuntu 26.04)
+            image: ubuntu:26.04
+            packages: build-essential
+            cxx: g++
+            host_cxx: g++
+            stdlib_flags: ""
+          - id: ubuntu-26.04-clang-libcxx
             name: clang + libc++ (ubuntu 26.04)
+            image: ubuntu:26.04
             packages: build-essential clang libc++-dev libc++abi-dev
             cxx: clang++
             host_cxx: clang++
@@ -151,11 +87,10 @@ jobs:
       CXX: ${{ matrix.cxx }}
       CPPGM_HOST_CXX: ${{ matrix.host_cxx }}
       CPPGM_STDLIB_FLAGS: ${{ matrix.stdlib_flags }}
-      CPPGM_LOWIR_DIRECT_TEXT_COMPARE: "1"
       ORDERED: "false"
 
     steps:
-      - name: Install checkout and host compiler dependencies
+      - name: Install test dependencies
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
@@ -163,6 +98,7 @@ jobs:
             ca-certificates \
             git \
             perl \
+            tar \
             ${{ matrix.packages }}
 
       - name: Check out repository
@@ -176,5 +112,208 @@ jobs:
           printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
           cat /etc/os-release
 
-      - name: Run ${{ matrix.suite }}
-        run: make ${{ matrix.target }}
+      - name: Build host compiler
+        run: make
+
+      - name: Upload host compiler build
+        run: |
+          set -euo pipefail
+          upload="$RUNNER_TEMP/cppgm-build-upload"
+          mkdir -p "$upload"
+          {
+            for exe in \
+              pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 \
+              cppgm++ lowir2cy86 lowiropt lowir2native cpplink cppeh; do
+              printf 'dev/%s\n' "$exe"
+            done
+            if [ -d obj/generated ]; then
+              find obj/generated -type f -print
+            fi
+          } | sort > "$RUNNER_TEMP/cppgm-build-files.txt"
+          tar -czf "$upload/cppgm-build.tar.gz" -T "$RUNNER_TEMP/cppgm-build-files.txt"
+          {
+            printf 'flavor=%s\n' "${{ matrix.id }}"
+            printf 'cxx=%s\n' "$CXX"
+            printf 'cppgm_host_cxx=%s\n' "$CPPGM_HOST_CXX"
+            printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
+          } > "$upload/metadata.env"
+
+      - name: Store host compiler build
+        uses: actions/upload-artifact@v6
+        with:
+          name: cppgm-build-${{ matrix.id }}
+          path: ${{ runner.temp }}/cppgm-build-upload/
+          if-no-files-found: error
+          retention-days: 1
+
+  test:
+    name: ${{ matrix.suite.name }} / ${{ matrix.flavor.name }}
+    needs: build
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ matrix.flavor.image }}
+    timeout-minutes: ${{ matrix.suite.timeout }}
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor:
+          - id: ubuntu-24.04-gcc
+            name: gcc + libstdc++ (ubuntu 24.04)
+            image: ubuntu:24.04
+            host_packages: build-essential
+            strict_packages: make libstdc++6
+            cxx: g++
+            host_cxx: g++
+            stdlib_flags: ""
+            artifact_name: pa37-cppgm-self-ubuntu-24.04-gcc
+          - id: ubuntu-24.04-clang-libcxx
+            name: clang + libc++ (ubuntu 24.04)
+            image: ubuntu:24.04
+            host_packages: build-essential clang libc++-dev libc++abi-dev
+            strict_packages: make libc++-dev libc++abi-dev
+            cxx: clang++
+            host_cxx: clang++
+            stdlib_flags: -stdlib=libc++
+            artifact_name: pa37-cppgm-self-ubuntu-24.04-clang-libcxx
+          - id: ubuntu-26.04-gcc
+            name: gcc + libstdc++ (ubuntu 26.04)
+            image: ubuntu:26.04
+            host_packages: build-essential
+            strict_packages: make libstdc++6
+            cxx: g++
+            host_cxx: g++
+            stdlib_flags: ""
+            artifact_name: pa37-cppgm-self-ubuntu-26.04-gcc
+          - id: ubuntu-26.04-clang-libcxx
+            name: clang + libc++ (ubuntu 26.04)
+            image: ubuntu:26.04
+            host_packages: build-essential clang libc++-dev libc++abi-dev
+            strict_packages: make libc++-dev libc++abi-dev
+            cxx: clang++
+            host_cxx: clang++
+            stdlib_flags: -stdlib=libc++
+            artifact_name: pa37-cppgm-self-ubuntu-26.04-clang-libcxx
+        suite:
+          - id: test-report
+            name: test-report
+            command: make test-report-nobuild
+            timeout: 120
+          - id: test-strict
+            name: test-strict
+            command: make test-strict-nobuild
+            timeout: 120
+          - id: pa37-through-pa10
+            name: pa37 test-through-pa10
+            command: make -C pa37 test-through-pa10 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
+            timeout: 90
+
+    env:
+      CXX: ${{ matrix.flavor.cxx }}
+      CPPGM_HOST_CXX: ${{ matrix.flavor.host_cxx }}
+      CPPGM_STDLIB_FLAGS: ${{ matrix.flavor.stdlib_flags }}
+      CPPGM_LOWIR_DIRECT_TEXT_COMPARE: "1"
+      ORDERED: "false"
+      FRONTIER_FLAVOR: ${{ matrix.flavor.id }}
+      FRONTIER_RUNNER_IMAGE: ${{ matrix.flavor.image }}
+      FRONTIER_ARTIFACT_NAME: ${{ matrix.flavor.artifact_name }}
+
+    steps:
+      - name: Install checkout and host compiler dependencies
+        run: |
+          packages="${{ matrix.flavor.host_packages }}"
+          if [ "${{ matrix.suite.id }}" = "test-strict" ]; then
+            packages="${{ matrix.flavor.strict_packages }}"
+          fi
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            bash \
+            ca-certificates \
+            git \
+            perl \
+            tar \
+            $packages
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Download host compiler build
+        uses: actions/download-artifact@v7
+        with:
+          name: cppgm-build-${{ matrix.flavor.id }}
+          path: ${{ runner.temp }}/cppgm-build-artifact
+
+      - name: Restore host compiler build
+        run: |
+          set -euo pipefail
+          tar -xzf "$RUNNER_TEMP/cppgm-build-artifact/cppgm-build.tar.gz"
+          cat "$RUNNER_TEMP/cppgm-build-artifact/metadata.env"
+          test -x dev/cppgm++
+
+      - name: Show compiler configuration
+        run: |
+          if command -v "$CXX" >/dev/null 2>&1; then
+            "$CXX" --version
+          else
+            printf '%s is not installed in this lightweight test job\n' "$CXX"
+          fi
+          printf 'CXX=%s\n' "$CXX"
+          printf 'CPPGM_HOST_CXX=%s\n' "$CPPGM_HOST_CXX"
+          printf 'CPPGM_STDLIB_FLAGS=%s\n' "$CPPGM_STDLIB_FLAGS"
+          cat /etc/os-release
+
+      - name: Run ${{ matrix.suite.name }}
+        run: ${{ matrix.suite.command }}
+
+      - name: Package cppgm++ self compiler
+        if: matrix.suite.id == 'pa37-through-pa10'
+        run: |
+          set -euo pipefail
+          source_sha=$(git rev-parse HEAD)
+          bundle="$RUNNER_TEMP/pa37-cppgm-self"
+          upload="$RUNNER_TEMP/pa37-cppgm-self-upload"
+          mkdir -p "$bundle/bin" "$upload"
+          cp obj/pa37/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          chmod 755 "$bundle/bin/cppgm++-self"
+          {
+            printf 'source_sha=%s\n' "$source_sha"
+            printf 'source_ref=%s\n' "$GITHUB_REF"
+            printf 'source_repository=%s\n' "$GITHUB_REPOSITORY"
+            printf 'frontier_run_id=%s\n' "$GITHUB_RUN_ID"
+            printf 'frontier_flavor=%s\n' "$FRONTIER_FLAVOR"
+            printf 'runner_image=%s\n' "$FRONTIER_RUNNER_IMAGE"
+            printf 'cxx=%s\n' "$CXX"
+            printf 'cppgm_host_cxx=%s\n' "$CPPGM_HOST_CXX"
+            printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
+          } > "$bundle/metadata.env"
+          (cd "$bundle" && sha256sum bin/cppgm++-self > SHA256SUMS)
+          tar -C "$bundle" -czf "$upload/pa37-cppgm-self.tar.gz" .
+          cp "$bundle/metadata.env" "$upload/metadata.env"
+          cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
+          {
+            echo "### PA37 self compiler artifact"
+            echo
+            echo "- Flavor: \`$FRONTIER_FLAVOR\`"
+            echo "- Artifact: \`$FRONTIER_ARTIFACT_NAME\`"
+            echo "- Workflow run id: \`$GITHUB_RUN_ID\`"
+            echo "- Source SHA: \`$source_sha\`"
+            echo
+            echo "Manual inception run:"
+            echo
+            echo "\`\`\`sh"
+            echo "gh workflow run pa37-inception.yml -f frontier_run_id=$GITHUB_RUN_ID -f artifact_name=$FRONTIER_ARTIFACT_NAME"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload cppgm++ self compiler
+        if: matrix.suite.id == 'pa37-through-pa10'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ env.FRONTIER_ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/pa37-cppgm-self-upload/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,10 +1,6 @@
 name: PA37 Frontier
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       flavor:

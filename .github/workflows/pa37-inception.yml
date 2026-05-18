@@ -3,6 +3,7 @@ name: PA37 Inception
 on:
   workflow_run:
     workflows:
+      - Tests
       - PA37 Frontier
     types:
       - completed
