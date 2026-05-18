@@ -63,6 +63,14 @@ struct MemberAliasTemplateLookupResult
   std::size_t path_offset = 0;
 };
 
+struct MemberVariableTemplateLookupResult
+{
+  VariableTemplateDecl * variable_template = nullptr;
+  const ClassInfo * declared_in = nullptr;
+  MemberAccess path_access = MA_PUBLIC;
+  std::size_t path_offset = 0;
+};
+
 struct QualifiedMemberTarget
 {
   bool qualified = false;
@@ -161,6 +169,10 @@ MemberClassTemplateLookupResult lookup_member_class_template(SemanticContext & c
 MemberAliasTemplateLookupResult lookup_member_alias_template(SemanticContext & ctx,
                                                              ClassInfo & info,
                                                              const std::string & name);
+MemberVariableTemplateLookupResult lookup_member_variable_template(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    const std::string & name);
 MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
                                           ClassInfo & info,
                                           const std::string & name,

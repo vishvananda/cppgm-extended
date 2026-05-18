@@ -767,6 +767,11 @@ bool member_lookup_present(const MemberAliasTemplateLookupResult & result)
   return result.alias_template != nullptr;
 }
 
+bool member_lookup_present(const MemberVariableTemplateLookupResult & result)
+{
+  return result.variable_template != nullptr;
+}
+
 bool is_enclosing_current_specialization_type(Scope & scope,
                                               const TypePtr & type)
 {
@@ -3170,6 +3175,36 @@ MemberAliasTemplateLookupResult lookup_member_alias_template(SemanticContext & c
       });
 }
 
+MemberVariableTemplateLookupResult lookup_member_variable_template(SemanticContext & ctx,
+                                                                   ClassInfo & info,
+                                                                   const string & name)
+{
+  return lookup_member_in_hierarchy<MemberVariableTemplateLookupResult>(
+      info,
+      [&ctx, &name](ClassInfo & current) -> MemberVariableTemplateLookupResult
+      {
+        if(!current.member_scope) {
+          return MemberVariableTemplateLookupResult();
+        }
+        if(!current.reference_members_collected &&
+           !current.reference_member_collection_in_progress) {
+          ctx.ensure_class_reference_members(current);
+        }
+        if(!current.member_scope) {
+          return MemberVariableTemplateLookupResult();
+        }
+        map<string, VariableTemplateDecl *>::iterator found =
+            current.member_scope->variable_templates.find(name);
+        if(found == current.member_scope->variable_templates.end()) {
+          return MemberVariableTemplateLookupResult();
+        }
+        MemberVariableTemplateLookupResult result;
+        result.variable_template = found->second;
+        result.declared_in = &current;
+        return result;
+      });
+}
+
 bool resolve_qualified_member_target(SemanticContext & ctx,
                                      Scope & scope,
                                      ClassInfo & object_class,
@@ -4855,43 +4890,57 @@ VariableTemplateDecl * lookup_variable_template(SemanticContext & ctx,
                                                 Scope & scope,
                                                 const QualifiedName & qualified)
 {
+  const auto lookup_in_scope =
+      [&ctx](Scope & target, const string & lookup_name) -> VariableTemplateDecl *
+      {
+        if(target.class_info) {
+          MemberVariableTemplateLookupResult member =
+              lookup_member_variable_template(ctx, *target.class_info, lookup_name);
+          if(member.variable_template) {
+            return member.variable_template;
+          }
+        }
+        map<string, VariableTemplateDecl *>::iterator found =
+            target.variable_templates.find(lookup_name);
+        return found == target.variable_templates.end() ? nullptr : found->second;
+      };
+
   if(qualified.rooted || !qualified.qualifiers.empty()) {
     return lookup_qualified_class_or_namespace_generic<VariableTemplateDecl *>(
-        ctx, scope, qualified,
-        [](Scope & target, const string & lookup_name) -> VariableTemplateDecl *
-        {
-          map<string, VariableTemplateDecl *>::iterator found =
-              target.variable_templates.find(lookup_name);
-          return found == target.variable_templates.end() ? nullptr : found->second;
-        });
+        ctx, scope, qualified, lookup_in_scope);
   }
 
   return lookup_unqualified_with_present<VariableTemplateDecl *>(
       scope, qualified.name,
-      [](Scope & target, const string & lookup_name) -> VariableTemplateDecl *
-      {
-        map<string, VariableTemplateDecl *>::iterator found =
-            target.variable_templates.find(lookup_name);
-        return found == target.variable_templates.end() ? nullptr : found->second;
-      },
+      lookup_in_scope,
       [](VariableTemplateDecl * result) -> bool
       {
         return result != nullptr;
       });
 }
 
-VariableTemplateDecl * lookup_variable_template(SemanticContext &,
+VariableTemplateDecl * lookup_variable_template(SemanticContext & ctx,
                                                 Scope & scope,
                                                 const string & name)
 {
-  return lookup_unqualified_with_present<VariableTemplateDecl *>(
-      scope, name,
-      [](Scope & target, const string & lookup_name) -> VariableTemplateDecl *
+  const auto lookup_in_scope =
+      [&ctx](Scope & target, const string & lookup_name) -> VariableTemplateDecl *
       {
+        if(target.class_info) {
+          MemberVariableTemplateLookupResult member =
+              lookup_member_variable_template(ctx, *target.class_info, lookup_name);
+          if(member.variable_template) {
+            return member.variable_template;
+          }
+        }
         map<string, VariableTemplateDecl *>::iterator found =
             target.variable_templates.find(lookup_name);
         return found == target.variable_templates.end() ? nullptr : found->second;
-      },
+      };
+
+  return lookup_unqualified_with_present<VariableTemplateDecl *>(
+      scope, name,
+      lookup_in_scope,
       [](VariableTemplateDecl * result) -> bool
       {
         return result != nullptr;

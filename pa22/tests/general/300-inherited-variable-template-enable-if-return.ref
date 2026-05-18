@@ -1,0 +1,26 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : obj<1x1>
+  slot $p : ptr
+  slot $refarg__1 : i32
+
+  block ^entry:
+    %t1 = addr $a
+    store ptr 0, $p
+    %t2 = addr $a
+    %t3 = load ptr $p
+    store i32 1, $refarg__1
+    %t4 = addr $refarg__1
+    call void @traits_Alloc___construct(%t2, %t3, %t4)
+    return i32 0
+}
+function @traits_Alloc___construct(%__param0 : ptr [pass=reference], %__param1 : ptr, %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6traitsI5AllocE9constructI1XJiEEEN9enable_ifIX13can_constructIT_S3_DpT0_EEvE4typeERS6_PS6_DpOS7_] {
+  slot $__param0 : ptr
+  slot $__param1 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %__param1, $__param1
+    store ptr %__param2, $__param2
+    return void
+}
