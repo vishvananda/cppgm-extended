@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install host compiler
         run: |
@@ -78,7 +78,8 @@ jobs:
             echo "- Frontier run id: \`$GITHUB_RUN_ID\`"
             echo "- Source SHA: \`$source_sha\`"
             echo
-            echo "Run manual inception with:"
+            echo "Inception runs automatically after a successful frontier run."
+            echo "Manual inception rerun:"
             echo
             echo "\`\`\`sh"
             echo "gh workflow run pa37-inception.yml -f frontier_run_id=$GITHUB_RUN_ID"
@@ -86,7 +87,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload cppgm++ self compiler
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pa37-cppgm-self-ubuntu-24.04-gcc
           path: ${{ runner.temp }}/pa37-cppgm-self-upload/

@@ -6,10 +6,16 @@ on:
       - Tests
     types:
       - completed
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: export-assignments-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   export:
@@ -23,7 +29,7 @@ jobs:
 
     steps:
       - name: Check out source repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
@@ -84,7 +90,7 @@ jobs:
             --clobber
 
       - name: Check out assignments repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: vishvananda/cppgm-assignments
           path: cppgm-assignments

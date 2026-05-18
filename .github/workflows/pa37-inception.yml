@@ -1,6 +1,11 @@
 name: PA37 Inception
 
 on:
+  workflow_run:
+    workflows:
+      - PA37 Frontier
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       frontier_run_id:
@@ -17,21 +22,28 @@ permissions:
 
 jobs:
   compare-cppgm-inception:
-    name: compare cppgm++ inception from stored self compiler
+    name: compare cppgm++ inception (advisory on PRs)
     runs-on: ubuntu-24.04
     timeout-minutes: 300
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       (github.event.workflow_run.event == 'pull_request' ||
+        github.event.workflow_run.head_branch == 'main'))
 
     env:
       CXX: g++
       CPPGM_HOST_CXX: g++
       CPPGM_STDLIB_FLAGS: ""
+      FRONTIER_RUN_ID: ${{ github.event.workflow_run.id || inputs.frontier_run_id }}
+      ARTIFACT_NAME: ${{ inputs.artifact_name || 'pa37-cppgm-self-ubuntu-24.04-gcc' }}
 
     steps:
       - name: Download cppgm++ self compiler artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
-          name: ${{ inputs.artifact_name }}
-          run-id: ${{ inputs.frontier_run_id }}
+          name: ${{ env.ARTIFACT_NAME }}
+          run-id: ${{ env.FRONTIER_RUN_ID }}
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/pa37-self-artifact
 
@@ -58,7 +70,7 @@ jobs:
           cat "$metadata"
 
       - name: Check out matching source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ steps.metadata.outputs.source_sha }}
 
@@ -86,6 +98,8 @@ jobs:
           printf 'PA37_RESTORED_CPPGM_SELF=%s\n' "$RUNNER_TEMP/pa37-restored-self/bin/cppgm++-self"
 
       - name: Compare cppgm++ inception
+        id: compare
+        continue-on-error: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' }}
         run: |
           CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa37/restored-self-driver" \
             make -C pa37 compare-cppgm++-inception-from-restored-self \
@@ -98,7 +112,14 @@ jobs:
           {
             echo "### PA37 cppgm++ inception"
             echo
-            echo "- Frontier run id: \`${{ inputs.frontier_run_id }}\`"
-            echo "- Artifact: \`${{ inputs.artifact_name }}\`"
+            echo "- Trigger: \`${{ github.event_name }}\`"
+            echo "- Frontier run id: \`$FRONTIER_RUN_ID\`"
+            echo "- Artifact: \`$ARTIFACT_NAME\`"
             echo "- Source SHA: \`${{ steps.metadata.outputs.source_sha }}\`"
+            echo "- Compare outcome: \`${{ steps.compare.outcome }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.compare.outcome }}" != "success" ] &&
+             [ "${{ github.event_name }}" = "workflow_run" ] &&
+             [ "${{ github.event.workflow_run.event }}" = "pull_request" ]; then
+            echo "::warning::PA37 cppgm++ inception advisory failed for this PR."
+          fi
