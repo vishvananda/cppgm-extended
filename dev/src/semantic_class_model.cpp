@@ -1600,15 +1600,35 @@ TypePtr try_resolve_instantiated_member_alias_type(SemanticContext & ctx,
   }
 
   owner_type = resolve_member_alias_owner_type(ctx, scope, owner_type, current_info);
-  if(!owner_type || ctx.type_depends_on_template_parameter(owner_type)) {
+  if(!owner_type) {
     return TypePtr();
   }
 
   ClassInfo * owner_info = ctx.class_info_for_type(owner_type);
-  if(!owner_info) {
+  if(!owner_info && !ctx.type_depends_on_template_parameter(owner_type)) {
     owner_info = ctx.complete_class_type(owner_type);
   }
   if(!owner_info) {
+    if(current_info && current_info->member_scope) {
+      std::map<std::string, TypePtr>::const_iterator direct =
+          current_info->member_scope->named_types.find(member_name);
+      if(direct != current_info->member_scope->named_types.end() &&
+         direct->second &&
+         !type_equals(direct->second, type)) {
+        TypePtr member_type = direct->second;
+        if(ctx.type_depends_on_template_parameter(member_type)) {
+          TypePtr resolved_member;
+          if(semantic_dependent_type::resolve_instantiated_dependent_type(
+                 ctx, *current_info->member_scope, member_type, resolved_member) &&
+             resolved_member) {
+            member_type = resolved_member;
+          }
+        }
+        if(member_type && !ctx.type_depends_on_template_parameter(member_type)) {
+          return apply_cv(member_type, cv_const, cv_volatile);
+        }
+      }
+    }
     return TypePtr();
   }
 

@@ -22580,11 +22580,29 @@ private:
               return false;
             }
             for(size_t j = 0; j < params.size(); ++j) {
+              TypePtr candidate_param = decl->params_pattern[j].second;
+              TypePtr incoming_param = params[j].second;
+              if(candidate_param) {
+                TypePtr normalized =
+                    semantic_class_model::resolve_instantiated_member_alias_type(
+                        *this, decl_scope, candidate_param, info);
+                if(normalized) {
+                  candidate_param = normalized;
+                }
+              }
+              if(incoming_param) {
+                TypePtr normalized =
+                    semantic_class_model::resolve_instantiated_member_alias_type(
+                        *this, scope, incoming_param, info);
+                if(normalized) {
+                  incoming_param = normalized;
+                }
+              }
               const bool type_match =
                   out_of_class_special_member_template_param_types_match(
-                      decl->params_pattern[j].second,
+                      candidate_param,
                       lhs_type_parameters,
-                      params[j].second,
+                      incoming_param,
                       rhs_type_parameters);
               if(!type_match) {
                 if(parser_trace::enabled("template.resolve")) {
@@ -22596,8 +22614,12 @@ private:
                         << " param-index=" << j
                         << " type-match=no"
                         << " candidate-type="
-                        << describe_type(decl->params_pattern[j].second)
+                        << describe_type(candidate_param)
                         << " incoming-type=" << describe_type(params[j].second);
+                  if(incoming_param != params[j].second) {
+                    trace << " normalized-incoming-type="
+                          << describe_type(incoming_param);
+                  }
                   parser_trace::note("template.resolve", std::string(), trace.str());
                 }
                 return false;

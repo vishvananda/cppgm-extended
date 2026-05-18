@@ -363,6 +363,19 @@ bool is_register_allocatable_temp_type(const string & type)
   return is_atomic_scalar_type(type);
 }
 
+string instruction_result_storage_type(const lir::Instruction & inst)
+{
+  if(inst.kind == lir::Instruction::IK_CMP) {
+    return "i64";
+  }
+  if(inst.kind == lir::Instruction::IK_BINARY &&
+     inst.op == "sub" &&
+     inst.type.text == "ptr") {
+    return "i64";
+  }
+  return inst.type.text;
+}
+
 bool is_xmm_allocatable_temp_type(const string & type)
 {
   return type == "f32" || type == "f64";
@@ -1056,7 +1069,7 @@ vector<TempInterval> collect_temp_intervals(
       }
       TempInterval & interval = intervals[inst.dest];
       interval.name = inst.dest;
-      interval.type = inst.kind == lir::Instruction::IK_CMP ? "i64" : inst.type.text;
+      interval.type = instruction_result_storage_type(inst);
     }
   }
 
@@ -2359,9 +2372,7 @@ FunctionLayout build_layout(const lir::Function & function,
       }
       layout.temp_def_instruction[inst.dest] = inst;
       if(layout.storage_type.count(inst.dest) == 0) {
-        const string dest_type =
-            inst.kind == lir::Instruction::IK_CMP ? "i64" : inst.type.text;
-        note_type(inst.dest, dest_type);
+        note_type(inst.dest, instruction_result_storage_type(inst));
       }
     }
   }

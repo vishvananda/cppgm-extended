@@ -6343,7 +6343,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
     const bool suppressed_by_owner =
         found->second->owner_class &&
-        found->second->owner_class->suppress_implicit_instantiation_definition;
+        found->second->owner_class->suppress_implicit_instantiation_definition &&
+        !(found->second->source_template &&
+          !found->second->suppress_implicit_instantiation_definition);
     bool definition_materialized_from_source_template = false;
     if(explicit_specialization) {
       found->second->body = body_override;

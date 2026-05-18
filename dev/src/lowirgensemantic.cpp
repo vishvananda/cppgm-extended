@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "cpp_decl_model.h"
+#include "class_template_mangle_info.h"
 #include "eh_runtime.h"
 #include "encoding.h"
 #include "parser_trace.h"
@@ -55,6 +56,27 @@ const char * exported_linkage_name(symbol_linkage::SymbolLinkage linkage)
 string thread_local_init_internal_symbol(const string & global_symbol)
 {
   return global_symbol + "__tls_init";
+}
+
+unsigned long long stable_symbol_hash(const string & text)
+{
+  unsigned long long value = 1469598103934665603ULL;
+  for(size_t i = 0; i < text.size(); ++i) {
+    value ^= static_cast<unsigned char>(text[i]);
+    value *= 1099511628211ULL;
+  }
+  return value;
+}
+
+string hex_u64(unsigned long long value)
+{
+  static const char hex[] = "0123456789abcdef";
+  string out(16, '0');
+  for(size_t i = 0; i < out.size(); ++i) {
+    const size_t shift = (out.size() - 1 - i) * 4;
+    out[i] = hex[(value >> shift) & 0x0FULL];
+  }
+  return out;
 }
 
 struct LowIRGlobal
@@ -1776,6 +1798,19 @@ bool is_constructor_function_name(const string & qualified)
   return unqualified == class_constructor_name(qualified.substr(0, split));
 }
 
+bool is_destructor_function_name(const string & qualified)
+{
+  const size_t split = qualified.rfind("::");
+  if(split == string::npos) {
+    return false;
+  }
+  const string unqualified = semantic_utils::unqualified_member_name(qualified);
+  if(unqualified.size() < 2 || unqualified[0] != '~') {
+    return false;
+  }
+  return unqualified.substr(1) == class_constructor_name(qualified.substr(0, split));
+}
+
 string lowir_type_for(const TypePtr & type);
 
 LowIRGlobal make_data_global(const string & name,
@@ -2905,11 +2940,10 @@ public:
         }
         VariableBinding binding =
             create_variable_binding(param_name, child.semantic_type, lowered_param_type);
-        if(abi_plan.kind == ParamAbiPlan::PAK_INDIRECT) {
-          if(param_passing != lowir_internal::PPM_BY_ADDRESS) {
-            binding.uses_external_storage_address = true;
-            binding.external_storage_address = abi_plan.inputs[0].first;
-          }
+        if(abi_plan.kind == ParamAbiPlan::PAK_INDIRECT &&
+           param_passing != lowir_internal::PPM_BY_ADDRESS) {
+          binding.uses_external_storage_address = true;
+          binding.external_storage_address = abi_plan.inputs[0].first;
         }
         binding.is_parameter = true;
         bindings_[param_name] = binding;
@@ -3362,6 +3396,193 @@ private:
       }
     }
     return false;
+  }
+
+  bool class_has_external_constructor_reference(const string & qualified_name,
+                                                const TypePtr & object_type,
+                                                Type::Kind ref_kind) const
+  {
+    if(qualified_name.empty()) {
+      return false;
+    }
+    const string constructor_name =
+        qualified_name + "::" + class_constructor_name(qualified_name);
+    vector<TypePtr> params;
+    params.push_back(make_pointer(object_type));
+    params.push_back(ref_kind == Type::TK_LVALUE_REFERENCE ?
+                         make_lvalue_reference_raw(make_cv(object_type, true, false)) :
+                         make_rvalue_reference_raw(object_type));
+    if(function_symbols_.count(function_key(
+           constructor_name,
+           make_function(make_fundamental(FT_VOID), params, false))) != 0) {
+      return true;
+    }
+    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
+      const FunctionSymbolEntry & entry = function_symbol_entries_[i];
+      if(entry.has_definition ||
+         !special_member_lookup_name_matches(entry.name, constructor_name)) {
+        continue;
+      }
+      if(matches_constructor_entry_type_for_lowir(entry.type, object_type, ref_kind)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool class_has_external_constructor_reference(const string & qualified_name,
+                                                const TypePtr & object_type) const
+  {
+    return class_has_external_constructor_reference(qualified_name,
+                                                    object_type,
+                                                    Type::TK_LVALUE_REFERENCE) ||
+           class_has_external_constructor_reference(qualified_name,
+                                                    object_type,
+                                                    Type::TK_RVALUE_REFERENCE);
+  }
+
+  bool class_has_external_destructor_reference(const string & qualified_name,
+                                               const TypePtr & object_type) const
+  {
+    if(qualified_name.empty()) {
+      return false;
+    }
+    const string destructor_name =
+        qualified_name + "::~" + class_constructor_name(qualified_name);
+    vector<TypePtr> params;
+    params.push_back(make_pointer(object_type));
+    const TypePtr destructor_type =
+        make_function(make_fundamental(FT_VOID), params, false);
+    if(function_symbols_.count(function_key(destructor_name, destructor_type)) != 0) {
+      return true;
+    }
+    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
+      const FunctionSymbolEntry & entry = function_symbol_entries_[i];
+      if(entry.has_definition ||
+         !special_member_lookup_name_matches(entry.name, destructor_name)) {
+        continue;
+      }
+      if(matches_destructor_entry_type_for_lowir(entry.type, object_type)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool class_has_external_lifecycle_reference(const string & qualified_name,
+                                              const TypePtr & object_type) const
+  {
+    return class_has_external_constructor_reference(qualified_name, object_type) ||
+           class_has_external_destructor_reference(qualified_name, object_type);
+  }
+
+  bool function_internal_symbol_in_use(const string & symbol) const
+  {
+    if(symbol.empty()) {
+      return false;
+    }
+    if(external_function_symbols_.count(symbol) != 0 ||
+       referenced_function_symbols_.count(symbol) != 0) {
+      return true;
+    }
+    for(map<string, string>::const_iterator it = function_symbols_.begin();
+        it != function_symbols_.end();
+        ++it) {
+      if(it->second == symbol) {
+        return true;
+      }
+    }
+    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
+      if(function_symbol_entries_[i].symbol == symbol) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  string collision_free_external_function_symbol(const string & base_symbol,
+                                                 const string & object_symbol) const
+  {
+    const string candidate =
+        base_symbol + "__host_" + hex_u64(stable_symbol_hash(object_symbol));
+    if(!function_internal_symbol_in_use(candidate)) {
+      return candidate;
+    }
+    for(size_t index = 2;; ++index) {
+      ostringstream out;
+      out << candidate << "__ov" << index;
+      if(!function_internal_symbol_in_use(out.str())) {
+        return out.str();
+      }
+    }
+  }
+
+  string synthesize_external_special_member_symbol(const string & qualified_name,
+                                                   const string & member_name,
+                                                   const TypePtr & object_type,
+                                                   const TypePtr & function_type,
+                                                   bool is_destructor) const
+  {
+    if(class_has_local_function_definition(qualified_name)) {
+      return string();
+    }
+    QualifiedName qualified_syntax;
+    if(!semantic_utils::split_qualified_name_text(qualified_name + "::" + member_name,
+                                                  qualified_syntax)) {
+      return string();
+    }
+    symbol_linkage::FunctionSymbolOptions options;
+    options.is_member_function = true;
+    options.has_implicit_object_parameter = true;
+    options.is_constructor = !is_destructor;
+    options.is_destructor = is_destructor;
+    shared_ptr<const ClassTemplateSpecializationMangleInfo> owner_template =
+        named_type_class_template_specialization_mangle_info_const(object_type);
+    if(owner_template) {
+      options.owner_template_parameters = &owner_template->template_parameters;
+      options.owner_template_arguments = &owner_template->arguments;
+      options.owner_template_name = owner_template->template_name;
+      options.template_argument_pack_sizes = &owner_template->pack_sizes;
+      options.suppress_template_argument_pack_grouping =
+          owner_template->force_structured_mangling;
+      symbol_linkage::FunctionSymbolOptions::OwnerTemplateComponent component;
+      component.template_name = owner_template->template_name;
+      component.parameters = &owner_template->template_parameters;
+      component.arguments = &owner_template->arguments;
+      options.owner_template_components.push_back(component);
+    }
+    const symbol_linkage::SymbolIdentity identity =
+        symbol_linkage::make_function_symbol_identity(qualified_syntax,
+                                                      member_name,
+                                                      false,
+                                                      function_type,
+                                                      options);
+    if(identity.internal_symbol.empty() || identity.object_symbol.empty()) {
+      return string();
+    }
+    for(map<string, string>::const_iterator it = external_function_symbols_.begin();
+        it != external_function_symbols_.end();
+        ++it) {
+      if(it->second == identity.object_symbol) {
+        return it->first;
+      }
+    }
+    string internal_symbol = identity.internal_symbol;
+    map<string, string>::const_iterator existing =
+        external_function_symbols_.find(internal_symbol);
+    if(existing != external_function_symbols_.end() &&
+       existing->second != identity.object_symbol) {
+      internal_symbol =
+          collision_free_external_function_symbol(identity.internal_symbol,
+                                                  identity.object_symbol);
+    } else if(existing == external_function_symbols_.end() &&
+              function_internal_symbol_in_use(internal_symbol)) {
+      internal_symbol =
+          collision_free_external_function_symbol(identity.internal_symbol,
+                                                  identity.object_symbol);
+    }
+    external_function_symbols_[internal_symbol] = identity.object_symbol;
+    return internal_symbol;
   }
 
   bool class_has_external_virtual_base_runtime_layout(const TypePtr & type) const
@@ -4356,7 +4577,7 @@ private:
       }
       return found->second;
     }
-    const string symbol = try_lookup_special_member_symbol_by_index(
+    string symbol = try_lookup_special_member_symbol_by_index(
         function_symbol_entries_,
         function_symbol_lookup_index_,
         lookup_name,
@@ -4366,6 +4587,14 @@ private:
                                                           object_type,
                                                           Type::TK_LVALUE_REFERENCE);
         });
+    if(symbol.empty() &&
+       class_has_external_lifecycle_reference(qualified, object_type)) {
+      symbol = synthesize_external_special_member_symbol(qualified,
+                                                         simple,
+                                                         object_type,
+                                                         lookup_type,
+                                                         false);
+    }
     note_referenced_function_signature(
         symbol,
         lookup_type);
@@ -4399,28 +4628,40 @@ private:
     vector<TypePtr> params;
     params.push_back(make_pointer(object_type));
     params.push_back(make_rvalue_reference_raw(object_type));
+    const string lookup_name = qualified + "::" + simple;
+    const TypePtr lookup_type =
+        make_function(make_fundamental(FT_VOID), params, false);
     map<string, string>::const_iterator found =
-        function_symbols_.find(function_key(qualified + "::" + simple,
-                                           make_function(make_fundamental(FT_VOID), params, false)));
+        function_symbols_.find(function_key(lookup_name, lookup_type));
     if(found != function_symbols_.end()) {
       note_referenced_function_signature(
           found->second,
-          make_function(make_fundamental(FT_VOID), params, false));
+          lookup_type);
       return found->second;
     }
-    const string symbol = try_lookup_special_member_symbol_by_index(
+    string symbol = try_lookup_special_member_symbol_by_index(
         function_symbol_entries_,
         function_symbol_lookup_index_,
-        qualified + "::" + simple,
+        lookup_name,
         [&](const TypePtr & entry_type)
         {
           return matches_constructor_entry_type_for_lowir(entry_type,
                                                           object_type,
                                                           Type::TK_RVALUE_REFERENCE);
         });
+    if(symbol.empty() &&
+       class_has_external_constructor_reference(qualified,
+                                                object_type,
+                                                Type::TK_RVALUE_REFERENCE)) {
+      symbol = synthesize_external_special_member_symbol(qualified,
+                                                         simple,
+                                                         object_type,
+                                                         lookup_type,
+                                                         false);
+    }
     note_referenced_function_signature(
         symbol,
-        make_function(make_fundamental(FT_VOID), params, false));
+        lookup_type);
     return symbol;
   }
 
@@ -5625,22 +5866,23 @@ private:
     const string simple = class_constructor_name(qualified);
     vector<TypePtr> params;
     params.push_back(make_pointer(object_type));
+    const string lookup_name = qualified + "::~" + simple;
+    const TypePtr lookup_type =
+        make_function(make_fundamental(FT_VOID), params, false);
     map<string, string>::const_iterator found =
-        function_symbols_.find(function_key(qualified + "::~" + simple,
-                                            make_function(make_fundamental(FT_VOID),
-                                                          params,
-                                                          false)));
+        function_symbols_.find(function_key(lookup_name, lookup_type));
     if(found != function_symbols_.end()) {
       return found->second;
     }
-    return try_lookup_special_member_symbol_by_index(
+    string symbol = try_lookup_special_member_symbol_by_index(
         function_symbol_entries_,
         function_symbol_lookup_index_,
-        qualified + "::~" + simple,
+        lookup_name,
         [&](const TypePtr & entry_type)
         {
           return matches_destructor_entry_type_for_lowir(entry_type, object_type);
         });
+    return symbol;
   }
 
   void note_destructor_symbol_reference(const string & symbol,
@@ -6666,13 +6908,23 @@ private:
     }
 
     if(is_indirect_value_type(param_type)) {
+      TypePtr object_param_type =
+          strip_top_level_cv(remove_reference_type(param_type));
       if(is_complete_class_value_type(arg.semantic_type) &&
          is_special_class_materialization_node(arg)) {
-        const string temp_ptr = new_hidden_object_address(arg.semantic_type, "arg");
+        const string temp_ptr = new_hidden_object_address(object_param_type, "arg");
         if(emit_special_class_value_to_target(arg, temp_ptr)) {
-          register_materialized_temporary_cleanup_live(arg.semantic_type, temp_ptr);
+          register_class_at_ptr_cleanup(object_param_type, temp_ptr);
           return temp_ptr;
         }
+      }
+      if(is_complete_class_value_type(object_param_type) &&
+         arg.value_category != CVC_LVALUE &&
+         !is_reference_type(arg.semantic_type)) {
+        const string temp_ptr = new_hidden_object_address(object_param_type, "arg");
+        emit_storage_value_to_target(object_param_type, arg, temp_ptr);
+        register_class_at_ptr_cleanup(object_param_type, temp_ptr);
+        return temp_ptr;
       }
       if(is_indirect_class_reference_type(arg.semantic_type)) {
         return emit_rvalue(arg);
@@ -15097,6 +15349,15 @@ private:
     return function_symbol_lookup_index().mapped_symbols.count(symbol) != 0;
   }
 
+  bool known_function_symbol_has_definition(const string & symbol) const
+  {
+    if(generated_function_symbol_exists(symbol)) {
+      return true;
+    }
+    const FunctionSymbolEntry * entry = find_function_symbol_entry_by_symbol(symbol);
+    return entry && entry->has_definition;
+  }
+
   bool known_global_symbol_exists(const string & symbol) const
   {
     if(generated_global_symbol_exists(symbol)) {
@@ -15715,18 +15976,28 @@ private:
       return;
     }
 
+    map<string, string>::const_iterator external =
+        external_function_symbols_.find(symbol);
+    if(external != external_function_symbols_.end()) {
+      if(symbol_linkage::has_exported_object_symbol(identity) &&
+         external->second != identity.object_symbol) {
+        throw logic_error("conflicting external function alias for " + symbol);
+      }
+      return;
+    }
+
     if(known_function_symbol_exists(symbol)) {
+      if(identity.prefer_local_object_binding &&
+         !known_function_symbol_has_definition(symbol) &&
+         symbol_linkage::has_exported_object_symbol(identity)) {
+        external_function_symbols_[symbol] = identity.object_symbol;
+        return;
+      }
       set_exported_symbol(symbol, identity, reason, owner);
       return;
     }
 
     if(symbol_linkage::has_exported_object_symbol(identity)) {
-      map<string, string>::const_iterator existing =
-          external_function_symbols_.find(symbol);
-      if(existing != external_function_symbols_.end() &&
-         existing->second != identity.object_symbol) {
-        throw logic_error("conflicting external function alias for " + symbol);
-      }
       external_function_symbols_[symbol] = identity.object_symbol;
       return;
     }
@@ -17061,7 +17332,8 @@ private:
     const string name =
         callsem_resolved_name(node).empty() ? node.text.str() :
             callsem_resolved_name(node);
-    if(!is_constructor_function_name(name)) {
+    if(!is_constructor_function_name(name) &&
+       !is_destructor_function_name(name)) {
       return;
     }
     const string key = function_key(name, node.semantic_type);

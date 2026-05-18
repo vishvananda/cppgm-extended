@@ -14,11 +14,24 @@ if ! perl scripts/compare_host_undefined_symbols.pl --obj "__OBJ1__" \
   --optional-match 'std::.*basic_ostream<char, .*>::~basic_ostream\(\)' \
   --optional-match 'VTT for std::.*basic_ofstream<char, .*>' \
   > "__OBJ1__.inspect.tmp" 2>&1; then
-  if ! grep -Eq '^[0-9A-Fa-f]+ [A-Za-z] std::.*basic_ofstream<char, .*>::basic_ofstream(\[abi:[^]]+\])?\(char const\*, .*\)' "__OBJ1__.all.demangled" ||
-     ! grep -Eq '^[0-9A-Fa-f]+ [A-Za-z] std::.*basic_ofstream<char, .*>::~basic_ofstream\(\)' "__OBJ1__.all.demangled" ||
-     ! grep -Eq 'std::.*basic_filebuf<char, .*>::basic_filebuf\(\)' "__OBJ1__.undefined.demangled" ||
-     ! grep -Eq 'std::.*basic_filebuf<char, .*>::open\(char const\*, .*\)' "__OBJ1__.undefined.demangled" ||
-     ! grep -Eq 'std::.*basic_filebuf<char, .*>::~basic_filebuf\(\)' "__OBJ1__.undefined.demangled"; then
+  local_ctor=no
+  local_dtor=no
+  host_ctor=no
+  host_filebuf_ctor=no
+  host_filebuf_open=no
+  host_filebuf_dtor=no
+  grep -Eq '^[0-9A-Fa-f]+ [A-Za-z] std::.*basic_ofstream<char, .*>::basic_ofstream(\[abi:[^]]+\])?\(char const\*, .*\)' "__OBJ1__.all.demangled" && local_ctor=yes
+  grep -Eq '^[0-9A-Fa-f]+ [A-Za-z] std::.*basic_ofstream<char, .*>::~basic_ofstream\(\)' "__OBJ1__.all.demangled" && local_dtor=yes
+  grep -Eq 'std::.*basic_ofstream<char, .*>::basic_ofstream(\[abi:[^]]+\])?\(char const\*, .*\)' "__OBJ1__.undefined.demangled" && host_ctor=yes
+  grep -Eq 'std::.*basic_filebuf<char, .*>::basic_filebuf\(\)' "__OBJ1__.undefined.demangled" && host_filebuf_ctor=yes
+  grep -Eq 'std::.*basic_filebuf<char, .*>::open\(char const\*, .*\)' "__OBJ1__.undefined.demangled" && host_filebuf_open=yes
+  grep -Eq 'std::.*basic_filebuf<char, .*>::~basic_filebuf\(\)' "__OBJ1__.undefined.demangled" && host_filebuf_dtor=yes
+
+  if { [ "$local_ctor" != yes ] || [ "$local_dtor" != yes ] ||
+       [ "$host_filebuf_ctor" != yes ] || [ "$host_filebuf_open" != yes ] ||
+       [ "$host_filebuf_dtor" != yes ]; } &&
+     { [ "$host_ctor" != yes ] || [ "$local_dtor" != yes ] ||
+       [ "$host_filebuf_dtor" != yes ]; }; then
     cat "__OBJ1__.inspect.tmp"
     exit 1
   fi

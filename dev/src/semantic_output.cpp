@@ -1333,6 +1333,42 @@ FunctionBinding * find_or_ensure_move_constructor_binding(SemanticContext & ctx,
   return ctx.ensure_implicit_move_constructor(info);
 }
 
+bool special_member_constructor_can_use_host_object_symbol(SemanticContext & ctx,
+                                                          const FunctionBinding & binding)
+{
+  if(!binding.owner_class ||
+     !binding.is_constructor ||
+     binding.symbol.object_symbol.empty() ||
+     ctx.emit_all_source_function_definitions()) {
+    return false;
+  }
+  const symbol_linkage::SymbolLinkage linkage =
+      output_function_symbol_linkage(binding);
+  const bool host_owned =
+      linkage == symbol_linkage::SL_EXTERNAL ||
+      template_api::function_binding_output_suppressed_by_explicit_instantiation(
+          binding);
+  if(!host_owned) {
+    return false;
+  }
+  const CppAstNode * definition_node =
+      binding.definition_node ? binding.definition_node : binding.declaration_node;
+  return ctx.definition_comes_from_standard_include_path(definition_node,
+                                                        binding.body,
+                                                        binding.is_defaulted);
+}
+
+void require_constructor_definition_if_needed(SemanticContext & ctx,
+                                              FunctionBinding * binding,
+                                              OutputReason reason)
+{
+  if(!binding ||
+     special_member_constructor_can_use_host_object_symbol(ctx, *binding)) {
+    return;
+  }
+  ctx.require_function_definition(binding, reason);
+}
+
 bool special_member_binding_has_trivial_lifecycle_output(SemanticContext & ctx,
                                                          FunctionBinding & binding)
 {
@@ -1735,9 +1771,9 @@ void collect_required_return_statement_support(SemanticContext & ctx,
       ctor = info ? find_or_ensure_copy_constructor_binding(ctx, *info) : nullptr;
     }
   }
-  if(ctor) {
-    ctx.require_function_definition(ctor, OutputReason::SyntheticDependency);
-  }
+  require_constructor_definition_if_needed(ctx,
+                                           ctor,
+                                           OutputReason::SyntheticDependency);
 }
 
 void collect_required_exception_runtime_support(SemanticContext & ctx,
@@ -1756,9 +1792,10 @@ void collect_required_exception_runtime_support(SemanticContext & ctx,
         (strip_top_level_cv(expr.semantic_type) &&
          is_reference_type(strip_top_level_cv(expr.semantic_type)));
     if(requires_runtime_copy) {
-      if(FunctionBinding * copy = find_or_ensure_copy_constructor_binding(ctx, *info)) {
-        ctx.require_function_definition(copy, OutputReason::SyntheticDependency);
-      }
+      require_constructor_definition_if_needed(
+          ctx,
+          find_or_ensure_copy_constructor_binding(ctx, *info),
+          OutputReason::SyntheticDependency);
     }
     return;
   }
@@ -1775,9 +1812,10 @@ void collect_required_exception_runtime_support(SemanticContext & ctx,
   if(!info || !info->complete) {
     return;
   }
-  if(FunctionBinding * copy = find_or_ensure_copy_constructor_binding(ctx, *info)) {
-    ctx.require_function_definition(copy, OutputReason::SyntheticDependency);
-  }
+  require_constructor_definition_if_needed(
+      ctx,
+      find_or_ensure_copy_constructor_binding(ctx, *info),
+      OutputReason::SyntheticDependency);
   require_nontrivial_destructor_definition(ctx, *info);
 }
 
@@ -1871,7 +1909,8 @@ void require_hidden_class_transfer_constructor_for_output(SemanticContext & ctx,
       ctor = copy;
     }
   }
-  if(ctor) {
+  if(ctor &&
+     !special_member_constructor_can_use_host_object_symbol(ctx, *ctor)) {
     if(source_node && parser_trace::enabled("output.require")) {
       ostringstream trace;
       trace << "action=" << action
@@ -2012,7 +2051,8 @@ void collect_required_parameter_materialization_support(SemanticContext & ctx,
     if(!copy && !is_trivially_copy_constructible_type(ctx, param_type)) {
       copy = ctx.ensure_implicit_copy_constructor(*info);
     }
-    if(copy) {
+    if(copy &&
+       !special_member_constructor_can_use_host_object_symbol(ctx, *copy)) {
       if(!special_member_binding_has_trivial_lifecycle_output(ctx, *copy)) {
         ctx.require_function_definition(copy, OutputReason::SyntheticDependency);
       }

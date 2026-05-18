@@ -6961,7 +6961,13 @@ void append_function_template_call_candidates_impl(
       !use_preselected_member_templates &&
       name_node && has_qualified_template_name &&
       (has_structured_qualified_name || name_template_id_syntax);
-  if(use_structured_template_lookup) {
+  if(use_preselected_member_templates) {
+    const vector<FunctionTemplateDecl *> * found =
+        find_direct_function_template_set(lookup_scope, template_name);
+    if(found) {
+      append_unique_function_templates(templates, *found);
+    }
+  } else if(use_structured_template_lookup) {
     templates = ctx.lookup_function_templates_node(lookup_scope,
                                                    *name_node,
                                                    template_name);

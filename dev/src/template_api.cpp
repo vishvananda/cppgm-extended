@@ -1345,6 +1345,30 @@ bool binding_is_noop_copy_constructor_for_suppressed_emission(
   return true;
 }
 
+bool binding_is_noop_weak_function_for_suppressed_emission(
+    const semantic_model::FunctionBinding & binding)
+{
+  const bool inline_class_definition =
+      binding.owner_class &&
+      binding.declaration_node &&
+      binding.definition_node &&
+      binding.declaration_node == binding.definition_node;
+  const bool empty_compound_body =
+      binding.body &&
+      binding.body->kind == CppAstKind::compound_statement &&
+      binding.body->children.empty();
+  const bool empty_lazy_body =
+      binding.body &&
+      binding.body->kind == CppAstKind::lazy_function_body &&
+      binding.body->token_end <= binding.body->token_start + 2;
+  return binding.owner_class &&
+         !binding.is_deleted &&
+         (symbol_linkage::has_weak_linkage(binding.symbol) ||
+          inline_class_definition) &&
+         (empty_compound_body || empty_lazy_body) &&
+         !binding.ctor_initializer;
+}
+
 void apply_function_instantiation_intent(SemanticContext & ctx,
                                          semantic_model::FunctionBinding * binding,
                                          TemplateInstantiationIntent intent,
@@ -2016,6 +2040,10 @@ bool function_binding_bypasses_explicit_instantiation_suppression(
      binding_is_noop_copy_constructor_for_suppressed_emission(binding)) {
     return true;
   }
+  if(explicit_instantiation_suppressed &&
+     binding_is_noop_weak_function_for_suppressed_emission(binding)) {
+    return true;
+  }
 
   const bool implicit_special_member =
       binding.synthesized ||
@@ -2033,8 +2061,15 @@ bool function_binding_bypasses_explicit_instantiation_suppression(
 bool function_binding_output_suppressed_by_explicit_instantiation(
     const semantic_model::FunctionBinding & binding)
 {
-  return binding.owner_class &&
-         binding.owner_class->suppress_implicit_instantiation_definition &&
+  const bool class_instantiation_suppressed =
+      binding.owner_class &&
+      binding.owner_class->suppress_implicit_instantiation_definition;
+  if(class_instantiation_suppressed &&
+     binding.source_template &&
+     !binding.suppress_implicit_instantiation_definition) {
+    return false;
+  }
+  return class_instantiation_suppressed &&
          !function_binding_excluded_from_explicit_instantiation(binding) &&
          !function_binding_bypasses_explicit_instantiation_suppression(binding);
 }
