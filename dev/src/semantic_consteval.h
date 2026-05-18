@@ -30,6 +30,9 @@ semantic_model::Scope make_constexpr_call_scope(
     semantic_model::FunctionBinding * binding,
     bool bind_parameters = true);
 
+std::vector<std::pair<std::string, cpp_decl::TypePtr> >
+constexpr_function_parameters(semantic_model::FunctionBinding & binding);
+
 bool evaluate_expression_value(SemanticContext & ctx,
                                semantic_model::Scope & scope,
                                const CppAstNode & node,

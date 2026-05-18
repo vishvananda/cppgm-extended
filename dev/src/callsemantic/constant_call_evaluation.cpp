@@ -652,7 +652,7 @@ bool evaluate_constant_call_expression_value(
       TypePtr function_type = strip_top_level_cv(binding->type);
       info.return_type = function_type && function_type->kind == Type::TK_FUNCTION ?
           function_type->inner : TypePtr();
-      info.params = binding->params;
+      info.params = semantic_consteval::constexpr_function_parameters(*binding);
       CppAstNode expanded_body;
       info.body = constexpr_function_body(ctx, *binding);
       const bool body_has_pack_expansion =
@@ -751,7 +751,10 @@ bool evaluate_constant_call_expression_value(
   TypePtr function_type = strip_top_level_cv(binding->type);
   info.return_type = function_type && function_type->kind == Type::TK_FUNCTION ?
       function_type->inner : TypePtr();
-  info.params.assign(binding->params.begin() + explicit_param_offset, binding->params.end());
+  const std::vector<std::pair<std::string, TypePtr> > constexpr_params =
+      semantic_consteval::constexpr_function_parameters(*binding);
+  info.params.assign(constexpr_params.begin() + explicit_param_offset,
+                     constexpr_params.end());
   CppAstNode expanded_body;
   info.body = constexpr_function_body(ctx, *binding);
   const bool body_has_pack_expansion =

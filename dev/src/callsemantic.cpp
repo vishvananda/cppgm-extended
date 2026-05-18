@@ -11921,6 +11921,10 @@ private:
           }
         }
       }
+      const bool primary_owner =
+          !owner.source_template->class_node ||
+          !owner.template_output_node ||
+          owner.template_output_node == owner.source_template->class_node;
       for(size_t i = 0; i < owner.source_template->parameters.size(); ++i) {
         const TemplateParameterInfo & parameter =
             owner.source_template->parameters[i];
@@ -11947,9 +11951,11 @@ private:
               parameter.alternate_names[j]);
         }
       }
-      bind_template_arguments_into_scope(*inst_scope,
-                                         owner.source_template->parameters,
-                                         owner.instantiation_arguments);
+      if(primary_owner) {
+        bind_template_arguments_into_scope(*inst_scope,
+                                           owner.source_template->parameters,
+                                           owner.instantiation_arguments);
+      }
     };
     bind_enclosing_class_template_arguments();
     const auto make_dependent_alias_specialization = [&]() -> TypePtr
@@ -15868,7 +15874,9 @@ private:
     if((qualified_lookup &&
         (qualified_lookup->rooted || !qualified_lookup->qualifiers.empty())) ||
        !node.qualifier_template_id_syntaxes.empty() ||
-       !node.qualifier_type_syntaxes.empty()) {
+       !node.qualifier_type_syntaxes.empty() ||
+       (lookup_name.find("::") != string::npos &&
+        lookup_name.find('<') != string::npos)) {
       TypePtr structured_type =
           template_api::with_template_services(
               *this,

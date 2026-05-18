@@ -670,6 +670,16 @@ ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & 
 AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices & services,
                                                Scope & scope,
                                                const string & name);
+bool try_resolve_class_template_id_locally(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const template_api::TemplateTypeLookupRequest & request,
+    const string & original_text,
+    ClassTemplateDecl * class_template,
+    const std::vector<std::string> & arg_texts,
+    const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
+    template_api::TemplateEnvironmentHandle argument_scope,
+    TypePtr & out);
 
 bool is_decltype_or_typeof_text(const string & text)
 {
@@ -3283,6 +3293,162 @@ bool template_id_syntax_has_payload(const TemplateIdSyntax & syntax)
          !syntax.argument_syntaxes.empty();
 }
 
+bool template_id_syntax_from_component_text(const string & text,
+                                            TemplateIdSyntax & out)
+{
+  out = TemplateIdSyntax();
+  QualifiedName name;
+  vector<string> arguments;
+  if(!semantic_utils::split_top_level_template_id_text(trim_space(text),
+                                                       name,
+                                                       arguments) ||
+     arguments.empty()) {
+    return false;
+  }
+
+  out.name = name;
+  out.arguments = arguments;
+  out.argument_syntaxes.reserve(arguments.size());
+  for(size_t i = 0; i < arguments.size(); ++i) {
+    TemplateArgumentSyntax argument;
+    argument.text = trim_space(arguments[i]);
+    out.argument_syntaxes.push_back(argument);
+  }
+  return true;
+}
+
+bool template_id_syntax_from_qualified_component_text(
+    const QualifiedName & qualified,
+    size_t qualifier_index,
+    TemplateIdSyntax & out)
+{
+  if(qualifier_index >= qualified.qualifiers.size() ||
+     !template_id_syntax_from_component_text(qualified.qualifiers[qualifier_index],
+                                             out)) {
+    return false;
+  }
+  return true;
+}
+
+bool qualified_component_has_template_id(const string & text)
+{
+  TemplateIdSyntax syntax;
+  return template_id_syntax_from_component_text(text, syntax);
+}
+
+bool qualified_name_has_template_id_component(const QualifiedName & qualified)
+{
+  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
+    if(qualified_component_has_template_id(qualified.qualifiers[i])) {
+      return true;
+    }
+  }
+  return qualified_component_has_template_id(qualified.name);
+}
+
+ClassTemplateDecl * lookup_direct_or_inline_class_template(Scope & scope,
+                                                           const string & name)
+{
+  if(ClassTemplateDecl * direct =
+         semantic_lookup::lookup_direct_class_template(scope, name)) {
+    return direct;
+  }
+  for(size_t i = 0; i < scope.namespace_children.size(); ++i) {
+    Scope * child = scope.namespace_children[i].get();
+    if(!child || (!child->inline_namespace && child->name != "<unnamed>")) {
+      continue;
+    }
+    if(ClassTemplateDecl * nested =
+           lookup_direct_or_inline_class_template(*child, name)) {
+      return nested;
+    }
+  }
+  return nullptr;
+}
+
+AliasTemplateDecl * lookup_direct_or_inline_alias_template(Scope & scope,
+                                                           const string & name)
+{
+  if(AliasTemplateDecl * direct =
+         semantic_lookup::lookup_direct_alias_template(scope, name)) {
+    return direct;
+  }
+  for(size_t i = 0; i < scope.namespace_children.size(); ++i) {
+    Scope * child = scope.namespace_children[i].get();
+    if(!child || (!child->inline_namespace && child->name != "<unnamed>")) {
+      continue;
+    }
+    if(AliasTemplateDecl * nested =
+           lookup_direct_or_inline_alias_template(*child, name)) {
+      return nested;
+    }
+  }
+  return nullptr;
+}
+
+bool resolve_template_id_syntax_type_in_current_scope(
+    template_api::TemplateServices & services,
+    Scope & current_scope,
+    Scope & argument_scope,
+    const TemplateIdSyntax & syntax,
+    bool reference_class_templates_only,
+    const string & source_location,
+    TypePtr & out,
+    template_api::ClassTemplateSourceUseMode source_use_mode)
+{
+  out.reset();
+  if(syntax.name.name.empty() ||
+     syntax.name.rooted ||
+     !syntax.name.qualifiers.empty()) {
+    return false;
+  }
+
+  const vector<string> arg_texts = template_id_syntax_argument_texts(syntax);
+  if(AliasTemplateDecl * alias_template =
+         lookup_direct_or_inline_alias_template(current_scope,
+                                                syntax.name.name)) {
+    if(!services.semantic_context) {
+      return false;
+    }
+    out = services.semantic_context->instantiate_alias_template_with_syntax(
+        *alias_template,
+        argument_scope,
+        arg_texts,
+        &syntax.argument_syntaxes,
+        reference_class_templates_only);
+    resolve_instantiated_dependent_type_if_needed(
+        services,
+        template_api::make_template_environment(argument_scope),
+        out);
+    return out != nullptr;
+  }
+
+  if(ClassTemplateDecl * class_template =
+         lookup_direct_or_inline_class_template(current_scope,
+                                                syntax.name.name)) {
+    template_api::TemplateTypeLookupRequest request;
+    request.scope = &current_scope;
+    request.allow_class_templates = reference_class_templates_only;
+    request.name = syntax.name;
+    request.source_use_mode = source_use_mode;
+    request.source_location =
+        template_api::normalize_template_witness_source_location(source_location);
+    return try_resolve_class_template_id_locally(
+               services,
+               template_api::make_template_environment(current_scope),
+               request,
+               template_id_syntax_lookup_text(syntax),
+               class_template,
+               arg_texts,
+               &syntax.argument_syntaxes,
+               template_api::make_template_environment(argument_scope),
+               out) &&
+           out;
+  }
+
+  return false;
+}
+
 bool has_qualifier_template_id_syntax_payload(const CppAstNode & node)
 {
   for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
@@ -3323,11 +3489,6 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
       cppast_qualified_name_syntax(node);
   const bool has_lone_template_id =
       lone_template_id && template_id_syntax_has_payload(*lone_template_id);
-  if(!has_qualifier_template_id_syntax_payload(node) &&
-     !has_qualifier_type_syntax(node) &&
-     !has_lone_template_id) {
-    return StructuredTypeLookupResult::NotApplicable;
-  }
   const string normalized_lookup_name = normalize_type_lookup_name(lookup_name);
   const auto template_id_source_location =
       [&](const TemplateIdSyntax & syntax) -> string
@@ -3357,6 +3518,12 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     return StructuredTypeLookupResult::NotApplicable;
   }
   if(qualified.qualifiers.empty()) {
+    return StructuredTypeLookupResult::NotApplicable;
+  }
+  if(!has_qualifier_template_id_syntax_payload(node) &&
+     !has_qualifier_type_syntax(node) &&
+     !has_lone_template_id &&
+     !qualified_name_has_template_id_component(qualified)) {
     return StructuredTypeLookupResult::NotApplicable;
   }
 
@@ -3401,6 +3568,13 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     }
     TemplateIdSyntax local_qualifier_template_id;
     const TemplateIdSyntax * lookup_qualifier_template_id = qualifier_template_id;
+    if(!lookup_qualifier_template_id &&
+       template_id_syntax_from_qualified_component_text(
+           qualified,
+           i,
+           local_qualifier_template_id)) {
+      lookup_qualifier_template_id = &local_qualifier_template_id;
+    }
     if(qualifier_template_id) {
       local_qualifier_template_id =
           local_template_id_for_current_scope(*qualifier_template_id);
@@ -3485,7 +3659,7 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
                      unqualified.name.name).class_template) {
             template_api::TemplateTypeLookupRequest request;
             request.scope = current;
-            request.allow_class_templates = reference_class_templates_only;
+            request.allow_class_templates = true;
             request.name = unqualified.name;
             request.source_location =
                 template_api::normalize_template_witness_source_location(
@@ -3503,6 +3677,19 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
           }
         }
       }
+    }
+    if(!qualifier_type && lookup_qualifier_template_id) {
+      const string qualifier_use_location =
+          template_id_source_location(*source_qualifier_template_id);
+      resolve_template_id_syntax_type_in_current_scope(
+          services,
+          *current,
+          scope,
+          *lookup_qualifier_template_id,
+          true,
+          qualifier_use_location,
+          qualifier_type,
+          template_api::ClassTemplateSourceUseMode::EmitClassUse);
     }
     if(!qualifier_type && lookup_qualifier_template_id) {
       const string qualifier_use_location =
@@ -3589,7 +3776,13 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     current = member_scope;
   }
 
+  TemplateIdSyntax local_final_template_id;
   const TemplateIdSyntax * final_template_id = cppast_template_id_syntax(node);
+  if(!final_template_id &&
+     template_id_syntax_from_component_text(qualified.name,
+                                            local_final_template_id)) {
+    final_template_id = &local_final_template_id;
+  }
   if(final_template_id) {
     TemplateIdSyntax unqualified = *final_template_id;
     unqualified.name.rooted = false;
@@ -3641,6 +3834,18 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
           return StructuredTypeLookupResult::Resolved;
         }
       }
+    }
+    if(resolve_template_id_syntax_type_in_current_scope(
+           services,
+           *current,
+           scope,
+           unqualified,
+           reference_class_templates_only,
+           template_id_source_location(*final_template_id),
+           out,
+           template_api::ClassTemplateSourceUseMode::EmitClassUse) &&
+       out) {
+      return StructuredTypeLookupResult::Resolved;
     }
     if(resolve_template_id_syntax_type(
            services,
@@ -11205,11 +11410,10 @@ void bind_enclosing_alias_owner_template_arguments(
   }
 
   ClassInfo & owner = *decl.declaring_scope->class_info;
-  if(owner.source_template->class_node &&
-     owner.template_output_node &&
-     owner.template_output_node != owner.source_template->class_node) {
-    return;
-  }
+  const bool primary_owner =
+      !owner.source_template->class_node ||
+      !owner.template_output_node ||
+      owner.template_output_node == owner.source_template->class_node;
 
   set<string> alias_parameter_names;
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
@@ -11253,11 +11457,13 @@ void bind_enclosing_alias_owner_template_arguments(
     }
   }
 
-  template_instantiation::bind_template_arguments_into_scope(
-      services,
-      inst_scope,
-      owner.source_template->parameters,
-      owner.instantiation_arguments);
+  if(primary_owner) {
+    template_instantiation::bind_template_arguments_into_scope(
+        services,
+        inst_scope,
+        owner.source_template->parameters,
+        owner.instantiation_arguments);
+  }
 }
 
 bool try_resolve_alias_template_id_locally(
@@ -11809,19 +12015,29 @@ bool try_resolve_alias_template_id_locally(
 
   std::string expanded_text;
   template_specialization::AliasSubstitutionFailure alias_substitution_failure;
-  const bool expanded_alias =
-      template_specialization::expand_alias_template_pattern_id(
-          services,
-          scope,
-          template_api::qualified_name_text(request.name),
-          template_id,
-          arg_texts,
-          expanded_text,
-          arg_syntaxes,
-          effective_argument_scope,
-          &alias_substitution_failure);
+  bool expanded_alias_attempted = false;
+  bool expanded_alias = false;
+  const auto ensure_expanded_alias =
+      [&]() -> bool
+  {
+    if(!expanded_alias_attempted) {
+      expanded_alias_attempted = true;
+      expanded_alias =
+          template_specialization::expand_alias_template_pattern_id(
+              services,
+              scope,
+              template_api::qualified_name_text(request.name),
+              template_id,
+              arg_texts,
+              expanded_text,
+              arg_syntaxes,
+              effective_argument_scope,
+              &alias_substitution_failure);
+    }
+    return expanded_alias;
+  };
   const auto resolve_structural_alias_type =
-      [&](TypePtr & structural_alias) -> bool
+      [&](TypePtr & structural_alias, bool allow_dependent_result) -> bool
   {
     template_specialization::AliasSubstitutionFailure structural_substitution_failure;
     return template_specialization::expand_alias_template_pattern_type(
@@ -11832,56 +12048,124 @@ bool try_resolve_alias_template_id_locally(
         structural_alias,
         arg_syntaxes,
         effective_argument_scope,
-        false,
+        allow_dependent_result,
         &structural_substitution_failure) &&
            structural_alias &&
-           !service_type_depends_on_template_parameter(services, structural_alias);
+           (allow_dependent_result ||
+            !service_type_depends_on_template_parameter(services,
+                                                        structural_alias));
   };
+  const bool preserve_witness_source_capture =
+      witness::source_capture_enabled(services.witness_context);
 
   if(!dependent_arguments) {
-    if(alias_substitution_failure.active()) {
-      throw_substitution_failure(
-          string("alias template substitution failed [alias ") +
-              alias_template->name + "]",
-          string(),
-          "template-resolution");
-    }
-    TypePtr ast_alias;
-    if(resolve_alias_type_id_ast(ast_alias, false)) {
-      out = ast_alias;
+    if(preserve_witness_source_capture) {
+      TypePtr ast_alias;
+      if(resolve_alias_type_id_ast(ast_alias, false)) {
+        out = ast_alias;
+      } else {
+        TypePtr structural_alias;
+        if(resolve_structural_alias_type(structural_alias, false)) {
+          out = structural_alias;
+        } else {
+          if(alias_template->type_id && alias_template->declaring_scope) {
+            return false;
+          }
+          if(!ensure_expanded_alias()) {
+            if(alias_substitution_failure.active()) {
+              throw_substitution_failure(
+                  string("alias template substitution failed [alias ") +
+                      alias_template->name + "]",
+                  string(),
+                  "template-resolution");
+            }
+            return false;
+          }
+          return false;
+        }
+      }
     } else {
       TypePtr structural_alias;
-      if(resolve_structural_alias_type(structural_alias)) {
+      if(resolve_structural_alias_type(structural_alias, false)) {
         out = structural_alias;
       } else {
-        if(alias_template->type_id && alias_template->declaring_scope) {
+        TypePtr ast_alias;
+        if(resolve_alias_type_id_ast(ast_alias, false)) {
+          out = ast_alias;
+        } else {
+          if(alias_template->type_id && alias_template->declaring_scope) {
+            return false;
+          }
+          if(!ensure_expanded_alias()) {
+            if(alias_substitution_failure.active()) {
+              throw_substitution_failure(
+                  string("alias template substitution failed [alias ") +
+                      alias_template->name + "]",
+                  string(),
+                  "template-resolution");
+            }
+            return false;
+          }
           return false;
         }
-        if(!expanded_alias) {
-          return false;
-        }
-        return false;
       }
     }
   } else {
     std::string candidate_text = expanded_text;
-    TypePtr ast_alias;
+    if(candidate_text.empty()) {
+      ensure_expanded_alias();
+      candidate_text = expanded_text;
+    }
     if(candidate_text.empty() &&
        has_stale_concrete_dependent_alias_argument()) {
       return false;
     }
+    const bool non_propagating_dependent_arguments_validated =
+        validate_non_propagating_dependent_alias_arguments();
     if(candidate_text.empty() &&
-       !validate_non_propagating_dependent_alias_arguments()) {
-      return false;
-    }
-    if(dependent_member_alias_needs_deferred_surface()) {
+       !non_propagating_dependent_arguments_validated) {
       out = dependent_alias_specialization(resolved_arguments);
-    } else if(resolve_alias_type_id_ast(ast_alias, true) && ast_alias) {
-      out = ast_alias;
-    } else if(alias_template->type_id && alias_template->declaring_scope) {
+    } else if(!non_propagating_dependent_arguments_validated) {
       out = dependent_alias_specialization(resolved_arguments);
+    } else if(dependent_member_alias_needs_deferred_surface()) {
+      out = dependent_alias_specialization(resolved_arguments);
+    } else if(preserve_witness_source_capture) {
+      TypePtr ast_alias;
+      if(resolve_alias_type_id_ast(ast_alias, true) && ast_alias) {
+        out = ast_alias;
+      } else if(!candidate_text.empty() &&
+                alias_template->type_id &&
+                alias_template->declaring_scope) {
+        out = dependent_alias_specialization(resolved_arguments);
+      } else {
+        TypePtr structural_alias;
+        if(resolve_structural_alias_type(structural_alias, true)) {
+          out = structural_alias;
+        } else {
+          out = dependent_alias_specialization(resolved_arguments);
+        }
+      }
+    } else if(!candidate_text.empty() &&
+              alias_template->type_id &&
+              alias_template->declaring_scope) {
+      TypePtr structural_alias;
+      if(resolve_structural_alias_type(structural_alias, true)) {
+        out = structural_alias;
+      } else {
+        TypePtr ast_alias;
+        if(resolve_alias_type_id_ast(ast_alias, true) && ast_alias) {
+          out = ast_alias;
+        } else {
+          out = dependent_alias_specialization(resolved_arguments);
+        }
+      }
     } else {
-      out = dependent_alias_specialization(resolved_arguments);
+      TypePtr structural_alias;
+      if(resolve_structural_alias_type(structural_alias, true)) {
+        out = structural_alias;
+      } else {
+        out = dependent_alias_specialization(resolved_arguments);
+      }
     }
     if(service_type_depends_on_template_parameter(services, out)) {
       out = dependent_alias_specialization(resolved_arguments);
@@ -14335,6 +14619,23 @@ bool expand_pack_expressions_in_decltype_operand(Scope & scope,
                                                  CppAstNode & out,
                                                  bool & changed);
 
+bool collect_type_pack_references_in_node(
+    Scope & scope,
+    const CppAstNode & node,
+    vector<pair<string, const vector<TypePtr> *> > & packs);
+
+bool collect_value_pack_references_in_node(
+    Scope & scope,
+    const CppAstNode & node,
+    vector<pair<string, const vector<ValueBinding> *> > & packs);
+
+bool expand_bound_pack_expression_children(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const vector<CppAstNode> & source_children,
+    vector<CppAstNode> & expanded_children,
+    bool & changed);
+
 bool expand_bound_packs_in_template_id_syntax(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -14487,9 +14788,23 @@ bool expand_bound_packs_in_expression_node(
       changed = true;
     }
   }
-  for(size_t i = 0; i < node.children.size(); ++i) {
-    if(expand_bound_packs_in_expression_node(services, scope, node.children[i])) {
+
+  vector<CppAstNode> expanded_children;
+  bool child_list_changed = false;
+  if(expand_bound_pack_expression_children(services,
+                                           scope,
+                                           node.children,
+                                           expanded_children,
+                                           child_list_changed)) {
+    if(child_list_changed) {
+      node.children.swap(expanded_children);
       changed = true;
+    }
+  } else {
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(expand_bound_packs_in_expression_node(services, scope, node.children[i])) {
+        changed = true;
+      }
     }
   }
   CppAstNode expanded;
@@ -14934,6 +15249,89 @@ bool substitute_bound_replacements_in_argument_syntax(Scope & scope,
     syntax.text = template_id_syntax_lookup_text(*syntax.template_id);
   }
   return changed;
+}
+
+bool expand_bound_pack_expression_children(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const vector<CppAstNode> & source_children,
+    vector<CppAstNode> & expanded_children,
+    bool & changed)
+{
+  expanded_children.clear();
+  expanded_children.reserve(source_children.size());
+  for(size_t i = 0; i < source_children.size(); ++i) {
+    const CppAstNode & child = source_children[i];
+    if(child.kind != CppAstKind::pack_expansion_expression ||
+       child.children.size() != 1) {
+      CppAstNode expanded_child = child;
+      if(expand_bound_packs_in_expression_node(services, scope, expanded_child)) {
+        changed = true;
+      }
+      expanded_children.push_back(expanded_child);
+      continue;
+    }
+
+    const CppAstNode & pattern = child.children[0];
+    vector<pair<string, const vector<TypePtr> *> > packs;
+    vector<pair<string, const vector<ValueBinding> *> > value_packs;
+    collect_type_pack_references_in_node(scope, pattern, packs);
+    collect_value_pack_references_in_node(scope, pattern, value_packs);
+    if(packs.empty() && value_packs.empty()) {
+      CppAstNode unwrapped = pattern;
+      if(expand_bound_packs_in_expression_node(services, scope, unwrapped)) {
+        changed = true;
+      }
+      expanded_children.push_back(unwrapped);
+      changed = true;
+      continue;
+    }
+
+    const size_t pack_size =
+        !packs.empty() ? packs[0].second->size() : value_packs[0].second->size();
+    for(size_t j = 1; j < packs.size(); ++j) {
+      if(packs[j].second->size() != pack_size) {
+        return false;
+      }
+    }
+    for(size_t j = 0; j < value_packs.size(); ++j) {
+      if(value_packs[j].second->size() != pack_size) {
+        return false;
+      }
+    }
+
+    for(size_t pack_index = 0; pack_index < pack_size; ++pack_index) {
+      map<string, TypePtr> replacements;
+      for(size_t j = 0; j < packs.size(); ++j) {
+        replacements[packs[j].first] = (*(packs[j].second))[pack_index];
+      }
+      map<string, ValueBinding> value_replacements;
+      for(size_t j = 0; j < value_packs.size(); ++j) {
+        value_replacements[value_packs[j].first] =
+            (*(value_packs[j].second))[pack_index];
+      }
+
+      CppAstNode substituted;
+      if(!substitute_type_pack_expression_node(scope,
+                                               pattern,
+                                               replacements,
+                                               substituted)) {
+        return false;
+      }
+      if(!value_replacements.empty() &&
+         !substitute_value_pack_expression_node(substituted,
+                                                value_replacements,
+                                                substituted)) {
+        return false;
+      }
+      if(expand_bound_packs_in_expression_node(services, scope, substituted)) {
+        changed = true;
+      }
+      expanded_children.push_back(substituted);
+    }
+    changed = true;
+  }
+  return true;
 }
 
 bool expand_pack_expressions_in_decltype_operand(Scope & scope,

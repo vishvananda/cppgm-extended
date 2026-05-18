@@ -105,6 +105,16 @@ const CppAstNode * find_child_kind(const CppAstNode & node, CppAstKind kind)
   return nullptr;
 }
 
+CppAstNode * find_child_kind_mutable(CppAstNode & node, CppAstKind kind)
+{
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(node.children[i].kind == kind) {
+      return &node.children[i];
+    }
+  }
+  return nullptr;
+}
+
 const CppAstNode * unwrap_initializer_payload(const CppAstNode & node)
 {
   if(node.kind == CppAstKind::initializer && node.children.size() == 1) {
@@ -550,6 +560,64 @@ bool evaluate_default_initialized_type(SemanticContext & ctx,
                                        const TypePtr & type,
                                        constant_eval::ConstexprValue & out);
 
+std::string constexpr_parameter_unique_name(
+    const FunctionBinding & binding,
+    std::size_t index,
+    std::map<std::string, std::size_t> & seen)
+{
+  const std::string binding_name = function_parameter_binding_name(binding, index);
+  const std::string alias_name = function_parameter_alias_name(binding, index);
+  const std::string base_name = !alias_name.empty() ? alias_name : binding_name;
+  if(base_name.empty()) {
+    return binding_name;
+  }
+  std::size_t & count = seen[base_name];
+  ++count;
+  if(count == 1) {
+    return binding_name.empty() ? base_name : binding_name;
+  }
+  return base_name + "__pack" + std::to_string(count);
+}
+
+std::string trailing_function_parameter_pack_name(const FunctionBinding & binding,
+                                                  std::size_t & pack_start)
+{
+  pack_start = 0;
+  if(!binding.source_template ||
+     !binding.source_template->has_trailing_function_parameter_pack ||
+     binding.source_template->params_pattern.empty()) {
+    return std::string();
+  }
+
+  const std::size_t explicit_offset =
+      function_binding_explicit_parameter_offset(binding);
+  const std::size_t pattern_index =
+      binding.source_template->params_pattern.size() - 1;
+  pack_start = explicit_offset + pattern_index;
+  if(pack_start > binding.params.size()) {
+    return std::string();
+  }
+
+  std::string pack_name =
+      function_template_parameter_alias_name(*binding.source_template, pattern_index);
+  if(pack_name.empty()) {
+    pack_name = binding.source_template->params_pattern[pattern_index].first;
+  }
+  return pack_name;
+}
+
+std::vector<std::pair<std::string, TypePtr> >
+constexpr_function_parameters_impl(FunctionBinding & binding)
+{
+  ensure_function_parameter_aliases(binding);
+  std::vector<std::pair<std::string, TypePtr> > params = binding.params;
+  std::map<std::string, std::size_t> seen;
+  for(std::size_t i = 0; i < params.size(); ++i) {
+    params[i].first = constexpr_parameter_unique_name(binding, i, seen);
+  }
+  return params;
+}
+
 Scope make_constexpr_call_scope_impl(Scope & parent,
                                      FunctionBinding * binding,
                                      bool bind_parameters)
@@ -558,21 +626,32 @@ Scope make_constexpr_call_scope_impl(Scope & parent,
   scope.class_info = binding && binding->owner_class ? binding->owner_class : parent.class_info;
   scope.function = binding ? binding : parent.function;
   if(binding && bind_parameters) {
-    ensure_function_parameter_aliases(*binding);
-    for(size_t i = 0; i < binding->params.size(); ++i) {
-      const std::string binding_name = function_parameter_binding_name(*binding, i);
+    const std::vector<std::pair<std::string, TypePtr> > params =
+        constexpr_function_parameters_impl(*binding);
+    std::size_t pack_start = 0;
+    const std::string pack_name =
+        trailing_function_parameter_pack_name(*binding, pack_start);
+    for(size_t i = 0; i < params.size(); ++i) {
+      const std::string binding_name = params[i].first;
       if(binding_name.empty()) {
         continue;
       }
       const std::string alias_name = function_parameter_alias_name(*binding, i);
-      const std::string output_name = !alias_name.empty() ? alias_name : binding_name;
       ValueBinding parameter(ValueBinding::VK_PARAMETER,
-                             output_name,
-                             binding->params[i].second);
+                             binding_name,
+                             params[i].second);
       scope.values[binding_name] = parameter;
-      if(!alias_name.empty() && alias_name != binding_name) {
+      if(!alias_name.empty() &&
+         alias_name != binding_name &&
+         scope.values.find(alias_name) == scope.values.end()) {
         scope.values[alias_name] = parameter;
       }
+      if(!pack_name.empty() && i >= pack_start) {
+        scope.named_value_packs[pack_name].push_back(parameter);
+      }
+    }
+    if(!pack_name.empty()) {
+      scope.named_pack_sizes[pack_name] = scope.named_value_packs[pack_name].size();
     }
   }
   return scope;
@@ -1871,6 +1950,40 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
                                          const CppAstNode & expr,
                                          constant_eval::ConstexprValue & value)
 {
+  if(expr.kind == CppAstKind::call_expression) {
+    CppAstNode expanded_call = expr;
+    CppAstNode * argument_list =
+        find_child_kind_mutable(expanded_call, CppAstKind::argument_list);
+    if(!argument_list) {
+      argument_list =
+          find_child_kind_mutable(expanded_call, CppAstKind::paren_argument_list);
+    }
+    bool changed = false;
+    if(argument_list) {
+      std::vector<CppAstNode> expanded_args;
+      expanded_args.reserve(argument_list->children.size());
+      for(size_t i = 0; i < argument_list->children.size(); ++i) {
+        const CppAstNode & argument = argument_list->children[i];
+        if(argument.kind != CppAstKind::pack_expansion_expression) {
+          expanded_args.push_back(argument);
+          continue;
+        }
+        std::vector<CppAstNode> expanded_nodes;
+        if(!ctx.expand_pack_argument_node(scope, argument, expanded_nodes)) {
+          return false;
+        }
+        expanded_args.insert(expanded_args.end(),
+                             expanded_nodes.begin(),
+                             expanded_nodes.end());
+        changed = true;
+      }
+      if(changed) {
+        argument_list->children.swap(expanded_args);
+        return evaluator.eval_expr(expanded_call, value);
+      }
+    }
+  }
+
   if(expr.kind == CppAstKind::fold_expression) {
     CppAstNode reduced;
     if(reduce_fold_expression_node(ctx, scope, expr, reduced)) {
@@ -1934,6 +2047,12 @@ Scope make_constexpr_call_scope(Scope & parent,
                                 bool bind_parameters)
 {
   return make_constexpr_call_scope_impl(parent, binding, bind_parameters);
+}
+
+std::vector<std::pair<std::string, TypePtr> >
+constexpr_function_parameters(FunctionBinding & binding)
+{
+  return constexpr_function_parameters_impl(binding);
 }
 
 constant_eval::ConstexprValue make_constexpr_string_literal_value(

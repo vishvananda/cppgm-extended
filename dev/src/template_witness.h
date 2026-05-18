@@ -2136,14 +2136,14 @@ inline std::string normalize_template_witness_source_location(
   while(!value.empty() &&
         (value[0] == ' ' || value[0] == '\t' || value[0] == '\n' ||
          value[0] == '\r')) {
-    value.erase(value.begin());
+    value.erase(0, 1);
   }
   while(value.compare(0, 3, "at ") == 0) {
     value = value.substr(3);
     while(!value.empty() &&
           (value[0] == ' ' || value[0] == '\t' || value[0] == '\n' ||
            value[0] == '\r')) {
-      value.erase(value.begin());
+      value.erase(0, 1);
     }
   }
   return value;
