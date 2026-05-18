@@ -501,6 +501,7 @@ void bind_class_template(Scope & scope,
                          ClassTemplateDecl * decl)
 {
   scope.class_templates[name] = decl;
+  scope.alias_templates.erase(name);
   scope.template_bound_template_names.insert(name);
   bump_binding_fingerprint_epoch(scope);
 }
@@ -510,6 +511,7 @@ void bind_alias_template(Scope & scope,
                          AliasTemplateDecl * decl)
 {
   scope.alias_templates[name] = decl;
+  scope.class_templates.erase(name);
   scope.template_bound_template_names.insert(name);
   bump_binding_fingerprint_epoch(scope);
 }
