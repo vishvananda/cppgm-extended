@@ -1302,6 +1302,9 @@ bool analyze_direct_class_materialization_initializer(SemanticContext & ctx,
   if(!type_equals(strip_top_level_cv(out.type), strip_top_level_cv(target_type))) {
     return false;
   }
+  if(out.category != VC_PRVALUE) {
+    return false;
+  }
   if(is_empty_same_type_function_style_constructor_call(ctx, scope, target_type, *payload)) {
     return false;
   }

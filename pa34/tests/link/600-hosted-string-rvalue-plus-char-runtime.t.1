@@ -1,0 +1,9 @@
+#include <string>
+
+int main()
+{
+  std::string delimiter = "";
+  char quote = '"';
+  std::string terminator = std::string(")") + delimiter + quote;
+  return terminator == ")\"" ? 0 : 1;
+}

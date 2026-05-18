@@ -1720,7 +1720,12 @@ void collect_required_return_statement_support(SemanticContext & ctx,
   FunctionBinding * ctor = nullptr;
   if(is_indirect_class_reference_type_for_output(expr.semantic_type)) {
     info = ctx.complete_class_type(return_type);
-    ctor = info ? find_or_ensure_copy_constructor_binding(ctx, *info) : nullptr;
+    if(info && expr.value_category == CVC_XVALUE) {
+      ctor = find_or_ensure_move_constructor_binding(ctx, *info);
+    }
+    if(!ctor) {
+      ctor = info ? find_or_ensure_copy_constructor_binding(ctx, *info) : nullptr;
+    }
   } else if(is_complete_class_value_type_for_output(expr.semantic_type)) {
     info = ctx.complete_class_type(expr.semantic_type);
     if(should_implicitly_move_return_object_for_output(expr)) {

@@ -17027,6 +17027,7 @@ private:
       const string callee_symbol =
           node.semantic_type ? lookup_runtime_reference_function_symbol(node) : string();
       if(!callee_symbol.empty()) {
+        note_selected_callee_symbol(node, callee_symbol);
         note_referenced_function_signature(callee_symbol, node.semantic_type);
         note_runtime_function_symbol_identity(callee_symbol,
                                               callsem_symbol(node),
@@ -17048,6 +17049,49 @@ private:
     for(size_t i = 0; i < children.size(); ++i) {
       collect_runtime_function_references(*children[i], current_function, child_top_level);
     }
+  }
+
+  void note_selected_callee_symbol(const CallSemNode & node,
+                                   const string & symbol)
+  {
+    if(symbol.empty() || node.text.empty() || !node.semantic_type) {
+      return;
+    }
+
+    const string name =
+        callsem_resolved_name(node).empty() ? node.text.str() :
+            callsem_resolved_name(node);
+    if(!is_constructor_function_name(name)) {
+      return;
+    }
+    const string key = function_key(name, node.semantic_type);
+    if(function_symbols_.find(key) == function_symbols_.end()) {
+      function_symbols_[key] = symbol;
+      invalidate_function_symbol_lookup_index();
+    }
+    if(function_symbol_nodes_.find(symbol) == function_symbol_nodes_.end()) {
+      function_symbol_nodes_[symbol] = &node;
+    }
+
+    const string node_type_key = stable_function_type_key(node.semantic_type);
+    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
+      if(function_symbol_entries_[i].name != name) {
+        continue;
+      }
+      if(!type_equals(function_symbol_entries_[i].type, node.semantic_type) &&
+         stable_function_type_key(function_symbol_entries_[i].type) != node_type_key) {
+        continue;
+      }
+      return;
+    }
+
+    FunctionSymbolEntry entry;
+    entry.name = name;
+    entry.type = node.semantic_type;
+    entry.symbol = symbol;
+    entry.has_definition = false;
+    function_symbol_entries_.push_back(entry);
+    invalidate_function_symbol_lookup_index();
   }
 
   void collect_reachable_function_symbols()
