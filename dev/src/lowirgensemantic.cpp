@@ -5982,10 +5982,6 @@ private:
       return;
     }
 
-    if(emit_discarded_indirect_prvalue(node)) {
-      return;
-    }
-
     TypePtr discard_type = node.semantic_type;
     if(is_void_type(discard_type)) {
       if(callsem_conversion_source_type(node)) {
@@ -6002,6 +5998,21 @@ private:
       emit_local_array_initializer(discard_type, node, temp_ptr);
       return;
     }
+
+    if(node.kind == CallSemKind::braced_init_list) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        emit_discarded_expression(node.children[i]);
+        if(!current_block_) {
+          return;
+        }
+      }
+      return;
+    }
+
+    if(emit_discarded_indirect_prvalue(node)) {
+      return;
+    }
+
     const bool can_discard_by_address =
         node.kind == CallSemKind::id_expression ||
         node.kind == CallSemKind::variable ||

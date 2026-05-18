@@ -5777,6 +5777,92 @@ ExprInfo finalize_functional_cast_result(SemanticContext & ctx,
   return result;
 }
 
+vector<const CppAstNode *> expand_functional_braced_init_elements(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & node,
+    vector<unique_ptr<CppAstNode> > & storage)
+{
+  vector<const CppAstNode *> out;
+  if(node.kind != CppAstKind::braced_init_list) {
+    return out;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind != CppAstKind::pack_expansion_expression) {
+      out.push_back(&child);
+      continue;
+    }
+    vector<CppAstNode> expanded_nodes;
+    if(!ctx.expand_pack_argument_node(scope, child, expanded_nodes)) {
+      throw logic_error("unsupported array functional-cast pack-expansion element");
+    }
+    for(size_t j = 0; j < expanded_nodes.size(); ++j) {
+      storage.emplace_back(new CppAstNode(expanded_nodes[j]));
+      out.push_back(storage.back().get());
+    }
+  }
+  return out;
+}
+
+bool node_is_designated_initializer(const CppAstNode & node)
+{
+  return node.kind == CppAstKind::designated_initializer;
+}
+
+ExprInfo analyze_array_functional_braced_init(SemanticContext & ctx,
+                                              Scope & scope,
+                                              const TypePtr & callee_type,
+                                              const CppAstNode & direct_braced_init)
+{
+  TypePtr array_type = strip_top_level_cv(remove_reference_type(callee_type));
+  if(!array_type || array_type->kind != Type::TK_ARRAY || !array_type->has_bound) {
+    throw logic_error("unsupported array functional cast target");
+  }
+
+  vector<unique_ptr<CppAstNode> > expanded_storage;
+  vector<const CppAstNode *> elements =
+      expand_functional_braced_init_elements(ctx,
+                                             scope,
+                                             direct_braced_init,
+                                             expanded_storage);
+  if(elements.size() > array_type->bound) {
+    throw logic_error("too many array functional-cast initializer elements");
+  }
+
+  ExprInfo result;
+  result.type = callee_type;
+  result.category = VC_PRVALUE;
+  result.node = make_dump_node(CallSemKind::braced_init_list);
+  ctx.set_expr_info_metadata(result, result.type, result.category);
+
+  for(size_t i = 0; i < array_type->bound; ++i) {
+    ExprInfo element;
+    if(i < elements.size()) {
+      if(node_is_designated_initializer(*elements[i])) {
+        throw logic_error("designated array functional-cast initializer unsupported");
+      }
+      element = ctx.analyze_expression_for_target(scope, *elements[i], array_type->inner);
+      if(!semantic_conversion::can_copy_initialize(ctx, array_type->inner, element)) {
+        throw logic_error("invalid array functional-cast initializer element");
+      }
+    } else {
+      TypePtr element_base = strip_top_level_cv(remove_reference_type(array_type->inner));
+      if(element_base &&
+         (element_base->kind == Type::TK_ARRAY ||
+          ctx.complete_class_type(element_base))) {
+        CppAstNode empty;
+        empty.kind = CppAstKind::braced_init_list;
+        element = ctx.analyze_expression_for_target(scope, empty, array_type->inner);
+      } else {
+        element = ctx.make_value_initialized_expr(array_type->inner);
+      }
+    }
+    result.node.children.push_back(std::move(element.node));
+  }
+  return result;
+}
+
 ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
                                       Scope & scope,
                                       const TypePtr & callee_type,
@@ -5858,6 +5944,15 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
     }
     if(direct_braced_init->children.empty()) {
       return ctx.make_value_initialized_expr(callee_type);
+    }
+    TypePtr target_array = strip_top_level_cv(remove_reference_type(callee_type));
+    if(target_array &&
+       target_array->kind == Type::TK_ARRAY &&
+       target_array->has_bound) {
+      return analyze_array_functional_braced_init(ctx,
+                                                  scope,
+                                                  callee_type,
+                                                  *direct_braced_init);
     }
     if(direct_braced_init->children.size() != 1) {
       throw logic_error("non-class braced-init-list requires one element");
