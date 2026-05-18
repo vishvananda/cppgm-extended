@@ -1350,7 +1350,7 @@ void analyze_for_init_statement(SemanticContext & ctx,
     const ScopedStatementTemplateUseLocation use_location_guard(
         template_api::normalize_template_witness_source_location(
             ctx.source_location_for_node(*type_id)));
-    if(!ctx.parse_type_id(scope, prepared_type_id, alias)) {
+    if(!ctx.parse_type_id(scope, prepared_type_id, alias, true)) {
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     alias = resolve_local_alias_type(ctx, scope, alias);
@@ -1758,7 +1758,7 @@ void analyze_statement_impl(SemanticContext & ctx,
     const ScopedStatementTemplateUseLocation use_location_guard(
         template_api::normalize_template_witness_source_location(
             ctx.source_location_for_node(*type_id)));
-    if(!ctx.parse_type_id(scope, prepared_type_id, alias)) {
+    if(!ctx.parse_type_id(scope, prepared_type_id, alias, true)) {
       throw logic_error(string("unsupported alias-declaration: ") + node_text(*type_id));
     }
     alias = resolve_local_alias_type(ctx, scope, alias);

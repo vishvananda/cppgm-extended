@@ -1,0 +1,13 @@
+function @print_log_value_char_const_____operator__(%this : ptr, %__param1 : ptr) -> void [binding=strong, object=_ZN15print_log_valueIPKcEclES1_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

@@ -5844,6 +5844,18 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
   }
 
   if(direct_braced_init) {
+    ExprInfo array_result;
+    if(target_base && target_base->kind == Type::TK_ARRAY) {
+      if(semantic_expression::try_analyze_array_braced_init_list_expression(
+             ctx,
+             scope,
+             callee_type,
+             *direct_braced_init,
+             array_result)) {
+        return array_result;
+      }
+      throw logic_error("invalid array braced-init-list");
+    }
     if(direct_braced_init->children.empty()) {
       return ctx.make_value_initialized_expr(callee_type);
     }

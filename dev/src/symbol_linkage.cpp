@@ -6760,6 +6760,22 @@ static bool owner_template_type_argument_for_specifier_seq(
   return false;
 }
 
+static void specifier_seq_cv_qualifiers(const CppAstNode & specifiers,
+                                        bool & cv_const,
+                                        bool & cv_volatile)
+{
+  cv_const = false;
+  cv_volatile = false;
+  for(size_t i = 0; i < specifiers.children.size(); ++i) {
+    const CppAstNode & child = specifiers.children[i];
+    if(child.value == "const") {
+      cv_const = true;
+    } else if(child.value == "volatile") {
+      cv_volatile = true;
+    }
+  }
+}
+
 static bool try_build_actual_owner_template_reference_type_id_ast_ir(
     const CppAstNode & node,
     const TypePtr & actual_type,
@@ -6785,8 +6801,20 @@ static bool try_build_actual_owner_template_reference_type_id_ast_ir(
   if(!simple_reference_declarator_operator(*abstract, reference_operator)) {
     return false;
   }
-  if(reference_operator != OP_LAND) {
-    return false;
+
+  TypePtr owner_argument_type;
+  if(owner_template_type_argument_for_specifier_seq(node.children[0],
+                                                    mangle_ctx,
+                                                    owner_argument_type)) {
+    bool cv_const = false;
+    bool cv_volatile = false;
+    specifier_seq_cv_qualifiers(node.children[0], cv_const, cv_volatile);
+    TypePtr base = apply_cv(owner_argument_type, cv_const, cv_volatile);
+    TypePtr reference_type =
+        reference_operator == OP_AMP ?
+            make_lvalue_reference_raw(base) :
+            make_rvalue_reference_raw(base);
+    return try_build_type_ir(reference_type, mangle_ctx, out);
   }
 
   if(!specifier_seq_names_owner_template_type_parameter(
@@ -15878,10 +15906,22 @@ static bool try_mangle_itanium_function_name_syntax(
          !emit_trailing_function_parameter_pack &&
          actual_param &&
          !type_has_dependent_mangle_state(actual_param)) {
-        mangled_param = try_mangle_type_impl(actual_param,
-                                             candidate,
-                                             &mangle_ctx,
-                                             state);
+        if(parameter_decl_pattern &&
+           ast_node_mentions_direct_template_parameter(*parameter_decl_pattern,
+                                                       &mangle_ctx)) {
+          mangled_param = emit_parameter_declaration_ir_from_ast(
+              *parameter_decl_pattern,
+              actual_param,
+              &mangle_ctx,
+              state,
+              candidate);
+        }
+        if(!mangled_param) {
+          mangled_param = try_mangle_type_impl(actual_param,
+                                               candidate,
+                                               &mangle_ctx,
+                                               state);
+        }
       }
       if(owner_template_only_pattern &&
          actual_param &&

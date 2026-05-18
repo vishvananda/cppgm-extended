@@ -6674,6 +6674,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     );
   };
   resolve_instantiated_params();
+  const bool instantiation_scope_had_template_placeholders =
+      ctx.scope_has_template_placeholders(inst_scope);
   bind_instantiated_function_parameter_values(ctx, inst_scope, *source_decl, params);
   // Some dependent alias/template-pack parameter types only collapse after the
   // instantiated parameter/value pack bindings exist in the function scope.
@@ -6687,7 +6689,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       template_arguments_are_dependent_for_instantiation(ctx, arguments);
   const bool non_dependent_instantiation =
       !dependent_template_arguments &&
-      !ctx.scope_has_template_placeholders(inst_scope);
+      !instantiation_scope_had_template_placeholders;
   std::vector<TypePtr> signature_param_types;
   signature_param_types.reserve(params.size());
   for(std::size_t i = 0; i < params.size(); ++i) {
@@ -6790,7 +6792,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                           parsed_result,
                                                           true) &&
                          parsed_result;
-                });
+        });
         if(parsed_result_type && parsed_result) {
           TypePtr resolved_result;
           if(recover_instantiation_bound_type(ctx,
@@ -7048,6 +7050,8 @@ const ValueBinding * instantiate_variable_template(
       arguments);
   const std::string key = template_argument_key_for_instantiation(ctx, arguments);
   const bool nested_replay_request = variable_initializer_replay_depth > 0;
+  const bool dependent_arguments =
+      template_arguments_are_dependent_for_instantiation(ctx, arguments);
   const auto note_variable_use =
       [&](const template_selection::VariableSpecializationSelection & selection,
           const ValueBinding & binding,
@@ -7235,7 +7239,7 @@ const ValueBinding * instantiate_variable_template(
               witness::VariableUseMergePolicy::AppendIfNew;
       note_variable_use(selection,
                         found->second,
-                        relocate_prior_source_use,
+                        relocate_prior_source_use && !dependent_arguments,
                         merge_policy);
     }
     if(parser_trace::enabled("template.resolve")) {
@@ -7335,8 +7339,6 @@ const ValueBinding * instantiate_variable_template(
     }
   }
 
-  const bool dependent_arguments =
-      template_arguments_are_dependent_for_instantiation(ctx, arguments);
   if(dependent_arguments) {
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;

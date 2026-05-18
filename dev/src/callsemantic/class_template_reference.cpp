@@ -69,6 +69,24 @@ string join_hotspot_arg_texts(const vector<string> & arg_texts)
   return out.str();
 }
 
+bool binding_arg_drops_resolved_array_cv(const string & binding_arg,
+                                         const string & resolved_arg)
+{
+  if(binding_arg.find('[') == string::npos ||
+     resolved_arg.find('[') == string::npos) {
+    return false;
+  }
+  const string binding_key = remove_space_chars(binding_arg);
+  const string resolved_key = remove_space_chars(resolved_arg);
+  if(binding_key == resolved_key) {
+    return false;
+  }
+  return (resolved_key.find("const") != string::npos &&
+          binding_key.find("const") == string::npos) ||
+         (resolved_key.find("volatile") != string::npos &&
+          binding_key.find("volatile") == string::npos);
+}
+
 class ClassTemplateReference
 {
 public:
@@ -1763,8 +1781,81 @@ public:
       const bool nested_argument_recovery =
           template_api::class_template_source_use_recovers_nested_arguments(
               source_use_mode);
-      if(dependent_arguments || nested_argument_recovery) {
+      const bool suppress_nested_arguments =
+          template_api::class_template_source_use_suppresses_nested_arguments(
+              source_use_mode);
+      const auto repair_bindings_from_resolved_instantiation =
+          [&](std::vector<template_api::TemplateWitnessSourceBinding> & bindings,
+              semantic_source_use::SourceTemplateIdOccurrence * occurrence)
+          {
+            if(!resolved_info) {
+              return;
+            }
+            QualifiedName resolved_template_name;
+            vector<string> resolved_name_args;
+            semantic_utils::split_top_level_template_id_text(
+                resolved_info->qualified_name,
+                resolved_template_name,
+                resolved_name_args);
+            if(resolved_name_args.empty()) {
+              semantic_utils::split_top_level_template_id_text(
+                  template_api::class_witness_output_qualified_name(
+                      ctx,
+                      *resolved_info),
+                  resolved_template_name,
+                  resolved_name_args);
+            }
+            if(resolved_name_args.empty() && resolved_info->type) {
+              semantic_utils::split_top_level_template_id_text(
+                  resolved_info->type->named_display,
+                  resolved_template_name,
+                  resolved_name_args);
+            }
+            if(resolved_name_args.empty() && resolved_info->type) {
+              semantic_utils::split_top_level_template_id_text(
+                  resolved_info->type->named_key,
+                  resolved_template_name,
+                  resolved_name_args);
+            }
+            const std::size_t limit =
+                std::min(bindings.size(),
+                         std::max(resolved_info->instantiation_arguments.size(),
+                                  resolved_name_args.size()));
+            for(std::size_t i = 0; i < limit; ++i) {
+              if(bindings[i].pack_binding) {
+                continue;
+              }
+              std::string resolved_arg =
+                  i < resolved_name_args.size() ?
+                      resolved_name_args[i] :
+                  i < resolved_info->instantiation_arg_texts.size() ?
+                      resolved_info->instantiation_arg_texts[i] :
+                      std::string();
+              if(resolved_arg.empty() &&
+                 i < resolved_info->instantiation_arguments.size()) {
+                resolved_arg =
+                    template_api::template_witness_source_argument_text(
+                        ctx,
+                        resolved_info->instantiation_arguments[i]);
+              }
+              if(binding_arg_drops_resolved_array_cv(bindings[i].arg,
+                                                     resolved_arg)) {
+                bindings[i].arg = resolved_arg;
+                if(occurrence &&
+                   i < occurrence->arguments.size()) {
+                  occurrence->arguments[i].text = resolved_arg;
+                  occurrence->arguments[i].semantic_text = resolved_arg;
+                }
+              }
+            }
+          };
+      if((dependent_arguments && !suppress_nested_arguments) ||
+         nested_argument_recovery) {
         emit_nested_source_argument_uses();
+      }
+      if(template_api::class_template_source_use_is_semantic_lookup_only(
+             source_use_mode)) {
+        return;
       }
       if(dependent_arguments) {
         if(source_capture_enabled &&
@@ -1853,6 +1944,9 @@ public:
                     arguments,
                     "explicit");
               }
+              repair_bindings_from_resolved_instantiation(
+                  request.bindings,
+                  &request.template_id_occurrence);
               canonicalize_template_parameter_source_bindings(
                   request.bindings,
                   arguments,
@@ -2006,6 +2100,12 @@ public:
           scope_is_inside_source_template_context(use_scope) &&
           (source_use_mentions_template_context ||
            !source_use_mentions_current_specialization_member);
+      const bool replayed_source_template_header_member_expression_source_use =
+          source_use_in_template_header &&
+          !scope_has_template_placeholders(use_scope) &&
+          scope_is_inside_source_template_context(use_scope) &&
+          source_use_mentions_current_specialization_member &&
+          !source_use_mentions_template_context;
       const bool dependent_member_template_pattern_source_use =
           source_use_in_template_body &&
           class_template_decl_is_member_template(decl) &&
@@ -2035,6 +2135,7 @@ public:
             replayed_source_template_header_source_use ||
             replayed_template_body_source_use ||
             replayed_source_template_body_source_use ||
+            replayed_source_template_header_member_expression_source_use ||
             dependent_member_template_pattern_source_use ||
             (template_api::function_binding_has_source_template_identity(
                  use_scope.function) &&
@@ -2530,6 +2631,9 @@ public:
               arguments,
               "explicit");
         }
+        repair_bindings_from_resolved_instantiation(
+            request.bindings,
+            &request.template_id_occurrence);
         if(!nested_partial_source_argument &&
            bound_parameters &&
            bound_parameters != &decl.parameters) {
@@ -2552,6 +2656,7 @@ public:
                                                  request.origin);
         witness::emit_class_use(witness_context, request);
         if(parent_class_use_records &&
+           !suppress_nested_arguments &&
            source_arg_syntaxes &&
            callbacks.emit_nested_class_use_source_events_from_syntaxes) {
           callbacks.emit_nested_class_use_source_events_from_syntaxes(
@@ -2559,7 +2664,7 @@ public:
               *source_arg_syntaxes,
               witness::SourceUseOwnership::SourceOwned,
               request.template_name);
-        } else if(parent_class_use_records) {
+        } else if(parent_class_use_records && !suppress_nested_arguments) {
           emit_nested_class_use_source_events_from_location(use_scope,
                                                             request.location,
                                                             witness::SourceUseOwnership::SourceOwned,

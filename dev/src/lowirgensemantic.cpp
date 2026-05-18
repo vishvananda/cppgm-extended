@@ -6200,6 +6200,13 @@ private:
       }
     }
     TypePtr discard_base = strip_top_level_cv(remove_reference_type(discard_type));
+    if(node.kind == CallSemKind::braced_init_list &&
+       discard_base &&
+       discard_base->kind == Type::TK_ARRAY) {
+      const string temp_ptr = new_hidden_object_address(discard_type, "discardarr");
+      emit_local_array_initializer(discard_type, node, temp_ptr);
+      return;
+    }
     const bool can_discard_by_address =
         node.kind == CallSemKind::id_expression ||
         node.kind == CallSemKind::variable ||
@@ -9747,7 +9754,7 @@ private:
                              string("binary add ") + result_type + " " + count + ", " + bit_set);
     emit_line("store " + result_type + " " + next_count + ", " + count_slot);
     const string shifted =
-        emit_temp_assignment(value_type, string("binary shr ") + value_type + " " + current + ", 1");
+        emit_temp_assignment(value_type, string("binary ushr ") + value_type + " " + current + ", 1");
     emit_line("store " + value_type + " " + shifted + ", " + value_slot);
     terminate(string("jump ") + lowir_block_name(check_label));
 

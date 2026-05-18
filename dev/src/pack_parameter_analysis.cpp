@@ -11,34 +11,134 @@ namespace pack_parameter_analysis {
 
 using namespace cpp_decl;
 using namespace semantic_model;
+using template_model::TemplateParameterInfo;
 
 namespace {
 
-bool is_identifier_spelling(const std::string & text)
+bool identifier_char(unsigned char ch)
 {
-  if(text.empty()) {
-    return false;
-  }
-
-  const unsigned char first = static_cast<unsigned char>(text[0]);
-  if(!(std::isalpha(first) || first == '_')) {
-    return false;
-  }
-
-  for(std::size_t i = 1; i < text.size(); ++i) {
-    const unsigned char ch = static_cast<unsigned char>(text[i]);
-    if(!(std::isalnum(ch) || ch == '_')) {
-      return false;
-    }
-  }
-
-  return true;
+  return std::isalnum(ch) || ch == '_';
 }
 
-void collect_identifiers(const CppAstNode & node, std::set<std::string> & out);
-void collect_identifiers(const TemplateIdSyntax & syntax, std::set<std::string> & out);
-void collect_identifiers(const TemplateArgumentSyntax & syntax,
-                         std::set<std::string> & out);
+bool contains_identifier_token(const std::string & text,
+                               const std::string & name)
+{
+  if(text.empty() || name.empty()) {
+    return false;
+  }
+  std::size_t pos = text.find(name);
+  while(pos != std::string::npos) {
+    const bool left_ok =
+        pos == 0 ||
+        !identifier_char(static_cast<unsigned char>(text[pos - 1]));
+    const std::size_t end = pos + name.size();
+    const bool right_ok =
+        end >= text.size() ||
+        !identifier_char(static_cast<unsigned char>(text[end]));
+    if(left_ok && right_ok) {
+      return true;
+    }
+    pos = text.find(name, pos + 1);
+  }
+  return false;
+}
+
+bool template_argument_syntax_mentions_identifier(
+    const TemplateArgumentSyntax & syntax,
+    const std::string & name);
+bool template_id_syntax_mentions_identifier(const TemplateIdSyntax & syntax,
+                                            const std::string & name);
+bool ast_node_mentions_identifier(const CppAstNode & node,
+                                  const std::string & name);
+
+bool template_argument_syntax_mentions_identifier(
+    const TemplateArgumentSyntax & syntax,
+    const std::string & name)
+{
+  if(!syntax.text.empty() && contains_identifier_token(syntax.text, name)) {
+    return true;
+  }
+  if(syntax.template_id &&
+     template_id_syntax_mentions_identifier(*syntax.template_id, name)) {
+    return true;
+  }
+  if(syntax.type_id && ast_node_mentions_identifier(*syntax.type_id, name)) {
+    return true;
+  }
+  return syntax.expression &&
+         ast_node_mentions_identifier(*syntax.expression, name);
+}
+
+bool template_id_syntax_mentions_identifier(const TemplateIdSyntax & syntax,
+                                            const std::string & name)
+{
+  for(std::size_t i = 0; i < syntax.name.qualifiers.size(); ++i) {
+    if(syntax.name.qualifiers[i] == name) {
+      return true;
+    }
+  }
+  if(syntax.name.name == name) {
+    return true;
+  }
+  for(std::size_t i = 0; i < syntax.arguments.size(); ++i) {
+    if(contains_identifier_token(syntax.arguments[i], name)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(template_argument_syntax_mentions_identifier(
+           syntax.argument_syntaxes[i],
+           name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool ast_node_mentions_identifier(const CppAstNode & node,
+                                  const std::string & name)
+{
+  if(node.kind == CppAstKind::identifier && node.value == name) {
+    return true;
+  }
+  if(!node.value.empty() && contains_identifier_token(node.value, name)) {
+    return true;
+  }
+  if(node.template_id_syntax &&
+     template_id_syntax_mentions_identifier(*node.template_id_syntax, name)) {
+    return true;
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_syntax_mentions_identifier(
+           node.qualifier_template_id_syntaxes[i],
+           name)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_node_mentions_identifier(node.qualifier_type_syntaxes[i], name)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_node_mentions_identifier(node.children[i], name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool declarator_has_parameter_pack(const CppAstNode & declarator)
+{
+  if(cpp_decl::find_child(declarator, CppAstKind::parameter_pack)) {
+    return true;
+  }
+  const CppAstNode * nested =
+      cpp_decl::find_child(declarator, CppAstKind::nested_declarator);
+  return nested &&
+         !nested->children.empty() &&
+         declarator_has_parameter_pack(nested->children[0]);
+}
 
 std::string last_identifier_in_subtree(const CppAstNode & node)
 {
@@ -53,67 +153,6 @@ std::string last_identifier_in_subtree(const CppAstNode & node)
     }
   }
   return out;
-}
-
-void collect_identifiers(const CppAstNode & node, std::set<std::string> & out)
-{
-  if(!node.value.empty() && is_identifier_spelling(node.value)) {
-    out.insert(node.value);
-  }
-  if(node.template_id_syntax) {
-    collect_identifiers(*node.template_id_syntax, out);
-  }
-  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
-    collect_identifiers(node.qualifier_template_id_syntaxes[i], out);
-  }
-  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
-    collect_identifiers(node.qualifier_type_syntaxes[i], out);
-  }
-  for(std::size_t i = 0; i < node.children.size(); ++i) {
-    collect_identifiers(node.children[i], out);
-  }
-}
-
-void collect_identifiers(const TemplateArgumentSyntax & syntax,
-                         std::set<std::string> & out)
-{
-  if(syntax.template_id) {
-    collect_identifiers(*syntax.template_id, out);
-  }
-  if(syntax.type_id) {
-    collect_identifiers(*syntax.type_id, out);
-  }
-  if(syntax.expression) {
-    collect_identifiers(*syntax.expression, out);
-  }
-}
-
-void collect_identifiers(const TemplateIdSyntax & syntax,
-                         std::set<std::string> & out)
-{
-  for(std::size_t i = 0; i < syntax.name.qualifiers.size(); ++i) {
-    if(is_identifier_spelling(syntax.name.qualifiers[i])) {
-      out.insert(syntax.name.qualifiers[i]);
-    }
-  }
-  if(is_identifier_spelling(syntax.name.name)) {
-    out.insert(syntax.name.name);
-  }
-  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
-    collect_identifiers(syntax.argument_syntaxes[i], out);
-  }
-}
-
-std::set<std::string> referenced_parameter_type_identifiers(const CppAstNode & parameter)
-{
-  std::set<std::string> identifiers;
-  collect_identifiers(parameter, identifiers);
-
-  const std::string parameter_name = parameter_declaration_name(parameter);
-  if(!parameter_name.empty()) {
-    identifiers.erase(parameter_name);
-  }
-  return identifiers;
 }
 
 }  // namespace
@@ -131,8 +170,7 @@ std::string parameter_declaration_name(const CppAstNode & parameter)
 std::vector<std::pair<std::string, const std::vector<TypePtr> *> >
 referenced_named_type_packs(Scope & scope, const CppAstNode & parameter)
 {
-  const std::set<std::string> identifiers =
-      referenced_parameter_type_identifiers(parameter);
+  const std::string parameter_name = parameter_declaration_name(parameter);
   std::vector<std::pair<std::string, const std::vector<TypePtr> *> > packs;
   std::set<std::string> seen_pack_names;
   for(Scope * current = &scope; current; current = current->parent) {
@@ -141,14 +179,55 @@ referenced_named_type_packs(Scope & scope, const CppAstNode & parameter)
     }
     for(const auto & pack : current->named_type_packs) {
       if(pack.first.empty() ||
-         identifiers.count(pack.first) == 0 ||
-         !seen_pack_names.insert(pack.first).second) {
+         pack.first == parameter_name ||
+         !seen_pack_names.insert(pack.first).second ||
+         !ast_node_mentions_identifier(parameter, pack.first)) {
         continue;
       }
       packs.push_back(std::make_pair(pack.first, &pack.second));
     }
   }
   return packs;
+}
+
+bool parameter_references_template_parameter_pack(
+    const CppAstNode & parameter,
+    const std::vector<TemplateParameterInfo> & template_parameters)
+{
+  const std::string parameter_name = parameter_declaration_name(parameter);
+  for(std::size_t i = 0; i < template_parameters.size(); ++i) {
+    if(template_parameters[i].parameter_pack &&
+       !template_parameters[i].name.empty() &&
+       template_parameters[i].name != parameter_name &&
+       ast_node_mentions_identifier(parameter, template_parameters[i].name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool declarator_has_trailing_template_parameter_pack(
+    const CppAstNode & declarator,
+    const std::vector<TemplateParameterInfo> & template_parameters)
+{
+  const CppAstNode * parameter_clause =
+      cpp_decl::find_child(declarator, CppAstKind::parameter_clause);
+  if(!parameter_clause || parameter_clause->children.empty()) {
+    return false;
+  }
+  const CppAstNode & last = parameter_clause->children.back();
+  if(last.kind != CppAstKind::parameter_declaration) {
+    return false;
+  }
+  const CppAstNode * declarator_child =
+      cpp_decl::find_child(last, CppAstKind::declarator);
+  const CppAstNode * abstract =
+      cpp_decl::find_child(last, CppAstKind::abstract_declarator);
+  if(!(declarator_child && declarator_has_parameter_pack(*declarator_child)) &&
+     !(abstract && declarator_has_parameter_pack(*abstract))) {
+    return false;
+  }
+  return parameter_references_template_parameter_pack(last, template_parameters);
 }
 
 bool infer_named_type_pack_size(Scope & scope,

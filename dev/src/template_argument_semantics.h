@@ -142,6 +142,10 @@ void note_structured_bool_value_members_in_template_argument_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const cpp_decl::TemplateArgumentSyntax & syntax);
+void note_structured_bool_value_member_for_type_if_needed(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const cpp_decl::TypePtr & type);
 
 void note_structured_bool_value_dependencies_for_class_info(
     template_api::TemplateServices & services,
@@ -349,7 +353,13 @@ std::vector<std::string> expand_bound_type_pack_texts(
     semantic_model::Scope & scope,
     const std::vector<std::string> & texts);
 
+bool expand_bound_packs_in_type_id_node(template_api::TemplateServices & services,
+                                        semantic_model::Scope & scope,
+                                        const CppAstNode & node,
+                                        CppAstNode & out);
+
 std::vector<cpp_decl::TemplateArgumentSyntax> expand_type_pack_argument_syntaxes(
+    template_api::TemplateServices & services,
     semantic_model::Scope & scope,
     const cpp_decl::TemplateArgumentSyntax & source_syntax,
     const std::vector<std::string> & expanded_texts);

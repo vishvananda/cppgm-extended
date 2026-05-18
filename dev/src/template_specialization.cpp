@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <functional>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -1101,7 +1102,9 @@ bool deduce_from_function_type_pattern(template_api::TemplateServices & services
   }
 
   if(pattern_base->variadic != actual_base->variadic ||
-     actual_base->prototype_relaxed ||
+     pattern_base->prototype_relaxed != actual_base->prototype_relaxed ||
+     pattern_base->function_const != actual_base->function_const ||
+     pattern_base->function_volatile != actual_base->function_volatile ||
      pattern_base->params.empty()) {
     return false;
   }
@@ -2440,7 +2443,6 @@ bool try_expand_alias_template_pattern_structurally(
       return false;
     }
   }
-
   const auto find_type_parameter =
       [&](const TypePtr & type) -> const TemplateParameterInfo *
   {
@@ -2484,6 +2486,52 @@ bool try_expand_alias_template_pattern_structurally(
     std::string element_text;
     return strip_trailing_pack_ellipsis(info.instantiation_arg_texts[index],
                                         element_text);
+  };
+  const auto argument_needs_alias_target_scope =
+      [&](const TemplateArgument & argument) -> bool
+  {
+    if(argument.kind == TemplateArgument::TA_TYPE &&
+       argument.type &&
+       find_type_parameter(argument.type)) {
+      return true;
+    }
+    if(argument.kind == TemplateArgument::TA_VALUE &&
+       find_non_type_parameter(argument)) {
+      return true;
+    }
+    return false;
+  };
+  const auto argument_has_dependent_source_syntax =
+      [](const TemplateArgument & argument) -> bool
+  {
+    if(!argument.dependent) {
+      return false;
+    }
+    if(argument.expression) {
+      return true;
+    }
+    return argument.source_syntax && argument.source_syntax->dependent;
+  };
+  const auto source_argument_needs_alias_target_scope =
+      [&](const TemplateArgument & argument) -> bool
+  {
+    if(argument_needs_alias_target_scope(argument)) {
+      return true;
+    }
+    return argument_has_dependent_source_syntax(argument);
+  };
+  const auto dependent_alias_arguments_need_alias_target_scope =
+      [&](const std::vector<DependentAliasTemplateArgumentSyntax> & alias_args) -> bool
+  {
+    for(std::size_t i = 0; i < alias_args.size(); ++i) {
+      if(alias_args[i].type && find_type_parameter(alias_args[i].type)) {
+        return true;
+      }
+      if(alias_args[i].syntax.dependent || alias_args[i].syntax.expression) {
+        return true;
+      }
+    }
+    return false;
   };
 
   TypePtr direct_member_alias_owner;
@@ -2539,6 +2587,184 @@ bool try_expand_alias_template_pattern_structurally(
 
   bool structural_substitution_failure = false;
   int substitution_depth = 0;
+  std::unique_ptr<Scope> alias_target_scope_storage;
+  const auto instantiated_alias_owner = [&](Scope & target_scope) -> ClassInfo *
+  {
+    if(!alias_template.declaring_scope ||
+       !alias_template.declaring_scope->class_info) {
+      return nullptr;
+    }
+    ClassInfo * declared_owner = alias_template.declaring_scope->class_info;
+    const auto matches_declared_owner =
+        [&](ClassInfo * info) -> bool
+    {
+      return info &&
+             info != declared_owner &&
+             info->name == declared_owner->name &&
+             info->source_template;
+    };
+    if(effective_argument_scope.valid()) {
+      for(Scope * current = &effective_argument_scope.require();
+          current;
+          current = current->parent) {
+        if(matches_declared_owner(current->class_info)) {
+          return current->class_info;
+        }
+      }
+    }
+    std::map<std::string, TypePtr>::const_iterator found =
+        target_scope.named_types.find(declared_owner->name);
+    if(found != target_scope.named_types.end()) {
+      ClassInfo * bound_info =
+          template_api::find_named_type_class_info(type_system.model,
+                                                   found->second);
+      if(matches_declared_owner(bound_info)) {
+        return bound_info;
+      }
+    }
+    return nullptr;
+  };
+  const auto ensure_alias_target_scope = [&]() -> Scope &
+  {
+    if(!alias_target_scope_storage) {
+      alias_target_scope_storage.reset(
+          new Scope(alias_template.declaring_scope ?
+                        alias_template.declaring_scope :
+                        &match_scope.require(),
+                    "",
+                    false));
+      if(alias_template.declaring_scope) {
+        template_api::overlay_instantiation_use_scope_bindings(
+            *alias_target_scope_storage,
+            effective_argument_scope.require(),
+            alias_template.declaring_scope);
+      }
+      if(ClassInfo * owner =
+             instantiated_alias_owner(*alias_target_scope_storage)) {
+        alias_target_scope_storage->class_info = owner;
+        if(!owner->name.empty() && owner->type) {
+          template_scope::bind_named_type(*alias_target_scope_storage,
+                                          owner->name,
+                                          owner->type);
+        }
+      }
+      template_api::bind_template_arguments_into_scope(
+          services,
+          *alias_target_scope_storage,
+          alias_template.parameters,
+          arguments);
+    }
+    return *alias_target_scope_storage;
+  };
+  const auto selected_class_arguments_have_defaulted_true_bool_value =
+      [&](const std::vector<TemplateArgument> & selected_arguments) -> bool
+  {
+    bool has_true_bool_value = false;
+    for(std::size_t i = 0; i < selected_arguments.size(); ++i) {
+      const TemplateArgument & argument = selected_arguments[i];
+      if(argument.kind == TemplateArgument::TA_VALUE) {
+        TypePtr value_type =
+            strip_top_level_cv(remove_reference_type(argument.type));
+        if(argument.dependent ||
+           (value_type && !is_bool_type(value_type)) ||
+           argument.value == 0) {
+          return false;
+        }
+        has_true_bool_value = true;
+        continue;
+      }
+      if(argument.kind == TemplateArgument::TA_TYPE) {
+        TypePtr type_argument =
+            strip_top_level_cv(remove_reference_type(argument.type));
+        if(type_argument &&
+           (is_bool_type(type_argument) || is_void_type(type_argument))) {
+          continue;
+        }
+        if(argument.source_defaulted) {
+          continue;
+        }
+        return false;
+      }
+      return false;
+    }
+    return has_true_bool_value;
+  };
+  const auto value_argument_has_structured_source =
+      [](const TemplateArgument & argument) -> bool
+  {
+    if(argument.expression) {
+      return true;
+    }
+    return argument.source_syntax &&
+           (argument.source_syntax->expression ||
+            argument.source_syntax->type_id ||
+            argument.source_syntax->template_id);
+  };
+  const auto try_evaluate_alias_target_value_argument =
+      [&](const TemplateArgument & argument, TemplateArgument & out) -> bool
+  {
+	    out = argument;
+	    if(argument.kind != TemplateArgument::TA_VALUE ||
+	       !source_argument_needs_alias_target_scope(argument) ||
+	       !value_argument_has_structured_source(argument)) {
+	      return false;
+	    }
+
+    Scope & eval_scope =
+        source_argument_needs_alias_target_scope(argument) ?
+            ensure_alias_target_scope() :
+            effective_argument_scope.require();
+    if(out.type) {
+      TypePtr resolved_type = out.type;
+      if(template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+             services,
+             template_api::make_template_environment(eval_scope),
+             resolved_type)) {
+        out.type = resolved_type;
+      }
+    }
+    if(!out.type || type_is_dependent(out.type)) {
+      return false;
+    }
+
+    long long value = 0;
+    std::string eval_error;
+    template_argument_semantics::NonTypeArgumentStatus status =
+        template_argument_semantics::NT_ARG_PARSE_FAILED;
+    if(argument.expression) {
+      status =
+          template_argument_semantics::evaluate_non_type_argument_expression(
+              services,
+              template_api::make_template_environment(eval_scope),
+              *argument.expression,
+              value,
+              &eval_error,
+              out.type);
+    }
+    if(status != template_argument_semantics::NT_ARG_EVALUATED &&
+       argument.source_syntax &&
+       (argument.source_syntax->expression ||
+        argument.source_syntax->type_id ||
+        argument.source_syntax->template_id)) {
+      status =
+          template_argument_semantics::evaluate_non_type_argument_syntax(
+              services,
+              template_api::make_template_environment(eval_scope),
+              *argument.source_syntax,
+              value,
+              &eval_error,
+              out.type);
+    }
+    if(status != template_argument_semantics::NT_ARG_EVALUATED) {
+      return false;
+    }
+
+    out.value = value;
+    out.dependent = false;
+    out.text.clear();
+    out.expression.reset();
+    return true;
+  };
   const auto mark_structural_substitution_failure =
       [&](Scope * lookup_scope, const std::string & member_name) -> void
   {
@@ -2641,6 +2867,10 @@ bool try_expand_alias_template_pattern_structurally(
             nested_arg_texts.push_back(substituted_alias_args[i].text);
             nested_arg_syntaxes.push_back(substituted_alias_args[i].syntax);
           }
+          template_api::TemplateEnvironmentHandle nested_argument_scope =
+              dependent_alias_arguments_need_alias_target_scope(dependent_alias_args) ?
+                  template_api::make_template_environment(ensure_alias_target_scope()) :
+                  effective_argument_scope;
           std::string nested_expanded_text;
           TypePtr nested_expanded_type;
           if(try_expand_alias_template_pattern_structurally(
@@ -2649,7 +2879,7 @@ bool try_expand_alias_template_pattern_structurally(
                  *nested_alias_template,
                  nested_arg_texts,
                  &nested_arg_syntaxes,
-                 effective_argument_scope,
+                 nested_argument_scope,
                  nested_expanded_text,
                  &nested_expanded_type,
                  allow_dependent_expansion,
@@ -2666,21 +2896,36 @@ bool try_expand_alias_template_pattern_structurally(
 
     TypePtr dependent_owner;
     std::vector<std::string> dependent_members;
+    std::vector<TemplateIdSyntax> dependent_member_template_ids;
     bool dependent_leading_typename = false;
     if(named_type_dependent_qualified_member(pattern,
                                              dependent_owner,
                                              dependent_members,
-                                             dependent_leading_typename)) {
+                                             dependent_leading_typename,
+                                             &dependent_member_template_ids)) {
       TypePtr substituted_owner;
       if(!substitute_type(dependent_owner, substituted_owner) ||
          !substituted_owner) {
         return false;
       }
       if(type_is_dependent(substituted_owner)) {
-        out = make_dependent_qualified_member_type(pattern->named_display,
+        std::string display;
+        const std::string owner_text = trim_space(type_text(substituted_owner));
+        if(!owner_text.empty() && !dependent_members.empty()) {
+          display = dependent_leading_typename ? "typename " : "";
+          display += owner_text;
+          for(std::size_t i = 0; i < dependent_members.size(); ++i) {
+            display += "::";
+            display += dependent_members[i];
+          }
+        }
+        out = make_dependent_qualified_member_type(display.empty() ?
+                                                       pattern->named_display :
+                                                       display,
                                                    substituted_owner,
                                                    dependent_members,
-                                                   dependent_leading_typename);
+                                                   dependent_leading_typename,
+                                                   dependent_member_template_ids);
         return out != nullptr;
       }
 
@@ -2760,19 +3005,16 @@ bool try_expand_alias_template_pattern_structurally(
          !arguments[index].type) {
         return false;
       }
-      TypePtr argument_type = arguments[index].type;
-      template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-          services,
-          effective_argument_scope,
-          argument_type);
-      out = argument_type;
+      out = arguments[index].type;
       return true;
     }
 
     const TypePtr pattern_base = strip_top_level_cv(pattern);
     TypePtr scope_bound_type;
+    const std::vector<std::string> pattern_parameter_names =
+        template_parameter_type_names(pattern_base);
     if(lookup_template_bound_type(effective_argument_scope.require(),
-                                  template_parameter_type_names(pattern_base),
+                                  pattern_parameter_names,
                                   scope_bound_type) &&
        scope_bound_type) {
       out = scope_bound_type;
@@ -2814,18 +3056,23 @@ bool try_expand_alias_template_pattern_structurally(
       std::vector<TemplateArgument> substituted_arguments;
       substituted_arguments.reserve(
           std::max(named_info.instantiation_arguments.size(), arguments.size()));
+      bool selected_arguments_need_alias_target_scope = false;
       for(std::size_t i = 0; i < named_info.instantiation_arguments.size(); ++i) {
         TemplateArgument argument = named_info.instantiation_arguments[i];
+        if(source_argument_needs_alias_target_scope(argument)) {
+          selected_arguments_need_alias_target_scope = true;
+        }
         if(argument.kind == TemplateArgument::TA_TYPE) {
           if(metadata_argument_has_pack_expansion(named_info, i)) {
+            const std::vector<std::string> pack_lookup_names =
+                type_pack_lookup_names(
+                    argument,
+                    i < named_info.instantiation_arg_texts.size() ?
+                        named_info.instantiation_arg_texts[i] :
+                        std::string());
             const std::vector<TypePtr> * bound_pack =
-                lookup_template_bound_type_pack(
-                    effective_argument_scope.require(),
-                    type_pack_lookup_names(
-                        argument,
-                        i < named_info.instantiation_arg_texts.size() ?
-                            named_info.instantiation_arg_texts[i] :
-                            std::string()));
+                lookup_template_bound_type_pack(effective_argument_scope.require(),
+                                                pack_lookup_names);
             if(bound_pack) {
               for(std::size_t j = 0; j < bound_pack->size(); ++j) {
                 TemplateArgument pack_argument;
@@ -2900,6 +3147,12 @@ bool try_expand_alias_template_pattern_structurally(
             }
             substituted_arguments.push_back(value_argument);
             continue;
+	          }
+	          TemplateArgument evaluated_argument;
+	          if(try_evaluate_alias_target_value_argument(argument,
+	                                                      evaluated_argument)) {
+	            substituted_arguments.push_back(evaluated_argument);
+	            continue;
           }
           substituted_arguments.push_back(argument);
           continue;
@@ -2920,19 +3173,102 @@ bool try_expand_alias_template_pattern_structurally(
         substituted_arguments.push_back(argument);
       }
 
+      if(template_arguments_are_dependent(substituted_arguments,
+                                          [&type_is_dependent](const TypePtr & type)
+                                          {
+                                            return type_is_dependent(type);
+                                          })) {
+        std::vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
+        dependent_arguments.reserve(substituted_arguments.size());
+        for(std::size_t i = 0; i < substituted_arguments.size(); ++i) {
+          const TemplateArgument & argument = substituted_arguments[i];
+          DependentAliasTemplateArgumentSyntax dependent_argument;
+          dependent_argument.text = argument_text(argument);
+          if(argument.kind == TemplateArgument::TA_TYPE) {
+            dependent_argument.type = argument.type;
+          }
+          if(argument.source_syntax) {
+            dependent_argument.syntax = *argument.source_syntax;
+          } else {
+            dependent_argument.syntax.text = dependent_argument.text;
+          }
+          if(argument.kind == TemplateArgument::TA_VALUE &&
+             argument.expression &&
+             !dependent_argument.syntax.expression) {
+            dependent_argument.syntax.text = dependent_argument.text;
+            dependent_argument.syntax.source_location_id =
+                argument.expression->source_location_id;
+            dependent_argument.syntax.expression.reset(
+                new CppAstNode(*argument.expression));
+          }
+          dependent_argument.syntax.dependent =
+              dependent_argument.syntax.dependent || argument.dependent;
+          dependent_argument.source_defaulted = argument.source_defaulted;
+          dependent_arguments.push_back(dependent_argument);
+        }
+
+        const std::string template_name =
+            named_info.source_template->declaring_scope ?
+                semantic_lookup::scope_qualified_name(
+                    *named_info.source_template->declaring_scope,
+                    named_info.source_template->name) :
+                named_info.source_template->name;
+        std::ostringstream display;
+        display << template_name << "<";
+        for(std::size_t i = 0; i < dependent_arguments.size(); ++i) {
+          if(i != 0) {
+            display << ", ";
+          }
+          display << dependent_arguments[i].text;
+        }
+        display << ">";
+        out = make_semantic_named(display.str(),
+                                  Type::NSK_DEPENDENT_TYPE,
+                                  display.str(),
+                                  true);
+        set_named_type_dependent_class_template(out,
+                                                named_info.source_template,
+                                                dependent_arguments);
+        return true;
+      }
+
       template_api::TemplateSelectedClassTemplateIdRequest request;
-      request.lookup.scope = &match_scope.require();
+      TypePtr pattern_cv_base;
+      bool pattern_const = false;
+      bool pattern_volatile = false;
+      top_level_cv_flags(pattern, pattern_cv_base, pattern_const, pattern_volatile);
+      Scope & selected_scope =
+          selected_arguments_need_alias_target_scope ?
+              ensure_alias_target_scope() :
+              match_scope.require();
+      request.lookup.scope = &selected_scope;
+      request.argument_scope = &selected_scope;
       request.lookup.name.name = named_info.source_template->name;
       request.lookup.allow_class_templates = true;
+      request.lookup.top_const = pattern_const;
+      request.lookup.top_volatile = pattern_volatile;
       request.class_template = named_info.source_template;
       request.resolved_arguments = substituted_arguments;
       request.source_arg_texts.reserve(substituted_arguments.size());
       for(std::size_t i = 0; i < substituted_arguments.size(); ++i) {
         request.source_arg_texts.push_back(argument_text(substituted_arguments[i]));
       }
-      if(type_system.resolve_selected_class_template_id(request, out) &&
-         out) {
-        return true;
+      const bool witness_session_active =
+          template_api::current_template_witness_session() != nullptr;
+      if(!witness_session_active ||
+         selected_class_arguments_have_defaulted_true_bool_value(
+             substituted_arguments)) {
+        if(type_system.resolve_selected_class_template_id(request, out) &&
+           out) {
+          return true;
+        }
+      } else {
+        const template_api::ScopedTemplateWitnessLifecyclePause
+            lifecycle_pause;
+        if(type_system.resolve_selected_class_template_id(request, out) &&
+           out) {
+          return true;
+        }
       }
     }
 
@@ -2948,7 +3284,7 @@ bool try_expand_alias_template_pattern_structurally(
       if(!substitute_type(pattern->inner, inner)) {
         return false;
       }
-      out = make_cv(inner, pattern->cv_const, pattern->cv_volatile);
+      out = apply_cv(inner, pattern->cv_const, pattern->cv_volatile);
       return true;
     }
 
@@ -4806,6 +5142,9 @@ bool expand_alias_template_pattern_type(
   }
 
   std::string expanded_text;
+  const witness::ScopedTemplateWitnessSourceCapturePause
+      source_capture_pause(
+          template_api::current_template_witness_session() != nullptr);
   return try_expand_alias_template_pattern_structurally(
       services,
       match_scope,

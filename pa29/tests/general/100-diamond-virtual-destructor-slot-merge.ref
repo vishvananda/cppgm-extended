@@ -114,10 +114,6 @@ function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] 
     %t9 = index i8 [projection=base_subobject] %t8, 8
     %t10 = addr @D____view__B2__8__vtable
     store ptr %t10, %t9
-    %t11 = load ptr $this
-    %t12 = index i8 [projection=base_subobject] %t11, 8
-    %t13 = addr @D____view__B0__8__vtable
-    store ptr %t13, %t12
     return void
 }
 function @D___D__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN1DD0Ev] {
@@ -135,16 +131,12 @@ function @D___D__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN1D
     store ptr %t6, %t5
     %t7 = load ptr $this
     %t8 = index i8 [projection=base_subobject] %t7, 8
-    %t9 = addr @D____view__B0__8__vtable
-    store ptr %t9, %t8
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 8
-    call void @B2___B2__base_entry(%t11)
-    %t12 = load ptr $this
-    %t13 = index i8 [projection=base_subobject] %t12, 0
-    call void @B1___B1__base_entry(%t13)
-    %t14 = load ptr $this
-    call void @operator_delete(%t14)
+    call void @B2___B2__base_entry(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=base_subobject] %t9, 0
+    call void @B1___B1__base_entry(%t10)
+    %t11 = load ptr $this
+    call void @operator_delete(%t11)
     return void
 }
 function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
@@ -162,14 +154,10 @@ function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
     store ptr %t6, %t5
     %t7 = load ptr $this
     %t8 = index i8 [projection=base_subobject] %t7, 8
-    %t9 = addr @D____view__B0__8__vtable
-    store ptr %t9, %t8
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 8
-    call void @B2___B2__base_entry(%t11)
-    %t12 = load ptr $this
-    %t13 = index i8 [projection=base_subobject] %t12, 0
-    call void @B1___B1__base_entry(%t13)
+    call void @B2___B2__base_entry(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=base_subobject] %t9, 0
+    call void @B1___B1__base_entry(%t10)
     return void
 }
 function @B1__B1__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2B1C2Ev] {

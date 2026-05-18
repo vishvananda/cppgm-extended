@@ -802,6 +802,22 @@ const CppAstNode * binding_parameter_clause(const FunctionBinding & binding)
   return parameter_clause_from_declarator_like(declarator);
 }
 
+Scope * binding_parameter_parse_scope(const FunctionBinding & binding)
+{
+  if(!binding.is_method &&
+     binding.lexical_access_class &&
+     binding.lexical_access_class->member_scope) {
+    return binding.lexical_access_class->member_scope.get();
+  }
+  if(binding.declaration_scope) {
+    return binding.declaration_scope;
+  }
+  if(binding.owner_class) {
+    return binding.owner_class->member_scope.get();
+  }
+  return nullptr;
+}
+
 void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
                                                  FunctionBinding & binding)
 {
@@ -810,10 +826,7 @@ void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
     return;
   }
 
-  Scope * parse_scope = binding.declaration_scope;
-  if(!parse_scope && binding.owner_class) {
-    parse_scope = binding.owner_class->member_scope.get();
-  }
+  Scope * parse_scope = binding_parameter_parse_scope(binding);
   if(!parse_scope) {
     return;
   }
@@ -892,10 +905,7 @@ void require_function_parameter_abi_output(SemanticContext & ctx,
     return;
   }
 
-  Scope * parse_scope = binding.declaration_scope;
-  if(!parse_scope && binding.owner_class) {
-    parse_scope = binding.owner_class->member_scope.get();
-  }
+  Scope * parse_scope = binding_parameter_parse_scope(binding);
   if(!parse_scope) {
     return;
   }
@@ -4783,13 +4793,15 @@ void analyze_function_definition(SemanticContext & ctx,
   FunctionBinding * binding =
       ctx.find_exact_function(*function_definition_scope, function_definition_name, type);
   if((!binding || !binding->has_definition) &&
-     !ctx.resolve_out_of_class_method_binding(scope,
-                                              name,
-                                              type,
-                                              declarator_is_const_method(*declarator),
-                                              declarator_is_volatile_method(*declarator),
-                                              declarator_ref_qualifier(*declarator),
-                                              binding)) {
+     !ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
+          scope,
+          name,
+          function_identifier,
+          type,
+          declarator_is_const_method(*declarator),
+          declarator_is_volatile_method(*declarator),
+          declarator_ref_qualifier(*declarator),
+          binding)) {
     throw logic_error("missing function binding");
   }
   if(!should_emit_free_function_definition(ctx, *binding)) {

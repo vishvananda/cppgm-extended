@@ -1083,7 +1083,8 @@ bool source_occurrence_from_typed_template_id(const WitnessEvent & event,
 
 string normalize_binding_arg_for_event(const string & arg);
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_qualified_member);
+                                       bool preserve_qualified_member,
+                                       bool preserve_const_char_array = false);
 bool is_simple_identifier_text(const string & text);
 
 bool is_simple_identifier_or_pack_expansion_text(const string & text)
@@ -1345,7 +1346,8 @@ void canonicalize_function_pointer_binding_args(vector<WitnessEvent> & events)
 
 string normalize_binding_arg_for_event(const string & arg);
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_qualified_member);
+                                       bool preserve_qualified_member,
+                                       bool preserve_const_char_array);
 string normalize_function_template_argument_spacing(const string & text);
 
 string semantic_or_source_argument_text(
@@ -2578,11 +2580,12 @@ void normalize_event_names(vector<WitnessEvent> & events,
 }
 
 string normalize_binding_arg_for_event(const string & arg,
-                                       bool preserve_qualified_member)
+                                       bool preserve_qualified_member,
+                                       bool preserve_const_char_array)
 {
-  typedef pair<string, bool> CacheKey;
+  typedef tuple<string, bool, bool> CacheKey;
   static map<CacheKey, string> cache;
-  const CacheKey key(arg, preserve_qualified_member);
+  const CacheKey key(arg, preserve_qualified_member, preserve_const_char_array);
   map<CacheKey, string>::const_iterator cached = cache.find(key);
   if(cached != cache.end()) {
     return cached->second;
@@ -2626,7 +2629,9 @@ string normalize_binding_arg_for_event(const string & arg,
   const string normalized = normalize_function_template_argument_spacing(value);
   const string anonymous_normalized =
       witness_text::normalize_anonymous_namespace_segments(
-          normalize_string_literal_array_witness_text(normalized));
+          preserve_const_char_array ?
+              normalized :
+              normalize_string_literal_array_witness_text(normalized));
   cache[key] = anonymous_normalized;
   return anonymous_normalized;
 }
@@ -2741,7 +2746,8 @@ string normalize_binding_arg_for_event(const WitnessBinding & binding)
 {
   const string normalized =
       normalize_binding_arg_for_event(binding.arg,
-                                      binding.preserve_qualified_member);
+                                      binding.preserve_qualified_member,
+                                      binding.source == "explicit");
   const string normalized_only =
       normalized == "unsigned" ? "unsigned int" : normalized;
   if(binding.type_like) {
@@ -4386,6 +4392,53 @@ void normalize_source_defined_template_calls(vector<WitnessEvent> & events,
         continue;
       }
       drop[i] = 1;
+    }
+  }
+  bool changed = true;
+  while(changed) {
+    changed = false;
+    for(size_t i = 0; i < events.size(); ++i) {
+      if(!drop[i] || events[i].kind != WitnessEventKind::ClassUse) {
+        continue;
+      }
+      const ParsedLocation parent_location = parse_line_col(events[i].location);
+      if(parent_location.line <= 0) {
+        continue;
+      }
+      for(size_t j = 0; j < events.size(); ++j) {
+        if(drop[j] || events[j].kind != WitnessEventKind::ClassUse) {
+          continue;
+        }
+        const ParsedLocation child_location = parse_line_col(events[j].location);
+        if(child_location.line != parent_location.line) {
+          continue;
+        }
+        const string child_entity = bound_class_use_entity_text(events[j]);
+        if(child_entity.empty()) {
+          continue;
+        }
+        bool parent_mentions_child = false;
+        for(size_t k = 0; k < events[i].bindings.size(); ++k) {
+          if(normalize_source_event_entity_text(events[i].bindings[k].arg) ==
+             child_entity) {
+            parent_mentions_child = true;
+            break;
+          }
+        }
+        if(!parent_mentions_child) {
+          for(size_t k = 0; k < events[i].specialization_bindings.size(); ++k) {
+            if(normalize_source_event_entity_text(
+                   events[i].specialization_bindings[k].arg) == child_entity) {
+              parent_mentions_child = true;
+              break;
+            }
+          }
+        }
+        if(parent_mentions_child) {
+          drop[j] = 1;
+          changed = true;
+        }
+      }
     }
   }
   vector<WitnessEvent> kept;

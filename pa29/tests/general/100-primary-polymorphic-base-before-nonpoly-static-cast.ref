@@ -60,9 +60,9 @@ global @__rtti_struct_dynamic_matcher_ [storage=readonly, binding=weak, object=_
   i32 0
   i32 2
   ptr addr @__rtti_struct_matcher
-  i64 2
-  ptr addr @__rtti_struct_iface
   i64 2050
+  ptr addr @__rtti_struct_iface
+  i64 2
 }
 global @dynamic_matcher___vtable [storage=readonly, binding=weak, object=_ZTV7dynamicI7matcherE] = {
   i64 0
@@ -70,11 +70,6 @@ global @dynamic_matcher___vtable [storage=readonly, binding=weak, object=_ZTV7dy
   ptr addr @dynamic_matcher____dynamic
   ptr addr @dynamic_matcher____dynamic__deleting_entry
   ptr addr @dynamic_matcher___peek
-}
-global @dynamic_matcher_____view__iface__8__vtable [storage=readonly, binding=weak, object=@dynamic_matcher_____view__iface__8__vtable] = {
-  ptr addr @_dynamic_matcher____dynamic__vtable_return_adjust
-  ptr addr @_dynamic_matcher____dynamic__deleting_entry__vtable_return_adjust
-  ptr addr @_dynamic_matcher___peek__vtable_return_adjust
 }
 global @iface__vtable [storage=readonly, binding=weak, object=_ZTV5iface] = {
   i64 0
@@ -85,7 +80,7 @@ global @iface__vtable [storage=readonly, binding=weak, object=_ZTV5iface] = {
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $d : obj<24x8>
+  slot $d : obj<16x8>
   slot $arg__1 : obj<4x4>
   slot $p : ptr
   slot $out : obj<4x4>
@@ -97,7 +92,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @matcher__matcher(%t2, 42)
     call void @dynamic_matcher___dynamic(%t1, %t2)
     %t3 = addr $d
-    %t4 = index i8 [projection=base_subobject] %t3, 8
+    %t4 = index i8 [projection=base_subobject] %t3, 0
     store ptr %t4, $p
     %t5 = addr $out
     %t6 = addr $out
@@ -147,23 +142,19 @@ function @dynamic_matcher___dynamic(%this : ptr, %m : ptr [pass=reference]) -> v
     store ptr %this, $this
     store ptr %m, $m
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 [projection=base_subobject] %t1, 8
     %t3 = load ptr $m
     copyobj 4x4 %t3, %t2
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 8
+    %t5 = index i8 [projection=base_subobject] %t4, 0
     call void @iface__iface__base_entry(%t5)
     %t6 = load ptr $this
     %t7 = addr @dynamic_matcher___vtable
     %t8 = index i8 %t7, 16
     store ptr %t8, %t6
     %t9 = load ptr $this
-    %t10 = index i8 [projection=base_subobject] %t9, 8
-    %t11 = addr @dynamic_matcher_____view__iface__8__vtable
-    store ptr %t11, %t10
-    %t12 = load ptr $this
-    %t13 = index i8 [projection=field] %t12, 16
-    store i32 9, %t13
+    %t10 = index i8 [projection=field] %t9, 12
+    store i32 9, %t10
     return void
 }
 function @dynamic_matcher___peek(%this : ptr, %out : ptr [pass=reference]) -> void [binding=weak, object=_ZNK7dynamicI7matcherE4peekER4sink] {
@@ -175,7 +166,7 @@ function @dynamic_matcher___peek(%this : ptr, %out : ptr [pass=reference]) -> vo
     store ptr %out, $out
     %t1 = load ptr $out
     %t2 = load ptr $this
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 [projection=base_subobject] %t2, 8
     %t4 = index i8 [projection=field] %t3, 0
     call void @sink__accept(%t1, %t4)
     return void
@@ -190,14 +181,10 @@ function @dynamic_matcher____dynamic__deleting_entry(%this : ptr) -> void [bindi
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 8
-    %t6 = addr @dynamic_matcher_____view__iface__8__vtable
-    store ptr %t6, %t5
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=base_subobject] %t7, 8
-    call void @iface___iface__base_entry(%t8)
-    %t9 = load ptr $this
-    call void @operator_delete(%t9)
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @iface___iface__base_entry(%t5)
+    %t6 = load ptr $this
+    call void @operator_delete(%t6)
     return void
 }
 function @dynamic_matcher____dynamic(%this : ptr) -> void [binding=weak, object=_ZN7dynamicI7matcherED1Ev] {
@@ -210,12 +197,8 @@ function @dynamic_matcher____dynamic(%this : ptr) -> void [binding=weak, object=
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 8
-    %t6 = addr @dynamic_matcher_____view__iface__8__vtable
-    store ptr %t6, %t5
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=base_subobject] %t7, 8
-    call void @iface___iface__base_entry(%t8)
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @iface___iface__base_entry(%t5)
     return void
 }
 function @sink__accept(%this : ptr, %x : ptr [pass=reference]) -> void [binding=weak, object=_ZN4sink6acceptERKi] {
@@ -289,23 +272,5 @@ function @iface___iface(%this : ptr) -> void [binding=weak, object=_ZN5ifaceD1Ev
     %t2 = addr @iface__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
-    return void
-}
-function @_dynamic_matcher____dynamic__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N7dynamicI7matcherED0Ev] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    call void @dynamic_matcher____dynamic__deleting_entry(%t1)
-    return void
-}
-function @_dynamic_matcher____dynamic__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N7dynamicI7matcherED1Ev] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    call void @dynamic_matcher____dynamic(%t1)
-    return void
-}
-function @_dynamic_matcher___peek__vtable_return_adjust(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=weak, object=_ZThn8_NK7dynamicI7matcherE4peekER4sink] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    call void @dynamic_matcher___peek(%t1, %arg1)
     return void
 }

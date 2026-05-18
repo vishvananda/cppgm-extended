@@ -31,6 +31,7 @@
 #include "semantic_utils.h"
 #include "template_api.h"
 #include "template_argument_semantics.h"
+#include "template_services.h"
 #include "template_witness.h"
 
 namespace semantic_class_model {
@@ -1754,11 +1755,17 @@ void expand_base_template_argument_syntax_groups(
 
     std::vector<TemplateArgumentSyntax> expanded_arg_syntaxes;
     if(arg_did_expand) {
-      expanded_arg_syntaxes =
-          template_argument_semantics::expand_type_pack_argument_syntaxes(
-              scope,
-              source_arg,
-              expanded_arg_texts);
+      template_api::with_template_services(
+          ctx,
+          [&](template_api::TemplateServices & services)
+          {
+            expanded_arg_syntaxes =
+                template_argument_semantics::expand_type_pack_argument_syntaxes(
+                    services,
+                    scope,
+                    source_arg,
+                    expanded_arg_texts);
+          });
       any_expanded = true;
     }
 
@@ -2572,8 +2579,25 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
                                            const std::string & type_id_text,
                                            bool dependent_class)
 {
+  CppAstNode expanded_type_id;
+  const CppAstNode * type_id_for_parse = &type_id;
+  if(info.member_scope) {
+    template_api::with_template_services(
+        ctx,
+        [&](template_api::TemplateServices & services)
+        {
+          if(template_argument_semantics::expand_bound_packs_in_type_id_node(
+                 services,
+                 *info.member_scope,
+                 type_id,
+                 expanded_type_id)) {
+            type_id_for_parse = &expanded_type_id;
+          }
+          return true;
+        });
+  }
   TypePtr alias;
-  if(ctx.parse_type_id(*info.member_scope, type_id, alias, true) && alias) {
+  if(ctx.parse_type_id(*info.member_scope, *type_id_for_parse, alias, true) && alias) {
     try {
       TypePtr canonical =
           canonicalize_member_typedef_type(ctx, *info.member_scope, alias, &info);
@@ -5874,6 +5898,8 @@ void finalize_class_layout(SemanticContext & ctx,
   info.virtual_base_subobjects.clear();
   info.vtables.clear();
 
+  ClassInfo * primary_base = primary_polymorphic_base(info);
+
   if(info.has_own_vptr) {
     class_size = 8;
     class_alignment = 8;
@@ -5881,51 +5907,70 @@ void finalize_class_layout(SemanticContext & ctx,
 
   std::vector<SubobjectInfo> placed_nonvirtual_subobjects;
 
+  const auto place_nonvirtual_base =
+      [&](BaseInfo & base)
+      {
+        size_t base_alignment = 0;
+        try {
+          base_alignment = cpp_decl::type_alignment(base.type->type);
+        } catch(const std::logic_error & e) {
+          std::ostringstream out;
+          out << e.what() << " [class " << info.qualified_name
+              << " nonvirtual base " << base.type->qualified_name;
+          out << " type " << cpp_decl::describe_type(base.type->type);
+          out << "]";
+          throw TemplateSubstitutionFailure(out.str());
+        }
+        const size_t base_size = base.type->nonvirtual_size;
+        const bool elide_empty_base = ctx.is_empty_class_info(base.type);
+        size_t base_offset = align_up(class_size, base_alignment);
+        if(elide_empty_base) {
+          const size_t search_limit = class_size;
+          for(size_t candidate = 0; candidate <= search_limit; ++candidate) {
+            if((candidate % base_alignment) != 0) {
+              continue;
+            }
+            if(!placement_conflicts_same_type_subobject(placed_nonvirtual_subobjects,
+                                                        *base.type,
+                                                        candidate)) {
+              base_offset = candidate;
+              break;
+            }
+          }
+        }
+        base.offset = base_offset;
+        if(elide_empty_base) {
+          class_size = std::max(class_size, base.offset == 0 ? std::size_t(0) :
+                                                base.offset + 1);
+        } else {
+          class_size = base.offset + base_size;
+        }
+        class_alignment = std::max(class_alignment, base_alignment);
+        record_placed_nonvirtual_subobjects(placed_nonvirtual_subobjects,
+                                            *base.type,
+                                            base.offset,
+                                            base.access);
+      };
+
+  if(primary_base) {
+    for(size_t i = 0; i < info.bases.size(); ++i) {
+      BaseInfo & base = info.bases[i];
+      if(!base.is_virtual && base.type == primary_base) {
+        place_nonvirtual_base(base);
+        break;
+      }
+    }
+  }
+
   for(size_t i = 0; i < info.bases.size(); ++i) {
     BaseInfo & base = info.bases[i];
     if(base.is_virtual) {
       continue;
     }
-    size_t base_alignment = 0;
-    try {
-      base_alignment = cpp_decl::type_alignment(base.type->type);
-    } catch(const std::logic_error & e) {
-      std::ostringstream out;
-      out << e.what() << " [class " << info.qualified_name
-          << " nonvirtual base " << base.type->qualified_name;
-      out << " type " << cpp_decl::describe_type(base.type->type);
-      out << "]";
-      throw TemplateSubstitutionFailure(out.str());
+    if(primary_base && base.type == primary_base) {
+      continue;
     }
-    const size_t base_size = base.type->nonvirtual_size;
-    const bool elide_empty_base = ctx.is_empty_class_info(base.type);
-    size_t base_offset = align_up(class_size, base_alignment);
-    if(elide_empty_base) {
-      const size_t search_limit = class_size;
-      for(size_t candidate = 0; candidate <= search_limit; ++candidate) {
-        if((candidate % base_alignment) != 0) {
-          continue;
-        }
-        if(!placement_conflicts_same_type_subobject(placed_nonvirtual_subobjects,
-                                                    *base.type,
-                                                    candidate)) {
-          base_offset = candidate;
-          break;
-        }
-      }
-    }
-    base.offset = base_offset;
-    if(elide_empty_base) {
-      class_size = std::max(class_size, base.offset == 0 ? std::size_t(0) :
-                                            base.offset + 1);
-    } else {
-      class_size = base.offset + base_size;
-    }
-    class_alignment = std::max(class_alignment, base_alignment);
-    record_placed_nonvirtual_subobjects(placed_nonvirtual_subobjects,
-                                        *base.type,
-                                        base.offset,
-                                        base.access);
+    place_nonvirtual_base(base);
     open_bit_size_bits = 0;
     open_bit_used_bits = 0;
     open_bit_alignment = 1;

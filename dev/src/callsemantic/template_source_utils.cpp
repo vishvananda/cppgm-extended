@@ -565,6 +565,12 @@ string template_argument_syntax_witness_source_text(
   if(!trim_space(argument.source_text).empty()) {
     return trim_space(argument.source_text);
   }
+  if(argument.type_id) {
+    const string type_text = trim_space(cpp_decl::node_text(*argument.type_id));
+    if(!type_text.empty()) {
+      return type_text;
+    }
+  }
   if(argument.expression) {
     const string expression_text =
         trim_space(callsemantic_internal::describe_expression_for_diagnostic(
@@ -2353,14 +2359,16 @@ bool current_specialization_alias_binding_argument_text(
     const TemplateArgumentSyntax * explicit_argument_syntax,
     std::string & out)
 {
-  const std::string rewritten =
-      current_specialization_source_binding_text(ctx,
-                                                 use_scope,
-                                                 argument,
-                                                 explicit_argument_text);
-  if(!rewritten.empty()) {
-    out = rewritten;
-    return true;
+  if(argument.kind == TemplateArgument::TA_TYPE) {
+    const std::string rewritten =
+        current_specialization_source_binding_text(ctx,
+                                                   use_scope,
+                                                   argument,
+                                                   explicit_argument_text);
+    if(!rewritten.empty()) {
+      out = rewritten;
+      return true;
+    }
   }
 
   const std::string rewritten_source =

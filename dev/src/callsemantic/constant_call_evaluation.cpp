@@ -9,6 +9,7 @@
 #include "semantic_conversion.h"
 #include "semantic_lookup.h"
 #include "semantic_template_function.h"
+#include "template_scope.h"
 #include "types.h"
 
 #include <sstream>
@@ -36,6 +37,7 @@ using semantic_lookup::lookup_member_value;
 using semantic_lookup::scope_qualified_name;
 using semantic_model::ClassInfo;
 using semantic_model::FunctionBinding;
+using semantic_model::FunctionTemplateDecl;
 using semantic_model::Scope;
 using semantic_model::ValueBinding;
 
@@ -71,6 +73,115 @@ FunctionBinding * ensure_constexpr_function_definition(SemanticContext & ctx,
       ctx,
       binding);
   return binding;
+}
+
+bool bind_constexpr_function_parameter_value_packs(
+    Scope & scope,
+    const FunctionBinding & binding,
+    const std::vector<constant_eval::ConstexprValue> & explicit_args,
+    const std::vector<std::pair<std::string, TypePtr> > & explicit_params)
+{
+  if(!binding.source_template ||
+     !binding.source_template->has_trailing_function_parameter_pack ||
+     binding.source_template->params_pattern.empty()) {
+    return false;
+  }
+
+  const FunctionTemplateDecl & source = *binding.source_template;
+  const std::size_t fixed_count = source.params_pattern.size() - 1;
+  if(explicit_args.size() < fixed_count ||
+     explicit_params.size() < fixed_count) {
+    return false;
+  }
+
+  const std::string pack_name =
+      function_template_parameter_alias_name(source, source.params_pattern.size() - 1);
+  if(pack_name.empty()) {
+    return false;
+  }
+
+  const std::size_t pack_count = explicit_args.size() - fixed_count;
+  std::vector<ValueBinding> pack_bindings;
+  pack_bindings.reserve(pack_count);
+  for(std::size_t i = 0; i < pack_count; ++i) {
+    const std::size_t arg_index = fixed_count + i;
+    TypePtr value_type = arg_index < explicit_params.size() ?
+        explicit_params[arg_index].second :
+        explicit_args[arg_index].type;
+    if(!value_type) {
+      value_type = explicit_args[arg_index].type;
+    }
+
+    const std::string alias_name = template_scope::pack_value_alias_name(pack_name, i);
+    ValueBinding value(ValueBinding::VK_PARAMETER, alias_name, value_type);
+    value.has_constexpr_value = true;
+    value.constexpr_value = explicit_args[arg_index];
+    long long integral_value = 0;
+    if(constant_eval::constexpr_value_to_integral(explicit_args[arg_index],
+                                                  integral_value)) {
+      value.has_constant_value = true;
+      value.constant_value = integral_value;
+    }
+    scope.values[alias_name] = value;
+    pack_bindings.push_back(scope.values[alias_name]);
+  }
+  template_scope::bind_value_pack(scope, pack_name, pack_bindings, true);
+  return true;
+}
+
+bool constexpr_function_body_contains_pack_expansion(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::pack_expansion_expression) {
+    return true;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(constexpr_function_body_contains_pack_expansion(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool expand_constexpr_function_body_packs(SemanticContext & ctx,
+                                          Scope & scope,
+                                          const CppAstNode & node,
+                                          CppAstNode & out)
+{
+  if(node.kind == CppAstKind::pack_expansion_expression) {
+    return false;
+  }
+
+  out = node;
+  std::vector<CppAstNode> children;
+  children.reserve(node.children.size());
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::pack_expansion_expression) {
+      std::vector<CppAstNode> expanded_nodes;
+      if(!ctx.expand_pack_argument_node(scope, child, expanded_nodes)) {
+        return false;
+      }
+      for(std::size_t j = 0; j < expanded_nodes.size(); ++j) {
+        CppAstNode expanded_child;
+        if(!expand_constexpr_function_body_packs(ctx,
+                                                 scope,
+                                                 expanded_nodes[j],
+                                                 expanded_child)) {
+          return false;
+        }
+        children.push_back(expanded_child);
+      }
+      continue;
+    }
+
+    CppAstNode expanded_child;
+    if(!expand_constexpr_function_body_packs(ctx, scope, child, expanded_child)) {
+      return false;
+    }
+    children.push_back(expanded_child);
+  }
+  out.children.swap(children);
+  return true;
 }
 
 }  // namespace
@@ -542,7 +653,21 @@ bool evaluate_constant_call_expression_value(
       info.return_type = function_type && function_type->kind == Type::TK_FUNCTION ?
           function_type->inner : TypePtr();
       info.params = binding->params;
+      CppAstNode expanded_body;
       info.body = constexpr_function_body(ctx, *binding);
+      const bool body_has_pack_expansion =
+          info.body && constexpr_function_body_contains_pack_expansion(*info.body);
+      if(body_has_pack_expansion) {
+        bind_constexpr_function_parameter_value_packs(
+            constexpr_call_scope, *binding, final_args, info.params);
+      }
+      if(body_has_pack_expansion &&
+         expand_constexpr_function_body_packs(ctx,
+                                             constexpr_call_scope,
+                                             *info.body,
+                                             expanded_body)) {
+        info.body = &expanded_body;
+      }
       info.variadic = function_type && function_type->kind == Type::TK_FUNCTION &&
                       (function_type->variadic || function_type->prototype_relaxed);
       info.is_method = binding->is_method;
@@ -627,7 +752,21 @@ bool evaluate_constant_call_expression_value(
   info.return_type = function_type && function_type->kind == Type::TK_FUNCTION ?
       function_type->inner : TypePtr();
   info.params.assign(binding->params.begin() + explicit_param_offset, binding->params.end());
+  CppAstNode expanded_body;
   info.body = constexpr_function_body(ctx, *binding);
+  const bool body_has_pack_expansion =
+      info.body && constexpr_function_body_contains_pack_expansion(*info.body);
+  if(body_has_pack_expansion) {
+    bind_constexpr_function_parameter_value_packs(
+        constexpr_call_scope, *binding, final_args, info.params);
+  }
+  if(body_has_pack_expansion &&
+     expand_constexpr_function_body_packs(ctx,
+                                         constexpr_call_scope,
+                                         *info.body,
+                                         expanded_body)) {
+    info.body = &expanded_body;
+  }
   info.variadic = function_type && function_type->kind == Type::TK_FUNCTION &&
                   (function_type->variadic || function_type->prototype_relaxed);
   info.is_method = binding->is_method;

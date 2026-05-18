@@ -17,3 +17,24 @@ int main() {
   (void)next;
   return 0;
 }
+
+namespace hidden_friend_current_instantiation {
+  template<class T>
+  struct iter {
+    friend bool operator==(iter<T> const &, iter<T> const &) {
+      return true;
+    }
+
+    friend bool operator!=(iter<T> const &left, iter<T> const &right) {
+      return !(left == right);
+    }
+  };
+
+  typedef iter<int> siter;
+
+  bool compare() {
+    siter begin;
+    siter end;
+    return begin != end;
+  }
+}

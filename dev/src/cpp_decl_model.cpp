@@ -772,7 +772,8 @@ TypePtr apply_cv(const TypePtr & base, bool cv_const, bool cv_volatile)
   }
 
   if(base->kind == Type::TK_LVALUE_REFERENCE ||
-     base->kind == Type::TK_RVALUE_REFERENCE) {
+     base->kind == Type::TK_RVALUE_REFERENCE ||
+     base->kind == Type::TK_FUNCTION) {
     return base;
   }
 

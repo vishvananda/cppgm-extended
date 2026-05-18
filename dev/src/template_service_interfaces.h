@@ -27,19 +27,35 @@ namespace template_api {
 enum class ClassTemplateSourceUseMode
 {
   EmitClassUse,
-  NestedArgumentsOnly
+  EmitClassUseOnly,
+  NestedArgumentsOnly,
+  SemanticLookupOnly
 };
 
 inline bool class_template_source_use_emits_class_use(
     ClassTemplateSourceUseMode mode)
 {
-  return mode == ClassTemplateSourceUseMode::EmitClassUse;
+  return mode == ClassTemplateSourceUseMode::EmitClassUse ||
+         mode == ClassTemplateSourceUseMode::EmitClassUseOnly;
 }
 
 inline bool class_template_source_use_recovers_nested_arguments(
     ClassTemplateSourceUseMode mode)
 {
   return mode == ClassTemplateSourceUseMode::NestedArgumentsOnly;
+}
+
+inline bool class_template_source_use_suppresses_nested_arguments(
+    ClassTemplateSourceUseMode mode)
+{
+  return mode == ClassTemplateSourceUseMode::EmitClassUseOnly ||
+         mode == ClassTemplateSourceUseMode::SemanticLookupOnly;
+}
+
+inline bool class_template_source_use_is_semantic_lookup_only(
+    ClassTemplateSourceUseMode mode)
+{
+  return mode == ClassTemplateSourceUseMode::SemanticLookupOnly;
 }
 
 struct TemplateNamedTypeMetadata

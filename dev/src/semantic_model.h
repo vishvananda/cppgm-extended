@@ -568,6 +568,7 @@ struct FunctionTemplateDecl
   std::vector<const CppAstNode *> default_arguments_pattern;
   std::vector<ClassInfo *> friend_access_classes;
   bool has_trailing_function_parameter_pack = false;
+  bool trailing_function_parameter_pack_analyzed = false;
   std::string debug_decl_location;
   std::string debug_decl_location_details;
   std::string debug_scope_name;
