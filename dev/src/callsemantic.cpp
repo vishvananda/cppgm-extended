@@ -11891,6 +11891,67 @@ private:
                                                    use_scope,
                                                    decl.parameters,
                                                    arguments);
+    const auto scope_has_template_bound_name =
+        [](const Scope & scope, const string & name) -> bool
+    {
+      return !name.empty() &&
+             (scope.template_bound_type_names.count(name) != 0 ||
+              scope.template_bound_type_pack_names.count(name) != 0 ||
+              scope.template_bound_value_names.count(name) != 0 ||
+              scope.template_bound_template_names.count(name) != 0);
+    };
+    const auto bind_enclosing_class_template_arguments =
+        [&]()
+    {
+      if(!decl.declaring_scope ||
+         !decl.declaring_scope->class_info ||
+         !decl.declaring_scope->class_info->source_template ||
+         decl.declaring_scope->class_info->instantiation_arguments.empty()) {
+        return;
+      }
+      ClassInfo & owner = *decl.declaring_scope->class_info;
+      set<string> alias_parameter_names;
+      for(size_t i = 0; i < decl.parameters.size(); ++i) {
+        if(!decl.parameters[i].name.empty()) {
+          alias_parameter_names.insert(decl.parameters[i].name);
+        }
+        for(size_t j = 0; j < decl.parameters[i].alternate_names.size(); ++j) {
+          if(!decl.parameters[i].alternate_names[j].empty()) {
+            alias_parameter_names.insert(decl.parameters[i].alternate_names[j]);
+          }
+        }
+      }
+      for(size_t i = 0; i < owner.source_template->parameters.size(); ++i) {
+        const TemplateParameterInfo & parameter =
+            owner.source_template->parameters[i];
+        if(alias_parameter_names.count(parameter.name) != 0 &&
+           scope_has_template_bound_name(*inst_scope, parameter.name)) {
+          return;
+        }
+        for(size_t j = 0; j < parameter.alternate_names.size(); ++j) {
+          if(alias_parameter_names.count(parameter.alternate_names[j]) != 0 &&
+             scope_has_template_bound_name(*inst_scope,
+                                           parameter.alternate_names[j])) {
+            return;
+          }
+        }
+      }
+      for(size_t i = 0; i < owner.source_template->parameters.size(); ++i) {
+        const TemplateParameterInfo & parameter =
+            owner.source_template->parameters[i];
+        template_scope::erase_template_parameter_binding(*inst_scope,
+                                                         parameter.name);
+        for(size_t j = 0; j < parameter.alternate_names.size(); ++j) {
+          template_scope::erase_template_parameter_binding(
+              *inst_scope,
+              parameter.alternate_names[j]);
+        }
+      }
+      bind_template_arguments_into_scope(*inst_scope,
+                                         owner.source_template->parameters,
+                                         owner.instantiation_arguments);
+    };
+    bind_enclosing_class_template_arguments();
     const auto make_dependent_alias_specialization = [&]() -> TypePtr
     {
       vector<string> dependent_source_arg_texts =
