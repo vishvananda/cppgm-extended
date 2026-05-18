@@ -5434,6 +5434,33 @@ private:
                                 to_string(stride));
   }
 
+  string emit_incdec_next_value(const CallSemNode & node,
+                                const string & memory_type,
+                                const string & old_value)
+  {
+    if(node.children.size() != 1 ||
+       (!callsem_has_token(node, OP_INC) && !callsem_has_token(node, OP_DEC))) {
+      throw logic_error("inc/dec expression shape");
+    }
+    const TypePtr operand_value_type =
+        lowir_value_conversion_type(node.children[0].semantic_type);
+    if(operand_value_type && operand_value_type->kind == Type::TK_POINTER) {
+      return callsem_has_token(node, OP_INC) ?
+          emit_pointer_index(old_value,
+                             "1",
+                             make_fundamental(FT_LONG_LONG_INT),
+                             node.children[0].semantic_type) :
+          emit_pointer_index_negated(old_value,
+                                     "1",
+                                     make_fundamental(FT_LONG_LONG_INT),
+                                     node.children[0].semantic_type);
+    }
+    return emit_temp_assignment(memory_type,
+                                string("binary ") +
+                                (callsem_has_token(node, OP_INC) ? "add " : "sub ") +
+                                memory_type + " " + old_value + ", 1");
+  }
+
   void emit_zero_storage_bytes(const string & target_ptr, size_t byte_count)
   {
     size_t offset = 0;
@@ -10848,28 +10875,8 @@ private:
             emit_temp_assignment(memory_type,
                                  string("load ") + memory_type + " " +
                                  emit_lvalue_storage(node.children[0]));
-        const TypePtr operand_value_type =
-            lowir_value_conversion_type(node.children[0].semantic_type);
-        string next_value;
-        if(operand_value_type && operand_value_type->kind == Type::TK_POINTER) {
-          next_value =
-              callsem_has_token(node, OP_INC) ?
-                  emit_pointer_index(old_value,
-                                     "1",
-                                     make_fundamental(FT_LONG_LONG_INT),
-                                     node.children[0].semantic_type) :
-                  emit_pointer_index_negated(old_value,
-                                             "1",
-                                             make_fundamental(FT_LONG_LONG_INT),
-                                             node.children[0].semantic_type);
-        } else {
-          next_value =
-              emit_temp_assignment(memory_type,
-                                   string("binary ") +
-                                   (callsem_has_token(node, OP_INC) ? "add " : "sub ") +
-                                   memory_type + " " +
-                                   old_value + ", 1");
-        }
+        const string next_value =
+            emit_incdec_next_value(node, memory_type, old_value);
         if(is_bit_field_member_expression(node.children[0])) {
           emit_store_to_bit_field(node.children[0], next_value);
         } else {
@@ -10919,28 +10926,8 @@ private:
           emit_temp_assignment(memory_type,
                                string("load ") + memory_type + " " +
                                emit_lvalue_storage(node.children[0]));
-      const TypePtr operand_value_type =
-          lowir_value_conversion_type(node.children[0].semantic_type);
-      string next_value;
-      if(operand_value_type && operand_value_type->kind == Type::TK_POINTER) {
-        next_value =
-            callsem_has_token(node, OP_INC) ?
-                emit_pointer_index(old_value,
-                                   "1",
-                                   make_fundamental(FT_LONG_LONG_INT),
-                                   node.children[0].semantic_type) :
-                emit_pointer_index_negated(old_value,
-                                           "1",
-                                           make_fundamental(FT_LONG_LONG_INT),
-                                           node.children[0].semantic_type);
-      } else {
-        next_value =
-            emit_temp_assignment(memory_type,
-                                 string("binary ") +
-                                 (callsem_has_token(node, OP_INC) ? "add " : "sub ") +
-                                 memory_type + " " +
-                                 old_value + ", 1");
-      }
+      const string next_value =
+          emit_incdec_next_value(node, memory_type, old_value);
       if(is_bit_field_member_expression(node.children[0])) {
         emit_store_to_bit_field(node.children[0], next_value);
       } else {
@@ -12231,10 +12218,7 @@ private:
                                string("load ") + memory_type + " " +
                                emit_lvalue_storage(node.children[0]));
       const string next_value =
-          emit_temp_assignment(memory_type,
-                               string("binary ") +
-                               (callsem_has_token(node, OP_INC) ? "add " : "sub ") +
-                               memory_type + " " + old_value + ", 1");
+          emit_incdec_next_value(node, memory_type, old_value);
       const string target = emit_lvalue_storage(node.children[0]);
       if(is_bit_field_member_expression(node.children[0])) {
         emit_store_to_bit_field(node.children[0], next_value);

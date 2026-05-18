@@ -1,0 +1,45 @@
+function @touch(%value : ptr [pass=reference]) -> ptr [binding=strong, object=_Z5touchRPi] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = load ptr %t1
+    return ptr %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $values : obj<12x4>
+  slot $p : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $values
+    %t2 = unary decay ptr %t1
+    %t3 = binary mul i64 2, 4
+    %t4 = index i8 %t2, %t3
+    store ptr %t4, $p
+    %t5 = load ptr $p
+    %t6 = binary mul i64 1, 4
+    %t7 = binary sub i64 0, %t6
+    %t8 = index i8 %t5, %t7
+    store ptr %t8, $p
+    %t9 = call ptr @touch($p)
+    %t10 = addr $values
+    %t11 = unary decay ptr %t10
+    %t12 = binary mul i64 1, 4
+    %t13 = index i8 %t11, %t12
+    %t14 = cmp eq ptr %t9, %t13
+    branch %t14, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t15 = load i32 $cond__1
+    return i32 %t15
+}
