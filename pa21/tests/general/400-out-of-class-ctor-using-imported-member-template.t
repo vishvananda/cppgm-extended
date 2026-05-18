@@ -1,12 +1,8 @@
 template<typename T>
-struct SizeBase
-{
-  using size_type = unsigned long;
-};
-
-template<typename T>
 struct InsertBase
 {
+  using size_type = unsigned long;
+
   void insert(int) {}
   void insert(int, int) {}
 
@@ -21,19 +17,18 @@ template<typename T>
 struct Insert<T, false> : InsertBase<T>
 {
   using base_type = InsertBase<T>;
+  using typename base_type::size_type;
   using base_type::insert;
 
-  template<typename Pair>
-  void insert(Pair &&) {}
-
-  template<typename Pair>
-  void insert(int, Pair &&) {}
+  void insert(long) {}
+  void insert(int, long) {}
 };
 
 template<typename T>
-struct Table : Insert<T, false>, SizeBase<T>
+struct Table : Insert<T, false>
 {
-  using size_type = typename SizeBase<T>::size_type;
+  using base_type = Insert<T, false>;
+  using size_type = typename base_type::size_type;
 
   template<typename It>
   Table(It first, It last, size_type hint);
@@ -44,7 +39,7 @@ template<typename It>
 Table<T>::Table(It first, It last, size_type hint)
 {
   (void)hint;
-  this->insert(first, last);
+  this->template insert<It>(first, last);
 }
 
 int main()
