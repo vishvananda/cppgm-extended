@@ -218,9 +218,9 @@ jobs:
       CPPGM_STDLIB_FLAGS: ${{ matrix.flavor.stdlib_flags }}
       CPPGM_LOWIR_DIRECT_TEXT_COMPARE: "1"
       ORDERED: "false"
-      FRONTIER_FLAVOR: ${{ matrix.flavor.id }}
-      FRONTIER_RUNNER_IMAGE: ${{ matrix.flavor.image }}
-      FRONTIER_ARTIFACT_NAME: ${{ matrix.flavor.artifact_name }}
+      SELFHOST_FLAVOR: ${{ matrix.flavor.id }}
+      SELFHOST_RUNNER_IMAGE: ${{ matrix.flavor.image }}
+      SELFHOST_ARTIFACT_NAME: ${{ matrix.flavor.artifact_name }}
 
     steps:
       - name: Install checkout and host compiler dependencies
@@ -273,7 +273,7 @@ jobs:
         if: matrix.suite.id == 'pa37-through-pa10'
         run: |
           set -euo pipefail
-          source_sha=$(git rev-parse HEAD)
+          source_sha="$GITHUB_SHA"
           bundle="$RUNNER_TEMP/pa37-cppgm-self"
           upload="$RUNNER_TEMP/pa37-cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
@@ -283,9 +283,9 @@ jobs:
             printf 'source_sha=%s\n' "$source_sha"
             printf 'source_ref=%s\n' "$GITHUB_REF"
             printf 'source_repository=%s\n' "$GITHUB_REPOSITORY"
-            printf 'frontier_run_id=%s\n' "$GITHUB_RUN_ID"
-            printf 'frontier_flavor=%s\n' "$FRONTIER_FLAVOR"
-            printf 'runner_image=%s\n' "$FRONTIER_RUNNER_IMAGE"
+            printf 'selfhost_run_id=%s\n' "$GITHUB_RUN_ID"
+            printf 'selfhost_flavor=%s\n' "$SELFHOST_FLAVOR"
+            printf 'runner_image=%s\n' "$SELFHOST_RUNNER_IMAGE"
             printf 'cxx=%s\n' "$CXX"
             printf 'cppgm_host_cxx=%s\n' "$CPPGM_HOST_CXX"
             printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
@@ -297,15 +297,17 @@ jobs:
           {
             echo "### PA37 self compiler artifact"
             echo
-            echo "- Flavor: \`$FRONTIER_FLAVOR\`"
-            echo "- Artifact: \`$FRONTIER_ARTIFACT_NAME\`"
+            echo "- Flavor: \`$SELFHOST_FLAVOR\`"
+            echo "- Artifact: \`$SELFHOST_ARTIFACT_NAME\`"
             echo "- Workflow run id: \`$GITHUB_RUN_ID\`"
             echo "- Source SHA: \`$source_sha\`"
             echo
             echo "Manual inception run:"
             echo
+            echo "[Open PA37 Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/pa37-inception.yml)"
+            echo
             echo "\`\`\`sh"
-            echo "gh workflow run pa37-inception.yml -f frontier_run_id=$GITHUB_RUN_ID -f artifact_name=$FRONTIER_ARTIFACT_NAME"
+            echo "gh workflow run pa37-inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -313,7 +315,7 @@ jobs:
         if: matrix.suite.id == 'pa37-through-pa10'
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ env.FRONTIER_ARTIFACT_NAME }}
+          name: ${{ env.SELFHOST_ARTIFACT_NAME }}
           path: ${{ runner.temp }}/pa37-cppgm-self-upload/
           if-no-files-found: error
           retention-days: 14

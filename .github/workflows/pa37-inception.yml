@@ -4,18 +4,23 @@ on:
   workflow_run:
     workflows:
       - Tests
-      - PA37 Frontier
     types:
       - completed
   workflow_dispatch:
     inputs:
-      frontier_run_id:
-        description: GitHub Actions run id from a successful PA37 Frontier run
+      selfhost_run_id:
+        description: GitHub Actions run id from a successful Tests or PA37 Selfhost run
         required: true
-      artifact_name:
-        description: Name of the cppgm++ self compiler artifact
+      flavor:
+        description: PA37 selfhost artifact flavor
         required: true
-        default: pa37-cppgm-self-ubuntu-24.04-gcc
+        default: ubuntu-24.04-gcc
+        type: choice
+        options:
+          - ubuntu-24.04-gcc
+          - ubuntu-24.04-clang-libcxx
+          - ubuntu-26.04-gcc
+          - ubuntu-26.04-clang-libcxx
 
 permissions:
   actions: read
@@ -25,7 +30,14 @@ jobs:
   compare-cppgm-inception:
     name: compare cppgm++ inception (advisory on PRs)
     runs-on: ubuntu-24.04
+    container:
+      image: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', '26.04') && 'ubuntu:26.04' || 'ubuntu:24.04' }}
     timeout-minutes: 300
+
+    defaults:
+      run:
+        shell: bash
+
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
@@ -34,18 +46,29 @@ jobs:
          github.event.workflow_run.head_branch == 'main')))
 
     env:
-      CXX: g++
-      CPPGM_HOST_CXX: g++
-      CPPGM_STDLIB_FLAGS: ""
-      FRONTIER_RUN_ID: ${{ github.event.workflow_run.id || inputs.frontier_run_id }}
-      ARTIFACT_NAME: ${{ inputs.artifact_name || 'pa37-cppgm-self-ubuntu-24.04-gcc' }}
+      SELFHOST_FLAVOR: ${{ github.event.inputs.flavor || 'ubuntu-24.04-gcc' }}
+      CXX: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', 'clang-libcxx') && 'clang++' || 'g++' }}
+      CPPGM_HOST_CXX: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', 'clang-libcxx') && 'clang++' || 'g++' }}
+      CPPGM_STDLIB_FLAGS: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', 'clang-libcxx') && '-stdlib=libc++' || '' }}
+      SELFHOST_RUN_ID: ${{ github.event.workflow_run.id || github.event.inputs.selfhost_run_id }}
+      ARTIFACT_NAME: pa37-cppgm-self-${{ github.event.inputs.flavor || 'ubuntu-24.04-gcc' }}
 
     steps:
+      - name: Install host compiler
+        run: |
+          set -euo pipefail
+          packages="bash ca-certificates git make perl tar build-essential"
+          if [[ "$SELFHOST_FLAVOR" == *clang-libcxx ]]; then
+            packages="$packages clang libc++-dev libc++abi-dev"
+          fi
+          apt-get update
+          apt-get install -y --no-install-recommends $packages
+
       - name: Download cppgm++ self compiler artifact
         uses: actions/download-artifact@v7
         with:
           name: ${{ env.ARTIFACT_NAME }}
-          run-id: ${{ env.FRONTIER_RUN_ID }}
+          run-id: ${{ env.SELFHOST_RUN_ID }}
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/pa37-self-artifact
 
@@ -76,11 +99,6 @@ jobs:
         with:
           ref: ${{ steps.metadata.outputs.source_sha }}
 
-      - name: Install host compiler
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential
-
       - name: Restore cppgm++ self compiler
         run: |
           set -euo pipefail
@@ -106,7 +124,8 @@ jobs:
           CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa37/restored-self-driver" \
             make -C pa37 compare-cppgm++-inception-from-restored-self \
             PA37_RESTORED_CPPGM_SELF="$RUNNER_TEMP/pa37-restored-self/bin/cppgm++-self" \
-            CPPGM_HOST_CXX="$CPPGM_HOST_CXX"
+            CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
+            CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
 
       - name: Summarize result
         if: always()
@@ -115,7 +134,8 @@ jobs:
             echo "### PA37 cppgm++ inception"
             echo
             echo "- Trigger: \`${{ github.event_name }}\`"
-            echo "- Frontier run id: \`$FRONTIER_RUN_ID\`"
+            echo "- Selfhost run id: \`$SELFHOST_RUN_ID\`"
+            echo "- Flavor: \`$SELFHOST_FLAVOR\`"
             echo "- Artifact: \`$ARTIFACT_NAME\`"
             echo "- Source SHA: \`${{ steps.metadata.outputs.source_sha }}\`"
             echo "- Compare outcome: \`${{ steps.compare.outcome }}\`"
