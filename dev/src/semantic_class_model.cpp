@@ -5046,9 +5046,12 @@ void record_direct_base(ClassInfo & info,
   base.is_virtual = is_virtual;
   base.source_dependent = source_dependent;
   info.bases.push_back(base);
-  semantic_scope_mutation::bind_named_type(*info.member_scope,
-                                           base_class->name,
-                                           base_class->type);
+  if(info.member_scope->named_types.find(base_class->name) ==
+     info.member_scope->named_types.end()) {
+    semantic_scope_mutation::bind_named_type(*info.member_scope,
+                                             base_class->name,
+                                             base_class->type);
+  }
 }
 
 void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode & node)
