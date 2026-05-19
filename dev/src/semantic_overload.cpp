@@ -5987,15 +5987,17 @@ int compare_function_template_reference_pattern_preference(
 
   FunctionTemplateDecl & current_template = *current.function->source_template;
   FunctionTemplateDecl & best_template = *best.function->source_template;
-  if(current.call_args.size() != current_template.params_pattern.size() ||
-     best.call_args.size() != best_template.params_pattern.size() ||
-     current.call_args.size() != best.call_args.size()) {
+  const size_t common_arg_count =
+      std::min(std::min(current.call_args.size(), best.call_args.size()),
+               std::min(current_template.params_pattern.size(),
+                        best_template.params_pattern.size()));
+  if(common_arg_count == 0) {
     return 0;
   }
 
   bool current_better = false;
   bool best_better = false;
-  for(size_t i = 0; i < current.call_args.size(); ++i) {
+  for(size_t i = 0; i < common_arg_count; ++i) {
     if(current.call_args[i].category != VC_LVALUE ||
        best.call_args[i].category != VC_LVALUE) {
       continue;
