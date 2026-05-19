@@ -3032,12 +3032,6 @@ bool dependent_qualified_lookup_is_type_required_context(
   }
 }
 
-bool is_dependent_qualified_missing_typename_error(const logic_error & error)
-{
-  const string message = error.what();
-  return message.find("dependent qualified type requires typename: ") == 0;
-}
-
 StructuredTypeLookupResult resolve_bound_owner_qualified_name_syntax_type(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -3119,7 +3113,8 @@ StructuredTypeLookupResult resolve_bound_owner_qualified_name_syntax_type(
            owner_type,
            lookup_text,
            has_leading_typename)) {
-      throw logic_error("dependent qualified type requires typename: " + lookup_text);
+      throw DependentQualifiedTypeMissingTypenameError(
+          "dependent qualified type requires typename: " + lookup_text);
     }
     out = make_structured_dependent_qualified_member_type(
         lookup_text,
@@ -3569,8 +3564,8 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
              qualifier_type,
              normalized_lookup_name,
              node.has_leading_typename)) {
-        throw logic_error("dependent qualified type requires typename: " +
-                          normalized_lookup_name);
+        throw DependentQualifiedTypeMissingTypenameError(
+            "dependent qualified type requires typename: " + normalized_lookup_name);
       }
       out = make_structured_dependent_qualified_member_type(
           normalized_lookup_name,
@@ -21111,6 +21106,8 @@ NonTypeArgumentStatus evaluate_structured_template_member_bool_qualifier_type(
           parse_type_id_node_for_templates(
               services, scope.require(), *qualifier_type_syntax, qualifier_type, true) &&
           qualifier_type;
+    } catch(const DependentQualifiedTypeMissingTypenameError &) {
+      return NT_ARG_DEPENDENT;
     } catch(const TemplateSubstitutionFailure &) {
       return NT_ARG_EVAL_FAILED;
     } catch(const SemanticSoftFailure &) {
@@ -21119,11 +21116,6 @@ NonTypeArgumentStatus evaluate_structured_template_member_bool_qualifier_type(
       return NT_ARG_EVAL_FAILED;
     } catch(const semantic_fallback_audit::SemanticFallbackError &) {
       return NT_ARG_EVAL_FAILED;
-    } catch(const logic_error & error) {
-      if(is_dependent_qualified_missing_typename_error(error)) {
-        return NT_ARG_DEPENDENT;
-      }
-      throw;
     }
     if(!parsed_qualifier_type) {
       return NT_ARG_EVAL_FAILED;
@@ -22148,14 +22140,13 @@ static bool type_id_ast_mentions_template_dependency(
     } else if(scope_has_template_placeholders(services, scope)) {
       return true;
     }
-  } catch(const logic_error & error) {
+  } catch(const DependentQualifiedTypeMissingTypenameError &) {
     const CppAstNode * type_name = single_type_name_from_type_id(node);
     const QualifiedName * qualified =
         type_name ? cppast_qualified_name_syntax(*type_name) : nullptr;
     if(qualified &&
        qualified->name == kStructuredBoolResultMemberName &&
-       !qualified->qualifiers.empty() &&
-       is_dependent_qualified_missing_typename_error(error)) {
+       !qualified->qualifiers.empty()) {
       return true;
     }
     throw;
@@ -23038,9 +23029,9 @@ NonTypeArgumentStatus evaluate_non_type_argument_syntax(
     }
   }
 
-	  const bool structured_bool_shortcut_allowed =
-	      target_type && is_bool_type(remove_reference_type(target_type));
-	  if(structured_bool_shortcut_allowed) {
+  const bool structured_bool_shortcut_allowed =
+      target_type && is_bool_type(remove_reference_type(target_type));
+  if(structured_bool_shortcut_allowed) {
     bool bool_value = false;
     NonTypeArgumentStatus structured_status = NT_ARG_PARSE_FAILED;
     {
@@ -23050,12 +23041,8 @@ NonTypeArgumentStatus evaluate_non_type_argument_syntax(
         structured_status =
             evaluate_structured_bool_template_argument(
                 services, scope, *effective_syntax, bool_value);
-      } catch(const logic_error & error) {
-        if(is_dependent_qualified_missing_typename_error(error)) {
-          structured_status = NT_ARG_DEPENDENT;
-        } else {
-          throw;
-        }
+      } catch(const DependentQualifiedTypeMissingTypenameError &) {
+        structured_status = NT_ARG_DEPENDENT;
       }
     }
     if(structured_status == NT_ARG_EVALUATED) {

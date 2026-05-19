@@ -4774,6 +4774,10 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
         }
         long long value = 0;
         std::string eval_error;
+        const TemplateArgumentSyntax * syntax = inputs.syntax_for(i);
+        const bool has_structured_non_type_syntax =
+            syntax &&
+            (syntax->expression || syntax->type_id || syntax->template_id);
         template_api::NonTypeArgumentStatus status =
             template_api::NT_ARG_PARSE_FAILED;
         if(text_mentions_template_dependency(services, scope, inputs.texts[i])) {
@@ -4787,16 +4791,10 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
                  status)) {
             return FRTA_UNSUPPORTED;
           }
-        } else if(const TemplateArgumentSyntax * syntax = inputs.syntax_for(i)) {
-          if(syntax->expression) {
-            status = template_api::evaluate_non_type_argument_expression(
-                services,
-                scope,
-                *syntax->expression,
-                value,
-                &eval_error,
-                bound_value_type);
-          }
+        }
+        if(status == template_api::NT_ARG_PARSE_FAILED &&
+           has_structured_non_type_syntax) {
+          return FRTA_UNSUPPORTED;
         }
         if(status == template_api::NT_ARG_PARSE_FAILED) {
           try {
@@ -4813,7 +4811,6 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
         }
         if(status != template_api::NT_ARG_EVALUATED &&
            status != template_api::NT_ARG_DEPENDENT) {
-          const TemplateArgumentSyntax * syntax = inputs.syntax_for(i);
           if(template_argument_syntax_can_retain_carried_non_type_dependency(
                  services, raw_scope, syntax) &&
              carried_dependent_expression_has_unresolved_lookup(
@@ -8388,17 +8385,17 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
 
-	    const bool syntax_dependency_still_visible =
-	        syntax &&
-	        syntax->dependent &&
-	        (!syntax->expression ||
-	         mentions_placeholders ||
-	         mentions_dependent_bindings);
-	    const bool can_try_carried_dependent_evaluation =
-	        carried_dependent_expression_unresolved &&
-	        !mentions_placeholders &&
-	        !mentions_dependent_bindings &&
-	        !syntax_dependency_still_visible;
+    const bool syntax_dependency_still_visible =
+        syntax &&
+        syntax->dependent &&
+        (!syntax->expression ||
+         mentions_placeholders ||
+         mentions_dependent_bindings);
+    const bool can_try_carried_dependent_evaluation =
+        carried_dependent_expression_unresolved &&
+        !mentions_placeholders &&
+        !mentions_dependent_bindings &&
+        !syntax_dependency_still_visible;
     bool allow_dependent_non_type_argument =
         mentions_placeholders ||
         mentions_dependent_bindings ||
@@ -8433,16 +8430,16 @@ bool resolve_template_argument(template_api::TemplateServices & services,
              value_status)) {
         selected_text = rewritten.empty() ? trimmed : rewritten;
       } else {
-	        const bool can_evaluate_structured_syntax =
-	            can_try_carried_dependent_evaluation &&
-	            syntax &&
-	            (syntax->expression || syntax->type_id || syntax->template_id);
-	        if(can_evaluate_structured_syntax) {
-	          const template_api::ScopedTemplateWitnessSourceCapturePause
-	              source_capture_pause;
-	          value_status = static_cast<template_api::NonTypeArgumentStatus>(
-	              template_argument_semantics::evaluate_non_type_argument_syntax(
-	                  services,
+        const bool can_evaluate_structured_syntax =
+            can_try_carried_dependent_evaluation &&
+            syntax &&
+            (syntax->expression || syntax->type_id || syntax->template_id);
+        if(can_evaluate_structured_syntax) {
+          const template_api::ScopedTemplateWitnessSourceCapturePause
+              source_capture_pause;
+          value_status = static_cast<template_api::NonTypeArgumentStatus>(
+              template_argument_semantics::evaluate_non_type_argument_syntax(
+                  services,
                   argument_scope,
                   *syntax,
                   value,
