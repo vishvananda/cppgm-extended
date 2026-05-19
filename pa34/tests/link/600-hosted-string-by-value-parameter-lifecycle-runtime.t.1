@@ -1,0 +1,13 @@
+#include <string>
+#include <utility>
+
+struct Holder {
+  Holder(std::string s) : value(std::move(s)) {}
+  std::string value;
+};
+
+int main()
+{
+  Holder holder((std::string()));
+  return 0;
+}

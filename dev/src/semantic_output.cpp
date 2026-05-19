@@ -1368,12 +1368,28 @@ bool special_member_constructor_can_use_host_object_symbol(SemanticContext & ctx
                                                         binding.is_defaulted);
 }
 
+void require_host_constructor_declaration(SemanticContext & ctx,
+                                          FunctionBinding * binding)
+{
+  if(!binding) {
+    return;
+  }
+  add_output_requirement(binding->output_requirements, ORK_DECLARATION);
+  if(symbol_linkage::has_exported_object_symbol(binding->symbol)) {
+    add_output_requirement(binding->output_requirements, ORK_EXPORT);
+  }
+  ctx.refresh_required_function_definition(binding, false);
+}
+
 void require_constructor_definition_if_needed(SemanticContext & ctx,
                                               FunctionBinding * binding,
                                               OutputReason reason)
 {
-  if(!binding ||
-     special_member_constructor_can_use_host_object_symbol(ctx, *binding)) {
+  if(!binding) {
+    return;
+  }
+  if(special_member_constructor_can_use_host_object_symbol(ctx, *binding)) {
+    require_host_constructor_declaration(ctx, binding);
     return;
   }
   ctx.require_function_definition(binding, reason);
@@ -1919,8 +1935,7 @@ void require_hidden_class_transfer_constructor_for_output(SemanticContext & ctx,
       ctor = copy;
     }
   }
-  if(ctor &&
-     !special_member_constructor_can_use_host_object_symbol(ctx, *ctor)) {
+  if(ctor) {
     if(source_node && parser_trace::enabled("output.require")) {
       ostringstream trace;
       trace << "action=" << action
@@ -1939,7 +1954,9 @@ void require_hidden_class_transfer_constructor_for_output(SemanticContext & ctx,
             << " child-count=" << source_node->children.size();
       parser_trace::note("output.require", string(), trace.str());
     }
-    ctx.require_function_definition(ctor, OutputReason::SyntheticDependency);
+    require_constructor_definition_if_needed(ctx,
+                                             ctor,
+                                             OutputReason::SyntheticDependency);
   }
 }
 
@@ -2061,9 +2078,10 @@ void collect_required_parameter_materialization_support(SemanticContext & ctx,
     if(!copy && !is_trivially_copy_constructible_type(ctx, param_type)) {
       copy = ctx.ensure_implicit_copy_constructor(*info);
     }
-    if(copy &&
-       !special_member_constructor_can_use_host_object_symbol(ctx, *copy)) {
-      if(!special_member_binding_has_trivial_lifecycle_output(ctx, *copy)) {
+    if(copy) {
+      if(special_member_constructor_can_use_host_object_symbol(ctx, *copy)) {
+        require_host_constructor_declaration(ctx, copy);
+      } else if(!special_member_binding_has_trivial_lifecycle_output(ctx, *copy)) {
         ctx.require_function_definition(copy, OutputReason::SyntheticDependency);
       }
     }
@@ -5847,8 +5865,20 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
            (!binding->is_method && !binding->is_constructor && !binding->is_destructor)) {
           return OAT_DONE;
         }
-        if(!has_output_requirement(binding->output_requirements, ORK_DEFINITION) ||
-           binding->is_deleted) {
+        const bool declaration_required =
+            has_output_requirement(binding->output_requirements, ORK_DECLARATION);
+        const bool definition_required =
+            has_output_requirement(binding->output_requirements, ORK_DEFINITION);
+        if(!definition_required) {
+          if(declaration_required && !binding->is_deleted && !binding->output_emitted) {
+            analyze_function_declaration_output(ctx, *binding, out);
+            if(counters && out.children.size() != previous_output_count) {
+              ++counters->late_synthesized_method_emits;
+            }
+          }
+          return OAT_DONE;
+        }
+        if(binding->is_deleted) {
           return OAT_DONE;
         }
         if(binding->output_emitted &&
