@@ -4294,6 +4294,42 @@ bool lookup_direct_bound_type_argument(Scope & scope,
   return false;
 }
 
+bool lookup_rewritten_bound_type_argument(Scope & scope,
+                                          const std::string & text,
+                                          TypePtr & out)
+{
+  out.reset();
+  std::string name = strip_elaborated_type_prefix(trim_space(text));
+  std::string stripped_typename;
+  if(strip_leading_typename_argument_text(name, stripped_typename)) {
+    name = stripped_typename;
+  }
+  if(name.empty()) {
+    return false;
+  }
+
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    for(std::set<std::string>::const_iterator it =
+            current->template_bound_type_names.begin();
+        it != current->template_bound_type_names.end();
+        ++it) {
+      std::map<std::string, TypePtr>::const_iterator found =
+          current->named_types.find(*it);
+      if(found == current->named_types.end() || !found->second) {
+        continue;
+      }
+      if(trim_space(reparseable_type_argument_text(found->second)) == name) {
+        out = found->second;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 bool lookup_exact_visible_type_argument_text(Scope & scope,
                                              const std::string & text,
                                              TypePtr & out)
@@ -8783,6 +8819,16 @@ bool resolve_template_argument(template_api::TemplateServices & services,
        direct_bound_type) {
       resolve_type_argument_if_needed(direct_bound_type);
       type = direct_bound_type;
+    }
+  }
+  if(!type && !has_structured_type_syntax) {
+    TypePtr rewritten_bound_type;
+    if(lookup_rewritten_bound_type_argument(raw_argument_scope,
+                                            trimmed,
+                                            rewritten_bound_type) &&
+       rewritten_bound_type) {
+      resolve_type_argument_if_needed(rewritten_bound_type);
+      type = rewritten_bound_type;
     }
   }
   if(!type && !has_structured_type_syntax) {
