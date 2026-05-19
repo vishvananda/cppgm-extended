@@ -112,7 +112,7 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertIn("invalid reference LowIR", output)
             self.assertIn("top-level LowIR order violation", output)
 
-    def test_lowir_compare_rejects_out_of_order_generated_lowir(self) -> None:
+    def test_lowir_compare_accepts_out_of_order_generated_lowir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
             testbase = root / "tests" / "102"
@@ -142,10 +142,234 @@ class CompareResultsCommonTests(unittest.TestCase):
             write_text(testbase.with_suffix(".ref"), ref_lowir)
             write_text(testbase.with_suffix(".my"), my_lowir)
             result = run_compare("lowir_t", root, "tests")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_lowir_direct_compare_rejects_out_of_order_generated_lowir(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "102b"
+            write_text(testbase.with_suffix(".t"), "int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            ref_lowir = textwrap.dedent(
+                """\
+                global @g : i64 = 0
+
+                function @main() -> i64 {
+                  block ^entry:
+                    return i64 0
+                }
+                """
+            )
+            my_lowir = textwrap.dedent(
+                """\
+                function @main() -> i64 {
+                  block ^entry:
+                    return i64 0
+                }
+
+                global @g : i64 = 0
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), ref_lowir)
+            write_text(testbase.with_suffix(".my"), my_lowir)
+            result = run_compare(
+                "lowir_t",
+                root,
+                "tests",
+                env={"CPPGM_LOWIR_DIRECT_TEXT_COMPARE": "1"},
+            )
             output = result.stdout + result.stderr
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("generated LowIR failed sanity validation", output)
             self.assertIn("top-level LowIR order violation", output)
+
+    def test_lowir_compare_accepts_reordered_function_definitions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "102c"
+            write_text(testbase.with_suffix(".t"), "int helper(); int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            ref_lowir = textwrap.dedent(
+                """\
+                function @helper() -> i32 [binding=strong, object=_Z6helperv] {
+                  block ^entry:
+                    return i32 7
+                }
+
+                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+                  block ^entry:
+                    %0 = call i32 @helper()
+                    return i32 %0
+                }
+                """
+            )
+            my_lowir = textwrap.dedent(
+                """\
+                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+                  block ^entry:
+                    %0 = call i32 @helper()
+                    return i32 %0
+                }
+
+                function @helper() -> i32 [binding=strong, object=_Z6helperv] {
+                  block ^entry:
+                    return i32 7
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), ref_lowir)
+            write_text(testbase.with_suffix(".my"), my_lowir)
+            result = run_compare("lowir_t", root, "tests")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_lowir_compare_failure_writes_canonical_order_diff(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "102c2"
+            write_text(testbase.with_suffix(".t"), "int helper(); int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            ref_lowir = textwrap.dedent(
+                """\
+                function @helper() -> i32 [binding=strong, object=_Z6helperv] {
+                  block ^entry:
+                    return i32 7
+                }
+
+                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+                  block ^entry:
+                    %0 = call i32 @helper()
+                    return i32 %0
+                }
+                """
+            )
+            my_lowir = textwrap.dedent(
+                """\
+                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+                  block ^entry:
+                    %0 = call i32 @helper()
+                    return i32 %0
+                }
+
+                function @helper() -> i32 [binding=strong, object=_Z6helperv] {
+                  block ^entry:
+                    return i32 8
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), ref_lowir)
+            write_text(testbase.with_suffix(".my"), my_lowir)
+            result = run_compare("lowir_t", root, "tests")
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("canonical diff written", output)
+            self.assertIn("canonicalized LowIR used for relaxed comparison", output)
+            ref_compare = pathlib.Path(str(testbase) + ".my.lowir.ref.compare")
+            my_compare = pathlib.Path(str(testbase) + ".my.lowir.my.compare")
+            compare_diff = pathlib.Path(str(testbase) + ".my.lowir.compare.diff")
+            self.assertTrue(ref_compare.exists())
+            self.assertTrue(my_compare.exists())
+            self.assertTrue(compare_diff.exists())
+            diff_text = compare_diff.read_text()
+            self.assertIn("return i32 7", diff_text)
+            self.assertIn("return i32 8", diff_text)
+            self.assertNotIn("@helper", ref_compare.read_text())
+            self.assertNotIn("@main", my_compare.read_text())
+
+    def test_lowir_compare_rejects_reordered_structured_global_data(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "102c3"
+            write_text(testbase.with_suffix(".t"), "int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            ref_lowir = textwrap.dedent(
+                """\
+                global @table [storage=readonly] = {
+                  i64 1
+                  i64 2
+                }
+
+                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+                  block ^entry:
+                    return i32 0
+                }
+                """
+            )
+            my_lowir = textwrap.dedent(
+                """\
+                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+                  block ^entry:
+                    return i32 0
+                }
+
+                global @table [storage=readonly] = {
+                  i64 2
+                  i64 1
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), ref_lowir)
+            write_text(testbase.with_suffix(".my"), my_lowir)
+            result = run_compare("lowir_t", root, "tests")
+            output = result.stdout + result.stderr
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("canonical diff written", output)
+            compare_diff = pathlib.Path(str(testbase) + ".my.lowir.compare.diff")
+            self.assertTrue(compare_diff.exists())
+            diff_text = compare_diff.read_text()
+            self.assertIn("i64 1", diff_text)
+            self.assertIn("i64 2", diff_text)
+
+    def test_lowir_compare_accepts_reordered_special_member_definitions(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "102d"
+            write_text(testbase.with_suffix(".t"), "struct Box; int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            ref_lowir = textwrap.dedent(
+                """\
+                function @Box_copy(%this : ptr, %other : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1ERKS_] {
+                  block ^entry:
+                    return void
+                }
+
+                function @Box_move(%this : ptr, %other : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1EOS_] {
+                  block ^entry:
+                    return void
+                }
+
+                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+                  block ^entry:
+                    return i32 0
+                }
+                """
+            )
+            my_lowir = textwrap.dedent(
+                """\
+                function @Box_move(%this : ptr, %other : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1EOS_] {
+                  block ^entry:
+                    return void
+                }
+
+                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+                  block ^entry:
+                    return i32 0
+                }
+
+                function @Box_copy(%this : ptr, %other : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1ERKS_] {
+                  block ^entry:
+                    return void
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), ref_lowir)
+            write_text(testbase.with_suffix(".my"), my_lowir)
+            result = run_compare("lowir_t", root, "tests")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_lowir_compare_rejects_move_constructor_before_copy_constructor(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

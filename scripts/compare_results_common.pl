@@ -1791,7 +1791,8 @@ sub validate_lowir_roles
 
 sub validate_lowir_text
 {
-	my ($data, $source_file) = @_;
+	my ($data, $source_file, $options) = @_;
+	$options = {} if !defined($options);
 	return (1, undef) if !defined($data) || $data eq '';
 
 	my $source_text = getrawdata($source_file);
@@ -1805,10 +1806,13 @@ sub validate_lowir_text
 	}
 	my @duplicates = sort grep { $top_count{$_} > 1 } keys(%top_count);
 	push @errors, "duplicate LowIR symbol entries: " . join(', ', @duplicates) if scalar(@duplicates) > 0;
-	push @errors, validate_lowir_top_level_order($data);
-	push @errors, validate_lowir_special_member_order($data);
+	if ($options->{strict_presentation_order})
+	{
+		push @errors, validate_lowir_top_level_order($data);
+		push @errors, validate_lowir_special_member_order($data);
+		push @errors, validate_lowir_function_role_order($data);
+	}
 	push @errors, validate_lowir_vtable_destructor_slot_order($data);
-	push @errors, validate_lowir_function_role_order($data);
 
 	my %all_symbols;
 	my %function_symbols;
@@ -1945,21 +1949,289 @@ sub canonicalize_lowir_metadata_group_for_compare
 
 sub canonicalize_lowir_for_compare
 {
-	my ($data) = @_;
+	my ($data, $function_symbols) = @_;
 	return undef if !defined($data);
 	$data =~ s/\s+\[([^\]]+)\]/canonicalize_lowir_metadata_group_for_compare($1)/ge;
-	my %function_symbols;
-	my $next_function_symbol = 0;
-	while ($data =~ /^(?:declare\s+)?function @([A-Za-z0-9_]+)\b/gm)
+	if (!defined($function_symbols))
 	{
-		my $name = $1;
-		next if exists($function_symbols{$name});
-		$function_symbols{$name} = '<fn' . $next_function_symbol . '>';
-		++$next_function_symbol;
+		my %local_function_symbols;
+		my $next_function_symbol = 0;
+		while ($data =~ /^(?:declare\s+)?function @([A-Za-z0-9_]+)\b/gm)
+		{
+			my $name = $1;
+			next if exists($local_function_symbols{$name});
+			$local_function_symbols{$name} = '<fn' . $next_function_symbol . '>';
+			++$next_function_symbol;
+		}
+		$function_symbols = \%local_function_symbols;
 	}
-	$data =~ s/@([A-Za-z0-9_]+)\b/exists($function_symbols{$1}) ? '@' . $function_symbols{$1} : '@' . $1/ge;
+	$data =~ s/@([A-Za-z0-9_]+)\b/exists($function_symbols->{$1}) ? '@' . $function_symbols->{$1} : '@' . $1/ge;
 	$data =~ s/[ \t]+$//mg;
 	return $data;
+}
+
+sub lowir_function_symbol_records
+{
+	my ($data) = @_;
+	my %records;
+	my @ordered;
+	my $type_pattern = lowir_type_pattern();
+
+	for my $line (split(/\n/, $data))
+	{
+		my ($name, $metadata_suffix);
+		if ($line =~ /^declare function @([A-Za-z0-9_]+)\((.*?)\) -> $type_pattern((?:\s+\[[^\]]+\])*)$/)
+		{
+			($name, $metadata_suffix) = ($1, $3);
+		}
+		elsif ($line =~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> $type_pattern((?:\s+\[[^\]]+\])*) \{$/)
+		{
+			($name, $metadata_suffix) = ($1, $3);
+		}
+		else
+		{
+			next;
+		}
+
+		if (!exists($records{$name}))
+		{
+			$records{$name} = {
+				name => $name,
+				order => scalar(@ordered),
+				keys => {},
+			};
+			push @ordered, $name;
+		}
+
+		my ($ok, $metadata_or_error) =
+			parse_lowir_function_metadata_suffix($metadata_suffix);
+		next if !$ok;
+		$records{$name}{keys}{"role:$metadata_or_error->{role}"} = 1
+			if exists($metadata_or_error->{role}) && $metadata_or_error->{role} ne '';
+		$records{$name}{keys}{"object:$metadata_or_error->{object}"} = 1
+			if exists($metadata_or_error->{object}) && $metadata_or_error->{object} ne '';
+	}
+
+	return (\%records, \@ordered);
+}
+
+sub assign_lowir_function_symbol_pair
+{
+	my ($ref_map, $my_map, $ref_name, $my_name, $next_ref) = @_;
+	return $$next_ref if exists($ref_map->{$ref_name}) || exists($my_map->{$my_name});
+	my $placeholder = '<fn' . $$next_ref . '>';
+	++$$next_ref;
+	$ref_map->{$ref_name} = $placeholder;
+	$my_map->{$my_name} = $placeholder;
+	return $$next_ref;
+}
+
+sub paired_lowir_function_symbol_maps
+{
+	my ($ref_data, $my_data) = @_;
+	my ($ref_records, $ref_order) = lowir_function_symbol_records($ref_data);
+	my ($my_records, $my_order) = lowir_function_symbol_records($my_data);
+	my (%ref_map, %my_map);
+	my $next = 0;
+
+	my %ref_by_key;
+	for my $name (@$ref_order)
+	{
+		for my $key (keys(%{$ref_records->{$name}{keys}}))
+		{
+			push @{$ref_by_key{$key}}, $name;
+		}
+	}
+	my %my_by_key;
+	for my $name (@$my_order)
+	{
+		for my $key (keys(%{$my_records->{$name}{keys}}))
+		{
+			push @{$my_by_key{$key}}, $name;
+		}
+	}
+	for my $key (sort keys(%ref_by_key))
+	{
+		next if !exists($my_by_key{$key});
+		next if scalar(@{$ref_by_key{$key}}) != 1 || scalar(@{$my_by_key{$key}}) != 1;
+		$next = assign_lowir_function_symbol_pair(\%ref_map,
+		                                          \%my_map,
+		                                          $ref_by_key{$key}[0],
+		                                          $my_by_key{$key}[0],
+		                                          \$next);
+	}
+
+	for my $name (sort keys(%$ref_records))
+	{
+		next if !exists($my_records->{$name});
+		$next = assign_lowir_function_symbol_pair(\%ref_map,
+		                                          \%my_map,
+		                                          $name,
+		                                          $name,
+		                                          \$next);
+	}
+
+	my @remaining_ref = grep { !exists($ref_map{$_}) } @$ref_order;
+	my @remaining_my = grep { !exists($my_map{$_}) } @$my_order;
+	my $pairs = scalar(@remaining_ref) < scalar(@remaining_my) ?
+		scalar(@remaining_ref) : scalar(@remaining_my);
+	for (my $i = 0; $i < $pairs; ++$i)
+	{
+		$next = assign_lowir_function_symbol_pair(\%ref_map,
+		                                          \%my_map,
+		                                          $remaining_ref[$i],
+		                                          $remaining_my[$i],
+		                                          \$next);
+	}
+	for my $name (@remaining_ref)
+	{
+		next if exists($ref_map{$name});
+		$ref_map{$name} = '<fn' . $next . '>';
+		++$next;
+	}
+	for my $name (@remaining_my)
+	{
+		next if exists($my_map{$name});
+		$my_map{$name} = '<fn' . $next . '>';
+		++$next;
+	}
+
+	return (\%ref_map, \%my_map);
+}
+
+sub lowir_relaxed_top_level_rank
+{
+	my ($entry) = @_;
+	return 0 if $entry =~ /^declare global /;
+	return 1 if $entry =~ /^declare function /;
+	return 2 if $entry =~ /^global /;
+	return 3 if $entry =~ /^function /;
+	return 4;
+}
+
+sub split_lowir_top_level_entries
+{
+	my ($data) = @_;
+	my @lines = split(/\n/, $data);
+	my @entries;
+	my @current;
+	my $mode = '';
+	for (my $i = 0; $i < scalar(@lines); ++$i)
+	{
+		my $line = $lines[$i];
+		next if $line =~ /^\s*$/ && scalar(@current) == 0;
+		if ($mode eq '')
+		{
+			if ($line =~ /^(?:declare global|declare function) /)
+			{
+				push @entries, $line;
+				next;
+			}
+			if ($line =~ /^global .*=\s*\{$/)
+			{
+				@current = ($line);
+				$mode = 'global';
+				next;
+			}
+			if ($line =~ /^global /)
+			{
+				push @entries, $line;
+				next;
+			}
+			if ($line =~ /^function /)
+			{
+				@current = ($line);
+				$mode = 'function';
+				next;
+			}
+			push @entries, $line;
+			next;
+		}
+
+		push @current, $line;
+		if ($line eq '}')
+		{
+			push @entries, join("\n", @current);
+			@current = ();
+			$mode = '';
+		}
+	}
+	push @entries, join("\n", @current) if scalar(@current) != 0;
+	return @entries;
+}
+
+sub canonicalize_lowir_top_level_order_for_compare
+{
+	my ($data) = @_;
+	my @entries = split_lowir_top_level_entries($data);
+	@entries = sort {
+		my $rank_a = lowir_relaxed_top_level_rank($a);
+		my $rank_b = lowir_relaxed_top_level_rank($b);
+		$rank_a <=> $rank_b || $a cmp $b
+	} @entries;
+	return join("\n\n", @entries) . (scalar(@entries) ? "\n" : "");
+}
+
+sub canonicalize_lowir_pair_for_compare
+{
+	my ($ref_data, $my_data) = @_;
+	my ($ref_symbols, $my_symbols) =
+		paired_lowir_function_symbol_maps($ref_data, $my_data);
+	my $ref_compare_data =
+		canonicalize_lowir_top_level_order_for_compare(
+			canonicalize_lowir_for_compare($ref_data, $ref_symbols));
+	my $my_compare_data =
+		canonicalize_lowir_top_level_order_for_compare(
+			canonicalize_lowir_for_compare($my_data, $my_symbols));
+	return ($ref_compare_data, $my_compare_data);
+}
+
+sub lowir_compare_artifact_paths
+{
+	my ($my) = @_;
+	return (
+		"$my.lowir.ref.compare",
+		"$my.lowir.my.compare",
+		"$my.lowir.compare.diff",
+	);
+}
+
+sub clear_lowir_compare_failure_artifacts
+{
+	my ($my) = @_;
+	my ($ref_compare, $my_compare, $diff_path) =
+		lowir_compare_artifact_paths($my);
+	unlink($ref_compare);
+	unlink($my_compare);
+	unlink($diff_path);
+}
+
+sub write_lowir_compare_failure_artifacts
+{
+	my ($my, $ref_compare_data, $my_compare_data) = @_;
+	my ($ref_compare, $my_compare, $diff_path) =
+		lowir_compare_artifact_paths($my);
+	putrawdata($ref_compare, $ref_compare_data);
+	putrawdata($my_compare, $my_compare_data);
+
+	my $diff_data = '';
+	if (open(my $diff_fh, '-|', 'diff', '-u', $ref_compare, $my_compare))
+	{
+		local $/;
+		$diff_data = <$diff_fh>;
+		close($diff_fh);
+	}
+	putrawdata($diff_path, defined($diff_data) ? $diff_data : '');
+	return ($ref_compare, $my_compare, $diff_path);
+}
+
+sub lowir_compare_failure_hint
+{
+	my ($ref_compare, $my_compare, $diff_path) = @_;
+	return "To inspect the relaxed LowIR comparison:\n\n    \$ diff " .
+		rooted_path($ref_compare) . " " . rooted_path($my_compare) .
+		"\n    \$ cat " . rooted_path($diff_path) . "\n\n" .
+		"These files contain the canonicalized LowIR used for relaxed comparison.\n\n";
 }
 
 sub compare_lowir_text
@@ -1968,6 +2240,7 @@ sub compare_lowir_text
 	my $ref = "$testbase.$ref_suffix";
 	my $my = "$testbase.$my_suffix";
 	my $source_file = "$testbase.t";
+	clear_lowir_compare_failure_artifacts($my);
 	my $ref_status = getdata("$ref.exit_status");
 	my $my_status = getdata("$my.exit_status");
 	my @missing_status = ();
@@ -1987,24 +2260,37 @@ sub compare_lowir_text
 	return (0, "ERROR: missing output file (" . join(', ', @missing_output) . ")")
 		if scalar(@missing_output) != 0;
 
-	my ($ref_valid, $ref_error) = validate_lowir_text($ref_data, $source_file);
+	my $direct_compare = env_flag_enabled('CPPGM_LOWIR_DIRECT_TEXT_COMPARE');
+	my ($ref_valid, $ref_error) = validate_lowir_text(
+		$ref_data,
+		$source_file,
+		{ strict_presentation_order => 1 });
 	return (0, "ERROR: invalid reference LowIR: $ref_error") if !$ref_valid;
-	my ($my_valid, $my_error) = validate_lowir_text($my_data, $source_file);
+	my ($my_valid, $my_error) = validate_lowir_text(
+		$my_data,
+		$source_file,
+		{ strict_presentation_order => $direct_compare });
 	return (0, "ERROR: generated LowIR failed sanity validation: $my_error") if !$my_valid;
 
-	if (env_flag_enabled('CPPGM_LOWIR_DIRECT_TEXT_COMPARE'))
+	if ($direct_compare)
 	{
 		return ($ref_data eq $my_data
 			? (1, undef)
 			: (0, "ERROR: generated LowIR does not match reference with direct text compare"));
 	}
 
-	my $ref_compare_data = canonicalize_lowir_for_compare($ref_data);
-	my $my_compare_data = canonicalize_lowir_for_compare($my_data);
+	my ($ref_compare_data, $my_compare_data) =
+		canonicalize_lowir_pair_for_compare($ref_data, $my_data);
 
-	return ($ref_compare_data eq $my_compare_data
-		? (1, undef)
-		: (0, "ERROR: generated LowIR does not match reference after relaxed metadata canonicalization"));
+	return (1, undef, undef) if $ref_compare_data eq $my_compare_data;
+
+	my ($ref_compare, $my_compare, $diff_path) =
+		write_lowir_compare_failure_artifacts($my,
+		                                      $ref_compare_data,
+		                                      $my_compare_data);
+	return (0,
+	        "ERROR: generated LowIR does not match reference after relaxed metadata canonicalization and order canonicalization; canonical diff written to $diff_path",
+	        lowir_compare_failure_hint($ref_compare, $my_compare, $diff_path));
 }
 
 sub compare_witness_text
@@ -2340,8 +2626,10 @@ for my $test (@tests)
 		}
 		elsif ($mode eq 'lowir_t')
 		{
-			($ok, $message) = compare_lowir_text($ref_suffix, $my_suffix, $testbase);
-			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix");
+			($ok, $message, $hint) =
+				compare_lowir_text($ref_suffix, $my_suffix, $testbase);
+			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix")
+				if !defined($hint);
 		}
 		elsif ($mode eq 'text_t1')
 		{
