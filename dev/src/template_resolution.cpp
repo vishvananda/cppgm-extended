@@ -701,6 +701,47 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
       };
 
   TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
+  const auto integral_value_fits_target =
+      [](const TypePtr & target, long long value) -> bool
+      {
+        TypePtr base = strip_top_level_cv(target);
+        if(!base || base->kind != Type::TK_FUNDAMENTAL ||
+           !is_integral_type(base)) {
+          return false;
+        }
+        if(base->fundamental == FT_BOOL) {
+          return true;
+        }
+        const std::size_t bits = type_size(base) * 8;
+        if(is_unsigned_integral_type(base)) {
+          if(value < 0) {
+            return false;
+          }
+          if(bits >= 63) {
+            return true;
+          }
+          const unsigned long long max_value = (1ull << bits) - 1ull;
+          return static_cast<unsigned long long>(value) <= max_value;
+        }
+        if(bits >= 63) {
+          return true;
+        }
+        const long long max_value = (1ll << (bits - 1)) - 1ll;
+        const long long min_value = -(1ll << (bits - 1));
+        return value >= min_value && value <= max_value;
+      };
+  const auto integral_binding_conversion_compatible =
+      [&](const TypePtr & binding_base,
+          const ValueBinding & binding) -> bool
+      {
+        if(!target_base || !binding_base ||
+           !is_integral_type(target_base) ||
+           !is_integral_type(binding_base)) {
+          return false;
+        }
+        return !binding.has_constant_value ||
+               integral_value_fits_target(target_base, binding.constant_value);
+      };
   if(target_base && is_bool_type(target_base) &&
      (trimmed == "true" || trimmed == "false")) {
     const long long value = trimmed == "true" ? 1 : 0;
@@ -741,6 +782,7 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
           (!target_base || !binding_base) ?
               type_equals(binding->type, target_type) :
               type_equals(binding_base, target_base) ||
+              integral_binding_conversion_compatible(binding_base, *binding) ||
               (is_integral_type(target_base) &&
                semantic_conversion::is_unscoped_enum_type(binding_base));
       if(compatible && binding->has_constant_value) {
@@ -814,6 +856,7 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
           (!target_base || !binding_base) ?
               type_equals(binding->type, target_type) :
               type_equals(binding_base, target_base) ||
+              integral_binding_conversion_compatible(binding_base, *binding) ||
               (is_integral_type(target_base) &&
                semantic_conversion::is_unscoped_enum_type(binding_base));
       if(compatible && binding->has_constant_value) {
