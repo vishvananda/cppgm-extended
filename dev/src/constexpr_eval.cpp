@@ -608,6 +608,9 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
     if(evaluate_functional_type_initializer(true)) {
       return true;
     }
+    if(single_braced_argument && evaluate_functional_type_initializer(false)) {
+      return true;
+    }
 
     vector<ConstexprValue> args;
     const bool zero_arg_braced_type_init =
