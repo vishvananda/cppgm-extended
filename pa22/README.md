@@ -62,11 +62,17 @@ The authoritative LowIR definition is `../pa13/lowir.md`. PA22 extends the
 PA21 lowering surface only by making more of the C++ source language lower into
 the already-defined LowIR family.
 
-Canonical top-level order is part of the LowIR output contract and is defined
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
 in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
-`function`. The same contract defines required generated-definition ordering,
-including source order, demand-emission order, copy-before-move within a
-special-member family, and constructor/destructor ABI entrypoint order.
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa13/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
 
 The test harness checks that the generated LowIR is well formed and matches the
 checked-in `.ref` files after canonicalizing presentation details that are not

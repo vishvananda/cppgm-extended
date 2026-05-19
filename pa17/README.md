@@ -87,11 +87,17 @@ PA17 writes a single concatenated LowIR program consisting of:
 - zero or more `global` definitions
 - zero or more `function` definitions
 
-Canonical top-level order is part of the LowIR output contract and is defined
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
 in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
-`function`. The same contract defines required generated-definition ordering,
-including source order, demand-emission order, copy-before-move within a
-special-member family, and constructor/destructor ABI entrypoint order.
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa13/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
 
 For supported polymorphic classes, PA17 extends the PA16 lowering convention by introducing:
 
@@ -99,9 +105,10 @@ For supported polymorphic classes, PA17 extends the PA16 lowering convention by 
 - explicit vpointer stores in constructors and destructors
 - indirect LowIR calls for supported virtual dispatch sites
 
-The vtable global order and vtable slot order, including the complete-then-deleting
-virtual destructor slot pair, are part of the canonical LowIR contract in
-`../pa13/lowir.md`.
+The contents of each vtable global are order-sensitive. Vtable slots, including
+the complete-then-deleting virtual destructor slot pair, are part of the LowIR
+contract in `../pa13/lowir.md` even though the top-level position of the vtable
+global itself is presentation.
 
 The checked-in `.ref` files define the required LowIR facts for the tests. The
 test harness checks exit status, LowIR well-formedness, and the
@@ -204,7 +211,7 @@ PA17 supports the following in addition to the PA16 subset:
 - virtual destructors as part of the supported virtual set
 - emitted vtable data for supported polymorphic classes
 - constructor/destructor vpointer writes for supported polymorphic classes
-- deterministic vtable order, including declaration order for ordinary virtual
+- deterministic vtable slot order, including declaration order for ordinary virtual
   functions and the destructor slot order used by the checked references
 
 Within this milestone, PA17 should produce valid LowIR for ordinary single-inheritance

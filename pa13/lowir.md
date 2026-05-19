@@ -67,27 +67,37 @@ storage. It is still not a general-purpose structured global-data item type.
 ## Program Structure
 
 A LowIR program is a sequence of top-level declarations and definitions.
-Canonical LowIR output uses this top-level order:
+Canonical LowIR reference output and canonical dumps use this top-level
+presentation order:
 
 1. `declare global`
 2. `declare function`
 3. `global`
 4. `function`
 
-No later phase may be followed by an earlier phase. For example, all global
-definitions appear before all function definitions, and all declarations appear
-before definitions.
+For canonical text, no later phase is followed by an earlier phase. For example,
+all global definitions appear before all function definitions, and all
+declarations appear before definitions.
 
-Within each phase, output order must be deterministic for the same input and
-command line. Source-owned top-level entries are ordered by command-line
-translation-unit order and then source/declaration order within each translation
-unit. Generated top-level entries, including helper globals, helper functions,
-init/fini functions, thunks, and runtime-support entries, must use a stable
-deterministic order.
+Within canonical text, each phase's output order is defined for the same input
+and command line. Source-owned top-level entries are ordered by command-line
+translation-unit order and then source/declaration order within each
+translation unit. Generated top-level entries, including helper globals, helper
+functions, init/fini functions, thunks, and runtime-support entries, follow the
+generated-definition rules below. If no more specific rule below applies, emit
+generated entries in first semantic-demand order using command-line
+translation-unit order and source/declaration order as the traversal order.
+For reference presentation, generated support entries that are collected from
+symbol sets rather than one semantic traversal point may use internal LowIR
+symbol-name order as a tie-breaker. That fallback is a presentation detail, not
+a semantic dependency: source-to-LowIR assignment comparison may canonicalize
+top-level entries before comparison, and implementations should not make host
+ABI mangling, `object=...` metadata, or backend symbol spelling the owner of
+semantic ordering facts.
 
-For C++ source-to-LowIR output, the following generated-definition ordering is
-part of the canonical text contract even when another order would have the same
-execution behavior:
+For C++ source-to-LowIR reference output, the following generated-definition
+ordering is the canonical presentation even when another top-level order would
+have the same execution behavior:
 
 - Source-owned non-mergeable function definitions appear in command-line
   translation-unit order and then source/declaration order.
@@ -120,8 +130,13 @@ execution behavior:
   reverse declaration order.
 
 Top-level definitions and declarations may refer to symbols that are emitted
-later in the same LowIR program. The canonical order is a stable presentation
-contract, not a dependency sort.
+later in the same LowIR program. The canonical top-level order is a stable
+presentation convention, not a dependency sort. Later source-to-LowIR
+assignment harnesses may canonicalize top-level entries before comparison, but
+they still preserve and check order-sensitive LowIR regions: instruction order
+inside blocks, item order inside structured globals, vtable slot order, and
+action order inside generated initialization, finalization, constructor,
+destructor, and cleanup bodies.
 
 The declaration/definition split is explicit:
 
