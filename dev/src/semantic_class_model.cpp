@@ -43,6 +43,8 @@ using namespace semantic_model;
 
 namespace {
 
+const int kMaxReferenceMemberCollectionDepth = 512;
+
 struct ScopedTemplateUseLocation
 {
   explicit ScopedTemplateUseLocation(const std::string & location)
@@ -8031,7 +8033,7 @@ void ensure_class_reference_members(SemanticContext & ctx,
      info.reference_member_collection_in_progress || !reference_node) {
     return;
   }
-  if(reference_member_collection_depth > 64) {
+  if(reference_member_collection_depth > kMaxReferenceMemberCollectionDepth) {
     return;
   }
   if(semantic_metrics::AnalyzerCounters * counters = ctx.performance_counters()) {
