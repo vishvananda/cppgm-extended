@@ -2236,6 +2236,7 @@ struct CandidateMatch
   vector<string> source_arg_locations;
   vector<TypePtr> params;
   vector<bool> needs_rematerialization;
+  size_t explicit_arg_count = static_cast<size_t>(-1);
 };
 
 struct BestCandidateSelection
@@ -6185,6 +6186,41 @@ int compare_function_template_trailing_pack_preference(const CandidateMatch & cu
   return 0;
 }
 
+bool transformed_function_template_parameter_types_for_match(
+    FunctionTemplateDecl & decl,
+    const CandidateMatch & match,
+    vector<TypePtr> & out)
+{
+  if(!semantic_template_function::transformed_function_template_parameter_types(decl, out)) {
+    return false;
+  }
+  const size_t effective_count =
+      match.explicit_arg_count == static_cast<size_t>(-1) ?
+          match.params.size() :
+          match.explicit_arg_count;
+  if(!decl.has_trailing_function_parameter_pack) {
+    if(match.explicit_arg_count != static_cast<size_t>(-1)) {
+      if(effective_count > out.size()) {
+        return false;
+      }
+      out.resize(effective_count);
+    }
+    return true;
+  }
+
+  const size_t fixed_count = decl.params_pattern.empty() ? 0 : decl.params_pattern.size() - 1;
+  if(effective_count < fixed_count || out.size() != decl.params_pattern.size()) {
+    return false;
+  }
+
+  TypePtr transformed_pack_param = out.empty() ? TypePtr() : out.back();
+  out.resize(fixed_count);
+  while(out.size() < effective_count) {
+    out.push_back(transformed_pack_param);
+  }
+  return true;
+}
+
 bool scope_has_direct_callable_name(Scope & current,
                                     const std::string & name)
 {
@@ -6305,10 +6341,10 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
 
   vector<TypePtr> current_transformed_params;
   vector<TypePtr> best_transformed_params;
-  if(!semantic_template_function::transformed_function_template_parameter_types(
-         *current.function->source_template, current_transformed_params) ||
-     !semantic_template_function::transformed_function_template_parameter_types(
-         *best.function->source_template, best_transformed_params)) {
+  if(!transformed_function_template_parameter_types_for_match(
+         *current.function->source_template, current, current_transformed_params) ||
+     !transformed_function_template_parameter_types_for_match(
+         *best.function->source_template, best, best_transformed_params)) {
     return trailing_pack_preference;
   }
 
@@ -6322,7 +6358,8 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
           current_transformed_params,
           current.function->source_template->pattern_scope ?
               current.function->source_template->pattern_scope :
-              current.function->source_template->declaring_scope);
+              current.function->source_template->declaring_scope,
+          true);
   const bool best_more_specialized =
       semantic_template_function::function_template_accepts_transformed_parameter_types(
           ctx,
@@ -6330,7 +6367,8 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
           best_transformed_params,
           best.function->source_template->pattern_scope ?
               best.function->source_template->pattern_scope :
-              best.function->source_template->declaring_scope);
+              best.function->source_template->declaring_scope,
+          true);
 
   if(current_more_specialized && !best_more_specialized) {
     return -1;
@@ -8172,6 +8210,7 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
               function_type->params[j + explicit_param_offset] :
               TypePtr());
     }
+    match.explicit_arg_count = match.params.size();
 
     if(okay) {
       Scope & decl_scope = candidate->declaration_scope ? *candidate->declaration_scope : scope;

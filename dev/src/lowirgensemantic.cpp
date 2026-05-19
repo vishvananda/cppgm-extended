@@ -15510,6 +15510,12 @@ private:
     } else if(is_named_enum_scalar_type(base)) {
       internal_name = "__external_rtti_vtable::__enum_type_info";
       object_symbol = "_ZTVN10__cxxabiv116__enum_type_infoE";
+    } else if(base && base->kind == Type::TK_FUNCTION) {
+      internal_name = "__external_rtti_vtable::__function_type_info";
+      object_symbol = "_ZTVN10__cxxabiv120__function_type_infoE";
+    } else if(base && base->kind == Type::TK_ARRAY) {
+      internal_name = "__external_rtti_vtable::__array_type_info";
+      object_symbol = "_ZTVN10__cxxabiv117__array_type_infoE";
     }
     if(!internal_name || !object_symbol) {
       return string();
@@ -15519,12 +15525,134 @@ private:
     return internal_symbol;
   }
 
+  static bool is_named_class_like_rtti_type(const TypePtr & type)
+  {
+    TypePtr base = strip_top_level_cv(type);
+    if(!base || base->kind != Type::TK_NAMED) {
+      return false;
+    }
+    return base->named_key.compare(0, 6, "class ") == 0 ||
+           base->named_key.compare(0, 7, "struct ") == 0 ||
+           base->named_key.compare(0, 6, "union ") == 0;
+  }
+
+  void ensure_host_incomplete_class_rtti_global(const TypePtr & type,
+                                                const char * reason,
+                                                const string & owner = string())
+  {
+    if(!emit_runtime_support_ || !type || !is_named_class_like_rtti_type(type)) {
+      return;
+    }
+
+    const string rtti_symbol = rtti_symbol_for_type(type);
+    const LowIRGlobal * existing = find_global_name(rtti_symbol);
+    if(existing && existing->kind == LowIRGlobal::LG_DATA &&
+       existing->data_items.size() >= 2) {
+      export_rtti_symbol(rtti_symbol, type, reason, owner);
+      return;
+    }
+
+    const string typeinfo_vtable_symbol =
+        symbol_linkage::internal_symbol_from_name(
+            "__external_rtti_vtable::__class_type_info");
+    external_object_symbols_[typeinfo_vtable_symbol] =
+        "_ZTVN10__cxxabiv117__class_type_infoE";
+
+    LowIRGlobal global = make_data_global(rtti_symbol, true);
+    global.data_items.push_back(string("ptr addr ") + typeinfo_vtable_symbol + " + 16");
+    global.data_items.push_back(string("ptr addr ") + ensure_host_typeinfo_name_global(type));
+
+    LowIRGlobal * replacement = find_global_name(rtti_symbol);
+    if(replacement) {
+      *replacement = global;
+    } else {
+      globals_.push_back(global);
+    }
+    export_rtti_symbol(rtti_symbol, type, reason, owner);
+  }
+
+  unsigned int host_pointer_rtti_flags_for_pointee(const TypePtr & pointee) const
+  {
+    unsigned int flags = 0;
+    TypePtr current = pointee;
+    if(current && current->kind == Type::TK_CV) {
+      if(current->cv_const) {
+        flags |= 0x1u;
+      }
+      if(current->cv_volatile) {
+        flags |= 0x2u;
+      }
+      current = current->inner;
+    }
+
+    TypePtr base = strip_top_level_cv(current);
+    if(base && is_named_class_like_rtti_type(base) && !base->named_has_layout) {
+      flags |= 0x8u;
+    }
+    return flags;
+  }
+
+  string host_pointer_pointee_typeinfo_reference_symbol(const TypePtr & pointee)
+  {
+    TypePtr base = strip_top_level_cv(pointee);
+    if(base && is_named_class_like_rtti_type(base) && !base->named_has_layout) {
+      ensure_host_incomplete_class_rtti_global(base, "pointer-rtti-pointee");
+      return rtti_symbol_for_type(base);
+    }
+    return host_typeinfo_reference_symbol(base);
+  }
+
+  bool ensure_host_pointer_rtti_global(const TypePtr & type,
+                                       const char * reason,
+                                       const string & owner = string())
+  {
+    TypePtr base = strip_top_level_cv(type);
+    if(!emit_runtime_support_ || !base || base->kind != Type::TK_POINTER ||
+       !base->inner) {
+      return false;
+    }
+
+    const string rtti_symbol = rtti_symbol_for_type(type);
+    const LowIRGlobal * existing = find_global_name(rtti_symbol);
+    if(existing && existing->kind == LowIRGlobal::LG_DATA &&
+       existing->data_items.size() >= 4) {
+      export_rtti_symbol(rtti_symbol, type, reason, owner);
+      return true;
+    }
+
+    const string typeinfo_vtable_symbol =
+        symbol_linkage::internal_symbol_from_name(
+            "__external_rtti_vtable::__pointer_type_info");
+    external_object_symbols_[typeinfo_vtable_symbol] =
+        "_ZTVN10__cxxabiv119__pointer_type_infoE";
+
+    LowIRGlobal global = make_data_global(rtti_symbol, true);
+    global.data_items.push_back(string("ptr addr ") + typeinfo_vtable_symbol + " + 16");
+    global.data_items.push_back(string("ptr addr ") + ensure_host_typeinfo_name_global(type));
+    global.data_items.push_back(
+        string("i32 ") + to_string(host_pointer_rtti_flags_for_pointee(base->inner)));
+    global.data_items.push_back(
+        string("ptr addr ") + host_pointer_pointee_typeinfo_reference_symbol(base->inner));
+
+    LowIRGlobal * replacement = find_global_name(rtti_symbol);
+    if(replacement) {
+      *replacement = global;
+    } else {
+      globals_.push_back(global);
+    }
+    export_rtti_symbol(rtti_symbol, type, reason, owner);
+    return true;
+  }
+
   bool ensure_host_nonclass_rtti_global(const TypePtr & type,
                                         const char * reason,
                                         const string & owner = string())
   {
     if(!emit_runtime_support_ || !type || is_complete_class_value_type(type)) {
       return false;
+    }
+    if(ensure_host_pointer_rtti_global(type, reason, owner)) {
+      return true;
     }
     const string typeinfo_vtable_symbol = host_nonclass_typeinfo_vtable_symbol(type);
     if(typeinfo_vtable_symbol.empty()) {

@@ -81,7 +81,8 @@ bool function_template_accepts_transformed_parameter_types(
     SemanticContext & ctx,
     semantic_model::FunctionTemplateDecl & decl,
     const std::vector<cpp_decl::TypePtr> & actual_params,
-    semantic_model::Scope * actual_lookup_scope = nullptr);
+    semantic_model::Scope * actual_lookup_scope = nullptr,
+    bool allow_prefix = false);
 
 void overlay_instantiation_use_scope_bindings(
     semantic_model::Scope & target,

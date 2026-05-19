@@ -168,9 +168,22 @@ bool function_template_accepts_transformed_parameter_types(
     SemanticContext & ctx,
     semantic_model::FunctionTemplateDecl & decl,
     const std::vector<cpp_decl::TypePtr> & actual_params,
-    semantic_model::Scope * actual_lookup_scope)
+    semantic_model::Scope * actual_lookup_scope,
+    bool allow_prefix)
 {
-  if(decl.params_pattern.size() != actual_params.size()) {
+  const bool has_trailing_pack =
+      decl.has_trailing_function_parameter_pack && !decl.params_pattern.empty();
+  const std::size_t fixed_count =
+      has_trailing_pack ? decl.params_pattern.size() - 1 : decl.params_pattern.size();
+  if(has_trailing_pack) {
+    if(actual_params.size() < fixed_count) {
+      return false;
+    }
+  } else if(allow_prefix) {
+    if(actual_params.size() > decl.params_pattern.size()) {
+      return false;
+    }
+  } else if(decl.params_pattern.size() != actual_params.size()) {
     return false;
   }
 
@@ -178,7 +191,9 @@ bool function_template_accepts_transformed_parameter_types(
       decl.pattern_scope ? decl.pattern_scope : decl.declaring_scope;
   std::map<std::string, cpp_decl::TypePtr> deduced;
   for(std::size_t i = 0; i < actual_params.size(); ++i) {
-    cpp_decl::TypePtr pattern = decl.params_pattern[i].second;
+    const std::size_t pattern_index =
+        has_trailing_pack && i >= fixed_count ? fixed_count : i;
+    cpp_decl::TypePtr pattern = decl.params_pattern[pattern_index].second;
     cpp_decl::TypePtr actual = actual_params[i];
     bool pattern_reference_adjusted = false;
     bool actual_reference_adjusted = false;
