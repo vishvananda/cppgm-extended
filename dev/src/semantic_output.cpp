@@ -4885,13 +4885,26 @@ void analyze_special_member_definition(SemanticContext & ctx,
     }
 
     FunctionBinding * binding = nullptr;
-    if(!ctx.resolve_out_of_class_method_binding(scope,
-                                                node.value,
-                                                declared_type,
-                                                syntax.is_const_method,
-                                                syntax.is_volatile_method,
-                                                syntax.ref_qualifier,
-                                                binding)) {
+    const CppAstNode * identifier = find_child(*declarator, CppAstKind::identifier);
+    const QualifiedName * qualified_name =
+        identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
+    const bool resolved =
+        qualified_name ?
+            ctx.resolve_out_of_class_method_binding(scope,
+                                                    *qualified_name,
+                                                    declared_type,
+                                                    syntax.is_const_method,
+                                                    syntax.is_volatile_method,
+                                                    syntax.ref_qualifier,
+                                                    binding) :
+            ctx.resolve_out_of_class_method_binding(scope,
+                                                    node.value,
+                                                    declared_type,
+                                                    syntax.is_const_method,
+                                                    syntax.is_volatile_method,
+                                                    syntax.ref_qualifier,
+                                                    binding);
+    if(!resolved) {
       throw logic_error("missing conversion operator binding");
     }
     analyze_function_binding_output_impl(ctx, state, scope, *binding, out);

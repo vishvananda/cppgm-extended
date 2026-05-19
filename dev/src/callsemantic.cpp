@@ -24989,14 +24989,27 @@ private:
       }
 
       FunctionBinding * binding = nullptr;
-      if(!resolve_out_of_class_named_method_binding(scope,
-                                                    node.value,
-                                                    name,
-                                                    declared_type,
-                                                    syntax.is_const_method,
-                                                    syntax.is_volatile_method,
-                                                    syntax.ref_qualifier,
-                                                    binding)) {
+      const CppAstNode * identifier = find_child(*declarator, CppAstKind::identifier);
+      const QualifiedName * qualified_name =
+          identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
+      const bool resolved =
+          qualified_name ?
+              resolve_out_of_class_method_binding(scope,
+                                                  *qualified_name,
+                                                  declared_type,
+                                                  syntax.is_const_method,
+                                                  syntax.is_volatile_method,
+                                                  syntax.ref_qualifier,
+                                                  binding) :
+              resolve_out_of_class_named_method_binding(scope,
+                                                        node.value,
+                                                        name,
+                                                        declared_type,
+                                                        syntax.is_const_method,
+                                                        syntax.is_volatile_method,
+                                                        syntax.ref_qualifier,
+                                                        binding);
+      if(!resolved) {
         throw logic_error("missing conversion operator binding");
       }
       if(!explicit_function_nothrow_specifications_match(

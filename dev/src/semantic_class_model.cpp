@@ -4850,6 +4850,15 @@ std::string unqualified_conversion_operator_member_name(const std::string & name
       name;
 }
 
+std::string conversion_operator_identifier_member_name(const CppAstNode & identifier)
+{
+  const QualifiedName * qualified_name = cppast_qualified_name_syntax(identifier);
+  if(qualified_name && !qualified_name->name.empty()) {
+    return qualified_name->name;
+  }
+  return unqualified_conversion_operator_member_name(identifier.value);
+}
+
 bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
                                                Scope & scope,
                                                const CppAstNode & declarator,
@@ -4858,7 +4867,7 @@ bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
   const CppAstNode * identifier = find_child(declarator, CppAstKind::identifier);
   const std::string operator_name =
       identifier ?
-          unqualified_conversion_operator_member_name(identifier->value) :
+          conversion_operator_identifier_member_name(*identifier) :
           std::string();
   if(operator_name.compare(0, 8, "operator") != 0) {
     return false;
@@ -4976,6 +4985,11 @@ bool parse_conversion_operator_signature(
                            declared_type) ||
      member_name.empty()) {
     return false;
+  }
+  const CppAstNode * identifier =
+      find_child(prepared_method.parse_declarator_node(), CppAstKind::identifier);
+  if(identifier) {
+    member_name = conversion_operator_identifier_member_name(*identifier);
   }
   member_name =
       canonical_function_lookup_name(
