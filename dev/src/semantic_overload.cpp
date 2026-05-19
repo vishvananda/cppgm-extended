@@ -2919,6 +2919,24 @@ bool is_scalar_pseudo_destructor_name(const string & name)
   return name.size() > 1 && name[0] == '~';
 }
 
+bool destructor_implicit_object_cv_compatible(const TypePtr & target,
+                                              const ExprInfo & arg)
+{
+  TypePtr target_base = strip_top_level_cv(target);
+  TypePtr object_type = value_conversion_type(arg);
+  TypePtr object_base = strip_top_level_cv(object_type);
+  if(!target_base ||
+     !object_base ||
+     target_base->kind != Type::TK_POINTER ||
+     object_base->kind != Type::TK_POINTER) {
+    return false;
+  }
+
+  TypePtr target_object = strip_top_level_cv(target_base->inner);
+  TypePtr actual_object = strip_top_level_cv(object_base->inner);
+  return target_object && actual_object && type_equals(target_object, actual_object);
+}
+
 bool constructor_candidates_match_deferred_functional_cast(
     SemanticContext & ctx,
     const TypePtr & deferred_functional_cast_type,
@@ -10999,6 +11017,15 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             semantic_conversion::implicit_object_conversion_rank(ctx,
                                                                  function_type->params[0],
                                                                  rank_object_arg);
+        if(this_rank == CR_BAD &&
+           candidate->is_destructor &&
+           destructor_implicit_object_cv_compatible(function_type->params[0],
+                                                    rank_object_arg)) {
+          this_rank = CR_EXACT;
+          ctx.set_expr_info_metadata(adjusted_this,
+                                     function_type->params[0],
+                                     adjusted_this.category);
+        }
         if(this_rank == CR_BAD) {
           okay = false;
           candidate_rejections[i] = "implicit object conversion failed";
