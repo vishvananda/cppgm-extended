@@ -118,6 +118,11 @@ struct NotDataMemberExpressionError : SemanticSoftFailure
   using SemanticSoftFailure::SemanticSoftFailure;
 };
 
+struct DependentQualifiedTypeMissingTypenameError : std::logic_error
+{
+  using std::logic_error::logic_error;
+};
+
 inline Diagnostic make_diagnostic(DiagnosticKind kind,
                                   const std::string & message,
                                   const std::string & location = std::string(),

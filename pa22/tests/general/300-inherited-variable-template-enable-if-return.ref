@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @traits_Alloc___construct(%t2, %t3, %t4)
     return i32 0
 }
-function @traits_Alloc___construct(%__param0 : ptr [pass=reference], %__param1 : ptr, %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6traitsI5AllocE9constructI1XJiEEEN9enable_ifIX13can_constructIT_S3_DpT0_EEvE4typeERS6_PS6_DpOS7_] {
+function @traits_Alloc___construct(%__param0 : ptr [pass=reference], %__param1 : ptr, %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6traitsI5AllocE9constructI1XJiEEEN9enable_ifIX13can_constructIS0_T_DpT0_EEvE4typeERS0_PS5_DpOS6_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

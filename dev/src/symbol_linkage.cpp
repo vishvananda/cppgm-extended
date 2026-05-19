@@ -1074,6 +1074,7 @@ struct TypeMangleContext
   bool suppress_member_template_name_component_substitution = false;
   bool suppress_decltype_callee_template_prefix_substitution = false;
   bool suppress_legacy_type_substitution_keys = false;
+  bool prefer_source_template_parameter_expression_arguments = false;
 };
 
 struct LambdaContextFunctionSymbolOptionsStorage
@@ -3220,6 +3221,31 @@ static bool template_argument_is_self_type_parameter(
   if(argument.kind != TemplateArgument::TA_TYPE) {
     return false;
   }
+  TypePtr argument_base = strip_top_level_cv(argument.type);
+  if(argument_base) {
+    if(argument_base->kind == Type::TK_NAMED &&
+       argument_base->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER) {
+      if(!parameter.placeholder_key.empty() &&
+         argument_base->named_key == parameter.placeholder_key) {
+        return true;
+      }
+      const string argument_display =
+          trim_elaborated_type_prefix(argument_base->named_display);
+      if(!parameter.name.empty() &&
+         text_matches_type_parameter_name(argument_display, parameter.name)) {
+        return true;
+      }
+    }
+    if(!matched_type) {
+      return false;
+    }
+    return argument_base.get() == matched_type.get() ||
+           (argument_base->kind == Type::TK_NAMED &&
+            argument_base->named_key == matched_type->named_key &&
+            trim_elaborated_type_prefix(
+                argument_base->named_display) == matched_display);
+  }
+
   const string argument_text =
       trim_elaborated_type_prefix(argument.text);
   if(!parameter.name.empty() &&
@@ -3227,15 +3253,7 @@ static bool template_argument_is_self_type_parameter(
       (parameter.parameter_pack && argument_text == parameter.name + "..."))) {
     return true;
   }
-  TypePtr argument_base = strip_top_level_cv(argument.type);
-  if(!argument_base || !matched_type) {
-    return false;
-  }
-  return argument_base.get() == matched_type.get() ||
-         (argument_base->kind == Type::TK_NAMED &&
-          argument_base->named_key == matched_type->named_key &&
-          trim_elaborated_type_prefix(
-              argument_base->named_display) == matched_display);
+  return false;
 }
 
 static bool emit_template_parameter_index(size_t index,
@@ -4124,7 +4142,13 @@ static TemplateArgumentSyntax clone_template_argument_syntax_for_mangling(
 {
   TemplateArgumentSyntax out;
   out.text = source.text;
+  out.source_text = source.source_text;
   out.pack_expansion = source.pack_expansion;
+  out.dependent = source.dependent;
+  out.has_source_token_start = source.has_source_token_start;
+  out.source_token_start = source.source_token_start;
+  out.source_location_id = source.source_location_id;
+  out.resolved_type = source.resolved_type;
   if(source.template_id) {
     out.template_id.reset(
         new TemplateIdSyntax(clone_template_id_syntax_for_mangling(*source.template_id)));
@@ -7148,7 +7172,8 @@ static bool context_free_type_ir_only_context(
          !mangle_ctx->suppress_current_type_id_substitution_registration &&
          !mangle_ctx->suppress_expression_qualifier_template_name_substitution &&
          !mangle_ctx->suppress_member_template_name_component_substitution &&
-         !mangle_ctx->suppress_decltype_callee_template_prefix_substitution;
+         !mangle_ctx->suppress_decltype_callee_template_prefix_substitution &&
+         !mangle_ctx->prefer_source_template_parameter_expression_arguments;
 }
 
 static bool attach_context_free_type_ir_substitution(
@@ -7606,12 +7631,15 @@ static itanium_mangle_ir::Type template_parameter_type_ir(
 
 static void wrap_pack_expansion_type_ir_if_needed(
     bool pack_expansion,
-    itanium_mangle_ir::Type & out)
+    itanium_mangle_ir::Type & out,
+    bool register_substitution = true)
 {
   if(pack_expansion &&
      out.kind != itanium_mangle_ir::Type::TK_PACK_EXPANSION) {
     out = itanium_mangle_ir::Type::pack_expansion(out);
-    attach_context_free_type_ir_substitution(out);
+    if(register_substitution) {
+      attach_context_free_type_ir_substitution(out);
+    }
   }
 }
 
@@ -7653,7 +7681,9 @@ static bool try_build_template_parameter_type_text_ir(
                                          parameters,
                                          register_substitution &&
                                          !mangle_ctx->suppress_template_parameter_type_registration);
-        wrap_pack_expansion_type_ir_if_needed(pack_expansion, out);
+        wrap_pack_expansion_type_ir_if_needed(pack_expansion,
+                                              out,
+                                              register_substitution);
         return true;
       }
     }
@@ -7682,7 +7712,9 @@ static bool try_build_template_parameter_type_text_ir(
                                          param,
                                          &parameters,
                                          register_substitution);
-        wrap_pack_expansion_type_ir_if_needed(pack_expansion, out);
+        wrap_pack_expansion_type_ir_if_needed(pack_expansion,
+                                              out,
+                                              register_substitution);
         return true;
       }
       if(arguments[i].kind == TemplateArgument::TA_TYPE &&
@@ -7694,7 +7726,9 @@ static bool try_build_template_parameter_type_text_ir(
                    mangle_ctx, i, owner_arg_ctx_storage),
                out)) {
           if(!(pack_expansion && param.parameter_pack)) {
-            wrap_pack_expansion_type_ir_if_needed(pack_expansion, out);
+            wrap_pack_expansion_type_ir_if_needed(pack_expansion,
+                                                  out,
+                                                  register_substitution);
           }
           return true;
         }
@@ -8348,6 +8382,28 @@ static bool try_build_sizeof_type_expression_text_ir(
   return true;
 }
 
+static bool try_build_dependent_type_template_argument_ir(
+    const DependentAliasTemplateArgumentSyntax & argument,
+    const TemplateParameterInfo & parameter,
+    const TypeMangleContext * mangle_ctx,
+    itanium_mangle_ir::Type::ClassTemplateArgument & out)
+{
+  if(parameter.kind != TemplateParameterInfo::TP_TYPE ||
+     !argument.type ||
+     argument.source_defaulted ||
+     type_has_dependent_mangle_state(argument.type)) {
+    return false;
+  }
+
+  itanium_mangle_ir::Type type;
+  if(!try_build_template_argument_type_ir(argument.type, mangle_ctx, type)) {
+    return false;
+  }
+  wrap_pack_expansion_type_ir_if_needed(argument.syntax.pack_expansion, type);
+  out = itanium_mangle_ir::Type::ClassTemplateArgument::type_arg(type);
+  return true;
+}
+
 static bool build_dependent_template_arguments_ir(
     const vector<DependentAliasTemplateArgumentSyntax> & arguments,
     const vector<TemplateParameterInfo> * parameters,
@@ -8374,9 +8430,15 @@ static bool build_dependent_template_arguments_ir(
         vector<itanium_mangle_ir::Type::ClassTemplateArgument> pack_arguments;
         pack_arguments.reserve(pack_count);
         for(size_t j = 0; j < pack_count; ++j) {
+          const DependentAliasTemplateArgumentSyntax & dependent_argument =
+              arguments[arg_index++];
           itanium_mangle_ir::Type::ClassTemplateArgument ir_argument;
-          if(!try_build_template_argument_syntax_ir(
-                 effective_dependent_argument_syntax(arguments[arg_index++]),
+          if(!try_build_dependent_type_template_argument_ir(dependent_argument,
+                                                            parameter,
+                                                            mangle_ctx,
+                                                            ir_argument) &&
+             !try_build_template_argument_syntax_ir(
+                 effective_dependent_argument_syntax(dependent_argument),
                  &parameter,
                  mangle_ctx,
                  ir_argument)) {
@@ -8386,7 +8448,7 @@ static bool build_dependent_template_arguments_ir(
                     << " parameter=" << parameter.name
                     << " kind=" << static_cast<int>(parameter.kind)
                     << " pack=yes"
-                    << " text=" << arguments[arg_index - 1].text;
+                    << " text=" << dependent_argument.text;
               parser_trace::note("symbol.linkage", string(), trace.str());
             }
             return false;
@@ -8401,9 +8463,15 @@ static bool build_dependent_template_arguments_ir(
       if(arg_index >= arguments.size()) {
         return false;
       }
+      const DependentAliasTemplateArgumentSyntax & dependent_argument =
+          arguments[arg_index++];
       itanium_mangle_ir::Type::ClassTemplateArgument ir_argument;
-      if(!try_build_template_argument_syntax_ir(
-             effective_dependent_argument_syntax(arguments[arg_index++]),
+      if(!try_build_dependent_type_template_argument_ir(dependent_argument,
+                                                        parameter,
+                                                        mangle_ctx,
+                                                        ir_argument) &&
+         !try_build_template_argument_syntax_ir(
+             effective_dependent_argument_syntax(dependent_argument),
              &parameter,
              mangle_ctx,
              ir_argument)) {
@@ -8413,7 +8481,7 @@ static bool build_dependent_template_arguments_ir(
                 << " parameter=" << parameter.name
                 << " kind=" << static_cast<int>(parameter.kind)
                 << " pack=no"
-                << " text=" << arguments[arg_index - 1].text;
+                << " text=" << dependent_argument.text;
           parser_trace::note("symbol.linkage", string(), trace.str());
         }
         return false;
@@ -10575,6 +10643,28 @@ static bool try_build_template_argument_syntax_ir(
     out = itanium_mangle_ir::Type::ClassTemplateArgument::type_arg(type);
     return true;
   }
+  const bool using_source_template_parameter_argument =
+      mangle_ctx &&
+      mangle_ctx->prefer_source_template_parameter_expression_arguments &&
+      !syntax.source_text.empty();
+  const string source_or_text =
+      trim_space(using_source_template_parameter_argument ?
+                     syntax.source_text :
+                     syntax.text);
+  if(!known_non_type_parameter &&
+     !source_or_text.empty() &&
+     try_build_template_parameter_type_text_ir(source_or_text,
+                                               mangle_ctx,
+                                               true,
+                                               type)) {
+    if(!(syntax.pack_expansion &&
+         pack_expansion_text_resolves_to_concrete_owner_pack(source_or_text,
+                                                             mangle_ctx))) {
+      wrap_pack_expansion_type_ir_if_needed(syntax.pack_expansion, type);
+    }
+    out = itanium_mangle_ir::Type::ClassTemplateArgument::type_arg(type);
+    return true;
+  }
   if(syntax.resolved_type &&
      try_build_type_ir(syntax.resolved_type, mangle_ctx, type)) {
     wrap_pack_expansion_type_ir_if_needed(syntax.pack_expansion, type);
@@ -10605,19 +10695,6 @@ static bool try_build_template_argument_syntax_ir(
   if(!known_non_type_parameter &&
      !syntax.text.empty() &&
      try_build_direct_type_syntax_text_ir(syntax.text, mangle_ctx, type)) {
-    if(!(syntax.pack_expansion &&
-         pack_expansion_text_resolves_to_concrete_owner_pack(syntax.text,
-                                                             mangle_ctx))) {
-      wrap_pack_expansion_type_ir_if_needed(syntax.pack_expansion, type);
-    }
-    out = itanium_mangle_ir::Type::ClassTemplateArgument::type_arg(type);
-    return true;
-  }
-  if(!syntax.text.empty() &&
-     try_build_template_parameter_type_text_ir(syntax.text,
-                                               mangle_ctx,
-                                               true,
-                                               type)) {
     if(!(syntax.pack_expansion &&
          pack_expansion_text_resolves_to_concrete_owner_pack(syntax.text,
                                                              mangle_ctx))) {
@@ -11015,9 +11092,17 @@ static bool try_build_dependent_expression_ir(
         dependent_arguments.push_back(argument);
       }
       vector<itanium_mangle_ir::Type::ClassTemplateArgument> class_arguments;
+      TypeMangleContext expression_argument_ctx_storage;
+      const TypeMangleContext * expression_argument_ctx = mangle_ctx;
+      if(mangle_ctx) {
+        expression_argument_ctx_storage = *mangle_ctx;
+        expression_argument_ctx_storage
+            .prefer_source_template_parameter_expression_arguments = true;
+        expression_argument_ctx = &expression_argument_ctx_storage;
+      }
       if(!build_dependent_template_arguments_ir(dependent_arguments,
                                                 nullptr,
-                                                mangle_ctx,
+                                                expression_argument_ctx,
                                                 class_arguments)) {
         return false;
       }
@@ -11076,6 +11161,8 @@ static bool try_build_dependent_expression_ir(
     if(mangle_ctx &&
        mangle_ctx->suppress_decltype_callee_template_prefix_substitution) {
       callee.suppress_template_prefix_substitution = true;
+    } else {
+      callee.suppress_template_prefix_substitution = false;
     }
     vector<itanium_mangle_ir::DependentExpression> arguments;
     if(node.children.size() >= 2 &&
@@ -11167,9 +11254,17 @@ static bool try_build_dependent_expression_ir(
           dependent_arguments.push_back(argument);
         }
         vector<itanium_mangle_ir::Type::ClassTemplateArgument> class_arguments;
+        TypeMangleContext expression_argument_ctx_storage;
+        const TypeMangleContext * expression_argument_ctx = mangle_ctx;
+        if(mangle_ctx) {
+          expression_argument_ctx_storage = *mangle_ctx;
+          expression_argument_ctx_storage
+              .prefer_source_template_parameter_expression_arguments = true;
+          expression_argument_ctx = &expression_argument_ctx_storage;
+        }
         if(!build_dependent_template_arguments_ir(dependent_arguments,
                                                   nullptr,
-                                                  mangle_ctx,
+                                                  expression_argument_ctx,
                                                   class_arguments)) {
           return false;
         }
@@ -11207,9 +11302,17 @@ static bool try_build_dependent_expression_ir(
         dependent_arguments.push_back(argument);
       }
       vector<itanium_mangle_ir::Type::ClassTemplateArgument> class_arguments;
+      TypeMangleContext expression_argument_ctx_storage;
+      const TypeMangleContext * expression_argument_ctx = mangle_ctx;
+      if(mangle_ctx) {
+        expression_argument_ctx_storage = *mangle_ctx;
+        expression_argument_ctx_storage
+            .prefer_source_template_parameter_expression_arguments = true;
+        expression_argument_ctx = &expression_argument_ctx_storage;
+      }
       if(!build_dependent_template_arguments_ir(dependent_arguments,
                                                 nullptr,
-                                                mangle_ctx,
+                                                expression_argument_ctx,
                                                 class_arguments)) {
         return false;
       }
@@ -11227,6 +11330,7 @@ static bool try_build_dependent_expression_ir(
       out = itanium_mangle_ir::DependentExpression::template_id(
           trim_space(template_id->name.name),
           arguments);
+      out.suppress_template_prefix_substitution = true;
       return true;
     }
 
@@ -11394,6 +11498,7 @@ static bool try_build_dependent_expression_text_ir(
     out = itanium_mangle_ir::DependentExpression::template_id(
         trim_space(template_id.name.name),
         arguments);
+    out.suppress_template_prefix_substitution = true;
     return true;
   }
 
