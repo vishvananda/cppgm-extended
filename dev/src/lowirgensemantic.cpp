@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "cpp_decl_model.h"
-#include "class_template_mangle_info.h"
 #include "eh_runtime.h"
 #include "encoding.h"
 #include "parser_trace.h"
@@ -56,27 +55,6 @@ const char * exported_linkage_name(symbol_linkage::SymbolLinkage linkage)
 string thread_local_init_internal_symbol(const string & global_symbol)
 {
   return global_symbol + "__tls_init";
-}
-
-unsigned long long stable_symbol_hash(const string & text)
-{
-  unsigned long long value = 1469598103934665603ULL;
-  for(size_t i = 0; i < text.size(); ++i) {
-    value ^= static_cast<unsigned char>(text[i]);
-    value *= 1099511628211ULL;
-  }
-  return value;
-}
-
-string hex_u64(unsigned long long value)
-{
-  static const char hex[] = "0123456789abcdef";
-  string out(16, '0');
-  for(size_t i = 0; i < out.size(); ++i) {
-    const size_t shift = (out.size() - 1 - i) * 4;
-    out[i] = hex[(value >> shift) & 0x0FULL];
-  }
-  return out;
 }
 
 struct LowIRGlobal
@@ -3362,193 +3340,6 @@ private:
     return false;
   }
 
-  bool class_has_external_constructor_reference(const string & qualified_name,
-                                                const TypePtr & object_type,
-                                                Type::Kind ref_kind) const
-  {
-    if(qualified_name.empty()) {
-      return false;
-    }
-    const string constructor_name =
-        qualified_name + "::" + class_constructor_name(qualified_name);
-    vector<TypePtr> params;
-    params.push_back(make_pointer(object_type));
-    params.push_back(ref_kind == Type::TK_LVALUE_REFERENCE ?
-                         make_lvalue_reference_raw(make_cv(object_type, true, false)) :
-                         make_rvalue_reference_raw(object_type));
-    if(function_symbols_.count(function_key(
-           constructor_name,
-           make_function(make_fundamental(FT_VOID), params, false))) != 0) {
-      return true;
-    }
-    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
-      const FunctionSymbolEntry & entry = function_symbol_entries_[i];
-      if(entry.has_definition ||
-         !special_member_lookup_name_matches(entry.name, constructor_name)) {
-        continue;
-      }
-      if(matches_constructor_entry_type_for_lowir(entry.type, object_type, ref_kind)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool class_has_external_constructor_reference(const string & qualified_name,
-                                                const TypePtr & object_type) const
-  {
-    return class_has_external_constructor_reference(qualified_name,
-                                                    object_type,
-                                                    Type::TK_LVALUE_REFERENCE) ||
-           class_has_external_constructor_reference(qualified_name,
-                                                    object_type,
-                                                    Type::TK_RVALUE_REFERENCE);
-  }
-
-  bool class_has_external_destructor_reference(const string & qualified_name,
-                                               const TypePtr & object_type) const
-  {
-    if(qualified_name.empty()) {
-      return false;
-    }
-    const string destructor_name =
-        qualified_name + "::~" + class_constructor_name(qualified_name);
-    vector<TypePtr> params;
-    params.push_back(make_pointer(object_type));
-    const TypePtr destructor_type =
-        make_function(make_fundamental(FT_VOID), params, false);
-    if(function_symbols_.count(function_key(destructor_name, destructor_type)) != 0) {
-      return true;
-    }
-    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
-      const FunctionSymbolEntry & entry = function_symbol_entries_[i];
-      if(entry.has_definition ||
-         !special_member_lookup_name_matches(entry.name, destructor_name)) {
-        continue;
-      }
-      if(matches_destructor_entry_type_for_lowir(entry.type, object_type)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  bool class_has_external_lifecycle_reference(const string & qualified_name,
-                                              const TypePtr & object_type) const
-  {
-    return class_has_external_constructor_reference(qualified_name, object_type) ||
-           class_has_external_destructor_reference(qualified_name, object_type);
-  }
-
-  bool function_internal_symbol_in_use(const string & symbol) const
-  {
-    if(symbol.empty()) {
-      return false;
-    }
-    if(external_function_symbols_.count(symbol) != 0 ||
-       referenced_function_symbols_.count(symbol) != 0) {
-      return true;
-    }
-    for(map<string, string>::const_iterator it = function_symbols_.begin();
-        it != function_symbols_.end();
-        ++it) {
-      if(it->second == symbol) {
-        return true;
-      }
-    }
-    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
-      if(function_symbol_entries_[i].symbol == symbol) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  string collision_free_external_function_symbol(const string & base_symbol,
-                                                 const string & object_symbol) const
-  {
-    const string candidate =
-        base_symbol + "__host_" + hex_u64(stable_symbol_hash(object_symbol));
-    if(!function_internal_symbol_in_use(candidate)) {
-      return candidate;
-    }
-    for(size_t index = 2;; ++index) {
-      ostringstream out;
-      out << candidate << "__ov" << index;
-      if(!function_internal_symbol_in_use(out.str())) {
-        return out.str();
-      }
-    }
-  }
-
-  string synthesize_external_special_member_symbol(const string & qualified_name,
-                                                   const string & member_name,
-                                                   const TypePtr & object_type,
-                                                   const TypePtr & function_type,
-                                                   bool is_destructor) const
-  {
-    if(class_has_local_function_definition(qualified_name)) {
-      return string();
-    }
-    QualifiedName qualified_syntax;
-    if(!semantic_utils::split_qualified_name_text(qualified_name + "::" + member_name,
-                                                  qualified_syntax)) {
-      return string();
-    }
-    symbol_linkage::FunctionSymbolOptions options;
-    options.is_member_function = true;
-    options.has_implicit_object_parameter = true;
-    options.is_constructor = !is_destructor;
-    options.is_destructor = is_destructor;
-    shared_ptr<const ClassTemplateSpecializationMangleInfo> owner_template =
-        named_type_class_template_specialization_mangle_info_const(object_type);
-    if(owner_template) {
-      options.owner_template_parameters = &owner_template->template_parameters;
-      options.owner_template_arguments = &owner_template->arguments;
-      options.owner_template_name = owner_template->template_name;
-      options.template_argument_pack_sizes = &owner_template->pack_sizes;
-      options.suppress_template_argument_pack_grouping =
-          owner_template->force_structured_mangling;
-      symbol_linkage::FunctionSymbolOptions::OwnerTemplateComponent component;
-      component.template_name = owner_template->template_name;
-      component.parameters = &owner_template->template_parameters;
-      component.arguments = &owner_template->arguments;
-      options.owner_template_components.push_back(component);
-    }
-    const symbol_linkage::SymbolIdentity identity =
-        symbol_linkage::make_function_symbol_identity(qualified_syntax,
-                                                      member_name,
-                                                      false,
-                                                      function_type,
-                                                      options);
-    if(identity.internal_symbol.empty() || identity.object_symbol.empty()) {
-      return string();
-    }
-    for(map<string, string>::const_iterator it = external_function_symbols_.begin();
-        it != external_function_symbols_.end();
-        ++it) {
-      if(it->second == identity.object_symbol) {
-        return it->first;
-      }
-    }
-    string internal_symbol = identity.internal_symbol;
-    map<string, string>::const_iterator existing =
-        external_function_symbols_.find(internal_symbol);
-    if(existing != external_function_symbols_.end() &&
-       existing->second != identity.object_symbol) {
-      internal_symbol =
-          collision_free_external_function_symbol(identity.internal_symbol,
-                                                  identity.object_symbol);
-    } else if(existing == external_function_symbols_.end() &&
-              function_internal_symbol_in_use(internal_symbol)) {
-      internal_symbol =
-          collision_free_external_function_symbol(identity.internal_symbol,
-                                                  identity.object_symbol);
-    }
-    external_function_symbols_[internal_symbol] = identity.object_symbol;
-    return internal_symbol;
-  }
-
   bool class_has_external_virtual_base_runtime_layout(const TypePtr & type) const
   {
     TypePtr class_type = strip_top_level_cv(remove_reference_type(type));
@@ -4551,14 +4342,6 @@ private:
                                                           object_type,
                                                           Type::TK_LVALUE_REFERENCE);
         });
-    if(symbol.empty() &&
-       class_has_external_lifecycle_reference(qualified, object_type)) {
-      symbol = synthesize_external_special_member_symbol(qualified,
-                                                         simple,
-                                                         object_type,
-                                                         lookup_type,
-                                                         false);
-    }
     note_referenced_function_signature(
         symbol,
         lookup_type);
@@ -4613,16 +4396,6 @@ private:
                                                           object_type,
                                                           Type::TK_RVALUE_REFERENCE);
         });
-    if(symbol.empty() &&
-       class_has_external_constructor_reference(qualified,
-                                                object_type,
-                                                Type::TK_RVALUE_REFERENCE)) {
-      symbol = synthesize_external_special_member_symbol(qualified,
-                                                         simple,
-                                                         object_type,
-                                                         lookup_type,
-                                                         false);
-    }
     note_referenced_function_signature(
         symbol,
         lookup_type);

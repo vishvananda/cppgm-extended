@@ -5078,6 +5078,37 @@ void append_emutls_thread_local_declaration_wrappers(
   }
 }
 
+void force_external_binding_for_function_declaration_imports(
+    const lowir_internal::Program & source_program,
+    machine_ir::Program & machine_program)
+{
+  set<string> defined_functions;
+  for(size_t i = 0; i < source_program.functions.size(); ++i) {
+    defined_functions.insert(source_program.functions[i].name);
+  }
+
+  set<string> declaration_only_functions;
+  for(size_t i = 0; i < source_program.function_declarations.size(); ++i) {
+    const string & name = source_program.function_declarations[i].name;
+    if(defined_functions.count(name) == 0) {
+      declaration_only_functions.insert(name);
+    }
+  }
+  if(declaration_only_functions.empty()) {
+    return;
+  }
+
+  for(size_t i = 0; i < machine_program.exported_symbols.size(); ++i) {
+    symbol_linkage::SymbolIdentity & symbol = machine_program.exported_symbols[i];
+    if(declaration_only_functions.count(symbol.internal_symbol) == 0 ||
+       !symbol_linkage::has_object_symbol(symbol)) {
+      continue;
+    }
+    symbol.linkage = symbol_linkage::SL_EXTERNAL;
+    symbol.prefer_local_object_binding = false;
+  }
+}
+
 }  // namespace
 
 machine_object::ObjectFile build_machine_object(const lowir_internal::Program & program,
@@ -5100,6 +5131,7 @@ machine_object::ObjectFile build_machine_object(const lowir_internal::Program & 
   machine_ir::Program machine_program =
       build_lowir_machine_ir_object(program, output_target, enable_host_eh);
   machine_program = optimize_machine_ir_program(machine_program, optimization_level);
+  force_external_binding_for_function_declaration_imports(program, machine_program);
   if(parser_trace::enabled("object.symbol")) {
     for(size_t i = 0; i < machine_program.functions.size(); ++i) {
       parser_trace::note("object.symbol",
