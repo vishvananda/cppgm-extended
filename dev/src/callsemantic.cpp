@@ -15100,6 +15100,35 @@ private:
                                             &alias_syntax.argument_syntaxes);
       witness::emit_alias_use(template_witness_context(), request);
     };
+    const auto qualified_template_name_has_dependent_source_owner =
+        [&](const QualifiedName & name) -> bool
+    {
+      if(name.qualifiers.empty()) {
+        return false;
+      }
+      const vector<string> qualifier_texts = name.qualifiers;
+      return template_argument_texts_mention_source_bindings(
+                 *this,
+                 pattern_scope,
+                 qualifier_texts) ||
+             template_argument_texts_mention_instantiated_class_local_type_aliases(
+                 pattern_scope,
+                 qualifier_texts) ||
+             template_argument_texts_mention_enclosing_source_template_parameters(
+                 pattern_scope,
+                 qualifier_texts) ||
+             template_argument_texts_mention_template_bound_scope_names(
+                 pattern_scope,
+                 qualifier_texts) ||
+             template_argument_texts_mention_current_specialization_names(
+                 pattern_scope,
+                 qualifier_texts);
+    };
+    const auto template_id_syntax_has_dependent_source_owner =
+        [&](const TemplateIdSyntax & syntax) -> bool
+    {
+      return qualified_template_name_has_dependent_source_owner(syntax.name);
+    };
 	    record_template_id_source_use_from_syntax =
 	        [&](const TemplateIdSyntax & nested_syntax) -> void
 	    {
@@ -15151,9 +15180,13 @@ private:
 	                  pattern_scope,
 	                  source_arg_texts);
 	        };
+        const bool dependent_source_owner =
+            template_id_syntax_has_dependent_source_owner(nested_syntax);
 	        AliasTemplateDecl * alias_template =
-	            lookup_alias_template_for_source_use(pattern_scope,
-	                                                 nested_syntax.name);
+            dependent_source_owner ?
+                nullptr :
+                lookup_alias_template_for_source_use(pattern_scope,
+                                                     nested_syntax.name);
         if(alias_template) {
           const bool record_now = recorded_alias_uses.insert(location).second;
           if(record_now) {
@@ -15165,7 +15198,9 @@ private:
           }
 	        } else {
 	          ClassTemplateDecl * class_template =
-	              lookup_class_template(pattern_scope, nested_syntax.name);
+              dependent_source_owner ?
+                  nullptr :
+                  lookup_class_template(pattern_scope, nested_syntax.name);
 	          if(class_template &&
 	             !source_arguments_are_dependent() &&
 	             recorded_class_uses.insert(location).second) {
@@ -15353,8 +15388,16 @@ private:
                       arg_texts);
             }
             if(have_template_id) {
+              const bool dependent_source_owner =
+                  syntax ?
+                      template_id_syntax_has_dependent_source_owner(*syntax) :
+                      qualified_template_name_has_dependent_source_owner(
+                          template_id);
               AliasTemplateDecl * alias_template =
-                  lookup_alias_template_for_source_use(pattern_scope, template_id);
+                  dependent_source_owner ?
+                      nullptr :
+                      lookup_alias_template_for_source_use(pattern_scope,
+                                                           template_id);
               if(alias_template) {
                 vector<string> source_arg_texts = arg_texts;
                 const vector<TemplateArgumentSyntax> * source_arg_syntaxes =
@@ -15493,9 +15536,6 @@ private:
                        nested_arg_texts)) {
                   continue;
                 }
-                AliasTemplateDecl * nested_alias_template =
-                    lookup_alias_template_for_source_use(pattern_scope,
-                                                         nested_template_id);
                 const TemplateIdSyntax * nested_syntax =
                     template_id_syntax_for_anchor_at_or_after_location(
                         template_witness_context(),
@@ -15507,10 +15547,23 @@ private:
                       template_id_argument_witness_source_texts(
                           *nested_syntax);
                 }
+                const bool nested_dependent_source_owner =
+                    nested_syntax ?
+                        template_id_syntax_has_dependent_source_owner(
+                            *nested_syntax) :
+                        qualified_template_name_has_dependent_source_owner(
+                            nested_template_id);
+                AliasTemplateDecl * nested_alias_template =
+                    nested_dependent_source_owner ?
+                        nullptr :
+                        lookup_alias_template_for_source_use(pattern_scope,
+                                                             nested_template_id);
 	                if(!nested_alias_template) {
 	                  ClassTemplateDecl * nested_class_template =
-	                      lookup_class_template(pattern_scope,
-	                                            nested_template_id);
+                        nested_dependent_source_owner ?
+                            nullptr :
+                            lookup_class_template(pattern_scope,
+                                                  nested_template_id);
 	                  if(!nested_class_template ||
 	                     !recorded_class_uses.insert(
 	                         nested_occurrences[nested_index].location).second) {
