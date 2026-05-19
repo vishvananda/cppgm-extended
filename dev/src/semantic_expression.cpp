@@ -4079,9 +4079,15 @@ bool try_analyze_array_braced_init_list_expression(SemanticContext & ctx,
     return false;
   }
 
+  TypePtr direct_expr_base = strip_top_level_cv(expr_type);
+  const bool reference_target =
+      direct_expr_base &&
+      (direct_expr_base->kind == Type::TK_LVALUE_REFERENCE ||
+       direct_expr_base->kind == Type::TK_RVALUE_REFERENCE);
+
   ExprInfo result;
   result.type = expr_type;
-  result.category = VC_LVALUE;
+  result.category = reference_target ? VC_XVALUE : VC_LVALUE;
   result.node = make_dump_node(CallSemKind::braced_init_list);
   set_expr_metadata(result.node, result.type, result.category);
 

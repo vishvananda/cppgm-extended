@@ -371,6 +371,11 @@ bool is_decay_only_lvalue_reference_source(const ExprInfo & expr)
           base->kind == Type::TK_FUNCTION);
 }
 
+bool reference_referent_accepts_temporary(const TypePtr & referent)
+{
+  return referent && type_is_const_object(referent);
+}
+
 bool is_scoped_enum_key(const std::string & key)
 {
   return key.rfind("enum class ", 0) == 0 || key.rfind("enum struct ", 0) == 0;
@@ -391,7 +396,8 @@ bool reference_target_accepts_result_category(const TypePtr & target,
     return false;
   }
   if(base->kind == Type::TK_LVALUE_REFERENCE) {
-    return result_category == VC_LVALUE || is_const_object_type(base->inner);
+    return result_category == VC_LVALUE ||
+           reference_referent_accepts_temporary(base->inner);
   }
   if(base->kind == Type::TK_RVALUE_REFERENCE) {
     return result_category != VC_LVALUE;
@@ -409,7 +415,7 @@ TypePtr reference_binding_converted_pointer_target(const TypePtr & target,
 
   const bool const_lvalue_reference =
       target_base->kind == Type::TK_LVALUE_REFERENCE &&
-      is_const_object_type(target_base->inner);
+      reference_referent_accepts_temporary(target_base->inner);
   const bool rvalue_reference =
       target_base->kind == Type::TK_RVALUE_REFERENCE &&
       expr.category != VC_LVALUE;
@@ -755,13 +761,14 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
   TypePtr base_target = strip_top_level_cv(target);
   if(base_target->kind == Type::TK_LVALUE_REFERENCE) {
     TypePtr source_type = reference_binding_source_type(expr);
-    if((expr.category == VC_LVALUE || is_const_object_type(base_target->inner)) &&
+    if((expr.category == VC_LVALUE ||
+        reference_referent_accepts_temporary(base_target->inner)) &&
        same_type_with_compatible_top_cv(base_target->inner, source_type)) {
       return CR_EXACT;
     }
 
     TypePtr referred_base = strip_top_level_cv(base_target->inner);
-    if(is_const_object_type(base_target->inner) &&
+    if(reference_referent_accepts_temporary(base_target->inner) &&
        base_target->inner != referred_base &&
        base_target->inner->kind == Type::TK_CV) {
       ConversionRank rank = standard_conversion_rank_non_reference(referred_base, expr);
@@ -778,10 +785,12 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
   }
 
   if(base_target->kind == Type::TK_RVALUE_REFERENCE) {
+    bool decay_only_lvalue_source = false;
     if(expr.category == VC_LVALUE) {
       if(!is_decay_only_lvalue_reference_source(expr)) {
         return CR_BAD;
       }
+      decay_only_lvalue_source = true;
 
       TypePtr referred_base = strip_top_level_cv(base_target->inner);
       if(referred_base &&
@@ -794,7 +803,8 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
     if(same_type_with_compatible_top_cv(base_target->inner, source_type)) {
       return CR_EXACT;
     }
-    if(expr.category != VC_PRVALUE || is_class_or_union_object_type(source_type)) {
+    if((expr.category != VC_PRVALUE && !decay_only_lvalue_source) ||
+       is_class_or_union_object_type(source_type)) {
       return CR_BAD;
     }
     return standard_conversion_rank_non_reference(base_target->inner, expr);
@@ -832,11 +842,12 @@ void apply_standard_conversion_result_metadata(SemanticContext & ctx,
     if(target_base->kind == Type::TK_LVALUE_REFERENCE) {
       TypePtr source_type = reference_binding_source_type(expr);
       const bool direct_binding =
-          (expr.category == VC_LVALUE || is_const_object_type(referent_type)) &&
+          (expr.category == VC_LVALUE ||
+           reference_referent_accepts_temporary(referent_type)) &&
           same_type_with_compatible_top_cv(referent_type, source_type);
       TypePtr referred_base = strip_top_level_cv(referent_type);
       if(!direct_binding &&
-         is_const_object_type(referent_type) &&
+         reference_referent_accepts_temporary(referent_type) &&
          referred_base &&
          standard_conversion_rank_non_reference(referred_base, expr) != CR_BAD) {
         set_standard_converted_prvalue_result(ctx, referent_type, expr, out);
@@ -869,7 +880,8 @@ ConversionRank inheritance_conversion_rank(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_LVALUE_REFERENCE &&
-     (arg.category == VC_LVALUE || is_const_object_type(target_base->inner))) {
+     (arg.category == VC_LVALUE ||
+      reference_referent_accepts_temporary(target_base->inner))) {
     if(!top_level_cv_allows_reference_binding(target_base->inner, arg_object_type)) {
       return CR_BAD;
     }
@@ -1648,7 +1660,8 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_LVALUE_REFERENCE &&
-     (expr.category == VC_LVALUE || is_const_object_type(target_base->inner))) {
+     (expr.category == VC_LVALUE ||
+      reference_referent_accepts_temporary(target_base->inner))) {
     if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
       return false;
     }
@@ -1812,7 +1825,7 @@ bool try_argument_conversion(SemanticContext & ctx,
   if(ref_target_base &&
      ref_target_base->kind == Type::TK_LVALUE_REFERENCE &&
      expr.category == VC_LVALUE &&
-     is_const_object_type(ref_target_base->inner)) {
+     reference_referent_accepts_temporary(ref_target_base->inner)) {
     TypePtr referred_base = strip_top_level_cv(ref_target_base->inner);
     TypePtr source_type = reference_binding_source_type(expr);
     TypePtr source_base;

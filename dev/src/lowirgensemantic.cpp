@@ -6627,6 +6627,13 @@ private:
     if(is_reference_type(param_type)) {
       TypePtr referent_type = remove_reference_type(param_type);
       TypePtr referent_base = strip_top_level_cv(referent_type);
+      if(referent_base &&
+         referent_base->kind == Type::TK_ARRAY &&
+         arg.kind == CallSemKind::braced_init_list) {
+        const string temp_ptr = new_hidden_object_address(referent_type, "argarr");
+        emit_local_array_initializer(referent_type, arg, temp_ptr);
+        return temp_ptr;
+      }
       if((arg.is_base_subobject || arg.is_virtual_base_subobject) &&
          arg.value_category != CVC_LVALUE) {
         return emit_lvalue_address(arg);
