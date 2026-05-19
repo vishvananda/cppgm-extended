@@ -12,9 +12,13 @@ rebased Boost frontier branch.
 - safety branch:
   `backup/boost-frontier-before-lowir-lifecycle-rebase-20260519-072414`
 - perf baseline:
-  `/tmp/cppgm-perf-baseline-fix-lowir-external-lifecycle-perf-529454c61-20260519.json`
+  `/tmp/cppgm-perf-baseline-boost-frontier-rebased-8c9e3ce62-20260519.json`
 - rebased stack perf check: passed, instructions `-14.88%`, RSS `-2.77%`,
   footprint `-5.72%`
+- rebased-head perf baseline: recorded at branch head
+  `6735bc6cf22ab9de04de945a25cf6583235acb92`, compiler-equivalent to the
+  rebased frontier head; median instructions `312,198,629,210`, RSS `1.10 GiB`,
+  footprint `856.84 MiB`
 
 Local Boost wrapper state:
 
@@ -63,9 +67,11 @@ Local Boost wrapper state:
 
 | # | Suite | Status | Notes |
 |---|---|---|---|
-| 1 | `libs/accumulators/test` | pending | Starting point for this pass. |
+| 1 | `libs/accumulators/test` | pass | `JOBS=12`, 9s, log `/tmp/boost-frontier-seq-20260519-073659-j12-6735bc6cf/libs__accumulators__test.log`. |
+| 2 | `libs/algorithm/test` | next frontier | Re-run after const-reference-alias fix advanced past Boost.Test/Regex dependency builds. Remaining failures: `partition_subrange_test.o`, `sort_subrange_test.o`. |
 
 ## Fix Ledger
 
 | Status | Frontier seed | Root cause | Owner PA | Regression | Pre-fix result | Validation | Fix commit |
 |---|---|---|---|---|---|---|---|
+| committed | `libs/algorithm/test` dependency build via Boost.Test/Boost.Regex; libc++ `std::__1::vector` iterator conversion needed `__wrap_iter<T*>` to `__wrap_iter<T const*>` | Structural alias-template expansion handled a dependent alias before preserving an outer `TK_CV`, so `const remove_reference_t<T> &` with `T=item &` collapsed to `item &` during defaulted SFINAE checks. | `pa22:500` | `pa22/tests/general/500-const-reference-alias-default-sfinae.t` | Non-STL reducer `/tmp/cppgm-boost-reducers-20260519/alias_const_lvalue_ref_default_arg.cpp` failed with explicit type argument fallback / SFINAE rejection; STL reducer `/tmp/cppgm-boost-reducers-20260519/vector_const_iterator.cpp` failed to compile `vector::erase(v.begin())` / `insert(end(), begin(), end())`. | Reducers pass; focused LowIR ref matches; placement audit OK; `ACTIVE_TEST_REPORT_PAS='pa22' ORDERED=false TEST_REPORT_SUBTEST_JOBS=12 make test-report` passes `407/407`; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-strict-pa22` passes; `JOBS=12 ./run-cppgm-b2.sh -a libs/algorithm/test` advances to subrange failures; perf check against `/tmp/cppgm-perf-baseline-boost-frontier-rebased-8c9e3ce62-20260519.json` passes (`-0.14%` instructions). | `afe2ed272` |

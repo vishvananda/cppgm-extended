@@ -3547,6 +3547,16 @@ bool try_expand_alias_template_pattern_structurally(
     if(try_expand_make_integer_seq_builtin(pattern, out)) {
       return true;
     }
+
+    if(pattern->kind == Type::TK_CV) {
+      TypePtr inner;
+      if(!substitute_type(pattern->inner, inner)) {
+        return false;
+      }
+      out = apply_cv(inner, pattern->cv_const, pattern->cv_volatile);
+      return true;
+    }
+
     void * dependent_alias_template_decl = nullptr;
     std::vector<DependentAliasTemplateArgumentSyntax> dependent_alias_args;
     if(named_type_dependent_alias_template(pattern,
@@ -4085,14 +4095,7 @@ bool try_expand_alias_template_pattern_structurally(
       return true;
 
     case Type::TK_CV:
-    {
-      TypePtr inner;
-      if(!substitute_type(pattern->inner, inner)) {
-        return false;
-      }
-      out = apply_cv(inner, pattern->cv_const, pattern->cv_volatile);
-      return true;
-    }
+      return false;
 
     case Type::TK_ATOMIC:
     {
