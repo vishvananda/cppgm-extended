@@ -17354,6 +17354,14 @@ private:
   {
     vector<string> worklist(referenced_function_symbols_.begin(),
                             referenced_function_symbols_.end());
+    for(map<string, set<string> >::const_iterator it = function_references_.begin();
+        it != function_references_.end();
+        ++it) {
+      if(exported_symbols_.count(it->first) != 0 &&
+         referenced_function_symbols_.insert(it->first).second) {
+        worklist.push_back(it->first);
+      }
+    }
     for(size_t i = 0; i < worklist.size(); ++i) {
       map<string, set<string> >::const_iterator found =
           function_references_.find(worklist[i]);
