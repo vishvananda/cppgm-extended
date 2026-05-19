@@ -14262,6 +14262,33 @@ void substitute_type_pack_template_id_arguments(
     Scope & scope,
     const map<string, TypePtr> & type_replacements)
 {
+  if(syntax.argument_syntaxes.empty() && !syntax.arguments.empty()) {
+    bool needs_carried_syntax = false;
+    for(size_t i = 0; i < syntax.arguments.size() && !needs_carried_syntax; ++i) {
+      const string original = trim_space(syntax.arguments[i]);
+      for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+          it != type_replacements.end();
+          ++it) {
+        if(original == it->first || original == it->first + "...") {
+          needs_carried_syntax = true;
+          break;
+        }
+      }
+    }
+    if(needs_carried_syntax) {
+      syntax.argument_syntaxes.reserve(syntax.arguments.size());
+      for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+        TemplateArgumentSyntax argument;
+        argument.text = trim_space(syntax.arguments[i]);
+        if(argument.text.size() >= 3 &&
+           argument.text.substr(argument.text.size() - 3) == "...") {
+          argument.pack_expansion = true;
+        }
+        syntax.argument_syntaxes.push_back(argument);
+      }
+    }
+  }
+
   for(size_t i = 0; i < syntax.arguments.size(); ++i) {
     string rewritten = syntax.arguments[i];
     const string original = trim_space(rewritten);
@@ -14294,9 +14321,13 @@ void substitute_type_pack_template_id_arguments(
         pack_expansion_consumed = true;
       }
       const string original_argument_text = trim_space(argument.text);
+      const bool direct_expression_type_argument =
+          argument.expression &&
+          argument.expression->kind == CppAstKind::id_expression &&
+          trim_space(argument.expression->value) == it->first;
       const bool direct_type_pack_argument =
           !argument.template_id &&
-          !argument.expression &&
+          (!argument.expression || direct_expression_type_argument) &&
           (original_argument_text == it->first ||
            original_argument_text == it->first + "...");
       const string replacement = reparseable_type_argument_text(it->second);
@@ -14309,6 +14340,7 @@ void substitute_type_pack_template_id_arguments(
         }
         argument.pack_expansion = false;
         argument.resolved_type = it->second;
+        argument.expression.reset();
         argument.type_id.reset(new CppAstNode(
             make_substituted_type_id_node(it->second, replacement)));
       }
@@ -21518,7 +21550,8 @@ NonTypeArgumentStatus evaluate_structured_bool_expression(
     id_member_status =
         evaluate_structured_template_member_bool_value(
             services, scope, expr, out);
-    if(id_member_status != NT_ARG_PARSE_FAILED) {
+    if(id_member_status == NT_ARG_EVALUATED ||
+       id_member_status == NT_ARG_DEPENDENT) {
       return id_member_status;
     }
 
@@ -24394,6 +24427,46 @@ bool simple_type_argument_name_from_syntax(const TemplateArgumentSyntax & syntax
   return !out.empty();
 }
 
+static TypePtr resolved_direct_bound_type_argument_syntax(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  string name;
+  if(!simple_type_argument_name_from_syntax(syntax, name)) {
+    return TypePtr();
+  }
+  return lookup_exact_bound_type_name(scope, name);
+}
+
+static const TemplateArgumentSyntax * carry_substituted_bound_type_argument_syntax(
+    ExpandedTemplateArgumentInputs & inputs,
+    Scope & scope,
+    const TemplateArgumentSyntax & source,
+    const string & text,
+    TypePtr & out_type)
+{
+  out_type = resolved_direct_bound_type_argument_syntax(scope, source);
+  if(!out_type) {
+    return nullptr;
+  }
+
+  TemplateArgumentSyntax syntax =
+      clone_argument_syntax_for_template_substitution(source);
+  if(syntax.source_text.empty()) {
+    syntax.source_text = trim_space(source.source_text.empty() ?
+                                        source.text :
+                                        source.source_text);
+  }
+  syntax.text = text;
+  syntax.pack_expansion = false;
+  syntax.resolved_type = out_type;
+  if(!syntax.template_id && !syntax.expression) {
+    syntax.type_id.reset(new CppAstNode(
+        make_substituted_type_id_node(out_type, text)));
+  }
+  return add_owned_expanded_argument_syntax(inputs, syntax);
+}
+
 static bool argument_syntax_contains_resolved_type(
     const TemplateArgumentSyntax & syntax);
 
@@ -24748,13 +24821,19 @@ ExpandedTemplateArgumentInputs expand_template_argument_inputs(
     const TemplateArgumentSyntax * source_syntax =
         syntaxes && i < syntaxes->size() ? &(*syntaxes)[i] : nullptr;
     const string trimmed_text = trim_space(texts[i]);
+    TypePtr carried_type;
     if(source_syntax &&
        !template_argument_syntax_matches_text(*source_syntax, trimmed_text)) {
-      source_syntax = nullptr;
+      source_syntax =
+          carry_substituted_bound_type_argument_syntax(out,
+                                                       scope,
+                                                       *source_syntax,
+                                                       trimmed_text,
+                                                       carried_type);
     }
     if(texts[i].find("...") == string::npos) {
       out.texts.push_back(trimmed_text);
-      out.type_arguments.push_back(TypePtr());
+      out.type_arguments.push_back(carried_type);
       if(syntaxes) {
         out.syntaxes.push_back(source_syntax);
       }
