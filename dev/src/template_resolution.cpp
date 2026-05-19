@@ -4817,16 +4817,60 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
             (syntax->expression || syntax->type_id || syntax->template_id);
         template_api::NonTypeArgumentStatus status =
             template_api::NT_ARG_PARSE_FAILED;
-        if(text_mentions_template_dependency(services, scope, inputs.texts[i])) {
+        template_api::TemplateEnvironmentHandle argument_scope =
+            template_api::make_template_environment(raw_scope);
+        const bool needs_structured_pack_evaluation =
+            syntax &&
+            (syntax->pack_expansion ||
+             inputs.texts[i].find("...") != std::string::npos ||
+             syntax->text.find("...") != std::string::npos ||
+             syntax->source_text.find("...") != std::string::npos);
+        const bool can_evaluate_structured_syntax =
+            needs_structured_pack_evaluation &&
+            (syntax->expression || syntax->type_id || syntax->template_id);
+        if(text_mentions_template_dependency(services,
+                                             argument_scope,
+                                             inputs.texts[i])) {
           if(!try_evaluate_sizeof_pack_non_type_argument(
                  services,
-                 scope,
-                 inputs.syntax_for(i),
+                 argument_scope,
+                 syntax,
                  bound_value_type,
                  value,
                  eval_error,
                  status)) {
-            return FRTA_UNSUPPORTED;
+            if(can_evaluate_structured_syntax) {
+              status = static_cast<template_api::NonTypeArgumentStatus>(
+                  template_argument_semantics::evaluate_non_type_argument_syntax(
+                      services,
+                      argument_scope,
+                      *syntax,
+                      value,
+                      &eval_error,
+                      bound_value_type));
+            }
+            if(status != template_api::NT_ARG_EVALUATED) {
+              status = template_api::NT_ARG_DEPENDENT;
+            }
+          }
+        } else if(syntax) {
+          if(can_evaluate_structured_syntax) {
+            status = static_cast<template_api::NonTypeArgumentStatus>(
+                template_argument_semantics::evaluate_non_type_argument_syntax(
+                    services,
+                    argument_scope,
+                    *syntax,
+                    value,
+                    &eval_error,
+                    bound_value_type));
+          } else if(syntax->expression) {
+            status = template_api::evaluate_non_type_argument_expression(
+                services,
+                argument_scope,
+                *syntax->expression,
+                value,
+                &eval_error,
+                bound_value_type);
           }
         }
         if(status == template_api::NT_ARG_PARSE_FAILED &&
@@ -4837,7 +4881,7 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
           try {
             status = template_api::evaluate_non_type_argument_text(
                 services,
-                scope,
+                argument_scope,
                 inputs.texts[i],
                 value,
                 &eval_error,
