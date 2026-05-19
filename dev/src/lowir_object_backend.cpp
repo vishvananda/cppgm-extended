@@ -5078,6 +5078,21 @@ void append_emutls_thread_local_declaration_wrappers(
   }
 }
 
+bool is_special_member_entry_object_symbol(const string & object_symbol)
+{
+  string ignored;
+  return symbol_linkage::special_member_entry_point_object_symbol_from_object_symbol(
+             object_symbol,
+             true,
+             symbol_linkage::SMEK_COMPLETE,
+             ignored) ||
+         symbol_linkage::special_member_entry_point_object_symbol_from_object_symbol(
+             object_symbol,
+             false,
+             symbol_linkage::SMEK_COMPLETE,
+             ignored);
+}
+
 void force_external_binding_for_function_declaration_imports(
     const lowir_internal::Program & source_program,
     machine_ir::Program & machine_program)
@@ -5102,6 +5117,13 @@ void force_external_binding_for_function_declaration_imports(
     symbol_linkage::SymbolIdentity & symbol = machine_program.exported_symbols[i];
     if(declaration_only_functions.count(symbol.internal_symbol) == 0 ||
        !symbol_linkage::has_object_symbol(symbol)) {
+      continue;
+    }
+    // Weak generic declarations are inline/template surfaces that may not have
+    // a host out-of-line provider. Special members are ABI entry points and must
+    // bind to the hosted definition when this object did not emit one.
+    if(symbol_linkage::has_weak_linkage(symbol) &&
+       !is_special_member_entry_object_symbol(symbol.object_symbol)) {
       continue;
     }
     symbol.linkage = symbol_linkage::SL_EXTERNAL;
