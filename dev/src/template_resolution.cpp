@@ -8100,6 +8100,28 @@ void apply_function_template_call_deduction_adjustments(
   actual = normalize_parameter_type(actual);
 }
 
+bool argument_is_braced_init_list_for_deduction(const ExprInfo & arg)
+{
+  return arg.node.kind == CallSemKind::braced_init_list;
+}
+
+bool deduction_pattern_accepts_braced_init_list_argument(SemanticContext & ctx,
+                                                        const TypePtr & pattern)
+{
+  if(!pattern) {
+    return false;
+  }
+
+  TypePtr base = strip_top_level_cv(remove_reference_type(strip_top_level_cv(pattern)));
+  if(!base) {
+    return false;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    return true;
+  }
+  return ctx.is_initializer_list_type(base, nullptr, nullptr);
+}
+
 void remove_shadowing_template_parameter_bindings(
     Scope & scope,
     const std::vector<TemplateParameterInfo> & parameters)
@@ -11375,6 +11397,47 @@ bool deduce_function_template_arguments(SemanticContext & ctx,
                                         Scope * use_scope,
                                         std::map<std::string, std::size_t> * pack_sizes_out);
 
+bool deduce_initializer_list_pattern_from_list_like_argument(
+    SemanticContext & ctx,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TypePtr & pattern,
+    const TypePtr & actual,
+    DeducedTypeMap & deduced_types,
+    DeducedValueMap & deduced_values,
+    Scope * deduction_scope,
+    DeducedPackArgumentMap * deduced_pack_arguments)
+{
+  if(!pattern || !actual) {
+    return false;
+  }
+
+  TypePtr pattern_base = strip_top_level_cv(remove_reference_type(strip_top_level_cv(pattern)));
+  TypePtr pattern_element;
+  if(!pattern_base ||
+     !ctx.is_initializer_list_type(pattern_base, &pattern_element, nullptr) ||
+     !pattern_element) {
+    return false;
+  }
+
+  TypePtr actual_base = strip_top_level_cv(remove_reference_type(strip_top_level_cv(actual)));
+  if(!actual_base ||
+     (actual_base->kind != Type::TK_ARRAY && actual_base->kind != Type::TK_POINTER) ||
+     !actual_base->inner) {
+    return false;
+  }
+
+  return deduce_template_argument_impl(ctx,
+                                       parameters,
+                                       pattern_element,
+                                       actual_base->inner,
+                                       deduced_types,
+                                       deduced_values,
+                                       deduction_scope,
+                                       false,
+                                       nullptr,
+                                       deduced_pack_arguments);
+}
+
 bool deduce_function_template_arguments_uncached(
     SemanticContext & ctx,
     FunctionTemplateDecl & decl,
@@ -11571,6 +11634,18 @@ bool deduce_function_template_arguments_uncached(
         }
         continue;
       }
+      if(argument_is_braced_init_list_for_deduction(args[i]) &&
+         !deduction_pattern_accepts_braced_init_list_argument(ctx, pattern)) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "deduction-braced-init-rejected template=" << decl.name
+                << " param_index=" << pattern_index
+                << " pattern=" << describe_type(pattern)
+                << " actual=" << describe_type(actual);
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        return false;
+      }
       if(can_skip_resolved_non_dependent_pattern_check(
              ctx, bound_scope, decl, pattern_index, original_pattern, pattern)) {
         if(parser_trace::enabled("template.resolve")) {
@@ -11591,16 +11666,29 @@ bool deduce_function_template_arguments_uncached(
       DeducedPackArgumentMap * const deduction_pack_arguments =
           deducing_pack_element ? &temp_deduced_pack_arguments :
                                   &deduced_pack_arguments;
-      if(!deduce_template_argument_impl(ctx,
-                                        decl.parameters,
-                                        pattern,
-                                        actual,
-                                        temp_deduced_types,
-                                        temp_deduced_values,
-                                        &bound_scope,
-                                        false,
-                                        nullptr,
-                                        deduction_pack_arguments)) {
+      bool deduced_argument =
+          deduce_initializer_list_pattern_from_list_like_argument(ctx,
+                                                                 decl.parameters,
+                                                                 pattern,
+                                                                 actual,
+                                                                 temp_deduced_types,
+                                                                 temp_deduced_values,
+                                                                 &bound_scope,
+                                                                 deduction_pack_arguments);
+      if(!deduced_argument) {
+        deduced_argument =
+            deduce_template_argument_impl(ctx,
+                                          decl.parameters,
+                                          pattern,
+                                          actual,
+                                          temp_deduced_types,
+                                          temp_deduced_values,
+                                          &bound_scope,
+                                          false,
+                                          nullptr,
+                                          deduction_pack_arguments);
+      }
+      if(!deduced_argument) {
         TypePtr original_base = strip_top_level_cv(original_pattern);
         if(original_base && original_base->kind == Type::TK_NAMED) {
           void * dependent_alias_template_decl = nullptr;
@@ -12154,6 +12242,18 @@ bool deduce_function_template_arguments_with_explicit(
         }
         continue;
       }
+      if(argument_is_braced_init_list_for_deduction(args[i]) &&
+         !deduction_pattern_accepts_braced_init_list_argument(ctx, pattern)) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "explicit-deduction-braced-init-rejected template=" << decl.name
+                << " param_index=" << pattern_index
+                << " pattern=" << describe_type(pattern)
+                << " actual=" << describe_type(actual);
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        return false;
+      }
       if(can_skip_resolved_non_dependent_pattern_check(
              ctx, bound_scope, decl, pattern_index, original_pattern, pattern)) {
         if(parser_trace::enabled("template.resolve")) {
@@ -12173,16 +12273,29 @@ bool deduce_function_template_arguments_with_explicit(
       DeducedPackArgumentMap * const deduction_pack_arguments =
           deducing_pack_element ? &temp_deduced_pack_arguments :
                                   &deduced_pack_arguments;
-      if(!deduce_template_argument_impl(ctx,
-                                        decl.parameters,
-                                        pattern,
-                                        actual,
-                                        temp_deduced_types,
-                                        temp_deduced_values,
-                                        &bound_scope,
-                                        false,
-                                        nullptr,
-                                        deduction_pack_arguments)) {
+      bool deduced_argument =
+          deduce_initializer_list_pattern_from_list_like_argument(ctx,
+                                                                 decl.parameters,
+                                                                 pattern,
+                                                                 actual,
+                                                                 temp_deduced_types,
+                                                                 temp_deduced_values,
+                                                                 &bound_scope,
+                                                                 deduction_pack_arguments);
+      if(!deduced_argument) {
+        deduced_argument =
+            deduce_template_argument_impl(ctx,
+                                          decl.parameters,
+                                          pattern,
+                                          actual,
+                                          temp_deduced_types,
+                                          temp_deduced_values,
+                                          &bound_scope,
+                                          false,
+                                          nullptr,
+                                          deduction_pack_arguments);
+      }
+      if(!deduced_argument) {
         TypePtr original_base = strip_top_level_cv(original_pattern);
         if(original_base && original_base->kind == Type::TK_NAMED) {
           const std::string normalized_text = strip_elaborated_type_prefix(

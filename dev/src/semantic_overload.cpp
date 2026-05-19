@@ -6404,6 +6404,25 @@ bool should_use_target_aware_argument_analysis(const CppAstNode & node,
   return node.kind == CppAstKind::id_expression && target_function_type(target);
 }
 
+bool should_use_template_deduction_target_aware_argument_analysis(
+    SemanticContext & ctx,
+    const CppAstNode & node,
+    const TypePtr & target)
+{
+  const CppAstNode * payload = &node;
+  if((node.kind == CppAstKind::initializer ||
+      node.kind == CppAstKind::paren_initializer) &&
+     node.children.size() == 1) {
+    payload = &node.children[0];
+  }
+  if(payload->kind == CppAstKind::braced_init_list &&
+     target &&
+     ctx.type_depends_on_template_parameter(target)) {
+    return false;
+  }
+  return true;
+}
+
 vector<const CppAstNode *> initializer_argument_nodes(const CppAstNode & node)
 {
   vector<const CppAstNode *> args;
@@ -7203,7 +7222,11 @@ void append_function_template_call_candidates_impl(
         ExprInfo arg;
         {
           ScopedCallSemConstructionPath arg_path("overload.template.arg-analysis");
-          arg = argument_analyzer.analyze_argument(source_arg_index, target, true);
+          arg = argument_analyzer.analyze_argument(
+              source_arg_index,
+              target,
+              should_use_template_deduction_target_aware_argument_analysis(
+                  ctx, *arg_nodes[source_arg_index], target));
         }
         arg_options.push_back(vector<ExprInfo>(1, arg));
       } catch(const logic_error & e) {
