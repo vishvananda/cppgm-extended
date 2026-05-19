@@ -15,6 +15,7 @@ using namespace cpp_decl;
 namespace {
 
 const size_t kMaxConstexprLoopIterations = 100000;
+const size_t kMaxConstexprCallDepth = 512;
 
 string literal_storage_identity(const CppAstNode & node)
 {
@@ -966,7 +967,8 @@ bool Evaluator::call(const FunctionInfo & function,
   }
 
   if(!function.body || function.variadic ||
-     function.params.size() != args.size() || call_depth_ >= 64) {
+     function.params.size() != args.size() ||
+     call_depth_ >= kMaxConstexprCallDepth) {
     if(use_override_hooks) {
       hooks_ = saved_hooks;
     }
