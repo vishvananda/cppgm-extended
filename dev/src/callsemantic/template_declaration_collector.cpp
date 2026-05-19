@@ -348,7 +348,8 @@ public:
         if(!stored.class_node ||
            stored.class_node->kind == CppAstKind::class_forward_declaration ||
            incoming_is_definition) {
-          stored.declaring_scope = &scope;
+          stored.declaring_scope =
+              primary->declaring_scope ? primary->declaring_scope : &scope;
           stored.class_node = &inner;
           specialization_changed = true;
         }
