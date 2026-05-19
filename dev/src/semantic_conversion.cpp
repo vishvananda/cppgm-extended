@@ -2231,6 +2231,19 @@ bool try_argument_conversion(SemanticContext & ctx,
                   candidates[i].implicit_object_rank >
                       candidates[best].implicit_object_rank) {
           best_better = true;
+        } else if(candidates[i].conversion_function &&
+                  candidates[best].conversion_function) {
+          int object_qual_pref =
+              compare_qualification_conversion_preference(
+                  candidates[i].conversion_implicit_object_param,
+                  candidates[i].source_expr,
+                  candidates[best].conversion_implicit_object_param,
+                  candidates[best].source_expr);
+          if(object_qual_pref < 0) {
+            current_better = true;
+          } else if(object_qual_pref > 0) {
+            best_better = true;
+          }
         }
       }
     }
