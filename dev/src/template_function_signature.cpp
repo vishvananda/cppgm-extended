@@ -89,6 +89,89 @@ CppAstNode function_result_declarator(const CppAstNode & declarator)
   return filtered;
 }
 
+bool is_empty_abstract_declarator(const CppAstNode & node)
+{
+  return (node.kind == CppAstKind::abstract_declarator ||
+          node.kind == CppAstKind::declarator) &&
+         node.children.empty();
+}
+
+bool is_empty_nested_declarator(const CppAstNode & node)
+{
+  return node.kind == CppAstKind::nested_declarator &&
+         node.children.size() == 1 &&
+         is_empty_abstract_declarator(node.children[0]);
+}
+
+void append_function_result_declarator_children(
+    const CppAstNode & source,
+    CppAstNode & target,
+    bool & erased_name,
+    bool & erased_parameter_clause)
+{
+  bool erase_declared_function_suffixes = false;
+  for(std::size_t i = 0; i < source.children.size(); ++i) {
+    const CppAstNode & child = source.children[i];
+    if(child.kind == CppAstKind::identifier) {
+      erased_name = true;
+      continue;
+    }
+
+    if(child.kind == CppAstKind::nested_declarator) {
+      CppAstNode nested = child;
+      nested.value.clear();
+      nested.children.clear();
+      if(child.children.size() == 1) {
+        CppAstNode nested_declarator;
+        nested_declarator.kind = CppAstKind::abstract_declarator;
+        append_function_result_declarator_children(child.children[0],
+                                                   nested_declarator,
+                                                   erased_name,
+                                                   erased_parameter_clause);
+        if(!is_empty_abstract_declarator(nested_declarator)) {
+          nested.children.push_back(nested_declarator);
+        }
+      }
+      if(!is_empty_nested_declarator(nested)) {
+        target.children.push_back(nested);
+      }
+      continue;
+    }
+
+    if(child.kind == CppAstKind::parameter_clause &&
+       erased_name && !erased_parameter_clause) {
+      erased_parameter_clause = true;
+      erase_declared_function_suffixes = true;
+      continue;
+    }
+
+    if(erase_declared_function_suffixes &&
+       (child.kind == CppAstKind::function_qualifier ||
+        child.kind == CppAstKind::ref_qualifier ||
+        child.kind == CppAstKind::trailing_return_type)) {
+      continue;
+    }
+
+    target.children.push_back(child);
+  }
+}
+
+CppAstNode build_function_result_abstract_declarator(
+    const CppAstNode & parse_declarator,
+    bool & erased_function_signature)
+{
+  CppAstNode abstract;
+  abstract.kind = CppAstKind::abstract_declarator;
+  bool erased_name = false;
+  bool erased_parameter_clause = false;
+  append_function_result_declarator_children(parse_declarator,
+                                             abstract,
+                                             erased_name,
+                                             erased_parameter_clause);
+  erased_function_signature = erased_name && erased_parameter_clause;
+  return abstract;
+}
+
 std::vector<TypePtr> normalized_parameter_types(
     const std::vector<std::pair<std::string, TypePtr> > & params)
 {
@@ -186,12 +269,18 @@ CppAstNode build_function_result_type_pattern(
   out.value = result_specifiers.value;
   out.children.push_back(result_specifiers);
 
-  CppAstNode abstract;
-  abstract.kind = CppAstKind::abstract_declarator;
-  for(std::size_t i = 0; i < parse_declarator.children.size(); ++i) {
-    const CppAstNode & child = parse_declarator.children[i];
-    if(child.kind == CppAstKind::ptr_operator) {
-      abstract.children.push_back(child);
+  bool erased_function_signature = false;
+  CppAstNode abstract =
+      build_function_result_abstract_declarator(parse_declarator,
+                                                erased_function_signature);
+  if(!erased_function_signature) {
+    abstract = CppAstNode();
+    abstract.kind = CppAstKind::abstract_declarator;
+    for(std::size_t i = 0; i < parse_declarator.children.size(); ++i) {
+      const CppAstNode & child = parse_declarator.children[i];
+      if(child.kind == CppAstKind::ptr_operator) {
+        abstract.children.push_back(child);
+      }
     }
   }
   if(!abstract.children.empty()) {
