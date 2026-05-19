@@ -91,6 +91,8 @@ bool is_benign_driver_flag(const string & arg)
       arg == "-pipe" ||
       arg == "-w" ||
       arg == "-pg" ||
+      arg == "-pedantic" ||
+      arg == "-pedantic-errors" ||
       starts_with(arg, "-W") ||
       starts_with(arg, "-f") ||
       starts_with(arg, "-m") ||
