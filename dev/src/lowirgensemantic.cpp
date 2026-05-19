@@ -11614,10 +11614,14 @@ private:
       return emit_typeid_value(node);
     }
 
+    const bool has_direct_special_lvalue_address =
+        node.value_category == CVC_LVALUE &&
+        (node.kind == CallSemKind::conditional_expression ||
+         (node.kind == CallSemKind::binary_expression &&
+          callsem_has_token(node, OP_COMMA)));
     if(is_complete_class_value_type(node.semantic_type) &&
        is_special_class_materialization_node(node) &&
-       !(node.kind == CallSemKind::conditional_expression &&
-         node.value_category == CVC_LVALUE)) {
+       !has_direct_special_lvalue_address) {
       const string temp_ptr = new_hidden_object_address(node.semantic_type, "tmpobj");
       if(emit_special_class_value_to_target(node, temp_ptr)) {
         register_materialized_temporary_cleanup_live(node.semantic_type, temp_ptr);
