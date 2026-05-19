@@ -1197,6 +1197,106 @@ AliasTemplateDecl * lookup_alias_template_in_direct_or_inline_scope(Scope & scop
       });
 }
 
+template<typename DeclT, typename MapLookup>
+DeclT * lookup_inherited_member_template_decl(SemanticContext & ctx,
+                                              ClassInfo & info,
+                                              const string & name,
+                                              const MapLookup & map_lookup)
+{
+  set<ClassInfo *> visited_virtual;
+  vector<ClassInfo *> candidates;
+  vector<ClassInfo *> stack;
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    if(info.bases[i].type) {
+      stack.push_back(info.bases[i].type);
+    }
+  }
+
+  while(!stack.empty()) {
+    ClassInfo * current = stack.back();
+    stack.pop_back();
+    if(!current || current->reference_member_collection_in_progress) {
+      continue;
+    }
+    if(!current->reference_members_collected) {
+      ctx.ensure_class_reference_members(*current);
+    }
+    if(current->member_scope && map_lookup(*current->member_scope, name)) {
+      candidates.push_back(current);
+      continue;
+    }
+    for(size_t i = 0; i < current->bases.size(); ++i) {
+      BaseInfo & base = current->bases[i];
+      if(base.is_virtual && !visited_virtual.insert(base.type).second) {
+        continue;
+      }
+      if(base.type) {
+        stack.push_back(base.type);
+      }
+    }
+  }
+
+  if(candidates.empty()) {
+    return nullptr;
+  }
+  ClassInfo * declared_in = candidates[0];
+  for(size_t i = 1; i < candidates.size(); ++i) {
+    if(candidates[i] != declared_in) {
+      ostringstream out;
+      out << "ambiguous member template lookup";
+      out << " [root " << info.qualified_name << "]";
+      out << " [name " << name << "]";
+      out << " [candidates " << describe_class_candidate_list(candidates) << "]";
+      throw logic_error(out.str());
+    }
+  }
+  return declared_in && declared_in->member_scope ?
+      map_lookup(*declared_in->member_scope, name) :
+      nullptr;
+}
+
+ClassTemplateDecl * lookup_class_template_in_scope_or_inherited_members(
+    SemanticContext & ctx,
+    Scope & scope,
+    const string & name)
+{
+  if(ClassTemplateDecl * direct = lookup_direct_class_template(scope, name)) {
+    return direct;
+  }
+  if(!scope.class_info) {
+    return nullptr;
+  }
+  return lookup_inherited_member_template_decl<ClassTemplateDecl>(
+      ctx,
+      *scope.class_info,
+      name,
+      [](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
+      {
+        return lookup_direct_class_template(target, lookup_name);
+      });
+}
+
+AliasTemplateDecl * lookup_alias_template_in_scope_or_inherited_members(
+    SemanticContext & ctx,
+    Scope & scope,
+    const string & name)
+{
+  if(AliasTemplateDecl * direct = lookup_direct_alias_template(scope, name)) {
+    return direct;
+  }
+  if(!scope.class_info) {
+    return nullptr;
+  }
+  return lookup_inherited_member_template_decl<AliasTemplateDecl>(
+      ctx,
+      *scope.class_info,
+      name,
+      [](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
+      {
+        return lookup_direct_alias_template(target, lookup_name);
+      });
+}
+
 template<typename DeclT, typename DirectLookup, typename SameEntity>
 DeclT * lookup_qualified_decl_with_using_directives(
     Scope & scope,
@@ -4684,11 +4784,11 @@ ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
     return lookup_unqualified_decl_with_entity_equivalence<ClassTemplateDecl>(
         scope,
         qualified.name,
-        [](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
+        [&ctx](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
         {
-          map<string, ClassTemplateDecl *>::iterator found =
-              target.class_templates.find(lookup_name);
-          return found == target.class_templates.end() ? nullptr : found->second;
+          return lookup_class_template_in_scope_or_inherited_members(ctx,
+                                                                     target,
+                                                                     lookup_name);
         },
         [](ClassTemplateDecl * lhs, ClassTemplateDecl * rhs) -> bool
         {
@@ -4715,11 +4815,22 @@ ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
       });
 }
 
-ClassTemplateDecl * lookup_class_template(SemanticContext &,
+ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
                                           Scope & scope,
                                           const string & name)
 {
-  return lookup_unqualified_class_template(scope, name);
+  return lookup_unqualified_decl_with_entity_equivalence<ClassTemplateDecl>(
+      scope, name,
+      [&ctx](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
+      {
+        return lookup_class_template_in_scope_or_inherited_members(ctx,
+                                                                   target,
+                                                                   lookup_name);
+      },
+      [](ClassTemplateDecl * lhs, ClassTemplateDecl * rhs) -> bool
+      {
+        return same_inline_namespace_class_template_entity(lhs, rhs);
+      });
 }
 
 ClassTemplateDecl * lookup_unqualified_class_template(Scope & scope,
@@ -4747,11 +4858,11 @@ AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
     return lookup_unqualified_decl_with_entity_equivalence<AliasTemplateDecl>(
         scope,
         qualified.name,
-        [](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
+        [&ctx](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
         {
-          map<string, AliasTemplateDecl *>::iterator found =
-              target.alias_templates.find(lookup_name);
-          return found == target.alias_templates.end() ? nullptr : found->second;
+          return lookup_alias_template_in_scope_or_inherited_members(ctx,
+                                                                     target,
+                                                                     lookup_name);
         },
         [](AliasTemplateDecl * lhs, AliasTemplateDecl * rhs) -> bool
         {
@@ -4778,11 +4889,22 @@ AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
       });
 }
 
-AliasTemplateDecl * lookup_alias_template(SemanticContext &,
+AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
                                           Scope & scope,
                                           const string & name)
 {
-  return lookup_unqualified_alias_template(scope, name);
+  return lookup_unqualified_decl_with_entity_equivalence<AliasTemplateDecl>(
+      scope, name,
+      [&ctx](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
+      {
+        return lookup_alias_template_in_scope_or_inherited_members(ctx,
+                                                                   target,
+                                                                   lookup_name);
+      },
+      [](AliasTemplateDecl * lhs, AliasTemplateDecl * rhs) -> bool
+      {
+        return same_inline_namespace_alias_template_entity(lhs, rhs);
+      });
 }
 
 AliasTemplateDecl * lookup_unqualified_alias_template(Scope & scope,
