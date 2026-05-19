@@ -13703,6 +13703,157 @@ CppAstNode make_substituted_value_expression_node(const ValueBinding & binding)
   return out;
 }
 
+bool parse_unary_builtin_type_transform_syntax(const string & text,
+                                               string & builtin_name,
+                                               string & arg_text)
+{
+  builtin_name.clear();
+  arg_text.clear();
+
+  const string trimmed = trim_space(text);
+  const size_t open = trimmed.find('(');
+  if(open == string::npos || open == 0 || trimmed.empty() ||
+     trimmed[trimmed.size() - 1] != ')') {
+    return false;
+  }
+
+  int depth = 0;
+  for(size_t i = open; i < trimmed.size(); ++i) {
+    if(trimmed[i] == '(') {
+      ++depth;
+    } else if(trimmed[i] == ')') {
+      --depth;
+      if(depth == 0 && i + 1 != trimmed.size()) {
+        return false;
+      }
+      if(depth < 0) {
+        return false;
+      }
+    }
+  }
+  if(depth != 0) {
+    return false;
+  }
+
+  builtin_name = trim_space(trimmed.substr(0, open));
+  arg_text = trim_space(trimmed.substr(open + 1, trimmed.size() - open - 2));
+  return !builtin_name.empty() && !arg_text.empty();
+}
+
+bool apply_context_free_builtin_type_transform(const string & builtin_name,
+                                               const TypePtr & arg_type,
+                                               TypePtr & out)
+{
+  out.reset();
+  if(!arg_type) {
+    return false;
+  }
+
+  if(builtin_name == "__remove_cv") {
+    out = strip_top_level_cv(arg_type);
+    return static_cast<bool>(out);
+  }
+  if(builtin_name == "__remove_const") {
+    out = arg_type->kind == Type::TK_CV ?
+        make_cv(arg_type->inner, false, arg_type->cv_volatile) :
+        arg_type;
+    return static_cast<bool>(out);
+  }
+  if(builtin_name == "__remove_volatile") {
+    out = arg_type->kind == Type::TK_CV ?
+        make_cv(arg_type->inner, arg_type->cv_const, false) :
+        arg_type;
+    return static_cast<bool>(out);
+  }
+  if(builtin_name == "__remove_reference" ||
+     builtin_name == "__remove_reference_t") {
+    out = remove_reference_type(arg_type);
+    return static_cast<bool>(out);
+  }
+  if(builtin_name == "__remove_cvref") {
+    out = strip_top_level_cv(remove_reference_type(arg_type));
+    return static_cast<bool>(out);
+  }
+  if(builtin_name == "__decay") {
+    TypePtr decayed = remove_reference_type(arg_type);
+    TypePtr decayed_base = strip_top_level_cv(decayed);
+    if(!decayed_base) {
+      return false;
+    }
+    if(decayed_base->kind == Type::TK_ARRAY) {
+      out = make_pointer(decayed_base->inner);
+    } else if(decayed_base->kind == Type::TK_FUNCTION) {
+      out = make_pointer(decayed_base);
+    } else {
+      out = decayed_base;
+    }
+    return static_cast<bool>(out);
+  }
+  if(builtin_name == "__add_pointer") {
+    TypePtr pointee = remove_reference_type(arg_type);
+    if(!pointee) {
+      return false;
+    }
+    out = make_pointer(pointee);
+    return true;
+  }
+  if(builtin_name == "__remove_pointer") {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    out = base->kind == Type::TK_POINTER ? base->inner : arg_type;
+    return static_cast<bool>(out);
+  }
+  if(builtin_name == "__add_lvalue_reference" ||
+     builtin_name == "__add_rvalue_reference") {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    if(is_void_type(base) || base->kind == Type::TK_LVALUE_REFERENCE) {
+      out = arg_type;
+      return true;
+    }
+    if(base->kind == Type::TK_RVALUE_REFERENCE) {
+      out = builtin_name == "__add_lvalue_reference" ?
+          make_lvalue_reference_raw(base->inner) :
+          arg_type;
+      return true;
+    }
+    out = builtin_name == "__add_lvalue_reference" ?
+        make_lvalue_reference_raw(arg_type) :
+        make_rvalue_reference_raw(arg_type);
+    return true;
+  }
+  return false;
+}
+
+bool resolve_substituted_builtin_type_transform_syntax(
+    const string & text,
+    const map<string, TypePtr> & type_replacements,
+    TypePtr & out)
+{
+  out.reset();
+  string builtin_name;
+  string arg_text;
+  if(!parse_unary_builtin_type_transform_syntax(text, builtin_name, arg_text)) {
+    return false;
+  }
+
+  TypePtr arg_type;
+  map<string, TypePtr>::const_iterator direct = type_replacements.find(arg_text);
+  if(direct != type_replacements.end()) {
+    arg_type = direct->second;
+  } else if(!resolve_substituted_builtin_type_transform_syntax(arg_text,
+                                                               type_replacements,
+                                                               arg_type)) {
+    return false;
+  }
+
+  return apply_context_free_builtin_type_transform(builtin_name, arg_type, out);
+}
+
 bool substitute_qualified_name_qualifier_type(
     CppAstNode & node,
     size_t qualifier_index,
@@ -13846,6 +13997,12 @@ bool substitute_type_pack_expression_node(
     }
   }
   refresh_qualified_name_qualifier_template_id_texts(out);
+  TypePtr transformed_type;
+  if(resolve_substituted_builtin_type_transform_syntax(out.value,
+                                                       type_replacements,
+                                                       transformed_type)) {
+    out.semantic_type = transformed_type;
+  }
   for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
@@ -13897,6 +14054,11 @@ bool substitute_type_pack_expression_node(
     if(value_changed) {
       out.value = substituted_value;
     }
+  }
+  if(resolve_substituted_builtin_type_transform_syntax(out.value,
+                                                       type_replacements,
+                                                       transformed_type)) {
+    out.semantic_type = transformed_type;
   }
 
   vector<CppAstNode> children;
