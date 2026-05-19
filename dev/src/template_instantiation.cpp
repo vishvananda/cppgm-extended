@@ -4343,6 +4343,73 @@ FunctionTemplateDecl * canonical_instantiation_template_decl(SemanticContext & c
   return semantic_match ? semantic_match : decl;
 }
 
+ValueBinding * direct_static_member_definition_binding(ClassInfo & info,
+                                                       const std::string & member_name)
+{
+  if(!info.member_scope) {
+    return nullptr;
+  }
+  std::map<std::string, ValueBinding>::iterator found =
+      info.member_scope->values.find(member_name);
+  if(found == info.member_scope->values.end() ||
+     found->second.kind != ValueBinding::VK_VARIABLE ||
+     found->second.owner_class != &info) {
+    return nullptr;
+  }
+  return &found->second;
+}
+
+ValueBinding * static_member_definition_binding_for_key(SemanticContext & ctx,
+                                                        ClassInfo & info,
+                                                        const std::string & member_key)
+{
+  QualifiedName qualified;
+  if(!semantic_utils::split_qualified_name_text(member_key, qualified) ||
+     qualified.qualifiers.empty()) {
+    return direct_static_member_definition_binding(info, member_key);
+  }
+
+  std::size_t qualifier_start = 0;
+  const std::string first_qualifier =
+      semantic_utils::strip_trailing_top_level_template_arguments(
+          qualified.qualifiers.front());
+  if(first_qualifier == info.name ||
+     first_qualifier == semantic_utils::unqualified_member_name(info.qualified_name)) {
+    qualifier_start = 1;
+  }
+
+  ClassInfo * current = &info;
+  for(std::size_t i = qualifier_start; i < qualified.qualifiers.size(); ++i) {
+    if(!current->member_scope) {
+      return nullptr;
+    }
+    if(!current->reference_member_collection_in_progress) {
+      ctx.ensure_class_reference_members(*current);
+    }
+    const std::string member_class_name =
+        semantic_utils::strip_trailing_top_level_template_arguments(
+            qualified.qualifiers[i]);
+    std::map<std::string, TypePtr>::iterator found =
+        current->member_scope->named_types.find(member_class_name);
+    if(found == current->member_scope->named_types.end()) {
+      return nullptr;
+    }
+    ClassInfo * nested = ctx.class_info_for_type(found->second);
+    if(!nested || nested->enclosing_scope != current->member_scope.get()) {
+      return nullptr;
+    }
+    current = nested;
+  }
+
+  if(!current->member_scope) {
+    return nullptr;
+  }
+  if(!current->reference_member_collection_in_progress) {
+    ctx.ensure_class_reference_members(*current);
+  }
+  return direct_static_member_definition_binding(*current, qualified.name);
+}
+
 void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
                                                   ClassTemplateDecl & decl,
                                                   ClassInfo & info,
@@ -4367,17 +4434,16 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
           static_member_definitions.begin();
       it != static_member_definitions.end();
       ++it) {
-    std::map<std::string, ValueBinding>::iterator member =
-        info.member_scope->values.find(it->first);
+    ValueBinding * member =
+        static_member_definition_binding_for_key(ctx, info, it->first);
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "apply-out-of-class-static-member class=" << info.qualified_name
             << " member=" << it->first
-            << " found=" << (member != info.member_scope->values.end() ? "yes" : "no");
+            << " found=" << (member ? "yes" : "no");
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    if(member == info.member_scope->values.end() ||
-       member->second.kind != ValueBinding::VK_VARIABLE) {
+    if(!member) {
       continue;
     }
     const std::string specialization_key =
@@ -4386,7 +4452,7 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
            std::make_pair(it->first, specialization_key)) != 0) {
       continue;
     }
-    if(member->second.is_explicit_specialization) {
+    if(member->is_explicit_specialization) {
       continue;
     }
     note_out_of_class_owner_class_use_for_applied_definition(
@@ -4394,32 +4460,36 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
         &decl,
         info,
         it->second.node ? it->second.node : it->second.declarator);
-    member->second.has_storage_definition = it->second.has_storage_definition;
-    member->second.declaration_node = member->second.declaration_node ?
-        member->second.declaration_node :
+    member->has_storage_definition = it->second.has_storage_definition;
+    member->declaration_node = member->declaration_node ?
+        member->declaration_node :
         it->second.declarator;
-    member->second.definition_node = it->second.has_storage_definition ?
+    member->definition_node = it->second.has_storage_definition ?
         it->second.declarator :
-        member->second.definition_node;
-    member->second.requires_constant_initializer =
-        member->second.requires_constant_initializer ||
+        member->definition_node;
+    member->requires_constant_initializer =
+        member->requires_constant_initializer ||
         (it->second.specifiers &&
          decl_spec_contains_token(*it->second.specifiers, KW_CONSTEXPR));
     if(!it->second.initializer) {
       continue;
     }
 
-    member->second.constant_initializer = it->second.initializer;
-    member->second.constant_initializer_scope = nullptr;
-    member->second.has_constexpr_value = false;
-    member->second.constexpr_value = constant_eval::ConstexprValue();
-    member->second.has_constant_value = false;
-    member->second.constant_value = 0;
-    member->second.dependent_template_value = false;
+    member->constant_initializer = it->second.initializer;
+    member->constant_initializer_scope = nullptr;
+    member->has_constexpr_value = false;
+    member->constexpr_value = constant_eval::ConstexprValue();
+    member->has_constant_value = false;
+    member->constant_value = 0;
+    member->dependent_template_value = false;
 
-    Scope & init_scope = ctx.append_template_scope(*info.member_scope);
+    ClassInfo * member_owner = member->owner_class ? member->owner_class : &info;
+    Scope * member_scope = member_owner->member_scope ?
+        member_owner->member_scope.get() :
+        info.member_scope.get();
+    Scope & init_scope = ctx.append_template_scope(*member_scope);
     bind_template_arguments_into_scope(ctx, init_scope, it->second.parameters, arguments);
-    member->second.constant_initializer_scope = &init_scope;
+    member->constant_initializer_scope = &init_scope;
     ctx.emit_class_use_source_events_after_location(
         init_scope,
         ctx.source_location_for_node(*it->second.initializer),
@@ -4893,6 +4963,7 @@ void finalize_nested_member_class_instantiation_impl(
   apply_out_of_class_member_function_template_definitions(ctx, owner_decl, nested);
   apply_out_of_class_member_function_definitions(ctx, owner_decl, nested, owner_arguments);
   apply_out_of_class_special_member_definitions(ctx, owner_decl, nested, owner_arguments);
+  apply_out_of_class_static_member_definitions(ctx, owner_decl, nested, owner_arguments);
 
   if(!emit_track_instantiation) {
     return;
@@ -5443,51 +5514,57 @@ bool apply_out_of_class_static_member_definitions_to_reference(
           static_member_definitions.begin();
       it != static_member_definitions.end();
       ++it) {
-    std::map<std::string, ValueBinding>::iterator member =
-        info.member_scope->values.find(it->first);
-    if(member == info.member_scope->values.end() ||
-       member->second.kind != ValueBinding::VK_VARIABLE) {
+    ValueBinding * member =
+        static_member_definition_binding_for_key(ctx, info, it->first);
+    if(!member) {
       continue;
     }
     const CppAstNode * reference_source_node =
         info.template_output_node ? info.template_output_node : info.class_node;
+    const std::string member_leaf_name =
+        semantic_utils::unqualified_member_name(it->first);
     if(reference_source_node &&
-       !member_function_bodies_mention_member(*reference_source_node, it->first)) {
+       !member_function_bodies_mention_member(*reference_source_node,
+                                              member_leaf_name)) {
       continue;
     }
-    member->second.has_storage_definition = it->second.has_storage_definition;
+    member->has_storage_definition = it->second.has_storage_definition;
     has_concrete_storage_definition =
         has_concrete_storage_definition ||
         (it->second.has_storage_definition && !info.dependent_instantiation);
-    member->second.declaration_node = member->second.declaration_node ?
-        member->second.declaration_node :
+    member->declaration_node = member->declaration_node ?
+        member->declaration_node :
         it->second.declarator;
-    member->second.definition_node = it->second.has_storage_definition ?
+    member->definition_node = it->second.has_storage_definition ?
         it->second.declarator :
-        member->second.definition_node;
-    member->second.requires_constant_initializer =
-        member->second.requires_constant_initializer ||
+        member->definition_node;
+    member->requires_constant_initializer =
+        member->requires_constant_initializer ||
         (it->second.specifiers &&
          decl_spec_contains_token(*it->second.specifiers, KW_CONSTEXPR));
     if(!it->second.initializer) {
       continue;
     }
 
-    member->second.constant_initializer = it->second.initializer;
-    member->second.constant_initializer_scope = nullptr;
-    member->second.has_constexpr_value = false;
-    member->second.constexpr_value = constant_eval::ConstexprValue();
-    member->second.has_constant_value = false;
-    member->second.constant_value = 0;
-    member->second.dependent_template_value = false;
+    member->constant_initializer = it->second.initializer;
+    member->constant_initializer_scope = nullptr;
+    member->has_constexpr_value = false;
+    member->constexpr_value = constant_eval::ConstexprValue();
+    member->has_constant_value = false;
+    member->constant_value = 0;
+    member->dependent_template_value = false;
 
-    Scope & init_scope = ctx.append_template_scope(*info.member_scope);
+    ClassInfo * member_owner = member->owner_class ? member->owner_class : &info;
+    Scope * member_scope = member_owner->member_scope ?
+        member_owner->member_scope.get() :
+        info.member_scope.get();
+    Scope & init_scope = ctx.append_template_scope(*member_scope);
     bind_template_arguments_into_scope(
         ctx,
         init_scope,
         it->second.parameters,
         info.instantiation_arguments);
-    member->second.constant_initializer_scope = &init_scope;
+    member->constant_initializer_scope = &init_scope;
   }
   if(has_concrete_storage_definition) {
     ctx.track_instantiated_class(&info);

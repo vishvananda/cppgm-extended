@@ -2684,7 +2684,7 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
                                                  DumpNode & out)
 {
   (void)state;
-  if(!template_api::class_has_source_template_identity(&info)) {
+  if(!template_api::class_has_template_identity(&info)) {
     info.has_late_required_static_member_output = false;
     info.late_required_static_member_output_queued = false;
     return;
