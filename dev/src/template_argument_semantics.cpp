@@ -8308,19 +8308,21 @@ bool constexpr_value_to_template_argument_integral(const TypePtr & target_type,
                                                    const constant_eval::ConstexprValue & value,
                                                    long long & out)
 {
-  TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
-  if(target_base &&
-     is_integral_type(target_base) &&
-     type_size(target_base) <= sizeof(unsigned long long) &&
-     value.kind == constant_eval::ConstexprValue::CV_INTEGRAL) {
-    if(is_unsigned_integral_type(target_base)) {
-      unsigned long long unsigned_value = 0;
-      if(constant_eval::constexpr_value_to_unsigned_integral(value, unsigned_value)) {
-        out = static_cast<long long>(unsigned_value);
+  if(target_type) {
+    TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
+    if(target_base &&
+       is_integral_type(target_base) &&
+       type_size(target_base) <= sizeof(unsigned long long) &&
+       value.kind == constant_eval::ConstexprValue::CV_INTEGRAL) {
+      if(is_unsigned_integral_type(target_base)) {
+        unsigned long long unsigned_value = 0;
+        if(constant_eval::constexpr_value_to_unsigned_integral(value, unsigned_value)) {
+          out = static_cast<long long>(unsigned_value);
+          return true;
+        }
+      } else if(constant_eval::constexpr_value_to_integral(value, out)) {
         return true;
       }
-    } else if(constant_eval::constexpr_value_to_integral(value, out)) {
-      return true;
     }
   }
   return constant_eval::constexpr_value_to_integral(value, out);
