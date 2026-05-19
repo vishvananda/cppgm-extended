@@ -3485,7 +3485,7 @@ bool try_resolve_typeid_type_operand(SemanticContext & ctx,
 {
   out.reset();
   if(operand.kind == CppAstKind::type_id) {
-    return ctx.parse_type_id(scope, operand, out) && out != nullptr;
+    return ctx.parse_type_id(scope, operand, out, true) && out != nullptr;
   }
 
   if(operand.kind != CppAstKind::id_expression) {
@@ -3499,6 +3499,30 @@ bool try_resolve_typeid_type_operand(SemanticContext & ctx,
 
   out = lookup_id_expression_type_name(ctx, scope, operand);
   return out != nullptr;
+}
+
+void require_complete_typeid_class_operand(SemanticContext & ctx,
+                                           const TypePtr & type)
+{
+  TypePtr base = remove_reference_type(type);
+  if(!base) {
+    base = type;
+  }
+  base = strip_top_level_cv(base);
+  if(!base || ctx.type_depends_on_template_parameter(base)) {
+    return;
+  }
+
+  ClassInfo * info = ctx.class_info_for_type(base);
+  if(!info || info->class_kind == "enum") {
+    return;
+  }
+  if(info->complete) {
+    return;
+  }
+  if(!ctx.complete_class_type(base)) {
+    throw logic_error("typeid requires complete class type " + describe_type(base));
+  }
 }
 
 ExprInfo make_value_binding_expr(SemanticContext & ctx,
@@ -6085,6 +6109,7 @@ ExprInfo analyze_type_trait_expression(SemanticContext & ctx,
     throw logic_error("unsupported typeid type-id");
   }
   if(has_type_operand) {
+    require_complete_typeid_class_operand(ctx, type);
     ctx.note_rtti_use(type, false);
     result.node.text = rtti_symbol_for_type(type);
     return result;
