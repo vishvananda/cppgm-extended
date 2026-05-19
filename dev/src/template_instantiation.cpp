@@ -4343,6 +4343,77 @@ FunctionTemplateDecl * canonical_instantiation_template_decl(SemanticContext & c
   return semantic_match ? semantic_match : decl;
 }
 
+ClassInfo * function_template_context_owner(const FunctionTemplateDecl & decl)
+{
+  if(decl.declaring_scope && decl.declaring_scope->class_info) {
+    return decl.declaring_scope->class_info;
+  }
+  if(!decl.friend_access_classes.empty() &&
+     decl.pattern_scope &&
+     decl.pattern_scope->class_info) {
+    return decl.pattern_scope->class_info;
+  }
+  return nullptr;
+}
+
+Scope * function_template_instantiation_context_scope(const FunctionTemplateDecl & decl)
+{
+  if(decl.declaring_scope && decl.declaring_scope->class_info) {
+    return decl.declaring_scope;
+  }
+  if(!decl.friend_access_classes.empty() &&
+     decl.pattern_scope &&
+     decl.pattern_scope->class_info) {
+    return decl.pattern_scope;
+  }
+  return decl.declaring_scope;
+}
+
+bool class_template_owner_matches(const ClassInfo * candidate,
+                                  const ClassInfo * pattern_owner)
+{
+  if(!candidate || !pattern_owner) {
+    return false;
+  }
+  if(candidate == pattern_owner) {
+    return true;
+  }
+  if(candidate->source_template &&
+     pattern_owner->source_template &&
+     candidate->source_template == pattern_owner->source_template) {
+    return true;
+  }
+  return candidate->name == pattern_owner->name &&
+         candidate->source_template &&
+         pattern_owner->source_template;
+}
+
+ClassInfo * select_hidden_friend_instantiation_owner(
+    SemanticContext & ctx,
+    const FunctionTemplateDecl & decl,
+    const std::vector<TemplateArgument> & arguments)
+{
+  ClassInfo * pattern_owner = function_template_context_owner(decl);
+  if(!pattern_owner ||
+     decl.friend_access_classes.empty() ||
+     (decl.declaring_scope && decl.declaring_scope->class_info)) {
+    return nullptr;
+  }
+
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(arguments[i].kind != TemplateArgument::TA_TYPE || !arguments[i].type) {
+      continue;
+    }
+    TypePtr candidate_type =
+        strip_top_level_cv(remove_reference_type(arguments[i].type));
+    ClassInfo * candidate = ctx.class_info_for_type(candidate_type);
+    if(class_template_owner_matches(candidate, pattern_owner)) {
+      return candidate;
+    }
+  }
+  return nullptr;
+}
+
 ValueBinding * direct_static_member_definition_binding(ClassInfo & info,
                                                        const std::string & member_name)
 {
@@ -6812,18 +6883,26 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   };
   std::string key = template_argument_key_for_instantiation(ctx, arguments);
   ClassInfo * instantiation_owner = select_instantiation_owner(use_scope);
+  if(!instantiation_owner) {
+    instantiation_owner = select_hidden_friend_instantiation_owner(ctx, decl, arguments);
+  }
   FunctionTemplateDecl * source_decl =
       canonical_instantiation_template_decl(ctx, instantiation_owner, &decl);
+  if(!instantiation_owner) {
+    instantiation_owner =
+        select_hidden_friend_instantiation_owner(ctx, *source_decl, arguments);
+  }
   const bool effective_is_constexpr =
       explicit_specialization ?
           explicit_specialization_is_constexpr :
           source_decl->is_constexpr;
   trace_function_template_drift("instantiate-entry", *source_decl);
+  ClassInfo * source_decl_context_owner =
+      source_decl ? function_template_context_owner(*source_decl) : nullptr;
   if(instantiation_owner &&
      source_decl &&
-     source_decl->declaring_scope &&
-     source_decl->declaring_scope->class_info &&
-     instantiation_owner != source_decl->declaring_scope->class_info) {
+     source_decl_context_owner &&
+     instantiation_owner != source_decl_context_owner) {
     key = instantiation_owner->qualified_name + "||" + key;
   }
   if(instantiation_owner &&
@@ -6923,35 +7002,37 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                             arguments,
                                             effective_pack_sizes,
                                             false);
+    Scope * cache_instantiation_context_scope =
+        function_template_instantiation_context_scope(*cache_source_decl);
   Scope * owner_member_instantiation_scope =
         instantiation_owner && instantiation_owner->member_scope ?
             instantiation_owner->member_scope.get() :
             nullptr;
     const bool use_owner_scope_for_member_template =
-        cache_source_decl->declaring_scope &&
-        cache_source_decl->declaring_scope->class_info &&
+        cache_instantiation_context_scope &&
+        cache_instantiation_context_scope->class_info &&
         owner_member_instantiation_scope;
     const bool member_template_decl_already_in_active_owner =
         use_owner_scope_for_member_template &&
-        cache_source_decl->declaring_scope->class_info == instantiation_owner;
+        cache_instantiation_context_scope->class_info == instantiation_owner;
     if(use_scope) {
       Scope & refreshed_scope =
           member_template_decl_already_in_active_owner ?
               bind_template_arguments(ctx,
-                                      *cache_source_decl->declaring_scope,
+                                      *cache_instantiation_context_scope,
                                       cache_source_decl->parameters,
                                       arguments,
                                       effective_pack_sizes) :
           (use_owner_scope_for_member_template ?
                bind_template_arguments_for_instantiation(ctx,
-                                                        *cache_source_decl->declaring_scope,
+                                                        *cache_instantiation_context_scope,
                                                        *owner_member_instantiation_scope,
                                                        cache_source_decl->parameters,
                                                        arguments,
                                                        effective_pack_sizes,
                                                        instantiation_owner) :
                bind_template_arguments_for_instantiation(ctx,
-                                                        *cache_source_decl->declaring_scope,
+                                                        *cache_instantiation_context_scope,
                                                         *use_scope,
                                                         cache_source_decl->parameters,
                                                         arguments,
@@ -6967,7 +7048,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         overlay_instantiation_local_named_types(ctx,
                                                 refreshed_scope,
                                                 *use_scope,
-                                                cache_source_decl->declaring_scope,
+                                                cache_instantiation_context_scope,
                                                 arguments,
                                                 &excluded_names);
       }
@@ -7038,38 +7119,40 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       instantiation_owner && instantiation_owner->member_scope ?
           instantiation_owner->member_scope.get() :
           nullptr;
+  Scope * instantiation_context_scope =
+      function_template_instantiation_context_scope(*source_decl);
   const bool use_owner_scope_for_member_template =
-      source_decl->declaring_scope &&
-      source_decl->declaring_scope->class_info &&
+      instantiation_context_scope &&
+      instantiation_context_scope->class_info &&
       owner_member_instantiation_scope;
   const bool member_template_decl_already_in_active_owner =
       use_owner_scope_for_member_template &&
-      source_decl->declaring_scope->class_info == instantiation_owner;
+      instantiation_context_scope->class_info == instantiation_owner;
   Scope & inst_scope =
       use_scope ?
           (member_template_decl_already_in_active_owner ?
                bind_template_arguments(ctx,
-                                       *source_decl->declaring_scope,
+                                       *instantiation_context_scope,
                                        source_decl->parameters,
                                        arguments,
                                        effective_pack_sizes) :
            (use_owner_scope_for_member_template ?
                 bind_template_arguments_for_instantiation(ctx,
-                                                          *source_decl->declaring_scope,
+                                                          *instantiation_context_scope,
                                                           *owner_member_instantiation_scope,
                                                           source_decl->parameters,
                                                           arguments,
                                                           effective_pack_sizes,
                                                           instantiation_owner) :
                 bind_template_arguments_for_instantiation(ctx,
-                                                          *source_decl->declaring_scope,
+                                                          *instantiation_context_scope,
                                                           *use_scope,
                                                           source_decl->parameters,
                                                           arguments,
                                                           effective_pack_sizes,
                                                           instantiation_owner))) :
           bind_template_arguments(ctx,
-                                  *source_decl->declaring_scope,
+                                  *instantiation_context_scope,
                                   source_decl->parameters,
                                   arguments,
                                   effective_pack_sizes);
@@ -7081,7 +7164,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     overlay_instantiation_local_named_types(ctx,
                                             inst_scope,
                                             *use_scope,
-                                            source_decl->declaring_scope,
+                                            instantiation_context_scope,
                                             arguments,
                                             &excluded_names);
   }
