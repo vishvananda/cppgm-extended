@@ -333,6 +333,33 @@ TypePtr reference_binding_source_type(const ExprInfo & expr)
   return remove_reference_type(expr.type);
 }
 
+bool top_level_cv_allows_reference_binding(const TypePtr & target_referent,
+                                           const TypePtr & source_object)
+{
+  TypePtr target_base;
+  TypePtr source_base;
+  bool target_const = false;
+  bool target_volatile = false;
+  bool source_const = false;
+  bool source_volatile = false;
+  if(!top_level_cv_flags(target_referent, target_base, target_const, target_volatile) ||
+     !top_level_cv_flags(source_object, source_base, source_const, source_volatile)) {
+    return false;
+  }
+  return (!source_const || target_const) && (!source_volatile || target_volatile);
+}
+
+bool is_class_or_union_object_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED) {
+    return false;
+  }
+  return base->named_key.compare(0, 6, "class ") == 0 ||
+         base->named_key.compare(0, 7, "struct ") == 0 ||
+         base->named_key.compare(0, 6, "union ") == 0;
+}
+
 bool is_decay_only_lvalue_reference_source(const ExprInfo & expr)
 {
   if(expr.category != VC_LVALUE || !expr.type) {
@@ -763,6 +790,13 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
         return CR_BAD;
       }
     }
+    TypePtr source_type = reference_binding_source_type(expr);
+    if(same_type_with_compatible_top_cv(base_target->inner, source_type)) {
+      return CR_EXACT;
+    }
+    if(expr.category != VC_PRVALUE || is_class_or_union_object_type(source_type)) {
+      return CR_BAD;
+    }
     return standard_conversion_rank_non_reference(base_target->inner, expr);
   }
 
@@ -836,6 +870,9 @@ ConversionRank inheritance_conversion_rank(SemanticContext & ctx,
 
   if(target_base->kind == Type::TK_LVALUE_REFERENCE &&
      (arg.category == VC_LVALUE || is_const_object_type(target_base->inner))) {
+    if(!top_level_cv_allows_reference_binding(target_base->inner, arg_object_type)) {
+      return CR_BAD;
+    }
     ClassInfo * target_class =
         ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
     ClassInfo * arg_class = ensure_complete_class_info(ctx, arg_object_type);
@@ -845,6 +882,9 @@ ConversionRank inheritance_conversion_rank(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_RVALUE_REFERENCE && arg.category != VC_LVALUE) {
+    if(!top_level_cv_allows_reference_binding(target_base->inner, arg_object_type)) {
+      return CR_BAD;
+    }
     ClassInfo * target_class =
         ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
     ClassInfo * arg_class = ensure_complete_class_info(ctx, arg_object_type);
@@ -1609,6 +1649,9 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
 
   if(target_base->kind == Type::TK_LVALUE_REFERENCE &&
      (expr.category == VC_LVALUE || is_const_object_type(target_base->inner))) {
+    if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
+      return false;
+    }
     ClassInfo * target_class =
         ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
     ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
@@ -1626,6 +1669,9 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_RVALUE_REFERENCE && expr.category != VC_LVALUE) {
+    if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
+      return false;
+    }
     ClassInfo * target_class =
         ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
     ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
