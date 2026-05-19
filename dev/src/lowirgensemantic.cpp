@@ -540,12 +540,6 @@ const NumPutRuntimeBridgeSpec * find_num_put_runtime_bridge_spec(const string & 
   return nullptr;
 }
 
-string try_lookup_function_symbol(
-    const map<string, string> & function_symbols,
-    const vector<FunctionSymbolEntry> & function_symbol_entries,
-    const string & name,
-    const TypePtr & type);
-
 TypePtr lowir_value_conversion_type(const TypePtr & type);
 
 string virtual_member_pointer_thunk_symbol(const string & target_symbol)
@@ -1222,36 +1216,6 @@ string try_lookup_function_symbol_with_index(
       find_entry_indices(index.entries_by_simple_name, simple_lookup_name(compact_name)));
   return try_lookup_function_symbol_from_entries(
       function_symbol_entries, index, candidates, type, type_key);
-}
-
-string try_lookup_function_symbol(
-    const map<string, string> & function_symbols,
-    const vector<FunctionSymbolEntry> & function_symbol_entries,
-    const string & name,
-    const TypePtr & type)
-{
-  map<string, string>::const_iterator found = function_symbols.find(function_key(name, type));
-  if(found != function_symbols.end()) {
-    return found->second;
-  }
-
-  const string compact_name = compact_lookup_text(name);
-  const string simple_name = simple_lookup_name(compact_name);
-  const string type_key = stable_function_type_key(type);
-  for(size_t i = 0; i < function_symbol_entries.size(); ++i) {
-    const string entry_compact_name = compact_lookup_text(function_symbol_entries[i].name);
-    if(function_symbol_entries[i].name != name &&
-       entry_compact_name != compact_name &&
-       simple_lookup_name(entry_compact_name) != simple_name) {
-      continue;
-    }
-    if(type_equals(function_symbol_entries[i].type, type) ||
-       stable_function_type_key(function_symbol_entries[i].type) == type_key) {
-      return function_symbol_entries[i].symbol;
-    }
-  }
-
-  return string();
 }
 
 bool special_member_lookup_name_matches(const string & entry_name,
@@ -16994,10 +16958,15 @@ private:
     if(callee_symbol.empty() &&
        !callee.text.empty() &&
        callee.semantic_type) {
-      callee_symbol = try_lookup_function_symbol(function_symbols_,
-                                                 function_symbol_entries_,
-                                                 callee.text,
-                                                 callee.semantic_type);
+      const string lookup_name =
+          callsem_resolved_name(callee).empty() ? callee.text.str() :
+              callsem_resolved_name(callee);
+      callee_symbol =
+          try_lookup_function_symbol_with_index(function_symbols_,
+                                                function_symbol_entries_,
+                                                function_symbol_lookup_index(),
+                                                lookup_name,
+                                                callee.semantic_type);
     }
     return callee_symbol;
   }

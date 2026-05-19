@@ -3141,20 +3141,26 @@ bool remove_unreachable_blocks(lir::Function & function,
     }
   }
 
-  vector<lir::Block> kept_blocks;
-  kept_blocks.reserve(function.blocks.size());
   bool removed_any = false;
   for(size_t i = 0; i < function.blocks.size(); ++i) {
-    if(reachable[i]) {
-      kept_blocks.push_back(function.blocks[i]);
-    } else {
+    if(!reachable[i]) {
       removed_any = true;
+      break;
     }
   }
-  if(removed_any) {
-    function.blocks.swap(kept_blocks);
+  if(!removed_any) {
+    return false;
   }
-  return removed_any;
+
+  vector<lir::Block> kept_blocks;
+  kept_blocks.reserve(function.blocks.size());
+  for(size_t i = 0; i < function.blocks.size(); ++i) {
+    if(reachable[i]) {
+      kept_blocks.push_back(std::move(function.blocks[i]));
+    }
+  }
+  function.blocks.swap(kept_blocks);
+  return true;
 }
 
 bool instruction_is_eh_related(const lir::Instruction & instruction)
