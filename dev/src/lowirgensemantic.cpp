@@ -8224,6 +8224,33 @@ private:
   string emit_scalar_storage_value(const TypePtr & target_type,
                                    const CallSemNode & node)
   {
+    if(is_reference_type(node.semantic_type) &&
+       !is_reference_type(target_type)) {
+      TypePtr referent_type = remove_reference_type(node.semantic_type);
+      TypePtr referent_base = strip_top_level_cv(referent_type);
+      TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
+      if(referent_base &&
+         target_base &&
+         !is_indirect_value_type(referent_type) &&
+         !is_function_type(referent_base) &&
+         referent_base->kind != Type::TK_ARRAY &&
+         !is_indirect_value_type(target_type) &&
+         !is_function_type(target_base) &&
+         target_base->kind != Type::TK_ARRAY) {
+        const TypePtr loaded_type =
+            materialization_source_type_for(node, referent_type);
+        const string memory_type = lowir_memory_type_for(loaded_type);
+        const string loaded_value =
+            emit_temp_assignment(memory_type,
+                                 string("load ") + memory_type + " " +
+                                 emit_lvalue_address(node));
+        return emit_scalar_value_conversion(loaded_value,
+                                            loaded_type,
+                                            target_type,
+                                            true,
+                                            memory_type);
+      }
+    }
     return emit_scalar_value_conversion(emit_rvalue(node),
                                         node.semantic_type,
                                         target_type,
