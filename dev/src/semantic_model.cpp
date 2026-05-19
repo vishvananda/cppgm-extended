@@ -87,6 +87,7 @@ Scope::Scope(const Scope & other)
     template_bound_type_pack_names(other.template_bound_type_pack_names),
     template_bound_value_names(other.template_bound_value_names),
     template_bound_template_names(other.template_bound_template_names),
+    template_bound_template_arguments(other.template_bound_template_arguments),
     values(other.values),
     namespace_bindings(other.namespace_bindings),
     function_sets(other.function_sets),
@@ -118,6 +119,7 @@ Scope::Scope(Scope && other)
     template_bound_type_pack_names(std::move(other.template_bound_type_pack_names)),
     template_bound_value_names(std::move(other.template_bound_value_names)),
     template_bound_template_names(std::move(other.template_bound_template_names)),
+    template_bound_template_arguments(std::move(other.template_bound_template_arguments)),
     values(std::move(other.values)),
     namespace_bindings(std::move(other.namespace_bindings)),
     function_sets(std::move(other.function_sets)),
@@ -155,6 +157,7 @@ Scope & Scope::operator=(Scope && other)
   template_bound_type_pack_names = std::move(other.template_bound_type_pack_names);
   template_bound_value_names = std::move(other.template_bound_value_names);
   template_bound_template_names = std::move(other.template_bound_template_names);
+  template_bound_template_arguments = std::move(other.template_bound_template_arguments);
   values = std::move(other.values);
   namespace_bindings = std::move(other.namespace_bindings);
   function_sets = std::move(other.function_sets);

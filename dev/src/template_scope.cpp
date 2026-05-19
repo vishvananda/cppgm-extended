@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "parser_trace.h"
+#include "semantic_lookup.h"
 #include "template_binding.h"
 
 namespace template_scope {
@@ -490,6 +491,7 @@ bool erase_template_parameter_binding(Scope & scope, const std::string & name)
   changed = scope.class_templates.erase(name) != 0 || changed;
   changed = scope.alias_templates.erase(name) != 0 || changed;
   changed = scope.template_bound_template_names.erase(name) != 0 || changed;
+  changed = scope.template_bound_template_arguments.erase(name) != 0 || changed;
   if(changed) {
     bump_binding_fingerprint_epoch(scope);
   }
@@ -503,6 +505,7 @@ void bind_class_template(Scope & scope,
   scope.class_templates[name] = decl;
   scope.alias_templates.erase(name);
   scope.template_bound_template_names.insert(name);
+  scope.template_bound_template_arguments.erase(name);
   bump_binding_fingerprint_epoch(scope);
 }
 
@@ -513,6 +516,7 @@ void bind_alias_template(Scope & scope,
   scope.alias_templates[name] = decl;
   scope.class_templates.erase(name);
   scope.template_bound_template_names.insert(name);
+  scope.template_bound_template_arguments.erase(name);
   bump_binding_fingerprint_epoch(scope);
 }
 
@@ -527,13 +531,25 @@ void bind_template_template_argument(Scope & scope,
                                      const std::string & name,
                                      const TemplateArgument & argument)
 {
+  TemplateArgument stored_argument = argument;
   if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
-    scope.class_templates.erase(name);
-    bind_alias_template(scope, name, static_cast<AliasTemplateDecl *>(argument.template_decl));
+    AliasTemplateDecl * decl =
+        static_cast<AliasTemplateDecl *>(argument.template_decl);
+    bind_alias_template(scope, name, decl);
+    if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
+      stored_argument.text =
+          semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
+    }
   } else {
-    scope.alias_templates.erase(name);
-    bind_class_template(scope, name, static_cast<ClassTemplateDecl *>(argument.template_decl));
+    ClassTemplateDecl * decl =
+        static_cast<ClassTemplateDecl *>(argument.template_decl);
+    bind_class_template(scope, name, decl);
+    if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
+      stored_argument.text =
+          semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
+    }
   }
+  scope.template_bound_template_arguments[name] = stored_argument;
 }
 
 namespace {
@@ -658,6 +674,10 @@ void overlay_scope_bindings_impl(Scope & target,
                                         excluded_names);
     changed |= overlay_selected_entries(target.alias_templates,
                                         source.alias_templates,
+                                        template_names,
+                                        excluded_names);
+    changed |= overlay_selected_entries(target.template_bound_template_arguments,
+                                        source.template_bound_template_arguments,
                                         template_names,
                                         excluded_names);
     if(template_names) {

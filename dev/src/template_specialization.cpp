@@ -3764,10 +3764,10 @@ bool try_expand_alias_template_pattern_structurally(
     TypePtr scope_bound_type;
     const std::vector<std::string> pattern_parameter_names =
         template_parameter_type_names(pattern_base);
-    if((lookup_template_bound_type(effective_argument_scope.require(),
+    if((lookup_template_bound_type(effective_body_scope.require(),
                                    pattern_parameter_names,
                                    scope_bound_type) ||
-        lookup_template_bound_type(effective_body_scope.require(),
+        lookup_template_bound_type(effective_argument_scope.require(),
                                    pattern_parameter_names,
                                    scope_bound_type)) &&
        scope_bound_type) {
@@ -3852,11 +3852,11 @@ bool try_expand_alias_template_pattern_structurally(
                         named_info.instantiation_arg_texts[i] :
                         std::string());
               const std::vector<TypePtr> * bound_pack =
-                  lookup_template_bound_type_pack(effective_argument_scope.require(),
+                  lookup_template_bound_type_pack(effective_body_scope.require(),
                                                   pack_lookup_names);
               if(!bound_pack) {
                 bound_pack =
-                    lookup_template_bound_type_pack(effective_body_scope.require(),
+                    lookup_template_bound_type_pack(effective_argument_scope.require(),
                                                     pack_lookup_names);
               }
               if(bound_pack) {
@@ -4320,16 +4320,47 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
       {
         return specialization_argument_type_text(type_system, type);
       };
+  const auto bound_template_argument =
+      [&scope, &qualified]() -> const TemplateArgument *
+  {
+    if(qualified.rooted || !qualified.qualifiers.empty() || qualified.name.empty()) {
+      return nullptr;
+    }
+    for(const Scope * current = &scope; current; current = current->parent) {
+      std::map<std::string, TemplateArgument>::const_iterator found =
+          current->template_bound_template_arguments.find(qualified.name);
+      if(found != current->template_bound_template_arguments.end()) {
+        return &found->second;
+      }
+      if(current->namespace_scope || current->parent == nullptr) {
+        break;
+      }
+    }
+    return nullptr;
+  }();
   template_api::TemplateEnvironmentHandle effective_argument_scope =
       argument_scope.valid() ? argument_scope : match_scope;
   Scope & arg_scope = effective_argument_scope.require();
-  AliasTemplateDecl * alias_template =
-      template_argument_semantics::lookup_alias_template(
-          services, scope, template_api::qualified_name_text(qualified));
+  AliasTemplateDecl * alias_template = nullptr;
+  std::string effective_pattern_text = pattern_text;
+  if(bound_template_argument &&
+     bound_template_argument->kind == TemplateArgument::TA_ALIAS_TEMPLATE &&
+     bound_template_argument->template_decl) {
+    alias_template =
+        static_cast<AliasTemplateDecl *>(bound_template_argument->template_decl);
+    if(!bound_template_argument->text.empty()) {
+      effective_pattern_text = bound_template_argument->text;
+    }
+  }
+  if(!alias_template) {
+    alias_template =
+        template_argument_semantics::lookup_alias_template(
+            services, scope, template_api::qualified_name_text(qualified));
+  }
   if(!alias_template || !alias_template->type_id) {
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
-      trace << "expand-alias-pattern miss pattern=" << pattern_text;
+      trace << "expand-alias-pattern miss pattern=" << effective_pattern_text;
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
     return false;
@@ -4364,7 +4395,7 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
   };
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
-    trace << "expand-alias-pattern begin pattern=" << pattern_text
+    trace << "expand-alias-pattern begin pattern=" << effective_pattern_text
           << " alias=" << alias_template->name
           << " args=" << join_arg_texts(arg_texts)
           << " syntax=" << (pattern_arg_syntaxes ? "yes" : "no");
@@ -4433,7 +4464,7 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
   if(had_substitution_failure) {
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
-      trace << "expand-alias-pattern defer pattern=" << pattern_text
+      trace << "expand-alias-pattern defer pattern=" << effective_pattern_text
             << " reason=substitution-failure";
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
@@ -4445,7 +4476,7 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
                                                 alias_template->parameters)) {
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
-      trace << "expand-alias-pattern defer pattern=" << pattern_text
+      trace << "expand-alias-pattern defer pattern=" << effective_pattern_text
             << " reason=non-propagating-dependent-alias";
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
@@ -4470,7 +4501,7 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
     } else {
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
-        trace << "expand-alias-pattern defer pattern=" << pattern_text
+        trace << "expand-alias-pattern defer pattern=" << effective_pattern_text
               << " reason=structural-expansion-fail"
               << " substitution="
               << (substitution_failure && substitution_failure->active() ? "yes" : "no");
@@ -4487,7 +4518,7 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
   }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
-    trace << "expand-alias-pattern pattern=" << pattern_text
+    trace << "expand-alias-pattern pattern=" << effective_pattern_text
           << " expanded=" << expanded_text;
     parser_trace::note("template.resolve", std::string(), trace.str());
   }

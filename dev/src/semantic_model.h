@@ -204,6 +204,7 @@ struct Scope
     template_bound_type_pack_names = other.template_bound_type_pack_names;
     template_bound_value_names = other.template_bound_value_names;
     template_bound_template_names = other.template_bound_template_names;
+    template_bound_template_arguments = other.template_bound_template_arguments;
     values = other.values;
     namespace_bindings = other.namespace_bindings;
     function_sets = other.function_sets;
@@ -247,6 +248,7 @@ struct Scope
   std::set<std::string> template_bound_type_pack_names;
   std::set<std::string> template_bound_value_names;
   std::set<std::string> template_bound_template_names;
+  std::map<std::string, template_model::TemplateArgument> template_bound_template_arguments;
   std::map<std::string, ValueBinding> values;
   std::map<std::string, Scope *> namespace_bindings;
   std::map<std::string, std::vector<FunctionBinding *> > function_sets;

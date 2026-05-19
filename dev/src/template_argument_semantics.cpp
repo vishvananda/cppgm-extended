@@ -211,6 +211,12 @@ bool template_parameter_is_function_pointer_value(
 AliasTemplateDecl * lookup_alias_template(template_api::TemplateServices & services,
                                           Scope & scope,
                                           const string & name);
+bool resolve_member_template_template_argument_text(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const string & text,
+    size_t expected_parameter_count,
+    TemplateArgument & out);
 
 bool evaluate_builtin_type_trait(template_api::TemplateServices & services,
                                  Scope & scope,
@@ -10343,8 +10349,26 @@ bool substitute_dependent_alias_type(const TypePtr & type,
   string payload = named_type_semantic_payload(type);
   if(AliasTemplateDecl * alias_template =
          static_cast<AliasTemplateDecl *>(alias_template_decl)) {
+    string specialization_head = alias_template->name;
+    QualifiedName existing_name;
+    vector<string> ignored_arguments;
+    if(semantic_utils::split_top_level_template_id_text(payload,
+                                                        existing_name,
+                                                        ignored_arguments)) {
+      const string existing_head = template_api::qualified_name_text(existing_name);
+      if(!existing_head.empty()) {
+        specialization_head = existing_head;
+      }
+    } else if(semantic_utils::split_top_level_template_id_text(display,
+                                                               existing_name,
+                                                               ignored_arguments)) {
+      const string existing_head = template_api::qualified_name_text(existing_name);
+      if(!existing_head.empty()) {
+        specialization_head = existing_head;
+      }
+    }
     ostringstream specialization_name;
-    specialization_name << alias_template->name << "<";
+    specialization_name << specialization_head << "<";
     for(size_t i = 0; i < dependent_arguments.size(); ++i) {
       if(i != 0) {
         specialization_name << ", ";
@@ -10359,7 +10383,9 @@ bool substitute_dependent_alias_type(const TypePtr & type,
     }
     specialization_name << ">";
     display = specialization_name.str();
-    payload = alias_template->declaring_scope ?
+    payload = specialization_head.find("::") != string::npos ?
+        display :
+        alias_template->declaring_scope ?
         semantic_lookup::scope_qualified_name(*alias_template->declaring_scope,
                                               display) :
         display;
@@ -11497,12 +11523,59 @@ bool try_resolve_alias_template_id_locally(
   {
     return template_model::template_argument_text(argument, type_text);
   };
-  AliasTemplateDecl * alias_template =
-      lookup_alias_template_impl(services,
-                                 raw_scope,
-                                 template_api::qualified_name_text(template_id));
+  const TemplateArgument * bound_template_argument = nullptr;
+  if(!template_id.rooted && template_id.qualifiers.empty() && !template_id.name.empty()) {
+    for(Scope * current = &raw_scope; current; current = current->parent) {
+      map<string, TemplateArgument>::const_iterator found =
+          current->template_bound_template_arguments.find(template_id.name);
+      if(found != current->template_bound_template_arguments.end()) {
+        bound_template_argument = &found->second;
+        break;
+      }
+      if(current->namespace_scope || current->parent == nullptr) {
+        break;
+      }
+    }
+  }
+  string alias_specialization_head;
+  AliasTemplateDecl * alias_template = nullptr;
+  if(bound_template_argument &&
+     bound_template_argument->kind == TemplateArgument::TA_ALIAS_TEMPLATE &&
+     bound_template_argument->template_decl) {
+    alias_template =
+        static_cast<AliasTemplateDecl *>(bound_template_argument->template_decl);
+    if(!bound_template_argument->text.empty()) {
+      alias_specialization_head = bound_template_argument->text;
+    }
+  }
+  if(!alias_template) {
+    alias_template =
+        lookup_alias_template_impl(services,
+                                   raw_scope,
+                                   template_api::qualified_name_text(template_id));
+  }
+  if(!alias_template) {
+    TemplateArgument member_alias_argument;
+    if(resolve_member_template_template_argument_text(
+           services,
+           scope,
+           template_api::qualified_name_text(template_id),
+           static_cast<size_t>(-1),
+           member_alias_argument) &&
+       member_alias_argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE &&
+       member_alias_argument.template_decl) {
+      alias_template =
+          static_cast<AliasTemplateDecl *>(member_alias_argument.template_decl);
+      if(!member_alias_argument.text.empty()) {
+        alias_specialization_head = member_alias_argument.text;
+      }
+    }
+  }
   if(!alias_template) {
     return false;
+  }
+  if(alias_specialization_head.empty()) {
+    alias_specialization_head = alias_template->name;
   }
 
   const auto dependent_alias_specialization =
@@ -11557,7 +11630,7 @@ bool try_resolve_alias_template_id_locally(
     }
 
     ostringstream specialization_name;
-    specialization_name << alias_template->name << "<";
+    specialization_name << alias_specialization_head << "<";
     for(size_t i = 0; i < stored_indices.size(); ++i) {
       if(i != 0) {
         specialization_name << ", ";
@@ -11567,6 +11640,8 @@ bool try_resolve_alias_template_id_locally(
     specialization_name << ">";
 
     const string qualified_name =
+        alias_specialization_head.find("::") != string::npos ?
+            specialization_name.str() :
         alias_template->declaring_scope ?
             semantic_lookup::scope_qualified_name(*alias_template->declaring_scope,
                                                   specialization_name.str()) :
@@ -18752,21 +18827,23 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
       }
     }
   }
-  switch(resolve_structured_dependent_qualified_member_type(services, scope, type, out)) {
-  case DependentNamedTypeResolutionStatus::Resolved:
-    return DependentNamedTypeResolutionStatus::Resolved;
-  case DependentNamedTypeResolutionStatus::KeepDependent:
-    return DependentNamedTypeResolutionStatus::KeepDependent;
-  case DependentNamedTypeResolutionStatus::Fallback:
-    break;
-  }
-  switch(resolve_named_member_owner_type(services, scope, type, out)) {
-  case DependentNamedTypeResolutionStatus::Resolved:
-    return DependentNamedTypeResolutionStatus::Resolved;
-  case DependentNamedTypeResolutionStatus::KeepDependent:
-    return DependentNamedTypeResolutionStatus::KeepDependent;
-  case DependentNamedTypeResolutionStatus::Fallback:
-    break;
+  if(!named_type_is_dependent_alias(type)) {
+    switch(resolve_structured_dependent_qualified_member_type(services, scope, type, out)) {
+    case DependentNamedTypeResolutionStatus::Resolved:
+      return DependentNamedTypeResolutionStatus::Resolved;
+    case DependentNamedTypeResolutionStatus::KeepDependent:
+      return DependentNamedTypeResolutionStatus::KeepDependent;
+    case DependentNamedTypeResolutionStatus::Fallback:
+      break;
+    }
+    switch(resolve_named_member_owner_type(services, scope, type, out)) {
+    case DependentNamedTypeResolutionStatus::Resolved:
+      return DependentNamedTypeResolutionStatus::Resolved;
+    case DependentNamedTypeResolutionStatus::KeepDependent:
+      return DependentNamedTypeResolutionStatus::KeepDependent;
+    case DependentNamedTypeResolutionStatus::Fallback:
+      break;
+    }
   }
   if(named_type_is_dependent_decltype(type) ||
      named_type_is_dependent_typeof(type)) {
@@ -19521,19 +19598,19 @@ bool resolve_member_template_template_argument_text(
       template_api::find_named_type_class_info(service_type_system(services).model,
                                                owner_type);
   AliasTemplateDecl * alias_template = nullptr;
-  if(owner_info && services.semantic_context) {
-    semantic_lookup::MemberAliasTemplateLookupResult member =
-        semantic_lookup::lookup_member_alias_template(*services.semantic_context,
-                                                      *owner_info,
-                                                      member_name);
-    alias_template = member.alias_template;
-  }
-  if(!alias_template) {
+  {
     map<string, AliasTemplateDecl *>::iterator found =
         member_scope->alias_templates.find(member_name);
     if(found != member_scope->alias_templates.end()) {
       alias_template = found->second;
     }
+  }
+  if(!alias_template && owner_info && services.semantic_context) {
+    semantic_lookup::MemberAliasTemplateLookupResult member =
+        semantic_lookup::lookup_member_alias_template(*services.semantic_context,
+                                                      *owner_info,
+                                                      member_name);
+    alias_template = member.alias_template;
   }
   if(alias_template &&
      (expected_parameter_count == static_cast<size_t>(-1) ||
@@ -19551,19 +19628,19 @@ bool resolve_member_template_template_argument_text(
   }
 
   ClassTemplateDecl * class_template = nullptr;
-  if(owner_info && services.semantic_context) {
-    semantic_lookup::MemberClassTemplateLookupResult member =
-        semantic_lookup::lookup_member_class_template(*services.semantic_context,
-                                                      *owner_info,
-                                                      member_name);
-    class_template = member.class_template;
-  }
-  if(!class_template) {
+  {
     map<string, ClassTemplateDecl *>::iterator found =
         member_scope->class_templates.find(member_name);
     if(found != member_scope->class_templates.end()) {
       class_template = found->second;
     }
+  }
+  if(!class_template && owner_info && services.semantic_context) {
+    semantic_lookup::MemberClassTemplateLookupResult member =
+        semantic_lookup::lookup_member_class_template(*services.semantic_context,
+                                                      *owner_info,
+                                                      member_name);
+    class_template = member.class_template;
   }
   if(class_template &&
      (expected_parameter_count == static_cast<size_t>(-1) ||
