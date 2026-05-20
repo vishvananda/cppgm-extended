@@ -6105,6 +6105,23 @@ std::set<std::string> collect_template_parameter_names(
   return names;
 }
 
+std::set<std::string> collect_instantiation_overlay_excluded_names(
+    const Scope & declaring_scope,
+    const Scope & use_scope,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  std::set<std::string> names = collect_template_parameter_names(parameters);
+  if(declaring_scope.class_info &&
+     declaring_scope.class_info->source_template &&
+     declaring_scope.class_info->member_scope.get() != &use_scope) {
+    const std::set<std::string> class_parameter_names =
+        collect_template_parameter_names(
+            declaring_scope.class_info->source_template->parameters);
+    names.insert(class_parameter_names.begin(), class_parameter_names.end());
+  }
+  return names;
+}
+
 ClassInfo * current_instantiation_owner_for_scope(SemanticContext & ctx,
                                                   Scope & declaring_scope,
                                                   Scope & use_scope,
@@ -6387,7 +6404,8 @@ Scope & bind_template_arguments_for_instantiation(
 {
   Scope & scope = ctx.append_template_scope(declaring_scope);
   const std::set<std::string> excluded_names =
-      collect_template_parameter_names(parameters);
+      collect_instantiation_overlay_excluded_names(
+          declaring_scope, use_scope, parameters);
   if(excluded_names.empty()) {
     overlay_instantiation_use_scope_bindings(scope, use_scope, &declaring_scope);
   } else {
