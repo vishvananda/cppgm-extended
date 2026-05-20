@@ -93,6 +93,18 @@ bool declarator_has_parameter_pack(const CppAstNode & declarator)
   return nested && !nested->children.empty() && declarator_has_parameter_pack(nested->children[0]);
 }
 
+bool declarator_has_parameter_clause(const CppAstNode & declarator)
+{
+  for(std::size_t i = 0; i < declarator.children.size(); ++i) {
+    if(declarator.children[i].kind == CppAstKind::parameter_clause) {
+      return true;
+    }
+  }
+  const CppAstNode * nested = cpp_decl::find_child(declarator, CppAstKind::nested_declarator);
+  return nested && !nested->children.empty() &&
+         declarator_has_parameter_clause(nested->children[0]);
+}
+
 bool erase_parameter_pack_nodes(CppAstNode & current)
 {
   bool removed = false;
@@ -544,7 +556,17 @@ cpp_decl::AstDeclHooks make_decl_hooks(template_api::TemplateServices & services
                                        semantic_model::Scope & semantic_scope,
                                        semantic_model::Scope & parse_scope,
                                        bool reference_class_templates_only,
-                                       bool re_resolve_dependent_semantic_types = false);
+                                       bool re_resolve_dependent_semantic_types = false,
+                                       bool bind_parameter_names = false);
+
+semantic_model::Scope make_parameter_clause_scope(semantic_model::Scope & parent)
+{
+  semantic_model::Scope scope(&parent, "<parameter-clause>", false);
+  scope.class_info = parent.class_info;
+  scope.function = parent.function;
+  scope.namespace_scope = parent.namespace_scope;
+  return scope;
+}
 
 TypePtr lookup_decl_ast_type_node(template_api::TemplateServices & services,
                                   Scope & semantic_scope,
@@ -633,7 +655,8 @@ cpp_decl::AstDeclHooks make_decl_hooks(template_api::TemplateServices & services
                                        semantic_model::Scope & semantic_scope,
                                        semantic_model::Scope & parse_scope,
                                        bool reference_class_templates_only,
-                                       bool re_resolve_dependent_semantic_types)
+                                       bool re_resolve_dependent_semantic_types,
+                                       bool bind_parameter_names)
 {
   cpp_decl::AstDeclHooks hooks;
   template_api::TemplateTypeSystem * const type_system = &service_type_system(services);
@@ -728,6 +751,13 @@ cpp_decl::AstDeclHooks make_decl_hooks(template_api::TemplateServices & services
       {
         return template_scope::scope_has_type_parameter_pack_name(semantic_scope, name);
       };
+  if(bind_parameter_names) {
+    hooks.bind_parameter_name =
+        [&semantic_scope](const std::string & name, const TypePtr & type)
+        {
+          template_scope::bind_parameter_value(semantic_scope, name, type);
+        };
+  }
   hooks.normalize_function_parameters = true;
   return hooks;
 }
@@ -758,9 +788,15 @@ bool parse_parameter_clause(template_api::TemplateServices & services,
                             bool * variadic_out,
                             bool reference_class_templates_only)
 {
+  semantic_model::Scope parameter_scope = make_parameter_clause_scope(semantic_scope);
   return cpp_decl::parse_parameter_clause_ast(
       node,
-      make_decl_hooks(services, semantic_scope, parse_scope, reference_class_templates_only),
+      make_decl_hooks(services,
+                      parameter_scope,
+                      parse_scope,
+                      reference_class_templates_only,
+                      false,
+                      true),
       params,
       default_args_out,
       variadic_out);
@@ -775,9 +811,26 @@ bool parse_declarator(template_api::TemplateServices & services,
                       cpp_decl::TypePtr & type,
                       bool reference_class_templates_only)
 {
+  if(!declarator_has_parameter_clause(declarator)) {
+    return cpp_decl::parse_declarator_ast(
+        declarator,
+        make_decl_hooks(services,
+                        semantic_scope,
+                        parse_scope,
+                        reference_class_templates_only),
+        base,
+        name,
+        type);
+  }
+  semantic_model::Scope parameter_scope = make_parameter_clause_scope(semantic_scope);
   return cpp_decl::parse_declarator_ast(
       declarator,
-      make_decl_hooks(services, semantic_scope, parse_scope, reference_class_templates_only),
+      make_decl_hooks(services,
+                      parameter_scope,
+                      parse_scope,
+                      reference_class_templates_only,
+                      false,
+                      true),
       base,
       name,
       type);

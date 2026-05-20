@@ -1835,6 +1835,10 @@ public:
     const bool method_like_template =
         parse_scope->class_info &&
         find_descendant_kind(*declarator, CppAstKind::parameter_clause) != nullptr;
+    const bool nonmember_function_like_template =
+        !special_member_template &&
+        !method_like_template &&
+        function_parameter_clause_in_declarator(*declarator) != nullptr;
     const bool is_friend_template =
         parse_scope->class_info &&
         specifiers &&
@@ -2022,6 +2026,63 @@ public:
               *this, name, parsed_is_constructor, parsed_is_destructor);
           special_member_is_constructor = parsed_is_constructor;
           special_member_is_destructor = parsed_is_destructor;
+        }
+      }
+    } else if(nonmember_function_like_template) {
+      if(!parse_variable_declaration_type(*parse_scope,
+                                          *specifiers,
+                                          *declarator,
+                                          initializer,
+                                          true,
+                                          name,
+                                          type,
+                                          is_typedef,
+                                          true) ||
+         !type || is_typedef) {
+        template_api::FunctionTemplateSignatureParseResult parsed_result =
+            template_api::signature::try_parse_function_template_signature(
+                ctx,
+                *function_template_parse_scope,
+                inner.value,
+                *declarator,
+                *specifiers,
+                *declarator,
+                false);
+        if(parsed_result.ok()) {
+          const template_api::ParsedFunctionTemplateSignature & parsed =
+              parsed_result.signature;
+          name = parsed.name;
+          type = parsed.type;
+          is_typedef = false;
+          params = parsed.params;
+          default_args = parsed.default_arguments;
+          result_type_pattern = parsed.result_type_pattern;
+          parameter_declarations_pattern = parsed.parameter_declarations;
+          has_trailing_function_parameter_pack =
+              pack_parameter_analysis::declarator_has_trailing_template_parameter_pack(
+                  parsed.effective_declarator,
+                  template_parameters);
+        } else {
+          ostringstream out;
+          out << "unsupported template declarator";
+          TypePtr debug_base;
+          bool debug_typedef = false;
+          if(!parse_decl_spec(*specifiers, *parse_scope, debug_typedef, debug_base, true)) {
+            out << " [decl-specifier-seq]";
+          } else if(debug_typedef) {
+            out << " [typedef]";
+          } else {
+            const CppAstNode filtered_declarator = filtered_function_declarator(*declarator);
+            string debug_name;
+            TypePtr debug_type;
+            if(!parse_declarator(*parse_scope, filtered_declarator, debug_base,
+                                 debug_name, debug_type, true)) {
+              out << " [declarator " << node_text(filtered_declarator) << "]";
+            } else {
+              out << " [post-parse]";
+            }
+          }
+          throw logic_error(out.str());
         }
       }
     } else if(!parse_variable_declaration_type(*parse_scope, *specifiers, *declarator, initializer,

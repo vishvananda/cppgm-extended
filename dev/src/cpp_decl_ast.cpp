@@ -516,6 +516,9 @@ bool parse_parameter_clause_ast(
         make_pair(name,
                   hooks.normalize_function_parameters ? normalize_parameter_type(type) :
                                                         type));
+    if(hooks.bind_parameter_name) {
+      hooks.bind_parameter_name(params.back().first, params.back().second);
+    }
     if(default_args_out) {
       default_args_out->push_back(find_child(child, CppAstKind::default_argument));
     }
