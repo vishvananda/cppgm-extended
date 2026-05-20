@@ -7726,6 +7726,14 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               << (template_argument_semantics::type_depends_on_template_parameter(ctx, result_type) ? "yes" : "no");
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
+      if(!dependent_template_arguments &&
+         template_argument_semantics::type_depends_on_template_parameter(ctx, result_type) &&
+         type_mentions_template_parameter_name(result_type, source_decl->parameters)) {
+        throw_substitution_failure(
+            "instantiated function template retained dependent result type",
+            std::string(),
+            "template-instantiation");
+      }
       std::vector<TypePtr> rebuilt_params;
       for(std::size_t i = 0; i < params.size(); ++i) {
         rebuilt_params.push_back(params[i].second);
@@ -7773,6 +7781,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     request.parameter_syntax_node = source_decl->declarator;
     request.semantic_flags.access = source_decl->access;
     request.semantic_flags.is_constructor = source_decl->is_constructor;
+    request.semantic_flags.is_inherited_constructor =
+        source_decl->is_inherited_constructor;
     request.semantic_flags.is_destructor = source_decl->is_destructor;
     request.semantic_flags.is_explicit = source_decl->is_explicit;
     request.semantic_flags.is_const_method = source_decl->is_const_method;
@@ -7790,6 +7800,16 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         !source_decl->is_constructor &&
         !source_decl->is_destructor;
     binding = ctx.register_function_entity(request);
+    if(binding &&
+       source_decl->is_inherited_constructor &&
+       binding->is_constructor &&
+       binding->ctor_initializer &&
+       !binding->has_definition) {
+      binding->has_definition = true;
+      if(!binding->definition_node) {
+        binding->definition_node = binding->declaration_node;
+      }
+    }
   } else {
     FunctionRegistrationRequest request;
     request.scope = source_decl->declaring_scope;

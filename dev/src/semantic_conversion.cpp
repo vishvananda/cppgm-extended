@@ -376,6 +376,20 @@ bool reference_referent_accepts_temporary(const TypePtr & referent)
   return referent && type_is_const_object(referent);
 }
 
+bool nonvolatile_const_object_parameter(const TypePtr & implicit_object_parameter)
+{
+  TypePtr parameter = strip_top_level_cv(implicit_object_parameter);
+  if(parameter && parameter->kind == Type::TK_POINTER) {
+    parameter = parameter->inner;
+  }
+  TypePtr object_base;
+  bool object_const = false;
+  bool object_volatile = false;
+  return top_level_cv_flags(parameter, object_base, object_const, object_volatile) &&
+         object_const &&
+         !object_volatile;
+}
+
 bool is_scoped_enum_key(const std::string & key)
 {
   return key.rfind("enum class ", 0) == 0 || key.rfind("enum struct ", 0) == 0;
@@ -635,6 +649,23 @@ bool member_pointer_inheritance_conversion(SemanticContext & ctx,
                                            const TypePtr & target,
                                            const TypePtr & source,
                                            size_t * out_offset);
+
+bool ref_qualifier_accepts_implicit_object(RefQualifier ref_qualifier,
+                                           const TypePtr & implicit_object_parameter,
+                                           ValueCategory category)
+{
+  switch(ref_qualifier) {
+  case RQ_NONE:
+    return true;
+  case RQ_LVALUE:
+    return category == VC_LVALUE ||
+           nonvolatile_const_object_parameter(implicit_object_parameter);
+  case RQ_RVALUE:
+    return category == VC_PRVALUE || category == VC_XVALUE;
+  }
+
+  return false;
+}
 
 TypePtr value_conversion_type(const ExprInfo & expr)
 {

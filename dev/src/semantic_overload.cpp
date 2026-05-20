@@ -3400,19 +3400,23 @@ bool same_function_candidate_entity(FunctionBinding * lhs, FunctionBinding * rhs
   return false;
 }
 
-bool ref_qualifier_accepts_implicit_object(RefQualifier ref_qualifier,
-                                           ValueCategory category)
+bool ref_qualifier_rejects_implicit_object(RefQualifier ref_qualifier,
+                                           const TypePtr & implicit_object_parameter,
+                                           semantic_conversion::ValueCategory category)
 {
-  switch(ref_qualifier) {
-  case RQ_NONE:
-    return true;
-  case RQ_LVALUE:
-    return category == VC_LVALUE;
-  case RQ_RVALUE:
-    return category == VC_PRVALUE || category == VC_XVALUE;
+  if(ref_qualifier == RQ_NONE) {
+    return false;
   }
-
-  return false;
+  if(ref_qualifier == RQ_RVALUE) {
+    return category == VC_LVALUE;
+  }
+  if(category == VC_LVALUE) {
+    return false;
+  }
+  return !semantic_conversion::ref_qualifier_accepts_implicit_object(
+      ref_qualifier,
+      implicit_object_parameter,
+      category);
 }
 
 vector<TemplateArgument> constructor_deduction_local_type_arguments(
@@ -9904,8 +9908,10 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                                           visible.path_access)) {
                     continue;
                   }
-                  if(!ref_qualifier_accepts_implicit_object(candidate->ref_qualifier,
-                                                            callee_expr.category)) {
+                  if(ref_qualifier_rejects_implicit_object(
+                         candidate->ref_qualifier,
+                         conversion_function_type->params[0],
+                         callee_expr.category)) {
                     continue;
                   }
 
@@ -11070,8 +11076,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           candidate_rejections[i] = "member access not allowed";
           continue;
         }
-        if(!ref_qualifier_accepts_implicit_object(candidate->ref_qualifier,
-                                                  implicit_object_category)) {
+        if(ref_qualifier_rejects_implicit_object(candidate->ref_qualifier,
+                                                 function_type->params[0],
+                                                 implicit_object_category)) {
           candidate_rejections[i] = "implicit object ref-qualifier mismatch";
           continue;
         }

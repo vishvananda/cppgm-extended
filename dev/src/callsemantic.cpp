@@ -8637,6 +8637,7 @@ private:
     binding->is_method = true;
     binding->is_constexpr = flags.is_constexpr;
     binding->is_constructor = flags.is_constructor;
+    binding->is_inherited_constructor = flags.is_inherited_constructor;
     binding->is_destructor = flags.is_destructor;
     binding->is_explicit = flags.is_explicit;
     binding->is_const_method = flags.is_const_method;
@@ -26280,6 +26281,58 @@ private:
                                     MemberAccess access = MA_PUBLIC) override
   {
     collect_template_declaration_impl(scope, node, access, nullptr);
+  }
+
+  FunctionTemplateDecl * register_inherited_constructor_template(
+      ClassInfo & owner,
+      FunctionTemplateDecl & base_template,
+      const string & constructor_name,
+      const CppAstNode & using_node,
+      const CppAstNode * ctor_initializer,
+      MemberAccess access) override
+  {
+    if(!owner.member_scope) {
+      return nullptr;
+    }
+
+    vector<FunctionTemplateDecl *> & slot =
+        semantic_lookup::direct_function_template_slot(*owner.member_scope,
+                                                       constructor_name);
+    for(size_t i = 0; i < slot.size(); ++i) {
+      FunctionTemplateDecl * existing = slot[i];
+      if(existing &&
+         existing->is_inherited_constructor &&
+         existing->declaration_node == &using_node &&
+         existing->declarator == base_template.declarator) {
+        return existing;
+      }
+    }
+
+    unique_ptr<FunctionTemplateDecl> inherited(new FunctionTemplateDecl(base_template));
+    inherited->declaring_scope = owner.member_scope.get();
+    inherited->pattern_scope = owner.member_scope.get();
+    inherited->name = constructor_name;
+    inherited->access = access;
+    inherited->is_constructor = true;
+    inherited->is_inherited_constructor = true;
+    inherited->is_destructor = false;
+    inherited->is_static_member = false;
+    inherited->declaration_node = &using_node;
+    inherited->definition_node = ctor_initializer ? &using_node : nullptr;
+    inherited->body = nullptr;
+    inherited->ctor_initializer = ctor_initializer;
+    inherited->definition_inner = nullptr;
+    inherited->definition_specifiers = nullptr;
+    inherited->definition_declarator = nullptr;
+    inherited->friend_access_classes.clear();
+    inherited->instantiations.clear();
+    initialize_function_template_parameter_aliases(*inherited);
+    snapshot_function_template_debug_info(*this, *inherited);
+
+    FunctionTemplateDecl * raw = inherited.get();
+    slot.push_back(raw);
+    function_templates.push_back(std::move(inherited));
+    return raw;
   }
 
   void collect_namespace_definition(Scope & scope, const CppAstNode & node)

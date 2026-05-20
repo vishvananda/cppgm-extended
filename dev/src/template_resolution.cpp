@@ -787,6 +787,44 @@ bool try_resolve_function_non_type_template_argument_name(
       out);
 }
 
+bool lookup_member_pointer_function_candidates(template_api::TemplateServices & services,
+                                               Scope & scope,
+                                               const QualifiedName & qualified,
+                                               std::vector<FunctionBinding *> & out)
+{
+  out.clear();
+  if(!services.semantic_context ||
+     (!qualified.rooted && qualified.qualifiers.empty())) {
+    return false;
+  }
+
+  Scope * target =
+      semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
+          *services.semantic_context,
+          scope,
+          qualified);
+  if(!target || !target->class_info) {
+    return false;
+  }
+
+  ClassInfo * target_class = target->class_info;
+  if(!target_class->complete && target_class->type) {
+    if(ClassInfo * completed =
+           services.semantic_context->complete_class_type(target_class->type)) {
+      target_class = completed;
+    }
+  }
+
+  semantic_lookup::MemberCallableLookupResult callables =
+      semantic_lookup::lookup_visible_member_callables(*target_class, qualified.name);
+  if(callables.functions.empty() && !callables.templates.empty()) {
+    return false;
+  }
+
+  out = callables.functions;
+  return !out.empty();
+}
+
 bool try_resolve_function_non_type_template_argument_syntax(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -1122,8 +1160,25 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
     if(services.semantic_context &&
        semantic_utils::split_qualified_name_text(member_text, qualified) &&
        (qualified.rooted || !qualified.qualifiers.empty())) {
-      std::vector<FunctionBinding *> functions =
-          services.semantic_context->lookup_qualified_functions(scope, qualified);
+      std::vector<FunctionBinding *> functions;
+      try {
+        if(!lookup_member_pointer_function_candidates(services,
+                                                      scope,
+                                                      qualified,
+                                                      functions)) {
+          return false;
+        }
+      } catch(const TemplateSubstitutionFailure &) {
+        return false;
+      } catch(const SemanticSoftFailure &) {
+        return false;
+      } catch(const SemanticDiagnosticError &) {
+        return false;
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+        return false;
+      } catch(const std::logic_error &) {
+        return false;
+      }
       FunctionBinding * selected = nullptr;
       for(std::size_t i = 0; i < functions.size(); ++i) {
         FunctionBinding * binding = functions[i];

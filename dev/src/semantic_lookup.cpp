@@ -1266,6 +1266,13 @@ ClassTemplateDecl * lookup_class_template_in_scope_or_inherited_members(
   if(!scope.class_info) {
     return nullptr;
   }
+  if(scope.class_info->member_scope &&
+     scope.class_info->member_scope.get() != &scope) {
+    if(ClassTemplateDecl * owner_direct =
+           lookup_direct_class_template(*scope.class_info->member_scope, name)) {
+      return owner_direct;
+    }
+  }
   return lookup_inherited_member_template_decl<ClassTemplateDecl>(
       ctx,
       *scope.class_info,
@@ -1286,6 +1293,13 @@ AliasTemplateDecl * lookup_alias_template_in_scope_or_inherited_members(
   }
   if(!scope.class_info) {
     return nullptr;
+  }
+  if(scope.class_info->member_scope &&
+     scope.class_info->member_scope.get() != &scope) {
+    if(AliasTemplateDecl * owner_direct =
+           lookup_direct_alias_template(*scope.class_info->member_scope, name)) {
+      return owner_direct;
+    }
   }
   return lookup_inherited_member_template_decl<AliasTemplateDecl>(
       ctx,

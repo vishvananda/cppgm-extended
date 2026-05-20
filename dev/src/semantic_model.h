@@ -59,6 +59,7 @@ struct FunctionSemanticFlags
 {
   MemberAccess access = MA_PUBLIC;
   bool is_constructor = false;
+  bool is_inherited_constructor = false;
   bool is_destructor = false;
   bool is_explicit = false;
   bool is_const_method = false;
@@ -541,6 +542,7 @@ struct FunctionTemplateDecl
   FunctionBinding * lexical_access_function = nullptr;
   MemberAccess access = MA_PUBLIC;
   bool is_constructor = false;
+  bool is_inherited_constructor = false;
   bool is_destructor = false;
   bool is_static_member = false;
   bool is_constexpr = false;

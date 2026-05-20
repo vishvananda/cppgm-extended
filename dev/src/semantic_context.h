@@ -592,6 +592,13 @@ public:
   virtual void collect_explicit_instantiation(semantic_model::Scope & scope,
                                               const CppAstNode & node) = 0;
   virtual const CppAstNode * own_synthetic_ast(CppAstNode node) = 0;
+  virtual semantic_model::FunctionTemplateDecl * register_inherited_constructor_template(
+      semantic_model::ClassInfo & owner,
+      semantic_model::FunctionTemplateDecl & base_template,
+      const std::string & constructor_name,
+      const CppAstNode & using_node,
+      const CppAstNode * ctor_initializer,
+      semantic_model::MemberAccess access) = 0;
   virtual void collect_deduction_guide_declaration(semantic_model::Scope & scope,
                                                    const CppAstNode & node) = 0;
   virtual void collect_template_declaration(

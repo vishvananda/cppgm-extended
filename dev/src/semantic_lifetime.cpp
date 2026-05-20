@@ -1416,6 +1416,21 @@ const CppAstNode * find_ctor_base_initializer(SemanticContext & ctx,
         return &init;
       }
     }
+    if(id->semantic_type) {
+      TypePtr semantic_type = id->semantic_type;
+      TypePtr resolved_type;
+      if(template_api::type::resolve_instantiated_dependent_type(ctx,
+                                                                 scope,
+                                                                 semantic_type,
+                                                                 resolved_type) &&
+         resolved_type) {
+        semantic_type = resolved_type;
+      }
+      if(semantic_type &&
+         type_equals(strip_top_level_cv(semantic_type), base.type)) {
+        return &init;
+      }
+    }
     TypePtr named = ctx.lookup_type(scope, id->value);
     if(named && type_equals(strip_top_level_cv(named), base.type)) {
       return &init;

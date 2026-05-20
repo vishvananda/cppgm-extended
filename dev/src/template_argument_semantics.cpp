@@ -75,6 +75,29 @@ using callsemantic_internal::match_wrapped_type_text;
 using callsemantic_internal::normalize_type_lookup_name;
 using callsemantic_internal::reparseable_type_argument_text;
 
+namespace {
+
+bool ref_qualifier_rejects_implicit_object(RefQualifier ref_qualifier,
+                                           const TypePtr & implicit_object_parameter,
+                                           semantic_conversion::ValueCategory category)
+{
+  if(ref_qualifier == RQ_NONE) {
+    return false;
+  }
+  if(ref_qualifier == RQ_RVALUE) {
+    return category == semantic_conversion::VC_LVALUE;
+  }
+  if(category == semantic_conversion::VC_LVALUE) {
+    return false;
+  }
+  return !semantic_conversion::ref_qualifier_accepts_implicit_object(
+      ref_qualifier,
+      implicit_object_parameter,
+      category);
+}
+
+}  // namespace
+
 static bool expression_ast_mentions_template_dependency(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -5883,12 +5906,11 @@ bool callable_object_structured_invocation_result(
        !binding->is_const_method) {
       continue;
     }
-    if(binding->ref_qualifier == RQ_LVALUE &&
-       callable_expr.category != semantic_conversion::VC_LVALUE) {
-      continue;
-    }
-    if(binding->ref_qualifier == RQ_RVALUE &&
-       callable_expr.category == semantic_conversion::VC_LVALUE) {
+    const TypePtr implicit_object_parameter =
+        explicit_offset != 0 ? binding->params[0].second : TypePtr();
+    if(ref_qualifier_rejects_implicit_object(binding->ref_qualifier,
+                                             implicit_object_parameter,
+                                             callable_expr.category)) {
       continue;
     }
 
@@ -7082,10 +7104,13 @@ bool select_unique_leaf_function_binding(
       if(object_is_const && !candidate->is_const_method) {
         continue;
       }
-      if(candidate->ref_qualifier == RQ_LVALUE && !base_is_lvalue) {
-        continue;
-      }
-      if(candidate->ref_qualifier == RQ_RVALUE && base_is_lvalue) {
+      const TypePtr implicit_object_parameter =
+          candidate->params.empty() ? TypePtr() : candidate->params[0].second;
+      if(ref_qualifier_rejects_implicit_object(
+             candidate->ref_qualifier,
+             implicit_object_parameter,
+             base_is_lvalue ? semantic_conversion::VC_LVALUE :
+                              semantic_conversion::VC_PRVALUE)) {
         continue;
       }
       if(!object_type) {
@@ -8051,10 +8076,13 @@ bool evaluate_leaf_constexpr_function_call(template_api::TemplateServices & serv
     if(object_is_const && !candidate->is_const_method) {
       continue;
     }
-    if(candidate->ref_qualifier == RQ_LVALUE && !base_is_lvalue) {
-      continue;
-    }
-    if(candidate->ref_qualifier == RQ_RVALUE && base_is_lvalue) {
+    const TypePtr implicit_object_parameter =
+        candidate->params.empty() ? TypePtr() : candidate->params[0].second;
+    if(ref_qualifier_rejects_implicit_object(
+           candidate->ref_qualifier,
+           implicit_object_parameter,
+           base_is_lvalue ? semantic_conversion::VC_LVALUE :
+                            semantic_conversion::VC_PRVALUE)) {
       continue;
     }
 
@@ -18423,6 +18451,25 @@ bool type_depends_on_template_parameter(template_api::TemplateTypeSystem & type_
 
   case Type::TK_NAMED:
   {
+    const TypePtr named = strip_top_level_cv(type);
+    if(named &&
+       named->kind == Type::TK_NAMED &&
+       named->named_dependent_class_template_decl) {
+      const vector<DependentAliasTemplateArgumentSyntax> &
+          dependent_class_arguments = named->named_dependent_class_arguments;
+      for(size_t i = 0; i < dependent_class_arguments.size(); ++i) {
+        const DependentAliasTemplateArgumentSyntax & argument =
+            dependent_class_arguments[i];
+        if(argument.syntax.dependent ||
+           (argument.syntax.resolved_type &&
+            type_depends_on_template_parameter(type_system,
+                                               argument.syntax.resolved_type)) ||
+           (argument.type &&
+            type_depends_on_template_parameter(type_system, argument.type))) {
+          return true;
+        }
+      }
+    }
     if(named_type_has_dependent_semantic(type) ||
        named_type_key_contains_dependent_semantic(type)) {
       return true;
@@ -19793,9 +19840,16 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   const bool syntactically_dependent =
       named_type_has_dependent_semantic(type) ||
       named_type_key_contains_dependent_semantic(type);
-  const bool semantically_dependent =
+  bool semantically_dependent =
       syntactically_dependent ||
       type_is_dependent(type);
+  if(!semantically_dependent) {
+    const TypePtr named = strip_top_level_cv(type);
+    semantically_dependent =
+        named &&
+        named->kind == Type::TK_NAMED &&
+        named->named_dependent_class_template_decl;
+  }
   if(!semantically_dependent) {
     return DependentNamedTypeResolutionStatus::Fallback;
   }
