@@ -6254,6 +6254,66 @@ bool lookup_leaf_function_bindings(Scope & scope,
   return false;
 }
 
+bool leaf_value_binding_visible_from_node(const ValueBinding * binding,
+                                          const CppAstNode * use_node)
+{
+  if(!binding || !use_node) {
+    return true;
+  }
+  const CppAstNode * declaration_node =
+      binding->declaration_node ? binding->declaration_node : binding->definition_node;
+  if(!declaration_node ||
+     declaration_node->token_end <= declaration_node->token_start ||
+     use_node->token_end <= use_node->token_start) {
+    return true;
+  }
+  return declaration_node->token_start <= use_node->token_start;
+}
+
+bool ordinary_leaf_non_function_lookup_suppresses_adl(Scope & scope,
+                                                      const string & name,
+                                                      const CppAstNode * use_node)
+{
+  const ValueBinding * binding = nullptr;
+  if(!lookup_leaf_value_binding(scope, name, binding) || !binding) {
+    return false;
+  }
+  return leaf_value_binding_visible_from_node(binding, use_node);
+}
+
+void collect_leaf_adl_function_candidates(
+    template_api::TemplateServices & services,
+    const string & name,
+    const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos,
+    vector<FunctionBinding *> & functions,
+    vector<FunctionTemplateDecl *> & function_templates)
+{
+  if(!services.semantic_context) {
+    return;
+  }
+
+  vector<Scope *> associated_scopes;
+  for(size_t i = 0; i < arg_infos.size(); ++i) {
+    const TypePtr & arg_type = arg_infos[i].first;
+    if(!arg_type) {
+      continue;
+    }
+    semantic_lookup::collect_associated_namespace_scopes_for_type(
+        *services.semantic_context, arg_type, associated_scopes);
+    semantic_lookup::lookup_associated_friend_functions_for_type(
+        *services.semantic_context, arg_type, name, functions);
+    semantic_lookup::lookup_associated_friend_function_templates_for_type(
+        *services.semantic_context, arg_type, name, function_templates);
+  }
+
+  semantic_lookup::lookup_adl_functions_in_scopes(associated_scopes,
+                                                  name,
+                                                  functions);
+  semantic_lookup::lookup_adl_function_templates_in_scopes(associated_scopes,
+                                                           name,
+                                                           function_templates);
+}
+
 const QualifiedName * qualified_syntax_if_qualified(const CppAstNode & node)
 {
   const QualifiedName * qualified = cppast_qualified_name_syntax(node);
@@ -6944,13 +7004,70 @@ bool class_operand_declares_address_of_operator(template_api::TemplateServices &
               .functions.empty();
 }
 
+bool leaf_type_may_have_user_defined_conversion(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  return base && base->kind == Type::TK_NAMED;
+}
+
+bool leaf_argument_can_bind_to_parameter(template_api::TemplateServices & services,
+                                         Scope & scope,
+                                         const TypePtr & parameter_type,
+                                         const semantic_conversion::ExprInfo & expr_info,
+                                         bool allow_user_defined_conversion)
+{
+  if(semantic_conversion::standard_conversion_rank(parameter_type, expr_info) !=
+     semantic_conversion::CR_BAD) {
+    return true;
+  }
+  if(!allow_user_defined_conversion ||
+     !services.semantic_context ||
+     (!leaf_type_may_have_user_defined_conversion(parameter_type) &&
+      !leaf_type_may_have_user_defined_conversion(expr_info.type))) {
+    return false;
+  }
+
+  semantic_conversion::ExprInfo converted;
+  semantic_conversion::ConversionRank rank = semantic_conversion::CR_BAD;
+  ArgumentConversionOptions options =
+      semantic_policy::without_user_defined_body_instantiation();
+  options.materialize_user_defined_output = false;
+  try {
+    return semantic_conversion::try_argument_conversion(
+               *services.semantic_context,
+               scope,
+               parameter_type,
+               expr_info,
+               converted,
+               rank,
+               options) &&
+           rank != semantic_conversion::CR_BAD;
+  } catch(const logic_error &) {
+    return false;
+  }
+}
+
+bool leaf_function_binding_has_friend_lookup_surface(
+    const FunctionBinding & binding)
+{
+  if(binding.is_method) {
+    return false;
+  }
+  return binding.lexical_access_class ||
+         (binding.source_template &&
+          !binding.source_template->friend_access_classes.empty());
+}
+
 bool select_unique_leaf_function_binding(
+    template_api::TemplateServices & services,
+    Scope & scope,
     const vector<FunctionBinding *> & functions,
     const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos,
     bool is_method_call,
     const TypePtr & object_type,
     bool object_is_const,
     bool base_is_lvalue,
+    bool allow_user_defined_conversions,
     FunctionBinding *& out)
 {
   out = nullptr;
@@ -6977,14 +7094,19 @@ bool select_unique_leaf_function_binding(
     }
 
     bool matches = true;
+    const bool allow_candidate_user_defined_conversions =
+        allow_user_defined_conversions ||
+        leaf_function_binding_has_friend_lookup_surface(*candidate);
     for(size_t arg_index = 0; arg_index < arg_infos.size(); ++arg_index) {
       const size_t param_index = (is_method_call ? 1u : 0u) + arg_index;
       semantic_conversion::ExprInfo expr_info;
       expr_info.type = arg_infos[arg_index].first;
       expr_info.category = arg_infos[arg_index].second;
-      if(semantic_conversion::standard_conversion_rank(
-             candidate->params[param_index].second,
-             expr_info) == semantic_conversion::CR_BAD) {
+      if(!leaf_argument_can_bind_to_parameter(services,
+                                              scope,
+                                              candidate->params[param_index].second,
+                                              expr_info,
+                                              allow_candidate_user_defined_conversions)) {
         matches = false;
         break;
       }
@@ -7051,32 +7173,15 @@ bool leaf_function_type_call_result(
   return out != nullptr;
 }
 
-void append_leaf_function_template_instantiations(
+bool append_leaf_function_template_instantiations_from_candidates(
     template_api::TemplateServices & services,
     Scope & scope,
-    const CppAstNode & callee,
     const TemplateIdSyntax * template_id,
-    const QualifiedName * callee_qualified,
-    const string & callee_lookup_name,
+    const vector<FunctionTemplateDecl *> & function_templates,
     const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos,
     bool include_body,
     vector<FunctionBinding *> & functions)
 {
-  const QualifiedName * template_qualified =
-      template_id &&
-      (template_id->name.rooted || !template_id->name.qualifiers.empty()) ?
-          &template_id->name :
-          callee_qualified;
-
-  vector<FunctionTemplateDecl *> function_templates;
-  if(template_qualified) {
-    lookup_leaf_qualified_function_templates(
-        services, scope, *template_qualified, &callee, function_templates);
-  } else if(services.semantic_context) {
-    semantic_lookup::collect_function_templates(
-        *services.semantic_context, scope, callee_lookup_name, function_templates);
-  }
-
   bool has_dependent_arg_type = false;
   for(size_t i = 0; i < arg_infos.size(); ++i) {
     if(service_type_depends_on_template_parameter(services, arg_infos[i].first)) {
@@ -7087,7 +7192,7 @@ void append_leaf_function_template_instantiations(
   if(!services.semantic_context ||
      has_dependent_arg_type ||
      function_templates.empty()) {
-    return;
+    return false;
   }
 
   vector<semantic_conversion::ExprInfo> expr_args;
@@ -7099,6 +7204,7 @@ void append_leaf_function_template_instantiations(
     expr_args.push_back(info);
   }
 
+  bool added_function = false;
   for(size_t i = 0; i < function_templates.size(); ++i) {
     if(!function_templates[i]) {
       continue;
@@ -7145,8 +7251,78 @@ void append_leaf_function_template_instantiations(
           template_api::acquire_function_instantiation(
               *services.semantic_context,
               instantiation_request).function_binding;
+      const size_t before = functions.size();
       append_unique_leaf_function_binding(functions, binding);
+      if(functions.size() != before) {
+        added_function = true;
+      }
     } catch(const TemplateSubstitutionFailure &) {
+    }
+  }
+  return added_function;
+}
+
+void append_leaf_function_template_instantiations(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const CppAstNode & callee,
+    const TemplateIdSyntax * template_id,
+    const QualifiedName * callee_qualified,
+    const string & callee_lookup_name,
+    const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos,
+    bool include_body,
+    vector<FunctionBinding *> & functions,
+    bool * added_adl_candidates)
+{
+  if(added_adl_candidates) {
+    *added_adl_candidates = false;
+  }
+  const QualifiedName * template_qualified =
+      template_id &&
+      (template_id->name.rooted || !template_id->name.qualifiers.empty()) ?
+          &template_id->name :
+          callee_qualified;
+
+  vector<FunctionTemplateDecl *> function_templates;
+  if(template_qualified) {
+    lookup_leaf_qualified_function_templates(
+        services, scope, *template_qualified, &callee, function_templates);
+  } else if(services.semantic_context) {
+    semantic_lookup::collect_function_templates(
+        *services.semantic_context, scope, callee_lookup_name, function_templates);
+  }
+  append_leaf_function_template_instantiations_from_candidates(services,
+                                                              scope,
+                                                              template_id,
+                                                              function_templates,
+                                                              arg_infos,
+                                                              include_body,
+                                                              functions);
+
+  if(!template_qualified &&
+     !ordinary_leaf_non_function_lookup_suppresses_adl(scope,
+                                                       callee_lookup_name,
+                                                       &callee)) {
+    const size_t before_adl_functions = functions.size();
+    vector<FunctionTemplateDecl *> adl_function_templates;
+    collect_leaf_adl_function_candidates(services,
+                                         callee_lookup_name,
+                                         arg_infos,
+                                         functions,
+                                         adl_function_templates);
+    bool adl_added = functions.size() != before_adl_functions;
+    adl_added =
+        append_leaf_function_template_instantiations_from_candidates(
+            services,
+            scope,
+            template_id,
+            adl_function_templates,
+            arg_infos,
+            include_body,
+            functions) ||
+        adl_added;
+    if(added_adl_candidates && adl_added) {
+      *added_adl_candidates = true;
     }
   }
 }
@@ -7333,6 +7509,7 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
         }
       }
     }
+    bool added_adl_candidates = false;
     append_leaf_function_template_instantiations(services,
                                                 scope,
                                                 *callee,
@@ -7341,16 +7518,20 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
                                                 callee_lookup_name,
                                                 arg_infos,
                                                 false,
-                                                functions);
+                                                functions,
+                                                &added_adl_candidates);
     if(!functions.empty()) {
       FunctionBinding * selected = nullptr;
       if(select_unique_leaf_function_binding(
+             services,
+             scope,
              functions,
              arg_infos,
              false,
              TypePtr(),
              false,
              false,
+             added_adl_candidates,
              selected) &&
          selected) {
         TypePtr function_type = strip_top_level_cv(selected->type);
@@ -7413,12 +7594,15 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
 
     FunctionBinding * selected = nullptr;
     if(!select_unique_leaf_function_binding(
+           services,
+           scope,
            functions,
            arg_infos,
            true,
            object_type,
            semantic_conversion::is_const_object_type(object_type),
            callee_category == semantic_conversion::VC_LVALUE,
+           false,
            selected) ||
        !selected) {
       return false;
@@ -7464,12 +7648,15 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
 
   FunctionBinding * selected = nullptr;
   if(!select_unique_leaf_function_binding(
+         services,
+         scope,
          functions,
          arg_infos,
          true,
          object_type,
          semantic_conversion::is_const_object_type(object_type),
          base_is_lvalue,
+         false,
          selected) ||
      !selected) {
     return false;
@@ -7799,7 +7986,8 @@ bool evaluate_leaf_constexpr_function_call(template_api::TemplateServices & serv
                                                 callee_lookup_name,
                                                 arg_infos,
                                                 true,
-                                                functions);
+                                                functions,
+                                                nullptr);
     if(functions.empty()) {
       return false;
     }
@@ -25584,17 +25772,76 @@ bool evaluate_declval_expression_type_category_text(
     if(!service_lookup_leaf_member_function_bindings(
            services, object_type, member_name, functions) ||
        !select_unique_leaf_function_binding(
+           services,
+           scope,
            functions,
            arg_infos,
            true,
            object_type,
            semantic_conversion::is_const_object_type(object_type),
            object_category == semantic_conversion::VC_LVALUE,
+           false,
            selected) ||
        !selected) {
       return false;
     }
     return function_type_result(selected->type, out, category);
+  }
+
+  if(services.semantic_context) {
+    const string callee_lookup_name = trim_space(callee_text);
+    QualifiedName qualified_callee;
+    const bool callee_is_qualified =
+        semantic_utils::split_qualified_name_text(callee_lookup_name, qualified_callee) &&
+        (qualified_callee.rooted || !qualified_callee.qualifiers.empty());
+    vector<FunctionBinding *> functions;
+    vector<FunctionTemplateDecl *> function_templates;
+    if(!callee_is_qualified) {
+      lookup_leaf_function_bindings(scope, callee_lookup_name, functions);
+      semantic_lookup::collect_function_templates(
+          *services.semantic_context, scope, callee_lookup_name, function_templates);
+      append_leaf_function_template_instantiations_from_candidates(
+          services,
+          scope,
+          nullptr,
+          function_templates,
+          arg_infos,
+          false,
+          functions);
+      const size_t before_adl_functions = functions.size();
+      vector<FunctionTemplateDecl *> adl_function_templates;
+      collect_leaf_adl_function_candidates(services,
+                                           callee_lookup_name,
+                                           arg_infos,
+                                           functions,
+                                           adl_function_templates);
+      bool added_adl_candidates = functions.size() != before_adl_functions;
+      added_adl_candidates =
+          append_leaf_function_template_instantiations_from_candidates(
+              services,
+              scope,
+              nullptr,
+              adl_function_templates,
+              arg_infos,
+              false,
+              functions) ||
+          added_adl_candidates;
+      FunctionBinding * selected = nullptr;
+      if(select_unique_leaf_function_binding(
+             services,
+             scope,
+             functions,
+             arg_infos,
+             false,
+             TypePtr(),
+             false,
+             false,
+             added_adl_candidates,
+             selected) &&
+         selected) {
+        return function_type_result(selected->type, out, category);
+      }
+    }
   }
 
   {
@@ -25625,12 +25872,15 @@ bool evaluate_declval_expression_type_category_text(
     const bool selected_call_op =
         found_call_ops &&
         select_unique_leaf_function_binding(
+            services,
+            scope,
             functions,
             arg_infos,
             true,
             object_type,
             semantic_conversion::is_const_object_type(object_type),
             callee_category == semantic_conversion::VC_LVALUE,
+            false,
             selected) &&
         selected;
     if(!selected_call_op) {

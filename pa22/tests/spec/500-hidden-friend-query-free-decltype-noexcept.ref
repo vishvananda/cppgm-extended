@@ -1,0 +1,8 @@
+global @api___GLOBAL__N_1__query [binding=internal, object=_ZN3api12_GLOBAL__N_15queryE] = {
+  zero 1
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

@@ -1,6 +1,8 @@
 #include "semantic_class_model.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cstring>
 #include <functional>
 #include <map>
 #include <set>
@@ -2617,6 +2619,84 @@ bool should_defer_reference_class_alias_type_id(SemanticContext & ctx,
                                                      dependent_class);
 }
 
+bool class_alias_type_id_contains_decltype_or_typeof(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::decltype_specifier) {
+    return true;
+  }
+  const std::string & text = node.value;
+  const auto starts_with =
+      [&text](const char * prefix) -> bool
+      {
+        size_t offset = 0;
+        while(offset < text.size() &&
+              std::isspace(static_cast<unsigned char>(text[offset]))) {
+          ++offset;
+        }
+        const size_t prefix_size = std::strlen(prefix);
+        return text.size() >= offset + prefix_size &&
+               text.compare(offset, prefix_size, prefix) == 0;
+      };
+  if(starts_with("decltype") ||
+     starts_with("__typeof__") ||
+     starts_with("__typeof") ||
+     starts_with("__decltype__") ||
+     starts_with("__decltype")) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(class_alias_type_id_contains_decltype_or_typeof(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool class_alias_type_id_text_mentions_decltype_or_typeof(
+    const std::string & type_id_text)
+{
+  return type_id_text.find("decltype") != std::string::npos ||
+         type_id_text.find("__typeof") != std::string::npos ||
+         type_id_text.find("__decltype") != std::string::npos;
+}
+
+bool class_constant_noexcept_operand_can_use_template_fallback(
+    const CppAstNode & operand)
+{
+  const CppAstNode * current = &operand;
+  while(current->kind == CppAstKind::parenthesized_expression &&
+        current->children.size() == 1) {
+    current = &current->children[0];
+  }
+  return current->kind == CppAstKind::call_expression;
+}
+
+bool class_constant_noexcept_operand_is_well_formed(SemanticContext & ctx,
+                                                    Scope & scope,
+                                                    const CppAstNode & operand)
+{
+  TypePtr operand_type;
+  return template_api::with_template_services(
+      ctx,
+      [&](template_api::TemplateServices & services)
+      {
+        template_api::TemplateDependentTypeExprRequest request;
+        request.scope = &scope;
+        request.kind = template_api::TDTEK_DECLTYPE;
+        request.operand_was_parenthesized = false;
+        request.operand = operand;
+        return (template_argument_semantics::evaluate_dependent_type_expression_leaf(
+                    services,
+                    scope,
+                    request,
+                    operand_type) ||
+                services.recursive_semantic.evaluate_dependent_type_expression(
+                    request,
+                    operand_type)) &&
+               operand_type;
+      });
+}
+
 TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
                                            ClassInfo & info,
                                            const std::string & alias_name,
@@ -2642,7 +2722,26 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
         });
   }
   TypePtr alias;
-  if(ctx.parse_type_id(*info.member_scope, *type_id_for_parse, alias, true) && alias) {
+  bool parsed_alias = false;
+  const bool alias_needs_template_parse =
+      !type_id_text.empty() ?
+          class_alias_type_id_text_mentions_decltype_or_typeof(type_id_text) :
+          class_alias_type_id_contains_decltype_or_typeof(*type_id_for_parse);
+  if(alias_needs_template_parse) {
+    parsed_alias =
+        template_api::type::parse_type_id_node_for_templates(ctx,
+                                                             *info.member_scope,
+                                                             *type_id_for_parse,
+                                                             alias,
+                                                             true) &&
+        alias;
+  }
+  if(!parsed_alias) {
+    parsed_alias =
+        ctx.parse_type_id(*info.member_scope, *type_id_for_parse, alias, true) &&
+        alias;
+  }
+  if(parsed_alias && alias) {
     try {
       TypePtr canonical =
           canonicalize_member_typedef_type(ctx, *info.member_scope, alias, &info);
@@ -8180,6 +8279,46 @@ void finalize_class_constant_members(SemanticContext & ctx,
             *binding.constant_initializer_scope,
             *binding.constant_initializer);
       };
+  const auto try_evaluate_noexcept_initializer =
+      [&](ValueBinding & binding, constant_eval::ConstexprValue & out) -> bool
+      {
+        if(!binding.constant_initializer || !binding.constant_initializer_scope) {
+          return false;
+        }
+        const CppAstNode * payload = binding.constant_initializer;
+        if(payload->kind == CppAstKind::initializer &&
+           payload->children.size() == 1) {
+          payload = &payload->children[0];
+        }
+        if(!payload ||
+           !node_has_simple_type(*payload, KW_NOEXCEPT) ||
+           payload->children.size() != 1) {
+          return false;
+        }
+
+        bool is_nothrow = false;
+        try {
+          if(ctx.expression_is_nothrow(*binding.constant_initializer_scope,
+                                       payload->children[0],
+                                       is_nothrow)) {
+            out = constant_eval::make_integral_value(is_nothrow ? 1 : 0,
+                                                     binding.type);
+            return true;
+          }
+        } catch(const std::logic_error &) {
+        }
+
+        if(!class_constant_noexcept_operand_can_use_template_fallback(
+               payload->children[0]) ||
+           !class_constant_noexcept_operand_is_well_formed(
+               ctx,
+               *binding.constant_initializer_scope,
+               payload->children[0])) {
+          return false;
+        }
+        out = constant_eval::make_integral_value(0, binding.type);
+        return true;
+      };
   const auto note_value_member_with_nested_member_type_dependency =
       [&](ValueBinding & binding, bool has_nested_member_type_dependency) -> void
       {
@@ -8289,6 +8428,9 @@ void finalize_class_constant_members(SemanticContext & ctx,
                                                           *binding.constant_initializer,
                                                           binding.type,
                                                           value);
+      if(!evaluated) {
+        evaluated = try_evaluate_noexcept_initializer(binding, value);
+      }
     } catch(...) {
       binding.constant_value_in_progress = false;
       throw;
