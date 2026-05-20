@@ -5299,6 +5299,13 @@ private:
   {
     if(node.kind == CallSemKind::call_expression &&
        is_reference_type(node.semantic_type)) {
+      const TypePtr result_object_type = indirect_call_result_object_type(node);
+      if(result_object_type) {
+        const string temp_ptr = new_hidden_object_address(result_object_type, "refcall");
+        emit_call_expression_to_target(node, temp_ptr);
+        register_materialized_temporary_cleanup_live(result_object_type, temp_ptr);
+        return temp_ptr;
+      }
       return emit_call_expression_raw(node);
     }
     if(node.is_base_subobject || node.is_virtual_base_subobject) {
@@ -7730,6 +7737,22 @@ private:
     TypePtr function_type;
     return resolve_callable_function_type(node.children[0].semantic_type, function_type) &&
            function_type && is_void_type(function_type->inner);
+  }
+
+  TypePtr indirect_call_result_object_type(const CallSemNode & node) const
+  {
+    if(node.kind != CallSemKind::call_expression || node.children.empty()) {
+      return TypePtr();
+    }
+    TypePtr function_type;
+    if(!resolve_callable_function_type(node.children[0].semantic_type, function_type) ||
+       !function_type ||
+       !function_type->inner ||
+       is_reference_type(function_type->inner) ||
+       !lowir_uses_indirect_result_boundary(function_type->inner)) {
+      return TypePtr();
+    }
+    return strip_top_level_cv(function_type->inner);
   }
 
   bool is_lowir_integral_scalar_type(const TypePtr & type) const
@@ -10435,14 +10458,22 @@ private:
       return emit_new_expression_value(node);
     }
 
+    const TypePtr indirect_result_object_type =
+        node.kind == CallSemKind::call_expression ?
+            indirect_call_result_object_type(node) :
+            TypePtr();
     if(node.kind == CallSemKind::call_expression &&
        (is_complete_class_value_type(node.semantic_type) ||
+        indirect_result_object_type ||
         is_constructor_materialization_call(node))) {
+      const TypePtr object_type =
+          indirect_result_object_type ?
+              indirect_result_object_type :
+              remove_reference_type(node.semantic_type);
       const string temp_ptr =
-          new_hidden_object_address(remove_reference_type(node.semantic_type), "arg");
+          new_hidden_object_address(object_type, "arg");
       emit_call_expression_to_target(node, temp_ptr);
-      register_materialized_temporary_cleanup_live(remove_reference_type(node.semantic_type),
-                                                   temp_ptr);
+      register_materialized_temporary_cleanup_live(object_type, temp_ptr);
       return temp_ptr;
     }
 
@@ -12010,14 +12041,22 @@ private:
       return field_storage;
     }
 
+    const TypePtr indirect_result_object_type =
+        node.kind == CallSemKind::call_expression ?
+            indirect_call_result_object_type(node) :
+            TypePtr();
     if(node.kind == CallSemKind::call_expression &&
        (is_indirect_value_type(node.semantic_type) ||
+        indirect_result_object_type ||
         is_constructor_materialization_call(node))) {
+      const TypePtr object_type =
+          indirect_result_object_type ?
+              indirect_result_object_type :
+              remove_reference_type(node.semantic_type);
       const string temp_ptr =
-          new_hidden_object_address(remove_reference_type(node.semantic_type), "tmpobj");
+          new_hidden_object_address(object_type, "tmpobj");
       emit_call_expression_to_target(node, temp_ptr);
-      register_materialized_temporary_cleanup_live(remove_reference_type(node.semantic_type),
-                                                   temp_ptr);
+      register_materialized_temporary_cleanup_live(object_type, temp_ptr);
       return temp_ptr;
     }
 
