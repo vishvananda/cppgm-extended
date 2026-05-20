@@ -9924,11 +9924,32 @@ private:
                                            const ConstructorSelectionOptions * ctor_options_override) override
   {
     ScopedCallSemConstructionPath construction_path("target-aware-expression");
+    vector<unique_ptr<CppAstNode> > expanded_ctor_arg_storage;
     const auto collect_constructor_arg_nodes =
-        [this, &scope, &target](const CppAstNode & expr,
-                                vector<const CppAstNode *> & args) -> bool
+        [this, &scope, &target, &expanded_ctor_arg_storage](
+            const CppAstNode & expr,
+            vector<const CppAstNode *> & args) -> bool
         {
           args.clear();
+          expanded_ctor_arg_storage.clear();
+          const auto append_arg =
+              [this, &scope, &args, &expanded_ctor_arg_storage](
+                  const CppAstNode & arg) -> bool
+              {
+                if(arg.kind != CppAstKind::pack_expansion_expression) {
+                  args.push_back(&arg);
+                  return true;
+                }
+                vector<CppAstNode> expanded_nodes;
+                if(!expand_pack_argument_node(scope, arg, expanded_nodes)) {
+                  return false;
+                }
+                for(size_t i = 0; i < expanded_nodes.size(); ++i) {
+                  expanded_ctor_arg_storage.emplace_back(new CppAstNode(expanded_nodes[i]));
+                  args.push_back(expanded_ctor_arg_storage.back().get());
+                }
+                return true;
+              };
           const CppAstNode * payload = &expr;
           if(expr.kind == CppAstKind::initializer && expr.children.size() == 1) {
             payload = &expr.children[0];
@@ -9939,7 +9960,9 @@ private:
              payload->kind == CppAstKind::paren_argument_list ||
              payload->kind == CppAstKind::braced_init_list) {
             for(size_t i = 0; i < payload->children.size(); ++i) {
-              args.push_back(&payload->children[i]);
+              if(!append_arg(payload->children[i])) {
+                return false;
+              }
             }
             return true;
           }
@@ -9983,12 +10006,16 @@ private:
           if(argument_list->children.size() == 1 &&
              argument_list->children[0].kind == CppAstKind::braced_init_list) {
             for(size_t i = 0; i < argument_list->children[0].children.size(); ++i) {
-              args.push_back(&argument_list->children[0].children[i]);
+              if(!append_arg(argument_list->children[0].children[i])) {
+                return false;
+              }
             }
             return true;
           }
           for(size_t i = 0; i < argument_list->children.size(); ++i) {
-            args.push_back(&argument_list->children[i]);
+            if(!append_arg(argument_list->children[i])) {
+              return false;
+            }
           }
           return true;
         };
@@ -10085,18 +10112,99 @@ private:
         ctor_options.use_location = preferred_source_location_for_node(node);
         ScopedTemplateUseLocation use_location_guard(
             preferred_source_location_for_node(node));
-        FunctionBinding * ctor =
-            (node.kind == CppAstKind::braced_init_list) ?
-                select_constructor_for_direct_braced_init(scope,
-                                                          *target_class,
-                                                          node,
-                                                          converted,
-                                                          ctor_options) :
-                select_constructor(scope,
-                                   *target_class,
-                                   ctor_arg_nodes,
-                                   converted,
-                                   ctor_options);
+        const auto try_constexpr_arg_constructor_selection =
+            [&]() -> FunctionBinding *
+            {
+              vector<ExprInfo> source_args;
+              source_args.reserve(ctor_arg_nodes.size());
+              for(size_t i = 0; i < ctor_arg_nodes.size(); ++i) {
+                constant_eval::ConstexprValue value;
+                if(!evaluate_constant_expression_value(scope, *ctor_arg_nodes[i], value)) {
+                  return nullptr;
+                }
+                ExprInfo source_arg;
+                source_arg.type = value.type;
+                source_arg.category = VC_PRVALUE;
+                if(value.kind == constant_eval::ConstexprValue::CV_NULLPTR) {
+                  source_arg.null_pointer_constant = true;
+                } else if(value.kind == constant_eval::ConstexprValue::CV_INTEGRAL) {
+                  long long integral_value = 0;
+                  source_arg.null_pointer_constant =
+                      constant_eval::constexpr_value_to_integral(value, integral_value) &&
+                      integral_value == 0;
+                }
+                source_args.push_back(source_arg);
+              }
+              vector<ExprInfo> selected_converted;
+              FunctionBinding * selected =
+                  select_constructor_from_exprs(scope,
+                                                *target_class,
+                                                source_args,
+                                                selected_converted,
+                                                nullptr,
+                                                ctor_options);
+              if(!selected) {
+                return nullptr;
+              }
+              TypePtr function_type = strip_top_level_cv(selected->type);
+              if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+                return nullptr;
+              }
+              const size_t explicit_offset =
+                  function_binding_explicit_parameter_offset(*selected);
+              if(function_type->params.size() < explicit_offset + ctor_arg_nodes.size()) {
+                return nullptr;
+              }
+
+              vector<ExprInfo> recovered_converted;
+              recovered_converted.reserve(ctor_arg_nodes.size());
+              try
+              {
+                for(size_t i = 0; i < ctor_arg_nodes.size(); ++i) {
+                  recovered_converted.push_back(
+                      analyze_expression_for_target(scope,
+                                                    *ctor_arg_nodes[i],
+                                                    function_type->params[explicit_offset + i]));
+                }
+              }
+              catch(const ExplicitSpecializationAfterInstantiationError &)
+              {
+                throw;
+              }
+              catch(const std::logic_error &)
+              {
+                return nullptr;
+              }
+              converted.swap(recovered_converted);
+              return selected;
+            };
+        FunctionBinding * ctor = nullptr;
+        try
+        {
+          ctor =
+              (node.kind == CppAstKind::braced_init_list) ?
+                  select_constructor_for_direct_braced_init(scope,
+                                                            *target_class,
+                                                            node,
+                                                            converted,
+                                                            ctor_options) :
+                  select_constructor(scope,
+                                     *target_class,
+                                     ctor_arg_nodes,
+                                     converted,
+                                     ctor_options);
+        }
+        catch(const ExplicitSpecializationAfterInstantiationError &)
+        {
+          throw;
+        }
+        catch(const std::logic_error &)
+        {
+          ctor = try_constexpr_arg_constructor_selection();
+          if(!ctor) {
+            throw;
+          }
+        }
         if(ctor) {
           out = make_constructor_conversion_expr(*ctor, target, converted);
           return true;

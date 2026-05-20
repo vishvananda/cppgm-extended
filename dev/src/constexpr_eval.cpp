@@ -372,6 +372,11 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
   }
 
   if(node.kind == CppAstKind::unary_expression && node.children.size() == 1 && node.has_token) {
+    if(hooks_.evaluate_special_expression &&
+       node.simple_type == OP_AMP &&
+       hooks_.evaluate_special_expression(*this, node, out)) {
+      return true;
+    }
     ConstexprValue operand;
     if(!eval_expr(node.children[0], operand)) {
       return false;

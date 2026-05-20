@@ -165,6 +165,80 @@ std::vector<const CppAstNode *> initializer_argument_nodes(const CppAstNode & no
   return args;
 }
 
+bool expand_initializer_argument_nodes(SemanticContext & ctx,
+                                       Scope & scope,
+                                       std::vector<const CppAstNode *> & args,
+                                       std::vector<CppAstNode> & expanded_storage)
+{
+  bool has_pack = false;
+  for(size_t i = 0; i < args.size(); ++i) {
+    if(!args[i]) {
+      return false;
+    }
+    if(args[i]->kind == CppAstKind::pack_expansion_expression) {
+      has_pack = true;
+    }
+  }
+  if(!has_pack) {
+    expanded_storage.clear();
+    return true;
+  }
+
+  expanded_storage.clear();
+  expanded_storage.reserve(args.size());
+  for(size_t i = 0; i < args.size(); ++i) {
+    const CppAstNode * arg = args[i];
+    if(arg->kind != CppAstKind::pack_expansion_expression) {
+      expanded_storage.push_back(*arg);
+      continue;
+    }
+
+    std::vector<CppAstNode> expanded_nodes;
+    if(!ctx.expand_pack_argument_node(scope, *arg, expanded_nodes)) {
+      return false;
+    }
+    expanded_storage.insert(expanded_storage.end(),
+                            expanded_nodes.begin(),
+                            expanded_nodes.end());
+  }
+
+  args.clear();
+  args.reserve(expanded_storage.size());
+  for(size_t i = 0; i < expanded_storage.size(); ++i) {
+    args.push_back(&expanded_storage[i]);
+  }
+  return true;
+}
+
+bool initializer_arg_needs_constexpr_value_selection(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::pack_expansion_expression) {
+    return true;
+  }
+  if(node.kind == CppAstKind::unary_expression &&
+     node.has_token &&
+     node.simple_type == OP_AMP) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(initializer_arg_needs_constexpr_value_selection(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool initializer_args_need_constexpr_value_selection(
+    const std::vector<const CppAstNode *> & args)
+{
+  for(size_t i = 0; i < args.size(); ++i) {
+    if(args[i] && initializer_arg_needs_constexpr_value_selection(*args[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool scope_has_template_placeholders(SemanticContext & ctx,
                                      Scope & scope)
 {
@@ -992,7 +1066,15 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
     return false;
   }
 
-  const std::vector<const CppAstNode *> args = initializer_argument_nodes(node);
+  std::vector<const CppAstNode *> args = initializer_argument_nodes(node);
+  std::vector<CppAstNode> expanded_arg_storage;
+  if(!expand_initializer_argument_nodes(ctx, scope, args, expanded_arg_storage)) {
+    return false;
+  }
+  const bool expanded_initializer_pack = !expanded_arg_storage.empty();
+  const bool prefer_evaluated_constructor_args =
+      expanded_initializer_pack ||
+      initializer_args_need_constexpr_value_selection(args);
   if(node.kind == CppAstKind::braced_init_list && ctx.can_synthesize_aggregate_constructor(*info)) {
     std::vector<std::pair<std::string, constant_eval::ConstexprValue> > members;
     std::vector<bool> member_is_base;
@@ -1069,6 +1151,7 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
 
   std::vector<ExprInfo> converted;
   std::vector<const CppAstNode *> chosen_args = args;
+  std::vector<constant_eval::ConstexprValue> evaluated_args;
   if(args.size() == 1) {
     constant_eval::ConstexprValue direct_value;
     if(evaluator.eval_initializer(*args[0], direct_value) &&
@@ -1081,18 +1164,73 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
       constructor_lifecycle_service::selection_options_for(
           constructor_lifecycle_service::direct_initialization_profile(
               "constexpr construction"));
+  bool selected_from_evaluated_args = false;
+  const auto try_select_from_evaluated_args =
+      [&]() -> FunctionBinding *
+      {
+        if(node.kind == CppAstKind::braced_init_list) {
+          return nullptr;
+        }
+        if(selected_from_evaluated_args) {
+          return nullptr;
+        }
+        std::vector<ExprInfo> evaluated_arg_infos;
+        evaluated_args.clear();
+        evaluated_args.reserve(args.size());
+        evaluated_arg_infos.reserve(args.size());
+        for(size_t i = 0; i < args.size(); ++i) {
+          constant_eval::ConstexprValue value;
+          if(!evaluator.eval_initializer(*args[i], value)) {
+            evaluated_args.clear();
+            return nullptr;
+          }
+          ExprInfo info_arg;
+          info_arg.type = value.type;
+          info_arg.category = VC_PRVALUE;
+          if(value.kind == constant_eval::ConstexprValue::CV_NULLPTR) {
+            info_arg.null_pointer_constant = true;
+          } else if(value.kind == constant_eval::ConstexprValue::CV_INTEGRAL) {
+            long long integral_value = 0;
+            info_arg.null_pointer_constant =
+                constant_eval::constexpr_value_to_integral(value, integral_value) &&
+                integral_value == 0;
+          }
+          evaluated_args.push_back(value);
+          evaluated_arg_infos.push_back(info_arg);
+        }
+        converted.clear();
+        FunctionBinding * selected =
+            ctx.select_constructor_from_exprs(scope,
+                                              *info,
+                                              evaluated_arg_infos,
+                                              converted,
+                                              nullptr,
+                                              ctor_options);
+        selected_from_evaluated_args = selected != nullptr;
+        if(!selected_from_evaluated_args) {
+          evaluated_args.clear();
+        }
+        return selected;
+      };
   FunctionBinding * ctor =
-      (node.kind == CppAstKind::braced_init_list) ?
-          ctx.select_constructor_for_direct_braced_init(scope,
-                                                        *info,
-                                                        node,
-                                                        converted,
-                                                        ctor_options) :
-          ctx.select_constructor(scope,
-                                 *info,
-                                 args,
-                                 converted,
-                                 ctor_options);
+      prefer_evaluated_constructor_args ? try_select_from_evaluated_args() : nullptr;
+  if(!ctor) {
+    ctor =
+        (node.kind == CppAstKind::braced_init_list) ?
+            ctx.select_constructor_for_direct_braced_init(scope,
+                                                          *info,
+                                                          node,
+                                                          converted,
+                                                          ctor_options) :
+            ctx.select_constructor(scope,
+                                   *info,
+                                   args,
+                                   converted,
+                                   ctor_options);
+  }
+  if(!ctor) {
+    ctor = try_select_from_evaluated_args();
+  }
   if(!ctor) {
     return false;
   }
@@ -1116,11 +1254,24 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
   std::vector<constant_eval::ConstexprValue> explicit_args;
   explicit_args.reserve(chosen_args.size());
   for(size_t i = 0; i < chosen_args.size(); ++i) {
-    constant_eval::ConstexprValue value;
-    if(!evaluator.eval_initializer(*chosen_args[i], value, i + 1 < ctor->params.size()
-                                                            ? ctor->params[i + 1].second
-                                                            : TypePtr())) {
-      return false;
+    constant_eval::ConstexprValue value =
+        selected_from_evaluated_args && i < evaluated_args.size() ?
+            evaluated_args[i] :
+            constant_eval::ConstexprValue();
+    if(!selected_from_evaluated_args || i >= evaluated_args.size()) {
+      if(!evaluator.eval_initializer(*chosen_args[i], value, i + 1 < ctor->params.size()
+                                                              ? ctor->params[i + 1].second
+                                                              : TypePtr())) {
+        if(!selected_from_evaluated_args) {
+          FunctionBinding * evaluated_ctor = try_select_from_evaluated_args();
+          if(evaluated_ctor && evaluated_args.size() == chosen_args.size()) {
+            ctor = evaluated_ctor;
+            explicit_args = evaluated_args;
+            break;
+          }
+        }
+        return false;
+      }
     }
     explicit_args.push_back(value);
   }
@@ -1944,6 +2095,67 @@ bool evaluate_constexpr_value_member_conversion(SemanticContext & ctx,
   return true;
 }
 
+bool evaluate_constexpr_function_address_expression(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & expr,
+    constant_eval::ConstexprValue & out)
+{
+  if(expr.kind != CppAstKind::unary_expression ||
+     expr.children.size() != 1 ||
+     !node_has_simple_type(expr, OP_AMP)) {
+    return false;
+  }
+
+  const CppAstNode * operand = &expr.children[0];
+  if(operand->kind == CppAstKind::parenthesized_expression &&
+     operand->children.size() == 1) {
+    operand = &operand->children[0];
+  }
+  if(operand->kind != CppAstKind::id_expression) {
+    return false;
+  }
+
+  std::vector<FunctionBinding *> functions;
+  const TemplateIdSyntax * template_id = cppast_template_id_syntax(*operand);
+  const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
+  if(template_id) {
+    functions = ctx.lookup_function_template_id_node(
+        scope,
+        *operand,
+        *template_id,
+        semantic_policy::without_body_instantiation());
+  } else if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+    functions = ctx.lookup_qualified_functions(scope, *qualified);
+  } else {
+    functions = ctx.lookup_functions(scope,
+                                     operand->value,
+                                     semantic_policy::without_body_instantiation());
+  }
+  if(functions.size() != 1 || !functions[0]) {
+    return false;
+  }
+
+  FunctionBinding * function = functions[0];
+  if(function->is_method) {
+    return false;
+  }
+  TypePtr function_type = strip_top_level_cv(function->type);
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    return false;
+  }
+
+  std::string identity = function->symbol.object_symbol;
+  if(identity.empty()) {
+    identity = function->symbol.internal_symbol;
+  }
+  if(identity.empty()) {
+    identity = function_binding_qualified_name_for_symbol(*function);
+  }
+  out = constant_eval::make_pointer_value(make_pointer(function_type), identity, 0);
+  return true;
+}
+
 bool evaluate_default_special_expression(SemanticContext & ctx,
                                          Scope & scope,
                                          constant_eval::Evaluator & evaluator,
@@ -1995,6 +2207,10 @@ bool evaluate_default_special_expression(SemanticContext & ctx,
   }
 
   if(evaluate_builtin_or_type_trait_expression(ctx, scope, expr, value)) {
+    return true;
+  }
+
+  if(evaluate_constexpr_function_address_expression(ctx, scope, expr, value)) {
     return true;
   }
 

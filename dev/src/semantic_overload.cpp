@@ -6795,26 +6795,40 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
                                name,
                                semantic_policy::without_body_instantiation());
   vector<FunctionTemplateDecl *> templates;
-  if(name_node &&
-     name_syntax &&
-     (name_syntax->rooted || !name_syntax->qualifiers.empty())) {
-    templates = ctx.lookup_function_templates_node(scope, *name_node, name);
-  } else if(name_syntax && (name_syntax->rooted || !name_syntax->qualifiers.empty())) {
-    collect_function_templates(ctx, scope, *name_syntax, templates);
-  } else {
-    collect_function_templates(ctx, scope, name, templates);
+  try
+  {
+    if(name_node &&
+       name_syntax &&
+       (name_syntax->rooted || !name_syntax->qualifiers.empty())) {
+      templates = ctx.lookup_function_templates_node(scope, *name_node, name);
+    } else if(name_syntax && (name_syntax->rooted || !name_syntax->qualifiers.empty())) {
+      collect_function_templates(ctx, scope, *name_syntax, templates);
+    } else {
+      collect_function_templates(ctx, scope, name, templates);
+    }
+  }
+  catch(const TemplateSubstitutionFailure &)
+  {
+    templates.clear();
   }
   for(size_t i = 0; i < templates.size(); ++i) {
     vector<TemplateArgument> explicit_arguments;
     const vector<TemplateArgument> * explicit_arguments_ptr = nullptr;
     if(name_template_id_syntax) {
-      if(!semantic_template_function::resolve_call_explicit_function_template_arguments(
-             ctx,
-             *templates[i],
-             scope,
-             name_template_id_syntax->arguments,
-             explicit_arguments,
-             &name_template_id_syntax->argument_syntaxes)) {
+      try
+      {
+        if(!semantic_template_function::resolve_call_explicit_function_template_arguments(
+               ctx,
+               *templates[i],
+               scope,
+               name_template_id_syntax->arguments,
+               explicit_arguments,
+               &name_template_id_syntax->argument_syntaxes)) {
+          continue;
+        }
+      }
+      catch(const TemplateSubstitutionFailure &)
+      {
         continue;
       }
       explicit_arguments_ptr = &explicit_arguments;
