@@ -4586,7 +4586,9 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
         member_owner->member_scope.get() :
         info.member_scope.get();
     Scope & init_scope = ctx.append_template_scope(*member_scope);
-    bind_template_arguments_into_scope(ctx, init_scope, it->second.parameters, arguments);
+    if(!partial) {
+      bind_template_arguments_into_scope(ctx, init_scope, it->second.parameters, arguments);
+    }
     member->constant_initializer_scope = &init_scope;
     ctx.emit_class_use_source_events_after_location(
         init_scope,
@@ -5657,11 +5659,13 @@ bool apply_out_of_class_static_member_definitions_to_reference(
         member_owner->member_scope.get() :
         info.member_scope.get();
     Scope & init_scope = ctx.append_template_scope(*member_scope);
-    bind_template_arguments_into_scope(
-        ctx,
-        init_scope,
-        it->second.parameters,
-        info.instantiation_arguments);
+    if(!partial) {
+      bind_template_arguments_into_scope(
+          ctx,
+          init_scope,
+          it->second.parameters,
+          info.instantiation_arguments);
+    }
     member->constant_initializer_scope = &init_scope;
   }
   if(has_concrete_storage_definition) {
@@ -5809,10 +5813,12 @@ void replay_witness_static_member_definition_if_needed(
   }
 
   Scope & init_scope = ctx.append_template_scope(*info.member_scope);
-  bind_template_arguments_into_scope(ctx,
-                                     init_scope,
-                                     static_member.parameters,
-                                     info.instantiation_arguments);
+  if(!partial) {
+    bind_template_arguments_into_scope(ctx,
+                                       init_scope,
+                                       static_member.parameters,
+                                       info.instantiation_arguments);
+  }
   replay_witness_function_pointer_initializer(ctx,
                                               init_scope,
                                               binding.type,

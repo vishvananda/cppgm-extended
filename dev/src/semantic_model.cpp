@@ -113,6 +113,7 @@ Scope::Scope(const Scope & other)
     template_bound_type_names(other.template_bound_type_names),
     template_bound_type_pack_names(other.template_bound_type_pack_names),
     template_bound_value_names(other.template_bound_value_names),
+    template_bound_value_pack_names(other.template_bound_value_pack_names),
     template_bound_template_names(other.template_bound_template_names),
     template_bound_template_arguments(other.template_bound_template_arguments),
     values(other.values),
@@ -145,6 +146,7 @@ Scope::Scope(Scope && other)
     template_bound_type_names(std::move(other.template_bound_type_names)),
     template_bound_type_pack_names(std::move(other.template_bound_type_pack_names)),
     template_bound_value_names(std::move(other.template_bound_value_names)),
+    template_bound_value_pack_names(std::move(other.template_bound_value_pack_names)),
     template_bound_template_names(std::move(other.template_bound_template_names)),
     template_bound_template_arguments(std::move(other.template_bound_template_arguments)),
     values(std::move(other.values)),
@@ -183,6 +185,7 @@ Scope & Scope::operator=(Scope && other)
   template_bound_type_names = std::move(other.template_bound_type_names);
   template_bound_type_pack_names = std::move(other.template_bound_type_pack_names);
   template_bound_value_names = std::move(other.template_bound_value_names);
+  template_bound_value_pack_names = std::move(other.template_bound_value_pack_names);
   template_bound_template_names = std::move(other.template_bound_template_names);
   template_bound_template_arguments = std::move(other.template_bound_template_arguments);
   values = std::move(other.values);

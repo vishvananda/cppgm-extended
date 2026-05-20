@@ -14929,6 +14929,10 @@ private:
             find_child_kind(parameter, CppAstKind::default_template_argument));
         if(placeholder_scope && !name.empty()) {
           template_scope::bind_non_type_value(*placeholder_scope, name, type, 0, true);
+          if(info.parameter_pack) {
+            placeholder_scope->template_bound_value_pack_names.insert(name);
+            template_scope::bump_binding_fingerprint_epoch(*placeholder_scope);
+          }
         }
         out.push_back(info);
         continue;
@@ -14990,6 +14994,11 @@ private:
                                             make_fundamental(FT_INT),
                                             0,
                                             true);
+        if(find_child_kind(parameter, CppAstKind::parameter_pack) ||
+           declarator_has_parameter_pack(*declarator)) {
+          placeholder_scope.template_bound_value_pack_names.insert(name);
+          template_scope::bump_binding_fingerprint_epoch(placeholder_scope);
+        }
       }
     }
   }

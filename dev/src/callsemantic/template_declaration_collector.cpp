@@ -1816,6 +1816,11 @@ public:
                                             parameter.value_type,
                                             0,
                                             true);
+        if(parameter.parameter_pack) {
+          template_parameter_parse_scope.template_bound_value_pack_names.insert(
+              parameter.name);
+          template_scope::bump_binding_fingerprint_epoch(template_parameter_parse_scope);
+        }
       } else if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
         template_scope::bind_template_template_placeholder(template_parameter_parse_scope,
                                                           parameter.name);

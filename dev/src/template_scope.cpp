@@ -442,6 +442,10 @@ void bind_template_parameter_placeholders(
                           parameter.value_type,
                           0,
                           true);
+      if(parameter.parameter_pack) {
+        scope.template_bound_value_pack_names.insert(parameter.name);
+        bump_binding_fingerprint_epoch(scope);
+      }
     } else if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
       bind_template_template_placeholder(scope, parameter.name);
     }
@@ -474,6 +478,7 @@ void bind_value_pack(Scope & scope,
   scope.named_value_packs[name] = bound_pack;
   if(template_bound) {
     scope.template_bound_value_names.insert(name);
+    scope.template_bound_value_pack_names.insert(name);
   }
   bump_binding_fingerprint_epoch(scope);
 }
@@ -488,6 +493,7 @@ bool erase_template_parameter_binding(Scope & scope, const std::string & name)
   changed = scope.named_pack_sizes.erase(name) != 0 || changed;
   changed = scope.values.erase(name) != 0 || changed;
   changed = scope.template_bound_value_names.erase(name) != 0 || changed;
+  changed = scope.template_bound_value_pack_names.erase(name) != 0 || changed;
   changed = scope.class_templates.erase(name) != 0 || changed;
   changed = scope.alias_templates.erase(name) != 0 || changed;
   changed = scope.template_bound_template_names.erase(name) != 0 || changed;
@@ -639,6 +645,22 @@ void overlay_scope_bindings_impl(Scope & target,
         changed |= target.named_pack_sizes.insert(*found).second;
       }
     }
+    for(const auto & name : source.template_bound_value_pack_names) {
+      if(!allow_overlay_name(excluded_names, name)) {
+        continue;
+      }
+      std::map<std::string, std::size_t>::const_iterator size =
+          source.named_pack_sizes.find(name);
+      if(size != source.named_pack_sizes.end()) {
+        changed |= target.named_pack_sizes.insert(*size).second;
+      }
+      std::map<std::string, std::vector<ValueBinding> >::const_iterator pack =
+          source.named_value_packs.find(name);
+      if(pack != source.named_value_packs.end()) {
+        changed |= target.named_value_packs.insert(*pack).second;
+      }
+      changed |= target.template_bound_value_pack_names.insert(name).second;
+    }
   } else {
     changed |= overlay_selected_entries(target.named_pack_sizes,
                                         source.named_pack_sizes,
@@ -661,6 +683,12 @@ void overlay_scope_bindings_impl(Scope & target,
       }
       if(source.values.count(name) != 0) {
         changed |= target.template_bound_value_names.insert(name).second;
+      }
+    }
+  } else {
+    for(const auto & name : source.template_bound_value_pack_names) {
+      if(allow_overlay_name(excluded_names, name)) {
+        changed |= target.template_bound_value_pack_names.insert(name).second;
       }
     }
   }
@@ -755,6 +783,24 @@ bool scope_has_type_parameter_pack_name(const Scope & scope,
   for(const Scope * current = &scope; current; current = current->parent) {
     if(current->template_bound_type_pack_names.count(name) != 0 ||
        current->named_type_packs.count(name) != 0) {
+      return true;
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return false;
+}
+
+bool scope_has_value_parameter_pack_name(const Scope & scope,
+                                         const std::string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  for(const Scope * current = &scope; current; current = current->parent) {
+    if(current->template_bound_value_pack_names.count(name) != 0 ||
+       current->named_value_packs.count(name) != 0) {
       return true;
     }
     if(current->namespace_scope || current->parent == nullptr) {

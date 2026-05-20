@@ -2,6 +2,7 @@
 
 #include "cpp_decl_bridge.h"
 #include "template_api.h"
+#include "template_scope.h"
 
 using namespace std;
 
@@ -36,6 +37,19 @@ bool sizeof_type_id_bound_is_dependent(SemanticContext & ctx,
          ctx.sizeof_depends_on_template_parameters(operand_type);
 }
 
+bool sizeof_pack_bound_is_dependent(Scope & scope, const CppAstNode & node)
+{
+  return node.kind == CppAstKind::sizeof_pack_expression &&
+         node.children.size() == 1 &&
+         node.children[0].kind == CppAstKind::identifier &&
+         (template_api::type::scope_has_type_parameter_pack_name(
+              scope,
+              node.children[0].value) ||
+          template_scope::scope_has_value_parameter_pack_name(
+              scope,
+              node.children[0].value));
+}
+
 }  // namespace
 
 cpp_decl::AstDeclHooks make_decl_hooks(SemanticContext & ctx,
@@ -59,6 +73,7 @@ cpp_decl::AstDeclHooks make_decl_hooks(SemanticContext & ctx,
       {
         const std::string text = node_text(node);
         return sizeof_type_id_bound_is_dependent(ctx, scope, node) ||
+               sizeof_pack_bound_is_dependent(scope, node) ||
                (!text.empty() &&
                 (ctx.text_mentions_template_placeholders(scope, text) ||
                  ctx.text_mentions_dependent_non_namespace_binding_names(scope, text)));

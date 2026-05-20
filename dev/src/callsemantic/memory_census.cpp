@@ -474,6 +474,7 @@ void census_scope(const Scope * scope,
                  set_storage_bytes(scope->template_bound_type_names) +
                  set_storage_bytes(scope->template_bound_type_pack_names) +
                  set_storage_bytes(scope->template_bound_value_names) +
+                 set_storage_bytes(scope->template_bound_value_pack_names) +
                  set_storage_bytes(scope->template_bound_template_names) +
                  map_storage_bytes(scope->values) +
                  map_storage_bytes(scope->namespace_bindings) +
@@ -529,6 +530,11 @@ void census_scope(const Scope * scope,
   }
   for(set<string>::const_iterator it = scope->template_bound_value_names.begin();
       it != scope->template_bound_value_names.end();
+      ++it) {
+    bytes += string_storage_bytes(*it);
+  }
+  for(set<string>::const_iterator it = scope->template_bound_value_pack_names.begin();
+      it != scope->template_bound_value_pack_names.end();
       ++it) {
     bytes += string_storage_bytes(*it);
   }

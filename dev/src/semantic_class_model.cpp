@@ -5501,6 +5501,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.member_scope->template_bound_type_names.clear();
   info.member_scope->template_bound_type_pack_names.clear();
   info.member_scope->template_bound_value_names.clear();
+  info.member_scope->template_bound_value_pack_names.clear();
   info.member_scope->template_bound_template_names.clear();
   info.member_scope->values.clear();
   info.member_scope->namespace_bindings.clear();
@@ -5533,6 +5534,7 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
   std::map<std::string, std::vector<TypePtr> > preserved_named_type_packs;
   std::map<std::string, std::vector<ValueBinding> > preserved_named_value_packs;
   std::map<std::string, std::size_t> preserved_named_pack_sizes;
+  std::set<std::string> preserved_template_bound_value_pack_names;
   std::map<std::string, ValueBinding> preserved_values;
   std::map<std::string, ClassTemplateDecl *> preserved_class_templates;
   std::map<std::string, AliasTemplateDecl *> preserved_alias_templates;
@@ -5588,12 +5590,18 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
         preserved_named_value_packs[*it] = pack->second;
       }
     }
+    for(std::set<std::string>::const_iterator it =
+            info.member_scope->template_bound_value_pack_names.begin();
+        it != info.member_scope->template_bound_value_pack_names.end();
+        ++it) {
+      preserved_template_bound_value_pack_names.insert(*it);
+    }
     for(std::map<std::string, std::size_t>::const_iterator it =
             info.member_scope->named_pack_sizes.begin();
         it != info.member_scope->named_pack_sizes.end();
         ++it) {
       if(info.member_scope->template_bound_type_pack_names.count(it->first) != 0 ||
-         info.member_scope->template_bound_value_names.count(it->first) != 0) {
+         info.member_scope->template_bound_value_pack_names.count(it->first) != 0) {
         preserved_named_pack_sizes[it->first] = it->second;
       }
     }
@@ -5659,6 +5667,8 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
     info.member_scope->named_type_packs.swap(preserved_named_type_packs);
     info.member_scope->named_value_packs.swap(preserved_named_value_packs);
     info.member_scope->named_pack_sizes.swap(preserved_named_pack_sizes);
+    info.member_scope->template_bound_value_pack_names.swap(
+        preserved_template_bound_value_pack_names);
     info.member_scope->values.swap(preserved_values);
     info.member_scope->namespace_bindings.clear();
     info.member_scope->function_sets.clear();
