@@ -4803,6 +4803,22 @@ CallSemNode make_resolved_callee_node(SemanticContext & ctx,
         MemberAccess access = MA_PUBLIC;
         return find_unique_base_path(object_class, target_class, out_offset, access);
       };
+  const auto class_for_dispatch_object_type =
+      [&ctx](const TypePtr & type) -> ClassInfo *
+      {
+        TypePtr object_type = strip_top_level_cv(remove_reference_type(type));
+        if(object_type && object_type->kind == Type::TK_POINTER) {
+          object_type = strip_top_level_cv(object_type->inner);
+        }
+        if(!object_type) {
+          return nullptr;
+        }
+        ClassInfo * info = ctx.class_info_for_type(object_type);
+        if(!info) {
+          info = complete_class_type_for_lookup(ctx, object_type);
+        }
+        return info;
+      };
 
   FunctionBinding * resolved =
       semantic_output::resolve_output_function_binding(ctx, &chosen);
@@ -4820,16 +4836,11 @@ CallSemNode make_resolved_callee_node(SemanticContext & ctx,
        !emitted.is_destructor &&
        !call_args.empty()) {
       const CallSemNode * root_object = peel_base_subobject_root(call_args[0].node);
-      TypePtr object_type = strip_top_level_cv(remove_reference_type(
-          root_object ? root_object->semantic_type : call_args[0].type));
-      if(object_type && object_type->kind == Type::TK_POINTER) {
-        object_type = strip_top_level_cv(object_type->inner);
+      if(root_object) {
+        object_class = class_for_dispatch_object_type(root_object->semantic_type);
       }
-      if(object_type) {
-        object_class = ctx.class_info_for_type(object_type);
-        if(!object_class) {
-          object_class = complete_class_type_for_lookup(ctx, object_type);
-        }
+      if(!object_class) {
+        object_class = class_for_dispatch_object_type(call_args[0].type);
       }
     }
 
