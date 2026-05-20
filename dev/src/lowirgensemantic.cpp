@@ -10215,6 +10215,81 @@ private:
     emit_dynamic_zero_storage_bytes(object_ptr, evaluated_byte_count);
   }
 
+  string array_new_element_count(const CallSemNode & node,
+                                 const string & evaluated_byte_count)
+  {
+    if(!node.has_uint_value || callsem_uint_value(node) == 0) {
+      throw logic_error("class array new-expression missing element size");
+    }
+    const unsigned long long element_size = callsem_uint_value(node);
+    const CallSemNode & byte_count_node = array_new_allocation_byte_count_node(node);
+    if(byte_count_node.has_uint_value) {
+      return emit_temp_assignment(
+          "i64",
+          string("const i64 ") +
+              to_string(callsem_uint_value(byte_count_node) / element_size));
+    }
+    if(evaluated_byte_count.empty()) {
+      throw logic_error("class array new-expression dynamic size was not captured");
+    }
+    return emit_temp_assignment("i64",
+                                string("binary udiv i64 ") + evaluated_byte_count +
+                                    ", " + to_string(element_size));
+  }
+
+  void emit_array_new_default_construction(const CallSemNode & node,
+                                           const string & object_ptr,
+                                           const string & evaluated_byte_count)
+  {
+    if(!node.has_uint_value || node.children.size() == 1) {
+      return;
+    }
+    if(node.children.size() != 2 || node.children[1].kind != CallSemKind::callee) {
+      throw logic_error("class array new-expression constructor shape");
+    }
+
+    TypePtr result_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
+    if(!result_type || result_type->kind != Type::TK_POINTER || !result_type->inner) {
+      throw logic_error("class array new-expression requires pointer result");
+    }
+    const unsigned long long element_size = callsem_uint_value(node);
+    const string element_count = array_new_element_count(node, evaluated_byte_count);
+    const string index_slot = new_hidden_slot("i64", "array_new_index");
+    const string cond_label = new_block("array_new_ctor_cond");
+    const string body_label = new_block("array_new_ctor_body");
+    const string end_label = new_block("array_new_ctor_end");
+
+    emit_line("store i64 0, " + index_slot);
+    terminate("jump " + lowir_block_name(cond_label));
+
+    start_block(cond_label);
+    const string index = emit_temp_assignment("i64", string("load i64 ") + index_slot);
+    const string keep_going =
+        emit_temp_assignment("i64", string("cmp ult i64 ") + index + ", " + element_count);
+    terminate("branch " + keep_going + ", " + lowir_block_name(body_label) + ", " +
+              lowir_block_name(end_label));
+
+    start_block(body_label);
+    string element_ptr = object_ptr;
+    if(element_size != 0) {
+      const string byte_offset =
+          emit_temp_assignment("i64",
+                               string("binary mul i64 ") + index + ", " +
+                                   to_string(element_size));
+      element_ptr = emit_temp_assignment("ptr",
+                                         string("index i8 ") + object_ptr + ", " +
+                                             byte_offset);
+    }
+    emit_line("call void " + lookup_function_symbol(node.children[1]) + "(" +
+              element_ptr + ")");
+    const string next =
+        emit_temp_assignment("i64", string("binary add i64 ") + index + ", 1");
+    emit_line("store i64 " + next + ", " + index_slot);
+    terminate("jump " + lowir_block_name(cond_label));
+
+    start_block(end_label);
+  }
+
   string emit_call_expression_rvalue(const CallSemNode & node,
                                      const CallArgumentCapture * capture = nullptr)
   {
@@ -10289,8 +10364,10 @@ private:
 
     string captured_array_new_byte_count;
     string object_ptr;
-    if(node.children.size() == 1 &&
-       node.value_initializes_result &&
+    const bool needs_array_byte_count_capture =
+        (node.children.size() == 1 && node.value_initializes_result) ||
+        (node.has_uint_value && node.children.size() > 1);
+    if(needs_array_byte_count_capture &&
        !array_new_allocation_byte_count_node(node).has_uint_value) {
       const string byte_count_slot = new_hidden_slot("i64", "array_new_size");
       CallArgumentCapture capture;
@@ -10302,6 +10379,16 @@ private:
           emit_temp_assignment("i64", string("load i64 ") + byte_count_slot);
     } else {
       object_ptr = emit_rvalue(node.children[0]);
+    }
+    if(node.has_uint_value) {
+      string nothrow_end_label;
+      if(node.value_initializes_result || node.children.size() > 1) {
+        begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
+      }
+      emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
+      emit_array_new_default_construction(node, object_ptr, captured_array_new_byte_count);
+      finish_nothrow_new_initialization(nothrow_end_label);
+      return object_ptr;
     }
     if(node.children.size() == 1) {
       string nothrow_end_label;

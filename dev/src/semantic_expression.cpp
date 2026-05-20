@@ -2859,14 +2859,15 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
   CppAstNode arguments;
   arguments.kind = CppAstKind::paren_argument_list;
   CppAstNode size_expr;
+  size_t array_element_size = 0;
   if(is_array_new) {
-    const size_t element_size = type_size(allocated_object_type);
+    array_element_size = type_size(allocated_object_type);
     if(allocated_base->has_bound) {
       size_expr.kind = CppAstKind::literal;
-      size_expr.value = to_string(allocated_base->bound * element_size);
+      size_expr.value = to_string(allocated_base->bound * array_element_size);
     } else {
       if(const CppAstNode * bound_expr = find_new_array_bound_expression(adjusted_type_id)) {
-        size_expr = build_new_array_size_expression(*bound_expr, element_size);
+        size_expr = build_new_array_size_expression(*bound_expr, array_element_size);
       } else {
         throw logic_error("array new-expression requires a bound");
       }
@@ -2915,18 +2916,62 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
       throw logic_error("array new-expression initializer unsupported");
     }
     ClassInfo * element_class = ctx.complete_class_type(allocated_object_type);
+    constructor_lifecycle_service::ConstructorSelectionResult array_ctor;
+    bool array_constructor_required = false;
+    bool class_array_zero_initializes = false;
     if(element_class) {
-      throw logic_error("class array new-expression unsupported");
+      if(!semantic_class_model::is_trivially_destructible_type_for_host_abi(
+             ctx,
+             allocated_object_type)) {
+        throw logic_error("nontrivial class array new-expression unsupported");
+      }
+      constructor_lifecycle_service::select_constructor_into(
+          ctx,
+          scope,
+          *element_class,
+          ctor_arg_nodes,
+          array_ctor,
+          constructor_lifecycle_service::selection_options_for(
+              constructor_lifecycle_service::direct_initialization_profile(
+                  "array new-expression")));
+      if(!array_ctor.ctor) {
+        throw NoViableConstructorError("no viable constructor for array new-expression");
+      }
+      array_constructor_required =
+          !semantic_class_model::is_trivially_default_constructible_type_for_host_abi(
+              ctx,
+              allocated_object_type);
+      class_array_zero_initializes =
+          empty_value_initializer &&
+          constructor_lifecycle_service::value_initialization_requires_zero_init(
+              *array_ctor.ctor);
     }
     ExprInfo result;
     result.type = result_type;
     result.category = VC_PRVALUE;
     result.node = make_dump_node(CallSemKind::new_expression);
     set_expr_metadata(result.node, result.type, result.category);
-    if(empty_value_initializer) {
+    if(element_class) {
+      set_callsem_uint_value(result.node, array_element_size);
+    }
+    if(element_class ? class_array_zero_initializes : empty_value_initializer) {
       result.node.value_initializes_result = true;
     }
     result.node.children.push_back(std::move(object_ptr.node));
+    if(array_constructor_required) {
+      constructor_lifecycle_service::ConstructorActionResult ctor_action;
+      constructor_lifecycle_service::prepare_selected_constructor_action_into(
+          ctx,
+          object_ptr,
+          array_ctor,
+          false,
+          OutputReason::NewExpression,
+          ctor_action);
+      if(ctor_action.call_args.size() != 1) {
+        throw logic_error("array new-expression constructor arguments unsupported");
+      }
+      result.node.children.push_back(make_bound_callee_node(ctx, *ctor_action.ctor));
+    }
     return result;
   }
 
