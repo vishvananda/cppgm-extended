@@ -1650,6 +1650,12 @@ bool try_overloaded_unary_operator(SemanticContext & ctx,
   const auto handle_unresolved_operator =
       [&](const logic_error & error) -> bool
       {
+        if(node_has_simple_type(node, OP_LNOT)) {
+          ExprInfo bool_operand = operand;
+          if(try_condition_test_conversion(ctx, scope, bool_operand)) {
+            return true;
+          }
+        }
         if(!has_class_operand(ctx, operand.type)) {
           // Enum-only unary lookup may legitimately continue to builtins.
           return true;
