@@ -16785,6 +16785,38 @@ ReferenceSuffixKind trailing_reference_suffix_kind(const string & text,
   return RSK_NONE;
 }
 
+bool trailing_pointer_suffix_text(const string & text,
+                                  string & base_text)
+{
+  const string trimmed = trim_space(text);
+  if(trimmed.empty() || trimmed[trimmed.size() - 1] != '*') {
+    base_text = trimmed;
+    return false;
+  }
+
+  int angle_depth = 0;
+  int paren_depth = 0;
+  for(size_t i = 0; i + 1 < trimmed.size(); ++i) {
+    const char ch = trimmed[i];
+    if(ch == '<') {
+      ++angle_depth;
+    } else if(ch == '>' && angle_depth > 0) {
+      --angle_depth;
+    } else if(ch == '(' && angle_depth == 0) {
+      ++paren_depth;
+    } else if(ch == ')' && angle_depth == 0 && paren_depth > 0) {
+      --paren_depth;
+    }
+  }
+  if(angle_depth != 0 || paren_depth != 0) {
+    base_text = trimmed;
+    return false;
+  }
+
+  base_text = trim_space(trimmed.substr(0, trimmed.size() - 1));
+  return !base_text.empty();
+}
+
 bool find_existing_declarator_group(const string & text,
                                     std::size_t & open_pos,
                                     std::size_t & close_pos)
@@ -26491,6 +26523,18 @@ bool parse_type_argument_text(template_api::TemplateServices & services,
             collapse_lvalue_reference_type(base_type) :
             collapse_rvalue_reference_type(base_type);
         route = "reference-wrapper";
+      }
+    }
+  }
+  if(!out) {
+    string base_text;
+    if(trailing_pointer_suffix_text(trimmed, base_text) &&
+       !base_text.empty()) {
+      TypePtr base_type;
+      if(parse_type_argument_text(services, scope, base_text, base_type) &&
+         base_type) {
+        out = make_pointer(base_type);
+        route = "pointer-wrapper";
       }
     }
   }
