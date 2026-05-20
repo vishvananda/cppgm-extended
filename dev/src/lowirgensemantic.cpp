@@ -10204,6 +10204,60 @@ private:
     return emit_call_expression_value(node, function_type->inner, call_result);
   }
 
+  bool new_expression_allocation_is_known_nothrow(const CallSemNode & node) const
+  {
+    if(node.children.empty() ||
+       node.children[0].kind != CallSemKind::call_expression ||
+       node.children[0].children.empty() ||
+       !call_expression_is_known_nothrow(node.children[0])) {
+      return false;
+    }
+
+    TypePtr function_type;
+    if(!resolve_callable_function_type(node.children[0].children[0].semantic_type,
+                                       function_type) ||
+       !function_type ||
+       function_type->kind != Type::TK_FUNCTION) {
+      return false;
+    }
+    for(size_t i = 1; i < function_type->params.size(); ++i) {
+      const string param_class =
+          class_qualified_name(strip_top_level_cv(remove_reference_type(function_type->params[i])));
+      if(param_class == "std::nothrow_t" || param_class == "std::__1::nothrow_t") {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool begin_nothrow_new_initialization(const CallSemNode & node,
+                                        const string & object_ptr,
+                                        string & end_label)
+  {
+    if(!new_expression_allocation_is_known_nothrow(node)) {
+      return false;
+    }
+    const string nonnull =
+        emit_temp_assignment("i64", string("cmp ne ptr ") + object_ptr + ", 0");
+    const string init_label = new_block("new_init");
+    end_label = new_block("new_end");
+    terminate("branch " + nonnull + ", " + lowir_block_name(init_label) +
+              ", " + lowir_block_name(end_label));
+    start_block(init_label);
+    return true;
+  }
+
+  void finish_nothrow_new_initialization(const string & end_label)
+  {
+    if(end_label.empty()) {
+      return;
+    }
+    if(current_block_) {
+      terminate("jump " + lowir_block_name(end_label));
+    }
+    start_block(end_label);
+  }
+
   string emit_new_expression_value(const CallSemNode & node)
   {
     if(node.children.empty()) {
@@ -10227,7 +10281,12 @@ private:
       object_ptr = emit_rvalue(node.children[0]);
     }
     if(node.children.size() == 1) {
+      string nothrow_end_label;
+      if(node.value_initializes_result) {
+        begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
+      }
       emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
+      finish_nothrow_new_initialization(nothrow_end_label);
       return object_ptr;
     }
     if(node.children[1].kind != CallSemKind::callee) {
@@ -10235,10 +10294,13 @@ private:
       if(!result_type || result_type->kind != Type::TK_POINTER || !result_type->inner) {
         throw logic_error("new-expression scalar initializer requires pointer result");
       }
+      string nothrow_end_label;
+      begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
       emit_line("store " +
                 lowir_memory_type_for(result_type->inner) + " " +
                 emit_rvalue(node.children[1]) + ", " +
                 object_ptr);
+      finish_nothrow_new_initialization(nothrow_end_label);
       return object_ptr;
     }
 
@@ -10263,9 +10325,14 @@ private:
     }
 
     if(node.value_initializes_result && !is_empty_class_storage_type(result_type->inner)) {
+      string nothrow_end_label;
+      begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
       emit_zero_storage_bytes(object_ptr, backend_storage_size(result_type->inner));
+      finish_nothrow_new_initialization(nothrow_end_label);
     }
 
+    string nothrow_end_label;
+    begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
     ostringstream op;
     op << "call void " << lookup_function_symbol(node.children[1]) << "(";
     for(size_t i = 0; i < args.size(); ++i) {
@@ -10276,6 +10343,7 @@ private:
     }
     op << ")";
     emit_line(op.str());
+    finish_nothrow_new_initialization(nothrow_end_label);
     return object_ptr;
   }
 
