@@ -6088,9 +6088,28 @@ ClassInfo * current_instantiation_owner_for_scope(SemanticContext & ctx,
     return nullptr;
   }
 
+  const auto candidate_matches_declared_owner =
+      [declared_owner](const ClassInfo * candidate) -> bool
+      {
+        if(!candidate ||
+           candidate == declared_owner ||
+           candidate->name != declared_owner->name) {
+          return false;
+        }
+        if(declared_owner->source_template) {
+          if(candidate->source_template != declared_owner->source_template) {
+            return false;
+          }
+          if(!declared_owner->instantiation_key.empty()) {
+            return candidate->instantiation_key == declared_owner->instantiation_key;
+          }
+          return true;
+        }
+        return candidate->source_template != nullptr;
+      };
+
   if(active_owner &&
-     active_owner != declared_owner &&
-     active_owner->name == declared_owner->name) {
+     candidate_matches_declared_owner(active_owner)) {
     return active_owner;
   }
 
@@ -6101,8 +6120,7 @@ ClassInfo * current_instantiation_owner_for_scope(SemanticContext & ctx,
     if(current->class_info == declared_owner) {
       return nullptr;
     }
-    if(current->class_info->source_template &&
-       current->class_info->name == declared_owner->name) {
+    if(candidate_matches_declared_owner(current->class_info)) {
       return current->class_info;
     }
   }
@@ -6115,14 +6133,11 @@ ClassInfo * current_instantiation_owner_for_scope(SemanticContext & ctx,
         ctx, use_scope, declared_owner->name);
   }
   if(current_instantiation &&
-     current_instantiation != declared_owner &&
-     current_instantiation->name == declared_owner->name) {
+     candidate_matches_declared_owner(current_instantiation)) {
     return current_instantiation;
   }
 
-  if(use_scope.class_info &&
-     use_scope.class_info != declared_owner &&
-     use_scope.class_info->name == declared_owner->name) {
+  if(candidate_matches_declared_owner(use_scope.class_info)) {
     return use_scope.class_info;
   }
 

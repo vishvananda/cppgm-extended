@@ -4338,6 +4338,57 @@ bool lookup_direct_bound_type_argument(Scope & scope,
   return false;
 }
 
+bool text_is_top_level_function_type_argument(const std::string & text)
+{
+  const std::string trimmed = trim_space(text);
+  if(trimmed.empty() || trimmed[trimmed.size() - 1] != ')') {
+    return false;
+  }
+
+  int angle_depth = 0;
+  int paren_depth = 0;
+  std::size_t open = std::string::npos;
+  for(std::size_t i = 0; i < trimmed.size(); ++i) {
+    const char ch = trimmed[i];
+    if(ch == '<') {
+      ++angle_depth;
+    } else if(ch == '>' && angle_depth > 0) {
+      --angle_depth;
+    } else if(ch == '(' && angle_depth == 0) {
+      if(paren_depth == 0 && open == std::string::npos) {
+        open = i;
+      }
+      ++paren_depth;
+    } else if(ch == ')' && angle_depth == 0) {
+      --paren_depth;
+      if(paren_depth < 0) {
+        return false;
+      }
+      if(paren_depth == 0 && i + 1 != trimmed.size()) {
+        return false;
+      }
+    }
+  }
+
+  return open != std::string::npos &&
+         open != 0 &&
+         paren_depth == 0 &&
+         angle_depth == 0;
+}
+
+bool scope_is_inside_source_template_class_instantiation(Scope & scope)
+{
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    if(current->class_info && current->class_info->source_template) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool lookup_rewritten_bound_type_argument(Scope & scope,
                                           const std::string & text,
                                           TypePtr & out)
@@ -4718,6 +4769,9 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
   }
 
   Scope & raw_scope = scope.require();
+  if(scope_is_inside_source_template_class_instantiation(raw_scope)) {
+    return FRTA_UNSUPPORTED;
+  }
   Scope bound_scope(&raw_scope, "", false);
   std::vector<TemplateArgument> resolved;
   resolved.reserve(parameters.size());
@@ -4788,6 +4842,11 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
       arg.source_defaulted = true;
     } else if(parameters[i].kind == TemplateParameterInfo::TP_TYPE) {
       TypePtr type;
+      const TypePtr expanded_type = inputs.type_for(i);
+      if(!expanded_type &&
+         text_is_top_level_function_type_argument(inputs.texts[i])) {
+        return FRTA_UNSUPPORTED;
+      }
       if(!try_resolve_expanded_type_template_argument(
              services,
              type_system,
@@ -4795,7 +4854,7 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
              parameters[i],
              inputs.texts[i],
              inputs.syntax_for(i),
-             inputs.type_for(i),
+             expanded_type,
              arg)) {
         bool determinate_member_failure = false;
         if(try_resolve_bound_member_type_argument(type_system,

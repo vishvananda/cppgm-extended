@@ -14622,17 +14622,37 @@ void refresh_qualified_name_qualifier_template_id_texts(CppAstNode & node)
   const size_t count =
       std::min(qualified.qualifiers.size(),
                node.qualifier_template_id_syntaxes.size());
+  const auto sync_qualifier_template_id_prefixes =
+      [&]() -> void
+  {
+    const size_t sync_count =
+        std::min(qualified.qualifiers.size(),
+                 node.qualifier_template_id_syntaxes.size());
+    for(size_t i = 0; i < sync_count; ++i) {
+      TemplateIdSyntax & syntax = node.qualifier_template_id_syntaxes[i];
+      if(syntax.name.name.empty()) {
+        continue;
+      }
+      syntax.name.rooted = qualified.rooted;
+      syntax.name.qualifiers.assign(qualified.qualifiers.begin(),
+                                    qualified.qualifiers.begin() + i);
+    }
+  };
   for(size_t i = 0; i < count; ++i) {
     const TemplateIdSyntax & syntax = node.qualifier_template_id_syntaxes[i];
     if(syntax.name.name.empty()) {
       continue;
     }
-    const string text = template_id_syntax_lookup_text(syntax);
+    TemplateIdSyntax component = syntax;
+    component.name.rooted = false;
+    component.name.qualifiers.clear();
+    const string text = template_id_syntax_lookup_text(component);
     if(!text.empty() && text != qualified.qualifiers[i]) {
       qualified.qualifiers[i] = text;
       changed = true;
     }
   }
+  sync_qualifier_template_id_prefixes();
   if(!changed) {
     return;
   }
@@ -25002,10 +25022,15 @@ bool parse_decltype_or_typeof_text(template_api::TemplateServices & services,
       [&]() -> bool
   {
     out.reset();
-    if(mentions_template_placeholders ||
-       mentions_dependent_names ||
-       comma_prefix_mentions_template_dependency ||
-       (scope_has_placeholders && !mentions_bound_names)) {
+    const bool unresolved_template_dependency =
+        mentions_template_placeholders ||
+        mentions_dependent_names ||
+        (scope_has_placeholders && !mentions_bound_names);
+    if(unresolved_template_dependency ||
+       (comma_prefix_mentions_template_dependency &&
+        (mentions_template_placeholders ||
+         mentions_dependent_names ||
+         scope_has_placeholders))) {
       out = make_semantic_named(
           text,
           parsed_text.is_typeof ? Type::NSK_DEPENDENT_TYPEOF :
@@ -25039,7 +25064,9 @@ bool parse_decltype_or_typeof_text(template_api::TemplateServices & services,
      out &&
      !service_type_depends_on_template_parameter(services, out)) {
     if(comma_prefix_mentions_template_dependency) {
-      return dependent_fallback();
+      if(dependent_fallback()) {
+        return true;
+      }
     }
     return true;
   }
@@ -25106,10 +25133,15 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
       [&]() -> bool
   {
     out.reset();
-    if(mentions_template_placeholders ||
-       mentions_dependent_names ||
-       comma_prefix_mentions_template_dependency ||
-       (scope_has_placeholders && !mentions_bound_names)) {
+    const bool unresolved_template_dependency =
+        mentions_template_placeholders ||
+        mentions_dependent_names ||
+        (scope_has_placeholders && !mentions_bound_names);
+    if(unresolved_template_dependency ||
+       (comma_prefix_mentions_template_dependency &&
+        (mentions_template_placeholders ||
+         mentions_dependent_names ||
+         scope_has_placeholders))) {
       out = make_dependent_type_expression_type(
           node.value,
           parsed_text.is_typeof ? Type::NSK_DEPENDENT_TYPEOF :
@@ -25197,8 +25229,13 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   if(evaluate_dependent_type_expression_leaf(services, scope, request, evaluated) &&
      evaluated &&
      !service_type_depends_on_template_parameter(services, evaluated)) {
-    if(comma_prefix_mentions_template_dependency) {
-      return dependent_fallback();
+    if(comma_prefix_mentions_template_dependency &&
+       comma_prefix_ast_mentions_template_dependency(services,
+                                                     env,
+                                                     *request_expr)) {
+      if(dependent_fallback()) {
+        return true;
+      }
     }
     out = evaluated;
     return true;
@@ -25206,8 +25243,13 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   if(service_evaluate_dependent_type_expression(services, request, evaluated) &&
      evaluated &&
      !service_type_depends_on_template_parameter(services, evaluated)) {
-    if(comma_prefix_mentions_template_dependency) {
-      return dependent_fallback();
+    if(comma_prefix_mentions_template_dependency &&
+       comma_prefix_ast_mentions_template_dependency(services,
+                                                     env,
+                                                     *request_expr)) {
+      if(dependent_fallback()) {
+        return true;
+      }
     }
     out = evaluated;
     return true;
@@ -25335,7 +25377,12 @@ bool parse_simple_type_specifier_argument_text(
   out.reset();
   vector<string> words;
   if(!whitespace_separated_type_specifier_words(text, words)) {
-    return false;
+    const string single = trim_space(text);
+    if(!is_identifier_text(single)) {
+      return false;
+    }
+    words.clear();
+    words.push_back(single);
   }
 
   TypeSpecifierAccumulator acc;
@@ -25357,6 +25404,93 @@ bool parse_simple_type_specifier_argument_text(
   }
 
   return acc.finalize(out);
+}
+
+bool parse_template_id_argument_text(template_api::TemplateServices & services,
+                                     template_api::TemplateEnvironmentHandle scope,
+                                     const string & text,
+                                     TypePtr & out)
+{
+  out.reset();
+  QualifiedName template_name;
+  vector<string> arg_texts;
+  if(!semantic_utils::split_top_level_template_id_text(text,
+                                                       template_name,
+                                                       arg_texts) ||
+     arg_texts.empty()) {
+    return false;
+  }
+
+  TemplateIdSyntax syntax;
+  syntax.name = template_name;
+  syntax.arguments = arg_texts;
+  return resolve_template_id_syntax_type(
+             services,
+             scope.require(),
+             syntax,
+             true,
+             string(),
+             out,
+             scope,
+             template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly,
+             false) &&
+         out != nullptr;
+}
+
+bool parse_function_type_argument_text(template_api::TemplateServices & services,
+                                       template_api::TemplateEnvironmentHandle scope,
+                                       const string & text,
+                                       TypePtr & out)
+{
+  out.reset();
+  string result_text;
+  string params_text;
+  if(!split_top_level_call_expression_text(text, result_text, params_text)) {
+    return false;
+  }
+
+  TypePtr result_type;
+  if(!parse_type_argument_text(services, scope, result_text, result_type) ||
+     !result_type) {
+    return false;
+  }
+
+  vector<TypePtr> params;
+  bool variadic = false;
+  const string trimmed_params = trim_space(params_text);
+  if(!trimmed_params.empty()) {
+    const vector<string> param_texts = split_comma_list(trimmed_params);
+    for(size_t i = 0; i < param_texts.size(); ++i) {
+      string param_text = trim_space(param_texts[i]);
+      if(param_text == "...") {
+        if(i + 1 != param_texts.size()) {
+          return false;
+        }
+        variadic = true;
+        continue;
+      }
+      if(param_text.size() > 3 &&
+         param_text.compare(param_text.size() - 3, 3, "...") == 0) {
+        if(i + 1 != param_texts.size()) {
+          return false;
+        }
+        variadic = true;
+        param_text = trim_space(param_text.substr(0, param_text.size() - 3));
+      }
+      TypePtr param_type;
+      if(!parse_type_argument_text(services, scope, param_text, param_type) ||
+         !param_type) {
+        return false;
+      }
+      params.push_back(param_type);
+    }
+  }
+
+  if(params.size() == 1 && is_void_type(params[0]) && !variadic) {
+    params.clear();
+  }
+  out = make_function(result_type, params, variadic);
+  return out != nullptr;
 }
 
 bool parse_type_argument_text(template_api::TemplateServices & services,
@@ -25401,6 +25535,16 @@ bool parse_type_argument_text(template_api::TemplateServices & services,
   if(!out) {
     if(parse_simple_type_specifier_argument_text(services, raw_scope, trimmed, out)) {
       route = "simple-specifier";
+    }
+  }
+  if(!out) {
+    if(parse_template_id_argument_text(services, scope, trimmed, out)) {
+      route = "template-id";
+    }
+  }
+  if(!out) {
+    if(parse_function_type_argument_text(services, scope, trimmed, out)) {
+      route = "function-type";
     }
   }
   if(!out) {
