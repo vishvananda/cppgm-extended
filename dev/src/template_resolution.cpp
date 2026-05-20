@@ -677,6 +677,148 @@ std::string typed_non_type_template_argument_text(template_api::TemplateTypeSyst
 }
 // template-boundary-audit: end text_recovery_bridge
 
+bool non_type_function_target_type(const TypePtr & target_type,
+                                   bool explicit_address,
+                                   TypePtr & out_function_type)
+{
+  out_function_type.reset();
+  TypePtr target_base = strip_top_level_cv(target_type);
+  if(!target_base) {
+    return false;
+  }
+  if(target_base->kind == Type::TK_POINTER &&
+     target_base->inner &&
+     strip_top_level_cv(target_base->inner)->kind == Type::TK_FUNCTION) {
+    out_function_type = target_base->inner;
+    return true;
+  }
+  if(!explicit_address &&
+     (target_base->kind == Type::TK_LVALUE_REFERENCE ||
+      target_base->kind == Type::TK_RVALUE_REFERENCE) &&
+     target_base->inner &&
+     strip_top_level_cv(target_base->inner)->kind == Type::TK_FUNCTION) {
+    out_function_type = target_base->inner;
+    return true;
+  }
+  return false;
+}
+
+FunctionBinding * select_non_type_function_argument(
+    const std::vector<FunctionBinding *> & functions,
+    const TypePtr & function_type)
+{
+  FunctionBinding * selected = nullptr;
+  for(std::size_t i = 0; i < functions.size(); ++i) {
+    FunctionBinding * candidate = functions[i];
+    if(!candidate ||
+       !candidate->type ||
+       !type_equals(strip_top_level_cv(candidate->type),
+                    strip_top_level_cv(function_type))) {
+      continue;
+    }
+    if(selected) {
+      return nullptr;
+    }
+    selected = candidate;
+  }
+  return selected;
+}
+
+bool bind_non_type_function_argument(const TypePtr & target_type,
+                                     FunctionBinding * function,
+                                     const std::string & text,
+                                     TemplateArgument & out)
+{
+  if(!function) {
+    return false;
+  }
+  out.kind = TemplateArgument::TA_VALUE;
+  out.type = target_type;
+  out.function_value = function;
+  out.text = text;
+  out.dependent = false;
+  return true;
+}
+
+bool try_resolve_function_non_type_template_argument_name(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TypePtr & target_type,
+    const QualifiedName * qualified,
+    const std::string & unqualified_name,
+    bool explicit_address,
+    TemplateArgument & out)
+{
+  TypePtr function_type;
+  if(!non_type_function_target_type(target_type, explicit_address, function_type)) {
+    return false;
+  }
+
+  std::vector<FunctionBinding *> functions;
+  std::string argument_text;
+  if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+    if(!services.semantic_context) {
+      return false;
+    }
+    try {
+      functions = services.semantic_context->lookup_qualified_functions(scope, *qualified);
+    } catch(const TemplateSubstitutionFailure &) {
+      return false;
+    } catch(const SemanticSoftFailure &) {
+      return false;
+    } catch(const SemanticDiagnosticError &) {
+      return false;
+    } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+      return false;
+    }
+    argument_text = source_text_for_qualified_name(*qualified);
+  } else {
+    if(unqualified_name.empty()) {
+      return false;
+    }
+    functions = lookup_unqualified_functions(scope, unqualified_name);
+    argument_text = unqualified_name;
+  }
+
+  return bind_non_type_function_argument(
+      target_type,
+      select_non_type_function_argument(functions, function_type),
+      argument_text,
+      out);
+}
+
+bool try_resolve_function_non_type_template_argument_syntax(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TemplateArgumentSyntax * syntax,
+    const TypePtr & target_type,
+    TemplateArgument & out)
+{
+  if(!syntax || !syntax->expression) {
+    return false;
+  }
+  const CppAstNode * operand = syntax->expression.get();
+  bool explicit_address = false;
+  if(operand->kind == CppAstKind::unary_expression &&
+     operand->children.size() == 1 &&
+     operand->has_token &&
+     operand->simple_type == OP_AMP) {
+    operand = &operand->children[0];
+    explicit_address = true;
+  }
+  if(!operand || operand->kind != CppAstKind::id_expression) {
+    return false;
+  }
+  return try_resolve_function_non_type_template_argument_name(
+      services,
+      scope,
+      target_type,
+      cppast_qualified_name_syntax(*operand),
+      operand->value,
+      explicit_address,
+      out);
+}
+
 bool try_resolve_named_non_type_template_argument(template_api::TemplateServices & services,
                                                   Scope & scope,
                                                   const std::string & text,
@@ -898,19 +1040,17 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
       }
     }
   }
-  if(target_base &&
-     target_base->kind == Type::TK_POINTER &&
-     target_base->inner &&
-     strip_top_level_cv(target_base->inner)->kind == Type::TK_FUNCTION) {
-    std::vector<FunctionBinding *> functions = lookup_unqualified_functions(scope, trimmed);
-    if(functions.size() == 1 &&
-       functions[0] &&
-       type_equals(functions[0]->type, target_base->inner)) {
-      out.kind = TemplateArgument::TA_VALUE;
-      out.type = target_type;
-      out.function_value = functions[0];
-      out.text = trimmed;
-      out.dependent = false;
+  TypePtr function_target_type;
+  if(non_type_function_target_type(target_type, false, function_target_type) &&
+     is_identifier_text(trimmed)) {
+    if(try_resolve_function_non_type_template_argument_name(
+           services,
+           scope,
+           target_type,
+           nullptr,
+           trimmed,
+           false,
+           out)) {
       return true;
     }
   }
@@ -8601,6 +8741,10 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       return true;
     }
     if(try_resolve_named_non_type(rewritten)) {
+      return true;
+    }
+    if(try_resolve_function_non_type_template_argument_syntax(
+           services, raw_argument_scope, syntax, bound_value_type, out)) {
       return true;
     }
 
