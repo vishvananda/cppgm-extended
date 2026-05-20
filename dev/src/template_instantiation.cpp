@@ -7376,8 +7376,13 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
   }
   if(!source_decl->has_trailing_function_parameter_pack) {
-    refresh_instantiated_function_parameter_clause(
-        ctx, inst_scope, *source_decl, type, params, default_args);
+    semantic_trace::append_template_context_as_substitution_failure(
+        [&]()
+        {
+          refresh_instantiated_function_parameter_clause(
+              ctx, inst_scope, *source_decl, type, params, default_args);
+        },
+        instantiation_context);
   }
   auto resolve_instantiated_params = [&]()
   {

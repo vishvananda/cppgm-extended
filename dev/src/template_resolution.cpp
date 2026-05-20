@@ -8231,6 +8231,9 @@ TypePtr prepare_function_template_deduction_pattern(
       return original_pattern;
     }
     throw;
+  } catch(const std::logic_error & e) {
+    throw TemplateSubstitutionFailure(
+        std::string("invalid function template deduction pattern: ") + e.what());
   }
   if(type_equals(pattern, original_pattern) &&
      mentions_function_template_parameter &&
