@@ -1,5 +1,6 @@
 #include "callsemantic/template_declaration_collector.h"
 
+#include "callsemantic/function_registry.h"
 #include "callsemantic/source_location_utils.h"
 #include "callsemantic/template_body_checks.h"
 #include "callsemantic/template_source_utils.h"
@@ -3088,6 +3089,39 @@ public:
       specialization_name = function_template_id->name;
       arg_texts = function_template_id->arguments;
     }
+    const auto build_function_template_deduction_args =
+        [&]() -> vector<ExprInfo>
+        {
+          vector<ExprInfo> deduction_args;
+          deduction_args.reserve(params.size());
+          for(size_t i = 0; i < params.size(); ++i) {
+            ExprInfo arg;
+            arg.type = params[i].second;
+            TypePtr arg_base = strip_top_level_cv(arg.type);
+            if(arg_base && arg_base->kind == Type::TK_LVALUE_REFERENCE) {
+              arg.category = VC_LVALUE;
+            } else if(arg_base && arg_base->kind == Type::TK_RVALUE_REFERENCE) {
+              arg.category = VC_XVALUE;
+            } else {
+              arg.category = VC_PRVALUE;
+            }
+            deduction_args.push_back(arg);
+          }
+          return deduction_args;
+        };
+    const auto function_template_specialization_type_matches =
+        [&](FunctionTemplateDecl & decl,
+            const vector<TemplateArgument> & arguments) -> bool
+        {
+          TypePtr instantiated_type;
+          return decl.type_pattern &&
+                 template_api::type::substitute_type(decl.type_pattern,
+                                                     decl.parameters,
+                                                     arguments,
+                                                     instantiated_type) &&
+                 instantiated_type &&
+                 callsemantic::types_equivalent_for_member_binding(instantiated_type, type);
+        };
     const auto record_explicit_function_specialization_binding =
         [&](const template_api::TemplateInstantiationResult & result) -> void
         {
@@ -3115,22 +3149,40 @@ public:
           throw logic_error("unsupported function explicit specialization");
         }
         templates = lookup_function_templates(scope, specialization_name.name);
+        const vector<ExprInfo> deduction_args =
+            build_function_template_deduction_args();
         for(size_t i = 0; i < templates.size(); ++i) {
-          vector<TemplateArgument> arguments;
-          if(!resolve_template_arguments(
-                 scope,
-                 templates[i]->parameters,
-                 arg_texts,
-                 &function_template_id->argument_syntaxes,
-                 arguments,
-                 templates[i]->declaring_scope)) {
+          vector<TemplateArgument> explicit_arguments;
+          if(!resolve_template_arguments(scope,
+                                         templates[i]->parameters,
+                                         arg_texts,
+                                         &function_template_id->argument_syntaxes,
+                                         explicit_arguments,
+                                         templates[i]->declaring_scope)) {
+            continue;
+          }
+          template_api::TemplateFunctionDeductionRequest deduction_request;
+          deduction_request.decl = templates[i];
+          deduction_request.args = &deduction_args;
+          deduction_request.resolution_scope = &scope;
+          deduction_request.explicit_arguments = &explicit_arguments;
+          template_api::TemplateFunctionDeductionResult deduction_result;
+          if(!template_api::deduce_function_template(ctx,
+                                                     deduction_request,
+                                                     deduction_result)) {
+            continue;
+          }
+          if(!function_template_specialization_type_matches(*templates[i],
+                                                           deduction_result.arguments)) {
             continue;
           }
           record_explicit_function_specialization_binding(
               acquire_function_template(*templates[i],
-                                        arguments,
-                                        nullptr,
-                                        nullptr,
+                                        deduction_result.arguments,
+                                        &scope,
+                                        deduction_result.pack_sizes.empty() ?
+                                            nullptr :
+                                            &deduction_result.pack_sizes,
                                         true,
                                         true,
                                         body,
@@ -3147,21 +3199,7 @@ public:
               !function_template_name_syntax->qualifiers.empty())) ?
                 lookup_function_templates(scope, *function_template_name_syntax) :
                 lookup_function_templates(scope, name);
-        vector<ExprInfo> deduction_args;
-        deduction_args.reserve(params.size());
-        for(size_t i = 0; i < params.size(); ++i) {
-          ExprInfo arg;
-          arg.type = params[i].second;
-          TypePtr arg_base = strip_top_level_cv(arg.type);
-          if(arg_base && arg_base->kind == Type::TK_LVALUE_REFERENCE) {
-            arg.category = VC_LVALUE;
-          } else if(arg_base && arg_base->kind == Type::TK_RVALUE_REFERENCE) {
-            arg.category = VC_XVALUE;
-          } else {
-            arg.category = VC_PRVALUE;
-          }
-          deduction_args.push_back(arg);
-        }
+        vector<ExprInfo> deduction_args = build_function_template_deduction_args();
         for(size_t i = 0; i < templates.size(); ++i) {
           vector<TemplateArgument> arguments;
           map<string, size_t> pack_sizes;
