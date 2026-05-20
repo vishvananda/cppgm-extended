@@ -7164,6 +7164,28 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           function_template_definition_should_suppress_declaration_abi_tags(ctx,
                                                                             *cache_source_decl);
       definition_materialized_from_source_template = true;
+    } else if(include_body &&
+              cache_source_decl &&
+              cache_source_decl->is_inherited_constructor &&
+              found->second->is_constructor &&
+              !found->second->suppress_implicit_instantiation_definition &&
+              !suppressed_by_owner &&
+              !found->second->has_definition) {
+      if(!found->second->ctor_initializer && cache_source_decl->ctor_initializer) {
+        found->second->ctor_initializer = cache_source_decl->ctor_initializer;
+      }
+      if(found->second->ctor_initializer) {
+        found->second->has_definition = true;
+        if(!found->second->definition_node) {
+          found->second->definition_node =
+              cache_source_decl->definition_node ?
+                  cache_source_decl->definition_node :
+                  (cache_source_decl->declaration_node ?
+                       cache_source_decl->declaration_node :
+                       found->second->declaration_node);
+        }
+        definition_materialized_from_source_template = true;
+      }
     }
     if(!found->second->function_qualifier) {
       found->second->function_qualifier = effective_function_qualifier(*cache_source_decl);
@@ -7802,12 +7824,15 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     binding = ctx.register_function_entity(request);
     if(binding &&
        source_decl->is_inherited_constructor &&
-       binding->is_constructor &&
-       binding->ctor_initializer &&
-       !binding->has_definition) {
-      binding->has_definition = true;
-      if(!binding->definition_node) {
-        binding->definition_node = binding->declaration_node;
+       binding->is_constructor) {
+      if(!binding->ctor_initializer && source_decl->ctor_initializer) {
+        binding->ctor_initializer = source_decl->ctor_initializer;
+      }
+      if(binding->ctor_initializer && !binding->has_definition) {
+        binding->has_definition = true;
+        if(!binding->definition_node) {
+          binding->definition_node = binding->declaration_node;
+        }
       }
     }
   } else {
