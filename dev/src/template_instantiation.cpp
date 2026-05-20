@@ -3582,6 +3582,33 @@ bool expand_instantiated_function_parameter_clause(
   return true;
 }
 
+void parse_instantiated_function_template_parameter_clause(
+    SemanticContext & ctx,
+    Scope & inst_scope,
+    const std::string & template_name,
+    const CppAstNode & parameter_clause,
+    std::vector<std::pair<std::string, TypePtr> > & params,
+    std::vector<const CppAstNode *> & default_args)
+{
+  const witness::ScopedTemplateWitnessSourceCapturePause source_capture_pause;
+  if(ctx.parse_parameter_clause(inst_scope,
+                                parameter_clause,
+                                params,
+                                &default_args,
+                                false)) {
+    return;
+  }
+
+  template_function_signature::collect_function_template_default_arguments(
+      parameter_clause,
+      default_args);
+  std::ostringstream out;
+  out << "unsupported instantiated function template parameter-clause";
+  out << " [template " << template_name << "]";
+  out << " [parameter-clause " << cppast_kind_text(parameter_clause.kind) << "]";
+  throw TemplateSubstitutionFailure(out.str());
+}
+
 bool build_instantiated_function_parameter_pack_fallback(
     SemanticContext & ctx,
     Scope & inst_scope,
@@ -7237,7 +7264,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     if(parameter_clause && !source_decl->has_trailing_function_parameter_pack) {
       std::vector<std::pair<std::string, TypePtr> > parsed_params;
       std::vector<const CppAstNode *> parsed_default_args;
-      template_api::signature::parse_function_template_parameter_clause(
+      parse_instantiated_function_template_parameter_clause(
           ctx, inst_scope, name, *parameter_clause, parsed_params, parsed_default_args);
       params.swap(parsed_params);
       default_args.swap(parsed_default_args);
