@@ -6693,6 +6693,11 @@ ClassInfo * instantiate_selected_class_template(
         decl.reference_instantiations.find(key);
     if(reference_found != decl.reference_instantiations.end()) {
       if(reference_found->second) {
+        if(reference_found->second->reference_member_collection_in_progress) {
+          trace_class_instantiation("reuse-reference-in-progress",
+                                    reference_found->second);
+          return reference_found->second;
+        }
         decl.instantiations[key] = reference_found->second;
         found = decl.instantiations.find(key);
       }
