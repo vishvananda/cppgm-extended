@@ -11641,6 +11641,173 @@ bool deduce_initializer_list_pattern_from_list_like_argument(
                                        deduced_pack_arguments);
 }
 
+bool deduce_function_template_target_function_type_with_trailing_pack(
+    SemanticContext & ctx,
+    FunctionTemplateDecl & decl,
+    Scope & bound_scope,
+    const TypePtr & pattern,
+    const TypePtr & target,
+    Scope * actual_lookup_scope,
+    DeducedTypeMap & deduced_types,
+    DeducedValueMap & deduced_values,
+    DeducedPackArgumentMap & deduced_pack_arguments)
+{
+  if(!uses_trailing_function_parameter_pack(decl)) {
+    return false;
+  }
+
+  TypePtr pattern_base = strip_top_level_cv(pattern);
+  TypePtr target_base = strip_top_level_cv(target);
+  if(!pattern_base ||
+     !target_base ||
+     pattern_base->kind != Type::TK_FUNCTION ||
+     target_base->kind != Type::TK_FUNCTION ||
+     pattern_base->params.empty()) {
+    return false;
+  }
+  if(pattern_base->variadic != target_base->variadic ||
+     pattern_base->prototype_relaxed != target_base->prototype_relaxed ||
+     pattern_base->function_const != target_base->function_const ||
+     pattern_base->function_volatile != target_base->function_volatile) {
+    return false;
+  }
+
+  const std::size_t fixed_param_count = pattern_base->params.size() - 1;
+  if(target_base->params.size() < fixed_param_count) {
+    return false;
+  }
+
+  if(!deduce_template_argument_impl(ctx,
+                                    decl.parameters,
+                                    pattern_base->inner,
+                                    target_base->inner,
+                                    deduced_types,
+                                    deduced_values,
+                                    &bound_scope,
+                                    false,
+                                    actual_lookup_scope,
+                                    &deduced_pack_arguments)) {
+    return false;
+  }
+
+  for(std::size_t i = 0; i < fixed_param_count; ++i) {
+    if(!deduce_template_argument_impl(ctx,
+                                      decl.parameters,
+                                      pattern_base->params[i],
+                                      target_base->params[i],
+                                      deduced_types,
+                                      deduced_values,
+                                      &bound_scope,
+                                      false,
+                                      actual_lookup_scope,
+                                      &deduced_pack_arguments)) {
+      return false;
+    }
+  }
+
+  const TypePtr pack_pattern = pattern_base->params.back();
+  for(std::size_t i = fixed_param_count; i < target_base->params.size(); ++i) {
+    DeducedTypeMap temp_deduced_types;
+    DeducedValueMap temp_deduced_values;
+    DeducedPackArgumentMap temp_deduced_pack_arguments;
+    clone_deduced_type_map(deduced_types, temp_deduced_types);
+    clone_deduced_value_map(deduced_values, temp_deduced_values);
+    if(!deduce_template_argument_impl(ctx,
+                                      decl.parameters,
+                                      pack_pattern,
+                                      target_base->params[i],
+                                      temp_deduced_types,
+                                      temp_deduced_values,
+                                      &bound_scope,
+                                      false,
+                                      actual_lookup_scope,
+                                      &temp_deduced_pack_arguments)) {
+      return false;
+    }
+    if(!merge_deduced_pack_arguments(ctx,
+                                     decl,
+                                     bound_scope,
+                                     deduced_types,
+                                     deduced_values,
+                                     temp_deduced_types,
+                                     temp_deduced_values,
+                                     temp_deduced_pack_arguments,
+                                     deduced_pack_arguments)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool deduce_function_template_target_pattern(
+    SemanticContext & ctx,
+    FunctionTemplateDecl & decl,
+    Scope & bound_scope,
+    const TypePtr & pattern,
+    const TypePtr & target,
+    Scope * actual_lookup_scope,
+    DeducedTypeMap & deduced_types,
+    DeducedValueMap & deduced_values,
+    DeducedPackArgumentMap & deduced_pack_arguments)
+{
+  if(!uses_trailing_function_parameter_pack(decl)) {
+    return deduce_template_argument_impl(ctx,
+                                         decl.parameters,
+                                         pattern,
+                                         target,
+                                         deduced_types,
+                                         deduced_values,
+                                         &bound_scope,
+                                         false,
+                                         actual_lookup_scope,
+                                         &deduced_pack_arguments);
+  }
+
+  DeducedTypeMap working_types;
+  DeducedValueMap working_values;
+  DeducedPackArgumentMap working_pack_arguments = deduced_pack_arguments;
+  clone_deduced_type_map(deduced_types, working_types);
+  clone_deduced_value_map(deduced_values, working_values);
+
+  if(deduce_template_argument_impl(ctx,
+                                   decl.parameters,
+                                   pattern,
+                                   target,
+                                   working_types,
+                                   working_values,
+                                   &bound_scope,
+                                   false,
+                                   actual_lookup_scope,
+                                   &working_pack_arguments)) {
+    deduced_types.swap(working_types);
+    deduced_values.swap(working_values);
+    deduced_pack_arguments.swap(working_pack_arguments);
+    return true;
+  }
+
+  working_pack_arguments = deduced_pack_arguments;
+  clone_deduced_type_map(deduced_types, working_types);
+  clone_deduced_value_map(deduced_values, working_values);
+  if(deduce_function_template_target_function_type_with_trailing_pack(
+         ctx,
+         decl,
+         bound_scope,
+         pattern,
+         target,
+         actual_lookup_scope,
+         working_types,
+         working_values,
+         working_pack_arguments)) {
+    deduced_types.swap(working_types);
+    deduced_values.swap(working_values);
+    deduced_pack_arguments.swap(working_pack_arguments);
+    return true;
+  }
+
+  return false;
+}
+
 bool deduce_function_template_arguments_uncached(
     SemanticContext & ctx,
     FunctionTemplateDecl & decl,
@@ -12135,16 +12302,15 @@ bool deduce_function_template_arguments_from_target_type(
         ctx, bound_scope, decl.parameters, deduced_types, deduced_values);
     TypePtr pattern = prepare_function_template_deduction_pattern(
         ctx, decl.parameters, bound_scope, decl.type_pattern);
-    if(!deduce_template_argument_impl(ctx,
-                                      decl.parameters,
-                                      pattern,
-                                      target,
-                                      deduced_types,
-                                      deduced_values,
-                                      &bound_scope,
-                                      false,
-                                      use_scope,
-                                      &deduced_pack_arguments)) {
+    if(!deduce_function_template_target_pattern(ctx,
+                                                decl,
+                                                bound_scope,
+                                                pattern,
+                                                target,
+                                                use_scope,
+                                                deduced_types,
+                                                deduced_values,
+                                                deduced_pack_arguments)) {
       return false;
     }
 
@@ -12259,16 +12425,15 @@ bool deduce_function_template_arguments_from_target_type_with_explicit(
     if(!deducible_parameters.empty() &&
        type_mentions_unbound_function_template_parameter(
            ctx, deducible_parameters, bound_scope, pattern) &&
-       !deduce_template_argument_impl(ctx,
-                                      decl.parameters,
-                                      pattern,
-                                      target,
-                                      deduced_types,
-                                      deduced_values,
-                                      &bound_scope,
-                                      false,
-                                      &resolution_scope,
-                                      &deduced_pack_arguments)) {
+       !deduce_function_template_target_pattern(ctx,
+                                                decl,
+                                                bound_scope,
+                                                pattern,
+                                                target,
+                                                &resolution_scope,
+                                                deduced_types,
+                                                deduced_values,
+                                                deduced_pack_arguments)) {
       return false;
     }
 
