@@ -18968,6 +18968,38 @@ private:
 
     is_typedef = false;
     Scope return_scope(&scope, "<trailing-return>", false);
+    return_scope.class_info = scope.class_info;
+    return_scope.namespace_scope = scope.namespace_scope;
+    FunctionBinding synthetic_function;
+    if(scope.class_info &&
+       scope.class_info->type &&
+       !decl_spec_contains_token(specifiers, KW_STATIC)) {
+      const bool is_const_method =
+          semantic_class_model::declarator_is_const_method(declarator);
+      const bool is_volatile_method =
+          semantic_class_model::declarator_is_volatile_method(declarator);
+      TypePtr this_type =
+          make_pointer(make_cv(scope.class_info->type,
+                               is_const_method,
+                               is_volatile_method));
+      if(this_type) {
+        synthetic_function.name = "<trailing-return>";
+        synthetic_function.owner_class = scope.class_info;
+        synthetic_function.lexical_access_class = scope.class_info;
+        synthetic_function.is_method = true;
+        synthetic_function.is_const_method = is_const_method;
+        synthetic_function.is_volatile_method = is_volatile_method;
+        synthetic_function.ref_qualifier =
+            semantic_class_model::declarator_ref_qualifier(declarator);
+        synthetic_function.type =
+            make_function(make_fundamental(FT_VOID),
+                          std::vector<TypePtr>(1, this_type),
+                          false);
+        return_scope.function = &synthetic_function;
+        return_scope.values["this"] =
+            ValueBinding(ValueBinding::VK_PARAMETER, "this", this_type);
+      }
+    }
     const CppAstNode * parameter_clause =
         find_child_kind(declarator, CppAstKind::parameter_clause);
     if(parameter_clause) {
