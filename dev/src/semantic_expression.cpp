@@ -6229,6 +6229,24 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
         operand = converted;
       }
     }
+    const bool explicit_class_reference_target =
+        node.simple_type == KW_STATIC_CAST &&
+        is_reference_type(target_type) &&
+        cast_target_object_type &&
+        (ctx.class_info_for_type(cast_target_object_type) ||
+         complete_class_type_for_lookup(ctx, cast_target_object_type));
+    if(explicit_class_reference_target) {
+      ExprInfo converted;
+      ConversionRank conversion_rank = CR_BAD;
+      if(ctx.try_argument_conversion(scope,
+                                     target_type,
+                                     operand,
+                                     converted,
+                                     conversion_rank,
+                                     semantic_policy::allow_explicit_argument_conversion())) {
+        operand = converted;
+      }
+    }
 
     ExprInfo inherited_conversion;
     if(semantic_conversion::try_apply_inheritance_conversion(ctx,
