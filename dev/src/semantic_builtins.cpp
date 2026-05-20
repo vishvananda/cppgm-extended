@@ -1959,6 +1959,7 @@ void register_builtin_functions(Scope & scope,
   add_builtin("__builtin_memcmp", int_type, std::vector<TypePtr>{const_void_ptr, const_void_ptr, size_type});
   add_builtin("__builtin_memchr", void_ptr, std::vector<TypePtr>{const_void_ptr, int_type, size_type});
   add_builtin("__builtin_memset", void_ptr, std::vector<TypePtr>{void_ptr, int_type, size_type});
+  add_builtin("__builtin_bzero", make_fundamental(FT_VOID), std::vector<TypePtr>{void_ptr, size_type});
   add_builtin("__builtin_strcmp", int_type, std::vector<TypePtr>(2, const_char_ptr));
   add_builtin("__builtin_strchr", char_ptr, std::vector<TypePtr>{const_char_ptr, int_type});
   add_builtin("__builtin_strlen", size_type, std::vector<TypePtr>(1, const_char_ptr));

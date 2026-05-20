@@ -16608,6 +16608,7 @@ private:
     if(builtin_name == "__builtin_isnormal") {
       return string("cppgm_builtin_isnormal") + floating_builtin_suffix();
     }
+    if(builtin_name == "__builtin_bzero") return "cppgm_builtin_bzero";
     if(builtin_name == "__builtin_memchr") return "cppgm_builtin_memchr";
     if(builtin_name == "__builtin_memcmp") return "cppgm_builtin_memcmp";
     if(builtin_name == "__builtin_memcpy") return "cppgm_builtin_memcpy";
