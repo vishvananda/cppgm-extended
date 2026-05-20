@@ -2790,6 +2790,7 @@ public:
                        const vector<FunctionSymbolEntry> & function_symbol_entries,
                        const FunctionSymbolLookupIndex & function_symbol_lookup_index,
                        const map<string, const CallSemNode *> & function_symbol_nodes,
+                       const set<string> & c_linkage_function_symbols,
                        const map<string, vector<pair<string, unsigned long long> > > &
                            function_virtual_base_layouts,
                        const map<string, vector<pair<string, unsigned long long> > > &
@@ -2817,6 +2818,7 @@ public:
     , function_symbol_entries_(function_symbol_entries)
     , function_symbol_lookup_index_(function_symbol_lookup_index)
     , function_symbol_nodes_(function_symbol_nodes)
+    , c_linkage_function_symbols_(c_linkage_function_symbols)
     , function_virtual_base_layouts_(function_virtual_base_layouts)
     , class_virtual_base_layouts_(class_virtual_base_layouts)
     , function_parameter_virtual_base_layouts_(function_parameter_virtual_base_layouts)
@@ -2962,6 +2964,7 @@ public:
                        const vector<FunctionSymbolEntry> & function_symbol_entries,
                        const FunctionSymbolLookupIndex & function_symbol_lookup_index,
                        const map<string, const CallSemNode *> & function_symbol_nodes,
+                       const set<string> & c_linkage_function_symbols,
                        const map<string, vector<pair<string, unsigned long long> > > &
                            function_virtual_base_layouts,
                        const map<string, vector<pair<string, unsigned long long> > > &
@@ -2989,6 +2992,7 @@ public:
     , function_symbol_entries_(function_symbol_entries)
     , function_symbol_lookup_index_(function_symbol_lookup_index)
     , function_symbol_nodes_(function_symbol_nodes)
+    , c_linkage_function_symbols_(c_linkage_function_symbols)
     , function_virtual_base_layouts_(function_virtual_base_layouts)
     , class_virtual_base_layouts_(class_virtual_base_layouts)
     , function_parameter_virtual_base_layouts_(function_parameter_virtual_base_layouts)
@@ -4001,6 +4005,7 @@ private:
   const vector<FunctionSymbolEntry> & function_symbol_entries_;
   const FunctionSymbolLookupIndex & function_symbol_lookup_index_;
   const map<string, const CallSemNode *> & function_symbol_nodes_;
+  const set<string> & c_linkage_function_symbols_;
   const map<string, vector<pair<string, unsigned long long> > > &
       function_virtual_base_layouts_;
   const map<string, vector<pair<string, unsigned long long> > > &
@@ -7826,8 +7831,30 @@ private:
                                 internal_symbol + "(" + value + ")");
   }
 
+  bool direct_runtime_function_symbol_available(const string & symbol) const
+  {
+    if(c_linkage_function_symbols_.count(symbol) == 0) {
+      return false;
+    }
+    if(function_symbol_nodes_.count(symbol) != 0 ||
+       function_symbol_lookup_index_.mapped_symbols.count(symbol) != 0) {
+      return true;
+    }
+    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
+      if(function_symbol_entries_[i].symbol == symbol) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   string external_runtime_symbol(const string & helper_symbol)
   {
+    const string direct_symbol = "@" + helper_symbol;
+    if(direct_runtime_function_symbol_available(direct_symbol)) {
+      return direct_symbol;
+    }
+
     const string internal_symbol =
         symbol_linkage::internal_symbol_from_name("__external_runtime::" + helper_symbol);
     external_function_symbols_[internal_symbol] = helper_symbol;
@@ -13838,6 +13865,7 @@ public:
                                function_symbol_entries_,
                                function_symbol_lookup_index(),
                                function_symbol_nodes_,
+                               c_linkage_function_symbols_,
                                function_virtual_base_layouts_,
                                class_virtual_base_layouts_,
                                function_parameter_virtual_base_layouts_,
@@ -13865,6 +13893,7 @@ public:
                                function_symbols_, function_symbol_entries_,
                                function_symbol_lookup_index(),
                                function_symbol_nodes_,
+                               c_linkage_function_symbols_,
                                function_virtual_base_layouts_,
                                class_virtual_base_layouts_,
                                function_parameter_virtual_base_layouts_,
@@ -13895,6 +13924,7 @@ public:
                                function_symbols_, function_symbol_entries_,
                                function_symbol_lookup_index(),
                                function_symbol_nodes_,
+                               c_linkage_function_symbols_,
                                function_virtual_base_layouts_,
                                class_virtual_base_layouts_,
                                function_parameter_virtual_base_layouts_,
@@ -17648,6 +17678,7 @@ private:
                              function_symbols_, function_symbol_entries_,
                              function_symbol_lookup_index(),
                              function_symbol_nodes_,
+                             c_linkage_function_symbols_,
                              function_virtual_base_layouts_,
                              class_virtual_base_layouts_,
                              function_parameter_virtual_base_layouts_,
@@ -17749,6 +17780,12 @@ private:
 
   string external_runtime_symbol(const string & helper_symbol)
   {
+    const string direct_symbol = "@" + helper_symbol;
+    if(function_symbol_is_c_linkage(direct_symbol) &&
+       known_function_symbol_exists(direct_symbol)) {
+      return direct_symbol;
+    }
+
     const string internal_symbol =
         symbol_linkage::internal_symbol_from_name("__external_runtime::" + helper_symbol);
     external_function_symbols_[internal_symbol] = helper_symbol;
