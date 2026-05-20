@@ -7600,9 +7600,46 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                 {
                   const witness::ScopedTemplateWitnessSourceCapturePause
                       source_capture_pause;
+                  Scope result_scope(&inst_scope, "<trailing-return>", false);
+                  FunctionBinding synthetic_function;
+                  Scope * parse_scope = &inst_scope;
+                  if(source_decl->declaring_scope &&
+                     source_decl->declaring_scope->class_info &&
+                     !source_decl->is_static_member &&
+                     inst_scope.class_info &&
+                     inst_scope.class_info->type) {
+                    TypePtr declared_type =
+                        make_function(make_fundamental(FT_VOID),
+                                      std::vector<TypePtr>(),
+                                      false);
+                    TypePtr method_type =
+                        semantic_class_model::method_function_type(
+                            inst_scope.class_info->type,
+                            source_decl->is_const_method,
+                            source_decl->is_volatile_method,
+                            declared_type);
+                    if(method_type && !method_type->params.empty()) {
+                      synthetic_function.name = "<trailing-return>";
+                      synthetic_function.owner_class = inst_scope.class_info;
+                      synthetic_function.lexical_access_class = inst_scope.class_info;
+                      synthetic_function.is_method = true;
+                      synthetic_function.is_const_method = source_decl->is_const_method;
+                      synthetic_function.is_volatile_method = source_decl->is_volatile_method;
+                      synthetic_function.ref_qualifier = source_decl->ref_qualifier;
+                      synthetic_function.type = method_type;
+                      result_scope.class_info = inst_scope.class_info;
+                      result_scope.namespace_scope = inst_scope.namespace_scope;
+                      result_scope.function = &synthetic_function;
+                      result_scope.values["this"] =
+                          ValueBinding(ValueBinding::VK_PARAMETER,
+                                       "this",
+                                       method_type->params[0]);
+                      parse_scope = &result_scope;
+                    }
+                  }
                   return template_decl_ast::parse_type_id(services,
-                                                          inst_scope,
-                                                          inst_scope,
+                                                          *parse_scope,
+                                                          *parse_scope,
                                                           source_decl->result_type_pattern,
                                                           parsed_result,
                                                           true) &&
