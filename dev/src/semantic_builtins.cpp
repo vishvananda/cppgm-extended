@@ -1203,6 +1203,12 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
   return true;
 }
 
+bool assignment_binding_is_implicitly_nothrow(
+    SemanticContext & ctx,
+    Scope & scope,
+    const FunctionBinding & binding,
+    std::set<FunctionBinding *> & visiting);
+
 bool function_binding_is_nothrow(SemanticContext & ctx,
                                  Scope & scope,
                                  const FunctionBinding & binding,
@@ -1221,6 +1227,8 @@ bool function_binding_is_nothrow(SemanticContext & ctx,
 
   const bool result = binding.is_constructor ?
       constructor_binding_is_implicitly_nothrow(ctx, scope, binding, visiting) :
+      (binding.is_copy_assignment || binding.is_move_assignment) ?
+          assignment_binding_is_implicitly_nothrow(ctx, scope, binding, visiting) :
       false;
   visiting.erase(mutable_binding);
   return result;
@@ -1258,6 +1266,99 @@ bool assignment_binding_accepts_rhs(SemanticContext & ctx,
 
   ExprInfo converted;
   return try_argument_conversion(ctx, scope, function_type->params[1], rhs, converted);
+}
+
+bool assignment_type_is_nothrow(SemanticContext & ctx,
+                                Scope & scope,
+                                const TypePtr & type,
+                                bool move,
+                                std::set<FunctionBinding *> & visiting)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base) {
+    return false;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    return assignment_type_is_nothrow(ctx, scope, base->inner, move, visiting);
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_scalar_or_member_pointer_type(ctx, base)) {
+    return true;
+  }
+  if(is_trivially_copy_assignable_type(ctx, base)) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.complete_class_type(base);
+  if(!info || !info->complete) {
+    return false;
+  }
+  semantic_class_model::ensure_implicit_special_members(ctx, *info);
+  ctx.ensure_implicit_copy_assignment(*info);
+  if(move) {
+    ctx.ensure_implicit_move_assignment(*info);
+  }
+
+  FunctionBinding * op = find_assignment_operator_for_trait(*info, move);
+  if(!op && move) {
+    op = find_assignment_operator_for_trait(*info, false);
+  }
+  return op && function_binding_is_nothrow(ctx, scope, *op, visiting);
+}
+
+bool assignment_binding_is_implicitly_nothrow(
+    SemanticContext & ctx,
+    Scope & scope,
+    const FunctionBinding & binding,
+    std::set<FunctionBinding *> & visiting)
+{
+  if(!binding.owner_class ||
+     (!binding.is_copy_assignment && !binding.is_move_assignment)) {
+    return false;
+  }
+  const bool implicit_like =
+      binding.synthesized ||
+      binding.is_defaulted ||
+      (!binding.declaration_node && !binding.definition_node && !binding.body);
+  if(!implicit_like) {
+    return false;
+  }
+
+  ClassInfo & info = *binding.owner_class;
+  if(info.class_kind == "union") {
+    return false;
+  }
+
+  const bool move = binding.is_move_assignment;
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    if(info.bases[i].is_virtual ||
+       !info.bases[i].type ||
+       !assignment_type_is_nothrow(ctx,
+                                   scope,
+                                   info.bases[i].type->type,
+                                   move,
+                                   visiting)) {
+      return false;
+    }
+  }
+  for(size_t i = 0; i < info.fields.size(); ++i) {
+    TypePtr field_type = strip_top_level_cv(info.fields[i].type);
+    if(info.fields[i].is_bit_field ||
+       is_reference_type(field_type)) {
+      continue;
+    }
+    if(!assignment_type_is_nothrow(ctx,
+                                   scope,
+                                   info.fields[i].type,
+                                   move,
+                                   visiting)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 FunctionBinding * find_class_assignment_operator_for_trait(SemanticContext & ctx,
