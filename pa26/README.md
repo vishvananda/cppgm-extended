@@ -141,15 +141,18 @@ The shipped PA26 tests are the contract for this milestone.
 
 ### PA26 Syntax Spec
 
-The authoritative source-language syntax boundary for PA26 is `pa26.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa26.gram`. The grammar defines accepted syntax only;
+the PA26 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-PA26 inherits the PA25 syntax boundary and does not add a new source-language grammar file
-format. It instead enables more of the already-accepted C++11 syntax to participate in
-semantic analysis and lowering.
+PA26 does not add a new source-language grammar format. It instead enables more
+of the already-accepted C++11 syntax to participate in semantic analysis and
+lowering.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
 `pa26.gram` as the source of truth.

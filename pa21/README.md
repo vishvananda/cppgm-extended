@@ -126,10 +126,10 @@ template completion:
 
 ### PA21 Syntax Boundary
 
-PA21 does not ship a new grammar file. It inherits the PA19 source-language
-syntax boundary and the PA20 constant-evaluation semantics. PA21 is a template
-entity and specialization assignment: parsing a template construct does not by
-itself make that construct required unless it is inside the PA21 boundary below.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa21.gram`. The grammar defines accepted syntax only;
+the PA21 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 ### Optional Student Test Ideas
 

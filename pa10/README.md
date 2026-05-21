@@ -93,14 +93,21 @@ cppgm++ --emit-ast -o <outfile> <srcfile1> [<srcfile2> ...]
 
 ### Input Contract
 
-Each input file is a C++ source file in the PA10 grammar subset. The
-authoritative source syntax is `pa10.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa10.gram`. The grammar defines accepted syntax only;
+the PA10 AST-output requirements are defined by the Required Features and Out Of
+Scope sections below.
 
 The grammar uses the same token vocabulary and extended BNF operators as the
 PA6 grammar. Where the grammar still needs a syntactic name category before
 full semantic lookup exists, the PA6 mock-name convention remains course-defined
 scaffolding for this assignment. PA10 should preserve those names in structured
 syntax nodes instead of treating the original source text as an opaque span.
+
+The shared grammar intentionally includes syntax whose semantic meaning is added
+by later assignments. PA10 is responsible for structured syntax preservation,
+not for deciding whether a later semantic or lowering stage would accept the
+program.
 
 Behavior is undefined for input that:
 
@@ -185,7 +192,8 @@ PA12 passes consume, including:
 - class, struct, union, enum, and scoped enum declarations
 - class members, access labels, bit-fields, base clauses, and constructor
   initializer syntax
-- template declarations with type and template-template parameters
+- template declarations with type, non-type, and template-template parameters
+- common template-id, explicit-instantiation, and explicit-specialization syntax
 - `static_assert`
 - declarator-derived syntax, including pointers, references, arrays, function
   parameter clauses, exception specifications, cv/ref qualifiers, default
@@ -211,7 +219,8 @@ PA10 does not require:
 - overload resolution
 - conversion ranking
 - template argument deduction
-- non-type template parameters such as `template<int N>` or `template<auto N>`
+- semantic validation or constant evaluation of non-type template parameters
+  and arguments
 - complete parsing of every C++11 corner case
 - semantic resolution of `template-id` versus `<`
 - semantic resolution of ambiguous template arguments such as `foo<T*p>`

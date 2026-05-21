@@ -92,13 +92,14 @@ cppgm++ --emit-semantics -o <outfile> <srcfile1> [<srcfile2> ...]
 
 ### Input Contract
 
-Each input file is a C++ source file in the PA12 grammar subset. The
-authoritative source syntax is `pa12.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa12.gram`. The grammar defines accepted syntax only;
+the PA12 procedural semantic requirements are defined by the Required Features
+and Out Of Scope sections below.
 
-`pa12.gram` intentionally mirrors the PA10/PA11 source subset so PA12 has an
-explicit local grammar contract. Passing PA10 and PA11 is necessary but not
-sufficient for PA12: a program may parse and form declarations successfully
-while still relying on call or expression semantics outside this assignment.
+Passing PA10 and PA11 is necessary but not sufficient for PA12: a program may
+parse and form declarations successfully while still relying on call or
+expression semantics outside this assignment.
 
 Behavior is undefined for input that:
 
