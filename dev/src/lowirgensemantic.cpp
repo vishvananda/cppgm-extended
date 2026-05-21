@@ -12537,14 +12537,20 @@ private:
     } else {
       TypePtr base = strip_top_level_cv(variable.semantic_type);
       if(base && base->kind == Type::TK_ARRAY) {
-        if(variable.children.size() != 1) {
-          throw logic_error("guarded static storage initializer arity");
+        if(variable.children.size() == 1 &&
+           variable.children[0].kind == CallSemKind::braced_init_list) {
+          const CallSemNode & init = variable.children[0];
+          emit_local_array_initializer(variable.semantic_type, init, target_ptr);
+        } else {
+          for(size_t i = 0; i < variable.children.size(); ++i) {
+            const CallSemNode & child = variable.children[i];
+            if(child.kind == CallSemKind::constructor_action) {
+              emit_constructor_action(child);
+            } else if(child.kind != CallSemKind::destructor_action) {
+              throw logic_error("guarded static array initializer action shape");
+            }
+          }
         }
-        const CallSemNode & init = variable.children[0];
-        if(init.kind != CallSemKind::braced_init_list) {
-          throw logic_error("guarded static array initializer requires braced-init-list");
-        }
-        emit_local_array_initializer(variable.semantic_type, init, target_ptr);
       } else if(is_reference_type(variable.semantic_type)) {
         if(variable.children.size() != 1) {
           throw logic_error("guarded static reference initializer arity");
@@ -12616,19 +12622,29 @@ private:
       return;
     }
     if(binding_is_array_storage(binding)) {
-      push_cleanup_scope(true);
-      if(variable.children.size() != 1 ||
-         variable.children[0].kind != CallSemKind::braced_init_list) {
-        throw logic_error("array initialization requires braced-init-list");
+      if(variable.children.size() == 1 &&
+         variable.children[0].kind == CallSemKind::braced_init_list) {
+        push_cleanup_scope(true);
+        const CallSemNode & init = variable.children[0];
+        emit_local_array_initializer(variable.semantic_type,
+                                     init,
+                                     emit_storage_address(binding.slots[0]));
+        if(current_block_) {
+          emit_scope_cleanups(cleanup_scopes_.back());
+        }
+        pop_cleanup_scope();
+        return;
       }
-      const CallSemNode & init = variable.children[0];
-      emit_local_array_initializer(variable.semantic_type,
-                                   init,
-                                   emit_storage_address(binding.slots[0]));
-      if(current_block_) {
-        emit_scope_cleanups(cleanup_scopes_.back());
+      for(size_t i = 0; i < variable.children.size(); ++i) {
+        const CallSemNode & child = variable.children[i];
+        if(child.kind == CallSemKind::constructor_action) {
+          emit_constructor_action(child);
+        } else if(child.kind == CallSemKind::destructor_action) {
+          register_bound_local_cleanup(child, variable.text, binding.slots[0]);
+        } else {
+          throw logic_error("array initialization action shape");
+        }
       }
-      pop_cleanup_scope();
       return;
     }
     push_cleanup_scope(true);
@@ -18679,6 +18695,8 @@ private:
     if(base && base->kind == Type::TK_ARRAY) {
       const GlobalBinding & binding = global_bindings_.find(node_internal_symbol(node))->second;
       LowIRGlobal global = make_data_global(binding.storage, false, binding.thread_local_storage);
+      const bool guarded_array =
+          !callsem_local_static_guard_symbol(node).empty();
       if(node.children.empty()) {
         global.data_items.push_back(string("zero ") + to_string(backend_storage_size(node.semantic_type)));
       } else if(node.children.size() == 1 &&
@@ -18687,8 +18705,7 @@ private:
         if(init.children.size() > base->bound) {
           throw logic_error("too many global array initializer elements");
         }
-        if(!callsem_local_static_guard_symbol(node).empty() &&
-           is_complete_class_value_type(strip_top_level_cv(base->inner))) {
+        if(guarded_array) {
           global.data_items.push_back(
               string("zero ") + to_string(backend_storage_size(node.semantic_type)));
           globals_.push_back(global);
@@ -18705,6 +18722,16 @@ private:
           }
           throw logic_error("unsupported global array initializer for " + node.text);
         }
+      } else if(guarded_array &&
+                all_of(node.children.begin(),
+                       node.children.end(),
+                       [](const CallSemNode & child)
+                       {
+                         return child.kind == CallSemKind::constructor_action ||
+                                child.kind == CallSemKind::destructor_action;
+                       })) {
+        global.data_items.push_back(
+            string("zero ") + to_string(backend_storage_size(node.semantic_type)));
       } else {
         throw logic_error("unsupported global array initializer for " + node.text);
       }

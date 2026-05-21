@@ -3822,6 +3822,28 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
                                      DumpNode & out,
                                      const std::string & object_use_location)
 {
+  TypePtr object_type = strip_top_level_cv(remove_reference_type(type));
+  if(object_type && object_type->kind == Type::TK_ARRAY) {
+    TypePtr element_type = object_type;
+    while(element_type && element_type->kind == Type::TK_ARRAY) {
+      element_type = strip_top_level_cv(element_type->inner);
+    }
+    if(!element_type || !ctx.complete_class_type(element_type)) {
+      return;
+    }
+
+    ExprInfo object = ctx.analyze_id_expression(scope, synthetic_identifier_node(name));
+    append_target_initialization_actions(ctx,
+                                         scope,
+                                         type,
+                                         initializer,
+                                         object,
+                                         out,
+                                         object_use_location);
+    append_destructor_actions_for_subobject(ctx, type, object, nullptr, true, out);
+    return;
+  }
+
   ClassInfo * info = ctx.complete_class_type(type);
   if(!info) {
     return;

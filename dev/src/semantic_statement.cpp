@@ -1326,6 +1326,10 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       }
       const bool has_class_lifetime =
           direct_storage_type && ctx.complete_class_type(direct_storage_type);
+      const bool has_automatic_array_class_lifetime =
+          direct_storage_type != static_storage_base &&
+          static_storage_base &&
+          ctx.complete_class_type(static_storage_base);
       const bool is_thread_local =
           decl_spec_contains_token(prepared_specifiers.resolved_specifiers, KW_THREAD_LOCAL);
       long long constexpr_static_value = 0;
@@ -1391,7 +1395,8 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
         if(initializer) {
           semantic_lifetime::analyze_initializer(ctx, scope, type, *initializer, var_node);
         }
-      } else if(ctx.complete_class_type(type)) {
+      } else if(ctx.complete_class_type(type) ||
+                (has_automatic_array_class_lifetime && !initializer)) {
         semantic_lifetime::analyze_object_lifetime_actions(
             ctx,
             scope,
