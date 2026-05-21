@@ -15,6 +15,7 @@
 
 #include "callsem_output.h"
 #include "callsemantic_internal.h"
+#include "class_template_mangle_info.h"
 #include "constructor_lifecycle_service.h"
 #include "cpp_decl_bridge.h"
 #include "cppast_dump.h"
@@ -6171,6 +6172,124 @@ int compare_function_template_array_element_cv_preference(
   return 0;
 }
 
+bool class_template_arg_cv_match_score(const TypePtr & pattern,
+                                       const TypePtr & actual,
+                                       int & score)
+{
+  score = 0;
+
+  TypePtr pattern_base = strip_top_level_cv(pattern);
+  if(pattern_base &&
+     (pattern_base->kind == Type::TK_LVALUE_REFERENCE ||
+      pattern_base->kind == Type::TK_RVALUE_REFERENCE)) {
+    pattern_base = strip_top_level_cv(pattern_base->inner);
+  }
+  TypePtr actual_base = strip_top_level_cv(actual);
+  if(actual_base &&
+     (actual_base->kind == Type::TK_LVALUE_REFERENCE ||
+      actual_base->kind == Type::TK_RVALUE_REFERENCE)) {
+    actual_base = strip_top_level_cv(actual_base->inner);
+  }
+
+  shared_ptr<const ClassTemplateSpecializationMangleInfo> pattern_info =
+      named_type_class_template_specialization_mangle_info_const(pattern_base);
+  shared_ptr<const ClassTemplateSpecializationMangleInfo> actual_info =
+      named_type_class_template_specialization_mangle_info_const(actual_base);
+  if(!pattern_info || !actual_info ||
+     !pattern_info->class_template_decl ||
+     pattern_info->class_template_decl != actual_info->class_template_decl ||
+     pattern_info->arguments.size() != actual_info->arguments.size()) {
+    return false;
+  }
+
+  bool considered_type_arg = false;
+  for(size_t i = 0; i < pattern_info->arguments.size(); ++i) {
+    const TemplateArgument & pattern_arg = pattern_info->arguments[i];
+    const TemplateArgument & actual_arg = actual_info->arguments[i];
+    if(pattern_arg.kind != TemplateArgument::TA_TYPE ||
+       actual_arg.kind != TemplateArgument::TA_TYPE ||
+       !pattern_arg.type ||
+       !actual_arg.type) {
+      continue;
+    }
+
+    TypePtr pattern_inner;
+    TypePtr actual_inner;
+    bool pattern_const = false;
+    bool pattern_volatile = false;
+    bool actual_const = false;
+    bool actual_volatile = false;
+    if(!top_level_cv_flags(pattern_arg.type,
+                           pattern_inner,
+                           pattern_const,
+                           pattern_volatile) ||
+       !top_level_cv_flags(actual_arg.type,
+                           actual_inner,
+                           actual_const,
+                           actual_volatile)) {
+      continue;
+    }
+    considered_type_arg = true;
+    if(pattern_const == actual_const) {
+      ++score;
+    }
+    if(pattern_volatile == actual_volatile) {
+      ++score;
+    }
+  }
+
+  return considered_type_arg;
+}
+
+int compare_function_template_class_template_arg_cv_preference(
+    const CandidateMatch & current,
+    const CandidateMatch & best)
+{
+  if(!current.function || !best.function ||
+     !current.function->source_template || !best.function->source_template) {
+    return 0;
+  }
+
+  FunctionTemplateDecl & current_template = *current.function->source_template;
+  FunctionTemplateDecl & best_template = *best.function->source_template;
+  if(current.call_args.size() != current_template.params_pattern.size() ||
+     best.call_args.size() != best_template.params_pattern.size() ||
+     current.call_args.size() != best.call_args.size()) {
+    return 0;
+  }
+
+  bool current_better = false;
+  bool best_better = false;
+  for(size_t i = 0; i < current.call_args.size(); ++i) {
+    const ExprInfo & actual =
+        i < current.source_args.size() ? current.source_args[i] : current.call_args[i];
+    int current_score = 0;
+    int best_score = 0;
+    if(!class_template_arg_cv_match_score(current_template.params_pattern[i].second,
+                                          actual.type,
+                                          current_score) ||
+       !class_template_arg_cv_match_score(best_template.params_pattern[i].second,
+                                          actual.type,
+                                          best_score) ||
+       current_score == best_score) {
+      continue;
+    }
+    if(current_score > best_score) {
+      current_better = true;
+    } else {
+      best_better = true;
+    }
+  }
+
+  if(current_better && !best_better) {
+    return -1;
+  }
+  if(best_better && !current_better) {
+    return 1;
+  }
+  return 0;
+}
+
 int compare_function_template_trailing_pack_preference(const CandidateMatch & current,
                                                        const CandidateMatch & best)
 {
@@ -6403,6 +6522,11 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
       compare_function_template_array_element_cv_preference(current, best);
   if(array_element_cv_preference != 0) {
     return array_element_cv_preference;
+  }
+  const int class_template_arg_cv_preference =
+      compare_function_template_class_template_arg_cv_preference(current, best);
+  if(class_template_arg_cv_preference != 0) {
+    return class_template_arg_cv_preference;
   }
   if(current.function->type && best.function->type &&
      type_equals(current.function->type, best.function->type)) {
