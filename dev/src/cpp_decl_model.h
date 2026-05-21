@@ -164,6 +164,7 @@ struct Type
   TypePtr named_member_owner_type;
   std::string named_member_name;
   TypePtr named_dependent_qualified_owner;
+  std::shared_ptr<TemplateIdSyntax> named_dependent_qualified_owner_template_id;
   std::vector<std::string> named_dependent_qualified_members;
   std::vector<TemplateIdSyntax> named_dependent_qualified_member_template_ids;
   bool named_dependent_qualified_leading_typename;
@@ -199,7 +200,8 @@ TypePtr make_dependent_qualified_member_type(
     const std::vector<std::string> & members,
     bool leading_typename,
     const std::vector<TemplateIdSyntax> & member_template_ids =
-        std::vector<TemplateIdSyntax>());
+        std::vector<TemplateIdSyntax>(),
+    const TemplateIdSyntax & owner_template_id = TemplateIdSyntax());
 bool named_type_is_template_parameter(const TypePtr & type);
 bool named_type_is_partial_order_placeholder(const TypePtr & type);
 bool named_type_is_dependent_alias(const TypePtr & type);

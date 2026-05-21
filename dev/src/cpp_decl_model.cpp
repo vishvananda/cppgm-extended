@@ -437,6 +437,16 @@ bool named_type_has_kind(const TypePtr & type, Type::NamedSemanticKind kind)
   return base && base->named_semantic_kind == kind;
 }
 
+bool template_id_syntax_has_metadata_payload(const TemplateIdSyntax & syntax)
+{
+  return syntax.name.rooted ||
+         !syntax.name.qualifiers.empty() ||
+         !syntax.name.name.empty() ||
+         syntax.source_location_id != 0 ||
+         !syntax.arguments.empty() ||
+         !syntax.argument_syntaxes.empty();
+}
+
 }  // namespace
 
 TypePtr make_dependent_qualified_member_type(
@@ -444,7 +454,8 @@ TypePtr make_dependent_qualified_member_type(
     const TypePtr & owner,
     const vector<string> & members,
     bool leading_typename,
-    const vector<TemplateIdSyntax> & member_template_ids)
+    const vector<TemplateIdSyntax> & member_template_ids,
+    const TemplateIdSyntax & owner_template_id)
 {
   ostringstream key;
   key << "$dqmember:" << template_argument_type_text(owner);
@@ -457,6 +468,10 @@ TypePtr make_dependent_qualified_member_type(
     base->named_semantic_kind = Type::NSK_DEPENDENT_TYPE;
     base->named_semantic_payload = key.str();
     base->named_dependent_qualified_owner = owner;
+    if(template_id_syntax_has_metadata_payload(owner_template_id)) {
+      base->named_dependent_qualified_owner_template_id.reset(
+          new TemplateIdSyntax(owner_template_id));
+    }
     base->named_dependent_qualified_members = members;
     base->named_dependent_qualified_member_template_ids = member_template_ids;
     base->named_dependent_qualified_leading_typename = leading_typename;
