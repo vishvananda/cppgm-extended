@@ -680,11 +680,7 @@ StatementResult Evaluator::exec_stmt(const CppAstNode & node, const TypePtr & re
     if(node.children.empty()) {
       return result;
     }
-    if(return_type &&
-       (node.children[0].kind == CppAstKind::initializer ||
-        node.children[0].kind == CppAstKind::paren_initializer ||
-        node.children[0].kind == CppAstKind::paren_argument_list ||
-        node.children[0].kind == CppAstKind::braced_init_list)) {
+    if(return_type && !is_void_type(return_type)) {
       if(!eval_initializer(node.children[0], result.value, return_type)) {
         result.kind = StatementResult::SR_FAIL;
         result.error = "failed to evaluate return expression";

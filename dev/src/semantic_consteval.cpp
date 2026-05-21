@@ -1498,10 +1498,30 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
      payload->kind != CppAstKind::paren_argument_list &&
      payload->kind != CppAstKind::braced_init_list) {
     constant_eval::ConstexprValue value;
-    if(evaluator.eval_expr(*payload, value) &&
-       constant_eval::constexpr_value_cast(value, target, out)) {
-      out.type = target;
-      return true;
+    if(evaluator.eval_expr(*payload, value)) {
+      if(constant_eval::constexpr_value_cast(value, target, out) ||
+         evaluate_constexpr_target_conversion(ctx,
+                                             scope,
+                                             evaluator,
+                                             *payload,
+                                             value,
+                                             target,
+                                             out)) {
+        out.type = target;
+        return true;
+      }
+      CppAstNode direct_init;
+      direct_init.kind = CppAstKind::paren_initializer;
+      direct_init.children.push_back(*payload);
+      if(evaluate_class_typed_initializer(ctx,
+                                          scope,
+                                          evaluator,
+                                          direct_init,
+                                          target,
+                                          out)) {
+        out.type = target;
+        return true;
+      }
     }
   }
 
@@ -1629,37 +1649,56 @@ bool evaluate_constexpr_overloaded_operator_expression(SemanticContext & ctx,
           return false;
         }
 
-        std::vector<constant_eval::ConstexprValue> args;
+        const std::size_t explicit_param_offset = binding->is_method ? 1u : 0u;
+        std::vector<const CppAstNode *> explicit_arg_nodes;
         constant_eval::ConstexprValue implicit_object;
         if(expr.kind == CppAstKind::binary_expression) {
-          constant_eval::ConstexprValue lhs;
-          constant_eval::ConstexprValue rhs;
-          if(!evaluator.eval_expr(expr.children[0], lhs) ||
-             !evaluator.eval_expr(expr.children[1], rhs)) {
-            return false;
-          }
           if(treat_first_operand_as_implicit_object && binding->is_method) {
+            constant_eval::ConstexprValue lhs;
+            if(!evaluator.eval_expr(expr.children[0], lhs)) {
+              return false;
+            }
             implicit_object = lhs;
-            args.push_back(rhs);
+            explicit_arg_nodes.push_back(&expr.children[1]);
           } else {
-            args.push_back(lhs);
-            args.push_back(rhs);
+            explicit_arg_nodes.push_back(&expr.children[0]);
+            explicit_arg_nodes.push_back(&expr.children[1]);
           }
         } else {
-          constant_eval::ConstexprValue operand;
-          if(!evaluator.eval_expr(expr.children[0], operand)) {
-            return false;
-          }
           if(treat_first_operand_as_implicit_object && binding->is_method) {
+            constant_eval::ConstexprValue operand;
+            if(!evaluator.eval_expr(expr.children[0], operand)) {
+              return false;
+            }
             implicit_object = operand;
           } else {
-            args.push_back(operand);
+            explicit_arg_nodes.push_back(&expr.children[0]);
           }
         }
 
-        const std::size_t explicit_param_offset = binding->is_method ? 1u : 0u;
-        if(function_type->params.size() != args.size() + explicit_param_offset) {
+        if(function_type->params.size() != explicit_arg_nodes.size() + explicit_param_offset) {
           return false;
+        }
+
+        std::vector<constant_eval::ConstexprValue> args;
+        args.reserve(explicit_arg_nodes.size());
+        for(std::size_t i = 0; i < explicit_arg_nodes.size(); ++i) {
+          const TypePtr & target = function_type->params[i + explicit_param_offset];
+          constant_eval::ConstexprValue value;
+          if(target &&
+             evaluate_typed_initializer_value(ctx,
+                                              scope,
+                                              evaluator,
+                                              *explicit_arg_nodes[i],
+                                              target,
+                                              value)) {
+            args.push_back(value);
+            continue;
+          }
+          if(!evaluator.eval_expr(*explicit_arg_nodes[i], value)) {
+            return false;
+          }
+          args.push_back(value);
         }
 
         Scope & call_scope = binding->declaration_scope ? *binding->declaration_scope : scope;
