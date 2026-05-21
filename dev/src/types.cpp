@@ -101,6 +101,33 @@ bool is_hex_digit_char(char c)
          (c >= 'A' && c <= 'F');
 }
 
+unsigned long long parse_integer_digits(const string & value,
+                                        unsigned int start,
+                                        unsigned int base)
+{
+  unsigned long long result = 0;
+  for(unsigned int i = start; i < value.size(); ++i) {
+    unsigned int digit = 0;
+    if(value[i] >= '0' && value[i] <= '9') {
+      digit = static_cast<unsigned int>(value[i] - '0');
+    } else if(value[i] >= 'a' && value[i] <= 'f') {
+      digit = 10u + static_cast<unsigned int>(value[i] - 'a');
+    } else if(value[i] >= 'A' && value[i] <= 'F') {
+      digit = 10u + static_cast<unsigned int>(value[i] - 'A');
+    } else {
+      throw logic_error("invalid integer digit");
+    }
+    if(digit >= base) {
+      throw logic_error("invalid integer digit");
+    }
+    if(result > (ULLONG_MAX - digit) / base) {
+      throw logic_error("out of range");
+    }
+    result = result * base + digit;
+  }
+  return result;
+}
+
 }  // namespace
 
 std::string type_to_string(EFundamentalType type)
@@ -128,7 +155,12 @@ EFundamentalType classify_int(const string& data,
   unsigned int pos;
   unsigned int len = data.size();
   bool octhex = data[0] == '0';
+  bool binary = false;
+  unsigned int digit_start = 0;
+  unsigned int base = 10;
   if(octhex && len > 1 && (data[1] == 'x' || data[1] == 'X')) {
+    digit_start = 2;
+    base = 16;
     for(pos = 2; pos < len; ++pos) {
       if(!is_hex_digit_char(data[pos])) {
         break;
@@ -136,8 +168,20 @@ EFundamentalType classify_int(const string& data,
     }
     if(pos == 2)
       throw logic_error("invalid hex escape");
+  } else if(octhex && len > 1 && (data[1] == 'b' || data[1] == 'B')) {
+    binary = true;
+    digit_start = 2;
+    base = 2;
+    for(pos = 2; pos < len; ++pos) {
+      if(data[pos] != '0' && data[pos] != '1') {
+        break;
+      }
+    }
+    if(pos == 2)
+      throw logic_error("invalid binary literal");
   } else {
     char top = octhex ? '7' : '9';
+    base = octhex ? 8 : 10;
     for(pos = 1; pos < len; ++pos)
       if(data[pos] < '0' || data[pos] > top)
         break;
@@ -169,9 +213,14 @@ EFundamentalType classify_int(const string& data,
       return FundamentalTypeOf<void>();
   }
 
-  result = strtoull(value.data(), NULL, 0);
-  if(result == ULLONG_MAX && errno == ERANGE)
-      throw logic_error("out of range");
+  if(binary) {
+    result = parse_integer_digits(value, digit_start, base);
+  } else {
+    errno = 0;
+    result = strtoull(value.data(), NULL, 0);
+    if(result == ULLONG_MAX && errno == ERANGE)
+        throw logic_error("out of range");
+  }
 
   if(u) {
     if(!ll && !l && result <= UINT_MAX) {
