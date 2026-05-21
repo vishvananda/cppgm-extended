@@ -32,6 +32,7 @@ struct FunctionLayout
   map<string, string> aliased_object_return_slots;
   map<string, lir::Instruction> temp_def_instruction;
   map<string, lir::Operand> elided_direct_branch_load_sources;
+  set<string> address_taken_temps;
   set<string> direct_branch_temps;
   set<string> dead_call_result_temps;
   set<string> direct_call_arg_index_temps;
@@ -570,6 +571,9 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
     const set<string> & direct_branch_temps,
     const set<string> & thread_local_globals);
+set<string> collect_address_taken_temps(
+    const lir::Function & function,
+    const map<string, vector<lir::Parameter> > & function_params);
 bool operand_may_emit_tls_addr(const lir::Operand & operand,
                                const set<string> & thread_local_globals);
 bool instruction_may_emit_tls_addr(const lir::Instruction & inst,
@@ -609,6 +613,119 @@ void note_instruction_uses(map<string, TempInterval> & intervals,
   for(size_t i = 0; i < inst.args.size(); ++i) {
     note_operand_use(intervals, inst.args[i], position, inst.kind);
   }
+}
+
+map<string, string> collect_temp_result_types(const lir::Function & function)
+{
+  map<string, string> out;
+  for(size_t i = 0; i < function.params.size(); ++i) {
+    out[function.params[i].name] = function.params[i].type.text;
+  }
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+      const lir::Instruction & inst = function.blocks[bi].instructions[ii];
+      if(!inst.dest.empty()) {
+        out[inst.dest] = instruction_result_storage_type(inst);
+      }
+    }
+  }
+  return out;
+}
+
+void note_temp_address_required(set<string> & out, const lir::Operand & operand)
+{
+  if(operand.kind == lir::Operand::OP_TEMP) {
+    out.insert(operand.text);
+  }
+}
+
+void note_storage_address_required(set<string> & out,
+                                   const map<string, string> & temp_types,
+                                   const lir::Operand & operand)
+{
+  if(operand.kind != lir::Operand::OP_TEMP) {
+    return;
+  }
+  map<string, string>::const_iterator found = temp_types.find(operand.text);
+  if(found == temp_types.end() || found->second != "ptr") {
+    out.insert(operand.text);
+  }
+}
+
+vector<lir::Parameter> instruction_call_params(
+    const lir::Instruction & inst,
+    const map<string, vector<lir::Parameter> > & function_params)
+{
+  if(inst.has_call_signature) {
+    return inst.call_params;
+  }
+  if(inst.first.kind != lir::Operand::OP_GLOBAL) {
+    return vector<lir::Parameter>();
+  }
+  map<string, vector<lir::Parameter> >::const_iterator found =
+      function_params.find(inst.first.text);
+  return found == function_params.end() ? vector<lir::Parameter>() : found->second;
+}
+
+set<string> collect_address_taken_temps(
+    const lir::Function & function,
+    const map<string, vector<lir::Parameter> > & function_params)
+{
+  const map<string, string> temp_types = collect_temp_result_types(function);
+  set<string> out;
+
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+      const lir::Instruction & inst = function.blocks[bi].instructions[ii];
+      switch(inst.kind) {
+        case lir::Instruction::IK_ADDR:
+          note_temp_address_required(out, inst.first);
+          break;
+        case lir::Instruction::IK_LOAD:
+        case lir::Instruction::IK_ATOMIC_LOAD:
+          note_storage_address_required(out, temp_types, inst.first);
+          break;
+        case lir::Instruction::IK_STORE:
+        case lir::Instruction::IK_ATOMIC_STORE:
+          note_storage_address_required(out, temp_types, inst.second);
+          break;
+        case lir::Instruction::IK_ATOMIC_ADD_FETCH:
+        case lir::Instruction::IK_ATOMIC_EXCHANGE:
+          note_storage_address_required(out, temp_types, inst.first);
+          break;
+        case lir::Instruction::IK_ATOMIC_COMPARE_EXCHANGE:
+          note_storage_address_required(out, temp_types, inst.first);
+          note_storage_address_required(out, temp_types, inst.second);
+          break;
+        case lir::Instruction::IK_COPYOBJ:
+          note_storage_address_required(out, temp_types, inst.first);
+          note_storage_address_required(out, temp_types, inst.second);
+          break;
+        case lir::Instruction::IK_ZEROINIT:
+          note_storage_address_required(out, temp_types, inst.first);
+          break;
+        case lir::Instruction::IK_CALL: {
+          const vector<lir::Parameter> call_params =
+              instruction_call_params(inst, function_params);
+          for(size_t ai = 0; ai < inst.args.size(); ++ai) {
+            if(ai >= call_params.size()) {
+              continue;
+            }
+            const string & param_type = call_params[ai].type.text;
+            if(!scalar_abi_chunk_types(param_type).empty() ||
+               uses_storage_address_passing(call_params[ai].metadata.passing)) {
+              note_storage_address_required(out, temp_types, inst.args[ai]);
+            }
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  }
+
+  return out;
 }
 
 void note_direct_branch_source_uses(map<string, TempInterval> & intervals,
@@ -1565,7 +1682,8 @@ void assign_temp_registers(const lir::Function & function,
   for(size_t i = 0; i < intervals.size(); ++i) {
     const TempInterval & interval = intervals[i];
     if(layout.dead_call_result_temps.count(interval.name) != 0 ||
-       layout.direct_call_arg_index_temps.count(interval.name) != 0) {
+       layout.direct_call_arg_index_temps.count(interval.name) != 0 ||
+       layout.address_taken_temps.count(interval.name) != 0) {
       continue;
     }
     if(!is_register_allocatable_temp_type(interval.type)) {
@@ -1662,7 +1780,8 @@ void assign_float_temp_registers(const lir::Function & function,
   for(size_t i = 0; i < intervals.size(); ++i) {
     const TempInterval & interval = intervals[i];
     if(layout.dead_call_result_temps.count(interval.name) != 0 ||
-       layout.direct_call_arg_index_temps.count(interval.name) != 0) {
+       layout.direct_call_arg_index_temps.count(interval.name) != 0 ||
+       layout.address_taken_temps.count(interval.name) != 0) {
       continue;
     }
     if(!is_xmm_allocatable_temp_type(interval.type) ||
@@ -2319,6 +2438,7 @@ FunctionLayout build_layout(const lir::Function & function,
       collect_direct_call_arg_index_temps(function,
                                          function_params,
                                          thread_local_globals);
+  layout.address_taken_temps = collect_address_taken_temps(function, function_params);
   const vector<mir::ParamBinding> param_bindings = collect_param_bindings(function);
   layout.forwarded_params = collect_forwarded_register_params(function, param_bindings);
   layout.variadic = function.boundary.arity == lir::CAM_VARIADIC;
