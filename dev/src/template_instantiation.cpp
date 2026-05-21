@@ -6409,6 +6409,42 @@ void bind_template_arguments_into_scope(
   bind_argument_local_named_types(type_system, scope, arguments);
 }
 
+void bind_active_owner_instantiation_context(SemanticContext & ctx,
+                                             Scope & scope,
+                                             const Scope & declaring_scope,
+                                             ClassInfo & active_owner)
+{
+  ClassInfo * declared_owner = declaring_scope.class_info;
+  if(!declared_owner ||
+     declared_owner == &active_owner ||
+     !declared_owner->source_template ||
+     active_owner.source_template != declared_owner->source_template) {
+    return;
+  }
+
+  if(!active_owner.instantiation_arguments.empty()) {
+    bind_template_arguments_into_scope(ctx,
+                                       scope,
+                                       active_owner.source_template->parameters,
+                                       active_owner.instantiation_arguments);
+  }
+
+  if(!active_owner.member_scope) {
+    return;
+  }
+  for(std::map<std::string, TypePtr>::const_iterator it =
+          active_owner.member_scope->named_types.begin();
+      it != active_owner.member_scope->named_types.end();
+      ++it) {
+    if(it->first.empty() ||
+       !it->second ||
+       declaring_scope.named_types.count(it->first) == 0) {
+      continue;
+    }
+    template_scope::bind_named_type(scope, it->first, it->second);
+  }
+}
+
 Scope & bind_template_arguments(SemanticContext & ctx,
                                 Scope & declaring_scope,
                                 const std::vector<TemplateParameterInfo> & parameters,
@@ -6445,6 +6481,10 @@ Scope & bind_template_arguments_for_instantiation(
          current_instantiation_owner_for_scope(
              ctx, declaring_scope, use_scope, active_owner)) {
     scope.class_info = current_owner;
+    bind_active_owner_instantiation_context(ctx,
+                                            scope,
+                                            declaring_scope,
+                                            *current_owner);
     if(!current_owner->name.empty()) {
       template_scope::bind_named_type(scope, current_owner->name, current_owner->type);
     }
@@ -7132,6 +7172,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                         instantiation_owner));
       if(use_owner_scope_for_member_template) {
         refreshed_scope.class_info = instantiation_owner;
+        bind_active_owner_instantiation_context(ctx,
+                                                refreshed_scope,
+                                                *cache_instantiation_context_scope,
+                                                *instantiation_owner);
       }
       if(use_owner_scope_for_member_template &&
          use_scope != owner_member_instantiation_scope) {
@@ -7284,6 +7328,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   }
   if(use_owner_scope_for_member_template) {
     inst_scope.class_info = instantiation_owner;
+    bind_active_owner_instantiation_context(ctx,
+                                            inst_scope,
+                                            *instantiation_context_scope,
+                                            *instantiation_owner);
   }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
