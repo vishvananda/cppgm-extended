@@ -180,6 +180,11 @@ protected:
   bool can_start_type_id() const;
   bool qualified_name_span_prefers_expression(std::size_t begin,
                                               std::size_t end) const;
+  bool qualified_name_span_names_known_type(std::size_t begin,
+                                            std::size_t end) const;
+  bool qualified_template_id_span_has_head_expression_lookup(
+      std::size_t begin,
+      std::size_t end) const;
   bool parenthesized_type_id_prefers_expression(
       const CppAstNode & type_id) const;
   bool can_start_named_decl_specifier_seq() const;

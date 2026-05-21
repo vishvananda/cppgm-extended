@@ -2786,11 +2786,158 @@ bool CppAstParser::qualified_name_span_prefers_expression(std::size_t begin,
          !scoped_known_type;
 }
 
+bool CppAstParser::qualified_name_span_names_known_type(std::size_t begin,
+                                                        std::size_t end) const
+{
+  if(begin >= end) {
+    return false;
+  }
+
+  const template_angle_lookup::ScopedNameLookup lookup =
+      make_template_angle_lookup();
+  qualified_name_parser::QualifiedNameParseResult parsed;
+  qualified_name_parser::UnqualifiedNameOptions options;
+  options.allow_operator = false;
+  if(!qualified_name_parser::parse_qualified_name(tokens,
+                                                  begin,
+                                                  lookup,
+                                                  options,
+                                                  parsed) ||
+     parsed.end != end ||
+     parsed.name_kind != qualified_name_parser::UNQ_COMPONENT) {
+    return false;
+  }
+
+  const std::pair<std::size_t, std::size_t> name_range =
+      parsed.name_has_template_suffix ?
+          parsed.name_template_head_component :
+          parsed.name_component;
+  if(name_range.first >= name_range.second) {
+    return false;
+  }
+  const std::string name =
+      primary_name_text(token_span_text_spaced(name_range.first,
+                                               name_range.second));
+  if(name.empty()) {
+    return false;
+  }
+
+  const RecogToken & token = tokens.peek(name_range.first);
+  const bool scoped_known_type =
+      is_known_type_name_identifier(token) ||
+      is_template_type_parameter_name(token);
+  if(!parsed.rooted && parsed.qualifiers.empty()) {
+    return scoped_known_type;
+  }
+
+  std::string qualifier_text = parsed.rooted ? std::string("::") : std::string();
+  for(std::size_t i = 0; i < parsed.qualifiers.size(); ++i) {
+    if(!qualifier_text.empty() && qualifier_text != "::") {
+      qualifier_text += "::";
+    }
+    qualifier_text += token_span_text_spaced(parsed.qualifiers[i].first,
+                                             parsed.qualifiers[i].second);
+  }
+  const std::string namespace_key =
+      resolve_visible_namespace_scope_key(qualifier_text);
+  const auto qualifier_names_current_namespace =
+      [&]() -> bool
+      {
+        const std::string normalized = normalized_lookup_name(qualifier_text);
+        const std::string current_key = current_namespace_path_key();
+        if(normalized.empty() || current_key.empty()) {
+          return false;
+        }
+        if(parsed.rooted) {
+          return normalized == current_key;
+        }
+
+        for(std::size_t depth = namespace_path_stack.size(); ; --depth) {
+          std::string candidate;
+          for(std::size_t i = 0; i < depth; ++i) {
+            if(!candidate.empty()) {
+              candidate += "::";
+            }
+            candidate += namespace_path_stack[i];
+          }
+          if(!candidate.empty()) {
+            candidate += "::";
+          }
+          candidate += normalized;
+          if(candidate == current_key) {
+            return true;
+          }
+          if(depth == 0) {
+            break;
+          }
+        }
+        return false;
+      };
+  const bool active_namespace_qualifier = qualifier_names_current_namespace();
+  if(namespace_key.empty() ||
+     (!namespace_scope_exists(namespace_key) && !active_namespace_qualifier)) {
+    return scoped_known_type;
+  }
+
+  const auto type_found = namespace_type_name_scopes.find(namespace_key);
+  bool known_type =
+      type_found != namespace_type_name_scopes.end() &&
+      type_found->second.count(name) != 0;
+  if(active_namespace_qualifier) {
+    const std::size_t namespace_scope_index = namespace_path_stack.size();
+    known_type =
+        known_type ||
+        (namespace_scope_index < type_name_scopes.size() &&
+         type_name_scopes[namespace_scope_index].count(name) != 0);
+  }
+
+  return known_type || scoped_known_type;
+}
+
+bool CppAstParser::qualified_template_id_span_has_head_expression_lookup(
+    std::size_t begin,
+    std::size_t end) const
+{
+  if(begin >= end) {
+    return false;
+  }
+
+  const template_angle_lookup::ScopedNameLookup lookup =
+      make_template_angle_lookup();
+  for(std::size_t open = begin; open < end; ++open) {
+    if(!tokens.peek(open).is_simple(OP_LT)) {
+      continue;
+    }
+
+    std::size_t suffix_end = open;
+    std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
+    if(!template_angle::parse_template_id_suffix_ranges(tokens,
+                                                        open,
+                                                        lookup,
+                                                        suffix_end,
+                                                        arg_ranges) ||
+       suffix_end != end) {
+      continue;
+    }
+
+    if(qualified_name_span_prefers_expression(begin, open) ||
+       (!qualified_name_span_names_known_type(begin, open) &&
+        peek().is_simple(OP_LPAREN))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool CppAstParser::parenthesized_type_id_prefers_expression(
     const CppAstNode & type_id) const
 {
   if(qualified_name_span_prefers_expression(type_id.token_start,
                                             type_id.token_end)) {
+    return true;
+  }
+  if(qualified_template_id_span_has_head_expression_lookup(type_id.token_start,
+                                                           type_id.token_end)) {
     return true;
   }
 
@@ -2805,6 +2952,10 @@ bool CppAstParser::parenthesized_type_id_prefers_expression(
   const CppAstNode & head = type_id.children[0].children[0];
   const bool function_like_abstract_declarator =
       type_id_has_function_style_abstract_declarator(type_id);
+  if(qualified_template_id_span_has_head_expression_lookup(head.token_start,
+                                                           head.token_end)) {
+    return true;
+  }
   const cpp_decl::QualifiedName * head_syntax = cppast_qualified_name_syntax(head);
   if(head_syntax &&
      (head_syntax->rooted || !head_syntax->qualifiers.empty()) &&
