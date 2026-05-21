@@ -184,6 +184,28 @@ bool expand_constexpr_function_body_packs(SemanticContext & ctx,
   return true;
 }
 
+bool evaluate_method_call_implicit_object(
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode & callee,
+    constant_eval::ConstexprValue & out)
+{
+  if(callee.kind == CppAstKind::member_expression &&
+     callee.children.size() == 2) {
+    if(callee.children[0].kind == CppAstKind::id_expression &&
+       callee.children[0].value == "this") {
+      return evaluator.current_this_object(out);
+    }
+    return evaluator.eval_expr(callee.children[0], out);
+  }
+
+  if(callee.kind == CppAstKind::id_expression ||
+     callee.kind == CppAstKind::identifier) {
+    return evaluator.current_this_object(out);
+  }
+
+  return evaluator.eval_expr(callee, out);
+}
+
 }  // namespace
 
 bool evaluate_constant_call_expression_value(
@@ -775,17 +797,7 @@ bool evaluate_constant_call_expression_value(
   info.is_method = binding->is_method;
   if(binding->is_method) {
     constant_eval::ConstexprValue implicit_object;
-    if(callee.kind == CppAstKind::member_expression &&
-       callee.children.size() == 2) {
-      if(callee.children[0].kind == CppAstKind::id_expression &&
-         callee.children[0].value == "this") {
-        if(!evaluator.current_this_object(implicit_object)) {
-          return false;
-        }
-      } else if(!evaluator.eval_expr(callee.children[0], implicit_object)) {
-        return false;
-      }
-    } else if(!evaluator.current_this_object(implicit_object)) {
+    if(!evaluate_method_call_implicit_object(evaluator, callee, implicit_object)) {
       return false;
     }
     info.has_implicit_object = true;
