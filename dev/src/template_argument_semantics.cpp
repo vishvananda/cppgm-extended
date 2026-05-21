@@ -23778,24 +23778,33 @@ NonTypeArgumentStatus evaluate_structured_template_member_bool_value(
     return NT_ARG_PARSE_FAILED;
   }
 
-  const ValueBinding * direct_member_template_value = nullptr;
-  if(lookup_concrete_member_template_value_binding(
-         services,
-         scope.require(),
-         template_api::qualified_name_text(*qualified),
-         direct_member_template_value) &&
-     direct_member_template_value) {
-    constant_eval::ConstexprValue direct_value;
-    bool truthy = false;
-    if(materialize_leaf_member_constant_binding(
+  bool has_qualifier_template_id_syntax = false;
+  for(size_t i = 0; i < qualified->qualifiers.size(); ++i) {
+    if(cppast_qualifier_template_id_syntax(expr, i)) {
+      has_qualifier_template_id_syntax = true;
+      break;
+    }
+  }
+  if(!has_qualifier_template_id_syntax && !has_qualifier_type_syntax(expr)) {
+    const ValueBinding * direct_member_template_value = nullptr;
+    if(lookup_concrete_member_template_value_binding(
            services,
-           *const_cast<ValueBinding *>(direct_member_template_value),
-           direct_value) &&
-       constant_eval::constexpr_value_truthy(direct_value, truthy)) {
-      out = truthy;
-      note_non_bool_static_value_dependency_for_witness(
-          services, *direct_member_template_value);
-      return NT_ARG_EVALUATED;
+           scope.require(),
+           template_api::qualified_name_text(*qualified),
+           direct_member_template_value) &&
+       direct_member_template_value) {
+      constant_eval::ConstexprValue direct_value;
+      bool truthy = false;
+      if(materialize_leaf_member_constant_binding(
+             services,
+             *const_cast<ValueBinding *>(direct_member_template_value),
+             direct_value) &&
+         constant_eval::constexpr_value_truthy(direct_value, truthy)) {
+        out = truthy;
+        note_non_bool_static_value_dependency_for_witness(
+            services, *direct_member_template_value);
+        return NT_ARG_EVALUATED;
+      }
     }
   }
 
