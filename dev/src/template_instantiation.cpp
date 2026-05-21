@@ -7673,6 +7673,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                   const witness::ScopedTemplateWitnessSourceCapturePause
                       source_capture_pause;
                   Scope result_scope(&inst_scope, "<trailing-return>", false);
+                  Scope owner_result_scope(&inst_scope,
+                                           "<trailing-return-owner>",
+                                           false);
                   FunctionBinding synthetic_function;
                   Scope * parse_scope = &inst_scope;
                   if(source_decl->declaring_scope &&
@@ -7708,6 +7711,23 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                        method_type->params[0]);
                       parse_scope = &result_scope;
                     }
+                  }
+                  if(instantiation_owner &&
+                     instantiation_owner->source_template &&
+                     !instantiation_owner->instantiation_arguments.empty()) {
+                    if(parse_scope == &inst_scope) {
+                      owner_result_scope.class_info = inst_scope.class_info;
+                      owner_result_scope.namespace_scope =
+                          inst_scope.namespace_scope;
+                      owner_result_scope.function = inst_scope.function;
+                      parse_scope = &owner_result_scope;
+                    }
+                    ::template_instantiation::bind_template_arguments_into_scope(
+                        services,
+                        *parse_scope,
+                        instantiation_owner->source_template->parameters,
+                        instantiation_owner->instantiation_arguments,
+                        nullptr);
                   }
                   return template_decl_ast::parse_type_id(services,
                                                           *parse_scope,

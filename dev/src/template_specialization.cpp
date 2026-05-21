@@ -3023,6 +3023,67 @@ bool try_expand_alias_template_pattern_structurally(
       return false;
     }
   }
+
+  const auto try_expand_known_conditional_alias = [&]() -> bool
+  {
+    if(arg_texts.size() != 3 ||
+       alias_template.parameters.size() != 3 ||
+       (alias_template.name != "conditional_t" &&
+        alias_template.name != "__conditional_t") ||
+       alias_template.parameters[0].kind != TemplateParameterInfo::TP_NON_TYPE ||
+       alias_template.parameters[1].kind != TemplateParameterInfo::TP_TYPE ||
+       alias_template.parameters[2].kind != TemplateParameterInfo::TP_TYPE ||
+       arguments.size() != 3 ||
+       arguments[0].kind != TemplateArgument::TA_VALUE ||
+       arguments[0].dependent) {
+      return false;
+    }
+
+    const std::size_t selected_index = arguments[0].value ? 1 : 2;
+    const TemplateArgument & selected = arguments[selected_index];
+    if(selected.kind != TemplateArgument::TA_TYPE || !selected.type) {
+      return false;
+    }
+
+    TypePtr selected_type = selected.type;
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        effective_body_scope,
+        selected_type);
+    if(!selected_type) {
+      return false;
+    }
+
+    if(expanded_type) {
+      *expanded_type = selected_type;
+    }
+    expanded_text = type_text(selected_type);
+    if(expanded_text.empty()) {
+      expanded_text = selected.text;
+    }
+    if(expanded_text.empty() &&
+       arg_syntaxes &&
+       selected_index < arg_syntaxes->size()) {
+      expanded_text = (*arg_syntaxes)[selected_index].text;
+    }
+    if(expanded_text.empty()) {
+      return false;
+    }
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "expand-alias-conditional-known alias="
+            << alias_template.name
+            << " selected=" << selected_index
+            << " type=" << describe_type(selected_type)
+            << " text=" << expanded_text;
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    return true;
+  };
+  if(try_expand_known_conditional_alias()) {
+    return true;
+  }
+
   const auto find_type_parameter =
       [&](const TypePtr & type) -> const TemplateParameterInfo *
   {
