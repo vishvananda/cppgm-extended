@@ -68,6 +68,77 @@ std::string simple_type_identifier_from_specifiers(const CppAstNode & specifiers
   return specifiers.children[0].value;
 }
 
+bool scope_level_has_expression_binding(const Scope & scope, const std::string & name)
+{
+  return scope.values.find(name) != scope.values.end() ||
+         scope.function_sets.find(name) != scope.function_sets.end() ||
+         scope.function_templates.find(name) != scope.function_templates.end() ||
+         scope.variable_templates.find(name) != scope.variable_templates.end() ||
+         scope.template_bound_value_names.find(name) != scope.template_bound_value_names.end() ||
+         scope.template_bound_value_pack_names.find(name) !=
+             scope.template_bound_value_pack_names.end() ||
+         scope.named_value_packs.find(name) != scope.named_value_packs.end();
+}
+
+bool scope_level_has_type_binding(const Scope & scope, const std::string & name)
+{
+  return scope.named_types.find(name) != scope.named_types.end() ||
+         scope.class_templates.find(name) != scope.class_templates.end() ||
+         scope.alias_templates.find(name) != scope.alias_templates.end() ||
+         scope.template_bound_type_names.find(name) != scope.template_bound_type_names.end() ||
+         scope.template_bound_type_pack_names.find(name) !=
+             scope.template_bound_type_pack_names.end() ||
+         scope.named_type_packs.find(name) != scope.named_type_packs.end();
+}
+
+bool unqualified_lookup_prefers_expression_binding(const Scope & scope,
+                                                   const std::string & name)
+{
+  for(const Scope * current = &scope; current; current = current->parent) {
+    const bool has_expression = scope_level_has_expression_binding(*current, name);
+    const bool has_type = scope_level_has_type_binding(*current, name);
+    if(has_expression || has_type) {
+      return has_expression;
+    }
+  }
+  return false;
+}
+
+bool initializer_mentions_expression_binding(const Scope & scope, const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::id_expression &&
+     !node.qualified_name_syntax &&
+     !node.template_id_syntax &&
+     simple_identifier_text(node.value) &&
+     unqualified_lookup_prefers_expression_binding(scope, node.value)) {
+    return true;
+  }
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(initializer_mentions_expression_binding(scope, node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool should_recover_function_style_local_initializer(
+    Scope & scope,
+    const CppAstNode & declarator)
+{
+  CppAstNode stripped_declarator;
+  CppAstNode recovered_initializer;
+  std::string recovery_error;
+  if(!semantic_parameter_recovery::recover_function_style_initializer_declarator(
+         declarator,
+         stripped_declarator,
+         recovered_initializer,
+         recovery_error)) {
+    return false;
+  }
+  return initializer_mentions_expression_binding(scope, recovered_initializer);
+}
+
 class ScopedStatementTemplateUseLocation
 {
 public:
@@ -1101,7 +1172,11 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
                                            is_typedef);
     const bool parsed_as_function =
         parsed_as_variable && type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION;
-    if(parsed_as_function && !initializer) {
+    const bool recover_function_style_initializer =
+        parsed_as_function &&
+        !initializer &&
+        should_recover_function_style_local_initializer(scope, init_decl.children[0]);
+    if(parsed_as_function && !initializer && !recover_function_style_initializer) {
       vector<pair<string, TypePtr> > params;
       vector<const CppAstNode *> default_args;
       const CppAstNode * parameter_clause =
