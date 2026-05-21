@@ -1001,12 +1001,12 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
       }
     } else if(!(value_initialize_missing_subobjects ?
                     evaluate_value_initialized_type(ctx,
-                                                    scope,
+                                                    constexpr_ctor_scope,
                                                     evaluator,
                                                     base.type->type,
                                                     base_value) :
                     evaluate_default_initialized_type(ctx,
-                                                      scope,
+                                                      constexpr_ctor_scope,
                                                       evaluator,
                                                       base.type->type,
                                                       base_value))) {
@@ -1033,12 +1033,12 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
       }
     } else if(!(value_initialize_missing_subobjects ?
                     evaluate_value_initialized_type(ctx,
-                                                    scope,
+                                                    constexpr_ctor_scope,
                                                     evaluator,
                                                     field.type,
                                                     field_value) :
                     evaluate_default_initialized_type(ctx,
-                                                      scope,
+                                                      constexpr_ctor_scope,
                                                       evaluator,
                                                       field.type,
                                                       field_value))) {
