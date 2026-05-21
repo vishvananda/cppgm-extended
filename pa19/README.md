@@ -147,13 +147,17 @@ metaprogramming integration cases under `tests/general/`.
 
 ### PA19 Syntax Spec
 
-The authoritative source-language syntax boundary for PA19 is `pa19.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa19.gram`. The grammar defines accepted syntax only;
+the PA19 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-PA19 inherits the PA18 syntax boundary and extends it with:
+PA19 gives the following previously parsed forms semantic/code-generation
+meaning:
 
 - integral non-type template parameters such as `template<int N>`
 - explicit specialization syntax such as `template<> int f<int>(int)` and

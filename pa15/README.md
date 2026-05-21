@@ -181,16 +181,17 @@ are not tied to one specific C++11 clause.
 
 ### PA15 Syntax Spec
 
-The authoritative source-language syntax boundary for PA15 is `pa15.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa15.gram`. The grammar defines accepted syntax only;
+the PA15 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-Because PA15 extends PA14 rather than adding a new syntax layer, `pa15.gram`
-intentionally mirrors the PA10-PA14 source subset. It exists so PA15 has the
-same explicit grammar contract and HTML grammar explorer shape as the earlier
-assignments.
+Because PA15 extends PA14 rather than adding a new syntax layer, PA15 gives the
+class/object subset described below semantic and lowering meaning.
 
 Passing PA14 is necessary but not sufficient for passing PA15: an input may be syntactically
 valid for PA10 and code-generation-valid for PA14 and still be outside the PA15 class/object

@@ -163,14 +163,17 @@ PA17 is tested against the generated LowIR text.
 
 ### PA17 Syntax Spec
 
-The authoritative source-language syntax boundary for PA17 is `pa17.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa17.gram`. The grammar defines accepted syntax only;
+the PA17 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-PA17 inherits the PA16 syntax boundary. The virtual syntax used here was already preserved
-in PA10; PA17 is the first milestone that gives it code-generation meaning.
+The virtual syntax used here was already preserved by PA10; PA17 is the first
+milestone that gives it code-generation meaning.
 
 Passing PA16 is necessary but not sufficient for passing PA17: an input may be syntactically
 valid for PA10-PA16 and code-generation-valid for PA16 and still be outside the PA17

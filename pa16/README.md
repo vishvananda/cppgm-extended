@@ -190,15 +190,18 @@ PA16 is tested against the generated LowIR text.
 
 ### PA16 Syntax Spec
 
-The authoritative source-language syntax boundary for PA16 is `pa16.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa16.gram`. The grammar defines accepted syntax only;
+the PA16 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-PA16 mostly inherits the PA10-PA15 syntax boundary, but extends it with the class-syntax
-forms needed to finish the common value-semantics work, especially out-of-class constructor
-and destructor definitions.
+Syntax for class value-semantics forms, including out-of-class constructor and
+destructor definitions, is already part of that grammar; PA16 gives the
+supported value-semantics subset semantic and lowering meaning.
 
 Passing PA15 is necessary but not sufficient for passing PA16: an input may be syntactically
 valid for PA10-PA15 and code-generation-valid for PA15 and still be outside the PA16

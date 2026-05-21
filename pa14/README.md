@@ -191,16 +191,18 @@ PA14 is tested against the generated LowIR text.
 
 ### PA14 Syntax Spec
 
-The authoritative source-language syntax boundary for PA14 is `pa14.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa14.gram`. The grammar defines accepted syntax only;
+the PA14 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-Because PA14 is a code-generation assignment layered directly on PA10-PA12,
-`pa14.gram` intentionally mirrors the PA10-PA12 source subset. It exists so PA14
-has the same explicit grammar contract and HTML grammar explorer shape as the
-earlier assignments.
+Because PA14 is a code-generation assignment layered directly on PA10-PA12, the
+grammar keeps parser/AST behavior stable while the `Assignment Boundary` below
+defines which already-parsed constructs PA14 must analyze and lower.
 
 Passing PA12 is necessary but not sufficient for passing PA14: an input may be syntactically
 valid for PA10 and semantically valid for PA12 and still be outside the PA14 code-generation

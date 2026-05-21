@@ -131,15 +131,18 @@ The shipped PA28 tests are the contract for this milestone.
 
 ### PA28 Syntax Spec
 
-The authoritative source-language syntax boundary for PA28 is `pa28.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa28.gram`. The grammar defines accepted syntax only;
+the PA28 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the
 checked-in `.ref` files.
 
-PA28 inherits the PA27 syntax boundary and does not add a new source-language grammar file
-format. It instead enables more of the already-accepted C++11 syntax to participate in
-semantic analysis and lowering.
+PA28 does not add a new source-language grammar format. It instead enables more
+of the already-accepted C++11 syntax to participate in semantic analysis and
+lowering.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
 `pa28.gram` as the source of truth.

@@ -68,7 +68,8 @@ The starter kit provides:
 - `pa30/Makefile`
 - `pa30/scripts/`, the compiler-driver test harness
 - `pa30/tests/general/`, the PA30 tests and checked-in reference files
-- the grammar for this assignment called `pa30.gram`
+- the shared `cppgm++` source grammar, exposed for this assignment as
+  `pa30.gram`
 - an HTML grammar explorer of `pa30.gram` in the sub-directory `grammar/`
 
 Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the

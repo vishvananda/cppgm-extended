@@ -124,11 +124,10 @@ of template completion:
 
 ### PA22 Syntax Boundary
 
-PA22 does not ship a new grammar file. It inherits the PA19 source-language
-syntax boundary, the PA20 constant-evaluation semantics, and the PA21 template
-entity/specialization model. PA22 is a deduction, substitution, and SFINAE
-assignment: parsing a construct does not by itself make that construct required
-unless it is inside the PA22 boundary below.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa22.gram`. The grammar defines accepted syntax only;
+the PA22 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 ### Optional Student Test Ideas
 

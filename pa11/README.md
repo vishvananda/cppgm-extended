@@ -89,13 +89,14 @@ cppgm++ --emit-types -o <outfile> <srcfile1> [<srcfile2> ...]
 
 ### Input Contract
 
-Each input file is a C++ source file in the PA11 grammar subset. The
-authoritative source syntax is `pa11.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa11.gram`. The grammar defines accepted syntax only;
+the PA11 scope/type requirements are defined by the Required Features and Out Of
+Scope sections below.
 
-`pa11.gram` intentionally mirrors the PA10 source subset so PA11 has an explicit
-local grammar contract. Passing PA10 syntax is necessary but not sufficient for
-PA11: a program may parse successfully and still require semantic behavior that
-this assignment does not define.
+Passing PA10 syntax is necessary but not sufficient for PA11: a program may
+parse successfully and still require declaration, type, or constant-expression
+behavior that this assignment does not define.
 
 The PA6/PA10 mock-name convention still applies where pure syntax needs a
 type-like name before full semantic disambiguation exists.
@@ -231,6 +232,8 @@ PA11 does not require:
 - general `sizeof`, `alignof`, or `decltype` beyond the type-forming cases
   required by this assignment
 - template-aware semantic disambiguation of PA10 syntax ambiguities
+- non-type template parameter binding, template specialization modeling, or
+  template instantiation semantics
 - floating-point or pointer constant evaluation
 - full constant-expression semantics
 - opaque unscoped enum declarations such as `enum E;`

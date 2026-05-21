@@ -163,15 +163,20 @@ assignments.
 
 ### PA18 Syntax Spec
 
-The authoritative source-language syntax boundary for PA18 is `pa18.gram`.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa18.gram`. The grammar defines accepted syntax only;
+the PA18 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
 format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
 `.ref` files.
 
-PA18 inherits the PA17 syntax boundary. Template declarations, template-parameter clauses,
-and the common template-id syntax were already preserved by PA10; PA18 is the first
-milestone that gives a supported subset of that syntax semantic/code-generation meaning.
+Template declarations, template-parameter clauses, common template-id syntax,
+and later-template syntax such as non-type template parameters were already
+preserved by PA10; PA18 is the first milestone that gives a supported
+type/template-template subset of template syntax semantic/code-generation
+meaning.
 
 Passing PA17 is necessary but not sufficient for passing PA18: an input may be syntactically
 valid for PA10-PA17 and code-generation-valid for PA17 and still be outside the PA18
@@ -236,7 +241,8 @@ optional execution scaffold.
 
 The following are explicitly out of scope for PA18:
 
-- non-type template parameters and non-type template arguments
+- semantic support for non-type template parameters and non-type template
+  arguments
 - partial specialization
 - explicit specialization
 - full standard two-phase lookup
