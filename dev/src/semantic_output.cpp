@@ -107,6 +107,9 @@ void apply_local_static_guard_to_lifetime_actions(DumpNode & var_node)
   }
 }
 
+bool namespace_variable_type_has_class_lifetime(SemanticContext & ctx,
+                                                const TypePtr & type);
+
 std::string describe_scope_placeholder_origin(SemanticContext & ctx, Scope & scope)
 {
   std::set<std::string> seen_type_names;
@@ -2753,11 +2756,26 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
 
     long long constant_value = 0;
     constant_eval::ConstexprValue constexpr_value;
+    Scope * initializer_scope =
+        binding.constant_initializer_scope ?
+            binding.constant_initializer_scope :
+            info.member_scope.get();
+    const bool class_lifetime_type =
+        namespace_variable_type_has_class_lifetime(ctx, binding.type);
+    const bool needs_default_lifetime_actions =
+        class_lifetime_type &&
+        !binding.constant_initializer &&
+        (!semantic_class_model::is_trivially_default_constructible_type_for_host_abi(
+             ctx,
+             binding.type) ||
+         !semantic_class_model::is_trivially_destructible_type_for_host_abi(
+             ctx,
+             binding.type));
     if(binding.constant_initializer &&
-       binding.constant_initializer_scope &&
+       initializer_scope &&
        !ctx.complete_class_type(binding.type) &&
        !is_int128_integral_type(binding.type) &&
-       ctx.evaluate_initializer_constant_value(*binding.constant_initializer_scope,
+       ctx.evaluate_initializer_constant_value(*initializer_scope,
                                                *binding.constant_initializer,
                                                binding.type,
                                                constexpr_value) &&
@@ -2767,11 +2785,23 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
       literal_node.semantic_type = binding.type;
       literal_node.value_category = CVC_PRVALUE;
       var_node.children.push_back(std::move(literal_node));
+    } else if(!var_node.is_extern_declaration &&
+              initializer_scope &&
+              class_lifetime_type &&
+              (binding.constant_initializer || needs_default_lifetime_actions)) {
+      semantic_lifetime::analyze_object_lifetime_actions(
+          ctx,
+          *initializer_scope,
+          binding.name,
+          binding.type,
+          binding.constant_initializer,
+          var_node,
+          ctx.source_location_for_name_in_node(*binding.definition_node, binding.name));
     } else if(binding.constant_initializer &&
-              binding.constant_initializer_scope &&
+              initializer_scope &&
               !var_node.is_extern_declaration) {
       semantic_lifetime::analyze_initializer(ctx,
-                                             *binding.constant_initializer_scope,
+                                             *initializer_scope,
                                              binding.type,
                                              *binding.constant_initializer,
                                              var_node);
