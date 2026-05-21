@@ -2319,6 +2319,22 @@ public:
                     << (matches_partial_owner_template_parameters ? "yes" : "no");
               parser_trace::note("template.resolve", std::string(), trace.str());
             }
+            const auto member_exclude_from_explicit_instantiation =
+                [&]() -> bool
+                {
+                  FunctionBinding * resolved_member_declaration = nullptr;
+                  return resolve_out_of_class_method_binding_with_resolution(
+                             pattern_scope,
+                             qualified_member,
+                             declared_type,
+                             prepared_owner_method.syntax.is_const_method,
+                             prepared_owner_method.syntax.is_volatile_method,
+                             prepared_owner_method.syntax.ref_qualifier,
+                             resolved_member_declaration,
+                             QualifiedOwnerClassResolution::ReferenceMembers) &&
+                         resolved_member_declaration &&
+                         resolved_member_declaration->exclude_from_explicit_instantiation;
+                };
             if(template_decl) {
               if(body) {
                 if(template_decl->body) {
@@ -2416,6 +2432,8 @@ public:
               stored.is_const_method = prepared_owner_method.syntax.is_const_method;
               stored.is_volatile_method = prepared_owner_method.syntax.is_volatile_method;
                 stored.ref_qualifier = prepared_owner_method.syntax.ref_qualifier;
+                stored.exclude_from_explicit_instantiation =
+                    member_exclude_from_explicit_instantiation();
                 stored.parameters = owner_template_parameters;
                 owner_template_decl->member_function_definitions[qualified_member.name].push_back(
                     stored);
@@ -2460,6 +2478,8 @@ public:
               stored.is_const_method = prepared_owner_method.syntax.is_const_method;
               stored.is_volatile_method = prepared_owner_method.syntax.is_volatile_method;
               stored.ref_qualifier = prepared_owner_method.syntax.ref_qualifier;
+              stored.exclude_from_explicit_instantiation =
+                  member_exclude_from_explicit_instantiation();
               stored.parameters = owner_template_parameters;
               owner_partial_decl->member_function_definitions[qualified_member.name].push_back(
                   stored);
@@ -2511,6 +2531,8 @@ public:
               stored.is_const_method = prepared_owner_method.syntax.is_const_method;
               stored.is_volatile_method = prepared_owner_method.syntax.is_volatile_method;
               stored.ref_qualifier = prepared_owner_method.syntax.ref_qualifier;
+              stored.exclude_from_explicit_instantiation =
+                  member_exclude_from_explicit_instantiation();
               stored.parameters = owner_template_parameters;
               owner_template_decl->member_function_definitions[qualified_member.name].push_back(
                   stored);

@@ -2319,6 +2319,35 @@ bool special_member_excluded_from_explicit_instantiation(const CppAstNode & node
   return text.find("exclude_from_explicit_instantiation") != std::string::npos;
 }
 
+bool class_member_declaration_excluded_from_explicit_instantiation(
+    const CppAstNode & node)
+{
+  if(node.has_exclude_from_explicit_instantiation) {
+    return true;
+  }
+  const CppAstNode * specifiers = find_child(node, CppAstKind::decl_specifier_seq);
+  if(specifiers && specifiers->has_exclude_from_explicit_instantiation) {
+    return true;
+  }
+  const CppAstNode * member_specifiers = find_child(node, CppAstKind::member_specifiers);
+  if(member_specifiers &&
+     member_specifiers->has_exclude_from_explicit_instantiation) {
+    return true;
+  }
+  const std::string text = node_text(node);
+  return text.find("exclude_from_explicit_instantiation") != std::string::npos;
+}
+
+void apply_member_declaration_exclusion(FunctionBinding * binding,
+                                        const CppAstNode & declaration)
+{
+  if(binding) {
+    binding->exclude_from_explicit_instantiation =
+        binding->exclude_from_explicit_instantiation ||
+        class_member_declaration_excluded_from_explicit_instantiation(declaration);
+  }
+}
+
 const CppAstNode * find_anonymous_union_specifier(const CppAstNode & node)
 {
   if(node.kind == CppAstKind::class_specifier && node.value.empty() && node_is_union_class(node)) {
@@ -7486,7 +7515,8 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                    is_constexpr_member,
                                    false);
         request.is_static_member = true;
-        ctx.register_function_entity(request);
+        apply_member_declaration_exclusion(ctx.register_function_entity(request),
+                                           node);
       } else {
         const bool is_defaulted =
             init_decl.children.size() == 2 &&
@@ -7518,6 +7548,7 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
+          apply_member_declaration_exclusion(binding, node);
         }
       }
       continue;
@@ -7882,6 +7913,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
         request.is_static_member = true;
         if(FunctionBinding * binding = ctx.register_function_entity(request)) {
           binding->is_deleted = is_deleted;
+          apply_member_declaration_exclusion(binding, node);
         }
       } else {
         FunctionBinding * binding =
@@ -7902,6 +7934,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
+          apply_member_declaration_exclusion(binding, node);
         }
       }
       continue;
@@ -8845,7 +8878,8 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                                    is_constexpr_member,
                                    false);
         request.is_static_member = true;
-        ctx.register_function_entity(request);
+        apply_member_declaration_exclusion(ctx.register_function_entity(request),
+                                           node);
       } else {
         const bool is_defaulted =
             init_decl.children.size() == 2 &&
@@ -8877,6 +8911,7 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
+          apply_member_declaration_exclusion(binding, node);
         }
       }
       continue;
