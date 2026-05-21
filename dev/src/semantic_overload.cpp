@@ -300,6 +300,24 @@ std::string prefer_later_source_location(const std::string & first,
 
 std::string normalize_template_witness_location(const std::string & location);
 
+bool source_location_is_strictly_later_in_same_file(const std::string & first,
+                                                    const std::string & second)
+{
+  const ParsedSourceLocation parsed_first =
+      parse_source_location(normalize_template_witness_location(first));
+  const ParsedSourceLocation parsed_second =
+      parse_source_location(normalize_template_witness_location(second));
+  if(!parsed_first.valid || !parsed_second.valid ||
+     parsed_first.file != parsed_second.file) {
+    return false;
+  }
+  if(parsed_first.line > parsed_second.line) {
+    return true;
+  }
+  return parsed_first.line == parsed_second.line &&
+         parsed_first.column > parsed_second.column;
+}
+
 bool source_location_in_template_body_range(SemanticContext & ctx,
                                             const std::string & location)
 {
@@ -2858,6 +2876,81 @@ string qualified_name_lookup_text(const QualifiedName & qualified)
   return out;
 }
 
+std::string value_binding_lookup_declaration_location(SemanticContext & ctx,
+                                                      const ValueBinding & binding)
+{
+  const CppAstNode * node =
+      binding.declaration_node ? binding.declaration_node : binding.definition_node;
+  if(node == nullptr) {
+    return std::string();
+  }
+
+  const std::string location_id_location =
+      source_location_for_token_id(ctx.template_witness_context(),
+                                   node->source_location_id);
+  if(!location_id_location.empty()) {
+    return location_id_location;
+  }
+  if(!binding.name.empty()) {
+    const std::string name_location =
+        ctx.source_location_for_name_in_node(*node, binding.name, true);
+    if(!name_location.empty()) {
+      return name_location;
+    }
+  }
+  return ctx.source_location_for_node(*node);
+}
+
+std::string ast_node_start_location(SemanticContext & ctx,
+                                    const CppAstNode & node)
+{
+  const std::string location_id_location =
+      source_location_for_token_id(ctx.template_witness_context(),
+                                   node.source_location_id);
+  if(!location_id_location.empty()) {
+    return location_id_location;
+  }
+  return ctx.source_location_for_node(node);
+}
+
+bool value_binding_visible_at_call_source(SemanticContext & ctx,
+                                          const CppAstNode & use_node,
+                                          const ValueBinding & binding)
+{
+  if(binding.owner_class || binding.kind == ValueBinding::VK_FIELD ||
+     (binding.declaration_scope && binding.declaration_scope->class_info)) {
+    return true;
+  }
+
+  const std::string use_location = ast_node_start_location(ctx, use_node);
+  const std::string effective_use_location =
+      !use_location.empty() ? use_location : parser_trace::current_order_use_location();
+  const std::string declaration_location =
+      value_binding_lookup_declaration_location(ctx, binding);
+  if(!effective_use_location.empty() &&
+     !declaration_location.empty() &&
+     source_location_is_strictly_later_in_same_file(declaration_location,
+                                                    effective_use_location)) {
+    return false;
+  }
+
+  const CppAstNode * declaration_node =
+      binding.declaration_node ? binding.declaration_node : binding.definition_node;
+  if(declaration_node &&
+     use_node.source_location_id != 0 &&
+     declaration_node->source_location_id != 0 &&
+     declaration_node->source_location_id > use_node.source_location_id) {
+    return false;
+  }
+  if(declaration_node &&
+     declaration_node->token_end > declaration_node->token_start &&
+     use_node.token_end > use_node.token_start &&
+     declaration_node->token_start > use_node.token_start) {
+    return false;
+  }
+  return true;
+}
+
 const ValueBinding * lookup_id_expression_value_binding_for_call(
     SemanticContext & ctx,
     Scope & scope,
@@ -2865,7 +2958,10 @@ const ValueBinding * lookup_id_expression_value_binding_for_call(
 {
   const QualifiedName * qualified = cppast_qualified_name_syntax(node);
   if(!qualified || (!qualified->rooted && qualified->qualifiers.empty())) {
-    return ctx.lookup_value(scope, node.value);
+    const ValueBinding * binding = ctx.lookup_value(scope, node.value);
+    return binding && value_binding_visible_at_call_source(ctx, node, *binding) ?
+        binding :
+        nullptr;
   }
 
   if(!node.qualifier_template_id_syntaxes.empty()) {
@@ -2883,19 +2979,27 @@ const ValueBinding * lookup_id_expression_value_binding_for_call(
         map<string, ValueBinding>::const_iterator found =
             qualifier_info->member_scope->values.find(qualified->name);
         if(found != qualifier_info->member_scope->values.end()) {
-          return &found->second;
+          return value_binding_visible_at_call_source(ctx, node, found->second) ?
+              &found->second :
+              nullptr;
         }
         MemberValueLookupResult member =
             lookup_member_value(*qualifier_info, qualified->name);
         if(member.binding && member.binding->kind != ValueBinding::VK_FIELD) {
-          return member.binding;
+          return value_binding_visible_at_call_source(ctx, node, *member.binding) ?
+              member.binding :
+              nullptr;
         }
         return nullptr;
       }
     }
   }
 
-  return lookup_qualified_value_binding_node(ctx, scope, *qualified, node);
+  const ValueBinding * binding =
+      lookup_qualified_value_binding_node(ctx, scope, *qualified, node);
+  return binding && value_binding_visible_at_call_source(ctx, node, *binding) ?
+      binding :
+      nullptr;
 }
 
 CppAstNode make_dot_member_operator_callee(const CppAstNode & operand,

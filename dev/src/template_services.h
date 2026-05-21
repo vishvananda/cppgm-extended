@@ -674,6 +674,15 @@ public:
     try {
       const ScopedTemplateDependentTypeExprUseLocation use_location(
           request.use_location);
+      std::string order_use_location;
+      order_use_location =
+          template_api::normalize_template_witness_source_location(
+              ctx_.source_location_for_node(request.operand));
+      if(order_use_location.empty()) {
+        order_use_location = request.use_location;
+      }
+      const parser_trace::ScopedOrderUseLocation order_use_location_guard(
+          order_use_location);
       semantic_conversion::ExprInfo info =
           request.operand.kind == CppAstKind::call_expression ?
               ctx_.analyze_call_expression(scope,
