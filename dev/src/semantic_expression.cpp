@@ -94,6 +94,47 @@ CppAstNode make_synthetic_literal_node(const CppAstNode & source,
   return out;
 }
 
+string char_literal_source(char c)
+{
+  switch(c) {
+  case '\n':
+    return "'\\n'";
+  case '\r':
+    return "'\\r'";
+  case '\t':
+    return "'\\t'";
+  case '\v':
+    return "'\\v'";
+  case '\f':
+    return "'\\f'";
+  case '\b':
+    return "'\\b'";
+  case '\a':
+    return "'\\a'";
+  case '\\':
+    return "'\\\\'";
+  case '\'':
+    return "'\\''";
+  default:
+    break;
+  }
+  return string("'") + c + "'";
+}
+
+TemplateArgumentSyntax make_char_template_argument_syntax(
+    const CppAstNode & source,
+    const string & text)
+{
+  TemplateArgumentSyntax out;
+  out.text = text;
+  out.source_text = text;
+  out.source_location_id = source.source_location_id;
+  out.has_source_token_start = true;
+  out.source_token_start = source.token_start;
+  out.expression.reset(new CppAstNode(make_synthetic_literal_node(source, text)));
+  return out;
+}
+
 ExprInfo analyze_string_user_defined_literal(SemanticContext & ctx,
                                              Scope & scope,
                                              const CppAstNode & node,
@@ -129,6 +170,54 @@ ExprInfo analyze_string_user_defined_literal(SemanticContext & ctx,
       make_synthetic_literal_node(
           node,
           to_string(string_literal_code_unit_count(literal))));
+  call.children.push_back(arguments);
+
+  return ctx.analyze_call_expression(scope, call);
+}
+
+ExprInfo analyze_integer_user_defined_literal_template(SemanticContext & ctx,
+                                                       Scope & scope,
+                                                       const CppAstNode & node,
+                                                       const string & ud_suffix)
+{
+  const string operator_name = string("operator\"\"") + ud_suffix;
+  const string literal_text = literal_without_ud_suffix(node.value, ud_suffix);
+
+  CppAstNode call;
+  call.kind = CppAstKind::call_expression;
+  call.source_location_id = node.source_location_id;
+  call.token_start = node.token_start;
+  call.token_end = node.token_end;
+  call.name_lookup_snapshot = node.name_lookup_snapshot;
+
+  CppAstNode callee;
+  callee.kind = CppAstKind::id_expression;
+  callee.value = operator_name;
+  callee.source_location_id = node.source_location_id;
+  callee.token_start = node.token_start;
+  callee.token_end = node.token_end;
+  callee.name_lookup_snapshot = node.name_lookup_snapshot;
+
+  TemplateIdSyntax template_id;
+  template_id.name.name = operator_name;
+  template_id.source_location_id = node.source_location_id;
+  template_id.arguments.reserve(literal_text.size());
+  template_id.argument_syntaxes.reserve(literal_text.size());
+  for(size_t i = 0; i < literal_text.size(); ++i) {
+    const string arg = char_literal_source(literal_text[i]);
+    template_id.arguments.push_back(arg);
+    template_id.argument_syntaxes.push_back(
+        make_char_template_argument_syntax(node, arg));
+  }
+  set_cppast_template_id_syntax(callee, std::move(template_id));
+  call.children.push_back(callee);
+
+  CppAstNode arguments;
+  arguments.kind = CppAstKind::paren_argument_list;
+  arguments.source_location_id = node.source_location_id;
+  arguments.token_start = node.token_start;
+  arguments.token_end = node.token_end;
+  arguments.name_lookup_snapshot = node.name_lookup_snapshot;
   call.children.push_back(arguments);
 
   return ctx.analyze_call_expression(scope, call);
@@ -4646,7 +4735,7 @@ ExprInfo analyze_literal(SemanticContext & ctx, Scope & scope, const CppAstNode 
     string ud_suffix;
     EFundamentalType literal_type = classify_int(node.value, literal_value, ud_suffix);
     if(!ud_suffix.empty()) {
-      throw logic_error("user-defined literals unsupported");
+      return analyze_integer_user_defined_literal_template(ctx, scope, node, ud_suffix);
     }
     result.type = make_fundamental(literal_type);
     result.category = VC_PRVALUE;
