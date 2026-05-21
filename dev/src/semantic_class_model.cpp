@@ -188,6 +188,36 @@ bool should_preserve_class_template_across_reference_reset(
 
   const CppAstNode * owner_node =
       info.template_output_node ? info.template_output_node : info.class_node;
+  if(decl && owner_node) {
+    for(std::map<std::string, ClassTemplateSpecializationDecl>::const_iterator it =
+            decl->explicit_specializations.begin();
+        it != decl->explicit_specializations.end();
+        ++it) {
+      if(it->second.class_node &&
+         !ast_node_contains(owner_node, it->second.class_node)) {
+        return true;
+      }
+    }
+    for(std::size_t i = 0; i < decl->partial_specializations.size(); ++i) {
+      const PartialClassTemplateSpecializationDecl & partial =
+          decl->partial_specializations[i];
+      if((partial.class_node &&
+          !ast_node_contains(owner_node, partial.class_node)) ||
+         !partial.static_member_definitions.empty() ||
+         !partial.witness_static_member_definitions.empty() ||
+         !partial.member_function_definitions.empty() ||
+         !partial.member_function_template_definitions.empty()) {
+        return true;
+      }
+    }
+    if(!decl->static_member_definitions.empty() ||
+       !decl->witness_static_member_definitions.empty() ||
+       !decl->member_class_definitions.empty() ||
+       !decl->member_function_definitions.empty() ||
+       !decl->member_function_template_definitions.empty()) {
+      return true;
+    }
+  }
   return decl &&
          decl->class_node &&
          owner_node &&
