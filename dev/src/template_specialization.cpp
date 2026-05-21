@@ -1848,6 +1848,7 @@ struct PartialPatternSpecificity
 void accumulate_partial_pattern_specificity(
     const std::vector<TemplateParameterInfo> & parameters,
     const std::string & raw_text,
+    const TemplateArgumentSyntax * syntax,
     PartialPatternSpecificity & out)
 {
   const std::string text = strip_elaborated_type_prefix(trim_space(raw_text));
@@ -1858,7 +1859,8 @@ void accumulate_partial_pattern_specificity(
   const DirectTemplateParameterPattern direct =
       find_direct_template_parameter_pattern(parameters, text);
   if(direct.parameter) {
-    if(direct.pack_expansion && direct.parameter->parameter_pack) {
+    if((direct.pack_expansion || (syntax && syntax->pack_expansion)) &&
+       direct.parameter->parameter_pack) {
       out.uses_pack_expansion = true;
       return;
     }
@@ -1868,12 +1870,31 @@ void accumulate_partial_pattern_specificity(
 
   QualifiedName template_name;
   std::vector<std::string> template_args;
+  const TemplateIdSyntax * template_id_syntax =
+      syntax && syntax->template_id ? syntax->template_id.get() : nullptr;
+  if(!template_id_syntax && syntax && syntax->type_id) {
+    template_id_syntax = cppast_template_id_syntax(*syntax->type_id);
+  }
+  if(template_id_syntax) {
+    ++out.fixed_components;
+    for(std::size_t i = 0; i < template_id_syntax->arguments.size(); ++i) {
+      const TemplateArgumentSyntax * child_syntax =
+          i < template_id_syntax->argument_syntaxes.size() ?
+              &template_id_syntax->argument_syntaxes[i] : nullptr;
+      accumulate_partial_pattern_specificity(parameters,
+                                             template_id_syntax->arguments[i],
+                                             child_syntax,
+                                             out);
+    }
+    return;
+  }
+
   if(semantic_utils::split_top_level_template_id_text(text,
                                                        template_name,
                                                        template_args)) {
     ++out.fixed_components;
     for(std::size_t i = 0; i < template_args.size(); ++i) {
-      accumulate_partial_pattern_specificity(parameters, template_args[i], out);
+      accumulate_partial_pattern_specificity(parameters, template_args[i], nullptr, out);
     }
     return;
   }
@@ -1887,8 +1908,11 @@ PartialPatternSpecificity partial_pattern_specificity(const PartialDecl & partia
 {
   PartialPatternSpecificity out;
   for(std::size_t i = 0; i < partial.arg_texts.size(); ++i) {
+    const TemplateArgumentSyntax * syntax =
+        i < partial.arg_syntaxes.size() ? &partial.arg_syntaxes[i] : nullptr;
     accumulate_partial_pattern_specificity(partial.parameters,
                                            partial.arg_texts[i],
+                                           syntax,
                                            out);
   }
   return out;
@@ -4831,8 +4855,9 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
   };
   for(std::size_t i = 0; i < partial.arg_texts.size(); ++i) {
     const std::string pattern_text = trim_space(partial.arg_texts[i]);
-    const TemplateParameterInfo * direct_parameter =
-        find_template_parameter_by_name(partial.parameters, pattern_text);
+    const DirectTemplateParameterPattern direct_pattern =
+        find_direct_template_parameter_pattern(partial.parameters, pattern_text);
+    const TemplateParameterInfo * direct_parameter = direct_pattern.parameter;
     const TemplateArgumentSyntax * pattern_syntax =
         i < partial.arg_syntaxes.size() ? &partial.arg_syntaxes[i] : nullptr;
 
