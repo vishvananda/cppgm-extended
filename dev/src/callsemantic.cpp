@@ -27860,9 +27860,9 @@ private:
     return semantic_expression::analyze_member_expression(*this, scope, node);
   }
 
-  ExprInfo analyze_literal(const CppAstNode & node)
+  ExprInfo analyze_literal(Scope & scope, const CppAstNode & node)
   {
-    return semantic_expression::analyze_literal(*this, node);
+    return semantic_expression::analyze_literal(*this, scope, node);
   }
 
   ExprInfo analyze_id_expression(Scope & scope, const CppAstNode & node) override

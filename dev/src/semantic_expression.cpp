@@ -69,6 +69,71 @@ size_t string_literal_code_unit_count(const QuoteLiteralData & literal)
   }
 }
 
+string literal_without_ud_suffix(const string & text, const string & ud_suffix)
+{
+  if(ud_suffix.empty()) {
+    return text;
+  }
+  if(text.size() < ud_suffix.size() ||
+     text.compare(text.size() - ud_suffix.size(), ud_suffix.size(), ud_suffix) != 0) {
+    throw logic_error("literal suffix does not match source");
+  }
+  return text.substr(0, text.size() - ud_suffix.size());
+}
+
+CppAstNode make_synthetic_literal_node(const CppAstNode & source,
+                                       const string & value)
+{
+  CppAstNode out;
+  out.kind = CppAstKind::literal;
+  out.value = value;
+  out.source_location_id = source.source_location_id;
+  out.token_start = source.token_start;
+  out.token_end = source.token_end;
+  out.name_lookup_snapshot = source.name_lookup_snapshot;
+  return out;
+}
+
+ExprInfo analyze_string_user_defined_literal(SemanticContext & ctx,
+                                             Scope & scope,
+                                             const CppAstNode & node,
+                                             const QuoteLiteralData & literal)
+{
+  CppAstNode call;
+  call.kind = CppAstKind::call_expression;
+  call.source_location_id = node.source_location_id;
+  call.token_start = node.token_start;
+  call.token_end = node.token_end;
+  call.name_lookup_snapshot = node.name_lookup_snapshot;
+
+  CppAstNode callee;
+  callee.kind = CppAstKind::id_expression;
+  callee.value = string("operator\"\"") + literal.ud_suffix;
+  callee.source_location_id = node.source_location_id;
+  callee.token_start = node.token_start;
+  callee.token_end = node.token_end;
+  callee.name_lookup_snapshot = node.name_lookup_snapshot;
+  call.children.push_back(callee);
+
+  CppAstNode arguments;
+  arguments.kind = CppAstKind::paren_argument_list;
+  arguments.source_location_id = node.source_location_id;
+  arguments.token_start = node.token_start;
+  arguments.token_end = node.token_end;
+  arguments.name_lookup_snapshot = node.name_lookup_snapshot;
+  arguments.children.push_back(
+      make_synthetic_literal_node(
+          node,
+          literal_without_ud_suffix(node.value, literal.ud_suffix)));
+  arguments.children.push_back(
+      make_synthetic_literal_node(
+          node,
+          to_string(string_literal_code_unit_count(literal))));
+  call.children.push_back(arguments);
+
+  return ctx.analyze_call_expression(scope, call);
+}
+
 struct ScopedTemplateUseLocation
 {
   explicit ScopedTemplateUseLocation(const string & location)
@@ -3188,11 +3253,11 @@ ExprInfo analyze_expression(SemanticContext & ctx,
   } else if(node.kind == CppAstKind::braced_init_list) {
     result = analyze_braced_init_list_expression(ctx, scope, node);
   } else if(node.kind == CppAstKind::literal) {
-    result = analyze_literal(ctx, node);
+    result = analyze_literal(ctx, scope, node);
   } else if(node.kind == CppAstKind::keyword_literal && node_has_simple_type(node, KW_THIS)) {
     result = analyze_this_expression(ctx, scope, node);
   } else if(node.kind == CppAstKind::keyword_literal) {
-    result = analyze_literal(ctx, node);
+    result = analyze_literal(ctx, scope, node);
   } else if(node.kind == CppAstKind::parenthesized_expression) {
     if(node.children.size() != 1) {
       throw logic_error("parenthesized-expression arity");
@@ -4534,7 +4599,7 @@ ExprInfo analyze_member_expression(SemanticContext & ctx,
   return result;
 }
 
-ExprInfo analyze_literal(SemanticContext &, const CppAstNode & node)
+ExprInfo analyze_literal(SemanticContext & ctx, Scope & scope, const CppAstNode & node)
 {
   ExprInfo result;
   result.node = make_dump_node(CallSemKind::literal, node.value);
@@ -4592,7 +4657,10 @@ ExprInfo analyze_literal(SemanticContext &, const CppAstNode & node)
 
   if(node.value.find('"') != string::npos) {
     QuoteLiteralData literal = parse_quote_literal(node.value);
-    if(literal.quote == '"' && literal.ud_suffix.empty()) {
+    if(literal.quote == '"') {
+      if(!literal.ud_suffix.empty()) {
+        return analyze_string_user_defined_literal(ctx, scope, node, literal);
+      }
       result.type = make_array(
           make_cv(make_fundamental(string_literal_element_type(literal)),
                   true,
