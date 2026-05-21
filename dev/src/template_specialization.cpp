@@ -1838,6 +1838,90 @@ int compare_transformed_partial_argument_reference_cv_specificity(
   return preference;
 }
 
+struct FunctionPatternPackShape
+{
+  bool trailing_pack = false;
+  std::size_t parameter_count = 0;
+  std::size_t fixed_parameter_count = 0;
+};
+
+bool function_pattern_pack_shape(const TemplateArgument & argument,
+                                 const TemplateArgumentSyntax * syntax,
+                                 FunctionPatternPackShape & out)
+{
+  out = FunctionPatternPackShape();
+  if(argument.kind != TemplateArgument::TA_TYPE) {
+    return false;
+  }
+
+  TypePtr type = strip_top_level_cv(argument.type);
+  if(!type || type->kind != Type::TK_FUNCTION) {
+    return false;
+  }
+
+  out.parameter_count = type->params.size();
+  out.trailing_pack = function_type_syntax_trailing_parameter_is_pack(syntax);
+  out.fixed_parameter_count =
+      out.trailing_pack && out.parameter_count != 0 ?
+          out.parameter_count - 1 :
+          out.parameter_count;
+  return true;
+}
+
+template <typename PartialDecl>
+int compare_function_type_pack_specificity(
+    const PartialDecl & current,
+    const PartialDecl & best,
+    const std::vector<TemplateArgument> & current_arguments,
+    const std::vector<TemplateArgument> & best_arguments)
+{
+  const std::size_t limit =
+      std::min(std::min(current_arguments.size(), best_arguments.size()),
+               std::min(current.arg_syntaxes.size(), best.arg_syntaxes.size()));
+  int preference = 0;
+  for(std::size_t i = 0; i < limit; ++i) {
+    FunctionPatternPackShape current_shape;
+    FunctionPatternPackShape best_shape;
+    if(!function_pattern_pack_shape(current_arguments[i],
+                                    &current.arg_syntaxes[i],
+                                    current_shape) ||
+       !function_pattern_pack_shape(best_arguments[i],
+                                    &best.arg_syntaxes[i],
+                                    best_shape) ||
+       (!current_shape.trailing_pack && !best_shape.trailing_pack)) {
+      continue;
+    }
+
+    int argument_preference = 0;
+    if(current_shape.trailing_pack != best_shape.trailing_pack) {
+      if(!current_shape.trailing_pack &&
+         current_shape.parameter_count >= best_shape.fixed_parameter_count) {
+        argument_preference = -1;
+      } else if(!best_shape.trailing_pack &&
+                best_shape.parameter_count >= current_shape.fixed_parameter_count) {
+        argument_preference = 1;
+      }
+    } else if(current_shape.fixed_parameter_count !=
+              best_shape.fixed_parameter_count) {
+      argument_preference =
+          current_shape.fixed_parameter_count >
+              best_shape.fixed_parameter_count ?
+                  -1 :
+                  1;
+    }
+
+    if(argument_preference == 0) {
+      continue;
+    }
+    if(preference != 0 && preference != argument_preference) {
+      return 0;
+    }
+    preference = argument_preference;
+  }
+
+  return preference;
+}
+
 struct PartialPatternSpecificity
 {
   std::size_t concrete_components = 0;
@@ -5083,6 +5167,14 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
           best_transformed);
   if(reference_cv_specificity != 0) {
     return reference_cv_specificity;
+  }
+  const int function_pack_specificity =
+      compare_function_type_pack_specificity(current,
+                                             best,
+                                             current_transformed,
+                                             best_transformed);
+  if(function_pack_specificity != 0) {
+    return function_pack_specificity;
   }
   const int pack_specificity =
       compare_partial_specialization_pack_specificity(current, best);
