@@ -7722,12 +7722,45 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                       owner_result_scope.function = inst_scope.function;
                       parse_scope = &owner_result_scope;
                     }
+                    ClassTemplateDecl & owner_template =
+                        *instantiation_owner->source_template;
+                    const std::vector<TemplateParameterInfo> * owner_parameters =
+                        &owner_template.parameters;
+                    const std::vector<TemplateArgument> * owner_arguments =
+                        &instantiation_owner->instantiation_arguments;
+                    const std::map<std::string, std::size_t> * owner_pack_sizes =
+                        nullptr;
+                    std::vector<TemplateArgument> selected_arguments;
+                    std::map<std::string, std::size_t> selected_pack_sizes;
+                    if(selected_partial_specialization(owner_template,
+                                                       *instantiation_owner)) {
+                      const template_selection::ClassSpecializationSelection selection =
+                          template_selection::select_class_specialization(
+                              services,
+                              owner_template,
+                              template_api::make_template_environment(inst_scope),
+                              template_argument_key_for_instantiation(
+                                  ctx,
+                                  instantiation_owner->instantiation_arguments),
+                              instantiation_owner->instantiation_arguments);
+                      if(selection.kind ==
+                             template_selection::MS_PARTIAL_SPECIALIZATION &&
+                         selection.parameters) {
+                        owner_parameters = selection.parameters;
+                        selected_arguments = selection.arguments;
+                        selected_pack_sizes = selection.pack_sizes;
+                        owner_arguments = &selected_arguments;
+                        owner_pack_sizes = selected_pack_sizes.empty() ?
+                            nullptr :
+                            &selected_pack_sizes;
+                      }
+                    }
                     ::template_instantiation::bind_template_arguments_into_scope(
                         services,
                         *parse_scope,
-                        instantiation_owner->source_template->parameters,
-                        instantiation_owner->instantiation_arguments,
-                        nullptr);
+                        *owner_parameters,
+                        *owner_arguments,
+                        owner_pack_sizes);
                   }
                   return template_decl_ast::parse_type_id(services,
                                                           *parse_scope,
