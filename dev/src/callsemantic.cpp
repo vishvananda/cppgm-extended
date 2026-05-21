@@ -24615,7 +24615,9 @@ private:
                                                                  *parse_scope,
                                                                  type);
           }
-          if(is_constexpr_variable && !out_of_class_static_member->has_constexpr_value) {
+          if(is_constexpr_variable &&
+             !is_reference_type(type) &&
+             !out_of_class_static_member->has_constexpr_value) {
             throw logic_error("unsupported constexpr variable initializer" +
                               source_location_for_node(init_decl));
           }
@@ -24663,7 +24665,9 @@ private:
                                                                *declaration_scope,
                                                                type);
         }
-        if(is_constexpr_variable && !binding.has_constexpr_value) {
+        if(is_constexpr_variable &&
+           !is_reference_type(type) &&
+           !binding.has_constexpr_value) {
           throw logic_error("unsupported constexpr variable initializer" +
                             source_location_for_node(init_decl));
         }
