@@ -2050,17 +2050,6 @@ void collect_required_parameter_materialization_support(SemanticContext & ctx,
       continue;
     }
 
-    FunctionBinding * copy = find_copy_constructor_binding(*info);
-    if(!copy && !is_trivially_copy_constructible_type(ctx, param_type)) {
-      copy = ctx.ensure_implicit_copy_constructor(*info);
-    }
-    if(copy) {
-      if(special_member_constructor_can_use_host_object_symbol(ctx, *copy)) {
-        require_host_constructor_declaration(ctx, copy);
-      } else if(!special_member_binding_has_trivial_lifecycle_output(ctx, *copy)) {
-        ctx.require_function_definition(copy, OutputReason::SyntheticDependency);
-      }
-    }
     if(FunctionBinding * dtor = find_destructor_binding(*info)) {
       if(!special_member_binding_has_trivial_lifecycle_output(ctx, *dtor)) {
         ctx.require_function_definition(dtor, OutputReason::SyntheticDependency);

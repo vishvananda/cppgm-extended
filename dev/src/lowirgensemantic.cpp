@@ -2884,8 +2884,7 @@ public:
         }
         VariableBinding binding =
             create_variable_binding(param_name, child.semantic_type, lowered_param_type);
-        if(abi_plan.kind == ParamAbiPlan::PAK_INDIRECT &&
-           param_passing != lowir_internal::PPM_BY_ADDRESS) {
+        if(abi_plan.kind == ParamAbiPlan::PAK_INDIRECT) {
           binding.uses_external_storage_address = true;
           binding.external_storage_address = abi_plan.inputs[0].first;
         }
@@ -3010,13 +3009,13 @@ public:
       if(abi_plan.kind == ParamAbiPlan::PAK_INDIRECT) {
         if(!binding_has_external_storage_address(binding)) {
           const string & param_temp = abi_plan.inputs[0].first;
-          // By-address parameters are already materialized at the call boundary.
-          // The callee must copy from that incoming object storage into its local
-          // binding instead of moving from the caller-provided slot.
           emit_copy_construct_to_target(param_types_[i],
                                         emit_storage_address(binding.slots[0]),
                                         param_temp);
           register_class_object_cleanup(binding);
+        } else {
+          register_class_at_ptr_cleanup(param_types_[i],
+                                        binding.external_storage_address);
         }
       } else if(abi_plan.kind == ParamAbiPlan::PAK_DIRECT_OBJECT) {
         // The caller has already performed by-value parameter initialization at
@@ -6711,20 +6710,12 @@ private:
     if(is_indirect_value_type(param_type)) {
       TypePtr object_param_type =
           strip_top_level_cv(remove_reference_type(param_type));
-      if(is_complete_class_value_type(arg.semantic_type) &&
-         is_special_class_materialization_node(arg)) {
+      if(is_complete_class_value_type(object_param_type)) {
         const string temp_ptr = new_hidden_object_address(object_param_type, "arg");
         if(emit_special_class_value_to_target(arg, temp_ptr)) {
-          register_class_at_ptr_cleanup(object_param_type, temp_ptr);
           return temp_ptr;
         }
-      }
-      if(is_complete_class_value_type(object_param_type) &&
-         arg.value_category != CVC_LVALUE &&
-         !is_reference_type(arg.semantic_type)) {
-        const string temp_ptr = new_hidden_object_address(object_param_type, "arg");
         emit_storage_value_to_target(object_param_type, arg, temp_ptr);
-        register_class_at_ptr_cleanup(object_param_type, temp_ptr);
         return temp_ptr;
       }
       if(is_indirect_class_reference_type(arg.semantic_type)) {

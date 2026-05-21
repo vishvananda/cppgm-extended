@@ -27434,40 +27434,7 @@ private:
 
   void require_function_parameter_abi_output(FunctionBinding * binding)
   {
-    if(!binding) {
-      return;
-    }
-
-    vector<TypePtr> declared_param_types;
-    const bool have_declared_param_types =
-        declared_parameter_types_for_abi_output(*binding, declared_param_types);
-    const size_t explicit_param_offset = function_binding_explicit_parameter_offset(*binding);
-
-    for(size_t i = 0; i < binding->params.size(); ++i) {
-      if(binding->params[i].first == "this") {
-        continue;
-      }
-
-      TypePtr param_type = binding->params[i].second;
-      const size_t explicit_index = i - explicit_param_offset;
-      if(have_declared_param_types && explicit_index < declared_param_types.size()) {
-        param_type = declared_param_types[explicit_index];
-      }
-      if(!param_type || is_reference_type(param_type)) {
-        continue;
-      }
-
-      ClassInfo * info = complete_class_type(param_type);
-      if(!info || !info->complete) {
-        continue;
-      }
-
-      if(FunctionBinding * copy = copy_constructor_for(*info)) {
-        if(!copy->synthesized) {
-          require_function_definition(copy, OutputReason::RuntimeDependency);
-        }
-      }
-    }
+    (void)binding;
   }
 
   bool node_designates_base_subobject(const CallSemNode & node) const
