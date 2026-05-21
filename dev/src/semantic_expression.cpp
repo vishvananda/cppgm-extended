@@ -5045,12 +5045,17 @@ ExprInfo analyze_unary_expression(SemanticContext & ctx,
     result.type = component_type;
     result.category = VC_PRVALUE;
   } else if(node_has_simple_type(node, OP_PLUS) || node_has_simple_type(node, OP_MINUS)) {
+    const bool unary_plus = node_has_simple_type(node, OP_PLUS);
     TypePtr operand_type = value_conversion_type(operand);
     if(!operand_type ||
-       !(is_integral_or_unscoped_enum_type(operand_type) || is_floating_type(operand_type))) {
+       !(is_integral_or_unscoped_enum_type(operand_type) ||
+         is_floating_type(operand_type) ||
+         (unary_plus && is_pointer_type(operand_type)))) {
       throw logic_error("unsupported unary arithmetic operand");
     }
-    if(is_floating_type(operand_type)) {
+    if(unary_plus && is_pointer_type(operand_type)) {
+      result.type = operand_type;
+    } else if(is_floating_type(operand_type)) {
       result.type = operand_type;
     } else {
       result.type = promoted_integral_result_type(operand_type);
