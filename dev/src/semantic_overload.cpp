@@ -1850,6 +1850,40 @@ void note_function_candidate_bucket(FunctionCandidateBucketMap & buckets,
   buckets[function_candidate_bucket_key(binding)].push_back(binding);
 }
 
+bool source_template_is_in_lookup_set(const FunctionBinding * binding,
+                                      const vector<FunctionTemplateDecl *> & templates)
+{
+  if(!binding ||
+     !binding->source_template ||
+     binding->is_explicit_specialization) {
+    return false;
+  }
+  for(size_t i = 0; i < templates.size(); ++i) {
+    if(same_inline_namespace_function_template_entity(binding->source_template,
+                                                      templates[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void suppress_implicit_template_instantiation_lookup_candidates(
+    vector<FunctionBinding *> & candidates,
+    const vector<FunctionTemplateDecl *> & templates)
+{
+  if(templates.empty() || candidates.empty()) {
+    return;
+  }
+  candidates.erase(
+      remove_if(candidates.begin(),
+                candidates.end(),
+                [&](FunctionBinding * binding) -> bool
+                {
+                  return source_template_is_in_lookup_set(binding, templates);
+                }),
+      candidates.end());
+}
+
 bool scope_is_within(const Scope & scope, const Scope * ancestor)
 {
   for(const Scope * current = &scope; current; current = current->parent) {
@@ -7226,10 +7260,6 @@ void append_function_template_call_candidates_impl(
     const TemplateIdSyntax * name_template_id_syntax = nullptr)
 {
   ScopedCallSemConstructionPath construction_path("overload.template-candidates");
-  FunctionCandidateBucketMap seen_candidates;
-  for(size_t i = 0; i < out.size(); ++i) {
-    note_function_candidate_bucket(seen_candidates, out[i]);
-  }
   std::string trace_location;
   if(template_witness_source_capture_enabled_for_calls(ctx)) {
     const std::string raw_trace_location =
@@ -7317,6 +7347,11 @@ void append_function_template_call_candidates_impl(
     filter_function_template_candidates_visible_from_node(templates,
                                                           name_node,
                                                           &lookup_scope);
+  }
+  suppress_implicit_template_instantiation_lookup_candidates(out, templates);
+  FunctionCandidateBucketMap seen_candidates;
+  for(size_t i = 0; i < out.size(); ++i) {
+    note_function_candidate_bucket(seen_candidates, out[i]);
   }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
