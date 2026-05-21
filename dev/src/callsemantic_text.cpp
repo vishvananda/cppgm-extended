@@ -853,7 +853,7 @@ bool infer_unknown_bound_array_size_impl(SemanticContext * ctx,
           } else if(element_fundamental != literal_type) {
             return false;
           }
-          out_bound = literal.contents.size() + 1;
+          out_bound = quote_literal_string_unit_count(literal) + 1;
           return true;
         }
         catch(const logic_error &)

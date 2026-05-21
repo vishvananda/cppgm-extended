@@ -128,6 +128,229 @@ unsigned long long parse_integer_digits(const string & value,
   return result;
 }
 
+char quote_literal_encoding(const string & prefix, char quote)
+{
+  if(quote == '\'') {
+    if(prefix == "u8") {
+      return '8';
+    }
+    if(prefix == "u") {
+      return 'u';
+    }
+    if(prefix == "U") {
+      return 'U';
+    }
+    if(prefix == "L") {
+      return 'L';
+    }
+    return '\'';
+  }
+
+  if(prefix == "u8" || prefix == "u8R") {
+    return '8';
+  }
+  if(prefix == "u" || prefix == "uR") {
+    return 'u';
+  }
+  if(prefix == "U" || prefix == "UR") {
+    return 'U';
+  }
+  if(prefix == "L" || prefix == "LR") {
+    return 'L';
+  }
+  return '"';
+}
+
+void append_encoded_code_point_units(char enc,
+                                     char32_t value,
+                                     vector<unsigned long long> & units)
+{
+  switch(enc) {
+  case 'u':
+    {
+      const u16string encoded = encode_utf16(u32string(1, value));
+      for(size_t i = 0; i < encoded.size(); ++i) {
+        units.push_back(static_cast<unsigned long long>(encoded[i]));
+      }
+    }
+    break;
+  case 'U':
+  case 'L':
+    units.push_back(static_cast<unsigned long long>(value));
+    break;
+  default:
+    {
+      const string encoded = encode_utf8(u32string(1, value));
+      for(size_t i = 0; i < encoded.size(); ++i) {
+        units.push_back(
+            static_cast<unsigned long long>(
+                static_cast<unsigned char>(encoded[i])));
+      }
+    }
+    break;
+  }
+}
+
+void append_code_point(char enc,
+                       char32_t value,
+                       u32string & contents,
+                       vector<unsigned long long> & string_units)
+{
+  contents.push_back(value);
+  append_encoded_code_point_units(enc, value, string_units);
+}
+
+void append_numeric_escape(unsigned long long value,
+                           u32string & contents,
+                           vector<unsigned long long> & string_units)
+{
+  contents.push_back(static_cast<char32_t>(value));
+  string_units.push_back(value);
+}
+
+unsigned long long parse_fixed_hex_escape(const u32string & data,
+                                          size_t & pos,
+                                          size_t digits)
+{
+  if(pos + digits >= data.size()) {
+    throw logic_error("invalid universal character name");
+  }
+
+  unsigned long long value = 0;
+  for(size_t i = 0; i < digits; ++i) {
+    const char32_t c = data[++pos];
+    try {
+      value = (value << 4) +
+              static_cast<unsigned long long>(hex_to_value(c));
+    } catch(const logic_error &) {
+      throw logic_error("invalid universal character name");
+    }
+  }
+  return value;
+}
+
+unsigned long long parse_variable_hex_escape(const u32string & data,
+                                             size_t & pos)
+{
+  unsigned long long value = 0;
+  bool any = false;
+  while(pos + 1 < data.size()) {
+    const char32_t c = data[pos + 1];
+    try {
+      value = (value << 4) +
+              static_cast<unsigned long long>(hex_to_value(c));
+      any = true;
+      ++pos;
+    } catch(const logic_error &) {
+      break;
+    }
+  }
+  if(!any) {
+    throw logic_error("invalid hex escape");
+  }
+  return value;
+}
+
+unsigned long long parse_octal_escape(const u32string & data,
+                                      size_t & pos,
+                                      char32_t first)
+{
+  unsigned long long value = static_cast<unsigned long long>(first - '0');
+  size_t count = 1;
+  while(count < 3 && pos + 1 < data.size()) {
+    const char32_t c = data[pos + 1];
+    if(c < '0' || c > '7') {
+      break;
+    }
+    value = (value << 3) + static_cast<unsigned long long>(c - '0');
+    ++pos;
+    ++count;
+  }
+  return value;
+}
+
+void decode_quote_payload(const string & payload,
+                          bool raw,
+                          char enc,
+                          u32string & contents,
+                          vector<unsigned long long> & string_units)
+{
+  contents.clear();
+  string_units.clear();
+
+  const u32string decoded = decode_utf8(payload);
+  for(size_t i = 0; i < decoded.size(); ++i) {
+    const char32_t c = decoded[i];
+    if(raw || c != '\\') {
+      append_code_point(enc, c, contents, string_units);
+      continue;
+    }
+
+    if(++i >= decoded.size()) {
+      throw logic_error("unterminated escape sequence");
+    }
+
+    const char32_t escaped = decoded[i];
+    switch(escaped) {
+    case '\'':
+    case '\"':
+    case '\\':
+    case '\?':
+      append_code_point(enc, escaped, contents, string_units);
+      break;
+    case 'a':
+      append_code_point(enc, '\a', contents, string_units);
+      break;
+    case 'b':
+      append_code_point(enc, '\b', contents, string_units);
+      break;
+    case 'f':
+      append_code_point(enc, '\f', contents, string_units);
+      break;
+    case 'n':
+      append_code_point(enc, '\n', contents, string_units);
+      break;
+    case 'r':
+      append_code_point(enc, '\r', contents, string_units);
+      break;
+    case 't':
+      append_code_point(enc, '\t', contents, string_units);
+      break;
+    case 'v':
+      append_code_point(enc, '\v', contents, string_units);
+      break;
+    case 'x':
+      append_numeric_escape(parse_variable_hex_escape(decoded, i),
+                            contents,
+                            string_units);
+      break;
+    case 'u':
+      append_code_point(enc,
+                        static_cast<char32_t>(
+                            parse_fixed_hex_escape(decoded, i, 4)),
+                        contents,
+                        string_units);
+      break;
+    case 'U':
+      append_code_point(enc,
+                        static_cast<char32_t>(
+                            parse_fixed_hex_escape(decoded, i, 8)),
+                        contents,
+                        string_units);
+      break;
+    default:
+      if(escaped >= '0' && escaped <= '7') {
+        append_numeric_escape(parse_octal_escape(decoded, i, escaped),
+                              contents,
+                              string_units);
+      } else {
+        append_code_point(enc, 0, contents, string_units);
+      }
+      break;
+    }
+  }
+}
+
 }  // namespace
 
 std::string type_to_string(EFundamentalType type)
@@ -366,6 +589,7 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
   out.quote = '\0';
   out.enc = '\0';
   out.contents.clear();
+  out.string_units.clear();
   out.ud_suffix.clear();
   const auto parse_single_quote_literal =
       [&](size_t start_pos, QuoteLiteralData & piece, size_t & next_pos) -> bool
@@ -373,6 +597,7 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
     piece.quote = '\0';
     piece.enc = '\0';
     piece.contents.clear();
+    piece.string_units.clear();
     piece.ud_suffix.clear();
 
     size_t pos = start_pos;
@@ -405,6 +630,7 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
     if(!prefix.empty() && prefix[prefix.size() - 1] == 'R') {
       raw = true;
     }
+    piece.enc = quote_literal_encoding(prefix, piece.quote);
 
     size_t end_quote = string::npos;
     string payload;
@@ -422,7 +648,6 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
       }
       payload = data.substr(payload_start + 1, payload_end - (payload_start + 1));
       end_quote = payload_end + terminator.size() - 1;
-      piece.contents = decode_utf8(payload);
     } else {
       payload.reserve(data.size() - (quote_pos + 1));
       bool escaped = false;
@@ -442,8 +667,8 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
       if(end_quote == string::npos) {
         return false;
       }
-      piece.contents = decode_escape(decode_utf8(payload));
     }
+    decode_quote_payload(payload, raw, piece.enc, piece.contents, piece.string_units);
 
     size_t suffix_pos = end_quote + 1;
     while(suffix_pos < data.size() &&
@@ -455,31 +680,8 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
     next_pos = suffix_pos;
 
     if(piece.quote == '\'') {
-      if(prefix == "u8") {
-        piece.enc = '8';
-      } else if(prefix == "u") {
-        piece.enc = 'u';
-      } else if(prefix == "U") {
-        piece.enc = 'U';
-      } else if(prefix == "L") {
-        piece.enc = 'L';
-      } else {
-        piece.enc = '\'';
-      }
       if(piece.enc == '\'' && !piece.contents.empty() && piece.contents[0] > 127) {
         piece.enc = 'i';
-      }
-    } else {
-      if(prefix == "u8" || prefix == "u8R") {
-        piece.enc = '8';
-      } else if(prefix == "u" || prefix == "uR") {
-        piece.enc = 'u';
-      } else if(prefix == "U" || prefix == "UR") {
-        piece.enc = 'U';
-      } else if(prefix == "L" || prefix == "LR") {
-        piece.enc = 'L';
-      } else {
-        piece.enc = '"';
       }
     }
     return true;
@@ -510,6 +712,9 @@ void parse_quote_literal(const string& data, QuoteLiteralData& out)
       }
     }
     out.contents.append(piece.contents);
+    out.string_units.insert(out.string_units.end(),
+                            piece.string_units.begin(),
+                            piece.string_units.end());
     pos = next_pos;
   }
 }
@@ -540,4 +745,15 @@ EFundamentalType character_literal_type(const QuoteLiteralData & literal)
   default:
     return FT_CHAR;
   }
+}
+
+const vector<unsigned long long> &
+quote_literal_string_units(const QuoteLiteralData & literal)
+{
+  return literal.string_units;
+}
+
+size_t quote_literal_string_unit_count(const QuoteLiteralData & literal)
+{
+  return literal.string_units.size();
 }

@@ -422,39 +422,7 @@ bool try_parse_string_literal_node(const CallSemNode & node, QuoteLiteralData & 
 
 vector<unsigned long long> string_literal_code_units(const QuoteLiteralData & literal)
 {
-  vector<unsigned long long> units;
-  switch(literal.enc) {
-  case 'u':
-    {
-      const u16string encoded = encode_utf16(literal.contents);
-      units.reserve(encoded.size());
-      for(size_t i = 0; i < encoded.size(); ++i) {
-        units.push_back(static_cast<unsigned long long>(encoded[i]));
-      }
-    }
-    break;
-
-  case 'U':
-  case 'L':
-    units.reserve(literal.contents.size());
-    for(size_t i = 0; i < literal.contents.size(); ++i) {
-      units.push_back(static_cast<unsigned long long>(literal.contents[i]));
-    }
-    break;
-
-  default:
-    {
-      const string encoded = encode_utf8(literal.contents);
-      units.reserve(encoded.size());
-      for(size_t i = 0; i < encoded.size(); ++i) {
-        units.push_back(
-            static_cast<unsigned long long>(
-                static_cast<unsigned char>(encoded[i])));
-      }
-    }
-    break;
-  }
-  return units;
+  return quote_literal_string_units(literal);
 }
 
 string lowir_name(const string & qualified)

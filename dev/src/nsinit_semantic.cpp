@@ -519,8 +519,9 @@ vector<char> encode_string_units(const QuoteLiteralData & literal,
 {
   vector<char> result;
   const size_t element_size = type_to_size(element_type);
-  for(size_t i = 0; i < literal.contents.size(); ++i) {
-    const unsigned long long value = literal.contents[i];
+  const vector<unsigned long long> & units = quote_literal_string_units(literal);
+  for(size_t i = 0; i < units.size(); ++i) {
+    const unsigned long long value = units[i];
     if(element_size == 1 && value > 0xffU) {
       throw logic_error("string literal element out of range");
     }
@@ -764,7 +765,7 @@ TypePtr make_string_literal_storage_type(const string & text)
   }
   return make_array(make_fundamental(string_literal_element_type(literal)),
                     true,
-                    literal.contents.size() + 1);
+                    quote_literal_string_unit_count(literal) + 1);
 }
 
 void collect_array_string_literal_entities(const CppAstNode & node,

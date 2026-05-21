@@ -55,9 +55,11 @@ bool parse_literal_value(const CppAstNode & node, ConstexprValue & out)
         const TypePtr char_type =
             make_cv(make_fundamental(element_type), true, false);
         vector<ConstexprValue> elements;
-        elements.reserve(literal.contents.size() + 1);
-        for(size_t i = 0; i < literal.contents.size(); ++i) {
-          elements.push_back(make_integral_value(static_cast<long long>(literal.contents[i]),
+        const vector<unsigned long long> & units =
+            quote_literal_string_units(literal);
+        elements.reserve(units.size() + 1);
+        for(size_t i = 0; i < units.size(); ++i) {
+          elements.push_back(make_integral_value(static_cast<long long>(units[i]),
                                                  make_fundamental(element_type)));
         }
         elements.push_back(make_integral_value(0, make_fundamental(element_type)));

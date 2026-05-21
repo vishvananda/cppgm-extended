@@ -58,15 +58,7 @@ namespace {
 
 size_t string_literal_code_unit_count(const QuoteLiteralData & literal)
 {
-  switch(literal.enc) {
-  case 'u':
-    return encode_utf16(literal.contents).size();
-  case 'U':
-  case 'L':
-    return literal.contents.size();
-  default:
-    return encode_utf8(literal.contents).size();
-  }
+  return quote_literal_string_unit_count(literal);
 }
 
 string literal_without_ud_suffix(const string & text, const string & ud_suffix)

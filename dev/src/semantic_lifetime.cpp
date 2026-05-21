@@ -2503,12 +2503,13 @@ bool build_string_literal_array_initializer(const TypePtr & type,
   const unsigned long long max_value =
       element_size >= sizeof(unsigned long long) ? ~0ULL :
       ((1ULL << (element_size * 8)) - 1ULL);
-  if(literal.contents.size() + 1 > base->bound) {
+  const vector<unsigned long long> & units = quote_literal_string_units(literal);
+  if(units.size() + 1 > base->bound) {
     throw logic_error("string literal too long");
   }
 
-  for(size_t i = 0; i < literal.contents.size(); ++i) {
-    const unsigned long long value = literal.contents[i];
+  for(size_t i = 0; i < units.size(); ++i) {
+    const unsigned long long value = units[i];
     if(value > max_value) {
       throw logic_error("string literal element out of range");
     }
