@@ -3180,6 +3180,188 @@ std::vector<std::pair<std::string, TypePtr> > binding_explicit_params(
       binding.params.end());
 }
 
+std::string inherited_constructor_base_match_name(const std::string & name)
+{
+  return semantic_utils::strip_trailing_top_level_template_arguments(
+      semantic_utils::unqualified_member_name(name));
+}
+
+ClassInfo * find_instantiated_inherited_constructor_base(
+    SemanticContext & ctx,
+    Scope & inst_scope,
+    const FunctionTemplateDecl & source_decl,
+    const FunctionBinding & binding)
+{
+  if(!binding.owner_class || !source_decl.ctor_initializer) {
+    return nullptr;
+  }
+  const CppAstNode & ctor_init = *source_decl.ctor_initializer;
+  if(ctor_init.children.empty()) {
+    return nullptr;
+  }
+  const CppAstNode * init_id =
+      find_child_kind(ctor_init.children[0], CppAstKind::mem_initializer_id);
+  if(!init_id) {
+    return nullptr;
+  }
+
+  TypePtr target_type = init_id->semantic_type;
+  if(target_type) {
+    TypePtr resolved_type;
+    if(recover_instantiation_bound_type(ctx, inst_scope, target_type, resolved_type) &&
+       resolved_type) {
+      target_type = resolved_type;
+    }
+    target_type = strip_top_level_cv(target_type);
+  }
+
+  const std::string target_name =
+      inherited_constructor_base_match_name(init_id->value);
+  for(std::size_t i = 0; i < binding.owner_class->bases.size(); ++i) {
+    const BaseInfo & base = binding.owner_class->bases[i];
+    if(!base.type || !base.type->type) {
+      continue;
+    }
+    if(target_type &&
+       type_equals(strip_top_level_cv(base.type->type), target_type)) {
+      return base.type;
+    }
+    if(target_name.empty()) {
+      continue;
+    }
+    if(target_name == inherited_constructor_base_match_name(base.type->name) ||
+       target_name == inherited_constructor_base_match_name(base.type->qualified_name)) {
+      return base.type;
+    }
+  }
+  return nullptr;
+}
+
+CppAstNode make_instantiated_inherited_constructor_type_id(const TypePtr & type)
+{
+  CppAstNode type_id;
+  type_id.kind = CppAstKind::type_id;
+
+  CppAstNode specifiers;
+  specifiers.kind = CppAstKind::decl_specifier_seq;
+
+  CppAstNode type_name;
+  type_name.kind = CppAstKind::type_name;
+  type_name.value = type ? template_argument_type_text(type) : std::string();
+  type_name.semantic_type = type;
+  specifiers.children.push_back(type_name);
+  type_id.children.push_back(specifiers);
+  return type_id;
+}
+
+CppAstNode make_instantiated_inherited_constructor_rvalue_type_id(
+    const TypePtr & type)
+{
+  CppAstNode type_id = make_instantiated_inherited_constructor_type_id(type);
+
+  CppAstNode abstract;
+  abstract.kind = CppAstKind::abstract_declarator;
+
+  CppAstNode ptr_operator;
+  ptr_operator.kind = CppAstKind::ptr_operator;
+  ptr_operator.value = "&&";
+  ptr_operator.has_token = true;
+  ptr_operator.token_kind = RT_SIMPLE;
+  ptr_operator.simple_type = OP_LAND;
+  abstract.children.push_back(ptr_operator);
+  type_id.children.push_back(abstract);
+  return type_id;
+}
+
+CppAstNode make_instantiated_inherited_constructor_argument_expression(
+    const std::vector<std::pair<std::string, TypePtr> > & params,
+    std::size_t index)
+{
+  CppAstNode id;
+  id.kind = CppAstKind::id_expression;
+  id.value =
+      index < params.size() && !params[index].first.empty() ?
+          params[index].first :
+          std::string("__param") + std::to_string(index + 1);
+
+  if(index >= params.size() ||
+     !params[index].second ||
+     strip_top_level_cv(params[index].second)->kind == Type::TK_LVALUE_REFERENCE) {
+    return id;
+  }
+
+  CppAstNode cast;
+  cast.kind = CppAstKind::cast_expression;
+  cast.value = "static_cast";
+  cast.has_token = true;
+  cast.token_kind = RT_SIMPLE;
+  cast.simple_type = KW_STATIC_CAST;
+  cast.children.push_back(
+      make_instantiated_inherited_constructor_rvalue_type_id(
+          remove_reference_type(params[index].second)));
+  cast.children.push_back(id);
+  return cast;
+}
+
+CppAstNode make_instantiated_inherited_constructor_initializer(
+    const ClassInfo & base_info,
+    const std::vector<std::pair<std::string, TypePtr> > & params)
+{
+  CppAstNode ctor_initializer;
+  ctor_initializer.kind = CppAstKind::ctor_initializer;
+
+  CppAstNode mem_initializer;
+  mem_initializer.kind = CppAstKind::mem_initializer;
+
+  CppAstNode mem_initializer_id;
+  mem_initializer_id.kind = CppAstKind::mem_initializer_id;
+  mem_initializer_id.value = !base_info.qualified_name.empty() ?
+      base_info.qualified_name :
+      base_info.name;
+  mem_initializer_id.semantic_type = base_info.type;
+  mem_initializer.children.push_back(mem_initializer_id);
+
+  CppAstNode paren_args;
+  paren_args.kind = CppAstKind::paren_argument_list;
+  for(std::size_t i = 0; i < params.size(); ++i) {
+    paren_args.children.push_back(
+        make_instantiated_inherited_constructor_argument_expression(params, i));
+  }
+  mem_initializer.children.push_back(paren_args);
+  ctor_initializer.children.push_back(mem_initializer);
+  return ctor_initializer;
+}
+
+void refresh_instantiated_inherited_constructor_initializer(
+    SemanticContext & ctx,
+    Scope & inst_scope,
+    const FunctionTemplateDecl & source_decl,
+    FunctionBinding & binding)
+{
+  if(!source_decl.is_inherited_constructor || !binding.is_constructor) {
+    return;
+  }
+  ClassInfo * base =
+      find_instantiated_inherited_constructor_base(ctx,
+                                                  inst_scope,
+                                                  source_decl,
+                                                  binding);
+  if(!base) {
+    return;
+  }
+  binding.ctor_initializer =
+      ctx.own_synthetic_ast(make_instantiated_inherited_constructor_initializer(
+          *base,
+          binding_explicit_params(binding)));
+  binding.has_definition = true;
+  if(!binding.definition_node) {
+    binding.definition_node =
+        source_decl.definition_node ? source_decl.definition_node :
+        (source_decl.declaration_node ? source_decl.declaration_node :
+                                       binding.declaration_node);
+  }
+}
+
 std::string instantiated_source_parameter_name(const FunctionBinding & binding,
                                                std::size_t index)
 {
@@ -7147,6 +7329,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     const bool member_template_decl_already_in_active_owner =
         use_owner_scope_for_member_template &&
         cache_instantiation_context_scope->class_info == instantiation_owner;
+    Scope * refreshed_instantiation_scope = nullptr;
     if(use_scope) {
       Scope & refreshed_scope =
           member_template_decl_already_in_active_owner ?
@@ -7189,6 +7372,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                 &excluded_names);
       }
       found->second->declaration_scope = &refreshed_scope;
+      refreshed_instantiation_scope = &refreshed_scope;
     }
     if(found->second->source_template &&
        found->second->symbol.linkage == symbol_linkage::SL_WEAK) {
@@ -7254,6 +7438,15 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
     if(!found->second->function_qualifier) {
       found->second->function_qualifier = effective_function_qualifier(*cache_source_decl);
+    }
+    if(include_body &&
+       refreshed_instantiation_scope &&
+       cache_source_decl->is_inherited_constructor &&
+       found->second->is_constructor) {
+      refresh_instantiated_inherited_constructor_initializer(ctx,
+                                                            *refreshed_instantiation_scope,
+                                                            *cache_source_decl,
+                                                            *found->second);
     }
     if(definition_materialized_from_source_template &&
        found->second->source_template &&
@@ -7947,15 +8140,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     if(binding &&
        source_decl->is_inherited_constructor &&
        binding->is_constructor) {
-      if(!binding->ctor_initializer && source_decl->ctor_initializer) {
-        binding->ctor_initializer = source_decl->ctor_initializer;
-      }
-      if(binding->ctor_initializer && !binding->has_definition) {
-        binding->has_definition = true;
-        if(!binding->definition_node) {
-          binding->definition_node = binding->declaration_node;
-        }
-      }
+      refresh_instantiated_inherited_constructor_initializer(ctx,
+                                                            inst_scope,
+                                                            *source_decl,
+                                                            *binding);
     }
   } else {
     FunctionRegistrationRequest request;
