@@ -11424,6 +11424,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                                      nullptr;
             ArgumentConversionOptions conversion_options(true, false);
             conversion_options.materialize_standard_adjustments = !instantiate_bodies;
+            if(hints && hints->suppress_user_defined_output_materialization) {
+              conversion_options.materialize_user_defined_output = false;
+            }
             bool converted_from_member_pointer_option = false;
             vector<ExprInfo> member_pointer_options;
             if(target_member_function_pointer_type(target) &&
@@ -11674,11 +11677,16 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       throw logic_error(outmsg.str());
     }
 
-    FunctionBinding * chosen = matches[selection.index].function;
+    CandidateMatch & selected_match = matches[selection.index];
+    if(hints && hints->selected_ranks_out) {
+      *hints->selected_ranks_out = selected_match.ranks;
+    }
+
+    FunctionBinding * chosen = selected_match.function;
     if(instantiate_bodies &&
        !rematerialize_candidate_match_args(ctx,
                                            scope,
-                                           matches[selection.index],
+                                           selected_match,
                                            semantic_policy::rematerialization_conversion(options),
                                            true)) {
       throw logic_error("failed to rematerialize selected call conversions");

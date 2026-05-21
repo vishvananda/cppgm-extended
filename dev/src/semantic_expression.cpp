@@ -5416,7 +5416,9 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
   auto try_overloaded_binary_operator =
       [&](const ExprInfo * rhs_expr,
           const OverloadableOperandInfo * rhs_operand,
-          ExprInfo & out) -> bool
+          ExprInfo & out,
+          bool instantiate_bodies,
+          vector<ConversionRank> * selected_ranks_out = nullptr) -> bool
       {
         if(operator_name.empty()) {
           return false;
@@ -5591,6 +5593,8 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
         hints.explicit_member_arg_prefix = 1;
         hints.explicit_member_declared_in = member_declared_in;
         hints.explicit_member_path_access = member_path_access;
+        hints.selected_ranks_out = selected_ranks_out;
+        hints.suppress_user_defined_output_materialization = !instantiate_bodies;
         hints.args.push_back(&lhs);
         hints.args.push_back(rhs_expr);
         try
@@ -5598,7 +5602,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           out = ctx.analyze_call_expression(
               operator_scope,
               call,
-              semantic_overload::CallAnalysisOptions(true, &hints));
+              semantic_overload::CallAnalysisOptions(instantiate_bodies, &hints));
           return true;
         }
         catch(const NoViableOverloadError & error)
@@ -5656,21 +5660,13 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     return result;
   }
 
-  if(try_overloaded_binary_operator(have_rhs ? &rhs : nullptr,
-                                    have_rhs ? &rhs_operand : nullptr,
-                                    overloaded_result)) {
-    return overloaded_result;
-  }
-  if(deferred_shift_rhs) {
-    throw logic_error(deferred_shift_rhs_error);
-  }
-
   const auto try_builtin_user_defined_class_conversion =
       [&](const TypePtr & target,
           const ExprInfo & expr,
           bool expr_has_complete_class_type,
           ExprInfo & out_expr,
-          ConversionRank & out_rank) -> bool
+          ConversionRank & out_rank,
+          const ArgumentConversionOptions & conversion_options) -> bool
       {
         if(!target || !expr.type || !expr_has_complete_class_type) {
           return false;
@@ -5683,7 +5679,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
                expr,
                converted,
                rank,
-               semantic_policy::default_argument_conversion())) {
+               conversion_options)) {
           return false;
         }
         TypePtr converted_type = value_conversion_type(converted);
@@ -5696,28 +5692,39 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
       };
 
   const auto try_builtin_binary_class_conversions =
-      [&](ExprInfo & lhs_expr, ExprInfo & rhs_expr)
+      [&](ExprInfo & lhs_expr,
+          ExprInfo & rhs_expr,
+          vector<ConversionRank> * ranks_out,
+          const ArgumentConversionOptions & conversion_options) -> bool
       {
+        if(ranks_out) {
+          ranks_out->clear();
+        }
         TypePtr lhs_base = value_conversion_type(lhs_expr);
         TypePtr rhs_base = value_conversion_type(rhs_expr);
         const bool lhs_class = complete_class_type_for_lookup(ctx, lhs_base) != nullptr;
         const bool rhs_class = complete_class_type_for_lookup(ctx, rhs_base) != nullptr;
         if(!lhs_class && !rhs_class) {
-          return;
+          return false;
         }
 
         const auto try_convert_single_class_operand =
             [&](const ExprInfo & class_expr,
                 bool class_complete,
                 const TypePtr & other_base,
-                ExprInfo & converted_out) -> bool
+                ExprInfo & converted_out,
+                ConversionRank & converted_rank_out,
+                TypePtr & target_out) -> bool
             {
               ConversionRank rank = CR_BAD;
               if(try_builtin_user_defined_class_conversion(other_base,
                                                            class_expr,
                                                            class_complete,
                                                            converted_out,
-                                                           rank)) {
+                                                           rank,
+                                                           conversion_options)) {
+                converted_rank_out = rank;
+                target_out = other_base;
                 return true;
               }
 
@@ -5732,23 +5739,59 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
                 return false;
               }
               rank = CR_BAD;
-              return try_builtin_user_defined_class_conversion(probe,
-                                                               class_expr,
-                                                               class_complete,
-                                                               converted_out,
-                                                               rank);
+              if(!try_builtin_user_defined_class_conversion(probe,
+                                                            class_expr,
+                                                            class_complete,
+                                                            converted_out,
+                                                            rank,
+                                                            conversion_options)) {
+                return false;
+              }
+              converted_rank_out = rank;
+              target_out = probe;
+              return true;
             };
 
         if(lhs_class != rhs_class) {
           ExprInfo converted;
+          ConversionRank converted_rank = CR_BAD;
+          TypePtr target;
           if(lhs_class &&
-             try_convert_single_class_operand(lhs_expr, lhs_class, rhs_base, converted)) {
+             try_convert_single_class_operand(lhs_expr,
+                                              lhs_class,
+                                              rhs_base,
+                                              converted,
+                                              converted_rank,
+                                              target)) {
+            ConversionRank other_rank = standard_conversion_rank(target, rhs_expr);
+            if(other_rank == CR_BAD) {
+              return false;
+            }
             lhs_expr = converted;
+            if(ranks_out) {
+              ranks_out->push_back(converted_rank);
+              ranks_out->push_back(other_rank);
+            }
+            return true;
           } else if(rhs_class &&
-                    try_convert_single_class_operand(rhs_expr, rhs_class, lhs_base, converted)) {
+                    try_convert_single_class_operand(rhs_expr,
+                                                     rhs_class,
+                                                     lhs_base,
+                                                     converted,
+                                                     converted_rank,
+                                                     target)) {
+            ConversionRank other_rank = standard_conversion_rank(target, lhs_expr);
+            if(other_rank == CR_BAD) {
+              return false;
+            }
             rhs_expr = converted;
+            if(ranks_out) {
+              ranks_out->push_back(other_rank);
+              ranks_out->push_back(converted_rank);
+            }
+            return true;
           }
-          return;
+          return false;
         }
 
         struct Candidate
@@ -5772,12 +5815,14 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
                                                         lhs_expr,
                                                         lhs_class,
                                                         candidate.lhs,
-                                                        candidate.lhs_rank) ||
+                                                        candidate.lhs_rank,
+                                                        conversion_options) ||
              !try_builtin_user_defined_class_conversion(targets[i],
                                                         rhs_expr,
                                                         rhs_class,
                                                         candidate.rhs,
-                                                        candidate.rhs_rank)) {
+                                                        candidate.rhs_rank,
+                                                        conversion_options)) {
             continue;
           }
           bool duplicate = false;
@@ -5798,7 +5843,7 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           candidates.push_back(candidate);
         }
         if(candidates.empty()) {
-          return;
+          return false;
         }
 
         size_t best = 0;
@@ -5827,14 +5872,228 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           }
         }
         if(ambiguous) {
-          return;
+          return false;
         }
 
         lhs_expr = candidates[best].lhs;
         rhs_expr = candidates[best].rhs;
+        if(ranks_out) {
+          ranks_out->push_back(candidates[best].lhs_rank);
+          ranks_out->push_back(candidates[best].rhs_rank);
+        }
+        return true;
       };
 
-  try_builtin_binary_class_conversions(lhs, rhs);
+  const auto compare_binary_conversion_rank_preference =
+      [](const vector<ConversionRank> & current,
+         const vector<ConversionRank> & best) -> int
+      {
+        if(current.size() != 2 || best.size() != 2) {
+          return 0;
+        }
+        bool current_better = false;
+        bool best_better = false;
+        for(size_t i = 0; i < 2; ++i) {
+          if(current[i] < best[i]) {
+            current_better = true;
+          } else if(current[i] > best[i]) {
+            best_better = true;
+          }
+        }
+        if(current_better && !best_better) {
+          return -1;
+        }
+        if(best_better && !current_better) {
+          return 1;
+        }
+        return 0;
+      };
+
+  const auto builtin_binary_operator_supported =
+      [&](const ExprInfo & lhs_expr, const ExprInfo & rhs_expr) -> bool
+      {
+        TypePtr lhs_type = value_conversion_type(lhs_expr);
+        TypePtr rhs_type = value_conversion_type(rhs_expr);
+        if(!lhs_type || !rhs_type) {
+          return false;
+        }
+
+        const bool lhs_integral_like = is_integral_or_unscoped_enum_type(lhs_type);
+        const bool rhs_integral_like = is_integral_or_unscoped_enum_type(rhs_type);
+        if(node_has_simple_type(node, OP_MINUS) &&
+           pointer_subtraction_operands_compatible(lhs_type, rhs_type)) {
+          return true;
+        }
+        if(node_has_simple_type(node, OP_PLUS)) {
+          return (is_pointer_type(lhs_type) &&
+                  is_integral_or_unscoped_enum_type(rhs_type)) ||
+                 (is_integral_or_unscoped_enum_type(lhs_type) &&
+                  is_pointer_type(rhs_type)) ||
+                 ((lhs_integral_like || is_floating_type(lhs_type)) &&
+                  (rhs_integral_like || is_floating_type(rhs_type)));
+        }
+        if(node_has_simple_type(node, OP_MINUS)) {
+          return (is_pointer_type(lhs_type) &&
+                  is_integral_or_unscoped_enum_type(rhs_type)) ||
+                 ((lhs_integral_like || is_floating_type(lhs_type)) &&
+                  (rhs_integral_like || is_floating_type(rhs_type)));
+        }
+        if(node_has_simple_type(node, OP_STAR) || node_has_simple_type(node, OP_DIV)) {
+          return (lhs_integral_like || is_floating_type(lhs_type)) &&
+                 (rhs_integral_like || is_floating_type(rhs_type));
+        }
+        if(node_has_simple_type(node, OP_MOD) ||
+           node_has_simple_type(node, OP_BOR) ||
+           node_has_simple_type(node, OP_XOR) ||
+           node_has_simple_type(node, OP_AMP) ||
+           node_has_simple_type(node, OP_LSHIFT) ||
+           node_has_simple_type(node, OP_RSHIFT)) {
+          return lhs_integral_like && rhs_integral_like;
+        }
+        if(node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE) ||
+           node_has_simple_type(node, OP_LT) || node_has_simple_type(node, OP_GT) ||
+           node_has_simple_type(node, OP_LE) || node_has_simple_type(node, OP_GE)) {
+          const auto is_null_pointer_constant_for_syntax =
+              [&](const ExprInfo & expr, const CppAstNode & syntax) -> bool
+              {
+                if(expr.null_pointer_constant) {
+                  return true;
+                }
+                if(!expr.type || !is_integral_type(expr.type)) {
+                  return false;
+                }
+                long long value = 0;
+                return ctx.evaluate_constant_expression(scope, syntax, value) &&
+                       value == 0;
+              };
+          const bool pointer_null_constant_comparison =
+              (node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE)) &&
+              ((is_nullable_pointer_like_type(lhs_type) &&
+                is_null_pointer_constant_for_syntax(rhs_expr, node.children[1])) ||
+               (is_nullable_pointer_like_type(rhs_type) &&
+                is_null_pointer_constant_for_syntax(lhs_expr, node.children[0])));
+          return pointer_equality_operands_compatible(lhs_type, rhs_type) ||
+                 pointer_class_hierarchy_equality_compatible(ctx, lhs_type, rhs_type) ||
+                 pointer_null_constant_comparison ||
+                 ((is_integral_type(lhs_type) || is_floating_type(lhs_type) ||
+                   is_named_enum_type(ctx, lhs_type)) &&
+                  (is_integral_type(rhs_type) || is_floating_type(rhs_type) ||
+                   is_named_enum_type(ctx, rhs_type)));
+        }
+        if(node_has_simple_type(node, OP_LAND) || node_has_simple_type(node, OP_LOR)) {
+          ExprInfo lhs_condition = lhs_expr;
+          ExprInfo rhs_condition = rhs_expr;
+          return try_condition_test_conversion(ctx, scope, lhs_condition) &&
+                 try_condition_test_conversion(ctx, scope, rhs_condition);
+        }
+        if(node_has_simple_type(node, OP_COMMA)) {
+          return true;
+        }
+        return false;
+      };
+
+  bool selected_builtin_class_conversion = false;
+  if(have_rhs) {
+    ArgumentConversionOptions builtin_probe_options =
+        semantic_policy::without_user_defined_body_instantiation();
+    builtin_probe_options.materialize_user_defined_output = false;
+    builtin_probe_options.materialize_standard_adjustments = false;
+
+    ExprInfo builtin_lhs_probe = lhs;
+    ExprInfo builtin_rhs_probe = rhs;
+    vector<ConversionRank> builtin_ranks;
+    const bool builtin_probe_ok =
+        try_builtin_binary_class_conversions(builtin_lhs_probe,
+                                             builtin_rhs_probe,
+                                             &builtin_ranks,
+                                             builtin_probe_options) &&
+        builtin_binary_operator_supported(builtin_lhs_probe, builtin_rhs_probe);
+
+    if(builtin_probe_ok) {
+      ExprInfo overloaded_probe;
+      vector<ConversionRank> overloaded_ranks;
+      if(try_overloaded_binary_operator(have_rhs ? &rhs : nullptr,
+                                        have_rhs ? &rhs_operand : nullptr,
+                                        overloaded_probe,
+                                        false,
+                                        &overloaded_ranks)) {
+        const bool builtin_is_better =
+            compare_binary_conversion_rank_preference(builtin_ranks,
+                                                      overloaded_ranks) < 0;
+        if(builtin_is_better) {
+          if(parser_trace::enabled("overload")) {
+            ostringstream trace;
+            trace << "binary-operator-builtin-candidate-selected"
+                  << " op=" << operator_name
+                  << " builtin_ranks={";
+            for(size_t i = 0; i < builtin_ranks.size(); ++i) {
+              if(i != 0) {
+                trace << ",";
+              }
+              trace << static_cast<int>(builtin_ranks[i]);
+            }
+            trace << "} overloaded_ranks={";
+            for(size_t i = 0; i < overloaded_ranks.size(); ++i) {
+              if(i != 0) {
+                trace << ",";
+              }
+              trace << static_cast<int>(overloaded_ranks[i]);
+            }
+            trace << "}";
+            parser_trace::note("overload",
+                               ctx.source_location_for_node(node),
+                               trace.str());
+          }
+          if(!try_builtin_binary_class_conversions(
+                 lhs,
+                 rhs,
+                 nullptr,
+                 semantic_policy::default_argument_conversion())) {
+            throw logic_error("failed to materialize selected builtin conversions");
+          }
+          selected_builtin_class_conversion = true;
+        } else {
+          if(!try_overloaded_binary_operator(have_rhs ? &rhs : nullptr,
+                                             have_rhs ? &rhs_operand : nullptr,
+                                             overloaded_result,
+                                             true)) {
+            throw logic_error("failed to materialize selected overloaded operator");
+          }
+          return overloaded_result;
+        }
+      } else if(!deferred_shift_rhs) {
+        if(!try_builtin_binary_class_conversions(
+               lhs,
+               rhs,
+               nullptr,
+               semantic_policy::default_argument_conversion())) {
+          throw logic_error("failed to materialize selected builtin conversions");
+        }
+        selected_builtin_class_conversion = true;
+      }
+    } else if(try_overloaded_binary_operator(have_rhs ? &rhs : nullptr,
+                                             have_rhs ? &rhs_operand : nullptr,
+                                             overloaded_result,
+                                             true)) {
+      return overloaded_result;
+    }
+  } else if(try_overloaded_binary_operator(have_rhs ? &rhs : nullptr,
+                                           have_rhs ? &rhs_operand : nullptr,
+                                           overloaded_result,
+                                           true)) {
+    return overloaded_result;
+  }
+
+  if(!selected_builtin_class_conversion) {
+    if(deferred_shift_rhs) {
+      throw logic_error(deferred_shift_rhs_error);
+    }
+    try_builtin_binary_class_conversions(lhs,
+                                         rhs,
+                                         nullptr,
+                                         semantic_policy::default_argument_conversion());
+  }
+
   const auto has_non_enum_class_value_type =
       [&](const ExprInfo & expr) -> bool
       {

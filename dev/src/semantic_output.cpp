@@ -3999,7 +3999,10 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
   output_guard.finish();
   binding.output_emitted = true;
   binding.cached_body_output.reset();
-  if(binding_has_out_of_class_member_definition(binding)) {
+  if(binding_has_out_of_class_member_definition(binding) ||
+     (binding.owner_class &&
+      binding.owner_class->is_polymorphic &&
+      (binding.is_constructor || binding.is_destructor))) {
     analyze_required_vtable_output(ctx, state, *binding.owner_class, out, &binding);
   }
 }
