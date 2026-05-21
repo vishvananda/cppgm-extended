@@ -2804,10 +2804,7 @@ bool CppAstParser::parenthesized_type_id_prefers_expression(
 
   const CppAstNode & head = type_id.children[0].children[0];
   const bool function_like_abstract_declarator =
-      type_id.kind == CppAstKind::type_id &&
-      type_id.children.size() == 2 &&
-      type_id.children[1].kind == CppAstKind::abstract_declarator &&
-      declarator_has_parameter_clause(type_id.children[1]);
+      type_id_has_function_style_abstract_declarator(type_id);
   const cpp_decl::QualifiedName * head_syntax = cppast_qualified_name_syntax(head);
   if(head_syntax &&
      (head_syntax->rooted || !head_syntax->qualifiers.empty()) &&
@@ -3363,6 +3360,15 @@ bool CppAstParser::declarator_has_parameter_clause(const CppAstNode & node) cons
     }
   }
   return false;
+}
+
+bool CppAstParser::type_id_has_function_style_abstract_declarator(
+    const CppAstNode & type_id) const
+{
+  return type_id.kind == CppAstKind::type_id &&
+         type_id.children.size() == 2 &&
+         type_id.children[1].kind == CppAstKind::abstract_declarator &&
+         declarator_has_parameter_clause(type_id.children[1]);
 }
 
 bool CppAstParser::parse_empty_declaration(CppAstNode & out)
@@ -6863,11 +6869,7 @@ bool CppAstParser::parse_parenthesized_type_id_or_expression(
       }
       const bool functional_cast_abstract_declarator =
           allow_expression &&
-          type_id.kind == CppAstKind::type_id &&
-          type_id.children.size() == 2 &&
-          type_id.children[1].kind == CppAstKind::abstract_declarator &&
-          type_id.children[1].children.size() == 1 &&
-          type_id.children[1].children[0].kind == CppAstKind::parameter_clause;
+          type_id_has_function_style_abstract_declarator(type_id);
       if(functional_cast_abstract_declarator) {
         pos = start + 1;
         CppAstNode expr;
@@ -6943,11 +6945,7 @@ bool CppAstParser::parse_decltype_or_typeof_operand_node(std::size_t specifier_s
     CppAstNode type_id;
     if(parse_type_id(type_id) && pos == operand_end) {
       const bool functional_cast_abstract_declarator =
-          type_id.kind == CppAstKind::type_id &&
-          type_id.children.size() == 2 &&
-          type_id.children[1].kind == CppAstKind::abstract_declarator &&
-          type_id.children[1].children.size() == 1 &&
-          type_id.children[1].children[0].kind == CppAstKind::parameter_clause;
+          type_id_has_function_style_abstract_declarator(type_id);
       if(parenthesized_type_id_prefers_expression(type_id) ||
          functional_cast_abstract_declarator) {
         pos = operand_start;
@@ -8558,33 +8556,45 @@ bool CppAstParser::parse_unary_expression(CppAstNode & out)
                                                  is_type_id,
                                                  false) &&
        is_type_id) {
-      if(parser_trace::enabled("parser.fragment")) {
-        std::ostringstream trace;
-        trace << "unary cast candidate type-id="
-              << token_span_text_spaced(type_id.token_start, type_id.token_end);
-        parser_trace::note("parser.fragment", tokens, start, trace.str());
-      }
-      CppAstNode operand;
-      if(!parse_unary_expression(operand)) {
-        if(parser_trace::enabled("parser.fragment")) {
-          std::ostringstream trace;
-          trace << "unary cast candidate rejected missing operand after type-id="
-                << token_span_text_spaced(type_id.token_start, type_id.token_end)
-                << " next=" << token_label(peek());
-          parser_trace::note("parser.fragment", tokens, pos, trace.str());
-        }
+      const bool postfix_after_parenthesized_functional_cast =
+          type_id_has_function_style_abstract_declarator(type_id) &&
+          (peek().is_simple(OP_LPAREN) ||
+           peek().is_simple(OP_LSQUARE) ||
+           peek().is_simple(OP_DOT) ||
+           peek().is_simple(OP_ARROW) ||
+           peek().is_simple(OP_INC) ||
+           peek().is_simple(OP_DEC));
+      if(postfix_after_parenthesized_functional_cast) {
         pos = start;
       } else {
-        out = make_node(CppAstKind::cast_expression);
-        set_node_simple_type(out, OP_LPAREN);
-        out.children.push_back(std::move(type_id));
-        out.children.push_back(std::move(operand));
-        if(!parse_postfix_suffixes(out, start)) {
-          pos = start;
-          return false;
+        if(parser_trace::enabled("parser.fragment")) {
+          std::ostringstream trace;
+          trace << "unary cast candidate type-id="
+                << token_span_text_spaced(type_id.token_start, type_id.token_end);
+          parser_trace::note("parser.fragment", tokens, start, trace.str());
         }
-        set_span(out, start);
-        return true;
+        CppAstNode operand;
+        if(!parse_unary_expression(operand)) {
+          if(parser_trace::enabled("parser.fragment")) {
+            std::ostringstream trace;
+            trace << "unary cast candidate rejected missing operand after type-id="
+                  << token_span_text_spaced(type_id.token_start, type_id.token_end)
+                  << " next=" << token_label(peek());
+            parser_trace::note("parser.fragment", tokens, pos, trace.str());
+          }
+          pos = start;
+        } else {
+          out = make_node(CppAstKind::cast_expression);
+          set_node_simple_type(out, OP_LPAREN);
+          out.children.push_back(std::move(type_id));
+          out.children.push_back(std::move(operand));
+          if(!parse_postfix_suffixes(out, start)) {
+            pos = start;
+            return false;
+          }
+          set_span(out, start);
+          return true;
+        }
       }
     }
     pos = start;

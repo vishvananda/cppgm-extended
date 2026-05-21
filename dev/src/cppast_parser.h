@@ -202,6 +202,8 @@ protected:
   bool can_start_attributed_decl_specifier_seq();
   bool can_start_structured_binding_declarator() const;
   bool declarator_has_parameter_clause(const CppAstNode & node) const;
+  bool type_id_has_function_style_abstract_declarator(
+      const CppAstNode & type_id) const;
   bool parse_condition_declaration_candidate(CppAstNode & out);
   bool parse_parenthesized_type_id_or_expression(CppAstNode & out,
                                                  bool & is_type_id,
