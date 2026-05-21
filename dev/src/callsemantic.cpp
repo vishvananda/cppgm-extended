@@ -3352,6 +3352,26 @@ private:
         {
           return destructor_for(info);
         };
+    callbacks.copy_constructor_for =
+        [this](ClassInfo & info) -> FunctionBinding *
+        {
+          return copy_constructor_for(info);
+        };
+    callbacks.move_constructor_for =
+        [this](ClassInfo & info) -> FunctionBinding *
+        {
+          return move_constructor_for(info);
+        };
+    callbacks.ensure_implicit_copy_constructor =
+        [this](ClassInfo & info) -> FunctionBinding *
+        {
+          return ensure_implicit_copy_constructor(info);
+        };
+    callbacks.ensure_implicit_move_constructor =
+        [this](ClassInfo & info) -> FunctionBinding *
+        {
+          return ensure_implicit_move_constructor(info);
+        };
     callbacks.copy_assignment_for =
         [this](ClassInfo & info) -> FunctionBinding *
         {
@@ -27356,6 +27376,20 @@ private:
     }
     for(size_t i = 0; i < found->second.size(); ++i) {
       if(found->second[i]->is_copy_constructor) {
+        return found->second[i];
+      }
+    }
+    return nullptr;
+  }
+
+  FunctionBinding * move_constructor_for(ClassInfo & info)
+  {
+    map<string, vector<FunctionBinding *> >::iterator found = info.methods.find(info.name);
+    if(found == info.methods.end()) {
+      return nullptr;
+    }
+    for(size_t i = 0; i < found->second.size(); ++i) {
+      if(found->second[i]->is_move_constructor) {
         return found->second[i];
       }
     }

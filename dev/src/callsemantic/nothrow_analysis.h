@@ -34,6 +34,14 @@ struct NothrowCallbacks
   std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>
       destructor_for;
   std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>
+      copy_constructor_for;
+  std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>
+      move_constructor_for;
+  std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>
+      ensure_implicit_copy_constructor;
+  std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>
+      ensure_implicit_move_constructor;
+  std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>
       copy_assignment_for;
   std::function<semantic_model::FunctionBinding *(semantic_model::ClassInfo &)>
       move_assignment_for;

@@ -1108,6 +1108,89 @@ bool default_initialization_is_nothrow(SemanticContext & ctx,
                                        Scope & scope,
                                        const TypePtr & type,
                                        std::set<FunctionBinding *> & visiting);
+bool function_binding_is_nothrow(SemanticContext & ctx,
+                                 Scope & scope,
+                                 const FunctionBinding & binding,
+                                 std::set<FunctionBinding *> & visiting);
+
+FunctionBinding * find_constructor_for_trait(ClassInfo & info, bool want_move)
+{
+  std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
+      info.methods.find(info.name);
+  if(found == info.methods.end()) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < found->second.size(); ++i) {
+    FunctionBinding * binding = found->second[i];
+    if(binding &&
+       ((want_move && binding->is_move_constructor) ||
+        (!want_move && binding->is_copy_constructor))) {
+      return binding;
+    }
+  }
+  return nullptr;
+}
+
+bool copy_or_move_construction_type_is_nothrow(
+    SemanticContext & ctx,
+    Scope & scope,
+    const TypePtr & type,
+    bool move,
+    std::set<FunctionBinding *> & visiting)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(is_reference_type(base)) {
+    return true;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    return base->has_bound &&
+           copy_or_move_construction_type_is_nothrow(ctx,
+                                                     scope,
+                                                     base->inner,
+                                                     move,
+                                                     visiting);
+  }
+  if(base->kind == Type::TK_FUNCTION || is_void_type(base)) {
+    return false;
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_scalar_or_member_pointer_type(ctx, base)) {
+    return true;
+  }
+  if(!move &&
+     semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(
+         ctx, base)) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.complete_class_type(base);
+  if(!info || !info->complete) {
+    return false;
+  }
+  semantic_class_model::ensure_implicit_special_members(ctx, *info);
+
+  FunctionBinding * ctor = nullptr;
+  if(move && !type_is_const_object(type)) {
+    ctor = find_constructor_for_trait(*info, true);
+    if(!ctor) {
+      ctor = ctx.ensure_implicit_move_constructor(*info);
+    }
+  }
+  if(!ctor || ctor->is_deleted) {
+    ctor = find_constructor_for_trait(*info, false);
+    if(!ctor) {
+      ctor = ctx.ensure_implicit_copy_constructor(*info);
+    }
+  }
+  return ctor && !ctor->is_deleted &&
+         function_binding_is_nothrow(ctx, scope, *ctor, visiting);
+}
 
 bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
                                                Scope & scope,
@@ -1123,6 +1206,9 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
 
   const ClassInfo & info = *binding.owner_class;
   std::set<std::string> explicitly_initialized;
+  const bool copy_or_move_ctor =
+      binding.is_copy_constructor || binding.is_move_constructor;
+  const bool move_ctor = binding.is_move_constructor;
 
   if(binding.ctor_initializer) {
     for(size_t i = 0; i < binding.ctor_initializer->children.size(); ++i) {
@@ -1178,7 +1264,17 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
        explicitly_initialized.count(qualified_name) != 0) {
       continue;
     }
-    if(!default_initialization_is_nothrow(ctx, scope, info.bases[i].type->type, visiting)) {
+    const bool base_nothrow = copy_or_move_ctor ?
+        copy_or_move_construction_type_is_nothrow(ctx,
+                                                  scope,
+                                                  info.bases[i].type->type,
+                                                  move_ctor,
+                                                  visiting) :
+        default_initialization_is_nothrow(ctx,
+                                          scope,
+                                          info.bases[i].type->type,
+                                          visiting);
+    if(!base_nothrow) {
       return false;
     }
   }
@@ -1187,7 +1283,15 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
     if(explicitly_initialized.count(info.fields[i].name) != 0) {
       continue;
     }
-    if(info.fields[i].default_initializer) {
+    if(copy_or_move_ctor) {
+      if(!copy_or_move_construction_type_is_nothrow(ctx,
+                                                    scope,
+                                                    info.fields[i].type,
+                                                    move_ctor,
+                                                    visiting)) {
+        return false;
+      }
+    } else if(info.fields[i].default_initializer) {
           if(!initializer_is_nothrow(ctx,
                                      scope,
                                      info.fields[i].type,
@@ -1195,8 +1299,13 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
                                      visiting)) {
             return false;
           }
-    } else if(!default_initialization_is_nothrow(ctx, scope, info.fields[i].type, visiting)) {
-      return false;
+    } else {
+      if(!default_initialization_is_nothrow(ctx,
+                                            scope,
+                                            info.fields[i].type,
+                                            visiting)) {
+        return false;
+      }
     }
   }
 
