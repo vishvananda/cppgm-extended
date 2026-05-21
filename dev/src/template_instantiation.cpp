@@ -3498,6 +3498,11 @@ bool expand_instantiated_function_parameter_clause(
   params.clear();
   default_args.clear();
 
+  Scope parameter_scope(&inst_scope, "<parameter-clause>", false);
+  parameter_scope.class_info = inst_scope.class_info;
+  parameter_scope.function = inst_scope.function;
+  parameter_scope.namespace_scope = inst_scope.namespace_scope;
+
   for(std::size_t i = 0; i < parameter_clause.children.size(); ++i) {
     const CppAstNode & parameter = parameter_clause.children[i];
     if(parameter.kind != CppAstKind::parameter_declaration) {
@@ -3518,7 +3523,7 @@ bool expand_instantiated_function_parameter_clause(
       single_clause.children.push_back(parameter);
       std::vector<std::pair<std::string, TypePtr> > single_params;
       std::vector<const CppAstNode *> single_defaults;
-      if(!ctx.parse_parameter_clause(inst_scope,
+      if(!ctx.parse_parameter_clause(parameter_scope,
                                      single_clause,
                                      single_params,
                                      &single_defaults,
@@ -3528,6 +3533,9 @@ bool expand_instantiated_function_parameter_clause(
       }
       params.push_back(single_params[0]);
       default_args.push_back(single_defaults.empty() ? nullptr : single_defaults[0]);
+      template_scope::bind_parameter_value(parameter_scope,
+                                           single_params[0].first,
+                                           single_params[0].second);
       continue;
     }
 
@@ -3537,7 +3545,7 @@ bool expand_instantiated_function_parameter_clause(
     }
 
     const std::vector<std::pair<std::string, const std::vector<TypePtr> *> > packs =
-        pack_parameter_analysis::referenced_named_type_packs(inst_scope,
+        pack_parameter_analysis::referenced_named_type_packs(parameter_scope,
                                                              stripped_parameter);
     if(packs.empty()) {
       return false;
@@ -3551,10 +3559,10 @@ bool expand_instantiated_function_parameter_clause(
     }
 
     for(std::size_t pack_index = 0; pack_index < pack_size; ++pack_index) {
-      Scope single_scope(&inst_scope, "<pack-param>", false);
-      single_scope.class_info = inst_scope.class_info;
-      single_scope.function = inst_scope.function;
-      single_scope.namespace_scope = inst_scope.namespace_scope;
+      Scope single_scope(&parameter_scope, "<pack-param>", false);
+      single_scope.class_info = parameter_scope.class_info;
+      single_scope.function = parameter_scope.function;
+      single_scope.namespace_scope = parameter_scope.namespace_scope;
       for(std::size_t pack = 0; pack < packs.size(); ++pack) {
         template_scope::bind_named_type(single_scope,
                                         packs[pack].first,
@@ -3576,6 +3584,19 @@ bool expand_instantiated_function_parameter_clause(
       }
       params.push_back(single_params[0]);
       default_args.push_back(single_defaults.empty() ? nullptr : single_defaults[0]);
+    }
+
+    const std::string pack_name =
+        pack_parameter_analysis::parameter_declaration_name(parameter);
+    if(!pack_name.empty() && params.size() >= pack_size) {
+      std::vector<TypePtr> pack_value_types;
+      pack_value_types.reserve(pack_size);
+      for(std::size_t j = 0; j < pack_size; ++j) {
+        pack_value_types.push_back(params[params.size() - pack_size + j].second);
+      }
+      template_scope::bind_parameter_value_pack(parameter_scope,
+                                                pack_name,
+                                                pack_value_types);
     }
   }
 
