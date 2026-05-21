@@ -3426,6 +3426,23 @@ bool value_binding_is_enumerator(const ValueBinding & binding)
          binding.declaration_node->kind == CppAstKind::enumerator;
 }
 
+ExprInfo make_enumerator_value_expr(const CppAstNode & node,
+                                    const ValueBinding & binding)
+{
+  ExprInfo result;
+  result.type = strip_top_level_cv(binding.type);
+  result.category = VC_PRVALUE;
+  if(binding.has_constant_value) {
+    result.node = make_dump_node(CallSemKind::literal,
+                                 to_string(binding.constant_value));
+    set_callsem_int_value(result.node, binding.constant_value);
+  } else {
+    result.node = make_dump_node(CallSemKind::id_expression, node.value);
+  }
+  set_expr_metadata(result.node, result.type, result.category);
+  return result;
+}
+
 bool storage_backed_primary_template_static_member(const ValueBinding & binding)
 {
   return binding.kind == ValueBinding::VK_VARIABLE &&
@@ -3728,6 +3745,9 @@ ExprInfo make_value_binding_expr(SemanticContext & ctx,
                                  const ValueBinding & binding,
                                  bool allow_constant_fold)
 {
+  if(value_binding_is_enumerator(binding)) {
+    return make_enumerator_value_expr(node, binding);
+  }
   if(binding.kind == ValueBinding::VK_VARIABLE && binding.owner_class) {
     return make_static_member_variable_expr(ctx, binding, allow_constant_fold);
   }
@@ -3767,20 +3787,6 @@ ExprInfo make_value_binding_expr(SemanticContext & ctx,
     set_callsem_uint_value(result.node, binding.anonymous_storage_member_offset);
     result.node.is_reference_storage = is_reference_type(binding.type);
     result.node.children.push_back(std::move(base.node));
-    return result;
-  }
-  if(value_binding_is_enumerator(binding)) {
-    ExprInfo result;
-    result.type = strip_top_level_cv(binding.type);
-    result.category = VC_PRVALUE;
-    if(binding.has_constant_value) {
-      result.node = make_dump_node(CallSemKind::literal,
-                                   to_string(binding.constant_value));
-      set_callsem_int_value(result.node, binding.constant_value);
-    } else {
-      result.node = make_dump_node(CallSemKind::id_expression, node.value);
-    }
-    set_expr_metadata(result.node, result.type, result.category);
     return result;
   }
   constant_eval::ConstexprValue constant_value;
@@ -4588,6 +4594,9 @@ ExprInfo analyze_member_expression(SemanticContext & ctx,
                                            field.binding->access,
                                            field.path_access)) {
     throw logic_error("inaccessible member");
+  }
+  if(value_binding_is_enumerator(*field.binding)) {
+    return make_enumerator_value_expr(node.children[1], *field.binding);
   }
   if(field.binding->kind == ValueBinding::VK_VARIABLE) {
     return make_static_member_variable_expr(ctx, *field.binding);
