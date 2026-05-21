@@ -13154,7 +13154,9 @@ private:
         throw logic_error("switch condition declaration shape");
       }
       emit_variable_declaration(child.children[0]);
-      return emit_rvalue(child.children[0]);
+      return emit_rvalue(callsem_lowered_condition_test(child) ?
+                             *callsem_lowered_condition_test(child) :
+                             child.children[0]);
     }
 
     return emit_rvalue(child);

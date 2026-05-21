@@ -583,6 +583,31 @@ bool switch_condition_expr_ok(SemanticContext & ctx, const ExprInfo & expr)
   return converted && (is_integral_type(converted) || is_named_enum_type(ctx, converted));
 }
 
+bool try_switch_condition_conversion(SemanticContext & ctx,
+                                     Scope & scope,
+                                     ExprInfo & expr)
+{
+  if(switch_condition_expr_ok(ctx, expr)) {
+    return true;
+  }
+
+  ExprInfo converted_expr;
+  ConversionRank rank = CR_BAD;
+  if(!ctx.try_argument_conversion(scope,
+                                  make_fundamental(FT_INT),
+                                  expr,
+                                  converted_expr,
+                                  rank)) {
+    return false;
+  }
+  if(!switch_condition_expr_ok(ctx, converted_expr)) {
+    return false;
+  }
+
+  expr = converted_expr;
+  return true;
+}
+
 void analyze_simple_declaration_statement(SemanticContext & ctx,
                                           Scope & scope,
                                           const CppAstNode & node,
@@ -777,7 +802,8 @@ void analyze_condition_declaration(SemanticContext & ctx,
                                    Scope & scope,
                                    const CppAstNode & node,
                                    DumpNode & out,
-                                   bool synthesize_condition_test = true)
+                                   bool synthesize_condition_test = true,
+                                   bool synthesize_switch_condition_test = false)
 {
   if(node.kind != CppAstKind::condition_declaration || node.children.size() < 3) {
     throw logic_error("unsupported condition-declaration");
@@ -831,12 +857,16 @@ void analyze_condition_declaration(SemanticContext & ctx,
     semantic_lifetime::analyze_initializer(ctx, scope, type, *initializer, out.children.back());
   }
 
-  if(!synthesize_condition_test) {
+  if(!synthesize_condition_test && !synthesize_switch_condition_test) {
     return;
   }
 
   ExprInfo condition_expr = ctx.analyze_expression(scope, make_id_expr_ast_node(name));
-  if(!condition_type_ok(ctx, scope, condition_expr)) {
+  const bool condition_ok =
+      synthesize_switch_condition_test ?
+          try_switch_condition_conversion(ctx, scope, condition_expr) :
+          condition_type_ok(ctx, scope, condition_expr);
+  if(!condition_ok) {
     throw logic_error("invalid condition declaration");
   }
   mutable_callsem_lowered_condition_test(out).reset(
@@ -857,13 +887,18 @@ void analyze_condition_node(SemanticContext & ctx,
   const CppAstNode & child = node.children[0];
   if(child.kind == CppAstKind::condition_declaration) {
     DumpNode condition_decl;
-    analyze_condition_declaration(ctx, scope, child, condition_decl, !allow_switch_condition);
+    analyze_condition_declaration(ctx,
+                                  scope,
+                                  child,
+                                  condition_decl,
+                                  !allow_switch_condition,
+                                  allow_switch_condition);
     out.children.push_back(std::move(condition_decl));
     return;
   }
 
   ExprInfo expr = ctx.analyze_expression(scope, child);
-  if(!(allow_switch_condition ? switch_condition_expr_ok(ctx, expr)
+  if(!(allow_switch_condition ? try_switch_condition_conversion(ctx, scope, expr)
                               : condition_type_ok(ctx, scope, expr))) {
     throw logic_error("invalid condition expression");
   }
@@ -892,6 +927,9 @@ TypePtr switch_condition_type(const DumpNode & condition)
   if(child.kind == CallSemKind::condition_declaration) {
     if(child.children.size() != 1 || child.children[0].kind != CallSemKind::variable) {
       throw logic_error("invalid switch condition declaration");
+    }
+    if(callsem_lowered_condition_test(child)) {
+      return callsem_lowered_condition_test(child)->semantic_type;
     }
     return child.children[0].semantic_type;
   }
