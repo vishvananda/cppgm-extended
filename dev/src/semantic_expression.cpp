@@ -986,6 +986,105 @@ TypePtr builtin_common_object_pointer_target()
   return make_pointer(make_cv(make_fundamental(FT_VOID), true, false));
 }
 
+std::vector<TypePtr> builtin_increment_reference_targets()
+{
+  const EFundamentalType fundamentals[] = {
+      FT_BOOL,
+      FT_CHAR,
+      FT_SIGNED_CHAR,
+      FT_UNSIGNED_CHAR,
+      FT_WCHAR_T,
+      FT_CHAR16_T,
+      FT_CHAR32_T,
+      FT_SHORT_INT,
+      FT_UNSIGNED_SHORT_INT,
+      FT_INT,
+      FT_UNSIGNED_INT,
+      FT_LONG_INT,
+      FT_UNSIGNED_LONG_INT,
+      FT_LONG_LONG_INT,
+      FT_UNSIGNED_LONG_LONG_INT,
+      FT_FLOAT,
+      FT_DOUBLE,
+      FT_LONG_DOUBLE,
+  };
+
+  std::vector<TypePtr> out;
+  for(size_t i = 0; i < sizeof(fundamentals) / sizeof(fundamentals[0]); ++i) {
+    out.push_back(make_lvalue_reference_raw(make_fundamental(fundamentals[i])));
+  }
+  return out;
+}
+
+bool is_builtin_increment_operand_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  return is_integral_type(base) ||
+         is_floating_type(base) ||
+         is_pointer_type(base);
+}
+
+bool try_builtin_increment_class_conversion(SemanticContext & ctx,
+                                            Scope & scope,
+                                            const ExprInfo & operand,
+                                            ExprInfo & out)
+{
+  if(complete_class_type_for_lookup(ctx, value_conversion_type(operand)) == nullptr) {
+    return false;
+  }
+
+  struct Candidate
+  {
+    ExprInfo expr;
+    ConversionRank rank = CR_BAD;
+  };
+
+  std::vector<Candidate> candidates;
+  const std::vector<TypePtr> targets = builtin_increment_reference_targets();
+  for(size_t i = 0; i < targets.size(); ++i) {
+    ExprInfo converted;
+    ConversionRank rank = CR_BAD;
+    if(!ctx.try_argument_conversion(scope,
+                                    targets[i],
+                                    operand,
+                                    converted,
+                                    rank,
+                                    semantic_policy::default_argument_conversion())) {
+      continue;
+    }
+    if(!is_modifiable_lvalue(converted) ||
+       !is_builtin_increment_operand_type(converted.type)) {
+      continue;
+    }
+    Candidate candidate;
+    candidate.expr = converted;
+    candidate.rank = rank;
+    candidates.push_back(candidate);
+  }
+
+  if(candidates.empty()) {
+    return false;
+  }
+
+  size_t best = 0;
+  bool ambiguous = false;
+  for(size_t i = 1; i < candidates.size(); ++i) {
+    if(candidates[i].rank < candidates[best].rank) {
+      best = i;
+      ambiguous = false;
+    } else if(candidates[i].rank == candidates[best].rank &&
+              !type_equals(candidates[i].expr.type, candidates[best].expr.type)) {
+      ambiguous = true;
+    }
+  }
+  if(ambiguous) {
+    return false;
+  }
+
+  out = candidates[best].expr;
+  return true;
+}
+
 void maybe_complete_layout_type(SemanticContext & ctx, const TypePtr & type)
 {
   if(!type) {
@@ -5208,11 +5307,15 @@ ExprInfo analyze_unary_expression(SemanticContext & ctx,
     result.type = operand_type->inner;
     result.category = VC_LVALUE;
   } else if(node_has_simple_type(node, OP_INC) || node_has_simple_type(node, OP_DEC)) {
-    TypePtr operand_type = strip_top_level_cv(remove_reference_type(operand.type));
     if(!is_modifiable_lvalue(operand) ||
-       !(is_integral_type(operand_type) ||
-         is_floating_type(operand_type) ||
-         is_pointer_type(operand_type))) {
+       !is_builtin_increment_operand_type(operand.type)) {
+      ExprInfo converted_operand;
+      if(try_builtin_increment_class_conversion(ctx, scope, operand, converted_operand)) {
+        operand = converted_operand;
+      }
+    }
+    if(!is_modifiable_lvalue(operand) ||
+       !is_builtin_increment_operand_type(operand.type)) {
       throw logic_error("invalid prefix increment/decrement");
     }
     result.type = remove_reference_type(operand.type);
@@ -5243,11 +5346,15 @@ ExprInfo analyze_postfix_expression(SemanticContext & ctx,
   }
 
   ExprInfo operand = ctx.analyze_expression(scope, node.children[0]);
-  TypePtr operand_type = strip_top_level_cv(remove_reference_type(operand.type));
   if(!is_modifiable_lvalue(operand) ||
-     !(is_integral_type(operand_type) ||
-       is_floating_type(operand_type) ||
-       is_pointer_type(operand_type))) {
+     !is_builtin_increment_operand_type(operand.type)) {
+    ExprInfo converted_operand;
+    if(try_builtin_increment_class_conversion(ctx, scope, operand, converted_operand)) {
+      operand = converted_operand;
+    }
+  }
+  if(!is_modifiable_lvalue(operand) ||
+     !is_builtin_increment_operand_type(operand.type)) {
     throw logic_error("invalid postfix increment/decrement");
   }
 
