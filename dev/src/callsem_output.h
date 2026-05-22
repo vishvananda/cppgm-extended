@@ -285,6 +285,7 @@ struct CallSemRarePayload
   cpp_decl::TypePtr materialization_source_type;
   cpp_decl::TypePtr conversion_source_type;
   cpp_decl::TypePtr initializer_list_element_type;
+  cpp_decl::TypePtr typeid_operand_type;
   CallSemVirtualBaseLayout virtual_base_layout;
   unsigned long long uint_value = 0;
   long long int_value = 0;
@@ -962,6 +963,22 @@ inline void set_callsem_initializer_list_element_type(
     return;
   }
   ensure_callsem_rare_payload(node).initializer_list_element_type = value;
+}
+
+inline const cpp_decl::TypePtr &
+callsem_typeid_operand_type(const CallSemNode & node)
+{
+  const CallSemRarePayload * payload = callsem_rare_payload(node);
+  return payload ? payload->typeid_operand_type : callsem_empty_extra_type();
+}
+
+inline void set_callsem_typeid_operand_type(CallSemNode & node,
+                                            const cpp_decl::TypePtr & value)
+{
+  if(!value && !callsem_rare_payload(node)) {
+    return;
+  }
+  ensure_callsem_rare_payload(node).typeid_operand_type = value;
 }
 
 inline const CallSemVirtualBaseLayout &

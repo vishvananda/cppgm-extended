@@ -6326,6 +6326,10 @@ private:
     }
 
     if(node.children.empty()) {
+      const TypePtr typeid_operand_type = callsem_typeid_operand_type(node);
+      if(use_host_eh_runtime() && typeid_operand_type) {
+        return emit_host_rtti_symbol_address(typeid_operand_type);
+      }
       return emit_rtti_symbol_address(node.text);
     }
 

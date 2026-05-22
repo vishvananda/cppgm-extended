@@ -432,6 +432,7 @@ void census_callsem_node(const CallSemNode & node,
   census_type(callsem_materialization_source_type(node), census, seen_types);
   census_type(callsem_conversion_source_type(node), census, seen_types);
   census_type(callsem_initializer_list_element_type(node), census, seen_types);
+  census_type(callsem_typeid_operand_type(node), census, seen_types);
   if(callsem_lowered_condition_test(node)) {
     census_callsem_node(*callsem_lowered_condition_test(node),
                         kind + ".lowered_condition_test",
@@ -1224,6 +1225,8 @@ bool callsem_shallow_exact_equal(const CallSemNode & lhs, const CallSemNode & rh
              callsem_conversion_source_type(rhs).get() &&
          callsem_initializer_list_element_type(lhs).get() ==
              callsem_initializer_list_element_type(rhs).get() &&
+         callsem_typeid_operand_type(lhs).get() ==
+             callsem_typeid_operand_type(rhs).get() &&
          callsem_virtual_base_layout(lhs) == callsem_virtual_base_layout(rhs) &&
          symbol_identity_equal(callsem_symbol(lhs), callsem_symbol(rhs)) &&
          callsem_uint_value(lhs) == callsem_uint_value(rhs) &&
@@ -1272,6 +1275,7 @@ uint64_t hash_callsem_shallow_exact(const CallSemNode & node)
   hash = hash_mix(hash, hash_type_ptr_value(callsem_materialization_source_type(node)));
   hash = hash_mix(hash, hash_type_ptr_value(callsem_conversion_source_type(node)));
   hash = hash_mix(hash, hash_type_ptr_value(callsem_initializer_list_element_type(node)));
+  hash = hash_mix(hash, hash_type_ptr_value(callsem_typeid_operand_type(node)));
   const CallSemVirtualBaseLayout & virtual_base_layout =
       callsem_virtual_base_layout(node);
   hash = hash_mix(hash, virtual_base_layout.size());
@@ -1956,7 +1960,9 @@ private:
        callsem_conversion_source_type(lhs).get() !=
            callsem_conversion_source_type(rhs).get() ||
        callsem_initializer_list_element_type(lhs).get() !=
-           callsem_initializer_list_element_type(rhs).get()) {
+           callsem_initializer_list_element_type(rhs).get() ||
+       callsem_typeid_operand_type(lhs).get() !=
+           callsem_typeid_operand_type(rhs).get()) {
       variations.insert("type");
     }
     if(!symbol_identity_equal(callsem_symbol(lhs), callsem_symbol(rhs))) {
@@ -2211,7 +2217,9 @@ string callsem_provenance_variation_mask(const CallSemNode & lhs,
      callsem_materialization_source_type(lhs).get() !=
          callsem_materialization_source_type(rhs).get() ||
      callsem_conversion_source_type(lhs).get() !=
-         callsem_conversion_source_type(rhs).get()) {
+         callsem_conversion_source_type(rhs).get() ||
+     callsem_typeid_operand_type(lhs).get() !=
+         callsem_typeid_operand_type(rhs).get()) {
     variations.insert("type");
   }
   if(!symbol_identity_equal(callsem_symbol(lhs), callsem_symbol(rhs))) {

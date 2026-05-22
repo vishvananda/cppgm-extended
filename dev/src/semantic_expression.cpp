@@ -6591,6 +6591,7 @@ ExprInfo analyze_type_trait_expression(SemanticContext & ctx,
     require_complete_typeid_class_operand(ctx, type);
     ctx.note_rtti_use(type, false);
     result.node.text = rtti_symbol_for_type(type);
+    set_callsem_typeid_operand_type(result.node, type);
     return result;
   }
 
@@ -6606,6 +6607,7 @@ ExprInfo analyze_type_trait_expression(SemanticContext & ctx,
 
   ctx.note_rtti_use(operand.type, false);
   result.node.text = rtti_symbol_for_type(operand.type);
+  set_callsem_typeid_operand_type(result.node, operand.type);
   return result;
 }
 

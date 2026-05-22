@@ -1569,6 +1569,7 @@ private:
         mark_type(callsem_vtt_owner_type(node));
         mark_type(callsem_materialization_source_type(node));
         mark_type(callsem_conversion_source_type(node));
+        mark_type(callsem_typeid_operand_type(node));
         if(FunctionBinding * binding = analyzer.function_binding_for_probe_symbol(
                callsem_symbol(node).internal_symbol)) {
           mark_function(binding);
