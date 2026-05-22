@@ -756,6 +756,107 @@ struct AliasTemplateDecl
     std::string member_name;
   };
 
+  struct StableAliasExpansionScopeKey
+  {
+    std::size_t instance_id = 0;
+    std::size_t binding_fingerprint = 0;
+
+    bool operator<(const StableAliasExpansionScopeKey & other) const
+    {
+      if(instance_id != other.instance_id) {
+        return instance_id < other.instance_id;
+      }
+      return binding_fingerprint < other.binding_fingerprint;
+    }
+  };
+
+  struct StableAliasExpansionArgumentKey
+  {
+    int kind = 0;
+    bool dependent = false;
+    bool source_defaulted = false;
+    const void * type_pointer = nullptr;
+    int type_code = 0;
+    const void * template_decl = nullptr;
+    const void * function_value = nullptr;
+    const void * value_binding = nullptr;
+    long long value = 0;
+    std::string text;
+
+    bool operator<(const StableAliasExpansionArgumentKey & other) const
+    {
+      if(kind != other.kind) {
+        return kind < other.kind;
+      }
+      if(dependent != other.dependent) {
+        return dependent < other.dependent;
+      }
+      if(source_defaulted != other.source_defaulted) {
+        return source_defaulted < other.source_defaulted;
+      }
+      if(type_code != other.type_code) {
+        return type_code < other.type_code;
+      }
+      if(value != other.value) {
+        return value < other.value;
+      }
+      if(text != other.text) {
+        return text < other.text;
+      }
+      if(type_pointer != other.type_pointer) {
+        return std::less<const void *>()(type_pointer, other.type_pointer);
+      }
+      if(template_decl != other.template_decl) {
+        return std::less<const void *>()(template_decl, other.template_decl);
+      }
+      if(function_value != other.function_value) {
+        return std::less<const void *>()(function_value, other.function_value);
+      }
+      return std::less<const void *>()(value_binding, other.value_binding);
+    }
+  };
+
+  struct StableAliasExpansionKey
+  {
+    bool allow_dependent_expansion = false;
+    StableAliasExpansionScopeKey match_scope;
+    StableAliasExpansionScopeKey argument_scope;
+    std::vector<StableAliasExpansionArgumentKey> arguments;
+
+    bool operator<(const StableAliasExpansionKey & other) const
+    {
+      if(allow_dependent_expansion != other.allow_dependent_expansion) {
+        return allow_dependent_expansion < other.allow_dependent_expansion;
+      }
+      if(match_scope < other.match_scope) {
+        return true;
+      }
+      if(other.match_scope < match_scope) {
+        return false;
+      }
+      if(argument_scope < other.argument_scope) {
+        return true;
+      }
+      if(other.argument_scope < argument_scope) {
+        return false;
+      }
+      return arguments < other.arguments;
+    }
+  };
+
+  struct StableAliasExpansionValue
+  {
+    enum Kind
+    {
+      EK_SUCCESS,
+      EK_DEPENDENT_DEFER
+    };
+
+    Kind kind = EK_SUCCESS;
+    std::string expanded_text;
+    cpp_decl::TypePtr expanded_type;
+  };
+
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
   std::string name;
@@ -766,6 +867,8 @@ struct AliasTemplateDecl
   std::map<std::string, cpp_decl::TypePtr> reference_instantiations;
   mutable std::map<StableSubstitutionKey, StableSubstitutionFailure>
       stable_substitution_failures;
+  mutable std::map<StableAliasExpansionKey, StableAliasExpansionValue>
+      stable_alias_expansions;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 

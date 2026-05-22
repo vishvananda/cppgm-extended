@@ -1284,12 +1284,14 @@ struct TypePtrAddressEqual
 struct FunctionTemplateDeductionArgCacheKey
 {
   TypePtr type;
+  std::uint64_t type_fingerprint = 0;
   int category = 0;
   bool null_pointer_constant = false;
 
   bool operator==(const FunctionTemplateDeductionArgCacheKey & other) const
   {
-    return type.get() == other.type.get() &&
+    return type_fingerprint == other.type_fingerprint &&
+           (type.get() == other.type.get() || type_equals(type, other.type)) &&
            category == other.category &&
            null_pointer_constant == other.null_pointer_constant;
   }
@@ -1416,6 +1418,9 @@ struct ResolveTemplateArgumentsCacheKeyHash
   }
 };
 
+std::uint64_t type_syntax_fingerprint(const TypePtr & type,
+                                      bool include_source_identity);
+
 template <typename Integer>
 typename std::enable_if<std::is_integral<Integer>::value &&
                         !std::is_same<typename std::decay<Integer>::type, bool>::value>::type
@@ -1434,6 +1439,228 @@ void hash_combine(std::size_t & seed, const std::string & value)
   hash_combine(seed, std::hash<std::string>()(value));
 }
 
+void hash_type_ptr_for_scope_cache(std::size_t & seed, const TypePtr & type)
+{
+  hash_combine(seed, type_syntax_fingerprint(type, false));
+}
+
+void hash_value_binding_for_scope_cache(std::size_t & seed,
+                                        const ValueBinding & binding)
+{
+  hash_combine(seed, static_cast<int>(binding.kind));
+  hash_combine(seed, binding.name);
+  hash_type_ptr_for_scope_cache(seed, binding.type);
+  hash_combine(seed, reinterpret_cast<std::uintptr_t>(binding.owner_class));
+  hash_combine(seed, binding.has_constant_value ? 1 : 0);
+  hash_combine(seed, binding.constant_value);
+  hash_combine(seed, binding.dependent_template_value ? 1 : 0);
+  hash_combine(seed, binding.non_type_template_argument_text);
+  hash_combine(seed,
+               reinterpret_cast<std::uintptr_t>(
+                   binding.non_type_template_function_value));
+  hash_combine(seed,
+               reinterpret_cast<std::uintptr_t>(
+                   binding.non_type_template_value_binding));
+}
+
+void hash_template_argument_for_scope_cache(std::size_t & seed,
+                                            const TemplateArgument & argument)
+{
+  hash_combine(seed, static_cast<int>(argument.kind));
+  hash_combine(seed, argument.dependent ? 1 : 0);
+  hash_type_ptr_for_scope_cache(seed, argument.type);
+  hash_combine(seed, argument.value);
+  hash_combine(seed, argument.text);
+  hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.template_decl));
+  hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.function_value));
+  hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.value_binding));
+}
+
+template <typename MapT>
+bool map_keys_are_subset_of_set(const MapT & values,
+                                const std::set<std::string> & names)
+{
+  for(typename MapT::const_iterator it = values.begin();
+      it != values.end();
+      ++it) {
+    if(names.count(it->first) == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool pack_size_keys_are_template_bound(const Scope & scope)
+{
+  for(std::map<std::string, std::size_t>::const_iterator it =
+          scope.named_pack_sizes.begin();
+      it != scope.named_pack_sizes.end();
+      ++it) {
+    if(scope.template_bound_type_pack_names.count(it->first) == 0 &&
+       scope.template_bound_value_pack_names.count(it->first) == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool scope_has_only_template_bound_cacheable_bindings(const Scope & scope)
+{
+  return !scope.namespace_scope &&
+         scope.named_type_access.empty() &&
+         scope.namespace_bindings.empty() &&
+         scope.function_sets.empty() &&
+         scope.function_set_access_overrides.empty() &&
+         scope.function_templates.empty() &&
+         scope.variable_templates.empty() &&
+         scope.using_directives.empty() &&
+         scope.namespace_children.empty() &&
+         scope.collected_template_declarations.empty() &&
+         map_keys_are_subset_of_set(scope.named_types,
+                                    scope.template_bound_type_names) &&
+         map_keys_are_subset_of_set(scope.named_type_packs,
+                                    scope.template_bound_type_pack_names) &&
+         map_keys_are_subset_of_set(scope.values,
+                                    scope.template_bound_value_names) &&
+         map_keys_are_subset_of_set(scope.named_value_packs,
+                                    scope.template_bound_value_pack_names) &&
+         map_keys_are_subset_of_set(scope.class_templates,
+                                    scope.template_bound_template_names) &&
+         map_keys_are_subset_of_set(scope.alias_templates,
+                                    scope.template_bound_template_names) &&
+         map_keys_are_subset_of_set(scope.template_bound_template_arguments,
+                                    scope.template_bound_template_names) &&
+         pack_size_keys_are_template_bound(scope);
+}
+
+void hash_string_set_for_scope_cache(std::size_t & seed,
+                                     const std::set<std::string> & values)
+{
+  hash_combine(seed, values.size());
+  for(std::set<std::string>::const_iterator it = values.begin();
+      it != values.end();
+      ++it) {
+    hash_combine(seed, *it);
+  }
+}
+
+bool try_stable_template_bound_scope_cache_fingerprint(const Scope & scope,
+                                                       std::uint64_t & out)
+{
+  out = 0;
+  if(!scope_has_only_template_bound_cacheable_bindings(scope)) {
+    return false;
+  }
+
+  std::size_t seed = 0;
+  hash_combine(seed, scope.name);
+  hash_combine(seed, scope.inline_namespace ? 1 : 0);
+  hash_combine(seed, reinterpret_cast<std::uintptr_t>(scope.class_info));
+  hash_combine(seed, reinterpret_cast<std::uintptr_t>(scope.function));
+
+  hash_string_set_for_scope_cache(seed, scope.template_bound_type_names);
+  for(std::map<std::string, TypePtr>::const_iterator it =
+          scope.named_types.begin();
+      it != scope.named_types.end();
+      ++it) {
+    hash_combine(seed, it->first);
+    hash_type_ptr_for_scope_cache(seed, it->second);
+  }
+
+  hash_string_set_for_scope_cache(seed, scope.template_bound_type_pack_names);
+  for(std::map<std::string, std::vector<TypePtr> >::const_iterator it =
+          scope.named_type_packs.begin();
+      it != scope.named_type_packs.end();
+      ++it) {
+    hash_combine(seed, it->first);
+    hash_combine(seed, it->second.size());
+    for(std::size_t i = 0; i < it->second.size(); ++i) {
+      hash_type_ptr_for_scope_cache(seed, it->second[i]);
+    }
+  }
+
+  hash_string_set_for_scope_cache(seed, scope.template_bound_value_names);
+  for(std::map<std::string, ValueBinding>::const_iterator it =
+          scope.values.begin();
+      it != scope.values.end();
+      ++it) {
+    hash_combine(seed, it->first);
+    hash_value_binding_for_scope_cache(seed, it->second);
+  }
+
+  hash_string_set_for_scope_cache(seed, scope.template_bound_value_pack_names);
+  for(std::map<std::string, std::vector<ValueBinding> >::const_iterator it =
+          scope.named_value_packs.begin();
+      it != scope.named_value_packs.end();
+      ++it) {
+    hash_combine(seed, it->first);
+    hash_combine(seed, it->second.size());
+    for(std::size_t i = 0; i < it->second.size(); ++i) {
+      hash_value_binding_for_scope_cache(seed, it->second[i]);
+    }
+  }
+
+  for(std::map<std::string, std::size_t>::const_iterator it =
+          scope.named_pack_sizes.begin();
+      it != scope.named_pack_sizes.end();
+      ++it) {
+    hash_combine(seed, it->first);
+    hash_combine(seed, it->second);
+  }
+
+  hash_string_set_for_scope_cache(seed, scope.template_bound_template_names);
+  for(std::map<std::string, ClassTemplateDecl *>::const_iterator it =
+          scope.class_templates.begin();
+      it != scope.class_templates.end();
+      ++it) {
+    hash_combine(seed, it->first);
+    hash_combine(seed, reinterpret_cast<std::uintptr_t>(it->second));
+  }
+  for(std::map<std::string, AliasTemplateDecl *>::const_iterator it =
+          scope.alias_templates.begin();
+      it != scope.alias_templates.end();
+      ++it) {
+    hash_combine(seed, it->first);
+    hash_combine(seed, reinterpret_cast<std::uintptr_t>(it->second));
+  }
+  for(std::map<std::string, TemplateArgument>::const_iterator it =
+          scope.template_bound_template_arguments.begin();
+      it != scope.template_bound_template_arguments.end();
+      ++it) {
+    hash_combine(seed, it->first);
+    hash_template_argument_for_scope_cache(seed, it->second);
+  }
+
+  if(scope.parent) {
+    std::uint64_t parent_stable = 0;
+    if(try_stable_template_bound_scope_cache_fingerprint(*scope.parent,
+                                                         parent_stable)) {
+      hash_combine(seed, static_cast<std::size_t>(parent_stable));
+    } else {
+      hash_combine(seed, scope.parent->instance_id);
+      hash_combine(seed, template_scope::scope_binding_fingerprint(*scope.parent));
+    }
+  }
+
+  out = static_cast<std::uint64_t>(seed ? seed : 1);
+  return true;
+}
+
+void fill_template_bound_aware_scope_cache_identity(
+    const Scope & scope,
+    std::size_t & instance_id,
+    std::uint64_t & binding_fingerprint)
+{
+  if(try_stable_template_bound_scope_cache_fingerprint(scope,
+                                                       binding_fingerprint)) {
+    instance_id = 0;
+    return;
+  }
+  instance_id = scope.instance_id;
+  binding_fingerprint =
+      static_cast<std::uint64_t>(template_scope::scope_binding_fingerprint(scope));
+}
+
 std::uint64_t template_argument_syntax_fingerprint(
     const TemplateArgumentSyntax * syntax,
     bool include_source_identity);
@@ -1448,6 +1675,9 @@ std::uint64_t cppast_node_syntax_fingerprint(const CppAstNode * node,
 std::uint64_t type_syntax_fingerprint(const TypePtr & type,
                                       bool include_source_identity,
                                       std::vector<const Type *> & active);
+
+std::uint64_t type_syntax_fingerprint(const TypePtr & type,
+                                      bool include_source_identity);
 
 void hash_qualified_name_syntax(std::size_t & seed, const QualifiedName & name)
 {
@@ -1672,19 +1902,19 @@ FunctionTemplateDeductionCacheKey make_function_template_deduction_cache_key(
     counters->function_template_deduction_cache_key_args += args.size();
   }
   if(function_template_deduction_use_scope_affects_cache_key(decl, args, use_scope)) {
-    key.use_scope_instance_id = use_scope->instance_id;
-    key.use_scope_binding_fingerprint =
-        static_cast<std::uint64_t>(
-            template_scope::scope_binding_fingerprint(*use_scope));
+    fill_template_bound_aware_scope_cache_identity(
+        *use_scope,
+        key.use_scope_instance_id,
+        key.use_scope_binding_fingerprint);
     if(counters) {
       ++counters->function_template_deduction_cache_use_scope_sensitive_keys;
     }
   }
   if(decl.declaring_scope) {
-    key.declaring_scope_instance_id = decl.declaring_scope->instance_id;
-    key.declaring_scope_binding_fingerprint =
-        static_cast<std::uint64_t>(
-            template_scope::scope_binding_fingerprint(*decl.declaring_scope));
+    fill_template_bound_aware_scope_cache_identity(
+        *decl.declaring_scope,
+        key.declaring_scope_instance_id,
+        key.declaring_scope_binding_fingerprint);
   }
 
   std::size_t seed = 0;
@@ -1699,10 +1929,11 @@ FunctionTemplateDeductionCacheKey make_function_template_deduction_cache_key(
   for(std::size_t i = 0; i < args.size(); ++i) {
     FunctionTemplateDeductionArgCacheKey arg_key;
     arg_key.type = args[i].type;
+    arg_key.type_fingerprint = type_syntax_fingerprint(args[i].type, false);
     arg_key.category = static_cast<int>(args[i].category);
     arg_key.null_pointer_constant = args[i].null_pointer_constant;
     key.args.push_back(arg_key);
-    hash_combine(seed, reinterpret_cast<std::uintptr_t>(arg_key.type.get()));
+    hash_combine(seed, arg_key.type_fingerprint);
     hash_combine(seed, arg_key.category);
     hash_combine(seed, arg_key.null_pointer_constant);
   }
@@ -2887,14 +3118,14 @@ ResolveTemplateArgumentsCacheProbe make_resolve_template_arguments_cache_probe(
     Scope * default_argument_declaring_scope)
 {
   ResolveTemplateArgumentsCacheProbe probe;
-  probe.scope_instance_id = scope.instance_id;
-  probe.scope_binding_fingerprint =
-      static_cast<std::uint64_t>(template_scope::scope_binding_fingerprint(scope));
+  fill_template_bound_aware_scope_cache_identity(scope,
+                                                 probe.scope_instance_id,
+                                                 probe.scope_binding_fingerprint);
   if(default_argument_declaring_scope) {
-    probe.default_scope_instance_id = default_argument_declaring_scope->instance_id;
-    probe.default_scope_binding_fingerprint =
-        static_cast<std::uint64_t>(
-            template_scope::scope_binding_fingerprint(*default_argument_declaring_scope));
+    fill_template_bound_aware_scope_cache_identity(
+        *default_argument_declaring_scope,
+        probe.default_scope_instance_id,
+        probe.default_scope_binding_fingerprint);
   }
   probe.parameter_count = parameters.size();
   probe.text_count = expanded_texts.size();

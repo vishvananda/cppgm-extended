@@ -2343,6 +2343,123 @@ bool stable_substitution_key_for_arguments(
   return true;
 }
 
+bool stable_alias_expansion_type_key(
+    const TypePtr & type,
+    const void *& type_pointer,
+    int & type_code)
+{
+  type_pointer = nullptr;
+  type_code = 0;
+  if(!type) {
+    return false;
+  }
+  type_code = static_cast<int>(type->kind);
+  if(type->kind == Type::TK_FUNDAMENTAL) {
+    type_code = 1000 + static_cast<int>(type->fundamental);
+    return true;
+  }
+  type_pointer = type.get();
+  return true;
+}
+
+std::string stable_alias_expansion_argument_text(
+    const TemplateArgument & argument)
+{
+  if(!argument.text.empty()) {
+    return trim_space(argument.text);
+  }
+  if(argument.source_syntax) {
+    if(!argument.source_syntax->text.empty()) {
+      return trim_space(argument.source_syntax->text);
+    }
+    if(!argument.source_syntax->source_text.empty()) {
+      return trim_space(argument.source_syntax->source_text);
+    }
+  }
+  return std::string();
+}
+
+bool stable_alias_expansion_argument_key(
+    const TemplateArgument & argument,
+    AliasTemplateDecl::StableAliasExpansionArgumentKey & out)
+{
+  out = AliasTemplateDecl::StableAliasExpansionArgumentKey();
+  out.kind = static_cast<int>(argument.kind);
+  out.dependent = argument.dependent;
+  out.source_defaulted = argument.source_defaulted;
+  out.function_value = argument.function_value;
+  out.value_binding = argument.value_binding;
+  if(argument.kind == TemplateArgument::TA_TYPE ||
+     argument.kind == TemplateArgument::TA_VALUE) {
+    if(argument.type &&
+       !stable_alias_expansion_type_key(argument.type,
+                                        out.type_pointer,
+                                        out.type_code)) {
+      return false;
+    }
+  }
+  switch(argument.kind) {
+  case TemplateArgument::TA_TYPE:
+    if(!argument.type) {
+      return false;
+    }
+    if(argument.dependent) {
+      out.text = stable_alias_expansion_argument_text(argument);
+    }
+    return true;
+
+  case TemplateArgument::TA_VALUE:
+    if(argument.dependent) {
+      out.text = stable_alias_expansion_argument_text(argument);
+      return !out.text.empty();
+    }
+    out.value = argument.value;
+    return true;
+
+  case TemplateArgument::TA_CLASS_TEMPLATE:
+  case TemplateArgument::TA_ALIAS_TEMPLATE:
+    if(argument.dependent || !argument.template_decl) {
+      out.text = stable_alias_expansion_argument_text(argument);
+      return !out.text.empty();
+    }
+    out.template_decl = argument.template_decl;
+    return true;
+  }
+  return false;
+}
+
+AliasTemplateDecl::StableAliasExpansionScopeKey stable_alias_expansion_scope_key(
+    const Scope & scope)
+{
+  AliasTemplateDecl::StableAliasExpansionScopeKey key;
+  key.instance_id = scope.instance_id;
+  key.binding_fingerprint = template_scope::scope_binding_fingerprint(scope);
+  return key;
+}
+
+bool stable_alias_expansion_key_for_arguments(
+    const Scope & match_scope,
+    const Scope & argument_scope,
+    const std::vector<TemplateArgument> & arguments,
+    bool allow_dependent_expansion,
+    AliasTemplateDecl::StableAliasExpansionKey & out)
+{
+  out = AliasTemplateDecl::StableAliasExpansionKey();
+  out.allow_dependent_expansion = allow_dependent_expansion;
+  out.match_scope = stable_alias_expansion_scope_key(match_scope);
+  out.argument_scope = stable_alias_expansion_scope_key(argument_scope);
+  out.arguments.reserve(arguments.size());
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    AliasTemplateDecl::StableAliasExpansionArgumentKey argument_key;
+    if(!stable_alias_expansion_argument_key(arguments[i], argument_key)) {
+      out.arguments.clear();
+      return false;
+    }
+    out.arguments.push_back(argument_key);
+  }
+  return true;
+}
+
 bool text_mentions_identifier_token(const std::string & text,
                                     const std::string & name)
 {
@@ -3108,6 +3225,70 @@ bool try_expand_alias_template_pattern_structurally(
     }
   }
 
+  AliasTemplateDecl::StableAliasExpansionKey alias_expansion_cache_key;
+  const bool has_alias_expansion_cache_key =
+      !witness::source_capture_enabled(services.witness_context) &&
+      stable_alias_expansion_key_for_arguments(
+          match_scope.require(),
+          effective_argument_scope.require(),
+          arguments,
+          allow_dependent_expansion,
+          alias_expansion_cache_key);
+  if(has_alias_expansion_cache_key) {
+    std::map<AliasTemplateDecl::StableAliasExpansionKey,
+             AliasTemplateDecl::StableAliasExpansionValue>::const_iterator
+        cached = alias_template.stable_alias_expansions.find(
+            alias_expansion_cache_key);
+    if(cached != alias_template.stable_alias_expansions.end()) {
+      if(cached->second.kind ==
+         AliasTemplateDecl::StableAliasExpansionValue::EK_SUCCESS) {
+        expanded_text = cached->second.expanded_text;
+        if(expanded_type) {
+          *expanded_type = cached->second.expanded_type;
+        }
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "expand-alias-structural-cache-hit alias="
+                << alias_template.name
+                << " result=success";
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        return true;
+      }
+      if(parser_trace::enabled("template.resolve")) {
+        std::ostringstream trace;
+        trace << "expand-alias-structural-cache-hit alias="
+              << alias_template.name
+              << " result=dependent-defer";
+        parser_trace::note("template.resolve", std::string(), trace.str());
+      }
+      return false;
+    }
+  }
+  const auto cache_alias_success =
+      [&](const std::string & text, const TypePtr & type) -> void
+  {
+    if(!has_alias_expansion_cache_key || text.empty() || !type) {
+      return;
+    }
+    AliasTemplateDecl::StableAliasExpansionValue value;
+    value.kind = AliasTemplateDecl::StableAliasExpansionValue::EK_SUCCESS;
+    value.expanded_text = text;
+    value.expanded_type = type;
+    alias_template.stable_alias_expansions[alias_expansion_cache_key] = value;
+  };
+  const auto cache_alias_dependent_defer =
+      [&]() -> void
+  {
+    if(!has_alias_expansion_cache_key) {
+      return;
+    }
+    AliasTemplateDecl::StableAliasExpansionValue value;
+    value.kind =
+        AliasTemplateDecl::StableAliasExpansionValue::EK_DEPENDENT_DEFER;
+    alias_template.stable_alias_expansions[alias_expansion_cache_key] = value;
+  };
+
   const auto try_expand_known_conditional_alias = [&]() -> bool
   {
     if(arg_texts.size() != 3 ||
@@ -3153,6 +3334,7 @@ bool try_expand_alias_template_pattern_structurally(
     if(expanded_text.empty()) {
       return false;
     }
+    cache_alias_success(expanded_text, selected_type);
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "expand-alias-conditional-known alias="
@@ -4397,6 +4579,7 @@ bool try_expand_alias_template_pattern_structurally(
               << " substituted=" << describe_type(substituted);
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
+      cache_alias_dependent_defer();
       return false;
     }
     if(type_has_dependent_non_type_template_argument(type_system, substituted) &&
@@ -4411,6 +4594,7 @@ bool try_expand_alias_template_pattern_structurally(
               << " substituted=" << describe_type(substituted);
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
+      cache_alias_dependent_defer();
       return false;
     }
     if(parser_trace::enabled("template.resolve")) {
@@ -4453,6 +4637,7 @@ bool try_expand_alias_template_pattern_structurally(
   if(expanded_type) {
     *expanded_type = substituted;
   }
+  cache_alias_success(expanded_text, substituted);
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
     trace << "expand-alias-structural-substituted alias="
