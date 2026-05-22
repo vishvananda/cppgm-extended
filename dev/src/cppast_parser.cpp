@@ -1707,6 +1707,33 @@ string current_class_trace_label(const vector<string> & class_name_stack)
   return class_name_stack.back();
 }
 
+int nearest_name_scope_index(const template_angle_lookup::NameSetStack * primary,
+                             const template_angle_lookup::NameSetStack * inherited,
+                             text_intern::Atom atom)
+{
+  if(!atom) {
+    return -1;
+  }
+
+  const int inherited_size =
+      inherited ? static_cast<int>(inherited->size()) : 0;
+  if(primary) {
+    for(size_t i = primary->size(); i > 0; --i) {
+      if((*primary)[i - 1].count(atom) != 0) {
+        return inherited_size + static_cast<int>(i - 1);
+      }
+    }
+  }
+  if(inherited) {
+    for(size_t i = inherited->size(); i > 0; --i) {
+      if((*inherited)[i - 1].count(atom) != 0) {
+        return static_cast<int>(i - 1);
+      }
+    }
+  }
+  return -1;
+}
+
 }  // namespace
 
 CppAstParser::CppAstParser(const vector<RecogToken> & tokens) :
@@ -2478,6 +2505,8 @@ bool CppAstParser::can_start_decl_specifier_seq() const
   const bool known_value_template =
       is_known_value_template_parameter_identifier(token);
   const bool known_value = is_known_value_name_identifier(token);
+  const bool value_name_preferred =
+      unqualified_identifier_prefers_value_name(token);
   const bool known_type_name =
       is_known_type_name_identifier(token) ||
       is_template_type_parameter_name(token);
@@ -2503,6 +2532,7 @@ bool CppAstParser::can_start_decl_specifier_seq() const
          is_gnu_decl_specifier_identifier(token) ||
          (named_candidate && can_start_named_decl_specifier_seq()) ||
          (known_type_name &&
+          !value_name_preferred &&
           !next.is_simple(OP_COLON2) &&
           !next.is_simple(OP_LT)) ||
          (token.is_identifier() &&
@@ -10609,6 +10639,43 @@ bool CppAstParser::is_known_value_name_identifier(const RecogToken & token) cons
       token) ||
          (external_name_lookup &&
           external_name_lookup->is_known_value_name_identifier(token));
+}
+
+bool CppAstParser::unqualified_identifier_prefers_value_name(
+    const RecogToken & token) const
+{
+  if(!token.is_identifier()) {
+    return false;
+  }
+
+  text_intern::Atom atom = token.cached_identifier_atom();
+  const int value_index =
+      std::max(nearest_name_scope_index(&value_name_scopes,
+                                        inherited_value_name_scopes,
+                                        atom),
+               nearest_name_scope_index(&template_value_parameter_scopes,
+                                        inherited_template_value_parameter_scopes,
+                                        atom));
+  const int type_index =
+      std::max(nearest_name_scope_index(&type_name_scopes,
+                                        inherited_type_name_scopes,
+                                        atom),
+               nearest_name_scope_index(&template_type_parameter_scopes,
+                                        inherited_template_type_parameter_scopes,
+                                        atom));
+
+  if(value_index >= 0 || type_index >= 0) {
+    return value_index >= type_index;
+  }
+
+  const bool fallback_value =
+      external_name_lookup &&
+      (external_name_lookup->is_known_value_name_identifier(token) ||
+       external_name_lookup->is_known_value_template_parameter_identifier(token));
+  const bool fallback_type =
+      external_name_lookup &&
+      external_name_lookup->is_known_type_name_identifier(token);
+  return fallback_value && !fallback_type;
 }
 
 void CppAstParser::collect_signature_type_hint_names(const CppAstNode & node,

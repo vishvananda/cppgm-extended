@@ -254,6 +254,7 @@ protected:
   bool is_known_type_name_identifier(const RecogToken & token) const;
   bool is_known_value_template_parameter_identifier(const RecogToken & token) const;
   bool is_known_value_name_identifier(const RecogToken & token) const;
+  bool unqualified_identifier_prefers_value_name(const RecogToken & token) const;
   template_angle_lookup::ScopedNameLookup make_template_angle_lookup(
       bool prefer_unknown_template_ids = false) const;
   struct SeededClassNameScopes
