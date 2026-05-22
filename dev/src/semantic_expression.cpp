@@ -3448,6 +3448,80 @@ ExprInfo analyze_unevaluated_sizeof_operand(SemanticContext & ctx,
   return ctx.analyze_expression(scope, expr_node);
 }
 
+bool build_sizeof_type_id_expression_operand(const CppAstNode & type_id,
+                                             CppAstNode & out)
+{
+  if(type_id.kind != CppAstKind::type_id) {
+    return false;
+  }
+
+  const CppAstNode * specifiers = find_child(type_id, CppAstKind::type_specifier_seq);
+  if(!specifiers || specifiers->children.size() != 1 ||
+     specifiers->children[0].kind != CppAstKind::type_name) {
+    return false;
+  }
+
+  const CppAstNode & name = specifiers->children[0];
+  const QualifiedName * qualified = cppast_qualified_name_syntax(name);
+  if(name.has_leading_typename ||
+     !qualified ||
+     (!qualified->rooted && qualified->qualifiers.empty())) {
+    return false;
+  }
+
+  CppAstNode expr = name;
+  expr.kind = CppAstKind::id_expression;
+  expr.children.clear();
+
+  for(size_t i = 0; i < type_id.children.size(); ++i) {
+    const CppAstNode & child = type_id.children[i];
+    if(child.kind == CppAstKind::type_specifier_seq) {
+      continue;
+    }
+    if(child.kind != CppAstKind::abstract_declarator) {
+      return false;
+    }
+    for(size_t j = 0; j < child.children.size(); ++j) {
+      const CppAstNode & suffix = child.children[j];
+      if(suffix.kind != CppAstKind::array_suffix || suffix.children.size() != 1) {
+        return false;
+      }
+
+      CppAstNode subscript;
+      subscript.kind = CppAstKind::subscript_expression;
+      subscript.token_start = expr.token_start;
+      subscript.token_end = suffix.token_end;
+      subscript.source_location_id = expr.source_location_id;
+      subscript.children.push_back(std::move(expr));
+      subscript.children.push_back(suffix.children[0]);
+      expr = std::move(subscript);
+    }
+  }
+
+  out = std::move(expr);
+  return true;
+}
+
+bool try_analyze_recovered_sizeof_type_id_operand(SemanticContext & ctx,
+                                                  Scope & scope,
+                                                  const CppAstNode & type_id,
+                                                  TypePtr & out)
+{
+  CppAstNode operand;
+  if(!build_sizeof_type_id_expression_operand(type_id, operand)) {
+    return false;
+  }
+
+  const CppAstNode * owned_operand = ctx.own_synthetic_ast(std::move(operand));
+  try {
+    ExprInfo expr = analyze_unevaluated_sizeof_operand(ctx, scope, *owned_operand);
+    out = expr.type;
+    return true;
+  } catch(const logic_error &) {
+    return false;
+  }
+}
+
 ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
                                           const ValueBinding & binding,
                                           bool allow_constant_fold = true);
@@ -6413,10 +6487,15 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
   const CppAstNode & child = node.children[0];
   if(child.kind == CppAstKind::type_id) {
     if(!ctx.parse_type_id(scope, child, operand_type) || !operand_type) {
-      throw logic_error("invalid sizeof type-id");
+      if(!try_analyze_recovered_sizeof_type_id_operand(ctx,
+                                                       scope,
+                                                       child,
+                                                       operand_type)) {
+        throw logic_error("invalid sizeof type-id");
+      }
     }
     maybe_complete_layout_type(ctx, operand_type);
-    if(!type_is_complete(operand_type)) {
+    if(!operand_type || !type_is_complete(operand_type)) {
       throw logic_error("invalid sizeof type-id");
     }
   } else if(child.kind == CppAstKind::id_expression) {

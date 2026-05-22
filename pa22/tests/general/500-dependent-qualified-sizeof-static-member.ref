@@ -1,0 +1,14 @@
+global @observed : i64 [binding=internal, object=_Z8observed] = zero
+global @bucket_array_base_true___sizes [binding=weak, object=_ZN17bucket_array_baseILb1EE5sizesE] = {
+  i64 1
+  i64 2
+  i64 3
+}
+global @bucket_array_base_true___sizes_length : i64 [binding=weak, object=_ZN17bucket_array_baseILb1EE12sizes_lengthE] = 3
+
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = load i64 @bucket_array_base_true___sizes_length
+    store i64 %t1, @observed
+    return void
+}
