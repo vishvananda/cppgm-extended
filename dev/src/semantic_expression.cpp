@@ -5455,6 +5455,9 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     if(node_has_simple_type(node, OP_COMMA)) {
       return "operator,";
     }
+    if(node_has_simple_type(node, OP_ARROWSTAR)) {
+      return "operator->*";
+    }
     return string();
   };
   const string operator_name = overloaded_operator_name();

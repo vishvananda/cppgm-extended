@@ -466,6 +466,12 @@ def declared_intrinsic_like_names(code: str) -> set[str]:
     return names
 
 
+def overloaded_arrow_star_without_member_pointer(code: str) -> bool:
+    if not re.search(r"\boperator\s*->\s*\*", code):
+        return False
+    return not re.search(r"::\s*\*|\.\*", code)
+
+
 def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dict[str, FeatureHit]:
     no_comments = strip_comments(source)
     code = strip_string_literals(no_comments)
@@ -476,6 +482,8 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         matched = match_rule_patterns(rule.patterns, haystack, rule.all_patterns, "source")
         matched.extend(match_rule_patterns(rule.ref_patterns, ref_text, rule.all_patterns, "ref"))
         matched.extend(match_rule_patterns(rule.path_patterns, test_path, rule.all_patterns, "path"))
+        if rule.feature_id == "class.member_pointer" and overloaded_arrow_star_without_member_pointer(code):
+            matched = [evidence for evidence in matched if "->*" not in evidence]
         if rule.feature_id == "class.inheritance.multiple" and has_top_level_base_comma(code):
             matched.append("source:<multiple base-specifiers>")
         if rule.feature_id == "template.builtin_traits" and declared_intrinsics:
