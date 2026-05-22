@@ -4,7 +4,11 @@ function @f() -> void [binding=strong, object=_Z1fv] {
   block ^entry:
     %t1 = addr $a
     %t2 = unary decay ptr %t1
-    call void @sift(%t2)
+    %t3 = index i8 [projection=array_element] %t2, 0
+    call void @Local__local_16583248074186681365__Local(%t3)
+    %t4 = addr $a
+    %t5 = unary decay ptr %t4
+    call void @sift(%t5)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -40,6 +44,13 @@ function @move_like(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z9m
     %t1 = load ptr $t
     return ptr %t1
 }
+function @Local__local_16583248074186681365__Local(%this : ptr) -> void [binding=weak, object=_ZZ1fvEN5LocalC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
 function @Local__local_16583248074186681365__Local__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZZ1fvEN5LocalC1EOS_] {
   slot $this : ptr
   slot $__param1 : ptr
@@ -49,4 +60,5 @@ function @Local__local_16583248074186681365__Local__ov3(%this : ptr, %__param1 :
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZZ1fvEN5LocalC2Ev = @Local__local_16583248074186681365__Local
 alias object _ZZ1fvEN5LocalC2EOS_ = @Local__local_16583248074186681365__Local__ov3
