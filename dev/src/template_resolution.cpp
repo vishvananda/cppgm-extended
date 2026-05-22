@@ -825,6 +825,46 @@ bool lookup_member_pointer_function_candidates(template_api::TemplateServices & 
   return !out.empty();
 }
 
+bool lookup_qualified_function_candidates_node(template_api::TemplateServices & services,
+                                               Scope & scope,
+                                               const QualifiedName & qualified,
+                                               const CppAstNode & node,
+                                               std::vector<FunctionBinding *> & out)
+{
+  out.clear();
+  if(!services.semantic_context ||
+     (!qualified.rooted && qualified.qualifiers.empty())) {
+    return false;
+  }
+
+  Scope * target =
+      services.semantic_context->resolve_qualified_scope_for_node(scope,
+                                                                  qualified,
+                                                                  node,
+                                                                  false);
+  if(!target) {
+    return false;
+  }
+
+  if(target->class_info) {
+    ClassInfo * target_class = target->class_info;
+    if(!target_class->complete && target_class->type) {
+      if(ClassInfo * completed =
+             services.semantic_context->complete_class_type(target_class->type)) {
+        target_class = completed;
+      }
+    }
+    out = semantic_lookup::lookup_visible_member_functions(*target_class,
+                                                           qualified.name).functions;
+    return !out.empty();
+  }
+
+  semantic_lookup::lookup_functions_in_scopes(std::vector<Scope *>(1, target),
+                                              qualified.name,
+                                              out);
+  return !out.empty();
+}
+
 bool try_resolve_function_non_type_template_argument_syntax(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -878,11 +918,42 @@ bool try_resolve_function_non_type_template_argument_syntax(
         operand->value,
         out);
   }
+  const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
+  if(qualified &&
+     (qualified->rooted || !qualified->qualifiers.empty()) &&
+     (!operand->qualifier_template_id_syntaxes.empty() ||
+      !operand->qualifier_type_syntaxes.empty())) {
+    TypePtr function_type;
+    if(non_type_function_target_type(target_type, explicit_address, function_type)) {
+      std::vector<FunctionBinding *> functions;
+      try {
+        if(lookup_qualified_function_candidates_node(services,
+                                                     scope,
+                                                     *qualified,
+                                                     *operand,
+                                                     functions)) {
+          return bind_non_type_function_argument(
+              target_type,
+              select_non_type_function_argument(functions, function_type),
+              operand->value,
+              out);
+        }
+      } catch(const TemplateSubstitutionFailure &) {
+        return false;
+      } catch(const SemanticSoftFailure &) {
+        return false;
+      } catch(const SemanticDiagnosticError &) {
+        return false;
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+        return false;
+      }
+    }
+  }
   return try_resolve_function_non_type_template_argument_name(
       services,
       scope,
       target_type,
-      cppast_qualified_name_syntax(*operand),
+      qualified,
       operand->value,
       explicit_address,
       out);

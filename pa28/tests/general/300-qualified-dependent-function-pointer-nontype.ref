@@ -1,0 +1,8 @@
+global @global_check [binding=strong, object=_Z12global_check] = {
+  zero 1
+}
+
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    return void
+}
