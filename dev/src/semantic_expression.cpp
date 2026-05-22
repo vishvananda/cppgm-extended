@@ -443,6 +443,47 @@ bool pointer_class_hierarchy_equality_compatible(SemanticContext & ctx,
          access == MA_PUBLIC;
 }
 
+bool const_cast_similar_object_types(const TypePtr & lhs, const TypePtr & rhs)
+{
+  TypePtr lhs_base = strip_top_level_cv(lhs);
+  TypePtr rhs_base = strip_top_level_cv(rhs);
+  if(!lhs_base || !rhs_base || lhs_base->kind != rhs_base->kind) {
+    return false;
+  }
+
+  switch(lhs_base->kind) {
+  case Type::TK_FUNDAMENTAL:
+  case Type::TK_NAMED:
+    return type_equals(lhs_base, rhs_base);
+
+  case Type::TK_CV:
+  case Type::TK_ATOMIC:
+    return const_cast_similar_object_types(lhs_base->inner, rhs_base->inner);
+
+  case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+    return const_cast_similar_object_types(lhs_base->inner, rhs_base->inner);
+
+  case Type::TK_MEMBER_POINTER:
+    return type_equals(strip_top_level_cv(lhs_base->owner),
+                       strip_top_level_cv(rhs_base->owner)) &&
+           const_cast_similar_object_types(lhs_base->inner, rhs_base->inner);
+
+  case Type::TK_ARRAY:
+    return lhs_base->has_bound == rhs_base->has_bound &&
+           lhs_base->bound == rhs_base->bound &&
+           lhs_base->bound_text == rhs_base->bound_text &&
+           const_cast_similar_object_types(lhs_base->inner, rhs_base->inner);
+
+  case Type::TK_FUNCTION:
+    return type_equals(lhs_base, rhs_base);
+  }
+
+  return false;
+}
+
 bool supports_zero_offset_static_reference_downcast(SemanticContext & ctx,
                                                     const TypePtr & target_type,
                                                     const ExprInfo & operand)
@@ -6881,7 +6922,11 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
          target_base->kind == Type::TK_LVALUE_REFERENCE) {
         supported =
             operand.category == VC_LVALUE &&
-            same_reference_object_type;
+            (same_reference_object_type ||
+             const_cast_similar_object_types(target_base->inner,
+                                             operand_object_type) ||
+             const_cast_similar_object_types(target_base->inner,
+                                             normalized_operand_object_type));
       } else if(reinterpret_like_cast &&
                 target_base->kind == Type::TK_LVALUE_REFERENCE) {
         supported =
@@ -6893,7 +6938,11 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
                 target_base->kind == Type::TK_RVALUE_REFERENCE) {
         supported =
             operand.category != VC_PRVALUE &&
-            same_reference_object_type;
+            (same_reference_object_type ||
+             const_cast_similar_object_types(target_base->inner,
+                                             operand_object_type) ||
+             const_cast_similar_object_types(target_base->inner,
+                                             normalized_operand_object_type));
       } else if(reinterpret_like_cast &&
                 target_base->kind == Type::TK_RVALUE_REFERENCE) {
         supported =
