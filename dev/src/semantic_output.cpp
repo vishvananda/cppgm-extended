@@ -3684,13 +3684,18 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
   ScopedDefinitionOutput output_guard(binding.definition_output_in_progress,
                                       binding.definition_output_emitted);
 
-  Scope * parent_scope = binding.is_method ?
-                             (binding.declaration_scope ?
-                                  binding.declaration_scope :
-                                  binding.owner_class->member_scope.get()) :
-                             (binding.declaration_scope ?
-                                  binding.declaration_scope :
-                                  &scope);
+  Scope * parent_scope = nullptr;
+  if(binding.is_method) {
+    parent_scope = binding.declaration_scope ?
+                       binding.declaration_scope :
+                       binding.owner_class->member_scope.get();
+  } else if(binding_defines_inline_like_friend(binding) &&
+            binding.lexical_access_class &&
+            binding.lexical_access_class->member_scope) {
+    parent_scope = binding.lexical_access_class->member_scope.get();
+  } else {
+    parent_scope = binding.declaration_scope ? binding.declaration_scope : &scope;
+  }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
     trace << "emit-binding-scope binding=" << static_cast<void *>(&binding)

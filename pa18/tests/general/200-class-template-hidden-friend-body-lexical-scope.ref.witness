@@ -1,0 +1,18 @@
+translation-unit
+  class-use at pa18/tests/general/200-class-template-hidden-friend-body-lexical-scope.t:15:3
+    template pair_box
+    selected primary
+    bind #1 = first source=explicit
+    bind #2 = second source=explicit
+  class-use at pa18/tests/general/200-class-template-hidden-friend-body-lexical-scope.t:16:3
+    template pair_box
+    selected primary
+    bind #1 = second source=explicit
+    bind #2 = first source=explicit
+template-closure-events
+  ensure-definition
+    entity flip
+  function-instantiation
+    entity flip
+  require-definition
+    entity flip
