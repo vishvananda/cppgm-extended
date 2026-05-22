@@ -150,6 +150,27 @@ bool store_deduced_type_pack(DeducedState & deduced,
   return true;
 }
 
+bool store_deduced_value_pack(DeducedState & deduced,
+                              const std::string & parameter_name,
+                              const std::vector<long long> & values)
+{
+  std::map<std::string, std::vector<long long> >::iterator found =
+      deduced.value_packs.find(parameter_name);
+  if(found == deduced.value_packs.end()) {
+    deduced.value_packs[parameter_name] = values;
+    return true;
+  }
+  if(found->second.size() != values.size()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < values.size(); ++i) {
+    if(found->second[i] != values[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool is_bare_template_parameter_type(const TypePtr & type)
 {
   return type &&
@@ -5764,7 +5785,7 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 
   if(trailing_pack_parameter) {
     if(trailing_pack_parameter->kind == TemplateParameterInfo::TP_TYPE) {
-      std::vector<TypePtr> & deduced_pack = deduced.type_packs[trailing_pack_parameter->name];
+      std::vector<TypePtr> deduced_pack;
       for(std::size_t arg_index = fixed_argument_count;
           arg_index < actual_args.size();
           ++arg_index) {
@@ -5776,8 +5797,13 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
         }
         deduced_pack.push_back(actual_arg_type);
       }
+      if(!store_deduced_type_pack(deduced,
+                                  trailing_pack_parameter->name,
+                                  deduced_pack)) {
+        return false;
+      }
     } else if(trailing_pack_parameter->kind == TemplateParameterInfo::TP_NON_TYPE) {
-      std::vector<long long> & deduced_pack = deduced.value_packs[trailing_pack_parameter->name];
+      std::vector<long long> deduced_pack;
       for(std::size_t arg_index = fixed_argument_count;
           arg_index < actual_args.size();
           ++arg_index) {
@@ -5789,6 +5815,11 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
           return false;
         }
         deduced_pack.push_back(value);
+      }
+      if(!store_deduced_value_pack(deduced,
+                                   trailing_pack_parameter->name,
+                                   deduced_pack)) {
+        return false;
       }
     } else {
       return false;
