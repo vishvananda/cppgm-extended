@@ -6344,8 +6344,8 @@ ExprInfo analyze_subscript_expression(SemanticContext & ctx,
       const bool has_member_operator =
           !lookup_visible_member_functions(*base_class, "operator[]").functions.empty();
       const bool has_member_operator_templates =
-          base_class->member_scope &&
-          !lookup_direct_function_templates(*base_class->member_scope, "operator[]").empty();
+          !lookup_visible_member_function_templates(*base_class, "operator[]")
+               .templates.empty();
       if(has_member_operator || has_member_operator_templates) {
         CppAstNode member_callee;
         member_callee.kind = CppAstKind::member_expression;
