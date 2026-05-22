@@ -26919,8 +26919,7 @@ bool parse_template_id_argument_text(template_api::TemplateServices & services,
   vector<string> arg_texts;
   if(!semantic_utils::split_top_level_template_id_text(text,
                                                        template_name,
-                                                       arg_texts) ||
-     arg_texts.empty()) {
+                                                       arg_texts)) {
     return false;
   }
 
