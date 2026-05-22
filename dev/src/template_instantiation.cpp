@@ -2773,38 +2773,53 @@ void bind_instantiated_function_parameter_values(
       parameters.push_back(&parameter_clause->children[i]);
     }
   }
-  if(parameters.empty() || !parameter_declaration_has_pack(*parameters.back())) {
+  if(parameters.empty()) {
     return;
   }
 
-  const std::string pack_name =
-      pack_parameter_analysis::parameter_declaration_name(*parameters.back());
-  if(pack_name.empty()) {
-    return;
-  }
+  std::size_t param_index = 0;
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameters[i])) {
+      if(param_index < params.size()) {
+        ++param_index;
+      }
+      continue;
+    }
 
-  std::size_t pack_size = 0;
-  if(!pack_parameter_analysis::infer_named_type_pack_size(inst_scope,
-                                                          *parameters.back(),
-                                                          pack_size)) {
-    const std::size_t fixed_param_count = parameters.size() - 1;
-    if(params.size() < fixed_param_count) {
+    const std::string pack_name =
+        pack_parameter_analysis::parameter_declaration_name(*parameters[i]);
+    if(pack_name.empty()) {
       return;
     }
-    pack_size = params.size() - fixed_param_count;
-  }
 
-  const std::size_t fixed_param_count = parameters.size() - 1;
-  if(params.size() < fixed_param_count + pack_size) {
-    return;
-  }
+    std::size_t pack_size = 0;
+    if(!pack_parameter_analysis::infer_named_type_pack_size(inst_scope,
+                                                            *parameters[i],
+                                                            pack_size)) {
+      std::size_t remaining_fixed_params = 0;
+      for(std::size_t j = i + 1; j < parameters.size(); ++j) {
+        if(!parameter_declaration_has_pack(*parameters[j])) {
+          ++remaining_fixed_params;
+        }
+      }
+      if(params.size() < param_index + remaining_fixed_params) {
+        return;
+      }
+      pack_size = params.size() - param_index - remaining_fixed_params;
+    }
 
-  std::vector<TypePtr> pack_value_types;
-  pack_value_types.reserve(pack_size);
-  for(std::size_t i = 0; i < pack_size; ++i) {
-    pack_value_types.push_back(params[fixed_param_count + i].second);
+    if(params.size() < param_index + pack_size) {
+      return;
+    }
+
+    std::vector<TypePtr> pack_value_types;
+    pack_value_types.reserve(pack_size);
+    for(std::size_t j = 0; j < pack_size; ++j) {
+      pack_value_types.push_back(params[param_index + j].second);
+    }
+    template_scope::bind_parameter_value_pack(inst_scope, pack_name, pack_value_types);
+    param_index += pack_size;
   }
-  template_scope::bind_parameter_value_pack(inst_scope, pack_name, pack_value_types);
 }
 
 std::string template_argument_text_for_diagnostic(SemanticContext & ctx,

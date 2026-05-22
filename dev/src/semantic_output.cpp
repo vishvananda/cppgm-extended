@@ -824,46 +824,237 @@ void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
     }
   }
 
-  const bool has_pack_parameter =
-      !parameter_nodes.empty() &&
-      parameter_declaration_has_pack(*parameter_nodes.back());
-  const std::size_t fixed_param_count =
-      has_pack_parameter ? parameter_nodes.size() - 1 : parameter_nodes.size();
-  if(binding.params.size() < explicit_offset + fixed_param_count) {
-    return;
+  bool has_pack_parameter = false;
+  for(std::size_t i = 0; i < parameter_nodes.size(); ++i) {
+    if(parameter_declaration_has_pack(*parameter_nodes[i])) {
+      has_pack_parameter = true;
+      break;
+    }
   }
   if(!has_pack_parameter &&
      binding.params.size() != explicit_offset + params.size()) {
     return;
   }
 
-  const std::size_t direct_param_count =
-      std::min<std::size_t>(fixed_param_count, params.size());
-  for(std::size_t i = 0; i < direct_param_count; ++i) {
-    if(params[i].first.empty()) {
+  std::size_t binding_index = explicit_offset;
+  std::size_t parsed_param_index = 0;
+  for(std::size_t i = 0; i < parameter_nodes.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameter_nodes[i])) {
+      if(binding_index >= binding.params.size()) {
+        return;
+      }
+      std::string parameter_name;
+      if(parsed_param_index < params.size()) {
+        parameter_name = params[parsed_param_index].first;
+      }
+      if(parameter_name.empty()) {
+        parameter_name =
+            pack_parameter_analysis::parameter_declaration_name(*parameter_nodes[i]);
+      }
+      if(!parameter_name.empty() &&
+         (binding.parameter_aliases[binding_index].empty() ||
+          binding.parameter_aliases[binding_index] == binding.params[binding_index].first)) {
+        binding.parameter_aliases[binding_index] = parameter_name;
+      }
+      ++binding_index;
+      if(parsed_param_index < params.size()) {
+        ++parsed_param_index;
+      }
       continue;
     }
-    const std::size_t index = explicit_offset + i;
-    if(binding.parameter_aliases[index].empty() ||
-       binding.parameter_aliases[index] == binding.params[index].first) {
-      binding.parameter_aliases[index] = params[i].first;
+
+    const std::string pack_name =
+        pack_parameter_analysis::parameter_declaration_name(*parameter_nodes[i]);
+    if(pack_name.empty()) {
+      return;
+    }
+
+    std::size_t remaining_fixed_params = 0;
+    for(std::size_t j = i + 1; j < parameter_nodes.size(); ++j) {
+      if(!parameter_declaration_has_pack(*parameter_nodes[j])) {
+        ++remaining_fixed_params;
+      }
+    }
+    if(binding.params.size() < binding_index + remaining_fixed_params) {
+      return;
+    }
+    const std::size_t pack_size =
+        binding.params.size() - binding_index - remaining_fixed_params;
+    for(std::size_t j = 0; j < pack_size; ++j) {
+      const std::size_t index = binding_index + j;
+      binding.parameter_aliases[index] = pack_value_alias_name(pack_name, j);
+    }
+    binding_index += pack_size;
+    if(parsed_param_index < params.size()) {
+      parsed_param_index =
+          std::min<std::size_t>(params.size(), parsed_param_index + pack_size);
     }
   }
+}
 
-  if(!has_pack_parameter) {
+std::size_t count_remaining_fixed_function_parameters(
+    const std::vector<const CppAstNode *> & parameters,
+    std::size_t first_index)
+{
+  std::size_t count = 0;
+  for(std::size_t i = first_index; i < parameters.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameters[i])) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+bool infer_function_parameter_value_pack_size(SemanticContext & ctx,
+                                              Scope & function_scope,
+                                              const FunctionBinding & binding,
+                                              const std::vector<const CppAstNode *> & parameters,
+                                              std::size_t parameter_index,
+                                              std::size_t binding_param_index,
+                                              const std::string & pack_name,
+                                              std::size_t & out_pack_size)
+{
+  std::map<std::string, std::size_t>::const_iterator found_size =
+      function_scope.named_pack_sizes.find(pack_name);
+  if(found_size != function_scope.named_pack_sizes.end()) {
+    out_pack_size = found_size->second;
+    return true;
+  }
+
+  if(infer_function_parameter_pack_size_from_type_bindings(ctx,
+                                                           function_scope,
+                                                           *parameters[parameter_index],
+                                                           out_pack_size)) {
+    return true;
+  }
+
+  const std::size_t remaining_fixed_params =
+      count_remaining_fixed_function_parameters(parameters, parameter_index + 1);
+  if(binding.params.size() < binding_param_index + remaining_fixed_params) {
+    return false;
+  }
+  out_pack_size = binding.params.size() - binding_param_index - remaining_fixed_params;
+  return true;
+}
+
+std::vector<const CppAstNode *> function_parameter_declarations(
+    const CppAstNode & parameter_clause)
+{
+  std::vector<const CppAstNode *> parameters;
+  for(size_t i = 0; i < parameter_clause.children.size(); ++i) {
+    if(parameter_clause.children[i].kind == CppAstKind::parameter_declaration) {
+      parameters.push_back(&parameter_clause.children[i]);
+    }
+  }
+  return parameters;
+}
+
+/*
+    The function-body output path sees already-instantiated function parameters,
+    including any implicit object parameter. Walk the source parameter clause in
+    lockstep with those concrete bindings so a pack may be followed by ordinary
+    parameters, e.g. Args... args, Token token.
+*/
+void bind_function_parameter_pack_sizes(SemanticContext & ctx,
+                                        Scope & function_scope,
+                                        const FunctionBinding & binding)
+{
+  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
+  if(!parameter_clause) {
     return;
   }
 
-  const std::string pack_name =
-      pack_parameter_analysis::parameter_declaration_name(*parameter_nodes.back());
-  if(pack_name.empty()) {
+  const std::vector<const CppAstNode *> parameters =
+      function_parameter_declarations(*parameter_clause);
+  if(parameters.empty()) {
     return;
   }
 
-  const std::size_t pack_size = binding.params.size() - explicit_offset - fixed_param_count;
-  for(std::size_t i = 0; i < pack_size; ++i) {
-    const std::size_t index = explicit_offset + fixed_param_count + i;
-    binding.parameter_aliases[index] = pack_value_alias_name(pack_name, i);
+  std::size_t binding_param_index = binding_explicit_parameter_offset(binding);
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameters[i])) {
+      if(binding_param_index < binding.params.size()) {
+        ++binding_param_index;
+      }
+      continue;
+    }
+
+    const std::string pack_name =
+        pack_parameter_analysis::parameter_declaration_name(*parameters[i]);
+    if(pack_name.empty()) {
+      return;
+    }
+
+    std::size_t pack_size = 0;
+    if(!infer_function_parameter_value_pack_size(ctx,
+                                                 function_scope,
+                                                 binding,
+                                                 parameters,
+                                                 i,
+                                                 binding_param_index,
+                                                 pack_name,
+                                                 pack_size)) {
+      return;
+    }
+    semantic_scope_mutation::bind_named_pack_size(function_scope, pack_name, pack_size);
+    binding_param_index += pack_size;
+  }
+}
+
+void bind_function_parameter_value_packs(SemanticContext & ctx,
+                                         Scope & function_scope,
+                                         const FunctionBinding & binding)
+{
+  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
+  if(!parameter_clause) {
+    return;
+  }
+
+  const std::vector<const CppAstNode *> parameters =
+      function_parameter_declarations(*parameter_clause);
+  if(parameters.empty()) {
+    return;
+  }
+
+  std::size_t binding_param_index = binding_explicit_parameter_offset(binding);
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameters[i])) {
+      if(binding_param_index < binding.params.size()) {
+        ++binding_param_index;
+      }
+      continue;
+    }
+
+    const std::string pack_name =
+        pack_parameter_analysis::parameter_declaration_name(*parameters[i]);
+    if(pack_name.empty()) {
+      return;
+    }
+
+    std::size_t pack_size = 0;
+    if(!infer_function_parameter_value_pack_size(ctx,
+                                                 function_scope,
+                                                 binding,
+                                                 parameters,
+                                                 i,
+                                                 binding_param_index,
+                                                 pack_name,
+                                                 pack_size)) {
+      return;
+    }
+    if(binding.params.size() < binding_param_index + pack_size) {
+      return;
+    }
+
+    std::vector<ValueBinding> pack_bindings;
+    pack_bindings.reserve(pack_size);
+    for(std::size_t j = 0; j < pack_size; ++j) {
+      const TypePtr & element_type = binding.params[binding_param_index + j].second;
+      const std::string alias_name = pack_value_alias_name(pack_name, j);
+      pack_bindings.push_back(ValueBinding(ValueBinding::VK_PARAMETER, alias_name, element_type));
+    }
+    semantic_scope_mutation::bind_value_pack(function_scope, pack_name, pack_bindings);
+    binding_param_index += pack_size;
   }
 }
 
@@ -900,110 +1091,6 @@ void require_function_parameter_abi_output(SemanticContext & ctx,
       continue;
     }
   }
-}
-
-void bind_function_parameter_pack_sizes(SemanticContext & ctx,
-                                        Scope & function_scope,
-                                        const FunctionBinding & binding)
-{
-  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
-  if(!parameter_clause) {
-    return;
-  }
-
-  std::vector<const CppAstNode *> parameters;
-  for(size_t i = 0; i < parameter_clause->children.size(); ++i) {
-    if(parameter_clause->children[i].kind == CppAstKind::parameter_declaration) {
-      parameters.push_back(&parameter_clause->children[i]);
-    }
-  }
-  if(parameters.empty() || !parameter_declaration_has_pack(*parameters.back())) {
-    return;
-  }
-
-  const std::string pack_name =
-      pack_parameter_analysis::parameter_declaration_name(*parameters.back());
-  if(pack_name.empty()) {
-    return;
-  }
-
-  std::size_t pack_size = 0;
-  if(infer_function_parameter_pack_size_from_type_bindings(ctx,
-                                                           function_scope,
-                                                           *parameters.back(),
-                                                           pack_size)) {
-    semantic_scope_mutation::bind_named_pack_size(function_scope, pack_name, pack_size);
-    return;
-  }
-
-  const std::size_t explicit_param_offset = binding_explicit_parameter_offset(binding);
-  const std::size_t fixed_param_count = parameters.size() - 1;
-  if(binding.params.size() < explicit_param_offset + fixed_param_count) {
-    return;
-  }
-  semantic_scope_mutation::bind_named_pack_size(
-      function_scope,
-      pack_name,
-      binding.params.size() - explicit_param_offset - fixed_param_count);
-}
-
-void bind_function_parameter_value_packs(SemanticContext & ctx,
-                                         Scope & function_scope,
-                                         const FunctionBinding & binding)
-{
-  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
-  if(!parameter_clause) {
-    return;
-  }
-
-  std::vector<const CppAstNode *> parameters;
-  for(size_t i = 0; i < parameter_clause->children.size(); ++i) {
-    if(parameter_clause->children[i].kind == CppAstKind::parameter_declaration) {
-      parameters.push_back(&parameter_clause->children[i]);
-    }
-  }
-  if(parameters.empty() || !parameter_declaration_has_pack(*parameters.back())) {
-    return;
-  }
-
-  const std::string pack_name =
-      pack_parameter_analysis::parameter_declaration_name(*parameters.back());
-  if(pack_name.empty()) {
-    return;
-  }
-
-  std::size_t pack_size = 0;
-  std::map<std::string, std::size_t>::const_iterator found_size =
-      function_scope.named_pack_sizes.find(pack_name);
-  if(found_size != function_scope.named_pack_sizes.end()) {
-    pack_size = found_size->second;
-  } else if(infer_function_parameter_pack_size_from_type_bindings(ctx,
-                                                                  function_scope,
-                                                                  *parameters.back(),
-                                                                  pack_size)) {
-  } else {
-    const std::size_t explicit_param_offset = binding_explicit_parameter_offset(binding);
-    const std::size_t fixed_param_count = parameters.size() - 1;
-    if(binding.params.size() < explicit_param_offset + fixed_param_count) {
-      return;
-    }
-    pack_size = binding.params.size() - explicit_param_offset - fixed_param_count;
-  }
-
-  const std::size_t explicit_param_offset = binding_explicit_parameter_offset(binding);
-  const std::size_t fixed_param_count = parameters.size() - 1;
-  if(binding.params.size() < explicit_param_offset + fixed_param_count + pack_size) {
-    return;
-  }
-  std::vector<ValueBinding> pack_bindings;
-  pack_bindings.reserve(pack_size);
-  for(std::size_t i = 0; i < pack_size; ++i) {
-    const TypePtr & element_type =
-        binding.params[explicit_param_offset + fixed_param_count + i].second;
-    const std::string alias_name = pack_value_alias_name(pack_name, i);
-    pack_bindings.push_back(ValueBinding(ValueBinding::VK_PARAMETER, alias_name, element_type));
-  }
-  semantic_scope_mutation::bind_value_pack(function_scope, pack_name, pack_bindings);
 }
 
 bool variable_declaration_is_definition(const CppAstNode & specifiers,
