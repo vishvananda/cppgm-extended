@@ -140,6 +140,7 @@ protected:
   bool parse_asm_statement(CppAstNode & out);
   bool parse_exception_declaration(CppAstNode & out);
   bool parse_return_statement(CppAstNode & out);
+  bool parse_coroutine_return_statement(CppAstNode & out);
   bool parse_expression_statement(CppAstNode & out);
   bool parse_assignment_expression(CppAstNode & out);
   bool parse_conditional_expression(CppAstNode & out);

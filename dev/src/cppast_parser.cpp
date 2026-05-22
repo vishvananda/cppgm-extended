@@ -1452,6 +1452,12 @@ bool is_gnu_complex_unary_operator_name(const string & text)
          text == "__imag" || text == "__imag__";
 }
 
+bool is_coroutine_contextual_keyword(const RecogToken & token,
+                                     const char * spelling)
+{
+  return token.is_identifier() && token.source == spelling;
+}
+
 void apply_leading_declaration_attributes(CppAstNode & node,
                                           const CppAstNode & attributes)
 {
@@ -7461,6 +7467,10 @@ bool CppAstParser::parse_statement(CppAstNode & out)
   if(peek().is_simple(KW_RETURN)) {
     return parse_return_statement(out);
   }
+  if(is_coroutine_contextual_keyword(peek(), "co_return") &&
+     !is_known_value_name_identifier(peek())) {
+    return parse_coroutine_return_statement(out);
+  }
   if(parse_expression_statement(out)) {
     return true;
   }
@@ -8210,6 +8220,35 @@ bool CppAstParser::parse_return_statement(CppAstNode & out)
   return true;
 }
 
+bool CppAstParser::parse_coroutine_return_statement(CppAstNode & out)
+{
+  size_t start = pos;
+  if(!is_coroutine_contextual_keyword(peek(), "co_return")) {
+    pos = start;
+    return false;
+  }
+  ++pos;
+
+  out = make_node(CppAstKind::coroutine_return_statement, "co_return");
+
+  if(!peek().is_simple(OP_SEMICOLON)) {
+    CppAstNode expression;
+    if(!parse_braced_init_list(expression) && !parse_expression(expression)) {
+      pos = start;
+      return false;
+    }
+    out.children.push_back(std::move(expression));
+  }
+
+  if(!consume_simple(OP_SEMICOLON)) {
+    pos = start;
+    return false;
+  }
+
+  set_span(out, start);
+  return true;
+}
+
 bool CppAstParser::parse_expression_statement(CppAstNode & out)
 {
   size_t start = pos;
@@ -8272,6 +8311,20 @@ bool CppAstParser::parse_assignment_expression(CppAstNode & out)
     } else {
       pos = after_throw;
     }
+    set_span(out, start);
+    return true;
+  }
+
+  if(is_coroutine_contextual_keyword(peek(), "co_yield") &&
+     !is_known_value_name_identifier(peek())) {
+    ++pos;
+    out = make_node(CppAstKind::unary_expression, "co_yield");
+    CppAstNode operand;
+    if(!parse_braced_init_list(operand) && !parse_assignment_expression(operand)) {
+      pos = start;
+      return false;
+    }
+    out.children.push_back(std::move(operand));
     set_span(out, start);
     return true;
   }
@@ -8677,6 +8730,20 @@ bool CppAstParser::parse_unary_expression(CppAstNode & out)
       pos = start;
       return false;
     }
+    set_span(out, start);
+    return true;
+  }
+
+  if(is_coroutine_contextual_keyword(peek(), "co_await") &&
+     !is_known_value_name_identifier(peek())) {
+    ++pos;
+    CppAstNode operand;
+    if(!parse_unary_expression(operand)) {
+      pos = start;
+      return false;
+    }
+    out = make_node(CppAstKind::unary_expression, "co_await");
+    out.children.push_back(std::move(operand));
     set_span(out, start);
     return true;
   }

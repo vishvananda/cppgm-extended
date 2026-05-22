@@ -43,6 +43,7 @@
   X(condition_declaration, "condition-declaration") \
   X(conditional_expression, "conditional-expression") \
   X(continue_statement, "continue-statement") \
+  X(coroutine_return_statement, "coroutine-return-statement") \
   X(ctor_initializer, "ctor-initializer") \
   X(cv_qualifier, "cv-qualifier") \
   X(decl_specifier, "decl-specifier") \
