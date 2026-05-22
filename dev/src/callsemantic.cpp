@@ -10020,16 +10020,31 @@ private:
               true);
 
           const CppAstNode * argument_list = find_child_kind(*payload, CppAstKind::argument_list);
+          bool argument_list_is_parenthesized = false;
           if(!argument_list) {
             argument_list = find_child_kind(*payload, CppAstKind::paren_argument_list);
+            argument_list_is_parenthesized = argument_list != nullptr;
           }
           if(!argument_list) {
             return true;
           }
-          if(argument_list->children.size() == 1 &&
+          if(!argument_list_is_parenthesized) {
+            const CppAstNode & callee_node = payload->children[0];
+            argument_list_is_parenthesized =
+                callee_node.token_end > callee_node.token_start &&
+                witness_token_is_simple(callee_node.token_end, OP_LPAREN);
+          }
+          if(argument_list_is_parenthesized &&
+             argument_list->children.size() == 1 &&
              argument_list->children[0].kind == CppAstKind::braced_init_list) {
-            for(size_t i = 0; i < argument_list->children[0].children.size(); ++i) {
-              if(!append_arg(argument_list->children[0].children[i])) {
+            return append_arg(argument_list->children[0]);
+          }
+          if(!argument_list_is_parenthesized &&
+             argument_list->children.size() == 1 &&
+             argument_list->children[0].kind == CppAstKind::braced_init_list) {
+            const CppAstNode & braced_arg = argument_list->children[0];
+            for(size_t i = 0; i < braced_arg.children.size(); ++i) {
+              if(!append_arg(braced_arg.children[i])) {
                 return false;
               }
             }
