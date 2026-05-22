@@ -953,6 +953,18 @@ struct PartialClassTemplateSpecializationDecl
 
 struct ClassTemplateDecl
 {
+  struct SpecializationSelectionCacheEntry
+  {
+    std::size_t specialization_epoch = 0;
+    const CppAstNode * class_node = nullptr;
+    Scope * binding_scope = nullptr;
+    const std::vector<template_model::TemplateParameterInfo> * parameters = nullptr;
+    std::vector<template_model::TemplateArgument> arguments;
+    std::map<std::string, std::size_t> pack_sizes;
+    std::string selection_key;
+    int kind = 0;
+  };
+
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
   std::string name;
@@ -962,6 +974,8 @@ struct ClassTemplateDecl
   std::map<std::string, ClassInfo *> reference_instantiations;
   std::map<std::string, ClassInfo *> fast_reference_cache;
   std::size_t specialization_epoch = 0;
+  mutable std::map<std::string, SpecializationSelectionCacheEntry>
+      specialization_selection_cache;
   std::set<std::string> suppress_implicit_instantiation_definitions;
   std::set<std::string> explicit_static_member_specializations;
   std::set<std::pair<std::string, std::string> >

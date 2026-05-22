@@ -254,6 +254,61 @@ void apply_partial_class_selection(
   selection.kind = MS_PARTIAL_SPECIALIZATION;
 }
 
+bool class_specialization_selection_cache_enabled(
+    template_api::TemplateServices & services,
+    const std::vector<TemplateArgument> & arguments,
+    const std::vector<std::string> * dependent_source_argument_texts)
+{
+  return services.semantic_context &&
+         services.witness_context.session == nullptr &&
+         !template_api::semantic_source_use_capture_enabled() &&
+         !parser_trace::enabled("template.resolve") &&
+         !(dependent_source_argument_texts && !dependent_source_argument_texts->empty()) &&
+         !template_api::template_arguments_are_dependent(
+             *services.semantic_context,
+             arguments);
+}
+
+bool find_cached_class_specialization_selection(
+    const ClassTemplateDecl & decl,
+    const std::string & key,
+    ClassSpecializationSelection & selection)
+{
+  std::map<std::string,
+           ClassTemplateDecl::SpecializationSelectionCacheEntry>::const_iterator found =
+      decl.specialization_selection_cache.find(key);
+  if(found == decl.specialization_selection_cache.end() ||
+     found->second.specialization_epoch != decl.specialization_epoch) {
+    return false;
+  }
+
+  selection.class_node = found->second.class_node;
+  selection.binding_scope = found->second.binding_scope;
+  selection.parameters = found->second.parameters;
+  selection.arguments = found->second.arguments;
+  selection.pack_sizes = found->second.pack_sizes;
+  selection.selection_key = found->second.selection_key;
+  selection.kind = static_cast<MatchKind>(found->second.kind);
+  return true;
+}
+
+void cache_class_specialization_selection(
+    ClassTemplateDecl & decl,
+    const std::string & key,
+    const ClassSpecializationSelection & selection)
+{
+  ClassTemplateDecl::SpecializationSelectionCacheEntry entry;
+  entry.specialization_epoch = decl.specialization_epoch;
+  entry.class_node = selection.class_node;
+  entry.binding_scope = selection.binding_scope;
+  entry.parameters = selection.parameters;
+  entry.arguments = selection.arguments;
+  entry.pack_sizes = selection.pack_sizes;
+  entry.selection_key = selection.selection_key;
+  entry.kind = static_cast<int>(selection.kind);
+  decl.specialization_selection_cache[key] = entry;
+}
+
 VariableSpecializationSelection make_primary_variable_selection(
     VariableTemplateDecl & decl,
     const std::string & key,
@@ -473,6 +528,15 @@ ClassSpecializationSelection select_class_specialization(
 {
   ClassSpecializationSelection selection =
       make_primary_class_selection(decl, key, arguments);
+  const bool use_selection_cache =
+      class_specialization_selection_cache_enabled(
+          services,
+          arguments,
+          dependent_source_argument_texts);
+  if(use_selection_cache &&
+     find_cached_class_specialization_selection(decl, key, selection)) {
+    return selection;
+  }
 
   if(apply_exact_dependent_partial_class_selection(
          selection, decl, key, dependent_source_argument_texts)) {
@@ -484,11 +548,17 @@ ClassSpecializationSelection select_class_specialization(
   if(explicit_found != decl.explicit_specializations.end()) {
     apply_explicit_class_selection(selection, explicit_found->second);
     replay_concrete_class_value_dependencies(services, use_scope, arguments);
+    if(use_selection_cache) {
+      cache_class_specialization_selection(decl, key, selection);
+    }
     return selection;
   }
 
   if(decl.partial_specializations.empty()) {
     replay_concrete_class_value_dependencies(services, use_scope, arguments);
+    if(use_selection_cache) {
+      cache_class_specialization_selection(decl, key, selection);
+    }
     return selection;
   }
 
@@ -559,6 +629,9 @@ ClassSpecializationSelection select_class_specialization(
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
     replay_concrete_class_value_dependencies(services, use_scope, arguments);
+    if(use_selection_cache) {
+      cache_class_specialization_selection(decl, key, selection);
+    }
     return selection;
   }
 
@@ -582,6 +655,9 @@ ClassSpecializationSelection select_class_specialization(
           << " key=" << key
           << " pattern=" << join_partial_arg_texts(chosen_partial->arg_texts);
     parser_trace::note("template.resolve", std::string(), trace.str());
+  }
+  if(use_selection_cache) {
+    cache_class_specialization_selection(decl, key, selection);
   }
   return selection;
 }
