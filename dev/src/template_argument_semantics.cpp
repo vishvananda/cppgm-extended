@@ -24526,6 +24526,12 @@ NonTypeArgumentStatus evaluate_structured_bool_expression(
         [&](const CppAstNode & operand, long long & value) -> NonTypeArgumentStatus
     {
       if(operand.kind == CppAstKind::id_expression) {
+        const NonTypeArgumentStatus member_status =
+            evaluate_template_member_value_expression(
+                services, scope, operand, value, TypePtr());
+        if(member_status != NT_ARG_PARSE_FAILED) {
+          return member_status;
+        }
         bool structured_bool_value = false;
         const NonTypeArgumentStatus structured_bool_status =
             evaluate_structured_template_member_bool_value(
@@ -24536,12 +24542,6 @@ NonTypeArgumentStatus evaluate_structured_bool_expression(
         }
         if(structured_bool_status == NT_ARG_DEPENDENT) {
           return structured_bool_status;
-        }
-        const NonTypeArgumentStatus member_status =
-            evaluate_template_member_value_expression(
-                services, scope, operand, value, TypePtr());
-        if(member_status != NT_ARG_PARSE_FAILED) {
-          return member_status;
         }
       }
       if(try_evaluate_integral_expression_ast(
