@@ -372,6 +372,14 @@ public:
         }
         arg_texts = template_id_argument_texts_preserving_spacing(*class_template_id);
         Scope * primary_scope = &scope;
+        string owner_member_template_name;
+        ClassTemplateDecl * owner_template_for_member_partial =
+            resolve_dependent_owner_member_class_template_owner(
+                scope,
+                pattern_scope,
+                specialization_name,
+                owner_template_parameters,
+                owner_member_template_name);
         if(specialization_name.rooted || !specialization_name.qualifiers.empty()) {
           if(specialization_name.qualifiers.empty()) {
             throw logic_error("unsupported class partial specialization");
@@ -381,7 +389,7 @@ public:
           target_scope_name.qualifiers = specialization_name.qualifiers;
           primary_scope =
               semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
-                  *this, scope, target_scope_name);
+                  *this, scope, target_scope_name, true);
           if(!primary_scope) {
             throw logic_error("unknown qualified class partial specialization scope");
           }
@@ -443,6 +451,12 @@ public:
           record_class_template_base_source_uses(existing.class_node,
                                                  existing.pattern_scope);
           ++primary->specialization_epoch;
+          if(owner_template_for_member_partial) {
+            record_owner_member_class_template_partial_specialization(
+                *owner_template_for_member_partial,
+                owner_member_template_name,
+                existing);
+          }
           return;
         }
 
@@ -457,6 +471,12 @@ public:
                                                   primary->parameters,
                                                   normalized_arg_texts);
         primary->partial_specializations.push_back(partial);
+        if(owner_template_for_member_partial) {
+          record_owner_member_class_template_partial_specialization(
+              *owner_template_for_member_partial,
+              owner_member_template_name,
+              primary->partial_specializations.back());
+        }
         ++primary->specialization_epoch;
         record_template_parameter_clause_source_uses(scope, node);
         record_class_template_base_source_uses(&inner,
@@ -599,6 +619,14 @@ public:
           ++existing->specialization_epoch;
         }
         restore_reference_reset_witness_static_member_metadata(*existing);
+        if(class_template_scope->class_info &&
+           class_template_scope->class_info->source_template) {
+          merge_pending_member_class_template_partial_specializations(
+              *class_template_scope->class_info->source_template,
+              class_template_name,
+              class_template_scope->class_info,
+              *existing);
+        }
         record_template_parameter_clause_source_uses(scope, node);
         return;
       }
@@ -613,6 +641,14 @@ public:
           ctx.node_comes_from_standard_include_path(effective_class_node);
       class_template_scope->class_templates[decl->name] = decl.get();
       restore_reference_reset_witness_static_member_metadata(*decl);
+      if(class_template_scope->class_info &&
+         class_template_scope->class_info->source_template) {
+        merge_pending_member_class_template_partial_specializations(
+            *class_template_scope->class_info->source_template,
+            class_template_name,
+            class_template_scope->class_info,
+            *decl);
+      }
       class_templates.push_back(std::move(decl));
       record_template_parameter_clause_source_uses(scope, node);
       record_class_template_base_source_uses(effective_class_node,
@@ -4044,6 +4080,197 @@ private:
       const vector<TemplateParameterInfo> & incoming)
   {
     callsemantic::prefer_incoming_template_parameter_spellings(target, incoming);
+  }
+
+  bool merge_partial_class_template_specialization(
+      ClassTemplateDecl & target,
+      const PartialClassTemplateSpecializationDecl & incoming)
+  {
+    for(size_t i = 0; i < target.partial_specializations.size(); ++i) {
+      PartialClassTemplateSpecializationDecl & existing =
+          target.partial_specializations[i];
+      if(existing.class_node == incoming.class_node ||
+         existing.arg_texts == incoming.arg_texts) {
+        bool changed = false;
+        if(!existing.class_node ||
+           existing.class_node->kind == CppAstKind::class_forward_declaration) {
+          existing.class_node = incoming.class_node;
+          changed = true;
+        }
+        if(existing.arg_syntaxes.empty() && !incoming.arg_syntaxes.empty()) {
+          existing.arg_syntaxes = incoming.arg_syntaxes;
+          changed = true;
+        }
+        if(existing.parameters.empty() && !incoming.parameters.empty()) {
+          existing.parameters = incoming.parameters;
+          changed = true;
+        }
+        if(!existing.declaring_scope && incoming.declaring_scope) {
+          existing.declaring_scope = incoming.declaring_scope;
+          changed = true;
+        }
+        if(!existing.pattern_scope && incoming.pattern_scope) {
+          existing.pattern_scope = incoming.pattern_scope;
+          changed = true;
+        }
+        if(changed) {
+          ++target.specialization_epoch;
+        }
+        return changed;
+      }
+    }
+    target.partial_specializations.push_back(incoming);
+    ++target.specialization_epoch;
+    return true;
+  }
+
+  void merge_pending_member_class_template_partial_specializations(
+      ClassTemplateDecl & owner_template,
+      const string & member_template_name,
+      ClassInfo * owner_info,
+      ClassTemplateDecl & member_template)
+  {
+    map<string, vector<PartialClassTemplateSpecializationDecl> >::const_iterator
+        pending =
+            owner_template.member_class_template_partial_specializations.find(
+                member_template_name);
+    if(pending == owner_template.member_class_template_partial_specializations.end()) {
+      return;
+    }
+    for(size_t i = 0; i < pending->second.size(); ++i) {
+      if(owner_info) {
+        merge_member_class_template_partial_into_owner_info(
+            owner_info, member_template_name, pending->second[i]);
+      } else {
+        merge_partial_class_template_specialization(member_template,
+                                                   pending->second[i]);
+      }
+    }
+  }
+
+  void merge_member_class_template_partial_into_owner_info(
+      ClassInfo * info,
+      const string & member_template_name,
+      const PartialClassTemplateSpecializationDecl & partial)
+  {
+    if(!info || !info->member_scope) {
+      return;
+    }
+    map<string, ClassTemplateDecl *>::iterator found =
+        info->member_scope->class_templates.find(member_template_name);
+    if(found == info->member_scope->class_templates.end() || !found->second) {
+      return;
+    }
+    PartialClassTemplateSpecializationDecl adapted = partial;
+    Scope * partial_scope =
+        adapted.pattern_scope ? adapted.pattern_scope : adapted.declaring_scope;
+    if(partial_scope &&
+       info->source_template &&
+       !info->instantiation_arguments.empty()) {
+      Scope & owner_bound_scope = append_template_scope(*partial_scope);
+      owner_bound_scope.class_info = info;
+      template_api::binding::bind_template_arguments_into_scope(
+          ctx,
+          owner_bound_scope,
+          info->source_template->parameters,
+          info->instantiation_arguments,
+          nullptr);
+      adapted.pattern_scope = &owner_bound_scope;
+    }
+    merge_partial_class_template_specialization(*found->second, adapted);
+  }
+
+  void record_owner_member_class_template_partial_specialization(
+      ClassTemplateDecl & owner_template,
+      const string & member_template_name,
+      const PartialClassTemplateSpecializationDecl & partial)
+  {
+    vector<PartialClassTemplateSpecializationDecl> & pending =
+        owner_template.member_class_template_partial_specializations[
+            member_template_name];
+    bool found_pending = false;
+    for(size_t i = 0; i < pending.size(); ++i) {
+      if(pending[i].class_node == partial.class_node ||
+         pending[i].arg_texts == partial.arg_texts) {
+        pending[i] = partial;
+        found_pending = true;
+        break;
+      }
+    }
+    if(!found_pending) {
+      pending.push_back(partial);
+    }
+
+    for(map<string, ClassInfo *>::iterator it = owner_template.instantiations.begin();
+        it != owner_template.instantiations.end();
+        ++it) {
+      merge_member_class_template_partial_into_owner_info(
+          it->second, member_template_name, partial);
+    }
+    for(map<string, ClassInfo *>::iterator it = owner_template.reference_instantiations.begin();
+        it != owner_template.reference_instantiations.end();
+        ++it) {
+      merge_member_class_template_partial_into_owner_info(
+          it->second, member_template_name, partial);
+    }
+    invalidate_out_of_class_definition_caches(owner_template);
+  }
+
+  ClassTemplateDecl * resolve_dependent_owner_member_class_template_owner(
+      Scope & scope,
+      Scope & pattern_scope,
+      const QualifiedName & specialization_name,
+      const vector<TemplateParameterInfo> & owner_template_parameters,
+      string & member_template_name)
+  {
+    member_template_name.clear();
+    if(specialization_name.qualifiers.empty()) {
+      return nullptr;
+    }
+
+    string owner_template_name;
+    if(!split_unqualified_template_head_text(specialization_name.qualifiers.back(),
+                                             owner_template_name)) {
+      return nullptr;
+    }
+
+    Scope * owner_lookup_scope = &scope;
+    if(specialization_name.qualifiers.size() > 1 || specialization_name.rooted) {
+      QualifiedName owner_scope_name;
+      owner_scope_name.rooted = specialization_name.rooted;
+      if(specialization_name.qualifiers.size() > 1) {
+        owner_scope_name.qualifiers.assign(specialization_name.qualifiers.begin(),
+                                           specialization_name.qualifiers.end() - 2);
+        owner_scope_name.name =
+            specialization_name.qualifiers[specialization_name.qualifiers.size() - 2];
+      }
+      owner_lookup_scope =
+          semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
+              *this, scope, owner_scope_name, true);
+    }
+    if(!owner_lookup_scope) {
+      return nullptr;
+    }
+
+    ClassTemplateDecl * owner_template =
+        lookup_class_template(*owner_lookup_scope, owner_template_name);
+    if(!owner_template) {
+      return nullptr;
+    }
+    Scope * owner_pattern_scope =
+        owner_template->pattern_scope ? owner_template->pattern_scope :
+        owner_template->declaring_scope;
+    if(owner_pattern_scope &&
+       !out_of_class_special_member_template_parameters_match(
+           *owner_pattern_scope,
+           owner_template->parameters,
+           pattern_scope,
+           owner_template_parameters)) {
+      return nullptr;
+    }
+
+    member_template_name = specialization_name.name;
+    return owner_template;
   }
 
   bool resolve_template_arguments(

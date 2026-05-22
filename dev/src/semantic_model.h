@@ -987,6 +987,8 @@ struct ClassTemplateDecl
   std::map<std::string, OutOfClassStaticMemberDecl>
       witness_static_member_definitions;
   std::map<std::string, OutOfClassMemberClassDecl> member_class_definitions;
+  std::map<std::string, std::vector<PartialClassTemplateSpecializationDecl> >
+      member_class_template_partial_specializations;
   std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> > member_function_definitions;
   std::map<std::string, std::vector<OutOfClassMemberFunctionTemplateDefinition> >
       member_function_template_definitions;

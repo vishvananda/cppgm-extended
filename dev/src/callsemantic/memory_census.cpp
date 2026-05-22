@@ -817,6 +817,55 @@ void census_alias_template(const AliasTemplateDecl & decl,
   census_scope(decl.pattern_scope, census, seen_scopes, seen_types);
 }
 
+size_t partial_class_template_specialization_payload_bytes(
+    const PartialClassTemplateSpecializationDecl & decl,
+    MemoryCensus & census,
+    unordered_set<const Type *> & seen_types)
+{
+  size_t bytes = vector_storage_bytes(decl.parameters) +
+                 vector_storage_bytes(decl.arg_texts) +
+                 vector_storage_bytes(decl.arg_syntaxes) +
+                 map_storage_bytes(decl.static_member_definitions) +
+                 map_storage_bytes(decl.witness_static_member_definitions) +
+                 map_storage_bytes(decl.member_function_definitions) +
+                 map_storage_bytes(decl.member_function_template_definitions);
+  for(size_t i = 0; i < decl.parameters.size(); ++i) {
+    bytes += template_parameter_payload_bytes(decl.parameters[i],
+                                             census,
+                                             seen_types);
+  }
+  for(size_t i = 0; i < decl.arg_texts.size(); ++i) {
+    bytes += string_storage_bytes(decl.arg_texts[i]);
+  }
+  for(map<string, OutOfClassStaticMemberDecl>::const_iterator
+          it = decl.static_member_definitions.begin();
+      it != decl.static_member_definitions.end();
+      ++it) {
+    bytes += string_storage_bytes(it->first);
+  }
+  for(map<string, OutOfClassStaticMemberDecl>::const_iterator
+          it = decl.witness_static_member_definitions.begin();
+      it != decl.witness_static_member_definitions.end();
+      ++it) {
+    bytes += string_storage_bytes(it->first);
+  }
+  for(map<string, vector<OutOfClassMemberFunctionDecl> >::const_iterator
+          defs = decl.member_function_definitions.begin();
+      defs != decl.member_function_definitions.end();
+      ++defs) {
+    bytes += string_storage_bytes(defs->first);
+    bytes += vector_storage_bytes(defs->second);
+  }
+  for(map<string, vector<OutOfClassMemberFunctionTemplateDefinition> >::const_iterator
+          defs = decl.member_function_template_definitions.begin();
+      defs != decl.member_function_template_definitions.end();
+      ++defs) {
+    bytes += string_storage_bytes(defs->first);
+    bytes += vector_storage_bytes(defs->second);
+  }
+  return bytes;
+}
+
 void census_class_template(const ClassTemplateDecl & decl,
                            MemoryCensus & census,
                            unordered_set<const Type *> & seen_types)
@@ -833,6 +882,7 @@ void census_class_template(const ClassTemplateDecl & decl,
                  vector_storage_bytes(decl.deduction_guides) +
                  map_storage_bytes(decl.static_member_definitions) +
                  map_storage_bytes(decl.member_class_definitions) +
+                 map_storage_bytes(decl.member_class_template_partial_specializations) +
                  map_storage_bytes(decl.member_function_definitions) +
                  map_storage_bytes(decl.member_function_template_definitions);
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
@@ -876,6 +926,22 @@ void census_class_template(const ClassTemplateDecl & decl,
       ++it) {
     bytes += string_storage_bytes(it->first);
   }
+  for(map<string, vector<PartialClassTemplateSpecializationDecl> >::const_iterator
+          it = decl.member_class_template_partial_specializations.begin();
+      it != decl.member_class_template_partial_specializations.end();
+      ++it) {
+    bytes += string_storage_bytes(it->first);
+    bytes += vector_storage_bytes(it->second);
+    for(vector<PartialClassTemplateSpecializationDecl>::const_iterator
+            partial = it->second.begin();
+        partial != it->second.end();
+        ++partial) {
+      bytes += partial_class_template_specialization_payload_bytes(
+          *partial,
+          census,
+          seen_types);
+    }
+  }
   for(map<string, vector<OutOfClassMemberFunctionDecl> >::const_iterator
           it = decl.member_function_definitions.begin();
       it != decl.member_function_definitions.end();
@@ -894,22 +960,9 @@ void census_class_template(const ClassTemplateDecl & decl,
           it = decl.partial_specializations.begin();
       it != decl.partial_specializations.end();
       ++it) {
-    bytes += map_storage_bytes(it->member_function_definitions) +
-             map_storage_bytes(it->member_function_template_definitions);
-    for(map<string, vector<OutOfClassMemberFunctionDecl> >::const_iterator
-            defs = it->member_function_definitions.begin();
-        defs != it->member_function_definitions.end();
-        ++defs) {
-      bytes += string_storage_bytes(defs->first);
-      bytes += vector_storage_bytes(defs->second);
-    }
-    for(map<string, vector<OutOfClassMemberFunctionTemplateDefinition> >::const_iterator
-            defs = it->member_function_template_definitions.begin();
-        defs != it->member_function_template_definitions.end();
-        ++defs) {
-      bytes += string_storage_bytes(defs->first);
-      bytes += vector_storage_bytes(defs->second);
-    }
+    bytes += partial_class_template_specialization_payload_bytes(*it,
+                                                                 census,
+                                                                 seen_types);
   }
   census.note("class_template", bytes);
 }
