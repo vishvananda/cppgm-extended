@@ -1458,6 +1458,17 @@ bool is_coroutine_contextual_keyword(const RecogToken & token,
   return token.is_identifier() && token.source == spelling;
 }
 
+bool can_parse_coroutine_contextual_keyword_in_template(
+    const RecogToken & token,
+    const char * spelling,
+    size_t template_declaration_depth,
+    bool known_value_name)
+{
+  return template_declaration_depth > 0 &&
+         is_coroutine_contextual_keyword(token, spelling) &&
+         !known_value_name;
+}
+
 void apply_leading_declaration_attributes(CppAstNode & node,
                                           const CppAstNode & attributes)
 {
@@ -7467,8 +7478,11 @@ bool CppAstParser::parse_statement(CppAstNode & out)
   if(peek().is_simple(KW_RETURN)) {
     return parse_return_statement(out);
   }
-  if(is_coroutine_contextual_keyword(peek(), "co_return") &&
-     !is_known_value_name_identifier(peek())) {
+  if(can_parse_coroutine_contextual_keyword_in_template(
+         peek(),
+         "co_return",
+         template_declaration_depth,
+         is_known_value_name_identifier(peek()))) {
     return parse_coroutine_return_statement(out);
   }
   if(parse_expression_statement(out)) {
@@ -8223,7 +8237,11 @@ bool CppAstParser::parse_return_statement(CppAstNode & out)
 bool CppAstParser::parse_coroutine_return_statement(CppAstNode & out)
 {
   size_t start = pos;
-  if(!is_coroutine_contextual_keyword(peek(), "co_return")) {
+  if(!can_parse_coroutine_contextual_keyword_in_template(
+         peek(),
+         "co_return",
+         template_declaration_depth,
+         is_known_value_name_identifier(peek()))) {
     pos = start;
     return false;
   }
@@ -8315,8 +8333,11 @@ bool CppAstParser::parse_assignment_expression(CppAstNode & out)
     return true;
   }
 
-  if(is_coroutine_contextual_keyword(peek(), "co_yield") &&
-     !is_known_value_name_identifier(peek())) {
+  if(can_parse_coroutine_contextual_keyword_in_template(
+         peek(),
+         "co_yield",
+         template_declaration_depth,
+         is_known_value_name_identifier(peek()))) {
     ++pos;
     out = make_node(CppAstKind::unary_expression, "co_yield");
     CppAstNode operand;
@@ -8734,8 +8755,11 @@ bool CppAstParser::parse_unary_expression(CppAstNode & out)
     return true;
   }
 
-  if(is_coroutine_contextual_keyword(peek(), "co_await") &&
-     !is_known_value_name_identifier(peek())) {
+  if(can_parse_coroutine_contextual_keyword_in_template(
+         peek(),
+         "co_await",
+         template_declaration_depth,
+         is_known_value_name_identifier(peek()))) {
     ++pos;
     CppAstNode operand;
     if(!parse_unary_expression(operand)) {
