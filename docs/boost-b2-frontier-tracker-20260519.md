@@ -28,6 +28,10 @@ rebased Boost frontier branch.
   recorded at `e50910dc4e63dd0e610fc877cfc851a7c2364764` after the PA5,
   PA10, and PA18 cleanup commits; median instructions `274,421,860,597`,
   RSS `1.10 GiB`, footprint `882.22 MiB`
+- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-3820c92c7-20260522.json`
+  recorded at `3820c92c70aa7e7aff2d34bdcec960523a0d1441` after the parked
+  PA14, PA15, PA18, PA21, and PA22 cleanup commits; median instructions
+  `273,941,195,740`, RSS `1.11 GiB`, footprint `882.13 MiB`
 
 Local Boost wrapper state:
 
