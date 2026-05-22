@@ -18709,7 +18709,8 @@ private:
         if(init.children.size() > base->bound) {
           throw logic_error("too many global array initializer elements");
         }
-        if(guarded_array) {
+        if(guarded_array &&
+           is_complete_class_value_type(strip_top_level_cv(base->inner))) {
           global.data_items.push_back(
               string("zero ") + to_string(backend_storage_size(node.semantic_type)));
           globals_.push_back(global);

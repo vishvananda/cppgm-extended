@@ -1304,25 +1304,31 @@ bool evaluate_array_typed_initializer(SemanticContext & ctx,
   }
 
   if(payload->kind == CppAstKind::braced_init_list) {
-    const size_t bound = array_type->has_bound ? array_type->bound : payload->children.size();
-    if(payload->children.size() > bound) {
+    std::vector<const CppAstNode *> args = initializer_argument_nodes(*payload);
+    std::vector<CppAstNode> expanded_arg_storage;
+    if(!expand_initializer_argument_nodes(ctx, scope, args, expanded_arg_storage)) {
+      return false;
+    }
+
+    const size_t bound = array_type->has_bound ? array_type->bound : args.size();
+    if(args.size() > bound) {
       return false;
     }
     std::vector<constant_eval::ConstexprValue> elements;
     elements.reserve(bound);
-    for(size_t i = 0; i < payload->children.size(); ++i) {
+    for(size_t i = 0; i < args.size(); ++i) {
       constant_eval::ConstexprValue element;
       if(!evaluate_typed_initializer_value(ctx,
                                            scope,
                                            evaluator,
-                                           payload->children[i],
+                                           *args[i],
                                            array_type->inner,
                                            element)) {
         return false;
       }
       elements.push_back(element);
     }
-    for(size_t i = payload->children.size(); i < bound; ++i) {
+    for(size_t i = args.size(); i < bound; ++i) {
       constant_eval::ConstexprValue element;
       if(!evaluate_value_initialized_type(ctx, scope, evaluator, array_type->inner, element)) {
         return false;
