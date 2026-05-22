@@ -36,6 +36,10 @@ rebased Boost frontier branch.
   recorded at `72d1be3e4fd258411670a2d893485be38e982087` after the direct-init
   braced-argument fix and parked PA29/PA15 coverage commits; median
   instructions `273,763,739,997`, RSS `1.11 GiB`, footprint `882.12 MiB`
+- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-e90918d6c-20260522.json`
+  recorded at `e90918d6c2e3210052a3846a7c6d5241853d81c0` after the repeated-pack
+  partial-specialization ordering fix; median instructions `273,894,705,198`,
+  RSS `1.09 GiB`, footprint `882.34 MiB`
 
 Local Boost wrapper state:
 
