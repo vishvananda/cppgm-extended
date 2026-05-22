@@ -82,6 +82,30 @@ string trim_whitespace(const string & text)
   return text.substr(start, end - start);
 }
 
+bool is_identifier_like_preprocessing_operator(const string & text)
+{
+  switch(text.size()) {
+  case 2:
+    return text == "or";
+  case 3:
+    return text == "and" || text == "new" || text == "not" || text == "xor";
+  case 5:
+    return text == "bitor" || text == "compl" || text == "or_eq";
+  case 6:
+    return text == "and_eq" || text == "bitand" || text == "delete" ||
+           text == "not_eq" || text == "xor_eq";
+  default:
+    return false;
+  }
+}
+
+bool is_defined_operand_token(EPPTokenType type, const string & data)
+{
+  return type == PP_IDENTIFIER ||
+         (type == PP_PREPROCESSING_OP &&
+          is_identifier_like_preprocessing_operator(data));
+}
+
 vector<string> parse_compiler_search_paths(const string & output)
 {
   vector<string> results;
@@ -1847,7 +1871,7 @@ bool Preprocessor::process(const EPPTokenType type, const string & data,
         // fallthrough
       case DefinedState::NoParen:
       case DefinedState::Paren:
-        if(type == PP_IDENTIFIER) {
+        if(is_defined_operand_token(type, data)) {
           if(macroizer.macro_exists(data) ||
              is_predefined_builtin_probe_name(data))
             append_directive_token(PP_INT_LITERAL, "1");
