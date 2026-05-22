@@ -1,0 +1,50 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<4x4>
+  slot $cond__1 : i32
+  slot $tmpobj__2 : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr $value
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 7, %t3
+    %t4 = addr $tmpobj__2
+    call void @member_record__int__1___member(%t4)
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t6 = addr $value
+    %t7 = call ptr @member_base_record__int__1___operator__(%t5, %t6)
+    %t8 = load i32 %t7
+    %t9 = cmp eq i32 %t8, 7
+    branch %t9, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t10 = load i32 $cond__1
+    return i32 %t10
+}
+function @member_record__int__1___member(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN34member_3crecord_2c_20int_2c_201_3e6memberEU196member_3crecord_2c_20int_2c_201_3e_3a_3amember_7ctype_3dfunction_20of_20_28pointer_20to_20struct_20member_3crecord_2c_20int_2c_201_3e_29_20returning_20void_7cctor_7cowner_2dinst_3drecord_7cint_7c1] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @member_base_record__int__1___operator__(%this : ptr, %x : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN39member_base_3crecord_2c_20int_2c_201_3e14operator_28_29EU295member_base_3crecord_2c_20int_2c_201_3e_3a_3aoperator_28_29_7ctype_3dfunction_20of_20_28pointer_20to_20const_20struct_20member_base_3crecord_2c_20int_2c_201_3e_2c_20lvalue_2dreference_20to_20struct_20record_29_20returning_20lvalue_2dreference_20to_20int_7cconst_7cowner_2dinst_3drecord_7cint_7c1] {
+  slot $this : ptr
+  slot $x : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %x, $x
+    %t1 = load ptr $x
+    %t2 = binary sub i64 1, 1
+    %t3 = index i8 [projection=field] %t1, %t2
+    return ptr %t3
+}

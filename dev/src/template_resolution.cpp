@@ -973,16 +973,22 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
   if(trimmed.empty() || !target_type) {
     return false;
   }
+  TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
   const auto non_type_argument_text =
-      [&services, &target_type](long long value) -> std::string
+      [&services, &target_type, &target_base](long long value) -> std::string
       {
+        if(target_base &&
+           target_base->kind == Type::TK_MEMBER_POINTER &&
+           target_base->inner &&
+           !is_function_type(target_base->inner)) {
+          return std::string();
+        }
         return service_typed_non_type_template_argument_text(
             services,
             target_type,
             value);
       };
 
-  TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
   const auto integral_value_fits_target =
       [](const TypePtr & target, long long value) -> bool
       {
