@@ -1713,6 +1713,200 @@ int compare_template_id_head_specificity(const PartialDecl & current,
   return preference;
 }
 
+const TemplateParameterInfo * direct_template_parameter_from_argument_syntax(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TemplateArgumentSyntax & syntax)
+{
+  if(!syntax.text.empty()) {
+    const DirectTemplateParameterPattern direct =
+        find_direct_template_parameter_pattern(parameters, syntax.text);
+    if(direct.parameter) {
+      return direct.parameter;
+    }
+  }
+  if(!syntax.source_text.empty() && syntax.source_text != syntax.text) {
+    const DirectTemplateParameterPattern direct =
+        find_direct_template_parameter_pattern(parameters, syntax.source_text);
+    if(direct.parameter) {
+      return direct.parameter;
+    }
+  }
+
+  std::string parameter_name;
+  if(direct_template_parameter_name_from_syntax(syntax, parameter_name)) {
+    return find_template_parameter_by_name(parameters, parameter_name);
+  }
+  return nullptr;
+}
+
+struct TemplateParameterPatternOccurrence
+{
+  std::string path;
+  const TemplateParameterInfo * parameter = nullptr;
+};
+
+void collect_repeated_template_parameter_occurrences_from_template_id(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TemplateIdSyntax & syntax,
+    const std::string & path,
+    std::vector<TemplateParameterPatternOccurrence> & out);
+
+void collect_repeated_template_parameter_occurrences(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::string & raw_text,
+    const TemplateArgumentSyntax * syntax,
+    const std::string & path,
+    std::vector<TemplateParameterPatternOccurrence> & out)
+{
+  if(syntax) {
+    const TemplateParameterInfo * direct =
+        direct_template_parameter_from_argument_syntax(parameters, *syntax);
+    if(direct) {
+      TemplateParameterPatternOccurrence occurrence;
+      occurrence.path = path;
+      occurrence.parameter = direct;
+      out.push_back(occurrence);
+      return;
+    }
+
+    if(syntax->template_id) {
+      collect_repeated_template_parameter_occurrences_from_template_id(
+          parameters, *syntax->template_id, path, out);
+      return;
+    }
+    if(syntax->type_id) {
+      if(const TemplateIdSyntax * type_template_id =
+             cppast_template_id_syntax(*syntax->type_id)) {
+        collect_repeated_template_parameter_occurrences_from_template_id(
+            parameters, *type_template_id, path, out);
+        return;
+      }
+    }
+  }
+
+  const std::string text = trim_space(raw_text);
+  const DirectTemplateParameterPattern direct =
+      find_direct_template_parameter_pattern(parameters, text);
+  if(direct.parameter) {
+    TemplateParameterPatternOccurrence occurrence;
+    occurrence.path = path;
+    occurrence.parameter = direct.parameter;
+    out.push_back(occurrence);
+    return;
+  }
+
+  QualifiedName template_name;
+  std::vector<std::string> template_args;
+  if(!semantic_utils::split_top_level_template_id_text(text,
+                                                       template_name,
+                                                       template_args)) {
+    return;
+  }
+  for(std::size_t i = 0; i < template_args.size(); ++i) {
+    collect_repeated_template_parameter_occurrences(
+        parameters,
+        template_args[i],
+        nullptr,
+        path + "/" + std::to_string(i),
+        out);
+  }
+}
+
+void collect_repeated_template_parameter_occurrences_from_template_id(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TemplateIdSyntax & syntax,
+    const std::string & path,
+    std::vector<TemplateParameterPatternOccurrence> & out)
+{
+  for(std::size_t i = 0; i < syntax.arguments.size(); ++i) {
+    const TemplateArgumentSyntax * child_syntax =
+        i < syntax.argument_syntaxes.size() ? &syntax.argument_syntaxes[i] : nullptr;
+    collect_repeated_template_parameter_occurrences(
+        parameters,
+        syntax.arguments[i],
+        child_syntax,
+        path + "/" + std::to_string(i),
+        out);
+  }
+}
+
+struct RepeatedTemplateParameterConstraintSet
+{
+  std::set<std::pair<std::string, std::string> > repeated_occurrence_paths;
+};
+
+bool repeated_template_parameter_constraints_include(
+    const RepeatedTemplateParameterConstraintSet & lhs,
+    const RepeatedTemplateParameterConstraintSet & rhs)
+{
+  std::set<std::pair<std::string, std::string> >::const_iterator it =
+      rhs.repeated_occurrence_paths.begin();
+  for(; it != rhs.repeated_occurrence_paths.end(); ++it) {
+    if(lhs.repeated_occurrence_paths.count(*it) == 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename PartialDecl>
+RepeatedTemplateParameterConstraintSet repeated_template_parameter_constraints(
+    const PartialDecl & partial)
+{
+  RepeatedTemplateParameterConstraintSet out;
+  std::vector<TemplateParameterPatternOccurrence> occurrences;
+  for(std::size_t i = 0; i < partial.arg_texts.size(); ++i) {
+    const TemplateArgumentSyntax * syntax =
+        i < partial.arg_syntaxes.size() ? &partial.arg_syntaxes[i] : nullptr;
+    collect_repeated_template_parameter_occurrences(
+        partial.parameters,
+        partial.arg_texts[i],
+        syntax,
+        std::to_string(i),
+        occurrences);
+  }
+
+  for(std::size_t i = 0; i < occurrences.size(); ++i) {
+    if(!occurrences[i].parameter) {
+      continue;
+    }
+    for(std::size_t j = i + 1; j < occurrences.size(); ++j) {
+      if(occurrences[i].parameter != occurrences[j].parameter) {
+        continue;
+      }
+      out.repeated_occurrence_paths.insert(
+          std::make_pair(occurrences[i].path, occurrences[j].path));
+    }
+  }
+  return out;
+}
+
+template <typename PartialDecl>
+int compare_repeated_template_parameter_constraint_specificity(
+    const PartialDecl & current,
+    const PartialDecl & best)
+{
+  const RepeatedTemplateParameterConstraintSet current_constraints =
+      repeated_template_parameter_constraints(current);
+  const RepeatedTemplateParameterConstraintSet best_constraints =
+      repeated_template_parameter_constraints(best);
+
+  const bool current_includes_best =
+      repeated_template_parameter_constraints_include(current_constraints,
+                                                      best_constraints);
+  const bool best_includes_current =
+      repeated_template_parameter_constraints_include(best_constraints,
+                                                     current_constraints);
+
+  if(current_includes_best && !best_includes_current) {
+    return -1;
+  }
+  if(best_includes_current && !current_includes_best) {
+    return 1;
+  }
+  return 0;
+}
+
 int top_level_cv_rank(const TypePtr & type, TypePtr & base)
 {
   bool cv_const = false;
@@ -5317,7 +5511,12 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
     if(direct_constraint_specificity != 0) {
       return direct_constraint_specificity;
     }
-    return compare_template_id_head_specificity(current, best);
+    const int template_id_head_specificity =
+        compare_template_id_head_specificity(current, best);
+    if(template_id_head_specificity != 0) {
+      return template_id_head_specificity;
+    }
+    return compare_repeated_template_parameter_constraint_specificity(current, best);
   }
 
   std::vector<TemplateArgument> deduced_arguments;
@@ -5360,6 +5559,11 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
       compare_template_id_head_specificity(current, best);
   if(template_id_head_specificity != 0) {
     return template_id_head_specificity;
+  }
+  const int repeated_parameter_specificity =
+      compare_repeated_template_parameter_constraint_specificity(current, best);
+  if(repeated_parameter_specificity != 0) {
+    return repeated_parameter_specificity;
   }
   const int top_cv_specificity =
       compare_transformed_partial_argument_top_cv_specificity(current_transformed,
