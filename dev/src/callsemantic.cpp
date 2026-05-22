@@ -24955,6 +24955,36 @@ private:
             template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition);
         binding->is_explicit_instantiation_definition = true;
       }
+      if(explicit_info->member_scope) {
+        for(map<string, vector<FunctionBinding *> >::iterator it =
+                explicit_info->member_scope->function_sets.begin();
+            it != explicit_info->member_scope->function_sets.end();
+            ++it) {
+          for(size_t i = 0; i < it->second.size(); ++i) {
+            FunctionBinding * binding = it->second[i];
+            if(!binding ||
+               binding->owner_class != explicit_info ||
+               binding->is_method ||
+               binding->is_constructor ||
+               binding->is_destructor ||
+               binding->is_deleted ||
+               binding->synthesized ||
+               binding->is_defaulted ||
+               !binding->has_definition ||
+               template_api::function_binding_has_source_template_identity(binding) ||
+               template_api::function_binding_excluded_from_explicit_instantiation(
+                   *binding)) {
+              continue;
+            }
+            note_direct_explicit_function_instantiation(
+                binding,
+                template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition);
+            binding->is_explicit_instantiation_definition = true;
+            note_instantiated_function_output(binding,
+                                              InstantiatedFunctionOutputMode::RequireDefinition);
+          }
+        }
+      }
       return;
     }
 
