@@ -836,6 +836,24 @@ bool parse_declarator(template_api::TemplateServices & services,
       type);
 }
 
+bool parse_abstract_declarator(template_api::TemplateServices & services,
+                               semantic_model::Scope & parse_scope,
+                               semantic_model::Scope & semantic_scope,
+                               const CppAstNode & abstract_declarator,
+                               const cpp_decl::TypePtr & base,
+                               cpp_decl::TypePtr & type,
+                               bool reference_class_templates_only)
+{
+  return cpp_decl::parse_abstract_declarator_ast(
+      abstract_declarator,
+      make_decl_hooks(services,
+                      semantic_scope,
+                      parse_scope,
+                      reference_class_templates_only),
+      base,
+      type);
+}
+
 bool parse_type_specifier_seq(template_api::TemplateServices & services,
                               semantic_model::Scope & parse_scope,
                               semantic_model::Scope & semantic_scope,
