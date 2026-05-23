@@ -11672,8 +11672,100 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         }
         const auto match_parsed_template_ids = [&]() -> bool
         {
-        const std::vector<std::string> & pattern_args =
-            pattern_instantiation.argument_texts;
+        std::vector<std::string> pattern_visible_args_storage;
+        std::vector<TemplateArgument> pattern_visible_structured_args_storage;
+        const std::vector<std::string> * pattern_args_ptr =
+            &pattern_instantiation.argument_texts;
+        const auto argument_texts_have_direct_pack_expansion =
+            [&](const std::vector<std::string> & args) -> bool
+        {
+          for(std::size_t arg_i = 0; arg_i < args.size(); ++arg_i) {
+            const DirectTemplateParameterMatch direct_match =
+                find_direct_template_parameter_from_arg(args[arg_i]);
+            if(direct_match.parameter &&
+               direct_match.pack_expansion &&
+               direct_match.parameter->parameter_pack) {
+              return true;
+            }
+          }
+          return false;
+        };
+        const auto argument_text_matches_parameter_default =
+            [&](const TemplateParameterInfo & parameter,
+                const std::string & arg_text,
+                const TemplateArgument * structured_arg) -> bool
+        {
+          if(structured_arg && structured_arg->source_defaulted) {
+            return true;
+          }
+          if(!parameter.default_argument ||
+             parameter.default_argument->children.empty()) {
+            return false;
+          }
+          const CppAstNode & child = parameter.default_argument->children[0];
+          const std::string default_text =
+              parameter.kind == TemplateParameterInfo::TP_NON_TYPE ?
+                  default_argument_expression_text(child) :
+                  default_type_argument_text_from_ast(parameter, child);
+          std::string normalized_arg =
+              strip_elaborated_type_prefix(trim_space(arg_text));
+          std::string normalized_default =
+              strip_elaborated_type_prefix(trim_space(default_text));
+          if(normalized_arg.empty() || normalized_default.empty()) {
+            return false;
+          }
+          if(normalized_arg == normalized_default) {
+            return true;
+          }
+          if(normalized_default.find("::") == std::string::npos &&
+             normalized_arg.size() > normalized_default.size() + 2 &&
+             normalized_arg.compare(normalized_arg.size() - normalized_default.size(),
+                                    normalized_default.size(),
+                                    normalized_default) == 0 &&
+             normalized_arg.compare(normalized_arg.size() - normalized_default.size() - 2,
+                                    2,
+                                    "::") == 0) {
+            return true;
+          }
+          return false;
+        };
+        const auto trim_source_defaulted_tail =
+            [&](const ClassTemplateDecl * source_template,
+                const std::vector<std::string> & args,
+                const std::vector<TemplateArgument> * structured_args,
+                std::vector<std::string> & out_args,
+                std::vector<TemplateArgument> & out_structured_args) -> bool
+        {
+          if(!source_template ||
+             source_template->parameters.size() < args.size()) {
+            return false;
+          }
+          const bool have_structured_args =
+              structured_args && structured_args->size() == args.size();
+          std::size_t keep = args.size();
+          while(keep > 0) {
+            const TemplateParameterInfo & parameter =
+                source_template->parameters[keep - 1];
+            const TemplateArgument * structured_arg =
+                have_structured_args ? &(*structured_args)[keep - 1] : nullptr;
+            if(!argument_text_matches_parameter_default(parameter,
+                                                        args[keep - 1],
+                                                        structured_arg)) {
+              break;
+            }
+            --keep;
+          }
+          if(keep == args.size()) {
+            return false;
+          }
+          out_args.assign(args.begin(), args.begin() + keep);
+          out_structured_args.clear();
+          if(have_structured_args) {
+            out_structured_args.assign(structured_args->begin(),
+                                       structured_args->begin() + keep);
+          }
+          return true;
+        };
         const std::vector<std::string> & actual_args =
             actual_instantiation.argument_texts;
         std::vector<TemplateArgument> pattern_explicit_structured_args_storage;
@@ -11682,12 +11774,26 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                     align_explicit_template_arguments(
                         pattern_instantiation.source_template->parameters,
                         pattern_instantiation.arguments,
-                        pattern_args,
+                        *pattern_args_ptr,
                         pattern_explicit_structured_args_storage) ?
                 &pattern_explicit_structured_args_storage :
-            pattern_instantiation.arguments.size() == pattern_args.size() ?
+            pattern_instantiation.arguments.size() == pattern_args_ptr->size() ?
                 &pattern_instantiation.arguments :
                 nullptr;
+        if(argument_texts_have_direct_pack_expansion(*pattern_args_ptr) &&
+           trim_source_defaulted_tail(pattern_instantiation.source_template,
+                                      *pattern_args_ptr,
+                                      pattern_structured_args,
+                                      pattern_visible_args_storage,
+                                      pattern_visible_structured_args_storage)) {
+          pattern_args_ptr = &pattern_visible_args_storage;
+          pattern_structured_args =
+              pattern_visible_structured_args_storage.size() ==
+                      pattern_visible_args_storage.size() ?
+                  &pattern_visible_structured_args_storage :
+                  nullptr;
+        }
+        const std::vector<std::string> & pattern_args = *pattern_args_ptr;
         const ClassTemplateDecl * actual_template_decl =
             actual_instantiation.source_template;
         if(parsed_template_template_deduction) {
@@ -11705,7 +11811,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
             return false;
           }
         }
-        if(actual_template_decl) {
+        if(actual_template_decl &&
+           !argument_texts_have_direct_pack_expansion(pattern_args)) {
           if(pattern_instantiation.arguments.size() ==
                  actual_instantiation.arguments.size() &&
              (pattern_args.size() != actual_args.size() ||
@@ -11748,6 +11855,21 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           }
           actual_match_args = &actual_effective_args_storage;
           actual_match_structured_args = &actual_instantiation.arguments;
+        }
+        std::vector<std::string> actual_visible_args_storage;
+        std::vector<TemplateArgument> actual_visible_structured_args_storage;
+        if(argument_texts_have_direct_pack_expansion(pattern_args) &&
+           trim_source_defaulted_tail(actual_template_decl,
+                                      *actual_match_args,
+                                      actual_match_structured_args,
+                                      actual_visible_args_storage,
+                                      actual_visible_structured_args_storage)) {
+          actual_match_args = &actual_visible_args_storage;
+          actual_match_structured_args =
+              actual_visible_structured_args_storage.size() ==
+                      actual_visible_args_storage.size() ?
+                  &actual_visible_structured_args_storage :
+                  nullptr;
         }
         std::size_t direct_pack_count = 0;
         for(std::size_t i = 0; i < pattern_args.size(); ++i) {
