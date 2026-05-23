@@ -40,6 +40,10 @@ rebased Boost frontier branch.
   recorded at `e90918d6c2e3210052a3846a7c6d5241853d81c0` after the repeated-pack
   partial-specialization ordering fix; median instructions `273,894,705,198`,
   RSS `1.09 GiB`, footprint `882.34 MiB`
+- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-b0cfef0e8-20260522.json`
+  recorded at `b0cfef0e87110cb4d5f8cb44ca087e100e49fa31` after the bool NTTP
+  equality fix and tracker commit; median instructions `273,189,432,991`,
+  RSS `1.10 GiB`, footprint `882.55 MiB`
 
 Local Boost wrapper state:
 
