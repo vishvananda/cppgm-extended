@@ -8427,7 +8427,8 @@ static bool try_build_template_id_type_ir(const TemplateIdSyntax & syntax,
      template_template_parameter) {
     vector<TemplateParameterInfo> template_template_parameters;
     const vector<TemplateParameterInfo> * argument_parameters = nullptr;
-    if(template_template_parameter->template_parameter_count != 0) {
+    if(template_template_parameter->template_parameter_count != 0 &&
+       template_template_parameter->template_parameter_count != static_cast<size_t>(-1)) {
       template_template_parameters.resize(
           template_template_parameter->template_parameter_count);
       argument_parameters = &template_template_parameters;
