@@ -8381,7 +8381,7 @@ void bind_known_deductions_into_scope(SemanticContext & ctx,
 }
 
 bool is_dependent_qualified_nondeduced_type_context(
-    SemanticContext & ctx,
+    const DeductionContextOps & deduction_ops,
     const std::vector<TemplateParameterInfo> & parameters,
     const TypePtr & type)
 {
@@ -8402,22 +8402,22 @@ bool is_dependent_qualified_nondeduced_type_context(
   case Type::TK_RVALUE_REFERENCE:
   case Type::TK_ARRAY:
     return is_dependent_qualified_nondeduced_type_context(
-        ctx, parameters, base->inner);
+        deduction_ops, parameters, base->inner);
 
   case Type::TK_MEMBER_POINTER:
     return is_dependent_qualified_nondeduced_type_context(
-               ctx, parameters, base->owner) ||
+               deduction_ops, parameters, base->owner) ||
            is_dependent_qualified_nondeduced_type_context(
-               ctx, parameters, base->inner);
+               deduction_ops, parameters, base->inner);
 
   case Type::TK_FUNCTION:
     if(is_dependent_qualified_nondeduced_type_context(
-           ctx, parameters, base->inner)) {
+           deduction_ops, parameters, base->inner)) {
       return true;
     }
     for(std::size_t i = 0; i < base->params.size(); ++i) {
       if(is_dependent_qualified_nondeduced_type_context(
-             ctx, parameters, base->params[i])) {
+             deduction_ops, parameters, base->params[i])) {
         return true;
       }
     }
@@ -8426,7 +8426,7 @@ bool is_dependent_qualified_nondeduced_type_context(
   case Type::TK_NAMED:
   {
     const std::string text = strip_elaborated_type_prefix(
-        trim_space(type_argument_text_for_deduction(ctx, base)));
+        trim_space(deduction_ops.type_argument_text(base)));
     const std::size_t qualifier_end = text.rfind("::");
     if(qualifier_end == std::string::npos) {
       return false;
@@ -8450,6 +8450,15 @@ bool is_dependent_qualified_nondeduced_type_context(
   default:
     return false;
   }
+}
+
+bool is_dependent_qualified_nondeduced_type_context(
+    SemanticContext & ctx,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TypePtr & type)
+{
+  return is_dependent_qualified_nondeduced_type_context(
+      DeductionContextOps(ctx), parameters, type);
 }
 
 // template-boundary-audit: begin text_recovery_bridge
@@ -11675,6 +11684,11 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                                               actual_lookup_scope,
                                               deduced_pack_arguments,
                                               allow_actual_base_deduction)) {
+              if(is_dependent_qualified_nondeduced_type_context(
+                     deduction_ops, parameters, structured_pattern->type)) {
+                ++actual_index;
+                continue;
+              }
               return false;
             }
             ++actual_index;
