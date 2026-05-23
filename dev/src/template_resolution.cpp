@@ -4291,10 +4291,22 @@ void append_declaring_scope_template_bound_names(const Scope * scope,
   }
 }
 
+Scope * function_template_deduction_parent_scope(const FunctionTemplateDecl & decl)
+{
+  if(decl.is_inherited_constructor && decl.pattern_scope) {
+    return decl.pattern_scope;
+  }
+  return decl.declaring_scope;
+}
+
 std::set<std::string> deduction_overlay_excluded_names(const FunctionTemplateDecl & decl)
 {
   std::set<std::string> names = function_template_parameter_names(decl.parameters);
-  append_declaring_scope_template_bound_names(decl.declaring_scope, names);
+  Scope * deduction_parent = function_template_deduction_parent_scope(decl);
+  append_declaring_scope_template_bound_names(deduction_parent, names);
+  if(deduction_parent != decl.declaring_scope) {
+    append_declaring_scope_template_bound_names(decl.declaring_scope, names);
+  }
   return names;
 }
 
@@ -12510,7 +12522,8 @@ bool deduce_function_template_arguments_uncached(
       summary << "}";
       return summary.str();
     };
-    Scope bound_scope(decl.declaring_scope, "", false);
+    Scope * deduction_parent_scope = function_template_deduction_parent_scope(decl);
+    Scope bound_scope(deduction_parent_scope, "", false);
     const std::set<std::string> excluded_parameter_names =
         deduction_overlay_excluded_names(decl);
     const std::vector<TemplateArgument> local_type_arguments =
@@ -12521,12 +12534,12 @@ bool deduce_function_template_arguments_uncached(
       template_instantiation::overlay_instantiation_use_scope_bindings(
           bound_scope,
           *use_scope,
-          decl.declaring_scope,
+          deduction_parent_scope,
           excluded_parameter_names);
       template_api::overlay_instantiation_local_named_types(ctx,
                                                             bound_scope,
                                                             *use_scope,
-                                                            decl.declaring_scope,
+                                                            deduction_parent_scope,
                                                             local_type_arguments,
                                                             &excluded_parameter_names);
       if(parser_trace::enabled("template.resolve")) {
@@ -12886,7 +12899,8 @@ bool deduce_function_template_arguments_from_target_type(
     DeducedTypeMap deduced_types;
     DeducedValueMap deduced_values;
     DeducedPackArgumentMap deduced_pack_arguments;
-    Scope bound_scope(decl.declaring_scope, "", false);
+    Scope * deduction_parent_scope = function_template_deduction_parent_scope(decl);
+    Scope bound_scope(deduction_parent_scope, "", false);
     const std::set<std::string> excluded_parameter_names =
         deduction_overlay_excluded_names(decl);
     trace_function_template_drift("deduce-target-entry", decl);
@@ -12894,7 +12908,7 @@ bool deduce_function_template_arguments_from_target_type(
       template_instantiation::overlay_instantiation_use_scope_bindings(
           bound_scope,
           *use_scope,
-          decl.declaring_scope,
+          deduction_parent_scope,
           excluded_parameter_names);
     }
     remove_shadowing_template_parameter_bindings(bound_scope, decl.parameters);
@@ -12984,14 +12998,15 @@ bool deduce_function_template_arguments_from_target_type_with_explicit(
     DeducedTypeMap deduced_types;
     DeducedValueMap deduced_values;
     DeducedPackArgumentMap deduced_pack_arguments;
-    Scope bound_scope(decl.declaring_scope, "", false);
+    Scope * deduction_parent_scope = function_template_deduction_parent_scope(decl);
+    Scope bound_scope(deduction_parent_scope, "", false);
     const std::set<std::string> excluded_parameter_names =
         deduction_overlay_excluded_names(decl);
     trace_function_template_drift("deduce-target-explicit-entry", decl);
     template_instantiation::overlay_instantiation_use_scope_bindings(
         bound_scope,
         resolution_scope,
-        decl.declaring_scope,
+        deduction_parent_scope,
         excluded_parameter_names);
     remove_shadowing_template_parameter_bindings(bound_scope, decl.parameters);
     bind_resolvable_default_non_type_template_arguments_into_scope(
@@ -13106,7 +13121,8 @@ bool deduce_function_template_arguments_with_explicit(
     DeducedTypeMap deduced_types;
     DeducedValueMap deduced_values;
     DeducedPackArgumentMap deduced_pack_arguments;
-    Scope bound_scope(decl.declaring_scope, "", false);
+    Scope * deduction_parent_scope = function_template_deduction_parent_scope(decl);
+    Scope bound_scope(deduction_parent_scope, "", false);
     const std::set<std::string> excluded_parameter_names =
         deduction_overlay_excluded_names(decl);
     const std::vector<TemplateArgument> local_type_arguments =
@@ -13114,12 +13130,12 @@ bool deduce_function_template_arguments_with_explicit(
     template_instantiation::overlay_instantiation_use_scope_bindings(
         bound_scope,
         resolution_scope,
-        decl.declaring_scope,
+        deduction_parent_scope,
         excluded_parameter_names);
     template_api::overlay_instantiation_local_named_types(ctx,
                                                           bound_scope,
                                                           resolution_scope,
-                                                          decl.declaring_scope,
+                                                          deduction_parent_scope,
                                                           local_type_arguments,
                                                           &excluded_parameter_names);
     if(debug_skip_template_parameter_shadow_cleanup(decl)) {

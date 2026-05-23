@@ -26380,7 +26380,9 @@ private:
 
     unique_ptr<FunctionTemplateDecl> inherited(new FunctionTemplateDecl(base_template));
     inherited->declaring_scope = owner.member_scope.get();
-    inherited->pattern_scope = owner.member_scope.get();
+    inherited->pattern_scope = base_template.pattern_scope ?
+        base_template.pattern_scope :
+        base_template.declaring_scope;
     inherited->name = constructor_name;
     inherited->access = access;
     inherited->is_constructor = true;

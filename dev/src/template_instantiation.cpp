@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cctype>
 #include <functional>
+#include <map>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 
@@ -3195,6 +3197,48 @@ std::vector<std::pair<std::string, TypePtr> > binding_explicit_params(
       binding.params.end());
 }
 
+void ensure_unique_inherited_constructor_parameter_names(FunctionBinding & binding)
+{
+  const std::size_t offset = function_binding_explicit_parameter_offset(binding);
+  if(binding.params.size() <= offset) {
+    return;
+  }
+
+  std::map<std::string, std::size_t> counts;
+  for(std::size_t i = offset; i < binding.params.size(); ++i) {
+    const std::string & name = binding.params[i].first;
+    if(!name.empty()) {
+      ++counts[name];
+    }
+  }
+
+  std::vector<bool> rename(binding.params.size(), false);
+  std::set<std::string> used;
+  for(std::size_t i = offset; i < binding.params.size(); ++i) {
+    const std::string & name = binding.params[i].first;
+    const bool duplicate = !name.empty() && counts[name] > 1;
+    rename[i] = name.empty() || duplicate;
+    if(!rename[i]) {
+      used.insert(name);
+    }
+  }
+
+  for(std::size_t i = offset; i < binding.params.size(); ++i) {
+    if(!rename[i]) {
+      continue;
+    }
+    const std::string base =
+        std::string("__param") + std::to_string(i - offset + 1);
+    std::string candidate = base;
+    std::size_t suffix = 2;
+    while(used.count(candidate) != 0) {
+      candidate = base + "_" + std::to_string(suffix++);
+    }
+    binding.params[i].first = candidate;
+    used.insert(candidate);
+  }
+}
+
 std::string inherited_constructor_base_match_name(const std::string & name)
 {
   return semantic_utils::strip_trailing_top_level_template_arguments(
@@ -3364,6 +3408,7 @@ void refresh_instantiated_inherited_constructor_initializer(
   if(!base) {
     return;
   }
+  ensure_unique_inherited_constructor_parameter_names(binding);
   binding.ctor_initializer =
       ctx.own_synthetic_ast(make_instantiated_inherited_constructor_initializer(
           *base,
