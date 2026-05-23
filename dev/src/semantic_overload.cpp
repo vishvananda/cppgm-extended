@@ -7848,6 +7848,10 @@ bool append_ordinary_call_adl_candidates(
   vector<FunctionBinding *> associated_functions;
   vector<FunctionTemplateDecl *> associated_templates;
   vector<TypePtr> associated_arg_types;
+  const TemplateIdSyntax * lookup_template_id =
+      cppast_template_id_syntax(lookup_callee_node);
+  const string lookup_name =
+      lookup_template_id ? lookup_template_id->name.name : lookup_callee_node.value;
   for(size_t i = 0; i < arg_nodes.size(); ++i) {
     ExprInfo arg_expr;
     string arg_error;
@@ -7867,7 +7871,7 @@ bool append_ordinary_call_adl_candidates(
     associated_arg_types.push_back(arg_expr.type);
   }
   collect_associated_function_candidates_for_types(ctx,
-                                                   lookup_callee_node.value,
+                                                   lookup_name,
                                                    associated_arg_types,
                                                    associated_scopes,
                                                    associated_functions,
@@ -7879,11 +7883,9 @@ bool append_ordinary_call_adl_candidates(
     return false;
   }
 
-  lookup_adl_functions_in_scopes(associated_scopes,
-                                 lookup_callee_node.value,
-                                 associated_functions);
+  lookup_adl_functions_in_scopes(associated_scopes, lookup_name, associated_functions);
   lookup_adl_function_templates_in_scopes(associated_scopes,
-                                          lookup_callee_node.value,
+                                          lookup_name,
                                           associated_templates);
   if(associated_functions.empty() && associated_templates.empty()) {
     return false;
@@ -7893,24 +7895,22 @@ bool append_ordinary_call_adl_candidates(
   adl_scope.class_info = scope.class_info;
   adl_scope.function = scope.function;
   if(!associated_functions.empty()) {
-    direct_function_set_slot(adl_scope, lookup_callee_node.value) = associated_functions;
+    direct_function_set_slot(adl_scope, lookup_name) = associated_functions;
   }
   if(!associated_templates.empty()) {
-    direct_function_template_slot(adl_scope, lookup_callee_node.value) =
-        associated_templates;
+    direct_function_template_slot(adl_scope, lookup_name) = associated_templates;
   }
 
   vector<FunctionBinding *> adl_candidates =
       has_direct_explicit_template_args ?
           vector<FunctionBinding *>() :
-          ctx.lookup_functions(adl_scope,
-                               lookup_callee_node.value,
+          ctx.lookup_functions(adl_scope, lookup_name,
                                semantic_policy::without_body_instantiation());
   append_function_template_call_candidates_impl(
       ctx,
       adl_scope,
       scope,
-      lookup_callee_node.value,
+      lookup_name,
       arg_nodes,
       adl_candidates,
       semantic_policy::call_analysis(instantiate_bodies, &merged_lookup_hints),
