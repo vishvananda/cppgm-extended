@@ -9937,6 +9937,72 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
     return implicit_this_arg;
   };
+  ExprInfo qualified_id_implicit_object_arg;
+  bool qualified_id_implicit_object_checked = false;
+  bool qualified_id_implicit_object_available = false;
+  const auto get_qualified_id_implicit_object_arg =
+      [&](ExprInfo & out) -> bool
+  {
+    if(!qualified_id_implicit_object_checked) {
+      qualified_id_implicit_object_checked = true;
+      const QualifiedName * qualified =
+          lookup_callee_node.kind == CppAstKind::id_expression ?
+              cppast_qualified_name_syntax(lookup_callee_node) :
+              nullptr;
+      if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+        Scope * target_scope =
+            resolve_qualified_scope_for_class_or_namespace(ctx, scope, *qualified);
+        ClassInfo * target_class =
+            target_scope && target_scope->class_info ? target_scope->class_info : nullptr;
+        const ExprInfo & source_this = get_implicit_this_arg();
+        TypePtr source_pointer = strip_top_level_cv(source_this.type);
+        ClassInfo * source_class = nullptr;
+        if(source_pointer && source_pointer->kind == Type::TK_POINTER) {
+          source_class =
+              ctx.class_info_for_type(strip_top_level_cv(source_pointer->inner));
+        }
+        if(target_class && source_class) {
+          if(target_class == source_class) {
+            qualified_id_implicit_object_arg = source_this;
+            qualified_id_implicit_object_available = true;
+          } else {
+            size_t offset = 0;
+            MemberAccess access = MA_PUBLIC;
+            try {
+              if(find_unique_base_path(*source_class, target_class, offset, access)) {
+                TypePtr target_object_type = target_class->type;
+                TypePtr source_inner;
+                bool cv_const = false;
+                bool cv_volatile = false;
+                if(source_pointer->kind == Type::TK_POINTER &&
+                   top_level_cv_flags(source_pointer->inner,
+                                      source_inner,
+                                      cv_const,
+                                      cv_volatile)) {
+                  target_object_type =
+                      apply_cv(target_object_type, cv_const, cv_volatile);
+                }
+                qualified_id_implicit_object_arg =
+                    ctx.apply_base_subobject_adjustment(
+                        source_this,
+                        make_pointer(target_object_type),
+                        *target_class,
+                        offset);
+                qualified_id_implicit_object_available = true;
+              }
+            } catch(const logic_error &) {
+              qualified_id_implicit_object_available = false;
+            }
+          }
+        }
+      }
+    }
+    if(!qualified_id_implicit_object_available) {
+      return false;
+    }
+    out = qualified_id_implicit_object_arg;
+    return true;
+  };
   if(const CppAstNode * conversion_type_id = cppast_conversion_type_id_syntax(node)) {
     TypePtr functional_cast_type;
     if(ctx.parse_type_id(scope, *conversion_type_id, functional_cast_type)) {
@@ -11278,6 +11344,10 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             okay = false;
           } else {
             implicit_object_arg = get_implicit_this_arg();
+            ExprInfo qualified_object_arg;
+            if(get_qualified_id_implicit_object_arg(qualified_object_arg)) {
+              implicit_object_arg = qualified_object_arg;
+            }
             implicit_object_category = VC_LVALUE;
           }
         } else {

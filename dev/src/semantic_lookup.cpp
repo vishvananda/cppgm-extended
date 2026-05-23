@@ -3761,6 +3761,10 @@ bool member_access_allowed(const Scope * lexical_scope,
                            MemberAccess member_access,
                            MemberAccess path_access)
 {
+  if(member_access == MA_PUBLIC && path_access == MA_PUBLIC) {
+    return true;
+  }
+
   auto class_grants_access = [&](const ClassInfo * access_class) -> bool
   {
     if(!access_class) {
@@ -3818,7 +3822,7 @@ bool member_access_allowed(const Scope * lexical_scope,
     return true;
   }
 
-  return member_access == MA_PUBLIC && path_access == MA_PUBLIC;
+  return false;
 }
 
 bool member_access_allowed_through_object(const Scope * lexical_scope,
