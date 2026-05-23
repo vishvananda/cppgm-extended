@@ -64,6 +64,10 @@ rebased Boost frontier branch.
   recorded at `712d71b2a7510a67fa48f6214dfe642159dd7606` after the ADL
   explicit-template-id fix and tracker commit; median instructions
   `274,593,493,984`, RSS `1.11 GiB`, footprint `881.56 MiB`
+- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-4947357de-20260522.json`
+  recorded at `4947357de0f85b118d9f787866f826aa85b75181` after the class-template
+  pack-prefix deduction fix and tracker commit; median instructions
+  `275,270,664,333`, RSS `1.11 GiB`, footprint `881.85 MiB`
 
 Local Boost wrapper state:
 
