@@ -6128,7 +6128,7 @@ private:
       const string rhs_label = new_block(is_land ? "land_rhs" : "lor_rhs");
       const string short_label = new_block(is_land ? "land_short" : "lor_short");
       const string end_label = new_block(is_land ? "land_end" : "lor_end");
-      const string lhs = emit_rvalue(node.children[0]);
+      const string lhs = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + lhs + ", " +
                 lowir_block_name(is_land ? rhs_label : short_label) + ", " +
                 lowir_block_name(is_land ? short_label : rhs_label));
@@ -6153,7 +6153,7 @@ private:
       const string then_label = new_block("discard_cond_then");
       const string else_label = new_block("discard_cond_else");
       const string end_label = new_block("discard_cond_end");
-      const string cond = emit_rvalue(node.children[0]);
+      const string cond = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + cond + ", " + lowir_block_name(then_label) + ", " +
                 lowir_block_name(else_label));
 
@@ -6244,7 +6244,7 @@ private:
       const string then_label = new_block("condobj_then");
       const string else_label = new_block("condobj_else");
       const string end_label = new_block("condobj_end");
-      const string cond = emit_rvalue(node.children[0]);
+      const string cond = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + cond + ", " + lowir_block_name(then_label) + ", " +
                 lowir_block_name(else_label));
 
@@ -10125,6 +10125,15 @@ private:
     return emit_temp_assignment("i64", string("cmp ne i64 ") + value + ", 0");
   }
 
+  string emit_branch_condition_value(const CallSemNode & node)
+  {
+    const string value_type = lowir_value_type_for(node.semantic_type);
+    if(value_type == "f32" || value_type == "f64") {
+      return emit_normalized_truthy(node);
+    }
+    return emit_rvalue(node);
+  }
+
   void emit_throw_object_to_storage(const TypePtr & throw_type,
                                     const CallSemNode & node,
                                     const string & storage_ptr)
@@ -11081,7 +11090,7 @@ private:
         const string rhs_label = new_block(is_land ? "land_rhs" : "lor_rhs");
         const string short_label = new_block(is_land ? "land_short" : "lor_short");
         const string end_label = new_block(is_land ? "land_end" : "lor_end");
-        const string lhs = emit_rvalue(node.children[0]);
+        const string lhs = emit_branch_condition_value(node.children[0]);
         terminate(string("branch ") + lhs + ", " +
                   lowir_block_name(is_land ? rhs_label : short_label) + ", " +
                 lowir_block_name(is_land ? short_label : rhs_label));
@@ -11371,7 +11380,7 @@ private:
       const string then_label = new_block("cond_then");
       const string else_label = new_block("cond_else");
       const string end_label = new_block("cond_end");
-      const string cond = emit_rvalue(node.children[0]);
+      const string cond = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + cond + ", " + lowir_block_name(then_label) + ", " +
                 lowir_block_name(else_label));
 
@@ -12250,7 +12259,7 @@ private:
       const string then_label = new_block("condaddr_then");
       const string else_label = new_block("condaddr_else");
       const string end_label = new_block("condaddr_end");
-      const string cond = emit_rvalue(node.children[0]);
+      const string cond = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + cond + ", " + lowir_block_name(then_label) + ", " +
                 lowir_block_name(else_label));
 
@@ -12879,7 +12888,7 @@ private:
       return;
     }
 
-    const string cond_value = emit_rvalue(node);
+    const string cond_value = emit_branch_condition_value(node);
     terminate("branch " + cond_value + ", " + lowir_block_name(true_label) + ", " +
               lowir_block_name(false_label));
   }
