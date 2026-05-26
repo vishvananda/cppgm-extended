@@ -77,13 +77,29 @@ rebased Boost frontier branch.
 
 ## Local Gate Repairs
 
+- `8bb9d6213`: moved the binary-literal extension coverage out of PA6 and into
+  the PA33 host-compatibility preprocessor suite. The preprocessor now reports
+  `__has_feature(__cxx_binary_literals__)` and
+  `__has_extension(__cxx_binary_literals__)` as supported, matching the hosted
+  binary integer literal and binary UDL support added for Boost.Asio. The old
+  PA6 `0b01000010` fixture was replaced by a plain invalid-token balanced-scan
+  reducer using `@`, preserving coverage for the `RecogTokenBuffer` invalid
+  token EOF sentinel without assigning the hosted binary-literal extension to
+  PA6. Validation: `make -C dev cppgm++ preproc recog -j12`; focused PA6
+  reducer; full `make -C pa6 test CPPGM_SKIP_DEV_REBUILD=1`; focused PA33
+  binary-literal feature and tokenization checks; `ACTIVE_TEST_REPORT_PAS='pa33'
+  ORDERED=false TEST_REPORT_SUBTEST_JOBS=12 TEST_REPORT_ASSIGNMENT_JOBS=1
+  CPPGM_SKIP_DEV_REBUILD=1 make test-report-nobuild` passed `301/301`; direct
+  Boost.Config `no_cxx14_binary_literals_fail.cpp` now fails quickly via the
+  expected `#error`, while `no_cxx14_binary_literals_pass.cpp` compiles and
+  runs with status `0`.
 - `dcdd5d3e6`: restored the local lowir-compare gates before continuing Boost
   survey triage. Static hosted `typeid(T)` now uses an already requested local
   RTTI definition instead of an external ABI alias, fixing the PA34
   `std::function<int()>` link failure for `_ZTIPFivE` and the PA27 direct-text
-  typeid drift. The PA6 course binary-literal reference was refreshed to match
-  the accepted PA33 Boost.Asio binary literal behavior, and the PA29 reference
-  was refreshed for current `unwind=no` constructor metadata. Validation:
+  typeid drift. The temporary PA6 binary-literal reference refresh from this
+  commit was corrected in `8bb9d6213`; the PA29 reference was refreshed for
+  current `unwind=no` constructor metadata. Validation:
   focused `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa6 pa27 pa29 pa34'`
   report passed `229/229`; full `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make
   test-report` passed `3070/3070`; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make
