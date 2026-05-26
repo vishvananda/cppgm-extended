@@ -88,6 +88,11 @@ rebased Boost frontier branch.
   report passed `229/229`; full `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make
   test-report` passed `3070/3070`; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make
   test-strict` passed.
+- Local direct-LowIR gate refresh after the typed NTTP regression: the PA19
+  `100-negative-nontype-substitution-comparison.t` reference now matches the
+  non-odr-used static-member output produced by the current compiler. Full
+  `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ... make test-report-nobuild` passes
+  `3076/3076`.
 
 Local Boost wrapper state:
 

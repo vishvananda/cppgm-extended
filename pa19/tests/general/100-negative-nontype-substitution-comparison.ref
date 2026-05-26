@@ -1,6 +1,3 @@
-global @base_int___1000___const_min : i32 [binding=weak, object=_ZN4baseIiLi-1000EE9const_minE] = -1000
-global @base_unsigned_char__255___const_min : u8 [binding=weak, object=_ZN4baseIhLh255EE9const_minE] = 255
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
