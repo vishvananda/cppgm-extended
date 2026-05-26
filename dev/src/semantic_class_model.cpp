@@ -1506,16 +1506,56 @@ TypePtr lookup_visible_member_alias_owner_type(SemanticContext & ctx,
   if(name.empty()) {
     return TypePtr();
   }
-  if(current_info && current_info->member_scope) {
-    MemberTypeLookupResult member =
-        lookup_member_type(ctx, *current_info, name, true, &scope);
-    if(member.type) {
-      return member.type;
+  const auto lookup_in_class =
+      [&ctx, &scope, &name](ClassInfo & info) -> TypePtr
+  {
+    if(info.member_scope) {
+      MemberTypeLookupResult member =
+          lookup_member_type(ctx, info, name, true, &scope);
+      if(member.type) {
+        return member.type;
+      }
+      std::map<std::string, TypePtr>::const_iterator found =
+          info.member_scope->named_types.find(name);
+      if(found != info.member_scope->named_types.end()) {
+        return found->second;
+      }
     }
-    std::map<std::string, TypePtr>::const_iterator found =
-        current_info->member_scope->named_types.find(name);
-    if(found != current_info->member_scope->named_types.end()) {
-      return found->second;
+    return TypePtr();
+  };
+  if(current_info && current_info->member_scope) {
+    if(TypePtr direct = lookup_in_class(*current_info)) {
+      return direct;
+    }
+    std::set<ClassInfo *> visited;
+    const auto lookup_enclosing_class_scopes =
+        [&](Scope * start) -> TypePtr
+    {
+      for(Scope * current = start; current; current = current->parent) {
+        if(current->class_info &&
+           current->class_info != current_info &&
+           visited.insert(current->class_info).second) {
+          if(TypePtr found = lookup_in_class(*current->class_info)) {
+            return found;
+          }
+        }
+        if(current->namespace_scope || current->parent == nullptr) {
+          break;
+        }
+      }
+      return TypePtr();
+    };
+    if(TypePtr enclosing =
+           lookup_enclosing_class_scopes(current_info->enclosing_scope)) {
+      return enclosing;
+    }
+    if(current_info->source_template &&
+       current_info->source_template->declaring_scope) {
+      if(TypePtr declaring =
+             lookup_enclosing_class_scopes(
+                 current_info->source_template->declaring_scope)) {
+        return declaring;
+      }
     }
   }
   for(Scope * current = &scope; current; current = current->parent) {
@@ -1535,10 +1575,123 @@ TypePtr lookup_visible_member_alias_owner_type(SemanticContext & ctx,
   return TypePtr();
 }
 
+TypePtr try_rebase_dependent_member_alias_owner_root(SemanticContext & ctx,
+                                                     Scope & scope,
+                                                     const TypePtr & owner,
+                                                     ClassInfo * current_info,
+                                                     const TemplateIdSyntax * owner_template_id_hint)
+{
+  if(!owner || !current_info) {
+    return TypePtr();
+  }
+
+  TypePtr dependent_root;
+  std::vector<std::string> members;
+  bool leading_typename = false;
+  std::vector<TemplateIdSyntax> member_template_ids;
+  if(!named_type_dependent_qualified_member(owner,
+                                            dependent_root,
+                                            members,
+                                            leading_typename,
+                                            &member_template_ids) ||
+     !dependent_root ||
+     members.empty()) {
+    TypePtr owner_base = strip_top_level_cv(owner);
+    if(!owner_template_id_hint ||
+       !owner_base ||
+       owner_base->kind != Type::TK_NAMED) {
+      return TypePtr();
+    }
+    std::string owner_text =
+        !owner_base->named_display.empty() ? owner_base->named_display :
+                                             owner_base->named_key;
+    owner_text = strip_leading_typename_for_member_alias(owner_text);
+    owner_text = semantic_utils::trim_space(owner_text);
+    const std::size_t split = semantic_utils::top_level_scope_split(owner_text);
+    if(split == std::string::npos) {
+      return TypePtr();
+    }
+    std::string root_text =
+        semantic_utils::trim_space(owner_text.substr(0, split));
+    std::string member_text =
+        semantic_utils::trim_space(owner_text.substr(split + 2));
+    if(root_text.empty() ||
+       root_text.find("::") != std::string::npos ||
+       root_text.find('<') != std::string::npos ||
+       member_text.empty()) {
+      return TypePtr();
+    }
+    dependent_root = make_semantic_named(root_text,
+                                         Type::NSK_DEPENDENT_TYPE,
+                                         root_text,
+                                         true);
+    members.clear();
+    members.push_back(member_text);
+    member_template_ids.clear();
+    member_template_ids.push_back(*owner_template_id_hint);
+  }
+
+  TypePtr root_base = strip_top_level_cv(dependent_root);
+  if(!root_base || root_base->kind != Type::TK_NAMED) {
+    return TypePtr();
+  }
+  std::string root_name =
+      !root_base->named_display.empty() ? root_base->named_display :
+                                          root_base->named_key;
+  root_name = strip_leading_typename_for_member_alias(root_name);
+  root_name = semantic_utils::trim_space(root_name);
+  if(root_name.empty() ||
+     root_name.find("::") != std::string::npos ||
+     root_name.find('<') != std::string::npos) {
+    return TypePtr();
+  }
+
+  TypePtr visible_root =
+      lookup_visible_member_alias_owner_type(ctx, scope, root_name, current_info);
+  if(!visible_root ||
+     type_equals(visible_root, dependent_root)) {
+    return TypePtr();
+  }
+
+  TemplateIdSyntax owner_template_id;
+  if(TypePtr owner_base = strip_top_level_cv(owner)) {
+    if(owner_base->named_dependent_qualified_owner_template_id) {
+      owner_template_id = *owner_base->named_dependent_qualified_owner_template_id;
+    }
+  }
+  std::string display = callsemantic_internal::reparseable_type_argument_text(visible_root);
+  if(display.empty()) {
+    display = describe_type(visible_root);
+  }
+  for(std::size_t i = 0; i < members.size(); ++i) {
+    display += "::";
+    display += members[i];
+  }
+
+  TypePtr rebased = make_dependent_qualified_member_type(display,
+                                                         visible_root,
+                                                         members,
+                                                         leading_typename,
+                                                         member_template_ids,
+                                                         owner_template_id);
+  if(!rebased) {
+    return TypePtr();
+  }
+
+  TypePtr instantiated;
+  if(semantic_dependent_type::resolve_instantiated_dependent_type(
+         ctx, scope, rebased, instantiated) &&
+     instantiated) {
+    return instantiated;
+  }
+  return rebased;
+}
+
 TypePtr resolve_member_alias_owner_type(SemanticContext & ctx,
                                         Scope & scope,
                                         const TypePtr & owner,
-                                        ClassInfo * current_info = nullptr)
+                                        ClassInfo * current_info = nullptr,
+                                        const TemplateIdSyntax * owner_template_id_hint = nullptr)
 {
   TypePtr resolved = owner;
   if(resolved && ctx.type_depends_on_template_parameter(resolved)) {
@@ -1547,6 +1700,18 @@ TypePtr resolve_member_alias_owner_type(SemanticContext & ctx,
            ctx, scope, resolved, instantiated) &&
        instantiated) {
       resolved = instantiated;
+    }
+  }
+  if(resolved &&
+     ctx.type_depends_on_template_parameter(resolved) &&
+     current_info) {
+    if(TypePtr rebased =
+           try_rebase_dependent_member_alias_owner_root(ctx,
+                                                        scope,
+                                                        resolved,
+                                                        current_info,
+                                                        owner_template_id_hint)) {
+      resolved = rebased;
     }
   }
   if(resolved &&
@@ -1623,7 +1788,13 @@ TypePtr try_resolve_instantiated_member_alias_type(SemanticContext & ctx,
         lookup_visible_member_alias_owner_type(ctx, scope, owner_name, current_info);
   }
 
-  owner_type = resolve_member_alias_owner_type(ctx, scope, owner_type, current_info);
+  owner_type =
+      resolve_member_alias_owner_type(
+          ctx,
+          scope,
+          owner_type,
+          current_info,
+          base->named_dependent_qualified_owner_template_id.get());
   if(!owner_type) {
     return TypePtr();
   }
