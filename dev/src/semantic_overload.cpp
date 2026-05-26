@@ -5890,13 +5890,24 @@ bool try_analyze_builtin_call_expression(SemanticContext & ctx,
 }
 
 ExprInfo finalize_functional_cast_result(SemanticContext & ctx,
+                                         Scope & scope,
                                          const TypePtr & callee_type,
                                          ExprInfo result,
                                          const CppAstNode & arg_node)
 {
   ExprInfo operand = result;
   if(!semantic_conversion::can_copy_initialize(ctx, callee_type, result)) {
-    if(semantic_conversion::supports_non_reference_explicit_cast(
+    ExprInfo converted;
+    ConversionRank rank = CR_BAD;
+    if(ctx.try_argument_conversion(scope,
+                                   callee_type,
+                                   result,
+                                   converted,
+                                   rank,
+                                   semantic_policy::allow_explicit_argument_conversion())) {
+      result = converted;
+      operand = result;
+    } else if(semantic_conversion::supports_non_reference_explicit_cast(
            ctx, callee_type, result, true)) {
       result.type = callee_type;
       result.category = VC_PRVALUE;
@@ -6132,6 +6143,7 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
     }
     return finalize_functional_cast_result(
         ctx,
+        scope,
         callee_type,
         ctx.analyze_expression_for_target(scope, direct_braced_init->children[0], callee_type),
         direct_braced_init->children[0]);
@@ -6144,6 +6156,7 @@ ExprInfo analyze_functional_cast_impl(SemanticContext & ctx,
   }
   return finalize_functional_cast_result(
       ctx,
+      scope,
       callee_type,
       ctx.analyze_expression_for_target(scope, *arg_nodes[0], callee_type),
       *arg_nodes[0]);

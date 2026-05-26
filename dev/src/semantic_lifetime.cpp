@@ -438,6 +438,30 @@ logic_error make_narrowing_initializer_error(const TypePtr & target_type,
   return logic_error(outmsg.str());
 }
 
+ExprInfo analyze_initializer_expression_for_target(SemanticContext & ctx,
+                                                   Scope & scope,
+                                                   const CppAstNode & init,
+                                                   const TypePtr & target_type,
+                                                   bool allow_explicit_conversion)
+{
+  ExprInfo result = ctx.analyze_expression_for_target(scope, init, target_type);
+  if(!allow_explicit_conversion || can_copy_initialize(ctx, target_type, result)) {
+    return result;
+  }
+
+  ExprInfo converted;
+  ConversionRank rank = CR_BAD;
+  if(ctx.try_argument_conversion(scope,
+                                 target_type,
+                                 result,
+                                 converted,
+                                 rank,
+                                 semantic_policy::allow_explicit_argument_conversion())) {
+    return converted;
+  }
+  return result;
+}
+
 std::string synthetic_parameter_name(const FunctionBinding & binding, std::size_t index)
 {
   return function_parameter_binding_name(binding, index);
@@ -3203,7 +3227,8 @@ void append_target_initialization_actions(SemanticContext & ctx,
     if(args.size() != 1) {
       throw logic_error("non-class member initializer requires one expression");
     }
-    ExprInfo init = ctx.analyze_expression_for_target(scope, *args[0], type);
+    ExprInfo init =
+        analyze_initializer_expression_for_target(ctx, scope, *args[0], type, true);
     if(!can_copy_initialize(ctx, type, init)) {
       if(parser_trace::enabled("lifetime.init")) {
         std::ostringstream trace;
@@ -3237,7 +3262,8 @@ void append_target_initialization_actions(SemanticContext & ctx,
     if(braced_scalar_initialization_has_narrowing_conversion(ctx, scope, *args[0], type, source_expr)) {
       throw make_narrowing_initializer_error(type, source_expr, *args[0]);
     }
-    ExprInfo init = ctx.analyze_expression_for_target(scope, *args[0], type);
+    ExprInfo init =
+        analyze_initializer_expression_for_target(ctx, scope, *args[0], type, true);
     if(!can_copy_initialize(ctx, type, init)) {
       if(parser_trace::enabled("lifetime.init")) {
         std::ostringstream trace;
@@ -3770,7 +3796,12 @@ void analyze_initializer(SemanticContext & ctx,
            ctx, scope, payload.children[0], type, source_expr)) {
       throw make_narrowing_initializer_error(type, source_expr, payload.children[0]);
     }
-    ExprInfo element = ctx.analyze_expression_for_target(scope, payload.children[0], type);
+    ExprInfo element =
+        analyze_initializer_expression_for_target(ctx,
+                                                  scope,
+                                                  payload.children[0],
+                                                  type,
+                                                  !node.uses_assignment_form);
     if(!can_copy_initialize(ctx, type, element)) {
       ostringstream outmsg;
       outmsg << "invalid initializer";
@@ -3788,7 +3819,12 @@ void analyze_initializer(SemanticContext & ctx,
     if(payload.children.size() != 1) {
       throw logic_error("scalar paren-initializer requires one expression");
     }
-    ExprInfo element = ctx.analyze_expression_for_target(scope, payload.children[0], type);
+    ExprInfo element =
+        analyze_initializer_expression_for_target(ctx,
+                                                  scope,
+                                                  payload.children[0],
+                                                  type,
+                                                  true);
     if(!can_copy_initialize(ctx, type, element)) {
       ostringstream outmsg;
       outmsg << "invalid initializer";
