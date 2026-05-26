@@ -10913,20 +10913,22 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                             std::move(call_args));
   }
   if(explicit_member_call) {
-    if(callee_node.children.size() != 2 || callee_node.children[1].kind != CppAstKind::identifier) {
+    const CppAstNode & member_callee_node = lookup_callee_node;
+    if(member_callee_node.children.size() != 2 ||
+       member_callee_node.children[1].kind != CppAstKind::identifier) {
       throw logic_error("unsupported member call");
     }
 
     const bool destructor_member_call =
-        is_scalar_pseudo_destructor_name(callee_node.children[1].value);
+        is_scalar_pseudo_destructor_name(member_callee_node.children[1].value);
     const template_api::ScopedTemplateWitnessDeclvalCallSourceCapturePause
         declval_witness_pause(destructor_member_call);
     ExprInfo base = hints && hints->explicit_member_base ?
         *hints->explicit_member_base :
-        ctx.analyze_expression(scope, callee_node.children[0]);
+        ctx.analyze_expression(scope, member_callee_node.children[0]);
     TypePtr base_type = strip_top_level_cv(remove_reference_type(base.type));
     ClassInfo * class_info = nullptr;
-    if(node_has_simple_type(callee_node, OP_DOT)) {
+    if(node_has_simple_type(member_callee_node, OP_DOT)) {
       if(base.category != VC_LVALUE &&
          base.category != VC_XVALUE &&
          base.category != VC_PRVALUE) {
@@ -10942,7 +10944,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         implicit_object_arg = ctx.make_address_of_expr(base);
       }
       implicit_object_category = base.category;
-    } else if(node_has_simple_type(callee_node, OP_ARROW)) {
+    } else if(node_has_simple_type(member_callee_node, OP_ARROW)) {
       if(base_type && base_type->kind == Type::TK_POINTER) {
         class_info = complete_class_type_for_lookup(ctx, base_type->inner);
         if(!class_info) {
@@ -10965,13 +10967,13 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           CppAstNode operator_call;
           operator_call.kind = CppAstKind::call_expression;
           operator_call.children.push_back(
-              make_dot_member_operator_callee(callee_node.children[0], "operator->"));
+              make_dot_member_operator_callee(member_callee_node.children[0], "operator->"));
 
           CppAstNode empty_args;
           empty_args.kind = CppAstKind::paren_argument_list;
           operator_call.children.push_back(empty_args);
 
-          CppAstNode rewritten_callee = callee_node;
+          CppAstNode rewritten_callee = member_callee_node;
           rewritten_callee.children[0] = operator_call;
 
           CppAstNode rewritten_call = node;
@@ -10992,7 +10994,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       if(try_analyze_scalar_pseudo_destructor_call(ctx,
                                                    scope,
                                                    node,
-                                                   callee_node,
+                                                   member_callee_node,
                                                    base,
                                                    pseudo_destructor)) {
         return pseudo_destructor;
@@ -11003,7 +11005,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       throw logic_error("member call requires class type");
     }
 
-    const QualifiedName * member_name = cppast_qualified_name_syntax(callee_node.children[1]);
+    const QualifiedName * member_name =
+        cppast_qualified_name_syntax(member_callee_node.children[1]);
     if(!member_name) {
       throw logic_error("member-call target missing structured name");
     }
@@ -11014,7 +11017,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
 
     const TemplateIdSyntax * member_template_id =
-        cppast_template_id_syntax(callee_node.children[1]);
+        cppast_template_id_syntax(member_callee_node.children[1]);
     if(member_template_id) {
       source_explicit_template_arg_count = member_template_id->arguments.size();
     }
@@ -11077,14 +11080,14 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           candidates,
           CallAnalysisOptions(instantiate_bodies, hints),
           &direct_function_source_drops,
-          &callee_node.children[1],
+          &member_callee_node.children[1],
           member_name,
           member_template_id);
     }
     if(candidates.empty() &&
        !looks_like_operator_function_name(target.lookup_name)) {
       try {
-        ExprInfo field_callee = ctx.analyze_expression(scope, callee_node);
+        ExprInfo field_callee = ctx.analyze_expression(scope, member_callee_node);
         ExprInfo direct_result;
         if(resolve_callee_expr_call(field_callee, direct_result)) {
           return direct_result;
