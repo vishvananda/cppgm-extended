@@ -68,6 +68,26 @@ rebased Boost frontier branch.
   recorded at `4947357de0f85b118d9f787866f826aa85b75181` after the class-template
   pack-prefix deduction fix and tracker commit; median instructions
   `275,270,664,333`, RSS `1.11 GiB`, footprint `881.85 MiB`
+- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
+  recorded after local lowir-compare gate repair commit `dcdd5d3e6`; median
+  instructions `273,606,162,353`, RSS `1.10 GiB`, footprint `882.21 MiB`.
+  The previous named `/tmp` baselines were no longer present, so this is a fresh
+  comparison point for subsequent frontier fixes rather than a before/after
+  regression check for `dcdd5d3e6`.
+
+## Local Gate Repairs
+
+- `dcdd5d3e6`: restored the local lowir-compare gates before continuing Boost
+  survey triage. Static hosted `typeid(T)` now uses an already requested local
+  RTTI definition instead of an external ABI alias, fixing the PA34
+  `std::function<int()>` link failure for `_ZTIPFivE` and the PA27 direct-text
+  typeid drift. The PA6 course binary-literal reference was refreshed to match
+  the accepted PA33 Boost.Asio binary literal behavior, and the PA29 reference
+  was refreshed for current `unwind=no` constructor metadata. Validation:
+  focused `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa6 pa27 pa29 pa34'`
+  report passed `229/229`; full `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make
+  test-report` passed `3070/3070`; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make
+  test-strict` passed.
 
 Local Boost wrapper state:
 
