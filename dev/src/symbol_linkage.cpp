@@ -6734,6 +6734,33 @@ static bool attach_semantic_type_ir_substitution(
   return attach_context_free_type_ir_substitution(ir_type);
 }
 
+static void apply_function_type_cv_ir(const TypePtr & type,
+                                      abi_mangle::Type & ir_type)
+{
+  if(!type ||
+     type->kind != Type::TK_FUNCTION ||
+     (!type->function_const && !type->function_volatile)) {
+    return;
+  }
+  ir_type = abi_mangle::Type::cv(type->function_const,
+                                 type->function_volatile,
+                                 ir_type);
+}
+
+static void apply_function_type_cv_substitution_key(
+    const TypePtr & type,
+    abi_mangle::SubstitutionKey & key)
+{
+  if(!type ||
+     type->kind != Type::TK_FUNCTION ||
+     (!type->function_const && !type->function_volatile)) {
+    return;
+  }
+  key = abi_mangle::SubstitutionKey::type_cv(type->function_const,
+                                             type->function_volatile,
+                                             std::move(key));
+}
+
 static bool attach_member_type_ir_substitution(
     abi_mangle::Type & ir_type,
     const string & source_text)
@@ -7233,11 +7260,7 @@ static bool try_build_context_free_type_ir(const TypePtr & type,
       params.push_back(param);
     }
     out = abi_mangle::Type::function(result, params, type->variadic);
-    if(type->function_const || type->function_volatile) {
-      out = abi_mangle::Type::cv(type->function_const,
-                                        type->function_volatile,
-                                        out);
-    }
+    apply_function_type_cv_ir(type, out);
     return attach_semantic_type_ir_substitution(type, mangle_ctx, out);
   }
 
@@ -12533,11 +12556,7 @@ static bool try_build_wrapped_type_ir(const TypePtr & type,
       params.push_back(param);
     }
     out = abi_mangle::Type::function(result, params, type->variadic);
-    if(type->function_const || type->function_volatile) {
-      out = abi_mangle::Type::cv(type->function_const,
-                                        type->function_volatile,
-                                        out);
-    }
+    apply_function_type_cv_ir(type, out);
     return attach_semantic_type_ir_substitution(type, mangle_ctx, out);
   }
 
@@ -14231,12 +14250,7 @@ static bool build_structural_type_substitution_key(
     out = abi_mangle::SubstitutionKey::type_function(std::move(result_key),
                                                      std::move(param_keys),
                                                      type->variadic);
-    if(type->function_const) {
-      out = abi_mangle::SubstitutionKey::type_cv(true, false, std::move(out));
-    }
-    if(type->function_volatile) {
-      out = abi_mangle::SubstitutionKey::type_cv(false, true, std::move(out));
-    }
+    apply_function_type_cv_substitution_key(type, out);
     return true;
   }
 
