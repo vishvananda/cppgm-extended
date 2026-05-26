@@ -26884,7 +26884,7 @@ private:
     binding->display_name = function_name;
     binding->declaration_scope = &durable_scope;
     binding->declaration_node = durable_declarator;
-    binding->definition_node = durable_declarator;
+    binding->definition_node = durable_declarator ? durable_declarator : durable_body;
     binding->type = function_type;
     binding->params = params;
     binding->default_arguments = normalize_default_arguments(params, default_arguments);
