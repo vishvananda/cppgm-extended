@@ -5329,7 +5329,8 @@ private:
     }
     if(node.kind == CallSemKind::call_expression &&
        (is_indirect_value_type(node.semantic_type) ||
-        is_complete_class_value_type(node.semantic_type))) {
+        is_complete_class_value_type(node.semantic_type) ||
+        is_constructor_materialization_call(node))) {
       emit_call_expression_to_target(node, target_ptr);
       return;
     }
