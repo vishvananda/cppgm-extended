@@ -11927,6 +11927,20 @@ private:
       }
     }
 
+    TypePtr member_pointer_access_type;
+    const bool has_member_pointer_access_shape =
+        node.kind == CallSemKind::binary_expression &&
+        node.children.size() == 2 &&
+        (callsem_has_token(node, OP_DOTSTAR) || callsem_has_token(node, OP_ARROWSTAR));
+    if(has_member_pointer_access_shape) {
+      member_pointer_access_type =
+          strip_top_level_cv(remove_reference_type(node.children[1].semantic_type));
+    }
+    const bool data_member_pointer_access =
+        member_pointer_access_type &&
+        member_pointer_access_type->kind == Type::TK_MEMBER_POINTER &&
+        !is_function_type(member_pointer_access_type->inner);
+
     TypePtr node_base = strip_top_level_cv(remove_reference_type(node.semantic_type));
     if(node.value_category != CVC_LVALUE &&
        !is_reference_type(node.semantic_type) &&
@@ -11938,7 +11952,8 @@ private:
        node.kind != CallSemKind::variable &&
        node.kind != CallSemKind::member_expression &&
        node.kind != CallSemKind::subscript_expression &&
-       node.kind != CallSemKind::conditional_expression) {
+       node.kind != CallSemKind::conditional_expression &&
+       !data_member_pointer_access) {
       const TypePtr materialized_type =
           materialization_source_type_for(node, node.semantic_type);
       const string memory_type = lowir_memory_type_for(materialized_type);
@@ -12181,11 +12196,8 @@ private:
       return field_storage;
     }
 
-    if(node.kind == CallSemKind::binary_expression &&
-       node.children.size() == 2 &&
-       (callsem_has_token(node, OP_DOTSTAR) || callsem_has_token(node, OP_ARROWSTAR))) {
-      TypePtr member_pointer_type =
-          strip_top_level_cv(remove_reference_type(node.children[1].semantic_type));
+    if(has_member_pointer_access_shape) {
+      TypePtr member_pointer_type = member_pointer_access_type;
       if(!member_pointer_type ||
          member_pointer_type->kind != Type::TK_MEMBER_POINTER ||
          is_function_type(member_pointer_type->inner)) {
