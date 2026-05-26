@@ -107,6 +107,14 @@ rebased Boost frontier branch.
   `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa19' ... make
   test-report-nobuild` passed `105/105`; full strict direct-LowIR compare
   passed PA18, PA19, PA21, and PA22.
+- PA26 direct-LowIR reference refresh after `069681317`: the braced
+  constructor argument in
+  `200-direct-init-single-braced-constructor-argument.t` now materializes
+  directly in the target argument slot rather than through an extra temporary
+  and `copyobj`. Focused PA26 check passes; focused
+  `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa26' ... make
+  test-report-nobuild` passes `99/99`; full direct-LowIR report passes
+  `3077/3077`.
 
 Local Boost wrapper state:
 

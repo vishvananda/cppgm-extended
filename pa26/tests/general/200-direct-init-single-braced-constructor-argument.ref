@@ -2,17 +2,14 @@ function @make(%ec : obj<4x4>) -> obj<4x4> [binding=strong, object=_Z4make10erro
   slot $ec : obj<4x4>
   slot $retobj__1 : obj<4x4>
   slot $arg__2 : obj<4x4>
-  slot $arg__3 : obj<4x4>
 
   block ^entry:
     %t1 = addr $ec
     copyobj 4x4 %ec, %t1
     %t2 = addr $retobj__1
     %t3 = addr $arg__2
-    %t4 = addr $arg__3
-    %t5 = addr $ec
-    call void @completion_message_void_error_code____completion_message(%t4, 0, %t5)
-    copyobj 4x4 %t4, %t3
+    %t4 = addr $ec
+    call void @completion_message_void_error_code____completion_message(%t3, 0, %t4)
     call void @completion_payload_void_error_code____completion_payload(%t2, %t3)
     return obj<4x4> $retobj__1
 }
