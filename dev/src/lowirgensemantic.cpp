@@ -5495,6 +5495,21 @@ private:
     return emit_temp_assignment("ptr", string("addr ") + host_rtti_reference_symbol(type));
   }
 
+  string host_typeid_rtti_reference_symbol(const TypePtr & type)
+  {
+    const string internal_symbol = rtti_symbol_for_type(type);
+    if(rtti_definition_symbols_.count(internal_symbol) != 0) {
+      return internal_symbol;
+    }
+    return host_rtti_reference_symbol(type);
+  }
+
+  string emit_host_typeid_rtti_symbol_address(const TypePtr & type)
+  {
+    return emit_temp_assignment("ptr", string("addr ") +
+                                host_typeid_rtti_reference_symbol(type));
+  }
+
   string emit_host_dynamic_typeinfo_address(const string & object_ptr)
   {
     const string vptr = emit_temp_assignment("ptr", string("load ptr ") + object_ptr);
@@ -6328,7 +6343,7 @@ private:
     if(node.children.empty()) {
       const TypePtr typeid_operand_type = callsem_typeid_operand_type(node);
       if(use_host_eh_runtime() && typeid_operand_type) {
-        return emit_host_rtti_symbol_address(typeid_operand_type);
+        return emit_host_typeid_rtti_symbol_address(typeid_operand_type);
       }
       return emit_rtti_symbol_address(node.text);
     }

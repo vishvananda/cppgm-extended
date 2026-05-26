@@ -135,7 +135,7 @@ function @B__B(%this : ptr) -> void [binding=weak, object=_ZN1BC1Ev] {
     store i32 7, %t2
     return void
 }
-function @E__E__ov2__base_entry(%this : ptr, %other : ptr [pass=reference], %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN1EC2ERKS_] {
+function @E__E__ov2__base_entry(%this : ptr, %other : ptr [pass=reference], %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN1EC2ERKS_] {
   slot $this : ptr
   slot $other : ptr
   slot $other__pvb0 : ptr
@@ -166,7 +166,7 @@ function @B__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [bindi
     %t6 = load ptr $this
     return ptr %t6
 }
-function @H__H__ov2__base_entry(%this : ptr, %other : ptr [pass=reference], %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1HC2ERKS_] {
+function @H__H__ov2__base_entry(%this : ptr, %other : ptr [pass=reference], %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1HC2ERKS_] {
   slot $this : ptr
   slot $other : ptr
   slot $other__pvb0 : ptr
