@@ -242,6 +242,83 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
             pid = int(wait_for_file(pidfile, 3.0))
             wait_for_pid_exit(pid, 3.0)
 
+    def test_run_all_text_test_timeout_marks_single_test_timeout(self):
+        with tempfile.TemporaryDirectory(prefix="run-all-text-timeout.") as temp_dir:
+            temp = Path(temp_dir) / "pa3"
+            tests = temp / "tests"
+            app = temp / "hang_text_test.py"
+            test = tests / "hang.t"
+
+            tests.mkdir(parents=True)
+            test.write_text("input\n")
+            app.write_text(
+                "#!/usr/bin/env python3\n"
+                "import time\n"
+                "\n"
+                "while True:\n"
+                "    time.sleep(60)\n"
+            )
+            app.chmod(0o755)
+
+            env = os.environ.copy()
+            env["CPPGM_TEXT_TEST_TIMEOUT_SEC"] = "1"
+            result = run(
+                "perl",
+                str(REPO_ROOT / "scripts" / "run_all_tests_common.pl"),
+                "text_t",
+                str(app),
+                "my",
+                "tests",
+                cwd=temp,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stderr, "")
+            self.assertEqual((tests / "hang.my.exit_status").read_text(), "EXIT_TIMEOUT\n")
+
+    def test_run_all_text_test_keeps_later_assignment_output_args(self):
+        with tempfile.TemporaryDirectory(prefix="run-all-text-output-args.") as temp_dir:
+            temp = Path(temp_dir) / "pa10"
+            tests = temp / "tests"
+            app = temp / "write_output_arg.py"
+            test = tests / "basic.t"
+
+            tests.mkdir(parents=True)
+            test.write_text("input\n")
+            app.write_text(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "\n"
+                "if len(sys.argv) != 4 or sys.argv[1] != '-o':\n"
+                "    sys.exit(2)\n"
+                "with open(sys.argv[2], 'w') as fh:\n"
+                "    fh.write('generated output\\n')\n"
+                "print('stdout log', flush=True)\n"
+                "print('stderr log', file=sys.stderr, flush=True)\n"
+            )
+            app.chmod(0o755)
+
+            result = run(
+                "perl",
+                str(REPO_ROOT / "scripts" / "run_all_tests_common.pl"),
+                "text_t",
+                str(app),
+                "my",
+                "tests",
+                cwd=temp,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stderr, "")
+            self.assertEqual((tests / "basic.my.exit_status").read_text(), "EXIT_SUCCESS\n")
+            self.assertEqual((tests / "basic.my").read_text(), "generated output\n")
+            self.assertEqual((tests / "basic.my.stdout").read_text(), "stdout log\nstderr log\n")
+
 
 if __name__ == "__main__":
     unittest.main()
