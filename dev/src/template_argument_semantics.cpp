@@ -15091,6 +15091,85 @@ CppAstNode make_substituted_type_id_node(const TypePtr & type,
   return type_id;
 }
 
+CppAstNode make_integral_literal_expression_node(unsigned long long value,
+                                                 const TypePtr & type,
+                                                 const string & suffix = string())
+{
+  CppAstNode literal;
+  literal.kind = CppAstKind::literal;
+  literal.value = to_string(value) + suffix;
+  literal.semantic_type = type;
+  return literal;
+}
+
+CppAstNode make_unary_minus_expression_node(const CppAstNode & operand,
+                                            const TypePtr & type)
+{
+  CppAstNode out;
+  out.kind = CppAstKind::unary_expression;
+  out.value = "-";
+  out.has_token = true;
+  out.token_kind = RT_SIMPLE;
+  out.simple_type = OP_MINUS;
+  out.semantic_type = type;
+  out.children.push_back(operand);
+  return out;
+}
+
+string synthetic_integral_type_text(const TypePtr & type)
+{
+  TypePtr base = type ? strip_top_level_cv(remove_reference_type(type)) : TypePtr();
+  if(base && base->kind == Type::TK_FUNDAMENTAL) {
+    return type_to_string(base->fundamental);
+  }
+  return string();
+}
+
+CppAstNode make_integral_cast_expression_node(const TypePtr & type,
+                                              const CppAstNode & operand)
+{
+  if(!type) {
+    return operand;
+  }
+
+  const string type_text = synthetic_integral_type_text(type);
+  CppAstNode out;
+  out.kind = CppAstKind::cast_expression;
+  out.value = "(" + type_text + ")" + operand.value;
+  out.has_token = true;
+  out.token_kind = RT_SIMPLE;
+  out.simple_type = OP_LPAREN;
+  out.semantic_type = type;
+  out.children.push_back(make_substituted_type_id_node(type, type_text));
+  out.children.push_back(operand);
+  return out;
+}
+
+CppAstNode make_signed_min_expression_node()
+{
+  CppAstNode one = make_integral_literal_expression_node(
+      1,
+      make_fundamental(FT_LONG_LONG_INT),
+      "LL");
+  CppAstNode max = make_integral_literal_expression_node(
+      static_cast<unsigned long long>(numeric_limits<long long>::max()),
+      make_fundamental(FT_LONG_LONG_INT),
+      "LL");
+
+  CppAstNode out;
+  out.kind = CppAstKind::binary_expression;
+  out.value = "-";
+  out.has_token = true;
+  out.token_kind = RT_SIMPLE;
+  out.simple_type = OP_MINUS;
+  out.semantic_type = make_fundamental(FT_LONG_LONG_INT);
+  out.children.push_back(make_unary_minus_expression_node(
+      max,
+      make_fundamental(FT_LONG_LONG_INT)));
+  out.children.push_back(one);
+  return out;
+}
+
 CppAstNode make_substituted_value_expression_node(const ValueBinding & binding)
 {
   CppAstNode out;
@@ -15105,10 +15184,39 @@ CppAstNode make_substituted_value_expression_node(const ValueBinding & binding)
     return out;
   }
 
-  out.kind = CppAstKind::literal;
-  out.value = binding.has_constant_value && !binding.dependent_template_value ?
-      to_string(binding.constant_value) :
-      (!binding.name.empty() ? binding.name : to_string(binding.constant_value));
+  if(binding.has_constant_value && !binding.dependent_template_value) {
+    if(base_type && is_unsigned_integral_type(base_type)) {
+      CppAstNode literal = make_integral_literal_expression_node(
+          static_cast<unsigned long long>(binding.constant_value),
+          make_fundamental(FT_UNSIGNED_LONG_LONG_INT),
+          "ULL");
+      return make_integral_cast_expression_node(binding.type, literal);
+    }
+
+    if(binding.constant_value == numeric_limits<long long>::min()) {
+      return make_integral_cast_expression_node(binding.type,
+                                                make_signed_min_expression_node());
+    }
+
+    unsigned long long magnitude = 0;
+    if(binding.constant_value < 0) {
+      magnitude =
+          static_cast<unsigned long long>(-(binding.constant_value + 1)) + 1ULL;
+    } else {
+      magnitude = static_cast<unsigned long long>(binding.constant_value);
+    }
+
+    CppAstNode literal =
+        make_integral_literal_expression_node(magnitude, binding.type);
+    if(binding.constant_value >= 0) {
+      return literal;
+    }
+
+    return make_unary_minus_expression_node(literal, binding.type);
+  }
+
+  out.kind = CppAstKind::id_expression;
+  out.value = !binding.name.empty() ? binding.name : to_string(binding.constant_value);
   out.semantic_type = binding.type;
   return out;
 }
@@ -15576,7 +15684,7 @@ bool substitute_value_pack_expression_node(
         out.qualifier_template_id_syntaxes.clear();
         out.qualifier_type_syntaxes.clear();
       }
-      break;
+      return true;
     }
   }
 

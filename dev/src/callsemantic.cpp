@@ -13238,6 +13238,87 @@ private:
         binding.name;
   }
 
+  CppAstNode make_integral_literal_expression_node(
+      unsigned long long value,
+      const TypePtr & type,
+      const string & suffix = string()) const
+  {
+    CppAstNode literal;
+    literal.kind = CppAstKind::literal;
+    literal.value = to_string(value) + suffix;
+    literal.semantic_type = type;
+    return literal;
+  }
+
+  CppAstNode make_unary_minus_expression_node(const CppAstNode & operand,
+                                              const TypePtr & type) const
+  {
+    CppAstNode node;
+    node.kind = CppAstKind::unary_expression;
+    node.value = "-";
+    node.has_token = true;
+    node.token_kind = RT_SIMPLE;
+    node.simple_type = OP_MINUS;
+    node.semantic_type = type;
+    node.children.push_back(operand);
+    return node;
+  }
+
+  string synthetic_integral_type_text(const TypePtr & type) const
+  {
+    TypePtr base = type ? strip_top_level_cv(remove_reference_type(type)) : TypePtr();
+    if(base && base->kind == Type::TK_FUNDAMENTAL) {
+      return type_to_string(base->fundamental);
+    }
+    return string();
+  }
+
+  CppAstNode make_integral_cast_expression_node(
+      const TypePtr & type,
+      const CppAstNode & operand) const
+  {
+    if(!type) {
+      return operand;
+    }
+
+    const string type_text = synthetic_integral_type_text(type);
+    CppAstNode node;
+    node.kind = CppAstKind::cast_expression;
+    node.value = "(" + type_text + ")" + operand.value;
+    node.has_token = true;
+    node.token_kind = RT_SIMPLE;
+    node.simple_type = OP_LPAREN;
+    node.semantic_type = type;
+    node.children.push_back(make_pack_type_id_node(type, type_text));
+    node.children.push_back(operand);
+    return node;
+  }
+
+  CppAstNode make_signed_min_expression_node() const
+  {
+    CppAstNode one = make_integral_literal_expression_node(
+        1,
+        make_fundamental(FT_LONG_LONG_INT),
+        "LL");
+    CppAstNode max = make_integral_literal_expression_node(
+        static_cast<unsigned long long>(numeric_limits<long long>::max()),
+        make_fundamental(FT_LONG_LONG_INT),
+        "LL");
+
+    CppAstNode node;
+    node.kind = CppAstKind::binary_expression;
+    node.value = "-";
+    node.has_token = true;
+    node.token_kind = RT_SIMPLE;
+    node.simple_type = OP_MINUS;
+    node.semantic_type = make_fundamental(FT_LONG_LONG_INT);
+    node.children.push_back(make_unary_minus_expression_node(
+        max,
+        make_fundamental(FT_LONG_LONG_INT)));
+    node.children.push_back(one);
+    return node;
+  }
+
   CppAstNode make_pack_type_id_node(const TypePtr & type,
                                     const string & text) const
   {
@@ -13400,6 +13481,20 @@ private:
         return node;
       }
 
+      TypePtr base_type = strip_top_level_cv(remove_reference_type(binding.type));
+      if(base_type && is_unsigned_integral_type(base_type)) {
+        CppAstNode literal = make_integral_literal_expression_node(
+            static_cast<unsigned long long>(binding.constant_value),
+            make_fundamental(FT_UNSIGNED_LONG_LONG_INT),
+            "ULL");
+        return make_integral_cast_expression_node(binding.type, literal);
+      }
+
+      if(binding.constant_value == numeric_limits<long long>::min()) {
+        return make_integral_cast_expression_node(binding.type,
+                                                  make_signed_min_expression_node());
+      }
+
       unsigned long long magnitude = 0;
       if(binding.constant_value < 0) {
         magnitude =
@@ -13407,20 +13502,13 @@ private:
       } else {
         magnitude = static_cast<unsigned long long>(binding.constant_value);
       }
-      CppAstNode literal;
-      literal.kind = CppAstKind::literal;
-      literal.value = to_string(magnitude);
+      CppAstNode literal =
+          make_integral_literal_expression_node(magnitude, binding.type);
       if(binding.constant_value >= 0) {
         return literal;
       }
 
-      node.kind = CppAstKind::unary_expression;
-      node.value = "-";
-      node.has_token = true;
-      node.token_kind = RT_SIMPLE;
-      node.simple_type = OP_MINUS;
-      node.children.push_back(literal);
-      return node;
+      return make_unary_minus_expression_node(literal, binding.type);
     }
 
     node.kind = CppAstKind::id_expression;
