@@ -328,6 +328,9 @@ void note_structured_bool_integral_constant_value_for_witness(
     template_api::TemplateServices & services,
     const ClassInfo & info,
     bool value);
+void require_structured_bool_value_member_output_if_needed(
+    template_api::TemplateServices & services,
+    ClassInfo & owner);
 bool lookup_leaf_member_function_bindings(
     template_api::TemplateTypeSystem & type_system,
     const TypePtr & base_type,
@@ -6925,6 +6928,10 @@ bool materialize_leaf_member_constant_binding(
     return false;
   }
   if(binding.has_constant_value) {
+    if(binding.owner_class) {
+      require_structured_bool_value_member_output_if_needed(
+          services, *binding.owner_class);
+    }
     if(services.semantic_context) {
       template_api::note_template_member_value_instantiation_if_needed(
           *services.semantic_context,
@@ -6937,6 +6944,10 @@ bool materialize_leaf_member_constant_binding(
     return true;
   }
   if(binding.has_constexpr_value) {
+    if(binding.owner_class) {
+      require_structured_bool_value_member_output_if_needed(
+          services, *binding.owner_class);
+    }
     if(services.semantic_context) {
       template_api::note_template_member_value_instantiation_if_needed(
           *services.semantic_context,
@@ -6981,6 +6992,10 @@ bool materialize_leaf_member_constant_binding(
     binding.constant_value = integral;
   }
   binding.dependent_template_value = false;
+  if(binding.owner_class) {
+    require_structured_bool_value_member_output_if_needed(
+        services, *binding.owner_class);
+  }
   if(services.semantic_context) {
     template_api::note_template_member_value_instantiation_if_needed(
         *services.semantic_context,
@@ -6989,6 +7004,49 @@ bool materialize_leaf_member_constant_binding(
   note_non_bool_static_value_dependency_for_witness(services, binding);
   out = value;
   return out.kind != constant_eval::ConstexprValue::CV_INVALID;
+}
+
+void require_structured_bool_value_member_output_if_needed(
+    template_api::TemplateServices & services,
+    ClassInfo & owner)
+{
+  if(!services.semantic_context || !owner.member_scope) {
+    return;
+  }
+
+  semantic_lookup::MemberValueLookupResult member =
+      semantic_lookup::lookup_member_value(owner, kStructuredBoolResultMemberName);
+  if(!member.binding ||
+     member.binding->kind != ValueBinding::VK_VARIABLE ||
+     member.binding->name != kStructuredBoolResultMemberName ||
+     !member.binding->type ||
+     !is_bool_type(strip_top_level_cv(remove_reference_type(member.binding->type)))) {
+    return;
+  }
+
+  if(owner.source_template &&
+     !owner.out_of_class_static_member_definitions_applied) {
+    template_api::TemplateClassFinalizationRequest request;
+    if(template_api::build_class_finalization_request(owner, request)) {
+      template_api::finalize_class_instantiation(*services.semantic_context, request);
+    }
+  }
+
+  map<string, ValueBinding>::iterator required =
+      owner.member_scope->values.find(kStructuredBoolResultMemberName);
+  if(required == owner.member_scope->values.end() ||
+     required->second.kind != ValueBinding::VK_VARIABLE ||
+     required->second.owner_class != &owner) {
+    return;
+  }
+
+  add_output_requirement(required->second.output_requirements, ORK_DEFINITION);
+  if(owner.definition_output_emitted &&
+     !owner.definition_output_in_progress &&
+     !required->second.definition_output_emitted) {
+    owner.has_late_required_static_member_output = true;
+  }
+  services.semantic_context->track_instantiated_class(&owner);
 }
 
 bool lookup_leaf_member_expression_value_in_scope(
@@ -7015,6 +7073,8 @@ bool lookup_leaf_member_expression_value_in_scope(
       out = constant_eval::make_integral_value(
           structured_value ? 1 : 0,
           make_fundamental(FT_BOOL));
+      require_structured_bool_value_member_output_if_needed(
+          services, *member_scope.class_info);
       if(services.witness_context.session != nullptr) {
         note_structured_bool_value_member_if_needed(services,
                                                    *member_scope.class_info);
@@ -16628,6 +16688,16 @@ Scope * resolve_qualified_scope_for_class_or_namespace_impl(
         current_specialization_type_for_dependent_qualifier_text(
             services, scope, qualifier_text);
     if(!qualifier_type) {
+      if(resolved_scope && i > 0) {
+        resolve_direct_type_name_lookup(services,
+                                        *resolved_scope,
+                                        qualified.qualifiers[i],
+                                        false,
+                                        string(),
+                                        qualifier_type);
+      }
+    }
+    if(!qualifier_type) {
       resolve_direct_type_name_lookup(services,
                                       scope,
                                       qualifier_name,
@@ -16753,6 +16823,17 @@ Scope * resolve_qualified_scope_for_class_or_namespace_node(
           false);
       if(!qualifier_type) {
         return nullptr;
+      }
+    }
+    if(!qualifier_type) {
+      if((i > 0 || current != &scope || qualified.rooted) &&
+         !qualified.qualifiers[i].empty()) {
+        resolve_direct_type_name_lookup(services,
+                                        *current,
+                                        qualified.qualifiers[i],
+                                        false,
+                                        string(),
+                                        qualifier_type);
       }
     }
     if(!qualifier_type) {
