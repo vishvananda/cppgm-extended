@@ -38,8 +38,7 @@ The PA13 starter kit contains:
 - the grammar for this assignment called `pa13.gram`
 - `lowir.md`, the LowIR format reference for this assignment family
 - an HTML grammar explorer of `pa13.gram` in the sub-directory `grammar/`
-- `scripts/run_all_tests.pl`, `scripts/run_one_test.sh`, and
-  `scripts/compare_results.pl`
+- `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
 - `tests/spec/`, the LowIR-to-CY86 tests
 - checked-in `.ref` and `.ref.exit_status` files used as the oracle
 

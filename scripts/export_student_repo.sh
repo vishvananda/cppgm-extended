@@ -109,41 +109,6 @@ sanitize_student_makefile_defaults() {
 
 sanitize_linux_student_scripts() {
   local run_script
-  run_script="$dest/pa30/scripts/run_one_test.sh"
-  if [ -f "$run_script" ]; then
-    perl -0pi -e '
-      s/host_target_name\(\) \{\n\tcase "\$\(uname -s\)" in\n\t\tDarwin\) printf '"'"'%s\\n'"'"' macos ;;\n\t\tLinux\) printf '"'"'%s\\n'"'"' linux ;;\n\t\t\*\) printf '"'"'%s\\n'"'"' "" ;;\n\tesac\n\}/host_target_name() {\n\tprintf '"'"'%s\\n'"'"' linux\n}/g;
-      s/host_target_triple_name\(\) \{\n\tcase "\$\(uname -s\)" in\n\t\tDarwin\) printf '"'"'%s\\n'"'"' x86_64-apple-darwin ;;\n\t\tLinux\) printf '"'"'%s\\n'"'"' x86_64-unknown-linux-gnu ;;\n\t\t\*\) printf '"'"'%s\\n'"'"' "" ;;\n\tesac\n\}/host_target_triple_name() {\n\tprintf '"'"'%s\\n'"'"' x86_64-unknown-linux-gnu\n}/g;
-    ' "$run_script"
-  fi
-
-  for run_script in "$dest"/pa31/scripts/run_one_test.sh "$dest"/pa32/scripts/run_one_test.sh; do
-    [ -f "$run_script" ] || continue
-    perl -0pi -e '
-      s/\nif ! command -v rg >\/dev\/null 2>&1; then\n\texport PATH="\$repo_root\/scripts\/test_shell_tools:\$PATH"\nfi\n/\n/g;
-      s/host_os=\$\(uname -s\)\nshared_ext=so\nhost_tag=\$\(printf '"'"'%s'"'"' "\$host_os" \| tr '"'"'\[:upper:\]'"'"' '"'"'\[:lower:\]'"'"'\)\nif \[ "\$host_os" = "Darwin" \]; then\n\tshared_ext=dylib\n\thost_tag=macos\nfi/host_os=Linux\nshared_ext=so\nhost_tag=linux/g;
-      s/host_cxx="\$\{CXX:-c\+\+\}"/host_cxx="\${CXX:-g++}"/g;
-      s/\*\.__SHARED_EXT__\|\*\.dylib\|\*\.so/*.__SHARED_EXT__|*.so/g;
-      s/\*\.o\|\*\.a\|\*\.dylib\|\*\.so/*.o|*.a|*.so/g;
-      s/\|\\\.dylib//g;
-    ' "$run_script"
-    perl -pi -e '
-      if ($skip_darwin_shared) {
-        if (/^\t\t\telse$/) {
-          $skip_darwin_shared = 0;
-          $skip_next_nested_fi = 1;
-        }
-        $_ = "";
-      } elsif (/^\t\t\tif \[ "\$host_os" = "Darwin" \]; then$/) {
-        $skip_darwin_shared = 1;
-        $_ = "";
-      } elsif ($skip_next_nested_fi && /^\t\t\tfi$/) {
-        $skip_next_nested_fi = 0;
-        $_ = "";
-      }
-    ' "$run_script"
-  done
-
   run_script="$dest/scripts/run_cpphostinterop_tests_worker.pl"
   if [ -f "$run_script" ]; then
     perl -0pi -e '
