@@ -45,6 +45,9 @@ endif
 ifeq ($(origin CXX), default)
 CXX := $(HOST_CXX_DEFAULT)
 endif
+V ?= 0
+Q = $(if $(filter 1,$(V)),,@)
+quiet = @if [ "$(V)" != "1" ]; then printf '  %-7s %s\n' '$(1)' '$(2)'; fi
 CPPGM_STDLIB_FLAGS ?=
 ifeq ($(origin CPPGM_HOST_CXX), undefined)
 CPPGM_HOST_CXX := $(CXX)
@@ -106,10 +109,12 @@ debug-build: $(DEBUG_TARGETS)
 
 define DEV_FRONTEND_RULES
 $(1): $(OBJ)/release $(1).cpp $(call frontend_link_objs,release,$(1)) $(call runner_state_stamp,release)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $$@ $$@.cpp $(call frontend_link_objs,release,$(1))
+	$(call quiet,LINK,$$@)
+	$(Q)$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $$@ $$@.cpp $(call frontend_link_objs,release,$(1))
 
 $(1)-debug: $(OBJ)/debug $(1).cpp $(call frontend_link_objs,debug,$(1)) $(call runner_state_stamp,debug)
-	$(CXX) $(ENTRY_DEBUG_CC_FLAGS) $(INC) -o $$@ $(1).cpp $(call frontend_link_objs,debug,$(1))
+	$(call quiet,LINK,$$@)
+	$(Q)$(CXX) $(ENTRY_DEBUG_CC_FLAGS) $(INC) -o $$@ $(1).cpp $(call frontend_link_objs,debug,$(1))
 endef
 
 $(foreach target,$(TARGETS),$(eval $(call DEV_FRONTEND_RULES,$(target))))
@@ -135,23 +140,27 @@ $(OBJ)/debug/.compile_config: FORCE | $(OBJ)/debug
 
 $(OBJ)/release/%.o: $(SRC)/%.cpp $(OBJ)/release/.compile_config
 	@mkdir -p $(@D) $(dir $(RDEPDIR)/$*)
-	$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(RDEPDIR)/$*.Td -o $@ $<
-	mv -f $(RDEPDIR)/$*.Td $(RDEPDIR)/$*.d
+	$(call quiet,CXX,$@)
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(RDEPDIR)/$*.Td -o $@ $<
+	@mv -f $(RDEPDIR)/$*.Td $(RDEPDIR)/$*.d
 
 $(OBJ)/debug/%.o: $(SRC)/%.cpp $(OBJ)/debug/.compile_config
 	@mkdir -p $(@D) $(dir $(DDEPDIR)/$*)
-	$(CXX) $(DEBUG_CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
-	mv -f $(DDEPDIR)/$*.Td $(DDEPDIR)/$*.d
+	$(call quiet,CXX,$@)
+	$(Q)$(CXX) $(DEBUG_CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
+	@mv -f $(DDEPDIR)/$*.Td $(DDEPDIR)/$*.d
 
 $(OBJ)/release/test_runner_enabled.o: $(SRC)/test_runner.cpp $(OBJ)/release/.compile_config
 	@mkdir -p $(@D) $(RDEPDIR)
-	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(RDEPDIR)/test_runner_enabled.Td -o $@ $<
-	mv -f $(RDEPDIR)/test_runner_enabled.Td $(RDEPDIR)/test_runner_enabled.d
+	$(call quiet,CXX,$@)
+	$(Q)$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(RDEPDIR)/test_runner_enabled.Td -o $@ $<
+	@mv -f $(RDEPDIR)/test_runner_enabled.Td $(RDEPDIR)/test_runner_enabled.d
 
 $(OBJ)/debug/test_runner_enabled.o: $(SRC)/test_runner.cpp $(OBJ)/debug/.compile_config
 	@mkdir -p $(@D) $(DDEPDIR)
-	$(CXX) $(DEBUG_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
-	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
+	$(call quiet,CXX,$@)
+	$(Q)$(CXX) $(DEBUG_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
+	@mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
 clean:
 	-rm -f $(TARGETS) $(DEBUG_TARGETS) $(OBJ)/release/*.o $(OBJ)/debug/*.o $(OBJ)/release/.compile_config $(OBJ)/debug/.compile_config
