@@ -8593,6 +8593,22 @@ private:
     return same_type_with_compatible_top_cv(base->inner, class_type);
   }
 
+  bool is_same_class_copy_assignment_parameter(const TypePtr & class_type,
+                                               const TypePtr & param_type) const
+  {
+    TypePtr base = strip_top_level_cv(param_type);
+    if(!base) {
+      return false;
+    }
+    if(base->kind == Type::TK_RVALUE_REFERENCE) {
+      return false;
+    }
+    if(base->kind == Type::TK_LVALUE_REFERENCE) {
+      return same_type_with_compatible_top_cv(base->inner, class_type);
+    }
+    return same_type_with_compatible_top_cv(param_type, class_type);
+  }
+
   FunctionBinding * register_class_function(ClassInfo & info,
                                             const string & simple_name,
                                             const TypePtr & declared_type,
@@ -8730,7 +8746,8 @@ private:
     if(!is_function_template_specialization &&
        !flags.is_constructor && !flags.is_destructor && simple_name == "operator=" &&
        normalized_explicit_params.size() == 1 &&
-       is_same_class_reference_parameter(info.type, normalized_explicit_params[0].second)) {
+       is_same_class_copy_assignment_parameter(info.type,
+                                               normalized_explicit_params[0].second)) {
       binding->is_copy_assignment = true;
     }
     if(!is_function_template_specialization &&
@@ -16454,6 +16471,33 @@ private:
         }
         if(info) {
           return info->type;
+        }
+      }
+      TypePtr structured_template_placeholder =
+          template_api::with_template_services(
+              *this,
+              [&](template_api::TemplateServices & services)
+              {
+                return template_argument_semantics::lookup_structured_type_node(
+                    services,
+                    scope,
+                    node,
+                    lookup_name,
+                    reference_class_templates_only,
+                    effective_use_location);
+              });
+      if(structured_template_placeholder) {
+        std::string template_template_parameter_name;
+        std::size_t template_template_parameter_arity =
+            static_cast<std::size_t>(-1);
+        std::vector<DependentAliasTemplateArgumentSyntax>
+            template_template_arguments;
+        if(named_type_dependent_template_template_parameter(
+               structured_template_placeholder,
+               template_template_parameter_name,
+               template_template_parameter_arity,
+               template_template_arguments)) {
+          return structured_template_placeholder;
         }
       }
     }

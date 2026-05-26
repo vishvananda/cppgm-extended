@@ -2274,6 +2274,12 @@ bool try_argument_conversion(SemanticContext & ctx,
             current_better = true;
           } else if(object_qual_pref > 0) {
             best_better = true;
+          } else if((candidates[i].conversion_function->source_template != nullptr) !=
+                    (candidates[best].conversion_function->source_template != nullptr)) {
+            current_better =
+                candidates[i].conversion_function->source_template == nullptr;
+            best_better =
+                candidates[best].conversion_function->source_template == nullptr;
           }
         }
       }

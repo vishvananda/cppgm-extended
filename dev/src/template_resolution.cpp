@@ -7680,6 +7680,28 @@ bool dependent_named_type_head_is_template_template_parameter(
     return false;
   }
 
+  std::string template_template_parameter_name;
+  std::size_t template_template_parameter_arity = static_cast<std::size_t>(-1);
+  std::vector<DependentAliasTemplateArgumentSyntax> template_template_arguments;
+  if(named_type_dependent_template_template_parameter(
+         base,
+         template_template_parameter_name,
+         template_template_parameter_arity,
+         template_template_arguments)) {
+    for(std::size_t i = 0; i < parameters.size(); ++i) {
+      if(parameters[i].kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+         parameters[i].name == template_template_parameter_name) {
+        return true;
+      }
+      for(std::size_t j = 0; j < parameters[i].alternate_names.size(); ++j) {
+        if(parameters[i].kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+           parameters[i].alternate_names[j] == template_template_parameter_name) {
+          return true;
+        }
+      }
+    }
+  }
+
   const auto head_matches =
       [](const std::string & text, const std::string & name) -> bool
       {

@@ -3953,6 +3953,16 @@ void require_complete_typeid_class_operand(SemanticContext & ctx,
   }
 }
 
+TypePtr canonical_typeid_operand_type(const TypePtr & type)
+{
+  TypePtr base = remove_reference_type(type);
+  if(!base) {
+    base = type;
+  }
+  TypePtr unqualified = strip_top_level_cv(base);
+  return unqualified ? unqualified : base;
+}
+
 ExprInfo make_value_binding_expr(SemanticContext & ctx,
                                  Scope & scope,
                                  const CppAstNode & node,
@@ -6818,10 +6828,11 @@ ExprInfo analyze_type_trait_expression(SemanticContext & ctx,
     throw logic_error("unsupported typeid type-id");
   }
   if(has_type_operand) {
-    require_complete_typeid_class_operand(ctx, type);
-    ctx.note_rtti_use(type, false);
-    result.node.text = rtti_symbol_for_type(type);
-    set_callsem_typeid_operand_type(result.node, type);
+    TypePtr typeid_type = canonical_typeid_operand_type(type);
+    require_complete_typeid_class_operand(ctx, typeid_type);
+    ctx.note_rtti_use(typeid_type, false);
+    result.node.text = rtti_symbol_for_type(typeid_type);
+    set_callsem_typeid_operand_type(result.node, typeid_type);
     return result;
   }
 
@@ -6835,9 +6846,10 @@ ExprInfo analyze_type_trait_expression(SemanticContext & ctx,
     return result;
   }
 
-  ctx.note_rtti_use(operand.type, false);
-  result.node.text = rtti_symbol_for_type(operand.type);
-  set_callsem_typeid_operand_type(result.node, operand.type);
+  TypePtr typeid_type = canonical_typeid_operand_type(operand.type);
+  ctx.note_rtti_use(typeid_type, false);
+  result.node.text = rtti_symbol_for_type(typeid_type);
+  set_callsem_typeid_operand_type(result.node, typeid_type);
   return result;
 }
 

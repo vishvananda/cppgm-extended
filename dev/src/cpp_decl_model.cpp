@@ -617,6 +617,43 @@ bool named_type_dependent_class_template(
   return true;
 }
 
+void set_named_type_dependent_template_template_parameter(
+    const TypePtr & type,
+    const string & parameter_name,
+    size_t parameter_arity,
+    const vector<DependentAliasTemplateArgumentSyntax> & arguments)
+{
+  TypePtr base = named_base(type);
+  if(!base) {
+    return;
+  }
+  base->named_dependent_template_template_parameter_name = parameter_name;
+  base->named_dependent_template_template_parameter_arity =
+      parameter_name.empty() ? static_cast<size_t>(-1) : parameter_arity;
+  base->named_dependent_template_template_arguments =
+      parameter_name.empty() ? vector<DependentAliasTemplateArgumentSyntax>() :
+                               arguments;
+}
+
+bool named_type_dependent_template_template_parameter(
+    const TypePtr & type,
+    string & parameter_name,
+    size_t & parameter_arity,
+    vector<DependentAliasTemplateArgumentSyntax> & arguments)
+{
+  TypePtr base = named_base(type);
+  if(!base || base->named_dependent_template_template_parameter_name.empty()) {
+    parameter_name.clear();
+    parameter_arity = static_cast<size_t>(-1);
+    arguments.clear();
+    return false;
+  }
+  parameter_name = base->named_dependent_template_template_parameter_name;
+  parameter_arity = base->named_dependent_template_template_parameter_arity;
+  arguments = base->named_dependent_template_template_arguments;
+  return true;
+}
+
 bool named_type_dependent_qualified_member(
     const TypePtr & type,
     TypePtr & owner,

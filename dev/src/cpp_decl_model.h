@@ -125,6 +125,7 @@ struct Type
       prototype_relaxed(false),
       function_const(false),
       function_volatile(false),
+      named_dependent_template_template_parameter_arity(static_cast<std::size_t>(-1)),
       named_dependent_qualified_leading_typename(false)
   {}
 
@@ -159,6 +160,10 @@ struct Type
   std::vector<DependentAliasTemplateArgumentSyntax> named_dependent_alias_arguments;
   void * named_dependent_class_template_decl = nullptr;
   std::vector<DependentAliasTemplateArgumentSyntax> named_dependent_class_arguments;
+  std::string named_dependent_template_template_parameter_name;
+  std::size_t named_dependent_template_template_parameter_arity;
+  std::vector<DependentAliasTemplateArgumentSyntax>
+      named_dependent_template_template_arguments;
   std::shared_ptr<ClassTemplateSpecializationMangleInfo>
       named_class_template_specialization_mangle_info;
   TypePtr named_member_owner_type;
@@ -224,6 +229,16 @@ void set_named_type_dependent_class_template(
 bool named_type_dependent_class_template(
     const TypePtr & type,
     void *& class_template_decl,
+    std::vector<DependentAliasTemplateArgumentSyntax> & arguments);
+void set_named_type_dependent_template_template_parameter(
+    const TypePtr & type,
+    const std::string & parameter_name,
+    std::size_t parameter_arity,
+    const std::vector<DependentAliasTemplateArgumentSyntax> & arguments);
+bool named_type_dependent_template_template_parameter(
+    const TypePtr & type,
+    std::string & parameter_name,
+    std::size_t & parameter_arity,
     std::vector<DependentAliasTemplateArgumentSyntax> & arguments);
 bool named_type_dependent_qualified_member(
     const TypePtr & type,
