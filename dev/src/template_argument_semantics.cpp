@@ -814,6 +814,38 @@ StructuredTypeLookupResult resolve_structured_type_lookup_node(
     const string & source_location,
     TypePtr & out);
 
+TypePtr lookup_shadowing_template_parameter_type(Scope & scope,
+                                                 const CppAstNode & node,
+                                                 const string & lookup_name)
+{
+  string candidate =
+      node.kind == CppAstKind::type_name && !node.value.empty() ?
+          node.value :
+          (lookup_name.empty() ? node_text(node) : lookup_name);
+  candidate = normalize_type_lookup_name(
+      semantic_utils::trim_space(
+          semantic_utils::strip_elaborated_type_prefix(candidate)));
+  if(candidate.empty() ||
+     candidate.find("::") != string::npos ||
+     candidate.find('<') != string::npos) {
+    return TypePtr();
+  }
+
+  for(Scope * current = &scope; current; current = current->parent) {
+    map<string, TypePtr>::const_iterator found =
+        current->named_types.find(candidate);
+    if(found != current->named_types.end() &&
+       current->template_bound_type_names.count(candidate) != 0 &&
+       named_type_is_template_parameter(found->second)) {
+      return found->second;
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return TypePtr();
+}
+
 }  // namespace
 
 ScopedDefaultTemplateArgumentEvaluation::ScopedDefaultTemplateArgumentEvaluation()
@@ -840,6 +872,11 @@ TypePtr lookup_structured_type_node(template_api::TemplateServices & services,
                                     bool reference_class_templates_only,
                                     const string & source_location)
 {
+  if(TypePtr shadowing_template_parameter =
+         lookup_shadowing_template_parameter_type(scope, node, lookup_name)) {
+    return shadowing_template_parameter;
+  }
+
   if(node.semantic_type) {
     TypePtr resolved;
     if(resolve_instantiated_dependent_type(
