@@ -1671,6 +1671,12 @@ bool is_host_runtime_rtti_class_type(const TypePtr & type)
   return is_host_runtime_rtti_class_name(qualified_name);
 }
 
+bool is_standard_library_class_name(const string & input_name)
+{
+  const string qualified_name = canonical_host_runtime_rtti_class_name(input_name);
+  return qualified_name.compare(0, 5, "std::") == 0;
+}
+
 bool has_external_vtable_symbol_candidate_for_type(const TypePtr & semantic_type)
 {
   return semantic_type &&
@@ -3385,7 +3391,8 @@ private:
     return !qualified_name.empty() &&
            symbol_linkage::has_external_vtable_symbol_candidate(class_type) &&
            class_virtual_base_layouts_.count(qualified_name) != 0 &&
-           !class_has_local_function_definition(qualified_name) &&
+           (!class_has_local_function_definition(qualified_name) ||
+            is_standard_library_class_name(qualified_name)) &&
            vtables_.count(qualified_name) == 0;
   }
 
@@ -3634,13 +3641,13 @@ private:
     const string base_object_ptr =
         object_ptr ? *object_ptr : emit_pointer_operand(object_arg);
 
-    if(object_arg.is_reference_storage &&
-       !object_arg.is_reference_storage_target) {
+    if(expression_path_uses_reference_storage(object_arg)) {
       string dynamic_external;
       if(try_emit_dynamic_external_virtual_base_pointer(object_arg.semantic_type,
                                                         base_object_ptr,
                                                         virtual_base.first,
-                                                        dynamic_external)) {
+                                                        dynamic_external,
+                                                        true)) {
         if(virtual_base.second == 0) {
           return dynamic_external;
         }
