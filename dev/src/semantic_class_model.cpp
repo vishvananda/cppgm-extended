@@ -8588,6 +8588,7 @@ void finalize_class_constant_members(SemanticContext & ctx,
         const bool has_template_identity =
             template_api::value_or_owner_has_template_identity(&binding) ||
             template_api::class_has_template_identity(&info);
+        binding.witness_member_value_instantiation_noted = true;
         const ScopedTemplateWitnessLifecycleResume lifecycle_resume;
         const template_api::ScopedTemplateWitnessEntryContext entry_context(
             template_api::make_template_closure_entry_context(

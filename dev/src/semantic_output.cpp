@@ -2757,6 +2757,27 @@ bool is_unrequired_constexpr_static_member_definition(const ValueBinding & bindi
           node_decl_spec_contains_token(binding.definition_node, KW_CONSTEXPR));
 }
 
+bool is_static_const_integral_member_with_initializer(SemanticContext & ctx,
+                                                      const ValueBinding & binding)
+{
+  if(!binding.owner_class ||
+     binding.kind != ValueBinding::VK_VARIABLE ||
+     !binding.constant_initializer ||
+     !type_is_const_object(binding.type)) {
+    return false;
+  }
+
+  TypePtr base = strip_top_level_cv(remove_reference_type(binding.type));
+  if(base && is_integral_type(base)) {
+    return true;
+  }
+  if(base && base->kind == Type::TK_NAMED) {
+    ClassInfo * info = ctx.class_info_for_type(base);
+    return info && info->class_kind == "enum";
+  }
+  return false;
+}
+
 void analyze_required_class_static_member_output(SemanticContext & ctx,
                                                  OutputState & state,
                                                  ClassInfo & info,
@@ -2777,11 +2798,21 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
         info.source_capture_header_instantiation_tracked &&
         witness::source_capture_enabled(ctx.template_witness_context()) &&
         !has_output_requirement(binding.output_requirements, ORK_DEFINITION);
+    const bool witness_only_unrequired_integral_constant =
+        witness::source_capture_enabled(ctx.template_witness_context()) &&
+        !class_has_required_member_output(info) &&
+        binding.name != "value" &&
+        !binding.witness_member_value_instantiation_noted &&
+        !binding.is_explicit_specialization &&
+        !template_api::class_is_explicit_specialization(&info) &&
+        !has_output_requirement(binding.output_requirements, ORK_DEFINITION) &&
+        is_static_const_integral_member_with_initializer(ctx, binding);
     if(binding.kind != ValueBinding::VK_VARIABLE ||
        binding.owner_class != &info ||
        !binding.definition_node ||
        binding.definition_output_emitted ||
        source_capture_header_static_member_output ||
+       witness_only_unrequired_integral_constant ||
        is_unrequired_constexpr_static_member_definition(binding)) {
       if(source_capture_header_static_member_output &&
          binding.kind == ValueBinding::VK_VARIABLE &&
@@ -4635,10 +4666,14 @@ void analyze_class_output_from_info_impl(SemanticContext & ctx,
   if(node.kind == CppAstKind::class_forward_declaration) {
     return;
   }
+  const bool source_capture_output =
+      witness::source_capture_enabled(ctx.template_witness_context());
+  const bool has_required_or_friend_output =
+      class_has_required_output(info) ||
+      class_has_immediate_friend_definition_output(ctx, info, node);
   if(!info.complete &&
-     !witness::source_capture_enabled(ctx.template_witness_context()) &&
-     !class_has_required_output(info) &&
-     !class_has_immediate_friend_definition_output(ctx, info, node)) {
+     !source_capture_output &&
+     !has_required_or_friend_output) {
     return;
   }
   if(!info.complete) {

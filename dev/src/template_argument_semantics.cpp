@@ -5737,6 +5737,9 @@ void note_template_value_dependency_for_witness(
   if(dependency.entity.empty() || dependency.decl_location.empty()) {
     return;
   }
+  if(dependency.value_binding) {
+    dependency.value_binding->witness_member_value_instantiation_noted = true;
+  }
   if(template_api::template_witness_detail::
          current_lifecycle_pause_depth_storage() != 0) {
     return;
