@@ -1817,10 +1817,15 @@ public:
     template_parameter_parse_scope.class_info = parse_scope->class_info;
     template_parameter_parse_scope.function = parse_scope->function;
     overlay_direct_scope_bindings(template_parameter_parse_scope, *parse_scope);
+    bool template_parameter_hides_class_value = false;
     for(size_t parameter_index = 0; parameter_index < template_parameters.size(); ++parameter_index) {
       const TemplateParameterInfo & parameter = template_parameters[parameter_index];
       if(parameter.name.empty()) {
         continue;
+      }
+      if(parse_scope->class_info &&
+         semantic_lookup::lookup_member_value(*parse_scope->class_info, parameter.name).binding) {
+        template_parameter_hides_class_value = true;
       }
       template_scope::erase_template_parameter_binding(template_parameter_parse_scope,
                                                        parameter.name);
@@ -1862,6 +1867,11 @@ public:
         template_scope::bind_template_template_placeholder(template_parameter_parse_scope,
                                                           parameter.name);
       }
+    }
+    // Member-template parameters shadow class and inherited member values while
+    // parsing the signature; direct class-scope bindings were overlaid above.
+    if(template_parameter_hides_class_value) {
+      template_parameter_parse_scope.class_info = nullptr;
     }
     Scope * function_template_parse_scope =
         template_parameters.empty() ? parse_scope : &template_parameter_parse_scope;
