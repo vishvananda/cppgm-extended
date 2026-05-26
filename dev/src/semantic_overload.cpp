@@ -7045,6 +7045,22 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
     return false;
   }
 
+  const bool has_qualified_name_syntax =
+      name_syntax && (name_syntax->rooted || !name_syntax->qualifiers.empty());
+  const bool has_qualified_template_id =
+      name_template_id_syntax &&
+      (name_template_id_syntax->name.rooted ||
+       !name_template_id_syntax->name.qualifiers.empty());
+  const string template_lookup_name =
+      name_template_id_syntax && !name_template_id_syntax->name.name.empty() ?
+          name_template_id_syntax->name.name :
+          name;
+  const bool has_structured_qualified_name_node =
+      name_node &&
+      has_qualified_name_syntax &&
+      (!name_node->qualifier_template_id_syntaxes.empty() ||
+       !name_node->qualifier_type_syntaxes.empty());
+
   vector<FunctionBinding *> overloads =
       name_template_id_syntax ?
           (name_node ?
@@ -7057,20 +7073,27 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
                    scope,
                    *name_template_id_syntax,
                    semantic_policy::without_body_instantiation())) :
-          ctx.lookup_functions(scope,
-                               name,
-                               semantic_policy::without_body_instantiation());
+          (has_structured_qualified_name_node ?
+               ctx.lookup_functions_node(
+                   scope,
+                   *name_node,
+                   name,
+                   semantic_policy::without_body_instantiation()) :
+               ctx.lookup_functions(scope,
+                                    name,
+                                    semantic_policy::without_body_instantiation()));
   vector<FunctionTemplateDecl *> templates;
   try
   {
-    if(name_node &&
-       name_syntax &&
-       (name_syntax->rooted || !name_syntax->qualifiers.empty())) {
-      templates = ctx.lookup_function_templates_node(scope, *name_node, name);
-    } else if(name_syntax && (name_syntax->rooted || !name_syntax->qualifiers.empty())) {
+    if(name_node && has_qualified_name_syntax) {
+      templates =
+          ctx.lookup_function_templates_node(scope, *name_node, template_lookup_name);
+    } else if(name_syntax && has_qualified_name_syntax) {
       collect_function_templates(ctx, scope, *name_syntax, templates);
+    } else if(name_template_id_syntax && has_qualified_template_id) {
+      collect_function_templates(ctx, scope, name_template_id_syntax->name, templates);
     } else {
-      collect_function_templates(ctx, scope, name, templates);
+      collect_function_templates(ctx, scope, template_lookup_name, templates);
     }
   }
   catch(const TemplateSubstitutionFailure &)

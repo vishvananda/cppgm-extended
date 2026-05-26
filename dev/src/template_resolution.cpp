@@ -846,6 +846,29 @@ bool non_type_function_target_type(const TypePtr & target_type,
   return false;
 }
 
+bool non_type_member_function_target_type(const TypePtr & target_type,
+                                          bool explicit_address,
+                                          TypePtr & out_owner_type,
+                                          TypePtr & out_function_type)
+{
+  out_owner_type.reset();
+  out_function_type.reset();
+  if(!explicit_address) {
+    return false;
+  }
+  TypePtr target_base = strip_top_level_cv(target_type);
+  if(!target_base ||
+     target_base->kind != Type::TK_MEMBER_POINTER ||
+     !target_base->owner ||
+     !target_base->inner ||
+     strip_top_level_cv(target_base->inner)->kind != Type::TK_FUNCTION) {
+    return false;
+  }
+  out_owner_type = target_base->owner;
+  out_function_type = target_base->inner;
+  return true;
+}
+
 FunctionBinding * select_non_type_function_argument(
     const std::vector<FunctionBinding *> & functions,
     const TypePtr & function_type)
@@ -863,6 +886,147 @@ FunctionBinding * select_non_type_function_argument(
       return nullptr;
     }
     selected = candidate;
+  }
+  return selected;
+}
+
+bool member_function_binding_matches_target(FunctionBinding * binding,
+                                            const TypePtr & owner_type,
+                                            const TypePtr & function_type)
+{
+  if(!binding ||
+     !binding->is_method ||
+     !binding->owner_class ||
+     binding->is_constructor ||
+     binding->is_destructor ||
+     !binding->owner_class->type ||
+     !type_equals(strip_top_level_cv(binding->owner_class->type),
+                  strip_top_level_cv(owner_type))) {
+    return false;
+  }
+
+  TypePtr member_function_type = binding->declared_type;
+  TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
+  if(stripped_function_type &&
+     stripped_function_type->kind == Type::TK_FUNCTION &&
+     (stripped_function_type->function_const != binding->is_const_method ||
+      stripped_function_type->function_volatile != binding->is_volatile_method)) {
+    member_function_type = make_function(stripped_function_type->inner,
+                                         stripped_function_type->params,
+                                         stripped_function_type->variadic,
+                                         binding->is_const_method,
+                                         binding->is_volatile_method,
+                                         stripped_function_type->prototype_relaxed);
+  }
+  return type_equals(strip_top_level_cv(member_function_type),
+                     strip_top_level_cv(function_type));
+}
+
+FunctionBinding * select_non_type_member_function_argument(
+    const std::vector<FunctionBinding *> & functions,
+    const TypePtr & owner_type,
+    const TypePtr & function_type)
+{
+  FunctionBinding * selected = nullptr;
+  for(std::size_t i = 0; i < functions.size(); ++i) {
+    FunctionBinding * binding = functions[i];
+    if(!member_function_binding_matches_target(binding, owner_type, function_type)) {
+      continue;
+    }
+    if(selected) {
+      return nullptr;
+    }
+    selected = binding;
+  }
+  return selected;
+}
+
+bool member_function_template_target_type_for_deduction(
+    const FunctionTemplateDecl & decl,
+    const TypePtr & function_type,
+    TypePtr & out)
+{
+  out.reset();
+  TypePtr target_base = strip_top_level_cv(function_type);
+  if(!target_base || target_base->kind != Type::TK_FUNCTION) {
+    return false;
+  }
+  if(target_base->function_const != decl.is_const_method ||
+     target_base->function_volatile != decl.is_volatile_method) {
+    return false;
+  }
+
+  out = function_type;
+  TypePtr pattern_base = strip_top_level_cv(decl.type_pattern);
+  if(pattern_base &&
+     pattern_base->kind == Type::TK_FUNCTION &&
+     (pattern_base->function_const != target_base->function_const ||
+      pattern_base->function_volatile != target_base->function_volatile)) {
+    out = make_function(target_base->inner,
+                        target_base->params,
+                        target_base->variadic,
+                        pattern_base->function_const,
+                        pattern_base->function_volatile,
+                        target_base->prototype_relaxed);
+  }
+  return true;
+}
+
+FunctionBinding * select_non_type_member_function_template_argument(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const std::vector<FunctionTemplateDecl *> & templates,
+    const TypePtr & owner_type,
+    const TypePtr & function_type)
+{
+  if(!services.semantic_context) {
+    return nullptr;
+  }
+
+  FunctionBinding * selected = nullptr;
+  for(std::size_t i = 0; i < templates.size(); ++i) {
+    FunctionTemplateDecl * decl = templates[i];
+    if(!decl) {
+      continue;
+    }
+
+    TypePtr deduction_target_type;
+    if(!member_function_template_target_type_for_deduction(*decl,
+                                                           function_type,
+                                                           deduction_target_type)) {
+      continue;
+    }
+
+    template_api::TemplateFunctionDeductionRequest deduction_request;
+    deduction_request.decl = decl;
+    deduction_request.target_type = deduction_target_type;
+    deduction_request.use_scope = &scope;
+    deduction_request.resolution_scope = &scope;
+    template_api::TemplateFunctionDeductionResult deduction;
+    if(!template_api::deduce_function_template(*services.semantic_context,
+                                               deduction_request,
+                                               deduction)) {
+      continue;
+    }
+
+    template_api::TemplateFunctionInstantiationRequest instantiation_request;
+    instantiation_request.decl = decl;
+    instantiation_request.arguments = deduction.arguments;
+    instantiation_request.use_scope = template_api::make_template_environment(scope);
+    instantiation_request.include_body = false;
+    instantiation_request.pack_sizes = deduction.pack_sizes;
+    instantiation_request.has_pack_sizes = !deduction.pack_sizes.empty();
+    FunctionBinding * binding =
+        template_api::acquire_function_instantiation(*services.semantic_context,
+                                                     instantiation_request)
+            .function_binding;
+    if(!member_function_binding_matches_target(binding, owner_type, function_type)) {
+      continue;
+    }
+    if(selected) {
+      return nullptr;
+    }
+    selected = binding;
   }
   return selected;
 }
@@ -1008,6 +1172,50 @@ bool lookup_qualified_function_candidates_node(template_api::TemplateServices & 
   return !out.empty();
 }
 
+bool lookup_member_pointer_callable_candidates_node(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const QualifiedName & qualified,
+    const CppAstNode & node,
+    std::vector<FunctionBinding *> & functions,
+    std::vector<FunctionTemplateDecl *> & templates)
+{
+  functions.clear();
+  templates.clear();
+  if(!services.semantic_context ||
+     (!qualified.rooted && qualified.qualifiers.empty())) {
+    return false;
+  }
+
+  Scope * target =
+      services.semantic_context->resolve_qualified_scope_for_node(scope,
+                                                                  qualified,
+                                                                  node,
+                                                                  false);
+  if(!target || !target->class_info) {
+    return false;
+  }
+
+  ClassInfo * target_class = target->class_info;
+  if(!target_class->complete && target_class->type) {
+    if(ClassInfo * completed =
+           services.semantic_context->complete_class_type(target_class->type)) {
+      target_class = completed;
+    }
+  }
+  if(!target_class->reference_members_collected &&
+     !target_class->reference_member_collection_in_progress &&
+     !target_class->full_member_collection_in_progress) {
+    services.semantic_context->ensure_class_reference_members(*target_class);
+  }
+
+  semantic_lookup::MemberCallableLookupResult callables =
+      semantic_lookup::lookup_visible_member_callables(*target_class, qualified.name);
+  functions = callables.functions;
+  templates = callables.templates;
+  return !functions.empty() || !templates.empty();
+}
+
 bool try_resolve_function_non_type_template_argument_syntax(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -1062,6 +1270,50 @@ bool try_resolve_function_non_type_template_argument_syntax(
         out);
   }
   const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
+  if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+    TypePtr owner_type;
+    TypePtr member_function_type;
+    if(non_type_member_function_target_type(target_type,
+                                            explicit_address,
+                                            owner_type,
+                                            member_function_type)) {
+      std::vector<FunctionBinding *> functions;
+      std::vector<FunctionTemplateDecl *> templates;
+      try {
+        if(lookup_member_pointer_callable_candidates_node(services,
+                                                          scope,
+                                                          *qualified,
+                                                          *operand,
+                                                          functions,
+                                                          templates)) {
+          FunctionBinding * selected =
+              select_non_type_member_function_argument(functions,
+                                                       owner_type,
+                                                       member_function_type);
+          if(!selected) {
+            selected =
+                select_non_type_member_function_template_argument(services,
+                                                                  scope,
+                                                                  templates,
+                                                                  owner_type,
+                                                                  member_function_type);
+          }
+          return bind_non_type_function_argument(target_type,
+                                                 selected,
+                                                 operand->value,
+                                                 out);
+        }
+      } catch(const TemplateSubstitutionFailure &) {
+        return false;
+      } catch(const SemanticSoftFailure &) {
+        return false;
+      } catch(const SemanticDiagnosticError &) {
+        return false;
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+        return false;
+      }
+    }
+  }
   if(qualified &&
      (qualified->rooted || !qualified->qualifiers.empty()) &&
      (!operand->qualifier_template_id_syntaxes.empty() ||
@@ -9340,7 +9592,33 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       }
       return true;
     };
+    const auto prefer_structured_function_non_type =
+        [&]() -> bool
+    {
+      if(!syntax || !syntax->expression) {
+        return false;
+      }
+      const CppAstNode * operand = syntax->expression.get();
+      if(operand->kind == CppAstKind::unary_expression &&
+         operand->children.size() == 1 &&
+         operand->has_token &&
+         operand->simple_type == OP_AMP) {
+        operand = &operand->children[0];
+      }
+      if(!operand || operand->kind != CppAstKind::id_expression) {
+        return false;
+      }
+      const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
+      return qualified && (qualified->rooted || !qualified->qualifiers.empty());
+    };
 
+    const bool structured_function_non_type_first =
+        prefer_structured_function_non_type();
+    if(structured_function_non_type_first &&
+       try_resolve_function_non_type_template_argument_syntax(
+           services, raw_argument_scope, syntax, bound_value_type, out)) {
+      return true;
+    }
     if(trimmed != rewritten &&
        try_resolve_named_non_type(trimmed)) {
       return true;
@@ -9348,7 +9626,8 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     if(try_resolve_named_non_type(rewritten)) {
       return true;
     }
-    if(try_resolve_function_non_type_template_argument_syntax(
+    if(!structured_function_non_type_first &&
+       try_resolve_function_non_type_template_argument_syntax(
            services, raw_argument_scope, syntax, bound_value_type, out)) {
       return true;
     }

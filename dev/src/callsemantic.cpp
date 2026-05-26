@@ -11677,10 +11677,7 @@ private:
             }
           }
           if(!qualifier_type) {
-            qualifier_type = lookup_type_impl(*current_scope,
-                                              qualifier_lookup_text,
-                                              true,
-                                              true);
+            return vector<FunctionTemplateDecl *>();
           }
         }
       } else {
@@ -11696,6 +11693,13 @@ private:
       ClassInfo * qualifier_info = class_info_for_type(qualifier_type);
       if(!qualifier_info || !qualifier_info->member_scope) {
         qualifier_info = complete_class_type(qualifier_type);
+      }
+      if(qualifier_info &&
+         qualifier_info->member_scope &&
+         !qualifier_info->reference_members_collected &&
+         !qualifier_info->reference_member_collection_in_progress &&
+         !qualifier_info->full_member_collection_in_progress) {
+        ensure_class_reference_members(*qualifier_info);
       }
       if(!qualifier_info || !qualifier_info->member_scope) {
         return lookup_function_templates(scope, name);
@@ -14384,10 +14388,7 @@ private:
             }
           }
           if(!qualifier_type) {
-            qualifier_type = lookup_type_impl(*current_scope,
-                                              qualifier_lookup_text,
-                                              true,
-                                              true);
+            return vector<FunctionBinding *>();
           }
         }
       } else {
@@ -14403,6 +14404,13 @@ private:
       ClassInfo * qualifier_info = class_info_for_type(qualifier_type);
       if(!qualifier_info || !qualifier_info->member_scope) {
         qualifier_info = complete_class_type(qualifier_type);
+      }
+      if(qualifier_info &&
+         qualifier_info->member_scope &&
+         !qualifier_info->reference_members_collected &&
+         !qualifier_info->reference_member_collection_in_progress &&
+         !qualifier_info->full_member_collection_in_progress) {
+        ensure_class_reference_members(*qualifier_info);
       }
       if(!qualifier_info || !qualifier_info->member_scope) {
         return lookup_functions(scope, name, options);
