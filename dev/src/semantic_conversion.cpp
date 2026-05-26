@@ -349,6 +349,46 @@ bool top_level_cv_allows_reference_binding(const TypePtr & target_referent,
   return (!source_const || target_const) && (!source_volatile || target_volatile);
 }
 
+bool pointer_pointee_cv_allows_base_conversion(const TypePtr & target_pointer,
+                                               const TypePtr & source_pointer,
+                                               TypePtr * target_pointee_base_out,
+                                               TypePtr * source_pointee_base_out)
+{
+  if(!target_pointer ||
+     !source_pointer ||
+     target_pointer->kind != Type::TK_POINTER ||
+     source_pointer->kind != Type::TK_POINTER) {
+    return false;
+  }
+
+  TypePtr target_pointee_base;
+  TypePtr source_pointee_base;
+  bool target_const = false;
+  bool target_volatile = false;
+  bool source_const = false;
+  bool source_volatile = false;
+  if(!top_level_cv_flags(target_pointer->inner,
+                         target_pointee_base,
+                         target_const,
+                         target_volatile) ||
+     !top_level_cv_flags(source_pointer->inner,
+                         source_pointee_base,
+                         source_const,
+                         source_volatile) ||
+     (source_const && !target_const) ||
+     (source_volatile && !target_volatile)) {
+    return false;
+  }
+
+  if(target_pointee_base_out) {
+    *target_pointee_base_out = target_pointee_base;
+  }
+  if(source_pointee_base_out) {
+    *source_pointee_base_out = source_pointee_base;
+  }
+  return true;
+}
+
 bool is_class_or_union_object_type(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
@@ -939,14 +979,10 @@ ConversionRank inheritance_conversion_rank(SemanticContext & ctx,
   if(target_base->kind == Type::TK_POINTER && arg_base->kind == Type::TK_POINTER) {
     TypePtr target_pointee_base;
     TypePtr arg_pointee_base;
-    bool target_const = false;
-    bool target_volatile = false;
-    bool arg_const = false;
-    bool arg_volatile = false;
-    if(top_level_cv_flags(target_base->inner, target_pointee_base, target_const, target_volatile) &&
-       top_level_cv_flags(arg_base->inner, arg_pointee_base, arg_const, arg_volatile) &&
-       (!arg_const || target_const) &&
-       (!arg_volatile || target_volatile)) {
+    if(pointer_pointee_cv_allows_base_conversion(target_base,
+                                                 arg_base,
+                                                 &target_pointee_base,
+                                                 &arg_pointee_base)) {
       ClassInfo * target_class = ctx.class_info_for_type(target_pointee_base);
       ClassInfo * arg_class = ctx.class_info_for_type(arg_pointee_base);
       if(!target_class) {
@@ -1733,10 +1769,18 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_POINTER && expr_base->kind == Type::TK_POINTER) {
+    TypePtr target_pointee_base;
+    TypePtr expr_pointee_base;
+    if(!pointer_pointee_cv_allows_base_conversion(target_base,
+                                                  expr_base,
+                                                  &target_pointee_base,
+                                                  &expr_pointee_base)) {
+      return false;
+    }
     ClassInfo * target_class =
-        ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
+        ensure_complete_class_info(ctx, target_pointee_base);
     ClassInfo * source_class =
-        ensure_complete_class_info(ctx, strip_top_level_cv(expr_base->inner));
+        ensure_complete_class_info(ctx, expr_pointee_base);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
     if(target_class && source_class && target_class != source_class &&
