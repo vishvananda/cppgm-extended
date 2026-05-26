@@ -3488,6 +3488,91 @@ bool instruction_is_dead_code_candidate(const lir::Instruction & instruction)
   }
 }
 
+bool block_has_incoming_eh_edge(const FunctionControlFlow & control_flow,
+                                size_t block_index)
+{
+  if(block_index >= control_flow.incoming_edges.size()) {
+    return false;
+  }
+  const vector<IncomingBlockEdge> & incoming_edges =
+      control_flow.incoming_edges[block_index];
+  for(size_t i = 0; i < incoming_edges.size(); ++i) {
+    if(incoming_edges[i].has_eh_edge) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool resolve_plain_jump_target(const lir::Function & function,
+                               const BlockIndexMap & block_index,
+                               const FunctionControlFlow & control_flow,
+                               const string & label,
+                               string & resolved_label)
+{
+  resolved_label = label;
+  set<string> seen_labels;
+  while(seen_labels.insert(resolved_label).second) {
+    const BlockIndexMap::const_iterator found = block_index.find(resolved_label);
+    if(found == block_index.end()) {
+      return false;
+    }
+    const size_t target_index = found->second;
+    const lir::Block & target_block = function.blocks[target_index];
+    if(block_has_incoming_eh_edge(control_flow, target_index) ||
+       block_contains_eh_related_instruction(target_block) ||
+       target_block.instructions.size() != 1) {
+      return true;
+    }
+    const lir::Instruction & only_instruction = target_block.instructions.front();
+    if(only_instruction.kind != lir::Instruction::IK_JUMP ||
+       only_instruction.first.kind != lir::Operand::OP_LABEL) {
+      return true;
+    }
+    resolved_label = only_instruction.first.text;
+  }
+  return false;
+}
+
+bool collapse_empty_branch_diamonds(lir::Function & function,
+                                    const BlockIndexMap & block_index,
+                                    const FunctionControlFlow & control_flow)
+{
+  bool changed = false;
+  for(size_t i = 0; i < function.blocks.size(); ++i) {
+    lir::Block & block = function.blocks[i];
+    if(block.instructions.empty()) {
+      continue;
+    }
+    lir::Instruction & terminator = block.instructions.back();
+    if(terminator.kind != lir::Instruction::IK_BRANCH ||
+       terminator.second.kind != lir::Operand::OP_LABEL ||
+       terminator.third.kind != lir::Operand::OP_LABEL) {
+      continue;
+    }
+
+    string true_target;
+    string false_target;
+    if(!resolve_plain_jump_target(function,
+                                  block_index,
+                                  control_flow,
+                                  terminator.second.text,
+                                  true_target) ||
+       !resolve_plain_jump_target(function,
+                                  block_index,
+                                  control_flow,
+                                  terminator.third.text,
+                                  false_target) ||
+       true_target != false_target) {
+      continue;
+    }
+
+    terminator = make_jump_instruction(true_target, &terminator);
+    changed = true;
+  }
+  return changed;
+}
+
 pair<set<string>, set<string> > block_use_def_sets(const lir::Block & block)
 {
   set<string> use_set;
@@ -3538,6 +3623,263 @@ bool instruction_is_dead_readnone_call(const lir::Instruction & instruction,
   return boundary.effects == lir::CFXM_READNONE &&
          boundary.unwind == lir::CUM_NO &&
          boundary.returns != lir::CRM_NORETURN;
+}
+
+bool instruction_may_unwind(const lir::Instruction & instruction,
+                            const FunctionBoundaryMap & function_boundaries)
+{
+  switch(instruction.kind) {
+    case lir::Instruction::IK_CALL: {
+      const lir::FunctionBoundaryMetadata boundary =
+          resolved_call_boundary(instruction, function_boundaries);
+      return boundary.unwind != lir::CUM_NO;
+    }
+    case lir::Instruction::IK_THROW:
+    case lir::Instruction::IK_RESUME:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool instruction_starts_eh_region(const lir::Instruction & instruction)
+{
+  return (instruction.kind == lir::Instruction::IK_EH_TRY ||
+          instruction.kind == lir::Instruction::IK_EH_CLEANUP) &&
+         instruction.first.kind == lir::Operand::OP_LABEL;
+}
+
+bool instruction_is_allowed_inside_nonthrowing_eh_region(
+    const lir::Instruction & instruction)
+{
+  switch(instruction.kind) {
+    case lir::Instruction::IK_EH_TRY:
+    case lir::Instruction::IK_EH_CLEANUP:
+    case lir::Instruction::IK_EH_END:
+      return true;
+    case lir::Instruction::IK_EH_CLEANUP_CLAUSE:
+    case lir::Instruction::IK_EH_CATCH:
+    case lir::Instruction::IK_EH_FILTER:
+    case lir::Instruction::IK_EH_CATCH_ALL:
+    case lir::Instruction::IK_EXCEPTION:
+    case lir::Instruction::IK_EXCEPTION_SELECTOR:
+    case lir::Instruction::IK_RESUME:
+      return false;
+    default:
+      return true;
+  }
+}
+
+struct EhInstructionPosition
+{
+  size_t block_index = 0;
+  size_t instruction_index = 0;
+
+  bool operator==(const EhInstructionPosition & rhs) const
+  {
+    return block_index == rhs.block_index &&
+           instruction_index == rhs.instruction_index;
+  }
+
+  bool operator<(const EhInstructionPosition & rhs) const
+  {
+    if(block_index != rhs.block_index) {
+      return block_index < rhs.block_index;
+    }
+    return instruction_index < rhs.instruction_index;
+  }
+};
+
+struct EhRegionScanState
+{
+  size_t block_index = 0;
+  size_t instruction_index = 0;
+  size_t depth = 0;
+
+  bool operator<(const EhRegionScanState & rhs) const
+  {
+    if(block_index != rhs.block_index) {
+      return block_index < rhs.block_index;
+    }
+    if(instruction_index != rhs.instruction_index) {
+      return instruction_index < rhs.instruction_index;
+    }
+    return depth < rhs.depth;
+  }
+};
+
+bool find_nonthrowing_eh_region_ends(
+    const lir::Function & function,
+    const BlockIndexMap & block_index,
+    const FunctionBoundaryMap & function_boundaries,
+    size_t start_block_index,
+    size_t start_instruction_index,
+    vector<EhInstructionPosition> & end_positions)
+{
+  if(start_block_index >= function.blocks.size() ||
+     start_instruction_index >= function.blocks[start_block_index].instructions.size()) {
+    return false;
+  }
+
+  const lir::Instruction & start_instruction =
+      function.blocks[start_block_index].instructions[start_instruction_index];
+  if(!instruction_starts_eh_region(start_instruction)) {
+    return false;
+  }
+
+  const size_t max_scan_states =
+      std::max<size_t>(64, function_instruction_count(function) * 8);
+  vector<EhRegionScanState> worklist;
+  set<EhRegionScanState> seen;
+  EhRegionScanState start_state;
+  start_state.block_index = start_block_index;
+  start_state.instruction_index = start_instruction_index + 1;
+  start_state.depth = 1;
+  worklist.push_back(start_state);
+
+  while(!worklist.empty()) {
+    const EhRegionScanState state = worklist.back();
+    worklist.pop_back();
+    if(state.block_index >= function.blocks.size() ||
+       !seen.insert(state).second) {
+      continue;
+    }
+    if(seen.size() > max_scan_states || state.depth > 64) {
+      return false;
+    }
+
+    const lir::Block & block = function.blocks[state.block_index];
+    size_t depth = state.depth;
+    bool closed_region_on_this_path = false;
+    for(size_t ii = state.instruction_index; ii < block.instructions.size(); ++ii) {
+      const lir::Instruction & instruction = block.instructions[ii];
+      if(!instruction_is_allowed_inside_nonthrowing_eh_region(instruction) ||
+         instruction_may_unwind(instruction, function_boundaries)) {
+        return false;
+      }
+
+      if(instruction_starts_eh_region(instruction)) {
+        ++depth;
+        if(depth > 64) {
+          return false;
+        }
+        continue;
+      }
+
+      if(instruction.kind == lir::Instruction::IK_EH_END) {
+        if(depth == 0) {
+          return false;
+        }
+        --depth;
+        if(depth == 0) {
+          EhInstructionPosition end_position;
+          end_position.block_index = state.block_index;
+          end_position.instruction_index = ii;
+          if(find(end_positions.begin(), end_positions.end(), end_position) ==
+             end_positions.end()) {
+            end_positions.push_back(end_position);
+          }
+          closed_region_on_this_path = true;
+          break;
+        }
+      }
+    }
+
+    if(closed_region_on_this_path) {
+      continue;
+    }
+
+    const vector<string> successor_labels =
+        block.instructions.empty() ? vector<string>() :
+                                      collect_successor_labels(block.instructions.back());
+    if(successor_labels.empty()) {
+      return false;
+    }
+    for(size_t si = 0; si < successor_labels.size(); ++si) {
+      const BlockIndexMap::const_iterator found =
+          block_index.find(successor_labels[si]);
+      if(found == block_index.end()) {
+        return false;
+      }
+      EhRegionScanState successor_state;
+      successor_state.block_index = found->second;
+      successor_state.instruction_index = 0;
+      successor_state.depth = depth;
+      worklist.push_back(successor_state);
+    }
+  }
+
+  return !end_positions.empty();
+}
+
+bool remove_nonthrowing_eh_markers(lir::Function & function,
+                                   const FunctionBoundaryMap & function_boundaries)
+{
+  if(function.boundary.unwind != lir::CUM_NO) {
+    return false;
+  }
+
+  const size_t instruction_count = function_instruction_count(function);
+  if(instruction_count > 256) {
+    return false;
+  }
+
+  const BlockIndexMap block_index = build_block_index_map(function);
+  vector<vector<bool> > remove_instruction(function.blocks.size());
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    remove_instruction[bi].assign(function.blocks[bi].instructions.size(), false);
+  }
+
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    const lir::Block & block = function.blocks[bi];
+    for(size_t ii = 0; ii < block.instructions.size(); ++ii) {
+      const lir::Instruction & instruction = block.instructions[ii];
+      if(!instruction_starts_eh_region(instruction)) {
+        continue;
+      }
+
+      vector<EhInstructionPosition> end_positions;
+      if(!find_nonthrowing_eh_region_ends(function,
+                                          block_index,
+                                          function_boundaries,
+                                          bi,
+                                          ii,
+                                          end_positions)) {
+        continue;
+      }
+      remove_instruction[bi][ii] = true;
+      for(size_t ei = 0; ei < end_positions.size(); ++ei) {
+        remove_instruction[end_positions[ei].block_index]
+                          [end_positions[ei].instruction_index] = true;
+      }
+    }
+  }
+
+  bool changed = false;
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    size_t remove_count = 0;
+    for(size_t ii = 0; ii < remove_instruction[bi].size(); ++ii) {
+      if(remove_instruction[bi][ii]) {
+        ++remove_count;
+      }
+    }
+    if(remove_count == 0) {
+      continue;
+    }
+
+    lir::Block & block = function.blocks[bi];
+    vector<lir::Instruction> kept;
+    kept.reserve(block.instructions.size() - remove_count);
+    for(size_t ii = 0; ii < block.instructions.size(); ++ii) {
+      if(!remove_instruction[bi][ii]) {
+        kept.push_back(block.instructions[ii]);
+      }
+    }
+    block.instructions.swap(kept);
+    changed = true;
+  }
+
+  return changed;
 }
 
 bool eliminate_dead_code(lir::Function & function,
@@ -3604,7 +3946,12 @@ bool eliminate_dead_code(lir::Function & function,
           !instruction.dest.empty() &&
           instruction_is_dead_code_candidate(instruction) &&
           live.count(instruction.dest) == 0;
-      if(removable || removable_dead_temp) {
+      const bool removable_dead_slot_load =
+          !instruction.dest.empty() &&
+          instruction.kind == lir::Instruction::IK_LOAD &&
+          instruction.first.kind == lir::Operand::OP_SLOT &&
+          live.count(instruction.dest) == 0;
+      if(removable || removable_dead_temp || removable_dead_slot_load) {
         changed = true;
         continue;
       }
@@ -3625,6 +3972,109 @@ bool eliminate_dead_code(lir::Function & function,
     function.blocks[i].instructions.swap(kept);
   }
 
+  return changed;
+}
+
+struct SlotStoreUseSummary
+{
+  bool saw_store = false;
+  bool saw_load = false;
+  bool saw_other_use = false;
+};
+
+void note_slot_other_use(map<string, SlotStoreUseSummary> & slot_uses,
+                         const lir::Operand & operand)
+{
+  if(operand.kind != lir::Operand::OP_SLOT) {
+    return;
+  }
+  map<string, SlotStoreUseSummary>::iterator found = slot_uses.find(operand.text);
+  if(found != slot_uses.end()) {
+    found->second.saw_other_use = true;
+  }
+}
+
+bool remove_stores_to_unread_slots(lir::Function & function)
+{
+  if(function.slots.empty()) {
+    return false;
+  }
+
+  map<string, SlotStoreUseSummary> slot_uses;
+  for(size_t i = 0; i < function.slots.size(); ++i) {
+    slot_uses[function.slots[i].first] = SlotStoreUseSummary();
+  }
+
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    const lir::Block & block = function.blocks[bi];
+    for(size_t ii = 0; ii < block.instructions.size(); ++ii) {
+      const lir::Instruction & instruction = block.instructions[ii];
+      if(instruction.kind == lir::Instruction::IK_STORE) {
+        note_slot_other_use(slot_uses, instruction.first);
+        if(instruction.second.kind == lir::Operand::OP_SLOT) {
+          map<string, SlotStoreUseSummary>::iterator found =
+              slot_uses.find(instruction.second.text);
+          if(found != slot_uses.end()) {
+            found->second.saw_store = true;
+          }
+        } else {
+          note_slot_other_use(slot_uses, instruction.second);
+        }
+        continue;
+      }
+
+      if(instruction.kind == lir::Instruction::IK_LOAD &&
+         instruction.first.kind == lir::Operand::OP_SLOT) {
+        map<string, SlotStoreUseSummary>::iterator found =
+            slot_uses.find(instruction.first.text);
+        if(found != slot_uses.end()) {
+          found->second.saw_load = true;
+        }
+        continue;
+      }
+
+      note_slot_other_use(slot_uses, instruction.first);
+      note_slot_other_use(slot_uses, instruction.second);
+      note_slot_other_use(slot_uses, instruction.third);
+      for(size_t ai = 0; ai < instruction.args.size(); ++ai) {
+        note_slot_other_use(slot_uses, instruction.args[ai]);
+      }
+    }
+  }
+
+  set<string> unread_store_slots;
+  for(map<string, SlotStoreUseSummary>::const_iterator it = slot_uses.begin();
+      it != slot_uses.end();
+      ++it) {
+    if(it->second.saw_store &&
+       !it->second.saw_load &&
+       !it->second.saw_other_use) {
+      unread_store_slots.insert(it->first);
+    }
+  }
+  if(unread_store_slots.empty()) {
+    return false;
+  }
+
+  bool changed = false;
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    lir::Block & block = function.blocks[bi];
+    vector<lir::Instruction> kept;
+    kept.reserve(block.instructions.size());
+    for(size_t ii = 0; ii < block.instructions.size(); ++ii) {
+      const lir::Instruction & instruction = block.instructions[ii];
+      if(instruction.kind == lir::Instruction::IK_STORE &&
+         instruction.second.kind == lir::Operand::OP_SLOT &&
+         unread_store_slots.count(instruction.second.text) != 0) {
+        changed = true;
+        continue;
+      }
+      kept.push_back(instruction);
+    }
+    if(kept.size() != block.instructions.size()) {
+      block.instructions.swap(kept);
+    }
+  }
   return changed;
 }
 
@@ -4065,6 +4515,52 @@ bool block_has_only_eh_try_end_inline_unsupported_semantics(const lir::Block & b
   return saw_eh_marker;
 }
 
+size_t block_eh_depth_before_instruction(const lir::Block & block,
+                                         size_t instruction_index)
+{
+  size_t depth = 0;
+  const size_t end = std::min(instruction_index, block.instructions.size());
+  for(size_t i = 0; i < end; ++i) {
+    const lir::Instruction & instruction = block.instructions[i];
+    if(instruction_starts_eh_region(instruction)) {
+      ++depth;
+    } else if(instruction.kind == lir::Instruction::IK_EH_END && depth != 0) {
+      --depth;
+    }
+  }
+  return depth;
+}
+
+bool block_eh_region_suffix_closes_without_may_unwind(
+    const lir::Block & block,
+    size_t instruction_index,
+    size_t depth,
+    const FunctionBoundaryMap & function_boundaries)
+{
+  for(size_t i = instruction_index; i < block.instructions.size() && depth != 0; ++i) {
+    const lir::Instruction & instruction = block.instructions[i];
+    if(instruction_may_unwind(instruction, function_boundaries)) {
+      return false;
+    }
+    if(instruction_starts_eh_region(instruction)) {
+      ++depth;
+    } else if(instruction.kind == lir::Instruction::IK_EH_END) {
+      --depth;
+    }
+  }
+  return depth == 0;
+}
+
+bool function_allows_eh_region_multi_block_inline(const lir::Function & function,
+                                                  const lir::Block & block,
+                                                  const lir::Function & callee)
+{
+  return callee.blocks.size() <= 4 &&
+         function.blocks.size() <= 8 &&
+         function_instruction_count(function) <= 96 &&
+         block.instructions.size() <= 8;
+}
+
 size_t function_instruction_count(const lir::Function & function)
 {
   size_t count = 0;
@@ -4442,11 +4938,18 @@ bool inline_direct_call_at(lir::Function & function,
                            size_t instruction_index,
                            const lir::Function & callee,
                            const FunctionBoundaryMap & function_boundaries,
-                           size_t inline_site_id)
+                           size_t inline_site_id,
+                           bool block_has_incoming_eh_edge)
 {
   const lir::Instruction call = function.blocks[block_index].instructions[instruction_index];
   const lir::Block original_block = function.blocks[block_index];
   if(instruction_index + 1 >= original_block.instructions.size()) {
+    return false;
+  }
+  // Landing-pad blocks have an implicit EH region in the object backend.
+  // The general inliner splits the caller block, which can move the matching
+  // eh_end into a continuation block and make that implicit pop underflow.
+  if(block_has_incoming_eh_edge) {
     return false;
   }
 
@@ -4500,90 +5003,110 @@ bool inline_direct_call_at(lir::Function & function,
   }
 
   if(block_has_inline_unsupported_semantics(original_block)) {
-    if(!block_has_only_eh_try_end_inline_unsupported_semantics(original_block) ||
-       callee.blocks.size() != 1 ||
-       function_return_count(callee) != 1 ||
-       !function_is_effectively_nonthrowing_inline_candidate(callee,
-                                                             function_boundaries)) {
+    if(!block_has_only_eh_try_end_inline_unsupported_semantics(original_block)) {
       return false;
     }
 
-    vector<pair<string, lir::LowType> > appended_slots;
-    appended_slots.reserve(callee.slots.size());
-    for(size_t i = 0; i < callee.slots.size(); ++i) {
-      appended_slots.push_back(
-          make_pair(renamed_slots[callee.slots[i].first], callee.slots[i].second));
-    }
-
-    vector<lir::Instruction> spliced_instructions;
-    const lir::Block & callee_block = callee.blocks.front();
-    spliced_instructions.reserve(callee_block.instructions.size());
-    for(size_t ii = 0; ii < callee_block.instructions.size(); ++ii) {
-      const lir::Instruction & original_instruction = callee_block.instructions[ii];
-      if(original_instruction.kind == lir::Instruction::IK_RETURN) {
-        if(has_object_copy_consumer) {
-          lir::Instruction copyobj =
-              make_copyobj_instruction(object_copy_consumer->byte_count,
-                                       object_copy_consumer->byte_alignment,
-                                       original_instruction.first,
-                                       object_copy_target,
-                                       &original_instruction);
-          rewrite_inlined_instruction(copyobj,
-                                      parameter_operands,
-                                      renamed_temps,
-                                      renamed_slots,
-                                      renamed_labels);
-          // The inlined aggregate return materializes directly into caller
-          // storage, so the destination must remain the caller operand.
-          copyobj.second = object_copy_target;
-          spliced_instructions.push_back(copyobj);
-        } else if(!call.call_returns_void && !call.dest.empty()) {
-          lir::Instruction copy =
-              make_copy_instruction(call.dest, call.type.text, original_instruction.first,
-                                    &original_instruction);
-          rewrite_inlined_instruction(copy,
-                                      parameter_operands,
-                                      renamed_temps,
-                                      renamed_slots,
-                                      renamed_labels);
-          // The inlined scalar return writes back into the caller's
-          // destination temp, so it must not be remapped through callee
-          // renaming even when the names collide.
-          copy.dest = call.dest;
-          simplify_copy_instruction(copy);
-          spliced_instructions.push_back(copy);
-        }
-        continue;
+    const size_t eh_depth_at_call =
+        block_eh_depth_before_instruction(original_block, instruction_index);
+    const bool call_is_in_eh_region = eh_depth_at_call != 0;
+    const bool callee_is_effectively_nonthrowing =
+        function_is_effectively_nonthrowing_inline_candidate(callee,
+                                                            function_boundaries);
+    if(call_is_in_eh_region &&
+       callee.blocks.size() == 1 &&
+       function_return_count(callee) == 1 &&
+       callee_is_effectively_nonthrowing) {
+      vector<pair<string, lir::LowType> > appended_slots;
+      appended_slots.reserve(callee.slots.size());
+      for(size_t i = 0; i < callee.slots.size(); ++i) {
+        appended_slots.push_back(
+            make_pair(renamed_slots[callee.slots[i].first], callee.slots[i].second));
       }
 
-      lir::Instruction cloned_instruction = original_instruction;
-      rewrite_inlined_instruction(cloned_instruction,
-                                  parameter_operands,
-                                  renamed_temps,
-                                  renamed_slots,
-                                  renamed_labels);
-      spliced_instructions.push_back(cloned_instruction);
+      vector<lir::Instruction> spliced_instructions;
+      const lir::Block & callee_block = callee.blocks.front();
+      spliced_instructions.reserve(callee_block.instructions.size());
+      for(size_t ii = 0; ii < callee_block.instructions.size(); ++ii) {
+        const lir::Instruction & original_instruction = callee_block.instructions[ii];
+        if(original_instruction.kind == lir::Instruction::IK_RETURN) {
+          if(has_object_copy_consumer) {
+            lir::Instruction copyobj =
+                make_copyobj_instruction(object_copy_consumer->byte_count,
+                                         object_copy_consumer->byte_alignment,
+                                         original_instruction.first,
+                                         object_copy_target,
+                                         &original_instruction);
+            rewrite_inlined_instruction(copyobj,
+                                        parameter_operands,
+                                        renamed_temps,
+                                        renamed_slots,
+                                        renamed_labels);
+            // The inlined aggregate return materializes directly into caller
+            // storage, so the destination must remain the caller operand.
+            copyobj.second = object_copy_target;
+            spliced_instructions.push_back(copyobj);
+          } else if(!call.call_returns_void && !call.dest.empty()) {
+            lir::Instruction copy =
+                make_copy_instruction(call.dest, call.type.text, original_instruction.first,
+                                      &original_instruction);
+            rewrite_inlined_instruction(copy,
+                                        parameter_operands,
+                                        renamed_temps,
+                                        renamed_slots,
+                                        renamed_labels);
+            // The inlined scalar return writes back into the caller's
+            // destination temp, so it must not be remapped through callee
+            // renaming even when the names collide.
+            copy.dest = call.dest;
+            simplify_copy_instruction(copy);
+            spliced_instructions.push_back(copy);
+          }
+          continue;
+        }
+
+        lir::Instruction cloned_instruction = original_instruction;
+        rewrite_inlined_instruction(cloned_instruction,
+                                    parameter_operands,
+                                    renamed_temps,
+                                    renamed_slots,
+                                    renamed_labels);
+        spliced_instructions.push_back(cloned_instruction);
+      }
+
+      lir::Block rebuilt_block;
+      rebuilt_block.label = original_block.label;
+      rebuilt_block.instructions.reserve(original_block.instructions.size() +
+                                         spliced_instructions.size());
+      rebuilt_block.instructions.insert(rebuilt_block.instructions.end(),
+                                        original_block.instructions.begin(),
+                                        original_block.instructions.begin() +
+                                            instruction_index);
+      rebuilt_block.instructions.insert(rebuilt_block.instructions.end(),
+                                        spliced_instructions.begin(),
+                                        spliced_instructions.end());
+      rebuilt_block.instructions.insert(rebuilt_block.instructions.end(),
+                                        original_block.instructions.begin() +
+                                            instruction_index + consumed_instruction_count,
+                                        original_block.instructions.end());
+
+      function.slots.insert(function.slots.end(), appended_slots.begin(), appended_slots.end());
+      function.blocks[block_index] = rebuilt_block;
+      return true;
     }
 
-    lir::Block rebuilt_block;
-    rebuilt_block.label = original_block.label;
-    rebuilt_block.instructions.reserve(original_block.instructions.size() +
-                                       spliced_instructions.size());
-    rebuilt_block.instructions.insert(rebuilt_block.instructions.end(),
-                                      original_block.instructions.begin(),
-                                      original_block.instructions.begin() +
-                                          instruction_index);
-    rebuilt_block.instructions.insert(rebuilt_block.instructions.end(),
-                                      spliced_instructions.begin(),
-                                      spliced_instructions.end());
-    rebuilt_block.instructions.insert(rebuilt_block.instructions.end(),
-                                      original_block.instructions.begin() +
-                                          instruction_index + consumed_instruction_count,
-                                      original_block.instructions.end());
-
-    function.slots.insert(function.slots.end(), appended_slots.begin(), appended_slots.end());
-    function.blocks[block_index] = rebuilt_block;
-    return true;
+    if(call_is_in_eh_region &&
+       (!callee_is_effectively_nonthrowing ||
+        !function_allows_eh_region_multi_block_inline(function,
+                                                      original_block,
+                                                      callee) ||
+        !block_eh_region_suffix_closes_without_may_unwind(
+            original_block,
+            instruction_index + consumed_instruction_count,
+            eh_depth_at_call,
+            function_boundaries))) {
+      return false;
+    }
   }
 
   vector<pair<string, lir::LowType> > appended_slots;
@@ -4747,8 +5270,20 @@ bool inline_small_direct_calls(lir::Function & function,
                                const unordered_set<string> & recursive_functions,
                                size_t & next_inline_site_id)
 {
+  const FunctionControlFlow control_flow = build_function_control_flow(function);
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
     const lir::Block & block = function.blocks[bi];
+    bool block_has_incoming_eh_edge = false;
+    if(bi < control_flow.incoming_edges.size()) {
+      const vector<IncomingBlockEdge> & incoming_edges =
+          control_flow.incoming_edges[bi];
+      for(size_t ei = 0; ei < incoming_edges.size(); ++ei) {
+        if(incoming_edges[ei].has_eh_edge) {
+          block_has_incoming_eh_edge = true;
+          break;
+        }
+      }
+    }
     for(size_t ii = 0; ii < block.instructions.size(); ++ii) {
       const lir::Instruction & instruction = block.instructions[ii];
       if(instruction.kind != lir::Instruction::IK_CALL ||
@@ -4775,7 +5310,8 @@ bool inline_small_direct_calls(lir::Function & function,
                                ii,
                                *found->second,
                                function_boundaries,
-                               next_inline_site_id)) {
+                               next_inline_site_id,
+                               block_has_incoming_eh_edge)) {
         ++next_inline_site_id;
         return true;
       }
@@ -4792,6 +5328,8 @@ bool run_o1_cleanup_pipeline(lir::Function & function,
   do {
     local_change = false;
     bool propagation_or_cfg_change = false;
+    propagation_or_cfg_change |=
+        remove_nonthrowing_eh_markers(function, function_boundaries);
     const FunctionOptimizationContext context =
         collect_function_optimization_context(function);
     propagation_or_cfg_change |= propagate_known_values_across_blocks(function, &context);
@@ -4801,6 +5339,16 @@ bool run_o1_cleanup_pipeline(lir::Function & function,
     BlockIndexMap structural_block_index = build_block_index_map(function);
     FunctionControlFlow structural_control_flow =
         build_function_control_flow(function, structural_block_index);
+    const bool collapsed_empty_branches =
+        collapse_empty_branch_diamonds(function,
+                                       structural_block_index,
+                                       structural_control_flow);
+    propagation_or_cfg_change |= collapsed_empty_branches;
+    if(collapsed_empty_branches) {
+      structural_block_index = build_block_index_map(function);
+      structural_control_flow =
+          build_function_control_flow(function, structural_block_index);
+    }
     const bool removed_unreachable =
         remove_unreachable_blocks(function, &structural_control_flow);
     propagation_or_cfg_change |= removed_unreachable;
@@ -4817,14 +5365,14 @@ bool run_o1_cleanup_pipeline(lir::Function & function,
     if(merged_blocks) {
       structural_control_flow = build_function_control_flow(function);
     }
+    const bool dead_code_change =
+        eliminate_dead_code(function, function_boundaries, &structural_control_flow);
+    const bool dead_slot_store_change = remove_stores_to_unread_slots(function);
+    const bool unused_slot_change = remove_unused_slots(function);
     const bool cleanup_change =
-        eliminate_dead_code(function, function_boundaries, &structural_control_flow) ||
-        remove_unused_slots(function);
+        dead_code_change || dead_slot_store_change || unused_slot_change;
     local_change = propagation_or_cfg_change || cleanup_change;
     changed |= local_change;
-    if(!propagation_or_cfg_change) {
-      break;
-    }
   } while(local_change);
   return changed;
 }

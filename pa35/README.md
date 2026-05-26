@@ -137,19 +137,29 @@ running optimizing transforms.
   chains with constants
 - control-flow cleanup, including folding known `branch` and `switch`
   selectors, removing unreachable blocks, bypassing trivial jump-only blocks,
-  and merging safe straight-line block pairs
+  merging safe straight-line block pairs, and collapsing empty branch diamonds
+  when both arms resolve through non-EH jump-only blocks to the same
+  continuation
 - preservation of exceptional handler targets and exception-structure blocks
   while doing CFG cleanup
+- conservative inlining of small direct calls, including `unwind=no` callees
+  inside EH regions only when the caller EH shape can be preserved
+- removal of no-op EH markers in functions known not to unwind when the
+  protected region contains no operation that can transfer to the handler
 - dead-code elimination for unused pure temp-producing instructions
 - removal of unused calls only when the callee is explicitly `readnone`, cannot
   unwind, and is not `noreturn`
+- removal of dead local-slot traffic for unused direct slot loads and for
+  stores to direct local slots that have no remaining loads, escaping uses, or
+  other non-store uses
 - removal of slot declarations that become unused after simplification
 
 `-O2` must include all `-O1` work and then conservatively promote eligible
 non-escaping scalar slots, including eligible `ptr` slots. Promotion must be
 limited to slots accessed through direct `store` and `load` operations whose
-current value can be tracked without introducing phi nodes. `-O2` also removes
-dead stores to promoted slots when no observable load can see the stored value.
+current value can be tracked without introducing phi nodes. Beyond the direct
+slot cleanup already allowed at `-O1`, `-O2` also removes dead stores to
+promoted slots when no observable load can see the stored value.
 
 ### Validation Modes
 
@@ -215,7 +225,8 @@ PA35 does not require:
 - SSA construction as a IR contract
 - global value numbering or partial redundancy elimination
 - alias-driven aggressive dead-store elimination
-- loop optimizations, vectorization, or inlining beyond the supplied LowIR optimizer contract
+- loop optimizations, vectorization, or general-purpose inlining beyond the
+  small direct-call inlining described for `-O1`
 - machine-IR scheduling or register-allocation optimization
 - interprocedural optimization
 - size-specific `-Os` or `-Oz` behavior

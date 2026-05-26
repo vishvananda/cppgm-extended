@@ -1,0 +1,4 @@
+function @main(%cond : i1) -> void {
+  block ^entry:
+    return void
+}
