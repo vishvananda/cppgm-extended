@@ -305,6 +305,9 @@ TARGETS = \
 	cy86
 
 CXX ?= g++
+V ?= 0
+Q = $(if $(filter 1,$(V)),,@)
+quiet = @if [ "$(V)" != "1" ]; then printf '  %-7s %s\n' '$(1)' '$(2)'; fi
 CPPGM_TEST_RUNNER ?= 1
 CPPGM_STDLIB_FLAGS ?=
 CC_FLAGS ?= -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS)
@@ -333,12 +336,14 @@ all: $(TARGETS)
 
 define FRONTEND_RULES
 $(1): $(OBJDIR) $(call link_objs,$(1)) $(RUNNER_STATE_STAMP)
-	$(CXX) $(CC_FLAGS) $(INC) -o $$@ $(call link_objs,$(1))
+	$(call quiet,LINK,$$@)
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $$@ $(call link_objs,$(1))
 
 $(call entry_obj,$(1)): $(1).cpp $(COMPILE_CONFIG_STAMP)
 	@mkdir -p $$(@D) $(DEPDIR)/entry
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -c -MT $$@ -MMD -MP -MF $(DEPDIR)/entry/$(1).Td -o $$@ $$<
-	mv -f $(DEPDIR)/entry/$(1).Td $(DEPDIR)/entry/$(1).d
+	$(call quiet,CXX,$$@)
+	$(Q)$(CXX) $(ENTRY_CC_FLAGS) $(INC) -c -MT $$@ -MMD -MP -MF $(DEPDIR)/entry/$(1).Td -o $$@ $$<
+	@mv -f $(DEPDIR)/entry/$(1).Td $(DEPDIR)/entry/$(1).d
 endef
 
 $(foreach target,$(TARGETS),$(eval $(call FRONTEND_RULES,$(target))))
@@ -360,13 +365,15 @@ $(RUNNER_STATE_STAMP): FORCE | $(OBJDIR)
 
 $(OBJDIR)/test_runner_enabled.o: $(SRC)/test_runner.cpp $(COMPILE_CONFIG_STAMP)
 	@mkdir -p $(@D) $(DEPDIR)
-	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DEPDIR)/test_runner_enabled.Td -o $@ $<
-	mv -f $(DEPDIR)/test_runner_enabled.Td $(DEPDIR)/test_runner_enabled.d
+	$(call quiet,CXX,$@)
+	$(Q)$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DEPDIR)/test_runner_enabled.Td -o $@ $<
+	@mv -f $(DEPDIR)/test_runner_enabled.Td $(DEPDIR)/test_runner_enabled.d
 
 $(OBJDIR)/%.o: $(SRC)/%.cpp $(COMPILE_CONFIG_STAMP)
 	@mkdir -p $(@D) $(dir $(DEPDIR)/$*)
-	$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td -o $@ $<
-	mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
+	$(call quiet,CXX,$@)
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td -o $@ $<
+	@mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
 clean:
 	-rm -f $(TARGETS)
