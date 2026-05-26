@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @tester_int___test() -> i32 [binding=weak, object=_ZN6testerIiE4testEv] {
+function @tester_int___test() -> i32 [binding=weak, object=_ZN6testerIiE4testEv, object_root=yes] {
   block ^entry:
     return i32 7
 }

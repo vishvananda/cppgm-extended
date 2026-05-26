@@ -2834,6 +2834,8 @@ public:
   {
     g_lowir_current_function_node = function_node_;
     function_.name = node_internal_symbol(*function_node_);
+    function_.metadata.object_output_root =
+        function_node_->is_explicit_instantiation_definition;
     function_.metadata.object_trivial_lifecycle =
         function_node_->object_trivial_lifecycle || function_node_->trivial_lifecycle;
     if(function_node_->has_source_location()) {
@@ -14285,6 +14287,8 @@ public:
           special_function_role_for_symbol(function.name),
           function_symbol_is_c_linkage(function.name),
           binding_for_defined_symbol(function.name));
+      out.metadata.object_output_root =
+          function.metadata.object_output_root;
       out.metadata.object_trivial_lifecycle =
           function.metadata.object_trivial_lifecycle;
       for(size_t pi = 0; pi < function.params.size(); ++pi) {

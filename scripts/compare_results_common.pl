@@ -551,6 +551,7 @@ sub parse_lowir_symbol_metadata_suffix
 		object => '',
 		keep_alias => '',
 		prefer_local => '',
+		object_root => '',
 	);
 	my %saw;
 	pos($suffix) = 0;
@@ -602,6 +603,12 @@ sub parse_lowir_symbol_metadata_suffix
 					if $value !~ /^(?:yes|no)$/;
 				$metadata{prefer_local} = $value;
 			}
+			elsif ($key eq 'object_root')
+			{
+				return (0, "unknown object_root mode '$value'")
+					if $value !~ /^(?:yes|no)$/;
+				$metadata{object_root} = $value;
+			}
 			else
 			{
 				return (0, "unknown symbol metadata key '$key'");
@@ -630,6 +637,7 @@ sub parse_lowir_function_metadata_suffix
 		tls_for => '',
 		keep_alias => '',
 		prefer_local => '',
+		object_root => '',
 	);
 	my %saw;
 	pos($suffix) = 0;
@@ -704,6 +712,12 @@ sub parse_lowir_function_metadata_suffix
 				return (0, "unknown prefer_local mode '$value'")
 					if $value !~ /^(?:yes|no)$/;
 				$metadata{prefer_local} = $value;
+			}
+			elsif ($key eq 'object_root')
+			{
+				return (0, "unknown object_root mode '$value'")
+					if $value !~ /^(?:yes|no)$/;
+				$metadata{object_root} = $value;
 			}
 			else
 			{

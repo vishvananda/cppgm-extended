@@ -25119,6 +25119,8 @@ private:
             binding,
             template_api::TemplateLifecycleCause::ExplicitInstantiationDefinition);
         binding->is_explicit_instantiation_definition = true;
+        note_instantiated_function_output(binding,
+                                          InstantiatedFunctionOutputMode::RequireDefinition);
       }
       if(explicit_info->member_scope) {
         for(map<string, vector<FunctionBinding *> >::iterator it =

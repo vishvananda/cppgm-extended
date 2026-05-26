@@ -493,6 +493,9 @@ void clear_lowir_program_debug_locations(lowir_internal::Program & program)
 
 bool object_symbol_definition_is_root(const lowir_internal::SymbolMetadata & metadata)
 {
+  if(metadata.object_output_root) {
+    return true;
+  }
   if(metadata.role != lowir_internal::SR_NONE) {
     return true;
   }
