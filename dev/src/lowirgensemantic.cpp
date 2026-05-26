@@ -407,17 +407,34 @@ bool try_get_integral_literal_value(const CallSemNode & node, long long & out)
   return false;
 }
 
+bool string_literal_type_matches(const TypePtr & type,
+                                 const QuoteLiteralData & literal)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  TypePtr element;
+  if(base->kind == Type::TK_ARRAY || base->kind == Type::TK_POINTER) {
+    element = strip_top_level_cv(base->inner);
+  }
+  return element &&
+         element->kind == Type::TK_FUNDAMENTAL &&
+         element->fundamental == string_literal_element_type(literal);
+}
+
 bool try_parse_string_literal_node(const CallSemNode & node, QuoteLiteralData & out)
 {
   if(node.kind != CallSemKind::literal || node.text.find('"') == string::npos) {
     return false;
   }
-  TypePtr base = strip_top_level_cv(node.semantic_type);
-  if(!base || base->kind != Type::TK_ARRAY) {
+  const QuoteLiteralData literal = parse_quote_literal(node.text);
+  if(literal.quote != '"' || !literal.ud_suffix.empty() ||
+     !string_literal_type_matches(node.semantic_type, literal)) {
     return false;
   }
-  out = parse_quote_literal(node.text);
-  return out.quote == '"' && out.ud_suffix.empty();
+  out = literal;
+  return true;
 }
 
 vector<unsigned long long> string_literal_code_units(const QuoteLiteralData & literal)
@@ -10397,7 +10414,7 @@ private:
       begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
       emit_line("store " +
                 lowir_memory_type_for(result_type->inner) + " " +
-                emit_rvalue(node.children[1]) + ", " +
+                emit_scalar_storage_value(result_type->inner, node.children[1]) + ", " +
                 object_ptr);
       finish_nothrow_new_initialization(nothrow_end_label);
       return object_ptr;
