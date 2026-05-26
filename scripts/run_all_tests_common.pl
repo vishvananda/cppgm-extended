@@ -533,6 +533,49 @@ sub run_batch_wrapped_pa9
 	close_wrapped_worker($worker_pid, $worker_out, $worker_in);
 }
 
+sub run_single_pa9_driver
+{
+	my ($app, $suffix, $test) = @_;
+	my $test_base = $test;
+	$test_base =~ s/\.t\.1$//;
+
+	unlink(glob("$test_base.$suffix.program"));
+	unlink(glob("$test_base.$suffix.program.exit_status"));
+	unlink(glob("$test_base.$suffix.program.stdout"));
+	unlink(glob("$test_base.$suffix.program.stderr"));
+	unlink(glob("$test_base.$suffix.impl.stdout"));
+	unlink(glob("$test_base.$suffix.impl.stderr"));
+	unlink(glob("$test_base.$suffix.impl.exit_status"));
+
+	my @srcfiles = sorted_glob("$test_base.t.*");
+	my @args;
+	if (defined($ENV{CY86_TARGET}) && $ENV{CY86_TARGET} ne '')
+	{
+		push @args, '--target', $ENV{CY86_TARGET};
+	}
+	push @args, '-o', "$test_base.$suffix.program", @srcfiles;
+
+	my $impl_status = run_command_capture(
+		cmd => [local_exec_path($app), @args],
+		stdout => "$test_base.$suffix.impl.stdout",
+		stderr => "$test_base.$suffix.impl.stderr",
+		timeout => get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 30),
+	);
+	write_numeric_status("$test_base.$suffix.impl.exit_status", $impl_status);
+
+	if ($impl_status == 0)
+	{
+		my $program_status = run_command_capture(
+			cmd => [local_exec_path("$test_base.$suffix.program")],
+			stdout => "$test_base.$suffix.program.stdout",
+			stderr => "$test_base.$suffix.program.stderr",
+			stdin => "$test_base.stdin",
+			timeout => get_timeout_from_env("CPPGM_PROGRAM_TEST_TIMEOUT_SEC", 10),
+		);
+		write_numeric_status("$test_base.$suffix.program.exit_status", $program_status);
+	}
+}
+
 sub shard_tests
 {
 	my ($tests, $jobs) = @_;
@@ -614,18 +657,9 @@ sub run_single
 			run_single_wrapped_text($mode, $app, $suffix, $test, $assignment);
 			return;
 		}
-		if ($mode eq "driver_t")
-		{
-			my $test_base = $test;
-			$test_base =~ s/\.t$//;
-			system("scripts/run_one_test.sh", $app, $suffix, $test_base);
-			return;
-		}
 		if ($mode eq "driver_t1")
 		{
-			my $test_base = $test;
-			$test_base =~ s/\.t\.1$//;
-			system("scripts/run_one_test.sh", $app, $suffix, $test_base);
+			run_single_pa9_driver($app, $suffix, $test);
 			return;
 		}
 		die "Unsupported run_all_tests mode $mode";
@@ -650,7 +684,6 @@ my %patterns = (
 	text_t => qr/\.t$/,
 	witness_t => qr/\.t$/,
 	text_t1 => qr/\.t\.1$/,
-	driver_t => qr/\.t$/,
 	driver_t1 => qr/\.t\.1$/,
 );
 die "Unsupported run_all_tests mode $mode" if !exists($patterns{$mode});

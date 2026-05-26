@@ -4,5 +4,5 @@ use warnings;
 use FindBin;
 use File::Basename qw(dirname);
 my $repo_root = dirname(dirname($FindBin::Bin));
-exec("perl", "$repo_root/scripts/run_all_tests_common.pl", "driver_t", @ARGV)
+exec("perl", "$repo_root/scripts/run_lowir_link_tests_worker.pl", @ARGV)
 	or die "exec failed: $!";

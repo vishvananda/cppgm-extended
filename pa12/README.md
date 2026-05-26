@@ -40,8 +40,7 @@ The PA12 starter kit contains:
 - `cppgm++.cpp`, a link to the editable `dev/cppgm++.cpp` entry point
 - the grammar for this assignment called `pa12.gram`
 - an HTML grammar explorer of `pa12.gram` in the sub-directory `grammar/`
-- `scripts/run_all_tests.pl`, `scripts/run_one_test.sh`, and
-  `scripts/compare_results.pl`
+- `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
 - `tests/spec/`, clause-anchored call/conversion/control-flow tests
 - `tests/general/`, broader call-semantics tests
 - checked-in `.ref` and `.ref.exit_status` files used as the oracle

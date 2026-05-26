@@ -319,6 +319,101 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
             self.assertEqual((tests / "basic.my").read_text(), "generated output\n")
             self.assertEqual((tests / "basic.my.stdout").read_text(), "stdout log\nstderr log\n")
 
+    def test_pa9_driver_mode_runs_without_shell_wrapper(self):
+        with tempfile.TemporaryDirectory(prefix="pa9-driver-no-wrapper.") as temp_dir:
+            temp = Path(temp_dir)
+            pa = temp / "pa9"
+            tests = pa / "tests"
+            app = temp / "fake_cy86.py"
+            test = tests / "basic.t.1"
+
+            tests.mkdir(parents=True)
+            test.write_text("source\n")
+            (tests / "basic.stdin").write_text("stdin\n")
+            app.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os\n"
+                "import stat\n"
+                "import sys\n"
+                "\n"
+                "out = sys.argv[sys.argv.index('-o') + 1]\n"
+                "with open(out, 'w') as fh:\n"
+                "    fh.write('#!/bin/sh\\ncat\\n')\n"
+                "os.chmod(out, stat.S_IRWXU)\n"
+            )
+            app.chmod(0o755)
+
+            result = run(
+                "perl",
+                str(REPO_ROOT / "scripts" / "run_all_tests_common.pl"),
+                "driver_t1",
+                str(app),
+                "my",
+                "tests",
+                cwd=pa,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stderr, "")
+            self.assertEqual((tests / "basic.my.impl.exit_status").read_text(), "0\n")
+            self.assertEqual((tests / "basic.my.program.exit_status").read_text(), "0\n")
+            self.assertEqual((tests / "basic.my.program.stdout").read_text(), "stdin\n")
+
+    def test_driver_assignment_wrapper_uses_worker_script(self):
+        with tempfile.TemporaryDirectory(prefix="pa23-worker-wrapper.") as temp_dir:
+            temp = Path(temp_dir)
+            pa = temp / "pa23"
+            tests = pa / "tests"
+            app = temp / "fake_lowir_native.py"
+            test = tests / "basic.t"
+
+            tests.mkdir(parents=True)
+            test.write_text("source\n")
+            (tests / "basic.stdin").write_text("stdin\n")
+            app.write_text(
+                "#!/usr/bin/env python3\n"
+                "import os\n"
+                "import stat\n"
+                "import sys\n"
+                "\n"
+                "if '--batch-stdin' not in sys.argv:\n"
+                "    sys.exit(2)\n"
+                "for line in sys.stdin:\n"
+                "    fields = line.rstrip('\\n').split('\\t')\n"
+                "    stdout_path, stderr_path, stdin_path, env_text, *args = fields\n"
+                "    open(stdout_path, 'a').close()\n"
+                "    open(stderr_path, 'a').close()\n"
+                "    if '--dump-machine-ir' in args:\n"
+                "        mir = args[args.index('--dump-machine-ir') + 1]\n"
+                "        with open(mir, 'w') as fh:\n"
+                "            fh.write('mir\\n')\n"
+                "    program = args[args.index('-o') + 1]\n"
+                "    with open(program, 'w') as fh:\n"
+                "        fh.write('#!/bin/sh\\ncat\\n')\n"
+                "    os.chmod(program, stat.S_IRWXU)\n"
+                "    print('EXIT_SUCCESS', flush=True)\n"
+            )
+            app.chmod(0o755)
+
+            result = run(
+                "perl",
+                str(REPO_ROOT / "pa23" / "scripts" / "run_all_tests.pl"),
+                str(app),
+                "my",
+                "tests",
+                cwd=pa,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stderr, "")
+            self.assertEqual((tests / "basic.my.impl.exit_status").read_text(), "0\n")
+            self.assertEqual((tests / "basic.my.program.exit_status").read_text(), "0\n")
+            self.assertEqual((tests / "basic.my.program.stdout").read_text(), "stdin\n")
+
 
 if __name__ == "__main__":
     unittest.main()
