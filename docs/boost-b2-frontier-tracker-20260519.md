@@ -188,6 +188,7 @@ Local Boost wrapper state:
 | 7 | `libs/assert/test` | pass | Baseline suite survey passed this suite; no current regression item is parked here. |
 | 8 | `libs/assign/test` | pass | Focused `ptr_list_of`, `list_inserter`, `list_of`, and `multi_index_container` now pass. The remaining `multi_index_container` frontier closed after constexpr static-array pointer iteration, private CRTP static pointer downcast access, null-preserving nonprimary base pointer adjustments, `std::endl` external owner routing, qualified same-name member-template hiding, and inherited member-template active-owner selection fixes. Full `JOBS=12 ./run-cppgm-b2.sh -a libs/assign/test` passed on 2026-05-26 and updated 84 targets. |
 | 9 | `libs/atomic/test` | pass | `JOBS=12 ./run-cppgm-b2.sh -a libs/atomic/test` passed on 2026-05-26 from the current tree; B2 found 1 already-current target. Log `/tmp/boost-frontier-atomic-current-20260526.log`. |
+| 10 | `libs/beast/test` | pass | `JOBS=12 ./run-cppgm-b2.sh -a libs/beast/test` passed on 2026-05-26 from the current tree; B2 found 1 already-current target. Log `/tmp/boost-frontier-beast-current-20260526.log`. |
 
 ## Survey Regression Triage - 2026-05-25
 
