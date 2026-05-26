@@ -5641,6 +5641,12 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
     if(node_has_simple_type(node, OP_GE)) {
       return "operator>=";
     }
+    if(node_has_simple_type(node, OP_LAND)) {
+      return "operator&&";
+    }
+    if(node_has_simple_type(node, OP_LOR)) {
+      return "operator||";
+    }
     if(node_has_simple_type(node, OP_COMMA)) {
       return "operator,";
     }
