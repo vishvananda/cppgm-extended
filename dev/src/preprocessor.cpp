@@ -806,6 +806,7 @@ bool is_supported_feature_query(const string & id, const string & name)
            name == "cxx_alignas" ||
            name == "cxx_alignof" ||
            name == "cxx_auto_type" ||
+           name == "__cxx_binary_literals__" ||
            name == "cxx_default_function_template_args" ||
            name == "cxx_defaulted_functions" ||
            name == "cxx_deleted_functions" ||
@@ -840,6 +841,7 @@ bool is_supported_feature_query(const string & id, const string & name)
            name == "cxx_alignas" ||
            name == "cxx_alignof" ||
            name == "cxx_auto_type" ||
+           name == "__cxx_binary_literals__" ||
            name == "cxx_default_function_template_args" ||
            name == "cxx_defaulted_functions" ||
            name == "cxx_deleted_functions" ||
