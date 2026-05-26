@@ -16739,6 +16739,22 @@ static bool try_emit_scoped_variable_object_symbol_ir(const semantic_model::Scop
          try_emit_qualified_name_object_symbol_ir(qualified, out);
 }
 
+bool mangle_itanium_type_encoding(const TypePtr & type, string & out)
+{
+  string candidate;
+  MangleSubstitutionState state;
+  if(!try_emit_type_encoding_ir_impl(type, candidate, nullptr, &state)) {
+    return false;
+  }
+  out.swap(candidate);
+  return true;
+}
+
+bool mangle_itanium_name_encoding(const QualifiedName & qualified_name, string & out)
+{
+  return try_emit_qualified_name_encoding_ir(qualified_name, out);
+}
+
 static bool emit_itanium_function_encoding_with_substitutions(
     const QualifiedName & qualified_name,
     const string & display_name,

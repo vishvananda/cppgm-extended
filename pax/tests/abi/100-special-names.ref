@@ -1,0 +1,6 @@
+case namespace_variable
+mangled _ZN2ns1xE
+case typeinfo_named
+mangled _ZTIN2ns1CE
+case vtable_named
+mangled _ZTVN2ns1CE

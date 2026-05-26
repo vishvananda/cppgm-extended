@@ -102,6 +102,10 @@ std::string thread_local_wrapper_object_symbol_from_object_symbol(
     const std::string & object_symbol);
 std::string typeinfo_symbol_for_type(const cpp_decl::TypePtr & type);
 std::string vtable_object_symbol_for_type(const cpp_decl::TypePtr & type);
+bool mangle_itanium_type_encoding(const cpp_decl::TypePtr & type,
+                                  std::string & out);
+bool mangle_itanium_name_encoding(const cpp_decl::QualifiedName & qualified_name,
+                                  std::string & out);
 std::string virtual_override_thunk_object_symbol(const std::string & target_object_symbol,
                                                  long long this_adjust,
                                                  bool has_result_adjust = false,

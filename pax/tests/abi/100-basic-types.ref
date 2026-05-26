@@ -1,0 +1,8 @@
+case pointer_to_const_int
+mangled PKi
+case fixed_array
+mangled A3_i
+case named_type
+mangled N2ns1CE
+case member_pointer
+mangled MN2ns1CEi
