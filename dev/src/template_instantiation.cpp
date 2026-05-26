@@ -7190,10 +7190,13 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       return declared_owner;
     }
 
-    if(active_owner &&
-       active_owner != declared_owner &&
-       active_owner->name == declared_owner->name) {
-      return active_owner;
+    if(active_owner) {
+      if(active_owner == declared_owner) {
+        return active_owner;
+      }
+      if(active_owner->name == declared_owner->name) {
+        return active_owner;
+      }
     }
 
     for(Scope * current = scope; current; current = current->parent) {

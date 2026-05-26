@@ -3257,6 +3257,19 @@ private:
     return binding && binding->is_parameter;
   }
 
+  bool base_subobject_pointer_operand_may_be_null(const CallSemNode & node) const
+  {
+    if(root_is_current_this(node)) {
+      return false;
+    }
+    if(node.kind == CallSemKind::unary_expression &&
+       node.children.size() == 1 &&
+       callsem_has_token(node, OP_AMP)) {
+      return false;
+    }
+    return true;
+  }
+
   string emit_pointer_operand(const CallSemNode & node)
   {
     TypePtr base_type = strip_top_level_cv(node.semantic_type);
@@ -5104,6 +5117,47 @@ private:
                                               to_string(offset),
                                               projection,
                                               false);
+  }
+
+  string emit_null_preserving_index_address_with_projection(
+      const string & element_type,
+      const string & base_ptr,
+      const string & offset,
+      lowir_internal::IndexProjectionKind projection)
+  {
+    if(offset == "0") {
+      return emit_index_address_with_projection(element_type,
+                                                base_ptr,
+                                                offset,
+                                                projection,
+                                                false);
+    }
+
+    const string result_slot = new_hidden_slot("ptr", "basecast");
+    const string null_label = new_block("basecast_null");
+    const string adjust_label = new_block("basecast_adjust");
+    const string end_label = new_block("basecast_end");
+    const string is_null =
+        emit_temp_assignment("i64", string("cmp eq ptr ") + base_ptr + ", 0");
+    terminate(string("branch ") + is_null + ", " + lowir_block_name(null_label) + ", " +
+              lowir_block_name(adjust_label));
+
+    start_block(null_label);
+    emit_line("store ptr 0, " + result_slot);
+    terminate(string("jump ") + lowir_block_name(end_label));
+
+    start_block(adjust_label);
+    const string adjusted =
+        emit_index_address_with_projection(element_type,
+                                           base_ptr,
+                                           offset,
+                                           projection,
+                                           false);
+    emit_line("store ptr " + adjusted + ", " + result_slot);
+    terminate(string("jump ") + lowir_block_name(end_label));
+
+    start_block(end_label);
+    return emit_temp_assignment("ptr", string("load ptr ") + result_slot);
   }
 
   string emit_decay_pointer(const string & ptr)
@@ -12090,11 +12144,19 @@ private:
         base = emit_lvalue_address(node.children[0]);
       }
       const string field_storage =
-          emit_index_address_with_projection("i8",
-                                             base,
-                                             offset,
-                                             projection,
-                                             false);
+          node.is_base_subobject &&
+                  base_type &&
+                  base_type->kind == Type::TK_POINTER &&
+                  base_subobject_pointer_operand_may_be_null(node.children[0]) ?
+              emit_null_preserving_index_address_with_projection("i8",
+                                                                 base,
+                                                                 offset,
+                                                                 projection) :
+              emit_index_address_with_projection("i8",
+                                                 base,
+                                                 offset,
+                                                 projection,
+                                                 false);
       if(node.is_reference_storage && !node.is_reference_storage_target) {
         return emit_temp_assignment("ptr", string("load ptr ") + field_storage);
       }
@@ -17751,7 +17813,10 @@ private:
       if(!function_symbol.empty()) {
         note_referenced_function_signature(function_symbol, node.semantic_type);
         if(symbol_linkage::has_object_symbol(callsem_symbol(node))) {
-          set_exported_symbol(function_symbol, callsem_symbol(node), "function-id", node.text);
+          note_runtime_function_symbol_identity(function_symbol,
+                                                callsem_symbol(node),
+                                                "function-id",
+                                                node.text);
         }
         if(current_function.empty()) {
           referenced_function_symbols_.insert(function_symbol);

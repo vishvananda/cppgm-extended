@@ -7518,18 +7518,58 @@ void append_function_template_call_candidates_impl(
       !use_preselected_member_templates &&
       name_node && has_qualified_template_name &&
       (has_structured_qualified_name || name_template_id_syntax);
+  map<FunctionTemplateDecl *, ClassInfo *> template_active_owners;
+  const auto note_template_active_owner =
+      [&](const vector<FunctionTemplateDecl *> & owner_templates, const ClassInfo * owner)
+      {
+        if(!owner) {
+          return;
+        }
+        for(size_t owner_index = 0; owner_index < owner_templates.size(); ++owner_index) {
+          if(owner_templates[owner_index]) {
+            template_active_owners[owner_templates[owner_index]] =
+                const_cast<ClassInfo *>(owner);
+          }
+        }
+      };
   if(use_preselected_member_templates) {
     const vector<FunctionTemplateDecl *> * found =
         find_direct_function_template_set(lookup_scope, template_name);
     if(found) {
       append_unique_function_templates(templates, *found);
+      note_template_active_owner(*found, lookup_scope.class_info);
     }
   } else if(use_structured_template_lookup) {
-    templates = ctx.lookup_function_templates_node(lookup_scope,
-                                                   *name_node,
-                                                   template_name);
+    Scope * qualified_scope =
+        ctx.resolve_qualified_scope_for_node(lookup_scope,
+                                             qualified_template_name,
+                                             *name_node,
+                                             false);
+    if(qualified_scope && qualified_scope->class_info) {
+      MemberFunctionTemplateLookupResult result =
+          lookup_visible_member_function_templates(*qualified_scope->class_info,
+                                                   qualified_template_name.name);
+      append_unique_function_templates(templates, result.templates);
+      note_template_active_owner(result.templates, result.declared_in);
+    } else {
+      templates = ctx.lookup_function_templates_node(lookup_scope,
+                                                     *name_node,
+                                                     template_name);
+    }
   } else if(has_qualified_template_name) {
-    collect_function_templates(ctx, lookup_scope, qualified_template_name, templates);
+    Scope * qualified_scope =
+        resolve_qualified_scope_for_class_or_namespace(ctx,
+                                                       lookup_scope,
+                                                       qualified_template_name);
+    if(qualified_scope && qualified_scope->class_info) {
+      MemberFunctionTemplateLookupResult result =
+          lookup_visible_member_function_templates(*qualified_scope->class_info,
+                                                   qualified_template_name.name);
+      append_unique_function_templates(templates, result.templates);
+      note_template_active_owner(result.templates, result.declared_in);
+    } else {
+      collect_function_templates(ctx, lookup_scope, qualified_template_name, templates);
+    }
   } else {
     collect_function_templates(ctx, lookup_scope, template_name, templates);
   }
@@ -7776,6 +7816,7 @@ void append_function_template_call_candidates_impl(
       FunctionCandidateBucketMap & seen_candidates;
       std::vector<FunctionBinding *> & out;
       std::vector<template_api::TemplateWitnessSourceDrop> & combination_drops;
+      std::map<FunctionTemplateDecl *, ClassInfo *> & template_active_owners;
       const std::string & trace_location;
 
       void run(size_t index)
@@ -7835,6 +7876,12 @@ void append_function_template_call_candidates_impl(
             const template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause
                 class_source_capture_pause;
             ScopedCallSemConstructionPath acquire_path("overload.template-acquire-binding");
+            ClassInfo * active_owner = nullptr;
+            map<FunctionTemplateDecl *, ClassInfo *>::iterator active_owner_it =
+                template_active_owners.find(&candidate_template);
+            if(active_owner_it != template_active_owners.end()) {
+              active_owner = active_owner_it->second;
+            }
             binding =
                 semantic_template_function::acquire_function_template_binding(
                     ctx,
@@ -7842,7 +7889,8 @@ void append_function_template_call_candidates_impl(
                     deduced,
                     instantiation_use_scope,
                     &pack_sizes,
-                    false);
+                    false,
+                    active_owner);
           }
           catch(const TemplateSubstitutionFailure & e)
           {
@@ -7887,6 +7935,7 @@ void append_function_template_call_candidates_impl(
         seen_candidates,
         out,
         combination_drops,
+        template_active_owners,
         trace_location};
     combination_runner.run(0);
     if(witness_drops && out.size() == candidate_count_before_combinations) {
@@ -10980,7 +11029,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                                             *target.target_class);
     }
     member_candidates = target.qualified ?
-        lookup_class_scoped_functions(*target.target_class, member_lookup_name) :
+        lookup_visible_member_functions(*target.target_class, member_lookup_name) :
         lookup_visible_member_functions(*class_info, member_lookup_name);
     suppress_virtual_dispatch_for_qualified_id = target.qualified;
     member_access_lookup_name = member_lookup_name;

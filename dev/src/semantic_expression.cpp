@@ -600,8 +600,7 @@ bool try_apply_static_reference_derived_cast(SemanticContext & ctx,
 
   size_t offset = 0;
   MemberAccess access = MA_PUBLIC;
-  if(!find_unique_base_path(*target_class, source_class, offset, access) ||
-     access != MA_PUBLIC) {
+  if(!find_unique_base_path(*target_class, source_class, offset, access)) {
     return false;
   }
 
@@ -669,8 +668,7 @@ bool try_apply_static_pointer_derived_cast(SemanticContext & ctx,
 
   size_t offset = 0;
   MemberAccess access = MA_PUBLIC;
-  if(!find_unique_base_path(*target_class, source_class, offset, access) ||
-     access != MA_PUBLIC) {
+  if(!find_unique_base_path(*target_class, source_class, offset, access)) {
     return false;
   }
 
@@ -4764,7 +4762,7 @@ ExprInfo analyze_member_expression(SemanticContext & ctx,
   field.path_offset += target.path_offset;
   if(!field.binding) {
     MemberFunctionLookupResult member_functions = target.qualified ?
-        lookup_class_scoped_functions(*target.target_class, target.lookup_name) :
+        lookup_visible_member_functions(*target.target_class, target.lookup_name) :
         lookup_visible_member_functions(*class_info, target.lookup_name);
     member_functions.path_access =
         combine_member_access(target.path_access, member_functions.path_access);

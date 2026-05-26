@@ -14146,7 +14146,7 @@ private:
               bindings.end());
         };
     const string normalized_name = normalize_type_lookup_name(name);
-    const auto lookup_class_scoped_with_implicit =
+    const auto lookup_visible_member_functions_with_implicit =
         [this](ClassInfo & info,
                const string & lookup_name) -> MemberFunctionLookupResult
     {
@@ -14155,7 +14155,7 @@ private:
         ensure_implicit_copy_assignment(info);
         ensure_implicit_move_assignment(info);
       }
-      return lookup_class_scoped_functions(info, lookup_name);
+      return lookup_visible_member_functions(info, lookup_name);
     };
     const bool suppress_source_dependent_base_members =
         callsemantic::scope_is_inside_source_template_context(scope);
@@ -14177,13 +14177,14 @@ private:
       vector<FunctionBinding *> out =
           lookup_qualified_class_or_namespace_generic<vector<FunctionBinding *> >(
           scope, qualified,
-          [&lookup_class_scoped_with_implicit](Scope & target,
-                                               const string & lookup_name)
+          [&lookup_visible_member_functions_with_implicit](Scope & target,
+                                                           const string & lookup_name)
               -> vector<FunctionBinding *>
           {
             if(target.class_info) {
               MemberFunctionLookupResult result =
-                  lookup_class_scoped_with_implicit(*target.class_info, lookup_name);
+                  lookup_visible_member_functions_with_implicit(*target.class_info,
+                                                                lookup_name);
               if(!result.functions.empty()) {
                 return result.functions;
               }
@@ -14268,7 +14269,8 @@ private:
       }
       if(out.empty() && current->class_info) {
         MemberFunctionLookupResult result =
-            lookup_class_scoped_with_implicit(*current->class_info, normalized_name);
+            lookup_visible_member_functions_with_implicit(*current->class_info,
+                                                          normalized_name);
         filter_source_dependent_base_member_lookup(*current->class_info, result);
         out = result.functions;
         filter_function_candidates_visible_from_node(out, use_node, &scope);
@@ -14292,7 +14294,7 @@ private:
       }
       if(out.empty() && lexical_class) {
         MemberFunctionLookupResult result =
-            lookup_class_scoped_with_implicit(*lexical_class, normalized_name);
+            lookup_visible_member_functions_with_implicit(*lexical_class, normalized_name);
         filter_source_dependent_base_member_lookup(*lexical_class, result);
         out = result.functions;
         filter_function_candidates_visible_from_node(out, use_node, &scope);

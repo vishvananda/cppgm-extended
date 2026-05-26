@@ -103,7 +103,8 @@ semantic_model::FunctionBinding * acquire_function_template_binding(
     const std::vector<template_model::TemplateArgument> & arguments,
     semantic_model::Scope * use_scope = nullptr,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr,
-    bool include_body = true);
+    bool include_body = true,
+    semantic_model::ClassInfo * active_owner = nullptr);
 
 semantic_model::FunctionBinding * acquire_function_definition_binding(
     SemanticContext & ctx,

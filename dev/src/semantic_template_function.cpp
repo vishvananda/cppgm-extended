@@ -266,11 +266,13 @@ semantic_model::FunctionBinding * acquire_function_template_binding(
     const std::vector<template_model::TemplateArgument> & arguments,
     semantic_model::Scope * use_scope,
     const std::map<std::string, std::size_t> * pack_sizes,
-    bool include_body)
+    bool include_body,
+    semantic_model::ClassInfo * active_owner)
 {
   template_api::TemplateFunctionInstantiationRequest request;
   request.decl = &decl;
   request.arguments = arguments;
+  request.active_owner = active_owner;
   request.use_scope = use_scope ? template_api::make_template_environment(*use_scope) :
                                   template_api::TemplateEnvironmentHandle();
   request.include_body = include_body;

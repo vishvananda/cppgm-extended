@@ -379,9 +379,42 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
        hooks_.evaluate_special_expression(*this, node, out)) {
       return true;
     }
+    if((node.simple_type == OP_INC || node.simple_type == OP_DEC) &&
+       node.children[0].kind == CppAstKind::id_expression) {
+      ConstexprValue current;
+      if(!lookup_value(node.children[0].value, &node.children[0], current)) {
+        return false;
+      }
+      ConstexprValue one = make_integral_value(1, make_fundamental(FT_INT));
+      ConstexprValue updated;
+      if(!constexpr_value_apply_binary(node.simple_type == OP_INC ? OP_PLUS : OP_MINUS,
+                                       current,
+                                       one,
+                                       updated) ||
+         !assign_local(node.children[0].value, updated)) {
+        return false;
+      }
+      out = updated;
+      return true;
+    }
     ConstexprValue operand;
     if(!eval_expr(node.children[0], operand)) {
       return false;
+    }
+    if(node.simple_type == OP_STAR &&
+       operand.kind == ConstexprValue::CV_POINTER &&
+       operand.pointer_offset < operand.array_elements.size()) {
+      out = operand.array_elements[operand.pointer_offset];
+      return true;
+    }
+    if(node.simple_type == OP_STAR &&
+       operand.kind == ConstexprValue::CV_POINTER &&
+       !operand.storage_identity.empty()) {
+      ConstexprValue storage;
+      if(lookup_value(operand.storage_identity, &node.children[0], storage) &&
+         array_element_value(storage, operand.pointer_offset, out)) {
+        return true;
+      }
     }
     return constexpr_value_apply_unary(node.simple_type, operand, out);
   }

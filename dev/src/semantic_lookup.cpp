@@ -747,11 +747,6 @@ bool member_lookup_present(const MemberFunctionLookupResult & result)
   return !result.functions.empty();
 }
 
-bool member_lookup_present(const MemberFunctionTemplateLookupResult & result)
-{
-  return !result.templates.empty();
-}
-
 bool member_lookup_present(const MemberCallableLookupResult & result)
 {
   return !result.functions.empty() || !result.templates.empty();
@@ -3169,30 +3164,25 @@ MemberFunctionLookupResult lookup_class_scoped_functions(ClassInfo & info,
 MemberFunctionLookupResult lookup_visible_member_functions(ClassInfo & info,
                                                            const string & name)
 {
-  MemberFunctionLookupResult scoped = lookup_class_scoped_functions(info, name);
-  if(!scoped.functions.empty()) {
-    return scoped;
-  }
-  return lookup_member_functions(info, name);
+  MemberCallableLookupResult callables = lookup_visible_member_callables(info, name);
+  MemberFunctionLookupResult result;
+  result.functions = callables.functions;
+  result.declared_in = callables.declared_in;
+  result.path_access = callables.path_access;
+  result.path_offset = callables.path_offset;
+  return result;
 }
 
 MemberFunctionTemplateLookupResult lookup_visible_member_function_templates(ClassInfo & info,
                                                                             const string & name)
 {
-  return lookup_member_in_hierarchy<MemberFunctionTemplateLookupResult>(
-      info,
-      [&name](ClassInfo & current) -> MemberFunctionTemplateLookupResult
-      {
-        const vector<FunctionTemplateDecl *> * found =
-            find_direct_function_template_set(*current.member_scope, name);
-        if(!found || found->empty()) {
-          return MemberFunctionTemplateLookupResult();
-        }
-        MemberFunctionTemplateLookupResult result;
-        result.templates = *found;
-        result.declared_in = &current;
-        return result;
-      });
+  MemberCallableLookupResult callables = lookup_visible_member_callables(info, name);
+  MemberFunctionTemplateLookupResult result;
+  result.templates = callables.templates;
+  result.declared_in = callables.declared_in;
+  result.path_access = callables.path_access;
+  result.path_offset = callables.path_offset;
+  return result;
 }
 
 MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,

@@ -299,6 +299,64 @@ bool array_decay_target_compatible(const TypePtr & source, const TypePtr & targe
          pointee_qualification_conversion_allowed(source_base->inner, target_base->inner);
 }
 
+bool integral_value_to_signed(const ConstexprValue & value, long long & out);
+
+bool constexpr_array_decay_to_pointer(const ConstexprValue & value,
+                                      ConstexprValue & out)
+{
+  TypePtr source = strip_top_level_cv(remove_reference_type(value.type));
+  if(value.kind != ConstexprValue::CV_ARRAY ||
+     !source ||
+     source->kind != Type::TK_ARRAY ||
+     !source->inner ||
+     value.storage_identity.empty()) {
+    return false;
+  }
+  out = make_pointer_value(make_pointer(source->inner), value.storage_identity, 0);
+  out.array_elements = value.array_elements;
+  return true;
+}
+
+bool constexpr_pointer_operand(const ConstexprValue & value,
+                               ConstexprValue & out)
+{
+  if(value.kind == ConstexprValue::CV_POINTER) {
+    out = value;
+    return true;
+  }
+  return constexpr_array_decay_to_pointer(value, out);
+}
+
+bool constexpr_pointer_offset_operand(const ConstexprValue & value,
+                                      long long & out)
+{
+  return value.kind == ConstexprValue::CV_INTEGRAL &&
+         integral_value_to_signed(value, out);
+}
+
+bool constexpr_pointer_add(const ConstexprValue & pointer_value,
+                           const ConstexprValue & offset_value,
+                           ConstexprValue & out)
+{
+  ConstexprValue pointer;
+  long long offset = 0;
+  if(!constexpr_pointer_operand(pointer_value, pointer) ||
+     !constexpr_pointer_offset_operand(offset_value, offset)) {
+    return false;
+  }
+  if(offset < 0 &&
+     static_cast<unsigned long long>(-offset) > pointer.pointer_offset) {
+    return false;
+  }
+  out = pointer;
+  if(offset < 0) {
+    out.pointer_offset -= static_cast<size_t>(-offset);
+  } else {
+    out.pointer_offset += static_cast<size_t>(offset);
+  }
+  return true;
+}
+
 bool value_to_floating(const ConstexprValue & value, long double & out)
 {
   if(value.kind == ConstexprValue::CV_FLOATING) {
@@ -996,6 +1054,7 @@ bool constexpr_value_cast(const ConstexprValue & value,
     if(source && base && array_decay_target_compatible(source, base) &&
        !value.storage_identity.empty()) {
       out = make_pointer_value(base, value.storage_identity, 0);
+      out.array_elements = value.array_elements;
       out.type = target;
       return true;
     }
@@ -1144,6 +1203,15 @@ bool constexpr_value_apply_binary(ETokenType op,
              lhs.pointer_offset == rhs.pointer_offset;
       }
       out = make_integral_value(op == OP_EQ ? eq : !eq, make_fundamental(FT_BOOL));
+      return true;
+    }
+  }
+
+  if(op == OP_PLUS || op == OP_MINUS) {
+    if(constexpr_pointer_add(lhs, rhs, out)) {
+      return true;
+    }
+    if(op == OP_PLUS && constexpr_pointer_add(rhs, lhs, out)) {
       return true;
     }
   }

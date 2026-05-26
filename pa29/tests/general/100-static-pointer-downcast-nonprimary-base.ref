@@ -42,16 +42,30 @@ global @leaf__vtable [storage=readonly, binding=weak, object=_ZTV4leaf] = {
 function @read(%root : ptr) -> i32 [binding=strong, object=_Z4readP4base] {
   slot $root : ptr
   slot $p : ptr
+  slot $basecast__1 : ptr
 
   block ^entry:
     store ptr %root, $root
     %t1 = load ptr $root
-    %t2 = index i8 [projection=base_subobject] %t1, -8
-    store ptr %t2, $p
-    %t3 = load ptr $p
-    %t4 = index i8 [projection=field] %t3, 12
-    %t5 = load i32 %t4
-    return i32 %t5
+    %t2 = cmp eq ptr %t1, 0
+    branch %t2, ^basecast_null_1, ^basecast_adjust_2
+
+  block ^basecast_null_1:
+    store ptr 0, $basecast__1
+    jump ^basecast_end_3
+
+  block ^basecast_adjust_2:
+    %t3 = index i8 [projection=base_subobject] %t1, -8
+    store ptr %t3, $basecast__1
+    jump ^basecast_end_3
+
+  block ^basecast_end_3:
+    %t4 = load ptr $basecast__1
+    store ptr %t4, $p
+    %t5 = load ptr $p
+    %t6 = index i8 [projection=field] %t5, 12
+    %t7 = load i32 %t6
+    return i32 %t7
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $object : obj<16x8>
