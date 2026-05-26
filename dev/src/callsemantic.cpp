@@ -10271,6 +10271,14 @@ private:
        node_has_simple_type(node, OP_AMP) &&
        node.children.size() == 1 &&
        node.children[0].kind == CppAstKind::id_expression) {
+      if(semantic_overload::resolve_member_function_id_for_target(*this,
+                                                                   scope,
+                                                                   node,
+                                                                   target,
+                                                                   out)) {
+        return true;
+      }
+
       ExprInfo function_expr;
       if(resolve_function_id_for_target(scope,
                                         node.children[0].value,

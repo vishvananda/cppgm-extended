@@ -7342,6 +7342,56 @@ bool collect_overloaded_member_pointer_argument_options(SemanticContext & ctx,
   return !out.empty();
 }
 
+bool resolve_member_function_id_for_target(SemanticContext & ctx,
+                                           Scope & scope,
+                                           const CppAstNode & unary_node,
+                                           const TypePtr & target,
+                                           ExprInfo & out)
+{
+  TypePtr target_member_pointer = target_member_function_pointer_type(target);
+  if(!target_member_pointer) {
+    return false;
+  }
+
+  vector<ExprInfo> options;
+  if(!collect_overloaded_member_pointer_argument_options(ctx,
+                                                         scope,
+                                                         unary_node,
+                                                         options)) {
+    return false;
+  }
+
+  const TypePtr target_base = strip_top_level_cv(target_member_pointer);
+  bool found = false;
+  bool ambiguous = false;
+  ExprInfo selected;
+  for(size_t i = 0; i < options.size(); ++i) {
+    TypePtr option_type = strip_top_level_cv(remove_reference_type(options[i].type));
+    if(!type_equals(option_type, target_base)) {
+      continue;
+    }
+    if(found) {
+      ambiguous = true;
+      break;
+    }
+    found = true;
+    selected = options[i];
+  }
+
+  if(ambiguous) {
+    ostringstream msg;
+    msg << "ambiguous overloaded member function id";
+    msg << " [target " << describe_type(target_base) << "]";
+    throw logic_error(msg.str());
+  }
+  if(!found) {
+    return false;
+  }
+
+  out = selected;
+  return true;
+}
+
 ExprInfo make_function_id_expr(SemanticContext & ctx, FunctionBinding & binding)
 {
   ExprInfo out;
