@@ -21,17 +21,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load i32 %t9
     %t11 = binary add i32 %t10, 1
-    %t12 = addr $result
-    %t13 = index i8 [projection=field] %t12, 0
-    store i32 %t11, %t13
+    store i32 %t11, %t9
     jump ^while_cond_1
 
   block ^while_end_3:
-    %t14 = addr $result
-    %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
-    %t17 = cmp eq i32 %t16, 16
-    branch %t17, ^cond_then_4, ^cond_else_5
+    %t12 = addr $result
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load i32 %t13
+    %t15 = cmp eq i32 %t14, 16
+    branch %t15, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:
     store i32 0, $cond__1
@@ -42,6 +40,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_6
 
   block ^cond_end_6:
-    %t18 = load i32 $cond__1
-    return i32 %t18
+    %t16 = load i32 $cond__1
+    return i32 %t16
 }

@@ -5606,6 +5606,49 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
                                                            then_lvalue_type)) {
       result.type = else_lvalue_type;
       result.category = VC_LVALUE;
+    } else {
+      const auto try_lvalue_conditional_conversion =
+          [&](const TypePtr & target_type,
+              const ExprInfo & source_expr,
+              ExprInfo & converted_source) -> bool
+          {
+            ConversionRank rank = CR_BAD;
+            ArgumentConversionOptions options(false);
+            if(!ctx.try_argument_conversion(scope,
+                                            target_type,
+                                            source_expr,
+                                            converted_source,
+                                            rank,
+                                            options)) {
+              return false;
+            }
+            if(converted_source.category != VC_LVALUE) {
+              return false;
+            }
+            return same_type_with_compatible_conditional_top_cv(
+                target_type,
+                remove_reference_type(converted_source.type));
+          };
+
+      ExprInfo converted_then;
+      ExprInfo converted_else;
+      const bool else_to_then =
+          try_lvalue_conditional_conversion(then_lvalue_type,
+                                            else_expr,
+                                            converted_else);
+      const bool then_to_else =
+          try_lvalue_conditional_conversion(else_lvalue_type,
+                                            then_expr,
+                                            converted_then);
+      if(else_to_then && !then_to_else) {
+        else_expr = converted_else;
+        result.type = then_lvalue_type;
+        result.category = VC_LVALUE;
+      } else if(then_to_else && !else_to_then) {
+        then_expr = converted_then;
+        result.type = else_lvalue_type;
+        result.category = VC_LVALUE;
+      }
     }
   }
 
