@@ -12829,6 +12829,7 @@ private:
         if(call.children.size() < 2) {
           throw logic_error("indirect value constructor action missing target");
         }
+        push_cleanup_scope(true);
         if(child.trivial_lifecycle) {
           if(call.children.size() > 3) {
             throw logic_error("unsupported trivial constructor action arity");
@@ -12850,6 +12851,10 @@ private:
             emit_constructor_action(child);
           }
         }
+        if(current_block_) {
+          emit_scope_cleanups(cleanup_scopes_.back());
+        }
+        pop_cleanup_scope();
       } else if(is_complete_class_value_type(variable.semantic_type) &&
                 child.kind == CallSemKind::destructor_action) {
         if(register_storage_cleanup) {

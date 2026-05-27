@@ -76,6 +76,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condobj_end_3:
     call void @S__S__ov2(%t1, %t2)
+    call void @S___S(%t2)
     return i32 0
 }
 alias object _ZN1SC2Ev = @S__S
