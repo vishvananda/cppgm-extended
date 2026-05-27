@@ -11006,6 +11006,10 @@ private:
                                string("load ") + memory_type + " " +
                                emit_lvalue_storage(node.children[0]));
       const string rhs = emit_rvalue(node.children[1]);
+      TypePtr lhs_type = remove_reference_type(node.children[0].semantic_type);
+      if(!lhs_type) {
+        lhs_type = node.children[0].semantic_type;
+      }
       const TypePtr lhs_value_type =
           lowir_value_conversion_type(node.children[0].semantic_type);
       const TypePtr rhs_value_type =
@@ -11014,10 +11018,6 @@ private:
       const bool rhs_integer_like =
           rhs_value_type &&
           (is_integral_type(rhs_value_type) || is_named_enum_scalar_type(rhs_value_type));
-      const string type = lowir_type_for(node.semantic_type);
-      const bool unsigned_integral =
-          is_lowir_unsigned_integral_scalar_type(
-              lowir_value_conversion_type(node.semantic_type));
       string next_value;
       if(callsem_has_token(node, OP_PLUSASS) && lhs_pointer && rhs_integer_like) {
         next_value =
@@ -11032,6 +11032,45 @@ private:
                                        node.children[1].semantic_type,
                                        node.children[0].semantic_type);
       } else {
+        const auto compound_binary_operand_type = [&]() -> TypePtr
+        {
+          if(callsem_has_token(node, OP_PLUSASS) ||
+             callsem_has_token(node, OP_MINUSASS) ||
+             callsem_has_token(node, OP_STARASS) ||
+             callsem_has_token(node, OP_DIVASS)) {
+            return semantic_conversion::common_arithmetic_result_type(lhs_value_type,
+                                                                      rhs_value_type);
+          }
+          if(callsem_has_token(node, OP_MODASS) ||
+             callsem_has_token(node, OP_XORASS) ||
+             callsem_has_token(node, OP_BANDASS) ||
+             callsem_has_token(node, OP_BORASS)) {
+            return semantic_conversion::common_integral_result_type(lhs_value_type,
+                                                                    rhs_value_type);
+          }
+          if(callsem_has_token(node, OP_LSHIFTASS) ||
+             callsem_has_token(node, OP_RSHIFTASS)) {
+            return semantic_conversion::promoted_integral_result_type(lhs_value_type);
+          }
+          return lowir_value_conversion_type(node.semantic_type);
+        };
+        TypePtr operand_type = compound_binary_operand_type();
+        if(!operand_type) {
+          operand_type = lowir_value_conversion_type(node.semantic_type);
+        }
+        const string type = lowir_type_for(operand_type);
+        const string lhs_operand =
+            emit_scalar_value_conversion(old_value,
+                                         node.children[0].semantic_type,
+                                         operand_type,
+                                         false,
+                                         memory_type);
+        const string rhs_operand =
+            emit_scalar_value_conversion(rhs,
+                                         node.children[1].semantic_type,
+                                         operand_type);
+        const bool unsigned_integral =
+            is_lowir_unsigned_integral_scalar_type(operand_type);
         string op;
         if(callsem_has_token(node, OP_PLUSASS)) {
           op = "add";
@@ -11056,9 +11095,14 @@ private:
         } else {
           throw logic_error("unsupported assignment-expression");
         }
-        next_value =
+        const string raw_next =
             emit_temp_assignment(type, string("binary ") + op + " " + type + " " +
-                                           old_value + ", " + rhs);
+                                           lhs_operand + ", " + rhs_operand);
+        next_value =
+            emit_scalar_value_conversion(raw_next,
+                                         operand_type,
+                                         lhs_type,
+                                         true);
       }
       if(is_bit_field_member_expression(node.children[0])) {
         emit_store_to_bit_field(node.children[0], next_value);
