@@ -330,6 +330,13 @@ struct ControlTransferTarget
   size_t cleanup_depth = 0;
 };
 
+struct GotoTarget
+{
+  string label;
+  size_t cleanup_depth = 0;
+  bool has_cleanup_depth = false;
+};
+
 struct ParamAbiPlan
 {
   enum Kind
@@ -3104,6 +3111,7 @@ public:
     }
     named_return_slot_variable_ =
         find_named_return_slot_variable(*function_node_, function_node_->semantic_type);
+    collect_goto_label_cleanup_depths_if_needed(*body, cleanup_scopes_.size());
     if(has_dynamic_exception_spec()) {
       const string dispatch_label = new_block("function_exception_dispatch");
       const string handler_entry_label =
@@ -3209,6 +3217,9 @@ public:
     start_block("entry");
     push_cleanup_scope();
     push_binding_scope();
+    for(size_t i = 0; i < actions.size(); ++i) {
+      collect_goto_label_cleanup_depths_if_needed(*actions[i], cleanup_scopes_.size());
+    }
     for(size_t i = 0; i < actions.size(); ++i) {
       emit_statement(*actions[i]);
     }
@@ -4066,7 +4077,7 @@ private:
   vector<unique_ptr<CallSemNode> > synthetic_nodes_;
   vector<ControlTransferTarget> break_targets_;
   vector<ControlTransferTarget> continue_targets_;
-  map<string, string> goto_targets_;
+  map<string, GotoTarget> goto_targets_;
   const map<const CallSemNode *, string> * active_switch_labels_ = nullptr;
   vector<vector<CleanupAction> > cleanup_scopes_;
   vector<size_t> cleanup_scope_normal_eh_end_counts_;
@@ -13549,6 +13560,124 @@ private:
     return emit_rvalue(child);
   }
 
+  bool subtree_contains_goto_or_label(const CallSemNode & node) const
+  {
+    if(node.kind == CallSemKind::goto_statement ||
+       node.kind == CallSemKind::labeled_statement) {
+      return true;
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(subtree_contains_goto_or_label(node.children[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void note_goto_target_cleanup_depth(const string & name, size_t cleanup_depth)
+  {
+    GotoTarget & target = goto_targets_[name];
+    target.cleanup_depth = cleanup_depth;
+    target.has_cleanup_depth = true;
+  }
+
+  void collect_switch_goto_label_cleanup_depths(const CallSemNode & node,
+                                                size_t cleanup_depth)
+  {
+    if(node.kind == CallSemKind::compound_statement) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_switch_goto_label_cleanup_depths(node.children[i], cleanup_depth + 1);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::case_statement ||
+       node.kind == CallSemKind::default_statement) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_switch_goto_label_cleanup_depths(node.children[i], cleanup_depth);
+      }
+      return;
+    }
+
+    collect_goto_label_cleanup_depths(node, cleanup_depth);
+  }
+
+  void collect_goto_label_cleanup_depths(const CallSemNode & node, size_t cleanup_depth)
+  {
+    if(node.kind == CallSemKind::labeled_statement) {
+      note_goto_target_cleanup_depth(node.text, cleanup_depth);
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_goto_label_cleanup_depths(node.children[i], cleanup_depth);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::compound_statement ||
+       node.kind == CallSemKind::then_node ||
+       node.kind == CallSemKind::else_node) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_goto_label_cleanup_depths(node.children[i], cleanup_depth + 1);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::if_statement) {
+      const size_t nested_cleanup_depth = cleanup_depth + 1;
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_goto_label_cleanup_depths(node.children[i], nested_cleanup_depth);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::switch_statement) {
+      if(node.children.size() >= 2) {
+        collect_switch_goto_label_cleanup_depths(node.children[1], cleanup_depth);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::for_statement) {
+      const size_t nested_cleanup_depth = cleanup_depth + 1;
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_goto_label_cleanup_depths(node.children[i], nested_cleanup_depth);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::try_statement) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        const CallSemNode & child = node.children[i];
+        if(child.kind == CallSemKind::compound_statement) {
+          collect_goto_label_cleanup_depths(child, cleanup_depth + 1);
+        } else if(child.kind == CallSemKind::catch_handler) {
+          collect_goto_label_cleanup_depths(child, cleanup_depth);
+        }
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::catch_handler) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        if(node.children[i].kind == CallSemKind::compound_statement) {
+          collect_goto_label_cleanup_depths(node.children[i], cleanup_depth + 1);
+        }
+      }
+      return;
+    }
+
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      collect_goto_label_cleanup_depths(node.children[i], cleanup_depth);
+    }
+  }
+
+  void collect_goto_label_cleanup_depths_if_needed(const CallSemNode & node,
+                                                   size_t cleanup_depth)
+  {
+    if(subtree_contains_goto_or_label(node)) {
+      collect_goto_label_cleanup_depths(node, cleanup_depth);
+    }
+  }
+
   void start_labeled_block(const string & label)
   {
     if(current_block_) {
@@ -13557,15 +13686,18 @@ private:
     start_block(label);
   }
 
-  string ensure_goto_target(const string & name)
+  GotoTarget & ensure_goto_target(const string & name)
   {
-    map<string, string>::const_iterator found = goto_targets_.find(name);
+    map<string, GotoTarget>::iterator found = goto_targets_.find(name);
     if(found != goto_targets_.end()) {
+      if(found->second.label.empty()) {
+        found->second.label = new_block("goto");
+      }
       return found->second;
     }
-    const string label = new_block("goto");
-    goto_targets_[name] = label;
-    return label;
+    GotoTarget & target = goto_targets_[name];
+    target.label = new_block("goto");
+    return target;
   }
 
   void emit_switch_body(const CallSemNode & node,
@@ -14361,7 +14493,12 @@ private:
     }
 
     if(node.kind == CallSemKind::goto_statement) {
-      terminate("jump " + lowir_block_name(ensure_goto_target(node.text)));
+      GotoTarget & target = ensure_goto_target(node.text);
+      if(!target.has_cleanup_depth) {
+        throw logic_error("goto target cleanup depth unavailable");
+      }
+      emit_cleanups_to_depth(target.cleanup_depth);
+      terminate("jump " + lowir_block_name(target.label));
       return;
     }
 
@@ -14369,7 +14506,12 @@ private:
       if(node.children.size() != 1) {
         throw logic_error("malformed labeled-statement");
       }
-      start_labeled_block(ensure_goto_target(node.text));
+      GotoTarget & target = ensure_goto_target(node.text);
+      if(!target.has_cleanup_depth) {
+        target.cleanup_depth = cleanup_scopes_.size();
+        target.has_cleanup_depth = true;
+      }
+      start_labeled_block(target.label);
       emit_statement(node.children[0]);
       return;
     }
