@@ -392,8 +392,8 @@ Goal:
 Work:
 
 - create a reduction path from:
-  - `pa33/tests/compile`
-  - `pa33/tests/frontier`
+  - `pa34/tests/compile`
+  - `pa34/tests/frontier`
   - validation seeds
   - hosted/STL/bootstrap regressions
 - every new discovered template bug should become:
@@ -418,9 +418,9 @@ Status:
 - `pa21/tests/spec/200-forward-declared-class-template-default-merge.t`
 - `pa21/tests/spec/215-partial-specialization-uses-primary-default-argument.t`
 - `pa22/tests/spec/438-function-template-defaulted-class-template-arg-deduction.t`
-- `pa33/tests/compile/656-forward-array-string-pair.t`
-- `pa33/tests/compile/542-local-functor-std-function-assignment.t`
-- `pa34/tests/link/701-hosted-function-reference-parameter-link-smoke.t.1`
+- `pa34/tests/compile/656-forward-array-string-pair.t`
+- `pa34/tests/compile/542-local-functor-std-function-assignment.t`
+- `pa35/tests/link/701-hosted-function-reference-parameter-link-smoke.t.1`
 - reduction tracking now lives in `template-kernel/REDUCTIONS.md`
 
 ## Phase 6. Performance Surface
@@ -447,7 +447,7 @@ Work:
 Exit criteria:
 
 - performance regressions can be caught on the kernel surface before they
-  become `pa33` cliffs
+  become `pa34` cliffs
 
 Status:
 
@@ -528,7 +528,7 @@ This experiment is successful if:
 2. the first oracle for template correctness becomes a deterministic query
    surface rather than STL compile success
 3. the first oracle for template performance becomes explicit stats/scale cases
-   rather than only `pa33` wall time
+   rather than only `pa34` wall time
 4. new template regressions reduce naturally into the kernel surface
 5. the same important decisions can also be emitted directly from the main
    compiler in a student-facing `--emit-templates` mode

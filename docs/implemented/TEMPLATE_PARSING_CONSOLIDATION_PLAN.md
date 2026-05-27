@@ -23,7 +23,7 @@ one place instead of being repeated across parser and semantic code.
   Success criteria:
   - `parse_qualified_name_string` no longer has its own `<` / `>` scanner
   - active semantic callers still work through the same public API
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - implemented with tokenization + `CppAstParser`-backed qualified-name
     parsing, with a shared-angle-parser fallback only for components the normal
@@ -45,7 +45,7 @@ one place instead of being repeated across parser and semantic code.
     parser implementations
   - `CppAstParser` name-text parsing delegates to the shared qualified-name
     parser where practical
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - `qualified_name_parser` now owns token-level parsing of identifier
     components, destructors, operator function-ids, and `decltype(...)`
@@ -62,7 +62,7 @@ one place instead of being repeated across parser and semantic code.
   - one shared adapter/builder layer exists for parser-backed and scope-backed
     lookups
   - repeated local lookup structs are removed
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - `template_angle_lookup::NameSetLookup` now provides the shared set-backed
     adapter used by `CppAstParser`, semantic fragment parsing, the qualified-name
@@ -79,7 +79,7 @@ one place instead of being repeated across parser and semantic code.
   - one canonical operator/function-id spelling is used for declaration
     collection and semantic lookup
   - transitional alias helpers are removed
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - `semantic_lookup` now owns canonical function lookup keys and the shared
     function-set/function-template slot helpers
@@ -95,7 +95,7 @@ one place instead of being repeated across parser and semantic code.
   - one shared fragment parsing utility owns tokenization, parser construction,
     and parse-environment seeding
   - semantic fragment entrypoints delegate to it
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - `semantic_fragment_parser` now owns the shared text-to-recog-token pipeline,
     fragment parser seeding, and the expression/type fragment wrappers
@@ -110,7 +110,7 @@ one place instead of being repeated across parser and semantic code.
   Success criteria:
   - one shared helper layer owns argument text classification and dependent vs
     hard-failure policy
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - `template_argument_semantics` now owns the shared text helpers for
     template-template classification, non-type evaluation, direct type
@@ -126,7 +126,7 @@ one place instead of being repeated across parser and semantic code.
   - call sites still choose manually between scoped and unscoped parsing
   Success criteria:
   - callers use a single preferred entrypoint
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - `SemanticContext::parse_template_id_string_in_scope(...)` is now the
     preferred entrypoint when the caller may or may not have a deduction/use
@@ -142,7 +142,7 @@ one place instead of being repeated across parser and semantic code.
   Success criteria:
   - the path is either deleted, or clearly marked legacy-only with a minimal
     shared implementation
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - the remaining cursor helper is now explicitly named
     `parse_legacy_template_id(...)` and documented as a PA6-only wrapper
@@ -161,7 +161,7 @@ one place instead of being repeated across parser and semantic code.
     location/message construction on hot parser-angle paths
   - any parser/fragment performance regressions introduced by consolidation are
     measured and reduced where practical
-  - full `pa10`-`pa31` validation passes
+  - full `pa10`-`pa32` validation passes
   Notes:
   - `parser_trace` now caches its environment-driven configuration once per
     process and short-circuits category-disabled calls before location lookup

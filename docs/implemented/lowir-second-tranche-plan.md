@@ -38,7 +38,7 @@ Slice 1 is now complete. The landed work in this tranche includes:
   are no longer re-derived from scattered ad hoc type checks
 - PA13 parser / printer / validator support for the new public surface
 - refreshed emitted-LowIR owner refs across the affected `pa14`-`pa29` lane
-- broad validation through `pa34`
+- broad validation through `pa35`
 
 That work makes the first remaining address/decay/storage boundaries explicit
 enough that Slice 2 can now focus on layout/runtime metadata rather than still
@@ -74,7 +74,7 @@ sharing ownership with basic lowering semantics.
 - explicit or more directly represented decay semantics where the optimizer or
   later lowering would otherwise have to reconstruct them
 - refreshed PA13 docs and owned refs
-- a broad sanity lane through the affected `pa14`-`pa34` emit-LowIR owners
+- a broad sanity lane through the affected `pa14`-`pa35` emit-LowIR owners
 
 ### Non-Goals
 
@@ -107,7 +107,7 @@ Slice 2 is now complete. The landed work in this tranche includes:
   the existing `index` offset operand plus `projection=...`, `obj<bytesxalign>`,
   `copyobj`, `zeroinit`, and structured global data items already expose the
   remaining layout facts that truly matter at the current LowIR boundary
-- broad validation through `pa34`
+- broad validation through `pa35`
 
 ### Scope
 
@@ -134,7 +134,7 @@ Slice 2 is now complete. The landed work in this tranche includes:
 - broad validation stayed green:
   - `pa13`: `72 / 72`
   - `pa14`-`pa29`: `770 / 770`
-  - `pa30`-`pa34`: `309 / 309`
+  - `pa30`-`pa35`: `309 / 309`
 
 ### Non-Goals
 
@@ -160,7 +160,7 @@ This follow-up plan is complete when:
   explicit LowIR structure rather than frontend-only conventions
 - the remaining layout/runtime-sensitive contracts that truly belong in LowIR
   are explicit
-- the broader `pa13` through `pa34` validation lanes are green again
+- the broader `pa13` through `pa35` validation lanes are green again
 - the old “later backlog” notes can be narrowed to genuinely optional future
   work rather than active execution items
 

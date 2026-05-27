@@ -12,7 +12,7 @@ The review oracle is intentionally private-runtime-shaped:
   [`dump_private_eh_object_facts.py`](/Users/vishvananda/cppgm/scripts/dump_private_eh_object_facts.py)
 
 It is not a direct Clang host-EH comparison. That later comparison belongs in
-the separate `PA32` host-EH review lane.
+the separate `PA33` host-EH review lane.
 
 ## Common Private EH Object Surface
 
@@ -346,5 +346,5 @@ Cross-platform validation note:
 
 The remaining higher-value EH comparison work is later and different:
 
-- direct host-EH comparison belongs in `PA32`
-- RTTI/vtable/thunk interaction belongs in the separate `PA32` ABI review lane
+- direct host-EH comparison belongs in `PA33`
+- RTTI/vtable/thunk interaction belongs in the separate `PA33` ABI review lane

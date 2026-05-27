@@ -21,66 +21,66 @@ report_sweep = load_module()
 
 
 class ReportSelfCompileSweepTests(unittest.TestCase):
-    def test_default_pa36_source_list_includes_runner(self):
+    def test_default_pa38_source_list_includes_runner(self):
         files = report_sweep.source_list(
             REPO_ROOT,
             "dev/cppgm++.cpp",
-            "pa37-selfhost",
+            "pa38-selfhost",
             True,
         )
         self.assertIn(REPO_ROOT / "dev" / "src" / "test_runner.cpp", files)
         self.assertIn(REPO_ROOT / "dev" / "cppgm++.cpp", files)
 
-    def test_pa36_shared_object_path_matches_ladder_layout(self):
+    def test_pa38_shared_object_path_matches_ladder_layout(self):
         obj = report_sweep.object_path(
             REPO_ROOT,
-            REPO_ROOT / "obj" / "pa37" / "selfhost",
+            REPO_ROOT / "obj" / "pa38" / "selfhost",
             0,
             REPO_ROOT / "dev" / "src" / "semantic_output.cpp",
-            "pa37-selfhost",
+            "pa38-selfhost",
             True,
         )
         self.assertEqual(
             obj,
-            REPO_ROOT / "obj" / "pa37" / "selfhost" / "shared" / "release" / "semantic_output.o",
+            REPO_ROOT / "obj" / "pa38" / "selfhost" / "shared" / "release" / "semantic_output.o",
         )
 
-    def test_pa36_entry_object_path_matches_ladder_layout(self):
+    def test_pa38_entry_object_path_matches_ladder_layout(self):
         obj = report_sweep.object_path(
             REPO_ROOT,
-            REPO_ROOT / "obj" / "pa37" / "selfhost",
+            REPO_ROOT / "obj" / "pa38" / "selfhost",
             0,
             REPO_ROOT / "dev" / "cppgm++.cpp",
-            "pa37-selfhost",
+            "pa38-selfhost",
             True,
         )
         self.assertEqual(
             obj,
-            REPO_ROOT / "obj" / "pa37" / "selfhost" / "cppgm++" / "release" / "cppgm++-runner.o",
+            REPO_ROOT / "obj" / "pa38" / "selfhost" / "cppgm++" / "release" / "cppgm++-runner.o",
         )
 
-    def test_pa36_runner_object_path_matches_ladder_layout(self):
+    def test_pa38_runner_object_path_matches_ladder_layout(self):
         obj = report_sweep.object_path(
             REPO_ROOT,
-            REPO_ROOT / "obj" / "pa37" / "selfhost",
+            REPO_ROOT / "obj" / "pa38" / "selfhost",
             0,
             REPO_ROOT / "dev" / "src" / "test_runner.cpp",
-            "pa37-selfhost",
+            "pa38-selfhost",
             True,
         )
         self.assertEqual(
             obj,
-            REPO_ROOT / "obj" / "pa37" / "selfhost" / "shared" / "release" / "test_runner-enabled.o",
+            REPO_ROOT / "obj" / "pa38" / "selfhost" / "shared" / "release" / "test_runner-enabled.o",
         )
 
-    def test_pa36_entry_compile_command_uses_runner_define_and_depfile(self):
-        obj = REPO_ROOT / "obj" / "pa37" / "selfhost" / "cppgm++" / "release" / "cppgm++-runner.o"
+    def test_pa38_entry_compile_command_uses_runner_define_and_depfile(self):
+        obj = REPO_ROOT / "obj" / "pa38" / "selfhost" / "cppgm++" / "release" / "cppgm++-runner.o"
         cmd = report_sweep.compile_command(
             REPO_ROOT,
             "./dev/cppgm++",
             REPO_ROOT / "dev" / "cppgm++.cpp",
             obj,
-            "pa37-selfhost",
+            "pa38-selfhost",
             True,
             "",
         )
@@ -89,14 +89,14 @@ class ReportSelfCompileSweepTests(unittest.TestCase):
         self.assertIn("-MF", cmd)
         self.assertEqual(cmd[-2:], ["-c", "dev/cppgm++.cpp"])
 
-    def test_pa36_runner_compile_command_uses_shared_runner_define(self):
-        obj = REPO_ROOT / "obj" / "pa37" / "selfhost" / "shared" / "release" / "test_runner-enabled.o"
+    def test_pa38_runner_compile_command_uses_shared_runner_define(self):
+        obj = REPO_ROOT / "obj" / "pa38" / "selfhost" / "shared" / "release" / "test_runner-enabled.o"
         cmd = report_sweep.compile_command(
             REPO_ROOT,
             "./dev/cppgm++",
             REPO_ROOT / "dev" / "src" / "test_runner.cpp",
             obj,
-            "pa37-selfhost",
+            "pa38-selfhost",
             True,
             "",
         )

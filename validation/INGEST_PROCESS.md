@@ -22,7 +22,7 @@ therefore:
 3. Choose the earliest natural PA.
    - Put the regression in the earliest PA that can naturally express and check
      the rule.
-   - Prefer pure-language earlier PAs over PA31 whenever possible.
+   - Prefer pure-language earlier PAs over PA32 whenever possible.
    - If an exact existing regression already covers the same rule, record that
      existing regression in the tracker instead of adding a duplicate file.
 

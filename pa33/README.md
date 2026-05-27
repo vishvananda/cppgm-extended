@@ -1,27 +1,23 @@
-## CPPGM Programming Assignment 33 (`cppgm++ -E` / `cppgm++ -c`)
+## CPPGM Programming Assignment 33 (`cppgm++ -c`)
 
 ### Overview
 
-PA33 is the hosted source/header compatibility assignment. Its job is to make
-`cppgm++` preprocess and compile the hosted standard-library and vendor
-extension environment needed by later bootstrap-style builds.
+Write one C++ application called `cppgm++`.
 
-This milestone is intentionally distinct from the previous host-toolchain
-assignments:
+PA33 is the host C++ ABI/runtime interoperability assignment. It builds on the
+ordinary host-linkable object contract from PA32 and makes the behavior of the
+host-linked program part of the assignment contract.
 
-- PA31 is about ordinary host-linkable object files.
-- PA32 is about host C++ ABI/runtime correctness after host link.
-- PA33 is about preprocessing, parsing, semantic analysis, and lowering
-  compatibility for hosted source/header inputs.
+The main PA33 question is: once host link succeeds, does the resulting program
+behave correctly under the ordinary host C++ ABI/runtime?
 
-To complete PA33, implement these goals:
+The tested ABI/runtime surface includes:
 
-- hosted preprocessor compatibility
-- GNU/Clang parser concessions used by the selected hosted headers
-- GNU builtin type and literal forms used by the selected hosted environment
-- builtin traits, transforms, and intrinsics used by that hosted environment
-- enough hosted-header/source compile compatibility to make later bootstrap
-  work realistic
+- virtual dispatch, vtable ownership, and imported/exported vtables
+- RTTI object ownership and `dynamic_cast` / `typeid`
+- covariant return adjustment
+- host exception handling in the exercised throw/catch/rethrow/cleanup subset
+- host-compatible unwind and relocation facts where the tests inspect objects
 
 ### Prerequisites
 
@@ -29,21 +25,26 @@ Complete PA32 before starting this assignment.
 
 You will want to reuse:
 
-- the full earlier language, template, and lowering stack
-- the PA31/PA32 `cppgm++ -c` host-object path
-- the PA32 host-ABI-compatible output path
-- the earlier preprocessor pipeline, now with hosted-driver controls
+- the full C++ language pipeline through PA32
+- the PA32 host-compatible `cppgm++ -c` path
+- the PA23/PA24 native object emission path
+- the PA25 exception/runtime lowering concepts
 
-The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
-working host C++ compiler with hosted C++ headers installed.
-You may override the compiler with `CXX=...`. `CPPGM_HOST_CXX` selects the host
-compiler used for builtin macro/include probing. If it is not set, it defaults
-to `CXX`.
+The tests assume a POSIX-like shell environment with `make`, `bash`,
+`perl`, and a working host C/C++ toolchain. The harness selects host tools from:
 
-The hosted tests rely on the host compiler's target, predefined macros, standard
-library include paths, and standard-library selection flags. When you use a
-non-default standard library, pass the same choice through `CPPGM_STDLIB_FLAGS`
-so the course compiler and host compiler agree.
+- `CPPGM_HOST_CXX` or `CXX` for the host C++ compiler/link driver
+- `CPPGM_HOST_CC` or `CC` for host C helper objects
+
+If those are not set, the harness searches for common compilers such as
+`clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Archive and inspection tests
+also require `ar`, `nm`, and `readelf`. The checked-in tests assume the normal
+x86_64 Linux host C++ ABI.
+
+Some PA33 object-inspection tests use course-provided helper tools from earlier
+assignments, such as `cpplink` and `cppeh`, to compare the host exception object
+surface. Those helpers support the harness; the PA33 assignment binary is
+still `cppgm++`.
 
 ### Starter Kit
 
@@ -54,9 +55,8 @@ The starter kit provides:
 - the shared `dev/` sources needed by the scaffold
 - `pa33/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
 - `pa33/Makefile`
-- `pa33/scripts/`, the hosted preprocessor/compile test harness
-- `pa33/tests/preproc/`, hosted preprocessor tests and references
-- `pa33/tests/compile/`, hosted compile-only tests and references
+- `pa33/scripts/`, the host-ABI test harness
+- `pa33/tests/general/`, the PA33 tests and checked-in reference files
 
 Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
@@ -66,81 +66,46 @@ to add or update tests.
 There is no separate PA33 reference binary in the starter kit. The checked-in
 `.ref.*` files are the oracle.
 
-### Driver Surface
-
-Previously required:
-
-- the PA30 compile/link surface: `-c`, default link mode, `-I`, `-L`, `-l`, and
-  `--target`
-- the PA31/PA32 host-compatible behavior for the relevant compile-mode subset
-
-New or newly required in PA33:
-
-- hosted preprocess mode: `-E`
-- hosted preprocessor-control flags:
-  - `-D <macro>` and `-D<macro>`
-  - `-U <macro>` and `-U<macro>`
-  - `-include <file>`
-  - `-isystem <dir>` and `-isystem<dir>`
-- direct driver query forms:
-  - `--version`
-  - `-v`
-  - `-dumpmachine`
-  - `-dumpversion`
-  - `-print-search-dirs`
-- compatibility handling for common build-system flags that should either be
-  honored or harmlessly accepted when they do not affect the tested output
-
 ### Command-Line Contract
 
-PA33 continues extending the same `cppgm++` frontend used in PA30-PA32.
-
-Required preprocess forms:
-
-```sh
-cppgm++ -E -o <outfile> <srcfile>
-cppgm++ -E <srcfile1> <srcfile2> ...
-cppgm++ -E -D <macro> -U <macro> -include <file> -isystem <dir> <srcfile>
-```
-
-Required compile forms:
+PA33 does not introduce new command-line flags. It reuses the PA32 compile-mode
+surface:
 
 ```sh
 cppgm++ -c -o <objfile> <srcfile>
-cppgm++ -c <srcfile1> <srcfile2> ...
-cppgm++ -c -D <macro> -U <macro> -include <file> -isystem <dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -o <objfile> <srcfile>
+cppgm++ -c -I <dir> -o <objfile> <srcfile>
+cppgm++ -c -I<dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
 ```
 
-Query flags are required only as direct driver queries. For example:
-
-```sh
-cppgm++ --version
-cppgm++ -dumpmachine
-cppgm++ -print-search-dirs
-```
+`<target>` may be `linux` or the corresponding x86_64 Linux host triple form
+accepted by your implementation. PA33 only requires compile mode. The normal
+PA33 final link is performed outside `cppgm++` by the host C++ compiler driver.
 
 ### Output Format
 
-`cppgm++ -E` shall write the same structured posttoken/preprocessor stream
-format used by the PA5 `preproc` frontend. When `-o <outfile>` is present, that
-stream is written to `<outfile>`.
+`cppgm++ -c` shall continue to write one host-linker-compatible relocatable
+object file to `<objfile>`.
 
-`cppgm++ -c` shall continue to write host-linker-compatible relocatable object
-files as in PA31/PA32.
+The PA33 tests do not compare object bytes directly. They observe:
 
-The new PA33 contract is not a new object format. It is the ability to
-preprocess and compile hosted source/header inputs successfully through the
-`cppgm++` path.
+- `cppgm++ -c` exit status
+- host final-link exit status
+- final program exit status
+- final program standard output
+- optional object-inspection output for ABI, unwind, relocation, RTTI, vtable,
+  thunk, and symbol-ownership checks
 
 ### Error Handling
 
 If preprocessing, parsing, semantic analysis, lowering, object emission, or
 output writing fails, `cppgm++` shall exit with failure.
 
-For compile-only tests, exact diagnostics are not the grading contract. The
-harness compares exit status and any checked output sidecars. If the reference
-run fails, stdout and stderr are diagnostic side effects rather than required
-output.
+For negative tests, exact diagnostics are not the grading contract. The harness
+compares exit status first. If the reference compile/link path fails, stdout and
+stderr are diagnostic side effects rather than required output.
 
 ### Testing
 
@@ -153,77 +118,79 @@ make test
 To run one test through the shared check target:
 
 ```sh
-make check TEST=tests/preproc/300-has-include.t
-make check TEST=tests/compile/500-builtin-transforms-and-traits.t
+make check TEST=tests/general/100-host-eh-same-tu-throw-catch.t
 ```
 
-PA33 has two test directories:
+The local tests live in `tests/general/`. They cover host C++ ABI/runtime
+behavior, host-linked exception handling, RTTI, vtables, thunks, and object
+inspection around those host-runtime surfaces. They are not direct N3485 clause
+tests.
 
-- `tests/preproc/`: hosted preprocessor compatibility. The oracle is the
-  PA5-style structured preprocessor stream plus exit status.
-- `tests/compile/`: hosted compile-only compatibility. The oracle is successful
-  object emission, compile exit status, and any stdout/reference sidecars used
-  by the harness.
+For each test anchor `x.t`, companion C++ sources are named:
 
-The checked-in tests are hosted/vendor compatibility cases, standard-library
-sentinels, reducers, and bootstrap-facing compile smokes rather than direct
-N3485 clause tests.
+```text
+x.t.1
+x.t.2
+...
+```
 
-Optional sidecars include:
+Optional sidecars control or check the host flow:
 
-- `x.env`: environment variables for one test, such as additional standard
-  include paths
 - `x.compile.flags`: extra flags passed to `cppgm++ -c`
+- `x.link.flags`: extra flags passed to the host link driver
+- `x.lib.*`: host-built C or C++ helper sources
+- `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: object-inspection
+  checks that use the host symbol and object tools
 
-The default preprocessor references are intentionally host-agnostic. The test harness checks that checked-in PA33 preprocessor refs do not accidentally
-pin local host macro values such as platform-specific integer or floating-point
-limits.
+The checked-in PA33 tests cover:
+
+- same-TU and cross-TU host exception throw/catch behavior
+- cleanup, rethrow, noexcept termination, and foreign catch-all behavior in the
+  exercised subset
+- virtual dispatch, imported/exported vtable ownership, and polymorphic header
+  duplication
+- RTTI-driven `dynamic_cast` and `typeid`
+- covariant return adjustment
+- host ABI mangling for dependent/template/lambda/standard-library-adjacent
+  names needed by this milestone
+- object facts such as unwind sections, relocation classes, weak/undefined
+  symbols, and vtable/RTTI ownership when a test includes an inspect sidecar
 
 ### Assignment Boundary
 
-PA33 owns hosted compatibility needed before bootstrap, including:
+PA33 owns practical host-linked C++ ABI/runtime behavior.
 
-- predefined macro import, `_Pragma`, `__has_*`, `#include_next`, `#warning`,
-  ignored unknown pragmas, and hosted hex-float preprocessing forms such as
-  `0x1p+4`
-- GNU/Clang parser concessions commonly exercised by the selected hosted
-  headers, including dependent nested-angle disambiguation, nested qualified
-  template-ids used as outer template arguments, builtin-trait identifiers
-  referenced as ordinary names, GNU `__decltype`, parenthesized
-  throw-expressions emitted by hosted helper macros, and GNU builtin float type
-  specifiers such as `__float128` / `_Float128`
-- builtin traits, transforms, intrinsics, and builtin families used during
-  hosted compile acceptance
-- semantic and lowering compatibility for hosted source patterns used by those
-  headers and by the bootstrap source base, including post-declarator parameter
-  attributes, explicit specializations of primary-template member functions,
-  and non-standard hex-float compile acceptance on ordinary floating types
+To complete PA33, preserve this behavior within the supported subset:
 
-Standard-language bugs discovered here should still be fixed in their true
-earlier owner stage when appropriate. PA33 owns the hosted compatibility
-pressure, not a second copy of every earlier language rule.
+- virtual dispatch and imported/exported vtable ownership
+- RTTI-driven `dynamic_cast` / `typeid`
+- covariant return adjustment
+- ordinary host-linked throw/catch/rethrow behavior
+- cleanup and unwind behavior visible to the host runtime
+- foreign catch-all interaction in the tested subset
+
+If host link succeeds but the host C++ ABI/runtime behavior is wrong, the issue
+belongs in PA33.
 
 ### Out Of Scope
 
 The following are out of scope for PA33:
 
-- host object/link/runtime contracts already owned by PA31 and PA32
-- hosted header-emitted link/runtime behavior, which belongs in PA34
-- full build-system emulation beyond the documented query and compatibility
-  flags
-- recursive hosted-header coverage reporting
+- private course-only exception/runtime ABI details that are not visible through
+  the host-linked program or object checks
+- hosted standard-library header/source compatibility, which belongs in PA34
+- hosted header-emitted link/runtime behavior, which belongs in PA35
 - bootstrap or self-host builds
 
 ### Design Notes (Non-Normative)
 
-Hosted compatibility is easiest to approach as a sequence of small compatibility
-surfaces: preprocessor probes, parser concessions, builtin traits/types, and
-then semantic/lowering cases. Keep fixes tied to the source pattern being
-exercised. Avoid making broad source-text special cases when an earlier
-semantic or template representation can carry the information directly.
+PA33 is not just a runtime-output assignment. Runtime behavior is the primary
+oracle, but some tests inspect object facts because host C++ ABI correctness is
+often decided before the program starts: symbol names, weak ownership, unwind
+sections, RTTI/vtable objects, and relocation classes must match the host
+toolchain's expectations closely enough for ordinary linking and unwinding.
 
 ### Stage Handoff
 
-The next stage is PA34, which keeps the same hosted source/header environment
-but raises the contract from "it compiles" to "its emitted code also links and
-runs."
+The next stage is PA34, which shifts from host ABI/runtime ownership to hosted
+source/header compatibility.

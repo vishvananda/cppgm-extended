@@ -182,7 +182,7 @@ EOF
 }
 
 run_template_audit_probe() {
-  local src="${repo_root}/pa33/tests/compile/641-incomplete-vector-signature.t"
+  local src="${repo_root}/pa34/tests/compile/641-incomplete-vector-signature.t"
   local out="${tmpdir}/template-audit-smoke.sem"
   local stdout="${tmpdir}/template-audit-smoke.stdout"
   local stderr="${tmpdir}/template-audit-smoke.stderr"

@@ -42,11 +42,11 @@ def have_docker_image(image):
 
 
 class LinuxPlatformRecoveryTests(unittest.TestCase):
-    def test_pa33_batch_compile_workers_follow_test_jobs(self):
+    def test_pa34_batch_compile_workers_follow_test_jobs(self):
         result = run(
             "make",
             "-C",
-            str(REPO_ROOT / "pa33"),
+            str(REPO_ROOT / "pa34"),
             "-pn",
             env={**os.environ, "CPPGM_TEST_JOBS": "1"},
             stdout=subprocess.PIPE,

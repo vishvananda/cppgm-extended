@@ -190,7 +190,7 @@ Implemented closure slice:
   being silently pruned away
 
 The validating regression that proved the new behavior was real was the TLS
-wrapper family in `pa31`:
+wrapper family in `pa32`:
 
 - `@...__tls_wrapper` initially surfaced as a closure-owner failure once
   pruning was removed
@@ -198,8 +198,8 @@ wrapper family in `pa31`:
 
 Validation on the backend-heavy lane is green after the change:
 
-- `pa31` TLS import/export owner checks: pass
-- `make test-report-nobuild ACTIVE_TEST_REPORT_PAS='pa30 pa31 pa32 pa33 pa34' ...`
+- `pa32` TLS import/export owner checks: pass
+- `make test-report-nobuild ACTIVE_TEST_REPORT_PAS='pa30 pa32 pa33 pa34 pa35' ...`
   -> `206 / 206`
 
 ## Regression Surface

@@ -95,7 +95,7 @@ From [BOOTSTRAP_SELFHOST_FRONTIER_TRACKER.md](/Users/vishvananda/cppgm/legacy/BO
 
 - `PA25`: 21
 - `PA21`: 20
-- `PA31`: 15
+- `PA32`: 15
 - `PA15`: 14
 - `PA12`: 13
 - `PA18`: 13
@@ -250,12 +250,12 @@ Initial default assignment set should be based on actual bootstrap owner history
 - `pa21`
 - `pa25`
 - `pa26`
-- `pa31`
+- `pa32`
 
 Optional additions by touched area:
 
 - if backend/LowIR files changed: add `pa22`, `pa23`, `pa24`
-- if driver/object/link/runtime files changed: add `pa29`, `pa30`, `pa31`
+- if driver/object/link/runtime files changed: add `pa29`, `pa30`, `pa32`
 - if parser/tokenization files changed: add `pa10`, `pa12`, `pa14`
 
 This gate should be implemented as a real target, not only a tracker convention.
@@ -309,13 +309,13 @@ The existing docs already use closure programs for recurring families.
 Build that into the faster bootstrap loop:
 
 - template family changes
-  - add `pa18`, `pa21`, `pa25`, `pa31`
+  - add `pa18`, `pa21`, `pa25`, `pa32`
 - lambda/capture changes
-  - add `pa25`, `pa26`, `pa31`
+  - add `pa25`, `pa26`, `pa32`
 - object-model/special-member changes
-  - add `pa15`, `pa16`, `pa21`, `pa29`, `pa31`
+  - add `pa15`, `pa16`, `pa21`, `pa29`, `pa32`
 - LowIR/native changes
-  - add `pa14`, `pa22`, `pa23`, `pa24`, `pa29`, `pa31`
+  - add `pa14`, `pa22`, `pa23`, `pa24`, `pa29`, `pa32`
 
 This avoids both extremes:
 
@@ -407,7 +407,7 @@ This is the main cycle-time reduction lever.
 
 1. Add `verify-bootstrap-fast` and `verify-bootstrap-full`.
 2. Seed the fast gate with the historically dominant owner suites:
-   - `pa12`, `pa14`, `pa15`, `pa16`, `pa18`, `pa21`, `pa25`, `pa26`, `pa31`
+   - `pa12`, `pa14`, `pa15`, `pa16`, `pa18`, `pa21`, `pa25`, `pa26`, `pa32`
 3. Add backend/toolchain expansions based on touched files.
 
 ## Phase 3: Better Discovery Output

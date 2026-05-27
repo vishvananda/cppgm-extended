@@ -288,7 +288,7 @@ Each phase should be validated with:
 
 - strict semantic LowIR compare for `pa18 pa19 pa21 pa22`;
 - `self-semantic-overload` phase timings and memory census;
-- a PA33/PA34 STL smoke run;
+- a PA34/PA35 STL smoke run;
 - an instruction-count sample when wall time is noisy.
 
 Success should be measured primarily by phase-level reductions:

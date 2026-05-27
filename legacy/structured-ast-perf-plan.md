@@ -240,16 +240,16 @@ the hottest path. It also unblocks Patches 2 and 8.
 Regression gate:
 
 - `make test-report ACTIVE_TEST_REPORT_PAS='pa18 pa19 pa21 pa22'`
-- Do not use the whole PA33 harness as the routine gate for this slice.
+- Do not use the whole PA34 harness as the routine gate for this slice.
 
 Performance check:
 
 - `resolve_template_arguments` cache hit ratio in non-witness mode must
   not regress.
 - Compile-time wall clock on a representative template-heavy file (a
-  focused long-running `pa33/tests/compile/` benchmark that exercises
+  focused long-running `pa34/tests/compile/` benchmark that exercises
   hosted STL template machinery) drops by at least 20%.
-  If hosted PA33 is known-failing on the branch, count these as
+  If hosted PA34 is known-failing on the branch, count these as
   known-error/measurable timing probes, not correctness gates.
 
 ### Patch 2 — Canonicalize types and template arguments behind opaque IDs
@@ -284,8 +284,8 @@ Regression gate:
 - ABI mangling tests are the most sensitive — any canonicalization bug
   shows up there.
 - `make test-report ACTIVE_TEST_REPORT_PAS='pa15 pa16 pa18 pa19 pa21 pa22'`
-- Run focused long PA33 probes for performance signal instead of the whole
-  hosted correctness harness. Do not use PA34 as a routine gate or benchmark
+- Run focused long PA34 probes for performance signal instead of the whole
+  hosted correctness harness. Do not use PA35 as a routine gate or benchmark
   group here; it is long-running and has known failures on this branch.
 
 Performance check:
@@ -550,7 +550,7 @@ For every patch, record:
 
 - HEAD before and after.
 - Wall clock on a fixed small benchmark set (a handful of
-  `pa33/tests/compile/*.t`, plus one `dev/src/*.cpp` if it builds).
+  `pa34/tests/compile/*.t`, plus one `dev/src/*.cpp` if it builds).
 - Counters from `CPPGM_SEMANTIC_STATS=1` and
   `CPPGM_SEMANTIC_HOTSPOT=1` (the existing instrumentation).
 - Peak RSS.

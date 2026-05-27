@@ -76,11 +76,11 @@ What is still missing compared with the kernel:
 - no "failed because enable-if condition was false" explanation
 - binding quality is poor for nested/member templates
 
-## Example: PA33 Test 542
+## Example: PA34 Test 542
 
 Test:
 
-- [pa33/tests/compile/542-local-functor-std-function-assignment.t](/private/tmp/cppgm-template-kernel-20260416/pa33/tests/compile/542-local-functor-std-function-assignment.t)
+- [pa34/tests/compile/542-local-functor-std-function-assignment.t](/private/tmp/cppgm-template-kernel-20260416/pa34/tests/compile/542-local-functor-std-function-assignment.t)
 
 Two important observations:
 
@@ -94,7 +94,7 @@ Two important observations:
    GCC_TMPL_METRICS_WALK_BODIES=0 \
    g++-15 -std=c++17 -x c++ -fsyntax-only \
      -fplugin=./gcctmplmetrics.dylib \
-     ../pa33/tests/compile/542-local-functor-std-function-assignment.t
+     ../pa34/tests/compile/542-local-functor-std-function-assignment.t
    ```
 
    This succeeds.

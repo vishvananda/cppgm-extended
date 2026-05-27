@@ -35,8 +35,19 @@ CPPGM_TEST_APP ?= ../dev/$(TARGET)
 REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
 TEST_DEPS ?= dev-shared-target
 RUN_CHECK_DEPS ?= dev-shared-target
-LINK_TEST_ROOT ?= tests/link
-COURSE_LINK_TEST_ROOT ?= course/pa34/link
+ifdef CPPGM_TEST_JOBS
+CPPGM_HOSTCOMPAT_COMPILE_WORKERS ?= $(CPPGM_TEST_JOBS)
+else
+CPPGM_HOSTCOMPAT_COMPILE_WORKERS ?= 3
+endif
+export CPPGM_HOSTCOMPAT_COMPILE_WORKERS
+PREPROC_TEST_ROOT ?= tests/preproc
+COMPILE_TEST_ROOT ?= tests/compile
+COURSE_PREPROC_TEST_ROOT ?= course/pa34/preproc
+COURSE_COMPILE_TEST_ROOT ?= course/pa34/compile
+ifneq ($(CPPGM_BATCH_TESTS),)
+export WRAPPED_BATCH_STDIN ?= 1
+endif
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
 HOST_CXX_DEFAULT_DEF = -DCPPGM_DEFAULT_HOST_CXX='"$(CPPGM_HOST_CXX)"'
@@ -47,7 +58,6 @@ ENTRY_CC_FLAGS = $(CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
 ENTRY_DEBUG_CC_FLAGS = $(DEBUG_CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
 SRC = ../dev/src
 OBJ ?= ../obj
-export CPPGM_OBJECT_ROOT := $(abspath $(OBJ))
 GENERATED ?= $(OBJ)/generated
 BUILTIN_HOST_CONFIG = $(GENERATED)/cppgm_builtin_host_config.h
 INC = -I$(SRC) -I$(GENERATED)
@@ -118,9 +128,46 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/test_runner.cpp
 	$(CXX) $(DEBUG_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
-define run_link_course_bucket
+define run_preproc_course_bucket
 	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
-		perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my "$(1)"; \
+		bash scripts/check_preproc_refs_portable.sh "$(1)"; \
+		if [ -n "$(CPPGM_BATCH_TESTS)" ]; then \
+			perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp "$(1)"; \
+		else \
+			scripts/run_all_tests.pl $(CPPGM_TEST_APP) pp "$(1)"; \
+		fi; \
+		scripts/compare_results.pl ref pp "$(1)"; \
+	else \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
+	fi
+endef
+
+define run_preproc_course_bucket_batch
+	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
+		bash scripts/check_preproc_refs_portable.sh "$(1)"; \
+		perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp "$(1)"; \
+		scripts/compare_results.pl ref pp "$(1)"; \
+	else \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
+	fi
+endef
+
+define run_compile_course_bucket
+	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
+		if [ -n "$(CPPGM_BATCH_TESTS)" ]; then \
+			perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my "$(1)"; \
+		else \
+			perl scripts/run_compile_tests.pl $(CPPGM_TEST_APP) my "$(1)"; \
+		fi; \
+		scripts/compare_results.pl ref my "$(1)"; \
+	else \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
+	fi
+endef
+
+define run_compile_course_bucket_batch
+	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
+		perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my "$(1)"; \
 		scripts/compare_results.pl ref my "$(1)"; \
 	else \
 		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
@@ -129,24 +176,44 @@ endef
 
 
 test: $(TEST_DEPS)
-	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(LINK_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(LINK_TEST_ROOT)
-	$(call run_link_course_bucket,$(COURSE_LINK_TEST_ROOT))
+	@bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
+ifneq ($(CPPGM_BATCH_TESTS),)
+	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
+else
+	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
+endif
+	@scripts/compare_results.pl ref pp $(PREPROC_TEST_ROOT)
+ifneq ($(CPPGM_BATCH_TESTS),)
+	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
+else
+	perl scripts/run_compile_tests.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
+endif
+	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
+	$(call run_preproc_course_bucket,$(COURSE_PREPROC_TEST_ROOT))
+	$(call run_compile_course_bucket,$(COURSE_COMPILE_TEST_ROOT))
 
 test-batch: $(TEST_DEPS)
-	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(LINK_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(LINK_TEST_ROOT)
-	$(call run_link_course_bucket,$(COURSE_LINK_TEST_ROOT))
+	@bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
+	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
+	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
+	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
+	$(call run_preproc_course_bucket_batch,$(COURSE_PREPROC_TEST_ROOT))
+	$(call run_compile_course_bucket_batch,$(COURSE_COMPILE_TEST_ROOT))
+
 
 ref-test:
-	@CPPGM_CMAKE_COMPILER=$(REF_TEST_APP) \
-		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(LINK_TEST_ROOT)
+	@scripts/run_all_tests.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
+	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
 
 ref-test-batch:
-	@CPPGM_CMAKE_COMPILER=$(REF_TEST_APP) \
-		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(LINK_TEST_ROOT)
+	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
+	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
 
-CHECK_RUN = perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) check "$(TEST)"
+CHECK_RUN = case "$(TEST)" in \
+	tests/preproc/*) perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
+	tests/compile/*) perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
+	*) echo "Usage: make check TEST=tests/preproc/<file>.t or tests/compile/<file>.t"; exit 1 ;; \
+esac
 include ../scripts/pa_run_check_targets.mk
 
 .PHONY: dev-shared-target ref-test ref-test-batch test-batch

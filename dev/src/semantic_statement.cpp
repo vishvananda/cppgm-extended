@@ -1389,7 +1389,7 @@ void analyze_range_for_statement(SemanticContext & ctx,
   const CppAstNode * specifiers = find_child_kind(range_decl, CppAstKind::decl_specifier_seq);
   const CppAstNode * declarator = find_child_kind(range_decl, CppAstKind::declarator);
   if(find_child_kind(range_decl, CppAstKind::structured_binding_declarator)) {
-    throw logic_error("structured-binding range declarations are only structurally accepted in PA31");
+    throw logic_error("structured-binding range declarations are only structurally accepted in PA32");
   }
   if(!specifiers || !declarator || range_init.children.size() != 1) {
     throw logic_error("unsupported range-for declaration");

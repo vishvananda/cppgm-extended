@@ -3,12 +3,12 @@
 ## Purpose
 
 This plan defines the missing backend-quality tranche that should have landed
- before the later `PA36` machine-IR optimization assignment.
+ before the later `PA37` machine-IR optimization assignment.
 
 The current backend already has:
 
 - a real `LowIR -> machine IR -> native` path in `PA23`
-- a later `PA36` assignment for explicit machine/backend `-O1` / `-O2` work
+- a later `PA37` assignment for explicit machine/backend `-O1` / `-O2` work
 
 What is still missing is a disciplined baseline-quality pass for unoptimized
  native code generation.
@@ -25,7 +25,7 @@ The result is that later `-O1` / `-O2` work is building on top of a baseline
  backend that is still heavier than an ordinary non-optimizing compiler.
 
 This plan therefore treats backend `-O0` quality as a **PA23-owned** buildout,
- not as a `PA36` optimization slice.
+ not as a `PA37` optimization slice.
 
 ## Goal
 
@@ -137,7 +137,7 @@ This plan covers:
 
 This plan does **not** cover:
 
-- `PA36` `-O1` / `-O2` optimization design
+- `PA37` `-O1` / `-O2` optimization design
 - inlining / IPA / scalar replacement across function boundaries
 - whole-program optimization
 
@@ -156,12 +156,12 @@ The tests for these slices should therefore live in:
 - `pa23/tests/structural/` for canonical MIR shape
 - `pa23/tests/strict/` only when exact raw MIR is the real contract
 
-`PA36` should continue to own only explicit machine/backend optimization levels
+`PA37` should continue to own only explicit machine/backend optimization levels
  on top of that baseline.
 
-### `PA36`
+### `PA37`
 
-`PA36` should not absorb these regressions unless a slice is specifically about
+`PA37` should not absorb these regressions unless a slice is specifically about
  machine-IR optimization after baseline lowering.
 
 ## Main Findings Driving The Plan

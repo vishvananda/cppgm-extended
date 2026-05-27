@@ -213,7 +213,7 @@
   with 33 failing targets. The first runtime frontier in that run was
   `libs/fusion/test//count`, where `boost::is_convertible<char[6], std::string>`
   was false because `__is_convertible` did not decay non-reference array
-  sources. After the PA33 builtin-trait fix, the focused
+  sources. After the PA34 builtin-trait fix, the focused
   `libs/fusion/test//count` target passes. The full Fusion suite should be
   rerun from the new commit to refresh the remaining frontier list.
 - 2026-05-13: `libs/fusion/test//filter_if` was rerun after builtin comparison

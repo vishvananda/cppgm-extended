@@ -10,7 +10,7 @@ assignment harnesses.
 - `dev/src/`: shared compiler implementation files and support headers
 - `dev/frontend_source_sets.mk`: per-tool lists of `dev/src/*.cpp` files to
   link into each compiler binary
-- `pa1/` through `pa37/`: assignment handouts, Makefiles, tests, scripts, and
+- `pa1/` through `pa38/`: assignment handouts, Makefiles, tests, scripts, and
   reference fixtures
 - `cppgm.tests/`: shared course tests used by assignment harnesses
 - `doc/`: public reference material, including `doc/n3485.txt`
@@ -34,9 +34,10 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 - PA10-PA12: AST, types, lookup, conversions, calls, and overload resolution
 - PA13-PA22: LowIR, C++ lowering, object model, templates, and constexpr
 - PA23-PA25: native backend, linking, and exception/runtime support
-- PA26-PA34: C++11 language closure, host ABI, and hosted compatibility
-- PA35-PA36: LowIR and machine-backend optimization
-- PA37: inception, rebuilding `cppgm++` with `cppgm++`
+- PA26-PA30: C++11 language closure and compile/link driver integration
+- PA31-PA35: ABI naming, host ABI, and hosted compatibility
+- PA36-PA37: LowIR and machine-backend optimization
+- PA38: inception, rebuilding `cppgm++` with `cppgm++`
 
 ## Assignment Map
 
@@ -72,17 +73,18 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 | PA28 | `cppgm++ --emit-lowir` | non-virtual multi-base object model |
 | PA29 | `cppgm++ --emit-lowir` | virtual/RTTI object-model completion |
 | PA30 | `cppgm++` | compile/link driver integration |
-| PA31 | `cppgm++ -c` | host-linkable object interoperability |
-| PA32 | `cppgm++ -c` | host C++ ABI and runtime behavior |
-| PA33 | `cppgm++ -E`, `cppgm++ -c` | hosted header/source compatibility |
-| PA34 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
-| PA35 | `lowiropt` | LowIR optimization |
-| PA36 | `lowir2native -O1/-O2` | machine/backend optimization |
-| PA37 | inception targets | rebuild `cppgm++` with `cppgm++` |
+| PA31 | `abimangle` | standalone ABI name construction |
+| PA32 | `cppgm++ -c` | host-linkable object interoperability |
+| PA33 | `cppgm++ -c` | host C++ ABI and runtime behavior |
+| PA34 | `cppgm++ -E`, `cppgm++ -c` | hosted header/source compatibility |
+| PA35 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
+| PA36 | `lowiropt` | LowIR optimization |
+| PA37 | `lowir2native -O1/-O2` | machine/backend optimization |
+| PA38 | inception targets | rebuild `cppgm++` with `cppgm++` |
 
-## PA37
+## PA38
 
-PA37 is different from the earlier one-binary assignments. Its goal is
+PA38 is different from the earlier one-binary assignments. Its goal is
 inception: build `cppgm++` with `cppgm++` and match the host build. The
 `test-through` ladder gives intermediate checkpoints, but the final target is a
 matching self-built compiler.

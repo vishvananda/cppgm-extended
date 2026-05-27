@@ -384,7 +384,7 @@ Add end-of-analysis shadow reports:
 ### Phase A: Measurement
 
 Implement phase timers, work counters, and shadow skip reports. Do not change
-semantic behavior. Run the frozen `semantic_overload.cpp` benchmark and PA33
+semantic behavior. Run the frozen `semantic_overload.cpp` benchmark and PA34
 STL controls with stats enabled and update `semantic-analysis-performance-plan.md`
 with the top costs.
 
@@ -444,13 +444,13 @@ Performance gates:
 - Frozen `benchmarks/self_compile/stable/semantic_overload.cpp` timing without
   hotspot tracing.
 - The same benchmark with semantic stats enabled for attribution.
-- PA33 STL controls for regression checks.
-- PA34 hosted-link controls after a meaningful behavior change.
+- PA34 STL controls for regression checks.
+- PA35 hosted-link controls after a meaningful behavior change.
 
 Correctness gates for output-sensitive changes:
 
 - Strict LowIR direct text comparison for pa18, pa19, pa21, and pa22.
-- Targeted PA32/PA33 tests when changing symbol emission, mangling, overload, or
+- Targeted PA33/PA34 tests when changing symbol emission, mangling, overload, or
   hosted-library behavior.
 - Full `make test-report` after the output-root and class-demand phases stabilize.
 

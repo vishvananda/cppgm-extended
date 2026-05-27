@@ -22,9 +22,9 @@ backend-quality requirements such as:
 - exposing a machine-IR oracle that is strong enough to test quality without
   over-constraining harmless register-choice differences
 
-This is **not** the same as the later `PA35` optimization assignment.
+This is **not** the same as the later `PA36` optimization assignment.
 
-`PA35` should still own:
+`PA36` should still own:
 
 - LowIR optimization
 - `-O*` levels
@@ -89,11 +89,11 @@ The public contract should become:
 3. those quality rules are tested through a more flexible MIR oracle than exact
    raw register-by-register matching
 
-This is a better fit than moving the work to `PA35`, because:
+This is a better fit than moving the work to `PA36`, because:
 
 - register allocation is target-specific machine-backend behavior
 - compare/branch lowering quality is also first a machine-backend concern
-- `PA35` should remain the first **LowIR optimization** assignment, not the
+- `PA36` should remain the first **LowIR optimization** assignment, not the
   first place students discover whether the backend still spills everything
 
 ## Public Contract Additions For PA23
@@ -358,12 +358,12 @@ everywhere" before demanding a mature allocator.
 Later register-allocation improvements can then tighten the same test surface
 instead of introducing a second incompatible oracle.
 
-## Relationship To PA35
+## Relationship To PA36
 
 This plan should land before or alongside later LowIR optimization work, not as
 part of it.
 
-`PA35` should still assume:
+`PA36` should still assume:
 
 - `PA23` already owns a credible machine-backend path
 - `PA23` already owns the first machine-IR quality rules
@@ -371,7 +371,7 @@ part of it.
 That keeps the curriculum split coherent:
 
 - `PA23`: direct backend correctness and basic machine-backend quality
-- `PA35`: LowIR optimization and `-O*`
+- `PA36`: LowIR optimization and `-O*`
 
 ## End State
 

@@ -94,46 +94,46 @@ DEFAULT_BENCHMARKS = [
 ]
 
 
-FOCUSED_PA33_PERF_BENCHMARKS = [
+FOCUSED_PA34_PERF_BENCHMARKS = [
     {
-        "name": "pa33-reference-wrapper-smoke",
-        "source": "pa33/tests/compile/540-reference-wrapper-smoke.t",
+        "name": "pa34-reference-wrapper-smoke",
+        "source": "pa34/tests/compile/540-reference-wrapper-smoke.t",
         "mode": "compile",
-        "tags": ["pa33", "long", "reference-wrapper", "functional"],
+        "tags": ["pa34", "long", "reference-wrapper", "functional"],
     },
     {
-        "name": "pa33-long-unordered-map-find",
-        "source": "pa33/tests/compile/655-const-unordered-map-find.t",
+        "name": "pa34-long-unordered-map-find",
+        "source": "pa34/tests/compile/655-const-unordered-map-find.t",
         "mode": "compile",
-        "tags": ["pa33", "long", "unordered-map", "string"],
+        "tags": ["pa34", "long", "unordered-map", "string"],
         "allow_failure": True,
     },
     {
-        "name": "pa33-long-istream-static-member-mask",
-        "source": "pa33/tests/compile/658-istream-static-member-mask-access.t",
+        "name": "pa34-long-istream-static-member-mask",
+        "source": "pa34/tests/compile/658-istream-static-member-mask-access.t",
         "mode": "compile",
-        "tags": ["pa33", "long", "iostream", "class-template"],
+        "tags": ["pa34", "long", "iostream", "class-template"],
         "allow_failure": True,
     },
     {
-        "name": "pa33-long-ostringstream-unsigned-int",
-        "source": "pa33/tests/compile/662-hosted-ostringstream-unsigned-int.t",
+        "name": "pa34-long-ostringstream-unsigned-int",
+        "source": "pa34/tests/compile/662-hosted-ostringstream-unsigned-int.t",
         "mode": "compile",
-        "tags": ["pa33", "long", "iostream", "templates"],
+        "tags": ["pa34", "long", "iostream", "templates"],
         "allow_failure": True,
     },
     {
-        "name": "pa33-long-vector-bool-storage",
-        "source": "pa33/tests/compile/679-hosted-vector-bool-storage-allocator-static-cast.t",
+        "name": "pa34-long-vector-bool-storage",
+        "source": "pa34/tests/compile/679-hosted-vector-bool-storage-allocator-static-cast.t",
         "mode": "compile",
-        "tags": ["pa33", "long", "vector", "allocator"],
+        "tags": ["pa34", "long", "vector", "allocator"],
         "allow_failure": True,
     },
     {
-        "name": "pa33-long-recursive-std-function-string",
-        "source": "pa33/tests/compile/680-hosted-recursive-std-function-string-substr.t",
+        "name": "pa34-long-recursive-std-function-string",
+        "source": "pa34/tests/compile/680-hosted-recursive-std-function-string-substr.t",
         "mode": "compile",
-        "tags": ["pa33", "long", "std-function", "string"],
+        "tags": ["pa34", "long", "std-function", "string"],
         "allow_failure": True,
     },
 ]
@@ -180,7 +180,7 @@ CHECKPOINT_SELF_COMPILE_BENCHMARKS = [
 
 ALL_BENCHMARKS = (
     DEFAULT_BENCHMARKS +
-    FOCUSED_PA33_PERF_BENCHMARKS +
+    FOCUSED_PA34_PERF_BENCHMARKS +
     OPTIONAL_SELF_COMPILE_BENCHMARKS +
     CHECKPOINT_SELF_COMPILE_BENCHMARKS
 )
@@ -840,10 +840,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--build-dir", default="")
     parser.add_argument("--benchmark", action="append", default=[],
                         help="Benchmark name to run. Defaults to all.")
-    parser.add_argument("--include-pa33-perf", action="store_true",
-                        help="Append focused long-running PA33 compile benchmarks.")
-    parser.add_argument("--include-hosted-pa33", action="store_true",
-                        help="Deprecated alias for --include-pa33-perf.")
+    parser.add_argument("--include-pa34-perf", action="store_true",
+                        help="Append focused long-running PA34 compile benchmarks.")
+    parser.add_argument("--include-hosted-pa34", action="store_true",
+                        help="Deprecated alias for --include-pa34-perf.")
     parser.add_argument("--include-self-compile", action="store_true",
                         help="Append optional frozen self-compile benchmarks.")
     parser.add_argument("--list", action="store_true",
@@ -870,20 +870,20 @@ def main() -> int:
 
     benchmarks = selected_benchmarks(args.benchmark)
     if not args.benchmark:
-        if args.include_pa33_perf or args.include_hosted_pa33:
-            benchmarks.extend(FOCUSED_PA33_PERF_BENCHMARKS)
+        if args.include_pa34_perf or args.include_hosted_pa34:
+            benchmarks.extend(FOCUSED_PA34_PERF_BENCHMARKS)
         if args.include_self_compile:
             benchmarks.extend(OPTIONAL_SELF_COMPILE_BENCHMARKS)
     if args.list:
         default_names = {item["name"] for item in DEFAULT_BENCHMARKS}
-        pa33_perf_names = {item["name"] for item in FOCUSED_PA33_PERF_BENCHMARKS}
+        pa34_perf_names = {item["name"] for item in FOCUSED_PA34_PERF_BENCHMARKS}
         checkpoint_names = {item["name"] for item in CHECKPOINT_SELF_COMPILE_BENCHMARKS}
         for item in ALL_BENCHMARKS:
             tags = ",".join(item["tags"])
             if item["name"] in default_names:
                 group = "default"
-            elif item["name"] in pa33_perf_names:
-                group = "pa33-perf"
+            elif item["name"] in pa34_perf_names:
+                group = "pa34-perf"
             elif item["name"] in checkpoint_names:
                 group = "checkpoint"
             else:

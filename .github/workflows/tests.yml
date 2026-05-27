@@ -170,7 +170,7 @@ jobs:
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
-            artifact_name: pa37-cppgm-self-ubuntu-24.04-gcc
+            artifact_name: pa38-cppgm-self-ubuntu-24.04-gcc
           - id: ubuntu-24.04-clang-libcxx
             name: clang + libc++ (ubuntu 24.04)
             image: ubuntu:24.04
@@ -179,7 +179,7 @@ jobs:
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
-            artifact_name: pa37-cppgm-self-ubuntu-24.04-clang-libcxx
+            artifact_name: pa38-cppgm-self-ubuntu-24.04-clang-libcxx
           - id: ubuntu-26.04-gcc
             name: gcc + libstdc++ (ubuntu 26.04)
             image: ubuntu:26.04
@@ -188,7 +188,7 @@ jobs:
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
-            artifact_name: pa37-cppgm-self-ubuntu-26.04-gcc
+            artifact_name: pa38-cppgm-self-ubuntu-26.04-gcc
           - id: ubuntu-26.04-clang-libcxx
             name: clang + libc++ (ubuntu 26.04)
             image: ubuntu:26.04
@@ -197,7 +197,7 @@ jobs:
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
-            artifact_name: pa37-cppgm-self-ubuntu-26.04-clang-libcxx
+            artifact_name: pa38-cppgm-self-ubuntu-26.04-clang-libcxx
         suite:
           - id: test-report
             name: test-report
@@ -207,9 +207,9 @@ jobs:
             name: test-strict
             command: make test-strict-nobuild
             timeout: 120
-          - id: pa37-through-pa10
-            name: pa37 test-through-pa10
-            command: make -C pa37 test-through-pa10 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
+          - id: pa38-through-pa10
+            name: pa38 test-through-pa10
+            command: make -C pa38 test-through-pa10 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
             timeout: 90
 
     env:
@@ -270,14 +270,14 @@ jobs:
         run: ${{ matrix.suite.command }}
 
       - name: Package cppgm++ self compiler
-        if: matrix.suite.id == 'pa37-through-pa10'
+        if: matrix.suite.id == 'pa38-through-pa10'
         run: |
           set -euo pipefail
           source_sha="$GITHUB_SHA"
-          bundle="$RUNNER_TEMP/pa37-cppgm-self"
-          upload="$RUNNER_TEMP/pa37-cppgm-self-upload"
+          bundle="$RUNNER_TEMP/pa38-cppgm-self"
+          upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa37/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa38/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -291,11 +291,11 @@ jobs:
             printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
           } > "$bundle/metadata.env"
           (cd "$bundle" && sha256sum bin/cppgm++-self > SHA256SUMS)
-          tar -C "$bundle" -czf "$upload/pa37-cppgm-self.tar.gz" .
+          tar -C "$bundle" -czf "$upload/pa38-cppgm-self.tar.gz" .
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
-            echo "### PA37 self compiler artifact"
+            echo "### PA38 self compiler artifact"
             echo
             echo "- Flavor: \`$SELFHOST_FLAVOR\`"
             echo "- Artifact: \`$SELFHOST_ARTIFACT_NAME\`"
@@ -304,18 +304,18 @@ jobs:
             echo
             echo "Manual inception run:"
             echo
-            echo "[Open PA37 Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/pa37-inception.yml)"
+            echo "[Open PA38 Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/pa38-inception.yml)"
             echo
             echo "\`\`\`sh"
-            echo "gh workflow run pa37-inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
+            echo "gh workflow run pa38-inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload cppgm++ self compiler
-        if: matrix.suite.id == 'pa37-through-pa10'
+        if: matrix.suite.id == 'pa38-through-pa10'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.SELFHOST_ARTIFACT_NAME }}
-          path: ${{ runner.temp }}/pa37-cppgm-self-upload/
+          path: ${{ runner.temp }}/pa38-cppgm-self-upload/
           if-no-files-found: error
           retention-days: 14

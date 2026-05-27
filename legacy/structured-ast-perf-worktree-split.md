@@ -80,9 +80,9 @@ Known current caveat: the branch has baseline PA10 reference drift in a few
 cases around `decltype` and placement-new parsing, also visible with the
 integration compiler. Treat those as stale-ref noise unless the diff set grows.
 
-Do not use the whole PA33 harness as a routine perf-slice gate. Use the focused
-PA33 long compile benchmarks from `scripts/run_structured_ast_perf_benchmarks.py
---include-pa33-perf` for timing signal instead. Those PA33 cases may be
+Do not use the whole PA34 harness as a routine perf-slice gate. Use the focused
+PA34 long compile benchmarks from `scripts/run_structured_ast_perf_benchmarks.py
+--include-pa34-perf` for timing signal instead. Those PA34 cases may be
 known-error/measurable on this branch, so they are for relative timing/RSS
 movement, not correctness signoff.
 

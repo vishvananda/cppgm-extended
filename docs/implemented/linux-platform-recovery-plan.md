@@ -17,7 +17,7 @@ should mean:
   - the still-separate Linux/ELF host-EH metadata work
 
 This plan is intentionally platform-recovery work, not a new language or
-backend milestone. It exists so ongoing PA23 / PA37 / export work can validate
+backend milestone. It exists so ongoing PA23 / PA38 / export work can validate
 against Linux again without rediscovering the same environment and ABI failures.
 
 ## Why This Needs Its Own Plan
@@ -62,7 +62,7 @@ This plan does **not** by itself complete:
 - the full Linux/ELF host-EH metadata path
 - broader assignment cleanup
 - PA23 machine-IR quality work
-- PA37 self-host ladder growth
+- PA38 self-host ladder growth
 
 But it should make those efforts testable on Linux again.
 
@@ -80,22 +80,22 @@ already re-established the basic lane:
 - the first stable Linux batch lane now passes in Docker using the same
   isolated object root:
   - `pa1` through `pa9`
-  - `pa31`
-- the next hosted probe after `pa31`, `pa32`, now also passes in full on
+  - `pa32`
+- the next hosted probe after `pa32`, `pa33`, now also passes in full on
   Linux:
   - `27 / 27` in batch mode under Linux Clang 22 with the isolated object root
   - ordinary weak-symbol / inspect-surface drift and the first ELF host-EH
     owner cluster (`191`, `192`, `193`, `194`, `220`) are fixed in this lane
-- the hosted-source compatibility lane beyond `pa32` is back in the normal
+- the hosted-source compatibility lane beyond `pa33` is back in the normal
   Linux batch path:
-  - `pa33` now passes in full on Linux (`18 / 18` preproc, `139 / 139`
+  - `pa34` now passes in full on Linux (`18 / 18` preproc, `139 / 139`
     compile)
   - the remaining issue there was a hidden batch-policy mismatch: even with
     `CPPGM_TEST_JOBS=1`, the compile lane still defaulted to three persistent
     host-compat workers
   - the compile-worker default now follows `CPPGM_TEST_JOBS` unless explicitly
     overridden, so low-contention Linux recovery runs behave as requested
-- the next hosted link owner after `pa33`, `pa34`, now also passes in full on
+- the next hosted link owner after `pa34`, `pa35`, now also passes in full on
   Linux:
   - `57 / 57` in batch mode under Linux Clang 22
   - the two real Linux fixes there were:
@@ -103,17 +103,17 @@ already re-established the basic lane:
       built object root instead of assuming `../obj`
     - platform-specific Mach-O-only inspect scripts were replaced with generic
       normalized object-surface expectations that work on Mach-O and ELF
-- the Linux lane now advances far enough to probe the first `pa37` self-host
+- the Linux lane now advances far enough to probe the first `pa38` self-host
   rung:
-  - Linux host-control `pa37 test-through-pa1` passes
-  - Linux self-host `pa37 test-through-pa1` now gets past the earlier driver
+  - Linux host-control `pa38 test-through-pa1` passes
+  - Linux self-host `pa38 test-through-pa1` now gets past the earlier driver
     and hosted-header blockers and exposes a real self-host runtime crash in
     the self-built `pptoken-self`
   - that current blocker is no longer a Linux portability bug; it belongs to
-    the active `PA37` ladder-fix process
+    the active `PA38` ladder-fix process
 
 That means Phases 1 and 2 are no longer speculative, and the hosted recovery
-lane is now advanced through `pa34` and into the first `pa37` self-host
+lane is now advanced through `pa35` and into the first `pa38` self-host
 checkpoint. The remaining Linux-plan work is to keep that lane documented and
 routine, not to absorb the newly exposed cross-platform self-host bug.
 
@@ -137,12 +137,12 @@ routine, not to absorb the newly exposed cross-platform self-host bug.
 ### ELF / Host-ABI Gaps
 
 - Linux/ELF host-EH now has a real self-emitted `.eh_frame` / LSDA path for the
-  current `pa32` owner set, and the ordinary hosted compile/link lane now
-  advances through `pa34`, but later hosted/self-host Linux probes still need
+  current `pa33` owner set, and the ordinary hosted compile/link lane now
+  advances through `pa35`, but later hosted/self-host Linux probes still need
   to be checked for:
   - deeper ELF host-EH metadata gaps
   - later vtable / RTTI / relocation-owner drift
-  - Linux-only hosted runtime behavior beyond the `pa34` surface
+  - Linux-only hosted runtime behavior beyond the `pa35` surface
 
 ### Validation / Process Gaps
 
@@ -153,9 +153,9 @@ routine, not to absorb the newly exposed cross-platform self-host bug.
 - Later hosted probes must preserve the same low-contention batch semantics
   when `CPPGM_TEST_JOBS=1`, rather than quietly reintroducing hidden worker
   fanout.
-- The current Linux `pa37` blocker after `pa34` is a real self-host runtime
+- The current Linux `pa38` blocker after `pa35` is a real self-host runtime
   failure in the rebuilt `pptoken-self` binary, not another Linux portability
-  issue. That bug should be fixed under the `PA37` ladder process while this
+  issue. That bug should be fixed under the `PA38` ladder process while this
   plan keeps the Linux validation lane available.
 
 ## Plan Structure
@@ -230,7 +230,7 @@ Tasks:
    low-contention validation.
 
 - targeted Linux hosted compile/link smokes pass without local workarounds,
-  and the lane is advanced at least through the earliest post-`pa34` hosted
+  and the lane is advanced at least through the earliest post-`pa35` hosted
   owner suite
 
 ### Phase 4: Split Out Linux/ELF Host-EH Work Explicitly
@@ -239,11 +239,11 @@ Goal:
 
 - keep Linux recovery honest by separating "ordinary Linux works again" from
   later Linux/ELF hosted-runtime work that may still appear beyond the current
-  `pa32` lane.
+  `pa33` lane.
 
 Tasks:
 
-1. Probe the next Linux hosted owner after `pa34` and reduce any new failures to
+1. Probe the next Linux hosted owner after `pa35` and reduce any new failures to
    earliest-owner tests.
 2. Split broad Linux portability regressions from backend- or ABI-specific
    follow-on plans when the failures are no longer general lane-recovery work.
@@ -302,21 +302,21 @@ The next implementation slice from this plan should be:
    - Linux Clang 22
    - `DOCKER_API_VERSION=1.52` on this host
    - isolated `OBJ=/tmp/<name>-linux-obj`
-2. keep the new Linux `pa37` probe in the documented lane so future self-host
+2. keep the new Linux `pa38` probe in the documented lane so future self-host
    fixes can validate there without rediscovering the earlier portability bugs
 3. keep genuine Linux portability / ELF issues separate from the newly exposed
-   cross-platform `PA37` self-host failures
+   cross-platform `PA38` self-host failures
 
 That next slice is intentionally chosen because it:
 
 - builds on a stable Linux build plus batch-validation base
 - can keep landing from a separate worktree with modest merge risk
-- keeps the Linux lane useful for `PA37` without turning this plan into the
+- keeps the Linux lane useful for `PA38` without turning this plan into the
   owner of non-Linux self-host bugs
 
 ## Relation To Other Active Plans
 
-- [pa37-selfhost-buildout-process.md](/Users/vishvananda/cppgm/docs/implemented/pa37-selfhost-buildout-process.md)
+- [pa38-selfhost-buildout-process.md](/Users/vishvananda/cppgm/docs/implemented/pa38-selfhost-buildout-process.md)
   remains the primary active implementation lane.
   Linux recovery is a parallel enabling lane for cross-platform validation.
 

@@ -8,8 +8,8 @@ Final outcome:
   implementation
 - bootstrap helper scripts/docs no longer depend on fallback-disable honesty
   guards
-- runner-backed batch validation passed across `pa1` through `pa31`
-- hosted `pa30` / `pa31` validation now runs on the normal self-emitted object
+- runner-backed batch validation passed across `pa1` through `pa32`
+- hosted `pa30` / `pa32` validation now runs on the normal self-emitted object
   path
 
 This is the remaining follow-up to the archived broad transition plan:
@@ -69,7 +69,7 @@ That means the hosted path is still mixed:
 - ordinary object emission: self-emitted
 - runtime-sensitive hosted source objects: sometimes host-compiled
 
-This is transitional behavior, not the target PA30/PA31 contract.
+This is transitional behavior, not the target PA30/PA32 contract.
 
 ## Remaining Work
 
@@ -183,7 +183,7 @@ This follow-up is complete only when all of the following are true:
 - `cppgm++ -c` emits self-owned objects for hosted inputs that previously fell
   back due to EH or host-native runtime/vtable reasons
 - PA30 hosted runtime / EH tests pass without host source compilation
-- PA31 hosted compatibility tests pass without host source compilation
+- PA32 hosted compatibility tests pass without host source compilation
 - no source-link path silently upgrades source inputs to host-compiled objects
 
 ## Regression Surface
@@ -191,7 +191,7 @@ This follow-up is complete only when all of the following are true:
 The main regression surface should be:
 
 - existing PA30 hosted runtime / EH tests
-- existing PA31 hosted compatibility tests, especially the hosted vtable,
+- existing PA32 hosted compatibility tests, especially the hosted vtable,
   imported-data, and fallback-disable smokes
 - broader hosted/runtime validation once the fallbacks are deleted
 

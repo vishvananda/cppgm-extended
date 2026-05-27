@@ -28,7 +28,7 @@
 - earliest owning assignment: `pa21`
 - regression path(s):
   - `pa21/tests/spec/408-template-static-member-storage-definition-preserves-inclass-initializer.t`
-  - `pa31/tests/compile/610-random-to-address-qualified-call.t`
+  - `pa32/tests/compile/610-random-to-address-qualified-call.t`
 
 ## Reduction
 
@@ -64,7 +64,7 @@
   - `std::string a; return a != "x";` passed
   - `dev/src/symbol_linkage.cpp` passed
   - isolated `Box<T>::value` storage-definition repro passed
-  - `pa31/tests/compile/610-random-to-address-qualified-call.t` passed after restoring skip behavior for unsupported friend-template declarations
+  - `pa32/tests/compile/610-random-to-address-qualified-call.t` passed after restoring skip behavior for unsupported friend-template declarations
 - owning suite:
   - `./dev/cpptemplatecomplete -o /tmp/408-static-member-preserve.ref.out pa21/tests/spec/408-template-static-member-storage-definition-preserves-inclass-initializer.t`
   - output matched checked-in refs

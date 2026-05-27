@@ -88,7 +88,7 @@ there.
   - not rerun
 - final full gate:
   - `make verify-fast-pa10-31 CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ VERIFY_ASSIGNMENT_JOBS=6`
-  - rebuilt cleanly and passed through `pa16`-`pa31`
+  - rebuilt cleanly and passed through `pa16`-`pa32`
   - stopped in `pa15` on pre-existing `249-const-subobject-member-call.t` reference drift
 
 ## Result

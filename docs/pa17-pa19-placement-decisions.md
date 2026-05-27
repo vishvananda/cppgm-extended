@@ -26,7 +26,7 @@ No tests or refs were moved, edited, or regenerated.
 | G9 | `pa18:mixed` | `move` | `pa20/tests/*/100-...` or `pa20/tests/*/300-...` | Full `constexpr` function/object behavior or function-local static template specialization state | PA18 templates | Move later. | Local-static refs include `__local_static__`; constexpr linkage cases rely on PA20 constexpr function/object ownership. |
 | G10 | `pa18:mixed` | `move` | `pa21/tests/*/100-...` | Class partial specialization / specialization graph behavior | PA18 packs/member templates | Move later. | Latest essential owner is PA21. |
 | G11 | `pa18:mixed` | `move` | `pa22/tests/*/100-...`, `pa22/tests/*/200-...`, or `pa22/tests/*/300-...` | Full deduction, function-template partial ordering, SFINAE/substitution, or no-eager instantiation | PA18/PA19 helper templates | Move later. | Use PA22 cluster 100 for full deduction, 200 for partial ordering/substitution, and 300 for SFINAE/no-eager timing. |
-| G12 | `pa18:mixed` | `move` | PA26 / PA27 / PA28 / PA29 / PA33 owner clusters | Lambda/initializer-list/member-pointer/pointer-adjust/builtin-trait support | PA18 templates as fixture | Move later. | Later support feature is essential; specific destinations are in the path list notes. |
+| G12 | `pa18:mixed` | `move` | PA26 / PA27 / PA28 / PA29 / PA34 owner clusters | Lambda/initializer-list/member-pointer/pointer-adjust/builtin-trait support | PA18 templates as fixture | Move later. | Later support feature is essential; specific destinations are in the path list notes. |
 | G13 | `pa18:100-spec` | `manual-review` | TBD | dependent sizeof/type-array member fixture | possible PA18 dependent-name vs later substitution split | Inspect before moving. | Scanner finds several later-looking features, but the primary assertion may be reducible to a PA18 dependent-name case. |
 | G14 | `pa19:mixed` | `keep` | current | PA19 integral NTTP/static-assert/integral-constant behavior | none | Leave in place. | Scanner `current_specialization`, `constexpr.full`, `function.noexcept`, and similar hits are false positives or fixture syntax for the PA19 integral subset. |
 | G15 | `pa19:100` | `renumber` | `pa19/tests/*/200-...` | `template.explicit_specialization` | none | Renumber later. | Current PA is right; first correct cluster is PA19 cluster 200. |
@@ -34,7 +34,7 @@ No tests or refs were moved, edited, or regenerated.
 | G17 | `pa19:mixed` | `move` | `pa20/tests/*/100-...` or `pa20/tests/*/300-...` | Full constexpr function/object behavior | PA19 NTTP/static data fixture | Move later. | These require PA20 beyond the PA19 integral-constant subset. |
 | G18 | `pa19:mixed` | `move` | `pa21/tests/*/100-...`, `pa21/tests/*/200-...`, or `pa21/tests/*/400-...` | alias templates, variable templates, class partial specialization, or specialization graph behavior | PA19 NTTP/static-assert fixture | Move later. | Latest essential owner is PA21. |
 | G19 | `pa19:mixed` | `move` | `pa22/tests/*/100-...`, `pa22/tests/*/300-...`, or `pa22/tests/*/400-...` | SFINAE/substitution/full deduction/no-eager or non-integral NTTP completion | PA19 integral helpers | Move later. | Function-pointer/reference NTTPs use the PA22 non-integral NTTP owner unless member pointers push the case to PA28. |
-| G20 | `pa19:mixed` | `move` | PA28 or PA33 owner clusters | member pointers or builtin/hosted trait probes | PA19 metaprogramming fixture | Move later. | Member-pointer cases belong to PA28; `__is_*` / hosted builtin-trait probes belong to PA33. |
+| G20 | `pa19:mixed` | `move` | PA28 or PA34 owner clusters | member pointers or builtin/hosted trait probes | PA19 metaprogramming fixture | Move later. | Member-pointer cases belong to PA28; `__is_*` / hosted builtin-trait probes belong to PA34. |
 
 ## Path Lists
 
@@ -238,12 +238,12 @@ No tests or refs were moved, edited, or regenerated.
 - `pa18/tests/spec/100-member-pointer-parameter-variadic-deduction.t` -> PA28
 - `pa18/tests/spec/100-overloaded-member-pointer-function-template-deduction.t` -> PA28
 - `pa18/tests/general/400-primary-polymorphic-base-before-nonpoly-static-cast.t` -> PA29
-- `pa18/tests/general/200-local-constructor-template-member-typedef.t` -> PA33
-- `pa18/tests/general/200-local-member-call-constructor-template-instantiation.t` -> PA33
-- `pa18/tests/general/200-static-assert-builtin-trait-non-type-argument.t` -> PA33
-- `pa18/tests/general/200-template-body-builtin-constant-p.t` -> PA33
-- `pa18/tests/spec/100-local-constructor-template-member-typedef.t` -> PA33
-- `pa18/tests/spec/100-local-member-call-constructor-template-instantiation.t` -> PA33
+- `pa18/tests/general/200-local-constructor-template-member-typedef.t` -> PA34
+- `pa18/tests/general/200-local-member-call-constructor-template-instantiation.t` -> PA34
+- `pa18/tests/general/200-static-assert-builtin-trait-non-type-argument.t` -> PA34
+- `pa18/tests/general/200-template-body-builtin-constant-p.t` -> PA34
+- `pa18/tests/spec/100-local-constructor-template-member-typedef.t` -> PA34
+- `pa18/tests/spec/100-local-member-call-constructor-template-instantiation.t` -> PA34
 
 ### G13
 
@@ -379,12 +379,12 @@ No tests or refs were moved, edited, or regenerated.
 
 ### G20
 
-- `pa19/tests/general/100-and-alias-decltype-pack-call.t` -> PA33
-- `pa19/tests/general/100-is-assignable-deleted-special-member.t` -> PA33
-- `pa19/tests/general/100-pair-template-parameter-clause-smoke.t` -> PA33
-- `pa19/tests/general/200-defaulted-dependent-nontype-expression-syntax.t` -> PA33
-- `pa19/tests/general/200-structured-nothrow-invocable-cache-default.t` -> PA33
+- `pa19/tests/general/100-and-alias-decltype-pack-call.t` -> PA34
+- `pa19/tests/general/100-is-assignable-deleted-special-member.t` -> PA34
+- `pa19/tests/general/100-pair-template-parameter-clause-smoke.t` -> PA34
+- `pa19/tests/general/200-defaulted-dependent-nontype-expression-syntax.t` -> PA34
+- `pa19/tests/general/200-structured-nothrow-invocable-cache-default.t` -> PA34
 - `pa19/tests/general/200-using-directive-template-id-member-pointer-owner.t` -> PA28
-- `pa19/tests/spec/200-bool-alias-base-preserves-nontype-type.t` -> PA33
+- `pa19/tests/spec/200-bool-alias-base-preserves-nontype-type.t` -> PA34
 - `pa19/tests/spec/200-dependent-member-function-pointer-nontype-detection.t` -> PA28
 - `pa19/tests/spec/200-member-pointer-nontype-template-parameter.t` -> PA28

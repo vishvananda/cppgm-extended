@@ -10,7 +10,7 @@ minutes), bringing it within striking distance of state-of-the-art compilers
 without micro-optimizing further.
 
 This plan supersedes the iterative per-slice strategy in
-`pa33-540-compile-performance-plan.md` and
+`pa34-540-compile-performance-plan.md` and
 `semantic-analysis-performance-plan.md` for the cases where those plans have
 plateaued. It does not replace them: the smaller wins they describe are
 complementary and should continue. This document targets the architectural
@@ -35,7 +35,7 @@ caller is wrong.
 
 ### Why micro-optimization has plateaued
 
-`pa33-540-compile-performance-plan.md` records ~30 measured experiments since
+`pa34-540-compile-performance-plan.md` records ~30 measured experiments since
 2026-04-30. Median wins per slice are -1% to -3%, several reverted as noisy or
 regressing. The cumulative improvement against the integration baseline is
 roughly -2% to -5% on `540`. This is what hitting an architectural ceiling
@@ -111,7 +111,7 @@ Algorithm:
    - per-fixpoint-subpass: items scanned vs items in reachable set
 
 Gate behind `CPPGM_REACHABILITY_PROBE=1`. Do not change behavior. Run once
-on `callsemantic.cpp` and once on `pa33-reference-wrapper-smoke`.
+on `callsemantic.cpp` and once on `pa34-reference-wrapper-smoke`.
 
 ### Decision Rule
 
@@ -127,7 +127,7 @@ The probe is a hard gate. Phase 1 does not start without a number.
 
 - Probe builds and runs without changing behavior on the strict suites.
 - Reachability ratios reported for at least `callsemantic.cpp` and one
-  hosted-header-heavy PA33 case.
+  hosted-header-heavy PA34 case.
 - `benchmarks/self_compile/stable/callsemantic_frozen.cpp` is checked in,
   taken from the same integration commit as the Phase 0 baseline binary.
   One single-run baseline number recorded as the checkpoint anchor; this
@@ -253,7 +253,7 @@ once, and dependencies flow only outward from roots.
 ### Exit Criteria
 
 - Strict suites `pa14 pa15 pa16 pa18 pa19 pa21 pa22` are clean.
-- `pa33` and `pa34` focused compile cases produce identical LowIR text.
+- `pa34` and `pa35` focused compile cases produce identical LowIR text.
 - `semantic_overload.cpp` counter for `complete-class-type-calls` drops
   by at least 70% (from 250k to under 75k).
 - `semantic_overload.cpp` wall time drops by at least 3x against the
@@ -312,7 +312,7 @@ for the duration of this work:
 
 | Tier | Benchmark input | Wall time | Use |
 |---|---|---|---|
-| Inner | `pa33-reference-wrapper-smoke` (540) and a few PA18/PA21 LowIR cases | ~7s / <1s | per-edit correctness, parser/output sanity |
+| Inner | `pa34-reference-wrapper-smoke` (540) and a few PA18/PA21 LowIR cases | ~7s / <1s | per-edit correctness, parser/output sanity |
 | Middle | `benchmarks/self_compile/stable/semantic_overload.cpp` | ~190s | **per-slice and per-phase counter + wall-time gate** |
 | Checkpoint | `benchmarks/self_compile/stable/callsemantic_frozen.cpp` | 20+ min | **single-run capstone at major boundaries only** |
 
@@ -385,11 +385,11 @@ reduce it by at least 5x against the Phase 0 baseline. A single run is
 sufficient at that magnitude — anything below 3x is a clear negative
 regardless of run-to-run variance.
 
-Cross-benchmark sanity: focused PA33 cases
-(`pa33-reference-wrapper-smoke`, `pa33-long-unordered-map-find`,
-`pa33-long-recursive-std-function-string`) should improve monotonically
+Cross-benchmark sanity: focused PA34 cases
+(`pa34-reference-wrapper-smoke`, `pa34-long-unordered-map-find`,
+`pa34-long-recursive-std-function-string`) should improve monotonically
 across phases or at minimum not regress. If the middle tier improves but
-PA33 cases regress, the demand walk is over-aggressive.
+PA34 cases regress, the demand walk is over-aggressive.
 
 ### Counter Gates
 
@@ -434,7 +434,7 @@ contents on a wide test matrix before flipping the default.
 
 ### Phase 2 Is A Big Patch
 
-Unlike the per-slice patches in `pa33-540-compile-performance-plan.md`,
+Unlike the per-slice patches in `pa34-540-compile-performance-plan.md`,
 Phase 2 is a single architectural change. It cannot be landed in tranches
 without the seed pass and fixpoint coexisting. The intermediate state
 should be: both paths exist, demand path is gated by env var, default is

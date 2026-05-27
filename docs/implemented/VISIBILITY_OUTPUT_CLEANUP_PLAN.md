@@ -2,9 +2,9 @@
 
 ## Status
 
-Complete for the pre-PA31 boundary.
+Complete for the pre-PA32 boundary.
 
-The visibility/output rewrite is now closed enough that PA31 failures can be treated as PA31
+The visibility/output rewrite is now closed enough that PA32 failures can be treated as PA32
 issues rather than as fallout from half-migrated output bookkeeping.
 
 ## Goal
@@ -14,7 +14,7 @@ Make output ownership coherent enough that:
 1. requirement state changes through central APIs
 2. validation runs on the common semantic/LowIR paths
 3. emission decisions are driven by one requirement model
-4. pre-PA31 suites stay green while the model is tightened
+4. pre-PA32 suites stay green while the model is tightened
 
 ## Landed Cleanup
 
@@ -27,7 +27,7 @@ Make output ownership coherent enough that:
 2. Validator on common paths
 
 - required-definition validation now runs on the paths used for ordinary regression work,
-  not only on the old PA31 object-build boundary.
+  not only on the old PA32 object-build boundary.
 
 3. No raw instantiation-tracking side channel
 
@@ -41,14 +41,14 @@ Make output ownership coherent enough that:
 - the compatibility `output_required` field is gone
 - trace output now reports derived definition-requirement state from `ORK_DEFINITION`
 
-5. Pre-PA31 baseline restored and held
+5. Pre-PA32 baseline restored and held
 
-- full root `make test-report` is green for every suite below PA31
+- full root `make test-report` is green for every suite below PA32
 - the current stable boundary is:
   - `1491 / 1498` passed
-  - only PA31 failures remain
+  - only PA32 failures remain
 
-## Why This Is Enough To Resume PA31
+## Why This Is Enough To Resume PA32
 
 The original cleanup concerns are resolved:
 
@@ -73,4 +73,4 @@ Keep these in place:
 - full root `make test-report` after each substantial output/visibility change
 
 If a future regression reintroduces a hidden output-ownership path, add the smallest
-non-PA31 regression that exposes it before fixing the PA31 symptom.
+non-PA32 regression that exposes it before fixing the PA32 symptom.

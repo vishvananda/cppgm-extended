@@ -342,7 +342,7 @@ spread across the renderer:
   compatibility API have been deleted; callers without semantic class identity
   do not claim a host external-vtable symbol.
 - The audited legacy fallback buckets have been deleted. The migrated
-  PA18/19/21/22 suite, focused PA32 owner tests, and PA33/PA34 hosted discovery
+  PA18/19/21/22 suite, focused PA33 owner tests, and PA34/PA35 hosted discovery
   tests pass without relying on any audited rendered-text fallback.
   The `template-id-component-text` bucket is gone: template-id mangling now
   consumes preserved `TemplateIdSyntax` and no longer reparses a component
@@ -378,7 +378,7 @@ the default path.
 - Record this plan.
 - Confirm the worktree starts green under the fast direct LowIR strict suite:
   `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-strict STRICT_PAS='pa18 pa19 pa21 pa22' STRICT_SUBTEST_JOBS=8 CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++`.
-- Confirm PA32 mangling owners:
+- Confirm PA33 mangling owners:
   `231`, `232`, `233`, `234`, `235`, `236`, `237`, `241`, `242`, `243`, `244`,
   plus the hosted `std::map` copy-assign probe.
 
@@ -412,7 +412,7 @@ the default path.
 - Acceptance:
   - PA19 `207-defaulted-nontype-expression-syntax-rewrite`
   - PA22 `511-index-sequence-alias-constructor-deduction`
-  - PA32 owner/template-template mangling tests `233`, `234`, `236`, `237`
+  - PA33 owner/template-template mangling tests `233`, `234`, `236`, `237`
 
 ### Phase 3. Dependent Non-Type Template Arguments
 
@@ -427,8 +427,8 @@ the default path.
   - PA19 `203-dependent-nontype-template-arg-mangle`
   - PA19 `205-nontype-pack-comma-expression-syntax`
   - PA19 `207-defaulted-nontype-expression-syntax-rewrite`
-  - PA32 `232-host-dependent-nontype-expression-mangling`
-  - PA32 `235-host-dependent-bool-owner-argument-mangling`
+  - PA33 `232-host-dependent-nontype-expression-mangling`
+  - PA33 `235-host-dependent-bool-owner-argument-mangling`
 
 ### Phase 4. Dependent Expressions
 
@@ -442,8 +442,8 @@ the default path.
   - PA22 `403-dependent-decltype-call-pack-expansion`
   - PA22 `404-dependent-decltype-nested-call-pack-expansion`
   - PA22 `493-pack-expanded-enable-if-member-value`
-  - PA32 `236-host-dependent-enable-if-alias-expression-mangling`
-  - PA32 `242-host-builtin-transform-alias-mangling`
+  - PA33 `236-host-dependent-enable-if-alias-expression-mangling`
+  - PA33 `242-host-builtin-transform-alias-mangling`
 
 ### Phase 5. Entity Names and Entry Points
 
@@ -472,10 +472,10 @@ the default path.
   and deleting variants rewrite the ctor/dtor code.
 - Add explicit checks for lambda context/signature substitutions and RTTI names.
 - Acceptance:
-  - PA32 `241-host-member-lambda-mangling`
-  - PA32 `243-host-lambda-rtti-mangling`
-  - PA32 `244-host-nested-lambda-parameter-substitution-mangling`
-  - existing constructor-symbol retention/absence tests around PA32 `245`-`248`
+  - PA33 `241-host-member-lambda-mangling`
+  - PA33 `243-host-lambda-rtti-mangling`
+  - PA33 `244-host-nested-lambda-parameter-substitution-mangling`
+  - existing constructor-symbol retention/absence tests around PA33 `245`-`248`
 
 ### Phase 6. Delete Text Fallback Parsers
 
@@ -488,8 +488,8 @@ the default path.
   Itanium `source-name` length fragments and internal-symbol normalization.
 - Acceptance:
   - strict LowIR direct compare for PA18/19/21/22
-  - PA32 mangling/host-ABI owners
-  - PA33/PA34 hosted discovery report
+  - PA33 mangling/host-ABI owners
+  - PA34/PA35 hosted discovery report
 
 ### Phase 7. Ratchet
 
@@ -499,7 +499,7 @@ the default path.
   constructs that are outside current course/compiler coverage, rather than
   silently accepting them through text parsing.
 - Current boundary: PA18/19/21/22 direct LowIR strict tests pass without the
-  retired migration flag, and the focused PA32 mangling-owner tests, including
+  retired migration flag, and the focused PA33 mangling-owner tests, including
   the hosted `std::map` copy-assignment probe, pass on the default path. The
   dependent libc++ SFINAE default argument `_Templ<_Args...>` used by
   `__sfinae_test_impl` carries its original `TemplateArgumentSyntax` through
@@ -537,7 +537,7 @@ CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-strict \
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
 ```
 
-Run PA32 mangling owners after every phase that touches object symbols:
+Run PA33 mangling owners after every phase that touches object symbols:
 
 ```sh
 for t in \
@@ -556,14 +556,14 @@ for t in \
   tests/spec/244-host-nested-lambda-parameter-substitution-mangling.t \
   tests/spec/235-host-std-map-copy-assign-empty-comparator.t
 do
-  make -C pa32 check TEST="$t" \
+  make -C pa33 check TEST="$t" \
     CXX=/usr/local/opt/llvm/bin/clang++ \
     CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ \
     CPPGM_SKIP_DEV_REBUILD=1 || exit 1
 done
 ```
 
-Run that PA32 list, including the hosted `std::map` probe, on the default
+Run that PA33 list, including the hosted `std::map` probe, on the default
 mangling path. The hosted probe now serves as the current ratchet for libc++
 member-class owner metadata and should not require a compatibility fallback.
 
@@ -578,6 +578,6 @@ the Itanium spec and clang's spelling for the same source.
   during mangling instead of entering a rendered-text compatibility path.
 - PA18/19/21/22 direct LowIR strict suite passes without semantic-fallback
   flags.
-- PA32 mangling owners pass.
+- PA33 mangling owners pass.
 - Remaining text helpers are either dead, used only for non-ABI diagnostics, or
   listed explicitly as unsupported follow-up work.

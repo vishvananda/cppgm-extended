@@ -46,7 +46,7 @@ The authoring guide gives the README shape:
 - Keep normative assignment requirements first.
 - Keep implementation advice under clearly non-normative design notes.
 - State the exact binary and invocation for ordinary tool assignments, or the
-  exact build/test targets for PA37-style staged assignments, plus inputs,
+  exact build/test targets for PA38-style staged assignments, plus inputs,
   outputs, and success/failure behavior.
 - Make the `Starter Kit` section match the export package, not the maintainer
   checkout.
@@ -64,7 +64,7 @@ The authoring guide gives the README shape:
 
 ## Cleanup Status
 
-The broad README/scaffold pass has been completed for PA10-PA37. The current
+The broad README/scaffold pass has been completed for PA10-PA38. The current
 state is tracked in `docs/student-export-inventory.md`.
 
 Resolved items from the initial audit:
@@ -79,10 +79,10 @@ Resolved items from the initial audit:
 - PA18-PA22 handouts no longer present "Missing Tests To Add Later" as student
   scope, and witness sidecars are described as outside the required oracle unless
   export policy changes.
-- PA31-PA34 handouts assume a Linux host/toolchain surface.
-- PA35/PA36 handouts now describe optimizer/backend behavior and testing
+- PA32-PA35 handouts assume a Linux host/toolchain surface.
+- PA36/PA37 handouts now describe optimizer/backend behavior and testing
   contracts.
-- PA37 is now a staged self-host handout rather than a wrapper status note.
+- PA38 is now a staged self-host handout rather than a wrapper status note.
 - The stale PA1-PA9 and PA23 `scripts/export_pa.sh` files were removed.
 - Scaffold TODO ownership has been aligned with the current assignment split.
 
@@ -99,7 +99,7 @@ Each worker should add rows or sections only for its assigned PA range, using
 this schema:
 
 - PA
-- exported binary or binaries, or staged targets for PA37-style assignments
+- exported binary or binaries, or staged targets for PA38-style assignments
 - student-editable files
 - scaffold source used for export
 - public support files
@@ -173,11 +173,11 @@ Focus:
 - scaffold sidecars for `lowir2native`, `cpplink`, `cppeh`, and `cppgm++`
 - grammar helper consistency
 
-### Slice E: PA30-PA34
+### Slice E: PA30-PA35
 
 Owns:
 
-- `pa30/README.md` through `pa34/README.md`
+- `pa30/README.md` through `pa35/README.md`
 - corresponding inventory sections
 
 Focus:
@@ -187,11 +187,11 @@ Focus:
 - filtering maintainer-only hosted-header sweep/frontier tooling out of the
   student contract
 
-### Slice F: PA35-PA36
+### Slice F: PA36-PA37
 
 Owns:
 
-- `pa35/README.md` and `pa36/README.md`
+- `pa36/README.md` and `pa37/README.md`
 - corresponding inventory sections
 
 Focus:
@@ -201,12 +201,12 @@ Focus:
 - direct text compare versus student structural validation
 - removal of absolute local links
 
-### Slice F2: PA37 Initial Audit Only
+### Slice F2: PA38 Initial Audit Only
 
 Owns:
 
-- the PA37 section of `docs/student-export-inventory.md`
-- optional notes for `pa37/README.md`, but not a broad rewrite
+- the PA38 section of `docs/student-export-inventory.md`
+- optional notes for `pa38/README.md`, but not a broad rewrite
 
 Focus:
 
@@ -214,9 +214,9 @@ Focus:
 - identify source sets, generated checkpoint binaries, reference tools, and
   host compiler prerequisites
 - separate maintainer implementation details from public workflow
-- record what needs a focused PA37 rewrite after the general README pass
+- record what needs a focused PA38 rewrite after the general README pass
 
-PA37 does not have a single assignment binary or one scaffold entrypoint. Treat
+PA38 does not have a single assignment binary or one scaffold entrypoint. Treat
 it as a staged build/test harness over the cumulative compiler tools.
 
 ### Slice G: Shared Export Infrastructure
@@ -274,7 +274,7 @@ References to read first:
 
 - docs/student-assignment-export-process.md
 - docs/student-export-readme-scaffold-subagent-plan.md
-- docs/pa10-34-assignment-cleanup-tracker.md, if your range overlaps PA10-PA34
+- docs/pa10-34-assignment-cleanup-tracker.md, if your range overlaps PA10-PA35
 - /Users/vishvananda/old/assignment-author-guide.md
 - /Users/vishvananda/old/assignment-authoring-report.md
 - each assigned paN/Makefile, paN/scripts/, paN/tests/, and public grammar/spec
@@ -284,7 +284,7 @@ References to read first:
 Edit goals:
 
 1. Make each assigned README student-facing:
-   - exact binary and invocation, or exact build/test targets for PA37-style
+   - exact binary and invocation, or exact build/test targets for PA38-style
      assignments
    - exact inputs, outputs, and exit behavior
    - prerequisites
@@ -325,10 +325,10 @@ Final response:
 - list validation commands and results
 ```
 
-## PA37 Follow-Up Rewrite
+## PA38 Follow-Up Rewrite
 
-After the broad workers finish, run a focused PA37 rewrite. That pass should not
-try to fit PA37 into the ordinary binary README template. It should instead
+After the broad workers finish, run a focused PA38 rewrite. That pass should not
+try to fit PA38 into the ordinary binary README template. It should instead
 document:
 
 - what the self-host ladder proves

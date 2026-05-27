@@ -21,7 +21,7 @@ make inception
 - `make test-report-through-paN` runs the report suite through PA N.
 - `make test-report` runs the broad keep-going report.
 - `make test-strict` runs stricter suites used by selected later assignments.
-- `make inception` runs the final PA37 self-host comparison.
+- `make inception` runs the final PA38 self-host comparison.
 
 The exit criterion for PA N is a clean root `make test-report-through-paN`.
 
@@ -47,7 +47,7 @@ make CXX=g++ CPPGM_HOST_CXX=g++
 ```
 
 For normal host builds, `CXX` and `CPPGM_HOST_CXX` should usually match. For
-PA37 self-host work, `CXX` may be `../dev/cppgm++` while `CPPGM_HOST_CXX`
+PA38 self-host work, `CXX` may be `../dev/cppgm++` while `CPPGM_HOST_CXX`
 remains a real host compiler.
 
 ## Test Locations

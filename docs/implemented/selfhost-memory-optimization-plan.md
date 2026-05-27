@@ -7,7 +7,7 @@ Reduce compiler memory usage in a disciplined way without:
 - breaking correctness
 - hiding real semantic work behind special cases
 - regressing compile time badly
-- destabilizing the active `pa37` ladder
+- destabilizing the active `pa38` ladder
 
 This plan is specifically for the current compiler-memory problem discovered
 while compiling large semantic translation units with a host-built `cppgm++`.
@@ -166,12 +166,12 @@ Validation on the accepted state is clean enough to close this plan:
 
 - `pa18`: `47 / 47`
 - `pa21`: `76 / 76`
-- targeted `pa34` hosted checks: pass
+- targeted `pa35` hosted checks: pass
 - broad `make test-report ORDERED=false`: `1838 / 1839`
 - the lone timeout in that historical run was
   `pa18/tests/spec/219-function-template-default-allocator-local-lambda.t`
   which was later identified as a misplaced hosted compile test and moved to
-  [720-hosted-function-template-default-allocator-local-lambda-compile.t](/Users/vishvananda/cppgm/pa33/tests/compile/720-hosted-function-template-default-allocator-local-lambda-compile.t)
+  [720-hosted-function-template-default-allocator-local-lambda-compile.t](/Users/vishvananda/cppgm/pa34/tests/compile/720-hosted-function-template-default-allocator-local-lambda-compile.t)
 
 ## Working Rule
 
@@ -378,7 +378,7 @@ Every memory fix candidate should follow this loop:
 4. rerun the owner tests for the touched feature
 5. rerun the newly added dirty-tree regressions
 6. rerun the relevant assignment suite
-7. only then decide whether the change is ready for a separate `pa37`
+7. only then decide whether the change is ready for a separate `pa38`
    integration handoff
 
 Minimum validation set for the current issue family:
@@ -386,7 +386,7 @@ Minimum validation set for the current issue family:
 - full `pa18`
 - new local-template regressions in `pa18`
 - new concrete-instantiation regression in `pa21`
-- new hosted runtime smoke in `pa34`
+- new hosted runtime smoke in `pa35`
 
 If a memory fix touches broader template, lookup, or semantic rewriting code,
 prefer also rerunning:
@@ -429,4 +429,4 @@ move the remaining work into a smaller follow-up tracker focused on:
 - cache hit-rate improvements
 - string canonicalization reduction
 - benchmark automation
-- broader self-host memory profiling during later `pa37` and `pa35` phases
+- broader self-host memory profiling during later `pa38` and `pa36` phases

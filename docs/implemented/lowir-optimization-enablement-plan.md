@@ -5,7 +5,7 @@
 This plan is now complete and ready to archive under `docs/implemented/`.
 
 This plan defines the next LowIR-facing evolution lane after the completed
-`PA35` optimizer buildout and the completed current-syntax optimizer follow-ups.
+`PA36` optimizer buildout and the completed current-syntax optimizer follow-ups.
 
 It exists to answer a narrower question than the earlier broad LowIR cleanup
 plans:
@@ -18,7 +18,7 @@ This plan should be read together with:
 
 - [docs/implemented/lowir-evolution-plan.md](/Users/vishvananda/cppgm/docs/implemented/lowir-evolution-plan.md)
 - [docs/implemented/lowir-second-tranche-plan.md](/Users/vishvananda/cppgm/docs/implemented/lowir-second-tranche-plan.md)
-- [docs/implemented/pa35-lowir-syntax-followups.md](/Users/vishvananda/cppgm/docs/implemented/pa35-lowir-syntax-followups.md)
+- [docs/implemented/pa36-lowir-syntax-followups.md](/Users/vishvananda/cppgm/docs/implemented/pa36-lowir-syntax-followups.md)
 
 ## Historical Rules To Keep
 
@@ -37,7 +37,7 @@ followed that shape.
 
 ## Current State
 
-The practical current-syntax PA35 follow-up work is now in place:
+The practical current-syntax PA36 follow-up work is now in place:
 
 - executable-edge-aware CFG propagation for values and available expressions
 - commutative-expression normalization
@@ -84,7 +84,7 @@ the first public LowIR syntax change.
 
 ### Why First
 
-The current PA35 optimizer note already identifies missing join values as the
+The current PA36 optimizer note already identifies missing join values as the
 main blocker for the next broad scalar wins. Internal SSA lets us prove the
 actual optimizer need before deciding whether public `phi` or block-parameter
 syntax is really required.

@@ -296,8 +296,10 @@ The following are out of scope for PA30:
 - dependency generation flags
 - precompiled headers
 - build-system conveniences such as depfiles or compilation databases
-- hosted preprocessor and hosted-header compatibility, which belong in PA33
-  and PA34
+- hosted preprocessor and hosted-header compatibility, which belong in PA34
+  and PA35
+- standalone ABI name construction, which belongs in PA31
+- host-linker-compatible object output, which belongs in PA32
 
 ### Design Notes (Non-Normative)
 
@@ -317,6 +319,5 @@ In particular:
 
 ### Stage Handoff
 
-The next stage is PA31, which extends `cppgm++ -c` so generated objects
-participate in the host toolchain itself rather than only the course
-compile/link path.
+The next stage is PA31, which isolates Itanium C++ ABI name construction before
+`cppgm++ -c` starts producing host-linker-compatible object files in PA32.

@@ -479,13 +479,13 @@ Every performance patch should have:
 For preprocessing and parser changes:
 
 ```bash
-make test-report ACTIVE_TEST_REPORT_PAS='pa1 pa2 pa3 pa4 pa5 pa6 pa33'
+make test-report ACTIVE_TEST_REPORT_PAS='pa1 pa2 pa3 pa4 pa5 pa6 pa34'
 ```
 
 For semantic, template, output, and codegen changes:
 
 ```bash
-make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'
+make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'
 ```
 
 Before merge or batching multiple performance patches:
@@ -553,8 +553,8 @@ Why first:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa1 pa2 pa3 pa4 pa5 pa6 pa33'`
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa1 pa2 pa3 pa4 pa5 pa6 pa34'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 
 Performance check:
 
@@ -585,7 +585,7 @@ Why second:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 
 Performance check:
 
@@ -613,7 +613,7 @@ Why third:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 
 Performance check:
 
@@ -645,7 +645,7 @@ Why fourth:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 - `make test-report`
 
 Performance check:
@@ -676,7 +676,7 @@ Why fifth:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 
 Performance check:
 
@@ -744,7 +744,7 @@ Why fifth:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 - `make test-report`
 
 Performance check:
@@ -779,7 +779,7 @@ Why sixth:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 - `make test-report`
 
 Performance check:
@@ -814,7 +814,7 @@ Why seventh:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 - `make test-report`
 
 Performance check:
@@ -847,7 +847,7 @@ Why eighth:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 - `make test-report`
 
 Performance check:
@@ -881,7 +881,7 @@ Why ninth:
 
 Regression:
 
-- `make test-report ACTIVE_TEST_REPORT_PAS='pa34 pa33 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
+- `make test-report ACTIVE_TEST_REPORT_PAS='pa35 pa34 pa27 pa26 pa22 pa21 pa18 pa16 pa15 pa14 pa12'`
 - `make test-report`
 
 Performance check:

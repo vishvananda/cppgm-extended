@@ -778,7 +778,7 @@ Additional bridge rules carried forward from the older broad plan:
    - if both parsed template-id syntax and template/class instantiation state
      are available, do not replace the parsed decomposition with a half-bound
      semantic record just because it exists
-   - this directly protects the `pa33/720` class of regressions where omitted
+   - this directly protects the `pa34/720` class of regressions where omitted
      defaults can still be completed structurally from the parsed template-id
 
 2. Temporary deferred defaults must carry the caller-bound dependent form.
@@ -1310,7 +1310,7 @@ Tests:
 ```bash
 make -C dev cppgm++ CXX=/usr/local/opt/llvm/bin/clang++
 make test-pa21 CXX=/usr/local/opt/llvm/bin/clang++
-make test-pa33 CXX=/usr/local/opt/llvm/bin/clang++
+make test-pa34 CXX=/usr/local/opt/llvm/bin/clang++
 ```
 
 ### Slice 4. Structured Type Template-Id Model
@@ -1331,7 +1331,7 @@ Tests:
 
 ```bash
 make -C dev cppgm++ CXX=/usr/local/opt/llvm/bin/clang++
-make test-pa33 CXX=/usr/local/opt/llvm/bin/clang++
+make test-pa34 CXX=/usr/local/opt/llvm/bin/clang++
 ```
 
 ### Slice 5. Structured Entity Names
@@ -1394,7 +1394,7 @@ Tests:
 ```bash
 make -C dev cppgm++ CXX=/usr/local/opt/llvm/bin/clang++
 make test-pa21 CXX=/usr/local/opt/llvm/bin/clang++
-make test-pa33 CXX=/usr/local/opt/llvm/bin/clang++
+make test-pa34 CXX=/usr/local/opt/llvm/bin/clang++
 ```
 
 ### Slice 8. Remove Compatibility Parsers From Semantic Hot Paths

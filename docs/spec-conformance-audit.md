@@ -89,7 +89,7 @@ If step 2 disproves the audit claim, update the audit and stop there.
 ### Regression placement
 
 - Put the regression in the earliest PA that naturally covers the language rule.
-- Use PA33 or PA34 only when the behavior depends on hosted library interaction, hosted
+- Use PA34 or PA35 only when the behavior depends on hosted library interaction, hosted
   emitted-code behavior, or compiler builtins.
 - If a hosted failure reduces to a smaller pure-language reproducer, add the earlier-PA test first.
 

@@ -7,7 +7,7 @@ strict ABI spelling guarantees that the current `symbol_linkage.cpp` path has
 accumulated.
 
 The immediate trigger is the `std::vector`/`std::map` substitution-slot bug
-found during the GCC PA37 frontier. A direct string-key fix made the symbols
+found during the GCC PA38 frontier. A direct string-key fix made the symbols
 match Homebrew Clang, but regressed the standard
 `semantic_overload.cpp` performance gate by about 5-7% instructions. The
 replacement must make the correct substitution sources cheap, not merely add
@@ -133,7 +133,7 @@ The commit and tracking process does not change:
 
 - Each code slice builds the GCC `dev/cppgm++` binary.
 - Each landed slice runs full `test-strict` with LowIR direct text compare.
-- PA31/PA32 `test-report` runs for symbol-surface changes.
+- PA32/PA33 `test-report` runs for symbol-surface changes.
 - The standard perf gate runs after correctness validation.
 - The perf result is recorded in the ledger before committing.
 - Temporary instruction regressions are acceptable only while they are explained
@@ -278,7 +278,7 @@ to build long wrapper strings for migrated IR types.
 Validation:
 
 - strict LowIR compare
-- PA31 substitution-owner tests
+- PA32 substitution-owner tests
 - standard perf gate
 
 ### Phase 2: Named Type And Template Component IR
@@ -293,15 +293,15 @@ Add IR nodes for:
 - standard abbreviation node with explicit substitution-source metadata
 
 Migrate only class-template specialization type mangling first. The target
-regression is the PA32 reducer for the PA37 bug:
+regression is the PA33 reducer for the PA38 bug:
 
-- `pa32/tests/spec/255-host-std-template-substitution-slots.t`
+- `pa33/tests/spec/255-host-std-template-substitution-slots.t`
 
-Also keep PA31 host symbol checks that compare against the host compiler:
+Also keep PA32 host symbol checks that compare against the host compiler:
 
-- `pa31/tests/spec/209-host-namespaced-enum-template-arg-mangling.t`
-- `pa31/tests/spec/226-function-template-nested-ref-substitution.t`
-- `pa31/tests/spec/227-namespace-operator-template-std-string-substitution.t`
+- `pa32/tests/spec/209-host-namespaced-enum-template-arg-mangling.t`
+- `pa32/tests/spec/226-function-template-nested-ref-substitution.t`
+- `pa32/tests/spec/227-namespace-operator-template-std-string-substitution.t`
 
 Do not migrate function names yet except where needed to render the type.
 
@@ -323,7 +323,7 @@ structured equivalent is covered by strict tests.
 Validation:
 
 - PA18, PA19, PA21, PA22 strict LowIR compare
-- PA31/PA32 report
+- PA32/PA33 report
 - focused Homebrew Clang vs cppgm symbol comparison for migrated reducers
 - standard perf gate
 
@@ -343,8 +343,8 @@ substitution table.
 
 Validation:
 
-- PA31 full report
 - PA32 full report
+- PA33 full report
 - strict LowIR compare
 - standard perf gate
 
@@ -378,8 +378,8 @@ Exit criteria:
 Validation:
 
 - full strict LowIR compare for every removal slice
-- PA31/PA32 report for symbol-surface changes
-- if PA31/PA32 finds a new symbol failure, add or identify an equivalent strict
+- PA32/PA33 report for symbol-surface changes
+- if PA32/PA33 finds a new symbol failure, add or identify an equivalent strict
   test before fixing it where feasible
 - standard perf gate recorded in the ledger
 
@@ -408,7 +408,7 @@ Targets:
 Validation:
 
 - strict LowIR compare
-- PA31/PA32 report for symbol-surface changes
+- PA32/PA33 report for symbol-surface changes
 - focused Homebrew Clang spelling comparison for any operator, elaborated type,
   or standard-substitution reducer touched by the slice
 - standard perf gate recorded in the ledger
@@ -443,7 +443,7 @@ Exit criteria:
 Validation:
 
 - strict LowIR compare
-- PA31/PA32 report if symbol-surface code moved
+- PA32/PA33 report if symbol-surface code moved
 - standard perf gate recorded in the ledger
 
 ### Phase 8: Simplification Audit
@@ -466,7 +466,7 @@ cleanup.
 Validation:
 
 - strict LowIR compare
-- PA31/PA32 report for any public symbol-shape movement
+- PA32/PA33 report for any public symbol-shape movement
 - standard perf gate recorded in the ledger
 
 ### Phase 9: Remove Premangled Encodings From Upstream Layers
@@ -511,7 +511,7 @@ Exit criteria:
 Validation:
 
 - strict LowIR compare
-- PA31/PA32 report
+- PA32/PA33 report
 - targeted inception/frontier reducer rerun for the scope/lambda/local symbol
   cases that originally required these fields
 - standard perf gate recorded in the ledger
@@ -565,7 +565,7 @@ make test-strict-nobuild \
   OBJ=../obj/gcc15
 ```
 
-For PA31/PA32 symbol-surface changes:
+For PA32/PA33 symbol-surface changes:
 
 ```sh
 env -u CPPGM_HOST_CXX -u CPPGM_STDLIB_FLAGS \
@@ -573,7 +573,7 @@ CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 \
 CPPGM_STRICT_TYPE_TEXT_FALLBACKS=1 \
 CPPGM_STRICT_SEMANTIC_FALLBACKS=1 \
 make test-report-nobuild \
-  ACTIVE_TEST_REPORT_PAS='pa31 pa32' \
+  ACTIVE_TEST_REPORT_PAS='pa32 pa33' \
   CXX=/usr/local/opt/gcc/bin/g++-15 \
   OBJ=../obj/gcc15 \
   ORDERED=false
@@ -642,42 +642,42 @@ Recorded migration measurements:
 | `6d9e40b6` | Simple constructor/destructor name IR | +7.87% | +3.47% | Strict/report passed; non-template special-member entry-point names now render through IR for simple owners. |
 | `0472551b` | Member fixed-operator name IR | +7.85% | +3.45% | Strict/report passed; simple member fixed-operator names now share the operator IR prefix path. |
 | `28d2cf2a` | Conversion operator name IR | +7.68% | +3.45% | Strict/report passed; non-template conversion operators now render their typed `cv...` terminal through IR. |
-| working tree after `28d2cf2a` | Owner template function-name component IR | +8.52% | +3.45% | Strict/report passed; PA31/PA32 passed; non-empty owner template components now render through function-name IR and standard substitutions no longer consume substitution slots. |
-| working tree after `48ab29d3` | Strict closure for dependent NTTP, conversion type, and local lookup regressions | +17.22% | +4.84% | Perf gate failed; full strict and PA31/PA32 report passed. Adds builtin type-transform IR, isolates conversion target substitutions, and fixes lookup-based qualification. Needs follow-up optimization plan before more broad IR expansion. |
-| working tree after `645c5ac` | Phase 5 type path fallback removal and lambda closure type IR | +14.66% | +4.18% | Perf gate failed; full strict and PA31/PA32 report passed. Deletes the old recursive type emitter stack and adds a typed lambda-closure node for RTTI/type-name symbols. |
-| working tree after `a977169d` | Remove full premangled lambda closure producer | +14.30% | +4.21% | Perf gate failed; full strict and PA31/PA32 report passed. Lambda closures now use structured context/signature metadata instead of `named_itanium_abi_encoding`. |
-| working tree after `09b73aee` | Remove `named_itanium_abi_encoding` from types | +14.36% | +1.96% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Anonymous enum spelling now comes from typed name-component IR, and the full premangled type field/copy plumbing is gone. |
-| working tree after `8722dcb1` | Remove type-level lambda context fragments | +14.31% | +0.45% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Lambda closure types now rebuild the enclosing-function context inside the mangler instead of storing context fragments on `Type`. |
-| working tree after `3094494d` | Remove lambda fragments from class/function options | +14.14% | -0.12% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Lambda call operators now carry the closure type and emit the signature from typed parameter IR instead of passing pre-rendered class/options fragments. |
-| working tree after `64d2d10a` | Remove semantic lambda signature pre-rendering | +14.25% | -0.28% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Removes semantic-side lambda context/signature rendering and the public lambda signature helper; ordinary free/namespace lambdas now use typed Clang local-source-name spelling. |
-| working tree after `3b2dc37c` | Add typed template-parameter type IR | +14.19% | -0.11% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Replaces the `T_`/`Tn_` premangled type leaf with a typed IR node while preserving the existing template-parameter substitution identity. |
-| working tree after `8bb5dce3` | Remove premangled type IR support | +14.53% | -0.30% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Deletes `TK_PREMANGLED`, `premangled_leaf`, and premangled substitution-key support; the remaining lookup preregistration is a generic legacy-key seed on typed IR. |
-| working tree after `13110868` | Remove public substitution-fragment helpers | +13.92% | -0.12% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Removes the public type substitution-fragment API and makes the function fragment helper file-local for lambda context rendering. |
-| working tree after `723f2017` | Pack lambda metadata into optional type storage | +14.44% | -5.63% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Replaces always-present lambda mangling fields on every `Type` with optional structured metadata and removes the last `named_itanium_abi_*` field plumbing from `dev/src`. |
-| working tree after `ee6c7d96` | Pack IR substitution metadata into optional type storage | +12.70% | -5.06% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Moves per-IR-type substitution bridge fields and preregistered legacy keys behind optional metadata, reducing the active migration overhead while preserving substitution-slot compatibility. |
-| working tree after `78a399aa` | Use named semantic kind for mangle placeholder checks | +12.65% | -5.07% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Replaces remaining `template-parameter`/`dependent` string-prefix checks in the mangler with `Type::named_semantic_kind`; builtin and local/anonymous namespace checks still need typed metadata. |
-| working tree after `bb98efbf` | Hash substitution lookup tables | +10.10% | -4.99% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Keeps substitution-slot order in the registration vector but changes string and typed substitution lookup indexes from ordered maps to hash maps, avoiding recursive key comparisons on the typed IR path. |
-| `ede58e93` | Dispatch function-name mangling and checkpoint real fallback state | +10.12% | -4.98% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. A temporary counter run showed function-name checkpointing logged about 1.42M substitutions with zero rollbacks on `semantic_overload`; the final slice emits typed function names directly and keeps checkpoints only around real fallback sites. |
-| `f43bd806` | Dispatch type IR by semantic type kind | +10.00% | -4.97% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. After the context-free fast path, non-named wrapper types now go straight to the wrapper builder instead of probing all named/dependent/class-template builders first. |
-| `2073770a` | Skip legacy lookup on ordinary IR substitution misses | +9.92% | -4.90% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Ordinary IR substitution misses no longer synthesize legacy string keys just to probe the old string map; explicit legacy bridge keys still use the old map. |
-| `5fd15e3d` | IR-only substitution state for uncaptured plain-function renders | +9.81% | -4.85% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Complete plain-function IR renders now suppress legacy type substitution keys and avoid mirroring IR substitutions into the legacy string map when no captured substitution state is needed. |
-| working tree after `6c5f1ce8` | Remove per-type legacy substitution overrides | +6.67% | -4.93% | Perf gate failed on instructions but recovered about three percentage points from the previous accepted migration state. Full strict and PA31/PA32 report passed; typed decltype lookup now bridges deterministic structural keys instead of storing per-type legacy override keys. |
-| working tree after `6ef3f277` | Preserve typed lambda-context substitution slots | +6.79% | -5.01% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Carries IR-only enclosing-context substitution slots for nested lambdas and restores template-prefix slot registration for single-argument `std::operator<<`, fixing PA31/PA32 reference substitution spellings without adding text reparsing. |
-| working tree after `62d558b8` | Strict closure for owner NTTP, pack NTTP, and decltype cast IR | +7.44% | -5.01% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Adds typed owner non-type template argument forwarding, non-type pack argument expressions, and function-parameter/member/conversion/cast dependent-expression IR without restoring text/AST fallback. |
-| working tree after `d17bc622` | Remove legacy AST/template-id mangling emitters | +7.45% | -5.04% | Perf gate failed on instructions; full strict and PA31/PA32 report passed. Deletes the old template-id, qualified-name, dependent-expression, type-id, type-specifier, and declarator AST string emitters; surviving AST entry points build typed IR and emit through the IR backend. |
-| working tree after `58bd2ba6` | Shrink function-template argument IR payloads | +7.08% | -5.47% | Perf gate failed on instructions but improved from the prior slice; full strict and PA31/PA32 report passed. Changes `itanium_mangle_ir::TemplateArgument` optional type payloads from always-present `Type` values to allocated-on-use children, reducing the struct from 1248 bytes to 216 bytes. |
-| working tree after `30d863ff` | Shrink dependent-expression IR payloads | +6.96% | -5.43% | Perf gate failed on instructions but improved from the prior slice; full strict and PA31/PA32 report passed. Changes dependent-expression owner/value type payloads from an always-present `Type` value to an allocated-on-use child, reducing the struct from 720 bytes to 208 bytes. |
-| working tree after `fece9acf` | Pack type lambda metadata into optional storage | +6.95% | -5.54% | Perf gate failed on instructions but improved slightly from the prior slice; full strict and PA31/PA32 report passed. Moves lambda-only type context/source/discriminator fields behind optional metadata, reducing ordinary `Type` from 528 bytes to 424 bytes. |
-| working tree after `050053a9` | Compact builtin type-code storage | +6.66% | -5.57% | Perf gate failed on instructions but improved from the prior slice; full strict and PA31/PA32 report passed. Stores builtin Itanium type terminals in a fixed two-character buffer instead of a full `std::string`, reducing ordinary `Type` from 424 bytes to 392 bytes. |
-| working tree after `fd846fe3` | Use hashed pointer cache for context-free type IR | +6.64% | -5.46% | Perf gate failed on instructions but improved slightly from the prior slice; full strict and PA31/PA32 report passed. Switches the existing `Type*` plan cache from ordered maps to `unordered_map`, keeping cache semantics unchanged. |
-| working tree after `42eaf141` | Pack named type IR metadata into optional storage | +5.48% | -5.66% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA31/PA32 report passed. Moves named/class-template-only fields behind optional metadata, reducing ordinary `Type` from 392 bytes to 256 bytes. |
-| working tree after `bd4789b1` | Pack template-argument IR metadata into optional storage | +5.33% | -5.68% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA31/PA32 report passed. Moves template-entity, external-entity, and pack-only fields behind optional metadata, reducing `ClassTemplateArgument` and `TemplateArgument` from 216 bytes to 80 bytes. |
-| working tree after `d031cfe2` | Pack lambda function-encoding metadata into optional storage | +5.12% | -5.70% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA31/PA32 report passed. Moves lambda-only function-name fields behind optional metadata, reducing `FunctionEncoding` from 648 bytes to 520 bytes. |
-| working tree after `ea759aaa` | Avoid per-call elaborated-prefix string construction | +4.33% | -5.69% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA31/PA32 report passed. `strip_elaborated_type_prefix` now compares against literal prefix spans instead of constructing a `std::string` for every prefix probe. |
-| working tree after `f0daccf3` | Use explicit ASCII whitespace in mangle text helpers | +3.80% | -5.64% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA31/PA32 report passed. Local `trim_space` and `remove_space_chars` avoid the C library classifier on hot mangling text paths. |
-| working tree after `e08b1af1` | Fuse elaborated-prefix stripping with trimming | +2.92% | -5.63% | Perf gate failed at the default 1% instruction tolerance but is below the active 3% migration ceiling; full strict and PA31/PA32 report passed. Common `trim_space(strip_elaborated_type_prefix(...))` sites now avoid building an intermediate stripped string. |
-| working tree after `a6fc6ee` | Fast elaborated-prefix dispatch and qualified-name append | +2.77% | -5.65% | Passed the active 3% migration ceiling; full strict and PA31/PA32 report passed. Prefix stripping now dispatches by first character, and qualified component joining reserves once instead of using chained string concatenation. |
-| working tree after `6fe86ca2` | Normalize type-parameter spelling checks and tune IR substitution lookup | +1.65% | -5.56% | Passed the active 3% migration ceiling; full strict and PA31/PA32 report passed. Accepted cleanup removes repeated `typename `/`class ` concatenations, caches recursive `SubstitutionKey` hashes, avoids duplicate hash probes, mutates type substitution metadata in place, lazily reserves substitution state capacity, and linearly scans small typed substitution states before using the hash table. |
+| working tree after `28d2cf2a` | Owner template function-name component IR | +8.52% | +3.45% | Strict/report passed; PA32/PA33 passed; non-empty owner template components now render through function-name IR and standard substitutions no longer consume substitution slots. |
+| working tree after `48ab29d3` | Strict closure for dependent NTTP, conversion type, and local lookup regressions | +17.22% | +4.84% | Perf gate failed; full strict and PA32/PA33 report passed. Adds builtin type-transform IR, isolates conversion target substitutions, and fixes lookup-based qualification. Needs follow-up optimization plan before more broad IR expansion. |
+| working tree after `645c5ac` | Phase 5 type path fallback removal and lambda closure type IR | +14.66% | +4.18% | Perf gate failed; full strict and PA32/PA33 report passed. Deletes the old recursive type emitter stack and adds a typed lambda-closure node for RTTI/type-name symbols. |
+| working tree after `a977169d` | Remove full premangled lambda closure producer | +14.30% | +4.21% | Perf gate failed; full strict and PA32/PA33 report passed. Lambda closures now use structured context/signature metadata instead of `named_itanium_abi_encoding`. |
+| working tree after `09b73aee` | Remove `named_itanium_abi_encoding` from types | +14.36% | +1.96% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Anonymous enum spelling now comes from typed name-component IR, and the full premangled type field/copy plumbing is gone. |
+| working tree after `8722dcb1` | Remove type-level lambda context fragments | +14.31% | +0.45% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Lambda closure types now rebuild the enclosing-function context inside the mangler instead of storing context fragments on `Type`. |
+| working tree after `3094494d` | Remove lambda fragments from class/function options | +14.14% | -0.12% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Lambda call operators now carry the closure type and emit the signature from typed parameter IR instead of passing pre-rendered class/options fragments. |
+| working tree after `64d2d10a` | Remove semantic lambda signature pre-rendering | +14.25% | -0.28% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Removes semantic-side lambda context/signature rendering and the public lambda signature helper; ordinary free/namespace lambdas now use typed Clang local-source-name spelling. |
+| working tree after `3b2dc37c` | Add typed template-parameter type IR | +14.19% | -0.11% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Replaces the `T_`/`Tn_` premangled type leaf with a typed IR node while preserving the existing template-parameter substitution identity. |
+| working tree after `8bb5dce3` | Remove premangled type IR support | +14.53% | -0.30% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Deletes `TK_PREMANGLED`, `premangled_leaf`, and premangled substitution-key support; the remaining lookup preregistration is a generic legacy-key seed on typed IR. |
+| working tree after `13110868` | Remove public substitution-fragment helpers | +13.92% | -0.12% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Removes the public type substitution-fragment API and makes the function fragment helper file-local for lambda context rendering. |
+| working tree after `723f2017` | Pack lambda metadata into optional type storage | +14.44% | -5.63% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Replaces always-present lambda mangling fields on every `Type` with optional structured metadata and removes the last `named_itanium_abi_*` field plumbing from `dev/src`. |
+| working tree after `ee6c7d96` | Pack IR substitution metadata into optional type storage | +12.70% | -5.06% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Moves per-IR-type substitution bridge fields and preregistered legacy keys behind optional metadata, reducing the active migration overhead while preserving substitution-slot compatibility. |
+| working tree after `78a399aa` | Use named semantic kind for mangle placeholder checks | +12.65% | -5.07% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Replaces remaining `template-parameter`/`dependent` string-prefix checks in the mangler with `Type::named_semantic_kind`; builtin and local/anonymous namespace checks still need typed metadata. |
+| working tree after `bb98efbf` | Hash substitution lookup tables | +10.10% | -4.99% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Keeps substitution-slot order in the registration vector but changes string and typed substitution lookup indexes from ordered maps to hash maps, avoiding recursive key comparisons on the typed IR path. |
+| `ede58e93` | Dispatch function-name mangling and checkpoint real fallback state | +10.12% | -4.98% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. A temporary counter run showed function-name checkpointing logged about 1.42M substitutions with zero rollbacks on `semantic_overload`; the final slice emits typed function names directly and keeps checkpoints only around real fallback sites. |
+| `f43bd806` | Dispatch type IR by semantic type kind | +10.00% | -4.97% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. After the context-free fast path, non-named wrapper types now go straight to the wrapper builder instead of probing all named/dependent/class-template builders first. |
+| `2073770a` | Skip legacy lookup on ordinary IR substitution misses | +9.92% | -4.90% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Ordinary IR substitution misses no longer synthesize legacy string keys just to probe the old string map; explicit legacy bridge keys still use the old map. |
+| `5fd15e3d` | IR-only substitution state for uncaptured plain-function renders | +9.81% | -4.85% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Complete plain-function IR renders now suppress legacy type substitution keys and avoid mirroring IR substitutions into the legacy string map when no captured substitution state is needed. |
+| working tree after `6c5f1ce8` | Remove per-type legacy substitution overrides | +6.67% | -4.93% | Perf gate failed on instructions but recovered about three percentage points from the previous accepted migration state. Full strict and PA32/PA33 report passed; typed decltype lookup now bridges deterministic structural keys instead of storing per-type legacy override keys. |
+| working tree after `6ef3f277` | Preserve typed lambda-context substitution slots | +6.79% | -5.01% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Carries IR-only enclosing-context substitution slots for nested lambdas and restores template-prefix slot registration for single-argument `std::operator<<`, fixing PA32/PA33 reference substitution spellings without adding text reparsing. |
+| working tree after `62d558b8` | Strict closure for owner NTTP, pack NTTP, and decltype cast IR | +7.44% | -5.01% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Adds typed owner non-type template argument forwarding, non-type pack argument expressions, and function-parameter/member/conversion/cast dependent-expression IR without restoring text/AST fallback. |
+| working tree after `d17bc622` | Remove legacy AST/template-id mangling emitters | +7.45% | -5.04% | Perf gate failed on instructions; full strict and PA32/PA33 report passed. Deletes the old template-id, qualified-name, dependent-expression, type-id, type-specifier, and declarator AST string emitters; surviving AST entry points build typed IR and emit through the IR backend. |
+| working tree after `58bd2ba6` | Shrink function-template argument IR payloads | +7.08% | -5.47% | Perf gate failed on instructions but improved from the prior slice; full strict and PA32/PA33 report passed. Changes `itanium_mangle_ir::TemplateArgument` optional type payloads from always-present `Type` values to allocated-on-use children, reducing the struct from 1248 bytes to 216 bytes. |
+| working tree after `30d863ff` | Shrink dependent-expression IR payloads | +6.96% | -5.43% | Perf gate failed on instructions but improved from the prior slice; full strict and PA32/PA33 report passed. Changes dependent-expression owner/value type payloads from an always-present `Type` value to an allocated-on-use child, reducing the struct from 720 bytes to 208 bytes. |
+| working tree after `fece9acf` | Pack type lambda metadata into optional storage | +6.95% | -5.54% | Perf gate failed on instructions but improved slightly from the prior slice; full strict and PA32/PA33 report passed. Moves lambda-only type context/source/discriminator fields behind optional metadata, reducing ordinary `Type` from 528 bytes to 424 bytes. |
+| working tree after `050053a9` | Compact builtin type-code storage | +6.66% | -5.57% | Perf gate failed on instructions but improved from the prior slice; full strict and PA32/PA33 report passed. Stores builtin Itanium type terminals in a fixed two-character buffer instead of a full `std::string`, reducing ordinary `Type` from 424 bytes to 392 bytes. |
+| working tree after `fd846fe3` | Use hashed pointer cache for context-free type IR | +6.64% | -5.46% | Perf gate failed on instructions but improved slightly from the prior slice; full strict and PA32/PA33 report passed. Switches the existing `Type*` plan cache from ordered maps to `unordered_map`, keeping cache semantics unchanged. |
+| working tree after `42eaf141` | Pack named type IR metadata into optional storage | +5.48% | -5.66% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA32/PA33 report passed. Moves named/class-template-only fields behind optional metadata, reducing ordinary `Type` from 392 bytes to 256 bytes. |
+| working tree after `bd4789b1` | Pack template-argument IR metadata into optional storage | +5.33% | -5.68% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA32/PA33 report passed. Moves template-entity, external-entity, and pack-only fields behind optional metadata, reducing `ClassTemplateArgument` and `TemplateArgument` from 216 bytes to 80 bytes. |
+| working tree after `d031cfe2` | Pack lambda function-encoding metadata into optional storage | +5.12% | -5.70% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA32/PA33 report passed. Moves lambda-only function-name fields behind optional metadata, reducing `FunctionEncoding` from 648 bytes to 520 bytes. |
+| working tree after `ea759aaa` | Avoid per-call elaborated-prefix string construction | +4.33% | -5.69% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA32/PA33 report passed. `strip_elaborated_type_prefix` now compares against literal prefix spans instead of constructing a `std::string` for every prefix probe. |
+| working tree after `f0daccf3` | Use explicit ASCII whitespace in mangle text helpers | +3.80% | -5.64% | Perf gate failed on instructions but improved from the prior accepted slice; full strict and PA32/PA33 report passed. Local `trim_space` and `remove_space_chars` avoid the C library classifier on hot mangling text paths. |
+| working tree after `e08b1af1` | Fuse elaborated-prefix stripping with trimming | +2.92% | -5.63% | Perf gate failed at the default 1% instruction tolerance but is below the active 3% migration ceiling; full strict and PA32/PA33 report passed. Common `trim_space(strip_elaborated_type_prefix(...))` sites now avoid building an intermediate stripped string. |
+| working tree after `a6fc6ee` | Fast elaborated-prefix dispatch and qualified-name append | +2.77% | -5.65% | Passed the active 3% migration ceiling; full strict and PA32/PA33 report passed. Prefix stripping now dispatches by first character, and qualified component joining reserves once instead of using chained string concatenation. |
+| working tree after `6fe86ca2` | Normalize type-parameter spelling checks and tune IR substitution lookup | +1.65% | -5.56% | Passed the active 3% migration ceiling; full strict and PA32/PA33 report passed. Accepted cleanup removes repeated `typename `/`class ` concatenations, caches recursive `SubstitutionKey` hashes, avoids duplicate hash probes, mutates type substitution metadata in place, lazily reserves substitution state capacity, and linearly scans small typed substitution states before using the hash table. |
 
 Rejected/uncommitted experiments:
 

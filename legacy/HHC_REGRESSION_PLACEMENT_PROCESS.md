@@ -20,7 +20,7 @@ Move each implemented HHC item out of the generic tracker bucket and into the ea
 1. Start from the tracker item, but treat the tracker PA as a hint only.
 2. Re-check ownership against `ROADMAP.md` and the target `paN/README.md`.
 3. If the item is before `pa10`, defer it for now.
-4. If it is true hosted/vendor compatibility work, leave it in the PA31 bucket.
+4. If it is true hosted/vendor compatibility work, leave it in the PA32 bucket.
 5. Otherwise reduce it to the earliest standard-language milestone that really owns it.
 6. Write the smallest fresh reduction that captures the bug clearly.
 7. Validate with the archived binaries when that is practical, using the per-PA
