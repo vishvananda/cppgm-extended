@@ -7326,8 +7326,16 @@ static bool try_build_context_free_type_ir(const TypePtr & type,
     return attach_semantic_type_ir_substitution(type, mangle_ctx, out);
   }
 
+  case Type::TK_ATOMIC: {
+    itanium_mangle_ir::Type inner;
+    if(!try_build_context_free_type_ir(type->inner, mangle_ctx, inner)) {
+      return false;
+    }
+    out = itanium_mangle_ir::Type::vendor_qualified("_Atomic", inner);
+    return attach_semantic_type_ir_substitution(type, mangle_ctx, out);
+  }
+
   case Type::TK_NAMED:
-  case Type::TK_ATOMIC:
   case Type::TK_MEMBER_POINTER:
   case Type::TK_BLOCK_POINTER:
     return false;
@@ -12598,9 +12606,17 @@ static bool try_build_wrapped_type_ir(const TypePtr & type,
     return attach_semantic_type_ir_substitution(type, mangle_ctx, out);
   }
 
+  case Type::TK_ATOMIC: {
+    itanium_mangle_ir::Type inner;
+    if(!try_build_type_ir(type->inner, mangle_ctx, inner)) {
+      return false;
+    }
+    out = itanium_mangle_ir::Type::vendor_qualified("_Atomic", inner);
+    return attach_semantic_type_ir_substitution(type, mangle_ctx, out);
+  }
+
   case Type::TK_FUNDAMENTAL:
   case Type::TK_NAMED:
-  case Type::TK_ATOMIC:
   case Type::TK_BLOCK_POINTER:
     return false;
   }
@@ -14001,6 +14017,16 @@ static bool build_type_substitution_key_impl(const TypePtr & type,
     return true;
   }
 
+  case Type::TK_ATOMIC: {
+    string inner_key;
+    if(!build_type_substitution_key_impl(type->inner, mangle_ctx, inner_key, true) ||
+       inner_key.empty()) {
+      return false;
+    }
+    out = string("type:vendor(_Atomic,") + inner_key + ")";
+    return true;
+  }
+
   case Type::TK_NAMED: {
     const string named_display = trim_elaborated_type_prefix(type->named_display);
     const bool has_template_parameter_key =
@@ -14066,7 +14092,6 @@ static bool build_type_substitution_key_impl(const TypePtr & type,
     return !out.empty();
   }
 
-  case Type::TK_ATOMIC:
   case Type::TK_BLOCK_POINTER:
     return false;
   }
@@ -14264,6 +14289,19 @@ static bool build_structural_type_substitution_key(
     return true;
   }
 
+  case Type::TK_ATOMIC: {
+    itanium_mangle_ir::SubstitutionKey inner_key;
+    if(!build_structural_type_substitution_key(type->inner,
+                                               mangle_ctx,
+                                               inner_key,
+                                               true)) {
+      return false;
+    }
+    out = itanium_mangle_ir::SubstitutionKey::type(
+        string("vendor-qualified:_Atomic:") + inner_key.structural_text());
+    return true;
+  }
+
   case Type::TK_NAMED:
     if(build_class_template_specialization_structural_key(type, mangle_ctx, out)) {
       return true;
@@ -14272,7 +14310,6 @@ static bool build_structural_type_substitution_key(
         preferred_named_type_text(type, mangle_ctx));
     return !out.empty();
 
-  case Type::TK_ATOMIC:
   case Type::TK_BLOCK_POINTER:
     return false;
   }

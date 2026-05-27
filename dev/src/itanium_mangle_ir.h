@@ -323,6 +323,7 @@ struct Type
     TK_ARRAY,
     TK_FUNCTION,
     TK_MEMBER_POINTER,
+    TK_VENDOR_QUALIFIED,
     TK_BUILTIN_TYPE_TRANSFORM,
     TK_PACK_EXPANSION,
     TK_TEMPLATE_PARAMETER,
@@ -568,6 +569,7 @@ struct Type
 
   Kind kind = TK_INVALID;
   char builtin_code[3] = {0, 0, 0};
+  std::string vendor_qualifier_name;
   std::string builtin_transform_name;
   std::string array_bound;
   std::string array_substitution_bound_key;
@@ -674,6 +676,15 @@ struct Type
     type.kind = TK_MEMBER_POINTER;
     type.owner.reset(new Type(owner));
     type.inner.reset(new Type(member));
+    return type;
+  }
+
+  static Type vendor_qualified(const std::string & name, const Type & inner)
+  {
+    Type type;
+    type.kind = TK_VENDOR_QUALIFIED;
+    type.vendor_qualifier_name = name;
+    type.inner.reset(new Type(inner));
     return type;
   }
 
@@ -1488,6 +1499,20 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
       return false;
     }
     out = SubstitutionKey::type_member_pointer(owner_key, member_key);
+    return true;
+  }
+
+  case Type::TK_VENDOR_QUALIFIED: {
+    if(type.vendor_qualifier_name.empty() || !type.inner) {
+      return false;
+    }
+    SubstitutionKey inner_key;
+    if(!make_type_substitution_key(*type.inner, inner_key)) {
+      return false;
+    }
+    out = SubstitutionKey::type(
+        std::string("vendor-qualified:") +
+        type.vendor_qualifier_name + ":" + inner_key.structural_text());
     return true;
   }
 
@@ -3246,6 +3271,16 @@ inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSin
     out += 'M';
     return emit_type(*type.owner, out, sink) &&
            emit_type(*type.inner, out, sink);
+
+  case Type::TK_VENDOR_QUALIFIED:
+    if(type.vendor_qualifier_name.empty() || !type.inner) {
+      return false;
+    }
+    out += 'U';
+    if(!emit_source_name(type.vendor_qualifier_name, out)) {
+      return false;
+    }
+    return emit_type(*type.inner, out, sink);
 
   case Type::TK_BUILTIN_TYPE_TRANSFORM:
     if(type.builtin_transform_name.empty() || !type.inner) {
