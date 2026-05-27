@@ -1264,6 +1264,25 @@ bool is_complete_class_value_type_for_output(const TypePtr & type)
          base->named_key.compare(0, 6, "union ") == 0;
 }
 
+ClassInfo * complete_class_object_type_for_output(SemanticContext & ctx,
+                                                  const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base || base->kind != Type::TK_NAMED ||
+     (base->named_key.compare(0, 6, "class ") != 0 &&
+      base->named_key.compare(0, 7, "struct ") != 0 &&
+      base->named_key.compare(0, 6, "union ") != 0)) {
+    return nullptr;
+  }
+
+  ClassInfo * info = ctx.class_info_for_type(base);
+  if(info && info->complete) {
+    return info;
+  }
+  info = ctx.complete_class_type(base);
+  return info && info->complete ? info : nullptr;
+}
+
 bool is_indirect_value_type_for_output(const TypePtr & type)
 {
   return is_complete_class_value_type_for_output(type);
@@ -1345,7 +1364,9 @@ void require_nontrivial_destructor_definition(SemanticContext & ctx,
 void require_temporary_destructor_definition(SemanticContext & ctx,
                                              ClassInfo & info)
 {
-  if(FunctionBinding * dtor = find_destructor_binding(info)) {
+  ensure_implicit_special_members(ctx, info);
+  FunctionBinding * dtor = find_destructor_binding(info);
+  if(dtor) {
     ctx.require_function_definition(dtor, OutputReason::SyntheticDependency);
   }
 }
@@ -2073,6 +2094,14 @@ void collect_required_storage_value_to_target_support(SemanticContext & ctx,
   }
 
   if(is_reference_type(effective_target_type)) {
+    if(node.value_category != CVC_LVALUE &&
+       !is_reference_type(effective_node_type)) {
+      ClassInfo * info =
+          complete_class_object_type_for_output(ctx, effective_node_type);
+      if(info) {
+        require_temporary_destructor_definition(ctx, *info);
+      }
+    }
     return;
   }
 

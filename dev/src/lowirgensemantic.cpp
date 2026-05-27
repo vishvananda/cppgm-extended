@@ -13138,38 +13138,63 @@ private:
                          is_land ? false_label : rhs_label);
 
       start_block(rhs_label);
-      push_cleanup_scope(true);
-      const bool needs_cleanup = !cleanup_scopes_.back().empty();
-      const string rhs_true_label =
-          needs_cleanup ?
-              new_block(is_land ? "land_rhs_true_cleanup" : "lor_rhs_true_cleanup") :
-              true_label;
-      const string rhs_false_label =
-          needs_cleanup ?
-              new_block(is_land ? "land_rhs_false_cleanup" : "lor_rhs_false_cleanup") :
-              false_label;
-      emit_truthy_branch(node.children[1], rhs_true_label, rhs_false_label);
-
-      if(needs_cleanup) {
-        start_block(rhs_true_label);
-        emit_scope_cleanups(cleanup_scopes_.back());
-        if(current_block_) {
-          terminate("jump " + lowir_block_name(true_label));
-        }
-
-        start_block(rhs_false_label);
-        emit_scope_cleanups(cleanup_scopes_.back());
-        if(current_block_) {
-          terminate("jump " + lowir_block_name(false_label));
-        }
+      if(is_short_circuit_truthy_expression(node.children[1])) {
+        emit_truthy_branch(node.children[1], true_label, false_label);
+      } else {
+        emit_simple_condition_branch(node.children[1], true_label, false_label);
       }
-      pop_cleanup_scope();
       return;
     }
 
     const string cond_value = emit_branch_condition_value(node);
     terminate("branch " + cond_value + ", " + lowir_block_name(true_label) + ", " +
               lowir_block_name(false_label));
+  }
+
+  bool is_short_circuit_truthy_expression(const CallSemNode & node) const
+  {
+    return node.kind == CallSemKind::binary_expression &&
+           node.children.size() == 2 &&
+           (callsem_has_token(node, OP_LAND) || callsem_has_token(node, OP_LOR));
+  }
+
+  void emit_simple_condition_branch(const CallSemNode & node,
+                                    const string & true_label,
+                                    const string & false_label)
+  {
+    push_cleanup_scope(true);
+    const string cond_value = emit_branch_condition_value(node);
+    if(!current_block_) {
+      pop_cleanup_scope();
+      return;
+    }
+
+    if(cleanup_scopes_.back().empty()) {
+      pop_cleanup_scope();
+      terminate("branch " + cond_value + ", " + lowir_block_name(true_label) + ", " +
+                lowir_block_name(false_label));
+      return;
+    }
+
+    const vector<CleanupAction> condition_cleanups = cleanup_scopes_.back();
+    pop_cleanup_scope();
+
+    const string true_cleanup_label = new_block("cond_true_cleanup");
+    const string false_cleanup_label = new_block("cond_false_cleanup");
+    terminate("branch " + cond_value + ", " + lowir_block_name(true_cleanup_label) + ", " +
+              lowir_block_name(false_cleanup_label));
+
+    start_block(true_cleanup_label);
+    emit_scope_cleanups(condition_cleanups);
+    if(current_block_) {
+      terminate("jump " + lowir_block_name(true_label));
+    }
+
+    start_block(false_cleanup_label);
+    emit_scope_cleanups(condition_cleanups);
+    if(current_block_) {
+      terminate("jump " + lowir_block_name(false_label));
+    }
   }
 
   void emit_condition_branch(const CallSemNode & condition,
@@ -13185,14 +13210,22 @@ private:
         throw logic_error("condition declaration shape");
       }
       emit_variable_declaration(child.children[0]);
-      emit_truthy_branch(callsem_lowered_condition_test(child) ?
-                             *callsem_lowered_condition_test(child) :
-                             child.children[0],
-                         true_label,
-                         false_label);
+      const CallSemNode & test =
+          callsem_lowered_condition_test(child) ?
+              *callsem_lowered_condition_test(child) :
+              child.children[0];
+      if(is_short_circuit_truthy_expression(test)) {
+        emit_truthy_branch(test, true_label, false_label);
+      } else {
+        emit_simple_condition_branch(test, true_label, false_label);
+      }
       return;
     }
-    emit_truthy_branch(child, true_label, false_label);
+    if(is_short_circuit_truthy_expression(child)) {
+      emit_truthy_branch(child, true_label, false_label);
+    } else {
+      emit_simple_condition_branch(child, true_label, false_label);
+    }
   }
 
   void emit_constructor_action_impl(const CallSemNode & action,
