@@ -7619,6 +7619,10 @@ void append_function_template_call_candidates_impl(
         templates[i]->declaring_scope &&
         templates[i]->declaring_scope->class_info &&
         !templates[i]->is_static_member;
+    if(uses_explicit_member_arg_prefix && options.hints->explicit_member_declared_in) {
+      template_active_owners[templates[i]] =
+          const_cast<ClassInfo *>(options.hints->explicit_member_declared_in);
+    }
     const size_t source_arg_begin =
         uses_explicit_member_arg_prefix ? options.hints->explicit_member_arg_prefix : 0;
     const size_t template_arg_count = arg_nodes.size() - source_arg_begin;
