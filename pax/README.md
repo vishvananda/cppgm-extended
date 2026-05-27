@@ -151,8 +151,8 @@ them:
 
 - ordinary external names for functions, variables, namespaces, nested names,
   local names, anonymous namespaces, inline namespaces, and C linkage
-- builtin, qualified, pointer, reference, array, function, member-pointer, enum,
-  class, and dependent types
+- builtin, vendor-qualified, qualified, pointer, reference, array, function,
+  member-pointer, enum, class, and dependent types
 - substitution table behavior and substitution ordering
 - Itanium standard substitutions such as `St`, `Sa`, `Sb`, and standard-library
   inline namespace interactions used by the course tests
@@ -183,8 +183,9 @@ of string helpers. Expected core records include:
   expression variants
 - `AbiDependentExpr`, with template/function parameters, literals, operations,
   member expressions, and entity references
-- `AbiFunctionPath`, with declaration ownership, template arguments, and
-  function parameter types for context-sensitive names
+- `AbiFunctionPath`, with declaration ownership, template arguments, optional
+  template-pattern result types, and function parameter types for
+  context-sensitive names
 - `AbiMangleContext`, owning the substitution table and current template
   parameter environment
 

@@ -2,7 +2,6 @@
 
 #include "cpp_decl_model.h"
 #include "itanium_mangle_ir.h"
-#include "symbol_linkage.h"
 
 #include <algorithm>
 #include <cctype>
@@ -335,6 +334,57 @@ const FactEntity & require_fact_entity_ref(const FactContext & ctx,
   return found->second;
 }
 
+string fundamental_mangle_code(EFundamentalType fundamental)
+{
+  switch(fundamental) {
+  case FT_SIGNED_CHAR:
+    return "a";
+  case FT_SHORT_INT:
+    return "s";
+  case FT_INT:
+    return "i";
+  case FT_LONG_INT:
+    return "l";
+  case FT_LONG_LONG_INT:
+    return "x";
+  case FT_INT128:
+    return "n";
+  case FT_UNSIGNED_CHAR:
+    return "h";
+  case FT_UNSIGNED_SHORT_INT:
+    return "t";
+  case FT_UNSIGNED_INT:
+    return "j";
+  case FT_UNSIGNED_LONG_INT:
+    return "m";
+  case FT_UNSIGNED_LONG_LONG_INT:
+    return "y";
+  case FT_UINT128:
+    return "o";
+  case FT_WCHAR_T:
+    return "w";
+  case FT_CHAR:
+    return "c";
+  case FT_CHAR16_T:
+    return "Ds";
+  case FT_CHAR32_T:
+    return "Di";
+  case FT_BOOL:
+    return "b";
+  case FT_FLOAT:
+    return "f";
+  case FT_DOUBLE:
+    return "d";
+  case FT_LONG_DOUBLE:
+    return "e";
+  case FT_VOID:
+    return "v";
+  case FT_NULLPTR_T:
+    return "Dn";
+  }
+  return string();
+}
+
 bool builtin_code_from_name(const string & word, string & code)
 {
   const map<string, EFundamentalType> fundamentals = fundamental_types();
@@ -343,8 +393,8 @@ bool builtin_code_from_name(const string & word, string & code)
   if(fundamental == fundamentals.end()) {
     return false;
   }
-  TypePtr type = make_fundamental(fundamental->second);
-  if(!symbol_linkage::mangle_itanium_type_encoding(type, code)) {
+  code = fundamental_mangle_code(fundamental->second);
+  if(code.empty()) {
     throw logic_error("unable to map builtin ABI fact type '" + word + "'");
   }
   return true;
@@ -410,6 +460,18 @@ AbiType parse_single_type_token(const string & text)
     return unary_type_spec(ABI_TYPE_VOLATILE,
                            parse_single_type_token(text.substr(9)));
   }
+  if(starts_with(text, "vendor:")) {
+    const string rest = text.substr(7);
+    const size_t pos = rest.find(':');
+    if(pos == string::npos || pos == 0 || pos + 1 >= rest.size()) {
+      throw logic_error("vendor type requires vendor:<qualifier>:<operand>");
+    }
+    AbiType out;
+    out.kind = ABI_TYPE_VENDOR_QUALIFIED;
+    out.name = rest.substr(0, pos);
+    out.child_types.push_back(parse_single_type_token(rest.substr(pos + 1)));
+    return out;
+  }
   if(starts_with(text, "array:")) {
     const string rest = text.substr(6);
     const size_t pos = rest.find(':');
@@ -462,12 +524,13 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
     out.abi_code = words[begin + 1];
     return out;
   }
-  if(kind == "template-param") {
+  if(kind == "template-param" || kind == "template-param-subst") {
     if(begin + 2 != words.size()) {
       throw logic_error("template-param type requires one index");
     }
     out.kind = ABI_TYPE_TEMPLATE_PARAMETER;
     out.template_parameter_index = parse_index(words[begin + 1]);
+    out.substitutable_template_parameter = kind == "template-param-subst";
     return out;
   }
   if(kind == "ptr" || kind == "ref" || kind == "rref" ||
@@ -489,6 +552,15 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
       out.kind = ABI_TYPE_PACK_EXPANSION;
     }
     out.child_types.push_back(parse_single_type_token(words[begin + 1]));
+    return out;
+  }
+  if(kind == "vendor") {
+    if(begin + 3 != words.size()) {
+      throw logic_error("vendor type requires qualifier and operand");
+    }
+    out.kind = ABI_TYPE_VENDOR_QUALIFIED;
+    out.name = words[begin + 1];
+    out.child_types.push_back(parse_single_type_token(words[begin + 2]));
     return out;
   }
   if(kind == "array") {
@@ -738,6 +810,13 @@ abi_ir::FunctionEncoding fact_path_function_encoding(
   function.name_components = make_ir_function_components(path.qualified_name);
   function.template_arguments =
       function_args_from_refs(ctx, path.template_argument_references);
+  if(!function.template_arguments.empty()) {
+    function.template_prefix_key =
+        abi_ir::SubstitutionKey::function_template_prefix(path.qualified_name);
+  }
+  if(path.has_result_type) {
+    function.parameter_types.push_back(lower_type(ctx, path.result_type));
+  }
   for(size_t i = 0; i < path.parameter_types.size(); ++i) {
     function.parameter_types.push_back(lower_type(ctx, path.parameter_types[i]));
   }
@@ -796,13 +875,23 @@ abi_ir::Type lower_type(FactContext & ctx, const AbiType & type)
   }
   case ABI_TYPE_BUILTIN_CODE:
     return abi_ir::Type::builtin(type.abi_code);
-  case ABI_TYPE_TEMPLATE_PARAMETER:
-    return abi_ir::Type::template_parameter(type.template_parameter_index);
+  case ABI_TYPE_TEMPLATE_PARAMETER: {
+    abi_ir::Type out =
+        abi_ir::Type::template_parameter(type.template_parameter_index);
+    if(type.substitutable_template_parameter) {
+      abi_ir::set_substitution(
+          out,
+          abi_ir::SubstitutionKey::type_template_parameter(
+              type.template_parameter_index));
+    }
+    return out;
+  }
   case ABI_TYPE_POINTER:
   case ABI_TYPE_LVALUE_REFERENCE:
   case ABI_TYPE_RVALUE_REFERENCE:
   case ABI_TYPE_CONST:
   case ABI_TYPE_VOLATILE:
+  case ABI_TYPE_VENDOR_QUALIFIED:
   case ABI_TYPE_PACK_EXPANSION: {
     if(type.child_types.size() != 1) {
       throw logic_error("unary ABI fact type requires one child type");
@@ -822,6 +911,12 @@ abi_ir::Type lower_type(FactContext & ctx, const AbiType & type)
     }
     if(type.kind == ABI_TYPE_VOLATILE) {
       return abi_ir::Type::cv(false, true, inner);
+    }
+    if(type.kind == ABI_TYPE_VENDOR_QUALIFIED) {
+      if(type.name.empty()) {
+        throw logic_error("vendor ABI fact type requires a qualifier");
+      }
+      return abi_ir::Type::vendor_qualified(type.name, inner);
     }
     return abi_ir::Type::pack_expansion(inner);
   }
@@ -1044,7 +1139,8 @@ bool single_type_token(const AbiType & type, string & token)
   case ABI_TYPE_LVALUE_REFERENCE:
   case ABI_TYPE_RVALUE_REFERENCE:
   case ABI_TYPE_CONST:
-  case ABI_TYPE_VOLATILE: {
+  case ABI_TYPE_VOLATILE:
+  case ABI_TYPE_VENDOR_QUALIFIED: {
     if(type.child_types.size() != 1) {
       return false;
     }
@@ -1060,8 +1156,13 @@ bool single_type_token(const AbiType & type, string & token)
       token = "rref:" + child;
     } else if(type.kind == ABI_TYPE_CONST) {
       token = "const:" + child;
-    } else {
+    } else if(type.kind == ABI_TYPE_VOLATILE) {
       token = "volatile:" + child;
+    } else {
+      if(type.name.empty()) {
+        return false;
+      }
+      token = "vendor:" + type.name + ":" + child;
     }
     return true;
   }
@@ -1130,11 +1231,17 @@ void append_type_spec_words(vector<string> & words, const AbiType & type)
     words.push_back(type.abi_code);
     break;
   case ABI_TYPE_TEMPLATE_PARAMETER:
-    words.push_back("template-param");
+    words.push_back(type.substitutable_template_parameter ?
+                    "template-param-subst" : "template-param");
     words.push_back(to_string(type.template_parameter_index));
     break;
   case ABI_TYPE_PACK_EXPANSION:
     words.push_back("pack");
+    append_single_type_token(words, type.child_types[0]);
+    break;
+  case ABI_TYPE_VENDOR_QUALIFIED:
+    words.push_back("vendor");
+    words.push_back(type.name);
     append_single_type_token(words, type.child_types[0]);
     break;
   case ABI_TYPE_FUNCTION:
@@ -1204,7 +1311,13 @@ AbiFunctionPath parse_function_path(const vector<string> & words,
   }
   AbiFunctionPath out;
   out.qualified_name = words[name_index];
-  for(size_t i = name_index + 1; i < words.size(); ++i) {
+  size_t i = name_index + 1;
+  if(i + 1 < words.size() && words[i] == "result") {
+    out.has_result_type = true;
+    out.result_type = parse_single_type_token(words[i + 1]);
+    i += 2;
+  }
+  for(; i < words.size(); ++i) {
     out.parameter_types.push_back(parse_single_type_token(words[i]));
   }
   return out;
@@ -1362,7 +1475,7 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
   }
   const string & command = words[0];
   if(command == "let-type") {
-    if(words.size() < 4) {
+    if(words.size() < 3) {
       throw logic_error("let-type requires id and type");
     }
     AbiFact fact;
@@ -1515,6 +1628,17 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
         parse_type_spec(words, 1));
     return;
   }
+  if(command == "result") {
+    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+      throw logic_error("result appears before function fact");
+    }
+    if(words.size() < 2) {
+      throw logic_error("result requires a type");
+    }
+    fact_case.target.function.has_result_type = true;
+    fact_case.target.function.result_type = parse_type_spec(words, 1);
+    return;
+  }
   throw logic_error("unknown ABI fact command '" + command + "'");
 }
 
@@ -1558,6 +1682,11 @@ abi_ir::FunctionEncoding lower_function_target(FactContext & ctx,
     function.name_components = make_ir_function_components(target.qualified_name);
     function.template_arguments =
         function_args_from_refs(ctx, target.template_argument_references);
+    if(!function.template_arguments.empty()) {
+      function.template_prefix_key =
+          abi_ir::SubstitutionKey::function_template_prefix(
+              target.qualified_name);
+    }
   } else if(target.form == ABI_FUNCTION_LAMBDA) {
     const FactLocalContext & context =
         require_fact_context_ref(ctx, target.context_reference);
@@ -1585,6 +1714,9 @@ abi_ir::FunctionEncoding lower_function_target(FactContext & ctx,
     function.terminal_fragment =
         terminal_fragment_from_fact_terminal(target.terminal);
   }
+  if(target.has_result_type) {
+    function.parameter_types.push_back(lower_type(ctx, target.result_type));
+  }
   for(size_t i = 0; i < target.parameter_types.size(); ++i) {
     function.parameter_types.push_back(lower_type(ctx, target.parameter_types[i]));
   }
@@ -1606,6 +1738,10 @@ void append_function_path_words(vector<string> & words,
 {
   words.push_back("function");
   words.push_back(path.qualified_name);
+  if(path.has_result_type) {
+    words.push_back("result");
+    append_single_type_token(words, path.result_type);
+  }
   for(size_t i = 0; i < path.parameter_types.size(); ++i) {
     append_single_type_token(words, path.parameter_types[i]);
   }
@@ -1782,6 +1918,12 @@ vector<vector<string> > target_lines(const AbiMangleTarget & target)
       words.push_back(target.function.discriminator);
     }
     lines.push_back(words);
+    if(target.function.has_result_type) {
+      vector<string> result_words;
+      result_words.push_back("result");
+      append_type_spec_words(result_words, target.function.result_type);
+      lines.push_back(result_words);
+    }
     for(size_t i = 0; i < target.function.parameter_types.size(); ++i) {
       vector<string> param_words;
       param_words.push_back("param");

@@ -20,7 +20,6 @@ FRONTEND_OBJ_BASENAMES_abimangle := \
 	recog_token_cursor \
 	semantic_utils \
 	source_location \
-	symbol_linkage \
 	template_angle_parser \
 	text_intern \
 	types
