@@ -2534,8 +2534,7 @@ bool CppAstParser::can_start_decl_specifier_seq() const
   const bool named_candidate =
       token.is_simple(OP_COLON2) ||
       (token.is_identifier() &&
-       !known_value_template &&
-       !known_value &&
+       !value_name_preferred &&
        (next.is_simple(OP_COLON2) ||
         next.is_simple(OP_LT)));
   const bool result = is_decltype_token(token) ||
