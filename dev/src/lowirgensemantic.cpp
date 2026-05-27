@@ -15599,6 +15599,426 @@ private:
     return true;
   }
 
+  struct GlobalAggregateArrayDataItem
+  {
+    size_t offset = 0;
+    size_t size = 0;
+    string text;
+  };
+
+  bool append_sorted_global_data_items(
+      vector<string> & data_items,
+      vector<GlobalAggregateArrayDataItem> & items,
+      size_t total_size)
+  {
+    sort(items.begin(),
+         items.end(),
+         [](const GlobalAggregateArrayDataItem & lhs,
+            const GlobalAggregateArrayDataItem & rhs)
+         {
+           return lhs.offset < rhs.offset;
+         });
+
+    size_t current_offset = 0;
+    for(size_t i = 0; i < items.size(); ++i) {
+      if(items[i].offset < current_offset ||
+         items[i].size > total_size ||
+         items[i].offset > total_size - items[i].size) {
+        return false;
+      }
+      if(items[i].offset > current_offset) {
+        data_items.push_back(string("zero ") +
+                             to_string(items[i].offset - current_offset));
+      }
+      data_items.push_back(items[i].text);
+      current_offset = items[i].offset + items[i].size;
+    }
+    if(current_offset < total_size) {
+      data_items.push_back(string("zero ") + to_string(total_size - current_offset));
+    }
+    return true;
+  }
+
+  const CallSemNode * global_array_assignment_subscript(const CallSemNode & node,
+                                                        const CallSemNode & variable) const
+  {
+    if(node.kind == CallSemKind::subscript_expression &&
+       node.children.size() == 2 &&
+       node_internal_symbol(node.children[0]) == node_internal_symbol(variable)) {
+      return &node;
+    }
+    if(node.kind == CallSemKind::member_expression && !node.children.empty()) {
+      return global_array_assignment_subscript(node.children[0], variable);
+    }
+    return nullptr;
+  }
+
+  bool format_global_data_item_for_value(const TypePtr & item_type,
+                                         const CallSemNode & value_node,
+                                         string & out)
+  {
+    string value;
+    bool is_addr = false;
+    long long addr_addend = 0;
+    if(!evaluate_global_initializer(value_node, value, is_addr, addr_addend)) {
+      return false;
+    }
+    if(is_addr) {
+      if(is_member_function_pointer_type(item_type)) {
+        if(addr_addend != 0) {
+          throw logic_error("member-function pointer global initializer addend unsupported");
+        }
+        vector<string> items;
+        append_member_function_pointer_global_data_items(items, value);
+        if(items.size() != 1) {
+          return false;
+        }
+        out = items[0];
+        return true;
+      }
+      out = string("ptr addr ") + format_global_address_operand(value, addr_addend);
+      return true;
+    }
+    if(is_pointer_type(item_type) && is_null_pointer_global_initializer(value_node)) {
+      out = string("zero ") + to_string(backend_storage_size(item_type));
+      return true;
+    }
+    out = lowir_memory_type_for(item_type) + " " + value;
+    return true;
+  }
+
+  bool collect_global_aggregate_array_assignment(
+      const CallSemNode & variable,
+      const TypePtr & array_type,
+      const CallSemNode & statement,
+      GlobalAggregateArrayDataItem & out)
+  {
+    TypePtr base = strip_top_level_cv(array_type);
+    if(!base || base->kind != Type::TK_ARRAY ||
+       statement.kind != CallSemKind::expression_statement ||
+       statement.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & assignment = statement.children[0];
+    if(assignment.kind != CallSemKind::assignment_expression ||
+       assignment.children.size() != 2 ||
+       !callsem_has_token(assignment, OP_ASS)) {
+      return false;
+    }
+
+    const CallSemNode & lhs = assignment.children[0];
+    if(lhs.kind != CallSemKind::member_expression ||
+       !lhs.has_uint_value ||
+       callsem_bit_field_width(lhs) != 0) {
+      return false;
+    }
+    const CallSemNode * subscript =
+        global_array_assignment_subscript(lhs, variable);
+    if(!subscript ||
+       subscript->children.size() != 2 ||
+       !subscript->children[1].has_uint_value) {
+      return false;
+    }
+
+    const unsigned long long raw_index =
+        callsem_uint_value(subscript->children[1]);
+    if(raw_index >= base->bound) {
+      throw logic_error("too many global array initializer elements");
+    }
+
+    TypePtr item_type = remove_reference_type(lhs.semantic_type);
+    TypePtr item_base = strip_top_level_cv(item_type);
+    if(!item_type ||
+       (item_base &&
+        (item_base->kind == Type::TK_ARRAY ||
+         is_complete_class_value_type(item_base)))) {
+      return false;
+    }
+
+    const size_t element_size = backend_storage_size(base->inner);
+    const size_t item_size = backend_storage_size(item_type);
+    const unsigned long long field_offset = callsem_uint_value(lhs);
+    if(field_offset > element_size ||
+       item_size > element_size - static_cast<size_t>(field_offset)) {
+      return false;
+    }
+
+    string item_text;
+    if(!format_global_data_item_for_value(item_type,
+                                          assignment.children[1],
+                                          item_text)) {
+      return false;
+    }
+
+    out.offset = static_cast<size_t>(raw_index) * element_size +
+                 static_cast<size_t>(field_offset);
+    out.size = item_size;
+    out.text = item_text;
+    return true;
+  }
+
+  bool global_array_element_address_index(const CallSemNode & expr,
+                                          const CallSemNode & variable,
+                                          unsigned long long & out) const
+  {
+    if(expr.kind != CallSemKind::unary_expression ||
+       !callsem_has_token(expr, OP_AMP) ||
+       expr.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & subscript = expr.children[0];
+    if(subscript.kind != CallSemKind::subscript_expression ||
+       subscript.children.size() != 2 ||
+       node_internal_symbol(subscript.children[0]) != node_internal_symbol(variable) ||
+       !subscript.children[1].has_uint_value) {
+      return false;
+    }
+    out = callsem_uint_value(subscript.children[1]);
+    return true;
+  }
+
+  const CallSemNode * function_node_for_static_constructor_callee(
+      const CallSemNode & callee) const
+  {
+    string symbol = callsem_symbol(callee).internal_symbol;
+    if(symbol.empty()) {
+      const string lookup_name =
+          callsem_resolved_name(callee).empty() ? callee.text.str() :
+              callsem_resolved_name(callee);
+      symbol = try_lookup_function_symbol_with_index(function_symbols_,
+                                                     function_symbol_entries_,
+                                                     function_symbol_lookup_index(),
+                                                     lookup_name,
+                                                     callee.semantic_type);
+    }
+    if(symbol.empty()) {
+      return nullptr;
+    }
+    map<string, const CallSemNode *>::const_iterator found =
+        function_symbol_nodes_.find(symbol);
+    return found == function_symbol_nodes_.end() ? nullptr : found->second;
+  }
+
+  const CallSemNode * compound_body_child(const CallSemNode & function) const
+  {
+    for(size_t i = 0; i < function.children.size(); ++i) {
+      if(function.children[i].kind == CallSemKind::compound_statement) {
+        return &function.children[i];
+      }
+    }
+    return nullptr;
+  }
+
+  bool constructor_static_parameters(const CallSemNode & constructor,
+                                     vector<const CallSemNode *> & out) const
+  {
+    out.clear();
+    for(size_t i = 0; i < constructor.children.size(); ++i) {
+      if(constructor.children[i].kind == CallSemKind::parameter) {
+        out.push_back(&constructor.children[i]);
+      }
+    }
+    return !out.empty() && out[0]->text == "this";
+  }
+
+  const CallSemNode * constructor_call_argument_for_parameter(
+      const vector<const CallSemNode *> & params,
+      const CallSemNode & call,
+      const CallSemNode & parameter) const
+  {
+    if(parameter.kind != CallSemKind::id_expression) {
+      return nullptr;
+    }
+    for(size_t i = 1; i < params.size(); ++i) {
+      if(params[i]->text == parameter.text) {
+        const size_t call_index = i + 1;
+        return call_index < call.children.size() ? &call.children[call_index] : nullptr;
+      }
+    }
+    return nullptr;
+  }
+
+  bool collect_global_class_array_constructor_assignment(
+      const CallSemNode & variable,
+      const TypePtr & array_type,
+      const CallSemNode & call,
+      const vector<const CallSemNode *> & params,
+      const CallSemNode & statement,
+      size_t element_offset,
+      GlobalAggregateArrayDataItem & out)
+  {
+    if(statement.kind != CallSemKind::expression_statement ||
+       statement.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & assignment = statement.children[0];
+    if(assignment.kind != CallSemKind::assignment_expression ||
+       assignment.children.size() != 2 ||
+       !callsem_has_token(assignment, OP_ASS)) {
+      return false;
+    }
+
+    const CallSemNode & lhs = assignment.children[0];
+    if(lhs.kind != CallSemKind::member_expression ||
+       lhs.children.size() != 1 ||
+       lhs.children[0].kind != CallSemKind::id_expression ||
+       lhs.children[0].text != "this" ||
+       !lhs.has_uint_value ||
+       callsem_bit_field_width(lhs) != 0) {
+      return false;
+    }
+
+    TypePtr item_type = remove_reference_type(lhs.semantic_type);
+    TypePtr item_base = strip_top_level_cv(item_type);
+    if(!item_type ||
+       (item_base &&
+        (item_base->kind == Type::TK_ARRAY ||
+         is_complete_class_value_type(item_base)))) {
+      return false;
+    }
+
+    const CallSemNode * value_node =
+        constructor_call_argument_for_parameter(params, call, assignment.children[1]);
+    if(value_node == nullptr) {
+      value_node = &assignment.children[1];
+    }
+
+    string item_text;
+    if(!format_global_data_item_for_value(item_type, *value_node, item_text)) {
+      return false;
+    }
+
+    const size_t element_size = backend_storage_size(array_type->inner);
+    const size_t item_size = backend_storage_size(item_type);
+    const unsigned long long field_offset = callsem_uint_value(lhs);
+    if(field_offset > element_size ||
+       item_size > element_size - static_cast<size_t>(field_offset)) {
+      return false;
+    }
+
+    out.offset = element_offset * element_size + static_cast<size_t>(field_offset);
+    out.size = item_size;
+    out.text = item_text;
+    return true;
+  }
+
+  bool collect_global_class_array_constructor_action(
+      const CallSemNode & variable,
+      const TypePtr & array_type,
+      const CallSemNode & action,
+      vector<GlobalAggregateArrayDataItem> & items)
+  {
+    if(action.kind != CallSemKind::constructor_action ||
+       action.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & call = action.children[0];
+    if(call.kind != CallSemKind::call_expression ||
+       call.children.size() < 2 ||
+       call.children[0].kind != CallSemKind::callee ||
+       !is_constructor_function_name(call.children[0].text)) {
+      return false;
+    }
+
+    unsigned long long raw_index = 0;
+    if(!global_array_element_address_index(call.children[1], variable, raw_index)) {
+      return false;
+    }
+    if(raw_index >= array_type->bound) {
+      throw logic_error("too many global array initializer elements");
+    }
+
+    const CallSemNode * constructor =
+        function_node_for_static_constructor_callee(call.children[0]);
+    if(constructor == nullptr) {
+      return false;
+    }
+    vector<const CallSemNode *> params;
+    if(!constructor_static_parameters(*constructor, params) ||
+       params.size() + 1 != call.children.size()) {
+      return false;
+    }
+
+    const CallSemNode * body = compound_body_child(*constructor);
+    if(body == nullptr) {
+      return false;
+    }
+    for(size_t i = 0; i < body->children.size(); ++i) {
+      GlobalAggregateArrayDataItem item;
+      if(!collect_global_class_array_constructor_assignment(
+             variable,
+             array_type,
+             call,
+             params,
+             body->children[i],
+             static_cast<size_t>(raw_index),
+             item)) {
+        return false;
+      }
+      items.push_back(item);
+    }
+    return true;
+  }
+
+  bool append_global_class_array_action_items(
+      vector<string> & data_items,
+      const CallSemNode & variable,
+      const TypePtr & array_type)
+  {
+    TypePtr base = strip_top_level_cv(array_type);
+    if(!base || base->kind != Type::TK_ARRAY ||
+       !is_complete_class_value_type(strip_top_level_cv(base->inner)) ||
+       variable.children.empty()) {
+      return false;
+    }
+
+    vector<GlobalAggregateArrayDataItem> items;
+    items.reserve(variable.children.size() * 2);
+    for(size_t i = 0; i < variable.children.size(); ++i) {
+      if(variable.children[i].kind != CallSemKind::constructor_action) {
+        return false;
+      }
+      if(!collect_global_class_array_constructor_action(variable,
+                                                        base,
+                                                        variable.children[i],
+                                                        items)) {
+        return false;
+      }
+    }
+    return append_sorted_global_data_items(data_items,
+                                           items,
+                                           backend_storage_size(array_type));
+  }
+
+  bool append_global_aggregate_array_assignment_items(
+      vector<string> & data_items,
+      const CallSemNode & variable,
+      const TypePtr & array_type)
+  {
+    TypePtr base = strip_top_level_cv(array_type);
+    if(!base || base->kind != Type::TK_ARRAY ||
+       !is_complete_class_value_type(strip_top_level_cv(base->inner)) ||
+       variable.children.empty()) {
+      return false;
+    }
+
+    vector<GlobalAggregateArrayDataItem> items;
+    items.reserve(variable.children.size());
+    for(size_t i = 0; i < variable.children.size(); ++i) {
+      GlobalAggregateArrayDataItem item;
+      if(!collect_global_aggregate_array_assignment(variable,
+                                                    array_type,
+                                                    variable.children[i],
+                                                    item)) {
+        return false;
+      }
+      items.push_back(item);
+    }
+    return append_sorted_global_data_items(data_items,
+                                           items,
+                                           backend_storage_size(array_type));
+  }
+
   void append_local_static_guard_global(const CallSemNode & node)
   {
     if(callsem_local_static_guard_symbol(node).empty()) {
@@ -18988,7 +19408,10 @@ private:
         global.data_items.push_back(
             string("zero ") + to_string(backend_storage_size(node.semantic_type)));
       } else {
-        throw logic_error("unsupported global array initializer for " + node.text);
+        if(!append_global_class_array_action_items(global.data_items, node, base) &&
+           !append_global_aggregate_array_assignment_items(global.data_items, node, base)) {
+          throw logic_error("unsupported global array initializer for " + node.text);
+        }
       }
       globals_.push_back(global);
       append_local_static_guard_global(node);
