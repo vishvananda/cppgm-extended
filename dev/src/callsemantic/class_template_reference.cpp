@@ -1038,6 +1038,13 @@ public:
     info = nullptr;
     arguments.clear();
     key.clear();
+    const auto unresolved = [&]() -> bool
+    {
+      info = nullptr;
+      arguments.clear();
+      key.clear();
+      return false;
+    };
     const bool lazy_references = lazy_class_template_references_enabled();
     if(decl.instantiations.empty() &&
        (!lazy_references || decl.reference_instantiations.empty())) {
@@ -1089,7 +1096,7 @@ public:
                                         expanded_texts[text_index],
                                         expanded_inputs.syntax_for(text_index),
                                         arg)) {
-            return false;
+            return unresolved();
           }
           arguments.push_back(arg);
           ++text_index;
@@ -1098,7 +1105,7 @@ public:
       }
 
       if(text_index >= expanded_texts.size()) {
-        return false;
+        return unresolved();
       }
 
       TemplateArgument arg;
@@ -1108,7 +1115,7 @@ public:
                                     expanded_texts[text_index],
                                     expanded_inputs.syntax_for(text_index),
                                     arg)) {
-        return false;
+        return unresolved();
       }
       arguments.push_back(arg);
       bind_single_template_argument_into_scope(bound_scope, decl.parameters[i], arg);
