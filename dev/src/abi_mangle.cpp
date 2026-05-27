@@ -1,22 +1,16 @@
 #include "abi_mangle.h"
 
-#include "cpp_decl_model.h"
-#include "itanium_mangle_ir.h"
-
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <fstream>
 #include <map>
-#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 using namespace std;
-using namespace cpp_decl;
-namespace abi_ir = itanium_mangle_ir;
 
 namespace abi_mangle {
 
@@ -61,57 +55,6 @@ string base36_number(size_t value)
     value /= 36;
   } while(value != 0);
   reverse(out.begin(), out.end());
-  return out;
-}
-
-struct SimpleIrSubstitutionSink : public abi_ir::SubstitutionSink
-{
-  bool emit_substitution(const abi_ir::SubstitutionKey & key,
-                         string & out) override
-  {
-    for(size_t i = 0; i < slots.size(); ++i) {
-      if(slots[i] == key) {
-        out += 'S';
-        if(i != 0) {
-          out += base36_number(i - 1);
-        }
-        out += '_';
-        return true;
-      }
-    }
-    return false;
-  }
-
-  void register_substitution(const abi_ir::SubstitutionKey & key) override
-  {
-    if(key.empty()) {
-      return;
-    }
-    for(size_t i = 0; i < slots.size(); ++i) {
-      if(slots[i] == key) {
-        return;
-      }
-    }
-    slots.push_back(key);
-  }
-
-  bool emit_dependent_parameter_type(const abi_ir::Type & type,
-                                     string & out) override
-  {
-    return abi_ir::emit_type(type, out, this);
-  }
-
-  vector<abi_ir::SubstitutionKey> slots;
-};
-
-vector<abi_ir::SubstitutionSlot> substitution_slots_from_sink(
-    const SimpleIrSubstitutionSink & sink)
-{
-  vector<abi_ir::SubstitutionSlot> out;
-  out.reserve(sink.slots.size());
-  for(size_t i = 0; i < sink.slots.size(); ++i) {
-    out.push_back(abi_ir::SubstitutionSlot::typed(sink.slots[i]));
-  }
   return out;
 }
 
@@ -174,229 +117,105 @@ long long parse_signed_integer(const string & text)
   return value;
 }
 
-string join_qualified_prefix(const vector<string> & parts, size_t count)
-{
-  string out;
-  for(size_t i = 0; i < count; ++i) {
-    if(i != 0) {
-      out += "::";
-    }
-    out += parts[i];
-  }
-  return out;
-}
-
-vector<abi_ir::Type::NameComponent> make_ir_prefix_components(
-    const vector<string> & parts)
-{
-  vector<abi_ir::Type::NameComponent> out;
-  for(size_t i = 0; i + 1 < parts.size(); ++i) {
-    if(i == 0 && parts[i] == "std") {
-      out.push_back(abi_ir::Type::NameComponent::std_namespace());
-      continue;
-    }
-    out.push_back(abi_ir::Type::NameComponent::source(
-        parts[i],
-        join_qualified_prefix(parts, i + 1)));
-  }
-  return out;
-}
-
-vector<abi_ir::FunctionNameComponent> make_ir_function_components(
-    const string & qualified_name)
-{
-  const vector<string> parts = split_qualified_name(qualified_name);
-  vector<abi_ir::FunctionNameComponent> out;
-  for(size_t i = 0; i < parts.size(); ++i) {
-    if(i == 0 && parts[i] == "std") {
-      out.push_back(abi_ir::FunctionNameComponent::std_namespace());
-      continue;
-    }
-    out.push_back(abi_ir::FunctionNameComponent::source(
-        parts[i],
-        join_qualified_prefix(parts, i + 1)));
-  }
-  return out;
-}
-
-map<string, EFundamentalType> fundamental_types();
-
-abi_ir::Type make_ir_named_type(const string & qualified_name)
-{
-  const vector<string> parts = split_qualified_name(qualified_name);
-  return abi_ir::Type::named_type(make_ir_prefix_components(parts),
-                                  parts.back(),
-                                  join_qualified_prefix(parts, parts.size()));
-}
-
-map<string, EFundamentalType> fundamental_types()
-{
-  map<string, EFundamentalType> out;
-  out["void"] = FT_VOID;
-  out["bool"] = FT_BOOL;
-  out["char"] = FT_CHAR;
-  out["schar"] = FT_SIGNED_CHAR;
-  out["uchar"] = FT_UNSIGNED_CHAR;
-  out["short"] = FT_SHORT_INT;
-  out["ushort"] = FT_UNSIGNED_SHORT_INT;
-  out["int"] = FT_INT;
-  out["uint"] = FT_UNSIGNED_INT;
-  out["long"] = FT_LONG_INT;
-  out["ulong"] = FT_UNSIGNED_LONG_INT;
-  out["longlong"] = FT_LONG_LONG_INT;
-  out["ulonglong"] = FT_UNSIGNED_LONG_LONG_INT;
-  out["int128"] = FT_INT128;
-  out["uint128"] = FT_UINT128;
-  out["wchar"] = FT_WCHAR_T;
-  out["char16"] = FT_CHAR16_T;
-  out["char32"] = FT_CHAR32_T;
-  out["float"] = FT_FLOAT;
-  out["double"] = FT_DOUBLE;
-  out["longdouble"] = FT_LONG_DOUBLE;
-  out["nullptr"] = FT_NULLPTR_T;
-  return out;
-}
-
-struct FactTemplateArgument
-{
-  abi_ir::Type::ClassTemplateArgument class_arg;
-  abi_ir::TemplateArgument function_arg;
-};
-
-struct FactLocalContext
-{
-  string fragment;
-  vector<abi_ir::SubstitutionSlot> substitution_slots;
-  shared_ptr<abi_ir::FunctionEncoding> function;
-};
-
-struct FactEntity
-{
-  string symbol;
-};
-
-struct FactContext
-{
-  map<string, abi_ir::Type> types;
-  map<string, FactTemplateArgument> args;
-  map<string, abi_ir::DependentExpression> exprs;
-  map<string, FactLocalContext> contexts;
-  map<string, FactEntity> entities;
-  abi_ir::FunctionEncoding function;
-  bool has_function = false;
-  bool has_type = false;
-  abi_ir::Type result_type;
-};
-
 bool boolean_word(const string & word)
 {
   return word == "1" || word == "yes" || word == "true";
 }
 
-const FactTemplateArgument & require_fact_arg_ref(const FactContext & ctx,
-                                                  const string & id)
+AbiBuiltinType builtin_type_from_name(const string & name)
 {
-  map<string, FactTemplateArgument>::const_iterator found = ctx.args.find(id);
-  if(found == ctx.args.end()) {
-    throw logic_error("unknown ABI fact template argument reference '" + id + "'");
-  }
-  return found->second;
+  if(name == "void") { return ABI_BUILTIN_VOID; }
+  if(name == "bool") { return ABI_BUILTIN_BOOL; }
+  if(name == "char") { return ABI_BUILTIN_CHAR; }
+  if(name == "schar") { return ABI_BUILTIN_SIGNED_CHAR; }
+  if(name == "uchar") { return ABI_BUILTIN_UNSIGNED_CHAR; }
+  if(name == "short") { return ABI_BUILTIN_SHORT; }
+  if(name == "ushort") { return ABI_BUILTIN_UNSIGNED_SHORT; }
+  if(name == "int") { return ABI_BUILTIN_INT; }
+  if(name == "uint") { return ABI_BUILTIN_UNSIGNED_INT; }
+  if(name == "long") { return ABI_BUILTIN_LONG; }
+  if(name == "ulong") { return ABI_BUILTIN_UNSIGNED_LONG; }
+  if(name == "longlong") { return ABI_BUILTIN_LONG_LONG; }
+  if(name == "ulonglong") { return ABI_BUILTIN_UNSIGNED_LONG_LONG; }
+  if(name == "int128") { return ABI_BUILTIN_INT128; }
+  if(name == "uint128") { return ABI_BUILTIN_UINT128; }
+  if(name == "wchar") { return ABI_BUILTIN_WCHAR; }
+  if(name == "char16") { return ABI_BUILTIN_CHAR16; }
+  if(name == "char32") { return ABI_BUILTIN_CHAR32; }
+  if(name == "float") { return ABI_BUILTIN_FLOAT; }
+  if(name == "double") { return ABI_BUILTIN_DOUBLE; }
+  if(name == "longdouble") { return ABI_BUILTIN_LONG_DOUBLE; }
+  if(name == "nullptr") { return ABI_BUILTIN_NULLPTR; }
+  return ABI_BUILTIN_INVALID;
 }
 
-const abi_ir::DependentExpression & require_fact_expr_ref(const FactContext & ctx,
-                                                          const string & id)
+string builtin_code(AbiBuiltinType type)
 {
-  map<string, abi_ir::DependentExpression>::const_iterator found =
-      ctx.exprs.find(id);
-  if(found == ctx.exprs.end()) {
-    throw logic_error("unknown ABI fact expression reference '" + id + "'");
+  switch(type) {
+  case ABI_BUILTIN_VOID: return "v";
+  case ABI_BUILTIN_BOOL: return "b";
+  case ABI_BUILTIN_CHAR: return "c";
+  case ABI_BUILTIN_SIGNED_CHAR: return "a";
+  case ABI_BUILTIN_UNSIGNED_CHAR: return "h";
+  case ABI_BUILTIN_SHORT: return "s";
+  case ABI_BUILTIN_UNSIGNED_SHORT: return "t";
+  case ABI_BUILTIN_INT: return "i";
+  case ABI_BUILTIN_UNSIGNED_INT: return "j";
+  case ABI_BUILTIN_LONG: return "l";
+  case ABI_BUILTIN_UNSIGNED_LONG: return "m";
+  case ABI_BUILTIN_LONG_LONG: return "x";
+  case ABI_BUILTIN_UNSIGNED_LONG_LONG: return "y";
+  case ABI_BUILTIN_INT128: return "n";
+  case ABI_BUILTIN_UINT128: return "o";
+  case ABI_BUILTIN_WCHAR: return "w";
+  case ABI_BUILTIN_CHAR16: return "Ds";
+  case ABI_BUILTIN_CHAR32: return "Di";
+  case ABI_BUILTIN_FLOAT: return "f";
+  case ABI_BUILTIN_DOUBLE: return "d";
+  case ABI_BUILTIN_LONG_DOUBLE: return "e";
+  case ABI_BUILTIN_NULLPTR: return "Dn";
+  case ABI_BUILTIN_INVALID: break;
   }
-  return found->second;
+  return string();
 }
 
-const FactLocalContext & require_fact_context_ref(const FactContext & ctx,
-                                                  const string & id)
+string builtin_name(AbiBuiltinType type)
 {
-  map<string, FactLocalContext>::const_iterator found = ctx.contexts.find(id);
-  if(found == ctx.contexts.end()) {
-    throw logic_error("unknown ABI fact local context reference '" + id + "'");
-  }
-  return found->second;
-}
-
-const FactEntity & require_fact_entity_ref(const FactContext & ctx,
-                                           const string & id)
-{
-  map<string, FactEntity>::const_iterator found = ctx.entities.find(id);
-  if(found == ctx.entities.end()) {
-    throw logic_error("unknown ABI fact entity reference '" + id + "'");
-  }
-  return found->second;
-}
-
-string fundamental_mangle_code(EFundamentalType fundamental)
-{
-  switch(fundamental) {
-  case FT_SIGNED_CHAR:
-    return "a";
-  case FT_SHORT_INT:
-    return "s";
-  case FT_INT:
-    return "i";
-  case FT_LONG_INT:
-    return "l";
-  case FT_LONG_LONG_INT:
-    return "x";
-  case FT_INT128:
-    return "n";
-  case FT_UNSIGNED_CHAR:
-    return "h";
-  case FT_UNSIGNED_SHORT_INT:
-    return "t";
-  case FT_UNSIGNED_INT:
-    return "j";
-  case FT_UNSIGNED_LONG_INT:
-    return "m";
-  case FT_UNSIGNED_LONG_LONG_INT:
-    return "y";
-  case FT_UINT128:
-    return "o";
-  case FT_WCHAR_T:
-    return "w";
-  case FT_CHAR:
-    return "c";
-  case FT_CHAR16_T:
-    return "Ds";
-  case FT_CHAR32_T:
-    return "Di";
-  case FT_BOOL:
-    return "b";
-  case FT_FLOAT:
-    return "f";
-  case FT_DOUBLE:
-    return "d";
-  case FT_LONG_DOUBLE:
-    return "e";
-  case FT_VOID:
-    return "v";
-  case FT_NULLPTR_T:
-    return "Dn";
+  switch(type) {
+  case ABI_BUILTIN_VOID: return "void";
+  case ABI_BUILTIN_BOOL: return "bool";
+  case ABI_BUILTIN_CHAR: return "char";
+  case ABI_BUILTIN_SIGNED_CHAR: return "schar";
+  case ABI_BUILTIN_UNSIGNED_CHAR: return "uchar";
+  case ABI_BUILTIN_SHORT: return "short";
+  case ABI_BUILTIN_UNSIGNED_SHORT: return "ushort";
+  case ABI_BUILTIN_INT: return "int";
+  case ABI_BUILTIN_UNSIGNED_INT: return "uint";
+  case ABI_BUILTIN_LONG: return "long";
+  case ABI_BUILTIN_UNSIGNED_LONG: return "ulong";
+  case ABI_BUILTIN_LONG_LONG: return "longlong";
+  case ABI_BUILTIN_UNSIGNED_LONG_LONG: return "ulonglong";
+  case ABI_BUILTIN_INT128: return "int128";
+  case ABI_BUILTIN_UINT128: return "uint128";
+  case ABI_BUILTIN_WCHAR: return "wchar";
+  case ABI_BUILTIN_CHAR16: return "char16";
+  case ABI_BUILTIN_CHAR32: return "char32";
+  case ABI_BUILTIN_FLOAT: return "float";
+  case ABI_BUILTIN_DOUBLE: return "double";
+  case ABI_BUILTIN_LONG_DOUBLE: return "longdouble";
+  case ABI_BUILTIN_NULLPTR: return "nullptr";
+  case ABI_BUILTIN_INVALID: break;
   }
   return string();
 }
 
 bool builtin_code_from_name(const string & word, string & code)
 {
-  const map<string, EFundamentalType> fundamentals = fundamental_types();
-  const map<string, EFundamentalType>::const_iterator fundamental =
-      fundamentals.find(word);
-  if(fundamental == fundamentals.end()) {
+  const AbiBuiltinType type = builtin_type_from_name(word);
+  if(type == ABI_BUILTIN_INVALID) {
     return false;
   }
-  code = fundamental_mangle_code(fundamental->second);
-  if(code.empty()) {
-    throw logic_error("unable to map builtin ABI fact type '" + word + "'");
-  }
+  code = builtin_code(type);
   return true;
 }
 
@@ -411,6 +230,10 @@ AbiType builtin_type_spec(const string & name)
   AbiType out;
   out.kind = ABI_TYPE_BUILTIN;
   out.name = name;
+  out.builtin_type = builtin_type_from_name(name);
+  if(out.builtin_type == ABI_BUILTIN_INVALID) {
+    throw logic_error("unknown builtin ABI fact type '" + name + "'");
+  }
   return out;
 }
 
@@ -469,6 +292,9 @@ AbiType parse_single_type_token(const string & text)
     AbiType out;
     out.kind = ABI_TYPE_VENDOR_QUALIFIED;
     out.name = rest.substr(0, pos);
+    if(out.name == "_Atomic") {
+      out.vendor_qualifier = ABI_VENDOR_QUALIFIER_ATOMIC;
+    }
     out.child_types.push_back(parse_single_type_token(rest.substr(pos + 1)));
     return out;
   }
@@ -516,14 +342,6 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
 
   const string & kind = words[begin];
   AbiType out;
-  if(kind == "builtin") {
-    if(begin + 2 != words.size()) {
-      throw logic_error("builtin type requires one ABI code");
-    }
-    out.kind = ABI_TYPE_BUILTIN_CODE;
-    out.abi_code = words[begin + 1];
-    return out;
-  }
   if(kind == "template-param" || kind == "template-param-subst") {
     if(begin + 2 != words.size()) {
       throw logic_error("template-param type requires one index");
@@ -560,6 +378,9 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
     }
     out.kind = ABI_TYPE_VENDOR_QUALIFIED;
     out.name = words[begin + 1];
+    if(out.name == "_Atomic") {
+      out.vendor_qualifier = ABI_VENDOR_QUALIFIER_ATOMIC;
+    }
     out.child_types.push_back(parse_single_type_token(words[begin + 2]));
     return out;
   }
@@ -675,76 +496,6 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
   throw logic_error("unknown ABI fact type kind '" + kind + "'");
 }
 
-abi_ir::Type lower_type(FactContext & ctx, const AbiType & type);
-FactTemplateArgument lower_argument(FactContext & ctx,
-                                    const AbiTemplateArg & fact);
-abi_ir::DependentExpression lower_expression(
-    FactContext & ctx,
-    const AbiDependentExpr & fact);
-
-abi_ir::Type fact_type_ref_or_builtin(FactContext & ctx, const string & word)
-{
-  map<string, abi_ir::Type>::const_iterator found = ctx.types.find(word);
-  if(found != ctx.types.end()) {
-    return found->second;
-  }
-
-  string code;
-  if(builtin_code_from_name(word, code)) {
-    return abi_ir::Type::builtin(code);
-  }
-
-  throw logic_error("unknown ABI fact type reference '" + word + "'");
-}
-
-vector<abi_ir::Type::ClassTemplateArgument> class_args_from_refs(
-    FactContext & ctx,
-    const vector<string> & refs)
-{
-  vector<abi_ir::Type::ClassTemplateArgument> out;
-  for(size_t i = 0; i < refs.size(); ++i) {
-    out.push_back(require_fact_arg_ref(ctx, refs[i]).class_arg);
-  }
-  return out;
-}
-
-vector<abi_ir::TemplateArgument> function_args_from_refs(
-    FactContext & ctx,
-    const vector<string> & refs)
-{
-  vector<abi_ir::TemplateArgument> out;
-  for(size_t i = 0; i < refs.size(); ++i) {
-    out.push_back(require_fact_arg_ref(ctx, refs[i]).function_arg);
-  }
-  return out;
-}
-
-string terminal_fragment_from_fact_word(const string & word)
-{
-  if(word == "operator-call") {
-    return "cl";
-  }
-  if(word == "operator-assign") {
-    return "aS";
-  }
-  if(word == "constructor-complete") {
-    return "C1";
-  }
-  if(word == "constructor-base") {
-    return "C2";
-  }
-  if(word == "destructor-complete") {
-    return "D1";
-  }
-  if(word == "destructor-base") {
-    return "D2";
-  }
-  if(word == "destructor-deleting") {
-    return "D0";
-  }
-  throw logic_error("unknown ABI fact terminal name '" + word + "'");
-}
-
 AbiFunctionTerminal terminal_from_fact_word(const string & word)
 {
   if(word == "operator-call") {
@@ -796,336 +547,6 @@ string terminal_word_from_fact_terminal(AbiFunctionTerminal terminal)
   throw logic_error("source-name terminal is not serialized as a terminal word");
 }
 
-string terminal_fragment_from_fact_terminal(AbiFunctionTerminal terminal)
-{
-  return terminal_fragment_from_fact_word(
-      terminal_word_from_fact_terminal(terminal));
-}
-
-abi_ir::FunctionEncoding fact_path_function_encoding(
-    FactContext & ctx,
-    const AbiFunctionPath & path)
-{
-  abi_ir::FunctionEncoding function;
-  function.name_components = make_ir_function_components(path.qualified_name);
-  function.template_arguments =
-      function_args_from_refs(ctx, path.template_argument_references);
-  if(!function.template_arguments.empty()) {
-    function.template_prefix_key =
-        abi_ir::SubstitutionKey::function_template_prefix(path.qualified_name);
-  }
-  if(path.has_result_type) {
-    function.parameter_types.push_back(lower_type(ctx, path.result_type));
-  }
-  for(size_t i = 0; i < path.parameter_types.size(); ++i) {
-    function.parameter_types.push_back(lower_type(ctx, path.parameter_types[i]));
-  }
-  return function;
-}
-
-string emit_fact_function_symbol(const abi_ir::FunctionEncoding & function)
-{
-  SimpleIrSubstitutionSink sink;
-  string out;
-  if(!abi_ir::emit_function_encoding(function, out, &sink)) {
-    throw logic_error("unable to encode ABI fact function entity");
-  }
-  return out;
-}
-
-string emit_fact_variable_symbol(const string & qualified_name)
-{
-  abi_ir::FunctionEncoding name;
-  name.name_components = make_ir_function_components(qualified_name);
-  SimpleIrSubstitutionSink sink;
-  string encoding;
-  if(!abi_ir::emit_function_name(name, encoding, &sink)) {
-    throw logic_error("unable to encode ABI fact variable entity");
-  }
-  return "_Z" + encoding;
-}
-
-FactLocalContext emit_fact_local_context(
-    const abi_ir::FunctionEncoding & function)
-{
-  SimpleIrSubstitutionSink sink;
-  string encoding;
-  if(!abi_ir::emit_function_encoding(function, encoding, &sink) ||
-     encoding.compare(0, 2, "_Z") != 0) {
-    throw logic_error("unable to encode ABI fact local context");
-  }
-  FactLocalContext out;
-  out.fragment = "Z" + encoding.substr(2) + "E";
-  out.substitution_slots = substitution_slots_from_sink(sink);
-  out.function.reset(new abi_ir::FunctionEncoding(function));
-  return out;
-}
-
-abi_ir::Type lower_type(FactContext & ctx, const AbiType & type)
-{
-  switch(type.kind) {
-  case ABI_TYPE_REFERENCE:
-    return fact_type_ref_or_builtin(ctx, type.reference);
-  case ABI_TYPE_BUILTIN: {
-    string code;
-    if(!builtin_code_from_name(type.name, code)) {
-      throw logic_error("unknown builtin ABI fact type '" + type.name + "'");
-    }
-    return abi_ir::Type::builtin(code);
-  }
-  case ABI_TYPE_BUILTIN_CODE:
-    return abi_ir::Type::builtin(type.abi_code);
-  case ABI_TYPE_TEMPLATE_PARAMETER: {
-    abi_ir::Type out =
-        abi_ir::Type::template_parameter(type.template_parameter_index);
-    if(type.substitutable_template_parameter) {
-      abi_ir::set_substitution(
-          out,
-          abi_ir::SubstitutionKey::type_template_parameter(
-              type.template_parameter_index));
-    }
-    return out;
-  }
-  case ABI_TYPE_POINTER:
-  case ABI_TYPE_LVALUE_REFERENCE:
-  case ABI_TYPE_RVALUE_REFERENCE:
-  case ABI_TYPE_CONST:
-  case ABI_TYPE_VOLATILE:
-  case ABI_TYPE_VENDOR_QUALIFIED:
-  case ABI_TYPE_PACK_EXPANSION: {
-    if(type.child_types.size() != 1) {
-      throw logic_error("unary ABI fact type requires one child type");
-    }
-    const abi_ir::Type inner = lower_type(ctx, type.child_types[0]);
-    if(type.kind == ABI_TYPE_POINTER) {
-      return abi_ir::Type::pointer(inner);
-    }
-    if(type.kind == ABI_TYPE_LVALUE_REFERENCE) {
-      return abi_ir::Type::lvalue_reference(inner);
-    }
-    if(type.kind == ABI_TYPE_RVALUE_REFERENCE) {
-      return abi_ir::Type::rvalue_reference(inner);
-    }
-    if(type.kind == ABI_TYPE_CONST) {
-      return abi_ir::Type::cv(true, false, inner);
-    }
-    if(type.kind == ABI_TYPE_VOLATILE) {
-      return abi_ir::Type::cv(false, true, inner);
-    }
-    if(type.kind == ABI_TYPE_VENDOR_QUALIFIED) {
-      if(type.name.empty()) {
-        throw logic_error("vendor ABI fact type requires a qualifier");
-      }
-      return abi_ir::Type::vendor_qualified(type.name, inner);
-    }
-    return abi_ir::Type::pack_expansion(inner);
-  }
-  case ABI_TYPE_ARRAY:
-    if(type.child_types.size() != 1) {
-      throw logic_error("array ABI fact type requires one element type");
-    }
-    return abi_ir::Type::array(type.array_bound,
-                               lower_type(ctx, type.child_types[0]));
-  case ABI_TYPE_FUNCTION: {
-    if(type.child_types.empty()) {
-      throw logic_error("function ABI fact type requires a result type");
-    }
-    vector<abi_ir::Type> params;
-    for(size_t i = 1; i < type.child_types.size(); ++i) {
-      params.push_back(lower_type(ctx, type.child_types[i]));
-    }
-    return abi_ir::Type::function(lower_type(ctx, type.child_types[0]),
-                                  params,
-                                  false);
-  }
-  case ABI_TYPE_MEMBER_POINTER:
-    if(type.child_types.size() != 2) {
-      throw logic_error("member-pointer ABI fact type requires owner and member type");
-    }
-    return abi_ir::Type::member_pointer(
-        lower_type(ctx, type.child_types[0]),
-        lower_type(ctx, type.child_types[1]));
-  case ABI_TYPE_NAMED:
-    return make_ir_named_type(type.name);
-  case ABI_TYPE_CLASS_TEMPLATE:
-    return abi_ir::Type::class_template_specialization(
-        make_ir_prefix_components(split_qualified_name(type.name)),
-        split_qualified_name(type.name).back(),
-        type.name,
-        class_args_from_refs(ctx, type.template_argument_references),
-        string(),
-        false);
-  case ABI_TYPE_STD_CLASS_TEMPLATE: {
-    const vector<string> parts = split_qualified_name(type.name);
-    return abi_ir::Type::class_template_specialization(
-        make_ir_prefix_components(parts),
-        parts.back(),
-        type.name,
-        class_args_from_refs(ctx, type.template_argument_references),
-        type.std_substitution,
-        type.std_substitution_includes_template_arguments);
-  }
-  case ABI_TYPE_MEMBER_TYPE:
-    if(type.child_types.size() != 1) {
-      throw logic_error("member ABI fact type requires one owner type");
-    }
-    return abi_ir::Type::member_named_type(
-        lower_type(ctx, type.child_types[0]),
-        type.name,
-        type.name);
-  case ABI_TYPE_MEMBER_CLASS_TEMPLATE:
-    if(type.child_types.size() != 1) {
-      throw logic_error("member-template ABI fact type requires one owner type");
-    }
-    return abi_ir::Type::member_class_template_specialization(
-        lower_type(ctx, type.child_types[0]),
-        type.name,
-        type.name,
-        class_args_from_refs(ctx, type.template_argument_references));
-  case ABI_TYPE_DECLTYPE: {
-    abi_ir::Type out;
-    out.kind = abi_ir::Type::TK_DECLTYPE_EXPRESSION;
-    out.expression.reset(
-        new abi_ir::DependentExpression(require_fact_expr_ref(ctx,
-                                                              type.expression_reference)));
-    return out;
-  }
-  case ABI_TYPE_LAMBDA_CLOSURE: {
-    const FactLocalContext & context =
-        require_fact_context_ref(ctx, type.context_reference);
-    vector<abi_ir::Type> signature;
-    for(size_t i = 0; i < type.child_types.size(); ++i) {
-      signature.push_back(lower_type(ctx, type.child_types[i]));
-    }
-    return abi_ir::Type::lambda_closure(context.fragment,
-                                        context.substitution_slots,
-                                        context.function,
-                                        signature,
-                                        type.discriminator);
-  }
-  case ABI_TYPE_LOCAL_TYPE: {
-    const FactLocalContext & context =
-        require_fact_context_ref(ctx, type.context_reference);
-    return abi_ir::Type::lambda_closure(context.fragment,
-                                        context.substitution_slots,
-                                        context.function,
-                                        vector<abi_ir::Type>(),
-                                        type.discriminator,
-                                        type.source_name);
-  }
-  }
-  throw logic_error("unknown ABI fact type kind");
-}
-
-FactTemplateArgument lower_argument(FactContext & ctx,
-                                    const AbiTemplateArg & fact)
-{
-  FactTemplateArgument out;
-  switch(fact.kind) {
-  case ABI_TEMPLATE_ARG_TYPE: {
-    const abi_ir::Type type = lower_type(ctx, fact.type);
-    out.class_arg = abi_ir::Type::ClassTemplateArgument::type_arg(type);
-    out.function_arg = abi_ir::TemplateArgument::type_arg(type);
-    return out;
-  }
-  case ABI_TEMPLATE_ARG_INTEGRAL_VALUE: {
-    const abi_ir::Type type = lower_type(ctx, fact.type);
-    const long long value = fact.integer_value;
-    out.class_arg =
-        abi_ir::Type::ClassTemplateArgument::integral_value_arg(type, value);
-    out.function_arg = abi_ir::TemplateArgument::integral_value_arg(type, value);
-    return out;
-  }
-  case ABI_TEMPLATE_ARG_UNTYPED_INTEGRAL_VALUE: {
-    const long long value = fact.integer_value;
-    out.class_arg =
-        abi_ir::Type::ClassTemplateArgument::untyped_integral_value_arg(value);
-    out.function_arg = abi_ir::TemplateArgument::untyped_integral_value_arg(value);
-    return out;
-  }
-  case ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION: {
-    const abi_ir::DependentExpression & expression =
-        require_fact_expr_ref(ctx, fact.expression_reference);
-    out.class_arg =
-        abi_ir::Type::ClassTemplateArgument::dependent_expression_arg(expression);
-    out.function_arg =
-        abi_ir::TemplateArgument::dependent_expression_arg(expression);
-    return out;
-  }
-  case ABI_TEMPLATE_ARG_ENTITY_ADDRESS:
-  case ABI_TEMPLATE_ARG_ENTITY_REFERENCE: {
-    const bool address_of = fact.kind == ABI_TEMPLATE_ARG_ENTITY_ADDRESS;
-    const FactEntity & entity = require_fact_entity_ref(ctx,
-                                                        fact.entity_reference);
-    out.class_arg = abi_ir::Type::ClassTemplateArgument::external_entity_arg(
-        entity.symbol,
-        address_of);
-    out.function_arg =
-        abi_ir::TemplateArgument::external_entity_arg(entity.symbol,
-                                                     address_of);
-    return out;
-  }
-  case ABI_TEMPLATE_ARG_PACK: {
-    vector<abi_ir::Type::ClassTemplateArgument> class_pack;
-    vector<abi_ir::TemplateArgument> function_pack;
-    for(size_t i = 0; i < fact.pack_argument_references.size(); ++i) {
-      const FactTemplateArgument & argument =
-          require_fact_arg_ref(ctx, fact.pack_argument_references[i]);
-      class_pack.push_back(argument.class_arg);
-      function_pack.push_back(argument.function_arg);
-    }
-    out.class_arg = abi_ir::Type::ClassTemplateArgument::argument_pack(class_pack);
-    out.function_arg = abi_ir::TemplateArgument::argument_pack(function_pack);
-    return out;
-  }
-  }
-  throw logic_error("unknown ABI fact template argument kind");
-}
-
-abi_ir::DependentExpression lower_expression(
-    FactContext & ctx,
-    const AbiDependentExpr & fact)
-{
-  switch(fact.kind) {
-  case ABI_EXPR_TEMPLATE_PARAMETER:
-    return abi_ir::DependentExpression::template_parameter(
-        fact.index);
-  case ABI_EXPR_FUNCTION_PARAMETER:
-    return abi_ir::DependentExpression::function_parameter(
-        fact.index);
-  case ABI_EXPR_LITERAL:
-    return abi_ir::DependentExpression::literal(fact.literal);
-  case ABI_EXPR_UNARY:
-    return abi_ir::DependentExpression::unary(
-        fact.opcode,
-        require_fact_expr_ref(ctx, fact.first_reference));
-  case ABI_EXPR_BINARY:
-    return abi_ir::DependentExpression::binary(
-        fact.opcode,
-        require_fact_expr_ref(ctx, fact.first_reference),
-        require_fact_expr_ref(ctx, fact.second_reference));
-  case ABI_EXPR_CONDITIONAL:
-    return abi_ir::DependentExpression::conditional(
-        require_fact_expr_ref(ctx, fact.first_reference),
-        require_fact_expr_ref(ctx, fact.second_reference),
-        require_fact_expr_ref(ctx, fact.third_reference));
-  case ABI_EXPR_MEMBER:
-    return abi_ir::DependentExpression::member(
-        lower_type(ctx, fact.owner_type),
-        fact.close_template_arguments,
-        fact.member_name);
-  case ABI_EXPR_ENTITY_ADDRESS:
-  case ABI_EXPR_ENTITY_REFERENCE: {
-    const FactEntity & entity = require_fact_entity_ref(ctx,
-                                                        fact.entity_reference);
-    return abi_ir::DependentExpression::external_entity(
-        entity.symbol,
-        fact.kind == ABI_EXPR_ENTITY_ADDRESS);
-  }
-  }
-  throw logic_error("unknown ABI fact expression kind");
-}
-
 bool single_type_token(const AbiType & type, string & token)
 {
   switch(type.kind) {
@@ -1133,8 +554,8 @@ bool single_type_token(const AbiType & type, string & token)
     token = type.reference;
     return true;
   case ABI_TYPE_BUILTIN:
-    token = type.name;
-    return true;
+    token = type.name.empty() ? builtin_name(type.builtin_type) : type.name;
+    return !token.empty();
   case ABI_TYPE_POINTER:
   case ABI_TYPE_LVALUE_REFERENCE:
   case ABI_TYPE_RVALUE_REFERENCE:
@@ -1159,10 +580,15 @@ bool single_type_token(const AbiType & type, string & token)
     } else if(type.kind == ABI_TYPE_VOLATILE) {
       token = "volatile:" + child;
     } else {
-      if(type.name.empty()) {
+      string qualifier = type.name;
+      if(qualifier.empty() &&
+         type.vendor_qualifier == ABI_VENDOR_QUALIFIER_ATOMIC) {
+        qualifier = "_Atomic";
+      }
+      if(qualifier.empty()) {
         return false;
       }
-      token = "vendor:" + type.name + ":" + child;
+      token = "vendor:" + qualifier + ":" + child;
     }
     return true;
   }
@@ -1226,10 +652,6 @@ void append_type_spec_words(vector<string> & words, const AbiType & type)
     return;
   }
   switch(type.kind) {
-  case ABI_TYPE_BUILTIN_CODE:
-    words.push_back("builtin");
-    words.push_back(type.abi_code);
-    break;
   case ABI_TYPE_TEMPLATE_PARAMETER:
     words.push_back(type.substitutable_template_parameter ?
                     "template-param-subst" : "template-param");
@@ -1378,6 +800,50 @@ AbiTemplateArg parse_template_argument_fact(
   throw logic_error("unknown ABI fact template argument kind '" + kind + "'");
 }
 
+AbiExpressionOperator expression_operator_from_word(const string & word)
+{
+  if(word == "de") { return ABI_EXPR_OP_DEREFERENCE; }
+  if(word == "ad") { return ABI_EXPR_OP_ADDRESS_OF; }
+  if(word == "ps") { return ABI_EXPR_OP_UNARY_PLUS; }
+  if(word == "ng") { return ABI_EXPR_OP_UNARY_MINUS; }
+  if(word == "nt") { return ABI_EXPR_OP_NOT; }
+  if(word == "co") { return ABI_EXPR_OP_COMPLEMENT; }
+  if(word == "pl") { return ABI_EXPR_OP_ADD; }
+  if(word == "dv") { return ABI_EXPR_OP_DIVIDE; }
+  if(word == "rm") { return ABI_EXPR_OP_REMAINDER; }
+  if(word == "eq") { return ABI_EXPR_OP_EQUAL; }
+  return ABI_EXPR_OP_INVALID;
+}
+
+string word_from_expression_operator(AbiExpressionOperator op)
+{
+  switch(op) {
+  case ABI_EXPR_OP_DEREFERENCE:
+    return "de";
+  case ABI_EXPR_OP_ADDRESS_OF:
+    return "ad";
+  case ABI_EXPR_OP_UNARY_PLUS:
+    return "ps";
+  case ABI_EXPR_OP_UNARY_MINUS:
+    return "ng";
+  case ABI_EXPR_OP_NOT:
+    return "nt";
+  case ABI_EXPR_OP_COMPLEMENT:
+    return "co";
+  case ABI_EXPR_OP_ADD:
+    return "pl";
+  case ABI_EXPR_OP_DIVIDE:
+    return "dv";
+  case ABI_EXPR_OP_REMAINDER:
+    return "rm";
+  case ABI_EXPR_OP_EQUAL:
+    return "eq";
+  case ABI_EXPR_OP_INVALID:
+    break;
+  }
+  throw logic_error("unknown ABI expression operator");
+}
+
 AbiDependentExpr parse_expression_fact(const vector<string> & words)
 {
   if(words.size() < 4) {
@@ -1411,19 +877,25 @@ AbiDependentExpr parse_expression_fact(const vector<string> & words)
   }
   if(kind == "unary") {
     if(words.size() != 5) {
-      throw logic_error("unary expression requires opcode and operand");
+      throw logic_error("unary expression requires operator and operand");
     }
     out.kind = ABI_EXPR_UNARY;
-    out.opcode = words[3];
+    out.expression_operator = expression_operator_from_word(words[3]);
+    if(out.expression_operator == ABI_EXPR_OP_INVALID) {
+      throw logic_error("unknown unary expression operator '" + words[3] + "'");
+    }
     out.first_reference = words[4];
     return out;
   }
   if(kind == "binary") {
     if(words.size() != 6) {
-      throw logic_error("binary expression requires opcode and two operands");
+      throw logic_error("binary expression requires operator and two operands");
     }
     out.kind = ABI_EXPR_BINARY;
-    out.opcode = words[3];
+    out.expression_operator = expression_operator_from_word(words[3]);
+    if(out.expression_operator == ABI_EXPR_OP_INVALID) {
+      throw logic_error("unknown binary expression operator '" + words[3] + "'");
+    }
     out.first_reference = words[4];
     out.second_reference = words[5];
     return out;
@@ -1642,97 +1114,6 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
   throw logic_error("unknown ABI fact command '" + command + "'");
 }
 
-void apply_fact(FactContext & ctx, const AbiFact & fact)
-{
-  switch(fact.kind) {
-  case ABI_FACT_TYPE:
-    ctx.types[fact.id] = lower_type(ctx, fact.type);
-    return;
-  case ABI_FACT_TEMPLATE_ARGUMENT:
-    ctx.args[fact.id] = lower_argument(ctx, fact.template_argument);
-    return;
-  case ABI_FACT_EXPRESSION:
-    ctx.exprs[fact.id] = lower_expression(ctx, fact.expression);
-    return;
-  case ABI_FACT_LOCAL_CONTEXT:
-    ctx.contexts[fact.id] =
-        emit_fact_local_context(fact_path_function_encoding(ctx,
-                                                            fact.context_function));
-    return;
-  case ABI_FACT_ENTITY: {
-    FactEntity entity;
-    if(fact.entity.kind == ABI_ENTITY_FUNCTION) {
-      entity.symbol = emit_fact_function_symbol(
-          fact_path_function_encoding(ctx, fact.entity.function));
-    } else {
-      entity.symbol = emit_fact_variable_symbol(fact.entity.qualified_name);
-    }
-    ctx.entities[fact.id] = entity;
-    return;
-  }
-  }
-  throw logic_error("unknown ABI fact kind");
-}
-
-abi_ir::FunctionEncoding lower_function_target(FactContext & ctx,
-                                               const AbiFunction & target)
-{
-  abi_ir::FunctionEncoding function;
-  if(target.form == ABI_FUNCTION_PATH) {
-    function.name_components = make_ir_function_components(target.qualified_name);
-    function.template_arguments =
-        function_args_from_refs(ctx, target.template_argument_references);
-    if(!function.template_arguments.empty()) {
-      function.template_prefix_key =
-          abi_ir::SubstitutionKey::function_template_prefix(
-              target.qualified_name);
-    }
-  } else if(target.form == ABI_FUNCTION_LAMBDA) {
-    const FactLocalContext & context =
-        require_fact_context_ref(ctx, target.context_reference);
-    abi_ir::FunctionEncoding::LambdaMetadata & lambda =
-        abi_ir::FunctionEncoding::ensure_lambda_metadata(function);
-    lambda.context_fragment = context.fragment;
-    lambda.context_substitution_slots = context.substitution_slots;
-    lambda.discriminator = target.discriminator;
-    function.terminal_fragment =
-        terminal_fragment_from_fact_terminal(target.terminal);
-    for(size_t i = 0; i < target.lambda_signature_parameter_types.size(); ++i) {
-      lambda.signature_parameter_types.push_back(
-          lower_type(ctx, target.lambda_signature_parameter_types[i]));
-    }
-  } else if(target.form == ABI_FUNCTION_LOCAL) {
-    const FactLocalContext & context =
-        require_fact_context_ref(ctx, target.context_reference);
-    abi_ir::FunctionEncoding::LambdaMetadata & local =
-        abi_ir::FunctionEncoding::ensure_lambda_metadata(function);
-    local.context_fragment = context.fragment;
-    local.context_substitution_slots = context.substitution_slots;
-    local.source_name = target.source_name;
-    local.discriminator = target.discriminator.empty() ? "0" :
-        target.discriminator;
-    function.terminal_fragment =
-        terminal_fragment_from_fact_terminal(target.terminal);
-  }
-  if(target.has_result_type) {
-    function.parameter_types.push_back(lower_type(ctx, target.result_type));
-  }
-  for(size_t i = 0; i < target.parameter_types.size(); ++i) {
-    function.parameter_types.push_back(lower_type(ctx, target.parameter_types[i]));
-  }
-  return function;
-}
-
-string emit_type_encoding(FactContext & ctx, const AbiType & type)
-{
-  SimpleIrSubstitutionSink sink;
-  string out;
-  if(!abi_ir::emit_type(lower_type(ctx, type), out, &sink)) {
-    throw logic_error("shared ABI IR mangler failed to encode fact type");
-  }
-  return out;
-}
-
 void append_function_path_words(vector<string> & words,
                                 const AbiFunctionPath & path)
 {
@@ -1811,12 +1192,14 @@ vector<string> fact_words(const AbiFact & fact)
       break;
     case ABI_EXPR_UNARY:
       words.push_back("unary");
-      words.push_back(fact.expression.opcode);
+      words.push_back(word_from_expression_operator(
+          fact.expression.expression_operator));
       words.push_back(fact.expression.first_reference);
       break;
     case ABI_EXPR_BINARY:
       words.push_back("binary");
-      words.push_back(fact.expression.opcode);
+      words.push_back(word_from_expression_operator(
+          fact.expression.expression_operator));
       words.push_back(fact.expression.first_reference);
       words.push_back(fact.expression.second_reference);
       break;
@@ -1936,34 +1319,1033 @@ vector<vector<string> > target_lines(const AbiMangleTarget & target)
   throw logic_error("unknown ABI mangle target kind");
 }
 
+struct DirectSubstitutionKey
+{
+  string value;
+
+  bool empty() const { return value.empty(); }
+
+  bool operator==(const DirectSubstitutionKey & rhs) const
+  {
+    return value == rhs.value;
+  }
+};
+
+struct DirectEncoder
+{
+  vector<DirectSubstitutionKey> substitutions;
+};
+
+struct DirectLocalContext
+{
+  AbiFunctionPath function;
+};
+
+struct DirectFactContext
+{
+  map<string, AbiType> types;
+  map<string, AbiTemplateArg> args;
+  map<string, AbiDependentExpr> exprs;
+  map<string, DirectLocalContext> contexts;
+  map<string, AbiEntity> entities;
+};
+
+DirectSubstitutionKey direct_key(const string & value)
+{
+  DirectSubstitutionKey out;
+  out.value = value;
+  return out;
+}
+
+bool direct_emit_substitution(DirectEncoder & encoder,
+                              const DirectSubstitutionKey & key,
+                              string & out)
+{
+  if(key.empty()) {
+    return false;
+  }
+  for(size_t i = 0; i < encoder.substitutions.size(); ++i) {
+    if(encoder.substitutions[i] == key) {
+      out += 'S';
+      if(i != 0) {
+        out += base36_number(i - 1);
+      }
+      out += '_';
+      return true;
+    }
+  }
+  return false;
+}
+
+void direct_register_substitution(DirectEncoder & encoder,
+                                  const DirectSubstitutionKey & key)
+{
+  if(key.empty()) {
+    return;
+  }
+  for(size_t i = 0; i < encoder.substitutions.size(); ++i) {
+    if(encoder.substitutions[i] == key) {
+      return;
+    }
+  }
+  encoder.substitutions.push_back(key);
+}
+
+bool direct_emit_source_name(const string & name, string & out)
+{
+  if(name.empty()) {
+    return false;
+  }
+  out += to_string(name.size());
+  out += name;
+  return true;
+}
+
+bool direct_builtin_code_from_type(const AbiType & type, string & out)
+{
+  out = builtin_code(type.builtin_type);
+  if(!out.empty()) {
+    return true;
+  }
+  return builtin_code_from_name(type.name, out);
+}
+
+const AbiType & direct_resolve_type_ref(const DirectFactContext & ctx,
+                                        const AbiType & type,
+                                        AbiType & builtin_storage)
+{
+  if(type.kind != ABI_TYPE_REFERENCE) {
+    return type;
+  }
+  map<string, AbiType>::const_iterator found = ctx.types.find(type.reference);
+  if(found != ctx.types.end()) {
+    return found->second;
+  }
+  if(is_builtin_type_name(type.reference)) {
+    builtin_storage = builtin_type_spec(type.reference);
+    return builtin_storage;
+  }
+  throw logic_error("unknown ABI fact type reference '" + type.reference + "'");
+}
+
+string direct_join_key_parts(const vector<string> & parts)
+{
+  string out;
+  for(size_t i = 0; i < parts.size(); ++i) {
+    if(i != 0) {
+      out += "::";
+    }
+    out += parts[i];
+  }
+  return out;
+}
+
+bool direct_type_key(const DirectFactContext & ctx,
+                     const AbiType & type,
+                     DirectSubstitutionKey & out);
+bool direct_template_arg_key(const DirectFactContext & ctx,
+                             const AbiTemplateArg & arg,
+                             DirectSubstitutionKey & out);
+
+bool direct_type_key(const DirectFactContext & ctx,
+                     const AbiType & input,
+                     DirectSubstitutionKey & out)
+{
+  AbiType builtin_storage;
+  const AbiType & type = direct_resolve_type_ref(ctx, input, builtin_storage);
+  switch(type.kind) {
+  case ABI_TYPE_REFERENCE:
+    return false;
+  case ABI_TYPE_BUILTIN:
+    return false;
+  case ABI_TYPE_TEMPLATE_PARAMETER:
+    if(type.substitutable_template_parameter) {
+      out = direct_key(string("type-template-param:") +
+                       to_string(type.template_parameter_index));
+      return true;
+    }
+    return false;
+  case ABI_TYPE_POINTER:
+  case ABI_TYPE_LVALUE_REFERENCE:
+  case ABI_TYPE_RVALUE_REFERENCE:
+  case ABI_TYPE_CONST:
+  case ABI_TYPE_VOLATILE:
+  case ABI_TYPE_VENDOR_QUALIFIED:
+  case ABI_TYPE_PACK_EXPANSION:
+  case ABI_TYPE_ARRAY:
+  case ABI_TYPE_MEMBER_POINTER:
+  case ABI_TYPE_FUNCTION: {
+    string payload = to_string(static_cast<int>(type.kind));
+    payload += ':';
+    payload += type.name;
+    payload += ':';
+    payload += to_string(static_cast<int>(type.vendor_qualifier));
+    payload += ':';
+    payload += type.array_bound;
+    for(size_t i = 0; i < type.child_types.size(); ++i) {
+      DirectSubstitutionKey child_key;
+      if(!direct_type_key(ctx, type.child_types[i], child_key)) {
+        child_key = direct_key(string("inline-type:") +
+                               to_string(static_cast<int>(type.child_types[i].kind)) +
+                               ":" + type.child_types[i].name + ":" +
+                               type.child_types[i].reference);
+      }
+      payload += '[' + child_key.value + ']';
+    }
+    out = direct_key(payload);
+    return true;
+  }
+  case ABI_TYPE_NAMED:
+    out = direct_key(string("named:") + type.name);
+    return true;
+  case ABI_TYPE_CLASS_TEMPLATE:
+  case ABI_TYPE_STD_CLASS_TEMPLATE:
+  case ABI_TYPE_MEMBER_CLASS_TEMPLATE: {
+    string payload = string("class-template:") + type.name;
+    for(size_t i = 0; i < type.template_argument_references.size(); ++i) {
+      map<string, AbiTemplateArg>::const_iterator found =
+          ctx.args.find(type.template_argument_references[i]);
+      if(found == ctx.args.end()) {
+        return false;
+      }
+      DirectSubstitutionKey arg_key;
+      if(!direct_template_arg_key(ctx, found->second, arg_key)) {
+        return false;
+      }
+      payload += '[' + arg_key.value + ']';
+    }
+    if(!type.child_types.empty()) {
+      DirectSubstitutionKey owner_key;
+      if(direct_type_key(ctx, type.child_types[0], owner_key)) {
+        payload += ":owner:" + owner_key.value;
+      }
+    }
+    out = direct_key(payload);
+    return true;
+  }
+  case ABI_TYPE_MEMBER_TYPE: {
+    DirectSubstitutionKey owner_key;
+    if(type.child_types.empty() ||
+       !direct_type_key(ctx, type.child_types[0], owner_key)) {
+      return false;
+    }
+    out = direct_key(string("member-type:") + owner_key.value + ":" + type.name);
+    return true;
+  }
+  case ABI_TYPE_DECLTYPE:
+    out = direct_key(string("decltype:") + type.expression_reference);
+    return true;
+  case ABI_TYPE_LAMBDA_CLOSURE:
+  case ABI_TYPE_LOCAL_TYPE:
+    out = direct_key(string("local-type:") + type.context_reference + ":" +
+                     type.source_name + ":" + type.discriminator);
+    return true;
+  }
+  return false;
+}
+
+bool direct_expression_key(const DirectFactContext & ctx,
+                           const AbiDependentExpr & expr,
+                           DirectSubstitutionKey & out)
+{
+  const string operator_word =
+      expr.expression_operator == ABI_EXPR_OP_INVALID ?
+      string() : word_from_expression_operator(expr.expression_operator);
+  string payload = string("expr:") + to_string(static_cast<int>(expr.kind)) +
+                   ":" + to_string(expr.index) + ":" + expr.literal + ":" +
+                   operator_word + ":" + expr.first_reference + ":" +
+                   expr.second_reference +
+                   ":" + expr.third_reference + ":" + expr.member_name + ":" +
+                   expr.entity_reference;
+  if(expr.kind == ABI_EXPR_MEMBER) {
+    DirectSubstitutionKey owner_key;
+    if(!direct_type_key(ctx, expr.owner_type, owner_key)) {
+      return false;
+    }
+    payload += ":owner:" + owner_key.value;
+  }
+  out = direct_key(payload);
+  return true;
+}
+
+bool direct_template_arg_key(const DirectFactContext & ctx,
+                             const AbiTemplateArg & arg,
+                             DirectSubstitutionKey & out)
+{
+  switch(arg.kind) {
+  case ABI_TEMPLATE_ARG_TYPE: {
+    DirectSubstitutionKey type_key;
+    if(!direct_type_key(ctx, arg.type, type_key)) {
+      return false;
+    }
+    out = direct_key(string("arg-type:") + type_key.value);
+    return true;
+  }
+  case ABI_TEMPLATE_ARG_INTEGRAL_VALUE: {
+    DirectSubstitutionKey type_key;
+    if(!direct_type_key(ctx, arg.type, type_key)) {
+      return false;
+    }
+    out = direct_key(string("arg-value:") + type_key.value + ":" +
+                     to_string(arg.integer_value));
+    return true;
+  }
+  case ABI_TEMPLATE_ARG_UNTYPED_INTEGRAL_VALUE:
+    out = direct_key(string("arg-untyped-value:") +
+                     to_string(arg.integer_value));
+    return true;
+  case ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION: {
+    map<string, AbiDependentExpr>::const_iterator found =
+        ctx.exprs.find(arg.expression_reference);
+    if(found == ctx.exprs.end()) {
+      return false;
+    }
+    DirectSubstitutionKey expr_key;
+    if(!direct_expression_key(ctx, found->second, expr_key)) {
+      return false;
+    }
+    out = direct_key(string("arg-expression:") + expr_key.value);
+    return true;
+  }
+  case ABI_TEMPLATE_ARG_ENTITY_ADDRESS:
+  case ABI_TEMPLATE_ARG_ENTITY_REFERENCE:
+    out = direct_key(string("arg-entity:") +
+                     (arg.kind == ABI_TEMPLATE_ARG_ENTITY_ADDRESS ? "address:" :
+                                                                    "reference:") +
+                     arg.entity_reference);
+    return true;
+  case ABI_TEMPLATE_ARG_PACK: {
+    string payload = "arg-pack:";
+    for(size_t i = 0; i < arg.pack_argument_references.size(); ++i) {
+      map<string, AbiTemplateArg>::const_iterator found =
+          ctx.args.find(arg.pack_argument_references[i]);
+      if(found == ctx.args.end()) {
+        return false;
+      }
+      DirectSubstitutionKey item_key;
+      if(!direct_template_arg_key(ctx, found->second, item_key)) {
+        return false;
+      }
+      payload += '[' + item_key.value + ']';
+    }
+    out = direct_key(payload);
+    return true;
+  }
+  }
+  return false;
+}
+
+bool direct_emit_type(const DirectFactContext & ctx,
+                      DirectEncoder & encoder,
+                      const AbiType & type,
+                      string & out);
+bool direct_emit_template_arg(const DirectFactContext & ctx,
+                              DirectEncoder & encoder,
+                              const AbiTemplateArg & arg,
+                              string & out);
+bool direct_emit_expression_body(const DirectFactContext & ctx,
+                                 DirectEncoder & encoder,
+                                 const AbiDependentExpr & expr,
+                                 string & out);
+bool direct_emit_function_path_encoding(const DirectFactContext & ctx,
+                                        DirectEncoder & encoder,
+                                        const AbiFunctionPath & path,
+                                        string & out);
+
+bool direct_emit_prefix_component(DirectEncoder & encoder,
+                                  const vector<string> & parts,
+                                  size_t index,
+                                  string & out)
+{
+  if(index == 0 && parts[index] == "std") {
+    out += "St";
+    return true;
+  }
+  const string qualified = direct_join_key_parts(
+      vector<string>(parts.begin(), parts.begin() + index + 1));
+  const DirectSubstitutionKey key = direct_key(string("name:") + qualified);
+  if(direct_emit_substitution(encoder, key, out)) {
+    return true;
+  }
+  if(!direct_emit_source_name(parts[index], out)) {
+    return false;
+  }
+  direct_register_substitution(encoder, key);
+  return true;
+}
+
+bool direct_emit_template_args(const DirectFactContext & ctx,
+                               DirectEncoder & encoder,
+                               const vector<string> & refs,
+                               string & out)
+{
+  out += 'I';
+  for(size_t i = 0; i < refs.size(); ++i) {
+    map<string, AbiTemplateArg>::const_iterator found = ctx.args.find(refs[i]);
+    if(found == ctx.args.end()) {
+      throw logic_error("unknown ABI fact template argument reference '" +
+                        refs[i] + "'");
+    }
+    if(!direct_emit_template_arg(ctx, encoder, found->second, out)) {
+      return false;
+    }
+  }
+  out += 'E';
+  return true;
+}
+
+bool direct_emit_qualified_source_name(DirectEncoder & encoder,
+                                       const string & qualified_name,
+                                       const vector<string> & template_arg_refs,
+                                       const DirectFactContext & ctx,
+                                       string & out)
+{
+  const vector<string> parts = split_qualified_name(qualified_name);
+  const bool direct_std = parts.size() == 2 && parts[0] == "std";
+  const bool nested = parts.size() > 1 && !direct_std;
+  if(direct_std) {
+    out += "St";
+  } else if(nested) {
+    out += 'N';
+    for(size_t i = 0; i + 1 < parts.size(); ++i) {
+      if(!direct_emit_prefix_component(encoder, parts, i, out)) {
+        return false;
+      }
+    }
+  }
+  if(!direct_emit_source_name(parts.back(), out)) {
+    return false;
+  }
+  if(!template_arg_refs.empty()) {
+    if(!direct_emit_template_args(ctx, encoder, template_arg_refs, out)) {
+      return false;
+    }
+  }
+  if(nested) {
+    out += 'E';
+  }
+  return true;
+}
+
+bool direct_emit_type_body(const DirectFactContext & ctx,
+                           DirectEncoder & encoder,
+                           const AbiType & input,
+                           string & out)
+{
+  AbiType builtin_storage;
+  const AbiType & type = direct_resolve_type_ref(ctx, input, builtin_storage);
+  switch(type.kind) {
+  case ABI_TYPE_REFERENCE:
+    return false;
+  case ABI_TYPE_BUILTIN: {
+    string code;
+    if(!direct_builtin_code_from_type(type, code)) {
+      return false;
+    }
+    out += code;
+    return true;
+  }
+  case ABI_TYPE_TEMPLATE_PARAMETER:
+    out += 'T';
+    if(type.template_parameter_index > 0) {
+      out += to_string(type.template_parameter_index - 1);
+    }
+    out += '_';
+    return true;
+  case ABI_TYPE_POINTER:
+    if(type.child_types.size() != 1) { return false; }
+    out += 'P';
+    return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_LVALUE_REFERENCE:
+    if(type.child_types.size() != 1) { return false; }
+    out += 'R';
+    return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_RVALUE_REFERENCE:
+    if(type.child_types.size() != 1) { return false; }
+    out += 'O';
+    return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_CONST:
+    if(type.child_types.size() != 1) { return false; }
+    out += 'K';
+    return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_VOLATILE:
+    if(type.child_types.size() != 1) { return false; }
+    out += 'V';
+    return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_VENDOR_QUALIFIED:
+    if(type.child_types.size() != 1 || type.vendor_qualifier == ABI_VENDOR_QUALIFIER_NONE) {
+      return false;
+    }
+    out += 'U';
+    if(type.vendor_qualifier == ABI_VENDOR_QUALIFIER_ATOMIC) {
+      if(!direct_emit_source_name("_Atomic", out)) { return false; }
+    }
+    return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_PACK_EXPANSION:
+    if(type.child_types.size() != 1) { return false; }
+    out += "Dp";
+    return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_ARRAY:
+    if(type.child_types.size() != 1) { return false; }
+    out += 'A';
+    out += type.array_bound;
+    out += '_';
+    return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_FUNCTION:
+    if(type.child_types.empty()) { return false; }
+    out += 'F';
+    if(!direct_emit_type(ctx, encoder, type.child_types[0], out)) {
+      return false;
+    }
+    if(type.child_types.size() == 1) {
+      out += 'v';
+    } else {
+      for(size_t i = 1; i < type.child_types.size(); ++i) {
+        if(!direct_emit_type(ctx, encoder, type.child_types[i], out)) {
+          return false;
+        }
+      }
+    }
+    out += 'E';
+    return true;
+  case ABI_TYPE_MEMBER_POINTER:
+    if(type.child_types.size() != 2) { return false; }
+    out += 'M';
+    return direct_emit_type(ctx, encoder, type.child_types[0], out) &&
+           direct_emit_type(ctx, encoder, type.child_types[1], out);
+  case ABI_TYPE_NAMED:
+    return direct_emit_qualified_source_name(encoder,
+                                             type.name,
+                                             vector<string>(),
+                                             ctx,
+                                             out);
+  case ABI_TYPE_CLASS_TEMPLATE:
+  case ABI_TYPE_STD_CLASS_TEMPLATE:
+    if(type.kind == ABI_TYPE_STD_CLASS_TEMPLATE &&
+       !type.std_substitution.empty()) {
+      out += type.std_substitution;
+      if(type.std_substitution_includes_template_arguments) {
+        return true;
+      }
+      return direct_emit_template_args(ctx,
+                                       encoder,
+                                       type.template_argument_references,
+                                       out);
+    }
+    return direct_emit_qualified_source_name(encoder,
+                                             type.name,
+                                             type.template_argument_references,
+                                             ctx,
+                                             out);
+  case ABI_TYPE_MEMBER_TYPE:
+  case ABI_TYPE_MEMBER_CLASS_TEMPLATE: {
+    if(type.child_types.size() != 1) {
+      return false;
+    }
+    string owner;
+    if(!direct_emit_type(ctx, encoder, type.child_types[0], owner)) {
+      return false;
+    }
+    out += 'N';
+    if(owner.size() >= 2 && owner[0] == 'N' && owner[owner.size() - 1] == 'E') {
+      out += owner.substr(1, owner.size() - 2);
+    } else {
+      out += owner;
+    }
+    if(!direct_emit_source_name(type.name, out)) {
+      return false;
+    }
+    if(type.kind == ABI_TYPE_MEMBER_CLASS_TEMPLATE &&
+       !direct_emit_template_args(ctx,
+                                  encoder,
+                                  type.template_argument_references,
+                                  out)) {
+      return false;
+    }
+    out += 'E';
+    return true;
+  }
+  case ABI_TYPE_DECLTYPE: {
+    map<string, AbiDependentExpr>::const_iterator found =
+        ctx.exprs.find(type.expression_reference);
+    if(found == ctx.exprs.end()) {
+      throw logic_error("unknown ABI fact expression reference '" +
+                        type.expression_reference + "'");
+    }
+    out += "DT";
+    if(!direct_emit_expression_body(ctx, encoder, found->second, out)) {
+      return false;
+    }
+    out += 'E';
+    return true;
+  }
+  case ABI_TYPE_LAMBDA_CLOSURE:
+  case ABI_TYPE_LOCAL_TYPE: {
+    map<string, DirectLocalContext>::const_iterator found =
+        ctx.contexts.find(type.context_reference);
+    if(found == ctx.contexts.end()) {
+      throw logic_error("unknown ABI fact local context reference '" +
+                        type.context_reference + "'");
+    }
+    out += 'Z';
+    if(!direct_emit_function_path_encoding(ctx, encoder, found->second.function, out)) {
+      return false;
+    }
+    out += 'E';
+    if(type.kind == ABI_TYPE_LOCAL_TYPE) {
+      return direct_emit_source_name(type.source_name, out);
+    }
+    out += "Ul";
+    if(type.child_types.empty()) {
+      out += 'v';
+    } else {
+      for(size_t i = 0; i < type.child_types.size(); ++i) {
+        if(!direct_emit_type(ctx, encoder, type.child_types[i], out)) {
+          return false;
+        }
+      }
+    }
+    out += 'E';
+    out += type.discriminator;
+    out += '_';
+    return true;
+  }
+  }
+  return false;
+}
+
+bool direct_emit_type(const DirectFactContext & ctx,
+                      DirectEncoder & encoder,
+                      const AbiType & type,
+                      string & out)
+{
+  DirectSubstitutionKey key;
+  const bool has_key = direct_type_key(ctx, type, key);
+  if(has_key && direct_emit_substitution(encoder, key, out)) {
+    return true;
+  }
+  const size_t begin = out.size();
+  if(!direct_emit_type_body(ctx, encoder, type, out)) {
+    out.resize(begin);
+    return false;
+  }
+  if(has_key) {
+    direct_register_substitution(encoder, key);
+  }
+  return true;
+}
+
+string direct_terminal_code(AbiFunctionTerminal terminal)
+{
+  switch(terminal) {
+  case ABI_FUNCTION_TERMINAL_OPERATOR_CALL:
+    return "cl";
+  case ABI_FUNCTION_TERMINAL_OPERATOR_ASSIGN:
+    return "aS";
+  case ABI_FUNCTION_TERMINAL_CONSTRUCTOR_COMPLETE:
+    return "C1";
+  case ABI_FUNCTION_TERMINAL_CONSTRUCTOR_BASE:
+    return "C2";
+  case ABI_FUNCTION_TERMINAL_DESTRUCTOR_COMPLETE:
+    return "D1";
+  case ABI_FUNCTION_TERMINAL_DESTRUCTOR_BASE:
+    return "D2";
+  case ABI_FUNCTION_TERMINAL_DESTRUCTOR_DELETING:
+    return "D0";
+  case ABI_FUNCTION_TERMINAL_SOURCE_NAME:
+    break;
+  }
+  return string();
+}
+
+bool direct_emit_function_name_path(const DirectFactContext & ctx,
+                                    DirectEncoder & encoder,
+                                    const string & qualified_name,
+                                    const vector<string> & template_arg_refs,
+                                    string & out)
+{
+  const vector<string> parts = split_qualified_name(qualified_name);
+  const bool direct_std = parts.size() == 2 && parts[0] == "std";
+  const bool nested = parts.size() > 1 && !direct_std;
+  if(direct_std) {
+    out += "St";
+  } else if(nested) {
+    out += 'N';
+    for(size_t i = 0; i + 1 < parts.size(); ++i) {
+      if(!direct_emit_prefix_component(encoder, parts, i, out)) {
+        return false;
+      }
+    }
+  }
+  if(!direct_emit_source_name(parts.back(), out)) {
+    return false;
+  }
+  if(!template_arg_refs.empty()) {
+    direct_register_substitution(
+        encoder,
+        direct_key(string("function-template-prefix:") + qualified_name));
+    if(!direct_emit_template_args(ctx, encoder, template_arg_refs, out)) {
+      return false;
+    }
+  }
+  if(nested) {
+    out += 'E';
+  }
+  return true;
+}
+
+bool direct_emit_function_path_encoding(const DirectFactContext & ctx,
+                                        DirectEncoder & encoder,
+                                        const AbiFunctionPath & path,
+                                        string & out)
+{
+  if(!direct_emit_function_name_path(ctx,
+                                     encoder,
+                                     path.qualified_name,
+                                     path.template_argument_references,
+                                     out)) {
+    return false;
+  }
+  if(path.has_result_type &&
+     !direct_emit_type(ctx, encoder, path.result_type, out)) {
+    return false;
+  }
+  if(path.parameter_types.empty()) {
+    out += 'v';
+  } else {
+    for(size_t i = 0; i < path.parameter_types.size(); ++i) {
+      if(!direct_emit_type(ctx, encoder, path.parameter_types[i], out)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+string direct_function_path_symbol(const DirectFactContext & ctx,
+                                   const AbiFunctionPath & path)
+{
+  DirectEncoder encoder;
+  string out = "_Z";
+  if(!direct_emit_function_path_encoding(ctx, encoder, path, out)) {
+    throw logic_error("unable to encode ABI fact function entity");
+  }
+  return out;
+}
+
+string direct_variable_symbol(const string & qualified_name)
+{
+  DirectFactContext empty_ctx;
+  DirectEncoder encoder;
+  string out = "_Z";
+  if(!direct_emit_function_name_path(empty_ctx,
+                                     encoder,
+                                     qualified_name,
+                                     vector<string>(),
+                                     out)) {
+    throw logic_error("unable to encode ABI fact variable entity");
+  }
+  return out;
+}
+
+string direct_entity_symbol(const DirectFactContext & ctx,
+                            const AbiEntity & entity)
+{
+  if(entity.kind == ABI_ENTITY_FUNCTION) {
+    return direct_function_path_symbol(ctx, entity.function);
+  }
+  return direct_variable_symbol(entity.qualified_name);
+}
+
+bool direct_emit_expression_body(const DirectFactContext & ctx,
+                                 DirectEncoder & encoder,
+                                 const AbiDependentExpr & expr,
+                                 string & out)
+{
+  switch(expr.kind) {
+  case ABI_EXPR_TEMPLATE_PARAMETER:
+    out += 'T';
+    if(expr.index > 0) {
+      out += to_string(expr.index - 1);
+    }
+    out += '_';
+    return true;
+  case ABI_EXPR_FUNCTION_PARAMETER:
+    out += "fp";
+    if(expr.index > 0) {
+      out += to_string(expr.index - 1);
+    }
+    out += '_';
+    return true;
+  case ABI_EXPR_LITERAL:
+    out += "Li";
+    out += expr.literal;
+    out += 'E';
+    return true;
+  case ABI_EXPR_UNARY:
+    out += word_from_expression_operator(expr.expression_operator);
+    return direct_emit_expression_body(ctx,
+                                       encoder,
+                                       ctx.exprs.find(expr.first_reference)->second,
+                                       out);
+  case ABI_EXPR_BINARY:
+    out += word_from_expression_operator(expr.expression_operator);
+    return direct_emit_expression_body(ctx,
+                                       encoder,
+                                       ctx.exprs.find(expr.first_reference)->second,
+                                       out) &&
+           direct_emit_expression_body(ctx,
+                                       encoder,
+                                       ctx.exprs.find(expr.second_reference)->second,
+                                       out);
+  case ABI_EXPR_CONDITIONAL:
+    out += "qu";
+    return direct_emit_expression_body(ctx,
+                                       encoder,
+                                       ctx.exprs.find(expr.first_reference)->second,
+                                       out) &&
+           direct_emit_expression_body(ctx,
+                                       encoder,
+                                       ctx.exprs.find(expr.second_reference)->second,
+                                       out) &&
+           direct_emit_expression_body(ctx,
+                                       encoder,
+                                       ctx.exprs.find(expr.third_reference)->second,
+                                       out);
+  case ABI_EXPR_MEMBER:
+    out += "sr";
+    if(!direct_emit_type(ctx, encoder, expr.owner_type, out)) {
+      return false;
+    }
+    if(expr.close_template_arguments) {
+      out += 'E';
+    }
+    return direct_emit_source_name(expr.member_name, out);
+  case ABI_EXPR_ENTITY_ADDRESS:
+  case ABI_EXPR_ENTITY_REFERENCE: {
+    map<string, AbiEntity>::const_iterator found =
+        ctx.entities.find(expr.entity_reference);
+    if(found == ctx.entities.end()) {
+      throw logic_error("unknown ABI fact entity reference '" +
+                        expr.entity_reference + "'");
+    }
+    out += expr.kind == ABI_EXPR_ENTITY_ADDRESS ? "adL" : "L";
+    out += direct_entity_symbol(ctx, found->second);
+    out += 'E';
+    if(expr.kind == ABI_EXPR_ENTITY_ADDRESS) {
+      out += 'E';
+    }
+    return true;
+  }
+  }
+  return false;
+}
+
+bool direct_emit_template_arg(const DirectFactContext & ctx,
+                              DirectEncoder & encoder,
+                              const AbiTemplateArg & arg,
+                              string & out)
+{
+  switch(arg.kind) {
+  case ABI_TEMPLATE_ARG_TYPE:
+    return direct_emit_type(ctx, encoder, arg.type, out);
+  case ABI_TEMPLATE_ARG_INTEGRAL_VALUE:
+    out += 'L';
+    if(!direct_emit_type(ctx, encoder, arg.type, out)) {
+      return false;
+    }
+    out += to_string(arg.integer_value);
+    out += 'E';
+    return true;
+  case ABI_TEMPLATE_ARG_UNTYPED_INTEGRAL_VALUE:
+    out += "Li";
+    out += to_string(arg.integer_value);
+    out += 'E';
+    return true;
+  case ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION: {
+    map<string, AbiDependentExpr>::const_iterator found =
+        ctx.exprs.find(arg.expression_reference);
+    if(found == ctx.exprs.end()) {
+      throw logic_error("unknown ABI fact expression reference '" +
+                        arg.expression_reference + "'");
+    }
+    out += 'X';
+    if(!direct_emit_expression_body(ctx, encoder, found->second, out)) {
+      return false;
+    }
+    out += 'E';
+    return true;
+  }
+  case ABI_TEMPLATE_ARG_ENTITY_ADDRESS:
+  case ABI_TEMPLATE_ARG_ENTITY_REFERENCE: {
+    map<string, AbiEntity>::const_iterator found =
+        ctx.entities.find(arg.entity_reference);
+    if(found == ctx.entities.end()) {
+      throw logic_error("unknown ABI fact entity reference '" +
+                        arg.entity_reference + "'");
+    }
+    out += arg.kind == ABI_TEMPLATE_ARG_ENTITY_ADDRESS ? "XadL" : "L";
+    out += direct_entity_symbol(ctx, found->second);
+    out += 'E';
+    if(arg.kind == ABI_TEMPLATE_ARG_ENTITY_ADDRESS) {
+      out += 'E';
+    }
+    return true;
+  }
+  case ABI_TEMPLATE_ARG_PACK:
+    out += 'J';
+    for(size_t i = 0; i < arg.pack_argument_references.size(); ++i) {
+      map<string, AbiTemplateArg>::const_iterator found =
+          ctx.args.find(arg.pack_argument_references[i]);
+      if(found == ctx.args.end()) {
+        throw logic_error("unknown ABI fact template argument reference '" +
+                          arg.pack_argument_references[i] + "'");
+      }
+      if(!direct_emit_template_arg(ctx, encoder, found->second, out)) {
+        return false;
+      }
+    }
+    out += 'E';
+    return true;
+  }
+  return false;
+}
+
+void direct_apply_fact(DirectFactContext & ctx, const AbiFact & fact)
+{
+  switch(fact.kind) {
+  case ABI_FACT_TYPE:
+    ctx.types[fact.id] = fact.type;
+    return;
+  case ABI_FACT_TEMPLATE_ARGUMENT:
+    ctx.args[fact.id] = fact.template_argument;
+    return;
+  case ABI_FACT_EXPRESSION:
+    ctx.exprs[fact.id] = fact.expression;
+    return;
+  case ABI_FACT_LOCAL_CONTEXT: {
+    DirectLocalContext context;
+    context.function = fact.context_function;
+    ctx.contexts[fact.id] = context;
+    return;
+  }
+  case ABI_FACT_ENTITY:
+    ctx.entities[fact.id] = fact.entity;
+    return;
+  }
+}
+
+string direct_emit_function_symbol(const DirectFactContext & ctx,
+                                   const AbiFunction & function)
+{
+  DirectEncoder encoder;
+  string out = "_Z";
+  if(function.form == ABI_FUNCTION_PATH) {
+    AbiFunctionPath path;
+    path.qualified_name = function.qualified_name;
+    path.template_argument_references = function.template_argument_references;
+    path.has_result_type = function.has_result_type;
+    path.result_type = function.result_type;
+    path.parameter_types = function.parameter_types;
+    if(!direct_emit_function_path_encoding(ctx, encoder, path, out)) {
+      throw logic_error("unable to encode ABI fact function");
+    }
+    return out;
+  }
+
+  map<string, DirectLocalContext>::const_iterator found =
+      ctx.contexts.find(function.context_reference);
+  if(found == ctx.contexts.end()) {
+    throw logic_error("unknown ABI fact local context reference '" +
+                      function.context_reference + "'");
+  }
+  out += 'Z';
+  if(!direct_emit_function_path_encoding(ctx, encoder, found->second.function, out)) {
+    throw logic_error("unable to encode ABI fact function context");
+  }
+  out += 'E';
+  if(function.form == ABI_FUNCTION_LAMBDA) {
+    out += 'N';
+    out += "Ul";
+    if(function.lambda_signature_parameter_types.empty()) {
+      out += 'v';
+    } else {
+      for(size_t i = 0; i < function.lambda_signature_parameter_types.size(); ++i) {
+        if(!direct_emit_type(ctx,
+                             encoder,
+                             function.lambda_signature_parameter_types[i],
+                             out)) {
+          throw logic_error("unable to encode ABI fact lambda signature");
+        }
+      }
+    }
+    out += 'E';
+    out += function.discriminator;
+    out += '_';
+    out += direct_terminal_code(function.terminal);
+    out += 'E';
+  } else {
+    out += 'N';
+    if(!direct_emit_source_name(function.source_name, out)) {
+      throw logic_error("unable to encode ABI fact local function name");
+    }
+    out += direct_terminal_code(function.terminal);
+    out += 'E';
+  }
+  if(function.has_result_type &&
+     !direct_emit_type(ctx, encoder, function.result_type, out)) {
+    throw logic_error("unable to encode ABI fact result type");
+  }
+  if(function.parameter_types.empty()) {
+    out += 'v';
+  } else {
+    for(size_t i = 0; i < function.parameter_types.size(); ++i) {
+      if(!direct_emit_type(ctx, encoder, function.parameter_types[i], out)) {
+        throw logic_error("unable to encode ABI fact parameter type");
+      }
+    }
+  }
+  return out;
+}
+
+string direct_emit_type_encoding(const DirectFactContext & ctx,
+                                 const AbiType & type)
+{
+  DirectEncoder encoder;
+  string out;
+  if(!direct_emit_type(ctx, encoder, type, out)) {
+    throw logic_error("ABI model mangler failed to encode fact type");
+  }
+  return out;
+}
+
 string mangle_case(const AbiFactCase & fact_case)
 {
   if(fact_case.facts.empty() && fact_case.target.kind == ABI_MANGLE_NONE) {
     throw logic_error("empty ABI fact case");
   }
-  FactContext ctx;
+  DirectFactContext ctx;
   for(size_t i = 0; i < fact_case.facts.size(); ++i) {
-    apply_fact(ctx, fact_case.facts[i]);
+    direct_apply_fact(ctx, fact_case.facts[i]);
   }
 
   switch(fact_case.target.kind) {
   case ABI_MANGLE_TYPE:
-    return emit_type_encoding(ctx, fact_case.target.type);
+    return direct_emit_type_encoding(ctx, fact_case.target.type);
   case ABI_MANGLE_FUNCTION:
     if(fact_case.target.function.c_linkage) {
       return unqualified_name(fact_case.target.function.qualified_name);
     }
-    return emit_fact_function_symbol(
-        lower_function_target(ctx, fact_case.target.function));
+    return direct_emit_function_symbol(ctx, fact_case.target.function);
   case ABI_MANGLE_VARIABLE:
     if(fact_case.target.c_linkage) {
       return unqualified_name(fact_case.target.qualified_name);
     }
-    return emit_fact_variable_symbol(fact_case.target.qualified_name);
+    return direct_variable_symbol(fact_case.target.qualified_name);
   case ABI_MANGLE_TYPEINFO:
-    return "_ZTI" + emit_type_encoding(ctx, fact_case.target.type);
+    return "_ZTI" + direct_emit_type_encoding(ctx, fact_case.target.type);
   case ABI_MANGLE_VTABLE:
-    return "_ZTV" + emit_type_encoding(ctx, fact_case.target.type);
+    return "_ZTV" + direct_emit_type_encoding(ctx, fact_case.target.type);
   case ABI_MANGLE_NONE:
     break;
   }

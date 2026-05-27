@@ -1,6 +1,7 @@
 obj
 *.dSYM
 *.o
+abimangle
 pptoken
 posttoken
 ctrlexpr

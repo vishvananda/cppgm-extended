@@ -37,6 +37,73 @@ assignment list.
 
 ## Implementation Plan
 
+## Typed Model Refactor Plan
+
+The ABI fact model should become the representation consumed by the Itanium
+encoder. The parser may keep a line-oriented syntax, but after parsing the
+implementation must not translate into a second internal ABI IR just to encode
+the result.
+
+The refactor is intentionally staged:
+
+1. Split parsed fact syntax from resolved ABI facts.
+   - The text format can continue to use names such as `T_arg` or `String`.
+   - A resolver should convert those parser IDs into typed handles once.
+   - Encoder entry points should receive only resolved `AbiType`,
+     `AbiTemplateArg`, `AbiDependentExpr`, `AbiEntity`, and `AbiFunction`
+     records.
+
+2. Replace semantic string payloads with enums and typed fields.
+   - Builtin ABI type spellings become `AbiBuiltinType`.
+   - Standard-library substitutions become `AbiStdSubstitution`.
+   - Dependent-expression operator spellings become operator enums.
+   - Function terminals and special names remain typed terminal enums.
+   - Array bounds become typed integer/expression bounds instead of raw
+     encoded text.
+   - Raw strings remain only where the ABI grammar genuinely consumes source
+     spellings: identifiers, ABI tags, discriminators, external raw symbols,
+     and literal values.
+
+3. Replace string references with compact handles in resolved records.
+   - `AbiTypeId`, `AbiTemplateArgId`, `AbiExprId`, `AbiEntityId`, and
+     `AbiContextId` should be stable indexes into resolved vectors.
+   - Parser IDs should not cross into the encoder.
+
+4. Make substitutions typed.
+   - Remove structural string payloads from substitution keys.
+   - Use a tagged `AbiSubstitutionKey` with nested typed keys.
+   - Keep substitution ordering in one `AbiMangleContext` owned by the encoder.
+
+5. Encode directly from the ABI model.
+   - Move type, template-argument, expression, function, and special-name
+     emission onto the ABI records.
+   - `abimangle` and future `cppgm++ --emit-abi-names` should call this same
+     encoder.
+   - The old `itanium_mangle_ir` layer can then be reduced to implementation
+     helpers or removed from the fact tool entirely.
+
+6. Optimize ownership once the representation is direct.
+   - Store resolved records in vectors and pass compact IDs or const
+     references.
+   - Avoid copying type/template vectors while resolving facts.
+   - Move parsed vectors into resolved records where no later serialization
+     needs the original object.
+
+7. Migrate production compiler callers incrementally.
+   - First add semantic-to-ABI-model builders beside the existing
+     `symbol_linkage` lowering path.
+   - Compare outputs for focused PA31/PA32 cases.
+   - Then switch symbol generation to the ABI model and delete the duplicate
+     direct `itanium_mangle_ir` construction.
+
+The first implementation slice in this branch makes `abimangle` encode from
+the ABI fact records directly, replacing stringly opcode/builtin fields where
+the current tests expose them. The larger `symbol_linkage` migration should be
+done as follow-up slices so each semantic mangling regression remains
+bisectable. Parser IDs and substitution keys may still use private strings
+inside the reference tool, but those details should not become part of the
+student-facing `abi_mangle.h` scaffold.
+
 ### Step 1: Standalone ABI Model
 
 Add a small typed ABI naming library under `dev/src/`, likely split as:
