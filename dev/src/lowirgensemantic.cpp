@@ -10241,6 +10241,14 @@ private:
     return emit_temp_assignment("ptr", string("addr ") + storage);
   }
 
+  string emit_lvalue_storage_operand_address(const string & storage)
+  {
+    if(!storage.empty() && (storage[0] == '$' || storage[0] == '@')) {
+      return emit_storage_address(storage);
+    }
+    return storage;
+  }
+
   string emit_normalized_truthy(const CallSemNode & node)
   {
     const string value = emit_rvalue(node);
@@ -11222,17 +11230,20 @@ private:
       }
       if(callsem_has_token(node, OP_INC) || callsem_has_token(node, OP_DEC)) {
         const string memory_type = lowir_lvalue_memory_type(node.children[0]);
-        const string old_value = is_bit_field_member_expression(node.children[0]) ?
+        const bool bit_field_member = is_bit_field_member_expression(node.children[0]);
+        const string target = bit_field_member ?
+            string() :
+            emit_lvalue_storage(node.children[0]);
+        const string old_value = bit_field_member ?
             emit_bit_field_rvalue(node.children[0]) :
             emit_temp_assignment(memory_type,
                                  string("load ") + memory_type + " " +
-                                 emit_lvalue_storage(node.children[0]));
+                                 target);
         const string next_value =
             emit_incdec_next_value(node, memory_type, old_value);
-        if(is_bit_field_member_expression(node.children[0])) {
+        if(bit_field_member) {
           emit_store_to_bit_field(node.children[0], next_value);
         } else {
-          const string target = emit_lvalue_storage(node.children[0]);
           emit_line("store " + memory_type + " " + next_value +
                     ", " + target);
         }
@@ -12608,15 +12619,18 @@ private:
        (callsem_has_token(node, OP_INC) || callsem_has_token(node, OP_DEC)) &&
        node.value_category == CVC_LVALUE) {
       const string memory_type = lowir_lvalue_memory_type(node.children[0]);
-      const string old_value = is_bit_field_member_expression(node.children[0]) ?
+      const bool bit_field_member = is_bit_field_member_expression(node.children[0]);
+      const string target = bit_field_member ?
+          string() :
+          emit_lvalue_storage(node.children[0]);
+      const string old_value = bit_field_member ?
           emit_bit_field_rvalue(node.children[0]) :
           emit_temp_assignment(memory_type,
                                string("load ") + memory_type + " " +
-                               emit_lvalue_storage(node.children[0]));
+                               target);
       const string next_value =
           emit_incdec_next_value(node, memory_type, old_value);
-      const string target = emit_lvalue_storage(node.children[0]);
-      if(is_bit_field_member_expression(node.children[0])) {
+      if(bit_field_member) {
         emit_store_to_bit_field(node.children[0], next_value);
       } else {
         const string debug_name = direct_local_debug_name(node.children[0]);
@@ -12627,7 +12641,8 @@ private:
                                                               next_value);
         emit_line("store " + memory_type + " " + stored_value + ", " + target);
       }
-      return target;
+      return bit_field_member ? emit_lvalue_address(node.children[0]) :
+                                emit_lvalue_storage_operand_address(target);
     }
 
     ostringstream out;
