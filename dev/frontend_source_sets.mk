@@ -5,24 +5,7 @@ FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro prepro
 
 # abimangle: shared object(s)
 FRONTEND_OBJ_BASENAMES_abimangle := \
-	abi_mangle \
-	cpp_decl_bridge \
-	cpp_decl_model \
-	encoding \
-	host_builtin_runtime \
-	pack_parameter_analysis \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	qualified_name_parser \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	semantic_utils \
-	source_location \
-	template_angle_parser \
-	text_intern \
-	types
+	abi_mangle
 
 # pptoken: 2 shared object(s)
 FRONTEND_OBJ_BASENAMES_pptoken := \

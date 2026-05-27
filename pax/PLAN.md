@@ -99,11 +99,18 @@ The refactor is intentionally staged:
 The implementation slice in this branch makes `abimangle` encode from the ABI
 fact records directly, replacing stringly builtin, vendor qualifier,
 standard-substitution, dependent-operator, and array-bound fields where the
-current tests expose them. The fact encoder also checks references before use
-and emits member-owner prefixes structurally instead of slicing encoded owner
-strings. Parser IDs remain only as fact-file linking syntax; future source
-integration should lower directly into the same typed records instead of
-constructing or reparsing those fact IDs.
+current tests expose them. The fact encoder also checks references before use,
+emits member-owner prefixes structurally instead of slicing encoded owner
+strings, and compares typed substitution keys instead of serialized structural
+payloads. Parser IDs remain only as fact-file linking syntax; substitution
+identity is derived from the resolved type, template-argument,
+dependent-expression, entity, and function-path records. Future source
+integration should lower semantic declarations directly into equivalent typed
+records instead of constructing or reparsing fact IDs.
+
+The standalone `abimangle` target is now intentionally narrow: it links only
+the ABI naming layer and the CLI entrypoint. It does not depend on the parser,
+recognizer, tokenizer, semantic model, or host runtime helpers.
 
 The larger `symbol_linkage` migration should be done as follow-up slices so
 each semantic mangling regression remains bisectable.
