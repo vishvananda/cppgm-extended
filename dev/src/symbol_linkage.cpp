@@ -111,11 +111,14 @@ string thread_local_guard_internal_symbol(const string & variable_internal_symbo
 struct TemplateParameterMangleContext;
 struct TypeMangleContext;
 
-static bool try_mangle_type(const TypePtr & type,
-                            string & out,
-                            const TypeMangleContext * mangle_ctx);
-static bool try_mangle_special_type(const TypePtr & type, string & out);
-static bool try_mangle_named_text(const string & text, string & out);
+static bool try_emit_type_encoding_ir(const TypePtr & type,
+                                      string & out,
+                                      const TypeMangleContext * mangle_ctx);
+static bool try_emit_special_type_encoding_ir(const TypePtr & type, string & out);
+static bool try_emit_qualified_name_encoding_ir(const QualifiedName & qualified,
+                                                string & out);
+static bool try_emit_qualified_name_object_symbol_ir(const QualifiedName & qualified,
+                                                     string & out);
 
 static size_t count_scope_operators(const string & text)
 {
@@ -154,7 +157,7 @@ static bool named_type_should_prefer_key_for_mangling(
 static string special_type_symbol_for_type(const char * prefix, const TypePtr & type)
 {
   string mangled;
-  if(!try_mangle_special_type(type, mangled)) {
+  if(!try_emit_special_type_encoding_ir(type, mangled)) {
     return string();
   }
   return string(prefix) + mangled;
@@ -178,11 +181,17 @@ static string thread_local_wrapper_object_symbol(const string & qualified_name)
   if(qualified_name.compare(0, 2, "_Z") == 0) {
     return string("_ZTW") + qualified_name.substr(2);
   }
-  string out = "_ZTW";
-  if(!try_mangle_named_text(qualified_name, out)) {
+  QualifiedName qualified;
+  if(!semantic_utils::split_qualified_name_text(qualified_name, qualified) ||
+     qualified.rooted ||
+     qualified.name.empty()) {
     return string();
   }
-  return out;
+  string encoding;
+  if(!try_emit_qualified_name_encoding_ir(qualified, encoding)) {
+    return string();
+  }
+  return string("_ZTW") + encoding;
 }
 
 string thread_local_wrapper_object_symbol_from_object_symbol(const string & object_symbol)
@@ -406,8 +415,8 @@ string construction_vtable_object_symbol(const semantic_model::ClassInfo & dynam
 {
   string dynamic_encoding;
   string base_encoding;
-  if(!try_mangle_type(dynamic_class.type, dynamic_encoding, nullptr) ||
-     !try_mangle_type(base_class.type, base_encoding, nullptr)) {
+  if(!try_emit_type_encoding_ir(dynamic_class.type, dynamic_encoding, nullptr) ||
+     !try_emit_type_encoding_ir(base_class.type, base_encoding, nullptr)) {
     return string();
   }
   return string("_ZTC") + dynamic_encoding + to_string(base_offset) + "_" + base_encoding;
@@ -421,25 +430,6 @@ string vtt_object_symbol(const semantic_model::ClassInfo & class_info)
 string vtt_object_symbol_for_type(const TypePtr & type)
 {
   return special_type_symbol_for_type("_ZTT", type);
-}
-
-static vector<string> split_qualified_name(const string & qualified_name)
-{
-  vector<string> parts;
-  size_t start = 0;
-  while(start <= qualified_name.size()) {
-    const size_t split = qualified_name.find("::", start);
-    if(split == string::npos) {
-      parts.push_back(qualified_name.substr(start));
-      break;
-    }
-    parts.push_back(qualified_name.substr(start, split - start));
-    start = split + 2;
-  }
-  if(parts.empty()) {
-    parts.push_back(qualified_name);
-  }
-  return parts;
 }
 
 static string encode_source_name(const string & text)
@@ -859,8 +849,6 @@ struct MangleSubstitutionState
   vector<itanium_mangle_ir::SubstitutionKey> substitution_ir_keys;
   vector<string> substitution_index_log;
   vector<itanium_mangle_ir::SubstitutionKey> ir_substitution_index_log;
-  vector<pair<size_t, itanium_mangle_ir::SubstitutionKey> >
-      substitution_ir_key_update_log;
   size_t checkpoint_depth = 0;
   bool use_entity_substitutions = true;
   bool substitution_capacity_reserved = false;
@@ -877,8 +865,6 @@ struct MangleSubstitutionCheckpoint
             state ? state->substitution_index_log.size() : 0),
         ir_substitution_index_log_size(
             state ? state->ir_substitution_index_log.size() : 0),
-        substitution_ir_key_update_log_size(
-            state ? state->substitution_ir_key_update_log.size() : 0),
         active(state != nullptr)
   {
     if(state) {
@@ -923,18 +909,6 @@ struct MangleSubstitutionCheckpoint
     }
     state->substitution_index_log.resize(substitution_index_log_size);
 
-    for(size_t i = state->substitution_ir_key_update_log.size();
-        i > substitution_ir_key_update_log_size;
-        --i) {
-      const pair<size_t, itanium_mangle_ir::SubstitutionKey> & entry =
-          state->substitution_ir_key_update_log[i - 1];
-      if(entry.first < state->substitution_ir_keys.size()) {
-        state->substitution_ir_keys[entry.first] = entry.second;
-      }
-    }
-    state->substitution_ir_key_update_log.resize(
-        substitution_ir_key_update_log_size);
-
     state->substitution_keys.resize(substitution_keys_size);
     state->substitution_ir_keys.resize(substitution_ir_keys_size);
     if(state->checkpoint_depth > 0) {
@@ -952,7 +926,6 @@ struct MangleSubstitutionCheckpoint
   size_t substitution_ir_keys_size;
   size_t substitution_index_log_size;
   size_t ir_substitution_index_log_size;
-  size_t substitution_ir_key_update_log_size;
   bool active;
 
 private:
@@ -960,10 +933,6 @@ private:
   MangleSubstitutionCheckpoint & operator=(const MangleSubstitutionCheckpoint &);
 };
 
-static bool try_mangle_named_text_impl(const string & text,
-                                       string & out,
-                                       const TypeMangleContext * mangle_ctx,
-                                       MangleSubstitutionState * state);
 static bool try_mangle_builtin_text(const string & trimmed, string & out);
 static bool parse_unary_builtin_type_transform_syntax_text(
     const string & text,
@@ -1073,7 +1042,7 @@ struct TypeMangleContext
   bool suppress_expression_qualifier_template_name_substitution = false;
   bool suppress_member_template_name_component_substitution = false;
   bool suppress_decltype_callee_template_prefix_substitution = false;
-  bool suppress_legacy_type_substitution_keys = false;
+  bool suppress_type_substitution_keys = false;
   bool prefer_source_template_parameter_expression_arguments = false;
 };
 
@@ -1115,6 +1084,18 @@ struct LambdaContextFunctionSymbolOptionsStorage
       } else {
         owner_template_parameters = *source.owner_template_parameters;
         options.owner_template_parameters = &owner_template_parameters;
+      }
+    }
+    if(source.owner_mangle_parameters) {
+      if(source.owner_mangle_parameters == source.template_parameters &&
+         options.template_parameters) {
+        options.owner_mangle_parameters = options.template_parameters;
+      } else if(source.owner_mangle_parameters == source.owner_template_parameters &&
+                options.owner_template_parameters) {
+        options.owner_mangle_parameters = options.owner_template_parameters;
+      } else {
+        owner_mangle_parameters = *source.owner_mangle_parameters;
+        options.owner_mangle_parameters = &owner_mangle_parameters;
       }
     }
     if(source.parameter_pattern) {
@@ -1193,6 +1174,7 @@ struct LambdaContextFunctionSymbolOptionsStorage
   vector<TemplateArgument> template_arguments;
   map<string, size_t> template_argument_pack_sizes;
   vector<TemplateParameterInfo> owner_template_parameters;
+  vector<TemplateParameterInfo> owner_mangle_parameters;
   vector<TemplateArgument> owner_template_arguments;
   vector<pair<string, TypePtr> > parameter_pattern;
   CppAstNode result_type_pattern;
@@ -1211,11 +1193,11 @@ shared_ptr<void> make_lambda_context_function_symbol_options(
   return static_pointer_cast<void>(options_alias);
 }
 
-static bool try_mangle_special_type(const TypePtr & type, string & out)
+static bool try_emit_special_type_encoding_ir(const TypePtr & type, string & out)
 {
   TypeMangleContext mangle_ctx;
   mangle_ctx.prefer_concrete_non_type_values_for_dependent_parameter_types = true;
-  return try_mangle_type(type, out, &mangle_ctx);
+  return try_emit_type_encoding_ir(type, out, &mangle_ctx);
 }
 
 static string template_parameter_type_substitution_key(
@@ -1257,11 +1239,11 @@ static string pack_expansion_type_substitution_key(const string & pattern_key)
   return string("type:pack-expansion(") + pattern_key + ")";
 }
 
-static bool try_mangle_type_impl(const TypePtr & type,
-                                 string & out,
-                                 const TypeMangleContext * mangle_ctx,
-                                 MangleSubstitutionState * state);
-static bool try_mangle_itanium_function_name_syntax(
+static bool try_emit_type_encoding_ir_impl(const TypePtr & type,
+                                           string & out,
+                                           const TypeMangleContext * mangle_ctx,
+                                           MangleSubstitutionState * state);
+static bool try_emit_itanium_function_symbol_ir(
     const QualifiedName & qualified,
     const string & qualified_name_label,
     const string & display_name,
@@ -1269,7 +1251,7 @@ static bool try_mangle_itanium_function_name_syntax(
     const FunctionSymbolOptions & options,
     string & out,
     MangleSubstitutionState * captured_state = nullptr);
-static bool mangle_itanium_function_encoding_with_substitutions(
+static bool emit_itanium_function_encoding_with_substitutions(
     const QualifiedName & qualified_name,
     const string & display_name,
     const TypePtr & type,
@@ -1359,21 +1341,6 @@ static bool try_mangle_template_argument_impl(const TemplateArgument & arg,
                                               MangleSubstitutionState * state,
                                               size_t parameter_index = static_cast<size_t>(-1));
 
-static bool emit_template_component_with_structured_arguments(
-    const string & base_name,
-    const vector<TemplateArgument> & arguments,
-    const vector<TemplateParameterInfo> * parameters,
-    const string & canonical_prefix,
-    string & out,
-    const TypeMangleContext * mangle_ctx,
-    MangleSubstitutionState * state,
-    string * canonical_full_text);
-static bool emit_component_with_substitution_keys(const string & text,
-                                                  const string & canonical_prefix,
-                                                  string & out,
-                                                  const TypeMangleContext * mangle_ctx,
-                                                  MangleSubstitutionState * state,
-                                                  string * canonical_full_text);
 static string function_template_prefix_substitution_key(
     const vector<string> & qualifiers,
     const string & name);
@@ -1494,9 +1461,6 @@ static string encode_substitution_sequence_id(size_t index)
 static bool insert_substitution_index(MangleSubstitutionState * state,
                                       const string & key,
                                       size_t index);
-static bool try_build_ir_key_from_legacy_substitution_key(
-    const string & key,
-    itanium_mangle_ir::SubstitutionKey & out);
 
 static bool emit_registered_substitution(MangleSubstitutionState * state,
                                          const string & key,
@@ -1509,18 +1473,6 @@ static bool emit_registered_substitution(MangleSubstitutionState * state,
   unordered_map<string, size_t>::const_iterator found =
       state->substitution_index.find(key);
   if(found == state->substitution_index.end()) {
-    itanium_mangle_ir::SubstitutionKey ir_key;
-    if(try_build_ir_key_from_legacy_substitution_key(key, ir_key)) {
-      unordered_map<itanium_mangle_ir::SubstitutionKey,
-                    size_t,
-                    MangleSubstitutionState::SubstitutionKeyHash>::const_iterator ir_found =
-          state->ir_substitution_index.find(ir_key);
-      if(ir_found != state->ir_substitution_index.end()) {
-        insert_substitution_index(state, key, ir_found->second);
-        out += encode_substitution_sequence_id(ir_found->second);
-        return true;
-      }
-    }
     return false;
   }
 
@@ -1532,10 +1484,6 @@ static bool insert_ir_substitution_index(
     MangleSubstitutionState * state,
     const itanium_mangle_ir::SubstitutionKey & key,
     size_t index);
-static void assign_substitution_ir_key(
-    MangleSubstitutionState * state,
-    size_t index,
-    const itanium_mangle_ir::SubstitutionKey & key);
 
 static void reserve_substitution_state_capacity(MangleSubstitutionState * state)
 {
@@ -1648,28 +1596,6 @@ static void ensure_substitution_ir_key_slots(MangleSubstitutionState * state)
   }
 }
 
-static void assign_substitution_ir_key(
-    MangleSubstitutionState * state,
-    size_t index,
-    const itanium_mangle_ir::SubstitutionKey & key)
-{
-  if(!state || key.empty()) {
-    return;
-  }
-  ensure_substitution_ir_key_slots(state);
-  if(index >= state->substitution_ir_keys.size()) {
-    return;
-  }
-  if(state->substitution_ir_keys[index].empty()) {
-    if(state->checkpoint_depth != 0) {
-      state->substitution_ir_key_update_log.push_back(
-          make_pair(index, state->substitution_ir_keys[index]));
-    }
-    state->substitution_ir_keys[index] = key;
-  }
-  insert_ir_substitution_index(state, key, index);
-}
-
 static vector<itanium_mangle_ir::SubstitutionSlot>
 substitution_slots_from_state(MangleSubstitutionState * state)
 {
@@ -1680,195 +1606,15 @@ substitution_slots_from_state(MangleSubstitutionState * state)
   ensure_substitution_ir_key_slots(state);
   slots.reserve(state->substitution_keys.size());
   for(size_t i = 0; i < state->substitution_keys.size(); ++i) {
-    if(!state->substitution_keys[i].empty()) {
-      slots.push_back(itanium_mangle_ir::SubstitutionSlot::legacy(
-          state->substitution_keys[i]));
-      continue;
-    }
     const itanium_mangle_ir::SubstitutionKey ir_key =
         i < state->substitution_ir_keys.size() ?
             state->substitution_ir_keys[i] :
             itanium_mangle_ir::SubstitutionKey::none();
-    slots.push_back(itanium_mangle_ir::SubstitutionSlot::typed(ir_key));
+    if(!ir_key.empty()) {
+      slots.push_back(itanium_mangle_ir::SubstitutionSlot::typed(ir_key));
+    }
   }
   return slots;
-}
-
-static bool find_top_level_separator(const string & text,
-                                     char separator,
-                                     size_t & out)
-{
-  int paren_depth = 0;
-  int bracket_depth = 0;
-  for(size_t i = 0; i < text.size(); ++i) {
-    const char ch = text[i];
-    if(ch == '(') {
-      ++paren_depth;
-    } else if(ch == ')') {
-      if(paren_depth > 0) {
-        --paren_depth;
-      }
-    } else if(ch == '[') {
-      ++bracket_depth;
-    } else if(ch == ']') {
-      if(bracket_depth > 0) {
-        --bracket_depth;
-      }
-    } else if(ch == separator && paren_depth == 0 && bracket_depth == 0) {
-      out = i;
-      return true;
-    }
-  }
-  return false;
-}
-
-static bool parenthesized_payload_after_prefix(const string & text,
-                                               const string & prefix,
-                                               string & out)
-{
-  if(text.compare(0, prefix.size(), prefix) != 0 ||
-     text.size() <= prefix.size() ||
-     text[text.size() - 1] != ')') {
-    return false;
-  }
-  out = text.substr(prefix.size(), text.size() - prefix.size() - 1);
-  return true;
-}
-
-static bool try_build_ir_type_key_from_legacy_payload(
-    const string & payload,
-    itanium_mangle_ir::SubstitutionKey & out);
-
-static bool try_build_ir_key_from_legacy_substitution_key(
-    const string & key,
-    itanium_mangle_ir::SubstitutionKey & out)
-{
-  static const string name_prefix = "name:";
-  static const string type_prefix = "type:";
-  static const string template_prefix = "template-prefix:";
-  static const string function_template_prefix = "function-template-prefix:";
-  if(key.compare(0, name_prefix.size(), name_prefix) == 0 &&
-     key.size() > name_prefix.size()) {
-    out = itanium_mangle_ir::SubstitutionKey::named(
-        key.substr(name_prefix.size()));
-    return true;
-  }
-  if(key.compare(0, template_prefix.size(), template_prefix) == 0 &&
-     key.size() > template_prefix.size()) {
-    out = itanium_mangle_ir::SubstitutionKey::prefix(
-        key.substr(template_prefix.size()));
-    return true;
-  }
-  if(key.compare(0,
-                 function_template_prefix.size(),
-                 function_template_prefix) == 0 &&
-     key.size() > function_template_prefix.size()) {
-    out = itanium_mangle_ir::SubstitutionKey::function_template_prefix(
-        key.substr(function_template_prefix.size()));
-    return true;
-  }
-  if(key.compare(0, type_prefix.size(), type_prefix) == 0 &&
-     key.size() > type_prefix.size()) {
-    return try_build_ir_type_key_from_legacy_payload(
-        key.substr(type_prefix.size()),
-        out);
-  }
-  return false;
-}
-
-static bool try_build_ir_type_key_from_legacy_payload(
-    const string & payload,
-    itanium_mangle_ir::SubstitutionKey & out)
-{
-  string inner;
-  if(payload == "builtin(v)") {
-    out = itanium_mangle_ir::SubstitutionKey::type_builtin("v");
-    return true;
-  }
-  if(parenthesized_payload_after_prefix(payload, "builtin(", inner) &&
-     !inner.empty()) {
-    out = itanium_mangle_ir::SubstitutionKey::type_builtin(inner);
-    return true;
-  }
-  if(parenthesized_payload_after_prefix(payload, "tparam(", inner)) {
-    const string index_prefix = "index:";
-    if(inner.compare(0, index_prefix.size(), index_prefix) == 0) {
-      size_t end = inner.find(';', index_prefix.size());
-      const string index_text = inner.substr(
-          index_prefix.size(),
-          end == string::npos ? string::npos : end - index_prefix.size());
-      if(!index_text.empty() &&
-         index_text.find_first_not_of("0123456789") == string::npos) {
-        out = itanium_mangle_ir::SubstitutionKey::type_template_parameter(
-            static_cast<size_t>(strtoull(index_text.c_str(), nullptr, 10)));
-        return true;
-      }
-    }
-    return false;
-  }
-  if(parenthesized_payload_after_prefix(payload, "ptr(", inner)) {
-    itanium_mangle_ir::SubstitutionKey inner_key;
-    if(!try_build_ir_key_from_legacy_substitution_key(inner, inner_key)) {
-      return false;
-    }
-    out = itanium_mangle_ir::SubstitutionKey::type_pointer(inner_key);
-    return true;
-  }
-  if(parenthesized_payload_after_prefix(payload, "lref(", inner)) {
-    itanium_mangle_ir::SubstitutionKey inner_key;
-    if(!try_build_ir_key_from_legacy_substitution_key(inner, inner_key)) {
-      return false;
-    }
-    out = itanium_mangle_ir::SubstitutionKey::type_lvalue_reference(inner_key);
-    return true;
-  }
-  if(parenthesized_payload_after_prefix(payload, "rref(", inner)) {
-    itanium_mangle_ir::SubstitutionKey inner_key;
-    if(!try_build_ir_key_from_legacy_substitution_key(inner, inner_key)) {
-      return false;
-    }
-    out = itanium_mangle_ir::SubstitutionKey::type_rvalue_reference(inner_key);
-    return true;
-  }
-  if(parenthesized_payload_after_prefix(payload, "cv(", inner)) {
-    size_t comma = string::npos;
-    if(!find_top_level_separator(inner, ',', comma)) {
-      return false;
-    }
-    const string cv = inner.substr(0, comma);
-    itanium_mangle_ir::SubstitutionKey inner_key;
-    if(!try_build_ir_key_from_legacy_substitution_key(
-           inner.substr(comma + 1),
-           inner_key)) {
-      return false;
-    }
-    out = itanium_mangle_ir::SubstitutionKey::type_cv(
-        cv.find('K') != string::npos,
-        cv.find('V') != string::npos,
-        inner_key);
-    return true;
-  }
-  if(parenthesized_payload_after_prefix(payload, "array(", inner)) {
-    size_t comma = string::npos;
-    if(!find_top_level_separator(inner, ',', comma)) {
-      return false;
-    }
-    itanium_mangle_ir::SubstitutionKey inner_key;
-    if(!try_build_ir_key_from_legacy_substitution_key(
-           inner.substr(comma + 1),
-           inner_key)) {
-      return false;
-    }
-    out = itanium_mangle_ir::SubstitutionKey::type_array(
-        inner.substr(0, comma),
-        inner_key);
-    return true;
-  }
-  if(parenthesized_payload_after_prefix(payload, "pack-expansion(", inner)) {
-    return false;
-  }
-  out = itanium_mangle_ir::SubstitutionKey::type(payload);
-  return !out.empty();
 }
 
 static void register_substitution_key_raw(MangleSubstitutionState * state,
@@ -1885,7 +1631,7 @@ static void register_substitution_key_raw(MangleSubstitutionState * state,
   }
 }
 
-static void register_ir_substitution_key_without_legacy(
+static void register_ir_substitution_key_raw(
     MangleSubstitutionState * state,
     const itanium_mangle_ir::SubstitutionKey & key)
 {
@@ -1907,53 +1653,17 @@ static void register_substitution_key(MangleSubstitutionState * state,
                                       const string & key)
 {
   if(!state || key.empty() || state->substitution_index.count(key) != 0) {
-    if(state && !key.empty()) {
-      unordered_map<string, size_t>::const_iterator found =
-          state->substitution_index.find(key);
-      if(found != state->substitution_index.end()) {
-        itanium_mangle_ir::SubstitutionKey ir_key;
-        if(try_build_ir_key_from_legacy_substitution_key(key, ir_key)) {
-          assign_substitution_ir_key(state, found->second, ir_key);
-        }
-      }
-    }
     return;
-  }
-  itanium_mangle_ir::SubstitutionKey ir_key;
-  if(try_build_ir_key_from_legacy_substitution_key(key, ir_key)) {
-    unordered_map<itanium_mangle_ir::SubstitutionKey,
-                  size_t,
-                  MangleSubstitutionState::SubstitutionKeyHash>::const_iterator ir_found =
-        state->ir_substitution_index.find(ir_key);
-    if(ir_found != state->ir_substitution_index.end()) {
-      insert_substitution_index(state, key, ir_found->second);
-      assign_substitution_ir_key(state, ir_found->second, ir_key);
-      return;
-    }
   }
   register_function_type_prerequisite_keys(key, state);
   register_substitution_key_raw(state, key);
-  unordered_map<string, size_t>::const_iterator found =
-      state->substitution_index.find(key);
-  if(found != state->substitution_index.end()) {
-    if(try_build_ir_key_from_legacy_substitution_key(key, ir_key)) {
-      assign_substitution_ir_key(state, found->second, ir_key);
-    }
-  }
 }
 
 static void register_ir_substitution_key(
     MangleSubstitutionState * state,
     const itanium_mangle_ir::SubstitutionKey & key)
 {
-  register_ir_substitution_key_without_legacy(state, key);
-}
-
-static void register_standard_substitution_slot(MangleSubstitutionState * state,
-                                                const string & key)
-{
-  (void)state;
-  (void)key;
+  register_ir_substitution_key_raw(state, key);
 }
 
 static void register_substitution_key_if_absent(MangleSubstitutionState * state,
@@ -1995,9 +1705,6 @@ static bool substitution_ir_key_is_template_parameter(
   if(key.kind == itanium_mangle_ir::SubstitutionKey::SK_TYPE &&
      key.payload.find("template-arg-pack:") == 0) {
     return true;
-  }
-  if(key.kind == itanium_mangle_ir::SubstitutionKey::SK_LEGACY) {
-    return is_template_parameter_substitution_key(key.payload);
   }
   return false;
 }
@@ -2054,17 +1761,6 @@ static void register_substitution_slot_if_absent(
   }
   if(!ir_key.empty()) {
     register_ir_substitution_key(state, ir_key);
-    unordered_map<itanium_mangle_ir::SubstitutionKey,
-                  size_t,
-                  MangleSubstitutionState::SubstitutionKeyHash>::const_iterator found =
-        state->ir_substitution_index.find(ir_key);
-    if(found != state->ir_substitution_index.end() && !key.empty()) {
-      unordered_map<string, size_t>::const_iterator string_found =
-          state->substitution_index.find(key);
-      if(string_found == state->substitution_index.end()) {
-        insert_substitution_index(state, key, found->second);
-      }
-    }
     return;
   }
   register_substitution_key_if_absent(state, key);
@@ -2186,18 +1882,11 @@ struct MangleIrSubstitutionSink : public itanium_mangle_ir::SubstitutionSink
   bool emit_substitution(const itanium_mangle_ir::SubstitutionKey & key,
                          string & out) override
   {
-    if(key.kind == itanium_mangle_ir::SubstitutionKey::SK_LEGACY) {
-      return emit_registered_substitution(state, key.legacy_text(), out);
-    }
     return emit_registered_ir_substitution(state, key, out);
   }
 
   void register_substitution(const itanium_mangle_ir::SubstitutionKey & key) override
   {
-    if(key.kind == itanium_mangle_ir::SubstitutionKey::SK_LEGACY) {
-      register_substitution_key(state, key.legacy_text());
-      return;
-    }
     register_ir_substitution_key(state, key);
   }
 
@@ -2692,65 +2381,6 @@ static bool direct_std_standard_substitution_component_enabled(
          direct_std_standard_substitutions_enabled(mangle_ctx);
 }
 
-static bool try_emit_direct_std_standard_substitution(const string & part,
-                                                      const string & full_key,
-                                                      string & out,
-                                                      const TypeMangleContext * mangle_ctx,
-                                                      MangleSubstitutionState * state)
-{
-  TemplateComponent standard_component;
-  if(!parse_template_component(part, standard_component) ||
-     trim_space(standard_component.base_name).empty()) {
-    return false;
-  }
-
-  const string base_name = trim_space(standard_component.base_name);
-  if(!direct_std_standard_substitution_component_enabled(standard_component, mangle_ctx)) {
-    return false;
-  }
-  if(base_name == "allocator") {
-    if(standard_component.has_template_id) {
-      return false;
-    }
-    out += "Sa";
-    register_standard_substitution_slot(state, "Sa");
-    return true;
-  }
-
-  if(template_component_matches_char_stream(standard_component, "basic_istream") ||
-     (base_name == "istream" && !standard_component.has_template_id)) {
-    out += "Si";
-    register_standard_substitution_slot(state, "Si");
-    return true;
-  }
-
-  if(template_component_matches_char_stream(standard_component, "basic_ostream") ||
-     (base_name == "ostream" && !standard_component.has_template_id)) {
-    out += "So";
-    register_standard_substitution_slot(state, "So");
-    return true;
-  }
-
-  if(template_component_matches_char_stream(standard_component, "basic_iostream") ||
-     (base_name == "iostream" && !standard_component.has_template_id)) {
-    out += "Sd";
-    register_standard_substitution_slot(state, "Sd");
-    return true;
-  }
-
-  if(base_name == "basic_string" &&
-     standard_component.arg_texts.size() == 3 &&
-     is_char_type_text(standard_component.arg_texts[0]) &&
-     is_std_char_traits_char_text(standard_component.arg_texts[1]) &&
-     is_std_allocator_char_text(standard_component.arg_texts[2])) {
-    out += "Ss";
-    register_standard_substitution_slot(state, "Ss");
-    return true;
-  }
-
-  return false;
-}
-
 static bool named_text_uses_enabled_direct_std_standard_substitution(
     const string & text,
     const TypeMangleContext * mangle_ctx)
@@ -2763,21 +2393,6 @@ static bool named_text_uses_enabled_direct_std_standard_substitution(
   vector<string> parts = qualified.qualifiers;
   parts.push_back(qualified.name);
   if(parts.size() != 2 || canonical_component_text(parts[0]) != "std") {
-    return false;
-  }
-
-  TemplateComponent component;
-  return parse_template_component(parts[1], component) &&
-         !trim_space(component.base_name).empty() &&
-         is_direct_std_standard_substitution_component(component) &&
-         direct_std_standard_substitution_component_enabled(component, mangle_ctx);
-}
-
-static bool can_emit_direct_std_standard_substitution(const vector<string> & parts,
-                                                      const vector<string> & canonical_parts,
-                                                      const TypeMangleContext * mangle_ctx)
-{
-  if(parts.size() != 2 || canonical_parts.size() != 2 || canonical_parts[0] != "std") {
     return false;
   }
 
@@ -3622,50 +3237,10 @@ static bool type_mentions_function_template_parameter_slice(
   return type_mentions_template_parameter_slice(type, parameters, begin);
 }
 
-static bool structured_template_arguments_are_simple_parameter_refs(
-    const vector<TemplateArgument> & arguments,
-    const vector<TemplateParameterInfo> * parameters)
+static void throw_unstructured_dependent_text_mangling(const string & kind,
+                                                       const string & text)
 {
-  if(!parameters || parameters->empty() || arguments.empty()) {
-    return false;
-  }
-
-  size_t arg_index = 0;
-  for(size_t i = 0; i < parameters->size(); ++i) {
-    const TemplateParameterInfo & parameter = (*parameters)[i];
-    if(parameter.parameter_pack) {
-      if(arg_index >= arguments.size()) {
-        continue;
-      }
-      const TemplateArgument & argument = arguments[arg_index++];
-      const string argument_text = trim_elaborated_type_prefix(argument.text);
-      if(parameter.name.empty() ||
-         (argument_text != parameter.name + "..." &&
-          !template_argument_is_self_type_parameter(argument,
-                                                   parameter,
-                                                   TypePtr(),
-                                                   parameter.name))) {
-        return false;
-      }
-      continue;
-    }
-    if(arg_index >= arguments.size() ||
-       !template_argument_is_self_type_parameter(arguments[arg_index],
-                                                parameter,
-                                                TypePtr(),
-                                                parameter.name)) {
-      return false;
-    }
-    ++arg_index;
-  }
-
-  return arg_index == arguments.size();
-}
-
-static void throw_legacy_dependent_text_mangling(const string & kind,
-                                                 const string & text)
-{
-  throw logic_error("legacy dependent " + kind +
+  throw logic_error("unstructured dependent " + kind +
                     " text reached ABI mangler: " + trim_space(text));
 }
 
@@ -5023,8 +4598,10 @@ static TemplateArgumentSyntax dependent_alias_argument_syntax_for_mangling(
   }
   if(argument.type) {
     syntax.resolved_type = argument.type;
-    syntax.type_id.reset(new CppAstNode(
-        make_semantic_type_id_node_for_mangling(argument.type, syntax.text)));
+    if(!syntax.type_id) {
+      syntax.type_id.reset(new CppAstNode(
+          make_semantic_type_id_node_for_mangling(argument.type, syntax.text)));
+    }
     if(!type_has_dependent_mangle_state(argument.type)) {
       syntax.pack_expansion = false;
     }
@@ -5742,178 +5319,6 @@ static const semantic_model::ClassInfo * nearest_member_class_scope(
   return nullptr;
 }
 
-static bool emit_qualified_prefix_text_components(
-    const string & prefix,
-    string & out,
-    const TypeMangleContext * mangle_ctx,
-    MangleSubstitutionState * state,
-    string & canonical_prefix)
-{
-  canonical_prefix.clear();
-  if(prefix.empty()) {
-    return true;
-  }
-
-  QualifiedName qualified_prefix;
-  if(!semantic_utils::split_qualified_name_text(prefix, qualified_prefix) ||
-     qualified_prefix.rooted ||
-     qualified_prefix.name.empty()) {
-    return false;
-  }
-
-  vector<string> prefix_parts = qualified_prefix.qualifiers;
-  prefix_parts.push_back(qualified_prefix.name);
-  vector<string> canonical_parts;
-  canonical_parts.reserve(prefix_parts.size());
-  for(size_t i = 0; i < prefix_parts.size(); ++i) {
-    canonical_parts.push_back(canonical_component_text(prefix_parts[i]));
-  }
-  if(prefix_parts.size() == 1 &&
-     canonical_parts[0] == "std") {
-    out += "St";
-    register_standard_substitution_slot(state, "St");
-    canonical_prefix = "std";
-    return true;
-  }
-
-  size_t start = 0;
-  for(size_t len = prefix_parts.size(); len > 0; --len) {
-    const string prefix_key =
-        named_substitution_key(join_canonical_qualified_parts(canonical_parts, len));
-    if(emit_registered_substitution(state, prefix_key, out)) {
-      canonical_prefix = join_canonical_qualified_parts(canonical_parts, len);
-      start = len;
-      break;
-    }
-  }
-  if(start == 0 && !prefix_parts.empty() && canonical_parts[0] == "std") {
-    out += "St";
-    register_standard_substitution_slot(state, "St");
-    canonical_prefix = "std";
-    start = 1;
-  }
-  for(size_t i = start; i < prefix_parts.size(); ++i) {
-    string canonical_full_text;
-    if(!emit_component_with_substitution_keys(prefix_parts[i],
-                                              canonical_prefix,
-                                              out,
-                                              mangle_ctx,
-                                              state,
-                                              &canonical_full_text)) {
-      return false;
-    }
-    canonical_prefix = canonical_full_text;
-  }
-  return true;
-}
-
-static bool emit_structured_class_scope_prefix(
-    const semantic_model::ClassInfo & info,
-    string & out,
-    const TypeMangleContext * mangle_ctx,
-    MangleSubstitutionState * state,
-    string & canonical_prefix);
-
-static bool emit_template_decl_scope_prefix_components(
-    const semantic_model::Scope * scope,
-    string & out,
-    const TypeMangleContext * mangle_ctx,
-    MangleSubstitutionState * state,
-    string & canonical_prefix)
-{
-  canonical_prefix.clear();
-  string prefix;
-  scope_prefix_text_for_template_decl(scope, prefix);
-  if(prefix.empty()) {
-    return true;
-  }
-
-  const semantic_model::ClassInfo * owner = nearest_member_class_scope(scope);
-  if(owner) {
-    const size_t begin = out.size();
-    MangleSubstitutionCheckpoint checkpoint(state);
-    if(emit_structured_class_scope_prefix(
-           *owner, out, mangle_ctx, state, canonical_prefix)) {
-      checkpoint.commit();
-      return true;
-    }
-    out.resize(begin);
-  }
-
-  return emit_qualified_prefix_text_components(prefix,
-                                               out,
-                                               mangle_ctx,
-                                               state,
-                                               canonical_prefix);
-}
-
-static bool emit_structured_class_scope_prefix(
-    const semantic_model::ClassInfo & info,
-    string & out,
-    const TypeMangleContext * mangle_ctx,
-    MangleSubstitutionState * state,
-    string & canonical_prefix)
-{
-  canonical_prefix.clear();
-  shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
-      named_type_class_template_specialization_mangle_info_const(info.type);
-  if(!specialization || !info.source_template) {
-    return false;
-  }
-
-  const semantic_model::ClassTemplateDecl * class_template =
-      static_cast<const semantic_model::ClassTemplateDecl *>(
-          specialization->class_template_decl);
-  if(!class_template || class_template != info.source_template) {
-    return false;
-  }
-
-  if(!emit_template_decl_scope_prefix_components(
-         info.source_template->declaring_scope,
-         out,
-         mangle_ctx,
-         state,
-         canonical_prefix)) {
-    return false;
-  }
-
-  TypeMangleContext specialization_ctx_storage;
-  const TypeMangleContext * specialization_ctx = mangle_ctx;
-  if(!specialization->pack_sizes.empty() ||
-     !specialization->arguments.empty()) {
-    specialization_ctx_storage = mangle_ctx ? *mangle_ctx : TypeMangleContext();
-    if(!specialization->pack_sizes.empty()) {
-      specialization_ctx_storage.template_argument_pack_sizes =
-          &specialization->pack_sizes;
-    }
-    specialization_ctx_storage.prefer_concrete_non_type_values_for_dependent_parameter_types = true;
-    specialization_ctx = &specialization_ctx_storage;
-  }
-
-  string canonical_full_text;
-  if(!emit_template_component_with_structured_arguments(
-         class_template->name,
-         specialization->arguments,
-         &class_template->parameters,
-         canonical_prefix,
-         out,
-         specialization_ctx,
-         state,
-         &canonical_full_text)) {
-    return false;
-  }
-  if(!canonical_full_text.empty()) {
-    string output_name;
-    if(canonicalize_named_substitution_text(class_output_qualified_name(info),
-                                            output_name)) {
-      canonical_full_text = output_name;
-      register_substitution_key(state, named_substitution_key(canonical_full_text));
-    }
-  }
-  canonical_prefix = canonical_full_text;
-  return !canonical_prefix.empty();
-}
-
 static TemplateArgumentSyntax effective_dependent_argument_syntax(
     const DependentAliasTemplateArgumentSyntax & argument)
 {
@@ -6126,7 +5531,7 @@ static const semantic_model::ClassInfo * resolved_class_template_instantiation(
     }
     MangleSubstitutionState local_state;
     string candidate_mangle;
-    if(try_mangle_type_impl(it->second->type,
+    if(try_emit_type_encoding_ir_impl(it->second->type,
                             candidate_mangle,
                             mangle_ctx,
                             &local_state) &&
@@ -6143,7 +5548,7 @@ static const semantic_model::ClassInfo * resolved_class_template_instantiation(
     }
     MangleSubstitutionState local_state;
     string candidate_mangle;
-    if(try_mangle_type_impl(it->second->type,
+    if(try_emit_type_encoding_ir_impl(it->second->type,
                             candidate_mangle,
                             mangle_ctx,
                             &local_state) &&
@@ -6989,39 +6394,6 @@ static bool try_mangle_template_argument_syntax_impl(
       state);
 }
 
-static bool emit_component_with_substitution_keys(const string & text,
-                                                  const string & canonical_prefix,
-                                                  string & out,
-                                                  const TypeMangleContext * mangle_ctx,
-                                                  MangleSubstitutionState * state,
-                                                  string * canonical_full_text)
-{
-  TemplateComponent component;
-  if(!parse_template_component(text, component) || component.base_name.empty()) {
-    return false;
-  }
-  if(component.has_template_id) {
-    return false;
-  }
-
-  const string canonical_base = trim_space(component.base_name);
-  const string full_base_text =
-      append_qualified_component_text(canonical_prefix, canonical_base);
-  const string base_key = named_substitution_key(full_base_text);
-  if(canonical_base.find("__anonymous_enum") == 0) {
-    out += "Ut_";
-  } else {
-    out += source_name_fragment(component.base_name);
-  }
-  const string full_text =
-      append_qualified_component_text(canonical_prefix, canonical_component_text(text));
-  register_substitution_key(state, named_substitution_key(full_text));
-  if(canonical_full_text) {
-    *canonical_full_text = full_text;
-  }
-  return true;
-}
-
 static bool build_type_substitution_key(const TypePtr & type,
                                         const TypeMangleContext * mangle_ctx,
                                         string & out);
@@ -7152,7 +6524,7 @@ static bool context_free_type_ir_only_context(
     const TypeMangleContext * mangle_ctx)
 {
   return mangle_ctx &&
-         mangle_ctx->suppress_legacy_type_substitution_keys &&
+         mangle_ctx->suppress_type_substitution_keys &&
          !mangle_ctx->template_parameters &&
          !mangle_ctx->owner_template_parameters &&
          !mangle_ctx->owner_template_arguments &&
@@ -7217,9 +6589,9 @@ static bool attach_semantic_type_ir_substitution(
 
 static bool attach_member_type_ir_substitution(
     itanium_mangle_ir::Type & ir_type,
-    const string & legacy_text)
+    const string & source_text)
 {
-  string flat_text = trim_elaborated_type_prefix(legacy_text);
+  string flat_text = trim_elaborated_type_prefix(source_text);
   static const char typename_prefix[] = "typename ";
   if(flat_text.compare(0, sizeof(typename_prefix) - 1, typename_prefix) == 0) {
     flat_text = trim_space(flat_text.substr(sizeof(typename_prefix) - 1));
@@ -7366,6 +6738,39 @@ static bool try_build_template_entity_argument_name_ir(
                                       canonical_prefix)) {
     return false;
   }
+  template_name_substitution =
+      append_qualified_component_text(canonical_prefix,
+                                      canonical_component_text(template_name));
+  return !template_name_substitution.empty();
+}
+
+static bool try_build_template_entity_argument_text_ir(
+    const string & text,
+    vector<itanium_mangle_ir::Type::NameComponent> & prefix_components,
+    string & template_name,
+    string & template_name_substitution)
+{
+  QualifiedName qualified;
+  if(!parse_external_named_text_candidate(text, qualified)) {
+    return false;
+  }
+  if(qualified.name.empty()) {
+    return false;
+  }
+  string prefix_text;
+  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
+    if(i != 0) {
+      prefix_text += "::";
+    }
+    prefix_text += qualified.qualifiers[i];
+  }
+  string canonical_prefix;
+  if(!build_name_prefix_components_ir(prefix_text,
+                                      prefix_components,
+                                      canonical_prefix)) {
+    return false;
+  }
+  template_name = qualified.name;
   template_name_substitution =
       append_qualified_component_text(canonical_prefix,
                                       canonical_component_text(template_name));
@@ -7608,7 +7013,7 @@ static bool try_build_class_template_argument_ir(
     const TemplateParameterInfo * parameter,
     const TypeMangleContext * mangle_ctx,
     itanium_mangle_ir::Type::ClassTemplateArgument & out);
-static bool try_mangle_itanium_static_member_object_name(
+static bool try_emit_static_member_object_symbol_ir(
     const semantic_model::ClassInfo & owner_class,
     const string & member_name,
     string & out);
@@ -7765,22 +7170,30 @@ static bool try_build_template_parameter_value_expression_ir(
     const TypeMangleContext * mangle_ctx,
     itanium_mangle_ir::DependentExpression & out)
 {
-  if(!mangle_ctx ||
-     !mangle_ctx->template_parameters ||
-     !mangle_ctx->template_parameters->parameters) {
+  if(!mangle_ctx) {
     return false;
   }
   const string stripped = trim_space(text);
-  const vector<TemplateParameterInfo> & parameters =
-      *mangle_ctx->template_parameters->parameters;
-  for(size_t i = 0; i < parameters.size(); ++i) {
-    const TemplateParameterInfo & parameter = parameters[i];
-    if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE &&
-       !parameter.name.empty() &&
-       stripped == parameter.name) {
-      out = itanium_mangle_ir::DependentExpression::template_parameter(i);
-      return true;
-    }
+  const auto try_parameters =
+      [&](const vector<TemplateParameterInfo> * parameters) -> bool
+      {
+        if(!parameters) {
+          return false;
+        }
+        for(size_t i = 0; i < parameters->size(); ++i) {
+          const TemplateParameterInfo & parameter = (*parameters)[i];
+          if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE &&
+             !parameter.name.empty() &&
+             stripped == parameter.name) {
+            out = itanium_mangle_ir::DependentExpression::template_parameter(i);
+            return true;
+          }
+        }
+        return false;
+      };
+  if(mangle_ctx->template_parameters &&
+     try_parameters(mangle_ctx->template_parameters->parameters)) {
+    return true;
   }
   return false;
 }
@@ -8039,7 +7452,7 @@ static bool try_build_resolved_constant_member_expression_ir(
      !(found->second.declaration_node &&
        found->second.declaration_node->kind == CppAstKind::enumerator)) {
     string symbol;
-    if(try_mangle_itanium_static_member_object_name(*info,
+    if(try_emit_static_member_object_symbol_ir(*info,
                                                     qualified->name,
                                                     symbol)) {
       out = itanium_mangle_ir::DependentExpression::external_entity(symbol,
@@ -8150,7 +7563,7 @@ static bool try_build_resolved_constant_member_expression_text_ir(
      !(found->second.declaration_node &&
        found->second.declaration_node->kind == CppAstKind::enumerator)) {
     string symbol;
-    if(try_mangle_itanium_static_member_object_name(*info,
+    if(try_emit_static_member_object_symbol_ir(*info,
                                                     qualified.name,
                                                     symbol)) {
       out = itanium_mangle_ir::DependentExpression::external_entity(symbol,
@@ -8591,6 +8004,11 @@ static bool class_template_argument_ir_to_template_argument_ir(
     if(!in.metadata) {
       return false;
     }
+    if(in.metadata->template_name_is_template_parameter) {
+      out = itanium_mangle_ir::TemplateArgument::
+          template_parameter_template_arg(in.metadata->template_parameter_index);
+      return true;
+    }
     out = itanium_mangle_ir::TemplateArgument::template_entity_arg(
         in.metadata->prefix_components,
         in.metadata->template_name,
@@ -8830,12 +8248,10 @@ static bool try_build_template_id_type_ir(const TemplateIdSyntax & syntax,
         }
         itanium_mangle_ir::set_substitution(
             ir_type,
-            itanium_mangle_ir::SubstitutionKey::legacy(
-                named_substitution_key(
-                    dependent_class_template_name_key_text(
-                        prefix,
-                        base_name,
-                        dependent_arguments))));
+            itanium_mangle_ir::SubstitutionKey::named(
+                dependent_class_template_name_key_text(prefix,
+                                                       base_name,
+                                                       dependent_arguments)));
         out = ir_type;
         return true;
       }
@@ -8844,13 +8260,13 @@ static bool try_build_template_id_type_ir(const TemplateIdSyntax & syntax,
 
   string standard_substitution;
   bool standard_substitution_includes_arguments = false;
-  vector<TemplateArgument> legacy_arguments =
+  vector<TemplateArgument> source_arguments =
       template_arguments_for_dependent_mangling(dependent_arguments,
                                                 parameters,
                                                 mangle_ctx);
   structured_std_standard_substitution_for_template_component(
       base_name,
-      legacy_arguments,
+      source_arguments,
       canonical_prefix,
       mangle_ctx,
       standard_substitution,
@@ -8869,11 +8285,10 @@ static bool try_build_template_id_type_ir(const TemplateIdSyntax & syntax,
           standard_substitution_includes_arguments);
   itanium_mangle_ir::set_substitution(
       ir_type,
-      itanium_mangle_ir::SubstitutionKey::legacy(
-          named_substitution_key(dependent_class_template_name_key_text(
-              canonical_prefix,
-              base_name,
-              dependent_arguments))));
+      itanium_mangle_ir::SubstitutionKey::named(
+          dependent_class_template_name_key_text(canonical_prefix,
+                                                 base_name,
+                                                 dependent_arguments)));
   out = ir_type;
   return true;
 }
@@ -9417,9 +8832,6 @@ static bool try_build_direct_type_syntax_text_ir(
      text.find("(anonymous namespace)") == string::npos) {
     TypePtr lookup_type = lookup_scope_named_type_for_mangling(text, mangle_ctx);
     if(lookup_type && try_build_type_ir(lookup_type, mangle_ctx, out)) {
-      itanium_mangle_ir::add_preregister_legacy_key(
-          out,
-          named_substitution_key(canonical_component_text(text)));
       return true;
     }
   }
@@ -9700,11 +9112,10 @@ static bool try_build_dependent_class_template_type_ir(
           false);
   itanium_mangle_ir::set_substitution(
       ir_type,
-      itanium_mangle_ir::SubstitutionKey::legacy(
-          named_substitution_key(dependent_class_template_name_key_text(
-              canonical_prefix,
-              base_name,
-              dependent_arguments))));
+      itanium_mangle_ir::SubstitutionKey::named(
+          dependent_class_template_name_key_text(canonical_prefix,
+                                                 base_name,
+                                                 dependent_arguments)));
   out = ir_type;
   return true;
 }
@@ -9765,38 +9176,58 @@ static bool try_build_dependent_alias_type_ir(
     const TypeMangleContext * mangle_ctx,
     itanium_mangle_ir::Type & out)
 {
+  TypePtr base = strip_top_level_cv(type);
   void * alias_template_decl = nullptr;
   vector<DependentAliasTemplateArgumentSyntax> arguments;
-  if(!named_type_dependent_alias_template(type, alias_template_decl, arguments)) {
-    return false;
-  }
-  const semantic_model::AliasTemplateDecl * alias_template =
-      static_cast<const semantic_model::AliasTemplateDecl *>(alias_template_decl);
-  if(!alias_template || !alias_template->type_id ||
-     arguments.size() > alias_template->parameters.size()) {
-    return false;
-  }
-  arguments = complete_dependent_alias_template_arguments_for_mangling(
-      alias_template->parameters,
-      arguments,
-      alias_template->declaring_scope);
+  if(named_type_dependent_alias_template(type, alias_template_decl, arguments)) {
+    const semantic_model::AliasTemplateDecl * alias_template =
+        static_cast<const semantic_model::AliasTemplateDecl *>(alias_template_decl);
+    if(alias_template && alias_template->type_id &&
+       arguments.size() <= alias_template->parameters.size()) {
+      arguments = complete_dependent_alias_template_arguments_for_mangling(
+          alias_template->parameters,
+          arguments,
+          alias_template->declaring_scope);
 
-  CppAstNode alias_expansion =
-      clone_ast_node_for_mangling(*alias_template->type_id);
-  substitute_dependent_alias_template_arguments_in_node(
-      alias_expansion,
-      alias_template->parameters,
-      arguments);
+      CppAstNode alias_expansion =
+          clone_ast_node_for_mangling(*alias_template->type_id);
+      substitute_dependent_alias_template_arguments_in_node(
+          alias_expansion,
+          alias_template->parameters,
+          arguments);
 
-  TypeMangleContext alias_ctx_storage;
-  const TypeMangleContext * alias_ctx = mangle_ctx;
-  if(mangle_ctx) {
-    alias_ctx_storage = *mangle_ctx;
-    ++alias_ctx_storage.alias_expansion_depth;
-    alias_ctx_storage.suppress_current_type_id_substitution_registration = true;
-    alias_ctx = &alias_ctx_storage;
+      TypeMangleContext alias_ctx_storage;
+      const TypeMangleContext * alias_ctx = mangle_ctx;
+      if(mangle_ctx) {
+        alias_ctx_storage = *mangle_ctx;
+        ++alias_ctx_storage.alias_expansion_depth;
+        alias_ctx_storage.suppress_current_type_id_substitution_registration = true;
+        alias_ctx = &alias_ctx_storage;
+      }
+      if(try_build_type_id_ast_ir(alias_expansion, alias_ctx, out)) {
+        return true;
+      }
+    }
   }
-  return try_build_type_id_ast_ir(alias_expansion, alias_ctx, out);
+
+  if(base &&
+     base->kind == Type::TK_NAMED &&
+     base->named_semantic_kind == Type::NSK_DEPENDENT_ALIAS &&
+     base->named_dependent_type_expression_node) {
+    TypeMangleContext alias_ctx_storage;
+    const TypeMangleContext * alias_ctx = mangle_ctx;
+    if(mangle_ctx) {
+      alias_ctx_storage = *mangle_ctx;
+      ++alias_ctx_storage.alias_expansion_depth;
+      alias_ctx_storage.suppress_current_type_id_substitution_registration = true;
+      alias_ctx = &alias_ctx_storage;
+    }
+    return try_build_type_id_ast_ir(*base->named_dependent_type_expression_node,
+                                    alias_ctx,
+                                    out);
+  }
+
+  return false;
 }
 
 static bool try_build_dependent_decltype_type_ir(
@@ -9969,7 +9400,7 @@ static bool build_itanium_lambda_context_fragment_from_type(
   if(!metadata) {
     return false;
   }
-  if(!mangle_itanium_function_encoding_with_substitutions(
+  if(!emit_itanium_function_encoding_with_substitutions(
          metadata->context_function_qualified_name,
          metadata->context_function_display_name,
          metadata->context_function_type,
@@ -10597,6 +10028,12 @@ static bool try_build_template_argument_syntax_ir(
      !non_type_expression_text.empty() &&
      !syntax.type_id &&
      !syntax.template_id) {
+    if(try_build_owner_non_type_template_argument_ir(non_type_expression_text,
+                                                     syntax.pack_expansion,
+                                                     mangle_ctx,
+                                                     out)) {
+      return true;
+    }
     itanium_mangle_ir::DependentExpression expression;
     if(try_build_dependent_expression_text_ir(non_type_expression_text,
                                               mangle_ctx,
@@ -10613,6 +10050,13 @@ static bool try_build_template_argument_syntax_ir(
   if(known_non_type_parameter) {
     itanium_mangle_ir::DependentExpression expression;
     if(!non_type_expression_text.empty() &&
+       try_build_owner_non_type_template_argument_ir(non_type_expression_text,
+                                                     syntax.pack_expansion,
+                                                     mangle_ctx,
+                                                     out)) {
+      return true;
+    }
+    if(!non_type_expression_text.empty() &&
        try_build_template_parameter_value_expression_ir(non_type_expression_text,
                                                         mangle_ctx,
                                                         expression)) {
@@ -10622,13 +10066,6 @@ static bool try_build_template_argument_syntax_ir(
       }
       out = itanium_mangle_ir::Type::ClassTemplateArgument::
           dependent_expression_arg(expression);
-      return true;
-    }
-    if(!non_type_expression_text.empty() &&
-       try_build_owner_non_type_template_argument_ir(non_type_expression_text,
-                                                     syntax.pack_expansion,
-                                                     mangle_ctx,
-                                                     out)) {
       return true;
     }
     return false;
@@ -11659,6 +11096,90 @@ static TypePtr class_template_value_argument_type_for_ir(
   return value_type;
 }
 
+static bool try_build_dependent_value_template_argument_expression_ir(
+    const TemplateArgument & argument,
+    const TypeMangleContext * mangle_ctx,
+    itanium_mangle_ir::DependentExpression & out)
+{
+  if(!argument.dependent) {
+    return false;
+  }
+  if(argument.expression &&
+     try_build_dependent_expression_ir(*argument.expression, mangle_ctx, out)) {
+    return true;
+  }
+
+  string text = trim_space(argument.text);
+  bool pack_expansion =
+      argument.source_syntax && argument.source_syntax->pack_expansion;
+  if(text.size() >= 3 && text.compare(text.size() - 3, 3, "...") == 0) {
+    text = trim_space(text.substr(0, text.size() - 3));
+    pack_expansion = true;
+  }
+  if(text.empty()) {
+    return false;
+  }
+
+  itanium_mangle_ir::DependentExpression expression;
+  if(!try_build_dependent_expression_text_ir(text, mangle_ctx, expression)) {
+    return false;
+  }
+  out = pack_expansion ?
+      itanium_mangle_ir::DependentExpression::pack_expansion(expression) :
+      expression;
+  return true;
+}
+
+static bool try_build_template_argument_source_type_ir(
+    const TemplateArgument & argument,
+    const TypeMangleContext * mangle_ctx,
+    itanium_mangle_ir::Type & out)
+{
+  if(!argument.source_syntax) {
+    return false;
+  }
+  if(argument.source_syntax->type_id &&
+     try_build_type_id_ast_ir(*argument.source_syntax->type_id,
+                              mangle_ctx,
+                              out)) {
+    return true;
+  }
+  if(argument.source_syntax->resolved_type &&
+     try_build_template_argument_type_ir(argument.source_syntax->resolved_type,
+                                         mangle_ctx,
+                                         out)) {
+    return true;
+  }
+  return false;
+}
+
+static bool try_find_template_template_parameter_argument_index(
+    const TemplateArgument & argument,
+    const TypeMangleContext * mangle_ctx,
+    size_t & out)
+{
+  if(argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+     argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) {
+    return false;
+  }
+  if(argument.template_decl && !argument.dependent) {
+    return false;
+  }
+
+  string text = trim_space(argument.text);
+  if(text.empty() && argument.source_syntax) {
+    text = trim_space(argument.source_syntax->source_text.empty() ?
+                          argument.source_syntax->text :
+                          argument.source_syntax->source_text);
+  }
+  const TemplateParameterInfo * parameter = nullptr;
+  return !text.empty() &&
+         try_find_template_template_parameter_index(text,
+                                                    mangle_ctx,
+                                                    out,
+                                                    parameter);
+}
+
 static bool template_value_argument_integral_value_for_ir(
     const TemplateArgument & argument,
     long long & out)
@@ -11845,7 +11366,8 @@ static bool try_build_class_template_argument_ir(
   switch(argument.kind) {
   case TemplateArgument::TA_TYPE: {
     itanium_mangle_ir::Type type;
-    if(!try_build_template_argument_type_ir(argument.type, mangle_ctx, type)) {
+    if(!try_build_template_argument_type_ir(argument.type, mangle_ctx, type) &&
+       !try_build_template_argument_source_type_ir(argument, mangle_ctx, type)) {
       return false;
     }
     out = itanium_mangle_ir::Type::ClassTemplateArgument::type_arg(type);
@@ -11870,6 +11392,24 @@ static bool try_build_class_template_argument_ir(
       return true;
     }
     if(argument.dependent) {
+      itanium_mangle_ir::Type::ClassTemplateArgument owner_argument;
+      const bool pack_expansion =
+          argument.source_syntax && argument.source_syntax->pack_expansion;
+      if(try_build_owner_non_type_template_argument_ir(argument.text,
+                                                       pack_expansion,
+                                                       mangle_ctx,
+                                                       owner_argument)) {
+        out = owner_argument;
+        return true;
+      }
+      itanium_mangle_ir::DependentExpression expression;
+      if(try_build_dependent_value_template_argument_expression_ir(argument,
+                                                                   mangle_ctx,
+                                                                   expression)) {
+        out = itanium_mangle_ir::Type::ClassTemplateArgument::
+            dependent_expression_arg(expression);
+        return true;
+      }
       return false;
     }
     TypePtr value_type =
@@ -11893,6 +11433,16 @@ static bool try_build_class_template_argument_ir(
 
   case TemplateArgument::TA_CLASS_TEMPLATE:
   case TemplateArgument::TA_ALIAS_TEMPLATE: {
+    size_t template_parameter_index = 0;
+    if(try_find_template_template_parameter_argument_index(
+           argument,
+           mangle_ctx,
+           template_parameter_index)) {
+      out = itanium_mangle_ir::Type::ClassTemplateArgument::
+          template_parameter_template_arg(template_parameter_index);
+      return true;
+    }
+
     vector<itanium_mangle_ir::Type::NameComponent> prefix_components;
     string template_name;
     string template_name_substitution;
@@ -12005,7 +11555,8 @@ static bool try_build_function_template_argument_ir(
   switch(argument.kind) {
   case TemplateArgument::TA_TYPE: {
     itanium_mangle_ir::Type type;
-    if(!try_build_template_argument_type_ir(argument.type, mangle_ctx, type)) {
+    if(!try_build_template_argument_type_ir(argument.type, mangle_ctx, type) &&
+       !try_build_template_argument_source_type_ir(argument, mangle_ctx, type)) {
       return false;
     }
     out = itanium_mangle_ir::TemplateArgument::type_arg(type);
@@ -12030,6 +11581,27 @@ static bool try_build_function_template_argument_ir(
       return true;
     }
     if(argument.dependent) {
+      itanium_mangle_ir::Type::ClassTemplateArgument owner_class_argument;
+      itanium_mangle_ir::TemplateArgument owner_argument;
+      const bool pack_expansion =
+          argument.source_syntax && argument.source_syntax->pack_expansion;
+      if(try_build_owner_non_type_template_argument_ir(argument.text,
+                                                       pack_expansion,
+                                                       mangle_ctx,
+                                                       owner_class_argument) &&
+         class_template_argument_ir_to_template_argument_ir(owner_class_argument,
+                                                           owner_argument)) {
+        out = owner_argument;
+        return true;
+      }
+      itanium_mangle_ir::DependentExpression expression;
+      if(try_build_dependent_value_template_argument_expression_ir(argument,
+                                                                   mangle_ctx,
+                                                                   expression)) {
+        out = itanium_mangle_ir::TemplateArgument::
+            dependent_expression_arg(expression);
+        return true;
+      }
       return false;
     }
     TypePtr value_type = template_value_argument_type_for_ir(argument,
@@ -12052,6 +11624,16 @@ static bool try_build_function_template_argument_ir(
 
   case TemplateArgument::TA_CLASS_TEMPLATE:
   case TemplateArgument::TA_ALIAS_TEMPLATE: {
+    size_t template_parameter_index = 0;
+    if(try_find_template_template_parameter_argument_index(
+           argument,
+           mangle_ctx,
+           template_parameter_index)) {
+      out = itanium_mangle_ir::TemplateArgument::
+          template_parameter_template_arg(template_parameter_index);
+      return true;
+    }
+
     vector<itanium_mangle_ir::Type::NameComponent> prefix_components;
     string template_name;
     string template_name_substitution;
@@ -12269,18 +11851,11 @@ static bool try_build_class_template_specialization_type_ir(
             arguments);
     itanium_mangle_ir::Type::ensure_name_metadata(ir_type)
         .register_member_expression_template_name = true;
-    string legacy_key;
     itanium_mangle_ir::SubstitutionKey structural_key;
-    if(!build_type_substitution_key(base, specialization_ctx, legacy_key) ||
-       legacy_key.empty()) {
-      return false;
-    }
     if(!build_class_template_specialization_structural_key(base,
                                                            specialization_ctx,
-                                                           structural_key) &&
-       !try_build_ir_key_from_legacy_substitution_key(legacy_key,
-                                                      structural_key)) {
-      structural_key = itanium_mangle_ir::SubstitutionKey::legacy(legacy_key);
+                                                           structural_key)) {
+      return false;
     }
     itanium_mangle_ir::set_substitution(ir_type, structural_key);
     out = ir_type;
@@ -12314,18 +11889,11 @@ static bool try_build_class_template_specialization_type_ir(
           standard_substitution_includes_arguments);
 
   if(!standard_substitution_includes_arguments) {
-    string legacy_key;
     itanium_mangle_ir::SubstitutionKey structural_key;
-    if(!build_type_substitution_key(base, mangle_ctx, legacy_key) ||
-       legacy_key.empty()) {
-      return false;
-    }
     if(!build_class_template_specialization_structural_key(base,
                                                            mangle_ctx,
-                                                           structural_key) &&
-       !try_build_ir_key_from_legacy_substitution_key(legacy_key,
-                                                      structural_key)) {
-      structural_key = itanium_mangle_ir::SubstitutionKey::legacy(legacy_key);
+                                                           structural_key)) {
+      return false;
     }
     itanium_mangle_ir::set_substitution(ir_type, structural_key);
   }
@@ -12664,10 +12232,10 @@ static bool try_build_type_ir_cached(
     return try_build_type_ir(type, mangle_ctx, out);
   }
 
-  static thread_local unordered_map<TypePtr, itanium_mangle_ir::Type> legacy_cache;
+  static thread_local unordered_map<TypePtr, itanium_mangle_ir::Type> default_cache;
   static thread_local unordered_map<TypePtr, itanium_mangle_ir::Type> ir_only_cache;
   unordered_map<TypePtr, itanium_mangle_ir::Type> & cache =
-      mangle_ctx ? ir_only_cache : legacy_cache;
+      mangle_ctx ? ir_only_cache : default_cache;
   unordered_map<TypePtr, itanium_mangle_ir::Type>::const_iterator found =
       cache.find(type);
   if(found != cache.end()) {
@@ -12796,157 +12364,6 @@ static bool build_array_bound_type_mangle(const TypePtr & type,
   return true;
 }
 
-static bool try_mangle_named_text_impl(const string & text,
-                                       string & out,
-                                       const TypeMangleContext * mangle_ctx,
-                                       MangleSubstitutionState * state)
-{
-  const string stripped = trim_elaborated_type_prefix(text);
-  QualifiedName unqualified_candidate;
-  const bool prefer_local_component_emission =
-      mangle_ctx &&
-      !mangle_ctx->lexical_scope.empty() &&
-      lexical_scope_supports_local_component_emission(mangle_ctx->lexical_scope) &&
-      parse_external_named_text_candidate(stripped, unqualified_candidate) &&
-      unqualified_candidate.qualifiers.empty();
-
-  QualifiedName qualified;
-  const string scoped_text = qualify_named_text_with_lexical_scope(text, mangle_ctx);
-  if(!parse_external_named_text_candidate(scoped_text, qualified)) {
-    return false;
-  }
-
-  vector<string> parts = qualified.qualifiers;
-  parts.push_back(qualified.name);
-  if(parts.empty()) {
-    return false;
-  }
-
-  vector<string> canonical_parts;
-  canonical_parts.reserve(parts.size());
-  for(size_t i = 0; i < parts.size(); ++i) {
-    canonical_parts.push_back(canonical_component_text(parts[i]));
-  }
-
-  const string full_key =
-      named_substitution_key(join_canonical_qualified_parts(canonical_parts, canonical_parts.size()));
-  if(!prefer_local_component_emission &&
-     emit_registered_substitution(state, full_key, out)) {
-    return true;
-  }
-
-  if(prefer_local_component_emission) {
-    string canonical_prefix;
-    if(!canonicalize_named_substitution_text(mangle_ctx->lexical_scope, canonical_prefix)) {
-      canonical_prefix = mangle_ctx->lexical_scope;
-    }
-    string canonical_full_text;
-    return emit_component_with_substitution_keys(stripped,
-                                                 canonical_prefix,
-                                                 out,
-                                                 mangle_ctx,
-                                                 state,
-                                                 &canonical_full_text);
-  }
-
-  if(parts.size() == 1) {
-    string canonical_full_text;
-    return emit_component_with_substitution_keys(parts[0],
-                                                 string(),
-                                                 out,
-                                                 mangle_ctx,
-                                                 state,
-                                                 &canonical_full_text);
-  }
-
-  if(can_emit_direct_std_standard_substitution(parts, canonical_parts, mangle_ctx) &&
-     try_emit_direct_std_standard_substitution(parts[1], full_key, out, mangle_ctx, state)) {
-    return true;
-  }
-
-  if(parts.size() == 2 && canonical_parts[0] == "std") {
-    out += "St";
-    register_standard_substitution_slot(state, "St");
-    string canonical_full_text;
-    return emit_component_with_substitution_keys(parts[1],
-                                                 "std",
-                                                 out,
-                                                 mangle_ctx,
-                                                 state,
-                                                 &canonical_full_text);
-  }
-
-  out += 'N';
-
-  string canonical_prefix;
-  size_t start = 0;
-  for(size_t len = parts.size() - 1; len > 0; --len) {
-    const string prefix_key =
-        named_substitution_key(join_canonical_qualified_parts(canonical_parts, len));
-    if(emit_registered_substitution(state, prefix_key, out)) {
-      canonical_prefix = join_canonical_qualified_parts(canonical_parts, len);
-      start = len;
-      break;
-    }
-  }
-
-  if(start == 0) {
-    if(canonical_parts.size() >= 2 && canonical_parts[0] == "std" &&
-       canonical_parts[1] == "__1") {
-      out += "St3__1";
-      register_standard_substitution_slot(state, "St");
-      canonical_prefix = "std::__1";
-      register_substitution_key(state, named_substitution_key(canonical_prefix));
-      start = 2;
-    } else if(canonical_parts.size() >= 2 &&
-              can_emit_direct_std_standard_substitution(vector<string>(parts.begin(),
-                                                                      parts.begin() + 2),
-                                                        vector<string>(canonical_parts.begin(),
-                                                                       canonical_parts.begin() + 2),
-                                                        mangle_ctx) &&
-              try_emit_direct_std_standard_substitution(
-                  parts[1],
-                  named_substitution_key(join_canonical_qualified_parts(canonical_parts, 2)),
-                  out,
-                  mangle_ctx,
-                  state)) {
-      canonical_prefix = join_canonical_qualified_parts(canonical_parts, 2);
-      start = 2;
-    } else if(canonical_parts[0] == "std") {
-      out += "St";
-      canonical_prefix = "std";
-      register_standard_substitution_slot(state, "St");
-      start = 1;
-    }
-  }
-
-  for(size_t i = start; i < parts.size(); ++i) {
-    string canonical_full_text;
-    if(!emit_component_with_substitution_keys(parts[i],
-                                              canonical_prefix,
-                                              out,
-                                              mangle_ctx,
-                                              state,
-                                              &canonical_full_text)) {
-      return false;
-    }
-    canonical_prefix = canonical_full_text;
-  }
-  out += 'E';
-  return true;
-}
-
-static bool try_mangle_named_text(const string & text, string & out)
-{
-  MangleSubstitutionState state;
-  return try_mangle_named_text_impl(text, out, nullptr, &state);
-}
-
-static bool try_mangle_type_impl(const TypePtr & type,
-                                 string & out,
-                                 const TypeMangleContext * mangle_ctx,
-                                 MangleSubstitutionState * state);
-
 static bool try_mangle_value_template_argument_impl(const TypePtr & type,
                                                     long long value,
                                                     string & out,
@@ -12964,7 +12381,7 @@ static bool try_mangle_value_template_argument_impl(const TypePtr & type,
     }
   }
   out += 'L';
-  if(base && try_mangle_type_impl(base, out, nullptr, state)) {
+  if(base && try_emit_type_encoding_ir_impl(base, out, nullptr, state)) {
     out += to_string(value);
     out += 'E';
     return true;
@@ -13128,7 +12545,7 @@ static bool try_mangle_dependent_non_type_template_argument(
        !type_has_dependent_mangle_state(arg.type)) {
       return false;
     }
-    throw_legacy_dependent_text_mangling(
+    throw_unstructured_dependent_text_mangling(
         "non-type template parameter type",
         non_type_template_parameter_type_diagnostic_text(parameter));
   }
@@ -13167,7 +12584,7 @@ static bool try_mangle_dependent_non_type_template_argument(
                                            state,
                                            false);
     }
-    throw_legacy_dependent_text_mangling(
+    throw_unstructured_dependent_text_mangling(
         "non-type template argument",
         arg.text);
   }
@@ -13297,12 +12714,12 @@ static bool should_prefer_unqualified_lexical_named_type(const TypePtr & type,
          canonical_scoped_text == canonical_key_text;
 }
 
-static bool try_mangle_type(const TypePtr & type,
+static bool try_emit_type_encoding_ir(const TypePtr & type,
                             string & out,
                             const TypeMangleContext * mangle_ctx)
 {
   MangleSubstitutionState state;
-  return try_mangle_type_impl(type, out, mangle_ctx, &state);
+  return try_emit_type_encoding_ir_impl(type, out, mangle_ctx, &state);
 }
 
 static bool parse_type_substitution_wrapper_key(const string & key,
@@ -13384,10 +12801,10 @@ static void register_function_type_prerequisite_keys(
   }
 }
 
-static bool try_mangle_type_impl(const TypePtr & type,
-                                 string & out,
-                                 const TypeMangleContext * mangle_ctx,
-                                 MangleSubstitutionState * state)
+static bool try_emit_type_encoding_ir_impl(const TypePtr & type,
+                                           string & out,
+                                           const TypeMangleContext * mangle_ctx,
+                                           MangleSubstitutionState * state)
 {
   if(!type) {
     return false;
@@ -13796,7 +13213,7 @@ static bool try_mangle_template_argument_impl(const TemplateArgument & arg,
              &sink)) {
         return false;
       }
-    } else if(!try_mangle_type_impl(arg.type, out, mangle_ctx, state)) {
+    } else if(!try_emit_type_encoding_ir_impl(arg.type, out, mangle_ctx, state)) {
       return false;
     }
     register_direct_std_type_substitution_if_needed(arg.type, mangle_ctx, state);
@@ -13898,7 +13315,7 @@ static bool try_mangle_template_argument_impl(const TemplateArgument & arg,
                                              state,
                                              false);
       }
-      throw_legacy_dependent_text_mangling(
+      throw_unstructured_dependent_text_mangling(
           "non-type template argument",
           arg.text);
     }
@@ -13930,113 +13347,23 @@ static bool try_mangle_template_argument_impl(const TemplateArgument & arg,
     if(try_mangle_template_parameter_text(arg.text, mangle_ctx, out, state)) {
       return true;
     }
-    return try_mangle_named_text_impl(arg.text, out, mangle_ctx, state);
+    if(try_build_template_entity_argument_text_ir(arg.text,
+                                                  prefix_components,
+                                                  template_name,
+                                                  template_name_substitution)) {
+      MangleIrSubstitutionSink sink(state);
+      return itanium_mangle_ir::emit_template_argument(
+          itanium_mangle_ir::TemplateArgument::template_entity_arg(
+              prefix_components,
+              template_name,
+              template_name_substitution),
+          out,
+          &sink);
+    }
+    return false;
   }
   }
   return false;
-}
-
-static bool emit_template_component_with_structured_arguments(
-    const string & base_name,
-    const vector<TemplateArgument> & arguments,
-    const vector<TemplateParameterInfo> * parameters,
-    const string & canonical_prefix,
-    string & out,
-    const TypeMangleContext * mangle_ctx,
-    MangleSubstitutionState * state,
-    string * canonical_full_text)
-{
-  const string component = trim_space(base_name);
-  if(component.empty()) {
-    return false;
-  }
-
-  const string full_base_text =
-      append_qualified_component_text(canonical_prefix,
-                                      canonical_component_text(component));
-  string standard_substitution;
-  bool standard_substitution_includes_arguments = false;
-  if(structured_std_standard_substitution_for_template_component(
-         component,
-         arguments,
-         canonical_prefix,
-         mangle_ctx,
-         standard_substitution,
-         standard_substitution_includes_arguments)) {
-    out += standard_substitution;
-    register_standard_substitution_slot(state, standard_substitution);
-    if(standard_substitution_includes_arguments) {
-      if(canonical_full_text) {
-        *canonical_full_text = full_base_text;
-      }
-      return true;
-    }
-    if(!emit_grouped_template_arguments(
-           arguments.size(),
-           parameters,
-           out,
-           [&](size_t i, const TemplateParameterInfo * parameter) -> bool
-           {
-             const size_t parameter_index =
-                 parameters && parameter ? static_cast<size_t>(parameter - &(*parameters)[0]) :
-                                           static_cast<size_t>(-1);
-             return try_mangle_template_argument_impl(
-                 arguments[i], parameter, out, mangle_ctx, state, parameter_index);
-           })) {
-      return false;
-    }
-    if(canonical_full_text) {
-      *canonical_full_text = full_base_text;
-    }
-    return true;
-  }
-
-  const string base_key = named_substitution_key(full_base_text);
-  const bool suppress_simple_dependent_member_template_name =
-      !canonical_prefix.empty() &&
-      mangle_ctx &&
-      mangle_ctx->suppress_member_template_name_component_substitution &&
-      structured_template_arguments_are_simple_parameter_refs(arguments, parameters);
-  const bool suppress_template_name_component_substitution =
-      !canonical_prefix.empty() &&
-      ((mangle_ctx &&
-        mangle_ctx->suppress_member_template_name_component_substitution) ||
-       suppress_simple_dependent_member_template_name);
-  if(!suppress_template_name_component_substitution &&
-     emit_registered_substitution(state, base_key, out)) {
-    // The template-name substitution replaces the source-name component only.
-  } else {
-    out += source_name_fragment(component);
-  }
-  if(!suppress_template_name_component_substitution) {
-    register_substitution_key(state, base_key);
-  }
-  if(arguments.empty()) {
-    if(canonical_full_text) {
-      *canonical_full_text = full_base_text;
-    }
-    return true;
-  }
-
-  if(!emit_grouped_template_arguments(
-         arguments.size(),
-         parameters,
-         out,
-         [&](size_t i, const TemplateParameterInfo * parameter) -> bool
-         {
-           const size_t parameter_index =
-               parameters && parameter ? static_cast<size_t>(parameter - &(*parameters)[0]) :
-                                         static_cast<size_t>(-1);
-           return try_mangle_template_argument_impl(
-               arguments[i], parameter, out, mangle_ctx, state, parameter_index);
-         })) {
-    return false;
-  }
-
-  if(canonical_full_text) {
-    *canonical_full_text = full_base_text;
-  }
-  return true;
 }
 
 static bool try_mangle_builtin_text(const string & trimmed, string & out)
@@ -14421,13 +13748,18 @@ static bool build_class_template_specialization_structural_key(
     const TypeMangleContext * mangle_ctx,
     itanium_mangle_ir::SubstitutionKey & out)
 {
-  if(!structural_substitution_key_context_is_stable(mangle_ctx)) {
-    return false;
-  }
   shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
       named_type_class_template_specialization_mangle_info_const(type);
   if(!info) {
     return false;
+  }
+  const TypeMangleContext * key_ctx = mangle_ctx;
+  if(!structural_substitution_key_context_is_stable(key_ctx)) {
+    if(template_arguments_have_dependent_mangle_state(info->arguments) ||
+       template_arguments_have_entity_value(info->arguments)) {
+      return false;
+    }
+    key_ctx = nullptr;
   }
 
   string canonical_scope;
@@ -14444,7 +13776,7 @@ static bool build_class_template_specialization_structural_key(
                                       canonical_component_text(template_name));
 
   string named_key;
-  if(build_type_substitution_key(type, mangle_ctx, named_key)) {
+  if(build_type_substitution_key(type, key_ctx, named_key)) {
     static const char name_prefix[] = "name:";
     if(named_key.compare(0, sizeof(name_prefix) - 1, name_prefix) == 0 &&
        named_key.size() > sizeof(name_prefix) - 1) {
@@ -14459,7 +13791,7 @@ static bool build_class_template_specialization_structural_key(
   for(size_t i = 0; i < info->arguments.size(); ++i) {
     itanium_mangle_ir::SubstitutionKey argument_key;
     if(!build_template_argument_structural_key(info->arguments[i],
-                                               mangle_ctx,
+                                               key_ctx,
                                                argument_key)) {
       return false;
     }
@@ -14995,11 +14327,32 @@ static bool try_build_function_qualifier_component_ir(
       owner_component ? owner_component->parameters : options.owner_template_parameters;
   const vector<TemplateArgument> * structured_arguments =
       owner_component ? owner_component->arguments : options.owner_template_arguments;
+  vector<TemplateArgument> structured_arguments_with_source;
+  if(owner_component &&
+     owner_component->argument_syntaxes &&
+     structured_arguments &&
+     owner_component->argument_syntaxes->size() == structured_arguments->size()) {
+    structured_arguments_with_source = *structured_arguments;
+    for(size_t i = 0; i < structured_arguments_with_source.size(); ++i) {
+      if(!structured_arguments_with_source[i].source_syntax) {
+        structured_arguments_with_source[i].source_syntax.reset(
+            new TemplateArgumentSyntax((*owner_component->argument_syntaxes)[i]));
+      }
+    }
+    structured_arguments = &structured_arguments_with_source;
+  }
   if(owner_component) {
     component_matches_owner_template = true;
   }
   owner_component_ctx.owner_template_parameters = structured_parameters;
   owner_component_ctx.owner_template_arguments = structured_arguments;
+  TemplateParameterMangleContext owner_component_template_parameter_ctx;
+  if(owner_component && owner_component->mangle_parameters) {
+    owner_component_template_parameter_ctx.parameters =
+        owner_component->mangle_parameters;
+    owner_component_ctx.template_parameters =
+        &owner_component_template_parameter_ctx;
+  }
   const bool should_use_structured_owner_arguments =
       owner_component ||
       component_matches_owner_template ||
@@ -15104,6 +14457,39 @@ static bool build_function_name_components_ir(
   function.name_components.push_back(include_terminal_source_name ?
       itanium_mangle_ir::FunctionNameComponent::source(qualified.name, string()) :
       itanium_mangle_ir::FunctionNameComponent::source(string(), string()));
+  return true;
+}
+
+static bool try_emit_qualified_name_encoding_ir(const QualifiedName & qualified,
+                                                string & out)
+{
+  FunctionSymbolOptions options;
+  itanium_mangle_ir::FunctionEncoding function;
+  if(!build_function_name_components_ir(qualified, options, true, function)) {
+    return false;
+  }
+  MangleSubstitutionState state;
+  MangleIrSubstitutionSink sink(&state);
+  string candidate;
+  if(!itanium_mangle_ir::emit_function_name(function, candidate, &sink)) {
+    return false;
+  }
+  out.swap(candidate);
+  return true;
+}
+
+static bool try_emit_qualified_name_object_symbol_ir(const QualifiedName & qualified,
+                                                     string & out)
+{
+  FunctionSymbolOptions options;
+  itanium_mangle_ir::FunctionEncoding function;
+  if(!build_function_name_components_ir(qualified, options, true, function)) {
+    return false;
+  }
+  MangleSubstitutionState state;
+  if(!emit_function_name_ir(function, &state, out)) {
+    return false;
+  }
   return true;
 }
 
@@ -15446,7 +14832,7 @@ static bool try_mangle_operator_name_prefix_ir(
       return false;
     }
     function.template_prefix_key =
-        itanium_mangle_ir::SubstitutionKey::legacy(
+        itanium_mangle_ir::SubstitutionKey::function_template_prefix(
             string("operator-name:") + operator_code);
   }
 
@@ -15567,7 +14953,7 @@ static bool try_mangle_plain_function_ir(const QualifiedName & qualified,
                                          const FunctionSymbolOptions & options,
                                          string & out,
                                          MangleSubstitutionState * state,
-                                         bool suppress_legacy_bridge)
+                                         bool suppress_type_substitution_keys)
 {
   if(qualified.rooted ||
      qualified.name.empty() ||
@@ -15600,10 +14986,10 @@ static bool try_mangle_plain_function_ir(const QualifiedName & qualified,
   function.variadic = function_type->variadic;
   function.parameter_types.reserve(function_type->params.size());
   TypeMangleContext ir_only_type_ctx;
-  ir_only_type_ctx.suppress_legacy_type_substitution_keys =
-      suppress_legacy_bridge;
+  ir_only_type_ctx.suppress_type_substitution_keys =
+      suppress_type_substitution_keys;
   const TypeMangleContext * parameter_type_ctx =
-      suppress_legacy_bridge ? &ir_only_type_ctx : nullptr;
+      suppress_type_substitution_keys ? &ir_only_type_ctx : nullptr;
   for(size_t i = 0; i < function_type->params.size(); ++i) {
     itanium_mangle_ir::Type param;
     if(!try_build_type_ir_cached(function_type->params[i],
@@ -15701,7 +15087,7 @@ static FunctionNameIrPath select_function_name_ir_path(
   return FNIP_NONE;
 }
 
-static bool try_mangle_itanium_function_name_syntax(
+static bool try_emit_itanium_function_symbol_ir(
     const QualifiedName & qualified,
     const string & qualified_name_label,
     const string & display_name,
@@ -15826,6 +15212,11 @@ static bool try_mangle_itanium_function_name_syntax(
   const size_t param_start = strip_implicit_self ? 1 : 0;
 
   TemplateParameterMangleContext template_ctx;
+  TemplateParameterMangleContext owner_mangle_template_ctx;
+  if(!options.template_parameters && options.owner_mangle_parameters) {
+    owner_mangle_template_ctx.parameters = options.owner_mangle_parameters;
+    mangle_ctx.template_parameters = &owner_mangle_template_ctx;
+  }
   TypePtr pattern_type = strip_top_level_cv(options.function_type_pattern);
   if(options.template_parameters &&
      options.template_arguments &&
@@ -15918,14 +15309,14 @@ static bool try_mangle_itanium_function_name_syntax(
           candidate.resize(structured_begin);
           if(actual_function_type->inner &&
              !type_has_dependent_mangle_state(actual_function_type->inner) &&
-             try_mangle_type_impl(actual_function_type->inner,
+             try_emit_type_encoding_ir_impl(actual_function_type->inner,
                                   candidate,
                                   &result_ctx,
                                   state)) {
             mangled_return = true;
           } else if(type_ast_references_alias_template(*options.result_type_pattern,
                                                        &result_ctx) &&
-                    try_mangle_type_impl(actual_function_type->inner,
+                    try_emit_type_encoding_ir_impl(actual_function_type->inner,
                                          candidate,
                                          &result_ctx,
                                          state)) {
@@ -15934,7 +15325,7 @@ static bool try_mangle_itanium_function_name_syntax(
         }
         if(!mangled_return) {
           throw logic_error(
-              string("dependent function result type reached legacy ABI mangler: ") +
+              string("dependent function result type reached unstructured ABI text mangler: ") +
               ast_node_diagnostic_label(*options.result_type_pattern));
         }
       }
@@ -15943,7 +15334,7 @@ static bool try_mangle_itanium_function_name_syntax(
             hybridize_pattern_type_with_actual(pattern_type->inner,
                                                actual_function_type->inner,
                                                &mangle_ctx);
-        if(!try_mangle_type_impl(hybrid_return_type, candidate, &mangle_ctx, state)) {
+        if(!try_emit_type_encoding_ir_impl(hybrid_return_type, candidate, &mangle_ctx, state)) {
           return false;
         }
       }
@@ -16022,7 +15413,7 @@ static bool try_mangle_itanium_function_name_syntax(
               candidate);
         }
         if(!mangled_param) {
-          mangled_param = try_mangle_type_impl(actual_param,
+          mangled_param = try_emit_type_encoding_ir_impl(actual_param,
                                                candidate,
                                                &mangle_ctx,
                                                state);
@@ -16032,7 +15423,7 @@ static bool try_mangle_itanium_function_name_syntax(
          actual_param &&
          (!type_has_dependent_mangle_state(actual_param) ||
           type_has_concrete_template_id_spelling_for_mangling(actual_param, &mangle_ctx))) {
-        mangled_param = try_mangle_type_impl(actual_param,
+        mangled_param = try_emit_type_encoding_ir_impl(actual_param,
                                              candidate,
                                              &mangle_ctx,
                                              state);
@@ -16041,7 +15432,7 @@ static bool try_mangle_itanium_function_name_syntax(
         const size_t structured_begin = candidate.size();
         // Prefer preserved dependent template/member state over re-reading type
         // syntax; this keeps pack, alias, and substitution handling typed.
-        mangled_param = try_mangle_type_impl(hybrid_param_type,
+        mangled_param = try_emit_type_encoding_ir_impl(hybrid_param_type,
                                              candidate,
                                              &mangle_ctx,
                                              state);
@@ -16053,7 +15444,7 @@ static bool try_mangle_itanium_function_name_syntax(
          type_has_dependent_class_template_nested_owner_mangle_state(
              hybrid_param_type)) {
         const size_t structured_begin = candidate.size();
-        mangled_param = try_mangle_type_impl(hybrid_param_type,
+        mangled_param = try_emit_type_encoding_ir_impl(hybrid_param_type,
                                              candidate,
                                              &mangle_ctx,
                                              state);
@@ -16075,17 +15466,17 @@ static bool try_mangle_itanium_function_name_syntax(
         if(!mangled_param) {
           candidate.resize(structured_begin);
           if(actual_param && !type_has_dependent_mangle_state(actual_param) &&
-             try_mangle_type_impl(actual_param, candidate, &mangle_ctx, state)) {
+             try_emit_type_encoding_ir_impl(actual_param, candidate, &mangle_ctx, state)) {
             mangled_param = true;
           } else {
             throw logic_error(
-                string("dependent function parameter declaration reached legacy ABI mangler: ") +
+                string("dependent function parameter declaration reached unstructured ABI text mangler: ") +
                 ast_node_diagnostic_label(*parameter_decl_pattern));
           }
         }
       }
       if(!mangled_param &&
-         !try_mangle_type_impl(hybrid_param_type, candidate, &mangle_ctx, state)) {
+         !try_emit_type_encoding_ir_impl(hybrid_param_type, candidate, &mangle_ctx, state)) {
         return false;
       }
       if(!pack_substitution_key.empty()) {
@@ -16107,7 +15498,7 @@ static bool try_mangle_itanium_function_name_syntax(
   }
 
   for(size_t i = param_start; i < type->params.size(); ++i) {
-    if(!try_mangle_type_impl(type->params[i], candidate, &mangle_ctx, state)) {
+    if(!try_emit_type_encoding_ir_impl(type->params[i], candidate, &mangle_ctx, state)) {
       return false;
     }
   }
@@ -16118,7 +15509,7 @@ static bool try_mangle_itanium_function_name_syntax(
   return true;
 }
 
-static bool try_mangle_itanium_static_member_object_name(
+static bool try_emit_static_member_object_symbol_ir(
     const semantic_model::ClassInfo & owner_class,
     const string & member_name,
     string & out)
@@ -16131,7 +15522,7 @@ static bool try_mangle_itanium_static_member_object_name(
   MangleSubstitutionState state;
   TypeMangleContext owner_ctx;
   owner_ctx.prefer_concrete_non_type_values_for_dependent_parameter_types = true;
-  if(!try_mangle_type_impl(owner_class.type, owner, &owner_ctx, &state) ||
+  if(!try_emit_type_encoding_ir_impl(owner_class.type, owner, &owner_ctx, &state) ||
      owner.empty()) {
     return false;
   }
@@ -16220,8 +15611,8 @@ static string scoped_symbol_qualified_name_from_parts(const vector<string> & par
   return out;
 }
 
-static string scoped_symbol_qualified_name_legacy(const semantic_model::Scope & scope,
-                                                  const string & name)
+static string scoped_symbol_qualified_name_from_scope(const semantic_model::Scope & scope,
+                                                      const string & name)
 {
   vector<string> parts;
   parts.push_back(name);
@@ -16243,7 +15634,21 @@ static string scoped_symbol_qualified_name_legacy(const semantic_model::Scope & 
   return scoped_symbol_qualified_name_from_parts(parts);
 }
 
-static bool try_mangle_scoped_variable_object_name(const semantic_model::Scope & scope,
+static bool qualified_name_from_scoped_symbol_parts(const vector<string> & parts,
+                                                    QualifiedName & out)
+{
+  if(parts.empty()) {
+    return false;
+  }
+  out = QualifiedName();
+  out.name = parts[0];
+  for(size_t i = parts.size(); i > 1; --i) {
+    out.qualifiers.push_back(parts[i - 1]);
+  }
+  return true;
+}
+
+static bool try_emit_scoped_variable_object_symbol_ir(const semantic_model::Scope & scope,
                                                    const string & name,
                                                    string & out,
                                                    string * qualified_name)
@@ -16256,43 +15661,12 @@ static bool try_mangle_scoped_variable_object_name(const semantic_model::Scope &
     *qualified_name = scoped_symbol_qualified_name_from_parts(parts);
   }
 
-  string candidate = "_Z";
-  if(parts.size() == 2 && parts[1] == "std") {
-    candidate += "St";
-    candidate += source_name_fragment(parts[0]);
-    out.swap(candidate);
-    return true;
-  }
-  if(parts.size() > 1) {
-    candidate += 'N';
-  }
-  size_t begin = parts.size();
-  if(parts.size() > 2 && parts.back() == "std") {
-    candidate += "St";
-    --begin;
-  }
-  for(size_t i = begin; i > 0; --i) {
-    candidate += source_name_fragment(parts[i - 1]);
-  }
-  if(parts.size() > 1) {
-    candidate += 'E';
-  }
-  out.swap(candidate);
-  return true;
+  QualifiedName qualified;
+  return qualified_name_from_scoped_symbol_parts(parts, qualified) &&
+         try_emit_qualified_name_object_symbol_ir(qualified, out);
 }
 
-bool mangle_itanium_type_encoding(const TypePtr & type, string & out)
-{
-  string candidate;
-  MangleSubstitutionState state;
-  if(!try_mangle_type_impl(type, candidate, nullptr, &state)) {
-    return false;
-  }
-  out.swap(candidate);
-  return true;
-}
-
-static bool mangle_itanium_function_encoding_with_substitutions(
+static bool emit_itanium_function_encoding_with_substitutions(
     const QualifiedName & qualified_name,
     const string & display_name,
     const TypePtr & type,
@@ -16303,13 +15677,13 @@ static bool mangle_itanium_function_encoding_with_substitutions(
   string candidate;
   MangleSubstitutionState state;
   const string qualified_name_label = qualified_name_syntax_key_text(qualified_name);
-  if(!try_mangle_itanium_function_name_syntax(qualified_name,
-                                              qualified_name_label,
-                                              display_name,
-                                              type,
-                                              options,
-                                              candidate,
-                                              substitution_slots ? &state : nullptr) ||
+  if(!try_emit_itanium_function_symbol_ir(qualified_name,
+                                          qualified_name_label,
+                                          display_name,
+                                          type,
+                                          options,
+                                          candidate,
+                                          substitution_slots ? &state : nullptr) ||
      candidate.compare(0, 2, "_Z") != 0) {
     return false;
   }
@@ -16326,29 +15700,6 @@ static bool uses_builtin_runtime_override(const string & name)
   return compact.compare(0, 10, "__builtin_") == 0 ||
          compact == "__builtin_operator_new" ||
          compact == "__builtin_operator_delete";
-}
-
-static string weak_object_symbol_from_function_signature(const string & qualified_name,
-                                                         const string & symbol_key)
-{
-  const vector<string> parts = split_qualified_name(qualified_name);
-  ostringstream out;
-  out << "_Z";
-  if(parts.size() > 1) {
-    out << 'N';
-  }
-  for(size_t i = 0; i < parts.size(); ++i) {
-    out << source_name_fragment(parts[i]);
-  }
-  if(parts.size() > 1) {
-    out << 'E';
-  }
-  if(symbol_key.empty()) {
-    out << 'v';
-  } else {
-    out << 'U' << source_name_fragment(symbol_key);
-  }
-  return out.str();
 }
 
 static SymbolIdentity c_linkage_identity(const string & raw_name,
@@ -16413,6 +15764,7 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
                                              SymbolLinkage linkage)
 {
   const string qualified_name = qualified_name_syntax_key_text(qualified);
+  (void)symbol_key;
   if(is_c_linkage) {
     SymbolIdentity out = c_linkage_identity(display_name, linkage);
     note_symbol_linkage_event("function", qualified_name, display_name, true, out);
@@ -16424,27 +15776,27 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
   out.linkage = linkage;
   if(linkage == SL_INTERNAL) {
     if(!uses_builtin_runtime_override(display_name)) {
-      try_mangle_itanium_function_name_syntax(qualified,
-                                              qualified_name,
-                                              display_name,
-                                              type,
-                                              options,
-                                              out.object_symbol);
+      try_emit_itanium_function_symbol_ir(qualified,
+                                          qualified_name,
+                                          display_name,
+                                          type,
+                                          options,
+                                          out.object_symbol);
     }
   } else if(qualified_name == "main" && display_name == "main") {
     out.object_symbol = "main";
     out.keep_internal_alias = true;
   } else if(!uses_builtin_runtime_override(display_name) &&
             (linkage == SL_WEAK || linkage == SL_EXTERNAL)) {
-    if(!try_mangle_itanium_function_name_syntax(qualified,
-                                                qualified_name,
-                                                display_name,
-                                                type,
-                                                options,
-                                                out.object_symbol) &&
+    if(!try_emit_itanium_function_symbol_ir(qualified,
+                                            qualified_name,
+                                            display_name,
+                                            type,
+                                            options,
+                                            out.object_symbol) &&
        linkage == SL_WEAK) {
-      out.object_symbol =
-          weak_object_symbol_from_function_signature(qualified_name, symbol_key);
+      throw logic_error("failed to build ABI IR function symbol for weak function " +
+                        qualified_name);
     }
   }
   note_symbol_linkage_event("function", qualified_name, display_name, false, out);
@@ -16477,7 +15829,7 @@ SymbolIdentity make_scoped_variable_symbol_identity(const semantic_model::Scope 
                                                     bool is_c_linkage,
                                                     SymbolLinkage linkage)
 {
-  string qualified_name = scoped_symbol_qualified_name_legacy(scope, name);
+  string qualified_name = scoped_symbol_qualified_name_from_scope(scope, name);
   vector<string> parts;
   if(scoped_variable_symbol_parts(scope, name, parts)) {
     qualified_name = scoped_symbol_qualified_name_from_parts(parts);
@@ -16492,7 +15844,10 @@ SymbolIdentity make_scoped_variable_symbol_identity(const semantic_model::Scope 
   SymbolIdentity out;
   out.internal_symbol = internal_symbol_from_name(qualified_name);
   out.linkage = linkage;
-  if(!try_mangle_scoped_variable_object_name(scope, name, out.object_symbol, &qualified_name)) {
+  if(!try_emit_scoped_variable_object_symbol_ir(scope,
+                                                name,
+                                                out.object_symbol,
+                                                &qualified_name)) {
     throw logic_error("failed to mangle scoped variable symbol from semantic scope " +
                       qualified_name);
   }
@@ -16519,9 +15874,9 @@ SymbolIdentity make_static_member_variable_symbol_identity(
   SymbolIdentity out;
   out.internal_symbol = internal_symbol_from_name(qualified_name);
   out.linkage = linkage;
-  if(!try_mangle_itanium_static_member_object_name(owner_class,
-                                                   member_name,
-                                                   out.object_symbol)) {
+  if(!try_emit_static_member_object_symbol_ir(owner_class,
+                                              member_name,
+                                              out.object_symbol)) {
     throw logic_error("failed to mangle static member variable symbol from semantic owner " +
                       qualified_name);
   }

@@ -1677,6 +1677,12 @@ public:
         precomputed_dependent_arguments ?
             *precomputed_dependent_arguments :
             template_arguments_are_dependent(arguments);
+    if(!source_arg_syntaxes &&
+       dependent_arguments &&
+       specialization.argument_syntaxes &&
+       specialization.argument_syntaxes->size() == arguments.size()) {
+      source_arg_syntaxes = specialization.argument_syntaxes;
+    }
 
     const CppAstNode * class_key = find_child_kind(*class_node, CppAstKind::class_key);
     if(!class_key) {

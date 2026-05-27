@@ -23,7 +23,7 @@ function @box_int___call(%this : ptr, %p : ptr) -> i32 [binding=weak, object=_ZN
     %t4 = call i32 @box_int___assign(%t1, %t2, %t3)
     return i32 %t4
 }
-function @box_int___assign(%this : ptr, %__param1 : ptr, %__param2 : ptr) -> i32 [binding=weak, object=_ZN3boxIiE6assignIPiTnN9enable_ifIXsr16is_constructibleIiN15iterator_traitsIT_E9referenceEEE5valueEiE4typeELi0EEEiS6_S6_] {
+function @box_int___assign(%this : ptr, %__param1 : ptr, %__param2 : ptr) -> i32 [binding=weak, object=_ZN3boxIiE6assignIPiTnN9enable_ifIXsr16is_constructibleIiN15iterator_traitsIT_E9referenceEEE5valueEiE4typeELi0EEEiS5_S5_] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

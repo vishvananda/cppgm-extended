@@ -16,7 +16,6 @@ struct SubstitutionKey
   enum Kind
   {
     SK_NONE,
-    SK_LEGACY,
     SK_NAMED,
     SK_TYPE,
     SK_TEMPLATE_ENTITY,
@@ -46,11 +45,6 @@ struct SubstitutionKey
   static SubstitutionKey none()
   {
     return SubstitutionKey();
-  }
-
-  static SubstitutionKey legacy(const std::string & key)
-  {
-    return make(SK_LEGACY, key);
   }
 
   static SubstitutionKey named(const std::string & name)
@@ -188,7 +182,6 @@ struct SubstitutionKey
     switch(kind) {
     case SK_NONE:
       return true;
-    case SK_LEGACY:
     case SK_NAMED:
     case SK_TYPE:
     case SK_TEMPLATE_ENTITY:
@@ -215,85 +208,6 @@ struct SubstitutionKey
       return false;
     }
     return true;
-  }
-
-  std::string legacy_text() const
-  {
-    switch(kind) {
-    case SK_NONE:
-      return std::string();
-    case SK_LEGACY:
-      return payload;
-    case SK_NAMED:
-      return std::string("name:") + payload;
-    case SK_TYPE:
-      return std::string("type:") + payload;
-    case SK_TEMPLATE_ENTITY:
-      return std::string("entity-template:") + payload;
-    case SK_PREFIX:
-      return std::string("template-prefix:") + payload;
-    case SK_TYPE_BUILTIN:
-      return std::string("type:builtin(") + payload + ")";
-    case SK_TYPE_CV:
-      if(children.size() != 1) {
-        return std::string();
-      }
-      return std::string("type:cv(") + payload + "," +
-             children[0].legacy_text() + ")";
-    case SK_TYPE_POINTER:
-      if(children.size() != 1) {
-        return std::string();
-      }
-      return std::string("type:ptr(") + children[0].legacy_text() + ")";
-    case SK_TYPE_LVALUE_REFERENCE:
-      if(children.size() != 1) {
-        return std::string();
-      }
-      return std::string("type:lref(") + children[0].legacy_text() + ")";
-    case SK_TYPE_RVALUE_REFERENCE:
-      if(children.size() != 1) {
-        return std::string();
-      }
-      return std::string("type:rref(") + children[0].legacy_text() + ")";
-    case SK_TYPE_ARRAY:
-      if(children.size() != 1) {
-        return std::string();
-      }
-      return std::string("type:array(") + payload + "," +
-             children[0].legacy_text() + ")";
-    case SK_TYPE_FUNCTION: {
-      if(children.empty()) {
-        return std::string();
-      }
-      std::string out = std::string("type:fn(") + children[0].legacy_text() + ";";
-      for(std::size_t i = 1; i < children.size(); ++i) {
-        if(i != 1) {
-          out += ",";
-        }
-        out += children[i].legacy_text();
-      }
-      out += ";";
-      out += payload;
-      out += ")";
-      return out;
-    }
-    case SK_TYPE_MEMBER_POINTER:
-      if(children.size() != 2) {
-        return std::string();
-      }
-      return std::string("type:mptr(") + children[0].legacy_text() + "," +
-             children[1].legacy_text() + ")";
-    case SK_TYPE_TEMPLATE_PARAMETER:
-      return std::string("type:tparam(index:") + std::to_string(id) + ")";
-    case SK_CLASS_TEMPLATE_SPECIALIZATION:
-    case SK_TEMPLATE_ARGUMENT_TYPE:
-    case SK_TEMPLATE_ARGUMENT_VALUE:
-    case SK_TEMPLATE_ARGUMENT_TEMPLATE:
-      return std::string();
-    case SK_FUNCTION_TEMPLATE_PREFIX:
-      return std::string("function-template-prefix:") + payload;
-    }
-    return std::string();
   }
 
   std::string structural_text() const
@@ -361,15 +275,7 @@ private:
 
 struct SubstitutionSlot
 {
-  std::string legacy_key;
   SubstitutionKey ir_key;
-
-  static SubstitutionSlot legacy(const std::string & key)
-  {
-    SubstitutionSlot slot;
-    slot.legacy_key = key;
-    return slot;
-  }
 
   static SubstitutionSlot typed(const SubstitutionKey & key)
   {
@@ -378,18 +284,9 @@ struct SubstitutionSlot
     return slot;
   }
 
-  static SubstitutionSlot combined(const std::string & legacy_key,
-                                   const SubstitutionKey & ir_key)
-  {
-    SubstitutionSlot slot;
-    slot.legacy_key = legacy_key;
-    slot.ir_key = ir_key;
-    return slot;
-  }
-
   bool empty() const
   {
-    return legacy_key.empty() && ir_key.empty();
+    return ir_key.empty();
   }
 };
 
@@ -475,7 +372,9 @@ struct Type
       std::string template_name_substitution;
       std::string external_entity_symbol;
       std::vector<ClassTemplateArgument> pack_arguments;
+      std::size_t template_parameter_index = 0;
       bool external_entity_address_of = false;
+      bool template_name_is_template_parameter = false;
     };
 
     Kind kind = CTAK_INVALID;
@@ -562,6 +461,17 @@ struct Type
       return argument;
     }
 
+    static ClassTemplateArgument template_parameter_template_arg(
+        std::size_t template_parameter_index)
+    {
+      ClassTemplateArgument argument;
+      argument.kind = CTAK_TEMPLATE_ENTITY;
+      Metadata & metadata = ensure_metadata(argument);
+      metadata.template_name_is_template_parameter = true;
+      metadata.template_parameter_index = template_parameter_index;
+      return argument;
+    }
+
     static ClassTemplateArgument external_entity_arg(const std::string & symbol,
                                                      bool address_of)
     {
@@ -586,7 +496,6 @@ struct Type
 
   struct SubstitutionMetadata
   {
-    std::vector<std::string> preregister_legacy_keys;
     SubstitutionKey key;
   };
 
@@ -865,7 +774,9 @@ struct TemplateArgument
     std::string template_name_substitution;
     std::string external_entity_symbol;
     std::vector<TemplateArgument> pack_arguments;
+    std::size_t template_parameter_index = 0;
     bool external_entity_address_of = false;
+    bool template_name_is_template_parameter = false;
   };
 
   Kind kind = TAK_INVALID;
@@ -948,6 +859,17 @@ struct TemplateArgument
     metadata.prefix_components = prefix_components;
     metadata.template_name = name;
     metadata.template_name_substitution = substitution;
+    return argument;
+  }
+
+  static TemplateArgument template_parameter_template_arg(
+      std::size_t template_parameter_index)
+  {
+    TemplateArgument argument;
+    argument.kind = TAK_TEMPLATE_ENTITY;
+    Metadata & metadata = ensure_metadata(argument);
+    metadata.template_name_is_template_parameter = true;
+    metadata.template_parameter_index = template_parameter_index;
     return argument;
   }
 
@@ -1297,19 +1219,6 @@ inline Type with_substitution(Type type, const SubstitutionKey & key)
   return type;
 }
 
-inline void add_preregister_legacy_key(Type & type, const std::string & key)
-{
-  if(key.empty()) {
-    return;
-  }
-  if(!type.substitution || !type.substitution.unique()) {
-    type.substitution.reset(type.substitution ?
-        new Type::SubstitutionMetadata(*type.substitution) :
-        new Type::SubstitutionMetadata);
-  }
-  type.substitution->preregister_legacy_keys.push_back(key);
-}
-
 inline const SubstitutionKey & type_substitution_key(const Type & type)
 {
   static const SubstitutionKey empty_key;
@@ -1601,6 +1510,13 @@ inline bool make_class_template_argument_substitution_key(
     if(!argument.metadata) {
       return false;
     }
+    if(argument.metadata->template_name_is_template_parameter) {
+      out = SubstitutionKey::template_argument_template(
+          0,
+          std::string("template-parameter:") +
+              std::to_string(argument.metadata->template_parameter_index));
+      return !out.empty();
+    }
     out = SubstitutionKey::template_argument_template(
         0,
         argument.metadata->template_name_substitution.empty() ?
@@ -1719,6 +1635,13 @@ inline bool make_template_argument_substitution_key(
   case TemplateArgument::TAK_TEMPLATE_ENTITY:
     if(!argument.metadata) {
       return false;
+    }
+    if(argument.metadata->template_name_is_template_parameter) {
+      out = SubstitutionKey::template_argument_template(
+          0,
+          std::string("template-parameter:") +
+              std::to_string(argument.metadata->template_parameter_index));
+      return !out.empty();
     }
     out = SubstitutionKey::template_argument_template(
         0,
@@ -2275,17 +2198,27 @@ inline bool emit_template_name_component(const Type & type,
                                          SubstitutionSink * sink)
 {
   const Type::NameMetadata * metadata = type.name.get();
-  if(!metadata || metadata->template_name.empty()) {
+  if(!metadata ||
+     (metadata->template_name.empty() &&
+      !metadata->template_name_is_template_parameter)) {
     return false;
   }
   const SubstitutionKey key =
+      metadata->template_name_is_template_parameter ?
+          SubstitutionKey::none() :
       metadata->template_name_substitution.empty() ?
           SubstitutionKey::none() :
           SubstitutionKey::named(metadata->template_name_substitution);
   if(sink && !key.empty() && sink->emit_substitution(key, out)) {
     return true;
   }
-  if(!emit_source_name(metadata->template_name, out)) {
+  if(metadata->template_name_is_template_parameter) {
+    out += 'T';
+    if(metadata->template_name_parameter_index > 0) {
+      out += std::to_string(metadata->template_name_parameter_index - 1);
+    }
+    out += '_';
+  } else if(!emit_source_name(metadata->template_name, out)) {
     return false;
   }
   if(sink && !key.empty()) {
@@ -2338,7 +2271,8 @@ inline bool emit_type_as_name_prefix_body(const Type & type,
       }
       return emit_class_template_arguments(metadata->template_arguments, out, sink);
     }
-    if(metadata->template_name.empty()) {
+    if(metadata->template_name.empty() &&
+       !metadata->template_name_is_template_parameter) {
       return false;
     }
     if(type.name_owner) {
@@ -2923,9 +2857,6 @@ inline void register_lambda_context_substitutions(
     if(!slots[i].ir_key.empty()) {
       sink->register_substitution(slots[i].ir_key);
     }
-    if(!slots[i].legacy_key.empty()) {
-      sink->register_substitution(SubstitutionKey::legacy(slots[i].legacy_key));
-    }
   }
 }
 
@@ -3102,14 +3033,6 @@ inline bool emit_type(const Type & type, std::string & out, SubstitutionSink * s
     return true;
   }
 
-  if(sink && type.substitution) {
-    const std::vector<std::string> & preregister_keys =
-        type.substitution->preregister_legacy_keys;
-    for(std::size_t i = 0; i < preregister_keys.size(); ++i) {
-      sink->register_substitution(SubstitutionKey::legacy(preregister_keys[i]));
-    }
-  }
-
   const std::size_t begin = out.size();
   if(!emit_type_body(type, out, sink)) {
     out.resize(begin);
@@ -3250,8 +3173,18 @@ inline bool emit_class_template_argument(
     return emit_integral_template_value(nullptr, argument.integral_value, out, sink);
 
   case Type::ClassTemplateArgument::CTAK_TEMPLATE_ENTITY:
-    return argument.metadata &&
-           emit_template_entity_name(argument.metadata->prefix_components,
+    if(!argument.metadata) {
+      return false;
+    }
+    if(argument.metadata->template_name_is_template_parameter) {
+      out += 'T';
+      if(argument.metadata->template_parameter_index > 0) {
+        out += std::to_string(argument.metadata->template_parameter_index - 1);
+      }
+      out += '_';
+      return true;
+    }
+    return emit_template_entity_name(argument.metadata->prefix_components,
                                      argument.metadata->template_name,
                                      argument.metadata->template_name_substitution,
                                      out,
@@ -3343,8 +3276,18 @@ inline bool emit_template_argument(const TemplateArgument & argument,
     return emit_integral_template_value(nullptr, argument.integral_value, out, sink);
 
   case TemplateArgument::TAK_TEMPLATE_ENTITY:
-    return argument.metadata &&
-           emit_template_entity_name(argument.metadata->prefix_components,
+    if(!argument.metadata) {
+      return false;
+    }
+    if(argument.metadata->template_name_is_template_parameter) {
+      out += 'T';
+      if(argument.metadata->template_parameter_index > 0) {
+        out += std::to_string(argument.metadata->template_parameter_index - 1);
+      }
+      out += '_';
+      return true;
+    }
+    return emit_template_entity_name(argument.metadata->prefix_components,
                                      argument.metadata->template_name,
                                      argument.metadata->template_name_substitution,
                                      out,
@@ -3805,7 +3748,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
     }
     if(sink) {
       sink->register_substitution(
-          SubstitutionKey::legacy(
+          SubstitutionKey::type(
               std::string("lambda-closure:") +
               lambda.context_fragment +
               out.substr(signature_begin)));

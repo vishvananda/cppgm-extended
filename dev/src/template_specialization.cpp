@@ -3983,6 +3983,9 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
         i < partial.arg_syntaxes.size() ? &partial.arg_syntaxes[i] : nullptr;
 
     TemplateArgument argument;
+    if(pattern_syntax) {
+      argument.source_syntax.reset(new TemplateArgumentSyntax(*pattern_syntax));
+    }
     if(direct_parameter && direct_parameter->kind == TemplateParameterInfo::TP_TYPE) {
       argument.kind = TemplateArgument::TA_TYPE;
       if(direct_parameter->parameter_pack) {

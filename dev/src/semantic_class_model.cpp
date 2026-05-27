@@ -2460,11 +2460,36 @@ TypePtr refine_instantiated_class_alias(SemanticContext & ctx,
 
 TypePtr make_dependent_class_alias_placeholder(const ClassInfo & info,
                                                const std::string & alias_name,
-                                               const std::string & type_id_text)
+                                               const std::string & type_id_text,
+                                               const CppAstNode * type_id = nullptr)
 {
-  return make_named(type_id_text.empty() ? alias_name : type_id_text,
-                    "dependent alias " + info.qualified_name + "::" + alias_name,
-                    true);
+  TypePtr out =
+      make_named(type_id_text.empty() ? alias_name : type_id_text,
+                 "dependent alias " + info.qualified_name + "::" + alias_name,
+                 true);
+  TypePtr base = strip_top_level_cv(out);
+  if(base && base->kind == Type::TK_NAMED && type_id) {
+    base->named_dependent_type_expression_node.reset(new CppAstNode(*type_id));
+  }
+  return out;
+}
+
+TypePtr attach_dependent_alias_type_id_node(const TypePtr & type,
+                                            const CppAstNode & type_id)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     base->named_semantic_kind != Type::NSK_DEPENDENT_ALIAS ||
+     base->named_dependent_type_expression_node) {
+    return type;
+  }
+  TypePtr out(new Type(*type));
+  TypePtr out_base = strip_top_level_cv(out);
+  if(out_base && out_base->kind == Type::TK_NAMED) {
+    out_base->named_dependent_type_expression_node.reset(new CppAstNode(type_id));
+  }
+  return out;
 }
 
 bool direct_named_type_depends_on_template_parameter(SemanticContext & ctx,
@@ -2490,6 +2515,32 @@ bool direct_named_type_depends_on_template_parameter(SemanticContext & ctx,
          ctx.type_depends_on_template_parameter(found->second);
 }
 
+bool direct_template_name_is_dependent_placeholder(Scope & scope,
+                                                   const std::string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  const std::string unqualified =
+      semantic_utils::unqualified_member_name(
+          semantic_utils::strip_trailing_top_level_template_arguments(name));
+  const std::string lookup_name = unqualified.empty() ? name : unqualified;
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->template_bound_template_names.count(lookup_name) == 0) {
+      continue;
+    }
+    std::map<std::string, ClassTemplateDecl *>::const_iterator found_class =
+        current->class_templates.find(lookup_name);
+    std::map<std::string, AliasTemplateDecl *>::const_iterator found_alias =
+        current->alias_templates.find(lookup_name);
+    return (found_class == current->class_templates.end() &&
+            found_alias == current->alias_templates.end()) ||
+           (found_class != current->class_templates.end() && !found_class->second) ||
+           (found_alias != current->alias_templates.end() && !found_alias->second);
+  }
+  return false;
+}
+
 bool qualified_name_syntax_mentions_dependent_direct_type(
     SemanticContext & ctx,
     Scope & scope,
@@ -2498,11 +2549,14 @@ bool qualified_name_syntax_mentions_dependent_direct_type(
   for(std::size_t i = 0; i < name.qualifiers.size(); ++i) {
     if(direct_named_type_depends_on_template_parameter(ctx,
                                                        scope,
-                                                       name.qualifiers[i])) {
+                                                       name.qualifiers[i]) ||
+       direct_template_name_is_dependent_placeholder(scope,
+                                                     name.qualifiers[i])) {
       return true;
     }
   }
-  return direct_named_type_depends_on_template_parameter(ctx, scope, name.name);
+  return direct_named_type_depends_on_template_parameter(ctx, scope, name.name) ||
+         direct_template_name_is_dependent_placeholder(scope, name.name);
 }
 
 bool type_id_syntax_mentions_dependent_direct_type(SemanticContext & ctx,
@@ -2601,17 +2655,25 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
     try {
       TypePtr canonical =
           canonicalize_member_typedef_type(ctx, *info.member_scope, alias, &info);
-      if(class_alias_type_id_is_explicitly_dependent(ctx,
-                                                     info,
-                                                     type_id,
-                                                     type_id_text,
-                                                     dependent_class) &&
+      const bool explicitly_dependent =
+          class_alias_type_id_is_explicitly_dependent(ctx,
+                                                      info,
+                                                      type_id,
+                                                      type_id_text,
+                                                      dependent_class);
+      if(explicitly_dependent &&
          canonical &&
          !ctx.type_depends_on_template_parameter(canonical) &&
          !type_is_complete(canonical)) {
         return make_dependent_class_alias_placeholder(info,
                                                       alias_name,
-                                                      type_id_text);
+                                                      type_id_text,
+                                                      type_id_for_parse);
+      }
+      if(explicitly_dependent &&
+         canonical &&
+         ctx.type_depends_on_template_parameter(canonical)) {
+        return attach_dependent_alias_type_id_node(canonical, *type_id_for_parse);
       }
       return canonical;
     } catch(const TemplateSubstitutionFailure &) {
@@ -2630,7 +2692,10 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
                                                  type_id,
                                                  type_id_text,
                                                  dependent_class)) {
-    return make_dependent_class_alias_placeholder(info, alias_name, type_id_text);
+    return make_dependent_class_alias_placeholder(info,
+                                                  alias_name,
+                                                  type_id_text,
+                                                  type_id_for_parse);
   }
 
   return TypePtr();
@@ -2655,7 +2720,10 @@ TypePtr defer_reference_class_alias_type_id(SemanticContext & ctx,
   deferred.type_id_text = type_id_text;
   deferred.dependent_class = dependent_class;
   info.deferred_member_aliases[alias_name] = deferred;
-  return make_dependent_class_alias_placeholder(info, alias_name, type_id_text);
+  return make_dependent_class_alias_placeholder(info,
+                                                alias_name,
+                                                type_id_text,
+                                                &type_id);
 }
 
 TypePtr parse_or_defer_reference_class_alias_type_id(SemanticContext & ctx,

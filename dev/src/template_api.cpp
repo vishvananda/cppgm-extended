@@ -343,6 +343,7 @@ ClassSpecializationSelection to_api_class_specialization_selection_impl(
   out.binding_scope = selection.binding_scope;
   out.parameters = selection.parameters;
   out.arguments = selection.arguments;
+  out.argument_syntaxes = selection.argument_syntaxes;
   out.pack_sizes = selection.pack_sizes;
   out.selection_key = selection.selection_key;
   out.kind = to_api_match_kind(selection.kind);
@@ -2095,6 +2096,8 @@ void apply_function_template_symbol_options(
       nearest_owner_parameters = nullptr;
   const std::vector<template_model::TemplateArgument> *
       nearest_owner_arguments = nullptr;
+  const std::vector<template_model::TemplateParameterInfo> *
+      nearest_owner_mangle_parameters = nullptr;
   std::string nearest_owner_template_name;
   std::vector<symbol_linkage::FunctionSymbolOptions::OwnerTemplateComponent>
       owner_components;
@@ -2121,15 +2124,26 @@ void apply_function_template_symbol_options(
       }
     }
     if(component_template && component_arguments) {
+      const semantic_model::PartialClassTemplateSpecializationDecl *
+          selected_partial = selected_partial_log_decl(current);
       if(!nearest_owner_parameters) {
         nearest_owner_parameters = &component_template->parameters;
         nearest_owner_arguments = component_arguments;
         nearest_owner_template_name = component_template->name;
+        if(selected_partial &&
+           selected_partial->arg_syntaxes.size() == component_arguments->size()) {
+          nearest_owner_mangle_parameters = &selected_partial->parameters;
+        }
       }
       symbol_linkage::FunctionSymbolOptions::OwnerTemplateComponent component;
       component.template_name = component_template->name;
       component.parameters = &component_template->parameters;
       component.arguments = component_arguments;
+      if(selected_partial &&
+         selected_partial->arg_syntaxes.size() == component_arguments->size()) {
+        component.mangle_parameters = &selected_partial->parameters;
+        component.argument_syntaxes = &selected_partial->arg_syntaxes;
+      }
       owner_components.push_back(component);
     }
   }
@@ -2140,6 +2154,7 @@ void apply_function_template_symbol_options(
   if(nearest_owner_parameters && nearest_owner_arguments) {
     options.owner_template_parameters = nearest_owner_parameters;
     options.owner_template_arguments = nearest_owner_arguments;
+    options.owner_mangle_parameters = nearest_owner_mangle_parameters;
     options.owner_template_name = nearest_owner_template_name;
   }
   if(source_template &&
