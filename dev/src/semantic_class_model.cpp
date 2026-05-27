@@ -3358,6 +3358,38 @@ size_t align_up(size_t value, size_t alignment)
   return remainder == 0 ? value : value + (alignment - remainder);
 }
 
+bool build_alignment_expression_from_type_id(const CppAstNode & type_id,
+                                             CppAstNode & out)
+{
+  if(type_id.kind != CppAstKind::type_id ||
+     type_id.children.empty() ||
+     type_id.children[0].kind != CppAstKind::type_specifier_seq ||
+     type_id.children[0].children.size() != 1 ||
+     type_id.children[0].children[0].kind != CppAstKind::type_name) {
+    return false;
+  }
+
+  const CppAstNode & type_name = type_id.children[0].children[0];
+  const QualifiedName * qualified = cppast_qualified_name_syntax(type_name);
+  if(type_name.has_leading_typename ||
+     !qualified ||
+     (!qualified->rooted && qualified->qualifiers.empty())) {
+    return false;
+  }
+
+  out = CppAstNode();
+  out.kind = CppAstKind::id_expression;
+  out.value = type_name.value;
+  out.qualified_name_syntax = type_name.qualified_name_syntax;
+  out.template_id_syntax = type_name.template_id_syntax;
+  out.qualifier_template_id_syntaxes = type_name.qualifier_template_id_syntaxes;
+  out.qualifier_type_syntaxes = type_name.qualifier_type_syntaxes;
+  out.token_start = type_name.token_start;
+  out.token_end = type_name.token_end;
+  out.source_location_id = type_name.source_location_id;
+  return true;
+}
+
 size_t evaluate_declared_alignment(SemanticContext & ctx,
                                    Scope & scope,
                                    const CppAstNode * node)
@@ -3387,7 +3419,14 @@ size_t evaluate_declared_alignment(SemanticContext & ctx,
     }
 
     long long value = 0;
-    if(syntax && ctx.evaluate_constant_expression(scope, *syntax, value)) {
+    CppAstNode expression_syntax;
+    const CppAstNode * value_syntax = syntax;
+    if(syntax &&
+       syntax->kind == CppAstKind::type_id &&
+       build_alignment_expression_from_type_id(*syntax, expression_syntax)) {
+      value_syntax = &expression_syntax;
+    }
+    if(value_syntax && ctx.evaluate_constant_expression(scope, *value_syntax, value)) {
       if(value <= 0 || (value & (value - 1)) != 0) {
         throw std::logic_error("alignas requires positive power-of-two alignment");
       }
