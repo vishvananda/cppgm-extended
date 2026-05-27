@@ -6,11 +6,58 @@
 
 namespace abi_mangle {
 
+enum AbiBuiltinType
+{
+  ABI_BUILTIN_INVALID,
+  ABI_BUILTIN_VOID,
+  ABI_BUILTIN_BOOL,
+  ABI_BUILTIN_CHAR,
+  ABI_BUILTIN_SIGNED_CHAR,
+  ABI_BUILTIN_UNSIGNED_CHAR,
+  ABI_BUILTIN_SHORT,
+  ABI_BUILTIN_UNSIGNED_SHORT,
+  ABI_BUILTIN_INT,
+  ABI_BUILTIN_UNSIGNED_INT,
+  ABI_BUILTIN_LONG,
+  ABI_BUILTIN_UNSIGNED_LONG,
+  ABI_BUILTIN_LONG_LONG,
+  ABI_BUILTIN_UNSIGNED_LONG_LONG,
+  ABI_BUILTIN_INT128,
+  ABI_BUILTIN_UINT128,
+  ABI_BUILTIN_WCHAR,
+  ABI_BUILTIN_CHAR16,
+  ABI_BUILTIN_CHAR32,
+  ABI_BUILTIN_FLOAT,
+  ABI_BUILTIN_DOUBLE,
+  ABI_BUILTIN_LONG_DOUBLE,
+  ABI_BUILTIN_NULLPTR
+};
+
+enum AbiVendorQualifier
+{
+  ABI_VENDOR_QUALIFIER_NONE,
+  ABI_VENDOR_QUALIFIER_ATOMIC
+};
+
+enum AbiExpressionOperator
+{
+  ABI_EXPR_OP_INVALID,
+  ABI_EXPR_OP_DEREFERENCE,
+  ABI_EXPR_OP_ADDRESS_OF,
+  ABI_EXPR_OP_UNARY_PLUS,
+  ABI_EXPR_OP_UNARY_MINUS,
+  ABI_EXPR_OP_NOT,
+  ABI_EXPR_OP_COMPLEMENT,
+  ABI_EXPR_OP_ADD,
+  ABI_EXPR_OP_DIVIDE,
+  ABI_EXPR_OP_REMAINDER,
+  ABI_EXPR_OP_EQUAL
+};
+
 enum AbiTypeKind
 {
   ABI_TYPE_REFERENCE,
   ABI_TYPE_BUILTIN,
-  ABI_TYPE_BUILTIN_CODE,
   ABI_TYPE_TEMPLATE_PARAMETER,
   ABI_TYPE_POINTER,
   ABI_TYPE_LVALUE_REFERENCE,
@@ -36,8 +83,9 @@ struct AbiType
 {
   AbiTypeKind kind = ABI_TYPE_REFERENCE;
   std::string reference;
+  AbiBuiltinType builtin_type = ABI_BUILTIN_INVALID;
+  AbiVendorQualifier vendor_qualifier = ABI_VENDOR_QUALIFIER_NONE;
   std::string name;
-  std::string abi_code;
   std::string array_bound;
   std::size_t template_parameter_index = 0;
   bool substitutable_template_parameter = false;
@@ -90,7 +138,7 @@ struct AbiDependentExpr
   AbiDependentExpressionKind kind = ABI_EXPR_LITERAL;
   std::size_t index = 0;
   std::string literal;
-  std::string opcode;
+  AbiExpressionOperator expression_operator = ABI_EXPR_OP_INVALID;
   std::string first_reference;
   std::string second_reference;
   std::string third_reference;
