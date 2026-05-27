@@ -47,8 +47,8 @@ function @main
     load.ptr r8, @table
     mov <gpr3>, r8
     mov rdi, 10
-    fmov.f64 xmm0, 1.5
     mov rsi, 20
+    fmov.f64 xmm0, 1.5
     fmov.f64 xmm1, 2.5
     call *<gpr3>
     mov r9, rax

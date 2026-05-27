@@ -62,6 +62,14 @@ struct PreservedIntegerValue
   size_t spill_index = 0;
 };
 
+struct XmmCallArgMove
+{
+  string type;
+  XmmRegister dst = XMM_0;
+  mir::Operand src;
+  bool done = false;
+};
+
 bool call_source_reg_clobbered_before_call_piece(const vector<bool> & arg_in_reg,
                                                  const vector<size_t> & arg_reg_index,
                                                  size_t index,
@@ -83,6 +91,91 @@ bool call_source_reg_clobbered_before_call_piece(const vector<bool> & arg_in_reg
     }
   }
   return false;
+}
+
+bool pending_xmm_arg_source_uses_register(const vector<XmmCallArgMove> & moves,
+                                          XmmRegister reg)
+{
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(!moves[i].done &&
+       moves[i].src.kind == mir::Operand::OP_XMM &&
+       moves[i].src.xmm == reg) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool find_spare_xmm_arg_move_register(const vector<XmmCallArgMove> & moves,
+                                      XmmRegister & out)
+{
+  set<XmmRegister> used;
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(moves[i].done) {
+      continue;
+    }
+    used.insert(moves[i].dst);
+    if(moves[i].src.kind == mir::Operand::OP_XMM) {
+      used.insert(moves[i].src.xmm);
+    }
+  }
+
+  static const XmmRegister candidates[] = {
+    XMM_0, XMM_1, XMM_2, XMM_3, XMM_4, XMM_5, XMM_6, XMM_7
+  };
+  for(size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
+    if(used.count(candidates[i]) == 0) {
+      out = candidates[i];
+      return true;
+    }
+  }
+  return false;
+}
+
+bool xmm_arg_register_moves_have_cycle(vector<XmmCallArgMove> moves)
+{
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(moves[i].src.kind == mir::Operand::OP_XMM &&
+       moves[i].src.xmm == moves[i].dst) {
+      moves[i].done = true;
+    }
+  }
+
+  while(true) {
+    bool any_pending = false;
+    bool made_progress = false;
+    for(size_t i = 0; i < moves.size(); ++i) {
+      if(moves[i].done) {
+        continue;
+      }
+      any_pending = true;
+      if(!pending_xmm_arg_source_uses_register(moves, moves[i].dst)) {
+        moves[i].done = true;
+        made_progress = true;
+      }
+    }
+    if(!any_pending) {
+      return false;
+    }
+    if(!made_progress) {
+      return true;
+    }
+  }
+}
+
+bool xmm_arg_register_moves_need_stack_spill(vector<XmmCallArgMove> moves)
+{
+  if(!xmm_arg_register_moves_have_cycle(moves)) {
+    return false;
+  }
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(moves[i].src.kind == mir::Operand::OP_XMM &&
+       moves[i].src.xmm == moves[i].dst) {
+      moves[i].done = true;
+    }
+  }
+  XmmRegister spare = XMM_0;
+  return !find_spare_xmm_arg_move_register(moves, spare);
 }
 
 string target_text(const string & output_target)
@@ -2969,6 +3062,82 @@ mir::Instruction make_instruction(mir::Instruction::Opcode opcode)
   inst.opcode = opcode;
   maybe_set_machine_ir_debug_location(inst);
   return inst;
+}
+
+void emit_xmm_arg_move(const XmmCallArgMove & move,
+                       vector<mir::Instruction> & out)
+{
+  if(move.src.kind == mir::Operand::OP_XMM && move.src.xmm == move.dst) {
+    return;
+  }
+
+  mir::Instruction inst = make_instruction(mir::Instruction::MI_FMOV);
+  inst.type = move.type;
+  inst.operands.push_back(xmm(move.dst));
+  inst.operands.push_back(move.src);
+  out.push_back(inst);
+}
+
+void emit_xmm_arg_register_moves(vector<XmmCallArgMove> moves,
+                                 const mir::Operand * spill_slot,
+                                 vector<mir::Instruction> & out)
+{
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(moves[i].src.kind == mir::Operand::OP_XMM &&
+       moves[i].src.xmm == moves[i].dst) {
+      moves[i].done = true;
+    }
+  }
+
+  while(true) {
+    bool any_pending = false;
+    bool made_progress = false;
+    for(size_t i = 0; i < moves.size(); ++i) {
+      if(moves[i].done) {
+        continue;
+      }
+      any_pending = true;
+      if(!pending_xmm_arg_source_uses_register(moves, moves[i].dst)) {
+        emit_xmm_arg_move(moves[i], out);
+        moves[i].done = true;
+        made_progress = true;
+      }
+    }
+    if(!any_pending) {
+      return;
+    }
+    if(made_progress) {
+      continue;
+    }
+
+    size_t cycle = 0;
+    while(cycle < moves.size() && moves[cycle].done) {
+      ++cycle;
+    }
+    if(cycle == moves.size()) {
+      return;
+    }
+
+    XmmRegister spare = XMM_0;
+    if(find_spare_xmm_arg_move_register(moves, spare)) {
+      XmmCallArgMove save;
+      save.type = moves[cycle].type;
+      save.dst = spare;
+      save.src = moves[cycle].src;
+      emit_xmm_arg_move(save, out);
+      moves[cycle].src = xmm(spare);
+    } else {
+      if(spill_slot == nullptr) {
+        throw logic_error("xmm call argument cycle requires spill slot");
+      }
+      mir::Instruction save = make_instruction(mir::Instruction::MI_FMOV);
+      save.type = moves[cycle].type;
+      save.operands.push_back(*spill_slot);
+      save.operands.push_back(moves[cycle].src);
+      out.push_back(save);
+      moves[cycle].src = *spill_slot;
+    }
+  }
 }
 
 struct ScopedMachineIRSourceInstruction
@@ -6601,6 +6770,17 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             stack_bytes += stack_arg_size(arg_type);
           }
         }
+        vector<XmmCallArgMove> xmm_arg_moves;
+        for(size_t i = 0; i < pieces.size(); ++i) {
+          if(!arg_in_xmm[i]) {
+            continue;
+          }
+          XmmCallArgMove move;
+          move.type = pieces[i].type;
+          move.dst = float_arg_register(arg_xmm_index[i]);
+          move.src = float_source_operand(layout, pieces[i].operand);
+          xmm_arg_moves.push_back(move);
+        }
         set<X64Register> blocked_arg_regs;
         for(size_t i = 0; i < pieces.size(); ++i) {
           if(arg_in_reg[i]) {
@@ -6659,13 +6839,19 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             reserved_preserve_regs.insert(preserved.reg);
           }
         }
-        const size_t stack_pad = stack_bytes == 0 || (stack_bytes % 16) == 0
+        const bool needs_xmm_arg_spill =
+            xmm_arg_register_moves_need_stack_spill(xmm_arg_moves);
+        const size_t xmm_arg_spill_bytes = needs_xmm_arg_spill ? 16 : 0;
+        const size_t stack_payload_bytes = stack_bytes + xmm_arg_spill_bytes;
+        const size_t stack_pad =
+            stack_payload_bytes == 0 || (stack_payload_bytes % 16) == 0
             ? 0
-            : 16 - (stack_bytes % 16);
-        if(stack_bytes + stack_pad != 0) {
+            : 16 - (stack_payload_bytes % 16);
+        if(stack_payload_bytes + stack_pad != 0) {
           mi = make_instruction(mir::Instruction::MI_SUB);
           mi.operands.push_back(reg(XR_RSP));
-          mi.operands.push_back(imm(static_cast<long long>(stack_bytes + stack_pad)));
+          mi.operands.push_back(
+              imm(static_cast<long long>(stack_payload_bytes + stack_pad)));
           out.push_back(mi);
         }
         if(!direct_symbol_call) {
@@ -6765,11 +6951,6 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             continue;
           }
           if(arg_in_xmm[i]) {
-            mi = make_instruction(mir::Instruction::MI_FMOV);
-            mi.type = arg_type;
-            mi.operands.push_back(xmm(float_arg_register(arg_xmm_index[i])));
-            mi.operands.push_back(float_source_operand(layout, pieces[i].operand));
-            out.push_back(mi);
             continue;
           }
           if(is_float_type(arg_type)) {
@@ -6861,6 +7042,13 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             out.push_back(mi);
           }
         }
+        mir::Operand xmm_arg_spill_slot;
+        const mir::Operand * xmm_arg_spill_slot_ptr = nullptr;
+        if(needs_xmm_arg_spill) {
+          xmm_arg_spill_slot = deref_offset(XR_RSP, static_cast<long long>(stack_bytes));
+          xmm_arg_spill_slot_ptr = &xmm_arg_spill_slot;
+        }
+        emit_xmm_arg_register_moves(xmm_arg_moves, xmm_arg_spill_slot_ptr, out);
         const lir::FunctionBoundaryMetadata boundary = resolved_call_boundary(inst);
         if(boundary.arity == lir::CAM_VARIADIC) {
           mi = make_instruction(mir::Instruction::MI_MOV);
@@ -6883,10 +7071,11 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
           mi.operands.push_back(reg(indirect_target_reg));
           out.push_back(mi);
         }
-        if(stack_bytes + stack_pad != 0) {
+        if(stack_payload_bytes + stack_pad != 0) {
           mi = make_instruction(mir::Instruction::MI_ADD);
           mi.operands.push_back(reg(XR_RSP));
-          mi.operands.push_back(imm(static_cast<long long>(stack_bytes + stack_pad)));
+          mi.operands.push_back(
+              imm(static_cast<long long>(stack_payload_bytes + stack_pad)));
           out.push_back(mi);
         }
         if(!inst.call_returns_void &&
