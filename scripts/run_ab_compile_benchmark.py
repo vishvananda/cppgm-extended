@@ -136,7 +136,7 @@ def main() -> int:
         description="Run alternating A/B compile benchmarks against two binaries."
     )
     parser.add_argument("--repo-root", default=str(Path(__file__).resolve().parent.parent))
-    parser.add_argument("--source", default="pa33/tests/compile/540-reference-wrapper-smoke.t")
+    parser.add_argument("--source", default="pa34/tests/compile/540-reference-wrapper-smoke.t")
     parser.add_argument("--compiler-a", required=True)
     parser.add_argument("--compiler-b", required=True)
     parser.add_argument("--label-a", default="baseline")

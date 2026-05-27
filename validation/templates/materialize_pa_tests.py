@@ -61,9 +61,9 @@ def is_preproc_test(test: pathlib.Path) -> bool:
     return len(parts) >= 3 and parts[1] == "tests" and parts[2] == "preproc"
 
 
-def is_pa34_link_manifest(test: pathlib.Path) -> bool:
+def is_pa35_link_manifest(test: pathlib.Path) -> bool:
     parts = test.relative_to(ROOT).parts
-    return (len(parts) >= 3 and parts[0] == "pa34" and
+    return (len(parts) >= 3 and parts[0] == "pa35" and
             parts[1] == "tests" and parts[2] == "link" and
             test.name.endswith(".t"))
 
@@ -87,7 +87,7 @@ def collect_tests(roots: Iterable[str]) -> List[pathlib.Path]:
     for root_text in roots:
         root = (ROOT / root_text).resolve()
         if root.is_file():
-            if is_pa34_link_manifest(root):
+            if is_pa35_link_manifest(root):
                 for source in link_sources_for_manifest(root):
                     add(source)
             elif root.suffix == ".t" or LINK_SOURCE_RE.search(root.name):
@@ -97,7 +97,7 @@ def collect_tests(roots: Iterable[str]) -> List[pathlib.Path]:
         for test in sorted(root.rglob("*")):
             if not test.is_file() or is_preproc_test(test):
                 continue
-            if is_pa34_link_manifest(test):
+            if is_pa35_link_manifest(test):
                 continue
             if test.suffix == ".t" or LINK_SOURCE_RE.search(test.name):
                 add(test)

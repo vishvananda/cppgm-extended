@@ -4,20 +4,29 @@
 
 Write one C++ application called `cppgm++`.
 
-PA32 is the host C++ ABI/runtime interoperability assignment. It builds on the
-ordinary host-linkable object contract from PA31 and makes the behavior of the
-host-linked program part of the assignment contract.
+PA32 is the host object/toolchain interoperability assignment. It does not add
+new language features. Instead, it combines the PA30 compile-mode driver with
+the PA31 ABI naming layer:
 
-The main PA32 question is: once host link succeeds, does the resulting program
-behave correctly under the ordinary host C++ ABI/runtime?
+- `cppgm++ -c` must emit ordinary relocatable object files for the current host
+  object format.
+- Those objects must be accepted by the host C++ compiler driver when it performs
+  the final link.
+- Objects produced by `cppgm++` must interoperate with host-built C and C++
+  objects, static archives, and shared libraries in the practical subset tested
+  here.
+- Header-emitted inline/template definitions must use host-correct symbol
+  spelling and duplicate-definition/coalescing rules.
 
-The tested ABI/runtime surface includes:
+The PA32 harness does not normally use `cppgm++` as the final linker. It runs:
 
-- virtual dispatch, vtable ownership, and imported/exported vtables
-- RTTI object ownership and `dynamic_cast` / `typeid`
-- covariant return adjustment
-- host exception handling in the exercised throw/catch/rethrow/cleanup subset
-- host-compatible unwind and relocation facts where the tests inspect objects
+1. `cppgm++ -c` once for each C++ translation unit.
+2. The host C++ compiler driver on the generated objects and any helper objects
+   supplied by the test.
+3. The linked program, when the link succeeds.
+
+The main PA32 question is: can `cppgm++` produce ordinary host-linkable object
+files?
 
 ### Prerequisites
 
@@ -25,13 +34,15 @@ Complete PA31 before starting this assignment.
 
 You will want to reuse:
 
-- the full C++ language pipeline through PA31
-- the PA31 host-compatible `cppgm++ -c` path
-- the PA23/PA24 native object emission path
-- the PA25 exception/runtime lowering concepts
+- the full C++ language pipeline through PA30
+- the PA30 `cppgm++ -c` driver path
+- the PA31 ABI naming layer
+- the PA23/PA24 native object-emission path
+- the PA30 cross-translation-unit compile/link model
 
 The tests assume a POSIX-like shell environment with `make`, `bash`,
-`perl`, and a working host C/C++ toolchain. The harness selects host tools from:
+`perl`, and a working host C/C++ toolchain. The harness selects host tools from
+environment variables first:
 
 - `CPPGM_HOST_CXX` or `CXX` for the host C++ compiler/link driver
 - `CPPGM_HOST_CC` or `CC` for host C helper objects
@@ -39,12 +50,7 @@ The tests assume a POSIX-like shell environment with `make`, `bash`,
 If those are not set, the harness searches for common compilers such as
 `clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Archive and inspection tests
 also require `ar`, `nm`, and `readelf`. The checked-in tests assume the normal
-x86_64 Linux host C++ ABI.
-
-Some PA32 object-inspection tests use course-provided helper tools from earlier
-assignments, such as `cpplink` and `cppeh`, to compare the host exception object
-surface. Those helpers support the harness; the PA32 assignment binary is
-still `cppgm++`.
+x86_64 Linux host object ABI.
 
 ### Starter Kit
 
@@ -55,7 +61,7 @@ The starter kit provides:
 - the shared `dev/` sources needed by the scaffold
 - `pa32/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
 - `pa32/Makefile`
-- `pa32/scripts/`, the host-ABI test harness
+- `pa32/scripts/`, the host-interoperability test harness
 - `pa32/tests/general/`, the PA32 tests and checked-in reference files
 
 Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
@@ -68,8 +74,11 @@ There is no separate PA32 reference binary in the starter kit. The checked-in
 
 ### Command-Line Contract
 
-PA32 does not introduce new command-line flags. It reuses the PA31 compile-mode
-surface:
+PA32 does not introduce new command-line flags. It strengthens the PA30
+compile-mode surface on the host-compatible path and uses the PA31 ABI naming
+layer for C++ object symbols.
+
+Required forms:
 
 ```sh
 cppgm++ -c -o <objfile> <srcfile>
@@ -86,8 +95,8 @@ PA32 final link is performed outside `cppgm++` by the host C++ compiler driver.
 
 ### Output Format
 
-`cppgm++ -c` shall continue to write one host-linker-compatible relocatable
-object file to `<objfile>`.
+`cppgm++ -c` shall write one host-linker-compatible relocatable object file to
+`<objfile>`.
 
 The PA32 tests do not compare object bytes directly. They observe:
 
@@ -95,8 +104,7 @@ The PA32 tests do not compare object bytes directly. They observe:
 - host final-link exit status
 - final program exit status
 - final program standard output
-- optional object-inspection output for ABI, unwind, relocation, RTTI, vtable,
-  thunk, and symbol-ownership checks
+- optional object-inspection output for tests that include `.inspect.*` sidecars
 
 ### Error Handling
 
@@ -118,13 +126,13 @@ make test
 To run one test through the shared check target:
 
 ```sh
-make check TEST=tests/general/100-host-eh-same-tu-throw-catch.t
+make check TEST=tests/general/100-host-main-argv.t
 ```
 
-The local tests live in `tests/general/`. They cover host C++ ABI/runtime
-behavior, host-linked exception handling, RTTI, vtables, thunks, and object
-inspection around those host-runtime surfaces. They are not direct N3485 clause
-tests.
+The local tests live in `tests/general/`. They cover host object
+interoperability, host final-link behavior, symbol spelling/coalescing, and
+object inspection where the object surface is part of the contract. They are
+not direct N3485 clause tests.
 
 For each test anchor `x.t`, companion C++ sources are named:
 
@@ -139,58 +147,77 @@ Optional sidecars control or check the host flow:
 - `x.compile.flags`: extra flags passed to `cppgm++ -c`
 - `x.link.flags`: extra flags passed to the host link driver
 - `x.lib.*`: host-built C or C++ helper sources
+- `x.argv`: program arguments for the runtime check
 - `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: object-inspection
-  checks that use the host symbol and object tools
+  checks that use the host symbol tools
 
 The checked-in PA32 tests cover:
 
-- same-TU and cross-TU host exception throw/catch behavior
-- cleanup, rethrow, noexcept termination, and foreign catch-all behavior in the
-  exercised subset
-- virtual dispatch, imported/exported vtable ownership, and polymorphic header
-  duplication
-- RTTI-driven `dynamic_cast` and `typeid`
-- covariant return adjustment
-- host ABI mangling for dependent/template/lambda/standard-library-adjacent
-  names needed by this milestone
-- object facts such as unwind sections, relocation classes, weak/undefined
-  symbols, and vtable/RTTI ownership when a test includes an inspect sidecar
+- hosted `main(argc, argv)` behavior through the host CRT
+- host linking across multiple `cppgm++`-generated objects
+- host linking against host-built objects
+- host linking against static archives and shared libraries
+- import/export of host-built `thread_local` variables in the tested subset
+- duplicate-definition/coalescing behavior for inline and template output
+- host symbol spelling for user-defined entities and selected template cases
+
+### Using PA31 ABI Names
+
+PA32 is still before the broader host C++ ABI/runtime stage in PA33, but ordinary
+host object interoperability already requires correct raw symbol spelling for
+user-defined entities.
+
+For this assignment, use the PA31 ABI naming layer as part of the object-file
+contract:
+
+- the host linker sees raw symbol names, not demangled intent
+- function templates must encode template-parameter references with the same
+  `T_`, `T0_`, and related forms the host compiler uses
+- repeated components inside one mangled name must reuse Itanium substitution
+  slots in host-compatible order
+- canonical qualified names matter, including inline namespaces when they are
+  part of the ABI name
+
+Reference:
+
+- Local copy of Itanium C++ ABI, Chapter 5.1 "External Names (a.k.a.
+  Mangling)": [`../doc/itanium-mangling.txt`](../doc/itanium-mangling.txt)
 
 ### Assignment Boundary
 
-PA32 owns practical host-linked C++ ABI/runtime behavior.
+PA32 owns ordinary host-toolchain interoperability of emitted object files.
 
-To complete PA32, preserve this behavior within the supported subset:
+To complete PA32, implement this behavior within the supported subset:
 
-- virtual dispatch and imported/exported vtable ownership
-- RTTI-driven `dynamic_cast` / `typeid`
-- covariant return adjustment
-- ordinary host-linked throw/catch/rethrow behavior
-- cleanup and unwind behavior visible to the host runtime
-- foreign catch-all interaction in the tested subset
+1. Emit host-linker-compatible relocatable objects.
+2. Expose a hosted entrypoint through the host CRT.
+3. Preserve cross-translation-unit behavior under host link.
+4. Emit target-correct duplicate-definition semantics for header and template
+   code.
+5. Interoperate with host-built objects, archives, shared libraries, and tested
+   `thread_local` variables through practical function/global boundaries.
 
-If host link succeeds but the host C++ ABI/runtime behavior is wrong, the issue
+If the host linker rejects generated objects as ordinary objects, the issue
 belongs in PA32.
 
 ### Out Of Scope
 
 The following are out of scope for PA32:
 
-- private course-only exception/runtime ABI details that are not visible through
-  the host-linked program or object checks
-- hosted standard-library header/source compatibility, which belongs in PA33
-- hosted header-emitted link/runtime behavior, which belongs in PA34
+- host C++ ABI/runtime behavior after link, which belongs in PA33
+- hosted standard-library header/source compatibility, which belongs in PA34
+- hosted header-emitted link/runtime behavior, which belongs in PA35
 - bootstrap or self-host builds
 
 ### Design Notes (Non-Normative)
 
-PA32 is not just a runtime-output assignment. Runtime behavior is the primary
-oracle, but some tests inspect object facts because host C++ ABI correctness is
-often decided before the program starts: symbol names, weak ownership, unwind
-sections, RTTI/vtable objects, and relocation classes must match the host
-toolchain's expectations closely enough for ordinary linking and unwinding.
+A simple implementation strategy is to keep PA30's source-to-LowIR path, use
+PA31 to derive concrete C++ object symbols, and retarget only the object
+emission details needed by the host object format. The observable contract is
+whether the host toolchain can consume and link the result, not whether your
+internal object pipeline has the same structure as the course implementation.
 
 ### Stage Handoff
 
-The next stage is PA33, which shifts from host ABI/runtime ownership to hosted
-source/header compatibility.
+The next stage is PA33, which keeps the host-link path but raises the contract
+from ordinary object interoperability to host C++ ABI/runtime interoperability.

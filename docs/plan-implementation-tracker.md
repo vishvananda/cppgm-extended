@@ -16,9 +16,9 @@ remain in `docs/`, but they are not ordered implementation plans.
 
 ## Status Review Notes
 
-- The PA33 `540` compile-performance plan reached its stated performance target
+- The PA34 `540` compile-performance plan reached its stated performance target
   and is archived in `docs/implemented/`.
-- The imported-symbol-kind follow-up is not complete. The immediate PA32
+- The imported-symbol-kind follow-up is not complete. The immediate PA33
   object-vs-function import bug was fixed by splitting function and object maps,
   but the planned typed import registry has not replaced
   `external_function_symbols_` / `external_object_symbols_` in
@@ -33,11 +33,11 @@ remain in `docs/`, but they are not ordered implementation plans.
 
 | Order | Status | Plan | Purpose | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | pending | [pa33-pa34-convergence-plan.md](pa33-pa34-convergence-plan.md) | Drive hosted-source and hosted-link compatibility failures to their earliest owning PA. | Historical frontier ledger. Revalidate current `main` before resuming or archiving. |
-| 2 | pending | [machine-backend-o0-quality-plan.md](machine-backend-o0-quality-plan.md) | Improve baseline PA23 `-O0` machine-code quality before later backend optimization work. | Partway landed; remaining work is a deferred PA23 quality lane, not active PA36 `-O1`/`-O2` work. |
+| 1 | pending | [pa34-pa35-convergence-plan.md](pa34-pa35-convergence-plan.md) | Drive hosted-source and hosted-link compatibility failures to their earliest owning PA. | Historical frontier ledger. Revalidate current `main` before resuming or archiving. |
+| 2 | pending | [machine-backend-o0-quality-plan.md](machine-backend-o0-quality-plan.md) | Improve baseline PA23 `-O0` machine-code quality before later backend optimization work. | Partway landed; remaining work is a deferred PA23 quality lane, not active PA37 `-O1`/`-O2` work. |
 | 3 | pending | [semantic-fallback-removal-plan.md](semantic-fallback-removal-plan.md) | Replace remaining semantic fallback control flow with explicit structured decisions. | Several hard-fail categories and text-reparse removals landed; deferred rewrite-removal inventory remains. |
 | 4 | pending | [template-lowir-log-convergence-plan.md](template-lowir-log-convergence-plan.md) | Move template logging onto the real LowIR closure path. | Not started; depends on the structured witness/source-use boundary staying stable. |
-| 5 | pending | [imported-symbol-kind-followup-plan.md](imported-symbol-kind-followup-plan.md) | Carry function-vs-object import kind explicitly through LowIR/object emission. | Immediate PA32 import-kind bug is fixed, but the first-class typed import registry is still future work. |
+| 5 | pending | [imported-symbol-kind-followup-plan.md](imported-symbol-kind-followup-plan.md) | Carry function-vs-object import kind explicitly through LowIR/object emission. | Immediate PA33 import-kind bug is fixed, but the first-class typed import registry is still future work. |
 | 6 | ongoing | [spec-conformance-audit.md](spec-conformance-audit.md) | Spec-first review loop for placing real language gaps in the earliest owner. | Runs alongside other work rather than after it. |
 | 7 | blocked | [pa10-34-assignment-cleanup-process.md](pa10-34-assignment-cleanup-process.md) | Assignment boundary, test placement, README, and implementability cleanup. | Passes A-C and the test-grouping cleanup are complete. Only deferred Pass D buildout remains; working tracker: [pa10-34-assignment-cleanup-tracker.md](pa10-34-assignment-cleanup-tracker.md). |
 | 8 | ongoing | [deferred-issues-tracker.md](deferred-issues-tracker.md) | Revalidate and close known deferred bugs, workarounds, and transitional gaps. | Only keep items here when they are not already owned by a dedicated plan above. |

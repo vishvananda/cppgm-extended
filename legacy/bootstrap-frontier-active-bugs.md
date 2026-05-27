@@ -6,8 +6,8 @@ compile.
 
 Current policy for this queue:
 
-- keep the existing `obj/pa37/selfhost` tree warm
-- do not start a full `make bootstrap-self-sweep` or broad `pa37` rebuild
+- keep the existing `obj/pa38/selfhost` tree warm
+- do not start a full `make bootstrap-self-sweep` or broad `pa38` rebuild
   while one of these targeted bugs is still being reduced
 - land source-level backports and earliest-owner regressions first where
   practical
@@ -96,7 +96,7 @@ Current examples:
 
 ## Current Stage Map
 
-Latest targeted `pa37` selfhost status on current `main`:
+Latest targeted `pa38` selfhost status on current `main`:
 
 - PASS:
   - `pa1` through `pa18`
@@ -111,16 +111,16 @@ Latest targeted `pa37` selfhost status on current `main`:
   - `pa19`
   - `pa27`
   - `pa30`
-  - `pa31`
   - `pa32`
+  - `pa33`
 - older active later-stage evidence still stands until rerun:
-  - `pa33` ->
-    [542-local-functor-std-function-assignment.t](/Users/vishvananda/cppgm/pa33/tests/compile/542-local-functor-std-function-assignment.t)
   - `pa34` ->
-    [651-hosted-unordered-map-string-int-link-smoke.t](/Users/vishvananda/cppgm/pa34/tests/link/651-hosted-unordered-map-string-int-link-smoke.t)
+    [542-local-functor-std-function-assignment.t](/Users/vishvananda/cppgm/pa34/tests/compile/542-local-functor-std-function-assignment.t)
+  - `pa35` ->
+    [651-hosted-unordered-map-string-int-link-smoke.t](/Users/vishvananda/cppgm/pa35/tests/link/651-hosted-unordered-map-string-int-link-smoke.t)
   - isolated spot check:
-    - `pa31` [130-static-archive.t](/Users/vishvananda/cppgm/pa31/tests/spec/130-static-archive.t)
-      passes on the current staged snapshot, so the older `pa31` evidence is
+    - `pa32` [130-static-archive.t](/Users/vishvananda/cppgm/pa32/tests/spec/130-static-archive.t)
+      passes on the current staged snapshot, so the older `pa32` evidence is
       stale pending a full rerun
 
 ## Current Queue
@@ -129,7 +129,7 @@ Latest targeted `pa37` selfhost status on current `main`:
 
 - Status: completed
 - First failing checkpoint:
-  - `make -C pa37 test-pa11 CXX=../dev/cppgm++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++`
+  - `make -C pa38 test-pa11 CXX=../dev/cppgm++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++`
 - Earliest failing test:
   - [100-empty.t](/Users/vishvananda/cppgm/pa11/tests/spec/100-empty.t)
 - Current evidence:
@@ -168,7 +168,7 @@ Latest targeted `pa37` selfhost status on current `main`:
     - reduced object output now shows `non-external` ctor/dtor
     - the standalone two-TU collision repro now exits `0`
   - tracked owner regression:
-    [208-anon-namespace-implicit-special-member-linkage.t](/Users/vishvananda/cppgm/pa31/tests/spec/208-anon-namespace-implicit-special-member-linkage.t)
+    [208-anon-namespace-implicit-special-member-linkage.t](/Users/vishvananda/cppgm/pa32/tests/spec/208-anon-namespace-implicit-special-member-linkage.t)
   - the latest deliberate selfhost rebuild/recheck is clean: `pa11` passes
 - Intended debug direction:
   - closed
@@ -183,7 +183,7 @@ Latest targeted `pa37` selfhost status on current `main`:
   - [216-block-scope-using-declaration.t](/Users/vishvananda/cppgm/pa12/tests/spec/216-block-scope-using-declaration.t)
 - Current evidence:
   - the latest staged keep-going rerun passes `pa12` cleanly under
-    [cppgm++-self](/Users/vishvananda/cppgm/obj/pa37/bin/selfhost/cppgm++-self)
+    [cppgm++-self](/Users/vishvananda/cppgm/obj/pa38/bin/selfhost/cppgm++-self)
 - Intended debug direction:
   - closed
 
@@ -203,7 +203,7 @@ Latest targeted `pa37` selfhost status on current `main`:
     and owned by
     [740-direct-branch-source-live-across-call.t](/Users/vishvananda/cppgm/pa23/tests/structural/740-direct-branch-source-live-across-call.t)
   - after rebuilding the staged
-    [cppgm++-self](/Users/vishvananda/cppgm/obj/pa37/bin/selfhost/cppgm++-self),
+    [cppgm++-self](/Users/vishvananda/cppgm/obj/pa38/bin/selfhost/cppgm++-self),
     all previously tracked targeted failures in this bucket pass again:
     - [230-aliased-base-mem-initializer-match.t](/Users/vishvananda/cppgm/pa15/tests/spec/230-aliased-base-mem-initializer-match.t)
     - [255-derived-pointer-member-init.t](/Users/vishvananda/cppgm/pa15/tests/spec/255-derived-pointer-member-init.t)
@@ -299,7 +299,7 @@ Latest targeted `pa37` selfhost status on current `main`:
     registration time instead of storing a raw semantic node
   - new owning regression:
     [359-shadowed-local-cleanup-rebind-on-return.t](/Users/vishvananda/cppgm/pa16/tests/spec/359-shadowed-local-cleanup-rebind-on-return.t)
-  - after rebuilding staged `pa37` at `O0`:
+  - after rebuilding staged `pa38` at `O0`:
     - [147-qualified-function-template-call.t](/Users/vishvananda/cppgm/pa19/tests/spec/147-qualified-function-template-call.t)
       matches the refreshed ref
     - [208-distinct-lambda-member-template-types.t](/Users/vishvananda/cppgm/pa27/tests/spec/208-distinct-lambda-member-template-types.t)
@@ -348,22 +348,22 @@ Latest targeted `pa37` selfhost status on current `main`:
 - Status: retired
 - Prior evidence:
   - the old `pa18` timeout on
-    [219-function-template-default-allocator-local-lambda.t](/Users/vishvananda/cppgm/pa33/tests/compile/720-hosted-function-template-default-allocator-local-lambda-compile.t)
+    [219-function-template-default-allocator-local-lambda.t](/Users/vishvananda/cppgm/pa34/tests/compile/720-hosted-function-template-default-allocator-local-lambda-compile.t)
     was real, but the test itself was misowned
-  - it uses hosted STL headers and belongs in `pa33/tests/compile`, not `pa18`
+  - it uses hosted STL headers and belongs in `pa34/tests/compile`, not `pa18`
 - Current disposition:
   - the test has been moved to
-    [720-hosted-function-template-default-allocator-local-lambda-compile.t](/Users/vishvananda/cppgm/pa33/tests/compile/720-hosted-function-template-default-allocator-local-lambda-compile.t)
+    [720-hosted-function-template-default-allocator-local-lambda-compile.t](/Users/vishvananda/cppgm/pa34/tests/compile/720-hosted-function-template-default-allocator-local-lambda-compile.t)
   - do not treat that old timeout as a `pa18` frontier until `pa18` is rerun
 
 ### BF-004: non-`cppgm++` selfhost immediate segfault family
 
 - Status: completed
 - Affected self-built binaries:
-  - [lowir2cy86-self](/Users/vishvananda/cppgm/obj/pa37/bin/selfhost/lowir2cy86-self)
-  - [lowir2native-self](/Users/vishvananda/cppgm/obj/pa37/bin/selfhost/lowir2native-self)
-  - [cpplink-self](/Users/vishvananda/cppgm/obj/pa37/bin/selfhost/cpplink-self)
-  - [cppeh-self](/Users/vishvananda/cppgm/obj/pa37/bin/selfhost/cppeh-self)
+  - [lowir2cy86-self](/Users/vishvananda/cppgm/obj/pa38/bin/selfhost/lowir2cy86-self)
+  - [lowir2native-self](/Users/vishvananda/cppgm/obj/pa38/bin/selfhost/lowir2native-self)
+  - [cpplink-self](/Users/vishvananda/cppgm/obj/pa38/bin/selfhost/cpplink-self)
+  - [cppeh-self](/Users/vishvananda/cppgm/obj/pa38/bin/selfhost/cppeh-self)
 - Earliest failing owners:
   - [pa13/tests/spec/100-ret0.t](/Users/vishvananda/cppgm/pa13/tests/spec/100-ret0.t)
   - [pa23/tests/strict/100-ret0.t](/Users/vishvananda/cppgm/pa23/tests/strict/100-ret0.t)
@@ -378,7 +378,7 @@ Latest targeted `pa37` selfhost status on current `main`:
     - host `cppgm++` emits a 90-byte LowIR file for `int main(){return 0;}`
     - both `lowir2cy86-self` and `lowir2native-self` segfault on that file
   - hosted reduction now isolates the underlying compiler bug:
-    - [732-hosted-getline-indirect-result-vbptr-link-smoke.t](/Users/vishvananda/cppgm/pa34/tests/link/732-hosted-getline-indirect-result-vbptr-link-smoke.t)
+    - [732-hosted-getline-indirect-result-vbptr-link-smoke.t](/Users/vishvananda/cppgm/pa35/tests/link/732-hosted-getline-indirect-result-vbptr-link-smoke.t)
     - source shape: `Result load(std::istream&) { std::string line; std::getline(in, line); return Result{...}; }`
     - an `int`-return variant is fine, but the class-return variant crashed at
       the first `getline` in the same `std::__1::locale::locale` frame
@@ -446,22 +446,22 @@ Latest targeted `pa37` selfhost status on current `main`:
 
 - Status: in-progress
 - Affected checkpoints:
-  - `pa31`
+  - `pa32`
 - Earliest failing tests:
-  - [130-static-archive.t](/Users/vishvananda/cppgm/pa31/tests/spec/130-static-archive.t)
+  - [130-static-archive.t](/Users/vishvananda/cppgm/pa32/tests/spec/130-static-archive.t)
 - Current evidence:
   - `pa30` no longer belongs in this bucket
     - the current isolated repro for
       [303-runtime-virtual-member-pointer-multiple-inheritance.t](/Users/vishvananda/cppgm/pa30/tests/spec/303-runtime-virtual-member-pointer-multiple-inheritance.t)
       aborts during compile inside the same dependent-type/template-deduction
       family tracked in `BF-002`
-  - `pa31` is no longer confirmed as active on the current staged snapshot
+  - `pa32` is no longer confirmed as active on the current staged snapshot
     - the current isolated repro for
-      [130-static-archive.t](/Users/vishvananda/cppgm/pa31/tests/spec/130-static-archive.t)
+      [130-static-archive.t](/Users/vishvananda/cppgm/pa32/tests/spec/130-static-archive.t)
       passes with `impl.exit_status=0` and `program.exit_status=0`
-    - keep this bucket open only until `pa31` is rerun cleanly in the staged
+    - keep this bucket open only until `pa32` is rerun cleanly in the staged
       sweep
-  - `pa32` remains green and is out of the active frontier
+  - `pa33` remains green and is out of the active frontier
 - Intended debug direction:
   - defer until earlier `cppgm++` frontiers are narrowed
 
@@ -469,36 +469,36 @@ Latest targeted `pa37` selfhost status on current `main`:
 
 - Status: in-progress
 - Affected checkpoints:
-  - `pa33`, `pa34`
+  - `pa34`, `pa35`
 - Earliest failing tests:
-  - [542-local-functor-std-function-assignment.t](/Users/vishvananda/cppgm/pa33/tests/compile/542-local-functor-std-function-assignment.t)
-  - [651-hosted-unordered-map-string-int-link-smoke.t](/Users/vishvananda/cppgm/pa34/tests/link/651-hosted-unordered-map-string-int-link-smoke.t)
+  - [542-local-functor-std-function-assignment.t](/Users/vishvananda/cppgm/pa34/tests/compile/542-local-functor-std-function-assignment.t)
+  - [651-hosted-unordered-map-string-int-link-smoke.t](/Users/vishvananda/cppgm/pa35/tests/link/651-hosted-unordered-map-string-int-link-smoke.t)
 - Current evidence:
-  - `pa33` now fails by compile timeout on hosted/library-heavy sources, not by
+  - `pa34` now fails by compile timeout on hosted/library-heavy sources, not by
     immediate crash
-  - `pa33` still has earlier expected-failure owners like
-    [508-offsetof-bitfield-bad.t](/Users/vishvananda/cppgm/pa33/tests/compile/508-offsetof-bitfield-bad.t),
+  - `pa34` still has earlier expected-failure owners like
+    [508-offsetof-bitfield-bad.t](/Users/vishvananda/cppgm/pa34/tests/compile/508-offsetof-bitfield-bad.t),
     but the first real non-matching owner remains
-    [542-local-functor-std-function-assignment.t](/Users/vishvananda/cppgm/pa33/tests/compile/542-local-functor-std-function-assignment.t)
-  - `pa34` still makes real forward progress through its worker and is not an
+    [542-local-functor-std-function-assignment.t](/Users/vishvananda/cppgm/pa34/tests/compile/542-local-functor-std-function-assignment.t)
+  - `pa35` still makes real forward progress through its worker and is not an
     idle harness hang
-  - the rebuilt `pa34` sweep now reaches much further than before, but still
+  - the rebuilt `pa35` sweep now reaches much further than before, but still
     times out on multiple hosted/library tests
   - the latest sweep reached the `720+` tail before the worker stack stalled
     after writing results, so this bucket is now mostly real hosted timeouts
     plus a small amount of worker teardown noise
-  - concrete current `pa34` symptoms include:
-    - [651-hosted-unordered-map-string-int-link-smoke.t](/Users/vishvananda/cppgm/pa34/tests/link/651-hosted-unordered-map-string-int-link-smoke.t):
+  - concrete current `pa35` symptoms include:
+    - [651-hosted-unordered-map-string-int-link-smoke.t](/Users/vishvananda/cppgm/pa35/tests/link/651-hosted-unordered-map-string-int-link-smoke.t):
       `EXIT_TIMEOUT (124)`
-    - [675-hosted-dynamic-exception-spec-runtime.t](/Users/vishvananda/cppgm/pa34/tests/link/675-hosted-dynamic-exception-spec-runtime.t):
+    - [675-hosted-dynamic-exception-spec-runtime.t](/Users/vishvananda/cppgm/pa35/tests/link/675-hosted-dynamic-exception-spec-runtime.t):
       implementation exit `1`
-    - [692-hosted-initializer-list-member-definition-link-smoke.t](/Users/vishvananda/cppgm/pa34/tests/link/692-hosted-initializer-list-member-definition-link-smoke.t):
+    - [692-hosted-initializer-list-member-definition-link-smoke.t](/Users/vishvananda/cppgm/pa35/tests/link/692-hosted-initializer-list-member-definition-link-smoke.t):
       implementation exit `139`
-    - [708-hosted-shared-ptr-inline-odr-link-smoke.t](/Users/vishvananda/cppgm/pa34/tests/link/708-hosted-shared-ptr-inline-odr-link-smoke.t):
+    - [708-hosted-shared-ptr-inline-odr-link-smoke.t](/Users/vishvananda/cppgm/pa35/tests/link/708-hosted-shared-ptr-inline-odr-link-smoke.t):
       `EXIT_TIMEOUT (124)`
-    - [731-hosted-member-vs-free-shift-overload-link-smoke.t](/Users/vishvananda/cppgm/pa34/tests/link/731-hosted-member-vs-free-shift-overload-link-smoke.t):
+    - [731-hosted-member-vs-free-shift-overload-link-smoke.t](/Users/vishvananda/cppgm/pa35/tests/link/731-hosted-member-vs-free-shift-overload-link-smoke.t):
       pass under selfhost
-    - [732-hosted-getline-indirect-result-vbptr-link-smoke.t](/Users/vishvananda/cppgm/pa34/tests/link/732-hosted-getline-indirect-result-vbptr-link-smoke.t):
+    - [732-hosted-getline-indirect-result-vbptr-link-smoke.t](/Users/vishvananda/cppgm/pa35/tests/link/732-hosted-getline-indirect-result-vbptr-link-smoke.t):
       `EXIT_TIMEOUT (124)` under the rebuilt selfhost binary
 - Intended debug direction:
   - keep this separate from the earlier template and runtime/object families
@@ -509,13 +509,13 @@ Latest targeted `pa37` selfhost status on current `main`:
 - Status: in-progress
 - Blocking validation:
   - isolated `cppgm++` vs `cppgm++-self` `pa1` artifact compare under
-    `obj/pa35-bitcmp/selfcmp`
+    `obj/pa36-bitcmp/selfcmp`
 - Current evidence:
   - a fresh isolated `pptoken-self` self-compare build still fails before any
     bit-for-bit artifact diff can be taken
   - rerunning that isolated self-compare build with the staged compiler forced
     to `-O0` still fails in the same pre-diff compile phase, so this bucket is
-    not explained away by the current `pa37` self-build optimization issues
+    not explained away by the current `pa38` self-build optimization issues
   - current `-O0` compare build still dies while compiling:
     - `encoding.o`
     - `pptokenizer.o`
@@ -534,7 +534,7 @@ Latest targeted `pa37` selfhost status on current `main`:
   - current smallest reliable selfhost separator is:
     - `/tmp/std_string_min3.cpp`
     - host `./dev/cppgm++ -std=gnu++11 -Wall -O0 -I./dev/src -c`: pass
-    - staged `obj/pa37/bin/selfhost/cppgm++-self -std=gnu++11 -Wall -O0 -I./dev/src -c`:
+    - staged `obj/pa38/bin/selfhost/cppgm++-self -std=gnu++11 -Wall -O0 -I./dev/src -c`:
       segfault / `139`
     - reduced source shape:
       `long, long, const std::string&, long, long, long, long, bool`

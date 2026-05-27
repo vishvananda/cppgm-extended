@@ -12969,7 +12969,7 @@ private:
 
     if(node.kind == CallSemKind::asm_statement) {
       ostringstream out;
-      out << "GNU asm statement lowering unsupported in PA31 host compatibility";
+      out << "GNU asm statement lowering unsupported in PA32 host compatibility";
       if(!node.text.empty()) {
         out << " [text " << node.text << "]";
       }

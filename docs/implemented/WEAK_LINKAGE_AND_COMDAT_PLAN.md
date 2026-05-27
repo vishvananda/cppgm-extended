@@ -14,12 +14,12 @@ separate compilation:
 - generic PA30 object-inspection oracles for weak definitions, weak undefined references, and
   duplicate-definition grouping
 
-The remaining PA31 failures should now be treated as PA31 hosted compile/link issues, not as
+The remaining PA32 failures should now be treated as PA32 hosted compile/link issues, not as
 evidence that PA30 is still missing basic weak/coalesced object semantics.
 
 ## Why This Is PA30
 
-Weak duplicate-definition behavior belongs to PA30, not PA31.
+Weak duplicate-definition behavior belongs to PA30, not PA32.
 
 PA30 owns:
 
@@ -27,7 +27,7 @@ PA30 owns:
 - practical interoperability with the real host linker
 - object semantics needed for separate compilation across multiple translation units
 
-PA31 owns hosted source/header compatibility, not object-file semantics.
+PA32 owns hosted source/header compatibility, not object-file semantics.
 
 ## Goal
 
@@ -89,7 +89,7 @@ Replace stdlib-path suppression heuristics with real host-object semantics:
 The PA30 boundary is now strong enough that visibility/output cleanup no longer needs to assume
 "stdlib means suppress emission by path" just to avoid duplicate host-link failures.
 
-That does not mean every remaining PA31 failure is solved. It means the remaining PA31 failures
+That does not mean every remaining PA32 failure is solved. It means the remaining PA32 failures
 should be debugged on their own merits:
 
 - hosted semantic selection / output ownership
@@ -98,7 +98,7 @@ should be debugged on their own merits:
 
 ## Follow-Up
 
-No additional PA30 weak-linkage phases are required before returning to PA31.
+No additional PA30 weak-linkage phases are required before returning to PA32.
 
 If a future regression shows a supported duplicate-emission case still falls back to synthetic
 symbol spelling, add a focused PA30 structural test for that shape and extend

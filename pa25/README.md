@@ -36,7 +36,7 @@ specific serialized object syntax.
 
 This is intentionally a private runtime boundary, not a host-toolchain interoperability
 assignment. Ordinary host ABI/runtime behaviour for `cppgm++` objects is owned later by
-PA31. PA25 owns the internal `cppeh` path and the reserved internal exception-role family
+PA32. PA25 owns the internal `cppeh` path and the reserved internal exception-role family
 used by that path, such as `@__cppgm_eh_top`, `@__cppgm_eh_value`,
 `@__cppgm_eh_type`, and `@__cppgm_eh_unhandled`.
 
@@ -101,8 +101,8 @@ PA25 does not introduce a later follow-on binary of its own. What remains out of
 scope here is different work:
 
 - ordinary host-toolchain and host-ABI interoperability for `cppgm++`, which belongs to
-  PA31
-- hosted source/header compatibility for `cppgm++`, which belongs to PA33
+  PA32
+- hosted source/header compatibility for `cppgm++`, which belongs to PA34
 
 ### Input / Command-Line Arguments
 
@@ -375,7 +375,7 @@ PA27 then owns the remaining advanced language-closure work over the current
 single-inheritance model, including capturing lambdas, real `std::initializer_list`
 interoperation, RTTI, `typeid`, and pointer-form `dynamic_cast`. PA28 then picks up the
 remaining multiple-inheritance and ABI-heavy object-model work. Ordinary host-toolchain and
-host-ABI ownership for `cppgm++` objects remains a later PA31 concern, separate from the
+host-ABI ownership for `cppgm++` objects remains a later PA32 concern, separate from the
 private `cppeh` runtime boundary here.
 
 ### Design Notes (Non-Normative)

@@ -1,6 +1,7 @@
 cppgm++
 cppgm++-debug
 testout
+.test_failed
 tests/**/*.my
 tests/**/*.my.*
 tests/*.my
@@ -23,14 +24,4 @@ tests/**/*.so
 tests/*.so
 tests/**/*.dylib
 tests/*.dylib
-tests/**/*.stdout
-tests/*.stdout
-!tests/**/*.ref.stdout
-!tests/*.ref.stdout
-!tests/**/*.ref.program.stdout
-!tests/*.ref.program.stdout
-tests/**/*.pp
-tests/**/*.pp.*
-tests/*.pp
-tests/*.pp.*
 *.dSYM

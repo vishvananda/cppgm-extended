@@ -16,7 +16,7 @@ here. The useful PA25 review questions are:
 
 So this plan is a private-EH sanity review, not a "match host C++ EH output"
 project. The Clang-comparison style review belongs later in the host-linked EH
-lane under PA32.
+lane under PA33.
 
 ## Assignment Boundary
 
@@ -34,8 +34,8 @@ This plan stays inside PA25's owned surface:
 
 It does not own:
 
-- host final-link ABI behavior for `cppgm++ -c` objects, which belongs in PA32
-- hosted-header/source acceptance, which belongs later in PA33/PA34
+- host final-link ABI behavior for `cppgm++ -c` objects, which belongs in PA33
+- hosted-header/source acceptance, which belongs later in PA34/PA35
 
 ## Review Method
 
@@ -78,7 +78,7 @@ PA25 review should combine:
 
 This metadata should be normalized semantically, but it does not need to mimic
 host DWARF/Itanium EH naming or section structure. That host-compatible review
-is a later PA32 concern.
+is a later PA33 concern.
 
 ## Initial Owner Families
 
@@ -124,7 +124,7 @@ A complete PA25 lowering-review tranche should leave behind:
 
 This plan is not responsible for comparing PA25 output against Clang's host EH
 metadata/disassembly as though they should match one another. That later review
-belongs in a separate PA32 host-EH lowering plan, where the assignment boundary
+belongs in a separate PA33 host-EH lowering plan, where the assignment boundary
 actually owns ordinary host-linked EH behavior.
 
 ## Completion

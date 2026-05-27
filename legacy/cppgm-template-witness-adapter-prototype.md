@@ -104,7 +104,7 @@ Generate a partial witness for `542` even if `cppgm` still fails:
 cd /private/tmp/cppgm-template-kernel-20260416
 ./dev/cppgm_template_witness.py \
   --cppgm /private/tmp/cppgm-clang-postlowir-20260414/dev/cppgm++ \
-  --input /private/tmp/cppgm-clang-postlowir-20260414/pa33/tests/compile/542-local-functor-std-function-assignment.t \
+  --input /private/tmp/cppgm-clang-postlowir-20260414/pa34/tests/compile/542-local-functor-std-function-assignment.t \
   --symbol-filter operator= \
   --allow-failure \
   -o /tmp/cppgm-542-witness.json

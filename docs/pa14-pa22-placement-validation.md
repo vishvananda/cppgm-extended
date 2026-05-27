@@ -33,7 +33,7 @@ Accepted as reported:
 | PA14 qualified namespace overload symbol case | Split/reduce: keep integral namespace-symbol coverage in PA14 and move optional floating coverage to backend/PA23 form. |
 | PA14 one-past-end pointer case | Keep in PA14; `double` is a pointer-size fixture here, not floating codegen. |
 | PA14 incomplete class referent and qualified nested typedef cases | Move to PA15:100. |
-| PA14 `__uint128_t` cases | Move to PA33:600. |
+| PA14 `__uint128_t` cases | Move to PA34:600. |
 | PA15 default member initializer/basic static/access cases | Keep in PA15:100. |
 | PA15 ordinary inheritance, friends, lifetime, and global ctor cases currently in cluster 100 | Renumber to PA15:200. |
 | PA15 anonymous member cases | Renumber to PA15:300. |
@@ -86,14 +86,14 @@ Accepted as reported:
 | G9 | Move function-template local-static-per-specialization and constexpr linkage cases to PA20. |
 | G10 | Move partial-specialization / pack-specialization cases to PA21. |
 | G11 | Move full deduction, partial ordering, SFINAE, and no-eager cases to PA22. |
-| G12 | Move later support-feature cases to PA26/PA27/PA28/PA29/PA33 as listed in the report. Capturing lambda cases go to PA26:300. |
+| G12 | Move later support-feature cases to PA26/PA27/PA28/PA29/PA34 as listed in the report. Capturing lambda cases go to PA26:300. |
 | G13 | Resolve as PA18:200. `dependent-sizeof-type-array-member` is a dependent type/layout test, not a later template-completion case. |
 | G14 | Keep PA19 integral NTTP/static_assert subset tests. |
 | G15 | Renumber explicit-specialization tests to PA19:200. |
 | G16 | Renumber specialization timing/stale-primary tests to PA19:300. |
 | G18 | Move alias, variable-template, and partial-specialization graph tests to PA21. |
 | G19 | Move non-integral/function-pointer/reference NTTPs, SFINAE, full deduction, constructor-template deduction, and no-eager cases to PA22. |
-| G20 | Move builtin trait/intrinsic cases to PA33 and member-pointer cases to PA28. |
+| G20 | Move builtin trait/intrinsic cases to PA34 and member-pointer cases to PA28. |
 
 Adjusted from the first-pass report:
 
@@ -117,7 +117,7 @@ Accepted as reported:
 | PA20 keep group | Keep PA20 constant-evaluation tests where scanner hits are support-only. |
 | PA20 constexpr object/static-member group | Renumber to PA20:300. |
 | PA20 constexpr/noexcept/dependent template test | Split: keep reduced PA20 constexpr/noexcept coverage and move the full dependent function-template/no-eager form to PA22. |
-| PA20 `__uint128_t` constexpr test | Move to PA33:600. |
+| PA20 `__uint128_t` constexpr test | Move to PA34:600. |
 | PA21 variable-template group | Renumber to PA21:200. |
 | PA21 explicit/current-specialization group | Renumber to PA21:300. |
 | PA21 explicit-instantiation group | Renumber to PA21:300. |
@@ -127,7 +127,7 @@ Accepted as reported:
 | PA21 substitution/no-eager/dependent-alias group | Move to PA22:400 unless the individual test is more specifically SFINAE at PA22:300. |
 | PA21 member-pointer template cases | Move to PA28:300. |
 | PA21 function-pointer/member-pointer mixed ordering case | Split function-pointer PA21:400 from member-pointer PA28:300. |
-| PA21 attribute-on-specialization cases | Reduce to non-attribute PA21 coverage or move attribute variants to PA33:500. |
+| PA21 attribute-on-specialization cases | Reduce to non-attribute PA21 coverage or move attribute variants to PA34:500. |
 | PA21 broad specialization/entity graph keep group | Keep in PA21:400 on first pass. |
 | PA22 non-deduced/dependent-qualified context group | Renumber to PA22:400. |
 | PA22 SFINAE/detector group | Renumber to PA22:300. |
@@ -136,10 +136,10 @@ Accepted as reported:
 | PA22 stress keep group | Keep in PA22. |
 | PA22 member-pointer template tests | Move to PA28:300 or split a reduced non-member-pointer PA22 assertion. |
 | PA22 initializer-list tests | Move to PA27:200. |
-| PA22 attribute/no_unique_address template layout test | Move to PA33. |
+| PA22 attribute/no_unique_address template layout test | Move to PA34. |
 | PA22 lambda RTTI/typeinfo case | Move to PA26:300. |
 | PA22 auto-local dependent result tests | Split: reduced no-`auto` PA22 coverage plus PA26 auto coverage. |
-| PA22 builtin trait/intrinsic-heavy tests | Reduce intrinsic dependency or move hosted intrinsic variants to PA33:600. |
+| PA22 builtin trait/intrinsic-heavy tests | Reduce intrinsic dependency or move hosted intrinsic variants to PA34:600. |
 
 Resolved from PA21 manual-review group:
 

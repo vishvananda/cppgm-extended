@@ -95,7 +95,7 @@ there.
     visible blocker
 - final full gate:
   - `make verify-fast-pa10-31 CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ VERIFY_ASSIGNMENT_JOBS=6`
-  - pass through `pa31`
+  - pass through `pa32`
 
 ## Result
 

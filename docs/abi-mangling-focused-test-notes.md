@@ -30,36 +30,36 @@ should become focused mangling tests in the ABI assignment branch.
   - Focused test: mangle a partial specialization selected by
     `&Class::member_function`.
 
-- `pa32/tests/general/200-host-member-lambda-mangling.t`
+- `pa33/tests/general/200-host-member-lambda-mangling.t`
   - Gap: lambda closure constructors/destructors needed typed closure
     substitution keys and constructor/destructor terminal fragments.
   - Focused test: mangle a lambda closure nested in a member-function context.
 
-- `pa33/tests/compile/500-compressed-pair-padding-instantiation.t`
+- `pa34/tests/compile/500-compressed-pair-padding-instantiation.t`
   - Gap: dependent named syntax such as allocator `rebind` needed to preserve
     the dependent qualified type rather than falling back to text ABI names.
   - Focused test: mangle a dependent nested template-id type like
     `allocator<T>::rebind<U>::other`.
 
-- `pa33/tests/compile/600-catch-type-id-identifier.t`
+- `pa34/tests/compile/600-catch-type-id-identifier.t`
   - Gap: dependent alias/type-id forms needed to emit from the typed dependent
     syntax path.
   - Focused test: mangle a dependent alias used as a type-id.
 
-- `pa33/tests/compile/600-hosted-vector-bool-storage-allocator-static-cast.t`
+- `pa34/tests/compile/600-hosted-vector-bool-storage-allocator-static-cast.t`
   - Gap: member class-template specialization owners needed to be built from the
     current qualified owner instead of being re-resolved as namespace templates.
   - Focused test: mangle a nested member class-template specialization with a
     dependent owner.
 
-- `pa33/tests/compile/600-const-unordered-map-find.t`
+- `pa34/tests/compile/600-const-unordered-map-find.t`
   - Gap: dependent alias named keys needed the direct typed syntax path.
   - Focused test: mangle a dependent alias key used in an STL-like iterator or
     allocator type.
 
 ## Additional fixed cases
 
-- `pa33/tests/compile/600-regex-iterator-difference-alias.t`
+- `pa34/tests/compile/600-regex-iterator-difference-alias.t`
   - Gap: weak symbol
     `std::_Base_bitset<((_Nb)/(8*8)+((_Nb)%(8*8)==0?0:1))>::_Base_bitset`.
   - Fix area: dependent non-type expression template arguments with arithmetic,
@@ -68,7 +68,7 @@ should become focused mangling tests in the ABI assignment branch.
   - Focused test: mangle a class-template specialization whose NTTP argument is
     an expression like `N / 64 + (N % 64 == 0 ? 0 : 1)`.
 
-- `pa33/tests/compile/700-hosted-function-template-default-allocator-local-lambda-compile.t`
+- `pa34/tests/compile/700-hosted-function-template-default-allocator-local-lambda-compile.t`
   - Gap: weak symbol
     `std::vector<Info const *, std::allocator<Info const *>>::_Guard_alloc::_Guard_alloc`.
   - Fix area: special member symbol for a nested helper class inside a
@@ -76,9 +76,9 @@ should become focused mangling tests in the ABI assignment branch.
   - Focused test: mangle a nested non-template helper class special member owned
     by `Outer<T, Alloc<T>>`.
 
-- `pa34/tests/link/600-hosted-unordered-set-pointer-link-smoke.t`
-- `pa34/tests/link/700-hosted-namespace-alias-pointer-template-arg.t`
-- `pa34/tests/link/700-hosted-vector-string-pushback-link-smoke.t`
+- `pa35/tests/link/600-hosted-unordered-set-pointer-link-smoke.t`
+- `pa35/tests/link/700-hosted-namespace-alias-pointer-template-arg.t`
+- `pa35/tests/link/700-hosted-vector-string-pushback-link-smoke.t`
   - Gap: dependent-qualified member template metadata kept the full qualified
     template-id even though the typed owner had already been built.
   - Focused test: mangle a dependent-qualified member template type such as
@@ -87,16 +87,16 @@ should become focused mangling tests in the ABI assignment branch.
 - `pa22/tests/general/400-function-assignment-invocable-and-helper.t`
 - `pa22/tests/general/500-base-qualified-template-value-arg-syntax.t`
 - `pa22/tests/general/500-internal-remove-cvref-alias-sfinae.t`
-- `pa33/tests/compile/500-local-functor-std-function-assignment.t`
-- `pa33/tests/compile/700-hosted-local-class-distinct-member-symbols-compile.t`
+- `pa34/tests/compile/500-local-functor-std-function-assignment.t`
+- `pa34/tests/compile/700-hosted-local-class-distinct-member-symbols-compile.t`
   - Gap: named function-local class ordinary member functions, including
     `operator()` and `operator=`, were not using typed local-entity metadata.
   - Focused test: mangle ordinary members and fixed operators for a named local
     class.
 
-- `pa34/tests/link/700-hosted-getline-indirect-result-vbptr-link-smoke.t`
-- `pa34/tests/link/700-hosted-iostream-nounitbuf-string-runtime-smoke.t`
-- `pa34/tests/link/700-hosted-istream-ref-getline-eof-runtime-smoke.t`
+- `pa35/tests/link/700-hosted-getline-indirect-result-vbptr-link-smoke.t`
+- `pa35/tests/link/700-hosted-iostream-nounitbuf-string-runtime-smoke.t`
+- `pa35/tests/link/700-hosted-istream-ref-getline-eof-runtime-smoke.t`
   - Gap: unqualified template-ids inside function template parameter patterns
     did not search inline namespace children, so `basic_string` missed the
     typed `std::__cxx11` owner.
@@ -104,14 +104,14 @@ should become focused mangling tests in the ABI assignment branch.
     `basic_string<Char, Traits, Alloc>&` from an enclosing namespace with an
     inline child namespace.
 
-- `pa34/tests/link/700-hosted-local-class-template-mangling-link-smoke.t`
-- `pa34/tests/link/700-nested-template-local-owner-symbol-link-smoke.t`
+- `pa35/tests/link/700-hosted-local-class-template-mangling-link-smoke.t`
+- `pa35/tests/link/700-nested-template-local-owner-symbol-link-smoke.t`
   - Gap: expectations still used the old synthetic local-class names after the
     typed local-entity ABI spelling was restored.
   - Focused test: mangle a function template instantiated with a function-local
     class, and a nested template owner containing a function-local class.
 
-- `pa33/tests/compile/600-hosted-deque-member-template-include.t`
+- `pa34/tests/compile/600-hosted-deque-member-template-include.t`
   - Gap: libc++ owner-template self references such as
     `__deque_iterator<..., _BlockSize>::__block_size` could spell the owner
     template argument with the dependent value text instead of matching the
@@ -128,7 +128,7 @@ should become focused mangling tests in the ABI assignment branch.
     dependent NTTP argument is a conditional expression from the owner parameter
     list.
 
-- `pa33/tests/compile/600-hosted-forward-as-tuple-rvalue-ref.t`
+- `pa34/tests/compile/600-hosted-forward-as-tuple-rvalue-ref.t`
   - Gap: alias-template substitution replaced `_Tp` inside a type-id by editing
     only the leaf text. That dropped the template-id/semantic payload for
     arguments such as `__remove_cvref_t<_Tp>`, so nested libc++ aliases like

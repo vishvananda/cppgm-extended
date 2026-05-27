@@ -14,7 +14,7 @@ project:
 
 - the current backend spills almost every temporary through the frame
 - self-hosted code is much larger and slower than host `clang++ -O0`
-- future `PA35` optimization work should not start from a backend that still
+- future `PA36` optimization work should not start from a backend that still
   behaves like a stack machine for ordinary scalar temporaries
 
 ## Main Decision
@@ -206,7 +206,7 @@ Do **not** start by:
 - teaching the assembler to allocate registers
 - trying to optimize slots/address-taken locals away in the same patch series
 - starting with XMM/f80 before ordinary scalar temps are working
-- mixing this with PA35 high-level LowIR optimizations
+- mixing this with PA36 high-level LowIR optimizations
 
 Those are either wrong-layer changes or too much scope for the first landing.
 
@@ -302,13 +302,13 @@ Use reduced cases that are sensitive to:
 Recheck the existing hot self-host cases:
 
 - `pa3/tests/300-triple.t`
-- `pa32` self-host `ctrlexpr-self`
+- `pa33` self-host `ctrlexpr-self`
 
 Success should look like:
 
 - smaller `calculator.o` code
 - fewer frame temp bindings in machine IR
-- materially reduced self-host runtime without waiting for PA35
+- materially reduced self-host runtime without waiting for PA36
 
 ## Completion Criteria
 

@@ -146,7 +146,7 @@ The later combined GCC/clang validation added three more concrete lessons.
 
 ### 1. Parsed template-id decomposition must beat half-bound `ClassInfo`
 
-`pa33/720` (`std::vector<P>` with an omitted default allocator) regressed when
+`pa34/720` (`std::vector<P>` with an omitted default allocator) regressed when
 `decompose_template_instantiation(...)` was widened to prefer `info->source_template`
 even when the structured instantiation arguments were not fully bound.
 
@@ -166,7 +166,7 @@ Bridge rule:
 
 ### 2. Deferred default arguments must carry the **bound** dependent form
 
-The same `pa33/720` regression also showed that deferred default type
+The same `pa34/720` regression also showed that deferred default type
 arguments cannot safely store the original unbound spelling when caller
 bindings are already known.
 
@@ -194,7 +194,7 @@ for dependent class-template-ids.
 That made some deduction paths appear to work, but it also reintroduced the
 old hosted-header blowup:
 
-- `pa33/tests/compile/607-chrono-duration-convert-owner.t`
+- `pa34/tests/compile/607-chrono-duration-convert-owner.t`
   went from roughly the old GNU baseline to a 4-5x slowdown
 
 Bridge rule:
@@ -542,7 +542,7 @@ To keep this manageable, each slice should follow these rules:
 4. Add counters or trace notes so the old path can be measured shrinking.
 5. Prefer preserving current outward behavior over broad ref churn.
 6. Prefer choosing the correct existing structured source over broadening a
-   recovery path. The `pa33/720` regression came from using the wrong
+   recovery path. The `pa34/720` regression came from using the wrong
    structured carrier, not from a missing fallback.
 7. If a temporary text bridge remains necessary, perform the minimum
    substitution once at the deferral boundary and carry that result forward.

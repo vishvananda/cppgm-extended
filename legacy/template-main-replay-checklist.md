@@ -47,7 +47,7 @@ Known structural differences in this worktree:
 | `074ef33c` | ported | replayed the `template_resolution.cpp` structured lookup uses, with an integration-specific guard to keep unqualified names on the unqualified lookup path |
 | `1b8e8ae2` | ported | reference-only recursive class-template-id materialization now takes resolved arguments through explicit selected-materialization hooks instead of bouncing back through text argument lookup |
 | `68867eb4` | ported | full class-template-id recursive materialization now uses explicit selected-specialization hooks, with selection/materialization split in `template_instantiation` |
-| `8b974d9d` | skip-unrelated | modifies `dev/src/symbol_linkage.cpp` and `pa32` tests; not semantic/template boundary work |
+| `8b974d9d` | skip-unrelated | modifies `dev/src/symbol_linkage.cpp` and `pa33` tests; not semantic/template boundary work |
 | `bb4dd2a3` | ported | added explicit resolved-alias materialization and used it in the narrow semantic alias-template lookup path instead of forcing a second text-based argument resolution pass |
 | `4e95634a` | subsumed | this tree's selected-materialization split already routes builtin `initializer_list` instantiation through `instantiate_selected_class_template(...)` and the selected reference/materialization hooks |
 | `16ddd3a5` | subsumed | the raw `instantiate_alias_template(...arg_texts...)` fallback had already been eliminated in this tree's services-based template-id resolution path before replay |
@@ -66,4 +66,4 @@ Known structural differences in this worktree:
 
 | Commit | Status | Reason |
 | --- | --- | --- |
-| `8b974d9d` | skip-unrelated | modifies `dev/src/symbol_linkage.cpp` and `pa32` host-mangling tests, not the semantic/template boundary layer |
+| `8b974d9d` | skip-unrelated | modifies `dev/src/symbol_linkage.cpp` and `pa33` host-mangling tests, not the semantic/template boundary layer |

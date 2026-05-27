@@ -3,7 +3,7 @@
 ## Goal
 
 Reduce the number of binaries students build and reason about for `pa10` through
-`pa31`, while keeping the assignment story easy to follow.
+`pa32`, while keeping the assignment story easy to follow.
 
 The current layout follows the `pa1`-`pa9` pattern too literally:
 
@@ -240,7 +240,7 @@ This is much clearer than renaming the compiler every time.
 > This assignment expands the set of hosted C++ source inputs that must compile
 > correctly.
 
-### PA31 README shape
+### PA32 README shape
 
 > Extend `cppgm++` with preprocessing-only support:
 >
@@ -274,7 +274,7 @@ Introduce `cppgm++` support for:
 - `--emit-semantics`
 - `--emit-lowir`
 
-Replace the old assignment wrapper names in `pa10`-`pa31` rather than keeping
+Replace the old assignment wrapper names in `pa10`-`pa32` rather than keeping
 aliases. The student-facing story should be one compiler binary from `pa10`
 forward.
 
@@ -304,7 +304,7 @@ around the standard compiler-style interface:
 
 After interface consolidation:
 
-- `pa10`-`pa31` Makefiles should stop naming assignment-specific binaries
+- `pa10`-`pa32` Makefiles should stop naming assignment-specific binaries
 - each should invoke `../dev/cppgm++` with the right flags
 - shared boilerplate should move into one included make fragment
 

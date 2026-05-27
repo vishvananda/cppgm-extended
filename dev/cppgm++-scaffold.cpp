@@ -400,9 +400,9 @@ int run_driver_mode(const vector<string> & args)
   const DriverInvocation invocation = parse_driver_invocation(args);
   switch(invocation.mode) {
   case DriverMode::Query:
-    return run_unimplemented_mode("driver query mode", "PA33");
+    return run_unimplemented_mode("driver query mode", "PA34");
   case DriverMode::Preprocess:
-    return run_unimplemented_mode("hosted preprocess driver mode (-E)", "PA33");
+    return run_unimplemented_mode("hosted preprocess driver mode (-E)", "PA34");
   case DriverMode::Compile:
     return run_unimplemented_mode("compile driver mode (-c)", "PA30");
   case DriverMode::Link:

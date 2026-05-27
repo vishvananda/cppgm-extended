@@ -90,7 +90,7 @@ copy_tracked_paths() {
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         next if m{^pa9/extras/};
-        next if m{^pa32/tests/general/200-host-compact-unwind-large-frame-fallback(?:\.|$)};
+        next if m{^pa33/tests/general/200-host-compact-unwind-large-frame-fallback(?:\.|$)};
         print "$_\0";
       '
   ) | rsync -a --from0 --files-from=- "$repo_root/" "$dest/"
@@ -103,7 +103,7 @@ sanitize_student_makefile_defaults() {
     s/LLVM_CXX_LOCAL = \/usr\/local\/opt\/llvm\/bin\/clang\+\+\nLLVM_CXX_HOMEBREW = \/opt\/homebrew\/opt\/llvm\/bin\/clang\+\+\n(?:ifeq \(\$\(HOST_UNAME_S\),Darwin\)\n)?ifeq \(\$\(wildcard \$\(LLVM_CXX_LOCAL\)\),\)\nifneq \(\$\(wildcard \$\(LLVM_CXX_HOMEBREW\)\),\)\nLLVM_CXX_DEFAULT = \$\(LLVM_CXX_HOMEBREW\)\nendif\nelse\nLLVM_CXX_DEFAULT = \$\(LLVM_CXX_LOCAL\)\nendif\n(?:ifdef LLVM_CXX_DEFAULT\nHOST_CXX_DEFAULT = \$\(LLVM_CXX_DEFAULT\)\nelse\nHOST_CXX_DEFAULT = clang\+\+\nendif\nelse\nHOST_CXX_DEFAULT = g\+\+\nendif\n|)//g;
     s/ifeq \(\$\(origin CXX\), default\)\n(?:ifdef LLVM_CXX_DEFAULT\nCXX := \$\(LLVM_CXX_DEFAULT\)\nelse\nCXX := (?:clang|g)\+\+\nendif|CXX := \$\(HOST_CXX_DEFAULT\))\nendif/ifeq (\$(origin CXX), default)\nCXX := g++\nendif/g;
     s/ifeq \(\$\(origin CPPGM_HOST_CXX\), undefined\)\nifeq \(\$\(abspath \$\(CXX\)\),\$\(abspath \.\.\/dev\/cppgm\+\+\)\)\n(?:ifdef LLVM_CXX_DEFAULT\n\tCPPGM_HOST_CXX := \$\(LLVM_CXX_DEFAULT\)\nelse\n\tCPPGM_HOST_CXX := clang\+\+\nendif|CPPGM_HOST_CXX := \$\(HOST_CXX_DEFAULT\))\nelse\n\t?CPPGM_HOST_CXX := \$\(CXX\)\nendif\nendif/ifeq (\$(origin CPPGM_HOST_CXX), undefined)\nifeq (\$(abspath \$(CXX)),\$(abspath ..\/dev\/cppgm++))\n\tCPPGM_HOST_CXX := g++\nelse\n\tCPPGM_HOST_CXX := \$(CXX)\nendif\nendif/g;
-    s/PA37_LINKER_DETERMINISM_FLAGS =\nifeq \(\$\(HOST_UNAME_S\),Darwin\)\nPA37_LINKER_DETERMINISM_FLAGS \+= -Wl,-reproducible\nendif/PA37_LINKER_DETERMINISM_FLAGS =/g;
+    s/PA38_LINKER_DETERMINISM_FLAGS =\nifeq \(\$\(HOST_UNAME_S\),Darwin\)\nPA38_LINKER_DETERMINISM_FLAGS \+= -Wl,-reproducible\nendif/PA38_LINKER_DETERMINISM_FLAGS =/g;
   ' "$@"
 }
 
@@ -142,7 +142,7 @@ sanitize_linux_student_scripts() {
 }
 
 pa_dirs=()
-for n in $(seq 1 37); do
+for n in $(seq 1 38); do
   pa_dirs+=("pa$n")
 done
 
@@ -175,6 +175,7 @@ dev_public=(
 dev_support_files=(
   dev/src/DebugPPTokenStream.h
   dev/src/IPPTokenStream.h
+  dev/src/abi_mangle.h
   dev/src/exceptions.h
   dev/src/test_runner.cpp
   dev/src/tool_help_text.h
@@ -198,6 +199,7 @@ install -m 0644 "$repo_root"/docs/student-export-root/AUTHORS "$dest/AUTHORS"
 install -m 0644 "$repo_root"/docs/student-export-root/NOTICE "$dest/NOTICE"
 
 scaffold_pairs=(
+  abimangle:abimangle-scaffold.cpp
   pptoken:pptoken-scaffold.cpp
   posttoken:posttoken-scaffold.cpp
   ctrlexpr:ctrlexpr-scaffold.cpp
@@ -227,8 +229,9 @@ cat > "$dest/dev/frontend_source_sets.mk" <<'EOF'
 # Add dev/src/foo.cpp to the tools that use it by adding `foo` below. For
 # subdirectories, use the path without `.cpp`, such as `parser/foo`.
 
-FRONTEND_SOURCE_SET_TARGETS := pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native cpplink cppeh
+FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native cpplink cppeh
 
+FRONTEND_OBJ_BASENAMES_abimangle :=
 FRONTEND_OBJ_BASENAMES_pptoken :=
 FRONTEND_OBJ_BASENAMES_posttoken :=
 FRONTEND_OBJ_BASENAMES_ctrlexpr :=
@@ -253,6 +256,7 @@ MAKEFLAGS += -j$(DEFAULT_BUILD_JOBS)
 endif
 
 TARGETS = \
+	abimangle \
 	pptoken \
 	posttoken \
 	ctrlexpr \
@@ -356,16 +360,16 @@ EOF
 
 sanitize_student_makefile_defaults \
   "$dest/Makefile" \
-  "$dest"/pa33/Makefile \
   "$dest"/pa34/Makefile \
   "$dest"/pa35/Makefile \
   "$dest"/pa36/Makefile \
-  "$dest"/pa37/Makefile
+  "$dest"/pa37/Makefile \
+  "$dest"/pa38/Makefile
 sanitize_linux_student_scripts
 
 perl -0pi -e '
   s/\$\(foreach checkpoint,\$\(CHECKPOINTS\),\$\(if \$\(strip \$\(FRONTEND_OBJ_BASENAMES_\$\(checkpoint\)\)\),,\$\(error missing FRONTEND_OBJ_BASENAMES_\$\(checkpoint\) in \.\.\/dev\/frontend_source_sets\.mk\)\)\)/\$(foreach checkpoint,\$(CHECKPOINTS),\$(if \$(filter undefined,\$(origin FRONTEND_OBJ_BASENAMES_\$(checkpoint))),\$(error missing FRONTEND_OBJ_BASENAMES_\$(checkpoint) in ..\/dev\/frontend_source_sets.mk),))/g;
-' "$dest/pa37/Makefile"
+' "$dest/pa38/Makefile"
 
 cat >> "$dest/Makefile" <<'EOF'
 
@@ -378,6 +382,7 @@ setup: reference-binaries
 EOF
 
 reference_targets=(
+  abimangle
   pptoken
   posttoken
   ctrlexpr
@@ -444,12 +449,13 @@ pa_ref_pairs=(
   pa28:cppgm++
   pa29:cppgm++
   pa30:cppgm++
-  pa31:cppgm++
+  pa31:abimangle
   pa32:cppgm++
   pa33:cppgm++
   pa34:cppgm++
-  pa35:lowiropt
-  pa36:lowir2native
+  pa35:cppgm++
+  pa36:lowiropt
+  pa37:lowir2native
 )
 
 source_sha=$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || echo unknown)

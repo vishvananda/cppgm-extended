@@ -13,7 +13,7 @@ This plan is intentionally execution-oriented:
 - only archive the plan once the targeted gaps are covered by passing tests
 
 The purpose is to stop leaving important hosted ABI/runtime behavior visible
-only through broader `pa31` or bootstrap failures.
+only through broader `pa32` or bootstrap failures.
 
 ## Why This Is Needed
 

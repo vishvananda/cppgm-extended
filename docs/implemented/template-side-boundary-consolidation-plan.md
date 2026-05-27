@@ -65,7 +65,7 @@ coordinated.
 - Do not retune the public witness text contract in this plan. This plan may
   reorganize witness plumbing, but not redefine what the assignment harness
   expects.
-- Do not use the full PA33 or PA34 gates as routine correctness gates for this
+- Do not use the full PA34 or PA35 gates as routine correctness gates for this
   work. Use focused template suites and selected long-running probes only when
   the slice needs performance evaluation.
 
@@ -621,8 +621,8 @@ the point of this work is to reduce duplicated decision paths while keeping the
 observable template behavior stable.
 
 For performance-sensitive slices, record before/after hotspot counters on the
-current focused gates and a few selected long PA33 probes. Do not use the full
-PA33 or PA34 gates as routine correctness gates.
+current focused gates and a few selected long PA34 probes. Do not use the full
+PA34 or PA35 gates as routine correctness gates.
 
 After each stage:
 
@@ -664,5 +664,5 @@ member, and function-template declaration services, so adding a template
 declaration feature no longer requires threading another ad hoc callback
 through the collector.
 
-Remaining template work should be tracked as concrete correctness or PA33/PA34
+Remaining template work should be tracked as concrete correctness or PA34/PA35
 convergence failures rather than as this broad boundary-consolidation plan.

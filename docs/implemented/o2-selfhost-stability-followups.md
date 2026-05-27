@@ -11,7 +11,7 @@ made the current system stable enough to keep moving.
 
 Use this doc when:
 
-- debugging the current `PA37` / `PA3` `-O2` self-host failures
+- debugging the current `PA38` / `PA3` `-O2` self-host failures
 - deciding whether a current restriction is still needed
 - planning the order for re-enabling stronger optimization once the backend is
   robust enough
@@ -72,7 +72,7 @@ Why it landed:
 - the earlier restriction was a temporary guardrail while pointer live-range
   handling and merge behavior were still being stabilized
 - after the backend CFG-aware temp-interval tranche and pointer-slot-promotion
-  re-enablement landed, both `make test-pa37` and the fresh self-host `PA3`
+  re-enablement landed, both `make test-pa38` and the fresh self-host `PA3`
   `-O2` `300-triple.t` compare stayed green with pointer results allowed across
   block boundaries again
 
@@ -162,7 +162,7 @@ Why it landed:
 
 - the first metadata slice made heavy hosted compiles dramatically slower even
   at `-O0`
-- on `pa33/tests/compile/655-const-unordered-map-find.t`, enabling general
+- on `pa34/tests/compile/655-const-unordered-map-find.t`, enabling general
   explicit `noexcept(expr)` evaluation exploded semantic hotspot counts from
   roughly `108k` query requests / `53k` fragment requests to roughly `707k`
   query requests / `452k` fragment requests
@@ -188,8 +188,8 @@ optimizer/backend change reopens the same self-host path.
 - direct one-line `ctrlexpr` smoke: `printf '1\n' | <self-host ctrlexpr -O2 binary>`
 - `pa3/tests/300-triple.t` output and timing comparison for self-host `-O0`
   versus self-host `-O2`
-- `make test-pa37`
-- the active `PA37` self-host ladder checkpoint that currently depends on the
+- `make test-pa38`
+- the active `PA38` self-host ladder checkpoint that currently depends on the
   same backend/runtime path
 
 ## Working Rule
@@ -199,5 +199,5 @@ crashing. Remove them only after:
 
 1. the actual backend or optimizer invariant is restored
 2. the direct self-host repro is green
-3. the broader `PA37` self-host and `PA35` optimizer validation lane still
+3. the broader `PA38` self-host and `PA36` optimizer validation lane still
    passes

@@ -99,12 +99,12 @@ These are the right first tranche because they:
 - improve readability immediately
 - improve validator quality immediately
 - unblock the remaining host-ABI follow-up work
-- prepare LowIR for PA35 without forcing the most invasive storage rewrite yet
+- prepare LowIR for PA36 without forcing the most invasive storage rewrite yet
 
 ## Current Execution Status
 
 - The concrete near-term LowIR execution lane is now complete and validated
-  through `pa34`.
+  through `pa35`.
 - Phase 1 is implemented in the current execution lane:
   - explicit `declare function` / `declare global` syntax
   - parser / printer / validator support
@@ -185,7 +185,7 @@ These are the right first tranche because they:
   - the emitted LowIR uses those conversions instead of flattening everything
     into widened storage guesses
   - the recent hosted-output / throw / vtable fallout has been fixed and the
-    broader `pa13` through `pa34` validation lane is green again
+    broader `pa13` through `pa35` validation lane is green again
 - The next value-vs-storage cleanup slice is also implemented:
   - ordinary scalar explicit casts now lower through a first-class
     semantic cast node instead of relying entirely on flattened
@@ -207,7 +207,7 @@ These are the right first tranche because they:
   - the affected PA13 owners plus emitted-LowIR refs across `pa15`, `pa16`,
     `pa18`, `pa22`, `pa26`, and `pa27` have been refreshed
   - the `pa14` through `pa29` validation lane is clean again, and the late
-    `pa34` timeout pair (`651`, `652`) was checked directly and shown to
+    `pa35` timeout pair (`651`, `652`) was checked directly and shown to
     compile successfully in isolation, so that suite blip was ambient timeout
     pressure rather than a new semantic/codegen regression
 - The MachineIR preservation follow-up is now implemented:
@@ -227,7 +227,7 @@ These are the right first tranche because they:
   - emitted LowIR and simple backends now preserve that dispatch structure
     until later lowering instead of flattening it immediately
   - the owned `PA13` / `PA23` switch owners and the broader `pa14` through
-    `pa34` validation lane were refreshed and revalidated for that shape
+    `pa35` validation lane were refreshed and revalidated for that shape
 - The remaining Phase 4 backlog is now future work:
   - `prototype_relaxed` remains in LowIR as a generic capability, but truthful
     source-origin emission is deferred to a future C / FFI frontend rather than
@@ -239,14 +239,14 @@ These are the right first tranche because they:
 
 The concrete sequence that was active in this lane is now complete:
 
-1. fixed the regression fallout, including the `pa34` hosted-output / vtable
+1. fixed the regression fallout, including the `pa35` hosted-output / vtable
    ownership cluster, and re-established a clean broader sanity lane
 2. implemented the next optimization-relevant storage-model slice, centered on
    explicit integer width conversions and less ad hoc storage/value guessing
 3. implemented the remaining strong / weak binding metadata that still belonged
    to Phase 2 of this first concrete tranche
 4. reran the full affected validation set and restored a clean `pa13` through
-   `pa34` lane
+   `pa35` lane
 5. preserved explicit bulk-storage alignment through the MachineIR boundary so
    the new storage metadata no longer disappears before `PA23` MIR output
 6. landed first-class `switch` control flow so multi-way dispatch no longer has
@@ -552,7 +552,7 @@ Implementation note:
 
 ### 7. First-Class Address Projection Kinds
 
-The recent PA34 hosted-runtime fix required marking base-subobject expressions so we
+The recent PA35 hosted-runtime fix required marking base-subobject expressions so we
 would not treat them like reference fields needing an extra `load ptr`.
 
 That suggests a more explicit address-projection model would help:
@@ -660,8 +660,8 @@ This plan is now a prerequisite input to two later efforts:
 - [host-abi-runtime-followup-plan.md](/Users/vishvananda/cppgm/docs/implemented/host-abi-runtime-followup-plan.md)
   because the hosted EH follow-up wants explicit runtime-role handling below
   LowIR
-- [pa35-optimization-buildout-process.md](/Users/vishvananda/cppgm/docs/implemented/pa35-optimization-buildout-process.md)
-  because PA35 needs LowIR that is explicit enough to validate and optimize
+- [pa36-optimization-buildout-process.md](/Users/vishvananda/cppgm/docs/implemented/pa36-optimization-buildout-process.md)
+  because PA36 needs LowIR that is explicit enough to validate and optimize
 
 ## Priority Order By Goal
 
@@ -962,7 +962,7 @@ So the long-term target should be:
 
 ## Notes From Recent Fixes
 
-The latest PA31-PA34 work suggests these specific LowIR pain points:
+The latest PA32-PA35 work suggests these specific LowIR pain points:
 
 - array/object storage size must not default to 8 bytes
 - `index TYPE` semantics are important enough that the frontend should not be

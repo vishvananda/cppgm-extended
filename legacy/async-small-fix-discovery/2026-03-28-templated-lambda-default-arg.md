@@ -43,13 +43,13 @@ int main() {
 
 ## Regression
 
-- owner regression: `pa31/tests/compile/643-instantiated-templated-lambda-default-arg.t`
+- owner regression: `pa32/tests/compile/643-instantiated-templated-lambda-default-arg.t`
 
 ## Validation
 
 - direct hosted reducer: pass
 - direct `cpphostinterop -c dev/src/template_instantiation.cpp`: pass
-- `make -C pa31 test-worker CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_SKIP_DEV_REBUILD=1`: pass
+- `make -C pa32 test-worker CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_SKIP_DEV_REBUILD=1`: pass
 - `make verify-fast-pa10-31 CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ VERIFY_ASSIGNMENT_JOBS=6`: pass
 
 ## Final Commit

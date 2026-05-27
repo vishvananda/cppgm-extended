@@ -42,15 +42,15 @@ owns LowIR-to-native/backend behavior, not C++ source-to-LowIR behavior.
 
 | PA | Primary Layer | Keep As Primary Assertions | Defer Or Reduce Out |
 | --- | --- | --- | --- |
-| `pa14` | Procedural source-to-LowIR lowering | functions, globals, locals, references, pointers, arrays, scalar expressions, control flow, direct/function-pointer calls, enums if PA12 already owns them | runtime floating/variadic backend parity (`pa23`), function-local static guard/init (`pa20`), `__int128`/hosted extensions (`pa33`) |
-| `pa15` | Basic non-polymorphic object model | class/struct layout, access, member lookup, static members, single inheritance, constructors/destructors, basic lifetime, supported default member init, focused friend/ADL/operator overloads, aggregate init over the PA15 subset, inheriting constructors as a late class/using-declaration integration case | member pointers (`pa28`), conversion operators (`pa16` hard case), multiple inheritance (`pa28`), `new`/`delete` (`pa16`), `[[no_unique_address]]`/vendor attributes (`pa33`), auto-return/lambda/range closure (`pa26`) |
+| `pa14` | Procedural source-to-LowIR lowering | functions, globals, locals, references, pointers, arrays, scalar expressions, control flow, direct/function-pointer calls, enums if PA12 already owns them | runtime floating/variadic backend parity (`pa23`), function-local static guard/init (`pa20`), `__int128`/hosted extensions (`pa34`) |
+| `pa15` | Basic non-polymorphic object model | class/struct layout, access, member lookup, static members, single inheritance, constructors/destructors, basic lifetime, supported default member init, focused friend/ADL/operator overloads, aggregate init over the PA15 subset, inheriting constructors as a late class/using-declaration integration case | member pointers (`pa28`), conversion operators (`pa16` hard case), multiple inheritance (`pa28`), `new`/`delete` (`pa16`), `[[no_unique_address]]`/vendor attributes (`pa34`), auto-return/lambda/range closure (`pa26`) |
 | `pa16` | Value semantics | copy/move construction and assignment, by-value params/returns, temporary materialization, ref-qualified value paths, delegating/out-of-class ctors/dtors, scalar allocation as a late lifetime case, non-template conversion operators as a late value case | lookup-only using-directive cases (`pa12`), lambda/range-for/auto (`pa26`), multiple inheritance/member pointers (`pa28`), template-aware value semantics |
 | `pa17` | Single-inheritance virtual dispatch | virtual calls, vtables, vptr writes, virtual destructors, `override`/method `final`, deterministic vtable/destructor slot order for the supported single-inheritance model | multiple inheritance (`pa28`), non-primary polymorphic pointer adjustment/multi-vptr dispatch (`pa29`), virtual inheritance, pure-virtual/abstract enforcement unless explicitly added later |
 | `pa18` | Basic templates | class/function templates, type parameters, type/template defaults, basic function-template deduction, member templates, template friends, packs, template-template parameters, dependent names needed for those basics | NTTPs (`pa19`), explicit specialization (`pa19`), partial specialization/entity graph (`pa21`), full function-template partial ordering/deduction/SFINAE/no-eager timing (`pa22`), full constexpr (`pa20`) |
 | `pa19` | First metaprogramming layer | integral NTTPs, integral constant-expression template arguments, `static_assert`, explicit specialization, class-scope constant bindings, explicit-specialization timing that does not require SFINAE/no-eager failure behavior | alias/variable templates (`pa21`), partial specialization (`pa21`), broad constexpr function evaluation (`pa20`), non-integral/pointer/member NTTPs (`pa22` plus dependent feature owners) |
-| `pa20` | Full constant evaluation | constexpr functions/constructors/member functions/variables over the implemented language, object/reference/pointer/floating constant values, constexpr validation, constant-initialized local statics, dynamic guarded class local statics as a late local-static/object-lifetime integration case | new template entity features (`pa21`), SFINAE/deduction completion (`pa22`), hosted/vendor builtin probes (`pa33`) |
+| `pa20` | Full constant evaluation | constexpr functions/constructors/member functions/variables over the implemented language, object/reference/pointer/floating constant values, constexpr validation, constant-initialized local statics, dynamic guarded class local statics as a late local-static/object-lifetime integration case | new template entity features (`pa21`), SFINAE/deduction completion (`pa22`), hosted/vendor builtin probes (`pa34`) |
 | `pa21` | Template entity and specialization graph | alias templates, variable templates, partial specialization, specialization selection/order, explicit instantiation, current-specialization/entity ownership | full function-template deduction/partial ordering, SFINAE/substitution failure, no-eager dependent-call timing, detector idioms (`pa22`) |
-| `pa22` | Template completion | full deduction, function-template partial ordering, non-deduced contexts, substitution/candidate dropping, non-integral NTTPs, `enable_if`/`void_t`/detector idioms, remaining dependent-call/alias/no-eager timing | initializer-list language/library interop (`pa27`), member-pointer NTTP cases until member pointers are owned, hosted/vendor-only extensions (`pa33`) |
+| `pa22` | Template completion | full deduction, function-template partial ordering, non-deduced contexts, substitution/candidate dropping, non-integral NTTPs, `enable_if`/`void_t`/detector idioms, remaining dependent-call/alias/no-eager timing | initializer-list language/library interop (`pa27`), member-pointer NTTP cases until member pointers are owned, hosted/vendor-only extensions (`pa34`) |
 
 ## N3485 Reference Review
 
@@ -109,14 +109,14 @@ explicitly the integration milestone for those layers.
 | PA14 procedural integer/pointer/reference LowIR | `semantic_expression.*`, `semantic_statement.*`, `lowirgensemantic.*`, `lowir_internal.*` | Coherent: semantic analysis already owns the language shape and PA14 adds lowering. | Keep as PA14 core. |
 | PA14 runtime floating lowering | `posttokenizer.*`, `cpp_decl_model.*`, `semantic_expression.*`, `semantic_conversion.*`, `semantic_builtins.*`, `constant_value.*`, `lowir_*`, `host_builtin_runtime.*` | Too broad for a procedural LowIR milestone if tests require runtime ABI/backend behavior rather than simple scalar typing. | Canonical owner: `pa23` cluster `500` for runtime/backend parity. |
 | PA14 local statics/string-backed initialization | `semantic_statement.*`, `semantic_lifetime.*`, `callsemantic.*`, `lowirgensemantic.*`, object/backend support | Pulls initialization guards, storage duration, cleanup, and lowering into one early feature. | Canonical owner: `pa20` cluster `300` for constant-initialized local statics and `pa20` cluster `400` for dynamic guarded class local statics. |
-| PA14 `__int128` | `cpp_decl_model.*`, `constant_value.*`, `semantic_builtins.*`, `semantic_expression.*`, `semantic_conversion.*`, `lowirgensemantic.*`, machine/object backends | Compiler extension plus constant folding and backend width support. | Canonical owner: `pa33` cluster `600` as hosted/vendor compatibility. |
+| PA14 `__int128` | `cpp_decl_model.*`, `constant_value.*`, `semantic_builtins.*`, `semantic_expression.*`, `semantic_conversion.*`, `lowirgensemantic.*`, machine/object backends | Compiler extension plus constant folding and backend width support. | Canonical owner: `pa34` cluster `600` as hosted/vendor compatibility. |
 | PA15 basic class object model | `cppast_parser.*`, `cpp_decl_model.*`, `semantic_class_model.*`, `semantic_lookup.*`, `semantic_lifetime.*`, `lowirgensemantic.*` | Broad but conceptually adjacent: declarations, layout, member lookup, simple lifetime, lowering. | Keep PA15 constrained to this base object model. |
 | PA15 friend/ADL/operators | `semantic_lookup.*`, `semantic_overload.*`, `semantic_class_model.*`, `callsemantic.*` | Crosses class ownership, lookup, and overload, but it is still adjacent to object-model usability when kept non-template and non-value-heavy. | Keep in PA15 only as focused operator/ADL cases; avoid coupling to templates or advanced conversion machinery. |
 | PA15 bit-field access/init | `cppast_parser.*`, `semantic_class_model.*`, `semantic_expression.*`, `semantic_lifetime.*`, `lowirgensemantic.*` | Layout alone is local, but read/write/init lowering crosses many layers. | Split layout/declaration from access/init; access/init should be late PA15 or later if it blocks object-model progress. |
 | PA15 member pointers | `cpp_decl_model.*`, `semantic_conversion.*`, `semantic_expression.*`, `semantic_overload.*`, `template_argument_semantics.*`, `lowirgensemantic.*`, `symbol_linkage.*`, mangling | Very high coupling: type system, conversions, calls, overloads, NTTP-like constants, ABI representation. | Canonical owner: `pa28` cluster `300` over the completed non-virtual object model. |
 | PA15 conversion operators | `cppast_parser.*`, `semantic_conversion.*`, `semantic_overload.*`, `callsemantic.*`, template/constexpr paths | Forces user-defined conversion selection across overload and later constant/template cases. | Canonical owner: `pa16` cluster `400` for non-template conversion operators. |
 | PA15 `new`/`delete` | `semantic_expression.*`, `semantic_builtins.*`, `semantic_lifetime.*`, `callsemantic.*`, runtime symbols | Allocation syntax immediately combines expression semantics, ctor/dtor lifetime, cleanup, and runtime naming. | Canonical owner: `pa16` cluster `300` for scalar allocation and cluster `400` for array allocation. |
-| PA15 `[[no_unique_address]]` | `cppast_parser.*`, `semantic_class_model.*`, trait/type analysis | Post-C++11 layout feature, not needed for the basic class arc. | Canonical owner: `pa33` cluster `600`. |
+| PA15 `[[no_unique_address]]` | `cppast_parser.*`, `semantic_class_model.*`, trait/type analysis | Post-C++11 layout feature, not needed for the basic class arc. | Canonical owner: `pa34` cluster `600`. |
 | PA16 copy/move/value semantics | `semantic_class_model.*`, `semantic_lifetime.*`, `semantic_overload.*`, `callsemantic.*`, `lowirgensemantic.*` | Broad but coherent: PA16 is the value/lifetime integration point. | Keep as PA16 core, with tests ordered from simple transfer to cleanup-heavy cases. |
 | PA16 using directives | `typesemantic.*`, `semantic_scope_mutation.*`, `semantic_lookup.*`, `callsemantic.*`, template lookup paths | Pure lookup feature; not naturally part of value semantics. | Canonical owner: `pa12` cluster `200`. |
 | PA16 unions | `semantic_class_model.*`, `semantic_lifetime.*`, `semantic_builtins.*`, `lowirgensemantic.*`, template paths | Looks like object layout, but special members/storage-copy behavior is its own hard lifetime axis. | Keep only as late PA16 hard value cases, not early PA16 requirements. |
@@ -134,7 +134,7 @@ Implementation-coupling conclusions:
 
 1. PA14 should not silently own runtime/ABI scalar extensions. Floating runtime
    lowering moves to `pa23`, guarded local statics move to `pa20`, and
-   `__int128` moves to `pa33`.
+   `__int128` moves to `pa34`.
 2. PA15 should stay about the first class/object model. Member pointers,
    conversion operators, allocation, post-C++11 layout attributes, and bit-field
    read/write/init are separate integration axes with their own later or late
@@ -208,7 +208,7 @@ or harder clusters:
 Recommendation: keep class layout/access/member lookup/static members/basic
 operators/friend ADL in PA15. Treat bit-field access/init as PA15 cluster `400`;
 move `new`/`delete` and non-template conversion operators to PA16; move member
-pointers and multiple inheritance to PA28; move hosted attributes to PA33.
+pointers and multiple inheritance to PA28; move hosted attributes to PA34.
 
 ### PA16
 
@@ -321,7 +321,7 @@ per-test audit:
 2. Function-local static guard/init moves out of PA14 to `pa20` cluster `300`;
    dynamic guarded class local statics use `pa20` cluster `400`.
 3. GNU/hosted extensions such as `__int128`, `[[no_unique_address]]`, generic
-   attribute compatibility, and builtin traits move to `pa33`.
+   attribute compatibility, and builtin traits move to `pa34`.
 4. Bit-field access/init stays in PA15 but becomes cluster `400`; layout-only
    bit-field declarations are cluster `300`.
 5. Scalar `new`/`delete` moves to `pa16` cluster `300`; array allocation is

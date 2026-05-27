@@ -338,7 +338,7 @@ Add or keep small owned regressions for:
 - template function use discovered through non-obvious semantic paths
 - vtable slot visibility in instantiated classes
 - stdlib/polymorphic declaration-only suppression
-- PA31 compile/link smokes for hosted container/hash-table visibility
+- PA32 compile/link smokes for hosted container/hash-table visibility
 
 ## Current Bootstrap Interpretation
 

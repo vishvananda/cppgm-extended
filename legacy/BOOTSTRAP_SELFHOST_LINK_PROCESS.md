@@ -6,7 +6,7 @@ This document defines the workflow for bootstrap issues whose active failure sta
 - `self-compile-smoke-failed`
 - `self-run-smoke-failed`
 
-It is a narrow supplement to [BOOTSTRAP_SELFHOST_FRONTIER_PROCESS.md](/Users/vishvananda/cppgm/legacy/BOOTSTRAP_SELFHOST_FRONTIER_PROCESS.md), focused on link-stage reductions and the owner/regression loop around `PA31`.
+It is a narrow supplement to [BOOTSTRAP_SELFHOST_FRONTIER_PROCESS.md](/Users/vishvananda/cppgm/legacy/BOOTSTRAP_SELFHOST_FRONTIER_PROCESS.md), focused on link-stage reductions and the owner/regression loop around `PA32`.
 
 Direct command lines in this branch should use the build-first root runners:
 
@@ -138,7 +138,7 @@ The practical rule is:
 The intended loop is:
 
 1. try to link bootstrap
-2. reduce the failure honestly into `PA31` or an earlier owner
+2. reduce the failure honestly into `PA32` or an earlier owner
 3. fix the real bug
 4. add the owner regression(s)
 5. refresh refs carefully, only where the fix intentionally changed output
@@ -174,11 +174,11 @@ The intended loop is:
    - preserved frontier objects from the current `*.build` dir when they already expose the
      caller/provider mismatch you need
    - smallest direct `/tmp` source or object set that still reproduces the link failure
-   - `pa31/tests/link` if the issue is truly a link/runtime contract problem
-   - `pa31/tests/compile` if the failure only appears when the self-built compiler compiles a small hosted case
-   - earlier `paN` if the reduction exposes a language or LowIR bug that predates `PA31`
+   - `pa32/tests/link` if the issue is truly a link/runtime contract problem
+   - `pa32/tests/compile` if the failure only appears when the self-built compiler compiles a small hosted case
+   - earlier `paN` if the reduction exposes a language or LowIR bug that predates `PA32`
 
-   For `pa31/tests/link` failures, inspect both the preserved `*.impl.stderr` and the
+   For `pa32/tests/link` failures, inspect both the preserved `*.impl.stderr` and the
    accompanying `*.impl.unresolved_symbols` report. The `nm` report is a fast boundary check over
    the explicit objects and helper libraries in the smoke; it does not replace the real host link,
    but it often shows the whole missing-symbol set more clearly than the final linker message.
@@ -189,7 +189,7 @@ The intended loop is:
 4. Move the regression backward if the reduction stops being link-only.
 
    If the real bug is an earlier semantic / special-member / LowIR issue, the durable regression
-   belongs in the earliest owning `paN`, not only in `PA31`.
+   belongs in the earliest owning `paN`, not only in `PA32`.
 
 5. If the reduction or regression-writing step exposes a broader deferred LowIR cleanup or
    metadata gap that is not part of the current link fix, record it in
@@ -201,22 +201,22 @@ The intended loop is:
    If fixing the link issue uncovers an earlier owner bug, close that child first, verify it,
    refresh refs if needed, commit it if it stands alone, then rerun the parent link repro.
 
-## `PA31` Placement Rules
+## `PA32` Placement Rules
 
-Use `pa31/tests/link` when the bug is about linking or runtime contract shape itself:
+Use `pa32/tests/link` when the bug is about linking or runtime contract shape itself:
 
 - builtin runtime symbol ownership
 - EH runtime symbol ownership
 - host runtime shims
 - link-map drift that changes symbol/layout contracts
 
-Use `pa31/tests/compile` when the failing behavior is still hosted compilation, even if it was
+Use `pa32/tests/compile` when the failing behavior is still hosted compilation, even if it was
 discovered from bootstrap link work:
 
 - the self-built compiler cannot compile a reduced hosted program
 - the reduction proves the real issue is emitted IR / semantic generation rather than the final link
 
-Move the regression to an earlier `paN` when the reduced bug is clearly not `PA31`-specific:
+Move the regression to an earlier `paN` when the reduced bug is clearly not `PA32`-specific:
 
 - special member generation
 - conversion / overload resolution
@@ -233,19 +233,19 @@ area.
 
 Typical shapes:
 
-- `pa31/tests/link`: unresolved symbol, duplicate symbol, missing runtime shim, EH/runtime object
+- `pa32/tests/link`: unresolved symbol, duplicate symbol, missing runtime shim, EH/runtime object
   contract mismatch, or hosted object ownership problem
-- `pa31/tests/compile`: self-built compiler cannot compile a small hosted case, or the reduced
+- `pa32/tests/compile`: self-built compiler cannot compile a small hosted case, or the reduced
   issue is still compile-time codegen/semantic behavior rather than final link
 - earlier `paN`: a smaller standard-language or LowIR issue now proven underneath the link-stage
   symptom
 
 Use `/tmp` scratch reductions freely while searching, but do not stop there if the case belongs in
-`PA31` or an earlier assignment.
+`PA32` or an earlier assignment.
 
 ## Earlier Regression Loop
 
-For each reduced child that lands earlier than `PA31`:
+For each reduced child that lands earlier than `PA32`:
 
 1. add the earliest owning regression
 2. rerun that assignment's worker or targeted test
@@ -372,7 +372,7 @@ Each commit should explain both sides of the closure:
 Use this order in practice:
 
 1. bootstrap probe says link-stage failure
-2. reduce it to `/tmp` and then to `PA31` or earlier owner
+2. reduce it to `/tmp` and then to `PA32` or earlier owner
 3. fix the real bug in `dev/`
 4. add earlier regressions where needed
 5. refresh only the refs that genuinely changed

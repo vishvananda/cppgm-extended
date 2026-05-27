@@ -52,8 +52,8 @@ Keep everything else where it already belongs:
 
 Use the same reduced validation surface as the recent boundary work:
 
-- host: `pa24`, `pa25`, `pa32`
-- host: targeted `pa34` hosted-EH owners `668`, `675`, `683`, `684`, `690`,
+- host: `pa24`, `pa25`, `pa33`
+- host: targeted `pa35` hosted-EH owners `668`, `675`, `683`, `684`, `690`,
   `709`
 - host: a light `pa9` slice so the shared native writer path is exercised from
   `cy86`

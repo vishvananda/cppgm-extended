@@ -13,7 +13,7 @@ Assignment ownership for this migration should be:
 
 - **PA30** for ordinary host-ABI object/link/runtime interop
 - **PA24** for the still-private exception/runtime ABI surfaces
-- **PA31** only for hosted-header/source compatibility cases whose trigger is
+- **PA32** only for hosted-header/source compatibility cases whose trigger is
   really the hosted source environment rather than the final link/runtime ABI
 
 The key constraint is:
@@ -31,7 +31,7 @@ So the intermediate strategy should be:
 3. map selected roles to host ABI symbols during object/native emission
 4. make ordinary hosted links use the same default runtime surface as host
    `clang++`
-5. progressively remove test-time helper runtime objects from `pa31/tests/link`
+5. progressively remove test-time helper runtime objects from `pa32/tests/link`
 
 ## Current State
 
@@ -51,7 +51,7 @@ Today there are three layers mixed together:
    - libc/libc++ helpers
    - host exception ABI and unwinder
 
-That layering leak is why `pa31/tests/link` previously needed per-test helper
+That layering leak is why `pa32/tests/link` previously needed per-test helper
 objects for EH-owned cases such as:
 
 - `646-eh-runtime-link-smoke`
@@ -70,7 +70,7 @@ The transition has already moved several families onto the normal host ABI:
   `strlen`, `ceil*`, and `fabs*` now remap through the host link surface
 - the CMake wrapper no longer injects any private runtime archive; it now lets
   `cppgm++` own compile/link staging and host-driver delegation
-- these hosted PA31 link tests no longer need per-test helper runtime objects:
+- these hosted PA32 link tests no longer need per-test helper runtime objects:
   - `644-hosted-cmath-ceilf-link-smoke`
   - `645-builtin-operator-new-delete-link-smoke`
   - `647-builtin-memcpy-strlen-link-smoke`
@@ -84,7 +84,7 @@ The transition has already moved several families onto the normal host ABI:
   host-native EH object path, so the last helper-runtime link cases are gone:
   - `646-eh-runtime-link-smoke` has been replaced by
     `pa30/tests/spec/194-host-eh-unhandled-throw-smoke`
-  - `675-hosted-dynamic-exception-spec-runtime` now links in `pa31` with no
+  - `675-hosted-dynamic-exception-spec-runtime` now links in `pa32` with no
     helper runtime object
 
 Current staged reality:
@@ -141,7 +141,7 @@ Why these first:
 
 - the symbol contracts are comparatively stable
 - they are already expected to be provided by the host runtime in normal C++
-- they are the source of several current PA31 helper-library hacks
+- they are the source of several current PA32 helper-library hacks
 
 ### Family B: Keep Private For Now
 
@@ -207,7 +207,7 @@ Important constraint:
 Expected result:
 
 - ordinary `new`/`delete` code stops needing `host_builtin_runtime.cpp`
-- `pa31` allocation tests can stop linking `libruntime.o`
+- `pa32` allocation tests can stop linking `libruntime.o`
 - the wrapper no longer needs to inject allocation helpers
 
 ### Phase 2: Make Host `clang++` The Default Host-Interop Policy
@@ -227,10 +227,10 @@ After that, reorganize the relevant tests into three categories.
 
 These should link with just host toolchain inputs and no helper runtime object:
 
-- [645-builtin-operator-new-delete-link-smoke.t.1](/Users/vishvananda/cppgm/pa31/tests/link/645-builtin-operator-new-delete-link-smoke.t.1)
+- [645-builtin-operator-new-delete-link-smoke.t.1](/Users/vishvananda/cppgm/pa32/tests/link/645-builtin-operator-new-delete-link-smoke.t.1)
   - likely rewrite/rename away from builtin spelling toward ordinary `new/delete`
-- [669-cmake-wrapper-new-delete-link-smoke.t.1](/Users/vishvananda/cppgm/pa31/tests/link/669-cmake-wrapper-new-delete-link-smoke.t.1)
-- [670-delete-class-pointer-destroys-object-runtime.t.1](/Users/vishvananda/cppgm/pa31/tests/link/670-delete-class-pointer-destroys-object-runtime.t.1)
+- [669-cmake-wrapper-new-delete-link-smoke.t.1](/Users/vishvananda/cppgm/pa32/tests/link/669-cmake-wrapper-new-delete-link-smoke.t.1)
+- [670-delete-class-pointer-destroys-object-runtime.t.1](/Users/vishvananda/cppgm/pa32/tests/link/670-delete-class-pointer-destroys-object-runtime.t.1)
 
 Desired invariant:
 
@@ -245,16 +245,16 @@ host-link helper hacks. There is no remaining hosted-link helper test in this
 bucket now; the old `646-eh-runtime-link-smoke` ownership moved to the PA30
 host-link surface once compile-only hosted EH stopped requiring helper objects.
 
-#### 3. Hosted-Library Compatibility Smokes (`PA31`)
+#### 3. Hosted-Library Compatibility Smokes (`PA32`)
 
 These should gradually stop depending on per-test runtime source files and
 should default to ordinary host `clang++` linking:
 
-- [644-hosted-cmath-ceilf-link-smoke.t](/Users/vishvananda/cppgm/pa31/tests/link/644-hosted-cmath-ceilf-link-smoke.t)
-- [647-builtin-memcpy-strlen-link-smoke.t.1](/Users/vishvananda/cppgm/pa31/tests/link/647-builtin-memcpy-strlen-link-smoke.t.1)
-- [651-hosted-unordered-map-string-int-link-smoke.t.1](/Users/vishvananda/cppgm/pa31/tests/link/651-hosted-unordered-map-string-int-link-smoke.t.1)
-- [652-hosted-unordered-set-pointer-link-smoke.t.1](/Users/vishvananda/cppgm/pa31/tests/link/652-hosted-unordered-set-pointer-link-smoke.t.1)
-- [654-hosted-forward-as-tuple-rvalue-ref-runtime.t.1](/Users/vishvananda/cppgm/pa31/tests/link/654-hosted-forward-as-tuple-rvalue-ref-runtime.t.1)
+- [644-hosted-cmath-ceilf-link-smoke.t](/Users/vishvananda/cppgm/pa32/tests/link/644-hosted-cmath-ceilf-link-smoke.t)
+- [647-builtin-memcpy-strlen-link-smoke.t.1](/Users/vishvananda/cppgm/pa32/tests/link/647-builtin-memcpy-strlen-link-smoke.t.1)
+- [651-hosted-unordered-map-string-int-link-smoke.t.1](/Users/vishvananda/cppgm/pa32/tests/link/651-hosted-unordered-map-string-int-link-smoke.t.1)
+- [652-hosted-unordered-set-pointer-link-smoke.t.1](/Users/vishvananda/cppgm/pa32/tests/link/652-hosted-unordered-set-pointer-link-smoke.t.1)
+- [654-hosted-forward-as-tuple-rvalue-ref-runtime.t.1](/Users/vishvananda/cppgm/pa32/tests/link/654-hosted-forward-as-tuple-rvalue-ref-runtime.t.1)
 
 Desired invariant:
 
@@ -327,11 +327,11 @@ project is:
    can survive separate compilation and relinking.
 
 5. Only after 1 through 4 is stable, retire the hosted compile fallback.
-   At that point `cppgm++ -c` should still pass the PA30/PA31 EH smokes, but
+   At that point `cppgm++ -c` should still pass the PA30/PA32 EH smokes, but
    the emitted objects will be fully self-emitted rather than delegated to the
    host compiler for EH-bearing sources.
 
-## PA31 Test Replacement Plan
+## PA32 Test Replacement Plan
 
 ### Immediate Cleanup Target
 
@@ -351,8 +351,8 @@ Replacement:
 
 As part of this cleanup, the durable homes should be:
 
-- move ordinary host-ABI ownership tests from `pa31/tests/link` to `pa30/tests`
-- keep only the truly hosted-source-triggered libc++/vendor tests in `pa31`
+- move ordinary host-ABI ownership tests from `pa32/tests/link` to `pa30/tests`
+- keep only the truly hosted-source-triggered libc++/vendor tests in `pa32`
 - move private EH/runtime ownership checks to the PA24 runtime/EH surface when
   practical
 
@@ -365,7 +365,7 @@ As part of this cleanup, the durable homes should be:
 - eventually `645-builtin-operator-new-delete-link-smoke` should be retired or
   rewritten as an ordinary host-ABI allocation smoke
 
-These are fundamentally host-runtime ownership tests, not PA31 hosted-header
+These are fundamentally host-runtime ownership tests, not PA32 hosted-header
 tests.
 
 #### Keep As Explicit Private-Runtime Ownership Tests And Move Toward `PA24`
@@ -375,7 +375,7 @@ tests.
 These are the rare cases where a specialized helper path is still justified,
 because the point of the test is to verify the private-runtime contract itself.
 
-#### Keep In `PA31` As Hosted libc++ / Runtime Smokes Without Helpers
+#### Keep In `PA32` As Hosted libc++ / Runtime Smokes Without Helpers
 
 - `675-hosted-dynamic-exception-spec-runtime`
 
@@ -416,7 +416,7 @@ It should also drive assignment placement decisions:
 
 - host-runtime ownership issue -> `PA30`
 - private EH/runtime ABI ownership issue -> `PA24`
-- hosted-header/source compatibility issue -> `PA31`
+- hosted-header/source compatibility issue -> `PA32`
 
 ### Add Regression Coverage At Each Step
 
@@ -436,11 +436,11 @@ Examples for `new/delete`:
 1. explicit runtime symbol classification table
 2. direct host remap for `new/delete`
 3. move ordinary host-runtime ownership coverage toward `PA30`
-4. replace PA31 per-test runtime objects with plain host-link defaults
+4. replace PA32 per-test runtime objects with plain host-link defaults
 5. direct host remap for libc/libm-style builtin helpers
 6. shrink wrapper archive
 7. defer EH migration until later
 
-This gets us real host-ABI progress, removes most of the ad hoc PA31 runtime
+This gets us real host-ABI progress, removes most of the ad hoc PA32 runtime
 test machinery, puts the tests under the right assignment owners, and avoids
 churn in the LowIR reference corpus.

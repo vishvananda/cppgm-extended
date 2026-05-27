@@ -80,19 +80,19 @@ Run a focused subset while iterating:
 ```sh
 python3 scripts/run_structured_ast_perf_benchmarks.py \
   --repeat 3 \
-  --benchmark pa33-long-unordered-map-find \
-  --benchmark pa33-long-recursive-std-function-string \
+  --benchmark pa34-long-unordered-map-find \
+  --benchmark pa34-long-recursive-std-function-string \
   --output-prefix /tmp/cppgm-structured-ast-perf-focused
 ```
 
-Add the focused long-running PA33 compile benchmarks for perf evaluation, not
+Add the focused long-running PA34 compile benchmarks for perf evaluation, not
 as a whole-assignment correctness gate:
 
 ```sh
 python3 scripts/run_structured_ast_perf_benchmarks.py \
   --repeat 3 \
-  --include-pa33-perf \
-  --output-prefix /tmp/cppgm-structured-ast-perf-pa33
+  --include-pa34-perf \
+  --output-prefix /tmp/cppgm-structured-ast-perf-pa34
 ```
 
 Frozen self-compile benchmarks are optional until the current branch is green
@@ -156,27 +156,27 @@ Default current-pass benchmarks:
   `cppgm++ --emit-lowir` on
   `pa21/tests/general/437-partial-specialization-alias-pattern.t`
 
-Focused PA33 perf benchmarks selected with `--include-pa33-perf`:
+Focused PA34 perf benchmarks selected with `--include-pa34-perf`:
 
-- `pa33-long-unordered-map-find`:
-  `cppgm++ -c` on `pa33/tests/compile/655-const-unordered-map-find.t`
-- `pa33-long-istream-static-member-mask`:
-  `cppgm++ -c` on `pa33/tests/compile/658-istream-static-member-mask-access.t`
-- `pa33-long-ostringstream-unsigned-int`:
-  `cppgm++ -c` on `pa33/tests/compile/662-hosted-ostringstream-unsigned-int.t`
-- `pa33-long-vector-bool-storage`:
+- `pa34-long-unordered-map-find`:
+  `cppgm++ -c` on `pa34/tests/compile/655-const-unordered-map-find.t`
+- `pa34-long-istream-static-member-mask`:
+  `cppgm++ -c` on `pa34/tests/compile/658-istream-static-member-mask-access.t`
+- `pa34-long-ostringstream-unsigned-int`:
+  `cppgm++ -c` on `pa34/tests/compile/662-hosted-ostringstream-unsigned-int.t`
+- `pa34-long-vector-bool-storage`:
   `cppgm++ -c` on
-  `pa33/tests/compile/679-hosted-vector-bool-storage-allocator-static-cast.t`
-- `pa33-long-recursive-std-function-string`:
+  `pa34/tests/compile/679-hosted-vector-bool-storage-allocator-static-cast.t`
+- `pa34-long-recursive-std-function-string`:
   `cppgm++ -c` on
-  `pa33/tests/compile/680-hosted-recursive-std-function-string-substr.t`
+  `pa34/tests/compile/680-hosted-recursive-std-function-string-substr.t`
 
 Optional self-compile benchmarks selected with `--include-self-compile`:
 
 - frozen self-compile cases under `benchmarks/self_compile/stable/`
 
-Do not run the whole PA33 harness as the routine perf-slice correctness gate;
-use the focused PA33 compile cases for longer timing signal instead. These
+Do not run the whole PA34 harness as the routine perf-slice correctness gate;
+use the focused PA34 compile cases for longer timing signal instead. These
 benchmarks are marked as known-error/measurable until the hosted-header
 semantic surface is green; they should be used for relative wall/RSS movement,
 not as correctness evidence.
@@ -244,20 +244,20 @@ Performance:
   `/tmp/cppgm-structured-ast-perf-baseline-89976e2f-r3.json`
 - Default current JSON:
   `/tmp/cppgm-structured-ast-perf-current-89976e2f-wip-r3b.json`
-- Selected PA33 baseline JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-selected-baseline-89976e2f-r3.json`
-- Selected PA33 current JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-selected-current-89976e2f-wip-r3.json`
+- Selected PA34 baseline JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-selected-baseline-89976e2f-r3.json`
+- Selected PA34 current JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-selected-current-89976e2f-wip-r3.json`
 
 Result:
 
 - Default small controls are wall-clock neutral, with medians between roughly
   `-1.13%` and `+1.76%`.
-- Selected PA33 known-error timing probes show a consistent RSS reduction:
-  `pa33-long-unordered-map-find` `-21.23%`,
-  `pa33-long-ostringstream-unsigned-int` `-17.66%`, and
-  `pa33-long-recursive-std-function-string` `-17.80%`.
-- Selected PA33 wall time is still neutral/inconclusive:
+- Selected PA34 known-error timing probes show a consistent RSS reduction:
+  `pa34-long-unordered-map-find` `-21.23%`,
+  `pa34-long-ostringstream-unsigned-int` `-17.66%`, and
+  `pa34-long-recursive-std-function-string` `-17.80%`.
+- Selected PA34 wall time is still neutral/inconclusive:
   `+0.10%`, `-2.11%`, and `+2.16%` respectively.
 
 Decision:
@@ -355,10 +355,10 @@ Performance:
   `/tmp/cppgm-structured-ast-perf-current-after-move-scope2.json`
 - Result: default benchmark set is too small/noisy for a defensible win claim
   so far; the clean rerun is flat within roughly +/-1% wall time.
-- PA33 timing probe:
-  `/tmp/cppgm-structured-ast-perf-pa33-current-r3.json` compared to
-  `/tmp/cppgm-structured-ast-perf-pa33-integration-r3.json` shows
-  `pa33-long-unordered-map-find` known-error median wall time at `13.934s`
+- PA34 timing probe:
+  `/tmp/cppgm-structured-ast-perf-pa34-current-r3.json` compared to
+  `/tmp/cppgm-structured-ast-perf-pa34-integration-r3.json` shows
+  `pa34-long-unordered-map-find` known-error median wall time at `13.934s`
   vs `25.588s` baseline. Treat this as an early directional signal only
   because the known-error path and host load are noisy.
 - Tooling smoke: `/tmp/cppgm-structured-ast-perf-default-smoke2.json`
@@ -378,8 +378,8 @@ Performance:
   `/tmp/cppgm-structured-ast-perf-fragment-range-view-r3.json` completed
   `13/13` default benchmarks with `--repeat 3`, compared against
   `/tmp/cppgm-structured-ast-perf-current-89976e2f-wip-r3b.json`.
-  Default medians are still neutral/noisy. The focused PA33 `655` probe
-  `/tmp/cppgm-structured-ast-perf-pa33-655-fragment-range-view-r3.json`
+  Default medians are still neutral/noisy. The focused PA34 `655` probe
+  `/tmp/cppgm-structured-ast-perf-pa34-655-fragment-range-view-r3.json`
   measured `-1.52%` wall and `+0.53%` RSS versus the previous slice, which is
   not enough to claim a material win but is not a regression.
 
@@ -418,10 +418,10 @@ Performance:
 
 - Default benchmark JSON:
   `/tmp/cppgm-structured-ast-perf-decl-dispatch-guards-r3.json`
-- Focused PA33 JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-655-decl-dispatch-guards-r3.json`
+- Focused PA34 JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-655-decl-dispatch-guards-r3.json`
 - Result: default benchmarks are mixed/noisy with small wall-clock movement;
-  the focused long PA33 `655` probe measured `-2.85%` median wall time and
+  the focused long PA34 `655` probe measured `-2.85%` median wall time and
   `+2.25%` RSS versus the previous fragment range-view slice. Keep this as a
   long-path parser speculation win, not a broad benchmark-set win.
 
@@ -452,13 +452,13 @@ Correctness:
 
 Performance:
 
-- Fresh clean-head PA33 `662` baseline:
-  `/tmp/cppgm-structured-ast-perf-clean-head-44565939-pa33-662-r3b.json`
-- Focused PA33 `662` current JSON:
-  `/tmp/cppgm-structured-ast-perf-template-special-member-prefilter-safe-pa33-662-r3.json`
+- Fresh clean-head PA34 `662` baseline:
+  `/tmp/cppgm-structured-ast-perf-clean-head-44565939-pa34-662-r3b.json`
+- Focused PA34 `662` current JSON:
+  `/tmp/cppgm-structured-ast-perf-template-special-member-prefilter-safe-pa34-662-r3.json`
 - Default controls:
   `/tmp/cppgm-structured-ast-perf-template-special-member-prefilter-default-r3.json`
-- Result: focused PA33 `662` known-error timing probe improved `-5.41%`
+- Result: focused PA34 `662` known-error timing probe improved `-5.41%`
   median wall time (`14.118s` vs `14.925s`) with flat RSS (`+0.02%`).
   Default controls completed `13 / 13` with no failures.
 
@@ -499,9 +499,9 @@ Performance:
 
 - Default benchmark JSON:
   `/tmp/cppgm-structured-ast-perf-source-arg-borrow-r3.json`
-- Focused PA33 JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-655-source-arg-borrow-r3.json`
-- Result: default controls remain within noise. The focused long PA33 `655`
+- Focused PA34 JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-655-source-arg-borrow-r3.json`
+- Result: default controls remain within noise. The focused long PA34 `655`
   probe measured `-1.16%` median wall time and `+0.36%` RSS versus the
   previous declaration-dispatch slice. Treat this as reduced copy churn, not a
   broad compile-time win.
@@ -536,12 +536,12 @@ Performance:
 
 - Default benchmark JSON:
   `/tmp/cppgm-structured-ast-perf-class-readiness-reuse-r3.json`
-- Focused PA33 JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-655-class-readiness-reuse-r3.json`
+- Focused PA34 JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-655-class-readiness-reuse-r3.json`
 - PA21 hotspot JSON:
   `/tmp/cppgm-structured-ast-perf-pa21-inline-hotspot-class-readiness-reuse.json`
 - Result: default controls moved `-0.92%` to `-3.27%` wall time versus the
-  previous source-argument slice. The PA33 `655` known-error probe measured
+  previous source-argument slice. The PA34 `655` known-error probe measured
   `+2.38%` wall and `-5.78%` RSS, which is inconclusive on that early-error
   path. The PA21 hotspot count for `instantiated_class_output_readiness` did
   not drop, so this should be treated as a small local reuse cleanup rather
@@ -578,13 +578,13 @@ Performance:
 
 - Exact previous-commit baseline worktree:
   `/tmp/cppgm-baseline-2b6102d6-20260428`
-- Focused PA33 `662` baseline JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-baseline-2b6102d6-r3.json`
-- Focused PA33 `662` current JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-template-arg-normalize-r3.json`
+- Focused PA34 `662` baseline JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-662-baseline-2b6102d6-r3.json`
+- Focused PA34 `662` current JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-662-template-arg-normalize-r3.json`
 - Default current JSON:
   `/tmp/cppgm-structured-ast-perf-template-arg-normalize-r3.json`
-- Result: `pa33-long-ostringstream-unsigned-int` measured `-1.31%` median
+- Result: `pa34-long-ostringstream-unsigned-int` measured `-1.31%` median
   wall time and `+0.23%` RSS versus the exact previous commit. Default
   controls are flat/noisy within about `+/-1%` wall time. Keep this as a
   focused string-normalization cleanup on the hot resolve-template-arguments
@@ -611,7 +611,7 @@ Implemented:
 Rejected during this phase:
 
 - an inline-storage rewrite of `ResolveTemplateArgumentsCacheKey` was tested and
-  then removed after the focused PA33 `662` probe regressed by `+22.51%`
+  then removed after the focused PA34 `662` probe regressed by `+22.51%`
   median wall time; do not revive that shape without stronger allocation and
   cache-locality evidence
 
@@ -631,18 +631,18 @@ Performance:
   `/tmp/cppgm-structured-ast-perf-template-arg-normalize-r3.json`
 - Default current JSON:
   `/tmp/cppgm-structured-ast-perf-resolve-bookkeeping-r3b.json`
-- Focused PA33 `662` baseline JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-template-arg-normalize-r3.json`
-- Focused PA33 `662` current JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-resolve-bookkeeping-r3.json`
+- Focused PA34 `662` baseline JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-662-template-arg-normalize-r3.json`
+- Focused PA34 `662` current JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-662-resolve-bookkeeping-r3.json`
 - Rejected inline-key experiment JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-resolve-setup-r3.json`
-- Result: `pa33-long-ostringstream-unsigned-int` measured `-3.87%` median
+  `/tmp/cppgm-structured-ast-perf-pa34-662-resolve-setup-r3.json`
+- Result: `pa34-long-ostringstream-unsigned-int` measured `-3.87%` median
   wall time and `-0.26%` RSS versus the previous template-argument
   normalization phase. The default control rerun completed `13 / 13` but was
   uniformly about `+1%` to `+2%` wall time against the prior JSON; treat that as
   small/noisy control movement rather than a broad win. This slice is kept for
-  the focused PA33 resolver-path signal and because the changed guards should
+  the focused PA34 resolver-path signal and because the changed guards should
   only remove unused bookkeeping.
 
 ### Patch 1 Probe - Hash Resolver Cache Keys While Building
@@ -678,12 +678,12 @@ Performance:
   `/tmp/cppgm-structured-ast-perf-resolve-bookkeeping-r3b.json`
 - Default current JSON:
   `/tmp/cppgm-structured-ast-perf-resolve-key-build-r3.json`
-- Focused PA33 `662` baseline JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-resolve-bookkeeping-r3.json`
-- Focused PA33 `662` current JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-resolve-key-build-r3.json`
+- Focused PA34 `662` baseline JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-662-resolve-bookkeeping-r3.json`
+- Focused PA34 `662` current JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-662-resolve-key-build-r3.json`
 - Result: default controls are stable versus the previous phase, with most
-  median wall deltas between about `-1%` and `+0.5%`. The focused PA33 `662`
+  median wall deltas between about `-1%` and `+0.5%`. The focused PA34 `662`
   probe measured another `-1.72%` median wall time and `+0.08%` RSS versus the
   bookkeeping phase; one run was a `30.818s` outlier, but the other two runs
   were `15.996s` and `16.103s`.
@@ -710,7 +710,7 @@ Implemented:
 Rejected during this phase:
 
 - a one-entry "last resolve-template-arguments result" cache was tested and
-  removed after the focused PA33 `662` probe regressed by `+12.00%` median wall
+  removed after the focused PA34 `662` probe regressed by `+12.00%` median wall
   time; direct input comparison before cache-key construction was more
   expensive than the locality it captured
 
@@ -730,13 +730,13 @@ Performance:
   `/tmp/cppgm-structured-ast-perf-resolve-key-build-r3.json`
 - Default current JSON:
   `/tmp/cppgm-structured-ast-perf-reuse-class-inst-key-r3b.json`
-- Focused PA33 `662` baseline JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-resolve-key-build-r3.json`
-- Focused PA33 `662` current JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-reuse-class-inst-key-r3.json`
+- Focused PA34 `662` baseline JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-662-resolve-key-build-r3.json`
+- Focused PA34 `662` current JSON:
+  `/tmp/cppgm-structured-ast-perf-pa34-662-reuse-class-inst-key-r3.json`
 - Rejected last-cache experiment JSON:
-  `/tmp/cppgm-structured-ast-perf-pa33-662-resolve-last-cache-r3.json`
-- Result: `pa33-long-ostringstream-unsigned-int` measured `-13.88%` median
+  `/tmp/cppgm-structured-ast-perf-pa34-662-resolve-last-cache-r3.json`
+- Result: `pa34-long-ostringstream-unsigned-int` measured `-13.88%` median
   wall time and `-0.06%` RSS versus the previous resolver-key phase. The
   default control repeat completed `13 / 13`; PA10 AST controls stayed roughly
   within `+/-2%`, while several subsecond PA18/PA21 lowir controls reported
@@ -840,8 +840,8 @@ Performance:
   `/tmp/cppgm-structured-ast-perf-after-parser-move-r3.json`
 - After wider move pass smoke:
   `/tmp/cppgm-structured-ast-perf-after-wide-parser-move-smoke.json`
-- Focused PA33 known-error probe after wider move pass:
-  `/tmp/cppgm-structured-ast-perf-pa33-after-wide-parser-move-smoke2.json`
+- Focused PA34 known-error probe after wider move pass:
+  `/tmp/cppgm-structured-ast-perf-pa34-after-wide-parser-move-smoke2.json`
 - After AST setter move smoke:
   `/tmp/cppgm-structured-ast-perf-after-ast-setter-move-smoke.json`
 - After AST setter move repeat-3:
@@ -858,7 +858,7 @@ Performance:
   signal, not proof that the setter overload slice alone produced the gain.
   The parser loop cleanup smoke completed `13/13`, but repeat-1 timings are
   noise-only and should not be used for a win/regression claim. The single
-  PA33 probe measured `pa33-long-unordered-map-find` at `27.067s`
+  PA34 probe measured `pa34-long-unordered-map-find` at `27.067s`
   as a known-error timing probe, `+5.78%` versus the older baseline JSON and
   `-2.90%` RSS; this is repeat-1 and not enough to call a regression or win.
 

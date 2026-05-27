@@ -191,9 +191,9 @@ and into:
 
 Validation status for that slice:
 
-- macOS host subset: `pa23`, `pa24`, `pa25`, `pa32`, `pa34` clean
-- Linux Clang 22 subset: `pa23`, `pa24`, `pa25`, `pa32` clean
-- Linux `pa34` remains baseline-broken in the same hosted-runtime cases on a
+- macOS host subset: `pa23`, `pa24`, `pa25`, `pa33`, `pa35` clean
+- Linux Clang 22 subset: `pa23`, `pa24`, `pa25`, `pa33` clean
+- Linux `pa35` remains baseline-broken in the same hosted-runtime cases on a
   clean checkout, so the imported-reference slice did not introduce a new ELF
   regression there
 
@@ -213,8 +213,8 @@ which is explicitly the object-format side of the backend seam.
 Validation for that completion slice used a lighter-weight but sufficient
 runtime subset on both host and Linux:
 
-- full `pa24`, `pa25`, and `pa32`
-- targeted hosted-EH `pa34` owners:
+- full `pa24`, `pa25`, and `pa33`
+- targeted hosted-EH `pa35` owners:
   - `668`
   - `675`
   - `683`

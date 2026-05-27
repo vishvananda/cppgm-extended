@@ -47,7 +47,7 @@ In particular:
   `cppgm++ --emit-ast/--emit-types/--emit-semantics/--emit-lowir` for the earlier text modes,
   and plain `cppgm++ -E/-c/...` for the PA29-31 hosted/toolchain path
 - move standard-language bugs backward into the earliest real owning milestone
-- keep true bootstrap-only integration issues in `PA32`
+- keep true bootstrap-only integration issues in `PA33`
 - if reduction, regression placement, or ref analysis exposes a broader deferred LowIR cleanup
   or metadata gap that is not being implemented in the current fix, append a short note to
   [`docs/lowir-evolution-plan.md`](/Users/vishvananda/cppgm/docs/lowir-evolution-plan.md)
@@ -349,7 +349,7 @@ Use the sweep in these cases:
 
 For one-file bootstrap blockers, especially when the default sweep budget is too short for slow
 translation units such as `callsemantic.cpp`, prefer a no-timeout single-source sweep rerun that
-reuses the same self-host object layout as the PA37 ladder:
+reuses the same self-host object layout as the PA38 ladder:
 
 ```sh
 python3 scripts/report_self_compile_sweep.py \
@@ -357,8 +357,8 @@ python3 scripts/report_self_compile_sweep.py \
   --compiler ./dev/cppgm++ \
   --host-cxx /usr/local/opt/llvm/bin/clang++ \
   --frontend cppgm++ \
-  --object-layout pa37-selfhost \
-  --build-dir ./obj/pa37/selfhost \
+  --object-layout pa38-selfhost \
+  --build-dir ./obj/pa38/selfhost \
   --test-runner 1 \
   --timeout-sec 0 \
   --source dev/src/<failing>.cpp \
@@ -368,7 +368,7 @@ python3 scripts/report_self_compile_sweep.py \
 Use that command when you need a trustworthy answer to:
 
 - does the active bootstrap blocker still fail when compiled alone?
-- can the resulting `.o` be reused directly by the PA37 ladder without rebuilding?
+- can the resulting `.o` be reused directly by the PA38 ladder without rebuilding?
 - is the current issue a real compile failure rather than a short-budget timeout artifact?
 
 The sweep does not replace the active serial frontier, but it is the preferred way to discover
@@ -628,7 +628,7 @@ As with hosted frontier work, the reduction is not an owning regression unless i
 both the last broken commit and the first fixed commit.
 
 Once the reduction identifies the owner, implement the full owner-level feature or compatibility
-surface. Do not stop at "the bootstrap source compiles now" if the real issue is a broader PA31
+surface. Do not stop at "the bootstrap source compiles now" if the real issue is a broader PA32
 compatibility gap or an earlier standard-language feature that still needs proper coverage.
 
 If the reduction instead exposes a smaller real owner bug underneath the current bootstrap item,
@@ -642,9 +642,9 @@ unwinding back up.
 Use the same ownership rules as the hosted frontier, with one added bootstrap-specific rule:
 
 - if the failure is truly about the bootstrap orchestration itself rather than the language,
-  semantics, backend contract, or hosted compatibility, it belongs to `PA32`
+  semantics, backend contract, or hosted compatibility, it belongs to `PA33`
 
-Examples of likely `PA32` ownership:
+Examples of likely `PA33` ownership:
 
 - bootstrap source-set ordering
 - self-build driver flow

@@ -6,7 +6,7 @@ Implemented for:
 
 - `cppgm++ -g0` and `cppgm++ -gline-tables-only`
 - PA13 debug metadata transport and debug-only validation lanes
-- PA35 debug metadata transit tests through `-O1` and `-O2`
+- PA36 debug metadata transit tests through `-O1` and `-O2`
 - object-file DWARF line tables and host-linked debugger smoke coverage
 
 Intentionally out of scope:
@@ -52,7 +52,7 @@ location data between semantic output and the backend IR layers.
 2. Treat line-table quality as the first shipping milestone.
 3. Make PA13 own the text IR debug metadata surface before native object
    emission depends on it.
-4. Make PA35 metadata preservation explicit. Optimizations may be allowed to
+4. Make PA36 metadata preservation explicit. Optimizations may be allowed to
    coarsen metadata in some cases, but they should not silently erase it.
 5. Keep the custom executable linker work optional at first. Object-file
    debuginfo and host-linked executables are the earlier milestone.
@@ -129,12 +129,12 @@ Notes:
 - synthetic code should have an explicit policy, for example nearest enclosing
   source location or marked compiler-generated locations
 
-### Phase 4: LowIR And PA35 Optimization Preservation
+### Phase 4: LowIR And PA36 Optimization Preservation
 
 Goals:
 
 - lower debug metadata from semantic output into LowIR
-- make PA35 preserve metadata through optimization passes
+- make PA36 preserve metadata through optimization passes
 
 Deliverables:
 
@@ -150,7 +150,7 @@ Optional follow-up:
 Notes:
 
 - this phase is optional only in ordering, not in eventual ownership
-- the minimum acceptable outcome is that PA35 does not accidentally strip all
+- the minimum acceptable outcome is that PA36 does not accidentally strip all
   debug locations during otherwise valid transforms
 
 ### Phase 5: MachineIR And Object Emission
@@ -208,7 +208,7 @@ Suggested test groups:
 
 1. CLI parsing and mode selection for `-g`, `-g0`, and `-gline-tables-only`
 2. PA13 metadata parse/dump round-trip tests
-3. PA35 preservation tests showing metadata survives representative optimizations
+3. PA36 preservation tests showing metadata survives representative optimizations
 4. object inspection tests for emitted debug sections and relocations
 5. debugger-smoke or external tool inspection tests where practical
 
@@ -222,5 +222,5 @@ safe to stage:
 3. add the separate top-level debug-info validation target
 4. start no-op propagation of debug-info options toward object emission
 
-That gives the later PA13 and PA35 metadata work a stable execution lane and a
+That gives the later PA13 and PA36 metadata work a stable execution lane and a
 real option path to build on.

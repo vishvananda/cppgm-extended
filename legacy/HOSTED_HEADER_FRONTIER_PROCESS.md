@@ -30,7 +30,7 @@ leaving behind the right regression.
 1. `ROADMAP.md` and the owning `paN/README.md` define assignment ownership.
 2. Current shared-binary behavior is only evidence, not assignment scope.
 3. Standard-language fixes belong in the earliest written milestone that owns them.
-4. True hosted/vendor compatibility stays in `PA31`.
+4. True hosted/vendor compatibility stays in `PA32`.
 5. Implement the actual missing functionality for the true owning surface. Do not "work around"
    a frontier blocker with a header-specific hack, a one-off special case, a source rewrite that
    only sidesteps the current failure, or the smallest patch that only clears the current smoke.
@@ -189,22 +189,22 @@ Do not promote the next blocker into a new `HHC-###` item until this sweep evide
 recorded in the active hosted frontier tracker. The next frontier item is not fully discovered
 until both the local smoke and the sweep-backed cluster note are written down.
 
-Run the PA31 batch sweep tool against the same host compiler used by the active frontier:
+Run the PA32 batch sweep tool against the same host compiler used by the active frontier:
 
 ```sh
-cd pa31
+cd pa32
 env CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ make header-sweep
 ```
 
 Useful variants:
 
 ```sh
-cd pa31
+cd pa32
 env CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ make header-sweep-recursive
 env CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ make header-sweep-internal
 ```
 
-Use the generated report under `pa31/testout/` to:
+Use the generated report under `pa32/testout/` to:
 
 - cluster many failing headers by normalized diagnostic fingerprint
 - find sibling occurrences of the current blocker so you understand the real blast radius
@@ -261,7 +261,7 @@ env CPPGM_TRACE=parser.angle,parser.fragment \
     CPPGM_TRACE_FILE=allocator \
     CPPGM_TRACE_ON_ERROR=1 \
     CPPGM_TRACE_LIMIT=400 \
-    make run-cppgm CPPGM_ARGS='-c -o /tmp/hhc.o pa31/tests/frontier/HHC-397-allocator-traits-max-size-ambiguity-smoke.t'
+    make run-cppgm CPPGM_ARGS='-c -o /tmp/hhc.o pa32/tests/frontier/HHC-397-allocator-traits-max-size-ambiguity-smoke.t'
 ```
 
 Then narrow further as needed:
@@ -362,10 +362,10 @@ Use this decision order:
 1. Is it true hosted/vendor compatibility?
    - examples: `__has_*`, `#include_next`, GNU attributes, builtin probes, hosted predefined
      macros, libc++ compatibility glue
-   - owner: `PA31`
+   - owner: `PA32`
 2. Is it standard pre-`PA10` behavior?
    - default policy: do not reopen the `PA1`-`PA9` contracts just because hosted work found it
-   - if it is only needed for hosted compatibility, keep it in `PA31`
+   - if it is only needed for hosted compatibility, keep it in `PA32`
 3. Is it standard C++ behavior already owned by a later front-end milestone?
    - place it in the earliest real `PA10+` owner
 4. Is it still ambiguous?

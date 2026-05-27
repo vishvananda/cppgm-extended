@@ -6,7 +6,7 @@ Use it when the full self-host frontier is too expensive for each iteration and 
 
 This process is for discovering compiler bugs cheaply, not for replacing the normal regression and commit discipline.
 
-It is also a maintainer workflow, not the final public PA37 build contract.
+It is also a maintainer workflow, not the final public PA38 build contract.
 The maintained frontend source lists now live in
 [dev/frontend_source_sets.mk](/Users/vishvananda/cppgm/dev/frontend_source_sets.mk),
 and the early-PA wrapper `Makefile`s use those same checked-in lists directly.
@@ -117,9 +117,9 @@ Examples:
 
 - LowIR typing or lowering bugs should move down to the earliest LowIR-owning PA
 - constructor/destructor lifetime bugs should move down to the earliest PA that can express the lifetime rule
-- hosted compile-only compatibility bugs may stay in `pa33` when that is truly the first
+- hosted compile-only compatibility bugs may stay in `pa34` when that is truly the first
   owner
-- hosted emitted-code link/runtime bugs may stay in `pa34` when that is truly the first
+- hosted emitted-code link/runtime bugs may stay in `pa35` when that is truly the first
   owner
 
 Full `test-report` remains the gate before the fix is considered closed.
@@ -127,7 +127,7 @@ Full `test-report` remains the gate before the fix is considered closed.
 Useful commands after landing a candidate fix:
 
 ```bash
-make test-report-nobuild ACTIVE_TEST_REPORT_PAS='pa23 pa34 pa33' CPPGM_SKIP_DEV_REBUILD=1 \
+make test-report-nobuild ACTIVE_TEST_REPORT_PAS='pa23 pa35 pa34' CPPGM_SKIP_DEV_REBUILD=1 \
   CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
 ```
 
@@ -135,7 +135,7 @@ make test-report-nobuild ACTIVE_TEST_REPORT_PAS='pa23 pa34 pa33' CPPGM_SKIP_DEV_
 make test-report CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
 ```
 
-If the first durable repro turns out to belong below `pa33`/`pa34`, move it down
+If the first durable repro turns out to belong below `pa34`/`pa35`, move it down
 immediately rather than leaving it as a frontier-only smoke.
 
 ## Escalation Rules

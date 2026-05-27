@@ -1,4 +1,4 @@
-# PA10-PA34 Assignment Cleanup Tracker
+# PA10-PA35 Assignment Cleanup Tracker
 
 This is the working tracker for
 [pa10-34-assignment-cleanup-process.md](/Users/vishvananda/cppgm/docs/pa10-34-assignment-cleanup-process.md).
@@ -42,14 +42,14 @@ It is intentionally more operational than the process doc:
 | `pa28` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa29` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa30` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
-| `pa31` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa32` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa33` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa34` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
+| `pa35` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 
-Pass A is now complete across `pa10` through `pa34`.
-Pass B is now complete across `pa10` through `pa34`.
-Pass C is now complete across `pa10` through `pa34`.
+Pass A is now complete across `pa10` through `pa35`.
+Pass B is now complete across `pa10` through `pa35`.
+Pass C is now complete across `pa10` through `pa35`.
 
 ## 2026-05-11 Test Grouping / Rename Pass
 
@@ -69,8 +69,8 @@ recorded in:
 - `docs/implemented/test-grouping-notes-pa14-pa17.md`
 - `docs/implemented/test-grouping-notes-pa18-pa22.md`
 - `docs/implemented/test-grouping-notes-pa23-pa29.md`
-- `docs/implemented/test-grouping-notes-pa30-pa34.md`
-- `docs/implemented/test-grouping-notes-pa35-pa36.md`
+- `docs/implemented/test-grouping-notes-pa30-pa35.md`
+- `docs/implemented/test-grouping-notes-pa36-pa37.md`
 
 Coordinator summary:
 
@@ -86,14 +86,14 @@ Coordinator summary:
   `tests/general/`, updated moved path references in refs and witness refs, and
   updated READMEs.
 - `pa23`: kept the intentional `tests/strict` and `tests/structural` role split.
-- `pa24` through `pa32`: moved broad milestone/ABI/runtime suites from
+- `pa24` through `pa33`: moved broad milestone/ABI/runtime suites from
   `tests/spec/` to `tests/general/` and updated README descriptions.
-- `pa33`: kept `tests/preproc` and `tests/compile` as meaningful public role
+- `pa34`: kept `tests/preproc` and `tests/compile` as meaningful public role
   buckets, removed the untested internal `tests/frontier` discovery surface
   from the repository, and preserved shared numeric feature-family anchors.
-- `pa34`: kept `tests/link` as the link/runtime oracle bucket and preserved
+- `pa35`: kept `tests/link` as the link/runtime oracle bucket and preserved
   shared numeric feature-family bands.
-- `pa35` and `pa36`: kept existing optimizer/backend optimization-level,
+- `pa36` and `pa37`: kept existing optimizer/backend optimization-level,
   driver, and debug-info role buckets; updated READMEs and bucket descriptions.
 
 Follow-up numbering and citation audit:
@@ -113,8 +113,8 @@ Follow-up numbering and citation audit:
 
 Validation notes for this pass:
 
-- Worker slice validation passed for `pa10` through `pa32`, focused affected
-  anchors in `pa33` and `pa34`, and full `pa35`/`pa36` test plus debug-info
+- Worker slice validation passed for `pa10` through `pa33`, focused affected
+  anchors in `pa34` and `pa35`, and full `pa36`/`pa37` test plus debug-info
   targets. Detailed commands and counts are in the slice notes.
 - Coordinator strict validation with `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1` passed
   for `pa18 pa19 pa21 pa22`.
@@ -140,11 +140,11 @@ Validation notes for this pass:
     then `PA23 nativebackend`
 - `pa25` / `pa26`
   - no ownership move was needed; the private-EH to language-closure handoff is coherent
-- `pa30` / `pa31` / `pa32`
+- `pa30` / `pa32` / `pa33`
   - host object interop, then host ABI/runtime ownership, remains a clean monotonic sequence
-  - clarified that broader hosted-header compatibility is later `PA33` / `PA34` work, not
-    part of the `PA31` handoff
-- `pa32` / `pa33` / `pa34`
+  - clarified that broader hosted-header compatibility is later `PA34` / `PA35` work, not
+    part of the `PA32` handoff
+- `pa33` / `pa34` / `pa35`
   - host ABI/runtime, then hosted compile compatibility, then hosted emitted-code
     link/runtime remains the intended progression
 
@@ -768,13 +768,13 @@ Pass D deferred test buildout.
   - none identified yet
 - `planned new tests`:
   - deferred to Pass D
-  - reserve `300-399` for any remaining driver-mode owners after PA31/PA32/PA33/PA34 handoffs are rechecked
+  - reserve `300-399` for any remaining driver-mode owners after PA32/PA33/PA34/PA35 handoffs are rechecked
 - `defer reason`:
   - this assignment now sits at the base of a split host-driver sequence, so new tests should wait for the full cross-PA review
 - `next actions`:
   - Pass B: normalize README wording to the final single-`tests/` layout
 
-### `pa31`
+### `pa32`
 
 - `owner/boundary summary`:
   - host object/toolchain interoperability assignment
@@ -801,11 +801,11 @@ Pass D deferred test buildout.
 - `next actions`:
   - Pass B: normalize README heading style and single-`tests/` wording
 
-### `pa32`
+### `pa33`
 
 - `owner/boundary summary`:
   - host C++ ABI/runtime interoperability assignment
-  - builds on PA31 host-linkable objects and owns the host ABI/runtime behavior after host link
+  - builds on PA32 host-linkable objects and owns the host ABI/runtime behavior after host link
 - `primary oracle`:
   - compile plus external host link/run behavior
 - `secondary smokes`:
@@ -828,7 +828,7 @@ Pass D deferred test buildout.
 - `next actions`:
   - Pass B: normalize README heading style and single-`tests/` wording
 
-### `pa33`
+### `pa34`
 
 - `owner/boundary summary`:
   - hosted source/header compatibility assignment
@@ -846,7 +846,7 @@ Pass D deferred test buildout.
   - `compile`: shared `500`, `600`, and `700` hosted-compile families
 - `pass_a findings`:
   - this is a legitimate multi-directory assignment; `preproc` and `compile` reflect real different public test roles
-  - the former internal frontier files were untested by the PA33 harness and should not remain in the public repository
+  - the former internal frontier files were untested by the PA34 harness and should not remain in the public repository
   - compile owners now use shared hundred-family anchors (`500`, `600`, `700`) rather than uniqueness-driven local sequences
 - `misplaced tests`:
   - none identified yet
@@ -857,11 +857,11 @@ Pass D deferred test buildout.
 - `next actions`:
   - Pass B: keep `preproc` / `compile` explicit
 
-### `pa34`
+### `pa35`
 
 - `owner/boundary summary`:
   - hosted header-emission and hosted link/runtime compatibility assignment
-  - keeps the PA33 hosted environment but raises the contract from compile acceptance to host-linked correctness
+  - keeps the PA34 hosted environment but raises the contract from compile acceptance to host-linked correctness
 - `primary oracle`:
   - hosted compile plus external host link/run behavior
 - `secondary smokes`:

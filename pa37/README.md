@@ -1,177 +1,206 @@
-## CPPGM Programming Assignment 37 (Inception)
+## CPPGM Programming Assignment 37 (`lowir2native -O*`)
 
 ### Overview
 
-PA37 is the inception assignment. To complete PA37, make `cppgm++` build
-`cppgm++` and have that rebuilt compiler match the host-seeded build. In
-Makefile terms, the main target is:
+PA37 adds machine-backend optimization levels to `lowir2native`.
 
-```sh
-make compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-```
+PA36 optimizes LowIR before backend lowering. PA37 starts after that boundary:
+LowIR has already been translated into machine IR, and the backend must improve
+the generated native path while preserving program behavior.
 
-This builds `cppgm++-self`, builds `cppgm++-inception` with that self-built
-compiler, and compares the two outputs byte for byte. Passing that comparison
-means the compiler can reproduce itself from its own output.
+The questions for this assignment are:
 
-The `test-through-*` preservation ladder is not the final product. It is the
-debugging path that helps you reach inception one stage at a time. The earlier
-programming assignments build a compiler sequentially by adding one language,
-semantic, lowering, runtime, or backend surface at a time; the PA37 ladder uses
-the same idea for self-hosting. Each rung runs the already-completed assignment
-tests with a self-built checkpoint binary, so missing functionality usually
-shows up at the first stage that needs it instead of only as a full
-`cppgm++` inception failure.
-
-### What PA37 Tests
-
-PA37 does not add a new language feature, command-line mode, object format, or
-runtime ABI. It reuses the compiler implementation and checks that the existing
-implementation can compile itself reproducibly.
-
-If the earlier assignment tests cover every language, lowering, runtime,
-linking, and optimization feature used by your implementation, PA37 should be a
-straightforward build plus a few reproducibility cleanups. In practice, the
-self-build usually finds missing coverage. A failure in PA37 is usually evidence
-that an earlier compiler surface accepts the assignment tests but still has a
-bug in code that the compiler implementation itself happens to use.
+- can `lowir2native -O1` perform local machine-IR cleanup?
+- can `lowir2native -O2` perform whole-function machine-IR cleanup?
+- can both levels preserve debug metadata and generated program behavior?
 
 ### Prerequisites
 
-Complete PA36 before starting PA37. PA37 reuses:
+You should complete:
 
-- the PA1-PA9 frontend tools
-- the cumulative `cppgm++` compiler
-- the native, object, runtime, and hosted compile/link surfaces
-- the PA35/PA36 optimization surfaces
-- the earlier `pa1` through `pa36` tests for preservation checks
+- PA23 for the baseline `lowir2native` backend
+- PA36 for the explicit LowIR optimization stage
 
-PA37 also needs a host C++ compiler and linker. The host compiler links staged
-object files and provides the hosted configuration used by the compiler build.
+You will reuse the PA13 LowIR input language. Handwritten PA37 tests should use
+the maintained LowIR surface, including explicit role metadata such as
+`[role=entry]` where required.
 
-### Build Variables
+### Starter Kit
 
-Use two compiler variables when running PA37:
+The starter kit supplies:
 
-- `CXX=../dev/cppgm++` selects the course compiler as the compiler under test.
-- `CPPGM_HOST_CXX=<host-cxx>` selects the host C++ compiler used for linking
-  checkpoint programs and generating hosted compiler configuration.
+- `pa37/Makefile`
+- `pa37/lowir2native.cpp`, linked to the editable `dev/lowir2native.cpp`
+- a `dev/lowir2native.cpp` scaffold based on `dev/lowir2native-scaffold.cpp`
+- shared machine-IR and native backend support under `dev/src/`
+- test directories under `pa37/tests/`
+- harness scripts under `pa37/scripts/`
+- checked-in machine-IR and generated-program oracle sidecars
 
-For example:
+The expected implementation work is in `dev/lowir2native.cpp` and the shared
+machine-IR/native backend modules under `dev/src/`, especially machine-IR
+optimization and object-generation plumbing. The supplied LowIR parser,
+machine-IR data model, object writer, linker helpers, and harness scripts are
+support code; they do not complete the optimization assignment for you.
 
-```sh
-make compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-```
+The harness uses checked-in sidecars as the oracle. There is no separate
+`lowir2native-ref` binary in the starter kit.
 
-If `../dev/cppgm++` does not exist yet, the PA37 Makefile first builds it with
-`CPPGM_HOST_CXX`.
+### Command Line
 
-### Inception Targets
-
-The focused PA37 goal is:
-
-```sh
-make cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-```
-
-Useful broader targets are:
+PA37 requires these invocations:
 
 ```sh
-make inception CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make compare-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make bitcmp CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
+lowir2native -O1 -o <program> <lowirfile>...
+lowir2native -O2 -o <program> <lowirfile>...
+lowir2native -O1 --dump-machine-ir <mirfile> <lowirfile>...
+lowir2native -O2 --dump-machine-ir <mirfile> <lowirfile>...
+lowir2native -O1 --dump-machine-ir <mirfile> -o <program> <lowirfile>...
+lowir2native -O2 --dump-machine-ir <mirfile> -o <program> <lowirfile>...
 ```
 
-`inception` builds all inception checkpoint binaries. `compare-inception` and
-`bitcmp` compare all self-built checkpoint binaries against their inception
-versions.
+`--help` and `-h` print usage information and exit successfully.
 
-### Intermediate Ladder
+The `--target <target>` option is inherited from the native backend. Tests may
+set the target through the harness environment, but the optimization
+contract is independent of host-specific elapsed time.
 
-To build one checkpoint:
+`-O0` remains the PA23 baseline. PA37 must preserve that earlier behavior while
+adding the explicit `-O1` and `-O2` backend optimization levels.
+
+### Output Format
+
+With `--dump-machine-ir <mirfile>`, `lowir2native` writes the optimized machine
+IR dump to `<mirfile>`.
+
+With `-o <program>`, `lowir2native` writes a native executable to `<program>`.
+When both options are present, both outputs must be produced from the same
+optimized machine-IR program.
+
+The primary backend-shape oracle is the machine-IR dump. The generated native
+program's exit status and standard output are behavior-preservation oracles
+layered on top of that structural check.
+
+### Error Handling
+
+The tool must fail with a nonzero exit status when:
+
+- neither `-o` nor `--dump-machine-ir` is provided
+- an option requiring a path is missing that path
+- there are no input files
+- an input file cannot be read
+- the input is not valid LowIR
+- the target is unsupported
+- a requested output file cannot be written
+- native code generation or linking fails
+
+For failure cases, exact diagnostic text is not part of the grading
+contract. Output files after a failed run are undefined.
+
+### Optimization Levels
+
+To complete PA37, implement these backend optimization levels:
+
+`-O1` is the local machine-improvement level. It must include these
+semantic-preserving rewrites where safe:
+
+- remove unconditional jumps to the immediately following block
+- coalesce block-local integer and floating-point register copies
+- remove redundant move chains and simple return shuffles
+- clean up call-result and call-argument copies
+- rematerialize cheap integer immediates into supported arithmetic,
+  zero-compare, and call-argument instruction forms
+- collapse conditional-branch plus unconditional-jump block tails when one
+  target is the natural fallthrough block
+- rewrite zero-comparison branches into direct `test reg, reg` machine IR when
+  the backend supports that shape
+- fold frame-address temporaries back into direct frame operands or direct
+  `lea` call-argument setup where safe
+
+`-O2` is the whole-function machine-improvement level. It must include all
+`-O1` work and additionally:
+
+- improve block layout by following unconditional jump traces so likely
+  successors become natural fallthrough blocks
+- remove callee-saved register preservation that is no longer needed after
+  optimization
+- recompute final stack reservation from the surviving frame state
+
+Both levels must preserve valid debug metadata. Optimizations may choose to be
+more conservative when a rewrite would make source locations misleading.
+
+### Validation Modes
+
+Machine-IR dumps contain presentation details, such as scratch-register choices,
+frame offsets, and host target spelling, that are not always semantic
+requirements. The PA37 harness canonicalizes permitted non-semantic differences
+while still checking the required backend facts and generated program behavior.
+Exact textual machine-IR matching is not a PA37 grading requirement unless a
+test explicitly makes that shape part of the oracle.
+
+### Testing
+
+Run the PA37 suite with:
 
 ```sh
-make pptoken-self CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make cppgm++-self CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
+make test
 ```
 
-To build checkpoints through a point:
+`make test` runs:
+
+- `tests/o1`
+- `tests/o2`
+
+Run the debug metadata preservation lanes with:
 
 ```sh
-make through-cy86 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make through-cppgm++ CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make through-cppeh CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
+make test-debuginfo
 ```
 
-To run preservation tests through an assignment stage:
+`make test-debuginfo` runs:
 
-```sh
-make test-through-pa9 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make test-through-pa36 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-```
+- `tests/debuginfo/o1`
+- `tests/debuginfo/o2`
 
-To test one stage:
+These directories are organized by backend role and validation mode, not by
+N3485 source-language clauses.
 
-```sh
-make test-pa1 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make test-pa10 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make test-pa35 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-```
+- `tests/o1` runs `lowir2native -O1` over LowIR inputs and checks local
+  backend cleanup.
+- `tests/o2` runs `lowir2native -O2` over LowIR inputs, repeats the `-O1`
+  surface, and adds O2-only layout and frame cleanup cases.
+- `tests/debuginfo/o1` and `tests/debuginfo/o2` run equivalent machine-IR
+  rewrite cases carrying `!dbg(...)` metadata.
 
-The test targets reuse the earlier assignment harnesses. PA37 changes which
-binary those harnesses run; it does not change the expected PA1 through PA36
-outputs.
+For each `.t` test, the harness builds with `--dump-machine-ir` and `-o`,
+records implementation exit status, runs the generated program when the build
+succeeds, and compares:
 
-### Checkpoint Ownership
+- implementation exit status
+- optimized machine-IR dump
+- generated-program exit status
+- generated-program standard output, when relevant
 
-The checkpoint used for each assignment stage is:
+Failed reference builds are judged by implementation exit status. Successful
+reference builds are judged by the test directory's structural machine-IR
+validation and generated-program behavior.
 
-- `pptoken-self`: PA1
-- `posttoken-self`: PA2
-- `ctrlexpr-self`: PA3
-- `macro-self`: PA4
-- `preproc-self`: PA5
-- `recog-self`: PA6
-- `nsdecl-self`: PA7
-- `nsinit-self`: PA8
-- `cy86-self`: PA9
-- `cppgm++-self`: PA10-PA12, PA14-PA22, and PA26-PA34
-- `lowir2cy86-self`: PA13
-- `lowir2native-self`: PA23 and PA36
-- `cpplink-self`: PA24
-- `cppeh-self`: PA25
-- `lowiropt-self`: PA35
+### Out Of Scope
 
-Checkpoint source sets are fixed by `../dev/frontend_source_sets.mk`. Do not
-replace that with a generated source scan; PA37 is checking whether the known
-implementation source sets can be rebuilt reproducibly.
+PA37 does not require:
 
-### Working Through Failures
+- changing the LowIR optimizer from PA36
+- redefining `lowir2native -O0`
+- source-language semantic changes
+- wall-clock performance grading
+- global register allocation beyond the machine-IR cleanup contract
+- instruction scheduling, vectorization, or target-specific peephole work not
+  covered by the tests
+- interprocedural backend optimization
 
-Treat PA37 failures as compiler bugs until proven otherwise.
+### Handoff
 
-Do not rewrite tests around a failure, and do not add a self-hosting special
-case just to make the build move forward. Find the first incorrect behavior and
-fix the underlying parser, semantic, lowering, optimizer, backend, runtime, or
-reproducibility bug.
-
-A useful workflow is:
-
-1. Find the first failing checkpoint, source file, or preservation test.
-2. Reduce the failure to the smallest source that still fails.
-3. Identify the earliest assignment surface that owns that behavior.
-4. Add the reducer as a focused test under the matching
-   `cppgm.tests/course/paN` directory while you work on the fix.
-5. Fix the underlying compiler bug and rerun the narrow stage before returning
-   to the broader `test-through-*` or inception target.
-
-For example, if `cppgm++-self` fails because a construct in `dev/src/*.cpp` is
-miscompiled, reduce that construct and place the focused test in the earliest
-`cppgm.tests/course/paN` directory that should have covered it. If
-`compare-cppgm++-inception` builds both compilers but the bytes differ, look for
-reproducibility issues such as unstable output order, generated configuration
-drift, embedded paths, timestamps, or linker determinism.
-
-The best PA37 fixes usually improve an earlier assignment surface and leave a
-small focused test behind.
+PA38 uses the PA36 LowIR optimizer and the PA37 machine-backend optimizer as
+part of the self-host ladder. By the end of PA37, optimized and unoptimized
+native paths should remain deterministic enough for staged self-host builds and
+test reruns.

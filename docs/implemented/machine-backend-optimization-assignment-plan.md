@@ -62,7 +62,7 @@ teaching backend optimizations.
 ### 2. LowIR optimization and machine optimization should stay separate
 
 LowIR optimization already has a clean owner in
-[pa35/README.md](/Users/vishvananda/cppgm/pa35/README.md).
+[pa36/README.md](/Users/vishvananda/cppgm/pa36/README.md).
 
 The machine/backend work should not blur that boundary.
 
@@ -130,7 +130,7 @@ Pros:
 
 - best architectural fit
 - keeps baseline backend and backend optimization separate
-- avoids mixing machine work into `PA35`
+- avoids mixing machine work into `PA36`
 - does not force self-host to move if numbering is fixed
 
 Cons:
@@ -144,13 +144,13 @@ Assessment:
 
 - best fallback if the late-stage numbering must remain stable
 
-## Option C. Introduce a new PA36 and move self-host to PA37
+## Option C. Introduce a new PA37 and move self-host to PA38
 
 Shape:
 
-- `PA35`: LowIR optimization
-- new `PA36`: machine/backend optimization
-- `PA37`: self-host
+- `PA36`: LowIR optimization
+- new `PA37`: machine/backend optimization
+- `PA38`: self-host
 
 Pros:
 
@@ -174,9 +174,9 @@ Assessment:
 
 The preferred order is:
 
-1. `PA35`: LowIR optimization
-2. new `PA36`: machine/backend optimization
-3. `PA37`: self-host
+1. `PA36`: LowIR optimization
+2. new `PA37`: machine/backend optimization
+3. `PA38`: self-host
 
 That is the clearest student-facing sequence.
 
@@ -184,7 +184,7 @@ If renumbering self-host is not acceptable, the second-best choice is:
 
 1. keep `PA23` as baseline native backend
 2. add a new backend-opt follow-on immediately after it
-3. do not put this work into `PA35`
+3. do not put this work into `PA36`
 
 The least attractive choice is:
 
@@ -210,7 +210,7 @@ lowir2native -O2 --dump-machine-ir <mirfile> -o <outfile> <srcfile>...
 The key rule is:
 
 - the optimization levels are machine/backend levels
-- they do not replace or merge with the `PA35` LowIR optimizer
+- they do not replace or merge with the `PA36` LowIR optimizer
 
 The primary oracle should remain:
 
@@ -370,7 +370,7 @@ Inside each bucket:
 - `.ref.program.exit_status`
 - `.ref.program.stdout`
 
-This matches the PA35 "levels first" organization while preserving the PA23
+This matches the PA36 "levels first" organization while preserving the PA23
 backend-oracle style.
 
 ## Example Test Families
@@ -476,25 +476,25 @@ self-host itself the place students first debug backend quality.
 If renumbering is allowed, the clean sequence is:
 
 - `PA23`: native backend baseline
-- `PA35`: LowIR optimization
-- new `PA36`: machine/backend optimization
-- `PA37`: self-host
+- `PA36`: LowIR optimization
+- new `PA37`: machine/backend optimization
+- `PA38`: self-host
 
 If renumbering is not allowed, the next-best sequence is:
 
 - `PA23`: native backend baseline
 - new immediate follow-on backend-opt assignment after `PA23`
-- `PA35`: LowIR optimization
-- `PA36`: self-host
+- `PA36`: LowIR optimization
+- `PA37`: self-host
 
 ## Final Recommendation
 
 The strongest recommendation is:
 
-- do not put machine/backend optimization into `PA35`
+- do not put machine/backend optimization into `PA36`
 - do not rely on PA23 tests "just not triggering" later backend passes
 - use explicit backend `-O0` / `-O1` / `-O2` levels
 - place the assignment before self-host
 
 If the course can absorb one numbering change, a new machine/backend-opt
-`PA36` followed by self-host `PA37` is the cleanest long-term shape.
+`PA37` followed by self-host `PA38` is the cleanest long-term shape.

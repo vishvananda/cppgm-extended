@@ -1,9 +1,9 @@
-# PA10-PA34 Assignment Cleanup Process
+# PA10-PA35 Assignment Cleanup Process
 
 ## Purpose
 
 This document defines the repo-internal cleanup process for the post-PA9
-assignment series, especially `pa10` through `pa34`.
+assignment series, especially `pa10` through `pa35`.
 
 The goal is to make each assignment:
 
@@ -280,8 +280,8 @@ This is especially important around:
 - `pa13` / `pa14+`
 - `pa21` / `pa22` / `pa23`
 - `pa25` / `pa26`
-- `pa30` / `pa31` / `pa32`
-- `pa32` / `pa33` / `pa34`
+- `pa30` / `pa32` / `pa33`
+- `pa33` / `pa34` / `pa35`
 
 ### 12. Performance / Practicality
 
@@ -363,7 +363,7 @@ Primary deliverables:
 
 After the individual PAs are cleaned:
 
-1. review the full `pa10`-`pa34` flow
+1. review the full `pa10`-`pa35` flow
 2. update adjacent README handoffs where needed
 3. recheck moved tests for final ownership
 4. make sure the series is teachable and monotonic
@@ -379,8 +379,8 @@ This pass is best executed by transition group rather than by isolated PA:
 - `pa13` / `pa14+`
 - `pa21` / `pa22` / `pa23`
 - `pa25` / `pa26`
-- `pa30` / `pa31` / `pa32`
-- `pa32` / `pa33` / `pa34`
+- `pa30` / `pa32` / `pa33`
+- `pa33` / `pa34` / `pa35`
 
 ### Pass D: Deferred Buildout
 
@@ -472,10 +472,10 @@ This high-level table records pass status only.
 | `pa28` | pending | pending | pending | pending |  |
 | `pa29` | pending | pending | pending | pending |  |
 | `pa30` | pending | pending | pending | pending |  |
-| `pa31` | pending | pending | pending | pending |  |
 | `pa32` | pending | pending | pending | pending |  |
 | `pa33` | pending | pending | pending | pending |  |
 | `pa34` | pending | pending | pending | pending |  |
+| `pa35` | pending | pending | pending | pending |  |
 
 ## Completion Criteria
 

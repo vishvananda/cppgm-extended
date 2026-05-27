@@ -1,142 +1,174 @@
-## CPPGM Programming Assignment 36 (`lowir2native -O*`)
+## CPPGM Programming Assignment 36 (`lowiropt`)
 
 ### Overview
 
-PA36 adds machine-backend optimization levels to `lowir2native`.
+PA36 adds the first explicit optimization stage to the compiler. The new tool,
+`lowiropt`, reads PA13 LowIR text, applies a deterministic optimization
+pipeline selected by `-O0`, `-O1`, or `-O2`, and writes LowIR text.
 
-PA35 optimizes LowIR before backend lowering. PA36 starts after that boundary:
-LowIR has already been translated into machine IR, and the backend must improve
-the generated native path while preserving program behavior.
-
-The questions for this assignment are:
-
-- can `lowir2native -O1` perform local machine-IR cleanup?
-- can `lowir2native -O2` perform whole-function machine-IR cleanup?
-- can both levels preserve debug metadata and generated program behavior?
+The same LowIR optimizer is also reached from `cppgm++` when source programs
+are compiled with `--emit-lowir -O1`, `--emit-lowir -O2`, or through the
+ordinary compile/link driver at an optimization level.
 
 ### Prerequisites
 
-You should complete:
+You should complete PA35 before starting this assignment.
 
-- PA23 for the baseline `lowir2native` backend
-- PA35 for the explicit LowIR optimization stage
+You will reuse:
 
-You will reuse the PA13 LowIR input language. Handwritten PA36 tests should use
-the maintained LowIR surface, including explicit role metadata such as
-`[role=entry]` where required.
+- the PA13 LowIR syntax and semantic contract
+- the PA14 through PA35 source-to-LowIR lowering pipeline
+- the PA23 through PA25 native backend and runtime path
+- the PA35 hosted compiler driver surface
 
 ### Starter Kit
 
 The starter kit supplies:
 
 - `pa36/Makefile`
-- `pa36/lowir2native.cpp`, linked to the editable `dev/lowir2native.cpp`
-- a `dev/lowir2native.cpp` scaffold based on `dev/lowir2native-scaffold.cpp`
-- shared machine-IR and native backend support under `dev/src/`
+- `pa36/lowiropt.cpp`, linked to the editable `dev/lowiropt.cpp`
+- a `dev/lowiropt.cpp` scaffold based on `dev/lowiropt-scaffold.cpp`
+- shared compiler support under `dev/src/`
 - test directories under `pa36/tests/`
 - harness scripts under `pa36/scripts/`
-- checked-in machine-IR and generated-program oracle sidecars
+- checked-in `.ref` and `.ref.exit_status` files for the tests
 
-The expected implementation work is in `dev/lowir2native.cpp` and the shared
-machine-IR/native backend modules under `dev/src/`, especially machine-IR
-optimization and object-generation plumbing. The supplied LowIR parser,
-machine-IR data model, object writer, linker helpers, and harness scripts are
-support code; they do not complete the optimization assignment for you.
+The expected implementation work is in `dev/lowiropt.cpp` and shared optimizer
+or driver support under `dev/src/`, especially the LowIR optimizer and
+optimization-level plumbing. The supplied LowIR parser, dumper, driver helpers,
+and test harness are support code; they do not implement the optimization
+passes for you.
 
-The harness uses checked-in sidecars as the oracle. There is no separate
-`lowir2native-ref` binary in the starter kit.
+The harness uses checked-in references as the oracle. There is no
+separate `lowiropt-ref` binary in the starter kit.
 
 ### Command Line
 
-PA36 requires these invocations:
+`lowiropt` accepts exactly one optimization level, one output path, and one or
+more LowIR input files:
 
 ```sh
-lowir2native -O1 -o <program> <lowirfile>...
-lowir2native -O2 -o <program> <lowirfile>...
-lowir2native -O1 --dump-machine-ir <mirfile> <lowirfile>...
-lowir2native -O2 --dump-machine-ir <mirfile> <lowirfile>...
-lowir2native -O1 --dump-machine-ir <mirfile> -o <program> <lowirfile>...
-lowir2native -O2 --dump-machine-ir <mirfile> -o <program> <lowirfile>...
+lowiropt -O0 -o <outfile> <lowirfile>...
+lowiropt -O1 -o <outfile> <lowirfile>...
+lowiropt -O2 -o <outfile> <lowirfile>...
 ```
 
 `--help` and `-h` print usage information and exit successfully.
 
-The `--target <target>` option is inherited from the native backend. Tests may
-set the target through the harness environment, but the optimization
-contract is independent of host-specific elapsed time.
+PA36 also requires the source driver to route these options through the same
+optimizer:
 
-`-O0` remains the PA23 baseline. PA36 must preserve that earlier behavior while
-adding the explicit `-O1` and `-O2` backend optimization levels.
+```sh
+cppgm++ --emit-lowir -g0 -O1 -o <outfile> <srcfile>...
+cppgm++ --emit-lowir -g0 -O2 -o <outfile> <srcfile>...
+cppgm++ --emit-lowir -gline-tables-only -O1 -o <outfile> <srcfile>...
+cppgm++ --emit-lowir -gline-tables-only -O2 -o <outfile> <srcfile>...
+```
+
+The ordinary `cppgm++ -c` and link-driver paths must also accept `-O0`, `-O1`,
+and `-O2` and use the same LowIR optimization level before object generation.
 
 ### Output Format
 
-With `--dump-machine-ir <mirfile>`, `lowir2native` writes the optimized machine
-IR dump to `<mirfile>`.
+`lowiropt` writes LowIR text to `<outfile>`. The output must remain valid LowIR
+and must preserve the behavior of every defined input program.
 
-With `-o <program>`, `lowir2native` writes a native executable to `<program>`.
-When both options are present, both outputs must be produced from the same
-optimized machine-IR program.
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa13/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
 
-The primary backend-shape oracle is the machine-IR dump. The generated native
-program's exit status and standard output are behavior-preservation oracles
-layered on top of that structural check.
+For successful runs:
+
+- `-O0` performs a deterministic parse/dump round trip.
+- `-O1` applies local and control-flow-aware LowIR simplifications.
+- `-O2` applies all `-O1` work and additional conservative slot-promotion
+  optimizations.
+
+The assignment grades the optimized LowIR shape as well as behavior
+preservation. The goal is a deterministic optimization stage, not elapsed-time
+benchmark wins.
 
 ### Error Handling
 
 The tool must fail with a nonzero exit status when:
 
-- neither `-o` nor `--dump-machine-ir` is provided
-- an option requiring a path is missing that path
+- no optimization level is provided
+- `-o` is missing or has no following path
 - there are no input files
 - an input file cannot be read
 - the input is not valid LowIR
-- the target is unsupported
-- a requested output file cannot be written
-- native code generation or linking fails
+- the output file cannot be written
 
-For failure cases, exact diagnostic text is not part of the grading
-contract. Output files after a failed run are undefined.
+For failure cases, diagnostics only need to be useful to a developer; exact
+diagnostic text is not part of the grading contract. The contents of the
+output file after a failed run are undefined.
 
 ### Optimization Levels
 
-To complete PA36, implement these backend optimization levels:
+To complete PA36, implement these optimization levels:
 
-`-O1` is the local machine-improvement level. It must include these
-semantic-preserving rewrites where safe:
+`-O0` is the baseline canonicalization mode. It should parse the input program,
+preserve all semantic content, and write the canonical LowIR dump without
+running optimizing transforms.
 
-- remove unconditional jumps to the immediately following block
-- coalesce block-local integer and floating-point register copies
-- remove redundant move chains and simple return shuffles
-- clean up call-result and call-argument copies
-- rematerialize cheap integer immediates into supported arithmetic,
-  zero-compare, and call-argument instruction forms
-- collapse conditional-branch plus unconditional-jump block tails when one
-  target is the natural fallthrough block
-- rewrite zero-comparison branches into direct `test reg, reg` machine IR when
-  the backend supports that shape
-- fold frame-address temporaries back into direct frame operands or direct
-  `lea` call-argument setup where safe
+`-O1` must include these semantic-preserving pass families where safe:
 
-`-O2` is the whole-function machine-improvement level. It must include all
-`-O1` work and additionally:
+- constant folding for scalar `copy`, `unary`, `binary`, `cmp`, and `convert`
+  instructions with known constant operands
+- algebraic identities such as `x + 0`, `x - 0`, `x * 1`, `x & -1`, redundant
+  `unary decay`, identity `convert`, and compares whose operands are known to
+  be identical
+- local and executable-edge-aware copy and constant propagation
+- local and executable-edge-aware pure-expression reuse for eligible `addr`,
+  `index`, `unary`, `binary`, `cmp`, and `convert` instructions
+- safe normalization of commutative integer operations and reversible compare
+  directions so equivalent expressions reuse the same producer
+- boolean compare cleanup for `cmp eq` and `cmp ne` against `0` or `1` when the
+  compared value is already known to be an `i64` boolean
+- local reassociation of repeated integer `add`, `mul`, `and`, `or`, and `xor`
+  chains with constants
+- control-flow cleanup, including folding known `branch` and `switch`
+  selectors, removing unreachable blocks, bypassing trivial jump-only blocks,
+  merging safe straight-line block pairs, and collapsing empty branch diamonds
+  when both arms resolve through non-EH jump-only blocks to the same
+  continuation
+- preservation of exceptional handler targets and exception-structure blocks
+  while doing CFG cleanup
+- conservative inlining of small direct calls, including `unwind=no` callees
+  inside EH regions only when the caller EH shape can be preserved
+- removal of no-op EH markers in functions known not to unwind when the
+  protected region contains no operation that can transfer to the handler
+- dead-code elimination for unused pure temp-producing instructions
+- removal of unused calls only when the callee is explicitly `readnone`, cannot
+  unwind, and is not `noreturn`
+- removal of dead local-slot traffic for unused direct slot loads and for
+  stores to direct local slots that have no remaining loads, escaping uses, or
+  other non-store uses
+- removal of slot declarations that become unused after simplification
 
-- improve block layout by following unconditional jump traces so likely
-  successors become natural fallthrough blocks
-- remove callee-saved register preservation that is no longer needed after
-  optimization
-- recompute final stack reservation from the surviving frame state
-
-Both levels must preserve valid debug metadata. Optimizations may choose to be
-more conservative when a rewrite would make source locations misleading.
+`-O2` must include all `-O1` work and then conservatively promote eligible
+non-escaping scalar slots, including eligible `ptr` slots. Promotion must be
+limited to slots accessed through direct `store` and `load` operations whose
+current value can be tracked without introducing phi nodes. Beyond the direct
+slot cleanup already allowed at `-O1`, `-O2` also removes dead stores to
+promoted slots when no observable load can see the stored value.
 
 ### Validation Modes
 
-Machine-IR dumps contain presentation details, such as scratch-register choices,
-frame offsets, and host target spelling, that are not always semantic
-requirements. The PA36 harness canonicalizes permitted non-semantic differences
-while still checking the required backend facts and generated program behavior.
-Exact textual machine-IR matching is not a PA36 grading requirement unless a
-test explicitly makes that shape part of the oracle.
+LowIR output has presentation details, such as internal helper names and
+metadata ordering, that are not semantic requirements. The PA36 harness checks
+exit status, LowIR well-formedness, required IR facts, and behavior
+preservation without requiring every non-semantic presentation choice to match
+the course solution exactly. Exact textual LowIR matching is not a PA36 grading
+requirement unless a test explicitly says so.
 
 ### Testing
 
@@ -148,8 +180,20 @@ make test
 
 `make test` runs:
 
+- `tests/o0`
 - `tests/o1`
 - `tests/o2`
+- `tests/driver/o1`
+- `tests/driver/o2`
+
+These directories are organized by tool mode and validation mode, not by N3485
+source-language clauses.
+
+- `tests/o0` runs `lowiropt -O0` on handwritten LowIR.
+- `tests/o1` runs `lowiropt -O1` on handwritten LowIR.
+- `tests/o2` runs `lowiropt -O2` on handwritten LowIR.
+- `tests/driver/o1` runs `cppgm++ --emit-lowir -g0 -O1` on source programs.
+- `tests/driver/o2` runs `cppgm++ --emit-lowir -g0 -O2` on source programs.
 
 Run the debug metadata preservation lanes with:
 
@@ -161,46 +205,34 @@ make test-debuginfo
 
 - `tests/debuginfo/o1`
 - `tests/debuginfo/o2`
+- `tests/debuginfo/driver/o1`
+- `tests/debuginfo/driver/o2`
 
-These directories are organized by backend role and validation mode, not by
-N3485 source-language clauses.
+The direct debug-info tests run `lowiropt -O*` over LowIR containing
+`!dbg(...)` metadata. The driver debug-info tests run
+`cppgm++ --emit-lowir -gline-tables-only -O*` and check that source locations
+survive the source-to-LowIR optimizer path.
 
-- `tests/o1` runs `lowir2native -O1` over LowIR inputs and checks local
-  backend cleanup.
-- `tests/o2` runs `lowir2native -O2` over LowIR inputs, repeats the `-O1`
-  surface, and adds O2-only layout and frame cleanup cases.
-- `tests/debuginfo/o1` and `tests/debuginfo/o2` run equivalent machine-IR
-  rewrite cases carrying `!dbg(...)` metadata.
-
-For each `.t` test, the harness builds with `--dump-machine-ir` and `-o`,
-records implementation exit status, runs the generated program when the build
-succeeds, and compares:
-
-- implementation exit status
-- optimized machine-IR dump
-- generated-program exit status
-- generated-program standard output, when relevant
-
-Failed reference builds are judged by implementation exit status. Successful
-reference builds are judged by the test directory's structural machine-IR
-validation and generated-program behavior.
+For each `.t` test, the harness records the tool exit status and compares the
+generated output against the oracle for that test directory. Failed reference
+cases are judged by exit status; successful reference cases are judged by the
+directory's LowIR validation mode.
 
 ### Out Of Scope
 
 PA36 does not require:
 
-- changing the LowIR optimizer from PA35
-- redefining `lowir2native -O0`
-- source-language semantic changes
-- wall-clock performance grading
-- global register allocation beyond the machine-IR cleanup contract
-- instruction scheduling, vectorization, or target-specific peephole work not
-  covered by the tests
-- interprocedural backend optimization
+- SSA construction as a IR contract
+- global value numbering or partial redundancy elimination
+- alias-driven aggressive dead-store elimination
+- loop optimizations, vectorization, or general-purpose inlining beyond the
+  small direct-call inlining described for `-O1`
+- machine-IR scheduling or register-allocation optimization
+- interprocedural optimization
+- size-specific `-Os` or `-Oz` behavior
 
 ### Handoff
 
-PA37 uses the PA35 LowIR optimizer and the PA36 machine-backend optimizer as
-part of the self-host ladder. By the end of PA36, optimized and unoptimized
-native paths should remain deterministic enough for staged self-host builds and
-test reruns.
+PA37 builds on this assignment by optimizing after LowIR has already been
+lowered to machine IR. PA36 owns the LowIR optimization pipeline and the
+`lowiropt` structural oracle; PA37 owns machine-backend optimization.

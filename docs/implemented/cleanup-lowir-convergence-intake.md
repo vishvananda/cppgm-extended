@@ -21,34 +21,34 @@ The intent is:
 
 ### Clean Or Mostly-Clean Build / Harness Intake
 
-- [x] `d20e78d9` `Parallelize pa37 ladder stage builds`
-  - classification: clean `pa37/Makefile` intake
+- [x] `d20e78d9` `Parallelize pa38 ladder stage builds`
+  - classification: clean `pa38/Makefile` intake
   - expected handling: cherry-pick cleanly
 
-- [x] `c937b61e` `Cache shared pa37 self-host objects across checkpoints`
-  - classification: clean `pa37/Makefile` intake
+- [x] `c937b61e` `Cache shared pa38 self-host objects across checkpoints`
+  - classification: clean `pa38/Makefile` intake
   - expected handling: cherry-pick cleanly
 
-- [x] `a1405066` `Export pa37 ladder test environment settings`
-  - classification: clean `pa37/Makefile` intake
+- [x] `a1405066` `Export pa38 ladder test environment settings`
+  - classification: clean `pa38/Makefile` intake
   - expected handling: cherry-pick cleanly
 
-- [x] `03307654` `Add shared run/check targets and fix pa37 runner rule`
+- [x] `03307654` `Add shared run/check targets and fix pa38 runner rule`
   - classification: harness / Makefile intake
   - touched files:
     - `scripts/pa_run_check_targets.mk`
     - `pa12` through `pa29` `Makefile`
-    - `pa37/Makefile`
+    - `pa38/Makefile`
   - expected handling: cherry-pick if clean; validate that it does not disturb
     the cleanup-pass Makefile changes
 
-- [x] `ca145cb0` `Default sparse frontend builds and extend pa37 through pa34`
+- [x] `ca145cb0` `Default sparse frontend builds and extend pa38 through pa35`
   - classification: build-system intake with generated file
   - touched files:
     - `dev/Makefile`
     - `scripts/generate_pa_fast_link_sets.py`
     - `dev/generated_pa_fast_link_sets.mk`
-    - `pa37/Makefile`
+    - `pa38/Makefile`
   - expected handling: manual port or careful cherry-pick, then regenerate the
     generated file in the current tree if needed
 
@@ -67,21 +67,21 @@ The intent is:
   - classification: semantic `lowirgensemantic` change plus new hosted runtime
     test
   - new test:
-    - `pa34/tests/link/725-hosted-ostream-char-sequence-parameter-runtime-smoke.t`
+    - `pa35/tests/link/725-hosted-ostream-char-sequence-parameter-runtime-smoke.t`
   - expected handling:
     - import the new test in the current suite shape
     - port the semantic change
     - validate the new hosted owner directly
 
-- [x] `3df3e311` `Fix pa37 host link default and ostream ref-member lowering`
+- [x] `3df3e311` `Fix pa38 host link default and ostream ref-member lowering`
   - classification: semantic `lowirgensemantic` change plus new hosted runtime
-    test and `pa37/Makefile` adjustment
+    test and `pa38/Makefile` adjustment
   - new test:
-    - `pa34/tests/link/726-hosted-ostream-ref-member-char-sequence-runtime-smoke.t`
+    - `pa35/tests/link/726-hosted-ostream-ref-member-char-sequence-runtime-smoke.t`
   - expected handling:
     - import the test first
     - port the semantic change carefully
-    - handle the `pa37/Makefile` part with the other harness intake
+    - handle the `pa38/Makefile` part with the other harness intake
 
 - [x] `3592e6d8` `Fix float-width lowering and pa8 scalar init bytes`
   - classification: semantic/backend change plus new tests
@@ -91,11 +91,11 @@ The intent is:
     - `dev/src/nsinit_semantic.cpp`
   - new tests:
     - `pa23/tests/structural/720-f64-f80-implicit-store-return-convert.t`
-    - `pa34/tests/link/727-hosted-vector-char-assign-initlist-runtime-smoke.t`
+    - `pa35/tests/link/727-hosted-vector-char-assign-initlist-runtime-smoke.t`
   - expected handling:
     - import the tests first
     - port the code change carefully
-    - validate `pa23`, `pa8`, and the new `pa34` owner directly
+    - validate `pa23`, `pa8`, and the new `pa35` owner directly
 
 - [x] `5097b3f6` `Fix local-type template matching and semantic display names`
   - classification: semantic/template-resolution change plus new tests
@@ -148,7 +148,7 @@ The intent is:
       - `pa26`
       - `pa27`
       - `pa29`
-      - `pa34`
+      - `pa35`
 
 ### Semantic / LowIR Commits With Mixed Ref Churn
 
@@ -161,7 +161,7 @@ The intent is:
   - touched non-code:
     - `pa23/tests/structural/720-f64-f80-implicit-store-return-convert.ref.cmir`
     - `pa27/tests/spec/120-initializer-list-call.ref`
-    - `pa37/Makefile`
+    - `pa38/Makefile`
     - `dev/generated_pa_fast_link_sets.mk`
   - expected handling:
     - port the semantic change after `3592e6d8`

@@ -46,16 +46,18 @@ into per-PA inventory entries and mark unresolved decisions explicitly.
 | PA23 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists. |
 | PA24 | `cpplink` | `dev/cpplink.cpp` | `dev/cpplink-scaffold.cpp` | Scaffold exists. |
 | PA25 | `cppeh` | `dev/cppeh.cpp` | `dev/cppeh-scaffold.cpp` | Scaffold exists. |
-| PA26-PA34 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
-| PA35 | `lowiropt` | `dev/lowiropt.cpp` | `dev/lowiropt-scaffold.cpp` | Scaffold exists. |
-| PA36 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Reuses the PA23 backend entrypoint; export docs must explain the optimization extension. |
-| PA37 | self-host ladder | multiple `dev/` tools and source sets | not a binary scaffold | Special export case. Needs an initial inventory audit, then a focused README rewrite around staged self-host validation rather than a single editable binary. |
+| PA26-PA30 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
+| PA31 | `abimangle` | `dev/abimangle.cpp` | `dev/abimangle-scaffold.cpp` | Scaffold exists; optional typed ABI fact header is exported under `dev/src`. |
+| PA32-PA35 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
+| PA36 | `lowiropt` | `dev/lowiropt.cpp` | `dev/lowiropt-scaffold.cpp` | Scaffold exists. |
+| PA37 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Reuses the PA23 backend entrypoint; export docs must explain the optimization extension. |
+| PA38 | self-host ladder | multiple `dev/` tools and source sets | not a binary scaffold | Special export case. Needs an initial inventory audit, then a focused README rewrite around staged self-host validation rather than a single editable binary. |
 
 ## Per-PA Inventory Schema
 
 Each PA section should eventually include:
 
-- exported binary or binaries, or staged targets for PA37-style assignments
+- exported binary or binaries, or staged targets for PA38-style assignments
 - student-editable files
 - scaffold source used for export
 - public support files
@@ -72,8 +74,8 @@ Each PA section should eventually include:
 
 - Decide whether the student repo is exported as one cumulative working tree,
   one starter tree per assignment, or a cumulative tree with per-PA checkpoints.
-  This affects how the shared `cppgm++` scaffold is described for PA10-PA34.
-- Decide whether PA10-PA34 should ship checked-in refs only or also reference
+  This affects how the shared `cppgm++` scaffold is described for PA10-PA30 and PA32-PA35.
+- Decide whether PA10-PA35 should ship checked-in refs only or also reference
   binaries. Current README wording treats checked-in refs as the oracle for
   PA10+.
 - Decide the exact `dev/src` support-file set exported with the cumulative
@@ -82,13 +84,13 @@ Each PA section should eventually include:
   or a maintainer-only strict validation surface.
 - Decide how to expose loose LowIR validation in the student repo while keeping
   maintainer strict text comparison internal.
-- Decide how to expose structural MIR validation for PA36 while keeping
+- Decide how to expose structural MIR validation for PA37 while keeping
   maintainer direct `.ref.mir` comparison internal.
 - Decide whether PA13 `tests/debuginfo/` and scripts that invoke later tools are
   omitted or packaged as instructor-only extras.
-- Decide whether PA33/PA34 hosted-header sweep tooling is omitted entirely or
+- Decide whether PA34/PA35 hosted-header sweep tooling is omitted entirely or
   exported as optional instructor tooling.
-- Decide which PA37 checkpoint source sets are student-facing package inputs and
+- Decide which PA38 checkpoint source sets are student-facing package inputs and
   which generated/intermediate artifacts are omitted from export.
 
 ## Resolved Cleanup Notes
@@ -99,9 +101,9 @@ Each PA section should eventually include:
   `pa17/scripts/scripts/` were removed.
 - The stale PA1-PA9 and PA23 `scripts/export_pa.sh` files were removed.
 - The `cppgm++` scaffold now assigns compile/link driver mode to PA30.
-- The PA33 hosted test no longer pins a local Homebrew GCC path, and the PA34
+- The PA34 hosted test no longer pins a local Homebrew GCC path, and the PA35
   ostringstream smoke no longer contains an absolute local source path.
-- PA37 README has been rewritten as a student-facing staged self-host handout.
+- PA38 README has been rewritten as a student-facing staged self-host handout.
 
 ## PA Sections
 
@@ -170,46 +172,50 @@ or approved shared infrastructure update.
 - README wording assumes x86_64 Linux for the student-facing native target.
 - Remaining decisions: loose LowIR validator packaging.
 
-### PA30-PA34
+### PA30-PA35
 
 - PA30 exports cumulative `cppgm++` compile/link driver mode; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include
   `pa30.gram`, `grammar/`, `tests/general`, refs, wrapper/runtime helpers, and
   harness scripts.
-- PA31 exports host-linkable object interoperability for `cppgm++ -c`; support
+- PA31 exports standalone ABI name construction for `abimangle`; students edit
+  `dev/abimangle.cpp` from `dev/abimangle-scaffold.cpp`; support files include
+  the optional `dev/src/abi_mangle.h` typed fact scaffold, `pa31/Makefile`,
+  `pa31/scripts`, and `pa31/tests/abi`.
+- PA32 exports host-linkable object interoperability for `cppgm++ -c`; support
   files include `tests/general`, refs, harness scripts, host compiler helpers,
   and Linux tools such as `ar`, `nm`, and `readelf`.
-- PA32 exports host C++ ABI/runtime behavior after host link; support files
+- PA33 exports host C++ ABI/runtime behavior after host link; support files
   include `tests/general`, refs, host object/symbol inspection helpers, and
   earlier `cpplink`/`cppeh` support used by the harness.
-- PA33 exports hosted preprocess/compile compatibility; support files include
+- PA34 exports hosted preprocess/compile compatibility; support files include
   `tests/preproc`, `tests/compile`, hosted compile scripts, and portability
   reference checks.
-- PA34 exports hosted header-emission link/runtime compatibility; support files
+- PA35 exports hosted header-emission link/runtime compatibility; support files
   include `tests/link`, symbol comparison helpers, and
   `scripts/cppgm-cmake-wrapper.sh`.
 - README wording assumes x86_64 Linux for the student-facing host/toolchain
   environment.
-- Remaining decisions: PA33/PA34 hosted sweep omission and reference binary
+- Remaining decisions: PA34/PA35 hosted sweep omission and reference binary
   policy.
 
-### PA35-PA36
+### PA36-PA37
 
-- PA35 exports `lowiropt`; students edit `dev/lowiropt.cpp` from
+- PA36 exports `lowiropt`; students edit `dev/lowiropt.cpp` from
   `dev/lowiropt-scaffold.cpp` plus shared optimizer/driver support under
-  `dev/src`; support files include `pa35/Makefile`, `pa35/scripts`, and
+  `dev/src`; support files include `pa36/Makefile`, `pa36/scripts`, and
   `tests/{o0,o1,o2,driver,debuginfo}` with checked-in refs.
-- PA36 exports `lowir2native -O1/-O2`; students edit `dev/lowir2native.cpp`
+- PA37 exports `lowir2native -O1/-O2`; students edit `dev/lowir2native.cpp`
   from `dev/lowir2native-scaffold.cpp` plus shared machine/backend optimizer
-  support under `dev/src`; support files include `pa36/Makefile`, `pa36/scripts`,
+  support under `dev/src`; support files include `pa37/Makefile`, `pa37/scripts`,
   `scripts/run_lowir_native_tests_worker.pl`, and
   `tests/{o1,o2,debuginfo}` sidecars.
-- Remaining decisions: loose LowIR validator configuration for PA35 and
-  structural MIR validator configuration for PA36.
+- Remaining decisions: loose LowIR validator configuration for PA36 and
+  structural MIR validator configuration for PA37.
 
-### PA37
+### PA38
 
-Special self-host export case. PA37 has no single binary scaffold. It exports a
+Special self-host export case. PA38 has no single binary scaffold. It exports a
 staged self-host ladder over checkpoint tools:
 
 - `pptoken`, `posttoken`, `ctrlexpr`, `macro`, `preproc`, `recog`, `nsdecl`,
@@ -217,7 +223,7 @@ staged self-host ladder over checkpoint tools:
 - `cppgm++`, `lowiropt`, `lowir2cy86`, `lowir2native`, `cpplink`, `cppeh`
 
 Source sets derive from `dev/frontend_source_sets.mk`, and generated checkpoint
-binaries live under `../obj/pa37/bin/selfhost/*-self`.
+binaries live under `../obj/pa38/bin/selfhost/*-self`.
 
 Remaining decisions: source-set packaging details and which generated,
 intermediate, or extra comparison artifacts are omitted from export.

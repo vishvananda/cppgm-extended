@@ -9,16 +9,16 @@ harnesses used to keep each milestone stable.
 The main rule for code changes is:
 
 - Put production compiler changes in `dev/` and especially `dev/src/`.
-- Treat `pa1/` through `pa37/` primarily as assignment specifications, tests,
+- Treat `pa1/` through `pa38/` primarily as assignment specifications, tests,
   wrappers, and reference fixtures unless a task explicitly asks to update a
   test, harness, or reference.
 
 ## Current State
 
-All assignment buildouts through PA37 exist in this checkout. The compiler is no
+All assignment buildouts through PA38 exist in this checkout. The compiler is no
 longer an early PA1-PA9 starter implementation; it has the full frontend,
 semantic analysis, LowIR generation, native object/link surface, optimization
-passes, hosted compatibility work, and the PA37 self-host ladder.
+passes, hosted compatibility work, and the PA38 self-host ladder.
 
 Important user-facing binaries built from `dev/`:
 
@@ -35,21 +35,22 @@ The assignment arc is roughly:
 - PA13-PA14: LowIR contract and source-to-LowIR lowering
 - PA15-PA22: classes, value semantics, virtuals, templates, witness output
 - PA23-PA25: native execution, linking, exception/runtime surfaces
-- PA26-PA34: language completion, object generation, host ABI, hosted headers
-- PA35-PA36: LowIR and machine-backend optimization
-- PA37: staged self-host ladder
+- PA26-PA30: language completion and compile/link driver integration
+- PA31-PA35: ABI naming, object generation, host ABI, hosted headers
+- PA36-PA37: LowIR and machine-backend optimization
+- PA38: staged self-host ladder
 
 ## Top-Level Layout
 
 - `Makefile`: root orchestration for builds, global reports, strict tests,
-  reference regeneration, and the PA37 inception wrapper.
+  reference regeneration, and the PA38 inception wrapper.
 - `dev/`: active compiler implementation and build rules.
 - `dev/src/`: shared compiler libraries used by all frontend tools.
 - `dev/frontend_source_sets.mk`: checked-in reduced-link source-set manifest
   for each frontend binary.
-- `pa1/` through `pa37/`: milestone specs, wrappers, tests, scripts, and refs.
+- `pa1/` through `pa38/`: milestone specs, wrappers, tests, scripts, and refs.
 - `cppgm.tests/`: shared external course tests used by assignment harnesses.
-- `scripts/`: shared test runners, comparison tools, PA37/self-host helpers,
+- `scripts/`: shared test runners, comparison tools, PA38/self-host helpers,
   and validation scripts.
 - `docs/`: active plans, current trackers, operational references, and the
   `docs/implemented/` archive for completed plan records.
@@ -62,7 +63,7 @@ The assignment arc is roughly:
 
 ## Build Defaults
 
-On Linux, the root, `dev/`, and `pa37` Makefiles default to `g++`, which uses
+On Linux, the root, `dev/`, and `pa38` Makefiles default to `g++`, which uses
 libstdc++ by default. On macOS, they prefer Homebrew LLVM when available:
 
 - `/usr/local/opt/llvm/bin/clang++`
@@ -81,7 +82,7 @@ real host compiler for `CPPGM_HOST_CXX`.
 
 The shared `obj/` root assumes `CXX` and `CPPGM_HOST_CXX` are the same host
 compiler. For self-host or mixed-compiler experiments, use an isolated object
-root such as `OBJ=../obj/pa37/...` or another task-specific directory.
+root such as `OBJ=../obj/pa38/...` or another task-specific directory.
 
 ## Main Build And Test Commands
 
@@ -106,7 +107,7 @@ Current behavior:
 
 - `make` builds all `dev/` frontends.
 - `make test` builds once and runs the non-experimental assignment tests
-  (`pa1` through `pa36` by default).
+  (`pa1` through `pa37` by default).
 - `make test-paN` builds once and runs one assignment.
 - `make ref-test` regenerates assignment `.ref` outputs. Later PA Makefiles
   invoke provided `*-ref` binaries directly and fail if the ref binary is
@@ -123,7 +124,7 @@ Current behavior:
   `STRICT_PAS` (`pa18 pa19 pa21 pa22` by default).
 - `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1` enables direct LowIR text comparison in
   the shared comparison harness.
-- `make inception` builds the final PA37 self-host target and compares it with
+- `make inception` builds the final PA38 self-host target and compares it with
   the host-built `cppgm++`.
 
 Useful knobs:
@@ -136,26 +137,26 @@ Useful knobs:
 - `CPPGM_STDLIB_FLAGS=...` passes additional standard-library flags through
   compiler and test builds.
 
-## PA37 Self-Host Surfaces
+## PA38 Self-Host Surfaces
 
-PA37 builds staged checkpoint binaries with `cppgm++`. Its main goal is
+PA38 builds staged checkpoint binaries with `cppgm++`. Its main goal is
 inception: rebuilding `cppgm++` with `cppgm++` and matching the host build. The
-`pa37` wrapper owns the intermediate `test-through-*` ladder; the root Makefile
+`pa38` wrapper owns the intermediate `test-through-*` ladder; the root Makefile
 keeps only the final `inception` shortcut.
 
-Useful direct PA37 commands:
+Useful direct PA38 commands:
 
 ```sh
-make -C pa37 cppgm++-self CXX=../dev/cppgm++ \
+make -C pa38 cppgm++-self CXX=../dev/cppgm++ \
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
-make -C pa37 test-through-pa10 CXX=../dev/cppgm++ \
+make -C pa38 test-through-pa10 CXX=../dev/cppgm++ \
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
-make -C pa37 test-through-pa36 CXX=../dev/cppgm++ \
+make -C pa38 test-through-pa37 CXX=../dev/cppgm++ \
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
 make inception CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
 ```
 
-Use `PA37_OBJ_ROOT_BASE=...` when comparing host-compiler lanes or preserving
+Use `PA38_OBJ_ROOT_BASE=...` when comparing host-compiler lanes or preserving
 multiple self-host object trees.
 
 ## Performance Checks
@@ -259,8 +260,8 @@ For broad changes, start with:
 - `dev/src/lowir_optimizer.*`
 - `dev/src/lowir_machine_ir.*`
 - `dev/src/lowir_object_backend.*`
-- `pa37/README.md`
-- `pa37/Makefile`
+- `pa38/README.md`
+- `pa38/Makefile`
 - `docs/performance-regression-validation.md`
 
 For milestone-specific behavior, read the corresponding `paN/README.md` and

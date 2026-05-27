@@ -486,7 +486,7 @@ This is intentionally narrow. The cache is only enabled when:
   `labeled_statement`, `goto_statement`, `case_statement`, or
   `default_statement`
 
-The control-flow guard was required because `pa31/tests/compile/639-lambda-goto-return-deduction.t`
+The control-flow guard was required because `pa32/tests/compile/639-lambda-goto-return-deduction.t`
 regressed with an early `malformed labeled-statement` failure when the cached
 path was applied too broadly.
 
@@ -616,7 +616,7 @@ These cold-path passes were validated with:
 
 - the reduced first-insert hotspot reducers above
 - direct rerun of
-  `pa31/tests/compile/639-lambda-goto-return-deduction.t`
+  `pa32/tests/compile/639-lambda-goto-return-deduction.t`
 - `CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++ make verify-fast-pa10-31-nobuild CXX=/usr/local/opt/llvm/bin/clang++ VERIFY_ASSIGNMENT_JOBS=6`
 
 At this point the remaining first-insert growth looks much more distributed.

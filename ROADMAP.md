@@ -1,4 +1,4 @@
-# CPPGM Part 2 Roadmap: PA10–PA37
+# CPPGM Part 2 Roadmap: PA10–PA38
 
 This document outlines the proposed programming assignments for Part 2 of the `cppgm`
 course.
@@ -15,14 +15,16 @@ Two policy changes drive the structure below:
 That means a custom stdlib, full RTTI, `dynamic_cast`, and multiple inheritance are no longer
 on the critical path to self-hosting.
 
-This revision also inserts three new milestone numbers to split previously oversized
+This revision also inserts four new milestone numbers to split previously oversized
 assignments before bootstrap:
 
 - `PA22 templatecomplete`, separating template specialization ownership from the later
   deduction/substitution/SFINAE closure
-- `PA32 hostabi`, separating ordinary host object interop from host C++ ABI/runtime
+- `PA31 abimangle`, separating Itanium C++ ABI name construction from host object
+  emission
+- `PA33 hostabi`, separating ordinary host object interop from host C++ ABI/runtime
   behavior
-- `PA34 hostedlink`, separating hosted source/header compatibility from hosted emitted-code
+- `PA35 hostedlink`, separating hosted source/header compatibility from hosted emitted-code
   link/runtime behavior
 
 ---
@@ -469,7 +471,7 @@ compile-and-link path.
 - This PA does not require migration to the host C++ EH ABI.
   Keeping a private EH/runtime contract is acceptable here as long as its behavior is
   documented and deterministic.
-- Ordinary host ABI/runtime interop for `cppgm++` objects is intentionally deferred to PA31.
+- Ordinary host ABI/runtime interop for `cppgm++` objects is intentionally deferred to PA33.
 
 **Input**: linked programs from PA24
 **Output**: exception-capable executables on the private `cppeh` runtime path
@@ -604,10 +606,11 @@ collection of assignment-specific binaries.
 **Notes**:
 - This is the milestone where the compiler stops being "the PA binaries" and starts looking
   like a practical compiler toolchain for its own ecosystem.
+- Itanium C++ ABI name construction is intentionally deferred to PA31.
 - Host-linker-compatible object output and explicit external-library interop are
-  intentionally deferred to PA31.
+  intentionally deferred to PA32.
 - Standard-library header ingestion and hosted/vendor compatibility are intentionally
-  deferred to PA33.
+  deferred to PA34.
 
 **Input**: compiler from PA29
 **Output**: practical `cppgm++` compiler driver and toolchain
@@ -616,7 +619,36 @@ collection of assignment-specific binaries.
 
 ---
 
-## PA31: `hostinterop` — Host Toolchain Interoperability
+## PA31: `abimangle` — Standalone Itanium ABI Naming
+
+**Goal**: Build a reusable Itanium C++ ABI name encoder before host object output makes raw
+symbol spelling part of the object-file contract.
+
+**Topics**:
+- A standalone `abimangle` tool
+- Normalized ABI fact files as input
+- Typed representation of ABI entities, types, template arguments, dependent expressions,
+  local contexts, ABI tags, special names, thunks, TLS wrappers, vtables, typeinfo, and VTTs
+- Itanium substitution-table behavior in host-compatible order
+- Checked-in fact-file references rather than live host compiler or object-tool oracles
+
+**Notes**:
+- This PA does not require C++ source parsing, semantic analysis, LowIR generation, object
+  emission, linking, or runtime behavior.
+- The point is to make the naming layer testable in isolation. PA32 then feeds real compiler
+  semantic entities into this layer when it emits host-linker-compatible objects.
+- Earlier LowIR-producing assignments may carry `object=...` metadata, but relaxed LowIR
+  comparison omits those late object spellings. PA31 is where the ABI spelling itself becomes
+  a focused public assignment contract.
+
+**Input**: compiler/toolchain foundation from PA30
+**Output**: standalone ABI name encoder ready for host object emission
+
+**Dependencies**: PA30
+
+---
+
+## PA32: `hostinterop` — Host Toolchain Interoperability
 
 **Goal**: Make `cppgm++ -c` produce objects that the real host linker accepts, and validate
 the ordinary host object/toolchain interoperability surface.
@@ -635,27 +667,27 @@ the ordinary host object/toolchain interoperability surface.
   host-compatible objects are required here.
 - It is acceptable for the implementation to keep the internal linker path for earlier
   milestones while validating host interoperability through an external host-link step.
-- Full hosted-header and vendor-compatibility work is intentionally deferred to PA33.
+- Full hosted-header and vendor-compatibility work is intentionally deferred to PA34.
 - Ordinary hosted runtime references needed by generated objects should resolve through the
   real host toolchain here rather than through per-test helper runtime source files.
   In practice this includes host allocation/deallocation, libc/libm-style builtins, and the
   normal host CRT entry surface.
 - The practical host C++ ABI/runtime surface for imported/exported vtables, RTTI,
   `dynamic_cast` / `typeid`, and ordinary host-linked EH is intentionally deferred one more
-  step to PA32.
-- The remaining compiler-private EH/runtime surface is still owned by PA25, not PA31.
+  step to PA33.
+- The remaining compiler-private EH/runtime surface is still owned by PA25, not PA32.
 
-**Input**: compiler from PA30
+**Input**: compiler from PA31
 **Output**: `cppgm++` objects that participate in the host toolchain, plus host-linked
 executables built from those objects under the ordinary host toolchain path
 
-**Dependencies**: PA30
+**Dependencies**: PA31
 
 ---
 
-## PA32: `hostabi` — Host C++ ABI and Runtime Interoperability
+## PA33: `hostabi` — Host C++ ABI and Runtime Interoperability
 
-**Goal**: Keep the host-linked object path from PA31, but raise the contract from "host
+**Goal**: Keep the host-linked object path from PA32, but raise the contract from "host
 linker accepts these objects" to "the ordinary host C++ ABI/runtime surface actually works."
 
 **Topics**:
@@ -669,18 +701,18 @@ linker accepts these objects" to "the ordinary host C++ ABI/runtime surface actu
 **Notes**:
 - This is distinct from PA25 private `exceptrt`, which still owns the private
   `cppgm_eh_*` internal runtime path.
-- This is also distinct from PA33/PA34 hosted compatibility; PA32 is about the ordinary
+- This is also distinct from PA34/PA35 hosted compatibility; PA33 is about the ordinary
   host C++ ABI/runtime path once host link succeeds at all.
 
-**Input**: host-linkable compiler from PA31
+**Input**: host-linkable compiler from PA32
 **Output**: host-linked objects that participate correctly in the ordinary host C++ ABI and
 runtime surface
 
-**Dependencies**: PA31
+**Dependencies**: PA32
 
 ---
 
-## PA33: `hostedcompat` — Hosted Header and Vendor Compatibility
+## PA34: `hostedcompat` — Hosted Header and Vendor Compatibility
 
 **Goal**: Make the compiler source-compatible with the hosted standard-library and vendor
 extension environment needed for bootstrap.
@@ -705,22 +737,22 @@ extension environment needed for bootstrap.
   their real owners whenever possible.
 - The public test surface should stay centered on `cppgm++`, even when some tests are
   logically "preprocessor" or "header compatibility" oriented.
-- PA33 should not become a second runtime-ABI assignment.
+- PA34 should not become a second runtime-ABI assignment.
   New hosted-compatibility coverage should normally compile and link through the plain host
-  toolchain surface already established by PA31/PA32.
-- If a PA33-hosted smoke still needs a helper runtime object, that helper should be limited
+  toolchain surface already established by PA32/PA33.
+- If a PA34-hosted smoke still needs a helper runtime object, that helper should be limited
   to the explicit PA25-owned private EH/runtime surface rather than reintroducing general
   host-builtin shims.
 
-**Input**: host-ABI-compatible compiler from PA32
+**Input**: host-ABI-compatible compiler from PA33
 **Output**: compiler that can consume the hosted headers and source patterns needed for
 bootstrap
 
-**Dependencies**: PA32
+**Dependencies**: PA33
 
 ---
 
-## PA34: `hostedlink` — Hosted Header Emission and Link Compatibility
+## PA35: `hostedlink` — Hosted Header Emission and Link Compatibility
 
 **Goal**: Once hosted headers preprocess and compile, make their emitted inline/template
 code link and run correctly through the existing host toolchain path.
@@ -735,18 +767,18 @@ code link and run correctly through the existing host toolchain path.
 **Notes**:
 - This is still not a second general runtime-ABI assignment.
 - It remains scoped to hosted header-emission and hosted library compatibility on top of the
-  ordinary host ABI path already owned by PA32.
+  ordinary host ABI path already owned by PA33.
 - Current `tests/frontier`-style bootstrap reduction remains an internal maintainer tool,
   not a public assignment surface.
 
-**Input**: hosted source/header compatible compiler from PA33
+**Input**: hosted source/header compatible compiler from PA34
 **Output**: hosted header-emitted code that links and runs through the plain host toolchain
 
-**Dependencies**: PA33
+**Dependencies**: PA34
 
 ---
 
-## PA35: `optimize` — Optimization Passes
+## PA36: `optimize` — Optimization Passes
 
 **Goal**: Add the first optimization layer over the compiler-owned backend representation.
 
@@ -764,64 +796,56 @@ code link and run correctly through the existing host toolchain path.
 - The important point is establishing a clean and testable optimization stage with public
   `-O0`, `-O1`, and `-O2` levels.
 
-**Input**: hosted source/header compatible compiler from PA34
+**Input**: hosted source/header compatible compiler from PA35
 **Output**: optimized LowIR feeding the native backend
-
-**Dependencies**: PA34
-
----
-
-## PA36: `bootstrap` — Self-Hosting Build
-
-**Goal**: Compile `cppgm` with itself.
-
-**Topics**:
-- Compile the `dev/` compiler sources with the `cppgm++` compiler
-- Link the resulting compiler using the PA31 host-interoperable toolchain
-- Use the host platform's existing standard library/runtime for bootstrap unless explicitly
-  replaced earlier
-- Validate the self-compiled compiler on the existing PA suites
-- Establish repeatable stage1/stage2 build flow
-
-**Deliverable**:
-- A self-compiled `cppgm` binary whose outputs match the host-compiled `cppgm` binary on all
-  implemented PA test suites.
-- Where outputs are textual or otherwise deterministic, require bit-identical results.
-
-**Notes**:
-- This milestone is intentionally integration-heavy rather than feature-heavy.
-- Ordinary standard-language gaps discovered here should usually move backward into earlier
-  assignments rather than being treated as bootstrap-only work.
-- True hosted/vendor compatibility work discovered here should usually move backward into
-  PA33 unless they reveal a deeper earlier-language bug.
-
-**Input**: optimized and host-interoperable compiler from PA35
-**Output**: self-hosted `cppgm` binary
 
 **Dependencies**: PA35
 
 ---
 
-## PA37: `independence` — Post-Bootstrap Capstone
+## PA37: `machineopt` — Machine Backend Optimization
 
-**Goal**: Push beyond "can compile itself" toward "can stand on its own."
+**Goal**: Add local and whole-function optimization over the lowered machine-IR/native
+backend representation.
 
 **Topics**:
-- Custom runtime support where host dependencies still remain
-- Minimal in-house standard library pieces where strategically useful
-- Broader conformance testing
-- Stage2/stage3 reproducibility and performance work
+- `lowir2native -O1` local machine-IR cleanup
+- `lowir2native -O2` whole-function machine-IR cleanup
+- Preservation of generated program behavior
+- Machine-IR shape oracles that prove optimization is happening below the LowIR boundary
 
 **Notes**:
-- This is explicitly a capstone phase, not a normal one-week assignment.
-- It is intentionally open-ended and can be split further if the course continues.
-- A full custom stdlib is optional and should be justified by concrete bootstrap or
-  portability needs, not assumed up front.
+- PA36 optimizes LowIR before backend lowering. PA37 starts after that boundary and improves
+  the target-facing machine path.
+- `-O0` remains the PA23 baseline.
 
-**Input**: optimized self-hosted and host-interoperable compiler from PA36
-**Output**: more independent compiler/runtime stack with broader C++ coverage
+**Input**: optimized LowIR and native backend from PA36
+**Output**: optimized machine IR and native executables
 
 **Dependencies**: PA36
+
+---
+
+## PA38: `inception` — Self-Hosting Inception
+
+**Goal**: Build `cppgm++` with `cppgm++`, then build it again and compare the two compiler
+outputs byte for byte.
+
+**Topics**:
+- Self-built `cppgm++-self`
+- Inception-built `cppgm++-inception`
+- Preservation checks through the earlier assignment test ladder
+- Reproducible output and deterministic build behavior
+
+**Notes**:
+- PA38 does not add a new language feature, command-line mode, object format, or runtime ABI.
+- Failures discovered here should usually move backward to the earlier assignment surface that
+  owns the missing language, lowering, runtime, linking, optimization, or determinism behavior.
+
+**Input**: optimized compiler implementation from PA37
+**Output**: reproducible self-built compiler
+
+**Dependencies**: PA37
 
 ---
 
@@ -850,11 +874,12 @@ PA6 (recog)
                                                                                             └─ PA28 (objectcomplete)
                                                                                                  └─ PA29 (multivirt)
                                                                                                       └─ PA30 (toolchain)
-                                                                                                           └─ PA31 (hostinterop)
-                                                                                                                └─ PA32 (hostabi)
-                                                                                                                     └─ PA33 (hostedcompat)
-                                                                                                                          └─ PA34 (hostedlink)
-                                                                                                                               └─ PA35 (optimize)
-                                                                                                                                    └─ PA36 (bootstrap)
-                                                                                                                                         └─ PA37 (independence)
+                                                                                                           └─ PA31 (abimangle)
+                                                                                                                └─ PA32 (hostinterop)
+                                                                                                                     └─ PA33 (hostabi)
+                                                                                                                          └─ PA34 (hostedcompat)
+                                                                                                                               └─ PA35 (hostedlink)
+                                                                                                                                    └─ PA36 (lowiropt)
+                                                                                                                                         └─ PA37 (machineopt)
+                                                                                                                                              └─ PA38 (inception)
 ```

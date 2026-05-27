@@ -20,7 +20,7 @@ Many of the recent failures were discovered through STL code, but the underlying
 - imported polymorphic definitions
 - cross-TU key-function ownership
 
-So a smaller `pa30` suite can give earlier and more legible signal while keeping `pa31` focused on library-specific hosted compatibility.
+So a smaller `pa30` suite can give earlier and more legible signal while keeping `pa32` focused on library-specific hosted compatibility.
 
 **Existing Seeds**
 The repository already has a few useful `pa30` starting points:
@@ -182,9 +182,9 @@ Start with the lowest-complexity, highest-signal families:
 7. add construction/destruction dispatch tests
 8. expand duplicate/coalescing polymorphic tests
 
-That ordering should expose most core hosted ABI breakage before the library-specific `pa31` layer is involved.
+That ordering should expose most core hosted ABI breakage before the library-specific `pa32` layer is involved.
 
-**What Should Stay In PA31**
+**What Should Stay In PA32**
 This `pa30` suite should not try to own library-specific ABI surfaces such as:
 
 - libc++ inline-namespace and ABI-tag behavior
@@ -192,7 +192,7 @@ This `pa30` suite should not try to own library-specific ABI surfaces such as:
 - iostream/locale virtual slot assumptions
 - imported stdlib explicit-instantiation ownership
 
-Those remain better covered by `pa31` hosted compatibility tests.
+Those remain better covered by `pa32` hosted compatibility tests.
 
 **Completion Criteria**
 A useful first version of this plan is complete when `pa30` has:
@@ -204,7 +204,7 @@ A useful first version of this plan is complete when `pa30` has:
 - at least one virtual-inheritance test
 - object-surface inspection on the ownership/import-sensitive cases
 
-At that point `pa30` should be able to catch a large fraction of RTTI/vtable regressions before they first appear inside STL-heavy `pa31` cases.
+At that point `pa30` should be able to catch a large fraction of RTTI/vtable regressions before they first appear inside STL-heavy `pa32` cases.
 
 **Completion Note**
 The first ladder described here landed and this plan is now archived. The

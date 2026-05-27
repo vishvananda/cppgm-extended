@@ -19,7 +19,7 @@ fragment reparsing by:
 Every stage in this plan should follow the same closeout process before the
 next stage starts:
 
-- run the full `pa10` through `pa31` validation sweep from the repo root
+- run the full `pa10` through `pa32` validation sweep from the repo root
 - prefer:
   - `make verify-fast-pa10-31 CXX=/usr/local/opt/llvm/bin/clang++ VERIFY_ASSIGNMENT_JOBS=6`
 - if the fast worker path is not appropriate for the change under test, fall

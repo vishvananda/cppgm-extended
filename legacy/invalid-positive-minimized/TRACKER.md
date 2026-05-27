@@ -27,8 +27,8 @@ the appropriate PA with compiler fixes once each repro was confirmed minimal.
   - note: landed as `pa21/tests/general/472-extern-template-builtin-operator-function-declaration-bad.t`; repaired positive kept in `pa21/tests/general/211-extern-template-operator-function-declaration.t`
 - `270-integer-pack-builtin-bad.t`
   - status: not-a-bug
-  - target PA: `pa33`
-  - note: GNU `__integer_pack` hosted-compat case; original positive moved to `pa33/tests/compile/746-hosted-integer-pack-tuple-defer-compile.t`
+  - target PA: `pa34`
+  - note: GNU `__integer_pack` hosted-compat case; original positive moved to `pa34/tests/compile/746-hosted-integer-pack-tuple-defer-compile.t`
 - `304-nondependent-member-body-name-lookup-bad.t`
   - status: done
   - target PA: `pa22`

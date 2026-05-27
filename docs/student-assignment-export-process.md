@@ -87,7 +87,7 @@ cppgm/
 ├── pa1/
 ├── pa2/
 ├── ...
-├── pa37/
+├── pa38/
 ├── tests/                  # shared public test assets only
 └── doc/                    # public course docs only
 ```
@@ -106,7 +106,7 @@ paN/
 └── extras/                 # only when explicitly needed
 ```
 
-PA37 is the main exception to the single-binary pattern. It is a staged
+PA38 is the main exception to the single-binary pattern. It is a staged
 self-host validation assignment, so its export inventory should describe
 checkpoint targets, source sets, host compiler requirements, and generated
 checkpoint tools instead of forcing it into a `<binary>-ref` / one-entrypoint
@@ -255,7 +255,7 @@ The new export process should be manifest-driven:
 
 Before exporting, record for each PA:
 
-- exported binary name, or staged checkpoint targets for PA37-style assignments
+- exported binary name, or staged checkpoint targets for PA38-style assignments
 - exported README
 - exported tests and refs
 - exported support fixtures
@@ -339,7 +339,7 @@ and ordering are part of the public contract.
 
 ## Phase 3: Per-PA Export Curation
 
-Handle each PA in order, `pa1` through `pa37`.
+Handle each PA in order, `pa1` through `pa38`.
 
 For each PA:
 
@@ -571,13 +571,13 @@ The export should therefore:
   clearly better
 
 The old repo's simple `export_pa.sh` approach is a useful historical baseline,
-but not the desired long-term export mechanism for the full PA1-PA37 series.
+but not the desired long-term export mechanism for the full PA1-PA38 series.
 
 ## Completion Criteria
 
 This export process is complete when:
 
-- every cleaned PA from `pa1` through `pa37` has an export inventory entry
+- every cleaned PA from `pa1` through `pa38` has an export inventory entry
 - the student repo can be generated reproducibly
 - the exported repo validates independently
 - the exported repo matches the old course format at the outer layer

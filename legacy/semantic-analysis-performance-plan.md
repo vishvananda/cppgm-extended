@@ -17,8 +17,8 @@ Primary benchmark:
 
 Green controls:
 
-- PA33 STL compile smoke cases such as unordered-map/find and ostringstream tests.
-- PA34 hosted-link smoke cases when broader validation is needed.
+- PA34 STL compile smoke cases such as unordered-map/find and ostringstream tests.
+- PA35 hosted-link smoke cases when broader validation is needed.
 - Strict semantic suites `pa18 pa19 pa21 pa22` remain the fast correctness gate after each implementation change.
 
 Timing discipline:
@@ -42,7 +42,7 @@ Phase 1 baseline after refreshing the frozen benchmark:
 
 - `self-semantic-overload`: known-error timing run, `104.813s`, max RSS `1240696 KB`.
 - `self-semantic-overload`: known-error diagnostic counter run, `179.782s`, max RSS `1212948 KB`.
-- `pa33-long-unordered-map-find`: green control timing run, `13.996s`, max RSS `171064 KB`.
+- `pa34-long-unordered-map-find`: green control timing run, `13.996s`, max RSS `171064 KB`.
 
 The diagnostic counter run reported:
 
@@ -59,7 +59,7 @@ After rebasing this work onto current `main` (`0ba01528`), the same frozen sourc
 - With the Phase 2 negative class-info cache: `self-semantic-overload` completed in `204.397s`.
 - With the per-key class-info cache refinement: `self-semantic-overload` completed in `190.042s`.
 - With the per-key class-info cache refinement and semantic stats enabled, but no hotspot tracing: `self-semantic-overload` completed in `190.847s`.
-- With the per-key class-info cache refinement: `pa33-long-unordered-map-find` completed in `5.474s`.
+- With the per-key class-info cache refinement: `pa34-long-unordered-map-find` completed in `5.474s`.
 
 The current `main` strict gate is red independent of this branch for:
 
@@ -76,7 +76,7 @@ Those failures reproduce on `/Users/vishvananda/cppgm` at `0ba01528` with the re
 3. Record:
    - timing baseline without hotspot tracing,
    - diagnostic counter baseline with hotspot tracing,
-   - one green PA33 control timing.
+   - one green PA34 control timing.
 4. Commit the benchmark/doc setup before optimization patches.
 
 ## Phase 2: Class-Info Lookup Cache
@@ -111,14 +111,14 @@ Implementation:
 2. Identify repeated raw reference shapes that can be cached safely by declaration, use scope, and structured argument identity.
 3. Prefer structured keys and interned semantic objects over text keys. Text may remain only as canonical output/mangling data, not as reparsed input.
 4. Preserve witness and strict fallback behavior behind existing guards.
-5. Validate on strict semantic tests, PA33 controls, and the primary benchmark.
+5. Validate on strict semantic tests, PA34 controls, and the primary benchmark.
 
 Expected result: visible reduction in `resolve_template_arguments` calls and class-template key builds.
 
 Attempted results:
 
-- Increasing the resolver's recent-cache ring from 64 to 256 reduced `resolve-template-argument-key-builds` by only about `1.3k` on the frozen self-overload benchmark and slowed the PA33 control. It was rejected.
-- Increasing the ring to 128 was also worse on the PA33 control. It was rejected.
+- Increasing the resolver's recent-cache ring from 64 to 256 reduced `resolve-template-argument-key-builds` by only about `1.3k` on the frozen self-overload benchmark and slowed the PA34 control. It was rejected.
+- Increasing the ring to 128 was also worse on the PA34 control. It was rejected.
 - Threading a precomputed class-template argument key through `template_services` removed duplicate counted `class-template-key-builds`, but the key had already been built for specialization selection and the wall time regressed. It was rejected.
 
 Next viable direction:
@@ -305,6 +305,6 @@ a few semantic requirements.
 After measurable wins on the primary benchmark:
 
 1. Run `CPPGM_STRICT_SEMANTIC_FALLBACKS=1 make test-strict STRICT_PAS='pa18 pa19 pa21 pa22' STRICT_SUBTEST_JOBS=8 CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++`.
-2. Run PA33/PA34 targeted `test-report` for STL-heavy cases.
+2. Run PA34/PA35 targeted `test-report` for STL-heavy cases.
 3. Run a full report when the optimized patches are stable.
 4. Update this document with final before/after numbers and any remaining bottlenecks.
