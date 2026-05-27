@@ -1,6 +1,0 @@
-case lambda_closure_type
-mangled ZN2ns4makeEvEUlvE0_
-case local_class_call_operator
-mangled _ZZN2ns4makeEvEN5LocalclEv
-case member_lambda_call_operator
-mangled _ZZN2ns1C4makeEvENUliE0_clEv

@@ -25,12 +25,11 @@ object emission, and runtime behavior. The source integration mode prevents
 students from passing a standalone DSL while their compiler still lacks a
 usable semantic-to-ABI-name bridge.
 
-The checked-in standalone tests use a line-oriented fact form. Simple cases are
+The checked-in standalone tests use a line-oriented fact form. Simple tests are
 one line, such as `function ::ns::f int` or `type ptr:const:int`. Structured
-cases introduce named facts before the result:
+tests introduce named facts before the result:
 
 ```text
-case dependent_rebind
 let-type T template-param 0
 let-type U template-param 1
 let-arg U_arg type U
@@ -48,17 +47,23 @@ not Itanium terminal spellings. This keeps the standalone tests as normalized
 ABI facts instead of source code or direct calls into an implementation-specific
 mangler API.
 
-The scaffold exposes the text format as `AbiFactFile`, `AbiFactCase`, and
-`AbiFactLine` records in `abi_mangle.h`. `parse_fact_text` reads the line
-format into those records, and `serialize_fact_file` writes the same normalized
-format back out. The reference tool round-trips parsed facts through the
-serializer before mangling, so the text form and the C++ representation stay in
-sync.
+The scaffold exposes the text format as typed semantic ABI facts in
+`abi_mangle.h`. `AbiFactFile` contains `AbiFactCase` records; each case has an
+ordered list of `AbiFact` definitions and one `AbiMangleTarget`. Single-case
+files do not need an explicit label. The facts use typed records such as
+`AbiType`, `AbiTemplateArg`, `AbiDependentExpr`, `AbiFunctionPath`, and
+`AbiEntity`, not raw token lines. `parse_fact_text` reads the line format into
+those records, and `serialize_fact_file` writes the same normalized format back
+out. The reference tool round-trips parsed facts through the serializer before
+mangling, then encodes names only from the typed records. If a required
+maintainer mangling case cannot be expressed through these records, the ABI fact
+surface is missing semantic data and should be extended.
 
 The standalone ABI tests are numbered from simpler names toward more complete
-ABI situations: `100-*` covers basic names and types, `200-*` local entities,
-`300-*` entity-valued template arguments, `400-*` dependent member types,
-`500-*` dependent expressions, and `600-*` nested template owner contexts.
+ABI situations. Each checked-in test file covers exactly one mangled name:
+`100-*` covers basic names and types, `200-*` local entities, `300-*`
+entity-valued template arguments, `400-*` dependent member types, `500-*`
+dependent expressions, and `600-*` nested template owner contexts.
 
 PAX does not require producing relocatable objects, linking, or executing
 programs.
@@ -108,13 +113,11 @@ Itanium mangling grammar:
 - alias targets, dependent names, inline namespace ownership, anonymous
   namespace ownership, local entity context, and ABI tags where required
 
-`abimangle` writes a deterministic table of case labels and mangled names. A
-draft output shape is:
+`abimangle` writes one deterministic ABI name per input case. A draft output
+shape is:
 
 ```text
-case basic_function
-entity function ::ns::f(int, char*)
-mangled _ZN2ns1fEiPc
+_ZN2ns1fEiPc
 ```
 
 The final fact-file syntax can be line-oriented or S-expression-like, but it
@@ -178,6 +181,10 @@ of string helpers. Expected core records include:
 - `AbiTemplateParam`, with depth, index, pack identity, and kind
 - `AbiTemplateArg`, with typed value, type, template, pack, and dependent
   expression variants
+- `AbiDependentExpr`, with template/function parameters, literals, operations,
+  member expressions, and entity references
+- `AbiFunctionPath`, with declaration ownership, template arguments, and
+  function parameter types for context-sensitive names
 - `AbiMangleContext`, owning the substitution table and current template
   parameter environment
 
