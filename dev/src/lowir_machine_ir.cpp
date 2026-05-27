@@ -663,6 +663,7 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
 map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
     const set<string> & direct_branch_temps,
+    const map<string, string> & promoted_param_slots,
     const set<string> & thread_local_globals);
 set<string> collect_address_taken_temps(
     const lir::Function & function,
@@ -1566,18 +1567,24 @@ set<string> collect_direct_branch_temps(const lir::Function & function,
 map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
     const set<string> & direct_branch_temps,
+    const map<string, string> & promoted_param_slots,
     const set<string> & thread_local_globals)
 {
   const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
   map<string, size_t> raw_use_count;
+  map<string, size_t> raw_use_position;
+  map<string, size_t> direct_branch_use_position;
+  vector<size_t> caller_saved_clobber_positions;
+  size_t position = 0;
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii, ++position) {
       const lir::Instruction & inst = function.blocks[bi].instructions[ii];
       const auto note_raw_use =
           [&](const lir::Operand & operand)
           {
             if(operand.kind == lir::Operand::OP_TEMP) {
               ++raw_use_count[operand.text];
+              raw_use_position[operand.text] = position;
             }
           };
       note_raw_use(inst.first);
@@ -1586,11 +1593,36 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
       for(size_t ai = 0; ai < inst.args.size(); ++ai) {
         note_raw_use(inst.args[ai]);
       }
+      if(inst.kind == lir::Instruction::IK_BRANCH &&
+         inst.first.kind == lir::Operand::OP_TEMP &&
+         direct_branch_temps.count(inst.first.text) != 0) {
+        direct_branch_use_position[inst.first.text] = position;
+      }
+      if(inst.kind == lir::Instruction::IK_CALL ||
+         instruction_may_emit_tls_addr(inst, thread_local_globals) ||
+         instruction_may_emit_i128_helper_call(inst)) {
+        caller_saved_clobber_positions.push_back(position);
+      }
     }
   }
 
+  const auto caller_saved_clobber_between =
+      [&](size_t first, size_t last) -> bool
+      {
+        if(first >= last) {
+          return false;
+        }
+        vector<size_t>::const_iterator found =
+            upper_bound(caller_saved_clobber_positions.begin(),
+                        caller_saved_clobber_positions.end(),
+                        first);
+        return found != caller_saved_clobber_positions.end() && *found < last;
+      };
+
   auto is_elidable_direct_load =
-      [&](const lir::Operand & operand, const string & compare_type)
+      [&](const string & direct_branch_temp,
+          const lir::Operand & operand,
+          const string & compare_type)
       {
         if(operand.kind != lir::Operand::OP_TEMP) {
           return false;
@@ -1609,6 +1641,20 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
         if(def->second.first.kind == lir::Operand::OP_GLOBAL &&
            thread_local_globals.count(def->second.first.text) != 0) {
           return false;
+        }
+        if(def->second.first.kind == lir::Operand::OP_SLOT &&
+           promoted_param_slots.count(def->second.first.text) != 0) {
+          map<string, size_t>::const_iterator branch_use =
+              direct_branch_use_position.find(direct_branch_temp);
+          map<string, size_t>::const_iterator raw_use =
+              raw_use_position.find(operand.text);
+          const size_t use_position =
+              branch_use != direct_branch_use_position.end()
+                  ? branch_use->second
+                  : (raw_use == raw_use_position.end() ? def->second.position : raw_use->second);
+          if(caller_saved_clobber_between(def->second.position, use_position)) {
+            return false;
+          }
         }
         return def->second.first.kind == lir::Operand::OP_SLOT ||
                def->second.first.kind == lir::Operand::OP_GLOBAL;
@@ -1632,16 +1678,16 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
         !is_float_type(def->second.type) &&
         !is_i128_scalar_type(def->second.type);
     if(direct_cmp) {
-      if(is_elidable_direct_load(def->second.first, def->second.type)) {
+      if(is_elidable_direct_load(*it, def->second.first, def->second.type)) {
         out[def->second.first.text] =
             def_info.find(def->second.first.text)->second.first;
       }
-      if(is_elidable_direct_load(def->second.second, def->second.type)) {
+      if(is_elidable_direct_load(*it, def->second.second, def->second.type)) {
         out[def->second.second.text] =
             def_info.find(def->second.second.text)->second.first;
       }
     } else if(direct_integer_not &&
-              is_elidable_direct_load(def->second.first, def->second.type)) {
+              is_elidable_direct_load(*it, def->second.first, def->second.type)) {
       out[def->second.first.text] =
           def_info.find(def->second.first.text)->second.first;
     }
@@ -2518,13 +2564,14 @@ FunctionLayout build_layout(const lir::Function & function,
   layout.scratch_bytes = scratch_bytes_for(function);
   layout.host_eh_enabled = host_eh_enabled;
   layout.thread_local_globals = thread_local_globals;
+  layout.promoted_param_slots = collect_promoted_param_slots(function);
   layout.direct_branch_temps = collect_direct_branch_temps(function,
                                                            thread_local_globals);
   layout.elided_direct_branch_load_sources =
       collect_elided_direct_branch_loads(function,
                                          layout.direct_branch_temps,
+                                         layout.promoted_param_slots,
                                          thread_local_globals);
-  layout.promoted_param_slots = collect_promoted_param_slots(function);
   layout.aliased_param_slots = collect_aliased_object_param_slots(function);
   layout.dead_call_result_temps = collect_dead_call_result_temps(function);
   layout.direct_call_arg_index_temps =
