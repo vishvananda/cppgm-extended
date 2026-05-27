@@ -7513,9 +7513,12 @@ private:
             to_string(callsem_virtual_dispatch_view_offset(callee)));
   }
 
-  string host_num_put_bridge_iterator_bits_ptr(const string & iterator_arg_ptr)
+  string host_num_put_bridge_iterator_storage_ptr(const string & iterator_arg)
   {
-    return emit_temp_assignment("ptr", string("index i8 ") + iterator_arg_ptr + ", 8");
+    if(!iterator_arg.empty() && iterator_arg[0] == '$') {
+      return emit_storage_address(iterator_arg);
+    }
+    return iterator_arg;
   }
 
   void emit_call_expression_to_target_impl(const CallSemNode & node, const string & target_ptr)
@@ -7602,7 +7605,7 @@ private:
         note_runtime_bridge_support_symbol(host_num_put_bridge);
         vector<string> bridge_args = call_args;
         if(bridge_args.size() >= 2) {
-          bridge_args[1] = host_num_put_bridge_iterator_bits_ptr(bridge_args[1]);
+          bridge_args[1] = host_num_put_bridge_iterator_storage_ptr(bridge_args[1]);
         }
         ostringstream bridge_call;
         bridge_call << "call void @" << host_num_put_bridge << "(" << target_ptr;
@@ -7701,7 +7704,7 @@ private:
       note_runtime_bridge_support_symbol(host_num_put_bridge);
       vector<string> bridge_args = args;
       if(bridge_args.size() >= 3) {
-        bridge_args[2] = host_num_put_bridge_iterator_bits_ptr(bridge_args[2]);
+        bridge_args[2] = host_num_put_bridge_iterator_storage_ptr(bridge_args[2]);
       }
       op << "@" << host_num_put_bridge << "(";
       for(size_t i = 0; i < bridge_args.size(); ++i) {
@@ -7819,7 +7822,7 @@ private:
       note_runtime_bridge_support_symbol(host_num_put_bridge);
       vector<string> bridge_args = args;
       if(bridge_args.size() >= 3) {
-        bridge_args[2] = host_num_put_bridge_iterator_bits_ptr(bridge_args[2]);
+        bridge_args[2] = host_num_put_bridge_iterator_storage_ptr(bridge_args[2]);
       }
       op << "@" << host_num_put_bridge << "(";
       for(size_t i = 0; i < bridge_args.size(); ++i) {
@@ -8775,7 +8778,7 @@ private:
       const string result_slot = new_hidden_slot(raw_result_lowir_type, "numput");
       vector<string> bridge_args = args;
       if(bridge_args.size() >= 2) {
-        bridge_args[1] = host_num_put_bridge_iterator_bits_ptr(bridge_args[1]);
+        bridge_args[1] = host_num_put_bridge_iterator_storage_ptr(bridge_args[1]);
       }
       emit_line("call void @" + host_num_put_bridge + "(" +
                 emit_storage_address(result_slot) + ", " +
