@@ -39,6 +39,18 @@ enum AbiVendorQualifier
   ABI_VENDOR_QUALIFIER_ATOMIC
 };
 
+enum AbiStdSubstitution
+{
+  ABI_STD_SUBSTITUTION_NONE,
+  ABI_STD_SUBSTITUTION_STD,
+  ABI_STD_SUBSTITUTION_ALLOCATOR,
+  ABI_STD_SUBSTITUTION_BASIC_STRING,
+  ABI_STD_SUBSTITUTION_STRING,
+  ABI_STD_SUBSTITUTION_ISTREAM,
+  ABI_STD_SUBSTITUTION_OSTREAM,
+  ABI_STD_SUBSTITUTION_IOSTREAM
+};
+
 enum AbiExpressionOperator
 {
   ABI_EXPR_OP_INVALID,
@@ -52,6 +64,20 @@ enum AbiExpressionOperator
   ABI_EXPR_OP_DIVIDE,
   ABI_EXPR_OP_REMAINDER,
   ABI_EXPR_OP_EQUAL
+};
+
+enum AbiArrayBoundKind
+{
+  ABI_ARRAY_BOUND_NONE,
+  ABI_ARRAY_BOUND_INTEGER,
+  ABI_ARRAY_BOUND_EXPRESSION
+};
+
+struct AbiArrayBound
+{
+  AbiArrayBoundKind kind = ABI_ARRAY_BOUND_NONE;
+  unsigned long long integer_value = 0;
+  std::string expression_reference;
 };
 
 enum AbiTypeKind
@@ -86,10 +112,10 @@ struct AbiType
   AbiBuiltinType builtin_type = ABI_BUILTIN_INVALID;
   AbiVendorQualifier vendor_qualifier = ABI_VENDOR_QUALIFIER_NONE;
   std::string name;
-  std::string array_bound;
+  AbiArrayBound array_bound;
   std::size_t template_parameter_index = 0;
   bool substitutable_template_parameter = false;
-  std::string std_substitution;
+  AbiStdSubstitution std_substitution = ABI_STD_SUBSTITUTION_NONE;
   bool std_substitution_includes_template_arguments = false;
   std::string context_reference;
   std::string discriminator;
