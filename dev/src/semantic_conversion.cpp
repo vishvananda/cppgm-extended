@@ -535,19 +535,153 @@ void collect_conversion_function_names(SemanticContext & ctx,
   }
 }
 
+TypePtr conversion_function_result_type(FunctionBinding * binding)
+{
+  if(!binding) {
+    return TypePtr();
+  }
+  TypePtr function_type = strip_top_level_cv(binding->type);
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    function_type = strip_top_level_cv(binding->declared_type);
+  }
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    return TypePtr();
+  }
+  return function_type->inner;
+}
+
+bool conversion_result_type_seen(const vector<TypePtr> & seen,
+                                 const TypePtr & result_type)
+{
+  for(size_t i = 0; i < seen.size(); ++i) {
+    if(type_equals(seen[i], result_type)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+struct VisibleConversionFunctionGroup
+{
+  MemberFunctionLookupResult result;
+  TypePtr result_type;
+};
+
+void append_direct_conversion_function_groups(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    vector<VisibleConversionFunctionGroup> & out,
+    vector<TypePtr> & direct_result_types)
+{
+  set<FunctionBinding *> seen_bindings;
+  const auto append_binding = [&](FunctionBinding * binding)
+  {
+    if(!binding || !seen_bindings.insert(binding).second) {
+      return;
+    }
+    TypePtr result_type = conversion_function_result_type(binding);
+    if(!result_type) {
+      return;
+    }
+    MemberFunctionLookupResult result;
+    result.functions.push_back(binding);
+    result.declared_in = &info;
+    result.path_access = MA_PUBLIC;
+    result.path_offset = 0;
+
+    VisibleConversionFunctionGroup group;
+    group.result = result;
+    group.result_type = result_type;
+    out.push_back(group);
+    if(!conversion_result_type_seen(direct_result_types, result_type)) {
+      direct_result_types.push_back(result_type);
+    }
+  };
+
+  for(map<string, vector<FunctionBinding *> >::const_iterator it = info.methods.begin();
+      it != info.methods.end(); ++it) {
+    if(!ctx.is_conversion_function_name(it->first)) {
+      continue;
+    }
+    for(size_t i = 0; i < it->second.size(); ++i) {
+      append_binding(it->second[i]);
+    }
+  }
+
+  if(info.member_scope) {
+    for(map<string, vector<FunctionBinding *> >::const_iterator it =
+            info.member_scope->function_sets.begin();
+        it != info.member_scope->function_sets.end();
+        ++it) {
+      if(!ctx.is_conversion_function_name(it->first)) {
+        continue;
+      }
+      for(size_t i = 0; i < it->second.size(); ++i) {
+        append_binding(it->second[i]);
+      }
+    }
+  }
+}
+
+void collect_visible_conversion_function_groups(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    set<ClassInfo *> & visited,
+    set<ClassInfo *> & visited_virtual,
+    vector<VisibleConversionFunctionGroup> & out)
+{
+  if(!visited.insert(&info).second) {
+    return;
+  }
+
+  vector<TypePtr> direct_result_types;
+  append_direct_conversion_function_groups(ctx, info, out, direct_result_types);
+
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    BaseInfo & base = info.bases[i];
+    if(!base.type) {
+      continue;
+    }
+    if(base.is_virtual && !visited_virtual.insert(base.type).second) {
+      continue;
+    }
+
+    vector<VisibleConversionFunctionGroup> base_groups;
+    collect_visible_conversion_function_groups(ctx,
+                                               *base.type,
+                                               visited,
+                                               visited_virtual,
+                                               base_groups);
+    for(size_t j = 0; j < base_groups.size(); ++j) {
+      if(conversion_result_type_seen(direct_result_types,
+                                     base_groups[j].result_type)) {
+        continue;
+      }
+      base_groups[j].result.path_access =
+          combine_member_access(base.access, base_groups[j].result.path_access);
+      base_groups[j].result.path_offset += base.offset;
+      out.push_back(base_groups[j]);
+    }
+  }
+}
+
 vector<MemberFunctionLookupResult> collect_visible_conversion_functions(SemanticContext & ctx,
                                                                        ClassInfo & info)
 {
   set<ClassInfo *> visited;
   set<ClassInfo *> visited_virtual;
-  set<string> names;
-  collect_conversion_function_names(ctx, info, visited, visited_virtual, names);
+  vector<VisibleConversionFunctionGroup> groups;
+  collect_visible_conversion_function_groups(ctx,
+                                             info,
+                                             visited,
+                                             visited_virtual,
+                                             groups);
 
   vector<MemberFunctionLookupResult> out;
-  for(set<string>::const_iterator it = names.begin(); it != names.end(); ++it) {
-    MemberFunctionLookupResult visible = lookup_member_functions(info, *it);
-    if(!visible.functions.empty()) {
-      out.push_back(visible);
+  out.reserve(groups.size());
+  for(size_t i = 0; i < groups.size(); ++i) {
+    if(!groups[i].result.functions.empty()) {
+      out.push_back(groups[i].result);
     }
   }
   return out;

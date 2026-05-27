@@ -3981,6 +3981,15 @@ bool class_or_bases_have_conversion_functions(SemanticContext & ctx,
   }
 
   if(info.member_scope) {
+    for(map<string, vector<FunctionBinding *> >::const_iterator it =
+            info.member_scope->function_sets.begin();
+        it != info.member_scope->function_sets.end();
+        ++it) {
+      if(ctx.is_conversion_function_name(it->first) && !it->second.empty()) {
+        return true;
+      }
+    }
+
     for(map<string, vector<FunctionTemplateDecl *> >::const_iterator it =
             info.member_scope->function_templates.begin();
         it != info.member_scope->function_templates.end();
@@ -4026,6 +4035,15 @@ void collect_conversion_function_names_for_call(SemanticContext & ctx,
   }
 
   if(info.member_scope) {
+    for(map<string, vector<FunctionBinding *> >::const_iterator it =
+            info.member_scope->function_sets.begin();
+        it != info.member_scope->function_sets.end();
+        ++it) {
+      if(ctx.is_conversion_function_name(it->first) && !it->second.empty()) {
+        out.insert(it->first);
+      }
+    }
+
     for(map<string, vector<FunctionTemplateDecl *> >::const_iterator it =
             info.member_scope->function_templates.begin();
         it != info.member_scope->function_templates.end();
