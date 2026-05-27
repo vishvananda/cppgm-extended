@@ -1451,6 +1451,11 @@ size_t backend_storage_alignment(const TypePtr & type)
   return type_alignment(base);
 }
 
+size_t class_array_new_cookie_size(const TypePtr & element_type)
+{
+  return max<size_t>(8, backend_storage_alignment(element_type));
+}
+
 string storage_span_text(const TypePtr & type)
 {
   ostringstream out;
@@ -5860,12 +5865,36 @@ private:
     emit_line("call void " + dtor + "(" + object_ptr + ")");
   }
 
-  bool is_marked_scalar_delete_expression(const CallSemNode & node) const
+  bool is_operator_delete_array_callee(const CallSemNode & callee) const
+  {
+    const string lookup_name =
+        callsem_resolved_name(callee).empty() ? callee.text.str() :
+            callsem_resolved_name(callee);
+    if(lookup_name == "operator delete[]" || lookup_name == "operatordelete[]") {
+      return true;
+    }
+    const string & symbol = callsem_symbol(callee).internal_symbol;
+    return symbol.find("operator_delete_array") != string::npos;
+  }
+
+  bool is_marked_delete_expression(const CallSemNode & node) const
   {
     return node.kind == CallSemKind::call_expression &&
            callsem_has_token(node, KW_DELETE) &&
            node.children.size() == 2 &&
            node.children[0].kind == CallSemKind::callee;
+  }
+
+  bool is_marked_array_delete_expression(const CallSemNode & node) const
+  {
+    return is_marked_delete_expression(node) &&
+           is_operator_delete_array_callee(node.children[0]);
+  }
+
+  bool is_marked_scalar_delete_expression(const CallSemNode & node) const
+  {
+    return is_marked_delete_expression(node) &&
+           !is_operator_delete_array_callee(node.children[0]);
   }
 
   string emit_marked_scalar_delete_expression(const CallSemNode & node)
@@ -5932,6 +5961,85 @@ private:
                 delete_ptr + ")");
       terminate("jump " + lowir_block_name(end_label));
     }
+
+    start_block(end_label);
+    return "0";
+  }
+
+  string emit_marked_array_delete_expression(const CallSemNode & node)
+  {
+    if(!is_marked_array_delete_expression(node)) {
+      throw logic_error("expected marked array delete-expression");
+    }
+
+    TypePtr pointer_type =
+        strip_top_level_cv(remove_reference_type(node.children[1].semantic_type));
+    if(!pointer_type || pointer_type->kind != Type::TK_POINTER || !pointer_type->inner) {
+      throw logic_error("marked array delete-expression requires pointer operand");
+    }
+    TypePtr element_type = strip_top_level_cv(pointer_type->inner);
+    if(!element_type) {
+      throw logic_error("marked array delete-expression requires element type");
+    }
+
+    const string object_ptr = emit_rvalue(node.children[1]);
+    const string nonnull =
+        emit_temp_assignment("i64", string("cmp ne ptr ") + object_ptr + ", 0");
+    const string delete_label = new_block("array_delete_nonnull");
+    const string end_label = new_block("array_delete_end");
+    terminate("branch " + nonnull + ", " + lowir_block_name(delete_label) +
+              ", " + lowir_block_name(end_label));
+
+    start_block(delete_label);
+    const size_t cookie_size = class_array_new_cookie_size(element_type);
+    const string allocation_ptr =
+        emit_temp_assignment("ptr",
+                             string("index i8 ") + object_ptr + ", -" +
+                                 to_string(cookie_size));
+    const string element_count =
+        emit_temp_assignment("i64", string("load i64 ") + allocation_ptr);
+
+    const string dtor = destructor_symbol_for_runtime_call(element_type);
+    if(!dtor.empty()) {
+      const size_t element_size = backend_storage_size(element_type);
+      const string index_slot = new_hidden_slot("i64", "array_delete_index");
+      const string cond_label = new_block("array_delete_dtor_cond");
+      const string body_label = new_block("array_delete_dtor_body");
+      const string after_dtor_label = new_block("array_delete_dtor_end");
+
+      emit_line("store i64 " + element_count + ", " + index_slot);
+      terminate("jump " + lowir_block_name(cond_label));
+
+      start_block(cond_label);
+      const string index = emit_temp_assignment("i64", string("load i64 ") + index_slot);
+      const string keep_going =
+          emit_temp_assignment("i64", string("cmp ne i64 ") + index + ", 0");
+      terminate("branch " + keep_going + ", " + lowir_block_name(body_label) +
+                ", " + lowir_block_name(after_dtor_label));
+
+      start_block(body_label);
+      const string next =
+          emit_temp_assignment("i64", string("binary sub i64 ") + index + ", 1");
+      emit_line("store i64 " + next + ", " + index_slot);
+      string element_ptr = object_ptr;
+      if(element_size != 0) {
+        const string byte_offset =
+            emit_temp_assignment("i64",
+                                 string("binary mul i64 ") + next + ", " +
+                                     to_string(element_size));
+        element_ptr = emit_temp_assignment("ptr",
+                                           string("index i8 ") + object_ptr + ", " +
+                                               byte_offset);
+      }
+      emit_line("call void " + dtor + "(" + element_ptr + ")");
+      terminate("jump " + lowir_block_name(cond_label));
+
+      start_block(after_dtor_label);
+    }
+
+    emit_line("call void " + lookup_function_symbol(node.children[0]) + "(" +
+              allocation_ptr + ")");
+    terminate("jump " + lowir_block_name(end_label));
 
     start_block(end_label);
     return "0";
@@ -10265,6 +10373,41 @@ private:
     return node.children[0].children[1];
   }
 
+  size_t array_new_cookie_size(const CallSemNode & node) const
+  {
+    TypePtr result_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
+    if(!result_type || result_type->kind != Type::TK_POINTER || !result_type->inner) {
+      throw logic_error("class array new-expression requires pointer result");
+    }
+    return class_array_new_cookie_size(result_type->inner);
+  }
+
+  unsigned long long array_new_constant_object_byte_count(const CallSemNode & node) const
+  {
+    const CallSemNode & byte_count_node = array_new_allocation_byte_count_node(node);
+    if(!byte_count_node.has_uint_value) {
+      throw logic_error("array new value-init requires constant allocation size");
+    }
+    const size_t cookie_size = array_new_cookie_size(node);
+    const unsigned long long byte_count = callsem_uint_value(byte_count_node);
+    if(byte_count < cookie_size) {
+      throw logic_error("class array new-expression allocation smaller than cookie");
+    }
+    return byte_count - cookie_size;
+  }
+
+  string array_new_dynamic_object_byte_count(const CallSemNode & node,
+                                             const string & evaluated_byte_count)
+  {
+    const size_t cookie_size = array_new_cookie_size(node);
+    if(evaluated_byte_count.empty()) {
+      throw logic_error("class array new-expression dynamic size was not captured");
+    }
+    return emit_temp_assignment("i64",
+                                string("binary sub i64 ") + evaluated_byte_count +
+                                    ", " + to_string(cookie_size));
+  }
+
   void emit_array_new_value_initialization(const CallSemNode & node,
                                            const string & object_ptr,
                                            const string & evaluated_byte_count)
@@ -10278,6 +10421,20 @@ private:
     }
 
     const CallSemNode & byte_count_node = array_new_allocation_byte_count_node(node);
+    if(node.has_uint_value) {
+      if(byte_count_node.has_uint_value) {
+        const unsigned long long object_byte_count =
+            array_new_constant_object_byte_count(node);
+        if(object_byte_count != 0) {
+          emit_zero_storage_bytes(object_ptr, object_byte_count);
+        }
+        return;
+      }
+      emit_dynamic_zero_storage_bytes(
+          object_ptr,
+          array_new_dynamic_object_byte_count(node, evaluated_byte_count));
+      return;
+    }
     if(byte_count_node.has_uint_value) {
       const unsigned long long byte_count = callsem_uint_value(byte_count_node);
       if(byte_count != 0) {
@@ -10305,14 +10462,27 @@ private:
       return emit_temp_assignment(
           "i64",
           string("const i64 ") +
-              to_string(callsem_uint_value(byte_count_node) / element_size));
+              to_string(array_new_constant_object_byte_count(node) / element_size));
     }
-    if(evaluated_byte_count.empty()) {
-      throw logic_error("class array new-expression dynamic size was not captured");
-    }
+    const string object_byte_count =
+        array_new_dynamic_object_byte_count(node, evaluated_byte_count);
     return emit_temp_assignment("i64",
-                                string("binary udiv i64 ") + evaluated_byte_count +
+                                string("binary udiv i64 ") + object_byte_count +
                                     ", " + to_string(element_size));
+  }
+
+  string emit_array_new_cookie_object_pointer(const CallSemNode & node,
+                                              const string & allocation_ptr,
+                                              const string & evaluated_byte_count)
+  {
+    const size_t cookie_size = array_new_cookie_size(node);
+    const string object_ptr =
+        emit_temp_assignment("ptr",
+                             string("index i8 ") + allocation_ptr + ", " +
+                                 to_string(cookie_size));
+    const string element_count = array_new_element_count(node, evaluated_byte_count);
+    emit_line("store i64 " + element_count + ", " + allocation_ptr);
+    return object_ptr;
   }
 
   void emit_array_new_default_construction(const CallSemNode & node,
@@ -10444,7 +10614,7 @@ private:
     string object_ptr;
     const bool needs_array_byte_count_capture =
         (node.children.size() == 1 && node.value_initializes_result) ||
-        (node.has_uint_value && node.children.size() > 1);
+        node.has_uint_value;
     if(needs_array_byte_count_capture &&
        !array_new_allocation_byte_count_node(node).has_uint_value) {
       const string byte_count_slot = new_hidden_slot("i64", "array_new_size");
@@ -10459,13 +10629,26 @@ private:
       object_ptr = emit_rvalue(node.children[0]);
     }
     if(node.has_uint_value) {
-      string nothrow_end_label;
-      if(node.value_initializes_result || node.children.size() > 1) {
-        begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
+      const string allocation_ptr = object_ptr;
+      if(new_expression_allocation_is_known_nothrow(node)) {
+        const string result_slot = new_hidden_slot("ptr", "array_new_result");
+        emit_line("store ptr 0, " + result_slot);
+        string nothrow_end_label;
+        begin_nothrow_new_initialization(node, allocation_ptr, nothrow_end_label);
+        object_ptr = emit_array_new_cookie_object_pointer(node,
+                                                          allocation_ptr,
+                                                          captured_array_new_byte_count);
+        emit_line("store ptr " + object_ptr + ", " + result_slot);
+        emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
+        emit_array_new_default_construction(node, object_ptr, captured_array_new_byte_count);
+        finish_nothrow_new_initialization(nothrow_end_label);
+        return emit_temp_assignment("ptr", string("load ptr ") + result_slot);
       }
+      object_ptr = emit_array_new_cookie_object_pointer(node,
+                                                        allocation_ptr,
+                                                        captured_array_new_byte_count);
       emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
       emit_array_new_default_construction(node, object_ptr, captured_array_new_byte_count);
-      finish_nothrow_new_initialization(nothrow_end_label);
       return object_ptr;
     }
     if(node.children.size() == 1) {
@@ -11467,6 +11650,9 @@ private:
     if(node.kind == CallSemKind::call_expression) {
       if(node.children.empty()) {
         throw logic_error("call-expression missing callee");
+      }
+      if(is_marked_array_delete_expression(node)) {
+        return emit_marked_array_delete_expression(node);
       }
       if(is_marked_scalar_delete_expression(node)) {
         return emit_marked_scalar_delete_expression(node);

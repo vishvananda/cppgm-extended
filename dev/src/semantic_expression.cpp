@@ -1801,11 +1801,39 @@ const CppAstNode * find_new_array_bound_expression(const CppAstNode & type_id)
   return nullptr;
 }
 
+size_t class_array_new_cookie_size(const TypePtr & element_type)
+{
+  return max<size_t>(8, type_alignment(element_type));
+}
+
+CppAstNode add_new_array_cookie_size(CppAstNode size_expr,
+                                     size_t cookie_size)
+{
+  if(cookie_size == 0) {
+    return size_expr;
+  }
+
+  CppAstNode adjusted;
+  adjusted.kind = CppAstKind::binary_expression;
+  adjusted.value = "+";
+  adjusted.has_token = true;
+  adjusted.token_kind = RT_SIMPLE;
+  adjusted.simple_type = OP_PLUS;
+  adjusted.children.push_back(size_expr);
+
+  CppAstNode cookie;
+  cookie.kind = CppAstKind::literal;
+  cookie.value = to_string(cookie_size);
+  adjusted.children.push_back(cookie);
+  return adjusted;
+}
+
 CppAstNode build_new_array_size_expression(const CppAstNode & bound_expr,
-                                           size_t element_size)
+                                           size_t element_size,
+                                           size_t cookie_size)
 {
   if(element_size == 1) {
-    return bound_expr;
+    return add_new_array_cookie_size(bound_expr, cookie_size);
   }
 
   CppAstNode size_expr;
@@ -1820,7 +1848,7 @@ CppAstNode build_new_array_size_expression(const CppAstNode & bound_expr,
   factor.kind = CppAstKind::literal;
   factor.value = to_string(element_size);
   size_expr.children.push_back(factor);
-  return size_expr;
+  return add_new_array_cookie_size(size_expr, cookie_size);
 }
 
 bool parse_new_placement_argument_nodes(const CppAstNode & placement,
@@ -3207,6 +3235,10 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
     throw logic_error("function new-expression unsupported");
   }
   maybe_complete_layout_type(ctx, allocated_object_type);
+  ClassInfo * array_element_class =
+      is_array_new ? ctx.complete_class_type(allocated_object_type) : nullptr;
+  const size_t array_cookie_size =
+      array_element_class ? class_array_new_cookie_size(allocated_object_type) : 0;
 
   CppAstNode allocation_call;
   allocation_call.kind = CppAstKind::call_expression;
@@ -3223,10 +3255,13 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
     array_element_size = type_size(allocated_object_type);
     if(allocated_base->has_bound) {
       size_expr.kind = CppAstKind::literal;
-      size_expr.value = to_string(allocated_base->bound * array_element_size);
+      size_expr.value =
+          to_string(allocated_base->bound * array_element_size + array_cookie_size);
     } else {
       if(const CppAstNode * bound_expr = find_new_array_bound_expression(adjusted_type_id)) {
-        size_expr = build_new_array_size_expression(*bound_expr, array_element_size);
+        size_expr = build_new_array_size_expression(*bound_expr,
+                                                    array_element_size,
+                                                    array_cookie_size);
       } else {
         throw logic_error("array new-expression requires a bound");
       }
@@ -3274,16 +3309,11 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
     if((has_new_initializer || implied_empty_initializer) && !empty_value_initializer) {
       throw logic_error("array new-expression initializer unsupported");
     }
-    ClassInfo * element_class = ctx.complete_class_type(allocated_object_type);
+    ClassInfo * element_class = array_element_class;
     constructor_lifecycle_service::ConstructorSelectionResult array_ctor;
     bool array_constructor_required = false;
     bool class_array_zero_initializes = false;
     if(element_class) {
-      if(!semantic_class_model::is_trivially_destructible_type_for_host_abi(
-             ctx,
-             allocated_object_type)) {
-        throw logic_error("nontrivial class array new-expression unsupported");
-      }
       constructor_lifecycle_service::select_constructor_into(
           ctx,
           scope,
@@ -3437,10 +3467,13 @@ ExprInfo analyze_delete_expression(SemanticContext & ctx,
   call.children.push_back(arguments);
   ExprInfo result = ctx.analyze_call_expression(scope, call);
 
-  if(!is_array_delete) {
-    TypePtr pointee_type = strip_top_level_cv(pointer_type->inner);
-    if(ClassInfo * info = ctx.complete_class_type(pointee_type)) {
-      if(info->complete) {
+  TypePtr pointee_type = strip_top_level_cv(pointer_type->inner);
+  if(ClassInfo * info = ctx.complete_class_type(pointee_type)) {
+    if(info->complete) {
+      if(is_array_delete) {
+        result.node.has_token = true;
+        result.node.token_type = KW_DELETE;
+      } else {
         FunctionBinding * dtor = find_delete_destructor_binding(*info);
         if(dtor) {
           result.node.has_token = true;
