@@ -1788,13 +1788,23 @@ public:
                                                        parameter.name);
 
       if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
+        string placeholder_payload = parameter.placeholder_key;
+        static const char template_parameter_prefix[] = "template-parameter ";
+        if(placeholder_payload.compare(0,
+                                       sizeof(template_parameter_prefix) - 1,
+                                       template_parameter_prefix) == 0) {
+          placeholder_payload =
+              placeholder_payload.substr(sizeof(template_parameter_prefix) - 1);
+        }
         template_scope::bind_named_type(
             template_parameter_parse_scope,
             parameter.name,
-            make_named(string("typename ") + parameter.name,
-                       parameter.placeholder_key.empty() ? parameter.name :
-                                                           parameter.placeholder_key,
-                       true));
+            make_semantic_named(string("typename ") + parameter.name,
+                                Type::NSK_TEMPLATE_PARAMETER,
+                                placeholder_payload.empty() ?
+                                    parameter.name :
+                                    placeholder_payload,
+                                true));
         if(parameter.parameter_pack) {
           template_parameter_parse_scope.template_bound_type_pack_names.insert(parameter.name);
           template_scope::bump_binding_fingerprint_epoch(template_parameter_parse_scope);

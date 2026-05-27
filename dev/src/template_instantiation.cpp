@@ -2489,7 +2489,8 @@ void update_class_template_specialization_mangle_info(
     ClassInfo & info,
     const std::vector<TemplateArgument> & arguments,
     bool force_structured_mangling,
-    const std::vector<TemplateArgumentSyntax> * argument_syntaxes = nullptr)
+    const std::vector<TemplateArgumentSyntax> * argument_syntaxes = nullptr,
+    const std::vector<TemplateParameterInfo> * mangle_parameters = nullptr)
 {
   if(!info.type || !info.source_template || info.is_lambda_closure) {
     set_named_type_class_template_specialization_mangle_info(
@@ -2518,6 +2519,9 @@ void update_class_template_specialization_mangle_info(
     }
   }
   mangle_info->template_parameters = info.source_template->parameters;
+  if(mangle_parameters) {
+    mangle_info->mangle_parameters = *mangle_parameters;
+  }
   mangle_info->arguments = arguments;
   if(argument_syntaxes) {
     mangle_info->argument_syntaxes = *argument_syntaxes;
@@ -4659,7 +4663,9 @@ bool record_class_template_instantiation_state(
     bool suppress_implicit_instantiation_definition,
     bool dependent_arguments,
     const std::vector<std::string> * dependent_argument_texts,
-    const std::vector<TemplateArgumentSyntax> * dependent_argument_syntaxes)
+    const std::vector<TemplateArgumentSyntax> * dependent_argument_syntaxes,
+    const std::vector<TemplateParameterInfo> *
+        dependent_argument_mangle_parameters)
 {
   const bool existing_instantiation_metadata =
       !info.instantiation_key.empty() ||
@@ -4722,7 +4728,8 @@ bool record_class_template_instantiation_state(
       info,
       effective_arguments,
       template_arguments_contain_forced_structured_mangling(effective_arguments),
-      dependent_argument_syntaxes);
+      dependent_argument_syntaxes,
+      dependent_argument_mangle_parameters);
   update_class_template_dependent_type_metadata(
       ctx,
       info,

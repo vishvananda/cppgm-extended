@@ -87,7 +87,9 @@ bool record_class_template_instantiation_state(
     bool suppress_implicit_instantiation_definition,
     bool dependent_arguments,
     const std::vector<std::string> * dependent_argument_texts = nullptr,
-    const std::vector<cpp_decl::TemplateArgumentSyntax> * dependent_argument_syntaxes = nullptr);
+    const std::vector<cpp_decl::TemplateArgumentSyntax> * dependent_argument_syntaxes = nullptr,
+    const std::vector<template_model::TemplateParameterInfo> *
+        dependent_argument_mangle_parameters = nullptr);
 
 using ClassTemplateCompletionPlan = template_api::ClassTemplateCompletionPlan;
 using ClassTemplateUseInfo = template_api::ClassTemplateUseInfo;

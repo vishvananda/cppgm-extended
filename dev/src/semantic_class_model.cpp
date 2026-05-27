@@ -5346,6 +5346,9 @@ void reset_instantiated_class_info(ClassInfo & info,
                                    const std::string & template_name,
                                    const CppAstNode * output_node)
 {
+  const bool was_lambda_closure = info.is_lambda_closure;
+  std::shared_ptr<cpp_decl::Type::LambdaMangleMetadata> lambda_mangle =
+      info.type ? info.type->named_lambda_mangle : std::shared_ptr<cpp_decl::Type::LambdaMangleMetadata>();
   info.template_output_node = output_node;
   info.is_final = output_node && output_node->is_final_specifier;
   info.fields.clear();
@@ -5366,7 +5369,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.friend_class_names.clear();
   info.is_initializer_list = false;
   info.initializer_list_element_type = TypePtr();
-  info.is_lambda_closure = false;
+  info.is_lambda_closure = was_lambda_closure;
   info.is_explicit_specialization = false;
   info.has_own_vptr = false;
   info.nonvirtual_size = 0;
@@ -5378,7 +5381,11 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.type->named_alignment = 1;
   info.type->named_size = 0;
   info.type->named_is_empty = false;
-  info.type->named_lambda_mangle.reset();
+  if(was_lambda_closure || info.source_is_named_function_local_class) {
+    info.type->named_lambda_mangle = lambda_mangle;
+  } else {
+    info.type->named_lambda_mangle.reset();
+  }
 
   info.member_scope->named_types.clear();
   info.member_scope->named_type_packs.clear();
@@ -6673,12 +6680,27 @@ bool register_friend_function_template_binding(SemanticContext & ctx,
           continue;
         }
         if(parameter.kind == template_model::TemplateParameterInfo::TP_TYPE) {
+          std::string placeholder_payload = parameter.placeholder_key;
+          static const char template_parameter_prefix[] =
+              "template-parameter ";
+          if(placeholder_payload.compare(
+                 0,
+                 sizeof(template_parameter_prefix) - 1,
+                 template_parameter_prefix) == 0) {
+            placeholder_payload =
+                placeholder_payload.substr(
+                    sizeof(template_parameter_prefix) - 1);
+          }
           semantic_scope_mutation::ensure_template_named_type(
               canonical_scope,
               parameter.name,
-              make_named(std::string("typename ") + parameter.name,
-                         parameter.placeholder_key,
-                         true));
+              make_semantic_named(
+                  std::string("typename ") + parameter.name,
+                  Type::NSK_TEMPLATE_PARAMETER,
+                  placeholder_payload.empty() ?
+                      parameter.name :
+                      placeholder_payload,
+                  true));
         } else if(parameter.kind == template_model::TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
           semantic_scope_mutation::bind_template_template_parameter(canonical_scope,
                                                                     parameter.name,

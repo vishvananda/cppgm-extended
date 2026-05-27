@@ -75,6 +75,7 @@ struct FunctionSymbolOptions
   bool suppress_template_argument_pack_grouping = false;
   const semantic_model::Scope * lookup_scope = nullptr;
   cpp_decl::TypePtr lambda_closure_type;
+  cpp_decl::TypePtr local_class_type;
 };
 
 std::shared_ptr<void> make_lambda_context_function_symbol_options(

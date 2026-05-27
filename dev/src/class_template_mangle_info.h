@@ -15,6 +15,7 @@ struct ClassTemplateSpecializationMangleInfo
   std::string template_scope_prefix;
   std::string template_name;
   std::vector<template_model::TemplateParameterInfo> template_parameters;
+  std::vector<template_model::TemplateParameterInfo> mangle_parameters;
   std::vector<template_model::TemplateArgument> arguments;
   std::vector<TemplateArgumentSyntax> argument_syntaxes;
   std::map<std::string, std::size_t> pack_sizes;
