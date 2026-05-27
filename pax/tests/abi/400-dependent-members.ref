@@ -1,0 +1,6 @@
+case dependent_rebind_other
+mangled NT_6rebindIT0_E5otherE
+case dependent_alias_type_id
+mangled DTsrT_E4typeE
+case dependent_owner_member_template
+mangled N2ns5OuterIT_E8IteratorIT0_EE

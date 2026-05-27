@@ -25,6 +25,41 @@ object emission, and runtime behavior. The source integration mode prevents
 students from passing a standalone DSL while their compiler still lacks a
 usable semantic-to-ABI-name bridge.
 
+The checked-in standalone tests use a line-oriented fact form. Simple cases are
+one line, such as `function ::ns::f int` or `type ptr:const:int`. Structured
+cases introduce named facts before the result:
+
+```text
+case dependent_rebind
+let-type T template-param 0
+let-type U template-param 1
+let-arg U_arg type U
+let-type Rebind member-template T rebind U_arg
+type member Rebind other
+```
+
+`let-type` names canonical ABI types, `let-arg` names template arguments, and
+`let-expr` names dependent expressions. `let-context` names a typed enclosing
+function context for local classes and lambdas, and `let-entity` names an ABI
+entity that can be used by entity-valued template arguments. Result lines are
+`type ...` or `function ...`, with optional `param ...` lines for function
+parameter types. Operator terminals use semantic names such as `operator-call`,
+not Itanium terminal spellings. This keeps the standalone tests as normalized
+ABI facts instead of source code or direct calls into an implementation-specific
+mangler API.
+
+The scaffold exposes the text format as `AbiFactFile`, `AbiFactCase`, and
+`AbiFactLine` records in `abi_mangle.h`. `parse_fact_text` reads the line
+format into those records, and `serialize_fact_file` writes the same normalized
+format back out. The reference tool round-trips parsed facts through the
+serializer before mangling, so the text form and the C++ representation stay in
+sync.
+
+The standalone ABI tests are numbered from simpler names toward more complete
+ABI situations: `100-*` covers basic names and types, `200-*` local entities,
+`300-*` entity-valued template arguments, `400-*` dependent member types,
+`500-*` dependent expressions, and `600-*` nested template owner contexts.
+
 PAX does not require producing relocatable objects, linking, or executing
 programs.
 
