@@ -79,8 +79,8 @@ The refactor is intentionally staged:
      emission onto the ABI records.
    - `abimangle` and future `cppgm++ --emit-abi-names` should call this same
      encoder.
-   - The old `itanium_mangle_ir` layer can then be reduced to implementation
-     helpers or removed from the fact tool entirely.
+   - The old `itanium_mangle_ir` layer should not remain as a second production
+     ABI path.
 
 6. Optimize ownership once the representation is direct.
    - Store resolved records in vectors and pass compact IDs or const
@@ -90,11 +90,11 @@ The refactor is intentionally staged:
      needs the original object.
 
 7. Migrate production compiler callers incrementally.
-   - First add semantic-to-ABI-model builders beside the existing
-     `symbol_linkage` lowering path.
+   - Move semantic-to-ABI-model builders into the existing `symbol_linkage`
+     lowering path.
    - Compare outputs for focused PA31/PA32 cases.
-   - Then switch symbol generation to the ABI model and delete the duplicate
-     direct `itanium_mangle_ir` construction.
+   - Keep symbol generation on the ABI model; missing production cases should
+     be treated as ABI model gaps.
 
 The implementation slice in this branch makes `abimangle` encode from the ABI
 fact records directly, replacing stringly builtin, vendor qualifier,
@@ -112,8 +112,12 @@ The standalone `abimangle` target is now intentionally narrow: it links only
 the ABI naming layer and the CLI entrypoint. It does not depend on the parser,
 recognizer, tokenizer, semantic model, or host runtime helpers.
 
-The larger `symbol_linkage` migration should be done as follow-up slices so
-each semantic mangling regression remains bisectable.
+The production `symbol_linkage` path has been moved onto `dev/src/abi_model.h`
+in the `abi_mangle` namespace. The legacy `itanium_mangle_ir.h` header was
+removed so production ABI names cannot continue through a separate
+Itanium-specific IR. The remaining validation gap is serialization: the
+standalone fact surface should keep expanding until every production
+`abi_model.h` fact needed by `symbol_linkage` can be expressed in paX tests.
 
 ### Step 1: Standalone ABI Model
 
@@ -122,7 +126,7 @@ Add a small typed ABI naming library under `dev/src/`, likely split as:
 - `abi_name_model.{h,cpp}` for `AbiEntity`, `AbiType`, `AbiTemplateParam`,
   `AbiTemplateArg`, and context records
 - `abi_fact_parser.{h,cpp}` for the normalized fact input
-- `itanium_abi_mangler.{h,cpp}` for encoding and substitution-table behavior
+- `abi_model.{h,cpp}` for encoding and substitution-table behavior
 - `abimangle.cpp` as the standalone assignment tool
 
 The first tests should use fact files only and cover ordinary names, builtin
