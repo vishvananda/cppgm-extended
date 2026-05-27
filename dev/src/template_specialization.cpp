@@ -1739,6 +1739,200 @@ const TemplateParameterInfo * direct_template_parameter_from_argument_syntax(
   return nullptr;
 }
 
+const TemplateIdSyntax * template_argument_template_id_syntax(
+    const TemplateArgumentSyntax & syntax)
+{
+  if(syntax.template_id) {
+    return syntax.template_id.get();
+  }
+  if(syntax.type_id) {
+    return cppast_template_id_syntax(*syntax.type_id);
+  }
+  return nullptr;
+}
+
+bool template_argument_syntax_is_pack_expansion(
+    const TemplateIdSyntax & syntax,
+    std::size_t index)
+{
+  if(index < syntax.argument_syntaxes.size() &&
+     syntax.argument_syntaxes[index].pack_expansion) {
+    return true;
+  }
+  if(index < syntax.arguments.size()) {
+    std::string element;
+    return strip_trailing_pack_ellipsis(syntax.arguments[index], element);
+  }
+  return false;
+}
+
+bool template_id_trailing_pack_suffix(
+    const TemplateIdSyntax & syntax,
+    std::size_t & fixed_count)
+{
+  fixed_count = syntax.arguments.size();
+  bool seen_pack = false;
+  for(std::size_t i = 0; i < syntax.arguments.size(); ++i) {
+    if(template_argument_syntax_is_pack_expansion(syntax, i)) {
+      if(!seen_pack) {
+        fixed_count = i;
+        seen_pack = true;
+      }
+      continue;
+    }
+    if(seen_pack) {
+      return false;
+    }
+  }
+  return seen_pack;
+}
+
+bool template_parameters_have_direct_template_template_parameter(
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(parameters[i].kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+       !parameters[i].parameter_pack) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename PartialDecl>
+bool partial_arguments_may_have_pack_expansion(const PartialDecl & partial)
+{
+  for(std::size_t i = 0; i < partial.arg_texts.size(); ++i) {
+    if(partial.arg_texts[i].find("...") != std::string::npos) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < partial.arg_syntaxes.size(); ++i) {
+    const TemplateArgumentSyntax & syntax = partial.arg_syntaxes[i];
+    if(syntax.pack_expansion ||
+       syntax.text.find("...") != std::string::npos ||
+       syntax.source_text.find("...") != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool template_id_fixed_prefix_patterns_compatible(
+    const std::vector<TemplateParameterInfo> & current_parameters,
+    const TemplateIdSyntax & current,
+    const std::vector<TemplateParameterInfo> & best_parameters,
+    const TemplateIdSyntax & best,
+    std::size_t prefix_count)
+{
+  if(current.arguments.size() < prefix_count ||
+     best.arguments.size() < prefix_count) {
+    return false;
+  }
+  for(std::size_t i = 0; i < prefix_count; ++i) {
+    const TemplateArgumentSyntax * current_syntax =
+        i < current.argument_syntaxes.size() ? &current.argument_syntaxes[i] : nullptr;
+    const TemplateArgumentSyntax * best_syntax =
+        i < best.argument_syntaxes.size() ? &best.argument_syntaxes[i] : nullptr;
+    const TemplateParameterInfo * current_direct =
+        current_syntax ?
+            direct_template_parameter_from_argument_syntax(current_parameters,
+                                                          *current_syntax) :
+            nullptr;
+    const TemplateParameterInfo * best_direct =
+        best_syntax ?
+            direct_template_parameter_from_argument_syntax(best_parameters,
+                                                          *best_syntax) :
+            nullptr;
+    if(current_direct || best_direct) {
+      if(!current_direct || !best_direct ||
+         current_direct->kind != best_direct->kind ||
+         current_direct->parameter_pack != best_direct->parameter_pack) {
+        return false;
+      }
+      continue;
+    }
+
+    if(trim_space(current.arguments[i]) != trim_space(best.arguments[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename PartialDecl>
+int compare_template_id_trailing_pack_specificity(const PartialDecl & current,
+                                                  const PartialDecl & best)
+{
+  if(current.arg_syntaxes.empty() || best.arg_syntaxes.empty()) {
+    return 0;
+  }
+  if(!template_parameters_have_direct_template_template_parameter(current.parameters) ||
+     !template_parameters_have_direct_template_template_parameter(best.parameters) ||
+     (!partial_arguments_may_have_pack_expansion(current) &&
+      !partial_arguments_may_have_pack_expansion(best))) {
+    return 0;
+  }
+  int preference = 0;
+  const std::size_t limit =
+      std::min(current.arg_syntaxes.size(), best.arg_syntaxes.size());
+  for(std::size_t i = 0; i < limit; ++i) {
+    const TemplateIdSyntax * current_id =
+        template_argument_template_id_syntax(current.arg_syntaxes[i]);
+    const TemplateIdSyntax * best_id =
+        template_argument_template_id_syntax(best.arg_syntaxes[i]);
+    if(!current_id || !best_id) {
+      continue;
+    }
+
+    TemplateIdHeadPattern current_head;
+    TemplateIdHeadPattern best_head;
+    if(!template_id_syntax_head_pattern(current.parameters,
+                                        *current_id,
+                                        current_head) ||
+       !template_id_syntax_head_pattern(best.parameters,
+                                        *best_id,
+                                        best_head) ||
+       !current_head.direct_template_template_parameter ||
+       !best_head.direct_template_template_parameter) {
+      continue;
+    }
+
+    std::size_t current_fixed = 0;
+    std::size_t best_fixed = 0;
+    const bool current_has_pack =
+        template_id_trailing_pack_suffix(*current_id, current_fixed);
+    const bool best_has_pack =
+        template_id_trailing_pack_suffix(*best_id, best_fixed);
+    int argument_preference = 0;
+    if(!current_has_pack && best_has_pack &&
+       current_id->arguments.size() == best_fixed &&
+       template_id_fixed_prefix_patterns_compatible(current.parameters,
+                                                    *current_id,
+                                                    best.parameters,
+                                                    *best_id,
+                                                    best_fixed)) {
+      argument_preference = -1;
+    } else if(!best_has_pack && current_has_pack &&
+              best_id->arguments.size() == current_fixed &&
+              template_id_fixed_prefix_patterns_compatible(current.parameters,
+                                                           *current_id,
+                                                           best.parameters,
+                                                           *best_id,
+                                                           current_fixed)) {
+      argument_preference = 1;
+    }
+    if(argument_preference == 0) {
+      continue;
+    }
+    if(preference != 0 && preference != argument_preference) {
+      return 0;
+    }
+    preference = argument_preference;
+  }
+  return preference;
+}
+
 struct TemplateParameterPatternOccurrence
 {
   std::string path;
@@ -5530,6 +5724,11 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
     if(template_id_head_specificity != 0) {
       return template_id_head_specificity;
     }
+    const int template_id_pack_specificity =
+        compare_template_id_trailing_pack_specificity(current, best);
+    if(template_id_pack_specificity != 0) {
+      return template_id_pack_specificity;
+    }
     return compare_repeated_template_parameter_constraint_specificity(current, best);
   }
 
@@ -5573,6 +5772,11 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
       compare_template_id_head_specificity(current, best);
   if(template_id_head_specificity != 0) {
     return template_id_head_specificity;
+  }
+  const int template_id_pack_specificity =
+      compare_template_id_trailing_pack_specificity(current, best);
+  if(template_id_pack_specificity != 0) {
+    return template_id_pack_specificity;
   }
   const int repeated_parameter_specificity =
       compare_repeated_template_parameter_constraint_specificity(current, best);
