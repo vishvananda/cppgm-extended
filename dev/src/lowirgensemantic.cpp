@@ -11747,6 +11747,15 @@ private:
           emit_rvalue(node.children[2]);
           return value;
         }
+        if(builtin_name == "__builtin_prefetch") {
+          if(node.children.size() < 2 || node.children.size() > 4) {
+            throw logic_error("__builtin_prefetch child count");
+          }
+          for(size_t i = 1; i < node.children.size(); ++i) {
+            emit_rvalue(node.children[i]);
+          }
+          return "0";
+        }
         if(builtin_name == "__builtin_is_constant_evaluated") {
           if(node.children.size() != 1) {
             throw logic_error("__builtin_is_constant_evaluated child count");

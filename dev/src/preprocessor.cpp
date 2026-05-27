@@ -764,6 +764,7 @@ bool is_supported_builtin_name(const string & name)
          name == "__builtin_invoke" ||
          name == "__builtin_offsetof" ||
          name == "__builtin_expect" ||
+         name == "__builtin_prefetch" ||
          name == "__builtin_assume_aligned" ||
          name == "__builtin_fabsf" ||
          name == "__builtin_fabs" ||

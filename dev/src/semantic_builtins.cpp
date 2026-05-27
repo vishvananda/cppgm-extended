@@ -2175,6 +2175,13 @@ void register_builtin_functions(Scope & scope,
   add_builtin("__builtin_strlen", size_type, std::vector<TypePtr>(1, const_char_ptr));
   add_builtin("__builtin_alloca", void_ptr, std::vector<TypePtr>{size_type});
   add_builtin("__builtin_expect", long_type, std::vector<TypePtr>{long_type, long_type});
+  add_builtin("__builtin_prefetch", make_fundamental(FT_VOID), std::vector<TypePtr>{const_void_ptr});
+  add_builtin("__builtin_prefetch",
+              make_fundamental(FT_VOID),
+              std::vector<TypePtr>{const_void_ptr, int_type});
+  add_builtin("__builtin_prefetch",
+              make_fundamental(FT_VOID),
+              std::vector<TypePtr>{const_void_ptr, int_type, int_type});
   add_builtin("__builtin_assume_aligned",
               void_ptr,
               std::vector<TypePtr>{const_void_ptr, size_type});
