@@ -519,6 +519,81 @@ bool supports_zero_offset_static_reference_downcast(SemanticContext & ctx,
          offset == 0;
 }
 
+bool top_level_cv_compatible_for_direct_reference_cast(const TypePtr & target,
+                                                       const TypePtr & source)
+{
+  TypePtr target_base;
+  TypePtr source_base;
+  bool target_const = false;
+  bool target_volatile = false;
+  bool source_const = false;
+  bool source_volatile = false;
+  return top_level_cv_flags(target, target_base, target_const, target_volatile) &&
+         top_level_cv_flags(source, source_base, source_const, source_volatile) &&
+         !(source_const && !target_const) &&
+         !(source_volatile && !target_volatile);
+}
+
+bool direct_static_reference_cast_preserves_object(SemanticContext & ctx,
+                                                   Scope & scope,
+                                                   const TypePtr & target_type,
+                                                   const ExprInfo & operand)
+{
+  TypePtr target_base = strip_top_level_cv(target_type);
+  if(!target_base ||
+     (target_base->kind != Type::TK_LVALUE_REFERENCE &&
+      target_base->kind != Type::TK_RVALUE_REFERENCE)) {
+    return false;
+  }
+  if(target_base->kind == Type::TK_LVALUE_REFERENCE &&
+     operand.category != VC_LVALUE) {
+    return false;
+  }
+
+  TypePtr target_object_type = target_base->inner;
+  TypePtr operand_object_type = remove_reference_type(operand.type);
+  if(!target_object_type || !operand_object_type) {
+    return false;
+  }
+
+  TypePtr normalized_target_object_type = target_object_type;
+  TypePtr normalized_operand_object_type = operand_object_type;
+  TypePtr resolved_object_type;
+  if(semantic_dependent_type::resolve_instantiated_dependent_type(
+         ctx, scope, target_object_type, resolved_object_type) &&
+     resolved_object_type) {
+    normalized_target_object_type = resolved_object_type;
+  }
+  if(semantic_dependent_type::resolve_instantiated_dependent_type(
+         ctx, scope, operand_object_type, resolved_object_type) &&
+     resolved_object_type) {
+    normalized_operand_object_type = resolved_object_type;
+  }
+
+  if(same_type_with_compatible_top_cv(target_object_type, operand_object_type) ||
+     same_type_with_compatible_top_cv(normalized_target_object_type,
+                                      normalized_operand_object_type)) {
+    return true;
+  }
+
+  TypePtr target_unqualified_object_type =
+      strip_top_level_cv(normalized_target_object_type);
+  TypePtr operand_unqualified_object_type =
+      strip_top_level_cv(normalized_operand_object_type);
+  ClassInfo * target_object_class =
+      target_unqualified_object_type
+          ? ctx.class_info_for_type(target_unqualified_object_type)
+          : nullptr;
+  ClassInfo * operand_object_class =
+      operand_unqualified_object_type
+          ? ctx.class_info_for_type(operand_unqualified_object_type)
+          : nullptr;
+  return target_object_class &&
+         target_object_class == operand_object_class &&
+         top_level_cv_compatible_for_direct_reference_cast(
+             normalized_target_object_type, normalized_operand_object_type);
+}
+
 bool try_apply_static_reference_base_cast(SemanticContext & ctx,
                                           const TypePtr & target_type,
                                           const ExprInfo & operand,
@@ -6918,6 +6993,9 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
   }
 
   ExprInfo operand = ctx.analyze_expression(scope, node.children[1]);
+  const bool direct_static_class_reference_cast =
+      node.simple_type == KW_STATIC_CAST &&
+      direct_static_reference_cast_preserves_object(ctx, scope, target_type, operand);
   const TypePtr reinterpret_reference_target =
       node.simple_type == KW_REINTERPET_CAST ?
           strip_top_level_cv(remove_reference_type(target_type)) :
@@ -6956,7 +7034,7 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
         cast_target_object_type &&
         (ctx.class_info_for_type(cast_target_object_type) ||
          complete_class_type_for_lookup(ctx, cast_target_object_type));
-    if(explicit_class_reference_target) {
+    if(explicit_class_reference_target && !direct_static_class_reference_cast) {
       ExprInfo converted;
       ConversionRank conversion_rank = CR_BAD;
       if(ctx.try_argument_conversion(scope,
