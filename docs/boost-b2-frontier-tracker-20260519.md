@@ -195,7 +195,7 @@ rebased Boost frontier branch.
   check against
   `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
   passes (instructions `+0.18%`, RSS `+0.49%`, footprint `+1.36%`).
-- this commit: repaired the Boost.Bind `apply_rv_test` /
+- `3e805a2e6`: repaired the Boost.Bind `apply_rv_test` /
   `apply_rv_test2` compile frontier. Forwarding function lvalues through
   Boost.Bind deduced argument types such as `F & (&)()`, and libc++'s
   `std::tuple<A&...>` constructor SFINAE asked
@@ -216,6 +216,29 @@ rebased Boost frontier branch.
   passes and updates 303 targets; perf check against
   `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
   passes (instructions `+0.26%`, RSS `+1.16%`, footprint `+1.35%`).
+- this commit: repaired the first Boost.Bloom compile frontier. Qualified
+  array type template arguments such as `std::uint32_t[4]` were recognized
+  neither as direct qualified type-ids nor as dependent expressions by the
+  template-argument fragment classifier, so the structured `type_id` syntax was
+  dropped before explicit type-argument resolution and strict fallback auditing
+  stopped in `filter_core::next_element`. The parser now treats `[]` after a
+  non-template qualified type name as type syntax, preserving structured type
+  resolution without adding a source-text reparse path. Validation: no-STL
+  reducers
+  `/tmp/cppgm-boost-reducers-20260526/qualified_array_type_template_arg_tiny.cpp`,
+  `/tmp/cppgm-boost-reducers-20260526/nested_qualified_array_type_template_arg.cpp`,
+  and `/tmp/cppgm-boost-reducers-20260526/bloom_array_type_arg_min.cpp` compile;
+  PA18 regression
+  `100-qualified-array-type-template-argument.t` passes; PA18 placement audit
+  passes with `--fail-on-early`; PA18 report passes `168/168`; PA18
+  direct-LowIR report passes `168/168`; full strict direct-LowIR compare
+  passes; full direct-LowIR report passes `3107/3107`; focused Boost
+  `libs/bloom/test//test_bulk_operations` and full `libs/bloom/test` advance to
+  the next frontier, `invalid array braced-init-list` in
+  `boost::mp11::detail::mp_for_each_impl`, with 9 compile targets still
+  failing; perf check against
+  `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
+  passes (instructions `+0.26%`, RSS `+1.98%`, footprint `+1.40%`).
 
 Local Boost wrapper state:
 
@@ -276,6 +299,7 @@ Local Boost wrapper state:
 | 10 | `libs/beast/test` | pass | `JOBS=12 ./run-cppgm-b2.sh -a libs/beast/test` passed on 2026-05-26 from the current tree; B2 found 1 already-current target. Log `/tmp/boost-frontier-beast-current-20260526.log`. |
 | 11 | `libs/bimap/test` | pass | `test_bimap_range` now passes after the floating logical-branch fix, the Boost.Serialization `basic_iarchive.o` / `basic_oarchive.o` dependency objects now compile after the parenthesized member-callee fix, the explicit-instantiation object-root fix closes the missing archive weak symbols, `test_bimap_serialization` links and runs after the hosted `std::ostream&` virtual-base layout fix, and the two Xpressive frontiers are fixed. The final expected-fail bookkeeping issue was actually CPPGM accepting `test_bimap_info_1`, `test_bimap_mutable_1`, and `test_bimap_mutable_2`; inherited const-object overload selection now rejects those compile-fail probes. Full `JOBS=12 ./run-cppgm-b2.sh -a libs/bimap/test` passed on 2026-05-26 and updated 205 targets; log `/tmp/boost-bimap-full-after-inherited-cv.log`. |
 | 12 | `libs/bind/test` | pass | Full `JOBS=12 ./run-cppgm-b2.sh -a libs/bind/test` passed on 2026-05-26 and updated 303 targets. The remaining `apply_rv_test` / `apply_rv_test2` frontier closed after structural `__is_constructible` started treating function-reference targets as references; earlier Bind fixes closed overloaded logical operators, data-member pointer prvalue-object lowering, member-function pointer cv-qualified type mangling, typed member-function pointer source-argument metadata, same-object rvalue-reference casts, `nullptr_t` null constant ranking, and function-pointer by-value rvalue argument move-constructor output. |
+| 13 | `libs/bloom/test` | failing | Full `JOBS=12 ./run-cppgm-b2.sh -a libs/bloom/test` after the qualified array type-argument parser fix updated 4 targets: `test_boost_bloom_hpp` passes, and the remaining 9 compile targets now fail at `invalid array braced-init-list` in `boost::mp11::detail::mp_for_each_impl` while expanding the Bloom test type list. The earlier strict fallback on `std::uint32_t[4]` in `filter_core::next_element` is closed. |
 
 ## Survey Regression Triage - 2026-05-25
 
