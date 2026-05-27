@@ -5451,6 +5451,16 @@ private:
         return found;
       }
     }
+    if(class_scope.class_info && class_scope.class_info->enclosing_scope) {
+      for(const Scope * current = class_scope.class_info->enclosing_scope;
+          current;
+          current = current->parent) {
+        TypePtr found = lookup_scope_and_inline_children(*current);
+        if(found) {
+          return found;
+        }
+      }
+    }
     return TypePtr();
   }
 
@@ -5581,12 +5591,19 @@ private:
                                 const CppAstNode * class_node = nullptr) override
   {
     callsemantic::TypeRegistryState state = type_registry_state();
-    return callsemantic::create_class_info(state,
-                                           type_registry_callbacks(),
-                                           scope,
-                                           class_kind,
-                                           name,
-                                           class_node);
+    ClassInfo * info =
+        callsemantic::create_class_info(state,
+                                        type_registry_callbacks(),
+                                        scope,
+                                        class_kind,
+                                        name,
+                                        class_node);
+    if(info &&
+       info->source_is_named_function_local_class &&
+       !info->is_lambda_closure) {
+      assign_local_class_itanium_metadata(*info, scope, name);
+    }
+    return info;
   }
 
   bool resolve_declared_class_scope_and_name(Scope & scope,
@@ -6417,6 +6434,13 @@ private:
             if(direct_alias) {
               return direct_alias;
             }
+          }
+          TypePtr enclosing =
+              lookup_enclosing_type_before_reference_placeholder(
+                  *current,
+                  normalized_name);
+          if(enclosing) {
+            return enclosing;
           }
           return make_named(normalized_name,
                             "dependent alias " +
@@ -14429,12 +14453,26 @@ private:
         if(placeholder_scope) {
           if(info.kind == TemplateParameterInfo::TP_TYPE) {
             if(!info.name.empty()) {
+              string placeholder_payload = info.placeholder_key;
+              static const char template_parameter_prefix[] =
+                  "template-parameter ";
+              if(placeholder_payload.compare(
+                     0,
+                     sizeof(template_parameter_prefix) - 1,
+                     template_parameter_prefix) == 0) {
+                placeholder_payload =
+                    placeholder_payload.substr(
+                        sizeof(template_parameter_prefix) - 1);
+              }
               template_scope::bind_named_type(
                   *placeholder_scope,
                   info.name,
-                  make_named(string("typename ") + info.name,
-                             info.placeholder_key,
-                             true));
+                  make_semantic_named(string("typename ") + info.name,
+                                      Type::NSK_TEMPLATE_PARAMETER,
+                                      placeholder_payload.empty() ?
+                                          info.name :
+                                          placeholder_payload,
+                                      true));
               if(info.parameter_pack) {
                 placeholder_scope->template_bound_type_pack_names.insert(info.name);
                 template_scope::bump_binding_fingerprint_epoch(*placeholder_scope);
@@ -14561,9 +14599,10 @@ private:
           template_scope::bind_named_type(
               placeholder_scope,
               name,
-              make_named(string("typename ") + name,
-                         string("template-parameter ") + name,
-                         true));
+              make_semantic_named(string("typename ") + name,
+                                  Type::NSK_TEMPLATE_PARAMETER,
+                                  name,
+                                  true));
           if(find_child_kind(parameter, CppAstKind::parameter_pack)) {
             placeholder_scope.template_bound_type_pack_names.insert(name);
             template_scope::bump_binding_fingerprint_epoch(placeholder_scope);
@@ -25589,6 +25628,56 @@ private:
     }
   }
 
+  void assign_local_class_itanium_metadata(ClassInfo & info,
+                                           Scope & scope,
+                                           const string & source_name)
+  {
+    FunctionBinding * current = current_function_scope(scope);
+    if(!current || !current->type || !info.type) {
+      return;
+    }
+
+    QualifiedName qualified_name_syntax;
+    if(!function_binding_qualified_name_syntax_for_symbol(*current,
+                                                          qualified_name_syntax)) {
+      return;
+    }
+
+    const FunctionTemplateRegistrationIdentity template_identity =
+        function_template_registration_identity(*current);
+    symbol_linkage::FunctionSymbolOptions context_options;
+    populate_function_symbol_options(
+        context_options,
+        current->is_method,
+        current->is_const_method,
+        current->is_volatile_method,
+        current->ref_qualifier,
+        current->is_constructor,
+        current->is_destructor,
+        template_identity,
+        current->owner_class,
+        current->declaration_scope,
+        current->declaration_node,
+        current->definition_node);
+    if(!current->instantiation_pack_sizes.empty()) {
+      context_options.template_argument_pack_sizes =
+          &current->instantiation_pack_sizes;
+    }
+    context_options.abi_tags = function_binding_abi_tags(*current);
+
+    shared_ptr<Type::LambdaMangleMetadata> metadata(
+        new Type::LambdaMangleMetadata);
+    metadata->context_function_qualified_name = qualified_name_syntax;
+    metadata->context_function_display_name =
+        function_binding_display_name_for_symbol(*current);
+    metadata->context_function_type = current->type;
+    metadata->context_function_symbol_options =
+        symbol_linkage::make_lambda_context_function_symbol_options(
+            context_options);
+    metadata->local_source_name = source_name;
+    info.type->named_lambda_mangle = metadata;
+  }
+
   SyntheticLambdaKey make_synthetic_lambda_key(Scope & scope, const CppAstNode & node) const
   {
     SyntheticLambdaKey key;
@@ -26058,12 +26147,13 @@ private:
       }
       initialize_function_template_parameter_aliases(*decl);
       snapshot_function_template_debug_info(*this, *decl);
-      semantic_lookup::direct_function_template_slot(*info->member_scope, decl->name)
-          .push_back(decl.get());
-      function_templates.push_back(std::move(decl));
+	      semantic_lookup::direct_function_template_slot(*info->member_scope, decl->name)
+	          .push_back(decl.get());
+	      function_templates.push_back(std::move(decl));
 
-      ensure_implicit_special_members(*info);
-      finalize_class_virtuals(*info);
+	      assign_lambda_itanium_metadata(*info, scope, params);
+	      ensure_implicit_special_members(*info);
+	      finalize_class_virtuals(*info);
       finalize_class_layout(*info);
       info->reference_members_collected = true;
       return info;

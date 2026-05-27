@@ -1626,7 +1626,9 @@ bool record_class_template_instantiation_state(
     bool suppress_implicit_instantiation_definition,
     bool dependent_arguments,
     const std::vector<std::string> * dependent_argument_texts,
-    const std::vector<cpp_decl::TemplateArgumentSyntax> * dependent_argument_syntaxes)
+    const std::vector<cpp_decl::TemplateArgumentSyntax> * dependent_argument_syntaxes,
+    const std::vector<template_model::TemplateParameterInfo> *
+        dependent_argument_mangle_parameters)
 {
   return template_instantiation::record_class_template_instantiation_state(
       ctx,
@@ -1637,7 +1639,8 @@ bool record_class_template_instantiation_state(
       suppress_implicit_instantiation_definition,
       dependent_arguments,
       dependent_argument_texts,
-      dependent_argument_syntaxes);
+      dependent_argument_syntaxes,
+      dependent_argument_mangle_parameters);
 }
 
 bool refresh_forward_class_template_selection(SemanticContext & ctx,
@@ -2092,6 +2095,11 @@ void apply_function_template_symbol_options(
      owner_class->type) {
     options.lambda_closure_type = owner_class->type;
   }
+  if(owner_class &&
+     owner_class->source_is_named_function_local_class &&
+     owner_class->type) {
+    options.local_class_type = owner_class->type;
+  }
   const std::vector<template_model::TemplateParameterInfo> *
       nearest_owner_parameters = nullptr;
   const std::vector<template_model::TemplateArgument> *
@@ -2106,44 +2114,61 @@ void apply_function_template_symbol_options(
       current = current->enclosing_scope ? current->enclosing_scope->class_info : nullptr) {
     const semantic_model::ClassTemplateDecl * component_template = nullptr;
     const std::vector<template_model::TemplateArgument> * component_arguments = nullptr;
+    const std::vector<template_model::TemplateParameterInfo> *
+        component_mangle_parameters = nullptr;
+    const std::vector<cpp_decl::TemplateArgumentSyntax> *
+        component_argument_syntaxes = nullptr;
+    std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
+        specialization =
+            cpp_decl::named_type_class_template_specialization_mangle_info_const(
+                current->type);
     if(current->source_template &&
        !current->instantiation_arguments.empty()) {
       component_template = current->source_template;
       component_arguments = &current->instantiation_arguments;
-    } else {
-      std::shared_ptr<const cpp_decl::ClassTemplateSpecializationMangleInfo>
-          specialization =
-              cpp_decl::named_type_class_template_specialization_mangle_info_const(
-                  current->type);
-      if(specialization &&
-         specialization->class_template_decl) {
-        component_template =
-            static_cast<const semantic_model::ClassTemplateDecl *>(
-                specialization->class_template_decl);
-        component_arguments = &specialization->arguments;
+    } else if(specialization &&
+              specialization->class_template_decl) {
+      component_template =
+          static_cast<const semantic_model::ClassTemplateDecl *>(
+              specialization->class_template_decl);
+      component_arguments = &specialization->arguments;
+    }
+    if(specialization && component_arguments) {
+      if(!specialization->mangle_parameters.empty()) {
+        component_mangle_parameters = &specialization->mangle_parameters;
+      }
+      if(specialization->argument_syntaxes.size() == component_arguments->size()) {
+        component_argument_syntaxes = &specialization->argument_syntaxes;
       }
     }
     if(component_template && component_arguments) {
       const semantic_model::PartialClassTemplateSpecializationDecl *
           selected_partial = selected_partial_log_decl(current);
+      const bool selected_partial_has_argument_syntaxes =
+          selected_partial &&
+          selected_partial->arg_syntaxes.size() == component_arguments->size();
+      const std::vector<template_model::TemplateParameterInfo> *
+          effective_mangle_parameters =
+              selected_partial_has_argument_syntaxes ?
+                  &selected_partial->parameters :
+                  component_mangle_parameters;
+      const std::vector<cpp_decl::TemplateArgumentSyntax> *
+          effective_argument_syntaxes =
+              selected_partial_has_argument_syntaxes ?
+                  &selected_partial->arg_syntaxes :
+                  component_argument_syntaxes;
       if(!nearest_owner_parameters) {
         nearest_owner_parameters = &component_template->parameters;
         nearest_owner_arguments = component_arguments;
         nearest_owner_template_name = component_template->name;
-        if(selected_partial &&
-           selected_partial->arg_syntaxes.size() == component_arguments->size()) {
-          nearest_owner_mangle_parameters = &selected_partial->parameters;
-        }
+        nearest_owner_mangle_parameters = effective_mangle_parameters;
       }
       symbol_linkage::FunctionSymbolOptions::OwnerTemplateComponent component;
       component.template_name = component_template->name;
       component.parameters = &component_template->parameters;
       component.arguments = component_arguments;
-      if(selected_partial &&
-         selected_partial->arg_syntaxes.size() == component_arguments->size()) {
-        component.mangle_parameters = &selected_partial->parameters;
-        component.argument_syntaxes = &selected_partial->arg_syntaxes;
-      }
+      component.mangle_parameters = effective_mangle_parameters;
+      component.argument_syntaxes = effective_argument_syntaxes;
       owner_components.push_back(component);
     }
   }
@@ -2188,11 +2213,17 @@ void apply_function_binding_template_symbol_options(
     symbol_linkage::FunctionSymbolOptions & options)
 {
   const bool has_arguments = !binding.instantiation_arguments.empty();
+  const semantic_model::ClassInfo * owner_class = binding.owner_class;
+  if(!owner_class &&
+     binding.declaration_scope &&
+     binding.declaration_scope->class_info) {
+    owner_class = binding.declaration_scope->class_info;
+  }
   apply_function_template_symbol_options(
       binding.source_template,
       has_arguments ? &binding.instantiation_arguments : nullptr,
       has_arguments,
-      binding.owner_class,
+      owner_class,
       binding.is_constructor,
       binding.is_destructor,
       options);

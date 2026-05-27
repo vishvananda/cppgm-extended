@@ -919,6 +919,7 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
         }
         out.kind = TemplateArgument::TA_VALUE;
         out.type = target_type;
+        out.value_binding = binding;
         out.value = encoded_offset;
         out.text.clear();
         out.dependent = false;

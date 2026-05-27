@@ -908,6 +908,7 @@ struct DependentExpression
     EK_OBJECT_MEMBER,
     EK_UNARY,
     EK_BINARY,
+    EK_CONDITIONAL,
     EK_PACK_EXPANSION,
     EK_CALL,
     EK_CONVERSION,
@@ -1020,6 +1021,18 @@ struct DependentExpression
     expression.op_code = op_code;
     expression.inner.reset(new DependentExpression(left));
     expression.arguments.push_back(right);
+    return expression;
+  }
+
+  static DependentExpression conditional(const DependentExpression & condition,
+                                         const DependentExpression & true_expr,
+                                         const DependentExpression & false_expr)
+  {
+    DependentExpression expression;
+    expression.kind = EK_CONDITIONAL;
+    expression.inner.reset(new DependentExpression(condition));
+    expression.arguments.push_back(true_expr);
+    expression.arguments.push_back(false_expr);
     return expression;
   }
 
@@ -1179,6 +1192,7 @@ struct FunctionEncoding
   std::string name_fragment;
   std::vector<FunctionNameComponent> name_components;
   std::string terminal_fragment;
+  std::string terminal_source_name;
   Type conversion_type;
   bool has_conversion_type = false;
   std::vector<TemplateArgument> template_arguments;
@@ -1240,6 +1254,40 @@ inline bool make_class_template_argument_substitution_key(
 inline bool make_dependent_expression_substitution_key(
     const DependentExpression & expression,
     SubstitutionKey & out);
+
+inline bool make_lambda_closure_substitution_key(
+    const std::string & context_fragment,
+    const std::string & source_name,
+    const std::vector<Type> & signature_parameter_types,
+    const std::string & discriminator,
+    SubstitutionKey & out)
+{
+  if(context_fragment.empty()) {
+    return false;
+  }
+  std::string payload = std::string("lambda-closure:") + context_fragment + ":";
+  if(!source_name.empty()) {
+    payload += "source:";
+    payload += source_name;
+  } else {
+    payload += "signature:";
+    for(std::size_t i = 0; i < signature_parameter_types.size(); ++i) {
+      SubstitutionKey parameter_key;
+      if(!make_type_substitution_key(signature_parameter_types[i],
+                                     parameter_key)) {
+        return false;
+      }
+      if(i != 0) {
+        payload += ',';
+      }
+      payload += parameter_key.structural_text();
+    }
+  }
+  payload += ":discriminator:";
+  payload += discriminator;
+  out = SubstitutionKey::type(payload);
+  return true;
+}
 
 inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
 {
@@ -1418,7 +1466,15 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     }
 
   case Type::TK_LAMBDA_CLOSURE:
-    return false;
+    if(!type.lambda) {
+      return false;
+    }
+    return make_lambda_closure_substitution_key(
+        type.lambda->context_fragment,
+        type.lambda->source_name,
+        type.params,
+        type.lambda->discriminator,
+        out);
 
   case Type::TK_INVALID:
     return false;
@@ -1831,6 +1887,30 @@ inline bool make_dependent_expression_substitution_key(
       out = SubstitutionKey::template_argument_value(
           std::string("expr-binary:") + expression.op_code + ":" +
           left_key.structural_text() + ":" + right_key.structural_text());
+      return true;
+    }
+
+  case DependentExpression::EK_CONDITIONAL:
+    if(!expression.inner || expression.arguments.size() != 2) {
+      return false;
+    }
+    {
+      SubstitutionKey condition_key;
+      SubstitutionKey true_key;
+      SubstitutionKey false_key;
+      if(!make_dependent_expression_substitution_key(*expression.inner,
+                                                     condition_key) ||
+         !make_dependent_expression_substitution_key(expression.arguments[0],
+                                                     true_key) ||
+         !make_dependent_expression_substitution_key(expression.arguments[1],
+                                                     false_key)) {
+        return false;
+      }
+      out = SubstitutionKey::template_argument_value(
+          std::string("expr-conditional:") +
+          condition_key.structural_text() + ":" +
+          true_key.structural_text() + ":" +
+          false_key.structural_text());
       return true;
     }
 
@@ -3455,6 +3535,15 @@ inline bool emit_dependent_expression_body(const DependentExpression & expressio
     return emit_dependent_expression_body(*expression.inner, out, sink) &&
            emit_dependent_expression_body(expression.arguments[0], out, sink);
 
+  case DependentExpression::EK_CONDITIONAL:
+    if(!expression.inner || expression.arguments.size() != 2) {
+      return false;
+    }
+    out += "qu";
+    return emit_dependent_expression_body(*expression.inner, out, sink) &&
+           emit_dependent_expression_body(expression.arguments[0], out, sink) &&
+           emit_dependent_expression_body(expression.arguments[1], out, sink);
+
   case DependentExpression::EK_PACK_EXPANSION:
     if(!expression.inner) {
       return false;
@@ -3722,7 +3811,6 @@ inline bool emit_function_name(const FunctionEncoding & function,
     register_lambda_context_substitutions(
         lambda.context_substitution_slots,
         sink);
-    const std::size_t signature_begin = out.size();
     if(!lambda.source_name.empty()) {
       if(!emit_source_name(lambda.source_name, out)) {
         return false;
@@ -3747,13 +3835,30 @@ inline bool emit_function_name(const FunctionEncoding & function,
       out += '_';
     }
     if(sink) {
-      sink->register_substitution(
-          SubstitutionKey::type(
-              std::string("lambda-closure:") +
-              lambda.context_fragment +
-              out.substr(signature_begin)));
+      SubstitutionKey lambda_key;
+      if(!make_lambda_closure_substitution_key(lambda.context_fragment,
+                                               lambda.source_name,
+                                               lambda.signature_parameter_types,
+                                               lambda.discriminator,
+                                               lambda_key)) {
+        return false;
+      }
+      sink->register_substitution(lambda_key);
     }
-    out += "cl";
+    if(function.has_conversion_type) {
+      out += "cv";
+      if(!emit_type(function.conversion_type, out, nullptr)) {
+        return false;
+      }
+    } else if(!function.terminal_source_name.empty()) {
+      if(!emit_source_name(function.terminal_source_name, out)) {
+        return false;
+      }
+    } else {
+      out += function.terminal_fragment.empty() ?
+          std::string("cl") :
+          function.terminal_fragment;
+    }
     emit_abi_tags(function.abi_tags, out);
     if(!function.template_arguments.empty()) {
       if(sink && !function.template_prefix_key.empty()) {

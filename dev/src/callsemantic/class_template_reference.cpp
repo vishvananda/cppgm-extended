@@ -828,6 +828,31 @@ public:
     return false;
   }
 
+  const vector<TemplateParameterInfo> *
+  enclosing_source_template_parameters_for_argument_mangling(
+      Scope & scope,
+      const std::vector<TemplateArgumentSyntax> * syntaxes)
+  {
+    if(!syntaxes ||
+       !template_argument_syntaxes_mention_source_template_context(scope,
+                                                                  syntaxes)) {
+      return nullptr;
+    }
+    for(Scope * current = &scope; current; current = current->parent) {
+      if(current->function &&
+         current->function->source_template &&
+         !current->function->source_template->parameters.empty()) {
+        return &current->function->source_template->parameters;
+      }
+      if(current->class_info &&
+         current->class_info->source_template &&
+         !current->class_info->source_template->parameters.empty()) {
+        return &current->class_info->source_template->parameters;
+      }
+    }
+    return nullptr;
+  }
+
   bool template_argument_syntaxes_mention_current_specialization_member(
       Scope & scope,
       const std::vector<TemplateArgumentSyntax> * syntaxes)
@@ -1683,6 +1708,13 @@ public:
        specialization.argument_syntaxes->size() == arguments.size()) {
       source_arg_syntaxes = specialization.argument_syntaxes;
     }
+    const vector<TemplateParameterInfo> *
+        dependent_argument_mangle_parameters =
+            dependent_arguments ?
+                enclosing_source_template_parameters_for_argument_mangling(
+                    use_scope,
+                    source_arg_syntaxes) :
+                nullptr;
 
     const CppAstNode * class_key = find_child_kind(*class_node, CppAstKind::class_key);
     if(!class_key) {
@@ -2822,7 +2854,8 @@ public:
                   decl.suppress_implicit_instantiation_definitions.end(),
               dependent_arguments,
               dependent_arguments ? source_arg_texts : nullptr,
-              dependent_arguments ? source_arg_syntaxes : nullptr);
+              dependent_arguments ? source_arg_syntaxes : nullptr,
+              dependent_argument_mangle_parameters);
       if(needs_instantiation_argument_refresh) {
         note_performance_counter(
             &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);
@@ -2883,7 +2916,8 @@ public:
                 decl.suppress_implicit_instantiation_definitions.end(),
             dependent_arguments,
             dependent_arguments ? source_arg_texts : nullptr,
-            dependent_arguments ? source_arg_syntaxes : nullptr);
+            dependent_arguments ? source_arg_syntaxes : nullptr,
+            dependent_argument_mangle_parameters);
     if(refreshed_instantiation_arguments) {
       note_performance_counter(
           &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);
