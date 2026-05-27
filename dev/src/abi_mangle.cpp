@@ -389,6 +389,18 @@ AbiType parse_single_type_token(const string & text)
     out.child_types.push_back(parse_single_type_token(rest.substr(pos + 1)));
     return out;
   }
+  if(starts_with(text, "transform:")) {
+    const string rest = text.substr(10);
+    const size_t pos = rest.find(':');
+    if(pos == string::npos || pos == 0 || pos + 1 >= rest.size()) {
+      throw logic_error("builtin transform type requires transform:<name>:<operand>");
+    }
+    AbiType out;
+    out.kind = ABI_TYPE_BUILTIN_TYPE_TRANSFORM;
+    out.name = rest.substr(0, pos);
+    out.child_types.push_back(parse_single_type_token(rest.substr(pos + 1)));
+    return out;
+  }
   if(starts_with(text, "array:")) {
     const string rest = text.substr(6);
     const size_t pos = rest.find(':');
@@ -484,13 +496,27 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
     out.child_types.push_back(parse_single_type_token(words[begin + 2]));
     return out;
   }
-  if(kind == "function-type") {
+  if(kind == "transform" || kind == "builtin-transform") {
+    if(begin + 3 != words.size()) {
+      throw logic_error("builtin-transform type requires name and operand");
+    }
+    out.kind = ABI_TYPE_BUILTIN_TYPE_TRANSFORM;
+    out.name = words[begin + 1];
+    out.child_types.push_back(parse_single_type_token(words[begin + 2]));
+    return out;
+  }
+  if(kind == "function-type" || kind == "function-type-variadic") {
     if(begin + 2 >= words.size()) {
       throw logic_error("function-type requires a result type");
     }
     out.kind = ABI_TYPE_FUNCTION;
+    out.variadic = kind == "function-type-variadic";
     for(size_t i = begin + 1; i < words.size(); ++i) {
-      out.child_types.push_back(parse_single_type_token(words[i]));
+      if(words[i] == "variadic" || words[i] == "varargs") {
+        out.variadic = true;
+      } else {
+        out.child_types.push_back(parse_single_type_token(words[i]));
+      }
     }
     return out;
   }
@@ -515,6 +541,17 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
     }
     out.kind = ABI_TYPE_CLASS_TEMPLATE;
     out.name = words[begin + 1];
+    out.template_argument_references.assign(words.begin() + begin + 2,
+                                            words.end());
+    return out;
+  }
+  if(kind == "template-param-template") {
+    if(begin + 3 > words.size()) {
+      throw logic_error(
+          "template-param-template type requires index and template arguments");
+    }
+    out.kind = ABI_TYPE_TEMPLATE_PARAMETER_CLASS_TEMPLATE;
+    out.template_parameter_index = parse_index(words[begin + 1]);
     out.template_argument_references.assign(words.begin() + begin + 2,
                                             words.end());
     return out;
@@ -599,6 +636,12 @@ AbiFunctionTerminal terminal_from_fact_word(const string & word)
   if(word == "operator-assign") {
     return ABI_FUNCTION_TERMINAL_OPERATOR_ASSIGN;
   }
+  if(word == "operator-code") {
+    return ABI_FUNCTION_TERMINAL_OPERATOR_CODE;
+  }
+  if(word == "conversion") {
+    return ABI_FUNCTION_TERMINAL_CONVERSION;
+  }
   if(word == "constructor-complete") {
     return ABI_FUNCTION_TERMINAL_CONSTRUCTOR_COMPLETE;
   }
@@ -626,6 +669,10 @@ string terminal_word_from_fact_terminal(AbiFunctionTerminal terminal)
     return "operator-call";
   case ABI_FUNCTION_TERMINAL_OPERATOR_ASSIGN:
     return "operator-assign";
+  case ABI_FUNCTION_TERMINAL_OPERATOR_CODE:
+    return "operator-code";
+  case ABI_FUNCTION_TERMINAL_CONVERSION:
+    return "conversion";
   case ABI_FUNCTION_TERMINAL_CONSTRUCTOR_COMPLETE:
     return "constructor-complete";
   case ABI_FUNCTION_TERMINAL_CONSTRUCTOR_BASE:
@@ -656,7 +703,8 @@ bool single_type_token(const AbiType & type, string & token)
   case ABI_TYPE_RVALUE_REFERENCE:
   case ABI_TYPE_CONST:
   case ABI_TYPE_VOLATILE:
-  case ABI_TYPE_VENDOR_QUALIFIED: {
+  case ABI_TYPE_VENDOR_QUALIFIED:
+  case ABI_TYPE_BUILTIN_TYPE_TRANSFORM: {
     if(type.child_types.size() != 1) {
       return false;
     }
@@ -674,7 +722,7 @@ bool single_type_token(const AbiType & type, string & token)
       token = "const:" + child;
     } else if(type.kind == ABI_TYPE_VOLATILE) {
       token = "volatile:" + child;
-    } else {
+    } else if(type.kind == ABI_TYPE_VENDOR_QUALIFIED) {
       string qualifier = type.name;
       if(qualifier.empty() &&
          type.vendor_qualifier == ABI_VENDOR_QUALIFIER_ATOMIC) {
@@ -684,6 +732,11 @@ bool single_type_token(const AbiType & type, string & token)
         return false;
       }
       token = "vendor:" + qualifier + ":" + child;
+    } else {
+      if(type.name.empty()) {
+        return false;
+      }
+      token = "transform:" + type.name + ":" + child;
     }
     return true;
   }
@@ -761,8 +814,13 @@ void append_type_spec_words(vector<string> & words, const AbiType & type)
     words.push_back(type.name);
     append_single_type_token(words, type.child_types[0]);
     break;
+  case ABI_TYPE_BUILTIN_TYPE_TRANSFORM:
+    words.push_back("builtin-transform");
+    words.push_back(type.name);
+    append_single_type_token(words, type.child_types[0]);
+    break;
   case ABI_TYPE_FUNCTION:
-    words.push_back("function-type");
+    words.push_back(type.variadic ? "function-type-variadic" : "function-type");
     for(size_t i = 0; i < type.child_types.size(); ++i) {
       append_single_type_token(words, type.child_types[i]);
     }
@@ -770,6 +828,13 @@ void append_type_spec_words(vector<string> & words, const AbiType & type)
   case ABI_TYPE_CLASS_TEMPLATE:
     words.push_back("template");
     words.push_back(type.name);
+    words.insert(words.end(),
+                 type.template_argument_references.begin(),
+                 type.template_argument_references.end());
+    break;
+  case ABI_TYPE_TEMPLATE_PARAMETER_CLASS_TEMPLATE:
+    words.push_back("template-param-template");
+    words.push_back(to_string(type.template_parameter_index));
     words.insert(words.end(),
                  type.template_argument_references.begin(),
                  type.template_argument_references.end());
@@ -835,7 +900,11 @@ AbiFunctionPath parse_function_path(const vector<string> & words,
     i += 2;
   }
   for(; i < words.size(); ++i) {
-    out.parameter_types.push_back(parse_single_type_token(words[i]));
+    if(words[i] == "variadic" || words[i] == "varargs") {
+      out.variadic = true;
+    } else {
+      out.parameter_types.push_back(parse_single_type_token(words[i]));
+    }
   }
   return out;
 }
@@ -862,6 +931,19 @@ AbiTemplateArg parse_template_argument_fact(
     out.integer_value = parse_signed_integer(words[4]);
     return out;
   }
+  if(kind == "dependent-value") {
+    if(words.size() != 6) {
+      throw logic_error(
+          "dependent-value template argument requires parameter type, value type or -, and integer");
+    }
+    out.kind = ABI_TEMPLATE_ARG_DEPENDENT_INTEGRAL_VALUE;
+    out.parameter_type = parse_single_type_token(words[3]);
+    if(words[4] != "-") {
+      out.type = parse_single_type_token(words[4]);
+    }
+    out.integer_value = parse_signed_integer(words[5]);
+    return out;
+  }
   if(kind == "untyped-value") {
     if(words.size() != 4) {
       throw logic_error("untyped-value template argument requires an integer");
@@ -876,6 +958,53 @@ AbiTemplateArg parse_template_argument_fact(
     }
     out.kind = ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION;
     out.expression_reference = words[3];
+    return out;
+  }
+  if(kind == "template-entity") {
+    if(words.size() != 4) {
+      throw logic_error("template-entity template argument requires a qualified name");
+    }
+    out.kind = ABI_TEMPLATE_ARG_TEMPLATE_ENTITY;
+    out.entity_reference = words[3];
+    return out;
+  }
+  if(kind == "template-param-template") {
+    if(words.size() != 4) {
+      throw logic_error(
+          "template-param-template template argument requires one index");
+    }
+    out.kind = ABI_TEMPLATE_ARG_TEMPLATE_PARAMETER_ENTITY;
+    out.template_parameter_index = parse_index(words[3]);
+    return out;
+  }
+  if(kind == "external-address" || kind == "external-reference") {
+    if(words.size() != 4) {
+      throw logic_error(kind + " template argument requires a raw symbol");
+    }
+    out.kind = ABI_TEMPLATE_ARG_EXTERNAL_ENTITY;
+    out.address_of = kind == "external-address";
+    out.symbol = words[3];
+    return out;
+  }
+  if(kind == "member-external-address" || kind == "member-external-reference") {
+    if(words.size() < 12) {
+      throw logic_error(
+          kind + " template argument requires symbol, owner, member, function flag, cv/ref flags, variadic flag, and optional parameters");
+    }
+    out.kind = ABI_TEMPLATE_ARG_MEMBER_EXTERNAL_ENTITY;
+    out.address_of = kind == "member-external-address";
+    out.symbol = words[3];
+    out.owner_type = parse_single_type_token(words[4]);
+    out.member_name = words[5];
+    out.member_is_function = boolean_word(words[6]);
+    out.member_function_const = boolean_word(words[7]);
+    out.member_function_volatile = boolean_word(words[8]);
+    out.member_function_lvalue_ref = boolean_word(words[9]);
+    out.member_function_rvalue_ref = boolean_word(words[10]);
+    out.member_function_variadic = boolean_word(words[11]);
+    for(size_t i = 12; i < words.size(); ++i) {
+      out.parameter_types.push_back(parse_single_type_token(words[i]));
+    }
     return out;
   }
   if(kind == "entity-address" || kind == "entity-reference") {
@@ -939,6 +1068,13 @@ string word_from_expression_operator(AbiExpressionOperator op)
   throw logic_error("unknown ABI expression operator");
 }
 
+string expression_operator_code(const AbiDependentExpr & expr)
+{
+  return expr.expression_operator_code.empty() ?
+      word_from_expression_operator(expr.expression_operator) :
+      expr.expression_operator_code;
+}
+
 AbiDependentExpr parse_expression_fact(const vector<string> & words)
 {
   if(words.size() < 4) {
@@ -970,15 +1106,22 @@ AbiDependentExpr parse_expression_fact(const vector<string> & words)
     out.literal = words[3];
     return out;
   }
+  if(kind == "integral-value") {
+    if(words.size() != 5) {
+      throw logic_error("integral-value expression requires type and integer");
+    }
+    out.kind = ABI_EXPR_INTEGRAL_VALUE;
+    out.value_type = parse_single_type_token(words[3]);
+    out.literal = words[4];
+    return out;
+  }
   if(kind == "unary") {
     if(words.size() != 5) {
       throw logic_error("unary expression requires operator and operand");
     }
     out.kind = ABI_EXPR_UNARY;
     out.expression_operator = expression_operator_from_word(words[3]);
-    if(out.expression_operator == ABI_EXPR_OP_INVALID) {
-      throw logic_error("unknown unary expression operator '" + words[3] + "'");
-    }
+    out.expression_operator_code = words[3];
     out.first_reference = words[4];
     return out;
   }
@@ -988,9 +1131,7 @@ AbiDependentExpr parse_expression_fact(const vector<string> & words)
     }
     out.kind = ABI_EXPR_BINARY;
     out.expression_operator = expression_operator_from_word(words[3]);
-    if(out.expression_operator == ABI_EXPR_OP_INVALID) {
-      throw logic_error("unknown binary expression operator '" + words[3] + "'");
-    }
+    out.expression_operator_code = words[3];
     out.first_reference = words[4];
     out.second_reference = words[5];
     return out;
@@ -1006,14 +1147,104 @@ AbiDependentExpr parse_expression_fact(const vector<string> & words)
     out.third_reference = words[5];
     return out;
   }
-  if(kind == "member") {
+  if(kind == "pack") {
+    if(words.size() != 4) {
+      throw logic_error("pack expression requires one operand");
+    }
+    out.kind = ABI_EXPR_PACK_EXPANSION;
+    out.first_reference = words[3];
+    return out;
+  }
+  if(kind == "call") {
+    if(words.size() < 4) {
+      throw logic_error("call expression requires callee and optional arguments");
+    }
+    out.kind = ABI_EXPR_CALL;
+    out.first_reference = words[3];
+    out.argument_references.assign(words.begin() + 4, words.end());
+    return out;
+  }
+  if(kind == "conversion") {
+    if(words.size() < 4) {
+      throw logic_error("conversion expression requires type and optional arguments");
+    }
+    out.kind = ABI_EXPR_CONVERSION;
+    out.expression_operator_code = "cv";
+    out.owner_type = parse_single_type_token(words[3]);
+    out.argument_references.assign(words.begin() + 4, words.end());
+    return out;
+  }
+  if(kind == "cast") {
     if(words.size() != 6) {
-      throw logic_error("member expression requires owner type, close flag, name");
+      throw logic_error("cast expression requires operator, type, and operand");
+    }
+    out.kind = ABI_EXPR_CONVERSION;
+    out.expression_operator_code = words[3];
+    out.owner_type = parse_single_type_token(words[4]);
+    out.argument_references.push_back(words[5]);
+    return out;
+  }
+  if(kind == "template-id") {
+    if(words.size() < 4) {
+      throw logic_error("template-id expression requires name and arguments");
+    }
+    out.kind = ABI_EXPR_TEMPLATE_ID;
+    out.member_name = words[3];
+    out.template_argument_references.assign(words.begin() + 4, words.end());
+    return out;
+  }
+  if(kind == "type-trait") {
+    if(words.size() < 4) {
+      throw logic_error("type-trait expression requires name and type operands");
+    }
+    out.kind = ABI_EXPR_TYPE_TRAIT;
+    out.member_name = words[3];
+    for(size_t i = 4; i < words.size(); ++i) {
+      out.type_arguments.push_back(parse_single_type_token(words[i]));
+    }
+    return out;
+  }
+  if(kind == "sizeof-type") {
+    if(words.size() != 4) {
+      throw logic_error("sizeof-type expression requires one type");
+    }
+    out.kind = ABI_EXPR_SIZEOF_TYPE;
+    out.owner_type = parse_single_type_token(words[3]);
+    return out;
+  }
+  if(kind == "member") {
+    if(words.size() < 6) {
+      throw logic_error(
+          "member expression requires owner type, close flag, name, and optional template arguments");
     }
     out.kind = ABI_EXPR_MEMBER;
     out.owner_type = parse_single_type_token(words[3]);
     out.close_template_arguments = boolean_word(words[4]);
     out.member_name = words[5];
+    if(words.size() > 6) {
+      out.template_argument_references.assign(words.begin() + 6, words.end());
+    }
+    return out;
+  }
+  if(kind == "object-member") {
+    if(words.size() < 6) {
+      throw logic_error(
+          "object-member expression requires operator, object, member name, and optional template arguments");
+    }
+    out.kind = ABI_EXPR_OBJECT_MEMBER;
+    out.expression_operator_code = words[3];
+    out.first_reference = words[4];
+    out.member_name = words[5];
+    out.template_argument_references.assign(words.begin() + 6, words.end());
+    return out;
+  }
+  if(kind == "external-address" || kind == "external-reference") {
+    if(words.size() != 4) {
+      throw logic_error(kind + " expression requires one raw symbol");
+    }
+    out.kind = ABI_EXPR_EXTERNAL_ENTITY;
+    out.address_of = kind == "external-address";
+    out.symbol = words[3];
     return out;
   }
   if(kind == "entity-address" || kind == "entity-reference") {
@@ -1144,11 +1375,11 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
       if(words.size() < 3) {
         throw logic_error("function path requires a qualified name");
       }
-      function.form = ABI_FUNCTION_PATH;
-      function.qualified_name = words[2];
-      function.template_argument_references.assign(words.begin() + 3,
-                                                   words.end());
-      return;
+	  function.form = ABI_FUNCTION_PATH;
+	  function.qualified_name = words[2];
+	  function.template_argument_references.assign(words.begin() + 3,
+	                                               words.end());
+	  return;
     }
     if(words[1] == "lambda") {
       if(words.size() < 5) {
@@ -1177,11 +1408,76 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
       function.discriminator = words.size() == 6 ? words[5] : "0";
       return;
     }
-    function.form = ABI_FUNCTION_PATH;
-    function.qualified_name = words[1];
-    for(size_t i = 2; i < words.size(); ++i) {
-      function.parameter_types.push_back(parse_single_type_token(words[i]));
+	function.form = ABI_FUNCTION_PATH;
+	function.qualified_name = words[1];
+	for(size_t i = 2; i < words.size(); ++i) {
+	  if(words[i] == "variadic" || words[i] == "varargs") {
+	    function.variadic = true;
+	  } else {
+	    function.parameter_types.push_back(parse_single_type_token(words[i]));
+	  }
+	}
+	return;
+      }
+  if(command == "variadic" || command == "varargs") {
+    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+      throw logic_error(command + " appears before function fact");
     }
+    if(words.size() != 1) {
+      throw logic_error(command + " takes no operands");
+    }
+    fact_case.target.function.variadic = true;
+    return;
+  }
+  if(command == "abi-tag") {
+    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+      throw logic_error("abi-tag appears before function fact");
+    }
+    if(words.size() != 2) {
+      throw logic_error("abi-tag requires one tag");
+    }
+    fact_case.target.function.abi_tags.push_back(words[1]);
+    return;
+  }
+  if(command == "function-qualifier" || command == "qualifier") {
+    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+      throw logic_error(command + " appears before function fact");
+    }
+    for(size_t i = 1; i < words.size(); ++i) {
+      if(words[i] == "const") {
+        fact_case.target.function.nested_const = true;
+      } else if(words[i] == "volatile") {
+        fact_case.target.function.nested_volatile = true;
+      } else if(words[i] == "lvalue-ref" || words[i] == "ref") {
+        fact_case.target.function.nested_lvalue_ref = true;
+      } else if(words[i] == "rvalue-ref" || words[i] == "rref") {
+        fact_case.target.function.nested_rvalue_ref = true;
+      } else {
+        throw logic_error("unknown function qualifier '" + words[i] + "'");
+      }
+    }
+    return;
+  }
+  if(command == "operator-terminal") {
+    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+      throw logic_error("operator-terminal appears before function fact");
+    }
+    if(words.size() != 2) {
+      throw logic_error("operator-terminal requires one Itanium operator code");
+    }
+    fact_case.target.function.terminal = ABI_FUNCTION_TERMINAL_OPERATOR_CODE;
+    fact_case.target.function.terminal_operator_code = words[1];
+    return;
+  }
+  if(command == "conversion-terminal") {
+    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+      throw logic_error("conversion-terminal appears before function fact");
+    }
+    if(words.size() < 2) {
+      throw logic_error("conversion-terminal requires a type");
+    }
+    fact_case.target.function.terminal = ABI_FUNCTION_TERMINAL_CONVERSION;
+    fact_case.target.function.conversion_type = parse_type_spec(words, 1);
     return;
   }
   if(command == "param") {
@@ -1221,6 +1517,9 @@ void append_function_path_words(vector<string> & words,
   for(size_t i = 0; i < path.parameter_types.size(); ++i) {
     append_single_type_token(words, path.parameter_types[i]);
   }
+  if(path.variadic) {
+    words.push_back("variadic");
+  }
 }
 
 vector<string> fact_words(const AbiFact & fact)
@@ -1245,6 +1544,17 @@ vector<string> fact_words(const AbiFact & fact)
       append_single_type_token(words, fact.template_argument.type);
       words.push_back(to_string(fact.template_argument.integer_value));
       break;
+    case ABI_TEMPLATE_ARG_DEPENDENT_INTEGRAL_VALUE:
+      words.push_back("dependent-value");
+      append_single_type_token(words, fact.template_argument.parameter_type);
+      if(fact.template_argument.type.kind == ABI_TYPE_REFERENCE &&
+         fact.template_argument.type.reference.empty()) {
+        words.push_back("-");
+      } else {
+        append_single_type_token(words, fact.template_argument.type);
+      }
+      words.push_back(to_string(fact.template_argument.integer_value));
+      break;
     case ABI_TEMPLATE_ARG_UNTYPED_INTEGRAL_VALUE:
       words.push_back("untyped-value");
       words.push_back(to_string(fact.template_argument.integer_value));
@@ -1252,6 +1562,35 @@ vector<string> fact_words(const AbiFact & fact)
     case ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION:
       words.push_back("expression");
       words.push_back(fact.template_argument.expression_reference);
+      break;
+    case ABI_TEMPLATE_ARG_TEMPLATE_ENTITY:
+      words.push_back("template-entity");
+      words.push_back(fact.template_argument.entity_reference);
+      break;
+    case ABI_TEMPLATE_ARG_TEMPLATE_PARAMETER_ENTITY:
+      words.push_back("template-param-template");
+      words.push_back(to_string(fact.template_argument.template_parameter_index));
+      break;
+    case ABI_TEMPLATE_ARG_EXTERNAL_ENTITY:
+      words.push_back(fact.template_argument.address_of ?
+                      "external-address" : "external-reference");
+      words.push_back(fact.template_argument.symbol);
+      break;
+    case ABI_TEMPLATE_ARG_MEMBER_EXTERNAL_ENTITY:
+      words.push_back(fact.template_argument.address_of ?
+                      "member-external-address" : "member-external-reference");
+      words.push_back(fact.template_argument.symbol);
+      append_single_type_token(words, fact.template_argument.owner_type);
+      words.push_back(fact.template_argument.member_name);
+      words.push_back(fact.template_argument.member_is_function ? "yes" : "no");
+      words.push_back(fact.template_argument.member_function_const ? "yes" : "no");
+      words.push_back(fact.template_argument.member_function_volatile ? "yes" : "no");
+      words.push_back(fact.template_argument.member_function_lvalue_ref ? "yes" : "no");
+      words.push_back(fact.template_argument.member_function_rvalue_ref ? "yes" : "no");
+      words.push_back(fact.template_argument.member_function_variadic ? "yes" : "no");
+      for(size_t i = 0; i < fact.template_argument.parameter_types.size(); ++i) {
+        append_single_type_token(words, fact.template_argument.parameter_types[i]);
+      }
       break;
     case ABI_TEMPLATE_ARG_ENTITY_ADDRESS:
       words.push_back("entity-address");
@@ -1285,16 +1624,32 @@ vector<string> fact_words(const AbiFact & fact)
       words.push_back("literal");
       words.push_back(fact.expression.literal);
       break;
+    case ABI_EXPR_INTEGRAL_VALUE:
+      words.push_back("integral-value");
+      append_single_type_token(words, fact.expression.value_type);
+      words.push_back(fact.expression.literal);
+      break;
+    case ABI_EXPR_OBJECT_MEMBER:
+      words.push_back("object-member");
+      words.push_back(fact.expression.expression_operator_code);
+      words.push_back(fact.expression.first_reference);
+      words.push_back(fact.expression.member_name);
+      words.insert(words.end(),
+                   fact.expression.template_argument_references.begin(),
+                   fact.expression.template_argument_references.end());
+      break;
     case ABI_EXPR_UNARY:
       words.push_back("unary");
-      words.push_back(word_from_expression_operator(
-          fact.expression.expression_operator));
+      words.push_back(fact.expression.expression_operator_code.empty() ?
+          word_from_expression_operator(fact.expression.expression_operator) :
+          fact.expression.expression_operator_code);
       words.push_back(fact.expression.first_reference);
       break;
     case ABI_EXPR_BINARY:
       words.push_back("binary");
-      words.push_back(word_from_expression_operator(
-          fact.expression.expression_operator));
+      words.push_back(fact.expression.expression_operator_code.empty() ?
+          word_from_expression_operator(fact.expression.expression_operator) :
+          fact.expression.expression_operator_code);
       words.push_back(fact.expression.first_reference);
       words.push_back(fact.expression.second_reference);
       break;
@@ -1304,11 +1659,66 @@ vector<string> fact_words(const AbiFact & fact)
       words.push_back(fact.expression.second_reference);
       words.push_back(fact.expression.third_reference);
       break;
+    case ABI_EXPR_PACK_EXPANSION:
+      words.push_back("pack");
+      words.push_back(fact.expression.first_reference);
+      break;
+    case ABI_EXPR_CALL:
+      words.push_back("call");
+      words.push_back(fact.expression.first_reference);
+      words.insert(words.end(),
+                   fact.expression.argument_references.begin(),
+                   fact.expression.argument_references.end());
+      break;
+    case ABI_EXPR_CONVERSION:
+      if(fact.expression.expression_operator_code.empty() ||
+         fact.expression.expression_operator_code == "cv") {
+        words.push_back("conversion");
+        append_single_type_token(words, fact.expression.owner_type);
+        words.insert(words.end(),
+                     fact.expression.argument_references.begin(),
+                     fact.expression.argument_references.end());
+      } else {
+        words.push_back("cast");
+        words.push_back(fact.expression.expression_operator_code);
+        append_single_type_token(words, fact.expression.owner_type);
+        if(fact.expression.argument_references.size() != 1) {
+          throw logic_error("cast expression requires exactly one operand");
+        }
+        words.push_back(fact.expression.argument_references[0]);
+      }
+      break;
+    case ABI_EXPR_TEMPLATE_ID:
+      words.push_back("template-id");
+      words.push_back(fact.expression.member_name);
+      words.insert(words.end(),
+                   fact.expression.template_argument_references.begin(),
+                   fact.expression.template_argument_references.end());
+      break;
+    case ABI_EXPR_TYPE_TRAIT:
+      words.push_back("type-trait");
+      words.push_back(fact.expression.member_name);
+      for(size_t i = 0; i < fact.expression.type_arguments.size(); ++i) {
+        append_single_type_token(words, fact.expression.type_arguments[i]);
+      }
+      break;
+    case ABI_EXPR_SIZEOF_TYPE:
+      words.push_back("sizeof-type");
+      append_single_type_token(words, fact.expression.owner_type);
+      break;
     case ABI_EXPR_MEMBER:
       words.push_back("member");
       append_single_type_token(words, fact.expression.owner_type);
       words.push_back(fact.expression.close_template_arguments ? "yes" : "no");
       words.push_back(fact.expression.member_name);
+      words.insert(words.end(),
+                   fact.expression.template_argument_references.begin(),
+                   fact.expression.template_argument_references.end());
+      break;
+    case ABI_EXPR_EXTERNAL_ENTITY:
+      words.push_back(fact.expression.address_of ?
+                      "external-address" : "external-reference");
+      words.push_back(fact.expression.symbol);
       break;
     case ABI_EXPR_ENTITY_ADDRESS:
       words.push_back("entity-address");
@@ -1394,22 +1804,64 @@ vector<vector<string> > target_lines(const AbiMangleTarget & target)
       words.push_back(terminal_word_from_fact_terminal(
           target.function.terminal));
       words.push_back(target.function.discriminator);
-    }
-    lines.push_back(words);
-    if(target.function.has_result_type) {
-      vector<string> result_words;
-      result_words.push_back("result");
-      append_type_spec_words(result_words, target.function.result_type);
-      lines.push_back(result_words);
+	}
+	lines.push_back(words);
+	if(target.function.terminal == ABI_FUNCTION_TERMINAL_OPERATOR_CODE) {
+	  vector<string> terminal_words;
+	  terminal_words.push_back("operator-terminal");
+	  terminal_words.push_back(target.function.terminal_operator_code);
+	  lines.push_back(terminal_words);
+	} else if(target.function.terminal == ABI_FUNCTION_TERMINAL_CONVERSION) {
+	  vector<string> terminal_words;
+	  terminal_words.push_back("conversion-terminal");
+	  append_type_spec_words(terminal_words, target.function.conversion_type);
+	  lines.push_back(terminal_words);
+	}
+	if(target.function.nested_const ||
+	   target.function.nested_volatile ||
+	   target.function.nested_lvalue_ref ||
+	   target.function.nested_rvalue_ref) {
+	  vector<string> qualifier_words;
+	  qualifier_words.push_back("function-qualifier");
+	  if(target.function.nested_const) {
+	    qualifier_words.push_back("const");
+	  }
+	  if(target.function.nested_volatile) {
+	    qualifier_words.push_back("volatile");
+	  }
+	  if(target.function.nested_lvalue_ref) {
+	    qualifier_words.push_back("lvalue-ref");
+	  }
+	  if(target.function.nested_rvalue_ref) {
+	    qualifier_words.push_back("rvalue-ref");
+	  }
+	  lines.push_back(qualifier_words);
+	}
+	for(size_t i = 0; i < target.function.abi_tags.size(); ++i) {
+	  vector<string> tag_words;
+	  tag_words.push_back("abi-tag");
+	  tag_words.push_back(target.function.abi_tags[i]);
+	  lines.push_back(tag_words);
+	}
+	if(target.function.has_result_type) {
+	  vector<string> result_words;
+	  result_words.push_back("result");
+	  append_type_spec_words(result_words, target.function.result_type);
+	  lines.push_back(result_words);
     }
     for(size_t i = 0; i < target.function.parameter_types.size(); ++i) {
       vector<string> param_words;
       param_words.push_back("param");
-      append_type_spec_words(param_words, target.function.parameter_types[i]);
-      lines.push_back(param_words);
-    }
-    return lines;
-  }
+	  append_type_spec_words(param_words, target.function.parameter_types[i]);
+	  lines.push_back(param_words);
+	}
+	if(target.function.variadic) {
+	  vector<string> variadic_words;
+	  variadic_words.push_back("variadic");
+	  lines.push_back(variadic_words);
+	}
+	return lines;
+      }
   }
   throw logic_error("unknown ABI mangle target kind");
 }
@@ -1444,6 +1896,7 @@ struct DirectSubstitutionKey
   long long signed_value = 0;
   bool flag = false;
   bool second_flag = false;
+  bool third_flag = false;
   string name;
   string secondary_name;
   string literal;
@@ -1469,6 +1922,7 @@ struct DirectSubstitutionKey
            signed_value == rhs.signed_value &&
            flag == rhs.flag &&
            second_flag == rhs.second_flag &&
+           third_flag == rhs.third_flag &&
            name == rhs.name &&
            secondary_name == rhs.secondary_name &&
            literal == rhs.literal &&
@@ -1665,6 +2119,7 @@ bool direct_function_path_key(const DirectFactContext & ctx,
   out.index = path.template_argument_references.size();
   out.unsigned_value = path.parameter_types.size();
   out.flag = path.has_result_type;
+  out.second_flag = path.variadic;
   for(size_t i = 0; i < path.template_argument_references.size(); ++i) {
     DirectSubstitutionKey arg_key;
     if(!direct_template_arg_key(
@@ -1752,6 +2207,7 @@ bool direct_type_identity_key(const DirectFactContext & ctx,
   out.index = type.template_parameter_index;
   out.flag = type.substitutable_template_parameter;
   out.second_flag = type.std_substitution_includes_template_arguments;
+  out.third_flag = type.variadic;
   out.name = type.name;
   out.secondary_name = type.source_name;
   out.literal = type.discriminator;
@@ -1769,6 +2225,7 @@ bool direct_type_identity_key(const DirectFactContext & ctx,
   case ABI_TYPE_CONST:
   case ABI_TYPE_VOLATILE:
   case ABI_TYPE_VENDOR_QUALIFIED:
+  case ABI_TYPE_BUILTIN_TYPE_TRANSFORM:
   case ABI_TYPE_PACK_EXPANSION:
   case ABI_TYPE_FUNCTION:
   case ABI_TYPE_MEMBER_POINTER:
@@ -1796,6 +2253,7 @@ bool direct_type_identity_key(const DirectFactContext & ctx,
     return true;
   }
   case ABI_TYPE_CLASS_TEMPLATE:
+  case ABI_TYPE_TEMPLATE_PARAMETER_CLASS_TEMPLATE:
   case ABI_TYPE_STD_CLASS_TEMPLATE:
   case ABI_TYPE_MEMBER_CLASS_TEMPLATE:
     out.unsigned_value = type.template_argument_references.size();
@@ -1886,6 +2344,7 @@ bool direct_type_key(const DirectFactContext & ctx,
   case ABI_TYPE_CONST:
   case ABI_TYPE_VOLATILE:
   case ABI_TYPE_VENDOR_QUALIFIED:
+  case ABI_TYPE_BUILTIN_TYPE_TRANSFORM:
   case ABI_TYPE_PACK_EXPANSION:
   case ABI_TYPE_ARRAY:
   case ABI_TYPE_MEMBER_POINTER:
@@ -1894,6 +2353,7 @@ bool direct_type_key(const DirectFactContext & ctx,
   case ABI_TYPE_NAMED:
     return direct_type_identity_key(ctx, type, out);
   case ABI_TYPE_CLASS_TEMPLATE:
+  case ABI_TYPE_TEMPLATE_PARAMETER_CLASS_TEMPLATE:
   case ABI_TYPE_STD_CLASS_TEMPLATE:
   case ABI_TYPE_MEMBER_CLASS_TEMPLATE:
   case ABI_TYPE_MEMBER_TYPE:
@@ -1917,7 +2377,9 @@ bool direct_expression_key(const DirectFactContext & ctx,
   out.expression_operator = expr.expression_operator;
   out.index = expr.index;
   out.flag = expr.close_template_arguments;
+  out.second_flag = expr.address_of;
   out.name = expr.member_name;
+  out.secondary_name = expr.expression_operator_code;
   out.literal = expr.literal;
   if(!expr.first_reference.empty()) {
     DirectSubstitutionKey child_key;
@@ -1949,12 +2411,21 @@ bool direct_expression_key(const DirectFactContext & ctx,
     }
     out.children.push_back(child_key);
   }
-  if(expr.kind == ABI_EXPR_MEMBER) {
+  if(expr.kind == ABI_EXPR_MEMBER ||
+     expr.kind == ABI_EXPR_SIZEOF_TYPE ||
+     expr.kind == ABI_EXPR_CONVERSION) {
     DirectSubstitutionKey owner_key;
     if(!direct_type_identity_key(ctx, expr.owner_type, owner_key)) {
       return false;
     }
     out.children.push_back(owner_key);
+  }
+  if(expr.kind == ABI_EXPR_INTEGRAL_VALUE) {
+    DirectSubstitutionKey value_type_key;
+    if(!direct_type_identity_key(ctx, expr.value_type, value_type_key)) {
+      return false;
+    }
+    out.children.push_back(value_type_key);
   }
   if(!expr.entity_reference.empty()) {
     DirectSubstitutionKey entity_key;
@@ -1965,6 +2436,40 @@ bool direct_expression_key(const DirectFactContext & ctx,
       return false;
     }
     out.children.push_back(entity_key);
+  }
+  if(!expr.symbol.empty()) {
+    DirectSubstitutionKey symbol_key;
+    symbol_key.kind = DIRECT_SUBST_EXPRESSION;
+    symbol_key.name = expr.symbol;
+    symbol_key.flag = expr.address_of;
+    out.children.push_back(symbol_key);
+  }
+  for(size_t i = 0; i < expr.argument_references.size(); ++i) {
+    DirectSubstitutionKey child_key;
+    if(!direct_expression_key(ctx,
+                              direct_require_expr_ref(ctx,
+                                                      expr.argument_references[i]),
+                              child_key)) {
+      return false;
+    }
+    out.children.push_back(child_key);
+  }
+  for(size_t i = 0; i < expr.template_argument_references.size(); ++i) {
+    DirectSubstitutionKey arg_key;
+    if(!direct_template_arg_key(
+           ctx,
+           direct_require_arg_ref(ctx, expr.template_argument_references[i]),
+           arg_key)) {
+      return false;
+    }
+    out.children.push_back(arg_key);
+  }
+  for(size_t i = 0; i < expr.type_arguments.size(); ++i) {
+    DirectSubstitutionKey type_key;
+    if(!direct_type_identity_key(ctx, expr.type_arguments[i], type_key)) {
+      return false;
+    }
+    out.children.push_back(type_key);
   }
   return true;
 }
@@ -1977,6 +2482,17 @@ bool direct_template_arg_key(const DirectFactContext & ctx,
   out.kind = DIRECT_SUBST_TEMPLATE_ARGUMENT;
   out.template_arg_kind = arg.kind;
   out.signed_value = arg.integer_value;
+  out.flag = arg.address_of;
+  out.second_flag = arg.member_is_function;
+  out.third_flag = arg.member_function_variadic;
+  out.name = arg.entity_reference;
+  out.secondary_name = arg.symbol;
+  out.index = arg.template_parameter_index;
+  out.unsigned_value =
+      (arg.member_function_const ? 1 : 0) |
+      (arg.member_function_volatile ? 2 : 0) |
+      (arg.member_function_lvalue_ref ? 4 : 0) |
+      (arg.member_function_rvalue_ref ? 8 : 0);
   switch(arg.kind) {
   case ABI_TEMPLATE_ARG_TYPE: {
     DirectSubstitutionKey type_key;
@@ -1994,6 +2510,21 @@ bool direct_template_arg_key(const DirectFactContext & ctx,
     out.children.push_back(type_key);
     return true;
   }
+  case ABI_TEMPLATE_ARG_DEPENDENT_INTEGRAL_VALUE: {
+    DirectSubstitutionKey parameter_type_key;
+    if(!direct_type_identity_key(ctx, arg.parameter_type, parameter_type_key)) {
+      return false;
+    }
+    out.children.push_back(parameter_type_key);
+    if(!(arg.type.kind == ABI_TYPE_REFERENCE && arg.type.reference.empty())) {
+      DirectSubstitutionKey value_type_key;
+      if(!direct_type_identity_key(ctx, arg.type, value_type_key)) {
+        return false;
+      }
+      out.children.push_back(value_type_key);
+    }
+    return true;
+  }
   case ABI_TEMPLATE_ARG_UNTYPED_INTEGRAL_VALUE:
     return true;
   case ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION: {
@@ -2004,6 +2535,29 @@ bool direct_template_arg_key(const DirectFactContext & ctx,
       return false;
     }
     out.children.push_back(expr_key);
+    return true;
+  }
+  case ABI_TEMPLATE_ARG_TEMPLATE_ENTITY:
+  case ABI_TEMPLATE_ARG_TEMPLATE_PARAMETER_ENTITY:
+  case ABI_TEMPLATE_ARG_EXTERNAL_ENTITY:
+    return true;
+  case ABI_TEMPLATE_ARG_MEMBER_EXTERNAL_ENTITY: {
+    DirectSubstitutionKey owner_key;
+    if(!direct_type_identity_key(ctx, arg.owner_type, owner_key)) {
+      return false;
+    }
+    out.children.push_back(owner_key);
+    out.literal = arg.member_name;
+    out.flag = arg.address_of;
+    out.second_flag = arg.member_is_function;
+    out.third_flag = arg.member_function_variadic;
+    for(size_t i = 0; i < arg.parameter_types.size(); ++i) {
+      DirectSubstitutionKey param_key;
+      if(!direct_type_identity_key(ctx, arg.parameter_types[i], param_key)) {
+        return false;
+      }
+      out.children.push_back(param_key);
+    }
     return true;
   }
   case ABI_TEMPLATE_ARG_ENTITY_ADDRESS:
@@ -2171,12 +2725,26 @@ bool direct_emit_type_name_prefix(const DirectFactContext & ctx,
     }
     break;
   case ABI_TYPE_CLASS_TEMPLATE:
+  case ABI_TYPE_TEMPLATE_PARAMETER_CLASS_TEMPLATE:
   case ABI_TYPE_STD_CLASS_TEMPLATE:
     if(type.kind == ABI_TYPE_STD_CLASS_TEMPLATE &&
        type.std_substitution != ABI_STD_SUBSTITUTION_NONE) {
       out += word_from_std_substitution(type.std_substitution);
       if(!type.std_substitution_includes_template_arguments &&
          !direct_emit_template_args(ctx,
+                                    encoder,
+                                    type.template_argument_references,
+                                    out)) {
+        out.resize(begin);
+        return false;
+      }
+    } else if(type.kind == ABI_TYPE_TEMPLATE_PARAMETER_CLASS_TEMPLATE) {
+      out += 'T';
+      if(type.template_parameter_index > 0) {
+        out += to_string(type.template_parameter_index - 1);
+      }
+      out += '_';
+      if(!direct_emit_template_args(ctx,
                                     encoder,
                                     type.template_argument_references,
                                     out)) {
@@ -2270,14 +2838,24 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
     out += 'V';
     return direct_emit_type(ctx, encoder, type.child_types[0], out);
   case ABI_TYPE_VENDOR_QUALIFIED:
-    if(type.child_types.size() != 1 || type.vendor_qualifier == ABI_VENDOR_QUALIFIER_NONE) {
+    if(type.child_types.size() != 1 || type.name.empty()) {
       return false;
     }
     out += 'U';
-    if(type.vendor_qualifier == ABI_VENDOR_QUALIFIER_ATOMIC) {
-      if(!direct_emit_source_name("_Atomic", out)) { return false; }
-    }
+    if(!direct_emit_source_name(type.name, out)) { return false; }
     return direct_emit_type(ctx, encoder, type.child_types[0], out);
+  case ABI_TYPE_BUILTIN_TYPE_TRANSFORM:
+    if(type.child_types.size() != 1 || type.name.empty()) {
+      return false;
+    }
+    out += 'u';
+    if(!direct_emit_source_name(type.name, out)) { return false; }
+    out += 'I';
+    if(!direct_emit_type(ctx, encoder, type.child_types[0], out)) {
+      return false;
+    }
+    out += 'E';
+    return true;
   case ABI_TYPE_PACK_EXPANSION:
     if(type.child_types.size() != 1) { return false; }
     out += "Dp";
@@ -2307,12 +2885,15 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
       return false;
     }
     if(type.child_types.size() == 1) {
-      out += 'v';
+      out += type.variadic ? 'z' : 'v';
     } else {
       for(size_t i = 1; i < type.child_types.size(); ++i) {
         if(!direct_emit_type(ctx, encoder, type.child_types[i], out)) {
           return false;
         }
+      }
+      if(type.variadic) {
+        out += 'z';
       }
     }
     out += 'E';
@@ -2329,6 +2910,7 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
                                              ctx,
                                              out);
   case ABI_TYPE_CLASS_TEMPLATE:
+  case ABI_TYPE_TEMPLATE_PARAMETER_CLASS_TEMPLATE:
   case ABI_TYPE_STD_CLASS_TEMPLATE:
     if(type.kind == ABI_TYPE_STD_CLASS_TEMPLATE &&
        type.std_substitution != ABI_STD_SUBSTITUTION_NONE) {
@@ -2336,6 +2918,17 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
       if(type.std_substitution_includes_template_arguments) {
         return true;
       }
+      return direct_emit_template_args(ctx,
+                                       encoder,
+                                       type.template_argument_references,
+                                       out);
+    }
+    if(type.kind == ABI_TYPE_TEMPLATE_PARAMETER_CLASS_TEMPLATE) {
+      out += 'T';
+      if(type.template_parameter_index > 0) {
+        out += to_string(type.template_parameter_index - 1);
+      }
+      out += '_';
       return direct_emit_template_args(ctx,
                                        encoder,
                                        type.template_argument_references,
@@ -2439,6 +3032,9 @@ string direct_terminal_code(AbiFunctionTerminal terminal)
     return "cl";
   case ABI_FUNCTION_TERMINAL_OPERATOR_ASSIGN:
     return "aS";
+  case ABI_FUNCTION_TERMINAL_OPERATOR_CODE:
+  case ABI_FUNCTION_TERMINAL_CONVERSION:
+    break;
   case ABI_FUNCTION_TERMINAL_CONSTRUCTOR_COMPLETE:
     return "C1";
   case ABI_FUNCTION_TERMINAL_CONSTRUCTOR_BASE:
@@ -2491,6 +3087,83 @@ bool direct_emit_function_name_path(const DirectFactContext & ctx,
   return true;
 }
 
+void direct_emit_abi_tags(const vector<string> & tags, string & out)
+{
+  vector<string> sorted = tags;
+  sort(sorted.begin(), sorted.end());
+  string previous;
+  for(size_t i = 0; i < sorted.size(); ++i) {
+    if(sorted[i].empty() || sorted[i] == previous) {
+      continue;
+    }
+    out += 'B';
+    out += to_string(sorted[i].size());
+    out += sorted[i];
+    previous = sorted[i];
+  }
+}
+
+bool direct_emit_function_name_for_function(const DirectFactContext & ctx,
+                                            DirectEncoder & encoder,
+                                            const AbiFunction & function,
+                                            string & out)
+{
+  const vector<string> parts = split_qualified_name(function.qualified_name);
+  const bool direct_std = parts.size() == 2 && parts[0] == "std";
+  const bool nested = parts.size() > 1 && !direct_std;
+  if(direct_std) {
+    out += "St";
+  } else if(nested) {
+    out += 'N';
+    if(function.nested_const) {
+      out += 'K';
+    }
+    if(function.nested_volatile) {
+      out += 'V';
+    }
+    if(function.nested_lvalue_ref) {
+      out += 'R';
+    } else if(function.nested_rvalue_ref) {
+      out += 'O';
+    }
+    for(size_t i = 0; i + 1 < parts.size(); ++i) {
+      if(!direct_emit_prefix_component(encoder, parts, i, out)) {
+        return false;
+      }
+    }
+  }
+
+  if(function.terminal == ABI_FUNCTION_TERMINAL_OPERATOR_CODE) {
+    if(function.terminal_operator_code.empty()) {
+      return false;
+    }
+    out += function.terminal_operator_code;
+  } else if(function.terminal == ABI_FUNCTION_TERMINAL_CONVERSION) {
+    out += "cv";
+    if(!direct_emit_type(ctx, encoder, function.conversion_type, out)) {
+      return false;
+    }
+  } else if(!direct_emit_source_name(parts.back(), out)) {
+    return false;
+  }
+  direct_emit_abi_tags(function.abi_tags, out);
+  if(!function.template_argument_references.empty()) {
+    direct_register_substitution(
+        encoder,
+        direct_function_template_prefix_key(function.qualified_name));
+    if(!direct_emit_template_args(ctx,
+                                  encoder,
+                                  function.template_argument_references,
+                                  out)) {
+      return false;
+    }
+  }
+  if(nested) {
+    out += 'E';
+  }
+  return true;
+}
+
 bool direct_emit_function_path_encoding(const DirectFactContext & ctx,
                                         DirectEncoder & encoder,
                                         const AbiFunctionPath & path,
@@ -2508,12 +3181,15 @@ bool direct_emit_function_path_encoding(const DirectFactContext & ctx,
     return false;
   }
   if(path.parameter_types.empty()) {
-    out += 'v';
+    out += path.variadic ? 'z' : 'v';
   } else {
     for(size_t i = 0; i < path.parameter_types.size(); ++i) {
       if(!direct_emit_type(ctx, encoder, path.parameter_types[i], out)) {
         return false;
       }
+    }
+    if(path.variadic) {
+      out += 'z';
     }
   }
   return true;
@@ -2579,15 +3255,45 @@ bool direct_emit_expression_body(const DirectFactContext & ctx,
     out += expr.literal;
     out += 'E';
     return true;
+  case ABI_EXPR_INTEGRAL_VALUE:
+    out += 'L';
+    if(!direct_emit_type(ctx, encoder, expr.value_type, out)) {
+      return false;
+    }
+    out += expr.literal;
+    out += 'E';
+    return true;
+  case ABI_EXPR_OBJECT_MEMBER:
+    if(expr.expression_operator_code.empty() || expr.member_name.empty()) {
+      return false;
+    }
+    out += expr.expression_operator_code;
+    if(!direct_emit_expression_body(ctx,
+                                    encoder,
+                                    direct_require_expr_ref(ctx,
+                                                            expr.first_reference),
+                                    out) ||
+       !direct_emit_source_name(expr.member_name, out)) {
+      return false;
+    }
+    if(!expr.template_argument_references.empty()) {
+      if(!direct_emit_template_args(ctx,
+                                    encoder,
+                                    expr.template_argument_references,
+                                    out)) {
+        return false;
+      }
+    }
+    return true;
   case ABI_EXPR_UNARY:
-    out += word_from_expression_operator(expr.expression_operator);
+    out += expression_operator_code(expr);
     return direct_emit_expression_body(ctx,
                                        encoder,
                                        direct_require_expr_ref(ctx,
                                                                expr.first_reference),
                                        out);
   case ABI_EXPR_BINARY:
-    out += word_from_expression_operator(expr.expression_operator);
+    out += expression_operator_code(expr);
     return direct_emit_expression_body(ctx,
                                        encoder,
                                        direct_require_expr_ref(ctx,
@@ -2615,6 +3321,90 @@ bool direct_emit_expression_body(const DirectFactContext & ctx,
                                        direct_require_expr_ref(ctx,
                                                                expr.third_reference),
                                        out);
+  case ABI_EXPR_PACK_EXPANSION:
+    out += "sp";
+    return direct_emit_expression_body(ctx,
+                                       encoder,
+                                       direct_require_expr_ref(ctx,
+                                                               expr.first_reference),
+                                       out);
+  case ABI_EXPR_CALL:
+    out += "cl";
+    if(!direct_emit_expression_body(ctx,
+                                    encoder,
+                                    direct_require_expr_ref(ctx,
+                                                            expr.first_reference),
+                                    out)) {
+      return false;
+    }
+    for(size_t i = 0; i < expr.argument_references.size(); ++i) {
+      if(!direct_emit_expression_body(ctx,
+                                      encoder,
+                                      direct_require_expr_ref(
+                                          ctx,
+                                          expr.argument_references[i]),
+                                      out)) {
+        return false;
+      }
+    }
+    out += 'E';
+    return true;
+  case ABI_EXPR_CONVERSION: {
+    const string op_code = expr.expression_operator_code.empty() ?
+        string("cv") : expr.expression_operator_code;
+    out += op_code;
+    if(!direct_emit_type(ctx, encoder, expr.owner_type, out)) {
+      return false;
+    }
+    if(op_code == "cv") {
+      out += '_';
+      for(size_t i = 0; i < expr.argument_references.size(); ++i) {
+        if(!direct_emit_expression_body(ctx,
+                                        encoder,
+                                        direct_require_expr_ref(
+                                            ctx,
+                                            expr.argument_references[i]),
+                                        out)) {
+          return false;
+        }
+      }
+      out += 'E';
+      return true;
+    }
+    return expr.argument_references.size() == 1 &&
+           direct_emit_expression_body(
+               ctx,
+               encoder,
+               direct_require_expr_ref(ctx, expr.argument_references[0]),
+               out);
+  }
+  case ABI_EXPR_TEMPLATE_ID:
+    if(expr.member_name.empty() ||
+       !direct_emit_source_name(expr.member_name, out)) {
+      return false;
+    }
+    return direct_emit_template_args(ctx,
+                                     encoder,
+                                     expr.template_argument_references,
+                                     out);
+  case ABI_EXPR_TYPE_TRAIT:
+    if(expr.member_name.empty()) {
+      return false;
+    }
+    out += 'u';
+    if(!direct_emit_source_name(expr.member_name, out)) {
+      return false;
+    }
+    for(size_t i = 0; i < expr.type_arguments.size(); ++i) {
+      if(!direct_emit_type(ctx, encoder, expr.type_arguments[i], out)) {
+        return false;
+      }
+    }
+    out += 'E';
+    return true;
+  case ABI_EXPR_SIZEOF_TYPE:
+    out += "st";
+    return direct_emit_type(ctx, encoder, expr.owner_type, out);
   case ABI_EXPR_MEMBER:
     out += "sr";
     if(!direct_emit_type(ctx, encoder, expr.owner_type, out)) {
@@ -2623,7 +3413,27 @@ bool direct_emit_expression_body(const DirectFactContext & ctx,
     if(expr.close_template_arguments) {
       out += 'E';
     }
-    return direct_emit_source_name(expr.member_name, out);
+    if(!direct_emit_source_name(expr.member_name, out)) {
+      return false;
+    }
+    if(!expr.template_argument_references.empty()) {
+      return direct_emit_template_args(ctx,
+                                       encoder,
+                                       expr.template_argument_references,
+                                       out);
+    }
+    return true;
+  case ABI_EXPR_EXTERNAL_ENTITY:
+    if(expr.symbol.empty()) {
+      return false;
+    }
+    out += expr.address_of ? "adL" : "L";
+    out += expr.symbol;
+    out += 'E';
+    if(expr.address_of) {
+      out += 'E';
+    }
+    return true;
   case ABI_EXPR_ENTITY_ADDRESS:
   case ABI_EXPR_ENTITY_REFERENCE: {
     const AbiEntity & entity = direct_require_entity_ref(ctx,
@@ -2640,6 +3450,88 @@ bool direct_emit_expression_body(const DirectFactContext & ctx,
   return false;
 }
 
+bool direct_emit_template_entity_name(const DirectFactContext & ctx,
+                                      DirectEncoder & encoder,
+                                      const string & qualified_name,
+                                      string & out)
+{
+  return direct_emit_qualified_source_name(encoder,
+                                           qualified_name,
+                                           vector<string>(),
+                                           ctx,
+                                           out);
+}
+
+bool direct_emit_external_member_entity_symbol(
+    const DirectFactContext & ctx,
+    DirectEncoder & encoder,
+    const AbiTemplateArg & arg,
+    string & out)
+{
+  if(arg.member_name.empty()) {
+    return false;
+  }
+  out += "_ZN";
+  if(arg.member_function_const) {
+    out += 'K';
+  }
+  if(arg.member_function_volatile) {
+    out += 'V';
+  }
+  if(arg.member_function_lvalue_ref) {
+    out += 'R';
+  }
+  if(arg.member_function_rvalue_ref) {
+    out += 'O';
+  }
+  if(!direct_emit_type_name_prefix(ctx, encoder, arg.owner_type, out) ||
+     !direct_emit_source_name(arg.member_name, out)) {
+    return false;
+  }
+  out += 'E';
+  if(arg.member_is_function) {
+    if(arg.parameter_types.empty()) {
+      out += arg.member_function_variadic ? 'z' : 'v';
+    } else {
+      for(size_t i = 0; i < arg.parameter_types.size(); ++i) {
+        if(!direct_emit_type(ctx, encoder, arg.parameter_types[i], out)) {
+          return false;
+        }
+      }
+      if(arg.member_function_variadic) {
+        out += 'z';
+      }
+    }
+  }
+  return true;
+}
+
+bool direct_emit_external_template_arg(const DirectFactContext & ctx,
+                                       DirectEncoder & encoder,
+                                       const AbiTemplateArg & arg,
+                                       string & out)
+{
+  if(arg.symbol.empty()) {
+    return false;
+  }
+  if(arg.address_of) {
+    out += "Xad";
+  }
+  out += 'L';
+  if(arg.kind == ABI_TEMPLATE_ARG_MEMBER_EXTERNAL_ENTITY) {
+    if(!direct_emit_external_member_entity_symbol(ctx, encoder, arg, out)) {
+      out += arg.symbol;
+    }
+  } else {
+    out += arg.symbol;
+  }
+  out += 'E';
+  if(arg.address_of) {
+    out += 'E';
+  }
+  return true;
+}
+
 bool direct_emit_template_arg(const DirectFactContext & ctx,
                               DirectEncoder & encoder,
                               const AbiTemplateArg & arg,
@@ -2652,6 +3544,22 @@ bool direct_emit_template_arg(const DirectFactContext & ctx,
     out += 'L';
     if(!direct_emit_type(ctx, encoder, arg.type, out)) {
       return false;
+    }
+    out += to_string(arg.integer_value);
+    out += 'E';
+    return true;
+  case ABI_TEMPLATE_ARG_DEPENDENT_INTEGRAL_VALUE:
+    out += "Tn";
+    if(!direct_emit_type(ctx, encoder, arg.parameter_type, out)) {
+      return false;
+    }
+    out += 'L';
+    if(arg.type.kind == ABI_TYPE_REFERENCE && arg.type.reference.empty()) {
+      out += 'i';
+    } else {
+      if(!direct_emit_type(ctx, encoder, arg.type, out)) {
+        return false;
+      }
     }
     out += to_string(arg.integer_value);
     out += 'E';
@@ -2673,6 +3581,21 @@ bool direct_emit_template_arg(const DirectFactContext & ctx,
     out += 'E';
     return true;
   }
+  case ABI_TEMPLATE_ARG_TEMPLATE_ENTITY:
+    return direct_emit_template_entity_name(ctx,
+                                            encoder,
+                                            arg.entity_reference,
+                                            out);
+  case ABI_TEMPLATE_ARG_TEMPLATE_PARAMETER_ENTITY:
+    out += 'T';
+    if(arg.template_parameter_index > 0) {
+      out += to_string(arg.template_parameter_index - 1);
+    }
+    out += '_';
+    return true;
+  case ABI_TEMPLATE_ARG_EXTERNAL_ENTITY:
+  case ABI_TEMPLATE_ARG_MEMBER_EXTERNAL_ENTITY:
+    return direct_emit_external_template_arg(ctx, encoder, arg, out);
   case ABI_TEMPLATE_ARG_ENTITY_ADDRESS:
   case ABI_TEMPLATE_ARG_ENTITY_REFERENCE: {
     const AbiEntity & entity = direct_require_entity_ref(ctx,
@@ -2732,14 +3655,24 @@ string direct_emit_function_symbol(const DirectFactContext & ctx,
   DirectEncoder encoder;
   string out = "_Z";
   if(function.form == ABI_FUNCTION_PATH) {
-    AbiFunctionPath path;
-    path.qualified_name = function.qualified_name;
-    path.template_argument_references = function.template_argument_references;
-    path.has_result_type = function.has_result_type;
-    path.result_type = function.result_type;
-    path.parameter_types = function.parameter_types;
-    if(!direct_emit_function_path_encoding(ctx, encoder, path, out)) {
+    if(!direct_emit_function_name_for_function(ctx, encoder, function, out)) {
       throw logic_error("unable to encode ABI fact function");
+    }
+    if(function.has_result_type &&
+       !direct_emit_type(ctx, encoder, function.result_type, out)) {
+      throw logic_error("unable to encode ABI fact result type");
+    }
+    if(function.parameter_types.empty()) {
+      out += function.variadic ? 'z' : 'v';
+    } else {
+      for(size_t i = 0; i < function.parameter_types.size(); ++i) {
+        if(!direct_emit_type(ctx, encoder, function.parameter_types[i], out)) {
+          throw logic_error("unable to encode ABI fact parameter type");
+        }
+      }
+      if(function.variadic) {
+        out += 'z';
+      }
     }
     return out;
   }
@@ -2784,12 +3717,15 @@ string direct_emit_function_symbol(const DirectFactContext & ctx,
     throw logic_error("unable to encode ABI fact result type");
   }
   if(function.parameter_types.empty()) {
-    out += 'v';
+    out += function.variadic ? 'z' : 'v';
   } else {
     for(size_t i = 0; i < function.parameter_types.size(); ++i) {
       if(!direct_emit_type(ctx, encoder, function.parameter_types[i], out)) {
         throw logic_error("unable to encode ABI fact parameter type");
       }
+    }
+    if(function.variadic) {
+      out += 'z';
     }
   }
   return out;

@@ -47,6 +47,18 @@ not Itanium terminal spellings. This keeps the standalone tests as normalized
 ABI facts instead of source code or direct calls into an implementation-specific
 mangler API.
 
+The standalone fact syntax now covers the ABI model forms currently used by
+production symbol naming: variadic function types and functions, generic vendor
+qualifiers, builtin type transforms, template-template arguments, dependent
+integral template values, raw and typed external entity references, member
+external entity references, member template expressions, dependent expression
+calls, casts/conversions, type traits, `sizeof(type)`, template-ids, object
+members, and pack expansions. Function cases can also carry ABI tags,
+member-function cv/ref qualifiers, operator terminal codes, and conversion
+function terminal types. If future `symbol_linkage` work needs another
+`abi_model.h` record shape, the fact syntax should gain a focused PAX test for
+that shape rather than bypassing the typed ABI records.
+
 The scaffold exposes the text format as typed semantic ABI facts in
 `abi_mangle.h`. `AbiFactFile` contains `AbiFactCase` records; each case has an
 ordered list of `AbiFact` definitions and one `AbiMangleTarget`. Single-case

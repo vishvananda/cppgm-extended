@@ -119,6 +119,16 @@ Itanium-specific IR. The remaining validation gap is serialization: the
 standalone fact surface should keep expanding until every production
 `abi_model.h` fact needed by `symbol_linkage` can be expressed in paX tests.
 
+The first serialization expansion added syntax for the model shapes that were
+missing from standalone tests: builtin type transforms, variadic function
+types/functions, template-template arguments, dependent integral values,
+generic external entities, member external entities, type-trait and
+`sizeof(type)` expressions, calls, casts/conversions, object members, template
+ids, expression pack expansions, ABI tags, operator terminal codes, conversion
+function terminal types, and member-function cv/ref qualifiers. The focused
+tests added in `pax/tests/abi/` cover each newly exposed ABI spelling with one
+mangled name per test.
+
 ### Step 1: Standalone ABI Model
 
 Add a small typed ABI naming library under `dev/src/`, likely split as:
