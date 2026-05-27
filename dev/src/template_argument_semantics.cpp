@@ -22684,9 +22684,10 @@ bool evaluate_builtin_conversion_leaf_type_trait(const string & name,
       out = 0;
       return true;
     }
-    if(target_base->kind == Type::TK_FUNCTION ||
-       target_base->kind == Type::TK_ARRAY ||
-       is_void_type(target_base)) {
+    if(!is_reference_type(lhs) &&
+       (target_base->kind == Type::TK_FUNCTION ||
+        target_base->kind == Type::TK_ARRAY ||
+        is_void_type(target_base))) {
       out = 0;
       return true;
     }
