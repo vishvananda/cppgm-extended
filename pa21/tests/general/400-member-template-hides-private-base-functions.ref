@@ -61,3 +61,4 @@ function @meta__true___true_(%this : ptr) -> void [unwind=no, binding=weak, obje
     store ptr %this, $this
     return void
 }
+alias object _ZN4meta5true_C2Ev = @meta__true___true_

@@ -33,3 +33,4 @@ function @S_void_____void______S(%this : ptr, %__param1 : i32, %__param2 : ptr [
     store ptr %__param2, $__param2
     return void
 }
+alias object _ZN1SIPFvPvEEC2ILb1EiEEiOS2_ = @S_void_____void______S

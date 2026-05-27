@@ -41,3 +41,4 @@ function @Item__operator_(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr 
     %t3 = load ptr $this
     return ptr %t3
 }
+alias object _ZN4ItemC2Ev = @Item__Item

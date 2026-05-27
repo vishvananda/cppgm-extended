@@ -148,3 +148,4 @@ function @_YD__g__vtable_return_adjust(%arg0 : ptr) -> i32 [binding=weak, object
     %t2 = call i32 @YD__g(%t1)
     return i32 %t2
 }
+alias object _ZN2YDC2Ev = @YD__YD

@@ -18,3 +18,4 @@ function @X__X__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [bind
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN1XC2ImEERT_ = @X__X__ov3

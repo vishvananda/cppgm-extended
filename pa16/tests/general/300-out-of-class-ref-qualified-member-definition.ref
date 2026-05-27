@@ -34,3 +34,4 @@ function @X__X(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1XC1Ev] 
     store ptr %this, $this
     return void
 }
+alias object _ZN1XC2Ev = @X__X

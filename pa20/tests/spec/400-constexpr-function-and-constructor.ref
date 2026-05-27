@@ -36,3 +36,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @Point__Point(%t1, %t2)
     return void
 }
+alias object _ZN5PointC2Ei = @Point__Point

@@ -29,3 +29,4 @@ function @value__value__ov2(%this : ptr, %high_ : i32, %low_ : i32) -> void [bin
     store i32 %t4, %t6
     return void
 }
+alias object _ZN5valueC2Eii = @value__value__ov2

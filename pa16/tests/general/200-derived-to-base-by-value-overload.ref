@@ -27,3 +27,4 @@ function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] 
     store ptr %this, $this
     return void
 }
+alias object _ZN1DC2Ev = @D__D

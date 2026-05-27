@@ -278,6 +278,7 @@ FRONTEND_OBJ_BASENAMES_cy86 := \
 
 # cppgm++: 111 shared object(s)
 FRONTEND_OBJ_BASENAMES_cppgm++ := \
+	abi_mangle \
 	calculator \
 	callsem_output \
 	callsemantic \

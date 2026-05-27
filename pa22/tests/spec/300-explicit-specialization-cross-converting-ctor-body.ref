@@ -123,3 +123,5 @@ function @complex_double___imag(%this : ptr) -> f64 [binding=weak, object=_ZNK7c
     %t3 = load f64 %t2
     return f64 %t3
 }
+alias object _ZN7complexIfEC2ERKS_IdE = @complex_float___complex__ov2
+alias object _ZN7complexIdEC2Edd = @complex_double___complex

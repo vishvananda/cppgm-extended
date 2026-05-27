@@ -22,6 +22,7 @@ top-level-item:
 	function-declaration
 	global-definition
 	function-definition
+	object-alias
 
 global-declaration:
 	KW_DECLARE KW_GLOBAL global-name (OP_COLON type)? metadata?
@@ -40,14 +41,28 @@ scalar-global-definition:
 structured-global-definition:
 	KW_GLOBAL global-name KW_READONLY? metadata? OP_ASS OP_LCURLY global-data-item+ OP_RCURLY
 
+object-alias:
+	KW_ALIAS KW_OBJECT object-symbol OP_ASS alias-target
+
 metadata:
 	OP_LSQUARE metadata-item (OP_COMMA metadata-item)* OP_RSQUARE
 
 metadata-item:
-	TT_IDENTIFIER OP_ASS TT_IDENTIFIER
+	TT_IDENTIFIER OP_ASS metadata-value
+
+metadata-value:
+	TT_IDENTIFIER
+	global-name
 
 global-name:
 	LOW_GLOBAL_NAME
+
+object-symbol:
+	TT_IDENTIFIER
+
+alias-target:
+	global-name
+	function-name
 
 function-definition:
 	KW_FUNCTION function-name OP_LPAREN parameter-list OP_RPAREN OP_ARROW type
@@ -57,7 +72,7 @@ function-metadata:
 	OP_LSQUARE function-metadata-item (OP_COMMA function-metadata-item)* OP_RSQUARE
 
 function-metadata-item:
-	TT_IDENTIFIER OP_ASS TT_IDENTIFIER
+	TT_IDENTIFIER OP_ASS metadata-value
 
 function-name:
 	LOW_FUNCTION_NAME

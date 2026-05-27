@@ -38,3 +38,5 @@ function @callable__callable(%this : ptr) -> void [unwind=no, binding=weak, obje
     store ptr %this, $this
     return void
 }
+alias object _ZN12function_boxIFiRK5tokenIcES3_EEC2I8callableEET_ = @function_box_int_token_char__const____token_char__const______function_box__ov3
+alias object _ZN8callableC2Ev = @callable__callable

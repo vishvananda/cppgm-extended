@@ -26,3 +26,5 @@ function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
     store ptr %this, $this
     return void
 }
+alias object _ZN5tupleIJO1XEEC2IJS0_ETnN9enable_ifIXsr3AndI17integral_constantIXeqsZT_sZT_EENS2_6EnableIJDpT_EEEEE5valueEiE4typeELi0EEEDpOS8_ = @tuple_X______tuple__ov3
+alias object _ZN1XC2Ev = @X__X

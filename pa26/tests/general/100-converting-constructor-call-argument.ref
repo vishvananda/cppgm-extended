@@ -26,3 +26,4 @@ function @Target__Target__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> 
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN6TargetC2ERK6Source = @Target__Target__ov2

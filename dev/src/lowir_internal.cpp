@@ -561,6 +561,7 @@ void parse_function_metadata(FunctionBoundaryMetadata & boundary,
   bool saw_linkage = false;
   bool saw_binding = false;
   bool saw_object = false;
+  bool saw_tls_for = false;
   bool saw_keep_alias = false;
   bool saw_prefer_local = false;
   while(stream.consume("[")) {
@@ -646,6 +647,15 @@ void parse_function_metadata(FunctionBoundaryMetadata & boundary,
           fail(line, "object metadata requires non-empty symbol name");
         }
         saw_object = true;
+      } else if(key == "tls_for") {
+        if(saw_tls_for) {
+          fail(line, "duplicate tls_for metadata");
+        }
+        symbol.tls_for_symbol = value;
+        if(symbol.tls_for_symbol.empty() || symbol.tls_for_symbol[0] != '@') {
+          fail(line, "tls_for metadata requires a LowIR global symbol name");
+        }
+        saw_tls_for = true;
       } else if(key == "keep_alias") {
         if(saw_keep_alias) {
           fail(line, "duplicate keep_alias metadata");
@@ -1365,6 +1375,38 @@ GlobalDeclaration parse_global_declaration(const LineInfo & line)
   return global;
 }
 
+ObjectAlias parse_object_alias(const LineInfo & line)
+{
+  const vector<string> tokens = lex_line(line.text);
+  TokenStream stream(tokens);
+  stream.expect(line, "alias");
+  stream.expect(line, "object");
+  if(stream.eof()) {
+    fail(line, "expected alias object symbol");
+  }
+  ObjectAlias alias;
+  alias.object_symbol = stream.take();
+  if(alias.object_symbol.empty() ||
+     alias.object_symbol == "=" ||
+     alias.object_symbol == "(" ||
+     alias.object_symbol == ")" ||
+     alias.object_symbol == "{" ||
+     alias.object_symbol == "}" ||
+     alias.object_symbol == "[" ||
+     alias.object_symbol == "]" ||
+     alias.object_symbol == "," ||
+     alias.object_symbol == ":" ||
+     alias.object_symbol == "->") {
+    fail(line, "expected alias object symbol");
+  }
+  stream.expect(line, "=");
+  alias.target = parse_name_with_prefix(stream, line, '@', "alias target");
+  if(!stream.eof()) {
+    fail(line, "unexpected trailing tokens in object alias");
+  }
+  return alias;
+}
+
 pair<string, LowType> parse_slot(const LineInfo & line)
 {
   const vector<string> tokens = lex_line(line.text);
@@ -1429,6 +1471,7 @@ void parse_call_signature(Instruction & instruction,
      metadata.linkage != LLM_DEFAULT ||
      metadata.binding != SBM_DEFAULT ||
      !metadata.object_symbol.empty() ||
+     !metadata.tls_for_symbol.empty() ||
      metadata.keep_internal_alias ||
      metadata.prefer_local_object_binding) {
     fail(line, "call signature metadata does not allow symbol metadata");
@@ -1908,14 +1951,28 @@ Program parse_program_lines(const vector<LineInfo> & lines)
 {
   Program program;
   set<string> top_level_names;
+  set<string> thread_local_global_names;
+  set<string> alias_object_symbols;
 
   size_t pos = 0;
   while(pos < lines.size()) {
     const LineInfo & line = lines[pos];
+    if(line.text.compare(0, 13, "alias object ") == 0) {
+      ObjectAlias alias = parse_object_alias(line);
+      if(!alias_object_symbols.insert(alias.object_symbol).second) {
+        fail(line, "duplicate object alias " + alias.object_symbol);
+      }
+      program.object_aliases.push_back(alias);
+      ++pos;
+      continue;
+    }
     if(line.text.compare(0, 15, "declare global ") == 0) {
       GlobalDeclaration global = parse_global_declaration(line);
       if(!top_level_names.insert(global.name).second) {
         fail(line, "duplicate top-level symbol " + global.name);
+      }
+      if(global.storage == GSM_THREAD_LOCAL) {
+        thread_local_global_names.insert(global.name);
       }
       program.global_declarations.push_back(global);
       ++pos;
@@ -1935,6 +1992,9 @@ Program parse_program_lines(const vector<LineInfo> & lines)
         GlobalDefinition global = parse_structured_global_header(line);
         if(!top_level_names.insert(global.name).second) {
           fail(line, "duplicate top-level symbol " + global.name);
+        }
+        if(global.storage == GSM_THREAD_LOCAL) {
+          thread_local_global_names.insert(global.name);
         }
         ++pos;
         bool closed = false;
@@ -1959,6 +2019,9 @@ Program parse_program_lines(const vector<LineInfo> & lines)
         GlobalDefinition global = parse_scalar_global(line);
         if(!top_level_names.insert(global.name).second) {
           fail(line, "duplicate top-level symbol " + global.name);
+        }
+        if(global.storage == GSM_THREAD_LOCAL) {
+          thread_local_global_names.insert(global.name);
         }
         program.globals.push_back(global);
         ++pos;
@@ -2038,7 +2101,79 @@ Program parse_program_lines(const vector<LineInfo> & lines)
       program.functions.push_back(function);
       continue;
     }
-    fail(line, "expected declaration, global, or function definition");
+    fail(line, "expected declaration, global, object alias, or function definition");
+  }
+
+  for(size_t i = 0; i < program.object_aliases.size(); ++i) {
+    if(top_level_names.count(program.object_aliases[i].target) == 0) {
+      LineInfo line;
+      line.file = "<program>";
+      line.line = 0;
+      fail(line, "object alias target is not a top-level symbol " +
+                 program.object_aliases[i].target);
+    }
+  }
+
+  map<string, string> tls_wrapper_by_global;
+  for(size_t i = 0; i < program.function_declarations.size(); ++i) {
+    const FunctionDeclaration & function = program.function_declarations[i];
+    if(function.metadata.tls_for_symbol.empty()) {
+      continue;
+    }
+    if(function.metadata.tls_for_symbol == function.name) {
+      LineInfo line;
+      line.file = "<program>";
+      line.line = 0;
+      fail(line, "tls_for metadata cannot target the wrapper function itself " +
+                 function.name);
+    }
+    if(thread_local_global_names.count(function.metadata.tls_for_symbol) == 0) {
+      LineInfo line;
+      line.file = "<program>";
+      line.line = 0;
+      fail(line, "tls_for metadata target is not a thread_local global " +
+                 function.metadata.tls_for_symbol);
+    }
+    map<string, string>::const_iterator found =
+        tls_wrapper_by_global.find(function.metadata.tls_for_symbol);
+    if(found != tls_wrapper_by_global.end() && found->second != function.name) {
+      LineInfo line;
+      line.file = "<program>";
+      line.line = 0;
+      fail(line, "duplicate tls_for wrapper for " +
+                 function.metadata.tls_for_symbol);
+    }
+    tls_wrapper_by_global[function.metadata.tls_for_symbol] = function.name;
+  }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    const Function & function = program.functions[i];
+    if(function.metadata.tls_for_symbol.empty()) {
+      continue;
+    }
+    if(function.metadata.tls_for_symbol == function.name) {
+      LineInfo line;
+      line.file = "<program>";
+      line.line = 0;
+      fail(line, "tls_for metadata cannot target the wrapper function itself " +
+                 function.name);
+    }
+    if(thread_local_global_names.count(function.metadata.tls_for_symbol) == 0) {
+      LineInfo line;
+      line.file = "<program>";
+      line.line = 0;
+      fail(line, "tls_for metadata target is not a thread_local global " +
+                 function.metadata.tls_for_symbol);
+    }
+    map<string, string>::const_iterator found =
+        tls_wrapper_by_global.find(function.metadata.tls_for_symbol);
+    if(found != tls_wrapper_by_global.end() && found->second != function.name) {
+      LineInfo line;
+      line.file = "<program>";
+      line.line = 0;
+      fail(line, "duplicate tls_for wrapper for " +
+                 function.metadata.tls_for_symbol);
+    }
+    tls_wrapper_by_global[function.metadata.tls_for_symbol] = function.name;
   }
 
   for(size_t i = 0; i < program.global_declarations.size(); ++i) {
@@ -2575,11 +2710,12 @@ void dump_function_metadata(const FunctionBoundaryMetadata & boundary,
   const bool has_linkage = metadata.linkage != LLM_DEFAULT;
   const bool has_binding = metadata.binding != SBM_DEFAULT;
   const bool has_object = !metadata.object_symbol.empty();
+  const bool has_tls_for = !metadata.tls_for_symbol.empty();
   const bool has_keep_alias = metadata.keep_internal_alias;
   const bool has_prefer_local = metadata.prefer_local_object_binding;
   if(!has_arity && !has_effects && !has_unwind && !has_return &&
      !has_role && !has_linkage && !has_binding &&
-     !has_object && !has_keep_alias && !has_prefer_local) {
+     !has_object && !has_tls_for && !has_keep_alias && !has_prefer_local) {
     return;
   }
   out << " [";
@@ -2635,6 +2771,13 @@ void dump_function_metadata(const FunctionBoundaryMetadata & boundary,
       out << ", ";
     }
     out << "object=" << metadata.object_symbol;
+    need_comma = true;
+  }
+  if(has_tls_for) {
+    if(need_comma) {
+      out << ", ";
+    }
+    out << "tls_for=" << metadata.tls_for_symbol;
     need_comma = true;
   }
   if(has_keep_alias) {
@@ -2845,6 +2988,15 @@ string dump_program(const Program & program)
     out << "}";
     if(i + 1 != program.functions.size()) {
       out << "\n";
+    }
+  }
+  if(!program.object_aliases.empty()) {
+    if(out.tellp() > 0) {
+      out << "\n";
+    }
+    for(size_t i = 0; i < program.object_aliases.size(); ++i) {
+      out << "alias object " << program.object_aliases[i].object_symbol
+          << " = " << program.object_aliases[i].target << "\n";
     }
   }
   string text = out.str();

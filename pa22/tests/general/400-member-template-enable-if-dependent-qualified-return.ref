@@ -30,3 +30,4 @@ function @box_int___accept(%this : ptr, %__param1 : ptr) -> void [binding=weak, 
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN3boxIiEC2EPi = @box_int___box

@@ -45,3 +45,4 @@ function @YC__YC__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [unwind=no, b
     store ptr %this, $this
     return void
 }
+alias object _ZN2YDC2Ev = @YD__YD

@@ -172,3 +172,9 @@ function @Tail__operator___ov2(%this : ptr, %o : ptr [pass=reference]) -> ptr [b
     %t6 = load ptr $this
     return ptr %t6
 }
+alias object _ZN3BoxC2Ev = @Box__Box
+alias object _ZN3BoxC2ERKS_ = @Box__Box__ov2
+alias object _ZN3BoxC2EOS_ = @Box__Box__ov3
+alias object _ZN4TailC2Ev = @Tail__Tail
+alias object _ZN4TailC2ERKS_ = @Tail__Tail__ov2
+alias object _ZN4TailC2EOS_ = @Tail__Tail__ov3

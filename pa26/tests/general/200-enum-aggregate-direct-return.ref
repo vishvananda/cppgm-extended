@@ -21,3 +21,4 @@ function @OneEnum__OneEnum__ov2(%this : ptr, %other : ptr [pass=reference]) -> v
     copyobj 4x4 %t2, %t1
     return void
 }
+alias object _ZN7OneEnumC2EOS_ = @OneEnum__OneEnum__ov2

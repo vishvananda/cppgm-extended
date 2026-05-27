@@ -35,3 +35,4 @@ function @convert_iterator_map_iterator_map_const__0____call(%x : ptr [pass=refe
     %t1 = load ptr $x
     return ptr %t1
 }
+alias object _ZN8true_tagC2Ev = @true_tag__true_tag

@@ -67,3 +67,6 @@ function @Inner__Inner__ov2(%this : ptr, %other : ptr [pass=reference]) -> void 
     store ptr %t3, %t5
     return void
 }
+alias object _ZN6HolderC2Ev = @Holder__Holder
+alias object _ZN5InnerC2Ev = @Inner__Inner
+alias object _ZN5InnerC2ERKS_ = @Inner__Inner__ov2

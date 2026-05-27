@@ -81,3 +81,4 @@ function @C____lambda_C__g_t77_88__operator__(%this : ptr, %__param1 : ptr [pass
     %t9 = binary add i32 %t6, %t8
     return i32 %t9
 }
+alias object _ZN1CC2Ev = @C__C

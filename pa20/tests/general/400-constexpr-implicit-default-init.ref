@@ -22,3 +22,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @Box__Box(%t1)
     return void
 }
+alias object _ZN3BoxC2Ev = @Box__Box

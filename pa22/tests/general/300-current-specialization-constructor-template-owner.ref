@@ -47,3 +47,4 @@ function @holder_int___holder__ov3(%this : ptr, %p : ptr) -> void [binding=weak,
     store ptr %t1, %t3
     return void
 }
+alias object _ZN6holderIiEC2IiEEPT_ = @holder_int___holder__ov3

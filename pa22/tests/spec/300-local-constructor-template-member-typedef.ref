@@ -36,3 +36,5 @@ function @wrap_local__local_11195235617367138529_const_____wrap__ov4(%this : ptr
     store ptr %t3, %t5
     return void
 }
+alias object _ZN4wrapIPZ4mainE5localEC2Ev = @wrap_local__local_11195235617367138529_____wrap
+alias object _ZN4wrapIPKZ4mainE5localEC2IPS0_EERKS_IT_E = @wrap_local__local_11195235617367138529_const_____wrap__ov4

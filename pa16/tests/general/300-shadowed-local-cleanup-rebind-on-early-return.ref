@@ -28,3 +28,4 @@ function @Guard__Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardC1Ev]
     store ptr %this, $this
     return void
 }
+alias object _ZN5GuardC2Ev = @Guard__Guard

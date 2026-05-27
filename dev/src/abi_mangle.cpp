@@ -1,4 +1,5 @@
 #include "abi_mangle.h"
+#include "abi_model.h"
 
 #include <algorithm>
 #include <cctype>
@@ -1266,6 +1267,75 @@ void require_no_target(const AbiFactCase & fact_case)
   }
 }
 
+bool target_has_function(AbiMangleTargetKind kind)
+{
+  return kind == ABI_MANGLE_FUNCTION ||
+         kind == ABI_MANGLE_THUNK ||
+         kind == ABI_MANGLE_VIRTUAL_BASE_THUNK;
+}
+
+void parse_function_target(AbiFunction & function,
+                           const vector<string> & words,
+                           size_t begin,
+                           const string & context)
+{
+  if(begin >= words.size()) {
+    throw logic_error(context + " fact requires a function name form");
+  }
+  if(words[begin] == "function") {
+    ++begin;
+  }
+  if(begin >= words.size()) {
+    throw logic_error(context + " fact requires a function name form");
+  }
+  if(words[begin] == "path") {
+    if(begin + 1 >= words.size()) {
+      throw logic_error(context + " function path requires a qualified name");
+    }
+    function.form = ABI_FUNCTION_PATH;
+    function.qualified_name = words[begin + 1];
+    function.template_argument_references.assign(words.begin() + begin + 2,
+                                                 words.end());
+    return;
+  }
+  if(words[begin] == "lambda") {
+    if(begin + 3 >= words.size()) {
+      throw logic_error(
+          context + " function lambda requires context, discriminator, and terminal");
+    }
+    function.form = ABI_FUNCTION_LAMBDA;
+    function.context_reference = words[begin + 1];
+    function.discriminator = words[begin + 2];
+    function.terminal = terminal_from_fact_word(words[begin + 3]);
+    for(size_t i = begin + 4; i < words.size(); ++i) {
+      function.lambda_signature_parameter_types.push_back(
+          parse_single_type_token(words[i]));
+    }
+    return;
+  }
+  if(words[begin] == "local") {
+    if(begin + 3 >= words.size() || begin + 5 < words.size()) {
+      throw logic_error(
+          context + " function local requires context, source name, terminal, and optional discriminator");
+    }
+    function.form = ABI_FUNCTION_LOCAL;
+    function.context_reference = words[begin + 1];
+    function.source_name = words[begin + 2];
+    function.terminal = terminal_from_fact_word(words[begin + 3]);
+    function.discriminator = begin + 4 < words.size() ? words[begin + 4] : "0";
+    return;
+  }
+  function.form = ABI_FUNCTION_PATH;
+  function.qualified_name = words[begin];
+  for(size_t i = begin + 1; i < words.size(); ++i) {
+    if(words[i] == "variadic" || words[i] == "varargs") {
+      function.variadic = true;
+    } else {
+      function.parameter_types.push_back(parse_single_type_token(words[i]));
+    }
+  }
+}
+
 void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
 {
   if(words.empty()) {
@@ -1342,14 +1412,72 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     fact_case.target.type = parse_type_spec(words, 1);
     return;
   }
-  if(command == "typeinfo" || command == "vtable") {
+  if(command == "typeinfo" || command == "vtable" || command == "vtt") {
     if(words.size() < 2) {
       throw logic_error(command + " fact requires a type");
     }
     require_no_target(fact_case);
-    fact_case.target.kind = command == "typeinfo" ?
-        ABI_MANGLE_TYPEINFO : ABI_MANGLE_VTABLE;
+    fact_case.target.kind =
+        command == "typeinfo" ? ABI_MANGLE_TYPEINFO :
+        command == "vtable" ? ABI_MANGLE_VTABLE :
+                               ABI_MANGLE_VTT;
     fact_case.target.type = parse_type_spec(words, 1);
+    return;
+  }
+  if(command == "construction-vtable") {
+    if(words.size() != 4) {
+      throw logic_error(
+          "construction-vtable requires dynamic type, base offset, and base type");
+    }
+    require_no_target(fact_case);
+    fact_case.target.kind = ABI_MANGLE_CONSTRUCTION_VTABLE;
+    fact_case.target.type = parse_single_type_token(words[1]);
+    if(!parse_unsigned_integer_word(words[2], fact_case.target.base_offset)) {
+      throw logic_error("construction-vtable base offset must be decimal");
+    }
+    fact_case.target.base_type = parse_single_type_token(words[3]);
+    return;
+  }
+  if(command == "tls-wrapper" || command == "thread-local-wrapper") {
+    if(words.size() != 3 ||
+       (words[1] != "variable" && words[1] != "c-variable")) {
+      throw logic_error(command + " requires variable or c-variable and a qualified name");
+    }
+    require_no_target(fact_case);
+    fact_case.target.kind = ABI_MANGLE_THREAD_LOCAL_WRAPPER;
+    fact_case.target.c_linkage = words[1] == "c-variable";
+    fact_case.target.qualified_name = words[2];
+    return;
+  }
+  if(command == "thunk") {
+    if(words.size() < 4) {
+      throw logic_error(
+          "thunk requires this adjustment, optional result adjustment, and a function target");
+    }
+    require_no_target(fact_case);
+    fact_case.target.kind = ABI_MANGLE_THUNK;
+    fact_case.target.this_adjust = parse_signed_integer(words[1]);
+    size_t function_begin = 2;
+    if(words[function_begin] != "function") {
+      if(function_begin + 1 >= words.size() || words[function_begin + 1] != "function") {
+        throw logic_error("thunk requires a function target");
+      }
+      fact_case.target.has_result_adjust = true;
+      fact_case.target.result_adjust = parse_signed_integer(words[function_begin]);
+      ++function_begin;
+    }
+    parse_function_target(fact_case.target.function, words, function_begin, command);
+    return;
+  }
+  if(command == "virtual-base-thunk") {
+    if(words.size() < 4) {
+      throw logic_error(
+          "virtual-base-thunk requires vcall offset and a function target");
+    }
+    require_no_target(fact_case);
+    fact_case.target.kind = ABI_MANGLE_VIRTUAL_BASE_THUNK;
+    fact_case.target.vcall_offset = parse_signed_integer(words[1]);
+    parse_function_target(fact_case.target.function, words, 2, command);
     return;
   }
   if(command == "variable" || command == "c-variable") {
@@ -1371,56 +1499,11 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     fact_case.target.kind = ABI_MANGLE_FUNCTION;
     AbiFunction & function = fact_case.target.function;
     function.c_linkage = command == "c-function";
-    if(words[1] == "path") {
-      if(words.size() < 3) {
-        throw logic_error("function path requires a qualified name");
-      }
-	  function.form = ABI_FUNCTION_PATH;
-	  function.qualified_name = words[2];
-	  function.template_argument_references.assign(words.begin() + 3,
-	                                               words.end());
-	  return;
-    }
-    if(words[1] == "lambda") {
-      if(words.size() < 5) {
-        throw logic_error(
-            "function lambda requires context, discriminator, and terminal");
-      }
-      function.form = ABI_FUNCTION_LAMBDA;
-      function.context_reference = words[2];
-      function.discriminator = words[3];
-      function.terminal = terminal_from_fact_word(words[4]);
-      for(size_t i = 5; i < words.size(); ++i) {
-        function.lambda_signature_parameter_types.push_back(
-            parse_single_type_token(words[i]));
-      }
-      return;
-    }
-    if(words[1] == "local") {
-      if(words.size() < 5 || words.size() > 6) {
-        throw logic_error(
-            "function local requires context, source name, terminal, and optional discriminator");
-      }
-      function.form = ABI_FUNCTION_LOCAL;
-      function.context_reference = words[2];
-      function.source_name = words[3];
-      function.terminal = terminal_from_fact_word(words[4]);
-      function.discriminator = words.size() == 6 ? words[5] : "0";
-      return;
-    }
-	function.form = ABI_FUNCTION_PATH;
-	function.qualified_name = words[1];
-	for(size_t i = 2; i < words.size(); ++i) {
-	  if(words[i] == "variadic" || words[i] == "varargs") {
-	    function.variadic = true;
-	  } else {
-	    function.parameter_types.push_back(parse_single_type_token(words[i]));
-	  }
-	}
+    parse_function_target(function, words, 1, command);
 	return;
       }
   if(command == "variadic" || command == "varargs") {
-    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+    if(!target_has_function(fact_case.target.kind)) {
       throw logic_error(command + " appears before function fact");
     }
     if(words.size() != 1) {
@@ -1430,7 +1513,7 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     return;
   }
   if(command == "abi-tag") {
-    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+    if(!target_has_function(fact_case.target.kind)) {
       throw logic_error("abi-tag appears before function fact");
     }
     if(words.size() != 2) {
@@ -1440,7 +1523,7 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     return;
   }
   if(command == "function-qualifier" || command == "qualifier") {
-    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+    if(!target_has_function(fact_case.target.kind)) {
       throw logic_error(command + " appears before function fact");
     }
     for(size_t i = 1; i < words.size(); ++i) {
@@ -1459,7 +1542,7 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     return;
   }
   if(command == "operator-terminal") {
-    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+    if(!target_has_function(fact_case.target.kind)) {
       throw logic_error("operator-terminal appears before function fact");
     }
     if(words.size() != 2) {
@@ -1470,7 +1553,7 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     return;
   }
   if(command == "conversion-terminal") {
-    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+    if(!target_has_function(fact_case.target.kind)) {
       throw logic_error("conversion-terminal appears before function fact");
     }
     if(words.size() < 2) {
@@ -1481,7 +1564,7 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     return;
   }
   if(command == "param") {
-    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+    if(!target_has_function(fact_case.target.kind)) {
       throw logic_error("param appears before function fact");
     }
     if(words.size() < 2) {
@@ -1492,7 +1575,7 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     return;
   }
   if(command == "result") {
-    if(fact_case.target.kind != ABI_MANGLE_FUNCTION) {
+    if(!target_has_function(fact_case.target.kind)) {
       throw logic_error("result appears before function fact");
     }
     if(words.size() < 2) {
@@ -1749,6 +1832,97 @@ vector<string> fact_words(const AbiFact & fact)
   throw logic_error("unknown ABI fact kind");
 }
 
+void append_function_target_words(vector<string> & words,
+                                  const AbiFunction & function,
+                                  const string & command)
+{
+  words.push_back(function.c_linkage && command == "function" ?
+                  "c-function" : command);
+  if(function.form == ABI_FUNCTION_PATH) {
+    words.push_back("path");
+    words.push_back(function.qualified_name);
+    words.insert(words.end(),
+                 function.template_argument_references.begin(),
+                 function.template_argument_references.end());
+  } else if(function.form == ABI_FUNCTION_LAMBDA) {
+    words.push_back("lambda");
+    words.push_back(function.context_reference);
+    words.push_back(function.discriminator);
+    words.push_back(terminal_word_from_fact_terminal(function.terminal));
+    for(size_t i = 0;
+        i < function.lambda_signature_parameter_types.size();
+        ++i) {
+      append_single_type_token(words,
+                               function.lambda_signature_parameter_types[i]);
+    }
+  } else {
+    words.push_back("local");
+    words.push_back(function.context_reference);
+    words.push_back(function.source_name);
+    words.push_back(terminal_word_from_fact_terminal(function.terminal));
+    words.push_back(function.discriminator);
+  }
+}
+
+void append_function_modifier_lines(vector<vector<string> > & lines,
+                                    const AbiFunction & function)
+{
+  if(function.terminal == ABI_FUNCTION_TERMINAL_OPERATOR_CODE) {
+    vector<string> terminal_words;
+    terminal_words.push_back("operator-terminal");
+    terminal_words.push_back(function.terminal_operator_code);
+    lines.push_back(terminal_words);
+  } else if(function.terminal == ABI_FUNCTION_TERMINAL_CONVERSION) {
+    vector<string> terminal_words;
+    terminal_words.push_back("conversion-terminal");
+    append_type_spec_words(terminal_words, function.conversion_type);
+    lines.push_back(terminal_words);
+  }
+  if(function.nested_const ||
+     function.nested_volatile ||
+     function.nested_lvalue_ref ||
+     function.nested_rvalue_ref) {
+    vector<string> qualifier_words;
+    qualifier_words.push_back("function-qualifier");
+    if(function.nested_const) {
+      qualifier_words.push_back("const");
+    }
+    if(function.nested_volatile) {
+      qualifier_words.push_back("volatile");
+    }
+    if(function.nested_lvalue_ref) {
+      qualifier_words.push_back("lvalue-ref");
+    }
+    if(function.nested_rvalue_ref) {
+      qualifier_words.push_back("rvalue-ref");
+    }
+    lines.push_back(qualifier_words);
+  }
+  for(size_t i = 0; i < function.abi_tags.size(); ++i) {
+    vector<string> tag_words;
+    tag_words.push_back("abi-tag");
+    tag_words.push_back(function.abi_tags[i]);
+    lines.push_back(tag_words);
+  }
+  if(function.has_result_type) {
+    vector<string> result_words;
+    result_words.push_back("result");
+    append_type_spec_words(result_words, function.result_type);
+    lines.push_back(result_words);
+  }
+  for(size_t i = 0; i < function.parameter_types.size(); ++i) {
+    vector<string> param_words;
+    param_words.push_back("param");
+    append_type_spec_words(param_words, function.parameter_types[i]);
+    lines.push_back(param_words);
+  }
+  if(function.variadic) {
+    vector<string> variadic_words;
+    variadic_words.push_back("variadic");
+    lines.push_back(variadic_words);
+  }
+}
+
 vector<vector<string> > target_lines(const AbiMangleTarget & target)
 {
   vector<vector<string> > lines;
@@ -1771,97 +1945,51 @@ vector<vector<string> > target_lines(const AbiMangleTarget & target)
     append_type_spec_words(words, target.type);
     lines.push_back(words);
     return lines;
+  case ABI_MANGLE_VTT:
+    words.push_back("vtt");
+    append_type_spec_words(words, target.type);
+    lines.push_back(words);
+    return lines;
+  case ABI_MANGLE_CONSTRUCTION_VTABLE:
+    words.push_back("construction-vtable");
+    append_single_type_token(words, target.type);
+    words.push_back(to_string(target.base_offset));
+    append_single_type_token(words, target.base_type);
+    lines.push_back(words);
+    return lines;
+  case ABI_MANGLE_THREAD_LOCAL_WRAPPER:
+    words.push_back("tls-wrapper");
+    words.push_back(target.c_linkage ? "c-variable" : "variable");
+    words.push_back(target.qualified_name);
+    lines.push_back(words);
+    return lines;
+  case ABI_MANGLE_THUNK:
+    words.push_back("thunk");
+    words.push_back(to_string(target.this_adjust));
+    if(target.has_result_adjust) {
+      words.push_back(to_string(target.result_adjust));
+    }
+    append_function_target_words(words, target.function, "function");
+    lines.push_back(words);
+    append_function_modifier_lines(lines, target.function);
+    return lines;
+  case ABI_MANGLE_VIRTUAL_BASE_THUNK:
+    words.push_back("virtual-base-thunk");
+    words.push_back(to_string(target.vcall_offset));
+    append_function_target_words(words, target.function, "function");
+    lines.push_back(words);
+    append_function_modifier_lines(lines, target.function);
+    return lines;
   case ABI_MANGLE_VARIABLE:
     words.push_back(target.c_linkage ? "c-variable" : "variable");
     words.push_back(target.qualified_name);
     lines.push_back(words);
     return lines;
-  case ABI_MANGLE_FUNCTION: {
-    words.push_back(target.function.c_linkage ? "c-function" : "function");
-    if(target.function.form == ABI_FUNCTION_PATH) {
-      words.push_back("path");
-      words.push_back(target.function.qualified_name);
-      words.insert(words.end(),
-                   target.function.template_argument_references.begin(),
-                   target.function.template_argument_references.end());
-    } else if(target.function.form == ABI_FUNCTION_LAMBDA) {
-      words.push_back("lambda");
-      words.push_back(target.function.context_reference);
-      words.push_back(target.function.discriminator);
-      words.push_back(terminal_word_from_fact_terminal(
-          target.function.terminal));
-      for(size_t i = 0;
-          i < target.function.lambda_signature_parameter_types.size();
-          ++i) {
-        append_single_type_token(
-            words,
-            target.function.lambda_signature_parameter_types[i]);
-      }
-    } else {
-      words.push_back("local");
-      words.push_back(target.function.context_reference);
-      words.push_back(target.function.source_name);
-      words.push_back(terminal_word_from_fact_terminal(
-          target.function.terminal));
-      words.push_back(target.function.discriminator);
-	}
-	lines.push_back(words);
-	if(target.function.terminal == ABI_FUNCTION_TERMINAL_OPERATOR_CODE) {
-	  vector<string> terminal_words;
-	  terminal_words.push_back("operator-terminal");
-	  terminal_words.push_back(target.function.terminal_operator_code);
-	  lines.push_back(terminal_words);
-	} else if(target.function.terminal == ABI_FUNCTION_TERMINAL_CONVERSION) {
-	  vector<string> terminal_words;
-	  terminal_words.push_back("conversion-terminal");
-	  append_type_spec_words(terminal_words, target.function.conversion_type);
-	  lines.push_back(terminal_words);
-	}
-	if(target.function.nested_const ||
-	   target.function.nested_volatile ||
-	   target.function.nested_lvalue_ref ||
-	   target.function.nested_rvalue_ref) {
-	  vector<string> qualifier_words;
-	  qualifier_words.push_back("function-qualifier");
-	  if(target.function.nested_const) {
-	    qualifier_words.push_back("const");
-	  }
-	  if(target.function.nested_volatile) {
-	    qualifier_words.push_back("volatile");
-	  }
-	  if(target.function.nested_lvalue_ref) {
-	    qualifier_words.push_back("lvalue-ref");
-	  }
-	  if(target.function.nested_rvalue_ref) {
-	    qualifier_words.push_back("rvalue-ref");
-	  }
-	  lines.push_back(qualifier_words);
-	}
-	for(size_t i = 0; i < target.function.abi_tags.size(); ++i) {
-	  vector<string> tag_words;
-	  tag_words.push_back("abi-tag");
-	  tag_words.push_back(target.function.abi_tags[i]);
-	  lines.push_back(tag_words);
-	}
-	if(target.function.has_result_type) {
-	  vector<string> result_words;
-	  result_words.push_back("result");
-	  append_type_spec_words(result_words, target.function.result_type);
-	  lines.push_back(result_words);
-    }
-    for(size_t i = 0; i < target.function.parameter_types.size(); ++i) {
-      vector<string> param_words;
-      param_words.push_back("param");
-	  append_type_spec_words(param_words, target.function.parameter_types[i]);
-	  lines.push_back(param_words);
-	}
-	if(target.function.variadic) {
-	  vector<string> variadic_words;
-	  variadic_words.push_back("variadic");
-	  lines.push_back(variadic_words);
-	}
-	return lines;
-      }
+  case ABI_MANGLE_FUNCTION:
+    append_function_target_words(words, target.function, "function");
+    lines.push_back(words);
+    append_function_modifier_lines(lines, target.function);
+    return lines;
   }
   throw logic_error("unknown ABI mangle target kind");
 }
@@ -3649,11 +3777,11 @@ void direct_apply_fact(DirectFactContext & ctx, const AbiFact & fact)
   }
 }
 
-string direct_emit_function_symbol(const DirectFactContext & ctx,
-                                   const AbiFunction & function)
+string direct_emit_function_symbol_body(const DirectFactContext & ctx,
+                                        const AbiFunction & function)
 {
   DirectEncoder encoder;
-  string out = "_Z";
+  string out;
   if(function.form == ABI_FUNCTION_PATH) {
     if(!direct_emit_function_name_for_function(ctx, encoder, function, out)) {
       throw logic_error("unable to encode ABI fact function");
@@ -3731,6 +3859,12 @@ string direct_emit_function_symbol(const DirectFactContext & ctx,
   return out;
 }
 
+string direct_emit_function_symbol(const DirectFactContext & ctx,
+                                   const AbiFunction & function)
+{
+  return "_Z" + direct_emit_function_symbol_body(ctx, function);
+}
+
 string direct_emit_type_encoding(const DirectFactContext & ctx,
                                  const AbiType & type)
 {
@@ -3738,6 +3872,19 @@ string direct_emit_type_encoding(const DirectFactContext & ctx,
   string out;
   if(!direct_emit_type(ctx, encoder, type, out)) {
     throw logic_error("ABI model mangler failed to encode fact type");
+  }
+  return out;
+}
+
+string direct_emit_special_type_symbol(const DirectFactContext & ctx,
+                                       SpecialTypeSymbolKind kind,
+                                       const AbiType & type)
+{
+  string out;
+  if(!emit_special_type_symbol_from_encoding(kind,
+                                             direct_emit_type_encoding(ctx, type),
+                                             out)) {
+    throw logic_error("unable to encode ABI fact special type symbol");
   }
   return out;
 }
@@ -3766,9 +3913,68 @@ string mangle_case(const AbiFactCase & fact_case)
     }
     return direct_variable_symbol(fact_case.target.qualified_name);
   case ABI_MANGLE_TYPEINFO:
-    return "_ZTI" + direct_emit_type_encoding(ctx, fact_case.target.type);
+    return direct_emit_special_type_symbol(ctx,
+                                           SPECIAL_TYPEINFO,
+                                           fact_case.target.type);
   case ABI_MANGLE_VTABLE:
-    return "_ZTV" + direct_emit_type_encoding(ctx, fact_case.target.type);
+    return direct_emit_special_type_symbol(ctx,
+                                           SPECIAL_VTABLE,
+                                           fact_case.target.type);
+  case ABI_MANGLE_VTT:
+    return direct_emit_special_type_symbol(ctx,
+                                           SPECIAL_VTT,
+                                           fact_case.target.type);
+  case ABI_MANGLE_CONSTRUCTION_VTABLE: {
+    string out;
+    if(!emit_construction_vtable_symbol_from_encodings(
+           direct_emit_type_encoding(ctx, fact_case.target.type),
+           fact_case.target.base_offset,
+           direct_emit_type_encoding(ctx, fact_case.target.base_type),
+           out)) {
+      throw logic_error("unable to encode ABI fact construction vtable symbol");
+    }
+    return out;
+  }
+  case ABI_MANGLE_THREAD_LOCAL_WRAPPER: {
+    string out;
+    DirectFactContext empty_ctx;
+    DirectEncoder encoder;
+    string name_encoding;
+    if(fact_case.target.qualified_name.empty() ||
+       !direct_emit_function_name_path(empty_ctx,
+                                       encoder,
+                                       fact_case.target.qualified_name,
+                                       vector<string>(),
+                                       name_encoding) ||
+       !emit_thread_local_wrapper_symbol_from_encoding(
+           name_encoding,
+           out)) {
+      throw logic_error("unable to encode ABI fact TLS wrapper symbol");
+    }
+    return out;
+  }
+  case ABI_MANGLE_THUNK: {
+    string out;
+    if(!emit_virtual_override_thunk_symbol_from_encoding(
+           direct_emit_function_symbol_body(ctx, fact_case.target.function),
+           fact_case.target.this_adjust,
+           fact_case.target.has_result_adjust,
+           fact_case.target.result_adjust,
+           out)) {
+      throw logic_error("unable to encode ABI fact thunk symbol");
+    }
+    return out;
+  }
+  case ABI_MANGLE_VIRTUAL_BASE_THUNK: {
+    string out;
+    if(!emit_virtual_base_override_thunk_symbol_from_encoding(
+           direct_emit_function_symbol_body(ctx, fact_case.target.function),
+           fact_case.target.vcall_offset,
+           out)) {
+      throw logic_error("unable to encode ABI fact virtual-base thunk symbol");
+    }
+    return out;
+  }
   case ABI_MANGLE_NONE:
     break;
   }

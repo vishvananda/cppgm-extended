@@ -78,3 +78,5 @@ function @S__S__ov2(%this : ptr, %o : ptr [pass=reference]) -> void [binding=wea
     store i32 %t3, %t5
     return void
 }
+alias object _ZN1SC2Ev = @S__S
+alias object _ZN1SC2ERKS_ = @S__S__ov2

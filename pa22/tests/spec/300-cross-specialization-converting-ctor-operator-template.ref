@@ -11,3 +11,4 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
+alias object _ZN3boxIfEC2ERKS_IdE = @box_float___box

@@ -49,3 +49,4 @@ function @holder_int__int___move_and_check(%this : ptr, %f : obj<8x8>, %l : obj<
     copyobj 8x8 %t5, %t4
     return obj<8x8> $retobj__1
 }
+alias object _ZN4iterIiPilLl1024EEC2Ev = @iter_int__int____long_int__1024___iter

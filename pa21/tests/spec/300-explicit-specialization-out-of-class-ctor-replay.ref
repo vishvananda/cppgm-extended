@@ -65,3 +65,5 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = binary sub i32 %t9, 17
     return i32 %t10
 }
+alias object _ZN1sIiEC2Ev = @s_int___s
+alias object _ZN1sIiEC2Ei = @s_int___s__ov2

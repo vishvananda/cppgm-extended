@@ -123,3 +123,5 @@ function @Base__Base__base_entry(%this : ptr, %first : ptr, %second : ptr) -> vo
     store ptr %t4, %t6
     return void
 }
+alias object _ZN4PairC2EPvS0_ = @Pair__Pair
+alias object _ZN4PairC2ERKS_ = @Pair__Pair__ov2

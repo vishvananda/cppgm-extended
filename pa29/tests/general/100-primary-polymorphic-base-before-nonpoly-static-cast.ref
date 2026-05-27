@@ -274,3 +274,7 @@ function @iface___iface(%this : ptr) -> void [binding=weak, object=_ZN5ifaceD1Ev
     store ptr %t3, %t1
     return void
 }
+alias object _ZN7dynamicI7matcherEC2ERKS0_ = @dynamic_matcher___dynamic
+alias object _ZN7dynamicI7matcherED2Ev = @dynamic_matcher____dynamic
+alias object _ZN7matcherC2Ei = @matcher__matcher
+alias object _ZN5ifaceD2Ev = @iface___iface

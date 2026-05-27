@@ -57,3 +57,4 @@ function @RefWrap__RefWrap__ov4(%this : ptr, %second : ptr [pass=reference]) -> 
     store ptr %t1, %t3
     return void
 }
+alias object _ZN7RefWrapC2ERi = @RefWrap__RefWrap__ov4

@@ -4334,4 +4334,383 @@ inline bool emit_function_encoding_body(const FunctionEncoding & function,
   return true;
 }
 
+enum SpecialTypeSymbolKind
+{
+  SPECIAL_TYPEINFO,
+  SPECIAL_VTABLE,
+  SPECIAL_VTT
+};
+
+enum SpecialMemberEntryKind
+{
+  SPECIAL_MEMBER_COMPLETE,
+  SPECIAL_MEMBER_BASE,
+  SPECIAL_MEMBER_DELETING
+};
+
+inline const char * special_type_symbol_prefix(SpecialTypeSymbolKind kind)
+{
+  switch(kind) {
+  case SPECIAL_TYPEINFO:
+    return "_ZTI";
+  case SPECIAL_VTABLE:
+    return "_ZTV";
+  case SPECIAL_VTT:
+    return "_ZTT";
+  }
+  return "";
+}
+
+inline bool emit_special_type_symbol_from_encoding(
+    SpecialTypeSymbolKind kind,
+    const std::string & type_encoding,
+    std::string & out)
+{
+  if(type_encoding.empty()) {
+    return false;
+  }
+  out = special_type_symbol_prefix(kind);
+  if(out.empty()) {
+    return false;
+  }
+  out += type_encoding;
+  return true;
+}
+
+inline bool emit_special_type_symbol(SpecialTypeSymbolKind kind,
+                                     const Type & type,
+                                     std::string & out,
+                                     SubstitutionSink * sink)
+{
+  std::string type_encoding;
+  if(!emit_type(type, type_encoding, sink)) {
+    return false;
+  }
+  return emit_special_type_symbol_from_encoding(kind, type_encoding, out);
+}
+
+inline bool emit_construction_vtable_symbol_from_encodings(
+    const std::string & dynamic_type_encoding,
+    unsigned long long base_offset,
+    const std::string & base_type_encoding,
+    std::string & out)
+{
+  if(dynamic_type_encoding.empty() || base_type_encoding.empty()) {
+    return false;
+  }
+  out = "_ZTC";
+  out += dynamic_type_encoding;
+  out += std::to_string(base_offset);
+  out += '_';
+  out += base_type_encoding;
+  return true;
+}
+
+inline bool emit_construction_vtable_symbol(const Type & dynamic_type,
+                                            unsigned long long base_offset,
+                                            const Type & base_type,
+                                            std::string & out,
+                                            SubstitutionSink * sink)
+{
+  std::string dynamic_type_encoding;
+  std::string base_type_encoding;
+  if(!emit_type(dynamic_type, dynamic_type_encoding, sink) ||
+     !emit_type(base_type, base_type_encoding, sink)) {
+    return false;
+  }
+  return emit_construction_vtable_symbol_from_encodings(dynamic_type_encoding,
+                                                        base_offset,
+                                                        base_type_encoding,
+                                                        out);
+}
+
+inline bool object_symbol_body(const std::string & object_symbol,
+                               std::string & out)
+{
+  if(object_symbol.size() < 2 ||
+     object_symbol[0] != '_' ||
+     object_symbol[1] != 'Z') {
+    return false;
+  }
+  out = object_symbol.substr(2);
+  return true;
+}
+
+inline bool emit_thread_local_wrapper_symbol_from_encoding(
+    const std::string & name_encoding,
+    std::string & out)
+{
+  if(name_encoding.empty()) {
+    return false;
+  }
+  out = "_ZTW";
+  out += name_encoding;
+  return true;
+}
+
+inline bool emit_thread_local_wrapper_symbol_from_symbol(
+    const std::string & object_symbol,
+    std::string & out)
+{
+  std::string body;
+  if(!object_symbol_body(object_symbol, body)) {
+    return false;
+  }
+  return emit_thread_local_wrapper_symbol_from_encoding(body, out);
+}
+
+inline std::string encode_abi_offset(long long value)
+{
+  return value < 0 ? std::string("n") + std::to_string(-value) :
+                     std::to_string(value);
+}
+
+inline std::string encode_nonvirtual_call_offset(long long value)
+{
+  return std::string("h") + encode_abi_offset(value) + "_";
+}
+
+inline bool emit_virtual_override_thunk_symbol_from_encoding(
+    const std::string & target_body,
+    long long this_adjust,
+    bool has_result_adjust,
+    long long result_adjust,
+    std::string & out);
+
+inline bool emit_virtual_base_override_thunk_symbol_from_encoding(
+    const std::string & target_body,
+    long long vcall_offset,
+    std::string & out);
+
+inline bool emit_virtual_override_thunk_symbol(
+    const std::string & target_object_symbol,
+    long long this_adjust,
+    bool has_result_adjust,
+    long long result_adjust,
+    std::string & out)
+{
+  std::string target_body;
+  if(!object_symbol_body(target_object_symbol, target_body)) {
+    return false;
+  }
+  return emit_virtual_override_thunk_symbol_from_encoding(target_body,
+                                                          this_adjust,
+                                                          has_result_adjust,
+                                                          result_adjust,
+                                                          out);
+}
+
+inline bool emit_virtual_override_thunk_symbol_from_encoding(
+    const std::string & target_body,
+    long long this_adjust,
+    bool has_result_adjust,
+    long long result_adjust,
+    std::string & out)
+{
+  if(target_body.empty()) {
+    return false;
+  }
+  if(has_result_adjust) {
+    out = "_ZTc";
+    out += encode_nonvirtual_call_offset(this_adjust);
+    out += encode_nonvirtual_call_offset(result_adjust);
+    out += target_body;
+    return true;
+  }
+  out = "_ZT";
+  out += encode_nonvirtual_call_offset(this_adjust);
+  out += target_body;
+  return true;
+}
+
+inline bool emit_virtual_base_override_thunk_symbol(
+    const std::string & target_object_symbol,
+    long long vcall_offset,
+    std::string & out)
+{
+  std::string target_body;
+  if(!object_symbol_body(target_object_symbol, target_body)) {
+    return false;
+  }
+  return emit_virtual_base_override_thunk_symbol_from_encoding(target_body,
+                                                               vcall_offset,
+                                                               out);
+}
+
+inline bool emit_virtual_base_override_thunk_symbol_from_encoding(
+    const std::string & target_body,
+    long long vcall_offset,
+    std::string & out)
+{
+  if(target_body.empty()) {
+    return false;
+  }
+  out = "_ZTv0_";
+  out += encode_abi_offset(vcall_offset);
+  out += '_';
+  out += target_body;
+  return true;
+}
+
+inline bool emit_function_name_symbol(const FunctionEncoding & function,
+                                      std::string & out,
+                                      SubstitutionSink * sink)
+{
+  out = "_Z";
+  return emit_function_name(function, out, sink);
+}
+
+inline bool special_member_entry_code(bool is_constructor,
+                                      SpecialMemberEntryKind entry_kind,
+                                      const char *& out)
+{
+  switch(entry_kind) {
+  case SPECIAL_MEMBER_COMPLETE:
+    out = is_constructor ? "C1" : "D1";
+    return true;
+  case SPECIAL_MEMBER_BASE:
+    out = is_constructor ? "C2" : "D2";
+    return true;
+  case SPECIAL_MEMBER_DELETING:
+    if(is_constructor) {
+      return false;
+    }
+    out = "D0";
+    return true;
+  }
+  return false;
+}
+
+inline bool find_special_member_entry_token(const std::string & object_symbol,
+                                            const std::string & token,
+                                            std::size_t & pos)
+{
+  pos = object_symbol.rfind(token);
+  while(pos != std::string::npos) {
+    const std::size_t after = pos + token.size();
+    if(after < object_symbol.size() &&
+       (object_symbol[after] == 'E' ||
+        object_symbol[after] == 'B' ||
+        object_symbol[after] == 'I')) {
+      return true;
+    }
+    if(pos == 0) {
+      break;
+    }
+    pos = object_symbol.rfind(token, pos - 1);
+  }
+  return false;
+}
+
+inline bool replace_special_member_entry_token(
+    const std::string & object_symbol,
+    const std::string & from,
+    const std::string & to,
+    std::string & out)
+{
+  std::size_t pos = std::string::npos;
+  if(!find_special_member_entry_token(object_symbol, from, pos)) {
+    return false;
+  }
+  out = object_symbol;
+  out.replace(pos, from.size(), to);
+  return out != object_symbol;
+}
+
+inline bool special_member_entry_point_symbol_from_complete_symbol(
+    const std::string & complete_object_symbol,
+    bool is_constructor,
+    SpecialMemberEntryKind entry_kind,
+    std::string & out)
+{
+  if(complete_object_symbol.empty()) {
+    return false;
+  }
+  const char * from = is_constructor ? "C1" : "D1";
+  const char * to = nullptr;
+  if(!special_member_entry_code(is_constructor, entry_kind, to)) {
+    return false;
+  }
+  if(std::string(from) == std::string(to)) {
+    out = complete_object_symbol;
+    return true;
+  }
+  return replace_special_member_entry_token(complete_object_symbol,
+                                            from,
+                                            to,
+                                            out);
+}
+
+inline bool special_member_entry_point_symbol_from_symbol(
+    const std::string & object_symbol,
+    bool is_constructor,
+    SpecialMemberEntryKind entry_kind,
+    std::string & out)
+{
+  if(object_symbol.empty()) {
+    return false;
+  }
+  const char * target = nullptr;
+  if(!special_member_entry_code(is_constructor, entry_kind, target)) {
+    return false;
+  }
+  std::size_t target_pos = std::string::npos;
+  if(find_special_member_entry_token(object_symbol, target, target_pos)) {
+    out = object_symbol;
+    return true;
+  }
+
+  const char * constructor_entries[] = {"C1", "C2"};
+  const char * destructor_entries[] = {"D1", "D2", "D0"};
+  const char ** entries = is_constructor ? constructor_entries : destructor_entries;
+  const std::size_t entry_count =
+      is_constructor ?
+          sizeof(constructor_entries) / sizeof(constructor_entries[0]) :
+          sizeof(destructor_entries) / sizeof(destructor_entries[0]);
+  for(std::size_t i = 0; i < entry_count; ++i) {
+    if(entries[i][0] == target[0] && entries[i][1] == target[1]) {
+      continue;
+    }
+    if(replace_special_member_entry_token(object_symbol,
+                                          entries[i],
+                                          target,
+                                          out)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline std::vector<std::string> implicit_special_member_symbol_aliases(
+    const std::string & object_symbol)
+{
+  std::vector<std::string> out;
+  const struct {
+    const char * from;
+    const char * to;
+  } replacements[] = {
+      {"C1", "C2"},
+      {"D1", "D2"}};
+
+  for(std::size_t i = 0; i < sizeof(replacements) / sizeof(replacements[0]); ++i) {
+    std::string alias;
+    if(replace_special_member_entry_token(object_symbol,
+                                          replacements[i].from,
+                                          replacements[i].to,
+                                          alias)) {
+      out.push_back(alias);
+    }
+  }
+
+  if(out.size() == 2 && out[1] < out[0]) {
+    std::string tmp = out[0];
+    out[0] = out[1];
+    out[1] = tmp;
+  }
+  if(out.size() == 2 && out[0] == out[1]) {
+    out.pop_back();
+  }
+  return out;
+}
+
 }  // namespace abi_mangle

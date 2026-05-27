@@ -196,3 +196,6 @@ function @Base__Base__base_entry(%this : ptr) -> void [unwind=no, binding=weak, 
     store ptr %t3, %t1
     return void
 }
+alias object _ZN4BaseD2Ev = @Base___Base
+alias object _ZN7DerivedC2Ev = @Derived__Derived
+alias object _ZN7DerivedD2Ev = @Derived___Derived

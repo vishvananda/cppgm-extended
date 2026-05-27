@@ -20,3 +20,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     return void
 }
+alias object _ZN4ZeroC2Ev = @Zero__Zero

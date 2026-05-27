@@ -48,6 +48,7 @@ struct GlobalDefinition
   std::string name;
   bool readonly = false;
   bool thread_local_storage = false;
+  std::string thread_local_wrapper_symbol;
   std::string type;
   long long int_value = 0;
   long double float_value = 0.0L;
@@ -272,12 +273,19 @@ struct Function
   std::vector<Block> blocks;
 };
 
+struct ObjectAlias
+{
+  std::string object_symbol;
+  std::string target;
+};
+
 struct Program
 {
   std::string target;
   std::vector<Instruction> startup;
   std::vector<GlobalDefinition> globals;
   std::vector<Function> functions;
+  std::vector<ObjectAlias> object_aliases;
   std::vector<symbol_linkage::SymbolIdentity> exported_symbols;
 };
 

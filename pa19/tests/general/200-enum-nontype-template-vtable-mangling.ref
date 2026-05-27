@@ -123,3 +123,5 @@ function @Control_int___Policy_2___Control(%this : ptr) -> void [unwind=no, bind
     store ptr %t3, %t1
     return void
 }
+alias object _ZN7ControlIiL6Policy2EED2Ev = @Control_int___Policy_2____Control
+alias object _ZN7ControlIiL6Policy2EEC2Ev = @Control_int___Policy_2___Control

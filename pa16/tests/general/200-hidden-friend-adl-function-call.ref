@@ -31,3 +31,4 @@ function @token__token(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN5
     store i32 %t1, %t3
     return void
 }
+alias object _ZN5tokenC2Ei = @token__token

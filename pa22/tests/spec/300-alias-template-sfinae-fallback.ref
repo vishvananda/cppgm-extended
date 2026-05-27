@@ -64,3 +64,5 @@ function @no_type__no_type(%this : ptr) -> void [unwind=no, binding=weak, object
     store ptr %this, $this
     return void
 }
+alias object _ZN8yes_typeC2Ev = @yes_type__yes_type
+alias object _ZN7no_typeC2Ev = @no_type__no_type

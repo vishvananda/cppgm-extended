@@ -293,3 +293,7 @@ function @Tok__Tok__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [bin
     call void @Payload__Payload__ov2(%t4, %t6)
     return void
 }
+alias object _ZN3TokC2Ev = @Tok__Tok
+alias object _ZN3TokC2Ei = @Tok__Tok__ov4
+alias object _ZN3TokD2Ev = @Tok___Tok
+alias object _ZN3TokC2EOS_ = @Tok__Tok__ov3

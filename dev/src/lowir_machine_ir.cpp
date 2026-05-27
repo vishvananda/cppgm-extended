@@ -97,11 +97,6 @@ string target_text(const string & output_target)
   return "unknown";
 }
 
-string tls_wrapper_internal_symbol(const string & global_symbol)
-{
-  return symbol_linkage::thread_local_wrapper_internal_symbol(global_symbol);
-}
-
 bool is_float_type(const string & type)
 {
   return type == "f32" || type == "f64" || type == "f80";
@@ -2892,12 +2887,20 @@ public:
   {
     machine_.target = target_text(output_target);
     machine_.exported_symbols = program_.exported_symbols;
+    for(size_t i = 0; i < program_.object_aliases.size(); ++i) {
+      mir::ObjectAlias alias;
+      alias.object_symbol = program_.object_aliases[i].object_symbol;
+      alias.target = program_.object_aliases[i].target;
+      machine_.object_aliases.push_back(alias);
+    }
     for(size_t i = 0; i < program_.function_declarations.size(); ++i) {
       const lir::FunctionDeclaration & declaration = program_.function_declarations[i];
       function_names_.insert(declaration.name);
       function_params_[declaration.name] = declaration.params;
       merge_boundary_metadata(function_boundaries_[declaration.name], declaration.boundary);
       register_function_role(declaration.name, declaration.metadata.role);
+      register_thread_local_wrapper(declaration.name,
+                                    declaration.metadata.tls_for_symbol);
     }
     for(size_t i = 0; i < program_.functions.size(); ++i) {
       const lir::Function & function = program_.functions[i];
@@ -2906,6 +2909,7 @@ public:
       function_params_[function.name] = function.params;
       merge_boundary_metadata(function_boundaries_[function.name], function.boundary);
       register_function_role(function.name, function.metadata.role);
+      register_thread_local_wrapper(function.name, function.metadata.tls_for_symbol);
     }
     if(enable_host_eh) {
       for(size_t i = 0; i < program_.functions.size(); ++i) {
@@ -2935,6 +2939,7 @@ public:
         scalar_global_types_[global.name] = global.type.text;
       }
     }
+    validate_thread_local_wrappers();
   }
 
   mir::Program build()
@@ -2970,6 +2975,7 @@ private:
   map<string, lir::SymbolRole> function_roles_;
   set<string> global_names_;
   set<string> thread_local_globals_;
+  map<string, string> thread_local_wrapper_symbols_;
   map<string, string> scalar_global_types_;
   mir::Program machine_;
   bool host_eh_requested_ = false;
@@ -2997,6 +3003,44 @@ private:
       }
     }
     function_roles_[name] = role;
+  }
+
+  void register_thread_local_wrapper(const string & wrapper_symbol,
+                                     const string & target_global)
+  {
+    if(target_global.empty()) {
+      return;
+    }
+    if(wrapper_symbol == target_global) {
+      throw lir::ParseError("tls_for metadata cannot target wrapper function " +
+                            wrapper_symbol);
+    }
+    map<string, string>::const_iterator found =
+        thread_local_wrapper_symbols_.find(target_global);
+    if(found != thread_local_wrapper_symbols_.end() &&
+       found->second != wrapper_symbol) {
+      throw lir::ParseError("duplicate thread_local wrapper for " + target_global);
+    }
+    thread_local_wrapper_symbols_[target_global] = wrapper_symbol;
+  }
+
+  void validate_thread_local_wrappers() const
+  {
+    for(map<string, string>::const_iterator it = thread_local_wrapper_symbols_.begin();
+        it != thread_local_wrapper_symbols_.end();
+        ++it) {
+      if(thread_local_globals_.count(it->first) == 0) {
+        throw lir::ParseError("tls_for target is not a thread_local global " +
+                              it->first);
+      }
+    }
+  }
+
+  string thread_local_wrapper_symbol_for_global(const string & global_symbol) const
+  {
+    map<string, string>::const_iterator found =
+        thread_local_wrapper_symbols_.find(global_symbol);
+    return found == thread_local_wrapper_symbols_.end() ? string() : found->second;
   }
 
   string first_defined_function_with_role(lir::SymbolRole role) const
@@ -3540,6 +3584,10 @@ private:
     out.name = global.name;
     out.readonly = global.storage == lir::GSM_READONLY;
     out.thread_local_storage = global.storage == lir::GSM_THREAD_LOCAL;
+    if(out.thread_local_storage) {
+      out.thread_local_wrapper_symbol =
+          thread_local_wrapper_symbol_for_global(global.name);
+    }
     if(!global.structured) {
       out.storage_kind = mir::GlobalDefinition::GS_SCALAR;
       out.type = global.type.text;
@@ -3791,9 +3839,15 @@ private:
     }
     if(operand.kind == lir::Operand::OP_GLOBAL) {
       if(thread_local_globals_.count(operand.text) != 0) {
+        const string wrapper_symbol =
+            thread_local_wrapper_symbol_for_global(operand.text);
+        if(wrapper_symbol.empty()) {
+          throw lir::ParseError("thread_local address requires tls_for wrapper for " +
+                                operand.text);
+        }
         inst = make_instruction(mir::Instruction::MI_TLS_ADDR);
         inst.operands.push_back(reg(dst));
-        inst.operands.push_back(symbol(tls_wrapper_internal_symbol(operand.text)));
+        inst.operands.push_back(symbol(wrapper_symbol));
         out.push_back(inst);
         return;
       }

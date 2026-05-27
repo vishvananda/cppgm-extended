@@ -43,3 +43,7 @@ function @Box_char___Tag__Tag(%this : ptr) -> void [binding=weak, object=_ZN3Box
     store ptr %this, $this
     return void
 }
+alias object _ZN3BoxIiEC2Ev = @Box_int___Box
+alias object _ZN3BoxIcEC2Ev = @Box_char___Box
+alias object _ZN3BoxIiE3TagC2Ev = @Box_int___Tag__Tag
+alias object _ZN3BoxIcE3TagC2Ev = @Box_char___Tag__Tag

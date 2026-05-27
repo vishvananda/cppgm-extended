@@ -87,3 +87,5 @@ function @identity_int___identity(%this : ptr) -> void [unwind=no, binding=weak,
     store ptr %this, $this
     return void
 }
+alias object _ZN8identityIcEC2Ev = @identity_char___identity
+alias object _ZN8identityIiEC2Ev = @identity_int___identity

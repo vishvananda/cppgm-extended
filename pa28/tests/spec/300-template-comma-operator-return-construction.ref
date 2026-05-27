@@ -105,3 +105,4 @@ function @named_parameter_combine_named_parameter_int__second_id___named_paramet
     copyobj 4x4 %t6, %t5
     return void
 }
+alias object _ZN23named_parameter_combineI15named_parameterIi9second_idES0_Ii8first_idEEC2ERKS2_RKS4_ = @named_parameter_combine_named_parameter_int__second_id___named_parameter_int__first_id____named_parameter_combine

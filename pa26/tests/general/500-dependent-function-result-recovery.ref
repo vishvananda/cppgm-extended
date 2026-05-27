@@ -259,3 +259,5 @@ function @lib__pair_int____int_____pair(%this : ptr, %a : ptr, %b : ptr) -> void
     store ptr %t4, %t6
     return void
 }
+alias object _ZN3lib9copy_implC2Ev = @lib__copy_impl__copy_impl
+alias object _ZN3lib4pairIPiS1_EC2ES1_S1_ = @lib__pair_int____int_____pair

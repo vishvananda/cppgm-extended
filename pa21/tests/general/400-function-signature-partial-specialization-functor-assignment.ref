@@ -97,3 +97,4 @@ function @add_one__operator__(%this : ptr, %value : i32) -> i32 [binding=weak, o
     %t2 = binary add i32 %t1, 1
     return i32 %t2
 }
+alias object _ZN12callable_boxIFiiEEC2Ev = @callable_box_int_int____callable_box

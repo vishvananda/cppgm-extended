@@ -515,136 +515,6 @@ bool object_symbol_definition_is_inline_canonicalizable(
           metadata.binding == lowir_internal::SBM_INTERNAL);
 }
 
-bool retargetable_complete_special_member_object_symbol(const string & object_symbol,
-                                                        string & base_object_symbol)
-{
-  return symbol_linkage::special_member_entry_point_object_symbol_from_complete_object_symbol(
-      object_symbol,
-      true,
-      symbol_linkage::SMEK_BASE,
-      base_object_symbol);
-}
-
-struct SpecialMemberObjectUse
-{
-  bool base = false;
-  bool complete = false;
-};
-
-bool operand_names_base_subobject_temp(const lowir_internal::Operand & operand,
-                                       const set<string> & base_subobject_temps)
-{
-  return operand.kind == lowir_internal::Operand::OP_TEMP &&
-         base_subobject_temps.count(operand.text) != 0;
-}
-
-lowir_internal::Program retarget_base_only_special_member_object_symbols(
-    const lowir_internal::Program & program)
-{
-  map<string, string> base_entry_object_symbols;
-  for(size_t i = 0; i < program.functions.size(); ++i) {
-    const lowir_internal::Function & function = program.functions[i];
-    string base_object_symbol;
-    if(function.metadata.object_symbol.empty() ||
-       !function.metadata.prefer_local_object_binding ||
-       !object_symbol_definition_is_prunable(function.metadata) ||
-       !retargetable_complete_special_member_object_symbol(
-           function.metadata.object_symbol,
-           base_object_symbol)) {
-      continue;
-    }
-    base_entry_object_symbols[function.name] = base_object_symbol;
-  }
-  if(base_entry_object_symbols.empty()) {
-    return program;
-  }
-
-  map<string, SpecialMemberObjectUse> uses;
-  for(map<string, string>::const_iterator it = base_entry_object_symbols.begin();
-      it != base_entry_object_symbols.end();
-      ++it) {
-    uses[it->first] = SpecialMemberObjectUse();
-  }
-
-  for(size_t fi = 0; fi < program.functions.size(); ++fi) {
-    const lowir_internal::Function & function = program.functions[fi];
-    for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-      const lowir_internal::Block & block = function.blocks[bi];
-      set<string> base_subobject_temps;
-      for(size_t ii = 0; ii < block.instructions.size(); ++ii) {
-        const lowir_internal::Instruction & instruction = block.instructions[ii];
-        if(!instruction.dest.empty()) {
-          base_subobject_temps.erase(instruction.dest);
-        }
-        if(instruction.kind == lowir_internal::Instruction::IK_INDEX &&
-           instruction.index_projection == lowir_internal::IPK_BASE_SUBOBJECT &&
-           !instruction.dest.empty()) {
-          base_subobject_temps.insert(instruction.dest);
-          continue;
-        }
-        if(instruction.kind == lowir_internal::Instruction::IK_COPY &&
-           !instruction.dest.empty() &&
-           operand_names_base_subobject_temp(instruction.first, base_subobject_temps)) {
-          base_subobject_temps.insert(instruction.dest);
-          continue;
-        }
-        if(instruction.kind == lowir_internal::Instruction::IK_CALL &&
-           instruction.first.kind == lowir_internal::Operand::OP_GLOBAL) {
-          map<string, SpecialMemberObjectUse>::iterator found =
-              uses.find(instruction.first.text);
-          if(found != uses.end()) {
-            const bool base_call =
-                !instruction.args.empty() &&
-                operand_names_base_subobject_temp(instruction.args[0],
-                                                  base_subobject_temps);
-            if(base_call) {
-              found->second.base = true;
-            } else {
-              found->second.complete = true;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  map<string, string> retargeted;
-  for(map<string, SpecialMemberObjectUse>::const_iterator it = uses.begin();
-      it != uses.end();
-      ++it) {
-    if(it->second.base && !it->second.complete) {
-      retargeted[it->first] = base_entry_object_symbols[it->first];
-    }
-  }
-  if(retargeted.empty()) {
-    return program;
-  }
-
-  lowir_internal::Program rewritten = program;
-  for(size_t i = 0; i < rewritten.functions.size(); ++i) {
-    map<string, string>::const_iterator found =
-        retargeted.find(rewritten.functions[i].name);
-    if(found != retargeted.end()) {
-      rewritten.functions[i].metadata.object_symbol = found->second;
-    }
-  }
-  for(size_t i = 0; i < rewritten.function_declarations.size(); ++i) {
-    map<string, string>::const_iterator found =
-        retargeted.find(rewritten.function_declarations[i].name);
-    if(found != retargeted.end()) {
-      rewritten.function_declarations[i].metadata.object_symbol = found->second;
-    }
-  }
-  for(size_t i = 0; i < rewritten.exported_symbols.size(); ++i) {
-    map<string, string>::const_iterator found =
-        retargeted.find(rewritten.exported_symbols[i].internal_symbol);
-    if(found != retargeted.end()) {
-      rewritten.exported_symbols[i].object_symbol = found->second;
-    }
-  }
-  return rewritten;
-}
-
 bool lowir_operand_equals(const lowir_internal::Operand & lhs,
                           const lowir_internal::Operand & rhs)
 {
@@ -1661,6 +1531,13 @@ void note_live_symbol_references(const lowir_internal::Function & function,
                                  set<string> & live_functions,
                                  set<string> & live_globals)
 {
+  if(!function.metadata.tls_for_symbol.empty()) {
+    note_live_symbol_name(function.metadata.tls_for_symbol,
+                          function_names,
+                          global_names,
+                          live_functions,
+                          live_globals);
+  }
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
     for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
       note_live_symbol_references(function.blocks[bi].instructions[ii],
@@ -1771,6 +1648,7 @@ lowir_internal::Program prune_unreferenced_object_symbol_definitions(
 
   lowir_internal::Program pruned = program;
   pruned.globals.clear();
+  pruned.function_declarations.clear();
   pruned.functions.clear();
   set<string> removed_globals;
   set<string> removed_functions;
@@ -1783,8 +1661,13 @@ lowir_internal::Program prune_unreferenced_object_symbol_definitions(
     pruned.globals.push_back(program.globals[i]);
   }
   for(size_t i = 0; i < program.functions.size(); ++i) {
-    if(object_symbol_definition_is_prunable(program.functions[i].metadata) &&
-       live_functions.count(program.functions[i].name) == 0) {
+    const lowir_internal::Function & function = program.functions[i];
+    const bool removed_tls_target =
+        !function.metadata.tls_for_symbol.empty() &&
+        removed_globals.count(function.metadata.tls_for_symbol) != 0;
+    if(removed_tls_target ||
+       (object_symbol_definition_is_prunable(function.metadata) &&
+        live_functions.count(function.name) == 0)) {
       removed_functions.insert(program.functions[i].name);
       continue;
     }
@@ -1792,7 +1675,7 @@ lowir_internal::Program prune_unreferenced_object_symbol_definitions(
   }
 
   if(removed_globals.empty() && removed_functions.empty()) {
-    return pruned;
+    return program;
   }
 
   pruned.exported_symbols.clear();
@@ -1802,6 +1685,23 @@ lowir_internal::Program prune_unreferenced_object_symbol_definitions(
       continue;
     }
     pruned.exported_symbols.push_back(program.exported_symbols[i]);
+  }
+  pruned.object_aliases.clear();
+  for(size_t i = 0; i < program.object_aliases.size(); ++i) {
+    if(removed_functions.count(program.object_aliases[i].target) != 0 ||
+       removed_globals.count(program.object_aliases[i].target) != 0) {
+      continue;
+    }
+    pruned.object_aliases.push_back(program.object_aliases[i]);
+  }
+  for(size_t i = 0; i < program.function_declarations.size(); ++i) {
+    const lowir_internal::FunctionDeclaration & declaration =
+        program.function_declarations[i];
+    if(!declaration.metadata.tls_for_symbol.empty() &&
+       removed_globals.count(declaration.metadata.tls_for_symbol) != 0) {
+      continue;
+    }
+    pruned.function_declarations.push_back(declaration);
   }
   return pruned;
 }
@@ -1864,7 +1764,6 @@ lowir_internal::Program prepare_object_lowir_program(lowir_internal::Program pro
     clear_lowir_program_debug_locations(program);
   }
   program = optimize_lowir_program(program, optimization_level);
-  program = retarget_base_only_special_member_object_symbols(program);
   program = inline_trivial_identity_object_wrappers(program);
   program = inline_constant_object_wrappers(program);
   program = inline_compare_object_wrappers(program);

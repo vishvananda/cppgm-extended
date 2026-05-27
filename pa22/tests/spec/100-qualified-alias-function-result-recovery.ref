@@ -56,3 +56,5 @@ function @api__pair_api__text_char__const__api__tag___pair(%this : ptr, %a : obj
     store i32 %t5, %t7
     return void
 }
+alias object _ZN3api4textIcEC2Ev = @api__text_char___text
+alias object _ZN3api4pairIKNS_4textIcEENS_3tagEEC2ES2_S4_ = @api__pair_api__text_char__const__api__tag___pair

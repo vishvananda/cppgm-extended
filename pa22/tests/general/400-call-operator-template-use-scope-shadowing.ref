@@ -56,3 +56,4 @@ function @N____copy_impl____copy_impl(%this : ptr) -> void [unwind=no, binding=w
     store ptr %this, $this
     return void
 }
+alias object _ZN1N11__copy_implC2Ev = @N____copy_impl____copy_impl

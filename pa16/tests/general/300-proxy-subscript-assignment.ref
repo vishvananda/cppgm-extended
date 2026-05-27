@@ -67,3 +67,4 @@ function @Proxy__Proxy(%this : ptr, %q : ptr) -> void [binding=weak, object=_ZN5
     store ptr %t1, %t3
     return void
 }
+alias object _ZN5ProxyC2EPi = @Proxy__Proxy

@@ -170,3 +170,6 @@ function @YD___YD(%this : ptr) -> void [binding=weak, object=_ZN2YDD1Ev] {
     call void @YB___YB__base_entry(%t5)
     return void
 }
+alias object _ZN2YBC2Ev = @YB__YB
+alias object _ZN2YBD2Ev = @YB___YB
+alias object _ZN2YDD2Ev = @YD___YD

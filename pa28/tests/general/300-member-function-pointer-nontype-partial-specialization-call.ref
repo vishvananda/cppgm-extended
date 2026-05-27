@@ -103,3 +103,5 @@ function @holder_example__fast_mem_fn_int__target_______const___target__id__1___
     %t2 = index i8 [projection=field] %t1, 0
     return void
 }
+alias object _ZN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS1_2idEvEELi1EEC2Ev = @example__fast_mem_fn_int__target_______const___target__id__1___fast_mem_fn
+alias object _ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC2ES5_ = @holder_example__fast_mem_fn_int__target_______const___target__id__1____holder

@@ -136,3 +136,8 @@ function @Deleter__operator__(%this : ptr, %__param1 : ptr) -> void [binding=wea
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN3tagI7DeleterEC2Ev = @tag_Deleter___tag
+alias object _ZN5CountC2IPi7DeleterEET_T0_ = @Count__Count
+alias object _ZN6HolderC2IPi3tagI7DeleterEEET_T0_ = @Holder__Holder
+alias object _ZN5CountC2IPi7DeleterEET_3tagIT0_E = @Count__Count__ov3
+alias object _ZN7DeleterC2Ev = @Deleter__Deleter

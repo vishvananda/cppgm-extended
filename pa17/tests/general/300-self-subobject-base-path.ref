@@ -46,3 +46,4 @@ function @B__f(%this : ptr) -> i32 [binding=weak, object=_ZNK1B1fEv] {
     store ptr %this, $this
     return i32 1
 }
+alias object _ZN1BC2Ev = @B__B

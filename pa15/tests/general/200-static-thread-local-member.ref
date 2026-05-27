@@ -1,3 +1,5 @@
+declare function @X__n__tls_wrapper() -> ptr [binding=strong, object=_ZTWN1X1nE, tls_for=@X__n]
+
 global @X__n : i32 [storage=thread_local, binding=strong, object=_ZN1X1nE] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

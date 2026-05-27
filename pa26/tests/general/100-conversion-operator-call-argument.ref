@@ -35,3 +35,4 @@ function @Target__Target(%this : ptr) -> void [binding=weak, object=_ZN6TargetC1
     store ptr %this, $this
     return void
 }
+alias object _ZN6TargetC2Ev = @Target__Target

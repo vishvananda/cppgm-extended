@@ -66,3 +66,6 @@ function @__lambda_S__S_t68_81(%s : ptr [pass=reference]) -> ptr [binding=intern
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
+alias object _ZN1SC2Ei = @S__S
+alias object _ZN1SC2EOS_ = @S__S__ov2
+alias object _ZN1UC2Ei = @U__U__ov2

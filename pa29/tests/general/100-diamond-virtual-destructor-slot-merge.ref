@@ -334,3 +334,8 @@ function @_D___D__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, objec
     call void @D___D(%t1)
     return void
 }
+alias object _ZN1DC2Ev = @D__D
+alias object _ZN1DD2Ev = @D___D
+alias object _ZN2B2D2Ev = @B2___B2
+alias object _ZN2B1D2Ev = @B1___B1
+alias object _ZN2B0D2Ev = @B0___B0

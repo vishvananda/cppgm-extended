@@ -74,3 +74,4 @@ function @E__E__ov2(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN1EC1
     store i32 %t1, %t3
     return void
 }
+alias object _ZN1EC2Ei = @E__E__ov2

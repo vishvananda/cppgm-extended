@@ -169,7 +169,8 @@ size_t unordered_set_storage_bytes(const unordered_set<T, H, E, A> & value)
 size_t symbol_identity_payload_bytes(const symbol_linkage::SymbolIdentity & symbol)
 {
   return string_storage_bytes(symbol.internal_symbol) +
-         string_storage_bytes(symbol.object_symbol);
+         string_storage_bytes(symbol.object_symbol) +
+         string_storage_bytes(symbol.thread_local_wrapper_object_symbol);
 }
 
 size_t callsem_symbol_storage_bytes(
@@ -1088,6 +1089,8 @@ bool symbol_identity_equal(const symbol_linkage::SymbolIdentity & lhs,
 {
   return lhs.internal_symbol == rhs.internal_symbol &&
          lhs.object_symbol == rhs.object_symbol &&
+         lhs.thread_local_wrapper_object_symbol ==
+             rhs.thread_local_wrapper_object_symbol &&
          lhs.keep_internal_alias == rhs.keep_internal_alias &&
          lhs.prefer_local_object_binding == rhs.prefer_local_object_binding &&
          lhs.linkage == rhs.linkage;
@@ -1098,6 +1101,7 @@ uint64_t hash_symbol_identity(const symbol_linkage::SymbolIdentity & symbol)
   uint64_t hash = 0x2f98b7e9c587a123ULL;
   hash = hash_mix(hash, hash_string_value(symbol.internal_symbol));
   hash = hash_mix(hash, hash_string_value(symbol.object_symbol));
+  hash = hash_mix(hash, hash_string_value(symbol.thread_local_wrapper_object_symbol));
   hash = hash_mix(hash, symbol.keep_internal_alias ? 1 : 0);
   hash = hash_mix(hash, symbol.prefer_local_object_binding ? 1 : 0);
   hash = hash_mix(hash, static_cast<uint64_t>(symbol.linkage));
@@ -1119,6 +1123,11 @@ bool callsem_flags_equal(const CallSemNode & lhs, const CallSemNode & rhs)
          lhs.has_token == rhs.has_token &&
          lhs.is_virtual_dispatch == rhs.is_virtual_dispatch &&
          lhs.is_virtual_member_function == rhs.is_virtual_member_function &&
+         lhs.is_constructor == rhs.is_constructor &&
+         lhs.is_destructor == rhs.is_destructor &&
+         lhs.is_const_method == rhs.is_const_method &&
+         lhs.is_volatile_method == rhs.is_volatile_method &&
+         lhs.has_function_ref_qualifier == rhs.has_function_ref_qualifier &&
          lhs.has_virtual_dispatch_view_offset ==
              rhs.has_virtual_dispatch_view_offset &&
          lhs.is_primary_vtable == rhs.is_primary_vtable &&
@@ -1159,6 +1168,11 @@ uint64_t hash_callsem_flags(const CallSemNode & node)
   hash = hash_mix(hash, node.has_token ? 1 : 0);
   hash = hash_mix(hash, node.is_virtual_dispatch ? 1 : 0);
   hash = hash_mix(hash, node.is_virtual_member_function ? 1 : 0);
+  hash = hash_mix(hash, node.is_constructor ? 1 : 0);
+  hash = hash_mix(hash, node.is_destructor ? 1 : 0);
+  hash = hash_mix(hash, node.is_const_method ? 1 : 0);
+  hash = hash_mix(hash, node.is_volatile_method ? 1 : 0);
+  hash = hash_mix(hash, node.has_function_ref_qualifier ? 1 : 0);
   hash = hash_mix(hash, node.has_virtual_dispatch_view_offset ? 1 : 0);
   hash = hash_mix(hash, node.is_primary_vtable ? 1 : 0);
   hash = hash_mix(hash, node.uses_extended_vtable_layout ? 1 : 0);
@@ -1190,6 +1204,8 @@ bool callsem_shallow_exact_equal(const CallSemNode & lhs, const CallSemNode & rh
          lhs.token_type == rhs.token_type &&
          callsem_special_member_entry_point_kind(lhs) ==
              callsem_special_member_entry_point_kind(rhs) &&
+         callsem_function_ref_qualifier(lhs) ==
+             callsem_function_ref_qualifier(rhs) &&
          lhs.text == rhs.text &&
          callsem_resolved_name(lhs) == callsem_resolved_name(rhs) &&
          qualified_name_equal(callsem_qualified_name_syntax(lhs),
@@ -1225,6 +1241,8 @@ bool callsem_shallow_exact_equal(const CallSemNode & lhs, const CallSemNode & rh
          callsem_runtime_bridge_symbol(lhs) == callsem_runtime_bridge_symbol(rhs) &&
          callsem_local_static_guard_symbol(lhs) ==
              callsem_local_static_guard_symbol(rhs) &&
+         callsem_abi_tags(lhs) == callsem_abi_tags(rhs) &&
+         callsem_object_aliases(lhs) == callsem_object_aliases(rhs) &&
          callsem_flags_equal(lhs, rhs);
 }
 
@@ -1237,6 +1255,9 @@ uint64_t hash_callsem_shallow_exact(const CallSemNode & node)
   hash = hash_mix(
       hash,
       static_cast<uint64_t>(callsem_special_member_entry_point_kind(node)));
+  hash = hash_mix(
+      hash,
+      static_cast<uint64_t>(callsem_function_ref_qualifier(node)));
   hash = hash_mix(hash, hash_string_value(node.text));
   hash = hash_mix(hash, hash_string_value(callsem_resolved_name(node)));
   hash = hash_mix(hash, hash_qualified_name(callsem_qualified_name_syntax(node)));
@@ -1272,6 +1293,16 @@ uint64_t hash_callsem_shallow_exact(const CallSemNode & node)
   hash = hash_mix(hash, hash_string_value(callsem_vtt_object_symbol(node)));
   hash = hash_mix(hash, hash_string_value(callsem_runtime_bridge_symbol(node)));
   hash = hash_mix(hash, hash_string_value(callsem_local_static_guard_symbol(node)));
+  const std::vector<std::string> & abi_tags = callsem_abi_tags(node);
+  hash = hash_mix(hash, abi_tags.size());
+  for(size_t i = 0; i < abi_tags.size(); ++i) {
+    hash = hash_mix(hash, hash_string_value(abi_tags[i]));
+  }
+  const std::vector<std::string> & object_aliases = callsem_object_aliases(node);
+  hash = hash_mix(hash, object_aliases.size());
+  for(size_t i = 0; i < object_aliases.size(); ++i) {
+    hash = hash_mix(hash, hash_string_value(object_aliases[i]));
+  }
   hash = hash_mix(hash, hash_callsem_flags(node));
   return hash;
 }
@@ -1897,7 +1928,9 @@ private:
        callsem_vtt_slice_offset(lhs) != callsem_vtt_slice_offset(rhs) ||
        callsem_vtt_entry_index(lhs) != callsem_vtt_entry_index(rhs) ||
        callsem_special_member_entry_point_kind(lhs) !=
-           callsem_special_member_entry_point_kind(rhs)) {
+           callsem_special_member_entry_point_kind(rhs) ||
+       callsem_function_ref_qualifier(lhs) !=
+           callsem_function_ref_qualifier(rhs)) {
       variations.insert("value");
     }
     if(!callsem_flags_equal(lhs, rhs)) {
@@ -1932,7 +1965,9 @@ private:
        callsem_vtt_object_symbol(lhs) != callsem_vtt_object_symbol(rhs) ||
        callsem_runtime_bridge_symbol(lhs) != callsem_runtime_bridge_symbol(rhs) ||
        callsem_local_static_guard_symbol(lhs) !=
-           callsem_local_static_guard_symbol(rhs)) {
+           callsem_local_static_guard_symbol(rhs) ||
+       callsem_abi_tags(lhs) != callsem_abi_tags(rhs) ||
+       callsem_object_aliases(lhs) != callsem_object_aliases(rhs)) {
       variations.insert("sidecar_string");
     }
     if(callsem_virtual_base_layout(lhs) != callsem_virtual_base_layout(rhs)) {
@@ -2150,7 +2185,9 @@ string callsem_provenance_variation_mask(const CallSemNode & lhs,
      callsem_vtt_slice_offset(lhs) != callsem_vtt_slice_offset(rhs) ||
      callsem_vtt_entry_index(lhs) != callsem_vtt_entry_index(rhs) ||
      callsem_special_member_entry_point_kind(lhs) !=
-         callsem_special_member_entry_point_kind(rhs)) {
+         callsem_special_member_entry_point_kind(rhs) ||
+     callsem_function_ref_qualifier(lhs) !=
+         callsem_function_ref_qualifier(rhs)) {
     variations.insert("value");
   }
   if(!callsem_flags_equal(lhs, rhs)) {
@@ -2183,7 +2220,9 @@ string callsem_provenance_variation_mask(const CallSemNode & lhs,
      callsem_vtt_object_symbol(lhs) != callsem_vtt_object_symbol(rhs) ||
      callsem_runtime_bridge_symbol(lhs) != callsem_runtime_bridge_symbol(rhs) ||
      callsem_local_static_guard_symbol(lhs) !=
-         callsem_local_static_guard_symbol(rhs)) {
+         callsem_local_static_guard_symbol(rhs) ||
+     callsem_abi_tags(lhs) != callsem_abi_tags(rhs) ||
+     callsem_object_aliases(lhs) != callsem_object_aliases(rhs)) {
     variations.insert("sidecar_string");
   }
   if(callsem_virtual_base_layout(lhs) != callsem_virtual_base_layout(rhs)) {

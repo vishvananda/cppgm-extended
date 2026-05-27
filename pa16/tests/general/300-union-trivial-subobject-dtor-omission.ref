@@ -30,3 +30,5 @@ function @Sink___Sink(%this : ptr) -> void [binding=weak, object=_ZN4SinkD1Ev] {
     store i32 1, @g
     return void
 }
+alias object _ZN7WrapperD2Ev = @Wrapper___Wrapper
+alias object _ZN4SinkD2Ev = @Sink___Sink

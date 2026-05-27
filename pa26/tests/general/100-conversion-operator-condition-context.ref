@@ -50,3 +50,4 @@ function @Flag__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK4Flagc
     %t4 = cmp ne i32 %t3, 0
     return u8 %t4
 }
+alias object _ZN4FlagC2Ei = @Flag__Flag

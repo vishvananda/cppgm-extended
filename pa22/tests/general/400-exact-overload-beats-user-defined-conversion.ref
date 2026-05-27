@@ -50,3 +50,4 @@ function @StringLike__StringLike(%this : ptr, %__param1 : ptr) -> void [binding=
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN10StringLikeC2EPKc = @StringLike__StringLike

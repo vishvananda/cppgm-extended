@@ -44,3 +44,5 @@ function @std___Enable_default_constructor_tag___Enable_default_constructor_tag(
     store ptr %this, $this
     return void
 }
+alias object _ZN4UsesIiEC2Ev = @Uses_int___Uses
+alias object _ZNSt31_Enable_default_constructor_tagC2Ev = @std___Enable_default_constructor_tag___Enable_default_constructor_tag

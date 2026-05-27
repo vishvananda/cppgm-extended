@@ -14,3 +14,4 @@ function @partial_current_instantiation_bits_1__3___partial_current_instantiatio
     store ptr %this, $this
     return void
 }
+alias object _ZN34partial_current_instantiation_bitsILi1ELm3EEC2Ev = @partial_current_instantiation_bits_1__3___partial_current_instantiation_bits

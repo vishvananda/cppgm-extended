@@ -51,3 +51,4 @@ function @Wrapper__operatorContext_(%this : ptr) -> ptr [binding=weak, object=_Z
     %t3 = load ptr %t2
     return ptr %t3
 }
+alias object _ZN7WrapperC2ER7Context = @Wrapper__Wrapper

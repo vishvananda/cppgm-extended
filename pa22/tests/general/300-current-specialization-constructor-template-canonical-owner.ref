@@ -55,3 +55,5 @@ function @duration_like_int___duration_like__ov4(%this : ptr, %other : ptr [pass
     store i32 %t4, %t6
     return void
 }
+alias object _ZN13duration_likeIxEC2IxEET_ = @duration_like_long_long_int___duration_like__ov3
+alias object _ZN13duration_likeIiEC2IxvEERKS_IT_E = @duration_like_int___duration_like__ov4

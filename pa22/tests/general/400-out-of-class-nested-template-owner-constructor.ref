@@ -17,3 +17,4 @@ function @outer_int___inner__inner(%this : ptr, %x : i32, %y : f64) -> void [bin
     store f64 %y, $y
     return void
 }
+alias object _ZN5outerIiE5innerC2Eid = @outer_int___inner__inner

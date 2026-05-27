@@ -138,8 +138,8 @@ PA13 must parse, validate, and translate the LowIR features needed by the `tests
 
 Required program structure:
 
-- top-level `declare global`, `declare function`, `global`, and `function`
-  forms
+- top-level `declare global`, `declare function`, `global`, `function`, and
+  `alias object` forms
 - scalar and structured global definitions
 - function definitions with parameters, stack slots, blocks, and instructions
 - one entry function, identified by `[role=entry]` or the legacy `@main`
@@ -157,8 +157,8 @@ Required types:
 
 Required metadata families:
 
-- top-level `role`, `linkage`, `binding`, `object`, `keep_alias`,
-  `prefer_local`, and global `storage`
+- top-level `role`, `linkage`, `binding`, `object`, function `tls_for`,
+  `keep_alias`, `prefer_local`, and global `storage`
 - function `arity`, `effects`, `unwind`, and `return`
 - parameter `pass`, `capture`, `access`, and `alias`
 - index `projection`
@@ -205,6 +205,9 @@ source contract and produces the expected CY86 behavior.
 Reject structurally malformed LowIR, including:
 
 - duplicate top-level symbol names
+- duplicate object alias spellings
+- an object alias whose target is not a top-level declaration or definition
+- a `tls_for` wrapper whose target is not a thread-local global
 - duplicate parameter, slot, or block names inside one function
 - a function with no blocks
 - a block with no terminator

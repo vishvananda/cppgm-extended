@@ -28,3 +28,4 @@ function @holder_int___good(%this : ptr) -> i32 [binding=weak, object=_ZNK6holde
     store ptr %this, $this
     return i32 0
 }
+alias object _ZN6holderIiEC2Ev = @holder_int___holder

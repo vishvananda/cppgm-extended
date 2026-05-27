@@ -13,3 +13,4 @@ function @Box_int___Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxIiEC1I
     store ptr %this, $this
     return void
 }
+alias object _ZN3BoxIiEC2I5checkIiETnN9enable_ifIXclsrT_2okEEiE4typeELi0EEEv = @Box_int___Box

@@ -15,3 +15,4 @@ function @Function_void_int____Function__ov3(%this : ptr, %f : i32) -> void [bin
     store i32 %f, $f
     return void
 }
+alias object _ZN8FunctionIFviEEC2IivEET_ = @Function_void_int____Function__ov3

@@ -35,3 +35,5 @@ function @Wrap_ActiveInterval__local_15653610362259474173_const_____Wrap__ov4(%t
     store ptr %t3, %t5
     return void
 }
+alias object _ZN4WrapIPZ4mainE14ActiveIntervalEC2Ev = @Wrap_ActiveInterval__local_15653610362259474173_____Wrap
+alias object _ZN4WrapIPKZ4mainE14ActiveIntervalEC2IPS0_EERKS_IT_E = @Wrap_ActiveInterval__local_15653610362259474173_const_____Wrap__ov4

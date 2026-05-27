@@ -38,3 +38,4 @@ function @S__G__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1S1GC
     store ptr %this, $this
     return void
 }
+alias object _ZN1S1GC2Ev = @S__G__G

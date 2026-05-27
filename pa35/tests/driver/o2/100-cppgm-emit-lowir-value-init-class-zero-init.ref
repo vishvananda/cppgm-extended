@@ -57,3 +57,5 @@ function @D__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -> ptr [
   block ^entry:
     return ptr %this
 }
+alias object _ZN1SC2Ev = @S__S
+alias object _ZN1DC2Ev = @D__D

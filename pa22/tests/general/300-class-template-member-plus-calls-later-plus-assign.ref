@@ -102,3 +102,5 @@ function @Box_int___Box__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> v
     copyobj 8x8 %t2, %t1
     return void
 }
+alias object _ZN3BoxIiEC2EPi = @Box_int___Box
+alias object _ZN3BoxIiEC2ERKS0_ = @Box_int___Box__ov2

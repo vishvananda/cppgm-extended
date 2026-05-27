@@ -34,3 +34,4 @@ function @F__operator____ov2(%this : ptr) -> i32 [binding=weak, object=_ZNO1FclE
     store ptr %this, $this
     return i32 4
 }
+alias object _ZN1FC2Ev = @F__F

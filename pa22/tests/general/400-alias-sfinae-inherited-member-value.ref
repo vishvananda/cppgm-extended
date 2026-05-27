@@ -20,3 +20,4 @@ function @function_int_____function__ov3(%this : ptr, %__param1 : ptr [pass=refe
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN8functionIFivEEC2IRS0_vEEOT_ = @function_int_____function__ov3

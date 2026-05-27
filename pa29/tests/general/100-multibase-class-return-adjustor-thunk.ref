@@ -301,3 +301,7 @@ function @_D__current__vtable_return_adjust(%arg0 : ptr) -> obj<4x4> [binding=we
     %t2 = call obj<4x4> @D__current(%t1)
     return obj<4x4> %t2
 }
+alias object _ZN1DC2Ev = @D__D
+alias object _ZN1DD2Ev = @D___D
+alias object _ZN2B2D2Ev = @B2___B2
+alias object _ZN2B1D2Ev = @B1___B1

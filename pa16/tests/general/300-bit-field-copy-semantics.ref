@@ -50,3 +50,4 @@ function @Bits__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [un
     %t6 = load ptr $this
     return ptr %t6
 }
+alias object _ZN4BitsC2Ev = @Bits__Bits

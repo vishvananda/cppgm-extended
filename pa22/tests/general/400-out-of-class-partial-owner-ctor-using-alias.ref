@@ -26,3 +26,4 @@ function @shell_bool__int___shell(%this : ptr, %first : i32, %last : i32, %alloc
     %t4 = load i32 %t3
     return void
 }
+alias object _ZN5shellIbiEC2IiTnN9enable_ifIXsr7acceptsIT_EE5valueEiE4typeELi0EEES3_S3_RKi = @shell_bool__int___shell

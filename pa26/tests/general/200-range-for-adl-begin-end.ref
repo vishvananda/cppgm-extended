@@ -148,3 +148,5 @@ function @Range__Range(%this : ptr, %data : ptr) -> void [binding=weak, object=_
     store ptr %t1, %t3
     return void
 }
+alias object _ZN4IterC2EPi = @Iter__Iter
+alias object _ZN5RangeC2EPi = @Range__Range

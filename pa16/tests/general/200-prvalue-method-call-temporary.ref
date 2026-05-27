@@ -27,3 +27,4 @@ function @P__get(%this : ptr) -> i32 [binding=weak, object=_ZN1P3getEv] {
     %t3 = load i32 %t2
     return i32 %t3
 }
+alias object _ZN1PC2Ev = @P__P

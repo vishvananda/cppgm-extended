@@ -23,3 +23,4 @@ function @box_box_int__int__const_____box__ov3(%this : ptr, %__param1 : ptr [pas
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN3boxIJRKS_IJiiEEEEC2IJiiELb0ETnN9enable_ifIXclsr4gateIXT0_EEE2noIDpRKT_EEEbE4typeELb0EEERKS_IJDpS6_EE = @box_box_int__int__const_____box__ov3

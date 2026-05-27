@@ -131,3 +131,4 @@ function @box__box(%this : ptr, %a : obj<4x4>, %b : obj<4x4>, %x : i32) -> void 
     store i32 %t13, %t15
     return void
 }
+alias object _ZN3boxC2I4iterEET_S2_i = @box__box

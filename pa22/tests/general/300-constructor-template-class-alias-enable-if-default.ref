@@ -26,3 +26,4 @@ function @duration_like_int___duration_like__ov3(%this : ptr, %r : ptr [pass=ref
     store i32 %t2, %t4
     return void
 }
+alias object _ZN13duration_likeIiEC2IiTnN9enable_ifIXsr7is_sameIT_iEE5valueEiE4typeELi0EEERKS3_ = @duration_like_int___duration_like__ov3

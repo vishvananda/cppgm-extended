@@ -235,3 +235,7 @@ function @D__D__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=
     store ptr %t7, %t5
     return void
 }
+alias object _ZN1DC2Ev = @D__D
+alias object _ZN1DD2Ev = @D___D
+alias object _ZN1BD2Ev = @B___B
+alias object _ZN1DC2ERKS_ = @D__D__ov2

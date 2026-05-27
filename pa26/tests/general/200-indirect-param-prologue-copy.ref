@@ -71,3 +71,4 @@ function @E___E(%this : ptr) -> void [binding=weak, object=_ZN1ED1Ev] {
     call void @S___S(%t6)
     return void
 }
+alias object _ZN1ED2Ev = @E___E

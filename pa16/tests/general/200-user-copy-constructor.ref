@@ -39,3 +39,5 @@ function @Y__Y__ov2(%this : ptr, %r : ptr [pass=reference]) -> void [binding=wea
     store i32 %t4, %t6
     return void
 }
+alias object _ZN1YC2Ev = @Y__Y
+alias object _ZN1YC2ERKS_ = @Y__Y__ov2

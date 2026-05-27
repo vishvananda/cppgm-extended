@@ -129,6 +129,8 @@ bool callsem_symbol_identity_equal(const symbol_linkage::SymbolIdentity & lhs,
 {
   return lhs.internal_symbol == rhs.internal_symbol &&
          lhs.object_symbol == rhs.object_symbol &&
+         lhs.thread_local_wrapper_object_symbol ==
+             rhs.thread_local_wrapper_object_symbol &&
          lhs.keep_internal_alias == rhs.keep_internal_alias &&
          lhs.prefer_local_object_binding == rhs.prefer_local_object_binding &&
          lhs.linkage == rhs.linkage;
@@ -140,6 +142,7 @@ uint64_t callsem_symbol_identity_hash(
   uint64_t value = 1469598103934665603ULL;
   value = callsem_hash_string(value, symbol.internal_symbol);
   value = callsem_hash_string(value, symbol.object_symbol);
+  value = callsem_hash_string(value, symbol.thread_local_wrapper_object_symbol);
   value = callsem_hash_mix(value, symbol.keep_internal_alias ? 1 : 0);
   value = callsem_hash_mix(value, symbol.prefer_local_object_binding ? 1 : 0);
   value = callsem_hash_mix(value, static_cast<unsigned>(symbol.linkage));

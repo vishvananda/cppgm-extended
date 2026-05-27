@@ -117,3 +117,5 @@ function @Control_int__7___Control(%this : ptr) -> void [unwind=no, binding=weak
     store ptr %t3, %t1
     return void
 }
+alias object _ZN7ControlIiLi7EED2Ev = @Control_int__7____Control
+alias object _ZN7ControlIiLi7EEC2Ev = @Control_int__7___Control

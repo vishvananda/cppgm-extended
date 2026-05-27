@@ -40,3 +40,4 @@ function @integral_constant_bool__true___integral_constant(%this : ptr) -> void 
     store ptr %this, $this
     return void
 }
+alias object _ZN17integral_constantIbLb1EEC2Ev = @integral_constant_bool__true___integral_constant

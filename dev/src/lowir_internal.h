@@ -157,6 +157,7 @@ struct SymbolMetadata
   LanguageLinkageMode linkage = LLM_DEFAULT;
   SymbolBindingMode binding = SBM_DEFAULT;
   std::string object_symbol;
+  std::string tls_for_symbol;
   bool keep_internal_alias = false;
   bool prefer_local_object_binding = false;
   bool object_trivial_lifecycle = false;
@@ -332,12 +333,19 @@ struct FunctionDeclaration
   SymbolMetadata metadata;
 };
 
+struct ObjectAlias
+{
+  std::string object_symbol;
+  std::string target;
+};
+
 struct Program
 {
   std::vector<GlobalDeclaration> global_declarations;
   std::vector<GlobalDefinition> globals;
   std::vector<FunctionDeclaration> function_declarations;
   std::vector<Function> functions;
+  std::vector<ObjectAlias> object_aliases;
   std::vector<symbol_linkage::SymbolIdentity> exported_symbols;
 };
 

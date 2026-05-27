@@ -114,3 +114,9 @@ function @Inner___Inner(%this : ptr) -> void [binding=weak, object=_ZN5InnerD1Ev
     call void @operator_delete(%t3)
     return void
 }
+alias object _ZN5OuterC2Ev = @Outer__Outer
+alias object _ZN5OuterC2EOS_ = @Outer__Outer__ov3
+alias object _ZN5OuterD2Ev = @Outer___Outer
+alias object _ZN5InnerC2Ev = @Inner__Inner
+alias object _ZN5InnerC2EOS_ = @Inner__Inner__ov3
+alias object _ZN5InnerD2Ev = @Inner___Inner

@@ -57,3 +57,4 @@ function @boost__mpl__identity_int___identity(%this : ptr) -> void [unwind=no, b
     store ptr %this, $this
     return void
 }
+alias object _ZN5boost3mpl8identityIiEC2Ev = @boost__mpl__identity_int___identity

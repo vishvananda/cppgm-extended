@@ -121,3 +121,5 @@ function @Guard___Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardD1Ev
     store i32 %t2, @destroyed
     return void
 }
+alias object _ZN5GuardC2Ev = @Guard__Guard
+alias object _ZN5GuardD2Ev = @Guard___Guard

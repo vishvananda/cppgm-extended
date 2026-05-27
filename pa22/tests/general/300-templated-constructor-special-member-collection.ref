@@ -23,3 +23,4 @@ function @pair_int___pair__ov3(%this : ptr, %__param1 : ptr [pass=reference], %_
     store ptr %__param2, $__param2
     return void
 }
+alias object _ZN4pairIiEC2IiiLi0EEEOT_OT0_ = @pair_int___pair__ov3

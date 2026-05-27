@@ -174,3 +174,6 @@ function @YB__YB__base_entry(%this : ptr) -> void [unwind=no, binding=weak, obje
     store ptr %t3, %t1
     return void
 }
+alias object _ZN2YBD2Ev = @YB___YB
+alias object _ZN2YDC2Ev = @YD__YD
+alias object _ZN2YDD2Ev = @YD___YD

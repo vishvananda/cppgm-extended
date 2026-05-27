@@ -115,3 +115,5 @@ function @vector_detail__each_elem__each_elem(%this : ptr) -> void [unwind=no, b
     store ptr %this, $this
     return void
 }
+alias object _ZN6vectorIJislEEC2IJiiiEEEDpOT_ = @vector_int__short_int__long_int___vector__ov2
+alias object _ZN13vector_detail9each_elemC2Ev = @vector_detail__each_elem__each_elem

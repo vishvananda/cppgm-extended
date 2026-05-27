@@ -163,3 +163,6 @@ function @base__base(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4ba
     store i32 %t1, %t3
     return void
 }
+alias object _ZN4leafC2Ev = @leaf__leaf
+alias object _ZN4leafD2Ev = @leaf___leaf
+alias object _ZN4baseC2Ei = @base__base

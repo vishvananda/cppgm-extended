@@ -60,3 +60,4 @@ function @helper(%a : i32, %v : obj<4x4>) -> i32 [binding=weak, object=_Z6helper
     %t6 = binary add i32 %t2, %t5
     return i32 %t6
 }
+alias object _ZN1SIiiEC2Ei = @S_int__int___S

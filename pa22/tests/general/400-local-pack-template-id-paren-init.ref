@@ -66,3 +66,4 @@ function @pair_int_const____int_const_____pair(%this : ptr, %a : ptr [pass=refer
     store ptr %t4, %t6
     return void
 }
+alias object _ZN4pairIRKiS1_EC2ES1_S1_ = @pair_int_const____int_const_____pair

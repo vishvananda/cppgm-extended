@@ -41,3 +41,4 @@ function @InsertBase_int___insert__ov3(%this : ptr, %__param1 : ptr, %__param2 :
     store ptr %__param2, $__param2
     return void
 }
+alias object _ZN5TableIiEC2IPiEET_S3_m = @Table_int___Table

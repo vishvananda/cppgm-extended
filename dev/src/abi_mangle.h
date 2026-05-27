@@ -306,15 +306,26 @@ enum AbiMangleTargetKind
   ABI_MANGLE_FUNCTION,
   ABI_MANGLE_VARIABLE,
   ABI_MANGLE_TYPEINFO,
-  ABI_MANGLE_VTABLE
+  ABI_MANGLE_VTABLE,
+  ABI_MANGLE_VTT,
+  ABI_MANGLE_CONSTRUCTION_VTABLE,
+  ABI_MANGLE_THREAD_LOCAL_WRAPPER,
+  ABI_MANGLE_THUNK,
+  ABI_MANGLE_VIRTUAL_BASE_THUNK
 };
 
 struct AbiMangleTarget
 {
   AbiMangleTargetKind kind = ABI_MANGLE_NONE;
   AbiType type;
+  AbiType base_type;
   AbiFunction function;
   std::string qualified_name;
+  unsigned long long base_offset = 0;
+  long long this_adjust = 0;
+  bool has_result_adjust = false;
+  long long result_adjust = 0;
+  long long vcall_offset = 0;
   bool c_linkage = false;
 };
 

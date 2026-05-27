@@ -107,3 +107,4 @@ function @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%th
     copyobj 1x1 %t4, %t1
     return obj<1x1> $retobj__1
 }
+alias object _ZN3BoxIPiEC2Ev = @Box_int_____Box

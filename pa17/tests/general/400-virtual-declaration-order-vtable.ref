@@ -87,3 +87,4 @@ function @V__z(%this : ptr) -> i32 [binding=weak, object=_ZN1V1zEv] {
     store ptr %this, $this
     return i32 1
 }
+alias object _ZN1VC2Ev = @V__V

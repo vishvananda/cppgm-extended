@@ -43,3 +43,4 @@ function @array_bound_only_deduction__tag__tag(%this : ptr) -> void [unwind=no, 
     store ptr %this, $this
     return void
 }
+alias object _ZN26array_bound_only_deduction3tagC2Ev = @array_bound_only_deduction__tag__tag

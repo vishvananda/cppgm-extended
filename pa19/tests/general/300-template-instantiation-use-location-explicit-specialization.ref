@@ -49,3 +49,4 @@ function @Local__local_16583248074186681365__Local__ov3(%this : ptr, %__param1 :
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZZ1fvEN5LocalC2EOS_ = @Local__local_16583248074186681365__Local__ov3

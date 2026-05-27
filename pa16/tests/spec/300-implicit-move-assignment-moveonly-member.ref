@@ -124,3 +124,6 @@ function @MoveOnly__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -
     %t11 = load ptr $this
     return ptr %t11
 }
+alias object _ZN5OuterC2Ev = @Outer__Outer
+alias object _ZN8MoveOnlyC2Ei = @MoveOnly__MoveOnly
+alias object _ZN8MoveOnlyC2EOS_ = @MoveOnly__MoveOnly__ov3
