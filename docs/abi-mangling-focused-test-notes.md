@@ -137,6 +137,13 @@ should become focused mangling tests in the ABI assignment branch.
   - Focused test: mangle an `enable_if` NTTP default whose condition goes
     through nested alias templates and a builtin type trait expression.
 
+- clang/libc++ self-host `semantic_model.o`
+  - Gap: libc++ C11 atomic support instantiated `std::addressof` on
+    `_Atomic(unsigned long)`, but typed ABI IR did not model `_Atomic(T)`.
+  - Focused test: mangle a function template instantiated with `_Atomic(T)`,
+    which should encode as an Itanium vendor-qualified type
+    (`U7_Atomic...`).
+
 ## Current status
 
 - `CPPGM_SKIP_DEV_REBUILD=1 make test-report` passes all tests:
