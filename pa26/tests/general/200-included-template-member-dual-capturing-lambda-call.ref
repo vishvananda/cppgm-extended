@@ -32,7 +32,7 @@ function @LambdaBox_int___run(%this : ptr, %args : ptr [pass=reference]) -> i32 
     %t5 = load i32 $value
     return i32 %t5
 }
-function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> void [binding=weak, object=_ZSt6helperIZN9LambdaBoxIiE3runIJiEEEiDpOT_EUlvE_ZN9LambdaBoxIiE3runIJiEEEiDpOT_EUlvE0_EvbS3_T0_] {
+function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> void [binding=weak, object=_ZSt6helperIZN9LambdaBoxIiE3runIJiEEEiDpOT_EUlvE_ZNS2_IJiEEEiS5_EUlvE0_EvbT_T0_] {
   slot $cond : u8
   slot $if_fn : obj<8x8>
   slot $else_fn : obj<8x8>

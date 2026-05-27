@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @__lambda_main_t16_22__operator__(%t3, 4)
     return i32 %t4
 }
-function @__lambda_main_t16_22__operator__(%this : ptr, %y : i32) -> i32 [binding=weak, object=_ZZ4mainvENK3$_0clEi] {
+function @__lambda_main_t16_22__operator__(%this : ptr, %y : i32) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clEi] {
   slot $this : ptr
   slot $y : i32
 

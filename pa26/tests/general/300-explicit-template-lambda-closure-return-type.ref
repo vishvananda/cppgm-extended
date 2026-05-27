@@ -33,7 +33,7 @@ function @Table_Key_int__char__long_int____emplace(%this : ptr, %__args : ptr [p
     %t6 = call i32 @__try_key_extraction($argobj__1, $argobj__2, %t5)
     return i32 %t6
 }
-function @__try_key_extraction(%__with_key : obj<8x8>, %__without_key : obj<1x1>, %__args : ptr [pass=reference]) -> i32 [binding=weak, object=_Z20__try_key_extractionI3KeyIiclEZN5TableI3KeyIiclEE7emplaceIJRA2_KcEEEiDpOT_EUlRKS1_S7_E_ZN5TableI3KeyIiclEE7emplaceIJRA2_KcEEEiDpOT_EUlS7_E_JS7_EEDTclclsr3std7declvalIT1_EEspclsr3std7declvalIT2_EEEET0_SD_DpOSE_] {
+function @__try_key_extraction(%__with_key : obj<8x8>, %__without_key : obj<1x1>, %__args : ptr [pass=reference]) -> i32 [binding=weak, object=_Z20__try_key_extractionI3KeyIiclEZN5TableIS1_E7emplaceIJRA2_KcEEEiDpOT_EUlRKS1_S7_E_ZNS4_IJS7_EEEiSA_EUlS7_E_JS7_EEDTclclsr3stdE7declvalIT1_EEspclsr3stdE7declvalIT2_EEEET0_SF_DpOSG_] {
   slot $__with_key : obj<8x8>
   slot $__without_key : obj<1x1>
   slot $__args : ptr

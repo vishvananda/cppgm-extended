@@ -245,6 +245,7 @@ bool deduce_implicit_return_type_from_exprs(const vector<ExprInfo> & return_expr
                                             TypePtr & out);
 
 bool lambda_body_contains_disallowed_cache_control_flow(const CppAstNode & node);
+bool lambda_body_contains_local_class_declaration(const CppAstNode & node);
 
 ClassInfo * complete_class_type_for_lookup(SemanticContext & ctx,
                                            const TypePtr & type);
@@ -2425,10 +2426,31 @@ bool lambda_body_output_cache_allowed(const PreparedLambdaExpression & prepared)
     return false;
   }
   if(prepared.body &&
+     lambda_body_contains_local_class_declaration(*prepared.body)) {
+    return false;
+  }
+  if(prepared.body &&
      lambda_body_contains_disallowed_cache_control_flow(*prepared.body)) {
     return false;
   }
   return prepared.captures.empty();
+}
+
+bool lambda_body_contains_local_class_declaration(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::class_specifier ||
+     node.kind == CppAstKind::class_forward_declaration) {
+    return true;
+  }
+  if(node.kind == CppAstKind::lambda_expression) {
+    return false;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(lambda_body_contains_local_class_declaration(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool lambda_body_contains_disallowed_cache_control_flow(const CppAstNode & node)
@@ -6479,7 +6501,12 @@ ExprInfo analyze_lambda_expression(SemanticContext & ctx,
 
   PreparedLambdaExpression & current = ensure_prepared();
 
-  if(current.introducer->value == "[]" && !current.template_parameters) {
+  const bool captureless_lambda_can_use_synthetic_function =
+      current.introducer->value == "[]" &&
+      !current.template_parameters &&
+      (!current.body ||
+       !lambda_body_contains_local_class_declaration(*current.body));
+  if(captureless_lambda_can_use_synthetic_function) {
     TypePtr function_type = current_captureless_function_type();
     FunctionBinding * binding = ctx.create_synthetic_lambda_function(scope,
                                                                     function_type,

@@ -70,7 +70,7 @@ function @Analyzer__lookup_functions(%this : ptr, %scope : ptr [pass=reference],
     call void @Box_int_____Box(%t8)
     return obj<1x1> $retobj__1
 }
-function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr, %scope : ptr [pass=reference], %qualified : ptr, %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN8Analyzer43lookup_qualified_class_or_namespace_genericI3BoxIPiEZN8Analyzer16lookup_functionsER5ScopePKcEUlS5_S7_E_EET_S5_S7_RKT0_] {
+function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr, %scope : ptr [pass=reference], %qualified : ptr, %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN8Analyzer43lookup_qualified_class_or_namespace_genericI3BoxIPiEZNS_16lookup_functionsER5ScopePKcEUlS5_S7_E_EET_S5_S7_RKT0_] {
   slot $this : ptr
   slot $scope : ptr
   slot $qualified : ptr

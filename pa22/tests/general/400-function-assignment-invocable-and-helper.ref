@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S__g(%t2)
     return i32 0
 }
-function @function_void_int____operator___ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8functionIFviEEaSIN1S29G__local_15453783005237734438EvEERS1_OT_] {
+function @function_void_int____operator___ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8functionIFviEEaSIZN1S1gEvE1GvEERS1_OT_] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -37,7 +37,7 @@ function @function_void_int____function(%this : ptr) -> void [binding=weak, obje
     store ptr %this, $this
     return void
 }
-function @S__G__local_15453783005237734438__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1S29G__local_15453783005237734438C1Ev] {
+function @S__G__local_15453783005237734438__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
   slot $this : ptr
 
   block ^entry:

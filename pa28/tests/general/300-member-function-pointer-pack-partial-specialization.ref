@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = call i32 @wrapper(%t2, $argobj__1)
     return i32 %t8
 }
-function @example__make(%__param0 : i128) -> obj<1x1> [binding=weak, object=_ZN7example4makeIM6targetFivEEEN4meta9enable_ifINS4_32is_const_member_function_pointerIT_EENS_5makerIS7_EEE4typeES7_] {
+function @example__make(%__param0 : i128) -> obj<1x1> [binding=weak, object=_ZN7example4makeIM6targetKFivEEEN4meta9enable_ifINS4_32is_const_member_function_pointerIT_EENS_5makerIS7_EEE4typeES7_] {
   slot $__param0 : i128
   slot $retobj__1 : obj<1x1>
 
@@ -24,7 +24,7 @@ function @example__make(%__param0 : i128) -> obj<1x1> [binding=weak, object=_ZN7
     call void @example__maker_int__target_______const___maker(%t1)
     return obj<1x1> $retobj__1
 }
-function @wrapper(%value : ptr [pass=reference], %fn : obj<1x1>) -> i32 [binding=weak, object=_Z7wrapperIN7example5makerIM6targetFivEEEEiRKS2_T_] {
+function @wrapper(%value : ptr [pass=reference], %fn : obj<1x1>) -> i32 [binding=weak, object=_Z7wrapperIN7example5makerIM6targetKFivEEEEiRKS2_T_] {
   slot $value : ptr
   slot $fn : obj<1x1>
 
@@ -44,14 +44,14 @@ function @target__id(%this : ptr) -> i32 [binding=weak, object=_ZNK6target2idEv]
     store ptr %this, $this
     return i32 0
 }
-function @example__maker_int__target_______const___maker(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7example5makerIM6targetFivEEC1Ev] {
+function @example__maker_int__target_______const___maker(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7example5makerIM6targetKFivEEC1Ev] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @example__maker_int__target_______const___value(%this : ptr) -> i32 [binding=weak, object=_ZNK7example5makerIM6targetFivEE5valueEv] {
+function @example__maker_int__target_______const___value(%this : ptr) -> i32 [binding=weak, object=_ZNK7example5makerIM6targetKFivEE5valueEv] {
   slot $this : ptr
 
   block ^entry:

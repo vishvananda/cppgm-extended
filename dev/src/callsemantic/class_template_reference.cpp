@@ -1715,6 +1715,17 @@ public:
                     use_scope,
                     source_arg_syntaxes) :
                 nullptr;
+    const bool selected_partial_mangle_context =
+        bound_parameters &&
+        bound_parameters != &decl.parameters &&
+        bound_arguments;
+    const vector<TemplateParameterInfo> * selected_mangle_parameters =
+        selected_partial_mangle_context ? bound_parameters :
+                                          dependent_argument_mangle_parameters;
+    const vector<TemplateArgument> * selected_mangle_arguments =
+        selected_partial_mangle_context ? bound_arguments : nullptr;
+    const map<string, size_t> * selected_mangle_pack_sizes =
+        selected_partial_mangle_context ? bound_pack_sizes : nullptr;
 
     const CppAstNode * class_key = find_child_kind(*class_node, CppAstKind::class_key);
     if(!class_key) {
@@ -2855,7 +2866,9 @@ public:
               dependent_arguments,
               dependent_arguments ? source_arg_texts : nullptr,
               dependent_arguments ? source_arg_syntaxes : nullptr,
-              dependent_argument_mangle_parameters);
+              selected_mangle_parameters,
+              selected_mangle_arguments,
+              selected_mangle_pack_sizes);
       if(needs_instantiation_argument_refresh) {
         note_performance_counter(
             &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);
@@ -2917,7 +2930,9 @@ public:
             dependent_arguments,
             dependent_arguments ? source_arg_texts : nullptr,
             dependent_arguments ? source_arg_syntaxes : nullptr,
-            dependent_argument_mangle_parameters);
+            selected_mangle_parameters,
+            selected_mangle_arguments,
+            selected_mangle_pack_sizes);
     if(refreshed_instantiation_arguments) {
       note_performance_counter(
           &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);

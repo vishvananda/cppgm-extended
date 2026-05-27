@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S__g(%t2)
     return i32 0
 }
-function @function_S__G__local_14968956668511153314___function(%this : ptr, %f : obj<1x1>) -> void [binding=weak, object=_ZN8functionIN1S29G__local_14968956668511153314EEC1ES1_] {
+function @function_S__G__local_14968956668511153314___function(%this : ptr, %f : obj<1x1>) -> void [binding=weak, object=_ZN8functionIZN1S1gEvE1GEC1ES1_] {
   slot $this : ptr
   slot $f : obj<1x1>
 
@@ -33,7 +33,7 @@ function @function_S__G__local_14968956668511153314___function(%this : ptr, %f :
     call void @value_func__value_func__ov3(%t2, %t4)
     return void
 }
-function @move(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z4moveIRN1S29G__local_14968956668511153314EEOu20__remove_reference_tIT_EOS3_] {
+function @move(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z4moveIRZN1S1gEvE1GEOu20__remove_reference_tIT_EOS3_] {
   slot $t : ptr
 
   block ^entry:
@@ -41,7 +41,7 @@ function @move(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z4moveIR
     %t1 = load ptr $t
     return ptr %t1
 }
-function @value_func__value_func__ov3(%this : ptr, %p : ptr [pass=reference]) -> void [binding=weak, object=_ZN10value_funcC1IN1S29G__local_14968956668511153314EEEOT_] {
+function @value_func__value_func__ov3(%this : ptr, %p : ptr [pass=reference]) -> void [binding=weak, object=_ZN10value_funcC1IZN1S1gEvE1GEEOT_] {
   slot $this : ptr
   slot $p : ptr
   slot $s : obj<1x1>
@@ -55,7 +55,7 @@ function @value_func__value_func__ov3(%this : ptr, %p : ptr [pass=reference]) ->
     call void @stored_S__G__local_14968956668511153314___stored(%t1, %t3)
     return void
 }
-function @stored_S__G__local_14968956668511153314___stored(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6storedIN1S29G__local_14968956668511153314EEC1EOS1_] {
+function @stored_S__G__local_14968956668511153314___stored(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6storedIZN1S1gEvE1GEC1EOS1_] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -64,7 +64,7 @@ function @stored_S__G__local_14968956668511153314___stored(%this : ptr, %__param
     store ptr %__param1, $__param1
     return void
 }
-function @S__G__local_14968956668511153314__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1S29G__local_14968956668511153314C1Ev] {
+function @S__G__local_14968956668511153314__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
   slot $this : ptr
 
   block ^entry:

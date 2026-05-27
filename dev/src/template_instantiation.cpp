@@ -2490,7 +2490,9 @@ void update_class_template_specialization_mangle_info(
     const std::vector<TemplateArgument> & arguments,
     bool force_structured_mangling,
     const std::vector<TemplateArgumentSyntax> * argument_syntaxes = nullptr,
-    const std::vector<TemplateParameterInfo> * mangle_parameters = nullptr)
+    const std::vector<TemplateParameterInfo> * mangle_parameters = nullptr,
+    const std::vector<TemplateArgument> * mangle_arguments = nullptr,
+    const std::map<std::string, std::size_t> * pack_sizes = nullptr)
 {
   if(!info.type || !info.source_template || info.is_lambda_closure) {
     set_named_type_class_template_specialization_mangle_info(
@@ -2522,9 +2524,15 @@ void update_class_template_specialization_mangle_info(
   if(mangle_parameters) {
     mangle_info->mangle_parameters = *mangle_parameters;
   }
+  if(mangle_arguments) {
+    mangle_info->mangle_arguments = *mangle_arguments;
+  }
   mangle_info->arguments = arguments;
   if(argument_syntaxes) {
     mangle_info->argument_syntaxes = *argument_syntaxes;
+  }
+  if(pack_sizes) {
+    mangle_info->pack_sizes = *pack_sizes;
   }
   mangle_info->force_structured_mangling = force_structured_mangling;
   set_named_type_class_template_specialization_mangle_info(info.type, mangle_info);
@@ -2546,7 +2554,10 @@ void record_class_template_argument_state(
     SemanticContext & ctx,
     ClassInfo & info,
     const std::string & key,
-    const std::vector<TemplateArgument> & arguments)
+    const std::vector<TemplateArgument> & arguments,
+    const std::vector<TemplateParameterInfo> * mangle_parameters = nullptr,
+    const std::vector<TemplateArgument> * mangle_arguments = nullptr,
+    const std::map<std::string, std::size_t> * pack_sizes = nullptr)
 {
   info.instantiation_key = key;
   info.instantiation_arg_texts = canonical_instantiation_arg_texts_impl(ctx, arguments);
@@ -2557,7 +2568,11 @@ void record_class_template_argument_state(
   update_class_template_specialization_mangle_info(
       info,
       arguments,
-      force_structured_mangling);
+      force_structured_mangling,
+      nullptr,
+      mangle_parameters,
+      mangle_arguments,
+      pack_sizes);
   update_class_template_dependent_type_metadata(
       ctx,
       info,
@@ -4665,7 +4680,9 @@ bool record_class_template_instantiation_state(
     const std::vector<std::string> * dependent_argument_texts,
     const std::vector<TemplateArgumentSyntax> * dependent_argument_syntaxes,
     const std::vector<TemplateParameterInfo> *
-        dependent_argument_mangle_parameters)
+        dependent_argument_mangle_parameters,
+    const std::vector<TemplateArgument> * dependent_argument_mangle_arguments,
+    const std::map<std::string, std::size_t> * dependent_argument_mangle_pack_sizes)
 {
   const bool existing_instantiation_metadata =
       !info.instantiation_key.empty() ||
@@ -4729,7 +4746,9 @@ bool record_class_template_instantiation_state(
       effective_arguments,
       template_arguments_contain_forced_structured_mangling(effective_arguments),
       dependent_argument_syntaxes,
-      dependent_argument_mangle_parameters);
+      dependent_argument_mangle_parameters,
+      dependent_argument_mangle_arguments,
+      dependent_argument_mangle_pack_sizes);
   update_class_template_dependent_type_metadata(
       ctx,
       info,
@@ -6034,7 +6053,18 @@ ClassInfo * instantiate_selected_class_template(
     template_audit::set_creation_context(
         *info, "instantiate_class_template [" + decl.name + "]");
   }
-  record_class_template_argument_state(ctx, *info, key, arguments);
+  const bool selected_partial_mangle_context =
+      bound_parameters &&
+      bound_parameters != &decl.parameters &&
+      bound_arguments;
+  record_class_template_argument_state(
+      ctx,
+      *info,
+      key,
+      arguments,
+      selected_partial_mangle_context ? bound_parameters : nullptr,
+      selected_partial_mangle_context ? bound_arguments : nullptr,
+      selected_partial_mangle_context ? bound_pack_sizes : nullptr);
   info->dependent_instantiation =
       template_arguments_are_dependent_for_instantiation(ctx, arguments);
   info->is_explicit_specialization =

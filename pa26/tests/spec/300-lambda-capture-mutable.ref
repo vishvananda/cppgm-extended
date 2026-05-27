@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @__lambda_main_t16_19__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZ4mainvEN3$_0clEv] {
+function @__lambda_main_t16_19__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZ4mainEN3$_0clEv] {
   slot $this : ptr
 
   block ^entry:

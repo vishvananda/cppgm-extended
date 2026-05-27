@@ -16,7 +16,7 @@ function @const_member_function_pointer_field_initializer__tester__foo(%this : p
     store ptr %this, $this
     return void
 }
-function @const_member_function_pointer_field_initializer__holder__holder(%this : ptr, %p : i128) -> void [binding=weak, object=_ZN47const_member_function_pointer_field_initializer6holderC1EMNS_6testerEFvvE] {
+function @const_member_function_pointer_field_initializer__holder__holder(%this : ptr, %p : i128) -> void [binding=weak, object=_ZN47const_member_function_pointer_field_initializer6holderC1EMNS_6testerEKFvvE] {
   slot $this : ptr
   slot $p : i128
 

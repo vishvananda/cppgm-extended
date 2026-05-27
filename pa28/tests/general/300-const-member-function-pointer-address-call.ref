@@ -1,4 +1,4 @@
-function @call0(%p : i128, %s : ptr [pass=reference]) -> i32 [binding=strong, object=_Z5call0M1SFivERKS_] {
+function @call0(%p : i128, %s : ptr [pass=reference]) -> i32 [binding=strong, object=_Z5call0M1SKFivERKS_] {
   slot $p : i128
   slot $s : ptr
 
@@ -12,7 +12,7 @@ function @call0(%p : i128, %s : ptr [pass=reference]) -> i32 [binding=strong, ob
     %t5 = call i32 %t4(%t1) as (%arg0 : ptr) -> i32
     return i32 %t5
 }
-function @call1(%p : i128, %s : ptr [pass=reference]) -> i32 [binding=strong, object=_Z5call1M1SFiiERKS_] {
+function @call1(%p : i128, %s : ptr [pass=reference]) -> i32 [binding=strong, object=_Z5call1M1SKFiiERKS_] {
   slot $p : i128
   slot $s : ptr
 

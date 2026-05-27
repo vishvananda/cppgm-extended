@@ -9,6 +9,7 @@
 namespace itanium_mangle_ir {
 
 struct DependentExpression;
+struct FunctionEncoding;
 struct Type;
 
 struct SubstitutionKey
@@ -131,11 +132,16 @@ struct SubstitutionKey
     return key;
   }
 
-  static SubstitutionKey type_template_parameter(std::size_t index)
+  static SubstitutionKey type_template_parameter(
+      std::size_t index,
+      std::uintptr_t scope_id = 0)
   {
     SubstitutionKey key;
     key.kind = SK_TYPE_TEMPLATE_PARAMETER;
     key.id = index;
+    if(scope_id != 0) {
+      key.payload = std::to_string(scope_id);
+    }
     return key;
   }
 
@@ -371,9 +377,19 @@ struct Type
       std::string template_name;
       std::string template_name_substitution;
       std::string external_entity_symbol;
+      std::shared_ptr<Type> external_entity_owner_type;
+      std::string external_entity_member_name;
+      std::vector<Type> external_entity_parameter_types;
       std::vector<ClassTemplateArgument> pack_arguments;
       std::size_t template_parameter_index = 0;
       bool external_entity_address_of = false;
+      bool external_entity_is_member = false;
+      bool external_entity_is_function = false;
+      bool external_entity_function_const = false;
+      bool external_entity_function_volatile = false;
+      bool external_entity_function_lvalue_ref = false;
+      bool external_entity_function_rvalue_ref = false;
+      bool external_entity_function_variadic = false;
       bool template_name_is_template_parameter = false;
     };
 
@@ -483,6 +499,34 @@ struct Type
       return argument;
     }
 
+    static ClassTemplateArgument external_member_entity_arg(
+        const std::string & symbol,
+        bool address_of,
+        const Type & owner_type,
+        const std::string & member_name,
+        const std::vector<Type> & parameter_types,
+        bool is_function,
+        bool function_const,
+        bool function_volatile,
+        bool function_lvalue_ref,
+        bool function_rvalue_ref,
+        bool function_variadic)
+    {
+      ClassTemplateArgument argument = external_entity_arg(symbol, address_of);
+      Metadata & metadata = ensure_metadata(argument);
+      metadata.external_entity_owner_type.reset(new Type(owner_type));
+      metadata.external_entity_member_name = member_name;
+      metadata.external_entity_parameter_types = parameter_types;
+      metadata.external_entity_is_member = true;
+      metadata.external_entity_is_function = is_function;
+      metadata.external_entity_function_const = function_const;
+      metadata.external_entity_function_volatile = function_volatile;
+      metadata.external_entity_function_lvalue_ref = function_lvalue_ref;
+      metadata.external_entity_function_rvalue_ref = function_rvalue_ref;
+      metadata.external_entity_function_variadic = function_variadic;
+      return argument;
+    }
+
     static ClassTemplateArgument argument_pack(
         const std::vector<ClassTemplateArgument> & arguments)
     {
@@ -503,6 +547,7 @@ struct Type
   {
     std::string context_fragment;
     std::vector<SubstitutionSlot> context_substitution_slots;
+    std::shared_ptr<FunctionEncoding> context_function;
     std::string source_name;
     std::string discriminator;
   };
@@ -513,6 +558,7 @@ struct Type
     std::vector<NameComponent> prefix_components;
     std::string template_name;
     std::string template_name_substitution;
+    SubstitutionKey template_name_ir_substitution;
     std::vector<ClassTemplateArgument> template_arguments;
     std::string standard_substitution;
     bool standard_substitution_includes_arguments = false;
@@ -736,6 +782,7 @@ struct Type
   static Type lambda_closure(
       const std::string & context_fragment,
       const std::vector<SubstitutionSlot> & context_substitution_slots,
+      const std::shared_ptr<FunctionEncoding> & context_function,
       const std::vector<Type> & signature_parameter_types,
       const std::string & discriminator,
       const std::string & source_name = std::string())
@@ -745,6 +792,7 @@ struct Type
     type.lambda.reset(new LambdaMetadata());
     type.lambda->context_fragment = context_fragment;
     type.lambda->context_substitution_slots = context_substitution_slots;
+    type.lambda->context_function = context_function;
     type.lambda->source_name = source_name;
     type.params = signature_parameter_types;
     type.lambda->discriminator = discriminator;
@@ -773,9 +821,19 @@ struct TemplateArgument
     std::string template_name;
     std::string template_name_substitution;
     std::string external_entity_symbol;
+    std::shared_ptr<Type> external_entity_owner_type;
+    std::string external_entity_member_name;
+    std::vector<Type> external_entity_parameter_types;
     std::vector<TemplateArgument> pack_arguments;
     std::size_t template_parameter_index = 0;
     bool external_entity_address_of = false;
+    bool external_entity_is_member = false;
+    bool external_entity_is_function = false;
+    bool external_entity_function_const = false;
+    bool external_entity_function_volatile = false;
+    bool external_entity_function_lvalue_ref = false;
+    bool external_entity_function_rvalue_ref = false;
+    bool external_entity_function_variadic = false;
     bool template_name_is_template_parameter = false;
   };
 
@@ -881,6 +939,34 @@ struct TemplateArgument
     Metadata & metadata = ensure_metadata(argument);
     metadata.external_entity_symbol = symbol;
     metadata.external_entity_address_of = address_of;
+    return argument;
+  }
+
+  static TemplateArgument external_member_entity_arg(
+      const std::string & symbol,
+      bool address_of,
+      const Type & owner_type,
+      const std::string & member_name,
+      const std::vector<Type> & parameter_types,
+      bool is_function,
+      bool function_const,
+      bool function_volatile,
+      bool function_lvalue_ref,
+      bool function_rvalue_ref,
+      bool function_variadic)
+  {
+    TemplateArgument argument = external_entity_arg(symbol, address_of);
+    Metadata & metadata = ensure_metadata(argument);
+    metadata.external_entity_owner_type.reset(new Type(owner_type));
+    metadata.external_entity_member_name = member_name;
+    metadata.external_entity_parameter_types = parameter_types;
+    metadata.external_entity_is_member = true;
+    metadata.external_entity_is_function = is_function;
+    metadata.external_entity_function_const = function_const;
+    metadata.external_entity_function_volatile = function_volatile;
+    metadata.external_entity_function_lvalue_ref = function_lvalue_ref;
+    metadata.external_entity_function_rvalue_ref = function_rvalue_ref;
+    metadata.external_entity_function_variadic = function_variadic;
     return argument;
   }
 
@@ -1136,6 +1222,8 @@ struct FunctionNameComponent
   std::string source_name;
   std::string substitution_name;
   std::string complete_substitution_name;
+  SubstitutionKey ir_substitution_key;
+  SubstitutionKey complete_ir_substitution_key;
   std::string standard_substitution;
   bool std_abbrev = false;
   bool standard_substitution_includes_arguments = false;
@@ -1184,6 +1272,7 @@ struct FunctionEncoding
   {
     std::string context_fragment;
     std::vector<SubstitutionSlot> context_substitution_slots;
+    std::shared_ptr<FunctionEncoding> context_function;
     std::string source_name;
     std::vector<Type> signature_parameter_types;
     std::string discriminator;
@@ -2098,6 +2187,9 @@ inline bool emit_function_name(const FunctionEncoding & function,
 inline bool emit_function_encoding(const FunctionEncoding & function,
                                    std::string & out,
                                    SubstitutionSink * sink);
+inline bool emit_function_encoding_body(const FunctionEncoding & function,
+                                        std::string & out,
+                                        SubstitutionSink * sink);
 
 inline bool type_needs_member_expression_template_name_registration(
     const Type & type);
@@ -2385,9 +2477,15 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
       return false;
     }
     if(type.name_owner) {
+      out += 'N';
       if(!emit_type_as_name_prefix(*type.name_owner, out, owner_name_sink)) {
         return false;
       }
+      if(!emit_source_name(metadata->template_name, out)) {
+        return false;
+      }
+      out += 'E';
+      return true;
     } else if(!emit_name_prefix_components(metadata->prefix_components,
                                            out,
                                            owner_name_sink)) {
@@ -2412,9 +2510,32 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
       return false;
     }
     if(type.name_owner) {
-      if(!emit_type_as_name_prefix(*type.name_owner, out, owner_name_sink)) {
+      SubstitutionSink * const member_owner_sink =
+          metadata->register_member_expression_template_name ? sink :
+                                                               owner_name_sink;
+      out += 'N';
+      if(!emit_type_as_name_prefix(*type.name_owner, out, member_owner_sink)) {
         return false;
       }
+      if(!emit_source_name(metadata->template_name, out)) {
+        return false;
+      }
+      if(sink &&
+         (metadata->register_member_expression_template_name ||
+          template_arguments_need_member_expression_template_name_registration(
+              metadata->template_arguments))) {
+        if(!metadata->template_name_ir_substitution.empty()) {
+          sink->register_substitution(metadata->template_name_ir_substitution);
+        } else if(!metadata->template_name_substitution.empty()) {
+          sink->register_substitution(
+              SubstitutionKey::named(metadata->template_name_substitution));
+        }
+      }
+      if(!emit_class_template_arguments(metadata->template_arguments, out, sink)) {
+        return false;
+      }
+      out += 'E';
+      return true;
     } else if(!emit_name_prefix_components(metadata->prefix_components,
                                            out,
                                            owner_name_sink)) {
@@ -2426,10 +2547,13 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
     if(sink &&
        (metadata->register_member_expression_template_name ||
         template_arguments_need_member_expression_template_name_registration(
-            metadata->template_arguments)) &&
-       !metadata->template_name_substitution.empty()) {
-      sink->register_substitution(
-          SubstitutionKey::named(metadata->template_name_substitution));
+            metadata->template_arguments))) {
+      if(!metadata->template_name_ir_substitution.empty()) {
+        sink->register_substitution(metadata->template_name_ir_substitution);
+      } else if(!metadata->template_name_substitution.empty()) {
+        sink->register_substitution(
+            SubstitutionKey::named(metadata->template_name_substitution));
+      }
     }
     if(!emit_class_template_arguments(metadata->template_arguments, out, sink)) {
       return false;
@@ -2884,9 +3008,73 @@ inline bool emit_template_entity_name(
   return true;
 }
 
+inline bool emit_external_member_entity_symbol(
+    const Type * owner_type,
+    const std::string & member_name,
+    const std::vector<Type> & parameter_types,
+    bool is_function,
+    bool function_const,
+    bool function_volatile,
+    bool function_lvalue_ref,
+    bool function_rvalue_ref,
+    bool function_variadic,
+    std::string & out,
+    SubstitutionSink * sink)
+{
+  if(!owner_type || member_name.empty()) {
+    return false;
+  }
+
+  out += "_ZN";
+  if(function_const) {
+    out += 'K';
+  }
+  if(function_volatile) {
+    out += 'V';
+  }
+  if(function_lvalue_ref) {
+    out += 'R';
+  }
+  if(function_rvalue_ref) {
+    out += 'O';
+  }
+  if(!emit_type_as_name_prefix_body(*owner_type, out, sink) ||
+     !emit_source_name(member_name, out)) {
+    return false;
+  }
+  out += 'E';
+
+  if(is_function) {
+    if(parameter_types.empty()) {
+      out += function_variadic ? 'z' : 'v';
+    } else {
+      for(std::size_t i = 0; i < parameter_types.size(); ++i) {
+        if(!emit_type(parameter_types[i], out, sink)) {
+          return false;
+        }
+      }
+      if(function_variadic) {
+        out += 'z';
+      }
+    }
+  }
+  return true;
+}
+
 inline bool emit_external_entity_argument(const std::string & symbol,
                                           bool address_of,
-                                          std::string & out)
+                                          const Type * owner_type,
+                                          const std::string & member_name,
+                                          const std::vector<Type> & parameter_types,
+                                          bool is_member,
+                                          bool is_function,
+                                          bool function_const,
+                                          bool function_volatile,
+                                          bool function_lvalue_ref,
+                                          bool function_rvalue_ref,
+                                          bool function_variadic,
+                                          std::string & out,
+                                          SubstitutionSink * sink)
 {
   if(symbol.empty()) {
     return false;
@@ -2895,7 +3083,20 @@ inline bool emit_external_entity_argument(const std::string & symbol,
     out += "Xad";
   }
   out += 'L';
-  out += symbol;
+  if(!is_member ||
+     !emit_external_member_entity_symbol(owner_type,
+                                         member_name,
+                                         parameter_types,
+                                         is_function,
+                                         function_const,
+                                         function_volatile,
+                                         function_lvalue_ref,
+                                         function_rvalue_ref,
+                                         function_variadic,
+                                         out,
+                                         sink)) {
+    out += symbol;
+  }
   out += 'E';
   if(address_of) {
     out += 'E';
@@ -2938,6 +3139,29 @@ inline void register_lambda_context_substitutions(
       sink->register_substitution(slots[i].ir_key);
     }
   }
+}
+
+inline bool emit_local_entity_context_fragment(
+    const std::string & context_fragment,
+    const std::vector<SubstitutionSlot> & context_substitution_slots,
+    const std::shared_ptr<FunctionEncoding> & context_function,
+    std::string & out,
+    SubstitutionSink * sink)
+{
+  if(context_function) {
+    out += 'Z';
+    if(!emit_function_encoding_body(*context_function, out, sink)) {
+      return false;
+    }
+    out += 'E';
+    return true;
+  }
+  if(context_fragment.empty()) {
+    return false;
+  }
+  register_lambda_context_substitutions(context_substitution_slots, sink);
+  out += context_fragment;
+  return true;
 }
 
 inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSink * sink)
@@ -3071,13 +3295,18 @@ inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSin
     return true;
 
   case Type::TK_LAMBDA_CLOSURE:
-    if(!type.lambda || type.lambda->context_fragment.empty()) {
+    if(!type.lambda ||
+       (type.lambda->context_fragment.empty() &&
+        !type.lambda->context_function)) {
       return false;
     }
-    register_lambda_context_substitutions(
-        type.lambda->context_substitution_slots,
-        sink);
-    out += type.lambda->context_fragment;
+    if(!emit_local_entity_context_fragment(type.lambda->context_fragment,
+                                           type.lambda->context_substitution_slots,
+                                           type.lambda->context_function,
+                                           out,
+                                           sink)) {
+      return false;
+    }
     if(!type.lambda->source_name.empty()) {
       if(!emit_source_name(type.lambda->source_name, out)) {
         return false;
@@ -3274,7 +3503,18 @@ inline bool emit_class_template_argument(
     return argument.metadata &&
            emit_external_entity_argument(argument.metadata->external_entity_symbol,
                                          argument.metadata->external_entity_address_of,
-                                         out);
+                                         argument.metadata->external_entity_owner_type.get(),
+                                         argument.metadata->external_entity_member_name,
+                                         argument.metadata->external_entity_parameter_types,
+                                         argument.metadata->external_entity_is_member,
+                                         argument.metadata->external_entity_is_function,
+                                         argument.metadata->external_entity_function_const,
+                                         argument.metadata->external_entity_function_volatile,
+                                         argument.metadata->external_entity_function_lvalue_ref,
+                                         argument.metadata->external_entity_function_rvalue_ref,
+                                         argument.metadata->external_entity_function_variadic,
+                                         out,
+                                         sink);
 
   case Type::ClassTemplateArgument::CTAK_ARGUMENT_PACK:
     if(!argument.metadata) {
@@ -3377,7 +3617,18 @@ inline bool emit_template_argument(const TemplateArgument & argument,
     return argument.metadata &&
            emit_external_entity_argument(argument.metadata->external_entity_symbol,
                                          argument.metadata->external_entity_address_of,
-                                         out);
+                                         argument.metadata->external_entity_owner_type.get(),
+                                         argument.metadata->external_entity_member_name,
+                                         argument.metadata->external_entity_parameter_types,
+                                         argument.metadata->external_entity_is_member,
+                                         argument.metadata->external_entity_is_function,
+                                         argument.metadata->external_entity_function_const,
+                                         argument.metadata->external_entity_function_volatile,
+                                         argument.metadata->external_entity_function_lvalue_ref,
+                                         argument.metadata->external_entity_function_rvalue_ref,
+                                         argument.metadata->external_entity_function_variadic,
+                                         out,
+                                         sink);
 
   case TemplateArgument::TAK_ARGUMENT_PACK:
     if(!argument.metadata) {
@@ -3639,7 +3890,18 @@ inline bool emit_dependent_expression_body(const DependentExpression & expressio
   case DependentExpression::EK_EXTERNAL_ENTITY:
     return emit_external_entity_argument(expression.text,
                                          expression.external_entity_address_of,
-                                         out);
+                                         nullptr,
+                                         std::string(),
+                                         std::vector<Type>(),
+                                         false,
+                                         false,
+                                         false,
+                                         false,
+                                         false,
+                                         false,
+                                         false,
+                                         out,
+                                         sink);
 
   case DependentExpression::EK_INVALID:
     return false;
@@ -3691,13 +3953,41 @@ inline SubstitutionKey function_name_component_prefix_key(
      component.standard_substitution_includes_arguments) {
     return SubstitutionKey::none();
   }
+  if(!component.complete_ir_substitution_key.empty()) {
+    return component.complete_ir_substitution_key;
+  }
   if(!component.complete_substitution_name.empty()) {
     return SubstitutionKey::named(component.complete_substitution_name);
+  }
+  if(!component.ir_substitution_key.empty()) {
+    return component.ir_substitution_key;
   }
   if(!component.substitution_name.empty()) {
     return SubstitutionKey::named(component.substitution_name);
   }
   return SubstitutionKey::none();
+}
+
+inline SubstitutionKey function_name_component_name_key(
+    const FunctionNameComponent & component)
+{
+  if(!component.ir_substitution_key.empty()) {
+    return component.ir_substitution_key;
+  }
+  return component.substitution_name.empty() ?
+      SubstitutionKey::none() :
+      SubstitutionKey::named(component.substitution_name);
+}
+
+inline SubstitutionKey function_name_component_complete_key(
+    const FunctionNameComponent & component)
+{
+  if(!component.complete_ir_substitution_key.empty()) {
+    return component.complete_ir_substitution_key;
+  }
+  return component.complete_substitution_name.empty() ?
+      SubstitutionKey::none() :
+      SubstitutionKey::named(component.complete_substitution_name);
 }
 
 inline bool emit_function_name_component(const FunctionNameComponent & component,
@@ -3718,27 +4008,26 @@ inline bool emit_function_name_component(const FunctionNameComponent & component
        !emit_template_arguments(component.template_arguments, out, sink)) {
       return false;
     }
+    const SubstitutionKey complete_key =
+        function_name_component_complete_key(component);
     if(sink &&
        !component.standard_substitution_includes_arguments &&
-       !component.complete_substitution_name.empty()) {
-      sink->register_substitution(
-          SubstitutionKey::named(component.complete_substitution_name));
+       !complete_key.empty()) {
+      sink->register_substitution(complete_key);
     }
     return true;
   }
 
-  const SubstitutionKey name_key =
-      component.substitution_name.empty() ?
-          SubstitutionKey::none() :
-          SubstitutionKey::named(component.substitution_name);
+  const SubstitutionKey name_key = function_name_component_name_key(component);
   if(sink && !name_key.empty() && sink->emit_substitution(name_key, out)) {
     if(!component.template_arguments.empty() &&
        !emit_template_arguments(component.template_arguments, out, sink)) {
       return false;
     }
-    if(sink && !component.complete_substitution_name.empty()) {
-      sink->register_substitution(
-          SubstitutionKey::named(component.complete_substitution_name));
+    const SubstitutionKey complete_key =
+        function_name_component_complete_key(component);
+    if(sink && !complete_key.empty()) {
+      sink->register_substitution(complete_key);
     }
     return true;
   }
@@ -3752,9 +4041,10 @@ inline bool emit_function_name_component(const FunctionNameComponent & component
      !emit_template_arguments(component.template_arguments, out, sink)) {
     return false;
   }
-  if(sink && !component.complete_substitution_name.empty()) {
-    sink->register_substitution(
-        SubstitutionKey::named(component.complete_substitution_name));
+  const SubstitutionKey complete_key =
+      function_name_component_complete_key(component);
+  if(sink && !complete_key.empty()) {
+    sink->register_substitution(complete_key);
   }
   return true;
 }
@@ -3792,10 +4082,16 @@ inline bool emit_function_name(const FunctionEncoding & function,
 {
   if(function.lambda) {
     const FunctionEncoding::LambdaMetadata & lambda = *function.lambda;
-    if(lambda.context_fragment.empty()) {
+    if(lambda.context_fragment.empty() && !lambda.context_function) {
       return false;
     }
-    out += lambda.context_fragment;
+    if(!emit_local_entity_context_fragment(lambda.context_fragment,
+                                           lambda.context_substitution_slots,
+                                           lambda.context_function,
+                                           out,
+                                           sink)) {
+      return false;
+    }
     out += 'N';
     if(function.nested_const) {
       out += 'K';
@@ -3808,9 +4104,6 @@ inline bool emit_function_name(const FunctionEncoding & function,
     } else if(function.nested_rvalue_ref) {
       out += 'O';
     }
-    register_lambda_context_substitutions(
-        lambda.context_substitution_slots,
-        sink);
     if(!lambda.source_name.empty()) {
       if(!emit_source_name(lambda.source_name, out)) {
         return false;
@@ -3891,6 +4184,18 @@ inline bool emit_function_name(const FunctionEncoding & function,
         out += 'O';
       }
     }
+    if(!function.template_arguments.empty() &&
+       sink &&
+       !function.template_prefix_key.empty() &&
+       sink->emit_substitution(function.template_prefix_key, out)) {
+      if(!emit_template_arguments(function.template_arguments, out, sink)) {
+        return false;
+      }
+      if(nested) {
+        out += 'E';
+      }
+      return true;
+    }
     const std::size_t terminal = function.name_components.size() - 1;
     if(direct_std_prefix) {
       out += "St";
@@ -3933,6 +4238,12 @@ inline bool emit_function_name(const FunctionEncoding & function,
   if(function.name_fragment.empty()) {
     return false;
   }
+  if(!function.template_arguments.empty() &&
+     sink &&
+     !function.template_prefix_key.empty() &&
+     sink->emit_substitution(function.template_prefix_key, out)) {
+    return emit_template_arguments(function.template_arguments, out, sink);
+  }
   if(function.has_conversion_type) {
     out += "cv";
     if(!emit_type(function.conversion_type,
@@ -3960,6 +4271,13 @@ inline bool emit_function_encoding(const FunctionEncoding & function,
                                    SubstitutionSink * sink)
 {
   out += "_Z";
+  return emit_function_encoding_body(function, out, sink);
+}
+
+inline bool emit_function_encoding_body(const FunctionEncoding & function,
+                                        std::string & out,
+                                        SubstitutionSink * sink)
+{
   if(!emit_function_name(function, out, sink)) {
     return false;
   }

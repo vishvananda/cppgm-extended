@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @Traits_Alloc___construct(%__param0 : ptr [pass=reference], %__param1 : ptr, %__param2 : ptr [pass=reference], %__param3 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6TraitsI5AllocE9constructI6WidgetJRiRlEEEN6EnableIXsr3AndI3HasIS3_JS4_S5_EEEE5valueEiE4typeERS0_PT_DpOT0_] {
+function @Traits_Alloc___construct(%__param0 : ptr [pass=reference], %__param1 : ptr, %__param2 : ptr [pass=reference], %__param3 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6TraitsI5AllocE9constructI6WidgetJRiRlEEEN6EnableIXsr3AndINS1_6HelperIT_JDpT0_EE4typeEEE5valueEiE4typeERS0_PS8_DpOS9_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

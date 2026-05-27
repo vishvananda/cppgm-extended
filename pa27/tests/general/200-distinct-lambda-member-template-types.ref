@@ -85,7 +85,7 @@ function @Analyzer__lookup_b(%this : ptr, %scope : ptr [pass=reference], %qualif
     copyobj 1x1 %t6, %t1
     return obj<1x1> $retobj__1
 }
-function @Analyzer__lookup_qualified_generic(%this : ptr, %scope : ptr [pass=reference], %qualified : ptr [pass=reference], %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN8Analyzer24lookup_qualified_genericI3VecIP1AEZN8Analyzer8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_] {
+function @Analyzer__lookup_qualified_generic(%this : ptr, %scope : ptr [pass=reference], %qualified : ptr [pass=reference], %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_] {
   slot $this : ptr
   slot $scope : ptr
   slot $qualified : ptr
@@ -116,7 +116,7 @@ function @Analyzer__lookup_qualified_generic(%this : ptr, %scope : ptr [pass=ref
     copyobj 1x1 %t12, %t1
     return obj<1x1> $retobj__1
 }
-function @Analyzer__lookup_qualified_generic__ov2(%this : ptr, %scope : ptr [pass=reference], %qualified : ptr [pass=reference], %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN8Analyzer24lookup_qualified_genericI3VecIP1BEZN8Analyzer8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_] {
+function @Analyzer__lookup_qualified_generic__ov2(%this : ptr, %scope : ptr [pass=reference], %qualified : ptr [pass=reference], %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_] {
   slot $this : ptr
   slot $scope : ptr
   slot $qualified : ptr
@@ -147,7 +147,7 @@ function @Analyzer__lookup_qualified_generic__ov2(%this : ptr, %scope : ptr [pas
     copyobj 1x1 %t12, %t1
     return obj<1x1> $retobj__1
 }
-function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=reference], %qualified : ptr [pass=reference], %resolve_unqualified_qualifier : ptr [pass=reference], %resolve_direct_qualifier : ptr [pass=reference], %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1AE5ScopeZN8Analyzer24lookup_qualified_genericI3VecIP1AEZN8Analyzer8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_EUlSD_E_ZN8Analyzer24lookup_qualified_genericI3VecIP1AEZN8Analyzer8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_EUlS8_SD_E_ZN8Analyzer8lookup_aER5ScopeRK13QualifiedNameEUlS8_SD_E_EESE_RSF_SB_RKT1_RKT2_RKT3_] {
+function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=reference], %qualified : ptr [pass=reference], %resolve_unqualified_qualifier : ptr [pass=reference], %resolve_direct_qualifier : ptr [pass=reference], %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1AE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_aERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS7_IS4_SE_EET_S8_SB_SI_EUlS8_SD_E_SE_EET_RT0_SB_RKT1_RKT2_RKT3_] {
   slot $root : ptr
   slot $qualified : ptr
   slot $resolve_unqualified_qualifier : ptr
@@ -275,7 +275,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=reference], %qual
     copyobj 1x1 %t51, %t45
     return obj<1x1> $retobj__1
 }
-function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=reference], %qualified : ptr [pass=reference], %resolve_unqualified_qualifier : ptr [pass=reference], %resolve_direct_qualifier : ptr [pass=reference], %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1BE5ScopeZN8Analyzer24lookup_qualified_genericI3VecIP1BEZN8Analyzer8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_EUlSD_E_ZN8Analyzer24lookup_qualified_genericI3VecIP1BEZN8Analyzer8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_EUlS8_SD_E_ZN8Analyzer8lookup_bER5ScopeRK13QualifiedNameEUlS8_SD_E_EESE_RSF_SB_RKT1_RKT2_RKT3_] {
+function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=reference], %qualified : ptr [pass=reference], %resolve_unqualified_qualifier : ptr [pass=reference], %resolve_direct_qualifier : ptr [pass=reference], %final_lookup : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1BE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_bERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS7_IS4_SE_EET_S8_SB_SI_EUlS8_SD_E_SE_EET_RT0_SB_RKT1_RKT2_RKT3_] {
   slot $root : ptr
   slot $qualified : ptr
   slot $resolve_unqualified_qualifier : ptr
@@ -431,7 +431,7 @@ function @Analyzer____lambda_Analyzer__lookup_b_t408_422__operator__(%this : ptr
     call void @Vec_B_____Vec(%t1)
     return obj<1x1> $retobj__1
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_A____Analyzer____lambda_Analyzer__lookup_a_t347_361_t274_282__operator__(%this : ptr, %__param1 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZN8Analyzer8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlSB_E_clESB_] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_A____Analyzer____lambda_Analyzer__lookup_a_t347_361_t274_282__operator__(%this : ptr, %__param1 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlSB_E_clESB_] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -443,7 +443,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_A____Analyz
     %t3 = load ptr %t2
     return ptr %t3
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_A____Analyzer____lambda_Analyzer__lookup_a_t347_361_t291_303__operator__(%this : ptr, %target : ptr [pass=reference], %__param2 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZN8Analyzer8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_A____Analyzer____lambda_Analyzer__lookup_a_t347_361_t291_303__operator__(%this : ptr, %target : ptr [pass=reference], %__param2 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_] {
   slot $this : ptr
   slot $target : ptr
   slot $__param2 : ptr
@@ -455,7 +455,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_A____Analyz
     %t1 = load ptr $target
     return ptr %t1
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_B____Analyzer____lambda_Analyzer__lookup_b_t408_422_t274_282__operator__(%this : ptr, %__param1 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZN8Analyzer8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlSB_E_clESB_] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_B____Analyzer____lambda_Analyzer__lookup_b_t408_422_t274_282__operator__(%this : ptr, %__param1 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlSB_E_clESB_] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -467,7 +467,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_B____Analyz
     %t3 = load ptr %t2
     return ptr %t3
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_B____Analyzer____lambda_Analyzer__lookup_b_t408_422_t291_303__operator__(%this : ptr, %target : ptr [pass=reference], %__param2 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZN8Analyzer8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic__Vec_B____Analyzer____lambda_Analyzer__lookup_b_t408_422_t291_303__operator__(%this : ptr, %target : ptr [pass=reference], %__param2 : ptr) -> ptr [binding=weak, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_] {
   slot $this : ptr
   slot $target : ptr
   slot $__param2 : ptr

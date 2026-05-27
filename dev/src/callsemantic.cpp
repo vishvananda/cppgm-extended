@@ -25633,6 +25633,16 @@ private:
                                            const string & source_name)
   {
     FunctionBinding * current = current_function_scope(scope);
+    ClassInfo * lexical_class = current_class_scope(scope);
+    if(lexical_class &&
+       lexical_class->is_lambda_closure &&
+       (!current || current->owner_class != lexical_class)) {
+      MemberFunctionLookupResult call_operator =
+          lookup_member_functions(*lexical_class, "operator()");
+      if(!call_operator.functions.empty()) {
+        current = call_operator.functions[0];
+      }
+    }
     if(!current || !current->type || !info.type) {
       return;
     }

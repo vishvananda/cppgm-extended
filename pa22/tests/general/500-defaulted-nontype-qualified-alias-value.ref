@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @tuple_X______tuple__ov3(%t2, %t3)
     return i32 0
 }
-function @tuple_X______tuple__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5tupleIJO1XEEC1IJS0_ETnN9enable_ifIXsr3AndI17integral_constantIXeqsZT_sZT_EENS2_6EnableIJDpT_EEEEE5valueEiE4typeELi0EEEDpOS9_] {
+function @tuple_X______tuple__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5tupleIJO1XEEC1IJS0_ETnN9enable_ifIXsr3AndI17integral_constantIXeqsZT_sZT_EENS2_6EnableIJDpT_EEEEE5valueEiE4typeELi0EEEDpOS8_] {
   slot $this : ptr
   slot $__param1 : ptr
 
