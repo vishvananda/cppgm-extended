@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @sink(%t1)
     return i32 0
 }
-function @sink(%__param0 : ptr [pass=reference]) -> void [binding=weak, object=_Z4sinkIZ4mainvE3$_0EvOT_] {
+function @sink(%__param0 : ptr [pass=reference]) -> void [binding=weak, object=_Z4sinkIZ4mainE3$_0EvOT_] {
   slot $__param0 : ptr
 
   block ^entry:

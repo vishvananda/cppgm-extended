@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S__g(%t2)
     return i32 0
 }
-function @decay_copy(%__param0 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_Z10decay_copyIN1S28G__local_4395382314435783492EEu7__decayIT_EOS2_] {
+function @decay_copy(%__param0 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_Z10decay_copyIZN1S1gEvE1GEu7__decayIT_EOS2_] {
   slot $__param0 : ptr
   slot $retobj__1 : obj<1x1>
 
@@ -31,7 +31,7 @@ function @decay_copy(%__param0 : ptr [pass=reference]) -> obj<1x1> [binding=weak
     call void @S__G__local_4395382314435783492__G(%t1)
     return obj<1x1> $retobj__1
 }
-function @S__G__local_4395382314435783492__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1S28G__local_4395382314435783492C1Ev] {
+function @S__G__local_4395382314435783492__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
   slot $this : ptr
 
   block ^entry:

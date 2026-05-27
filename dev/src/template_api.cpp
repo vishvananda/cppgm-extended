@@ -1628,7 +1628,11 @@ bool record_class_template_instantiation_state(
     const std::vector<std::string> * dependent_argument_texts,
     const std::vector<cpp_decl::TemplateArgumentSyntax> * dependent_argument_syntaxes,
     const std::vector<template_model::TemplateParameterInfo> *
-        dependent_argument_mangle_parameters)
+        dependent_argument_mangle_parameters,
+    const std::vector<template_model::TemplateArgument> *
+        dependent_argument_mangle_arguments,
+    const std::map<std::string, std::size_t> *
+        dependent_argument_mangle_pack_sizes)
 {
   return template_instantiation::record_class_template_instantiation_state(
       ctx,
@@ -1640,7 +1644,9 @@ bool record_class_template_instantiation_state(
       dependent_arguments,
       dependent_argument_texts,
       dependent_argument_syntaxes,
-      dependent_argument_mangle_parameters);
+      dependent_argument_mangle_parameters,
+      dependent_argument_mangle_arguments,
+      dependent_argument_mangle_pack_sizes);
 }
 
 bool refresh_forward_class_template_selection(SemanticContext & ctx,

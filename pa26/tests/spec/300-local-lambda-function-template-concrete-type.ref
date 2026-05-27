@@ -1,24 +1,24 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $f : ptr
+  slot $f : obj<1x1>
 
   block ^entry:
-    %t1 = addr @__lambda_main_t45_47
-    %t2 = unary decay ptr %t1
-    store ptr %t2, $f
-    %t3 = load ptr $f
-    %t4 = call i32 %t3() as () -> i32
-    return i32 %t4
+    %t1 = addr $f
+    %t2 = addr $f
+    %t3 = call i32 @__lambda_main_t45_47__operator__(%t2)
+    return i32 %t3
 }
-function @__lambda_main_t45_47() -> i32 [binding=internal] {
+function @__lambda_main_t45_47__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZ4mainENK3$_0clEv] {
+  slot $this : ptr
   slot $x : obj<1x1>
 
   block ^entry:
+    store ptr %this, $this
     %t1 = addr $x
     %t2 = addr $x
-    %t3 = call i32 @use(%t2)
+    %t3 = call i32 @use__ov2(%t2)
     return i32 %t3
 }
-function @use(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3useI32local__local_3524763403771748300EiR3boxIT_E] {
+function @use__ov2(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3useIZZ4mainENK3$_0clEvE5localEiR3boxIT_E] {
   slot $__param0 : ptr
 
   block ^entry:

@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @outer__f()
     return i32 %t1
 }
-function @lib__operator__(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN3libeqIPN5outer31Local__local_592976633096121141EEEbRKNS_8WrapIterIT_EES8_] {
+function @lib__operator__(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN3libeqIPZN5outer1fEvE5LocalEEbRKNS_8WrapIterIT_EES8_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

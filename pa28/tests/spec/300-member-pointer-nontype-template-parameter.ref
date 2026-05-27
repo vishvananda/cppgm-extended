@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @foo_1___bar(%this : ptr, %p : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN10foo_3c1_3e3barEU167foo_3c1_3e_3a_3abar_7ctype_3dfunction_20of_20_28pointer_20to_20struct_20foo_3c1_3e_2c_20lvalue_2dreference_20to_20struct_20pair_29_20returning_20int_7cowner_2dinst_3d1] {
+function @foo_1___bar(%this : ptr, %p : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1xEEEE3barERS0_] {
   slot $this : ptr
   slot $p : ptr
 
@@ -33,7 +33,7 @@ function @foo_1___bar(%this : ptr, %p : ptr [pass=reference]) -> i32 [binding=we
     %t4 = load i32 %t3
     return i32 %t4
 }
-function @foo_5___bar(%this : ptr, %p : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN10foo_3c5_3e3barEU167foo_3c5_3e_3a_3abar_7ctype_3dfunction_20of_20_28pointer_20to_20struct_20foo_3c5_3e_2c_20lvalue_2dreference_20to_20struct_20pair_29_20returning_20int_7cowner_2dinst_3d5] {
+function @foo_5___bar(%this : ptr, %p : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1yEEEE3barERS0_] {
   slot $this : ptr
   slot $p : ptr
 

@@ -20,7 +20,7 @@ function @S__g(%this : ptr) -> void [binding=weak, object=_ZN1S1gEv] {
     %t4 = call ptr @function_void_int____operator___ov3(%t2, %t3)
     return void
 }
-function @function_void_int____operator___ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8functionIFviEEaSIN1S27G__local_479283088363532800EEEN9enable_ifIXsr8CallableIT_EE5valueERS1_E4typeEOS6_] {
+function @function_void_int____operator___ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8functionIFviEEaSIZN1S1gEvE1GEEN9enable_ifIXsrNS1_8CallableIT_S7_13invoke_resultIRS7_JiEEEE5valueERS1_E4typeEOS7_] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -30,7 +30,7 @@ function @function_void_int____operator___ov3(%this : ptr, %__param1 : ptr [pass
     %t1 = load ptr $this
     return ptr %t1
 }
-function @S__G__local_479283088363532800__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1S27G__local_479283088363532800C1Ev] {
+function @S__G__local_479283088363532800__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
   slot $this : ptr
 
   block ^entry:

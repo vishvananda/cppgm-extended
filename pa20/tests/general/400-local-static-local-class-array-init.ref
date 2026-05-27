@@ -136,7 +136,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = load i32 $cond__1
     return i32 %t20
 }
-function @Prefix__local_14110209623060619131__Prefix(%this : ptr, %t : ptr, %s : i64) -> void [binding=weak, object=_ZN34Prefix__local_14110209623060619131C1EPKcm] {
+function @Prefix__local_14110209623060619131__Prefix(%this : ptr, %t : ptr, %s : i64) -> void [binding=weak, object=_ZZ11make_resultvEN6PrefixC1EPKcm] {
   slot $this : ptr
   slot $t : ptr
   slot $s : i64

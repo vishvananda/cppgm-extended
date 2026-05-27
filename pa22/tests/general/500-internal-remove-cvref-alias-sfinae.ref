@@ -1,4 +1,4 @@
-declare function @function_void_int____operator___ov3(%arg0 : ptr, %arg1 : obj<1x1>) -> ptr [binding=weak, object=_ZN8functionIFviEJEEaSIN1S29G__local_10174324311330680726EvEERS1_T_]
+declare function @function_void_int____operator___ov3(%arg0 : ptr, %arg1 : obj<1x1>) -> ptr [binding=weak, object=_ZN8functionIFviEJEEaSIZN1S1gEvE1GvEERS1_T_]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $s : obj<1x1>
@@ -22,7 +22,7 @@ function @S__g(%this : ptr) -> void [binding=weak, object=_ZN1S1gEv] {
     %t4 = call ptr @function_void_int____operator___ov3(%t2, $argobj__1)
     return void
 }
-function @S__G__local_10174324311330680726__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1S29G__local_10174324311330680726C1Ev] {
+function @S__G__local_10174324311330680726__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
   slot $this : ptr
 
   block ^entry:

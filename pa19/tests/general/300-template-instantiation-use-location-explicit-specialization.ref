@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @sift(%p : ptr) -> void [binding=weak, object=_Z4siftI33Local__local_16583248074186681365EvPT_] {
+function @sift(%p : ptr) -> void [binding=weak, object=_Z4siftIZ1fvE5LocalEvPT_] {
   slot $p : ptr
   slot $top : obj<1x1>
 
@@ -23,7 +23,7 @@ function @sift(%p : ptr) -> void [binding=weak, object=_Z4siftI33Local__local_16
     call void @Local__local_16583248074186681365__Local__ov3(%t1, %t3)
     return void
 }
-function @Ops_Policy___iter_move(%i : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3OpsI6PolicyE9iter_moveI33Local__local_16583248074186681365EEOT_RS4_] {
+function @Ops_Policy___iter_move(%i : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3OpsI6PolicyE9iter_moveIZ1fvE5LocalEEOT_RS4_] {
   slot $i : ptr
 
   block ^entry:
@@ -32,7 +32,7 @@ function @Ops_Policy___iter_move(%i : ptr [pass=reference]) -> ptr [binding=weak
     %t2 = call ptr @move_like(%t1)
     return ptr %t2
 }
-function @move_like(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z9move_likeI33Local__local_16583248074186681365EOT_RS1_] {
+function @move_like(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z9move_likeIZ1fvE5LocalEOT_RS1_] {
   slot $t : ptr
 
   block ^entry:
@@ -40,7 +40,7 @@ function @move_like(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z9m
     %t1 = load ptr $t
     return ptr %t1
 }
-function @Local__local_16583248074186681365__Local__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN33Local__local_16583248074186681365C1EOS_] {
+function @Local__local_16583248074186681365__Local__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZZ1fvEN5LocalC1EOS_] {
   slot $this : ptr
   slot $__param1 : ptr
 

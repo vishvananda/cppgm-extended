@@ -44,7 +44,7 @@ function @C__g(%this : ptr, %target : ptr [pass=reference], %name : ptr [pass=re
     %t6 = call i32 @C__lookup(%t1, %t2, %t3, %t4)
     return i32 %t6
 }
-function @C__lookup(%this : ptr, %target : ptr [pass=reference], %name : ptr [pass=reference], %f : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1C6lookupIiZN1C1gERiRKiEUlS1_S3_E_EET_S1_S3_RKT0_] {
+function @C__lookup(%this : ptr, %target : ptr [pass=reference], %name : ptr [pass=reference], %f : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1C6lookupIiZNS_1gERiRKiEUlS1_S3_E_EET_S1_S3_RKT0_] {
   slot $this : ptr
   slot $target : ptr
   slot $name : ptr

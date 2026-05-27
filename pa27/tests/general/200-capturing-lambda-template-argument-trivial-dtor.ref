@@ -46,7 +46,7 @@ function @StringLike__resize_and_overwrite(%this : ptr, %n : i32, %op : obj<4x4>
     store i32 %t10, %t12
     return void
 }
-function @move_ref(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z8move_refIZ6helperiE3$_0EOT_RS0_] {
+function @move_ref(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z8move_refIZ6helperiE3$_0EOT_RS1_] {
   slot $value : ptr
 
   block ^entry:

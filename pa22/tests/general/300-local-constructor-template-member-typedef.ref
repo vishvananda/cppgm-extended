@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Wrap_ActiveInterval__local_15653610362259474173_const_____Wrap__ov4(%t2, %t3)
     return i32 0
 }
-function @Wrap_ActiveInterval__local_15653610362259474173_____Wrap(%this : ptr) -> void [binding=weak, object=_ZN4WrapIP42ActiveInterval__local_15653610362259474173EC1Ev] {
+function @Wrap_ActiveInterval__local_15653610362259474173_____Wrap(%this : ptr) -> void [binding=weak, object=_ZN4WrapIPZ4mainE14ActiveIntervalEC1Ev] {
   slot $this : ptr
 
   block ^entry:
@@ -20,7 +20,7 @@ function @Wrap_ActiveInterval__local_15653610362259474173_____Wrap(%this : ptr) 
     store ptr 0, %t2
     return void
 }
-function @Wrap_ActiveInterval__local_15653610362259474173_const_____Wrap__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4WrapIPK42ActiveInterval__local_15653610362259474173EC1IPS0_EERKS_IT_E] {
+function @Wrap_ActiveInterval__local_15653610362259474173_const_____Wrap__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4WrapIPKZ4mainE14ActiveIntervalEC1IPS0_EERKS_IT_E] {
   slot $this : ptr
   slot $other : ptr
 

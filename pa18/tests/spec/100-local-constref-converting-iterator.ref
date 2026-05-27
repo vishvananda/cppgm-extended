@@ -25,7 +25,7 @@ function @builder__f(%this : ptr) -> i32 [binding=weak, object=_ZN7builder1fEv] 
     call void @use_const_ref(%t2)
     return i32 0
 }
-function @map_like_builder__value_type__local_17887723607189993837___end(%this : ptr) -> obj<1x1> [binding=weak, object=_ZN8map_likeIN7builder38value_type__local_17887723607189993837EE3endEv] {
+function @map_like_builder__value_type__local_17887723607189993837___end(%this : ptr) -> obj<1x1> [binding=weak, object=_ZN8map_likeIZN7builder1fEvE10value_typeE3endEv] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 
@@ -35,14 +35,14 @@ function @map_like_builder__value_type__local_17887723607189993837___end(%this :
     call void @map_iter_builder__value_type__local_17887723607189993837___map_iter(%t1)
     return obj<1x1> $retobj__1
 }
-function @map_iter_builder__value_type__local_17887723607189993837___map_iter(%this : ptr) -> void [binding=weak, object=_ZN8map_iterIN7builder38value_type__local_17887723607189993837EEC1Ev] {
+function @map_iter_builder__value_type__local_17887723607189993837___map_iter(%this : ptr) -> void [binding=weak, object=_ZN8map_iterIZN7builder1fEvE10value_typeEC1Ev] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @map_const_iter_builder__value_type__local_17887723607189993837___map_const_iter__ov2(%this : ptr, %x : obj<1x1>) -> void [binding=weak, object=_ZN14map_const_iterIN7builder38value_type__local_17887723607189993837EEC1E8map_iterIS1_E] {
+function @map_const_iter_builder__value_type__local_17887723607189993837___map_const_iter__ov2(%this : ptr, %x : obj<1x1>) -> void [binding=weak, object=_ZN14map_const_iterIZN7builder1fEvE10value_typeEC1E8map_iterIS1_E] {
   slot $this : ptr
   slot $x : obj<1x1>
 
@@ -54,7 +54,7 @@ function @map_const_iter_builder__value_type__local_17887723607189993837___map_c
     %t3 = index i8 [projection=field] %t2, 0
     return void
 }
-function @use_const_ref(%__param0 : ptr [pass=reference]) -> void [binding=weak, object=_Z13use_const_refIN7builder38value_type__local_17887723607189993837EEvRK14map_const_iterIT_E] {
+function @use_const_ref(%__param0 : ptr [pass=reference]) -> void [binding=weak, object=_Z13use_const_refIZN7builder1fEvE10value_typeEvRK14map_const_iterIT_E] {
   slot $__param0 : ptr
 
   block ^entry:

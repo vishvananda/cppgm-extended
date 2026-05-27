@@ -326,7 +326,11 @@ bool record_class_template_instantiation_state(
     const std::vector<std::string> * dependent_argument_texts = nullptr,
     const std::vector<cpp_decl::TemplateArgumentSyntax> * dependent_argument_syntaxes = nullptr,
     const std::vector<template_model::TemplateParameterInfo> *
-        dependent_argument_mangle_parameters = nullptr);
+        dependent_argument_mangle_parameters = nullptr,
+    const std::vector<template_model::TemplateArgument> *
+        dependent_argument_mangle_arguments = nullptr,
+    const std::map<std::string, std::size_t> *
+        dependent_argument_mangle_pack_sizes = nullptr);
 bool refresh_forward_class_template_selection(
     SemanticContext & ctx,
     semantic_model::ClassInfo & info);

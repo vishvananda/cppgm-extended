@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @call_erase(%t2, 0)
     return i32 %t3
 }
-function @call_erase(%active : ptr [pass=reference], %ai : i32) -> i32 [binding=weak, object=_Z10call_eraseI42ActiveInterval__local_15412970380081035629EiR7MiniVecIT_Ei] {
+function @call_erase(%active : ptr [pass=reference], %ai : i32) -> i32 [binding=weak, object=_Z10call_eraseIZ4mainE14ActiveIntervalEiR7MiniVecIT_Ei] {
   slot $active : ptr
   slot $ai : i32
   slot $argobj__1 : obj<8x8>
@@ -31,7 +31,7 @@ function @call_erase(%active : ptr [pass=reference], %ai : i32) -> i32 [binding=
     %t9 = call i32 @MiniVec_ActiveInterval__local_15412970380081035629___erase(%t1, $argobj__1)
     return i32 %t9
 }
-function @operator_(%it : obj<8x8>, %__param1 : i32) -> obj<8x8> [binding=weak, object=_ZplIP42ActiveInterval__local_15412970380081035629E4WrapIT_ES4_i] {
+function @operator_(%it : obj<8x8>, %__param1 : i32) -> obj<8x8> [binding=weak, object=_ZplIPZ4mainE14ActiveIntervalE4WrapIT_ES4_i] {
   slot $it : obj<8x8>
   slot $__param1 : i32
   slot $retobj__1 : obj<8x8>
@@ -45,7 +45,7 @@ function @operator_(%it : obj<8x8>, %__param1 : i32) -> obj<8x8> [binding=weak, 
     call void @Wrap_ActiveInterval__local_15412970380081035629_const_____Wrap__ov5(%t2, %t3)
     return obj<8x8> $retobj__1
 }
-function @Wrap_ActiveInterval__local_15412970380081035629_const_____Wrap__ov5(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4WrapIPK42ActiveInterval__local_15412970380081035629EC1IPS0_EERKS_IT_E] {
+function @Wrap_ActiveInterval__local_15412970380081035629_const_____Wrap__ov5(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4WrapIPKZ4mainE14ActiveIntervalEC1IPS0_EERKS_IT_E] {
   slot $this : ptr
   slot $other : ptr
 
@@ -60,7 +60,7 @@ function @Wrap_ActiveInterval__local_15412970380081035629_const_____Wrap__ov5(%t
     store ptr %t3, %t5
     return void
 }
-function @MiniVec_ActiveInterval__local_15412970380081035629___begin(%this : ptr) -> obj<8x8> [binding=weak, object=_ZN7MiniVecI42ActiveInterval__local_15412970380081035629E5beginEv] {
+function @MiniVec_ActiveInterval__local_15412970380081035629___begin(%this : ptr) -> obj<8x8> [binding=weak, object=_ZN7MiniVecIZ4mainE14ActiveIntervalE5beginEv] {
   slot $this : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -70,7 +70,7 @@ function @MiniVec_ActiveInterval__local_15412970380081035629___begin(%this : ptr
     call void @Wrap_ActiveInterval__local_15412970380081035629_____Wrap(%t1)
     return obj<8x8> $retobj__1
 }
-function @MiniVec_ActiveInterval__local_15412970380081035629___erase(%this : ptr, %__param1 : obj<8x8>) -> i32 [binding=weak, object=_ZN7MiniVecI42ActiveInterval__local_15412970380081035629E5eraseE4WrapIPKS0_E] {
+function @MiniVec_ActiveInterval__local_15412970380081035629___erase(%this : ptr, %__param1 : obj<8x8>) -> i32 [binding=weak, object=_ZN7MiniVecIZ4mainE14ActiveIntervalE5eraseE4WrapIPKS0_E] {
   slot $this : ptr
   slot $__param1 : obj<8x8>
 
@@ -80,7 +80,7 @@ function @MiniVec_ActiveInterval__local_15412970380081035629___erase(%this : ptr
     copyobj 8x8 %__param1, %t1
     return i32 0
 }
-function @Wrap_ActiveInterval__local_15412970380081035629_____Wrap(%this : ptr) -> void [binding=weak, object=_ZN4WrapIP42ActiveInterval__local_15412970380081035629EC1Ev] {
+function @Wrap_ActiveInterval__local_15412970380081035629_____Wrap(%this : ptr) -> void [binding=weak, object=_ZN4WrapIPZ4mainE14ActiveIntervalEC1Ev] {
   slot $this : ptr
 
   block ^entry:
