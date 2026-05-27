@@ -15286,11 +15286,7 @@ private:
 
   string host_typeinfo_name_symbol_for_type(const TypePtr & type) const
   {
-    const string typeinfo_symbol = symbol_linkage::typeinfo_symbol_for_type(type);
-    if(typeinfo_symbol.size() < 4 || typeinfo_symbol.substr(0, 4) != "_ZTI") {
-      return string();
-    }
-    return string("_ZTS") + typeinfo_symbol.substr(4);
+    return symbol_linkage::typeinfo_name_symbol_for_type(type);
   }
 
   string ensure_host_typeinfo_name_global(const TypePtr & type)
