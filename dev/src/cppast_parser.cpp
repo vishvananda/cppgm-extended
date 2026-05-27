@@ -1639,7 +1639,10 @@ bool is_gnu_float_type_specifier_identifier(const RecogToken & token)
 
 bool is_gnu_int128_type_specifier_identifier(const RecogToken & token)
 {
-  return token.is_identifier() && token.source == "__int128";
+  return token.is_identifier() &&
+         (token.source == "__int128" ||
+          token.source == "__int128_t" ||
+          token.source == "__uint128_t");
 }
 
 bool is_gnu_extension_token(const RecogToken & token)
@@ -2677,6 +2680,7 @@ bool CppAstParser::can_start_type_id() const
          token.is_simple(KW_ENUM) ||
          is_cv_qualifier(token) ||
          is_simple_type_specifier(token) ||
+         is_gnu_int128_type_specifier_identifier(token) ||
          is_known_type_name_identifier(token) ||
          is_template_type_parameter_name(token) ||
          token.is_simple(OP_COLON2) ||
@@ -5386,6 +5390,13 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
 
     if(is_simple_type_specifier(token)) {
       out.children.push_back(make_token_node(CppAstKind::type_specifier, token));
+      ++pos;
+      matched = true;
+      continue;
+    }
+
+    if(is_gnu_int128_type_specifier_identifier(token)) {
+      out.children.push_back(make_node(CppAstKind::type_specifier, token.source));
       ++pos;
       matched = true;
       continue;
