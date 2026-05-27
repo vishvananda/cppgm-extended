@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "class_template_mangle_info.h"
@@ -178,6 +179,11 @@ static string special_type_symbol_for_type(abi_mangle::SpecialTypeSymbolKind kin
 string typeinfo_symbol_for_type(const TypePtr & type)
 {
   return special_type_symbol_for_type(abi_mangle::SPECIAL_TYPEINFO, type);
+}
+
+string typeinfo_name_symbol_for_type(const TypePtr & type)
+{
+  return special_type_symbol_for_type(abi_mangle::SPECIAL_TYPEINFO_NAME, type);
 }
 
 string vtable_object_symbol_for_type(const TypePtr & type)
@@ -710,6 +716,7 @@ struct MangleSubstitutionState
   size_t checkpoint_depth = 0;
   bool use_entity_substitutions = true;
   bool substitution_capacity_reserved = false;
+  bool ir_substitution_index_materialized = false;
 };
 
 struct MangleSubstitutionCheckpoint
@@ -769,6 +776,8 @@ struct MangleSubstitutionCheckpoint
 
     state->substitution_keys.resize(substitution_keys_size);
     state->substitution_ir_keys.resize(substitution_ir_keys_size);
+    state->ir_substitution_index.clear();
+    state->ir_substitution_index_materialized = false;
     if(state->checkpoint_depth > 0) {
       --state->checkpoint_depth;
       if(state->checkpoint_depth == 0) {
@@ -1362,9 +1371,22 @@ static void reserve_substitution_state_capacity(MangleSubstitutionState * state)
   }
   state->substitution_capacity_reserved = true;
   state->substitution_index.reserve(16);
-  state->ir_substitution_index.reserve(16);
   state->substitution_keys.reserve(16);
   state->substitution_ir_keys.reserve(16);
+}
+
+static bool ir_substitution_key_matches_registered(
+    const abi_mangle::SubstitutionKey & registered,
+    const abi_mangle::SubstitutionKey & key)
+{
+  if(registered == key) {
+    return true;
+  }
+  return registered.kind ==
+             abi_mangle::SubstitutionKey::SK_CLASS_TEMPLATE_SPECIALIZATION &&
+         key.kind == abi_mangle::SubstitutionKey::SK_NAMED &&
+         !registered.payload.empty() &&
+         registered.payload == key.payload;
 }
 
 static bool find_registered_ir_substitution_small(
@@ -1376,12 +1398,36 @@ static bool find_registered_ir_substitution_small(
     return false;
   }
   for(size_t i = 0; i < state->substitution_ir_keys.size(); ++i) {
-    if(state->substitution_ir_keys[i] == key) {
+    if(ir_substitution_key_matches_registered(state->substitution_ir_keys[i],
+                                              key)) {
       index = i;
       return true;
     }
   }
   return false;
+}
+
+static void materialize_ir_substitution_index(MangleSubstitutionState * state)
+{
+  if(!state || state->ir_substitution_index_materialized) {
+    return;
+  }
+  state->ir_substitution_index.clear();
+  state->ir_substitution_index.reserve(state->substitution_ir_keys.size() * 2);
+  for(size_t i = 0; i < state->substitution_ir_keys.size(); ++i) {
+    const abi_mangle::SubstitutionKey & key = state->substitution_ir_keys[i];
+    if(key.empty()) {
+      continue;
+    }
+    state->ir_substitution_index.insert(make_pair(key, i));
+    if(key.kind ==
+           abi_mangle::SubstitutionKey::SK_CLASS_TEMPLATE_SPECIALIZATION &&
+       !key.payload.empty()) {
+      state->ir_substitution_index.insert(
+          make_pair(abi_mangle::SubstitutionKey::named(key.payload), i));
+    }
+  }
+  state->ir_substitution_index_materialized = true;
 }
 
 static bool emit_registered_ir_substitution(
@@ -1398,6 +1444,11 @@ static bool emit_registered_ir_substitution(
     out += encode_substitution_sequence_id(linear_index);
     return true;
   }
+  if(!state->ir_substitution_index_materialized &&
+     state->substitution_ir_keys.size() <= 12) {
+    return false;
+  }
+  materialize_ir_substitution_index(state);
 
   unordered_map<abi_mangle::SubstitutionKey,
                 size_t,
@@ -1429,6 +1480,11 @@ static bool insert_ir_substitution_index(
     size_t index)
 {
   reserve_substitution_state_capacity(state);
+  if(!state->ir_substitution_index_materialized &&
+     state->substitution_ir_keys.size() < 12) {
+    return true;
+  }
+  materialize_ir_substitution_index(state);
   pair<unordered_map<abi_mangle::SubstitutionKey,
                      size_t,
                      MangleSubstitutionState::SubstitutionKeyHash>::iterator,
@@ -6637,6 +6693,14 @@ static bool attach_semantic_type_ir_substitution(
     const TypeMangleContext * mangle_ctx,
     abi_mangle::Type & ir_type)
 {
+  if(mangle_ctx && mangle_ctx->suppress_type_substitution_keys) {
+    return true;
+  }
+
+  if(attach_type_ir_substitution(ir_type)) {
+    return true;
+  }
+
   abi_mangle::SubstitutionKey semantic_key;
   if(build_structural_type_substitution_key(type,
                                             mangle_ctx,
@@ -8494,7 +8558,7 @@ static bool try_build_template_id_type_ir(const TemplateIdSyntax & syntax,
             0,
             append_qualified_component_text(canonical_prefix,
                                             canonical_component_text(base_name)),
-            argument_keys));
+            std::move(argument_keys)));
   } else {
     abi_mangle::set_substitution(
         ir_type,
@@ -9434,7 +9498,7 @@ static bool try_build_dependent_class_template_type_ir(
             0,
             append_qualified_component_text(canonical_prefix,
                                             canonical_component_text(base_name)),
-            argument_keys));
+            std::move(argument_keys)));
   } else {
     abi_mangle::set_substitution(
         ir_type,
@@ -12127,13 +12191,23 @@ static bool try_build_class_template_specialization_type_ir(
             arguments);
     abi_mangle::Type::ensure_name_metadata(ir_type)
         .register_member_expression_template_name = true;
-    abi_mangle::SubstitutionKey structural_key;
-    if(!build_class_template_specialization_structural_key(base,
-                                                           specialization_ctx,
-                                                           structural_key)) {
+    if(mangle_ctx && mangle_ctx->suppress_type_substitution_keys) {
+      out = ir_type;
+      return true;
+    }
+    vector<abi_mangle::SubstitutionKey> argument_keys;
+    if(!build_class_template_argument_ir_substitution_keys(arguments,
+                                                           argument_keys)) {
       return false;
     }
-    abi_mangle::set_substitution(ir_type, structural_key);
+    abi_mangle::set_substitution(
+        ir_type,
+        abi_mangle::SubstitutionKey::class_template_specialization(
+            0,
+            append_qualified_component_text(
+                trim_space(specialization->template_scope_prefix),
+                canonical_component_text(trim_space(specialization->template_name))),
+            std::move(argument_keys)));
     out = ir_type;
     return true;
   }
@@ -12164,14 +12238,20 @@ static bool try_build_class_template_specialization_type_ir(
           standard_substitution,
           standard_substitution_includes_arguments);
 
-  if(!standard_substitution_includes_arguments) {
-    abi_mangle::SubstitutionKey structural_key;
-    if(!build_class_template_specialization_structural_key(base,
-                                                           mangle_ctx,
-                                                           structural_key)) {
+  if(!standard_substitution_includes_arguments &&
+     !(mangle_ctx && mangle_ctx->suppress_type_substitution_keys)) {
+    vector<abi_mangle::SubstitutionKey> argument_keys;
+    if(!build_class_template_argument_ir_substitution_keys(arguments,
+                                                           argument_keys)) {
       return false;
     }
-    abi_mangle::set_substitution(ir_type, structural_key);
+    abi_mangle::set_substitution(
+        ir_type,
+        abi_mangle::SubstitutionKey::class_template_specialization(
+            0,
+            append_qualified_component_text(canonical_prefix,
+                                            canonical_component_text(template_name)),
+            std::move(argument_keys)));
   }
 
   out = ir_type;
@@ -13990,13 +14070,13 @@ static bool build_class_template_specialization_structural_key(
            argument_key)) {
       return false;
     }
-    argument_keys.push_back(argument_key);
+    argument_keys.push_back(std::move(argument_key));
   }
 
   out = abi_mangle::SubstitutionKey::class_template_specialization(
       0,
       fallback_name,
-      argument_keys);
+      std::move(argument_keys));
   return !out.empty();
 }
 
@@ -14032,7 +14112,7 @@ static bool build_structural_type_substitution_key(
     }
     out = abi_mangle::SubstitutionKey::type_cv(type->cv_const,
                                                       type->cv_volatile,
-                                                      inner_key);
+                                                      std::move(inner_key));
     return true;
   }
 
@@ -14047,11 +14127,13 @@ static bool build_structural_type_substitution_key(
       return false;
     }
     if(type->kind == Type::TK_POINTER) {
-      out = abi_mangle::SubstitutionKey::type_pointer(inner_key);
+      out = abi_mangle::SubstitutionKey::type_pointer(std::move(inner_key));
     } else if(type->kind == Type::TK_LVALUE_REFERENCE) {
-      out = abi_mangle::SubstitutionKey::type_lvalue_reference(inner_key);
+      out = abi_mangle::SubstitutionKey::type_lvalue_reference(
+          std::move(inner_key));
     } else {
-      out = abi_mangle::SubstitutionKey::type_rvalue_reference(inner_key);
+      out = abi_mangle::SubstitutionKey::type_rvalue_reference(
+          std::move(inner_key));
     }
     return true;
   }
@@ -14068,7 +14150,8 @@ static bool build_structural_type_substitution_key(
                                                true)) {
       return false;
     }
-    out = abi_mangle::SubstitutionKey::type_array(bound_key, inner_key);
+    out = abi_mangle::SubstitutionKey::type_array(bound_key,
+                                                  std::move(inner_key));
     return true;
   }
 
@@ -14090,16 +14173,16 @@ static bool build_structural_type_substitution_key(
                                                  true)) {
         return false;
       }
-      param_keys.push_back(param_key);
+      param_keys.push_back(std::move(param_key));
     }
-    out = abi_mangle::SubstitutionKey::type_function(result_key,
-                                                           param_keys,
-                                                           type->variadic);
+    out = abi_mangle::SubstitutionKey::type_function(std::move(result_key),
+                                                     std::move(param_keys),
+                                                     type->variadic);
     if(type->function_const) {
-      out = abi_mangle::SubstitutionKey::type_cv(true, false, out);
+      out = abi_mangle::SubstitutionKey::type_cv(true, false, std::move(out));
     }
     if(type->function_volatile) {
-      out = abi_mangle::SubstitutionKey::type_cv(false, true, out);
+      out = abi_mangle::SubstitutionKey::type_cv(false, true, std::move(out));
     }
     return true;
   }
@@ -14117,8 +14200,9 @@ static bool build_structural_type_substitution_key(
                                                true)) {
       return false;
     }
-    out = abi_mangle::SubstitutionKey::type_member_pointer(owner_key,
-                                                                  member_key);
+    out = abi_mangle::SubstitutionKey::type_member_pointer(
+        std::move(owner_key),
+        std::move(member_key));
     return true;
   }
 
@@ -14423,7 +14507,7 @@ static bool build_function_template_argument_ir_substitution_keys(
       out.clear();
       return false;
     }
-    out.push_back(key);
+    out.push_back(std::move(key));
   }
   return true;
 }
@@ -14655,7 +14739,9 @@ static bool try_build_function_qualifier_component_ir(
                                                                argument_keys)) {
         out.complete_ir_substitution_key =
             abi_mangle::SubstitutionKey::
-                class_template_specialization(0, full_base_text, argument_keys);
+                class_template_specialization(0,
+                                              full_base_text,
+                                              std::move(argument_keys));
       }
       canonical_prefix = complete_text;
       owner_template_component_index = candidate_owner_template_component_index;
@@ -14811,7 +14897,9 @@ static bool try_build_function_qualifier_component_ir(
                                                                argument_keys)) {
         out.complete_ir_substitution_key =
             abi_mangle::SubstitutionKey::
-                class_template_specialization(0, full_base_text, argument_keys);
+                class_template_specialization(0,
+                                              full_base_text,
+                                              std::move(argument_keys));
       }
       canonical_prefix = complete_text;
       return true;

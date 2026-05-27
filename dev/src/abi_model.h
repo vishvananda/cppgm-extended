@@ -1,10 +1,12 @@
 #pragma once
 
-// Typed ABI model and Itanium encoder shared by production symbol linkage and
-// the standalone ABI naming assignment.
+// Lower-level typed ABI model and Itanium encoder support. The standalone
+// assignment-facing fact scaffold is abi_mangle.h; this header is one possible
+// implementation layer underneath it.
 
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,34 +53,34 @@ struct SubstitutionKey
     return SubstitutionKey();
   }
 
-  static SubstitutionKey named(const std::string & name)
+  static SubstitutionKey named(std::string name)
   {
-    return make(SK_NAMED, name);
+    return make(SK_NAMED, std::move(name));
   }
 
-  static SubstitutionKey type(const std::string & key)
+  static SubstitutionKey type(std::string key)
   {
-    return make(SK_TYPE, key);
+    return make(SK_TYPE, std::move(key));
   }
 
-  static SubstitutionKey template_entity(const std::string & key)
+  static SubstitutionKey template_entity(std::string key)
   {
-    return make(SK_TEMPLATE_ENTITY, key);
+    return make(SK_TEMPLATE_ENTITY, std::move(key));
   }
 
-  static SubstitutionKey prefix(const std::string & key)
+  static SubstitutionKey prefix(std::string key)
   {
-    return make(SK_PREFIX, key);
+    return make(SK_PREFIX, std::move(key));
   }
 
-  static SubstitutionKey type_builtin(const std::string & code)
+  static SubstitutionKey type_builtin(std::string code)
   {
-    return make(SK_TYPE_BUILTIN, code);
+    return make(SK_TYPE_BUILTIN, std::move(code));
   }
 
   static SubstitutionKey type_cv(bool is_const,
                                  bool is_volatile,
-                                 const SubstitutionKey & inner)
+                                 SubstitutionKey inner)
   {
     std::string payload;
     if(is_const) {
@@ -87,51 +89,53 @@ struct SubstitutionKey
     if(is_volatile) {
       payload += 'V';
     }
-    return make_unary(SK_TYPE_CV, payload, inner);
+    return make_unary(SK_TYPE_CV, std::move(payload), std::move(inner));
   }
 
-  static SubstitutionKey type_pointer(const SubstitutionKey & inner)
+  static SubstitutionKey type_pointer(SubstitutionKey inner)
   {
-    return make_unary(SK_TYPE_POINTER, std::string(), inner);
+    return make_unary(SK_TYPE_POINTER, std::string(), std::move(inner));
   }
 
-  static SubstitutionKey type_lvalue_reference(const SubstitutionKey & inner)
+  static SubstitutionKey type_lvalue_reference(SubstitutionKey inner)
   {
-    return make_unary(SK_TYPE_LVALUE_REFERENCE, std::string(), inner);
+    return make_unary(SK_TYPE_LVALUE_REFERENCE, std::string(), std::move(inner));
   }
 
-  static SubstitutionKey type_rvalue_reference(const SubstitutionKey & inner)
+  static SubstitutionKey type_rvalue_reference(SubstitutionKey inner)
   {
-    return make_unary(SK_TYPE_RVALUE_REFERENCE, std::string(), inner);
+    return make_unary(SK_TYPE_RVALUE_REFERENCE, std::string(), std::move(inner));
   }
 
   static SubstitutionKey type_array(const std::string & bound_key,
-                                    const SubstitutionKey & inner)
+                                    SubstitutionKey inner)
   {
-    return make_unary(SK_TYPE_ARRAY, bound_key, inner);
+    return make_unary(SK_TYPE_ARRAY, bound_key, std::move(inner));
   }
 
-  static SubstitutionKey type_function(const SubstitutionKey & result,
-                                       const std::vector<SubstitutionKey> & params,
+  static SubstitutionKey type_function(SubstitutionKey result,
+                                       std::vector<SubstitutionKey> params,
                                        bool variadic)
   {
     SubstitutionKey key;
     key.kind = SK_TYPE_FUNCTION;
     key.payload = variadic ? "z" : "v";
     key.children.reserve(params.size() + 1);
-    key.children.push_back(result);
-    key.children.insert(key.children.end(), params.begin(), params.end());
+    key.children.push_back(std::move(result));
+    for(std::size_t i = 0; i < params.size(); ++i) {
+      key.children.push_back(std::move(params[i]));
+    }
     return key;
   }
 
-  static SubstitutionKey type_member_pointer(const SubstitutionKey & owner,
-                                             const SubstitutionKey & member)
+  static SubstitutionKey type_member_pointer(SubstitutionKey owner,
+                                             SubstitutionKey member)
   {
     SubstitutionKey key;
     key.kind = SK_TYPE_MEMBER_POINTER;
     key.children.reserve(2);
-    key.children.push_back(owner);
-    key.children.push_back(member);
+    key.children.push_back(std::move(owner));
+    key.children.push_back(std::move(member));
     return key;
   }
 
@@ -150,40 +154,40 @@ struct SubstitutionKey
 
   static SubstitutionKey class_template_specialization(
       std::uintptr_t template_id,
-      const std::string & fallback_name,
-      const std::vector<SubstitutionKey> & arguments)
+      std::string fallback_name,
+      std::vector<SubstitutionKey> arguments)
   {
     SubstitutionKey key;
     key.kind = SK_CLASS_TEMPLATE_SPECIALIZATION;
     key.id = template_id;
-    key.payload = fallback_name;
-    key.children = arguments;
+    key.payload = std::move(fallback_name);
+    key.children = std::move(arguments);
     return key;
   }
 
-  static SubstitutionKey template_argument_type(const SubstitutionKey & type)
+  static SubstitutionKey template_argument_type(SubstitutionKey type)
   {
-    return make_unary(SK_TEMPLATE_ARGUMENT_TYPE, std::string(), type);
+    return make_unary(SK_TEMPLATE_ARGUMENT_TYPE, std::string(), std::move(type));
   }
 
-  static SubstitutionKey template_argument_value(const std::string & value)
+  static SubstitutionKey template_argument_value(std::string value)
   {
-    return make(SK_TEMPLATE_ARGUMENT_VALUE, value);
+    return make(SK_TEMPLATE_ARGUMENT_VALUE, std::move(value));
   }
 
   static SubstitutionKey template_argument_template(std::uintptr_t template_id,
-                                                    const std::string & fallback_name)
+                                                    std::string fallback_name)
   {
     SubstitutionKey key;
     key.kind = SK_TEMPLATE_ARGUMENT_TEMPLATE;
     key.id = template_id;
-    key.payload = fallback_name;
+    key.payload = std::move(fallback_name);
     return key;
   }
 
-  static SubstitutionKey function_template_prefix(const std::string & name)
+  static SubstitutionKey function_template_prefix(std::string name)
   {
-    return make(SK_FUNCTION_TEMPLATE_PREFIX, name);
+    return make(SK_FUNCTION_TEMPLATE_PREFIX, std::move(name));
   }
 
   bool empty() const
@@ -262,22 +266,22 @@ struct SubstitutionKey
   }
 
 private:
-  static SubstitutionKey make(Kind kind, const std::string & payload)
+  static SubstitutionKey make(Kind kind, std::string payload)
   {
     SubstitutionKey key;
     key.kind = kind;
-    key.payload = payload;
+    key.payload = std::move(payload);
     return key;
   }
 
   static SubstitutionKey make_unary(Kind kind,
-                                    const std::string & payload,
-                                    const SubstitutionKey & inner)
+                                    std::string payload,
+                                    SubstitutionKey inner)
   {
     SubstitutionKey key;
     key.kind = kind;
-    key.payload = payload;
-    key.children.push_back(inner);
+    key.payload = std::move(payload);
+    key.children.push_back(std::move(inner));
     return key;
   }
 };
@@ -1414,7 +1418,9 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     if(!make_type_substitution_key(*type.inner, inner_key)) {
       return false;
     }
-    out = SubstitutionKey::type_cv(type.cv_const, type.cv_volatile, inner_key);
+    out = SubstitutionKey::type_cv(type.cv_const,
+                                   type.cv_volatile,
+                                   std::move(inner_key));
     return true;
   }
 
@@ -1426,7 +1432,7 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     if(!make_type_substitution_key(*type.inner, inner_key)) {
       return false;
     }
-    out = SubstitutionKey::type_pointer(inner_key);
+    out = SubstitutionKey::type_pointer(std::move(inner_key));
     return true;
   }
 
@@ -1438,7 +1444,7 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     if(!make_type_substitution_key(*type.inner, inner_key)) {
       return false;
     }
-    out = SubstitutionKey::type_lvalue_reference(inner_key);
+    out = SubstitutionKey::type_lvalue_reference(std::move(inner_key));
     return true;
   }
 
@@ -1450,7 +1456,7 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     if(!make_type_substitution_key(*type.inner, inner_key)) {
       return false;
     }
-    out = SubstitutionKey::type_rvalue_reference(inner_key);
+    out = SubstitutionKey::type_rvalue_reference(std::move(inner_key));
     return true;
   }
 
@@ -1466,7 +1472,7 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
         type.array_substitution_bound_key.empty() ?
             type.array_bound :
             type.array_substitution_bound_key;
-    out = SubstitutionKey::type_array(bound_key, inner_key);
+    out = SubstitutionKey::type_array(bound_key, std::move(inner_key));
     return true;
   }
 
@@ -1485,9 +1491,11 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
       if(!make_type_substitution_key(type.params[i], param_key)) {
         return false;
       }
-      param_keys.push_back(param_key);
+      param_keys.push_back(std::move(param_key));
     }
-    out = SubstitutionKey::type_function(result_key, param_keys, type.variadic);
+    out = SubstitutionKey::type_function(std::move(result_key),
+                                         std::move(param_keys),
+                                         type.variadic);
     return true;
   }
 
@@ -1501,7 +1509,8 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
        !make_type_substitution_key(*type.inner, member_key)) {
       return false;
     }
-    out = SubstitutionKey::type_member_pointer(owner_key, member_key);
+    out = SubstitutionKey::type_member_pointer(std::move(owner_key),
+                                               std::move(member_key));
     return true;
   }
 
@@ -1613,7 +1622,7 @@ inline bool make_class_template_argument_substitution_key(
       if(!make_type_substitution_key(*argument.type, type_key)) {
         return false;
       }
-      out = SubstitutionKey::template_argument_type(type_key);
+      out = SubstitutionKey::template_argument_type(std::move(type_key));
       return true;
     }
 
@@ -1745,7 +1754,7 @@ inline bool make_template_argument_substitution_key(
        !make_type_substitution_key(*argument.value_type, type_key)) {
       return false;
     }
-    out = SubstitutionKey::template_argument_type(type_key);
+    out = SubstitutionKey::template_argument_type(std::move(type_key));
     return true;
   }
 
@@ -4337,6 +4346,7 @@ inline bool emit_function_encoding_body(const FunctionEncoding & function,
 enum SpecialTypeSymbolKind
 {
   SPECIAL_TYPEINFO,
+  SPECIAL_TYPEINFO_NAME,
   SPECIAL_VTABLE,
   SPECIAL_VTT
 };
@@ -4353,6 +4363,8 @@ inline const char * special_type_symbol_prefix(SpecialTypeSymbolKind kind)
   switch(kind) {
   case SPECIAL_TYPEINFO:
     return "_ZTI";
+  case SPECIAL_TYPEINFO_NAME:
+    return "_ZTS";
   case SPECIAL_VTABLE:
     return "_ZTV";
   case SPECIAL_VTT:

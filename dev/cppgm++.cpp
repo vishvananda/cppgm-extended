@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -222,13 +223,13 @@ string abi_qualified_name_text(const cpp_decl::QualifiedName & qualified)
 
 string abi_node_qualified_name_text(const CallSemNode & node)
 {
+  if(!callsem_resolved_name(node).empty()) {
+    return callsem_resolved_name(node);
+  }
   const shared_ptr<cpp_decl::QualifiedName> & qualified =
       callsem_qualified_name_syntax(node);
   if(qualified) {
     return abi_qualified_name_text(*qualified);
-  }
-  if(!callsem_resolved_name(node).empty()) {
-    return callsem_resolved_name(node);
   }
   return node.text.str();
 }
@@ -290,14 +291,14 @@ bool abi_type_from_cpp_type(const cpp_decl::TypePtr & type,
     if(type->cv_volatile) {
       abi_mangle::AbiType wrapper;
       wrapper.kind = abi_mangle::ABI_TYPE_VOLATILE;
-      wrapper.child_types.push_back(inner);
-      inner = wrapper;
+      wrapper.child_types.push_back(std::move(inner));
+      inner = std::move(wrapper);
     }
     if(type->cv_const) {
       out.kind = abi_mangle::ABI_TYPE_CONST;
-      out.child_types.push_back(inner);
+      out.child_types.push_back(std::move(inner));
     } else {
-      out = inner;
+      out = std::move(inner);
     }
     return true;
   }
@@ -337,6 +338,7 @@ bool abi_type_from_cpp_type(const cpp_decl::TypePtr & type,
   case cpp_decl::Type::TK_FUNCTION:
     out.kind = abi_mangle::ABI_TYPE_FUNCTION;
     out.variadic = type->variadic;
+    out.child_types.reserve(type->params.size() + 1);
     out.child_types.push_back(abi_mangle::AbiType());
     if(!abi_type_from_cpp_type(type->inner, out.child_types.back())) {
       return false;
@@ -410,6 +412,7 @@ bool append_abi_function_case(const CallSemNode & node,
   fact_case.target.function.nested_volatile =
       node.is_volatile_method || type->function_volatile;
   fact_case.target.function.abi_tags = callsem_abi_tags(node);
+  fact_case.target.function.parameter_types.reserve(type->params.size());
   for(size_t i = 0; i < type->params.size(); ++i) {
     fact_case.target.function.parameter_types.push_back(abi_mangle::AbiType());
     if(!abi_type_from_cpp_type(type->params[i],
@@ -417,7 +420,7 @@ bool append_abi_function_case(const CallSemNode & node,
       return false;
     }
   }
-  file.cases.push_back(fact_case);
+  file.cases.push_back(std::move(fact_case));
   return true;
 }
 
@@ -440,7 +443,7 @@ bool append_abi_variable_case(const CallSemNode & node,
     fact_case.target.kind = abi_mangle::ABI_MANGLE_VARIABLE;
     fact_case.target.qualified_name = qualified_name;
     fact_case.target.c_linkage = node.is_c_linkage;
-    file.cases.push_back(fact_case);
+    file.cases.push_back(std::move(fact_case));
   }
   if(node.is_thread_local &&
      !callsem_symbol(node).thread_local_wrapper_object_symbol.empty()) {
@@ -453,7 +456,7 @@ bool append_abi_variable_case(const CallSemNode & node,
           abi_fact_label_component(callsem_symbol(node).internal_symbol + "__tls_wrapper");
       fact_case.target.kind = abi_mangle::ABI_MANGLE_THREAD_LOCAL_WRAPPER;
       fact_case.target.qualified_name = qualified_name;
-      file.cases.push_back(fact_case);
+      file.cases.push_back(std::move(fact_case));
     }
   }
   return true;

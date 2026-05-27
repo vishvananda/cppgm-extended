@@ -1,5 +1,9 @@
 #pragma once
 
+// Optional assignment-facing ABI fact scaffold for the standalone abimangle
+// tool. Solutions may use these records directly or replace them, as long as
+// they accept the PAX fact files and emit the required Itanium ABI names.
+
 #include <cstddef>
 #include <string>
 #include <vector>

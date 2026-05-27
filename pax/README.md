@@ -1,286 +1,259 @@
-## CPPGM Programming Assignment X (`abimangle` and ABI names)
-
-### Status
-
-This is a draft assignment staged in `pax/` until we choose its final numbered
-position. The intended insertion point is between PA30 and PA31, so PA31 can
-focus on host object interoperability instead of introducing the Itanium
-mangling model at the same time as host-linkable object emission.
+## CPPGM Programming Assignment X (`abimangle`)
 
 ### Overview
 
-PAX is the ABI naming assignment. It requires a typed Itanium C++ ABI name
-encoder. The final assignment should also include a source-integration path
-that feeds that encoder from the compiler's semantic model.
+Write one C++ application called `abimangle`.
 
-The assignment deliberately splits the work into two observable contracts:
+`abimangle` takes normalized ABI fact files as input and writes Itanium C++
+ABI mangled names. Each input case describes the semantic facts for one ABI
+name: the entity being named, owner scopes, type structure, template
+parameters, template arguments, dependent expressions, local contexts, ABI
+tags, and special ABI-name forms.
 
-- a standalone ABI fact input that describes already-resolved ABI entities,
-  types, template parameters, template arguments, and declaration contexts
-- a source integration mode that emits the ABI names the compiler would use for
-  declarations in ordinary C++ translation units
-
-The standalone input isolates the mangler core from parsing, semantic analysis,
-object emission, and runtime behavior. The source integration mode prevents
-students from passing a standalone DSL while their compiler still lacks a
-usable semantic-to-ABI-name bridge.
-
-The checked-in standalone tests use a line-oriented fact form. Simple tests are
-one line, such as `function ::ns::f int` or `type ptr:const:int`. Structured
-tests introduce named facts before the result:
-
-```text
-let-type T template-param 0
-let-type U template-param 1
-let-arg U_arg type U
-let-type Rebind member-template T rebind U_arg
-type member Rebind other
-```
-
-`let-type` names canonical ABI types, `let-arg` names template arguments, and
-`let-expr` names dependent expressions. `let-context` names a typed enclosing
-function context for local classes and lambdas, and `let-entity` names an ABI
-entity that can be used by entity-valued template arguments. Result lines are
-`type ...` or `function ...`, with optional `param ...` lines for function
-parameter types. Operator terminals use semantic names such as `operator-call`,
-not Itanium terminal spellings. This keeps the standalone tests as normalized
-ABI facts instead of source code or direct calls into an implementation-specific
-mangler API.
-
-Special ABI names are also target facts, not caller-side string prefixes:
-`typeinfo <type>`, `vtable <type>`, `vtt <type>`,
-`construction-vtable <dynamic-type> <base-offset> <base-type>`,
-`tls-wrapper variable <qualified-name>`, `thunk <this-adjust>
-[<result-adjust>] function ...`, and `virtual-base-thunk <vcall-offset>
-function ...`. Wrapper and thunk targets are described with the same typed
-variable and function facts as ordinary symbols; tests must not pass an
-already-mangled target symbol back into the ABI layer.
-
-The standalone fact syntax now covers the ABI model forms currently used by
-production symbol naming: variadic function types and functions, generic vendor
-qualifiers, builtin type transforms, template-template arguments, dependent
-integral template values, raw and typed external entity references, member
-external entity references, member template expressions, dependent expression
-calls, casts/conversions, type traits, `sizeof(type)`, template-ids, object
-members, and pack expansions. Function cases can also carry ABI tags,
-member-function cv/ref qualifiers, operator terminal codes, conversion function
-terminal types, and special-name wrappers for VTTs, construction vtables, TLS
-wrappers, and thunks. If future `symbol_linkage` work needs another
-`abi_model.h` record shape, the fact syntax should gain a focused PAX test for
-that shape rather than bypassing the typed ABI records.
-
-The scaffold exposes the text format as typed semantic ABI facts in
-`abi_mangle.h`. `AbiFactFile` contains `AbiFactCase` records; each case has an
-ordered list of `AbiFact` definitions and one `AbiMangleTarget`. Single-case
-files do not need an explicit label. The facts use typed records such as
-`AbiType`, `AbiTemplateArg`, `AbiDependentExpr`, `AbiFunctionPath`, and
-`AbiEntity`, not raw token lines. Builtin types, vendor qualifiers, standard
-substitutions, dependent-expression operators, function terminals, and array
-bounds are represented as typed fields. `parse_fact_text` reads the line format
-into those records, and `serialize_fact_file` writes the same normalized format
-back out. The reference tool round-trips parsed facts through the serializer
-before mangling, then encodes names only from the typed records. If a required
-maintainer mangling case cannot be expressed through these records, the ABI
-fact surface is missing semantic data and should be extended.
-
-The standalone encoder keeps parser labels as fact-file references only. Its
-substitution table compares typed type, template-argument, dependent-expression,
-entity, and function-path keys rather than stringified internal payloads, so
-two equivalent facts do not become different substitutions just because the
-input file used different local labels. The standalone `abimangle` build also
-depends only on this ABI naming layer, not on the parser or semantic frontend.
-
-Production symbol naming also uses the ABI model. `symbol_linkage` builds
-`abi_mangle` model records from semantic bindings and calls the shared encoder;
-there is no separate `itanium_mangle_ir` production path. When a production
-name cannot be expressed through the standalone fact format, that is a paX
-fact-surface gap to close with a focused test and model field.
-
-The standalone ABI tests are numbered from simpler names toward more complete
-ABI situations. Each checked-in test file covers exactly one mangled name:
-`100-*` covers basic names and types, `200-*` local entities, `300-*`
-entity-valued template arguments, `400-*` dependent member types, `500-*`
-dependent expressions, and `600-*` nested template owner contexts.
-
-PAX does not require producing relocatable objects, linking, or executing
-programs.
+The input is not C++ source. This assignment is about ABI name construction
+only. It does not require C++ parsing, semantic analysis, LowIR generation,
+object emission, linking, or runtime behavior.
 
 ### Prerequisites
 
 Complete PA30 before starting this assignment.
 
-You will reuse:
+You will want to reuse:
 
-- the full C++ language pipeline through PA30
-- the PA18+ template and dependent-type model
-- the PA27-PA29 class, member, namespace, lambda, and special-member semantic
-  model
-- the PA30 `cppgm++` driver shell
+- the PA30 build and tool-driver structure
+- the PA18+ template and dependent-type concepts as design background
+- the PA27-PA29 namespace, class, member, lambda, and special-member concepts
+  as design background
+- the Itanium C++ ABI mangling rules in `../doc/itanium-mangling.txt`
 
-You will add a reusable ABI naming layer that later assignments can use for
-host object emission, vtables, RTTI, exception objects, thunks, template
-instantiations, and standard-library-adjacent symbols.
+The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`,
+and a working host C++ compiler for building the test executable.
 
-### Assignment Surface
+### Starter Kit
 
-PAX has two required modes.
+The starter kit provides:
 
-#### Standalone ABI Fact Mode
+- `dev/abimangle.cpp`, populated with command-line handling for `abimangle`
+- `pax/abimangle.cpp`, a wrapper that builds the editable tool source from
+  `../dev/abimangle.cpp`
+- `pax/Makefile`
+- `pax/scripts/`, the ABI fact test harness
+- `pax/tests/abi/`, the checked-in ABI fact tests and reference files
+- shared support sources and headers under `dev/src/`
+- an optional ABI fact scaffold in `dev/src/abi_mangle.h` and
+  `dev/src/abi_mangle.cpp`
 
-Add a tool named `abimangle`:
+Put code changes in `dev/`, especially `dev/abimangle.cpp` and reusable
+helpers under `dev/src/`. Do not edit generated `.my` files. Test inputs and
+references are part of the handout unless your instructor asks you to add or
+update tests.
+
+There is no separate reference binary in the starter kit. The checked-in
+`.ref.*` files are the oracle.
+
+### Command-Line Contract
+
+Required form:
 
 ```sh
 abimangle -o <outfile> <abi-facts-file>...
 ```
 
-Each input is a small ABI fact file. The format is not C++ source. It is a
-normalized entity graph that already encodes the semantic facts required by the
-Itanium mangling grammar:
+`abimangle` shall read all input fact files in command-line order and write one
+mangled name for each input case to `<outfile>`.
 
-- declaration context and source-visible entity name
-- entity kind: function, variable, typeinfo, vtable, VTT, thunk, constructor,
-  destructor, operator, conversion function, or lambda-related name
-- language linkage and symbol binding when it affects the name table
-- canonical type structure, including cv-qualification, references, pointers,
-  arrays, functions, member pointers, and class/enum names
-- template parameter depth/index/pack identity
-- template arguments, including type arguments, non-type template arguments,
-  template-template arguments, packs, dependent expressions, and defaulted
-  arguments that participate in the ABI spelling
-- alias targets, dependent names, inline namespace ownership, anonymous
-  namespace ownership, local entity context, and ABI tags where required
-
-`abimangle` writes one deterministic ABI name per input case. A draft output
-shape is:
+Each output name is written on its own line:
 
 ```text
 _ZN2ns1fEiPc
 ```
 
-The final fact-file syntax can be line-oriented or S-expression-like, but it
-must remain an ABI entity graph rather than a second C++ frontend.
+If an input file contains multiple cases, the output preserves the case order
+from that file before moving to the next input file.
 
-#### Source Integration Mode
+### ABI Fact Files
 
-This is the planned final source-facing surface; it is not implemented by the
-current standalone cleanup branch.
+ABI fact files are line-oriented. The checked-in tests use normalized facts of
+the forms described here.
 
-Add a `cppgm++` mode:
-
-```sh
-cppgm++ --emit-abi-names -o <outfile> <srcfile>...
-```
-
-The output is a deterministic table of selected ABI-visible names discovered
-from the compiler's semantic model. A draft output shape is:
+Simple cases can be one line:
 
 ```text
-defined strong function ::ns::f(int) _ZN2ns1fEi
-defined weak function-template ::algo::id<int>(int) _ZN4algo2idIiEET_S1_
-undefined external function ::host::take(int) _ZN4host4takeEi
+function f
+function path ns::f
+variable ns::g
+type ptr:const:int
+typeinfo ns::C
+vtable ns::C
 ```
 
-The source mode must feed the same typed ABI entity model as `abimangle`.
-Formatting a source declaration, reparsing it, demangling it, or reading object
-tool output is not an acceptable bridge.
+Structured cases introduce reusable facts before the final target:
+
+```text
+let-type Char template-param 0
+let-arg Char_arg type Char
+let-type Traits template std::char_traits Char_arg
+let-arg Traits_arg type Traits
+let-type Alloc template std::allocator Char_arg
+let-arg Alloc_arg type Alloc
+let-type String template std::__cxx11::basic_string Char_arg Traits_arg Alloc_arg
+function path std::getline Char_arg
+param ref String
+```
+
+Definition forms:
+
+- `let-type <id> ...`: a type fact
+- `let-arg <id> ...`: a template-argument fact
+- `let-expr <id> ...`: a dependent-expression fact
+- `let-context <id> ...`: a local or lambda context fact
+- `let-entity <id> ...`: an entity fact used by entity-valued template
+  arguments and dependent expressions
+
+Target forms:
+
+- `type ...`
+- `function ...` with optional following `param ...` lines
+- `variable ...`
+- `typeinfo ...`
+- `vtable ...`
+- `vtt ...`
+- `construction-vtable ...`
+- `tls-wrapper variable ...`
+- `thunk ... function ...`
+- `virtual-base-thunk ... function ...`
+
+Operator facts use semantic names such as `operator-call`, not raw Itanium
+terminal fragments. Thunks, wrappers, typeinfo, and vtable names are described
+as ABI facts instead of already-mangled names.
+
+The fact format is deliberately small, but it is still an ABI entity graph. It
+should not become a second C++ parser.
 
 ### Required ABI Coverage
 
-The standalone fact tests should cover these areas before PA31 depends on
-them:
+The checked-in tests are numbered from simpler names toward more complete ABI
+situations:
 
-- ordinary external names for functions, variables, namespaces, nested names,
-  local names, anonymous namespaces, inline namespaces, and C linkage
-- builtin, vendor-qualified, qualified, pointer, reference, array, function,
-  member-pointer, enum, class, and dependent types
-- substitution table behavior and substitution ordering
-- Itanium standard substitutions such as `St`, `Sa`, `Sb`, and standard-library
-  inline namespace interactions used by the course tests
-- function templates with type parameters, non-type template parameters,
-  default arguments, template-template parameters, and parameter packs
-- dependent return types, dependent aliases, dependent expressions, `decltype`,
-  and owner-template references
-- constructors, destructors, conversion functions, overloaded operators, special
-  member entry points, vtables, typeinfo, VTTs, and thunks
-- lambda and local-class naming where later assignments need host ABI names
-- ABI tags and weak/ODR-mergeable emitted template names
+- `100-*`: basic functions, variables, named types, builtin types, pointers,
+  arrays, member pointers, typeinfo, vtables, VTTs, and variadic forms
+- `200-*`: ABI tags, local entities, lambdas, operators, conversion terminals,
+  TLS wrappers, and thunks
+- `300-*`: entity-valued template arguments, template-template arguments,
+  standard substitutions, construction vtables, and dependent integral values
+- `400-*`: dependent aliases and dependent member/owner types
+- `500-*`: dependent expressions, casts, calls, type traits, `sizeof(type)`,
+  packs, and substitution of equivalent dependent expressions
+- `600-*`: nested owner contexts and standard-library-adjacent inline namespace
+  cases
 
-The source integration tests should be smaller. They should verify that real
-semantic declarations feed the same ABI model for representative examples from
-the standalone matrix, especially dependent template and owner-context cases.
+An implementation should handle Itanium substitution ordering, nested names,
+local-name contexts, template parameter references, template arguments,
+dependent expressions, ABI tags, special names, and every target form covered
+by the tests.
 
-### Architecture Requirements
+Reference:
 
-The implementation should introduce a typed ABI naming model, not a collection
-of string helpers. Expected core records include:
+- Local copy of Itanium C++ ABI, Chapter 5.1 "External Names (a.k.a.
+  Mangling)": [`../doc/itanium-mangling.txt`](../doc/itanium-mangling.txt)
 
-- `AbiEntity`, with entity kind, context, language linkage, ABI tags, special
-  name kind, and optional local/lambda discriminator
-- `AbiType`, with canonical type structure and source spelling only where the
-  ABI grammar requires source identity
-- `AbiTemplateParam`, with depth, index, pack identity, and kind
-- `AbiTemplateArg`, with typed value, type, template, pack, and dependent
-  expression variants
-- `AbiDependentExpr`, with template/function parameters, literals, operations,
-  member expressions, and entity references
-- `AbiFunctionPath`, with declaration ownership, template arguments, optional
-  template-pattern result types, and function parameter types for
-  context-sensitive names
-- `AbiMangleContext`, owning the substitution table and current template
-  parameter environment
+### Output Format
 
-Both `abimangle` and `cppgm++ --emit-abi-names` must build these records and
-call the same Itanium encoder. Later PA31/PA32 object emission should consume
-the resulting object symbols instead of reimplementing mangling rules in the
-object backend.
+The output file contains one mangled name per target, followed by a newline.
+
+For successful test cases, standard output and standard error are ignored. You
+may use them for diagnostics.
+
+### Error Handling
+
+If command-line parsing, input reading, fact parsing, or name construction
+fails, `abimangle` shall exit with failure.
+
+For negative tests, exact diagnostics are not the grading contract. The harness
+compares exit status first. If the reference path fails, stdout and stderr are
+diagnostic side effects rather than required output.
 
 ### Testing
 
-The eventual test layout should be:
+Run the ABI naming suite with:
 
-- `tests/abi/`: standalone ABI fact files and checked-in `.ref` outputs
-- `tests/source/`: C++ source integration tests and checked-in `.ref` outputs
-- optional instructor-only oracle scripts that compare generated names against
-  host compiler output when regenerating references
+```sh
+make test
+```
 
-Student tests should compare checked-in references. They should not invoke the
-host compiler as a live mangling oracle, because compiler version differences
-can create noise around ABI tags, standard-library inline namespaces, and local
-entity numbering.
+To run one test through the shared check target:
+
+```sh
+make check TEST=tests/abi/100-global-function.t
+```
+
+For each test case `x.t`:
+
+- `abimangle` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is compared against `x.ref`
+- `x.my.exit_status` is compared against `x.ref.exit_status`
+
+The checked-in references are the oracle. Your tests should not invoke the host
+compiler, `nm`, `readelf`, `objdump`, or a demangler as a live ABI-name oracle,
+because host compiler and standard-library version differences can create
+noise around ABI tags, inline namespaces, and local entity numbering.
 
 ### Assignment Boundary
 
-PAX owns ABI name construction.
+This assignment owns standalone ABI name construction from normalized ABI fact
+files.
 
-To complete PAX, an implementation must:
+To complete this assignment, implement this behavior:
 
-1. Parse normalized ABI fact files into typed ABI records.
-2. Encode those records using the Itanium C++ ABI mangling grammar.
-3. Produce deterministic source integration output from real semantic entities.
-4. Use one shared ABI naming model for both inputs.
-5. Preserve earlier PA30 behavior.
+1. Parse normalized ABI fact files.
+2. Represent the ABI facts with enough typed structure to apply the Itanium C++
+   ABI mangling grammar.
+3. Encode the supported fact records into deterministic mangled names.
+4. Implement substitution-table behavior in host-compatible order for the
+   tested cases.
 
-If a later host object test fails only because the raw symbol spelling is wrong,
-the missing behavior should either be covered by PAX or intentionally deferred
-from PAX in this README.
+If `abimangle` accepts a fact file and writes a different ABI name from the
+checked-in reference, the issue belongs in this assignment.
 
 ### Out Of Scope
 
-PAX does not require:
+The following are out of scope for this assignment:
 
+- C++ source input
+- C++ source parsing or semantic analysis
+- LowIR generation
 - relocatable object generation or host linking
 - ELF, Mach-O, COFF, archives, shared libraries, or relocation records
 - vtable layout, RTTI object layout, exception handling, unwind metadata, or
   host runtime behavior beyond naming the corresponding ABI entities
 - demangling
-- using `nm`, `readelf`, `objdump`, or host compiler output as compiler input
-- a full second C++ frontend for the standalone ABI fact format
+- using host object tools or host compiler output as compiler input
+
+### Design Notes (Non-Normative)
+
+A simple implementation strategy is to keep three concerns separate:
+
+- fact-file parsing into typed records
+- ABI name encoding from those typed records
+- substitution-table state for one mangled name
+
+The optional `abi_mangle.h` scaffold follows that shape. You may use it,
+adjust it, or replace it. The tests require the behavior of `abimangle`, not a
+specific internal representation.
+
+Substitution is part of the ABI grammar, not just text de-duplication. The
+encoder should record substitutions in the order required by the Itanium ABI
+and should compare structured facts when deciding whether a component can reuse
+an existing slot.
+
+Avoid building names by assembling large ad hoc strings that are later
+reparsed. Some ABI facts contain source spellings, but type structure,
+template arguments, dependent expressions, and local contexts should remain
+structured until the encoder emits the final mangled name.
 
 ### Stage Handoff
 
-After PAX, PA31 should treat ABI names as available compiler facts. PA31 should
-verify that host-linkable objects preserve those facts through symbol tables,
-bindings, weak/ODR coalescing, and host linker behavior. PA32 should then add
-host C++ ABI/runtime object semantics such as vtable ownership, RTTI layout,
-exception handling, and thunks while continuing to use the PAX ABI naming
-layer.
+The next host-object stage can feed real compiler semantic entities into the
+ABI naming layer, then preserve those names through symbol tables, bindings,
+weak/ODR coalescing, and host linker behavior.

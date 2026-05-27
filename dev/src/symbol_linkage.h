@@ -108,6 +108,7 @@ std::string thread_local_wrapper_object_symbol_for_static_member_variable(
     const semantic_model::ClassInfo & owner_class,
     const std::string & member_name);
 std::string typeinfo_symbol_for_type(const cpp_decl::TypePtr & type);
+std::string typeinfo_name_symbol_for_type(const cpp_decl::TypePtr & type);
 std::string vtable_object_symbol_for_type(const cpp_decl::TypePtr & type);
 bool mangle_itanium_type_encoding(const cpp_decl::TypePtr & type,
                                   std::string & out);
