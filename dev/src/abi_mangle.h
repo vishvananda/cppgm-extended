@@ -17,6 +17,7 @@ enum AbiTypeKind
   ABI_TYPE_RVALUE_REFERENCE,
   ABI_TYPE_CONST,
   ABI_TYPE_VOLATILE,
+  ABI_TYPE_VENDOR_QUALIFIED,
   ABI_TYPE_PACK_EXPANSION,
   ABI_TYPE_ARRAY,
   ABI_TYPE_FUNCTION,
@@ -39,6 +40,7 @@ struct AbiType
   std::string abi_code;
   std::string array_bound;
   std::size_t template_parameter_index = 0;
+  bool substitutable_template_parameter = false;
   std::string std_substitution;
   bool std_substitution_includes_template_arguments = false;
   std::string context_reference;
@@ -102,6 +104,8 @@ struct AbiFunctionPath
 {
   std::string qualified_name;
   std::vector<std::string> template_argument_references;
+  bool has_result_type = false;
+  AbiType result_type;
   std::vector<AbiType> parameter_types;
 };
 
@@ -168,6 +172,8 @@ struct AbiFunction
   std::string source_name;
   AbiFunctionTerminal terminal = ABI_FUNCTION_TERMINAL_SOURCE_NAME;
   std::vector<AbiType> lambda_signature_parameter_types;
+  bool has_result_type = false;
+  AbiType result_type;
   std::vector<AbiType> parameter_types;
 };
 
