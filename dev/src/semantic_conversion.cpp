@@ -761,6 +761,12 @@ ConversionRank standard_conversion_rank_non_reference(const TypePtr & target,
   TypePtr converted_base = strip_top_level_cv(converted);
 
   if(target_base->kind == Type::TK_FUNDAMENTAL &&
+     target_base->fundamental == FT_NULLPTR_T &&
+     expr.null_pointer_constant) {
+    return CR_CONVERSION;
+  }
+
+  if(target_base->kind == Type::TK_FUNDAMENTAL &&
      target_base->fundamental == FT_BOOL) {
     if(expr.null_pointer_constant ||
        (converted_base && converted_base->kind == Type::TK_FUNDAMENTAL &&
@@ -933,6 +939,11 @@ void apply_standard_conversion_result_metadata(SemanticContext & ctx,
   }
 
   TypePtr expr_base = strip_top_level_cv(remove_reference_type(expr.type));
+  if(target_base && target_base->kind == Type::TK_FUNDAMENTAL &&
+     target_base->fundamental == FT_NULLPTR_T &&
+     expr.null_pointer_constant && expr_base && is_integral_type(expr_base)) {
+    ctx.set_expr_info_metadata(out, target_base, VC_PRVALUE);
+  }
   if(target_base && is_nullable_pointer_like_type(target_base) &&
      expr.null_pointer_constant && expr_base && is_integral_type(expr_base)) {
     ctx.set_expr_info_metadata(out, target_base, out.category);

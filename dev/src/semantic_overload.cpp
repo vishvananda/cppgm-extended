@@ -4719,40 +4719,51 @@ int compare_candidate_match_preference(SemanticContext & ctx,
   bool current_better = false;
   bool best_better = false;
   for(size_t j = 0; j < current.ranks.size() && j < best.ranks.size(); ++j) {
+    const bool compare_second_standard_conversion =
+        current.ranks[j] == CR_USER_DEFINED &&
+        best.ranks[j] == CR_USER_DEFINED &&
+        j < current.args.size() &&
+        j < best.args.size();
+    const ExprInfo & current_compare_arg =
+        compare_second_standard_conversion ? current.args[j] :
+                                             source_arg_for_compare(current, j);
+    const ExprInfo & best_compare_arg =
+        compare_second_standard_conversion ? best.args[j] :
+                                             source_arg_for_compare(best, j);
     if(current.ranks[j] < best.ranks[j]) {
       current_better = true;
     } else if(current.ranks[j] > best.ranks[j]) {
       best_better = true;
     } else {
       int ref_pref = compare_reference_binding_preference(current.params[j],
-                                                          current.args[j],
+                                                          current_compare_arg,
                                                           best.params[j],
-                                                          best.args[j]);
+                                                          best_compare_arg);
       if(ref_pref < 0) {
         current_better = true;
       } else if(ref_pref > 0) {
         best_better = true;
       } else {
         int qual_pref = compare_qualification_conversion_preference(current.params[j],
-                                                                    current.args[j],
+                                                                    current_compare_arg,
                                                                     best.params[j],
-                                                                    best.args[j]);
+                                                                    best_compare_arg);
         if(qual_pref < 0) {
           current_better = true;
         } else if(qual_pref > 0) {
           best_better = true;
         } else {
           int std_pref = compare_standard_conversion_preference(current.params[j],
-                                                                current.args[j],
+                                                                current_compare_arg,
                                                                 best.params[j],
-                                                                best.args[j]);
+                                                                best_compare_arg);
           if(std_pref == 0 && j < current.args.size() && j < best.args.size()) {
             std_pref = compare_pointer_base_over_void_preference(
                 ctx,
                 current.params[j],
-                source_arg_for_compare(current, j),
+                current_compare_arg,
                 best.params[j],
-                source_arg_for_compare(best, j));
+                best_compare_arg);
           }
           if(std_pref < 0) {
             current_better = true;
