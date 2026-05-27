@@ -52,12 +52,14 @@ The scaffold exposes the text format as typed semantic ABI facts in
 ordered list of `AbiFact` definitions and one `AbiMangleTarget`. Single-case
 files do not need an explicit label. The facts use typed records such as
 `AbiType`, `AbiTemplateArg`, `AbiDependentExpr`, `AbiFunctionPath`, and
-`AbiEntity`, not raw token lines. `parse_fact_text` reads the line format into
-those records, and `serialize_fact_file` writes the same normalized format back
-out. The reference tool round-trips parsed facts through the serializer before
-mangling, then encodes names only from the typed records. If a required
-maintainer mangling case cannot be expressed through these records, the ABI fact
-surface is missing semantic data and should be extended.
+`AbiEntity`, not raw token lines. Builtin types, vendor qualifiers, standard
+substitutions, dependent-expression operators, function terminals, and array
+bounds are represented as typed fields. `parse_fact_text` reads the line format
+into those records, and `serialize_fact_file` writes the same normalized format
+back out. The reference tool round-trips parsed facts through the serializer
+before mangling, then encodes names only from the typed records. If a required
+maintainer mangling case cannot be expressed through these records, the ABI
+fact surface is missing semantic data and should be extended.
 
 The standalone ABI tests are numbered from simpler names toward more complete
 ABI situations. Each checked-in test file covers exactly one mangled name:

@@ -209,6 +209,34 @@ string builtin_name(AbiBuiltinType type)
   return string();
 }
 
+AbiStdSubstitution std_substitution_from_word(const string & word)
+{
+  if(word == "St") { return ABI_STD_SUBSTITUTION_STD; }
+  if(word == "Sa") { return ABI_STD_SUBSTITUTION_ALLOCATOR; }
+  if(word == "Sb") { return ABI_STD_SUBSTITUTION_BASIC_STRING; }
+  if(word == "Ss") { return ABI_STD_SUBSTITUTION_STRING; }
+  if(word == "Si") { return ABI_STD_SUBSTITUTION_ISTREAM; }
+  if(word == "So") { return ABI_STD_SUBSTITUTION_OSTREAM; }
+  if(word == "Sd") { return ABI_STD_SUBSTITUTION_IOSTREAM; }
+  if(word == "none" || word == "-") { return ABI_STD_SUBSTITUTION_NONE; }
+  return ABI_STD_SUBSTITUTION_NONE;
+}
+
+string word_from_std_substitution(AbiStdSubstitution substitution)
+{
+  switch(substitution) {
+  case ABI_STD_SUBSTITUTION_NONE: return "none";
+  case ABI_STD_SUBSTITUTION_STD: return "St";
+  case ABI_STD_SUBSTITUTION_ALLOCATOR: return "Sa";
+  case ABI_STD_SUBSTITUTION_BASIC_STRING: return "Sb";
+  case ABI_STD_SUBSTITUTION_STRING: return "Ss";
+  case ABI_STD_SUBSTITUTION_ISTREAM: return "Si";
+  case ABI_STD_SUBSTITUTION_OSTREAM: return "So";
+  case ABI_STD_SUBSTITUTION_IOSTREAM: return "Sd";
+  }
+  throw logic_error("unknown ABI standard substitution");
+}
+
 bool builtin_code_from_name(const string & word, string & code)
 {
   const AbiBuiltinType type = builtin_type_from_name(word);
@@ -235,6 +263,69 @@ AbiType builtin_type_spec(const string & name)
     throw logic_error("unknown builtin ABI fact type '" + name + "'");
   }
   return out;
+}
+
+AbiArrayBound integer_array_bound(unsigned long long value)
+{
+  AbiArrayBound out;
+  out.kind = ABI_ARRAY_BOUND_INTEGER;
+  out.integer_value = value;
+  return out;
+}
+
+AbiArrayBound expression_array_bound(const string & expression_reference)
+{
+  AbiArrayBound out;
+  out.kind = ABI_ARRAY_BOUND_EXPRESSION;
+  out.expression_reference = expression_reference;
+  return out;
+}
+
+bool parse_unsigned_integer_word(const string & text, unsigned long long & value)
+{
+  if(text.empty()) {
+    return false;
+  }
+  for(size_t i = 0; i < text.size(); ++i) {
+    if(!isdigit(static_cast<unsigned char>(text[i]))) {
+      return false;
+    }
+  }
+  char * end = nullptr;
+  value = strtoull(text.c_str(), &end, 10);
+  return end && *end == '\0';
+}
+
+AbiArrayBound parse_array_bound_word(const string & word)
+{
+  if(starts_with(word, "expr:")) {
+    const string ref = word.substr(5);
+    if(ref.empty()) {
+      throw logic_error("array expression bound requires expr:<reference>");
+    }
+    return expression_array_bound(ref);
+  }
+  unsigned long long value = 0;
+  if(!parse_unsigned_integer_word(word, value)) {
+    throw logic_error("array bound must be an integer or expr:<reference>");
+  }
+  return integer_array_bound(value);
+}
+
+string word_from_array_bound(const AbiArrayBound & bound)
+{
+  switch(bound.kind) {
+  case ABI_ARRAY_BOUND_INTEGER:
+    return to_string(bound.integer_value);
+  case ABI_ARRAY_BOUND_EXPRESSION:
+    if(bound.expression_reference.empty()) {
+      throw logic_error("array expression bound requires an expression reference");
+    }
+    return "expr:" + bound.expression_reference;
+  case ABI_ARRAY_BOUND_NONE:
+    break;
+  }
+  throw logic_error("array type requires a bound");
 }
 
 AbiType reference_type_spec(const string & id)
@@ -306,7 +397,7 @@ AbiType parse_single_type_token(const string & text)
     }
     AbiType out;
     out.kind = ABI_TYPE_ARRAY;
-    out.array_bound = rest.substr(0, pos);
+    out.array_bound = parse_array_bound_word(rest.substr(0, pos));
     out.child_types.push_back(parse_single_type_token(rest.substr(pos + 1)));
     return out;
   }
@@ -389,7 +480,7 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
       throw logic_error("array type requires bound and element type");
     }
     out.kind = ABI_TYPE_ARRAY;
-    out.array_bound = words[begin + 1];
+    out.array_bound = parse_array_bound_word(words[begin + 1]);
     out.child_types.push_back(parse_single_type_token(words[begin + 2]));
     return out;
   }
@@ -434,7 +525,11 @@ AbiType parse_type_spec(const vector<string> & words, size_t begin)
           "std-template type requires substitution, includes flag, and name");
     }
     out.kind = ABI_TYPE_STD_CLASS_TEMPLATE;
-    out.std_substitution = words[begin + 1];
+    out.std_substitution = std_substitution_from_word(words[begin + 1]);
+    if(out.std_substitution == ABI_STD_SUBSTITUTION_NONE &&
+       words[begin + 1] != "none" && words[begin + 1] != "-") {
+      throw logic_error("unknown std substitution '" + words[begin + 1] + "'");
+    }
     out.std_substitution_includes_template_arguments =
         boolean_word(words[begin + 2]);
     out.name = words[begin + 3];
@@ -600,7 +695,7 @@ bool single_type_token(const AbiType & type, string & token)
     if(!single_type_token(type.child_types[0], child)) {
       return false;
     }
-    token = "array:" + type.array_bound + ":" + child;
+    token = "array:" + word_from_array_bound(type.array_bound) + ":" + child;
     return true;
   }
   case ABI_TYPE_NAMED:
@@ -681,7 +776,7 @@ void append_type_spec_words(vector<string> & words, const AbiType & type)
     break;
   case ABI_TYPE_STD_CLASS_TEMPLATE:
     words.push_back("std-template");
-    words.push_back(type.std_substitution);
+    words.push_back(word_from_std_substitution(type.std_substitution));
     words.push_back(type.std_substitution_includes_template_arguments ?
                     "true" : "false");
     words.push_back(type.name);
@@ -1350,6 +1445,47 @@ struct DirectFactContext
   map<string, AbiEntity> entities;
 };
 
+const AbiTemplateArg & direct_require_arg_ref(const DirectFactContext & ctx,
+                                              const string & id)
+{
+  map<string, AbiTemplateArg>::const_iterator found = ctx.args.find(id);
+  if(found == ctx.args.end()) {
+    throw logic_error("unknown ABI fact template argument reference '" + id + "'");
+  }
+  return found->second;
+}
+
+const AbiDependentExpr & direct_require_expr_ref(const DirectFactContext & ctx,
+                                                 const string & id)
+{
+  map<string, AbiDependentExpr>::const_iterator found = ctx.exprs.find(id);
+  if(found == ctx.exprs.end()) {
+    throw logic_error("unknown ABI fact expression reference '" + id + "'");
+  }
+  return found->second;
+}
+
+const AbiEntity & direct_require_entity_ref(const DirectFactContext & ctx,
+                                            const string & id)
+{
+  map<string, AbiEntity>::const_iterator found = ctx.entities.find(id);
+  if(found == ctx.entities.end()) {
+    throw logic_error("unknown ABI fact entity reference '" + id + "'");
+  }
+  return found->second;
+}
+
+const DirectLocalContext & direct_require_context_ref(
+    const DirectFactContext & ctx,
+    const string & id)
+{
+  map<string, DirectLocalContext>::const_iterator found = ctx.contexts.find(id);
+  if(found == ctx.contexts.end()) {
+    throw logic_error("unknown ABI fact local context reference '" + id + "'");
+  }
+  return found->second;
+}
+
 DirectSubstitutionKey direct_key(const string & value)
 {
   DirectSubstitutionKey out;
@@ -1481,7 +1617,9 @@ bool direct_type_key(const DirectFactContext & ctx,
     payload += ':';
     payload += to_string(static_cast<int>(type.vendor_qualifier));
     payload += ':';
-    payload += type.array_bound;
+    if(type.kind == ABI_TYPE_ARRAY) {
+      payload += word_from_array_bound(type.array_bound);
+    }
     for(size_t i = 0; i < type.child_types.size(); ++i) {
       DirectSubstitutionKey child_key;
       if(!direct_type_key(ctx, type.child_types[i], child_key)) {
@@ -1502,14 +1640,15 @@ bool direct_type_key(const DirectFactContext & ctx,
   case ABI_TYPE_STD_CLASS_TEMPLATE:
   case ABI_TYPE_MEMBER_CLASS_TEMPLATE: {
     string payload = string("class-template:") + type.name;
+    payload += ":std:";
+    payload += to_string(static_cast<int>(type.std_substitution));
+    payload += type.std_substitution_includes_template_arguments ? ":with-args" :
+        ":without-args";
     for(size_t i = 0; i < type.template_argument_references.size(); ++i) {
-      map<string, AbiTemplateArg>::const_iterator found =
-          ctx.args.find(type.template_argument_references[i]);
-      if(found == ctx.args.end()) {
-        return false;
-      }
+      const AbiTemplateArg & arg =
+          direct_require_arg_ref(ctx, type.template_argument_references[i]);
       DirectSubstitutionKey arg_key;
-      if(!direct_template_arg_key(ctx, found->second, arg_key)) {
+      if(!direct_template_arg_key(ctx, arg, arg_key)) {
         return false;
       }
       payload += '[' + arg_key.value + ']';
@@ -1595,13 +1734,10 @@ bool direct_template_arg_key(const DirectFactContext & ctx,
                      to_string(arg.integer_value));
     return true;
   case ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION: {
-    map<string, AbiDependentExpr>::const_iterator found =
-        ctx.exprs.find(arg.expression_reference);
-    if(found == ctx.exprs.end()) {
-      return false;
-    }
+    const AbiDependentExpr & expression =
+        direct_require_expr_ref(ctx, arg.expression_reference);
     DirectSubstitutionKey expr_key;
-    if(!direct_expression_key(ctx, found->second, expr_key)) {
+    if(!direct_expression_key(ctx, expression, expr_key)) {
       return false;
     }
     out = direct_key(string("arg-expression:") + expr_key.value);
@@ -1617,13 +1753,10 @@ bool direct_template_arg_key(const DirectFactContext & ctx,
   case ABI_TEMPLATE_ARG_PACK: {
     string payload = "arg-pack:";
     for(size_t i = 0; i < arg.pack_argument_references.size(); ++i) {
-      map<string, AbiTemplateArg>::const_iterator found =
-          ctx.args.find(arg.pack_argument_references[i]);
-      if(found == ctx.args.end()) {
-        return false;
-      }
+      const AbiTemplateArg & item =
+          direct_require_arg_ref(ctx, arg.pack_argument_references[i]);
       DirectSubstitutionKey item_key;
-      if(!direct_template_arg_key(ctx, found->second, item_key)) {
+      if(!direct_template_arg_key(ctx, item, item_key)) {
         return false;
       }
       payload += '[' + item_key.value + ']';
@@ -1681,12 +1814,10 @@ bool direct_emit_template_args(const DirectFactContext & ctx,
 {
   out += 'I';
   for(size_t i = 0; i < refs.size(); ++i) {
-    map<string, AbiTemplateArg>::const_iterator found = ctx.args.find(refs[i]);
-    if(found == ctx.args.end()) {
-      throw logic_error("unknown ABI fact template argument reference '" +
-                        refs[i] + "'");
-    }
-    if(!direct_emit_template_arg(ctx, encoder, found->second, out)) {
+    if(!direct_emit_template_arg(ctx,
+                                 encoder,
+                                 direct_require_arg_ref(ctx, refs[i]),
+                                 out)) {
       return false;
     }
   }
@@ -1694,19 +1825,18 @@ bool direct_emit_template_args(const DirectFactContext & ctx,
   return true;
 }
 
-bool direct_emit_qualified_source_name(DirectEncoder & encoder,
-                                       const string & qualified_name,
-                                       const vector<string> & template_arg_refs,
-                                       const DirectFactContext & ctx,
-                                       string & out)
+bool direct_emit_qualified_source_name_prefix(
+    DirectEncoder & encoder,
+    const string & qualified_name,
+    const vector<string> & template_arg_refs,
+    const DirectFactContext & ctx,
+    string & out)
 {
   const vector<string> parts = split_qualified_name(qualified_name);
   const bool direct_std = parts.size() == 2 && parts[0] == "std";
-  const bool nested = parts.size() > 1 && !direct_std;
   if(direct_std) {
     out += "St";
-  } else if(nested) {
-    out += 'N';
+  } else {
     for(size_t i = 0; i + 1 < parts.size(); ++i) {
       if(!direct_emit_prefix_component(encoder, parts, i, out)) {
         return false;
@@ -1721,8 +1851,109 @@ bool direct_emit_qualified_source_name(DirectEncoder & encoder,
       return false;
     }
   }
+  return true;
+}
+
+bool direct_emit_qualified_source_name(DirectEncoder & encoder,
+                                       const string & qualified_name,
+                                       const vector<string> & template_arg_refs,
+                                       const DirectFactContext & ctx,
+                                       string & out)
+{
+  const vector<string> parts = split_qualified_name(qualified_name);
+  const bool direct_std = parts.size() == 2 && parts[0] == "std";
+  const bool nested = parts.size() > 1 && !direct_std;
+  if(nested) {
+    out += 'N';
+  }
+  if(!direct_emit_qualified_source_name_prefix(encoder,
+                                               qualified_name,
+                                               template_arg_refs,
+                                               ctx,
+                                               out)) {
+    return false;
+  }
   if(nested) {
     out += 'E';
+  }
+  return true;
+}
+
+bool direct_emit_type_name_prefix(const DirectFactContext & ctx,
+                                  DirectEncoder & encoder,
+                                  const AbiType & input,
+                                  string & out)
+{
+  DirectSubstitutionKey key;
+  const bool has_key = direct_type_key(ctx, input, key);
+  if(has_key && direct_emit_substitution(encoder, key, out)) {
+    return true;
+  }
+
+  AbiType builtin_storage;
+  const AbiType & type = direct_resolve_type_ref(ctx, input, builtin_storage);
+  const size_t begin = out.size();
+  switch(type.kind) {
+  case ABI_TYPE_NAMED:
+    if(!direct_emit_qualified_source_name_prefix(encoder,
+                                                 type.name,
+                                                 vector<string>(),
+                                                 ctx,
+                                                 out)) {
+      out.resize(begin);
+      return false;
+    }
+    break;
+  case ABI_TYPE_CLASS_TEMPLATE:
+  case ABI_TYPE_STD_CLASS_TEMPLATE:
+    if(type.kind == ABI_TYPE_STD_CLASS_TEMPLATE &&
+       type.std_substitution != ABI_STD_SUBSTITUTION_NONE) {
+      out += word_from_std_substitution(type.std_substitution);
+      if(!type.std_substitution_includes_template_arguments &&
+         !direct_emit_template_args(ctx,
+                                    encoder,
+                                    type.template_argument_references,
+                                    out)) {
+        out.resize(begin);
+        return false;
+      }
+    } else if(!direct_emit_qualified_source_name_prefix(
+                  encoder,
+                  type.name,
+                  type.template_argument_references,
+                  ctx,
+                  out)) {
+      out.resize(begin);
+      return false;
+    }
+    break;
+  case ABI_TYPE_MEMBER_TYPE:
+  case ABI_TYPE_MEMBER_CLASS_TEMPLATE:
+    if(type.child_types.size() != 1 ||
+       !direct_emit_type_name_prefix(ctx, encoder, type.child_types[0], out) ||
+       !direct_emit_source_name(type.name, out)) {
+      out.resize(begin);
+      return false;
+    }
+    if(type.kind == ABI_TYPE_MEMBER_CLASS_TEMPLATE &&
+       !direct_emit_template_args(ctx,
+                                  encoder,
+                                  type.template_argument_references,
+                                  out)) {
+      out.resize(begin);
+      return false;
+    }
+    break;
+  default:
+    if(!direct_emit_type(ctx, encoder, input, out)) {
+      out.resize(begin);
+      return false;
+    }
+    return true;
+  }
+
+  if(has_key) {
+    direct_register_substitution(encoder, key);
   }
   return true;
 }
@@ -1788,7 +2019,19 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
   case ABI_TYPE_ARRAY:
     if(type.child_types.size() != 1) { return false; }
     out += 'A';
-    out += type.array_bound;
+    if(type.array_bound.kind == ABI_ARRAY_BOUND_INTEGER) {
+      out += to_string(type.array_bound.integer_value);
+    } else if(type.array_bound.kind == ABI_ARRAY_BOUND_EXPRESSION) {
+      if(!direct_emit_expression_body(
+             ctx,
+             encoder,
+             direct_require_expr_ref(ctx, type.array_bound.expression_reference),
+             out)) {
+        return false;
+      }
+    } else {
+      return false;
+    }
     out += '_';
     return direct_emit_type(ctx, encoder, type.child_types[0], out);
   case ABI_TYPE_FUNCTION:
@@ -1822,8 +2065,8 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
   case ABI_TYPE_CLASS_TEMPLATE:
   case ABI_TYPE_STD_CLASS_TEMPLATE:
     if(type.kind == ABI_TYPE_STD_CLASS_TEMPLATE &&
-       !type.std_substitution.empty()) {
-      out += type.std_substitution;
+       type.std_substitution != ABI_STD_SUBSTITUTION_NONE) {
+      out += word_from_std_substitution(type.std_substitution);
       if(type.std_substitution_includes_template_arguments) {
         return true;
       }
@@ -1842,15 +2085,9 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
     if(type.child_types.size() != 1) {
       return false;
     }
-    string owner;
-    if(!direct_emit_type(ctx, encoder, type.child_types[0], owner)) {
-      return false;
-    }
     out += 'N';
-    if(owner.size() >= 2 && owner[0] == 'N' && owner[owner.size() - 1] == 'E') {
-      out += owner.substr(1, owner.size() - 2);
-    } else {
-      out += owner;
+    if(!direct_emit_type_name_prefix(ctx, encoder, type.child_types[0], out)) {
+      return false;
     }
     if(!direct_emit_source_name(type.name, out)) {
       return false;
@@ -1866,14 +2103,12 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
     return true;
   }
   case ABI_TYPE_DECLTYPE: {
-    map<string, AbiDependentExpr>::const_iterator found =
-        ctx.exprs.find(type.expression_reference);
-    if(found == ctx.exprs.end()) {
-      throw logic_error("unknown ABI fact expression reference '" +
-                        type.expression_reference + "'");
-    }
     out += "DT";
-    if(!direct_emit_expression_body(ctx, encoder, found->second, out)) {
+    if(!direct_emit_expression_body(ctx,
+                                    encoder,
+                                    direct_require_expr_ref(ctx,
+                                                            type.expression_reference),
+                                    out)) {
       return false;
     }
     out += 'E';
@@ -1881,14 +2116,10 @@ bool direct_emit_type_body(const DirectFactContext & ctx,
   }
   case ABI_TYPE_LAMBDA_CLOSURE:
   case ABI_TYPE_LOCAL_TYPE: {
-    map<string, DirectLocalContext>::const_iterator found =
-        ctx.contexts.find(type.context_reference);
-    if(found == ctx.contexts.end()) {
-      throw logic_error("unknown ABI fact local context reference '" +
-                        type.context_reference + "'");
-    }
+    const DirectLocalContext & context =
+        direct_require_context_ref(ctx, type.context_reference);
     out += 'Z';
-    if(!direct_emit_function_path_encoding(ctx, encoder, found->second.function, out)) {
+    if(!direct_emit_function_path_encoding(ctx, encoder, context.function, out)) {
       return false;
     }
     out += 'E';
@@ -2086,31 +2317,37 @@ bool direct_emit_expression_body(const DirectFactContext & ctx,
     out += word_from_expression_operator(expr.expression_operator);
     return direct_emit_expression_body(ctx,
                                        encoder,
-                                       ctx.exprs.find(expr.first_reference)->second,
+                                       direct_require_expr_ref(ctx,
+                                                               expr.first_reference),
                                        out);
   case ABI_EXPR_BINARY:
     out += word_from_expression_operator(expr.expression_operator);
     return direct_emit_expression_body(ctx,
                                        encoder,
-                                       ctx.exprs.find(expr.first_reference)->second,
+                                       direct_require_expr_ref(ctx,
+                                                               expr.first_reference),
                                        out) &&
            direct_emit_expression_body(ctx,
                                        encoder,
-                                       ctx.exprs.find(expr.second_reference)->second,
+                                       direct_require_expr_ref(ctx,
+                                                               expr.second_reference),
                                        out);
   case ABI_EXPR_CONDITIONAL:
     out += "qu";
     return direct_emit_expression_body(ctx,
                                        encoder,
-                                       ctx.exprs.find(expr.first_reference)->second,
+                                       direct_require_expr_ref(ctx,
+                                                               expr.first_reference),
                                        out) &&
            direct_emit_expression_body(ctx,
                                        encoder,
-                                       ctx.exprs.find(expr.second_reference)->second,
+                                       direct_require_expr_ref(ctx,
+                                                               expr.second_reference),
                                        out) &&
            direct_emit_expression_body(ctx,
                                        encoder,
-                                       ctx.exprs.find(expr.third_reference)->second,
+                                       direct_require_expr_ref(ctx,
+                                                               expr.third_reference),
                                        out);
   case ABI_EXPR_MEMBER:
     out += "sr";
@@ -2123,14 +2360,10 @@ bool direct_emit_expression_body(const DirectFactContext & ctx,
     return direct_emit_source_name(expr.member_name, out);
   case ABI_EXPR_ENTITY_ADDRESS:
   case ABI_EXPR_ENTITY_REFERENCE: {
-    map<string, AbiEntity>::const_iterator found =
-        ctx.entities.find(expr.entity_reference);
-    if(found == ctx.entities.end()) {
-      throw logic_error("unknown ABI fact entity reference '" +
-                        expr.entity_reference + "'");
-    }
+    const AbiEntity & entity = direct_require_entity_ref(ctx,
+                                                         expr.entity_reference);
     out += expr.kind == ABI_EXPR_ENTITY_ADDRESS ? "adL" : "L";
-    out += direct_entity_symbol(ctx, found->second);
+    out += direct_entity_symbol(ctx, entity);
     out += 'E';
     if(expr.kind == ABI_EXPR_ENTITY_ADDRESS) {
       out += 'E';
@@ -2163,14 +2396,12 @@ bool direct_emit_template_arg(const DirectFactContext & ctx,
     out += 'E';
     return true;
   case ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION: {
-    map<string, AbiDependentExpr>::const_iterator found =
-        ctx.exprs.find(arg.expression_reference);
-    if(found == ctx.exprs.end()) {
-      throw logic_error("unknown ABI fact expression reference '" +
-                        arg.expression_reference + "'");
-    }
     out += 'X';
-    if(!direct_emit_expression_body(ctx, encoder, found->second, out)) {
+    if(!direct_emit_expression_body(ctx,
+                                    encoder,
+                                    direct_require_expr_ref(ctx,
+                                                            arg.expression_reference),
+                                    out)) {
       return false;
     }
     out += 'E';
@@ -2178,14 +2409,10 @@ bool direct_emit_template_arg(const DirectFactContext & ctx,
   }
   case ABI_TEMPLATE_ARG_ENTITY_ADDRESS:
   case ABI_TEMPLATE_ARG_ENTITY_REFERENCE: {
-    map<string, AbiEntity>::const_iterator found =
-        ctx.entities.find(arg.entity_reference);
-    if(found == ctx.entities.end()) {
-      throw logic_error("unknown ABI fact entity reference '" +
-                        arg.entity_reference + "'");
-    }
+    const AbiEntity & entity = direct_require_entity_ref(ctx,
+                                                         arg.entity_reference);
     out += arg.kind == ABI_TEMPLATE_ARG_ENTITY_ADDRESS ? "XadL" : "L";
-    out += direct_entity_symbol(ctx, found->second);
+    out += direct_entity_symbol(ctx, entity);
     out += 'E';
     if(arg.kind == ABI_TEMPLATE_ARG_ENTITY_ADDRESS) {
       out += 'E';
@@ -2195,13 +2422,11 @@ bool direct_emit_template_arg(const DirectFactContext & ctx,
   case ABI_TEMPLATE_ARG_PACK:
     out += 'J';
     for(size_t i = 0; i < arg.pack_argument_references.size(); ++i) {
-      map<string, AbiTemplateArg>::const_iterator found =
-          ctx.args.find(arg.pack_argument_references[i]);
-      if(found == ctx.args.end()) {
-        throw logic_error("unknown ABI fact template argument reference '" +
-                          arg.pack_argument_references[i] + "'");
-      }
-      if(!direct_emit_template_arg(ctx, encoder, found->second, out)) {
+      if(!direct_emit_template_arg(
+             ctx,
+             encoder,
+             direct_require_arg_ref(ctx, arg.pack_argument_references[i]),
+             out)) {
         return false;
       }
     }
@@ -2253,14 +2478,10 @@ string direct_emit_function_symbol(const DirectFactContext & ctx,
     return out;
   }
 
-  map<string, DirectLocalContext>::const_iterator found =
-      ctx.contexts.find(function.context_reference);
-  if(found == ctx.contexts.end()) {
-    throw logic_error("unknown ABI fact local context reference '" +
-                      function.context_reference + "'");
-  }
+  const DirectLocalContext & context =
+      direct_require_context_ref(ctx, function.context_reference);
   out += 'Z';
-  if(!direct_emit_function_path_encoding(ctx, encoder, found->second.function, out)) {
+  if(!direct_emit_function_path_encoding(ctx, encoder, context.function, out)) {
     throw logic_error("unable to encode ABI fact function context");
   }
   out += 'E';

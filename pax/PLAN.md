@@ -96,13 +96,17 @@ The refactor is intentionally staged:
    - Then switch symbol generation to the ABI model and delete the duplicate
      direct `itanium_mangle_ir` construction.
 
-The first implementation slice in this branch makes `abimangle` encode from
-the ABI fact records directly, replacing stringly opcode/builtin fields where
-the current tests expose them. The larger `symbol_linkage` migration should be
-done as follow-up slices so each semantic mangling regression remains
-bisectable. Parser IDs and substitution keys may still use private strings
-inside the reference tool, but those details should not become part of the
-student-facing `abi_mangle.h` scaffold.
+The implementation slice in this branch makes `abimangle` encode from the ABI
+fact records directly, replacing stringly builtin, vendor qualifier,
+standard-substitution, dependent-operator, and array-bound fields where the
+current tests expose them. The fact encoder also checks references before use
+and emits member-owner prefixes structurally instead of slicing encoded owner
+strings. Parser IDs remain only as fact-file linking syntax; future source
+integration should lower directly into the same typed records instead of
+constructing or reparsing those fact IDs.
+
+The larger `symbol_linkage` migration should be done as follow-up slices so
+each semantic mangling regression remains bisectable.
 
 ### Step 1: Standalone ABI Model
 
