@@ -4,3 +4,5 @@ analyze_function_binding_output [make_pair]
   analyze_statement [return-statement] at tests/general/100-aggregate-braced-init-expression-default-member-init.t:7:3
     analyze_expression_for_target [ -> struct Pair] at tests/general/100-aggregate-braced-init-expression-default-member-init.t:7:10
       semantic_expression::analyze_expression_for_target [ -> struct Pair] at tests/general/100-aggregate-braced-init-expression-default-member-init.t:7:10
+        try_argument_conversion [target rvalue-reference to struct Pair]
+          select_constructor_from_exprs [Pair, args=1]

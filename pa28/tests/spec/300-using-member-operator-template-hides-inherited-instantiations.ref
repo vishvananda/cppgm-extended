@@ -122,3 +122,6 @@ function @combine_fourth__combine_third__combine_second__first_____combine(%this
     %t5 = index i8 [projection=field] %t4, 2
     return void
 }
+alias object _ZN7combineI6second5firstEC2ERKS0_RKS1_ = @combine_second__first___combine
+alias object _ZN7combineI5thirdS_I6second5firstEEC2ERKS0_RKS3_ = @combine_third__combine_second__first____combine
+alias object _ZN7combineI6fourthS_I5thirdS_I6second5firstEEEC2ERKS0_RKS5_ = @combine_fourth__combine_third__combine_second__first_____combine

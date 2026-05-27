@@ -119,6 +119,13 @@ static bool try_emit_qualified_name_encoding_ir(const QualifiedName & qualified,
                                                 string & out);
 static bool try_emit_qualified_name_object_symbol_ir(const QualifiedName & qualified,
                                                      string & out);
+static bool emit_itanium_function_encoding_with_substitutions(
+    const QualifiedName & qualified_name,
+    const string & display_name,
+    const TypePtr & type,
+    const FunctionSymbolOptions & options,
+    string & out,
+    vector<abi_mangle::SubstitutionSlot> * substitution_slots = nullptr);
 
 static size_t count_scope_operators(const string & text)
 {
@@ -154,258 +161,105 @@ static bool named_type_should_prefer_key_for_mangling(
   return count_scope_operators(key_text) > count_scope_operators(display_text);
 }
 
-static string special_type_symbol_for_type(const char * prefix, const TypePtr & type)
+static string special_type_symbol_for_type(abi_mangle::SpecialTypeSymbolKind kind,
+                                           const TypePtr & type)
 {
-  string mangled;
-  if(!try_emit_special_type_encoding_ir(type, mangled)) {
+  string type_encoding;
+  string out;
+  if(!try_emit_special_type_encoding_ir(type, type_encoding) ||
+     !abi_mangle::emit_special_type_symbol_from_encoding(kind,
+                                                         type_encoding,
+                                                         out)) {
     return string();
   }
-  return string(prefix) + mangled;
+  return out;
 }
 
 string typeinfo_symbol_for_type(const TypePtr & type)
 {
-  return special_type_symbol_for_type("_ZTI", type);
+  return special_type_symbol_for_type(abi_mangle::SPECIAL_TYPEINFO, type);
 }
 
 string vtable_object_symbol_for_type(const TypePtr & type)
 {
-  return special_type_symbol_for_type("_ZTV", type);
+  return special_type_symbol_for_type(abi_mangle::SPECIAL_VTABLE, type);
 }
 
-static string thread_local_wrapper_object_symbol(const string & qualified_name)
+string thread_local_wrapper_object_symbol_for_qualified_name(
+    const QualifiedName & qualified)
 {
-  if(qualified_name.empty()) {
-    return string();
-  }
-  if(qualified_name.compare(0, 2, "_Z") == 0) {
-    return string("_ZTW") + qualified_name.substr(2);
-  }
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(qualified_name, qualified) ||
-     qualified.rooted ||
-     qualified.name.empty()) {
+  if(qualified.rooted || qualified.name.empty()) {
     return string();
   }
   string encoding;
   if(!try_emit_qualified_name_encoding_ir(qualified, encoding)) {
     return string();
   }
-  return string("_ZTW") + encoding;
-}
-
-string thread_local_wrapper_object_symbol_from_object_symbol(const string & object_symbol)
-{
-  if(object_symbol.empty()) {
+  string wrapper;
+  if(!abi_mangle::emit_thread_local_wrapper_symbol_from_encoding(encoding,
+                                                                 wrapper)) {
     return string();
   }
-  if(object_symbol.compare(0, 2, "_Z") == 0) {
-    return string("_ZTW") + object_symbol.substr(2);
-  }
-  return thread_local_wrapper_object_symbol(object_symbol);
+  return wrapper;
 }
 
-namespace {
-
-string encode_thunk_offset(long long value)
+std::string virtual_override_thunk_object_symbol_for_function(
+    const QualifiedName & qualified_name,
+    const string & display_name,
+    bool is_c_linkage,
+    const TypePtr & type,
+    const FunctionSymbolOptions & options,
+    long long this_adjust,
+    bool has_result_adjust,
+    long long result_adjust)
 {
-  return value < 0 ? string("n") + to_string(-value) : to_string(value);
-}
-
-string encode_nonvirtual_call_offset(long long value)
-{
-  return string("h") + encode_thunk_offset(value) + "_";
-}
-
-}  // namespace
-
-string virtual_override_thunk_object_symbol(const string & target_object_symbol,
-                                            long long this_adjust,
-                                            bool has_result_adjust,
-                                            long long result_adjust)
-{
-  if(target_object_symbol.size() < 2 ||
-     target_object_symbol[0] != '_' ||
-     target_object_symbol[1] != 'Z') {
+  if(is_c_linkage) {
     return string();
   }
-
-  const string base_encoding = target_object_symbol.substr(2);
-  if(has_result_adjust) {
-    return string("_ZTc") +
-           encode_nonvirtual_call_offset(this_adjust) +
-           encode_nonvirtual_call_offset(result_adjust) +
-           base_encoding;
-  }
-  return string("_ZT") + encode_nonvirtual_call_offset(this_adjust) + base_encoding;
-}
-
-string virtual_base_override_thunk_object_symbol(const string & target_object_symbol,
-                                                 long long vcall_offset)
-{
-  if(target_object_symbol.size() < 2 ||
-     target_object_symbol[0] != '_' ||
-     target_object_symbol[1] != 'Z') {
+  string function_encoding;
+  string out;
+  if(!emit_itanium_function_encoding_with_substitutions(qualified_name,
+                                                       display_name,
+                                                       type,
+                                                       options,
+                                                       function_encoding,
+                                                       nullptr) ||
+     !abi_mangle::emit_virtual_override_thunk_symbol_from_encoding(
+         function_encoding,
+         this_adjust,
+         has_result_adjust,
+         result_adjust,
+         out)) {
     return string();
   }
-
-  const string base_encoding = target_object_symbol.substr(2);
-  return string("_ZTv0_") + encode_thunk_offset(vcall_offset) + "_" + base_encoding;
+  return out;
 }
 
-namespace {
-
-bool find_itanium_special_member_entry_token(const string & object_symbol,
-                                             const string & token,
-                                             size_t & pos)
+std::string virtual_base_override_thunk_object_symbol_for_function(
+    const QualifiedName & qualified_name,
+    const string & display_name,
+    bool is_c_linkage,
+    const TypePtr & type,
+    const FunctionSymbolOptions & options,
+    long long vcall_offset)
 {
-  pos = object_symbol.rfind(token);
-  while(pos != string::npos) {
-    const size_t after = pos + token.size();
-    if(after < object_symbol.size() &&
-       (object_symbol[after] == 'E' ||
-        object_symbol[after] == 'B' ||
-        object_symbol[after] == 'I')) {
-      return true;
-    }
-    if(pos == 0) {
-      break;
-    }
-    pos = object_symbol.rfind(token, pos - 1);
+  if(is_c_linkage) {
+    return string();
   }
-  return false;
-}
-
-bool replace_itanium_special_member_entry_token(const string & object_symbol,
-                                                const string & from,
-                                                const string & to,
-                                                string & out)
-{
-  size_t pos = string::npos;
-  if(!find_itanium_special_member_entry_token(object_symbol, from, pos)) {
-    return false;
+  string function_encoding;
+  string out;
+  if(!emit_itanium_function_encoding_with_substitutions(qualified_name,
+                                                       display_name,
+                                                       type,
+                                                       options,
+                                                       function_encoding,
+                                                       nullptr) ||
+     !abi_mangle::emit_virtual_base_override_thunk_symbol_from_encoding(
+         function_encoding,
+         vcall_offset,
+         out)) {
+    return string();
   }
-  out = object_symbol;
-  out.replace(pos, from.size(), to);
-  return out != object_symbol;
-}
-
-}  // namespace
-
-bool special_member_entry_point_object_symbol_from_complete_object_symbol(
-    const string & complete_object_symbol,
-    bool is_constructor,
-    SpecialMemberEntryPointKind entry_point_kind,
-    string & out)
-{
-  if(complete_object_symbol.empty()) {
-    return false;
-  }
-
-  const char * from = is_constructor ? "C1" : "D1";
-  const char * to = nullptr;
-  switch(entry_point_kind) {
-  case SMEK_COMPLETE:
-    to = from;
-    break;
-  case SMEK_BASE:
-    to = is_constructor ? "C2" : "D2";
-    break;
-  case SMEK_DELETING:
-    if(is_constructor) {
-      return false;
-    }
-    to = "D0";
-    break;
-  }
-
-  if(string(from) == string(to)) {
-    out = complete_object_symbol;
-    return true;
-  }
-  return replace_itanium_special_member_entry_token(
-      complete_object_symbol,
-      from,
-      to,
-      out);
-}
-
-bool special_member_entry_point_object_symbol_from_object_symbol(
-    const string & object_symbol,
-    bool is_constructor,
-    SpecialMemberEntryPointKind entry_point_kind,
-    string & out)
-{
-  if(object_symbol.empty()) {
-    return false;
-  }
-
-  const char * target = nullptr;
-  switch(entry_point_kind) {
-  case SMEK_COMPLETE:
-    target = is_constructor ? "C1" : "D1";
-    break;
-  case SMEK_BASE:
-    target = is_constructor ? "C2" : "D2";
-    break;
-  case SMEK_DELETING:
-    if(is_constructor) {
-      return false;
-    }
-    target = "D0";
-    break;
-  }
-
-  size_t target_pos = string::npos;
-  if(find_itanium_special_member_entry_token(object_symbol, target, target_pos)) {
-    out = object_symbol;
-    return true;
-  }
-
-  const char * constructor_entries[] = {"C1", "C2"};
-  const char * destructor_entries[] = {"D1", "D2", "D0"};
-  const char ** entries = is_constructor ? constructor_entries : destructor_entries;
-  const size_t entry_count =
-      is_constructor ?
-          sizeof(constructor_entries) / sizeof(constructor_entries[0]) :
-          sizeof(destructor_entries) / sizeof(destructor_entries[0]);
-  for(size_t i = 0; i < entry_count; ++i) {
-    if(entries[i][0] == target[0] && entries[i][1] == target[1]) {
-      continue;
-    }
-    if(replace_itanium_special_member_entry_token(object_symbol,
-                                                  entries[i],
-                                                  target,
-                                                  out)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-vector<string> implicit_special_member_object_aliases(const string & object_symbol)
-{
-  vector<string> out;
-
-  const struct {
-    const char * from;
-    const char * to;
-  } replacements[] = {
-      {"C1", "C2"},
-      {"D1", "D2"}};
-
-  for(size_t i = 0; i < sizeof(replacements) / sizeof(replacements[0]); ++i) {
-    string alias;
-    if(replace_itanium_special_member_entry_token(object_symbol,
-                                                  replacements[i].from,
-                                                  replacements[i].to,
-                                                  alias)) {
-      out.push_back(alias);
-    }
-  }
-
-  sort(out.begin(), out.end());
-  out.erase(unique(out.begin(), out.end()), out.end());
   return out;
 }
 
@@ -419,7 +273,15 @@ string construction_vtable_object_symbol(const semantic_model::ClassInfo & dynam
      !try_emit_type_encoding_ir(base_class.type, base_encoding, nullptr)) {
     return string();
   }
-  return string("_ZTC") + dynamic_encoding + to_string(base_offset) + "_" + base_encoding;
+  string out;
+  if(!abi_mangle::emit_construction_vtable_symbol_from_encodings(
+         dynamic_encoding,
+         base_offset,
+         base_encoding,
+         out)) {
+    return string();
+  }
+  return out;
 }
 
 string vtt_object_symbol(const semantic_model::ClassInfo & class_info)
@@ -429,39 +291,7 @@ string vtt_object_symbol(const semantic_model::ClassInfo & class_info)
 
 string vtt_object_symbol_for_type(const TypePtr & type)
 {
-  return special_type_symbol_for_type("_ZTT", type);
-}
-
-static string encode_source_name(const string & text)
-{
-  string out;
-  out.reserve(text.size());
-  for(size_t i = 0; i < text.size(); ++i) {
-    const unsigned char ch = static_cast<unsigned char>(text[i]);
-    if((ch >= 'a' && ch <= 'z') ||
-       (ch >= 'A' && ch <= 'Z') ||
-       (ch >= '0' && ch <= '9') ||
-       ch == '_') {
-      out.push_back(static_cast<char>(ch));
-      continue;
-    }
-    static const char kHex[] = "0123456789abcdef";
-    out.push_back('_');
-    out.push_back(kHex[(ch >> 4) & 0xF]);
-    out.push_back(kHex[ch & 0xF]);
-  }
-  if(out.empty()) {
-    out = "anon";
-  }
-  return out;
-}
-
-static string source_name_fragment(const string & text)
-{
-  const string encoded = encode_source_name(text);
-  ostringstream out;
-  out << encoded.size() << encoded;
-  return out.str();
+  return special_type_symbol_for_type(abi_mangle::SPECIAL_VTT, type);
 }
 
 static bool text_uses_only_simple_mangleable_chars(const string & text)
@@ -1958,8 +1788,8 @@ static bool emit_function_name_ir(
     string & out)
 {
   MangleIrSubstitutionSink sink(state);
-  string candidate = "_Z";
-  if(!abi_mangle::emit_function_name(function, candidate, &sink)) {
+  string candidate;
+  if(!abi_mangle::emit_function_name_symbol(function, candidate, &sink)) {
     return false;
   }
   out.swap(candidate);
@@ -8001,17 +7831,20 @@ static bool try_build_static_member_external_expression_from_template_syntax(
     return false;
   }
 
-  string symbol = "_Z";
-  if(owner_mangle.size() >= 2 &&
-     owner_mangle[0] == 'N' &&
-     owner_mangle[owner_mangle.size() - 1] == 'E') {
-    symbol += owner_mangle.substr(0, owner_mangle.size() - 1);
-  } else {
-    symbol += 'N';
-    symbol += owner_mangle;
+  string symbol;
+  if(!abi_mangle::emit_external_member_entity_symbol(&owner,
+                                                     member_name,
+                                                     vector<abi_mangle::Type>(),
+                                                     false,
+                                                     false,
+                                                     false,
+                                                     false,
+                                                     false,
+                                                     false,
+                                                     symbol,
+                                                     &sink)) {
+    return false;
   }
-  symbol += source_name_fragment(member_name);
-  symbol += 'E';
   out = abi_mangle::DependentExpression::external_entity(symbol,
                                                                 false);
   return true;
@@ -16591,23 +16424,56 @@ static bool try_emit_static_member_object_symbol_ir(
     return false;
   }
 
-  string owner;
+  abi_mangle::Type owner;
   MangleSubstitutionState state;
   TypeMangleContext owner_ctx;
   owner_ctx.prefer_concrete_non_type_values_for_dependent_parameter_types = true;
-  if(!try_emit_type_encoding_ir_impl(owner_class.type, owner, &owner_ctx, &state) ||
-     owner.empty()) {
+  if(!try_build_type_ir(owner_class.type, &owner_ctx, owner)) {
     return false;
   }
 
-  string candidate = "_Z";
-  if(owner.size() >= 2 && owner[0] == 'N' && owner[owner.size() - 1] == 'E') {
-    candidate += owner.substr(0, owner.size() - 1);
-  } else {
-    candidate += 'N';
-    candidate += owner;
+  MangleIrSubstitutionSink sink(&state);
+  string candidate;
+  if(!abi_mangle::emit_external_member_entity_symbol(&owner,
+                                                     member_name,
+                                                     vector<abi_mangle::Type>(),
+                                                     false,
+                                                     false,
+                                                     false,
+                                                     false,
+                                                     false,
+                                                     false,
+                                                     candidate,
+                                                     &sink)) {
+    return false;
   }
-  candidate += source_name_fragment(member_name);
+  out.swap(candidate);
+  return true;
+}
+
+static bool try_emit_static_member_name_encoding_ir(
+    const semantic_model::ClassInfo & owner_class,
+    const string & member_name,
+    string & out)
+{
+  if(!owner_class.type || trim_space(member_name).empty()) {
+    return false;
+  }
+
+  abi_mangle::Type owner;
+  MangleSubstitutionState state;
+  TypeMangleContext owner_ctx;
+  owner_ctx.prefer_concrete_non_type_values_for_dependent_parameter_types = true;
+  if(!try_build_type_ir(owner_class.type, &owner_ctx, owner)) {
+    return false;
+  }
+
+  MangleIrSubstitutionSink sink(&state);
+  string candidate = "N";
+  if(!abi_mangle::emit_type_as_name_prefix_body(owner, candidate, &sink) ||
+     !abi_mangle::emit_source_name(member_name, candidate)) {
+    return false;
+  }
   candidate += 'E';
   out.swap(candidate);
   return true;
@@ -16739,6 +16605,38 @@ static bool try_emit_scoped_variable_object_symbol_ir(const semantic_model::Scop
          try_emit_qualified_name_object_symbol_ir(qualified, out);
 }
 
+string thread_local_wrapper_object_symbol_for_scoped_variable(
+    const semantic_model::Scope & scope,
+    const string & name)
+{
+  vector<string> parts;
+  if(!scoped_variable_symbol_parts(scope, name, parts)) {
+    return string();
+  }
+  QualifiedName qualified;
+  string encoding;
+  string out;
+  if(!qualified_name_from_scoped_symbol_parts(parts, qualified) ||
+     !try_emit_qualified_name_encoding_ir(qualified, encoding) ||
+     !abi_mangle::emit_thread_local_wrapper_symbol_from_encoding(encoding, out)) {
+    return string();
+  }
+  return out;
+}
+
+string thread_local_wrapper_object_symbol_for_static_member_variable(
+    const semantic_model::ClassInfo & owner_class,
+    const string & member_name)
+{
+  string encoding;
+  string out;
+  if(!try_emit_static_member_name_encoding_ir(owner_class, member_name, encoding) ||
+     !abi_mangle::emit_thread_local_wrapper_symbol_from_encoding(encoding, out)) {
+    return string();
+  }
+  return out;
+}
+
 bool mangle_itanium_type_encoding(const TypePtr & type, string & out)
 {
   string candidate;
@@ -16773,10 +16671,9 @@ static bool emit_itanium_function_encoding_with_substitutions(
                                           options,
                                           candidate,
                                           substitution_slots ? &state : nullptr) ||
-     candidate.compare(0, 2, "_Z") != 0) {
+     !abi_mangle::object_symbol_body(candidate, out)) {
     return false;
   }
-  out = candidate.substr(2);
   if(substitution_slots) {
     *substitution_slots = substitution_slots_from_state(&state);
   }

@@ -298,6 +298,10 @@ struct CallSemRarePayload
   unsigned long long trivial_storage_copy_prefix_bytes = 0;
   unsigned long long vtt_slice_offset = 0;
   unsigned long long vtt_entry_index = 0;
+  symbol_linkage::FunctionRefQualifier function_ref_qualifier =
+      symbol_linkage::FRQ_NONE;
+  std::vector<std::string> abi_tags;
+  std::vector<std::string> object_aliases;
   std::shared_ptr<CallSemNode> lowered_condition_test;
 };
 
@@ -330,6 +334,11 @@ struct CallSemNode
       has_token(false),
       is_virtual_dispatch(false),
       is_virtual_member_function(false),
+      is_constructor(false),
+      is_destructor(false),
+      is_const_method(false),
+      is_volatile_method(false),
+      has_function_ref_qualifier(false),
       has_virtual_dispatch_view_offset(false),
       is_primary_vtable(false),
       uses_extended_vtable_layout(false),
@@ -389,6 +398,11 @@ struct CallSemNode
   std::uint64_t has_token : 1;
   std::uint64_t is_virtual_dispatch : 1;
   std::uint64_t is_virtual_member_function : 1;
+  std::uint64_t is_constructor : 1;
+  std::uint64_t is_destructor : 1;
+  std::uint64_t is_const_method : 1;
+  std::uint64_t is_volatile_method : 1;
+  std::uint64_t has_function_ref_qualifier : 1;
   std::uint64_t has_virtual_dispatch_view_offset : 1;
   std::uint64_t is_primary_vtable : 1;
   std::uint64_t uses_extended_vtable_layout : 1;
@@ -433,6 +447,7 @@ inline bool callsem_symbol_is_empty(const symbol_linkage::SymbolIdentity & symbo
 {
   return symbol.internal_symbol.empty() &&
          symbol.object_symbol.empty() &&
+         symbol.thread_local_wrapper_object_symbol.empty() &&
          !symbol.keep_internal_alias &&
          !symbol.prefer_local_object_binding &&
          symbol.linkage == symbol_linkage::SL_EXTERNAL;
@@ -643,6 +658,55 @@ inline void set_callsem_special_member_entry_point_kind(
     return;
   }
   ensure_callsem_rare_payload(node).special_member_entry_point_kind = value;
+}
+
+inline symbol_linkage::FunctionRefQualifier
+callsem_function_ref_qualifier(const CallSemNode & node)
+{
+  const CallSemRarePayload * payload = callsem_rare_payload(node);
+  return payload ? payload->function_ref_qualifier : symbol_linkage::FRQ_NONE;
+}
+
+inline void set_callsem_function_ref_qualifier(
+    CallSemNode & node,
+    symbol_linkage::FunctionRefQualifier value)
+{
+  if(value == symbol_linkage::FRQ_NONE && !callsem_rare_payload(node)) {
+    return;
+  }
+  ensure_callsem_rare_payload(node).function_ref_qualifier = value;
+}
+
+inline const std::vector<std::string> & callsem_abi_tags(const CallSemNode & node)
+{
+  static const std::vector<std::string> empty;
+  const CallSemRarePayload * payload = callsem_rare_payload(node);
+  return payload ? payload->abi_tags : empty;
+}
+
+inline void set_callsem_abi_tags(CallSemNode & node,
+                                 const std::vector<std::string> & value)
+{
+  if(value.empty() && !callsem_rare_payload(node)) {
+    return;
+  }
+  ensure_callsem_rare_payload(node).abi_tags = value;
+}
+
+inline const std::vector<std::string> & callsem_object_aliases(const CallSemNode & node)
+{
+  static const std::vector<std::string> empty;
+  const CallSemRarePayload * payload = callsem_rare_payload(node);
+  return payload ? payload->object_aliases : empty;
+}
+
+inline void set_callsem_object_aliases(CallSemNode & node,
+                                       const std::vector<std::string> & value)
+{
+  if(value.empty() && !callsem_rare_payload(node)) {
+    return;
+  }
+  ensure_callsem_rare_payload(node).object_aliases = value;
 }
 
 inline long long callsem_result_adjust(const CallSemNode & node)

@@ -30,3 +30,4 @@ function @use(%it : obj<1x1>, %n : i32) -> void [binding=weak, object=_Z3useI3Ve
     %t3 = addr $it
     return void
 }
+alias object _ZN4IterI3VecEC2Ev = @Iter_Vec___Iter

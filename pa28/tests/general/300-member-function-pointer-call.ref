@@ -44,3 +44,4 @@ function @X__add(%this : ptr, %y : i32) -> i32 [binding=weak, object=_ZN1X3addEi
     %t5 = binary add i32 %t3, %t4
     return i32 %t5
 }
+alias object _ZN1XC2Ev = @X__X

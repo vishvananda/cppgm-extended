@@ -493,3 +493,5 @@ function @Vec_B_____Vec(%this : ptr) -> void [binding=weak, object=_ZN3VecIP1BEC
     store ptr %this, $this
     return void
 }
+alias object _ZN3VecIP1AEC2Ev = @Vec_A_____Vec
+alias object _ZN3VecIP1BEC2Ev = @Vec_B_____Vec

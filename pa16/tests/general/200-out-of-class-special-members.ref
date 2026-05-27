@@ -43,3 +43,5 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 %t3
     return i32 %t4
 }
+alias object _ZN1YC2Ev = @Y__Y
+alias object _ZN1YD2Ev = @Y___Y

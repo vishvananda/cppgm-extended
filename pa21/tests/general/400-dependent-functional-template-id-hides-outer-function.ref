@@ -40,3 +40,4 @@ function @outer__inner__sink(%__param0 : ptr [pass=reference]) -> void [binding=
     store ptr %__param0, $__param0
     return void
 }
+alias object _ZN5outer5inner5rangeIiEC2Eii = @outer__inner__range_int___range

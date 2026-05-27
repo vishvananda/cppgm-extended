@@ -139,3 +139,5 @@ function @Outer__Outer__ov2(%this : ptr, %first : i32, %second : obj<4x4>) -> vo
     copyobj 4x4 %t7, %t6
     return void
 }
+alias object _ZN5InnerC2Ev = @Inner__Inner
+alias object _ZN5OuterC2Ei5Inner = @Outer__Outer__ov2

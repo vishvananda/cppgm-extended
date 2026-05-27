@@ -20386,10 +20386,29 @@ private:
                                                             binding.name,
                                                             binding.is_c_linkage,
                                                             linkage);
+    note_thread_local_wrapper_object_symbol(binding);
     claim_exported_symbol(binding.symbol,
                           describe_exported_symbol_owner("variable",
                                                          qualified_name,
                                                          binding.type));
+  }
+
+  void note_thread_local_wrapper_object_symbol(ValueBinding & binding) const
+  {
+    if(!binding.is_thread_local || !binding.declaration_scope) {
+      return;
+    }
+    if(binding.owner_class) {
+      binding.symbol.thread_local_wrapper_object_symbol =
+          symbol_linkage::thread_local_wrapper_object_symbol_for_static_member_variable(
+              *binding.owner_class,
+              binding.name);
+      return;
+    }
+    binding.symbol.thread_local_wrapper_object_symbol =
+        symbol_linkage::thread_local_wrapper_object_symbol_for_scoped_variable(
+            *binding.declaration_scope,
+            binding.name);
   }
 
   void refresh_definition_parameter_names(FunctionBinding & binding,
@@ -21049,6 +21068,7 @@ private:
       upgrade_value_symbol_linkage(existing->second,
                                    qualified_name,
                                    linkage);
+      note_thread_local_wrapper_object_symbol(existing->second);
       existing->second.has_storage_definition =
           existing->second.has_storage_definition || is_definition;
       if(is_definition && !existing->second.definition_node) {
@@ -21073,6 +21093,7 @@ private:
                                                                 symbol_linkage_node,
                                                                 is_c_linkage,
                                                                 binding.owner_class));
+    note_thread_local_wrapper_object_symbol(binding);
     map<string, ValueBinding>::iterator inserted =
         scope.values.insert(make_pair(name, binding)).first;
     return inserted->second;
@@ -23684,6 +23705,7 @@ private:
                               semantic_trace::previous_value_location_note(
                                   *this, "previous declaration", out_of_class_static_member));
           }
+          note_thread_local_wrapper_object_symbol(*out_of_class_static_member);
           if(!out_of_class_static_member->declaration_node) {
             out_of_class_static_member->declaration_node = &node;
           }
@@ -26566,33 +26588,6 @@ private:
     if(!target.is_constructor && !target.is_destructor) {
       return target.symbol;
     }
-    std::string entry_object_symbol;
-    if(!target.symbol.object_symbol.empty() &&
-       symbol_linkage::special_member_entry_point_object_symbol_from_object_symbol(
-           target.symbol.object_symbol,
-           target.is_constructor,
-           entry_point_kind,
-           entry_object_symbol)) {
-      symbol_linkage::SymbolIdentity updated = target.symbol;
-      updated.object_symbol = entry_object_symbol;
-      const string base_internal_symbol =
-          target.symbol.internal_symbol.empty() ?
-              symbol_linkage::internal_symbol_from_name(target.name) :
-              target.symbol.internal_symbol;
-      updated.internal_symbol =
-          entry_point_kind == symbol_linkage::SMEK_BASE ?
-              base_internal_symbol + "__base_entry" :
-          entry_point_kind == symbol_linkage::SMEK_DELETING ?
-              base_internal_symbol + "__deleting_entry" :
-              base_internal_symbol;
-      updated.keep_internal_alias = target.symbol.keep_internal_alias;
-      updated.prefer_local_object_binding = target.symbol.prefer_local_object_binding;
-      return updated;
-    }
-    if(entry_point_kind == symbol_linkage::SMEK_COMPLETE &&
-       !target.symbol.object_symbol.empty()) {
-      return target.symbol;
-    }
     symbol_linkage::FunctionSymbolOptions options;
     populate_function_symbol_options(options,
                                      target.is_method,
@@ -26652,6 +26647,8 @@ private:
     updated.internal_symbol =
         entry_point_kind == symbol_linkage::SMEK_BASE ?
             base_internal_symbol + "__base_entry" :
+        entry_point_kind == symbol_linkage::SMEK_DELETING ?
+            base_internal_symbol + "__deleting_entry" :
             base_internal_symbol;
     updated.keep_internal_alias = target.symbol.keep_internal_alias;
     updated.prefer_local_object_binding = target.symbol.prefer_local_object_binding;

@@ -51,3 +51,4 @@ function @boost__container__dtl__index_tuple_0___index_tuple(%this : ptr) -> voi
     store ptr %this, $this
     return void
 }
+alias object _ZN5boost9container3dtl11index_tupleIJLm0EEEC2Ev = @boost__container__dtl__index_tuple_0___index_tuple

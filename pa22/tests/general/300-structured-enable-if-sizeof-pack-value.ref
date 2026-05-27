@@ -14,3 +14,4 @@ function @tuple_int___tuple(%this : ptr) -> void [binding=weak, object=_ZN5tuple
     store ptr %this, $this
     return void
 }
+alias object _ZN5tupleIJiEEC2IvLi0EEEv = @tuple_int___tuple

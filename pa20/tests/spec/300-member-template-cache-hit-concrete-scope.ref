@@ -59,3 +59,4 @@ function @guard_int___guard(%this : ptr, %__param1 : i32) -> void [binding=weak,
     store i32 %__param1, $__param1
     return void
 }
+alias object _ZN5guardIiEC2Ei = @guard_int___guard

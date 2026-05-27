@@ -66,3 +66,4 @@ function @YB__YB__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2YBC2
     store i32 2, %t2
     return void
 }
+alias object _ZN2YCC2Ev = @YC__YC

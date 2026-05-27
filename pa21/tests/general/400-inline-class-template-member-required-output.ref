@@ -76,3 +76,4 @@ function @allocation_result_int____unsigned_long_int___allocation_result__ov2(%t
     store i64 %t4, %t6
     return void
 }
+alias object _ZN17allocation_resultIPimEC2ES0_m = @allocation_result_int____unsigned_long_int___allocation_result__ov2

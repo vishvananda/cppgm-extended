@@ -92,3 +92,4 @@ function @boost_no_using_breaks_adl__lib__inner__get_pointer(%__param0 : obj<1x1
   block ^entry:
     return ptr 0
 }
+alias object _ZN25boost_no_using_breaks_adl3lib5inner1XIiEC2Ev = @boost_no_using_breaks_adl__lib__inner__X_int___X

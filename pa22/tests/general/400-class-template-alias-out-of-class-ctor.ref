@@ -31,3 +31,4 @@ function @Box_int___Box(%this : ptr, %x : ptr [pass=reference]) -> void [binding
     store i32 %t2, %t4
     return void
 }
+alias object _ZN3BoxIiEC2ERKi = @Box_int___Box

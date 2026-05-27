@@ -21,3 +21,4 @@ function @G_int_____G(%this : ptr, %b : ptr, %n : i64) -> void [binding=weak, ob
     store i64 %n, $n
     return void
 }
+alias object _ZN1GIPiEC2IS0_EET_m = @G_int_____G

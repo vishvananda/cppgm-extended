@@ -148,3 +148,4 @@ function @HeaderVtableBase__HeaderVtableBase__base_entry(%this : ptr) -> void [b
     store ptr %t3, %t1
     return void
 }
+alias object _ZN19HeaderVtableDerivedC2Ev = @HeaderVtableDerived__HeaderVtableDerived

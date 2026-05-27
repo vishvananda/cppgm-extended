@@ -49,3 +49,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @H__H(%t1, %t2)
     return void
 }
+alias object _ZN1HC2EPFvvE = @H__H

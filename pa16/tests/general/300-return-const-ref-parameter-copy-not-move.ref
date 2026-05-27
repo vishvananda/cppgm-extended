@@ -78,3 +78,5 @@ function @Box__Box__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [bin
     store ptr %t3, %t5
     return void
 }
+alias object _ZN3BoxC2EPi = @Box__Box
+alias object _ZN3BoxC2ERKS_ = @Box__Box__ov2

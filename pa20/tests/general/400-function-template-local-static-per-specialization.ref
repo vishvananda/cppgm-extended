@@ -150,3 +150,5 @@ function @init_functor__init_functor(%this : ptr) -> void [unwind=no, binding=we
     store ptr %this, $this
     return void
 }
+alias object _ZN11log_functorC2Ev = @log_functor__log_functor
+alias object _ZN12init_functorC2Ev = @init_functor__init_functor

@@ -26,3 +26,4 @@ function @RefBox_int_____RefBox__ov3(%this : ptr, %input : ptr [pass=reference])
     store ptr %t1, %t3
     return void
 }
+alias object _ZN6RefBoxIRiEC2IS0_EEOT_ = @RefBox_int_____RefBox__ov3

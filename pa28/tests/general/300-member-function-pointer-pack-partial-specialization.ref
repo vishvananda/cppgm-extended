@@ -58,3 +58,4 @@ function @example__maker_int__target_______const___value(%this : ptr) -> i32 [bi
     store ptr %this, $this
     return i32 0
 }
+alias object _ZN7example5makerIM6targetKFivEEC2Ev = @example__maker_int__target_______const___maker

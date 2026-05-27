@@ -34,3 +34,4 @@ function @Ref_Box___Ref(%this : ptr, %__param1 : ptr, %__param2 : i32) -> void [
     store i32 %__param2, $__param2
     return void
 }
+alias object _ZN3RefI3BoxEC2EPii = @Ref_Box___Ref

@@ -55,3 +55,4 @@ function @MoveOnly__operator___ov2(%this : ptr, %__param1 : ptr [pass=reference]
     %t3 = load ptr $this
     return ptr %t3
 }
+alias object _ZN8MoveOnlyC2Ei = @MoveOnly__MoveOnly

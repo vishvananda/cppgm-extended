@@ -71,3 +71,7 @@ function @S__G__local_14968956668511153314__G(%this : ptr) -> void [unwind=no, b
     store ptr %this, $this
     return void
 }
+alias object _ZN8functionIZN1S1gEvE1GEC2ES1_ = @function_S__G__local_14968956668511153314___function
+alias object _ZN10value_funcC2IZN1S1gEvE1GEEOT_ = @value_func__value_func__ov3
+alias object _ZN6storedIZN1S1gEvE1GEC2EOS1_ = @stored_S__G__local_14968956668511153314___stored
+alias object _ZZN1S1gEvEN1GC2Ev = @S__G__local_14968956668511153314__G

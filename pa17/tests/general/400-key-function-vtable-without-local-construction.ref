@@ -144,3 +144,5 @@ function @KeyFunctionBase___KeyFunctionBase(%this : ptr) -> void [binding=weak, 
     store ptr %t3, %t1
     return void
 }
+alias object _ZN18KeyFunctionDerivedD2Ev = @KeyFunctionDerived___KeyFunctionDerived
+alias object _ZN15KeyFunctionBaseD2Ev = @KeyFunctionBase___KeyFunctionBase

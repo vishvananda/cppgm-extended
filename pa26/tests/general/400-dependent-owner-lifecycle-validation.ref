@@ -203,3 +203,5 @@ function @copy_algorithm__copy_algorithm(%this : ptr) -> void [unwind=no, bindin
     store ptr %this, $this
     return void
 }
+alias object _ZN9pair_likeIPiS0_EC2IS0_S0_EEOT_OT0_ = @pair_like_int____int_____pair_like__ov2
+alias object _ZN14copy_algorithmC2Ev = @copy_algorithm__copy_algorithm

@@ -18,3 +18,4 @@ function @tuple_int_const_____tuple__ov3(%this : ptr, %elements : ptr [pass=refe
     store ptr %elements, $elements
     return void
 }
+alias object _ZN5tupleIJRKiEEC2ILb1ETnN9enable_ifIXclsr3tccIXT_EEE13constructibleIS1_EEEbE4typeELb1EEES1_ = @tuple_int_const_____tuple__ov3

@@ -37,3 +37,4 @@ function @CopyBox__CopyBox__ov2(%this : ptr, %other : ptr [pass=reference]) -> v
     call void @CopyMember__CopyMember__ov2(%t2, %t4)
     return void
 }
+alias object _ZN7CopyBoxC2ERKS_ = @CopyBox__CopyBox__ov2

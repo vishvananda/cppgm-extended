@@ -29,3 +29,4 @@ function @const_member_function_pointer_field_initializer__holder__holder(%this 
     store i128 %t1, %t3
     return void
 }
+alias object _ZN47const_member_function_pointer_field_initializer6holderC2EMNS_6testerEKFvvE = @const_member_function_pointer_field_initializer__holder__holder

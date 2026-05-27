@@ -57,3 +57,4 @@ function @Box__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK3Boxcvb
     %t4 = cmp ne i32 %t3, 0
     return u8 %t4
 }
+alias object _ZN3BoxC2Ev = @Box__Box

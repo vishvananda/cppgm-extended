@@ -25,3 +25,4 @@ function @sink_int___sink(%this : ptr) -> void [unwind=no, binding=weak, object=
     store ptr %this, $this
     return void
 }
+alias object _ZN4sinkIiEC2Ev = @sink_int___sink

@@ -1307,6 +1307,34 @@ symbol_linkage::SymbolIdentity derive_vtable_entry_symbol_identity_for_name(
     const CallSemNode & node,
     const string & qualified_name);
 
+symbol_linkage::FunctionSymbolOptions vtable_entry_function_symbol_options(
+    const CallSemNode & node)
+{
+  symbol_linkage::FunctionSymbolOptions options;
+  options.is_member_function = true;
+  options.has_implicit_object_parameter = true;
+  options.is_const_method = node.is_const_method;
+  options.is_volatile_method = node.is_volatile_method;
+  options.ref_qualifier = node.has_function_ref_qualifier ?
+      callsem_function_ref_qualifier(node) :
+      symbol_linkage::FRQ_NONE;
+  options.is_constructor = node.is_constructor;
+  options.is_destructor = node.is_destructor;
+  options.abi_tags = callsem_abi_tags(node);
+  if(node.has_special_member_entry_point_kind) {
+    options.special_member_entry_point_kind =
+        callsem_special_member_entry_point_kind(node);
+  }
+  TypePtr function_type = strip_top_level_cv(node.semantic_type);
+  if(function_type && function_type->kind == Type::TK_FUNCTION &&
+     !node.is_const_method && !node.is_volatile_method &&
+     !node.has_function_ref_qualifier) {
+    options.is_const_method = function_type->function_const;
+    options.is_volatile_method = function_type->function_volatile;
+  }
+  return options;
+}
+
 symbol_linkage::SymbolIdentity derive_vtable_entry_symbol_identity(const CallSemNode & node)
 {
   return derive_vtable_entry_symbol_identity_for_name(
@@ -1325,14 +1353,8 @@ symbol_linkage::SymbolIdentity derive_vtable_entry_symbol_identity_for_name(
     return callsem_symbol(node);
   }
 
-  symbol_linkage::FunctionSymbolOptions options;
-  options.is_member_function = true;
-  options.has_implicit_object_parameter = true;
-  TypePtr function_type = strip_top_level_cv(node.semantic_type);
-  if(function_type && function_type->kind == Type::TK_FUNCTION) {
-    options.is_const_method = function_type->function_const;
-    options.is_volatile_method = function_type->function_volatile;
-  }
+  symbol_linkage::FunctionSymbolOptions options =
+      vtable_entry_function_symbol_options(node);
 
   const string display_name = simple_lookup_name(qualified_name);
   if(!callsem_qualified_name_syntax(node) && !node.is_c_linkage) {
@@ -13815,6 +13837,7 @@ public:
         it != exported_symbols_.end(); ++it) {
       program.exported_symbols.push_back(it->second);
     }
+    program.object_aliases = object_aliases_;
     complete_lowir_declarations(program);
     lowir_internal::canonicalize_program_export_metadata(program);
     return program;
@@ -13852,12 +13875,27 @@ private:
     return lowir_binding_for_exported_linkage(found->second.linkage);
   }
 
+  bool function_symbol_is_special_member_entry_point(const string & symbol) const
+  {
+    map<string, const CallSemNode *>::const_iterator owner =
+        function_symbol_nodes_.find(symbol);
+    return owner != function_symbol_nodes_.end() &&
+           owner->second &&
+           owner->second->has_special_member_entry_point_kind;
+  }
+
   lowir_internal::SymbolBindingMode binding_for_declared_symbol(const string & symbol) const
   {
     map<string, symbol_linkage::SymbolIdentity>::const_iterator found =
         exported_symbols_.find(symbol);
     if(found != exported_symbols_.end()) {
-      return lowir_binding_for_exported_linkage(found->second.linkage);
+      const lowir_internal::SymbolBindingMode binding =
+          lowir_binding_for_exported_linkage(found->second.linkage);
+      if(binding == lowir_internal::SBM_WEAK &&
+         function_symbol_is_special_member_entry_point(symbol)) {
+        return lowir_internal::SBM_STRONG;
+      }
+      return binding;
     }
     if(external_function_symbols_.count(symbol) != 0 ||
        external_object_symbols_.count(symbol) != 0 ||
@@ -13866,6 +13904,17 @@ private:
        eh_runtime::is_reserved_symbol(symbol) ||
        is_backend_passthrough_symbol(symbol)) {
       return lowir_internal::SBM_STRONG;
+    }
+    return lowir_internal::SBM_INTERNAL;
+  }
+
+  lowir_internal::SymbolBindingMode binding_for_thread_local_wrapper_symbol(
+      const string & symbol) const
+  {
+    map<string, symbol_linkage::SymbolIdentity>::const_iterator found =
+        exported_symbols_.find(symbol);
+    if(found != exported_symbols_.end()) {
+      return lowir_binding_for_exported_linkage(found->second.linkage);
     }
     return lowir_internal::SBM_INTERNAL;
   }
@@ -14005,7 +14054,8 @@ private:
   make_function_declaration(const string & name,
                             const LowIRFunctionSignatureText & signature,
                             bool is_c_linkage,
-                            lowir_internal::SymbolBindingMode binding)
+                            lowir_internal::SymbolBindingMode binding,
+                            const string & tls_for_symbol = string())
   {
     lowir_internal::FunctionDeclaration out;
     out.name = name;
@@ -14014,6 +14064,7 @@ private:
         special_function_role_for_symbol(name),
         is_c_linkage,
         binding);
+    out.metadata.tls_for_symbol = tls_for_symbol;
     out.return_type = parsed_lowir_type(signature.return_type);
     for(size_t i = 0; i < signature.params.size(); ++i) {
       out.params.push_back(
@@ -14270,10 +14321,10 @@ private:
     append_parameter_virtual_base_signature_params_for_layout(signature, layout_it->second);
   }
 
-  bool try_declare_known_function_symbol(lowir_internal::Program & program,
-                                         set<string> & emitted_function_declarations,
-                                         const string & symbol) const
-  {
+	  bool try_declare_known_function_symbol(lowir_internal::Program & program,
+	                                         set<string> & emitted_function_declarations,
+	                                         const string & symbol) const
+	  {
     if(emitted_function_declarations.count(symbol) != 0 ||
        generated_function_symbol_exists(symbol)) {
       return true;
@@ -14349,7 +14400,42 @@ private:
     return false;
   }
 
+  void record_thread_local_wrapper_declaration(
+      lowir_internal::Program & program,
+      set<string> & emitted_function_declarations,
+      const string & target_symbol,
+      lowir_internal::SymbolBindingMode binding,
+      const symbol_linkage::SymbolIdentity & variable_symbol) const
+  {
+    const string wrapper_object =
+        variable_symbol.thread_local_wrapper_object_symbol;
+    if(wrapper_object.empty()) {
+      return;
+    }
+
+    const string wrapper_internal =
+        symbol_linkage::thread_local_wrapper_internal_symbol(target_symbol);
+    if(emitted_function_declarations.count(wrapper_internal) != 0 ||
+       generated_function_symbol_exists(wrapper_internal)) {
+      return;
+    }
+
+    LowIRFunctionSignatureText signature;
+    signature.return_type = "ptr";
+    lowir_internal::FunctionDeclaration declaration =
+        make_function_declaration(wrapper_internal,
+                                  signature,
+                                  false,
+                                  binding,
+                                  target_symbol);
+    declaration.metadata.object_symbol = wrapper_object;
+    record_function_declaration(program,
+                                emitted_function_declarations,
+                                declaration);
+  }
+
   void declare_global_symbol(lowir_internal::Program & program,
+                             set<string> & emitted_function_declarations,
                              set<string> & emitted_global_declarations,
                              const string & symbol) const
   {
@@ -14375,6 +14461,13 @@ private:
       if(!is_opaque_global_declaration_type(it->second.semantic_type)) {
         out.has_type = true;
         out.type = parsed_lowir_type(it->second.lowir_type);
+      }
+      if(out.storage == lowir_internal::GSM_THREAD_LOCAL) {
+        record_thread_local_wrapper_declaration(program,
+                                                emitted_function_declarations,
+                                                symbol,
+                                                out.metadata.binding,
+                                                it->second.symbol);
       }
       record_global_declaration(program, emitted_global_declarations, out);
       return;
@@ -14482,7 +14575,10 @@ private:
       if(try_declare_known_function_symbol(program, emitted_function_declarations, *it)) {
         continue;
       }
-      declare_global_symbol(program, emitted_global_declarations, *it);
+      declare_global_symbol(program,
+                            emitted_function_declarations,
+                            emitted_global_declarations,
+                            *it);
     }
   }
 
@@ -14490,6 +14586,21 @@ private:
   {
     set<string> emitted_function_declarations;
     set<string> emitted_global_declarations;
+
+    for(map<string, string>::const_iterator it = thread_local_wrapper_targets_.begin();
+        it != thread_local_wrapper_targets_.end();
+        ++it) {
+      LowIRFunctionSignatureText signature;
+      signature.return_type = "ptr";
+      record_function_declaration(program,
+                                  emitted_function_declarations,
+                                  make_function_declaration(
+                                      it->first,
+                                      signature,
+                                      false,
+                                      binding_for_thread_local_wrapper_symbol(it->first),
+                                      it->second));
+    }
 
     for(map<string, string>::const_iterator it = external_function_symbols_.begin();
         it != external_function_symbols_.end();
@@ -14504,7 +14615,10 @@ private:
     for(map<string, string>::const_iterator it = external_object_symbols_.begin();
         it != external_object_symbols_.end();
         ++it) {
-      declare_global_symbol(program, emitted_global_declarations, it->first);
+      declare_global_symbol(program,
+                            emitted_function_declarations,
+                            emitted_global_declarations,
+                            it->first);
     }
   }
 
@@ -14961,12 +15075,18 @@ private:
     if(callsem_local_static_guard_symbol(node).empty()) {
       return;
     }
-    globals_.push_back(make_scalar_global(callsem_local_static_guard_symbol(node),
+    const string guard_symbol = callsem_local_static_guard_symbol(node);
+    globals_.push_back(make_scalar_global(guard_symbol,
                                           "i64",
                                           "zero",
                                           false,
                                           false,
                                           node.is_thread_local));
+    if(node.is_thread_local) {
+      thread_local_wrapper_targets_[
+          symbol_linkage::thread_local_wrapper_internal_symbol(guard_symbol)] =
+              guard_symbol;
+    }
   }
 
   const vector<CallSemNode> & translation_units_;
@@ -15001,6 +15121,9 @@ private:
   mutable map<string, TypePtr> referenced_function_signature_types_;
   map<string, set<string> > function_references_;
   map<string, symbol_linkage::SymbolIdentity> exported_symbols_;
+  vector<lowir_internal::ObjectAlias> object_aliases_;
+  map<string, string> object_alias_targets_;
+  map<string, string> thread_local_wrapper_targets_;
   vector<const CallSemNode *> function_nodes_;
   vector<const CallSemNode *> global_ctor_actions_;
   vector<const CallSemNode *> global_dtor_actions_;
@@ -15690,6 +15813,36 @@ private:
         exported_symbols_.count(symbol) != 0 ? "update" : "insert";
     exported_symbols_[symbol] = normalized;
     note_output_export_event(action, symbol, &normalized, reason, owner);
+  }
+
+  void add_object_alias(const string & object_symbol,
+                        const string & target_symbol)
+  {
+    if(object_symbol.empty() || target_symbol.empty()) {
+      return;
+    }
+    map<string, string>::const_iterator existing =
+        object_alias_targets_.find(object_symbol);
+    if(existing != object_alias_targets_.end()) {
+      if(existing->second != target_symbol) {
+        throw logic_error("conflicting LowIR object alias target for " + object_symbol);
+      }
+      return;
+    }
+    lowir_internal::ObjectAlias alias;
+    alias.object_symbol = object_symbol;
+    alias.target = target_symbol;
+    object_alias_targets_[object_symbol] = target_symbol;
+    object_aliases_.push_back(alias);
+  }
+
+  void maybe_add_special_member_base_alias(const CallSemNode & node,
+                                           const string & target_symbol)
+  {
+    const vector<string> & aliases = callsem_object_aliases(node);
+    for(size_t i = 0; i < aliases.size(); ++i) {
+      add_object_alias(aliases[i], target_symbol);
+    }
   }
 
   void note_runtime_function_symbol_identity(const string & symbol,
@@ -16618,7 +16771,9 @@ private:
       }
       if(symbol_linkage::has_object_symbol(callsem_symbol(node)) &&
          !is_output_on_use_function_definition(node)) {
-        set_exported_symbol(node_internal_symbol(node), callsem_symbol(node), "semantic-function", node.text);
+        const string internal_symbol = node_internal_symbol(node);
+        set_exported_symbol(internal_symbol, callsem_symbol(node), "semantic-function", node.text);
+        maybe_add_special_member_base_alias(node, internal_symbol);
       }
       if(node.kind == CallSemKind::function_definition &&
          subtree_contains_kind(node, CallSemKind::throw_statement)) {
@@ -16935,9 +17090,19 @@ private:
        !callsem_symbol(node).internal_symbol.empty() &&
        node.semantic_type &&
        !is_function_type(strip_top_level_cv(node.semantic_type))) {
-      referenced_global_symbols_.insert(callsem_symbol(node).internal_symbol);
+      symbol_linkage::SymbolIdentity symbol = callsem_symbol(node);
+      if(node.is_thread_local && symbol.thread_local_wrapper_object_symbol.empty()) {
+        const shared_ptr<QualifiedName> & qualified =
+            callsem_qualified_name_syntax(node);
+        if(qualified) {
+          symbol.thread_local_wrapper_object_symbol =
+              symbol_linkage::thread_local_wrapper_object_symbol_for_qualified_name(
+                  *qualified);
+        }
+      }
+      referenced_global_symbols_.insert(symbol.internal_symbol);
       map<string, GlobalBinding>::iterator existing =
-          global_bindings_.find(callsem_symbol(node).internal_symbol);
+          global_bindings_.find(symbol.internal_symbol);
       if(existing == global_bindings_.end()) {
         GlobalBinding binding;
         binding.semantic_type = node.semantic_type;
@@ -16947,17 +17112,21 @@ private:
         } else {
           binding.lowir_type = lowir_memory_type_for(node.semantic_type);
         }
-        binding.storage = callsem_symbol(node).internal_symbol;
+        binding.storage = symbol.internal_symbol;
         binding.thread_local_storage = node.is_thread_local;
-        binding.symbol = callsem_symbol(node);
+        binding.symbol = symbol;
         binding.is_definition = false;
         global_bindings_[binding.storage] = binding;
       } else if(node.is_thread_local) {
         existing->second.thread_local_storage = true;
+        if(existing->second.symbol.thread_local_wrapper_object_symbol.empty()) {
+          existing->second.symbol.thread_local_wrapper_object_symbol =
+              symbol.thread_local_wrapper_object_symbol;
+        }
       }
-      if(symbol_linkage::has_object_symbol(callsem_symbol(node))) {
-        set_exported_symbol(callsem_symbol(node).internal_symbol,
-                            callsem_symbol(node),
+      if(symbol_linkage::has_object_symbol(symbol)) {
+        set_exported_symbol(symbol.internal_symbol,
+                            symbol,
                             "id-expression-global",
                             node.text);
       }
@@ -17151,10 +17320,12 @@ private:
     collect_static_storage_globals(node);
     collect_dynamic_typeid_fallback_support(node);
     if(symbol_linkage::has_object_symbol(callsem_symbol(node))) {
-      set_exported_symbol(node_internal_symbol(node),
+      const string internal_symbol = node_internal_symbol(node);
+      set_exported_symbol(internal_symbol,
                           callsem_symbol(node),
                           "semantic-function",
                           node.text);
+      maybe_add_special_member_base_alias(node, internal_symbol);
     }
     LowIRFunction function =
         LowIRFunctionBuilder(node, global_bindings_, vtable_bindings_,
@@ -17561,28 +17732,35 @@ private:
     binding.thread_local_storage = node.is_thread_local;
     binding.thread_local_guard_symbol = callsem_local_static_guard_symbol(node);
     binding.symbol = callsem_symbol(node);
+    if(node.is_thread_local && binding.symbol.thread_local_wrapper_object_symbol.empty()) {
+      const shared_ptr<QualifiedName> & qualified =
+          callsem_qualified_name_syntax(node);
+      if(qualified) {
+        binding.symbol.thread_local_wrapper_object_symbol =
+            symbol_linkage::thread_local_wrapper_object_symbol_for_qualified_name(
+                *qualified);
+      }
+    }
     binding.is_definition = !node.is_extern_declaration;
     global_bindings_[binding.storage] = binding;
     if(node.is_c_linkage) {
       c_linkage_global_symbols_.insert(binding.storage);
     }
-    if(symbol_linkage::has_object_symbol(callsem_symbol(node))) {
-      set_exported_symbol(binding.storage, callsem_symbol(node), "semantic-global", node.text);
+    if(symbol_linkage::has_object_symbol(binding.symbol)) {
+      set_exported_symbol(binding.storage, binding.symbol, "semantic-global", node.text);
       if(node.is_thread_local) {
         const string wrapper_internal =
             symbol_linkage::thread_local_wrapper_internal_symbol(binding.storage);
-        const string base_object =
-            symbol_linkage::exported_object_symbol(callsem_symbol(node));
-        const string wrapper_object =
-            symbol_linkage::thread_local_wrapper_object_symbol_from_object_symbol(
-                base_object);
+        string wrapper_object =
+            binding.symbol.thread_local_wrapper_object_symbol;
         if(!wrapper_object.empty()) {
           set_exported_symbol(wrapper_internal,
                               symbol_linkage::make_object_symbol_identity(wrapper_internal,
                                                                           wrapper_object,
-                                                                          callsem_symbol(node).linkage),
+                                                                          binding.symbol.linkage),
                               "tls-wrapper",
                               node.text);
+          thread_local_wrapper_targets_[wrapper_internal] = binding.storage;
         }
       }
     }
@@ -17752,13 +17930,22 @@ private:
         const string thunk_symbol = lowir_name(entry_symbol + "::vtable_return_adjust");
         symbol_linkage::SymbolIdentity thunk_exported_symbol;
         if(needs_host_export_thunk) {
-          const string thunk_object_symbol =
-              symbol_linkage::virtual_override_thunk_object_symbol(
-                  exported_symbol.object_symbol,
+          const string thunk_target_name =
+              callsem_resolved_name(node.children[i]).empty() ?
+                  node.children[i].text.str() :
+                  callsem_resolved_name(node.children[i]);
+          const string thunk_object_symbol = callsem_qualified_name_syntax(node.children[i]) ?
+              symbol_linkage::virtual_override_thunk_object_symbol_for_function(
+                  *callsem_qualified_name_syntax(node.children[i]),
+                  simple_lookup_name(thunk_target_name),
+                  node.children[i].is_c_linkage,
+                  node.children[i].semantic_type,
+                  vtable_entry_function_symbol_options(node.children[i]),
                   this_adjust,
                   node.children[i].has_result_adjust &&
                       callsem_result_adjust(node.children[i]) != 0,
-                  callsem_result_adjust(node.children[i]));
+                  callsem_result_adjust(node.children[i])) :
+              string();
           if(!thunk_object_symbol.empty()) {
             thunk_exported_symbol =
                 symbol_linkage::make_object_symbol_identity(thunk_symbol,
@@ -17787,9 +17974,19 @@ private:
         entry_symbol = thunk_symbol;
       } else if(needs_host_export_thunk) {
         const string thunk_symbol = lowir_name(entry_symbol + "::host_export_thunk");
-        const string thunk_object_symbol =
-            symbol_linkage::virtual_override_thunk_object_symbol(exported_symbol.object_symbol,
-                                                                this_adjust);
+        const string thunk_target_name =
+            callsem_resolved_name(node.children[i]).empty() ?
+                node.children[i].text.str() :
+                callsem_resolved_name(node.children[i]);
+        const string thunk_object_symbol = callsem_qualified_name_syntax(node.children[i]) ?
+            symbol_linkage::virtual_override_thunk_object_symbol_for_function(
+                *callsem_qualified_name_syntax(node.children[i]),
+                simple_lookup_name(thunk_target_name),
+                node.children[i].is_c_linkage,
+                node.children[i].semantic_type,
+                vtable_entry_function_symbol_options(node.children[i]),
+                this_adjust) :
+            string();
         if(!thunk_object_symbol.empty()) {
           VTableEntryThunkRequest & request = vtable_entry_thunks_[thunk_symbol];
           if(request.symbol.empty()) {
@@ -17815,10 +18012,16 @@ private:
          symbol_linkage::has_exported_object_symbol(virtual_export_symbol) &&
          virtual_export_symbol.object_symbol != "__cxa_pure_virtual") {
         const string thunk_symbol = lowir_name(entry_symbol + "::host_virtual_export_thunk");
-        const string thunk_object_symbol =
-            symbol_linkage::virtual_base_override_thunk_object_symbol(
-                virtual_export_symbol.object_symbol,
-                -24);
+        const string thunk_target_name = callsem_resolved_name(node.children[i]);
+        const string thunk_object_symbol = callsem_qualified_name_syntax(node.children[i]) ?
+            symbol_linkage::virtual_base_override_thunk_object_symbol_for_function(
+                *callsem_qualified_name_syntax(node.children[i]),
+                simple_lookup_name(thunk_target_name),
+                node.children[i].is_c_linkage,
+                node.children[i].semantic_type,
+                vtable_entry_function_symbol_options(node.children[i]),
+                -24) :
+            string();
         if(!thunk_object_symbol.empty()) {
           VTableEntryThunkRequest & request = vtable_entry_thunks_[thunk_symbol];
           if(request.symbol.empty()) {

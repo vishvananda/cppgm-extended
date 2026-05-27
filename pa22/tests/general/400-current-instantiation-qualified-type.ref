@@ -33,3 +33,4 @@ function @Holder_int___Holder(%this : ptr) -> void [binding=weak, object=_ZN6Hol
     store i32 3, %t2
     return void
 }
+alias object _ZN6HolderIiEC2Ev = @Holder_int___Holder

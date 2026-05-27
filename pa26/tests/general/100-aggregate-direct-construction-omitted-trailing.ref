@@ -25,3 +25,4 @@ function @Pair__Pair__ov4(%this : ptr, %first : i32) -> void [unwind=no, binding
     store i32 0, %t5
     return void
 }
+alias object _ZN4PairC2Ei = @Pair__Pair__ov4

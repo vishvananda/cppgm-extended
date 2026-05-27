@@ -71,3 +71,4 @@ function @Copy__operator__(%this : ptr, %first : obj<4x4>, %last : obj<4x4>, %re
     %t11 = load i32 $cond__1
     return i32 %t11
 }
+alias object _ZN4IterIiLb0EEC2Ei = @Iter_int__false___Iter

@@ -158,3 +158,4 @@ function @Prefix__local_14110209623060619131__Prefix(%this : ptr, %t : ptr, %s :
     store i32 %t8, @constructed
     return void
 }
+alias object _ZZ11make_resultvEN6PrefixC2EPKcm = @Prefix__local_14110209623060619131__Prefix

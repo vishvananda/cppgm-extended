@@ -31,3 +31,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @Vec2__Vec2(%t1, 1, 2)
     return void
 }
+alias object _ZN4Vec2C2Eii = @Vec2__Vec2

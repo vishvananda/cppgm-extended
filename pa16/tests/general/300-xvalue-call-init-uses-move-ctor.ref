@@ -98,3 +98,5 @@ function @Owner__Owner__ov2(%this : ptr, %other : ptr [pass=reference]) -> void 
     store ptr 0, %t7
     return void
 }
+alias object _ZN5OwnerC2EPi = @Owner__Owner
+alias object _ZN5OwnerC2EOS_ = @Owner__Owner__ov2

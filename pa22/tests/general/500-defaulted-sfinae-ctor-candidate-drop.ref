@@ -67,3 +67,7 @@ function @base_int___base__ov2(%this : ptr, %__param1 : ptr [pass=reference]) ->
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN7derivedC2Ev = @derived__derived
+alias object _ZN7derivedC2ERKS_ = @derived__derived__ov2
+alias object _ZN4baseIiEC2Ev = @base_int___base
+alias object _ZN4baseIiEC2ERKS0_ = @base_int___base__ov2

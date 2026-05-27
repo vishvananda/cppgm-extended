@@ -68,3 +68,5 @@ function @s__i__c__less(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=
     store ptr %__param1, $__param1
     return u8 1
 }
+alias object _ZN1s1i1c8durationIxNS1_4nanoEEC2Ev = @s__i__c__duration_long_long_int__s__i__c__nano___duration
+alias object _ZN1s1i1c8durationIxNS1_5milliEEC2Ei = @s__i__c__duration_long_long_int__s__i__c__milli___duration__ov2

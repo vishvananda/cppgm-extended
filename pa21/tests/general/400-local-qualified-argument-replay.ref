@@ -177,3 +177,7 @@ function @end_expr__end_expr(%this : ptr, %__param1 : i32) -> void [binding=weak
     store i32 %__param1, $__param1
     return void
 }
+alias object _ZN9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEC2Ev = @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____plus_leaf_____2__const_____impl
+alias object _ZN9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEC2Ev = @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____deref_leaf_____2__const_____impl
+alias object _ZN10begin_exprC2Ei = @begin_expr__begin_expr
+alias object _ZN8end_exprC2Ei = @end_expr__end_expr

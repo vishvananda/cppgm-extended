@@ -58,3 +58,4 @@ function @Pair__Pair(%this : ptr) -> void [binding=weak, object=_ZN4PairC1Ev] {
     store i32 %t6, %t8
     return void
 }
+alias object _ZN4PairC2Ev = @Pair__Pair

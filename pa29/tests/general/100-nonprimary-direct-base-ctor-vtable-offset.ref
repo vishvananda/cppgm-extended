@@ -151,3 +151,4 @@ function @_Derived__g__vtable_return_adjust(%arg0 : ptr) -> i32 [binding=weak, o
     %t2 = call i32 @Derived__g(%t1)
     return i32 %t2
 }
+alias object _ZN7DerivedC2Ev = @Derived__Derived

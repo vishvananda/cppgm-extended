@@ -1,3 +1,6 @@
+declare function @ns__helper__tls_guard__tls_wrapper() -> ptr [binding=internal, tls_for=@ns__helper__tls_guard]
+declare function @ns__helper__tls_wrapper() -> ptr [binding=strong, object=_ZTWN2ns6helperE, tls_for=@ns__helper]
+
 global @ns__helper [storage=thread_local, binding=strong, object=_ZN2ns6helperE] = {
   zero 1
 }
@@ -43,3 +46,4 @@ function @ns__helper__tls_init() -> void [binding=internal] {
   block ^local_static_ctor_done_2:
     return void
 }
+alias object _ZN2ns6HelperIiEC2Ev = @ns__Helper_int___Helper

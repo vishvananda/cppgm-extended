@@ -251,17 +251,6 @@ void retarget_polymorphic_imported_destructors_to_base_entry(ClassInfo & info)
         continue;
       }
 
-      std::string base_object_symbol;
-      if(!binding->symbol.object_symbol.empty() &&
-         symbol_linkage::special_member_entry_point_object_symbol_from_complete_object_symbol(
-             binding->symbol.object_symbol,
-             false,
-             symbol_linkage::SMEK_BASE,
-             base_object_symbol)) {
-        binding->symbol.object_symbol = base_object_symbol;
-        continue;
-      }
-
       symbol_linkage::FunctionSymbolOptions options;
       options.is_member_function = true;
       options.has_implicit_object_parameter = true;

@@ -7,3 +7,6 @@ analyze_function_binding_output [main]
         analyze_expression [] at tests/general/400-overload-set-address-nondeduced-bad.t:23:10
           semantic_expression::analyze_expression [] at tests/general/400-overload-set-address-nondeduced-bad.t:23:10
             analyze_call_expression [] at tests/general/400-overload-set-address-nondeduced-bad.t:23:10
+              analyze_expression [choose] at tests/general/400-overload-set-address-nondeduced-bad.t:23:14
+                semantic_expression::analyze_expression [choose] at tests/general/400-overload-set-address-nondeduced-bad.t:23:14
+                  analyze_id_expression [choose] at tests/general/400-overload-set-address-nondeduced-bad.t:23:14

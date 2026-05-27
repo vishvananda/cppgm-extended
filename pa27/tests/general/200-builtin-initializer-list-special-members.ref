@@ -33,3 +33,4 @@ function @std__initializer_list_char___size(%this : ptr) -> i64 [binding=weak, o
     %t3 = load i64 %t2
     return i64 %t3
 }
+alias object _ZNSt16initializer_listIcEC2Ev = @std__initializer_list_char___initializer_list__ov2

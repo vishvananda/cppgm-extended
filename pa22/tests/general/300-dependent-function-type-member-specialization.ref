@@ -40,3 +40,5 @@ function @Value_void_____Value(%this : ptr) -> void [binding=weak, object=_ZN5Va
     store i32 7, %t2
     return void
 }
+alias object _ZN8FunctionIFvvEEC2Ev = @Function_void_____Function
+alias object _ZN5ValueIFvvEEC2Ev = @Value_void_____Value

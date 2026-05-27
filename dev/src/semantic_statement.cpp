@@ -1237,6 +1237,11 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
         binding.symbol = symbol_linkage::make_internal_symbol_identity(
             local_static_internal_symbol(scope, name, &init_decl),
             symbol_linkage::SL_INTERNAL);
+        if(is_thread_local) {
+          binding.symbol.thread_local_wrapper_object_symbol =
+              symbol_linkage::thread_local_wrapper_internal_symbol(
+                  binding.symbol.object_symbol);
+        }
         binding.declaration_scope = &scope;
       }
       if(initializer &&

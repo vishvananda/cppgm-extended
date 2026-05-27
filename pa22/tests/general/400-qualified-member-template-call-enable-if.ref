@@ -21,3 +21,4 @@ function @pair_like_int__int___pair_like(%this : ptr, %__param1 : ptr [pass=refe
     store ptr %__param2, $__param2
     return void
 }
+alias object _ZN9pair_likeIiiEC2I5checkIiiETnN9enable_ifIXclsrT_1fIRKiS7_EEEiE4typeELi0EEES7_S7_ = @pair_like_int__int___pair_like

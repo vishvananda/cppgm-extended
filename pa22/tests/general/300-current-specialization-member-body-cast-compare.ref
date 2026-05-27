@@ -67,3 +67,4 @@ function @holder_unsigned_int__int___holder(%this : ptr) -> void [binding=weak, 
     store u32 %t21, %t23
     return void
 }
+alias object _ZN6holderIjiEC2Ev = @holder_unsigned_int__int___holder

@@ -65,3 +65,4 @@ function @addrof__ov2(%x : ptr [pass=reference]) -> ptr [binding=weak, object=_Z
     %t1 = load ptr $x
     return ptr %t1
 }
+alias object _ZN4nodeIiEC2Ev = @node_int___node

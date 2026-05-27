@@ -64,3 +64,5 @@ function @bad__bad(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3bad
     store ptr %this, $this
     return void
 }
+alias object _ZN4goodC2Ev = @good__good
+alias object _ZN3badC2Ev = @bad__bad

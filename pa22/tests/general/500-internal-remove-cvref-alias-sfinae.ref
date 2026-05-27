@@ -29,3 +29,4 @@ function @S__G__local_10174324311330680726__G(%this : ptr) -> void [unwind=no, b
     store ptr %this, $this
     return void
 }
+alias object _ZZN1S1gEvEN1GC2Ev = @S__G__local_10174324311330680726__G

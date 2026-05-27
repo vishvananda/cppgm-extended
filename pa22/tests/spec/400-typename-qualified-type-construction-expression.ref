@@ -63,3 +63,4 @@ function @traits_iter___cat__cat(%this : ptr) -> void [unwind=no, binding=weak, 
     store ptr %this, $this
     return void
 }
+alias object _ZN6traitsI4iterE3catC2Ev = @traits_iter___cat__cat

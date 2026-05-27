@@ -180,3 +180,6 @@ function @downcast_root__downcast_root(%this : ptr, %v : i32) -> void [binding=w
     store i32 %t1, %t3
     return void
 }
+alias object _ZN13downcast_leafC2Ev = @downcast_leaf__downcast_leaf
+alias object _ZN13downcast_leafD2Ev = @downcast_leaf___downcast_leaf
+alias object _ZN13downcast_rootC2Ei = @downcast_root__downcast_root

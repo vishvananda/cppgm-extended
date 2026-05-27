@@ -78,3 +78,4 @@ function @Function_void_Scope______operator__(%this : ptr, %__param1 : ptr [pass
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN8FunctionIFvR5ScopeEEC2IZZN8Analyzer16lookup_functionsEiENKUlvE_clEvEUlS1_E_EET_ = @Function_void_Scope______Function__ov3

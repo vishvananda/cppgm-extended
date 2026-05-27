@@ -49,3 +49,5 @@ function @CopiesOnMove__CopiesOnMove__ov2(%this : ptr, %__param1 : ptr [pass=ref
     store i32 1, %t2
     return void
 }
+alias object _ZN12CopiesOnMoveC2Ev = @CopiesOnMove__CopiesOnMove
+alias object _ZN12CopiesOnMoveC2ERKS_ = @CopiesOnMove__CopiesOnMove__ov2

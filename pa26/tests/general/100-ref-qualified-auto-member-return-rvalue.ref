@@ -31,3 +31,4 @@ function @X__base(%this : ptr) -> ptr [binding=weak, object=_ZNO1X4baseEv] {
     %t1 = load ptr $this
     return ptr %t1
 }
+alias object _ZN1XC2Ei = @X__X

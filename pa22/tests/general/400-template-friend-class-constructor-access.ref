@@ -37,3 +37,4 @@ function @V_char__traits_char____Tag__Tag(%this : ptr) -> void [unwind=no, bindi
     store ptr %this, $this
     return void
 }
+alias object _ZN1VIc6traitsIcEE3TagC2Ev = @V_char__traits_char____Tag__Tag

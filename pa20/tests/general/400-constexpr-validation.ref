@@ -26,3 +26,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @Lit__Lit(%t1, 42)
     return void
 }
+alias object _ZN3LitC2Ei = @Lit__Lit

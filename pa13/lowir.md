@@ -74,6 +74,7 @@ presentation order:
 2. `declare function`
 3. `global`
 4. `function`
+5. `alias object`
 
 For canonical text, no later phase is followed by an earlier phase. For example,
 all global definitions appear before all function definitions, and all
@@ -171,16 +172,19 @@ function @boot() -> void [role=init, binding=strong] {
 ```
 
 The currently defined top-level metadata keys are `role`, `linkage`, `binding`, `object`,
-`keep_alias`, `prefer_local`, and `storage` (globals only).
+`tls_for` (functions only), `keep_alias`, `prefer_local`, and `storage` (globals only).
 
 The currently defined global `storage` values are:
 
 - `readonly`
 - `thread_local`
 
-`storage=thread_local` is semantic TLS storage intent. Backend-specific wrapper thunks,
-descriptor sections, and relocation forms are lower-layer object-format details and do not
-appear in LowIR itself.
+`storage=thread_local` is semantic TLS storage intent. Backend-specific descriptor
+sections and relocation forms are lower-layer object-format details. When a thread-local
+object needs a named ABI wrapper function surface, that surface appears as an ordinary
+LowIR function declaration or definition with `tls_for=<global>` naming the thread-local
+global it wraps, for example
+`declare function @x__tls_wrapper() -> ptr [object=_ZTW..., tls_for=@x]`.
 
 The currently defined role values are:
 
@@ -236,6 +240,23 @@ spells a different exported/backend name.
 The `prefer_local` metadata key is a `yes`/`no` flag. `prefer_local=yes` records that later
 object emission should prefer a local/private binding when that is legal, even if an explicit
 `object=...` spelling is also present.
+
+`alias object <object-symbol> = @target` records an additional object-file symbol spelling
+that must resolve to the same emitted top-level LowIR function or global as `@target`.
+Multiple alias lines may target the same LowIR symbol, but each alias object symbol may be
+defined only once:
+
+```text
+function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
+  ...
+}
+alias object _ZN3BoxC2Ev = @Box__Box
+```
+
+Use an object alias only when the extra symbol is another name for the same emitted code or
+data. If the extra ABI surface is separate generated code, such as a thread-local access
+wrapper, represent it as a normal LowIR function declaration or definition with its own
+`object=...` spelling.
 
 Canonical `cppgm++ --emit-lowir` output is expected to carry all backend-relevant symbol/export
 and runtime-support information needed by later object preparation. Later object-path steps such
@@ -605,6 +626,10 @@ object-file debug information may ignore it, but PA13 parsing, dumping, and
 A LowIR unit is structurally well formed only if all of the following hold:
 
 - every top-level symbol name appears at most once across declarations and definitions
+- every object alias spelling appears at most once
+- every object alias target names a top-level declaration or definition
+- every `tls_for` target names a top-level thread-local global, and at most one
+  wrapper names each thread-local global
 - each function parameter name is unique within that function header
 - each function slot name is unique within that function
 - each function block label is unique within that function

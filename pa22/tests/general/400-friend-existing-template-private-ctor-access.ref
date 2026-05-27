@@ -118,3 +118,7 @@ function @n__alloc_char___alloc(%this : ptr) -> void [unwind=no, binding=weak, o
     store ptr %this, $this
     return void
 }
+alias object _ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC2Ev = @n__basic_string_char__n__traits_char___n__alloc_char____basic_string
+alias object _ZN1n3tagC2Ev = @n__tag__tag
+alias object _ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC2ENS_3tagEiRKS4_ = @n__basic_string_char__n__traits_char___n__alloc_char____basic_string__ov2
+alias object _ZN1n5allocIcEC2Ev = @n__alloc_char___alloc

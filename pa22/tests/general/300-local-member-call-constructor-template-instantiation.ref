@@ -90,3 +90,5 @@ function @Wrap_ActiveInterval__local_15412970380081035629_____Wrap(%this : ptr) 
     store ptr 0, %t2
     return void
 }
+alias object _ZN4WrapIPKZ4mainE14ActiveIntervalEC2IPS0_EERKS_IT_E = @Wrap_ActiveInterval__local_15412970380081035629_const_____Wrap__ov5
+alias object _ZN4WrapIPZ4mainE14ActiveIntervalEC2Ev = @Wrap_ActiveInterval__local_15412970380081035629_____Wrap

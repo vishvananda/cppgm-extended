@@ -56,3 +56,5 @@ function @wrap_long_int___wrap__ov4(%this : ptr, %other : ptr [pass=reference]) 
     store i32 %t4, %t6
     return void
 }
+alias object _ZN4wrapIiEC2Ei = @wrap_int___wrap
+alias object _ZN4wrapIlEC2IiEERKS_IT_E = @wrap_long_int___wrap__ov4

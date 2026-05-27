@@ -22,3 +22,4 @@ function @X__f__ov2(%this : ptr) -> i32 [binding=weak, object=_ZNO1X1fEv] {
     store ptr %this, $this
     return i32 2
 }
+alias object _ZN1XC2Ev = @X__X

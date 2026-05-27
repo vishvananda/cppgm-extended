@@ -45,3 +45,5 @@ function @string_like_char__char_traits_char____string_like(%this : ptr) -> void
     store ptr %this, $this
     return void
 }
+alias object _ZN14delimiter_typeIc11char_traitsIcEEC2ERK11string_likeIcS1_E = @delimiter_type_char__char_traits_char____delimiter_type
+alias object _ZN11string_likeIc11char_traitsIcEEC2Ev = @string_like_char__char_traits_char____string_like

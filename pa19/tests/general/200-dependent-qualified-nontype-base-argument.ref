@@ -22,3 +22,5 @@ function @Holder_Rebind_int__Node_int__false_____Holder(%this : ptr) -> void [bi
     store ptr %this, $this
     return void
 }
+alias object _ZN5TableI6TraitsEC2Ei = @Table_Traits___Table
+alias object _ZN6HolderI6RebindIi4NodeIiLb0EEEEC2Ev = @Holder_Rebind_int__Node_int__false_____Holder

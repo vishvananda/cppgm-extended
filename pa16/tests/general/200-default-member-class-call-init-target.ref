@@ -35,3 +35,4 @@ function @Range__begin(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK5Range
     copyobj 4x4 %t5, %t4
     return obj<4x4> $retobj__1
 }
+alias object _ZN6HolderC2Ev = @Holder__Holder

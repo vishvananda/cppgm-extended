@@ -27,3 +27,5 @@ function @X_int__int_const____int_const____int_const___const____1024___X__ov4(%t
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZN1XIiPiRiPS0_Ll1024EEC2Ev = @X_int__int____int____int______1024___X
+alias object _ZN1XIiPKiRS0_PKS1_Ll1024EEC2IPiRiPS7_Li0EEERKS_IiT_T0_T1_Ll1024EE = @X_int__int_const____int_const____int_const___const____1024___X__ov4

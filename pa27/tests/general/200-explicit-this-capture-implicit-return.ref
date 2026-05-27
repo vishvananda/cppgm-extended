@@ -63,3 +63,4 @@ function @Box____lambda_Box__run_t39_41__operator__(%this : ptr) -> i32 [binding
     %t6 = load i32 %t5
     return i32 %t6
 }
+alias object _ZN3BoxC2Ei = @Box__Box

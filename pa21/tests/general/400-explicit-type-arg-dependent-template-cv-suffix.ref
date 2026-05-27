@@ -53,3 +53,5 @@ function @proto__terminal_reference_wrapper_basic_regex_int__const____type__type
     store ptr %this, $this
     return void
 }
+alias object _ZN17reference_wrapperIK11basic_regexIiEEC2ERS2_ = @reference_wrapper_basic_regex_int__const___reference_wrapper
+alias object _ZN5proto8terminalI17reference_wrapperIK11basic_regexIiEEE4typeC2Ev = @proto__terminal_reference_wrapper_basic_regex_int__const____type__type

@@ -82,3 +82,4 @@ function @ns__forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z
     %t1 = load ptr $t
     return ptr %t1
 }
+alias object _ZN2ns4PairImmEC2IjjEEOT_OT0_ = @ns__Pair_unsigned_long_int__unsigned_long_int___Pair

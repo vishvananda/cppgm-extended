@@ -49,3 +49,4 @@ function @read(%box : obj<4x4>) -> i32 [binding=weak, object=_Z4readIiET_3BoxIS0
     %t4 = load i32 %t3
     return i32 %t4
 }
+alias object _ZN3BoxIiEC2Ei = @Box_int___Box

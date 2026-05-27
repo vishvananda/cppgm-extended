@@ -4,5 +4,3 @@ analyze_function_binding_output [make_duration inst=long long int]
   analyze_statement [return-statement] at tests/general/300-bad-constructor-template-parameter-shadowing-target-aware.t:34:3
     analyze_expression_for_target [ -> struct duration_like<int>] at tests/general/300-bad-constructor-template-parameter-shadowing-target-aware.t:34:10
       semantic_expression::analyze_expression_for_target [ -> struct duration_like<int>] at tests/general/300-bad-constructor-template-parameter-shadowing-target-aware.t:34:10
-        deduce_function_template_arguments [duration_like, args=1]
-          lookup_type [enable_if_t<is_convertible<long long int const &,int>::value,int>]

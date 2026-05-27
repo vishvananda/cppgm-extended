@@ -30,3 +30,5 @@ function @std__allocator_void_____allocator__ov4(%this : ptr, %__param1 : ptr [p
     store ptr %__param1, $__param1
     return void
 }
+alias object _ZNSaIiEC2Ev = @std__allocator_int___allocator
+alias object _ZNSaIPvEC2IiEERKSaIT_E = @std__allocator_void_____allocator__ov4

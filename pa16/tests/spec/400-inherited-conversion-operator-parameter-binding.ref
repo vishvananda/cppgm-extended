@@ -62,3 +62,5 @@ function @Function__Function(%this : ptr) -> void [binding=weak, object=_ZN8Func
     store i32 0, %t2
     return void
 }
+alias object _ZN16ReadonlyPropertyC2Ev = @ReadonlyProperty__ReadonlyProperty
+alias object _ZN8FunctionC2Ev = @Function__Function

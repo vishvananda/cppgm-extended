@@ -185,3 +185,6 @@ function @YB__f(%this : ptr) -> i32 [binding=weak, object=_ZN2YB1fEv] {
     store ptr %this, $this
     return i32 1
 }
+alias object _ZN2YDC2Ev = @YD__YD
+alias object _ZN2YDD2Ev = @YD___YD
+alias object _ZN2YBD2Ev = @YB___YB

@@ -128,3 +128,6 @@ function @IOS__set(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3IOS3
     store i32 %t1, %t3
     return void
 }
+alias object _ZN12StringStreamC2Ev = @StringStream__StringStream
+alias object _ZN7OStreamC2Ev = @OStream__OStream
+alias object _ZN3IOSC2Ev = @IOS__IOS

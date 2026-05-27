@@ -303,31 +303,6 @@ symbol_linkage::SymbolIdentity function_entry_point_symbol(const FunctionBinding
     return output_function_symbol_identity(binding);
   }
 
-  std::string entry_object_symbol;
-  if(!binding.symbol.object_symbol.empty() &&
-     symbol_linkage::special_member_entry_point_object_symbol_from_object_symbol(
-         binding.symbol.object_symbol,
-         binding.is_constructor,
-         kind,
-         entry_object_symbol)) {
-    symbol_linkage::SymbolIdentity updated = output_function_symbol_identity(binding);
-    updated.object_symbol = entry_object_symbol;
-    const string base_internal_symbol =
-        binding.symbol.internal_symbol.empty() ?
-            symbol_linkage::internal_symbol_from_name(
-                function_binding_qualified_name_for_symbol(binding)) :
-            binding.symbol.internal_symbol;
-    updated.internal_symbol =
-        kind == symbol_linkage::SMEK_BASE ? base_internal_symbol + "__base_entry" :
-        kind == symbol_linkage::SMEK_DELETING ? base_internal_symbol + "__deleting_entry" :
-                                                base_internal_symbol;
-    return updated;
-  }
-  if(kind == symbol_linkage::SMEK_COMPLETE &&
-     !binding.symbol.object_symbol.empty()) {
-    return output_function_symbol_identity(binding);
-  }
-
   std::string symbol_key = binding.symbol.object_symbol;
   if(symbol_key.empty()) {
     symbol_key = binding.symbol.internal_symbol;
@@ -2747,15 +2722,34 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
     var_node.is_extern_declaration = !binding.has_storage_definition;
     var_node.is_thread_local = binding.is_thread_local;
     var_node.is_static_storage = binding.is_thread_local;
+    if(info.member_scope) {
+      set_callsem_qualified_name_syntax(
+          var_node,
+          scope_symbol_qualified_name_syntax(*info.member_scope, binding.name));
+    }
     symbol_linkage::SymbolIdentity symbol = binding.symbol;
     if(!binding.symbol.internal_symbol.empty()) {
-      set_dump_symbol(var_node, binding.symbol);
+      if(binding.is_thread_local &&
+         binding.owner_class &&
+         symbol.thread_local_wrapper_object_symbol.empty()) {
+        symbol.thread_local_wrapper_object_symbol =
+            symbol_linkage::thread_local_wrapper_object_symbol_for_static_member_variable(
+                *binding.owner_class,
+                binding.name);
+      }
+      set_dump_symbol(var_node, symbol);
     } else {
       symbol = symbol_linkage::make_static_member_variable_symbol_identity(
           info,
           binding.name,
           binding.is_c_linkage,
           output_variable_symbol_linkage(binding));
+      if(binding.is_thread_local && symbol.thread_local_wrapper_object_symbol.empty()) {
+        symbol.thread_local_wrapper_object_symbol =
+            symbol_linkage::thread_local_wrapper_object_symbol_for_static_member_variable(
+                info,
+                binding.name);
+      }
       set_dump_symbol(var_node, symbol);
     }
     if(binding.is_thread_local &&
@@ -3738,6 +3732,7 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
             function_binding_has_trivial_lifecycle_output(ctx, binding);
         function_node.object_trivial_lifecycle =
             function_binding_has_object_trivial_lifecycle_output(ctx, binding);
+        set_callsem_abi_tags(function_node, function_binding_abi_tags(binding));
         if(binding.declaration_node) {
           set_dump_source_location(function_node, *binding.declaration_node);
           set_dump_token(function_node, *binding.declaration_node);
@@ -3774,6 +3769,17 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
           }
         }
         set_dump_symbol(function_node, function_symbol);
+        if((binding.is_constructor || binding.is_destructor) &&
+           entry_point_kind == symbol_linkage::SMEK_COMPLETE) {
+          const symbol_linkage::SymbolIdentity base_entry_symbol =
+              function_entry_point_symbol(binding, symbol_linkage::SMEK_BASE);
+          if(symbol_linkage::has_exported_object_symbol(base_entry_symbol) &&
+             base_entry_symbol.object_symbol != function_symbol.object_symbol) {
+            std::vector<std::string> object_aliases;
+            object_aliases.push_back(base_entry_symbol.object_symbol);
+            set_callsem_object_aliases(function_node, object_aliases);
+          }
+        }
 
         DumpNode body_node = make_dump_node(CallSemKind::compound_statement);
         DumpNode constructor_try_prefix = make_dump_node(CallSemKind::compound_statement);
@@ -4368,9 +4374,30 @@ void append_vtable_output_node(SemanticContext & ctx,
           entry_node,
           symbol_linkage::make_c_function_symbol_identity("__cxa_pure_virtual"));
     } else {
+      const symbol_linkage::SpecialMemberEntryPointKind entry_point_kind =
+          is_secondary_virtual_destructor_slot(*slot_function, base_virtual, i) ?
+              symbol_linkage::SMEK_DELETING :
+              symbol_linkage::SMEK_COMPLETE;
       set_dump_symbol(entry_node, emitted_vtable_entry_symbol(*slot_function,
                                                               base_virtual,
                                                               i));
+      set_dump_qualified_name_syntax_from_function_binding(entry_node, *slot_function);
+      entry_node.is_virtual_member_function = slot_function->is_method;
+      entry_node.is_constructor = slot_function->is_constructor;
+      entry_node.is_destructor = slot_function->is_destructor;
+      entry_node.is_const_method = slot_function->is_const_method;
+      entry_node.is_volatile_method = slot_function->is_volatile_method;
+      set_callsem_abi_tags(entry_node, function_binding_abi_tags(*slot_function));
+      const symbol_linkage::FunctionRefQualifier ref_qualifier =
+          symbol_linkage_ref_qualifier(slot_function->ref_qualifier);
+      if(ref_qualifier != symbol_linkage::FRQ_NONE) {
+        entry_node.has_function_ref_qualifier = true;
+        set_callsem_function_ref_qualifier(entry_node, ref_qualifier);
+      }
+      if(slot_function->is_constructor || slot_function->is_destructor) {
+        entry_node.has_special_member_entry_point_kind = true;
+        set_callsem_special_member_entry_point_kind(entry_node, entry_point_kind);
+      }
     }
     set_callsem_uint_value(entry_node, i);
     if(table_node.uses_extended_vtable_layout || slot.this_adjust != 0) {
@@ -5135,6 +5162,14 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
                 binding->name,
                 binding->is_c_linkage,
                 output_variable_symbol_linkage(*binding));
+          }
+          if(binding->is_thread_local &&
+             binding->owner_class &&
+             symbol.thread_local_wrapper_object_symbol.empty()) {
+            symbol.thread_local_wrapper_object_symbol =
+                symbol_linkage::thread_local_wrapper_object_symbol_for_static_member_variable(
+                    *binding->owner_class,
+                    binding->name);
           }
           set_dump_symbol(var_node, symbol);
           if(binding->is_thread_local &&

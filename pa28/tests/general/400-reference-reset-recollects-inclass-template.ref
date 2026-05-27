@@ -49,3 +49,4 @@ function @interface_x__call(%this : ptr, %value : i32) -> void [binding=weak, ob
     call void %t9(%t3, %t4) as (%arg0 : ptr, %arg1 : i32) -> void
     return void
 }
+alias object _ZN11interface_xC2I6targetEERT_ = @interface_x__interface_x__ov3

@@ -627,6 +627,7 @@ sub parse_lowir_function_metadata_suffix
 		linkage => '',
 		binding => '',
 		object => '',
+		tls_for => '',
 		keep_alias => '',
 		prefer_local => '',
 	);
@@ -685,6 +686,12 @@ sub parse_lowir_function_metadata_suffix
 			elsif ($key eq 'object')
 			{
 				$metadata{object} = $value;
+			}
+			elsif ($key eq 'tls_for')
+			{
+				return (0, "invalid tls_for target '$value'")
+					if $value !~ /^@[A-Za-z0-9_]+$/;
+				$metadata{tls_for} = $value;
 			}
 			elsif ($key eq 'keep_alias')
 			{
@@ -1414,6 +1421,8 @@ sub lowir_top_level_order_kind
 		if $line =~ /^global @([A-Za-z0-9_]+)\b/;
 	return ('function', 3, $1)
 		if $line =~ /^function @([A-Za-z0-9_]+)\b/;
+	return ('alias object', 4, $1)
+		if $line =~ /^alias object ([^\s=]+)\s*=/;
 	return undef;
 }
 
@@ -1426,7 +1435,7 @@ sub validate_lowir_top_level_order
 	my $last_kind = 'start of file';
 	my $last_symbol = '';
 	my $expected =
-		'declare global, declare function, global, function';
+		'declare global, declare function, global, function, alias object';
 
 	for (my $i = 0; $i < scalar(@lines); ++$i)
 	{
@@ -1806,6 +1815,23 @@ sub validate_lowir_text
 	}
 	my @duplicates = sort grep { $top_count{$_} > 1 } keys(%top_count);
 	push @errors, "duplicate LowIR symbol entries: " . join(', ', @duplicates) if scalar(@duplicates) > 0;
+
+	my %alias_count;
+	my @alias_targets;
+	for my $line (split(/\n/, $data))
+	{
+		next if $line !~ /^alias object\b/;
+		if ($line !~ /^alias object ([^\s=]+)\s*=\s*@([A-Za-z0-9_]+)\s*$/)
+		{
+			push @errors, "invalid object alias syntax: $line";
+			next;
+		}
+		++$alias_count{$1};
+		push @alias_targets, $2;
+	}
+	my @duplicate_aliases = sort grep { $alias_count{$_} > 1 } keys(%alias_count);
+	push @errors, "duplicate LowIR object aliases: " . join(', ', @duplicate_aliases)
+		if scalar(@duplicate_aliases) > 0;
 	if ($options->{strict_presentation_order})
 	{
 		push @errors, validate_lowir_top_level_order($data);
@@ -1889,6 +1915,15 @@ sub validate_lowir_text
 		};
 	}
 
+	my %missing_alias_targets;
+	for my $name (@alias_targets)
+	{
+		$missing_alias_targets{$name} = 1 if !exists($all_symbols{$name});
+	}
+	push @errors, "object alias target(s) are not top-level symbols: " .
+		join(', ', map { "\@$_" } sort keys(%missing_alias_targets))
+		if scalar(keys(%missing_alias_targets)) > 0;
+
 	my %missing_calls;
 	while ($data =~ /call\s+(?:void|$type_pattern)\s+@([A-Za-z0-9_]+)\(/g)
 	{
@@ -1928,7 +1963,7 @@ sub lowir_metadata_item_ignored_for_compare
 	my ($key, $value) = @_;
 	# Validate full metadata, but do not make early source-to-LowIR oracles depend
 	# on later object/export policy or optional optimizer/provenance annotations.
-	return 1 if $key =~ /^(?:linkage|binding|object|keep_alias|prefer_local)$/;
+	return 1 if $key =~ /^(?:linkage|binding|object|tls_for|keep_alias|prefer_local)$/;
 	return 1 if $key =~ /^(?:effects|unwind|return|capture|access|alias|projection)$/;
 	return 1 if $key eq 'storage' && $value =~ /^(?:readonly|writable)$/;
 	return 0;
@@ -1952,6 +1987,9 @@ sub canonicalize_lowir_for_compare
 	my ($data, $function_symbols) = @_;
 	return undef if !defined($data);
 	$data =~ s/\s+\[([^\]]+)\]/canonicalize_lowir_metadata_group_for_compare($1)/ge;
+	# Object aliases are backend symbol-surface metadata, like object=... metadata.
+	# Validate them above, but omit them from relaxed source-to-LowIR comparison.
+	$data =~ s/^alias object [^\n]*\n?//gm;
 	if (!defined($function_symbols))
 	{
 		my %local_function_symbols;
@@ -2106,7 +2144,8 @@ sub lowir_relaxed_top_level_rank
 	return 1 if $entry =~ /^declare function /;
 	return 2 if $entry =~ /^global /;
 	return 3 if $entry =~ /^function /;
-	return 4;
+	return 4 if $entry =~ /^alias object /;
+	return 5;
 }
 
 sub split_lowir_top_level_entries
@@ -2123,6 +2162,11 @@ sub split_lowir_top_level_entries
 		if ($mode eq '')
 		{
 			if ($line =~ /^(?:declare global|declare function) /)
+			{
+				push @entries, $line;
+				next;
+			}
+			if ($line =~ /^alias object /)
 			{
 				push @entries, $line;
 				next;

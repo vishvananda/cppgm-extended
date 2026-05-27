@@ -117,3 +117,4 @@ function @Iter__operator__(%this : ptr, %n : i64) -> ptr [binding=weak, object=_
     %t8 = load ptr $this
     return ptr %t8
 }
+alias object _ZN4IterC2El = @Iter__Iter

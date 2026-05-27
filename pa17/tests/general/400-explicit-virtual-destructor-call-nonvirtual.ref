@@ -178,3 +178,6 @@ function @Base__destroy(%this : ptr) -> void [binding=weak, object=_ZN4Base7dest
     store ptr %this, $this
     return void
 }
+alias object _ZN7DerivedC2Ev = @Derived__Derived
+alias object _ZN7DerivedD2Ev = @Derived___Derived
+alias object _ZN4BaseD2Ev = @Base___Base

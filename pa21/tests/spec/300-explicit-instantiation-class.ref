@@ -45,3 +45,4 @@ function @holder_int___get(%this : ptr) -> i32 [binding=weak, object=_ZNK6holder
     %t3 = load i32 %t2
     return i32 %t3
 }
+alias object _ZN6holderIiEC2Ei = @holder_int___holder

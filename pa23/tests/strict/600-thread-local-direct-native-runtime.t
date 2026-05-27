@@ -1,3 +1,4 @@
+declare function @g__tls_wrapper() -> ptr [binding=strong, object=_ZTW1g, tls_for=@g]
 global @g : i64 [storage=thread_local, binding=strong, object=_Z1g] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

@@ -150,3 +150,6 @@ function @S___S(%this : ptr) -> void [binding=weak, object=_ZN1SD1Ev] {
     store ptr %this, $this
     return void
 }
+alias object _ZN1SC2Ev = @S__S
+alias object _ZN1SC2ERKS_ = @S__S__ov2
+alias object _ZN1SD2Ev = @S___S

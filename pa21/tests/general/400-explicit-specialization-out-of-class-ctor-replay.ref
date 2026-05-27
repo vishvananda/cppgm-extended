@@ -69,3 +69,5 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @f()
     return i32 %t1
 }
+alias object _ZN1SIiEC2Ev = @S_int___S
+alias object _ZN1SIiEC2Ei = @S_int___S__ov2

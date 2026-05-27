@@ -30,3 +30,4 @@ function @F__operator__(%this : ptr, %__param1 : i32) -> i32 [binding=weak, obje
     store i32 %__param1, $__param1
     return i32 1
 }
+alias object _ZN1FC2Ev = @F__F

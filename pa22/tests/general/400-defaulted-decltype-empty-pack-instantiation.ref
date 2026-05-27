@@ -36,3 +36,4 @@ function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
     store i32 7, %t2
     return void
 }
+alias object _ZN3BoxC2Ev = @Box__Box

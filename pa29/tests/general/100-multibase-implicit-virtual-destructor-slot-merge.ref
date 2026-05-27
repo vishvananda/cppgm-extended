@@ -251,3 +251,7 @@ function @_YC___YC__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, obj
     call void @YC___YC(%t1)
     return void
 }
+alias object _ZN2YCC2Ev = @YC__YC
+alias object _ZN2YCD2Ev = @YC___YC
+alias object _ZN2YBD2Ev = @YB___YB
+alias object _ZN2YAD2Ev = @YA___YA

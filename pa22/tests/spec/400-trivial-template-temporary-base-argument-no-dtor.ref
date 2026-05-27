@@ -23,3 +23,4 @@ function @trait_Payload_____trait(%this : ptr) -> void [unwind=no, binding=weak,
     store ptr %this, $this
     return void
 }
+alias object _ZN5traitIP7PayloadEC2Ev = @trait_Payload_____trait

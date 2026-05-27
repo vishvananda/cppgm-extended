@@ -70,3 +70,5 @@ function @D__operator__(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN
     %t3 = call i32 @printf(%t1, %p)
     return void
 }
+alias object _ZN1PC2EPi = @P__P
+alias object _ZN1PD2Ev = @P___P

@@ -25,3 +25,4 @@ function @D_int___R__R(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN
     store ptr %this, $this
     return void
 }
+alias object _ZN1DIiE1RC2Ev = @D_int___R__R

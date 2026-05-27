@@ -48,3 +48,4 @@ function @storage_1__1___storage(%this : ptr) -> void [binding=weak, object=_ZN7
     store ptr %this, $this
     return void
 }
+alias object _ZN7storageILm1ELm1EEC2Ev = @storage_1__1___storage

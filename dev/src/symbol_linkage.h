@@ -85,6 +85,7 @@ struct SymbolIdentity
 {
   std::string internal_symbol;
   std::string object_symbol;
+  std::string thread_local_wrapper_object_symbol;
   bool keep_internal_alias = false;
   bool prefer_local_object_binding = false;
   SymbolLinkage linkage = SL_EXTERNAL;
@@ -98,32 +99,36 @@ std::string mangle_symbol_name(const std::string & text);
 std::string internal_symbol_from_name(const std::string & name);
 std::string thread_local_wrapper_internal_symbol(const std::string & variable_internal_symbol);
 std::string thread_local_guard_internal_symbol(const std::string & variable_internal_symbol);
-std::string thread_local_wrapper_object_symbol_from_object_symbol(
-    const std::string & object_symbol);
+std::string thread_local_wrapper_object_symbol_for_qualified_name(
+    const cpp_decl::QualifiedName & qualified_name);
+std::string thread_local_wrapper_object_symbol_for_scoped_variable(
+    const semantic_model::Scope & scope,
+    const std::string & name);
+std::string thread_local_wrapper_object_symbol_for_static_member_variable(
+    const semantic_model::ClassInfo & owner_class,
+    const std::string & member_name);
 std::string typeinfo_symbol_for_type(const cpp_decl::TypePtr & type);
 std::string vtable_object_symbol_for_type(const cpp_decl::TypePtr & type);
 bool mangle_itanium_type_encoding(const cpp_decl::TypePtr & type,
                                   std::string & out);
 bool mangle_itanium_name_encoding(const cpp_decl::QualifiedName & qualified_name,
                                   std::string & out);
-std::string virtual_override_thunk_object_symbol(const std::string & target_object_symbol,
-                                                 long long this_adjust,
-                                                 bool has_result_adjust = false,
-                                                 long long result_adjust = 0);
-std::string virtual_base_override_thunk_object_symbol(const std::string & target_object_symbol,
-                                                      long long vcall_offset);
-bool special_member_entry_point_object_symbol_from_complete_object_symbol(
-    const std::string & complete_object_symbol,
-    bool is_constructor,
-    SpecialMemberEntryPointKind entry_point_kind,
-    std::string & out);
-bool special_member_entry_point_object_symbol_from_object_symbol(
-    const std::string & object_symbol,
-    bool is_constructor,
-    SpecialMemberEntryPointKind entry_point_kind,
-    std::string & out);
-std::vector<std::string> implicit_special_member_object_aliases(
-    const std::string & object_symbol);
+std::string virtual_override_thunk_object_symbol_for_function(
+    const cpp_decl::QualifiedName & qualified_name,
+    const std::string & display_name,
+    bool is_c_linkage,
+    const cpp_decl::TypePtr & type,
+    const FunctionSymbolOptions & options,
+    long long this_adjust,
+    bool has_result_adjust = false,
+    long long result_adjust = 0);
+std::string virtual_base_override_thunk_object_symbol_for_function(
+    const cpp_decl::QualifiedName & qualified_name,
+    const std::string & display_name,
+    bool is_c_linkage,
+    const cpp_decl::TypePtr & type,
+    const FunctionSymbolOptions & options,
+    long long vcall_offset);
 std::string construction_vtable_object_symbol(const semantic_model::ClassInfo & dynamic_class,
                                               unsigned long long base_offset,
                                               const semantic_model::ClassInfo & base_class);

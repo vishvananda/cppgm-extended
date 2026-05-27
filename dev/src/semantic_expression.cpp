@@ -3789,6 +3789,20 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
         binding.is_c_linkage,
         expression_variable_symbol_linkage(binding));
   }
+  if(binding.is_thread_local &&
+     symbol.thread_local_wrapper_object_symbol.empty()) {
+    if(binding.owner_class) {
+      symbol.thread_local_wrapper_object_symbol =
+          symbol_linkage::thread_local_wrapper_object_symbol_for_static_member_variable(
+              *binding.owner_class,
+              binding.name);
+    } else if(binding.declaration_scope) {
+      symbol.thread_local_wrapper_object_symbol =
+          symbol_linkage::thread_local_wrapper_object_symbol_for_scoped_variable(
+              *binding.declaration_scope,
+              binding.name);
+    }
+  }
   set_dump_symbol(result.node, symbol);
   result.node.is_thread_local = binding.is_thread_local;
   set_expr_metadata(result.node, result.type, result.category);

@@ -668,11 +668,6 @@ string thread_local_template_symbol(const map<string, symbol_linkage::SymbolIden
   return global_name + "__tls_init_data";
 }
 
-string thread_local_wrapper_symbol(const string & global_name)
-{
-  return symbol_linkage::thread_local_wrapper_internal_symbol(global_name);
-}
-
 string thread_local_runtime_object_symbol(
     const map<string, symbol_linkage::SymbolIdentity> & exports,
     const string & global_name,
@@ -3124,7 +3119,8 @@ ObjectLayout layout_object(const mir::Program & program)
     code_offset += layout.function_layouts[program.functions[i].name].size;
   }
   for(size_t i = 0; i < program.globals.size(); ++i) {
-    if(!program.globals[i].thread_local_storage) {
+    if(!program.globals[i].thread_local_storage ||
+       program.globals[i].thread_local_wrapper_symbol.empty()) {
       continue;
     }
     code_offset = align_up(code_offset, 16);
@@ -3516,7 +3512,8 @@ vector<unsigned char> build_code_bytes(const mir::Program & program,
   }
   for(size_t gi = 0; gi < program.globals.size(); ++gi) {
     const mir::GlobalDefinition & global = program.globals[gi];
-    if(!global.thread_local_storage) {
+    if(!global.thread_local_storage ||
+       global.thread_local_wrapper_symbol.empty()) {
       continue;
     }
     const size_t want_offset = layout.thread_local_wrapper_offsets.find(global.name)->second;
@@ -4606,28 +4603,41 @@ map<string, symbol_linkage::SymbolIdentity> export_map(
   return out;
 }
 
-bool has_suffix(const string & text, const string & suffix)
+map<string, vector<string> > object_alias_map(
+    const vector<machine_ir::ObjectAlias> & object_aliases)
 {
-  return text.size() >= suffix.size() &&
-         text.compare(text.size() - suffix.size(), suffix.size(), suffix) == 0;
+  map<string, vector<string> > out;
+  for(size_t i = 0; i < object_aliases.size(); ++i) {
+    out[object_aliases[i].target].push_back(object_aliases[i].object_symbol);
+  }
+  return out;
 }
 
-string derived_thread_local_wrapper_object_symbol(
-    const map<string, symbol_linkage::SymbolIdentity> & exports,
-    const string & internal_name)
+void append_object_alias_symbols(
+    const map<string, vector<string> > & aliases,
+    const string & target,
+    const set<string> & reserved_object_symbols,
+    map<string, bool> & defined_symbols,
+    const machine_object::Symbol & base,
+    vector<machine_object::Symbol> & symbols)
 {
-  const string suffix = "__tls_wrapper";
-  if(!has_suffix(internal_name, suffix)) {
-    return string();
+  map<string, vector<string> >::const_iterator found = aliases.find(target);
+  if(found == aliases.end()) {
+    return;
   }
-  const string base_internal = internal_name.substr(0, internal_name.size() - suffix.size());
-  map<string, symbol_linkage::SymbolIdentity>::const_iterator base =
-      exports.find(base_internal);
-  if(base == exports.end() || !symbol_linkage::has_object_symbol(base->second)) {
-    return string();
+  for(size_t i = 0; i < found->second.size(); ++i) {
+    const string & alias_name = found->second[i];
+    if(alias_name == base.name ||
+       reserved_object_symbols.count(alias_name) != 0 ||
+       defined_symbols.count(alias_name) != 0) {
+      continue;
+    }
+    machine_object::Symbol alias = base;
+    alias.name = alias_name;
+    alias.comdat_group.clear();
+    symbols.push_back(alias);
+    defined_symbols[alias.name] = true;
   }
-  const string base_object = symbol_linkage::exported_object_symbol(base->second);
-  return symbol_linkage::thread_local_wrapper_object_symbol_from_object_symbol(base_object);
 }
 
 string translated_symbol_name(const map<string, symbol_linkage::SymbolIdentity> & exports,
@@ -4651,11 +4661,6 @@ string translated_symbol_name(const map<string, symbol_linkage::SymbolIdentity> 
     object_name = symbol_linkage::exported_object_symbol(found->second);
     if(object_name.empty()) {
       throw logic_error("object symbol translation produced empty symbol for " + internal_name);
-    }
-  } else {
-    const string derived_wrapper = derived_thread_local_wrapper_object_symbol(exports, internal_name);
-    if(!derived_wrapper.empty()) {
-      object_name = derived_wrapper;
     }
   }
   if(is_exported_definition) {
@@ -4948,6 +4953,41 @@ void retarget_macos_init_alias_to_static_init(
   alias.extra_section = "__TEXT,__StaticInit";
 }
 
+void collect_lowir_thread_local_wrapper(
+    map<string, string> & wrappers_by_global,
+    const string & wrapper_symbol,
+    const lowir_internal::SymbolMetadata & metadata)
+{
+  if(metadata.tls_for_symbol.empty()) {
+    return;
+  }
+  map<string, string>::const_iterator found =
+      wrappers_by_global.find(metadata.tls_for_symbol);
+  if(found != wrappers_by_global.end() && found->second != wrapper_symbol) {
+    throw lowir_internal::ParseError(
+        "duplicate thread_local wrapper for " + metadata.tls_for_symbol);
+  }
+  wrappers_by_global[metadata.tls_for_symbol] = wrapper_symbol;
+}
+
+map<string, string> lowir_thread_local_wrappers_by_global(
+    const lowir_internal::Program & program)
+{
+  map<string, string> wrappers;
+  for(size_t i = 0; i < program.function_declarations.size(); ++i) {
+    collect_lowir_thread_local_wrapper(
+        wrappers,
+        program.function_declarations[i].name,
+        program.function_declarations[i].metadata);
+  }
+  for(size_t i = 0; i < program.functions.size(); ++i) {
+    collect_lowir_thread_local_wrapper(wrappers,
+                                       program.functions[i].name,
+                                       program.functions[i].metadata);
+  }
+  return wrappers;
+}
+
 void append_emutls_thread_local_declaration_wrappers(
     const lowir_internal::Program & program,
     const map<string, symbol_linkage::SymbolIdentity> & exports,
@@ -4961,6 +5001,8 @@ void append_emutls_thread_local_declaration_wrappers(
     return;
   }
 
+  const map<string, string> wrapper_symbols =
+      lowir_thread_local_wrappers_by_global(program);
   const bool default_unexported_symbols_global = exports.empty();
   set<string> defined_symbols;
   set<string> defined_tls_globals;
@@ -4983,7 +5025,12 @@ void append_emutls_thread_local_declaration_wrappers(
       continue;
     }
 
-    const string wrapper_internal = thread_local_wrapper_symbol(decl.name);
+    map<string, string>::const_iterator wrapper =
+        wrapper_symbols.find(decl.name);
+    if(wrapper == wrapper_symbols.end()) {
+      continue;
+    }
+    const string & wrapper_internal = wrapper->second;
     const string wrapper_object = translated_symbol_name(exports, wrapper_internal);
     if(wrapper_object.empty() || defined_symbols.count(wrapper_object) != 0) {
       continue;
@@ -5078,21 +5125,6 @@ void append_emutls_thread_local_declaration_wrappers(
   }
 }
 
-bool is_special_member_entry_object_symbol(const string & object_symbol)
-{
-  string ignored;
-  return symbol_linkage::special_member_entry_point_object_symbol_from_object_symbol(
-             object_symbol,
-             true,
-             symbol_linkage::SMEK_COMPLETE,
-             ignored) ||
-         symbol_linkage::special_member_entry_point_object_symbol_from_object_symbol(
-             object_symbol,
-             false,
-             symbol_linkage::SMEK_COMPLETE,
-             ignored);
-}
-
 void force_external_binding_for_function_declaration_imports(
     const lowir_internal::Program & source_program,
     machine_ir::Program & machine_program)
@@ -5120,10 +5152,9 @@ void force_external_binding_for_function_declaration_imports(
       continue;
     }
     // Weak generic declarations are inline/template surfaces that may not have
-    // a host out-of-line provider. Special members are ABI entry points and must
-    // bind to the hosted definition when this object did not emit one.
-    if(symbol_linkage::has_weak_linkage(symbol) &&
-       !is_special_member_entry_object_symbol(symbol.object_symbol)) {
+    // a host out-of-line provider. Declarations that require host binding must
+    // be emitted as strong in LowIR.
+    if(symbol_linkage::has_weak_linkage(symbol)) {
       continue;
     }
     symbol.linkage = symbol_linkage::SL_EXTERNAL;
@@ -5179,6 +5210,8 @@ machine_object::ObjectFile build_machine_object(const lowir_internal::Program & 
     retarget_macos_init_alias_to_static_init(program, exports, object);
   }
   append_emutls_thread_local_declaration_wrappers(program, exports, object);
+  const map<string, string> thread_local_wrapper_symbols =
+      lowir_thread_local_wrappers_by_global(program);
   set<string> declared_symbols;
   set<string> declared_thread_local_wrappers;
   for(size_t i = 0; i < program.function_declarations.size(); ++i) {
@@ -5193,11 +5226,12 @@ machine_object::ObjectFile build_machine_object(const lowir_internal::Program & 
                                 : translated_symbol_name(exports,
                                                          program.global_declarations[i].name));
     if(program.global_declarations[i].storage == lowir_internal::GSM_THREAD_LOCAL) {
-      declared_thread_local_wrappers.insert(
-          translated_symbol_name(
-              exports,
-              symbol_linkage::thread_local_wrapper_internal_symbol(
-                  program.global_declarations[i].name)));
+      map<string, string>::const_iterator wrapper =
+          thread_local_wrapper_symbols.find(program.global_declarations[i].name);
+      if(wrapper != thread_local_wrapper_symbols.end()) {
+        declared_thread_local_wrappers.insert(
+            translated_symbol_name(exports, wrapper->second));
+      }
     }
   }
   for(size_t i = 0; i < program.globals.size(); ++i) {
@@ -5208,11 +5242,12 @@ machine_object::ObjectFile build_machine_object(const lowir_internal::Program & 
                                              machine_program.target));
     }
     if(program.globals[i].storage == lowir_internal::GSM_THREAD_LOCAL) {
-      declared_thread_local_wrappers.insert(
-          translated_symbol_name(
-              exports,
-              symbol_linkage::thread_local_wrapper_internal_symbol(
-                  program.globals[i].name)));
+      map<string, string>::const_iterator wrapper =
+          thread_local_wrapper_symbols.find(program.globals[i].name);
+      if(wrapper != thread_local_wrapper_symbols.end()) {
+        declared_thread_local_wrappers.insert(
+            translated_symbol_name(exports, wrapper->second));
+      }
     }
   }
   for(size_t i = 0; i < object.symbols.size(); ++i) {
@@ -5335,6 +5370,8 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
             mobj::Symbol::SB_WEAK :
             mobj::Symbol::SB_GLOBAL;
   }
+  const map<string, vector<string> > explicit_object_aliases =
+      object_alias_map(program.object_aliases);
 
   map<string, bool> defined_symbols;
   for(size_t i = 0; i < object.symbols.size(); ++i) {
@@ -5342,10 +5379,27 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
       defined_symbols[object.symbols[i].name] = true;
     }
   }
-  set<string> translated_function_symbols;
+  set<string> translated_definition_symbols;
   for(size_t i = 0; i < program.functions.size(); ++i) {
-    translated_function_symbols.insert(
+    translated_definition_symbols.insert(
         translated_symbol_name(exports, program.functions[i].name));
+  }
+  for(size_t i = 0; i < program.globals.size(); ++i) {
+    if(program.globals[i].thread_local_storage) {
+      string global_symbol =
+          thread_local_runtime_object_symbol(exports, program.globals[i].name, program.target);
+      if(tls_info.abi == ThreadLocalSectionInfo::ABI_ELF) {
+        const string simple_tls_object_symbol =
+            linux_simple_thread_local_object_symbol(program.globals[i].name);
+        if(!simple_tls_object_symbol.empty()) {
+          global_symbol = simple_tls_object_symbol;
+        }
+      }
+      translated_definition_symbols.insert(global_symbol);
+    } else {
+      translated_definition_symbols.insert(
+          translated_symbol_name(exports, program.globals[i].name));
+    }
   }
 
   for(size_t i = 0; i < program.functions.size(); ++i) {
@@ -5402,21 +5456,12 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
       defined_symbols[alias.name] = true;
     }
 
-    const vector<string> special_member_aliases =
-        symbol_linkage::implicit_special_member_object_aliases(symbol.name);
-    for(size_t ai = 0; ai < special_member_aliases.size(); ++ai) {
-      if(translated_function_symbols.count(special_member_aliases[ai]) != 0) {
-        continue;
-      }
-      if(defined_symbols.count(special_member_aliases[ai]) != 0) {
-        continue;
-      }
-      machine_object::Symbol alias = symbol;
-      alias.name = special_member_aliases[ai];
-      alias.comdat_group.clear();
-      object.symbols.push_back(alias);
-      defined_symbols[alias.name] = true;
-    }
+    append_object_alias_symbols(explicit_object_aliases,
+                                program.functions[i].name,
+                                translated_definition_symbols,
+                                defined_symbols,
+                                symbol,
+                                object.symbols);
 
     const FunctionLayout & function_layout =
         layout.function_layouts.find(program.functions[i].name)->second;
@@ -5541,23 +5586,30 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
       defined_symbols[init_symbol.name] = true;
     }
     defined_symbols[symbol.name] = true;
+    append_object_alias_symbols(explicit_object_aliases,
+                                program.globals[i].name,
+                                translated_definition_symbols,
+                                defined_symbols,
+                                symbol,
+                                object.symbols);
   }
 
   for(size_t i = 0; i < program.globals.size(); ++i) {
-    if(!program.globals[i].thread_local_storage) {
+    if(!program.globals[i].thread_local_storage ||
+       program.globals[i].thread_local_wrapper_symbol.empty()) {
       continue;
     }
-    const string wrapper_internal = thread_local_wrapper_symbol(program.globals[i].name);
     machine_object::Symbol symbol;
     symbol.binding = default_unexported_symbols_global ?
         machine_object::Symbol::SB_GLOBAL :
         machine_object::Symbol::SB_LOCAL;
     symbol.section = machine_object::Symbol::SS_CODE;
-    symbol.name = translated_symbol_name(exports, wrapper_internal);
+    symbol.name = translated_symbol_name(
+        exports, program.globals[i].thread_local_wrapper_symbol);
     symbol.offset = layout.thread_local_wrapper_offsets.find(program.globals[i].name)->second;
     symbol.size = thread_local_wrapper_size(program.target);
     map<string, symbol_linkage::SymbolIdentity>::const_iterator exported =
-        exports.find(wrapper_internal);
+        exports.find(program.globals[i].thread_local_wrapper_symbol);
     if(exported == exports.end()) {
       exported = exports.find(program.globals[i].name);
     }

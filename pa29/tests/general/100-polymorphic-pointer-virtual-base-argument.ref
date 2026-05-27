@@ -240,3 +240,5 @@ function @V__V__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object
     store ptr %t3, %t1
     return void
 }
+alias object _ZN1DC2Ev = @D__D
+alias object _ZN6HolderC2ER1B = @Holder__Holder

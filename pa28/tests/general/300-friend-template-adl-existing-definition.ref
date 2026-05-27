@@ -90,3 +90,5 @@ function @ns__detail__set_info__ov2(%x : ptr [pass=reference], %y : ptr [pass=re
     %t7 = load ptr $x
     return ptr %t7
 }
+alias object _ZN2ns10error_infoINS_6detail8file_tagEPKcEC2ES4_ = @ns__error_info_ns__detail__file_tag__char_const_____error_info
+alias object _ZN2ns10error_infoINS_6detail8line_tagEiEC2Ei = @ns__error_info_ns__detail__line_tag__int___error_info

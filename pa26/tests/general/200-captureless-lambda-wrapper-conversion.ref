@@ -54,3 +54,4 @@ function @Wrapper__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, objec
     %t5 = call i32 %t4(%t1) as (%arg0 : i32) -> i32
     return i32 %t5
 }
+alias object _ZN7WrapperC2EPFiiE = @Wrapper__Wrapper

@@ -57,3 +57,4 @@ function @N__Id__get(%this : ptr) -> ptr [binding=weak, object=_ZNK1N2Id3getEv] 
     %t3 = load ptr %t2
     return ptr %t3
 }
+alias object _ZN1N2IdC2EPi = @N__Id__Id
