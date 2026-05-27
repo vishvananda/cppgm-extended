@@ -15659,10 +15659,12 @@ private:
   map<string, string> thread_local_wrapper_targets_;
   map<string, string> thread_local_wrapper_object_symbols_;
   vector<const CallSemNode *> function_nodes_;
+  map<string, const CallSemNode *> copy_constructor_order_prerequisites_;
   vector<const CallSemNode *> global_ctor_actions_;
   vector<const CallSemNode *> global_dtor_actions_;
   vector<pair<string, const CallSemNode *> > thread_local_init_actions_;
   vector<unique_ptr<CallSemNode> > synthetic_nodes_;
+  unordered_set<string> emitted_function_symbols_;
   mutable FunctionSymbolLookupIndex function_symbol_lookup_index_;
   mutable bool function_symbol_lookup_index_dirty_ = true;
   mutable unordered_set<string> generated_function_symbol_cache_;
@@ -17139,6 +17141,7 @@ private:
       for(size_t i = 0; i < translation_units_.size(); ++i) {
         collect_symbols(translation_units_[i]);
       }
+      build_constructor_copy_order_prerequisites();
     }
     {
       semantic_metrics::ScopedPhaseTimer phase("lowir.collect.virtual_runtime_classes");
@@ -17978,6 +17981,7 @@ private:
 
   void emit_function_definition(const CallSemNode & node)
   {
+    emitted_function_symbols_.insert(node_internal_symbol(node));
     collect_static_storage_globals(node);
     collect_dynamic_typeid_fallback_support(node);
     if(symbol_linkage::has_object_symbol(callsem_symbol(node))) {
@@ -18015,6 +18019,114 @@ private:
     functions_.push_back(function);
   }
 
+  bool constructor_transfer_kind_for_lowir(const CallSemNode & node,
+                                           Type::Kind & ref_kind,
+                                           TypePtr & object_type) const
+  {
+    if(node.kind != CallSemKind::function_definition ||
+       !is_constructor_function_name(node.text)) {
+      return false;
+    }
+    TypePtr function_type = strip_top_level_cv(node.semantic_type);
+    if(!function_type ||
+       function_type->kind != Type::TK_FUNCTION ||
+       !is_void_type(function_type->inner) ||
+       function_type->params.size() < 2) {
+      return false;
+    }
+
+    TypePtr this_type = strip_top_level_cv(function_type->params[0]);
+    if(!this_type || this_type->kind != Type::TK_POINTER) {
+      return false;
+    }
+    object_type = strip_top_level_cv(this_type->inner);
+    if(!is_complete_class_value_type(object_type)) {
+      return false;
+    }
+
+    for(size_t i = 1; i < function_type->params.size(); ++i) {
+      if(same_class_reference_parameter_for_lowir(object_type,
+                                                  function_type->params[i],
+                                                  Type::TK_LVALUE_REFERENCE)) {
+        ref_kind = Type::TK_LVALUE_REFERENCE;
+        return true;
+      }
+      if(same_class_reference_parameter_for_lowir(object_type,
+                                                  function_type->params[i],
+                                                  Type::TK_RVALUE_REFERENCE)) {
+        ref_kind = Type::TK_RVALUE_REFERENCE;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const CallSemNode * referenced_copy_constructor_for_move(
+      const CallSemNode & move_node) const
+  {
+    map<string, const CallSemNode *>::const_iterator found =
+        copy_constructor_order_prerequisites_.find(node_internal_symbol(move_node));
+    if(found == copy_constructor_order_prerequisites_.end()) {
+      return nullptr;
+    }
+    const string copy_symbol = node_internal_symbol(*found->second);
+    if(emitted_function_symbols_.count(copy_symbol) != 0) {
+      return nullptr;
+    }
+    return found->second;
+  }
+
+  string constructor_order_key(const TypePtr & object_type,
+                               symbol_linkage::SpecialMemberEntryPointKind entry) const
+  {
+    return stable_function_type_key(object_type) + "#" +
+           to_string(static_cast<int>(entry));
+  }
+
+  void build_constructor_copy_order_prerequisites()
+  {
+    map<string, const CallSemNode *> copy_by_key;
+    vector<pair<string, string> > move_keys;
+    for(size_t i = 0; i < function_nodes_.size(); ++i) {
+      const CallSemNode & node = *function_nodes_[i];
+      if(node.kind != CallSemKind::function_definition) {
+        continue;
+      }
+      Type::Kind ref_kind = Type::TK_LVALUE_REFERENCE;
+      TypePtr object_type;
+      if(!constructor_transfer_kind_for_lowir(node, ref_kind, object_type)) {
+        continue;
+      }
+      const string key =
+          constructor_order_key(object_type, callsem_special_member_entry_point_kind(node));
+      if(ref_kind == Type::TK_LVALUE_REFERENCE) {
+        copy_by_key[key] = &node;
+      } else if(ref_kind == Type::TK_RVALUE_REFERENCE) {
+        move_keys.push_back(make_pair(node_internal_symbol(node), key));
+      }
+    }
+    for(size_t i = 0; i < move_keys.size(); ++i) {
+      map<string, const CallSemNode *>::const_iterator copy =
+          copy_by_key.find(move_keys[i].second);
+      if(copy != copy_by_key.end()) {
+        copy_constructor_order_prerequisites_[move_keys[i].first] = copy->second;
+      }
+    }
+  }
+
+  bool emit_function_definition_with_order_prerequisites(const CallSemNode & node)
+  {
+    const string symbol = node_internal_symbol(node);
+    if(emitted_function_symbols_.count(symbol) != 0) {
+      return false;
+    }
+    if(const CallSemNode * copy_node = referenced_copy_constructor_for_move(node)) {
+      emit_function_definition(*copy_node);
+    }
+    emit_function_definition(node);
+    return true;
+  }
+
   bool emit_referenced_output_on_use_function_definition_pass()
   {
     collect_reachable_function_symbols();
@@ -18031,8 +18143,7 @@ private:
          generated_function_symbol_exists(symbol)) {
         continue;
       }
-      emit_function_definition(node);
-      emitted = true;
+      emitted = emit_function_definition_with_order_prerequisites(node) || emitted;
     }
     return emitted;
   }
@@ -18371,7 +18482,7 @@ private:
       if(should_skip_unreferenced_output_on_use_function(node)) {
         return;
       }
-      emit_function_definition(node);
+      emit_function_definition_with_order_prerequisites(node);
       return;
     }
 

@@ -155,7 +155,7 @@ rebased Boost frontier branch.
   `3101/3101`; focused Boost `bind_function_ap_test` passes; perf check
   against `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
   passes (instructions `+0.29%`, RSS `+1.97%`, footprint `+1.37%`).
-- this commit: repaired the Boost.Bind `bind_nested_rv_test` compile frontier.
+- `6c5d1adc5`: repaired the Boost.Bind `bind_nested_rv_test` compile frontier.
   `boost::shared_ptr<int> p; p != 0` exposed that integral null pointer
   constants were not considered convertible to `nullptr_t`, so the viable
   `operator!=(shared_ptr<T> const&, nullptr_t)` overload was rejected. The
@@ -171,6 +171,30 @@ rebased Boost frontier branch.
   `boost::shared_ptr<int>` move constructor; perf check against
   `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
   passes (instructions `+0.35%`, RSS `+1.20%`, footprint `+1.36%`).
+- this commit: repaired the Boost.Bind `bind_nested_rv_test` link frontier.
+  A by-value call through a function pointer,
+  `function(static_cast<T&&>(value))`, needed the inline
+  `boost::shared_ptr<int>` move constructor, but semantic output only collected
+  hidden argument materialization support when the call target was a direct
+  function binding. Indirect function-pointer calls now use the structured
+  callee function type that CallSem already has, avoiding text reparsing while
+  requiring the same hidden copy/move support as direct calls. The resulting
+  PA18 LowIR reducer also exposed an output-on-use ordering issue where a move
+  constructor could be emitted before the same complete-entry copy constructor;
+  LowIR generation now builds a one-time copy-before-move prerequisite map for
+  constructor definitions and uses an incremental emitted-symbol set rather
+  than broad call-argument tracking. A broader runtime-reference pre-scan was
+  rejected after perf regressed. Validation: no-STL reducer
+  `/tmp/cppgm-boost-reducers-20260526/template_inline_move_ctor_emit.cpp`
+  compiles, links, and runs with exit `0`; PA18 regression
+  `100-template-function-pointer-rvalue-argument-emits-move.t` passes in
+  normal and direct-LowIR modes; PA18 direct-LowIR report passes `167/167`;
+  full `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ... make test-report-nobuild`
+  passes `3105/3105`; full strict direct-LowIR compare passes; focused Boost
+  `libs/bind/test//bind_nested_rv_test` builds, links, and runs under B2; perf
+  check against
+  `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
+  passes (instructions `+0.18%`, RSS `+0.49%`, footprint `+1.36%`).
 
 Local Boost wrapper state:
 
@@ -230,7 +254,7 @@ Local Boost wrapper state:
 | 9 | `libs/atomic/test` | pass | `JOBS=12 ./run-cppgm-b2.sh -a libs/atomic/test` passed on 2026-05-26 from the current tree; B2 found 1 already-current target. Log `/tmp/boost-frontier-atomic-current-20260526.log`. |
 | 10 | `libs/beast/test` | pass | `JOBS=12 ./run-cppgm-b2.sh -a libs/beast/test` passed on 2026-05-26 from the current tree; B2 found 1 already-current target. Log `/tmp/boost-frontier-beast-current-20260526.log`. |
 | 11 | `libs/bimap/test` | pass | `test_bimap_range` now passes after the floating logical-branch fix, the Boost.Serialization `basic_iarchive.o` / `basic_oarchive.o` dependency objects now compile after the parenthesized member-callee fix, the explicit-instantiation object-root fix closes the missing archive weak symbols, `test_bimap_serialization` links and runs after the hosted `std::ostream&` virtual-base layout fix, and the two Xpressive frontiers are fixed. The final expected-fail bookkeeping issue was actually CPPGM accepting `test_bimap_info_1`, `test_bimap_mutable_1`, and `test_bimap_mutable_2`; inherited const-object overload selection now rejects those compile-fail probes. Full `JOBS=12 ./run-cppgm-b2.sh -a libs/bimap/test` passed on 2026-05-26 and updated 205 targets; log `/tmp/boost-bimap-full-after-inherited-cv.log`. |
-| 12 | `libs/bind/test` | frontier | `bind_and_or_test`, `bind_dm_test`, `bind_test`, `bind_mf2_test`, and `bind_function_ap_test` now pass after overloaded logical-operator lookup, data-member pointer prvalue-object lowering, member-function pointer cv-qualified type mangling, typed member-function pointer source-argument metadata fixes, and direct same-object rvalue-reference casts avoiding user-defined conversion functions. Focused logs `/tmp/boost-bind-and-or-after-logical-operator.log`, `/tmp/boost-bind-dm-after-prvalue-member.log`, `/tmp/boost-bind-test-after-member-function-pointer-cv-mangling.log`, `/tmp/boost-bind-mf2-after-typed-member-pointer-source-arg.log`; focused `bind_function_ap_test` passed in the direct B2 run. Full `JOBS=12 ./run-cppgm-b2.sh -a libs/bind/test` rerun after the `bind_function_ap_test` fix updated 288 targets and exits 1 with 4 failed updates: `bind_nested_rv_test` compile, `bind_unique_ptr_test` link, and `apply_rv_test` / `apply_rv_test2` compile. Log `/tmp/boost-bind-full-after-bind-function-ap-20260526.log`. Focused `bind_nested_rv_test` now compiles after the `nullptr_t` conversion fix and advances to link failure with undefined `boost::shared_ptr<int>::shared_ptr(boost::shared_ptr<int>&&)`; log `/tmp/boost-bind-nested-rv-after-nullptr-t-20260526.log`. Next frontier is that missing move-constructor emission/link issue. |
+| 12 | `libs/bind/test` | frontier | `bind_and_or_test`, `bind_dm_test`, `bind_test`, `bind_mf2_test`, `bind_function_ap_test`, and focused `bind_nested_rv_test` now pass after overloaded logical-operator lookup, data-member pointer prvalue-object lowering, member-function pointer cv-qualified type mangling, typed member-function pointer source-argument metadata fixes, direct same-object rvalue-reference casts avoiding user-defined conversion functions, `nullptr_t` null constant ranking, and function-pointer by-value rvalue argument move-constructor output. Focused logs `/tmp/boost-bind-and-or-after-logical-operator.log`, `/tmp/boost-bind-dm-after-prvalue-member.log`, `/tmp/boost-bind-test-after-member-function-pointer-cv-mangling.log`, `/tmp/boost-bind-mf2-after-typed-member-pointer-source-arg.log`; focused `bind_function_ap_test` and `bind_nested_rv_test` passed in direct B2 runs. Full `JOBS=12 ./run-cppgm-b2.sh -a libs/bind/test` rerun after the `bind_function_ap_test` fix updated 288 targets and exited 1 with 4 failed updates: `bind_nested_rv_test` compile, `bind_unique_ptr_test` link, and `apply_rv_test` / `apply_rv_test2` compile. Focused `bind_nested_rv_test` is now closed; next step is a fresh full `libs/bind/test` rerun to identify the current first remaining frontier. |
 
 ## Survey Regression Triage - 2026-05-25
 

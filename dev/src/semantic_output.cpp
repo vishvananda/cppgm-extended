@@ -2104,20 +2104,34 @@ void collect_required_call_argument_materialization_support(SemanticContext & ct
   }
 
   FunctionBinding * binding = find_direct_call_target_binding(ctx, node.children[0]);
-  if(!binding) {
-    return;
+  const size_t arg_count = node.children.size() - 1;
+  Scope * parameter_resolution_scope = resolution_scope;
+  std::vector<TypePtr> indirect_param_types;
+  const std::vector<std::pair<std::string, TypePtr> > * binding_params = nullptr;
+  if(binding) {
+    binding_params = &binding->params;
+    if(Scope * binding_scope = function_output_resolution_scope(binding)) {
+      parameter_resolution_scope = binding_scope;
+    }
+  } else {
+    TypePtr target_type = strip_top_level_cv(remove_reference_type(node.children[0].semantic_type));
+    if(target_type && target_type->kind == Type::TK_POINTER) {
+      target_type = strip_top_level_cv(target_type->inner);
+    }
+    if(!target_type || target_type->kind != Type::TK_FUNCTION) {
+      return;
+    }
+    indirect_param_types = target_type->params;
   }
 
-  const size_t arg_count = node.children.size() - 1;
-  const size_t param_count = binding->params.size();
+  const size_t param_count =
+      binding_params ? binding_params->size() : indirect_param_types.size();
   const size_t count = min(arg_count, param_count);
-  Scope * parameter_resolution_scope = function_output_resolution_scope(binding);
-  if(!parameter_resolution_scope) {
-    parameter_resolution_scope = resolution_scope;
-  }
   for(size_t i = 0; i < count; ++i) {
+    const TypePtr & param_type =
+        binding_params ? (*binding_params)[i].second : indirect_param_types[i];
     collect_required_storage_value_to_target_support(ctx,
-                                                     binding->params[i].second,
+                                                     param_type,
                                                      node.children[i + 1],
                                                      parameter_resolution_scope);
   }
