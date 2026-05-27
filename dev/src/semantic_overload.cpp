@@ -10068,6 +10068,22 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   };
   ExprInfo implicit_this_arg;
   bool implicit_this_ready = false;
+  bool implicit_this_available_checked = false;
+  bool implicit_this_available = false;
+  const auto has_implicit_this_arg = [&]() -> bool
+  {
+    if(!implicit_this_available_checked) {
+      implicit_this_available_checked = true;
+      for(Scope * current = &scope; current; current = current->parent) {
+        if(!current->function) {
+          continue;
+        }
+        implicit_this_available = current->values.find("this") != current->values.end();
+        break;
+      }
+    }
+    return implicit_this_available;
+  };
   const auto get_implicit_this_arg = [&]() -> const ExprInfo &
   {
     if(!implicit_this_ready) {
@@ -11480,16 +11496,33 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       size_t arg_offset = 0;
       size_t source_arg_begin = 0;
       if(candidate->is_method) {
+        const bool has_hinted_member_base =
+            hints &&
+            hints->explicit_member_base &&
+            hints->explicit_member_arg_prefix <= arg_nodes.size();
+        if(has_hinted_member_base) {
+          source_arg_begin = hints->explicit_member_arg_prefix;
+        }
+
+        const size_t explicit_arg_count = arg_nodes.size() - source_arg_begin;
+        const size_t required_params =
+            required_parameter_count(*candidate, 1, function_type->params.size());
+        if((!(function_type->variadic || function_type->prototype_relaxed) &&
+            (explicit_arg_count + 1 < required_params ||
+             explicit_arg_count + 1 > function_type->params.size())) ||
+           ((function_type->variadic || function_type->prototype_relaxed) &&
+            explicit_arg_count + 1 < required_params)) {
+          candidate_rejections[i] = "member argument count mismatch";
+          continue;
+        }
+
         if(explicit_member_call || callable_object_call) {
           // implicit_object_arg already prepared
-        } else if(hints &&
-                  hints->explicit_member_base &&
-                  hints->explicit_member_arg_prefix <= arg_nodes.size()) {
+        } else if(has_hinted_member_base) {
           implicit_object_arg = get_hinted_member_implicit_object_arg();
           implicit_object_category = hints->explicit_member_base->category;
-          source_arg_begin = hints->explicit_member_arg_prefix;
         } else if(use_function_lookup) {
-          if(!current_class_scope(scope)) {
+          if(!current_class_scope(scope) || !has_implicit_this_arg()) {
             okay = false;
           } else {
             implicit_object_arg = get_implicit_this_arg();
@@ -11503,16 +11536,8 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           okay = false;
         }
 
-        const size_t explicit_arg_count = arg_nodes.size() - source_arg_begin;
-        const size_t required_params =
-            required_parameter_count(*candidate, 1, function_type->params.size());
-        if(!okay ||
-           (!(function_type->variadic || function_type->prototype_relaxed) &&
-            (explicit_arg_count + 1 < required_params ||
-             explicit_arg_count + 1 > function_type->params.size())) ||
-           ((function_type->variadic || function_type->prototype_relaxed) &&
-            explicit_arg_count + 1 < required_params)) {
-          candidate_rejections[i] = "member argument count mismatch";
+        if(!okay) {
+          candidate_rejections[i] = "member call requires implicit object";
           continue;
         }
 
