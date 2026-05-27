@@ -4722,6 +4722,89 @@ int compare_pointer_base_over_void_preference(SemanticContext & ctx,
   return 0;
 }
 
+TypePtr reference_conversion_target_object_type(const TypePtr & param)
+{
+  TypePtr base = strip_top_level_cv(param);
+  if(!base ||
+     (base->kind != Type::TK_LVALUE_REFERENCE &&
+      base->kind != Type::TK_RVALUE_REFERENCE)) {
+    return TypePtr();
+  }
+  return strip_top_level_cv(base->inner);
+}
+
+TypePtr reference_conversion_source_object_type(const ExprInfo & arg)
+{
+  TypePtr source = strip_top_level_cv(arg.type);
+  if(source &&
+     (source->kind == Type::TK_LVALUE_REFERENCE ||
+      source->kind == Type::TK_RVALUE_REFERENCE)) {
+    return strip_top_level_cv(source->inner);
+  }
+  return strip_top_level_cv(remove_reference_type(arg.type));
+}
+
+ClassInfo * complete_class_info_for_conversion_type(SemanticContext & ctx,
+                                                    const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED) {
+    return nullptr;
+  }
+  ClassInfo * info = ctx.class_info_for_type(base);
+  if(!info) {
+    info = ctx.complete_class_type(base);
+  }
+  return info;
+}
+
+int compare_class_base_conversion_target_preference(SemanticContext & ctx,
+                                                    const TypePtr & lhs_param,
+                                                    const ExprInfo & lhs_source_arg,
+                                                    const TypePtr & rhs_param,
+                                                    const ExprInfo & rhs_source_arg)
+{
+  TypePtr lhs_target = reference_conversion_target_object_type(lhs_param);
+  TypePtr rhs_target = reference_conversion_target_object_type(rhs_param);
+  TypePtr lhs_source = reference_conversion_source_object_type(lhs_source_arg);
+  TypePtr rhs_source = reference_conversion_source_object_type(rhs_source_arg);
+  if(!lhs_target && !rhs_target) {
+    lhs_target = pointer_conversion_pointee_type(lhs_param);
+    rhs_target = pointer_conversion_pointee_type(rhs_param);
+    lhs_source = pointer_conversion_source_pointee_type(lhs_source_arg);
+    rhs_source = pointer_conversion_source_pointee_type(rhs_source_arg);
+  }
+  if(!lhs_target ||
+     !rhs_target ||
+     type_equals(lhs_target, rhs_target) ||
+     !type_equals(lhs_source, rhs_source)) {
+    return 0;
+  }
+
+  ClassInfo * lhs_target_class =
+      complete_class_info_for_conversion_type(ctx, lhs_target);
+  ClassInfo * rhs_target_class =
+      complete_class_info_for_conversion_type(ctx, rhs_target);
+  ClassInfo * source_class =
+      complete_class_info_for_conversion_type(ctx, lhs_source);
+  if(!lhs_target_class ||
+     !rhs_target_class ||
+     !source_class ||
+     lhs_target_class == rhs_target_class ||
+     !is_same_or_derived(source_class, lhs_target_class) ||
+     !is_same_or_derived(source_class, rhs_target_class)) {
+    return 0;
+  }
+
+  if(is_same_or_derived(lhs_target_class, rhs_target_class)) {
+    return -1;
+  }
+  if(is_same_or_derived(rhs_target_class, lhs_target_class)) {
+    return 1;
+  }
+  return 0;
+}
+
 const ExprInfo & source_arg_for_compare(const CandidateMatch & match, size_t index)
 {
   if(index < match.source_args.size()) {
@@ -4775,6 +4858,16 @@ int compare_candidate_match_preference(SemanticContext & ctx,
                                                                 current_compare_arg,
                                                                 best.params[j],
                                                                 best_compare_arg);
+          if(std_pref == 0 &&
+             (current.ranks[j] == CR_CONVERSION ||
+              compare_second_standard_conversion)) {
+            std_pref = compare_class_base_conversion_target_preference(
+                ctx,
+                current.params[j],
+                current_compare_arg,
+                best.params[j],
+                best_compare_arg);
+          }
           if(std_pref == 0 && j < current.args.size() && j < best.args.size()) {
             std_pref = compare_pointer_base_over_void_preference(
                 ctx,
