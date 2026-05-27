@@ -13623,9 +13623,7 @@ private:
                                                 size_t cleanup_depth)
   {
     if(node.kind == CallSemKind::compound_statement) {
-      for(size_t i = 0; i < node.children.size(); ++i) {
-        collect_switch_goto_label_cleanup_depths(node.children[i], cleanup_depth + 1);
-      }
+      collect_compound_goto_label_cleanup_depths(node, cleanup_depth);
       return;
     }
 
@@ -13638,6 +13636,49 @@ private:
     }
 
     collect_goto_label_cleanup_depths(node, cleanup_depth);
+  }
+
+  void collect_entry_labeled_statement_cleanup_depths(const CallSemNode & node,
+                                                      size_t label_cleanup_depth,
+                                                      size_t statement_cleanup_depth)
+  {
+    if(node.kind != CallSemKind::labeled_statement) {
+      collect_goto_label_cleanup_depths(node, statement_cleanup_depth);
+      return;
+    }
+
+    note_goto_target_cleanup_depth(node.text, label_cleanup_depth);
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      collect_entry_labeled_statement_cleanup_depths(node.children[i],
+                                                     label_cleanup_depth,
+                                                     statement_cleanup_depth);
+    }
+  }
+
+  void collect_compound_goto_label_cleanup_depths(const CallSemNode & node,
+                                                  size_t cleanup_depth)
+  {
+    if(node.kind != CallSemKind::compound_statement &&
+       node.kind != CallSemKind::then_node &&
+       node.kind != CallSemKind::else_node) {
+      throw logic_error("compound goto label cleanup scan shape");
+    }
+
+    const size_t nested_cleanup_depth = cleanup_depth + 1;
+    bool at_block_entry = true;
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      const CallSemNode & child = node.children[i];
+      if(at_block_entry && child.kind == CallSemKind::labeled_statement) {
+        collect_entry_labeled_statement_cleanup_depths(child,
+                                                       cleanup_depth,
+                                                       nested_cleanup_depth);
+      } else {
+        collect_goto_label_cleanup_depths(child, nested_cleanup_depth);
+      }
+      if(child.kind != CallSemKind::labeled_statement) {
+        at_block_entry = false;
+      }
+    }
   }
 
   void collect_goto_label_cleanup_depths(const CallSemNode & node, size_t cleanup_depth)
@@ -13653,9 +13694,7 @@ private:
     if(node.kind == CallSemKind::compound_statement ||
        node.kind == CallSemKind::then_node ||
        node.kind == CallSemKind::else_node) {
-      for(size_t i = 0; i < node.children.size(); ++i) {
-        collect_goto_label_cleanup_depths(node.children[i], cleanup_depth + 1);
-      }
+      collect_compound_goto_label_cleanup_depths(node, cleanup_depth);
       return;
     }
 
@@ -14535,7 +14574,14 @@ private:
       if(!target.has_cleanup_depth) {
         throw logic_error("goto target cleanup depth unavailable");
       }
-      emit_cleanups_to_depth(target.cleanup_depth);
+      // A goto can enter a lexically deeper block at a label before that
+      // block has any active cleanup state. Only scopes active at the source
+      // statement can be cleaned here.
+      const size_t cleanup_depth =
+          target.cleanup_depth < cleanup_scopes_.size() ?
+              target.cleanup_depth :
+              cleanup_scopes_.size();
+      emit_cleanups_to_depth(cleanup_depth);
       terminate("jump " + lowir_block_name(target.label));
       return;
     }
