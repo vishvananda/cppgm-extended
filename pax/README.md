@@ -10,8 +10,8 @@ mangling model at the same time as host-linkable object emission.
 ### Overview
 
 PAX is the ABI naming assignment. It requires a typed Itanium C++ ABI name
-encoder and a source-integration path that feeds that encoder from the
-compiler's semantic model.
+encoder. The final assignment should also include a source-integration path
+that feeds that encoder from the compiler's semantic model.
 
 The assignment deliberately splits the work into two observable contracts:
 
@@ -60,6 +60,13 @@ back out. The reference tool round-trips parsed facts through the serializer
 before mangling, then encodes names only from the typed records. If a required
 maintainer mangling case cannot be expressed through these records, the ABI
 fact surface is missing semantic data and should be extended.
+
+The standalone encoder keeps parser labels as fact-file references only. Its
+substitution table compares typed type, template-argument, dependent-expression,
+entity, and function-path keys rather than stringified internal payloads, so
+two equivalent facts do not become different substitutions just because the
+input file used different local labels. The standalone `abimangle` build also
+depends only on this ABI naming layer, not on the parser or semantic frontend.
 
 The standalone ABI tests are numbered from simpler names toward more complete
 ABI situations. Each checked-in test file covers exactly one mangled name:
@@ -126,6 +133,9 @@ The final fact-file syntax can be line-oriented or S-expression-like, but it
 must remain an ABI entity graph rather than a second C++ frontend.
 
 #### Source Integration Mode
+
+This is the planned final source-facing surface; it is not implemented by the
+current standalone cleanup branch.
 
 Add a `cppgm++` mode:
 

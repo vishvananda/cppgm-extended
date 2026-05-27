@@ -1414,15 +1414,65 @@ vector<vector<string> > target_lines(const AbiMangleTarget & target)
   throw logic_error("unknown ABI mangle target kind");
 }
 
+enum DirectSubstitutionKeyKind
+{
+  DIRECT_SUBST_EMPTY,
+  DIRECT_SUBST_NAME,
+  DIRECT_SUBST_TYPE,
+  DIRECT_SUBST_TEMPLATE_ARGUMENT,
+  DIRECT_SUBST_EXPRESSION,
+  DIRECT_SUBST_FUNCTION_PATH,
+  DIRECT_SUBST_FUNCTION_TEMPLATE_PREFIX,
+  DIRECT_SUBST_ENTITY
+};
+
 struct DirectSubstitutionKey
 {
-  string value;
+  DirectSubstitutionKeyKind kind = DIRECT_SUBST_EMPTY;
+  AbiTypeKind type_kind = ABI_TYPE_REFERENCE;
+  AbiTemplateArgumentKind template_arg_kind = ABI_TEMPLATE_ARG_TYPE;
+  AbiDependentExpressionKind expression_kind = ABI_EXPR_LITERAL;
+  AbiExpressionOperator expression_operator = ABI_EXPR_OP_INVALID;
+  AbiEntityKind entity_kind = ABI_ENTITY_VARIABLE;
+  AbiBuiltinType builtin_type = ABI_BUILTIN_INVALID;
+  AbiVendorQualifier vendor_qualifier = ABI_VENDOR_QUALIFIER_NONE;
+  AbiStdSubstitution std_substitution = ABI_STD_SUBSTITUTION_NONE;
+  AbiArrayBoundKind array_bound_kind = ABI_ARRAY_BOUND_NONE;
+  AbiFunctionTerminal terminal = ABI_FUNCTION_TERMINAL_SOURCE_NAME;
+  size_t index = 0;
+  unsigned long long unsigned_value = 0;
+  long long signed_value = 0;
+  bool flag = false;
+  bool second_flag = false;
+  string name;
+  string secondary_name;
+  string literal;
+  vector<DirectSubstitutionKey> children;
 
-  bool empty() const { return value.empty(); }
+  bool empty() const { return kind == DIRECT_SUBST_EMPTY; }
 
   bool operator==(const DirectSubstitutionKey & rhs) const
   {
-    return value == rhs.value;
+    return kind == rhs.kind &&
+           type_kind == rhs.type_kind &&
+           template_arg_kind == rhs.template_arg_kind &&
+           expression_kind == rhs.expression_kind &&
+           expression_operator == rhs.expression_operator &&
+           entity_kind == rhs.entity_kind &&
+           builtin_type == rhs.builtin_type &&
+           vendor_qualifier == rhs.vendor_qualifier &&
+           std_substitution == rhs.std_substitution &&
+           array_bound_kind == rhs.array_bound_kind &&
+           terminal == rhs.terminal &&
+           index == rhs.index &&
+           unsigned_value == rhs.unsigned_value &&
+           signed_value == rhs.signed_value &&
+           flag == rhs.flag &&
+           second_flag == rhs.second_flag &&
+           name == rhs.name &&
+           secondary_name == rhs.secondary_name &&
+           literal == rhs.literal &&
+           children == rhs.children;
   }
 };
 
@@ -1486,10 +1536,20 @@ const DirectLocalContext & direct_require_context_ref(
   return found->second;
 }
 
-DirectSubstitutionKey direct_key(const string & value)
+DirectSubstitutionKey direct_name_key(const string & qualified_name)
 {
   DirectSubstitutionKey out;
-  out.value = value;
+  out.kind = DIRECT_SUBST_NAME;
+  out.name = qualified_name;
+  return out;
+}
+
+DirectSubstitutionKey direct_function_template_prefix_key(
+    const string & qualified_name)
+{
+  DirectSubstitutionKey out;
+  out.kind = DIRECT_SUBST_FUNCTION_TEMPLATE_PREFIX;
+  out.name = qualified_name;
   return out;
 }
 
@@ -1579,9 +1639,230 @@ string direct_join_key_parts(const vector<string> & parts)
 bool direct_type_key(const DirectFactContext & ctx,
                      const AbiType & type,
                      DirectSubstitutionKey & out);
+bool direct_type_identity_key(const DirectFactContext & ctx,
+                              const AbiType & type,
+                              DirectSubstitutionKey & out);
 bool direct_template_arg_key(const DirectFactContext & ctx,
                              const AbiTemplateArg & arg,
                              DirectSubstitutionKey & out);
+bool direct_expression_key(const DirectFactContext & ctx,
+                           const AbiDependentExpr & expr,
+                           DirectSubstitutionKey & out);
+bool direct_entity_key(const DirectFactContext & ctx,
+                       const AbiEntity & entity,
+                       DirectSubstitutionKey & out);
+bool direct_function_path_key(const DirectFactContext & ctx,
+                              const AbiFunctionPath & path,
+                              DirectSubstitutionKey & out);
+
+bool direct_function_path_key(const DirectFactContext & ctx,
+                              const AbiFunctionPath & path,
+                              DirectSubstitutionKey & out)
+{
+  out = DirectSubstitutionKey();
+  out.kind = DIRECT_SUBST_FUNCTION_PATH;
+  out.name = path.qualified_name;
+  out.index = path.template_argument_references.size();
+  out.unsigned_value = path.parameter_types.size();
+  out.flag = path.has_result_type;
+  for(size_t i = 0; i < path.template_argument_references.size(); ++i) {
+    DirectSubstitutionKey arg_key;
+    if(!direct_template_arg_key(
+           ctx,
+           direct_require_arg_ref(ctx, path.template_argument_references[i]),
+           arg_key)) {
+      return false;
+    }
+    out.children.push_back(arg_key);
+  }
+  if(path.has_result_type) {
+    DirectSubstitutionKey result_key;
+    if(!direct_type_identity_key(ctx, path.result_type, result_key)) {
+      return false;
+    }
+    out.children.push_back(result_key);
+  }
+  for(size_t i = 0; i < path.parameter_types.size(); ++i) {
+    DirectSubstitutionKey param_key;
+    if(!direct_type_identity_key(ctx, path.parameter_types[i], param_key)) {
+      return false;
+    }
+    out.children.push_back(param_key);
+  }
+  return true;
+}
+
+bool direct_entity_key(const DirectFactContext & ctx,
+                       const AbiEntity & entity,
+                       DirectSubstitutionKey & out)
+{
+  out = DirectSubstitutionKey();
+  out.kind = DIRECT_SUBST_ENTITY;
+  out.entity_kind = entity.kind;
+  if(entity.kind == ABI_ENTITY_FUNCTION) {
+    DirectSubstitutionKey path_key;
+    if(!direct_function_path_key(ctx, entity.function, path_key)) {
+      return false;
+    }
+    out.children.push_back(path_key);
+  } else {
+    out.name = entity.qualified_name;
+  }
+  return true;
+}
+
+bool direct_array_bound_identity_key(const DirectFactContext & ctx,
+                                     const AbiArrayBound & bound,
+                                     DirectSubstitutionKey & out)
+{
+  out = DirectSubstitutionKey();
+  out.kind = DIRECT_SUBST_TYPE;
+  out.type_kind = ABI_TYPE_ARRAY;
+  out.array_bound_kind = bound.kind;
+  if(bound.kind == ABI_ARRAY_BOUND_INTEGER) {
+    out.unsigned_value = bound.integer_value;
+    return true;
+  }
+  if(bound.kind == ABI_ARRAY_BOUND_EXPRESSION) {
+    DirectSubstitutionKey expr_key;
+    if(!direct_expression_key(
+           ctx,
+           direct_require_expr_ref(ctx, bound.expression_reference),
+           expr_key)) {
+      return false;
+    }
+    out.children.push_back(expr_key);
+    return true;
+  }
+  return false;
+}
+
+bool direct_type_identity_key(const DirectFactContext & ctx,
+                              const AbiType & input,
+                              DirectSubstitutionKey & out)
+{
+  AbiType builtin_storage;
+  const AbiType & type = direct_resolve_type_ref(ctx, input, builtin_storage);
+  out = DirectSubstitutionKey();
+  out.kind = DIRECT_SUBST_TYPE;
+  out.type_kind = type.kind;
+  out.builtin_type = type.builtin_type;
+  out.vendor_qualifier = type.vendor_qualifier;
+  out.std_substitution = type.std_substitution;
+  out.index = type.template_parameter_index;
+  out.flag = type.substitutable_template_parameter;
+  out.second_flag = type.std_substitution_includes_template_arguments;
+  out.name = type.name;
+  out.secondary_name = type.source_name;
+  out.literal = type.discriminator;
+
+  switch(type.kind) {
+  case ABI_TYPE_REFERENCE:
+    return false;
+  case ABI_TYPE_BUILTIN:
+  case ABI_TYPE_TEMPLATE_PARAMETER:
+  case ABI_TYPE_NAMED:
+    return true;
+  case ABI_TYPE_POINTER:
+  case ABI_TYPE_LVALUE_REFERENCE:
+  case ABI_TYPE_RVALUE_REFERENCE:
+  case ABI_TYPE_CONST:
+  case ABI_TYPE_VOLATILE:
+  case ABI_TYPE_VENDOR_QUALIFIED:
+  case ABI_TYPE_PACK_EXPANSION:
+  case ABI_TYPE_FUNCTION:
+  case ABI_TYPE_MEMBER_POINTER:
+    for(size_t i = 0; i < type.child_types.size(); ++i) {
+      DirectSubstitutionKey child_key;
+      if(!direct_type_identity_key(ctx, type.child_types[i], child_key)) {
+        return false;
+      }
+      out.children.push_back(child_key);
+    }
+    return true;
+  case ABI_TYPE_ARRAY: {
+    DirectSubstitutionKey bound_key;
+    if(!direct_array_bound_identity_key(ctx, type.array_bound, bound_key)) {
+      return false;
+    }
+    out.children.push_back(bound_key);
+    for(size_t i = 0; i < type.child_types.size(); ++i) {
+      DirectSubstitutionKey child_key;
+      if(!direct_type_identity_key(ctx, type.child_types[i], child_key)) {
+        return false;
+      }
+      out.children.push_back(child_key);
+    }
+    return true;
+  }
+  case ABI_TYPE_CLASS_TEMPLATE:
+  case ABI_TYPE_STD_CLASS_TEMPLATE:
+  case ABI_TYPE_MEMBER_CLASS_TEMPLATE:
+    out.unsigned_value = type.template_argument_references.size();
+    for(size_t i = 0; i < type.template_argument_references.size(); ++i) {
+      DirectSubstitutionKey arg_key;
+      if(!direct_template_arg_key(
+             ctx,
+             direct_require_arg_ref(ctx, type.template_argument_references[i]),
+             arg_key)) {
+        return false;
+      }
+      out.children.push_back(arg_key);
+    }
+    for(size_t i = 0; i < type.child_types.size(); ++i) {
+      DirectSubstitutionKey owner_key;
+      if(!direct_type_identity_key(ctx, type.child_types[i], owner_key)) {
+        return false;
+      }
+      out.children.push_back(owner_key);
+    }
+    return true;
+  case ABI_TYPE_MEMBER_TYPE:
+    if(type.child_types.size() != 1) {
+      return false;
+    }
+    {
+      DirectSubstitutionKey owner_key;
+      if(!direct_type_identity_key(ctx, type.child_types[0], owner_key)) {
+        return false;
+      }
+      out.children.push_back(owner_key);
+    }
+    return true;
+  case ABI_TYPE_DECLTYPE:
+    {
+      DirectSubstitutionKey expr_key;
+      if(!direct_expression_key(
+             ctx,
+             direct_require_expr_ref(ctx, type.expression_reference),
+             expr_key)) {
+        return false;
+      }
+      out.children.push_back(expr_key);
+    }
+    return true;
+  case ABI_TYPE_LAMBDA_CLOSURE:
+  case ABI_TYPE_LOCAL_TYPE:
+    {
+      const DirectLocalContext & context =
+          direct_require_context_ref(ctx, type.context_reference);
+      DirectSubstitutionKey context_key;
+      if(!direct_function_path_key(ctx, context.function, context_key)) {
+        return false;
+      }
+      out.children.push_back(context_key);
+      for(size_t i = 0; i < type.child_types.size(); ++i) {
+        DirectSubstitutionKey signature_key;
+        if(!direct_type_identity_key(ctx, type.child_types[i], signature_key)) {
+          return false;
+        }
+        out.children.push_back(signature_key);
+      }
+    }
+    return true;
+  }
+  return false;
+}
 
 bool direct_type_key(const DirectFactContext & ctx,
                      const AbiType & input,
@@ -1596,9 +1877,7 @@ bool direct_type_key(const DirectFactContext & ctx,
     return false;
   case ABI_TYPE_TEMPLATE_PARAMETER:
     if(type.substitutable_template_parameter) {
-      out = direct_key(string("type-template-param:") +
-                       to_string(type.template_parameter_index));
-      return true;
+      return direct_type_identity_key(ctx, type, out);
     }
     return false;
   case ABI_TYPE_POINTER:
@@ -1610,75 +1889,20 @@ bool direct_type_key(const DirectFactContext & ctx,
   case ABI_TYPE_PACK_EXPANSION:
   case ABI_TYPE_ARRAY:
   case ABI_TYPE_MEMBER_POINTER:
-  case ABI_TYPE_FUNCTION: {
-    string payload = to_string(static_cast<int>(type.kind));
-    payload += ':';
-    payload += type.name;
-    payload += ':';
-    payload += to_string(static_cast<int>(type.vendor_qualifier));
-    payload += ':';
-    if(type.kind == ABI_TYPE_ARRAY) {
-      payload += word_from_array_bound(type.array_bound);
-    }
-    for(size_t i = 0; i < type.child_types.size(); ++i) {
-      DirectSubstitutionKey child_key;
-      if(!direct_type_key(ctx, type.child_types[i], child_key)) {
-        child_key = direct_key(string("inline-type:") +
-                               to_string(static_cast<int>(type.child_types[i].kind)) +
-                               ":" + type.child_types[i].name + ":" +
-                               type.child_types[i].reference);
-      }
-      payload += '[' + child_key.value + ']';
-    }
-    out = direct_key(payload);
-    return true;
-  }
+  case ABI_TYPE_FUNCTION:
+    return direct_type_identity_key(ctx, type, out);
   case ABI_TYPE_NAMED:
-    out = direct_key(string("named:") + type.name);
-    return true;
+    return direct_type_identity_key(ctx, type, out);
   case ABI_TYPE_CLASS_TEMPLATE:
   case ABI_TYPE_STD_CLASS_TEMPLATE:
-  case ABI_TYPE_MEMBER_CLASS_TEMPLATE: {
-    string payload = string("class-template:") + type.name;
-    payload += ":std:";
-    payload += to_string(static_cast<int>(type.std_substitution));
-    payload += type.std_substitution_includes_template_arguments ? ":with-args" :
-        ":without-args";
-    for(size_t i = 0; i < type.template_argument_references.size(); ++i) {
-      const AbiTemplateArg & arg =
-          direct_require_arg_ref(ctx, type.template_argument_references[i]);
-      DirectSubstitutionKey arg_key;
-      if(!direct_template_arg_key(ctx, arg, arg_key)) {
-        return false;
-      }
-      payload += '[' + arg_key.value + ']';
-    }
-    if(!type.child_types.empty()) {
-      DirectSubstitutionKey owner_key;
-      if(direct_type_key(ctx, type.child_types[0], owner_key)) {
-        payload += ":owner:" + owner_key.value;
-      }
-    }
-    out = direct_key(payload);
-    return true;
-  }
-  case ABI_TYPE_MEMBER_TYPE: {
-    DirectSubstitutionKey owner_key;
-    if(type.child_types.empty() ||
-       !direct_type_key(ctx, type.child_types[0], owner_key)) {
-      return false;
-    }
-    out = direct_key(string("member-type:") + owner_key.value + ":" + type.name);
-    return true;
-  }
+  case ABI_TYPE_MEMBER_CLASS_TEMPLATE:
+  case ABI_TYPE_MEMBER_TYPE:
+    return direct_type_identity_key(ctx, type, out);
   case ABI_TYPE_DECLTYPE:
-    out = direct_key(string("decltype:") + type.expression_reference);
-    return true;
+    return direct_type_identity_key(ctx, type, out);
   case ABI_TYPE_LAMBDA_CLOSURE:
   case ABI_TYPE_LOCAL_TYPE:
-    out = direct_key(string("local-type:") + type.context_reference + ":" +
-                     type.source_name + ":" + type.discriminator);
-    return true;
+    return direct_type_identity_key(ctx, type, out);
   }
   return false;
 }
@@ -1687,23 +1911,61 @@ bool direct_expression_key(const DirectFactContext & ctx,
                            const AbiDependentExpr & expr,
                            DirectSubstitutionKey & out)
 {
-  const string operator_word =
-      expr.expression_operator == ABI_EXPR_OP_INVALID ?
-      string() : word_from_expression_operator(expr.expression_operator);
-  string payload = string("expr:") + to_string(static_cast<int>(expr.kind)) +
-                   ":" + to_string(expr.index) + ":" + expr.literal + ":" +
-                   operator_word + ":" + expr.first_reference + ":" +
-                   expr.second_reference +
-                   ":" + expr.third_reference + ":" + expr.member_name + ":" +
-                   expr.entity_reference;
-  if(expr.kind == ABI_EXPR_MEMBER) {
-    DirectSubstitutionKey owner_key;
-    if(!direct_type_key(ctx, expr.owner_type, owner_key)) {
+  out = DirectSubstitutionKey();
+  out.kind = DIRECT_SUBST_EXPRESSION;
+  out.expression_kind = expr.kind;
+  out.expression_operator = expr.expression_operator;
+  out.index = expr.index;
+  out.flag = expr.close_template_arguments;
+  out.name = expr.member_name;
+  out.literal = expr.literal;
+  if(!expr.first_reference.empty()) {
+    DirectSubstitutionKey child_key;
+    if(!direct_expression_key(ctx,
+                              direct_require_expr_ref(ctx,
+                                                      expr.first_reference),
+                              child_key)) {
       return false;
     }
-    payload += ":owner:" + owner_key.value;
+    out.children.push_back(child_key);
   }
-  out = direct_key(payload);
+  if(!expr.second_reference.empty()) {
+    DirectSubstitutionKey child_key;
+    if(!direct_expression_key(ctx,
+                              direct_require_expr_ref(ctx,
+                                                      expr.second_reference),
+                              child_key)) {
+      return false;
+    }
+    out.children.push_back(child_key);
+  }
+  if(!expr.third_reference.empty()) {
+    DirectSubstitutionKey child_key;
+    if(!direct_expression_key(ctx,
+                              direct_require_expr_ref(ctx,
+                                                      expr.third_reference),
+                              child_key)) {
+      return false;
+    }
+    out.children.push_back(child_key);
+  }
+  if(expr.kind == ABI_EXPR_MEMBER) {
+    DirectSubstitutionKey owner_key;
+    if(!direct_type_identity_key(ctx, expr.owner_type, owner_key)) {
+      return false;
+    }
+    out.children.push_back(owner_key);
+  }
+  if(!expr.entity_reference.empty()) {
+    DirectSubstitutionKey entity_key;
+    if(!direct_entity_key(ctx,
+                          direct_require_entity_ref(ctx,
+                                                    expr.entity_reference),
+                          entity_key)) {
+      return false;
+    }
+    out.children.push_back(entity_key);
+  }
   return true;
 }
 
@@ -1711,27 +1973,28 @@ bool direct_template_arg_key(const DirectFactContext & ctx,
                              const AbiTemplateArg & arg,
                              DirectSubstitutionKey & out)
 {
+  out = DirectSubstitutionKey();
+  out.kind = DIRECT_SUBST_TEMPLATE_ARGUMENT;
+  out.template_arg_kind = arg.kind;
+  out.signed_value = arg.integer_value;
   switch(arg.kind) {
   case ABI_TEMPLATE_ARG_TYPE: {
     DirectSubstitutionKey type_key;
-    if(!direct_type_key(ctx, arg.type, type_key)) {
+    if(!direct_type_identity_key(ctx, arg.type, type_key)) {
       return false;
     }
-    out = direct_key(string("arg-type:") + type_key.value);
+    out.children.push_back(type_key);
     return true;
   }
   case ABI_TEMPLATE_ARG_INTEGRAL_VALUE: {
     DirectSubstitutionKey type_key;
-    if(!direct_type_key(ctx, arg.type, type_key)) {
+    if(!direct_type_identity_key(ctx, arg.type, type_key)) {
       return false;
     }
-    out = direct_key(string("arg-value:") + type_key.value + ":" +
-                     to_string(arg.integer_value));
+    out.children.push_back(type_key);
     return true;
   }
   case ABI_TEMPLATE_ARG_UNTYPED_INTEGRAL_VALUE:
-    out = direct_key(string("arg-untyped-value:") +
-                     to_string(arg.integer_value));
     return true;
   case ABI_TEMPLATE_ARG_DEPENDENT_EXPRESSION: {
     const AbiDependentExpr & expression =
@@ -1740,18 +2003,22 @@ bool direct_template_arg_key(const DirectFactContext & ctx,
     if(!direct_expression_key(ctx, expression, expr_key)) {
       return false;
     }
-    out = direct_key(string("arg-expression:") + expr_key.value);
+    out.children.push_back(expr_key);
     return true;
   }
   case ABI_TEMPLATE_ARG_ENTITY_ADDRESS:
-  case ABI_TEMPLATE_ARG_ENTITY_REFERENCE:
-    out = direct_key(string("arg-entity:") +
-                     (arg.kind == ABI_TEMPLATE_ARG_ENTITY_ADDRESS ? "address:" :
-                                                                    "reference:") +
-                     arg.entity_reference);
+  case ABI_TEMPLATE_ARG_ENTITY_REFERENCE: {
+    DirectSubstitutionKey entity_key;
+    if(!direct_entity_key(ctx,
+                          direct_require_entity_ref(ctx,
+                                                    arg.entity_reference),
+                          entity_key)) {
+      return false;
+    }
+    out.children.push_back(entity_key);
     return true;
+  }
   case ABI_TEMPLATE_ARG_PACK: {
-    string payload = "arg-pack:";
     for(size_t i = 0; i < arg.pack_argument_references.size(); ++i) {
       const AbiTemplateArg & item =
           direct_require_arg_ref(ctx, arg.pack_argument_references[i]);
@@ -1759,9 +2026,8 @@ bool direct_template_arg_key(const DirectFactContext & ctx,
       if(!direct_template_arg_key(ctx, item, item_key)) {
         return false;
       }
-      payload += '[' + item_key.value + ']';
+      out.children.push_back(item_key);
     }
-    out = direct_key(payload);
     return true;
   }
   }
@@ -1796,7 +2062,7 @@ bool direct_emit_prefix_component(DirectEncoder & encoder,
   }
   const string qualified = direct_join_key_parts(
       vector<string>(parts.begin(), parts.begin() + index + 1));
-  const DirectSubstitutionKey key = direct_key(string("name:") + qualified);
+  const DirectSubstitutionKey key = direct_name_key(qualified);
   if(direct_emit_substitution(encoder, key, out)) {
     return true;
   }
@@ -2214,7 +2480,7 @@ bool direct_emit_function_name_path(const DirectFactContext & ctx,
   if(!template_arg_refs.empty()) {
     direct_register_substitution(
         encoder,
-        direct_key(string("function-template-prefix:") + qualified_name));
+        direct_function_template_prefix_key(qualified_name));
     if(!direct_emit_template_args(ctx, encoder, template_arg_refs, out)) {
       return false;
     }
