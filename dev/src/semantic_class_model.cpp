@@ -5279,6 +5279,7 @@ bool prepare_class_member_function_definition(
 
   out.is_static_member = decl_spec_contains_token(*out.specifiers, KW_STATIC);
   out.is_constexpr_member = decl_spec_contains_token(*out.specifiers, KW_CONSTEXPR);
+  out.is_inline_member = decl_spec_contains_token(*out.specifiers, KW_INLINE);
   prepare_method_parse_context(out.specifiers, *out.declarator, out.method);
 
   bool is_typedef = false;
@@ -5366,7 +5367,8 @@ ClassFunctionOptions class_function_options(MemberAccess access,
                                             bool is_constructor,
                                             bool is_destructor,
                                             bool is_constexpr,
-                                            bool is_defaulted)
+                                            bool is_defaulted,
+                                            bool is_inline)
 {
   ClassFunctionOptions options;
   options.access = access;
@@ -5374,6 +5376,7 @@ ClassFunctionOptions class_function_options(MemberAccess access,
   options.is_destructor = is_destructor;
   options.is_constexpr = is_constexpr;
   options.is_defaulted = is_defaulted;
+  options.is_inline = is_inline;
   if(!syntax) {
     return options;
   }
@@ -7818,7 +7821,8 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                    false,
                                    false,
                                    is_constexpr_member,
-                                   false);
+                                   false,
+                                   decl_spec_contains_token(*specifiers, KW_INLINE));
         request.is_static_member = true;
         apply_member_declaration_exclusion(ctx.register_function_entity(request),
                                            node);
@@ -7849,7 +7853,9 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                                            false,
                                                            false,
                                                            is_constexpr_member,
-                                                           is_defaulted),
+                                                           is_defaulted,
+                                                           decl_spec_contains_token(*specifiers,
+                                                                                    KW_INLINE)),
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
@@ -8214,7 +8220,8 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                    false,
                                    false,
                                    is_constexpr_member,
-                                   is_defaulted);
+                                   is_defaulted,
+                                   decl_spec_contains_token(*specifiers, KW_INLINE));
         request.is_static_member = true;
         if(FunctionBinding * binding = ctx.register_function_entity(request)) {
           binding->is_deleted = is_deleted;
@@ -8235,7 +8242,9 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                                            false,
                                                            false,
                                                            is_constexpr_member,
-                                                           is_defaulted),
+                                                           is_defaulted,
+                                                           decl_spec_contains_token(*specifiers,
+                                                                                    KW_INLINE)),
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
@@ -9182,7 +9191,8 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                                    false,
                                    false,
                                    is_constexpr_member,
-                                   false);
+                                   false,
+                                   decl_spec_contains_token(*specifiers, KW_INLINE));
         request.is_static_member = true;
         apply_member_declaration_exclusion(ctx.register_function_entity(request),
                                            node);
@@ -9213,7 +9223,9 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                                                            false,
                                                            false,
                                                            is_constexpr_member,
-                                                           is_defaulted),
+                                                           is_defaulted,
+                                                           decl_spec_contains_token(*specifiers,
+                                                                                    KW_INLINE)),
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
@@ -9390,7 +9402,9 @@ void collect_class_method_definition(SemanticContext & ctx,
                              &prepared.method.syntax,
                              false,
                              false,
-                             prepared.is_constexpr_member);
+                             prepared.is_constexpr_member,
+                             false,
+                             prepared.is_inline_member);
 
   if(prepared.is_static_member) {
     FunctionRegistrationRequest request;
@@ -9404,6 +9418,7 @@ void collect_class_method_definition(SemanticContext & ctx,
     request.function_qualifier = prepared.method.syntax.function_qualifier;
     request.semantic_flags.access = access;
     request.semantic_flags.is_constexpr = prepared.is_constexpr_member;
+    request.semantic_flags.is_inline = prepared.is_inline_member;
     request.is_static_member = true;
     validate_member_function_static_asserts(ctx, ctx.register_function_entity(request));
   } else {
@@ -9476,7 +9491,9 @@ void collect_special_member(SemanticContext & ctx,
                              is_destructor,
                              member_specifiers &&
                                  decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR),
-                             is_defaulted);
+                             is_defaulted,
+                             member_specifiers &&
+                                 decl_spec_contains_token(*member_specifiers, KW_INLINE));
 
   FunctionBinding * binding =
       register_class_function(ctx,
@@ -9628,7 +9645,10 @@ void collect_class_reference_special_member(SemanticContext & ctx,
                                 false,
                                 false,
                                 member_specifiers &&
-                                    decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR)),
+                                    decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR),
+                                false,
+                                member_specifiers &&
+                                    decl_spec_contains_token(*member_specifiers, KW_INLINE)),
                             &node);
     trace_class_collection_event(ctx,
                                  "reference-conversion-operator-done",
@@ -9676,7 +9696,9 @@ void collect_class_reference_special_member(SemanticContext & ctx,
                                   is_destructor,
                                   member_specifiers &&
                                       decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR),
-                                  is_defaulted),
+                                  is_defaulted,
+                                  member_specifiers &&
+                                      decl_spec_contains_token(*member_specifiers, KW_INLINE)),
                               &node);
   if(binding) {
     binding->is_deleted = is_deleted;
@@ -9776,7 +9798,11 @@ void collect_conversion_operator_member(SemanticContext & ctx,
                                   false,
                                   member_specifiers &&
                                       decl_spec_contains_token(*member_specifiers,
-                                                               KW_CONSTEXPR)),
+                                                               KW_CONSTEXPR),
+                                  false,
+                                  member_specifiers &&
+                                      decl_spec_contains_token(*member_specifiers,
+                                                               KW_INLINE)),
                               &node);
   if(binding) {
     binding->display_name = semantic_utils::unqualified_member_name(node.value);

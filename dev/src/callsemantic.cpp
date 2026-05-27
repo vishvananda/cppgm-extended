@@ -8673,6 +8673,7 @@ private:
     binding->owner_class = &info;
     binding->is_method = true;
     binding->is_constexpr = flags.is_constexpr;
+    binding->is_inline = flags.is_inline;
     binding->is_constructor = flags.is_constructor;
     binding->is_inherited_constructor = flags.is_inherited_constructor;
     binding->is_destructor = flags.is_destructor;
@@ -9052,6 +9053,7 @@ private:
       slot[i]->is_explicit = slot[i]->is_explicit || binding->is_explicit;
       slot[i]->is_defaulted = slot[i]->is_defaulted || flags.is_defaulted;
       slot[i]->is_constexpr = slot[i]->is_constexpr || flags.is_constexpr;
+      slot[i]->is_inline = slot[i]->is_inline || flags.is_inline;
       ensure_function_parameter_aliases(*slot[i]);
       if(slot[i]->default_arguments.size() < binding->default_arguments.size()) {
         slot[i]->default_arguments.resize(binding->default_arguments.size(), nullptr);
@@ -9257,6 +9259,7 @@ private:
     }
     binding->owner_class = &info;
     binding->access = flags.access;
+    binding->is_inline = binding->is_inline || flags.is_inline;
     upgrade_function_symbol_linkage(
         *binding,
         info.qualified_name + "::" + simple_name,
@@ -21096,10 +21099,13 @@ private:
   {
     const bool linkage_template_identity =
         template_api::function_binding_has_linkage_template_identity(&binding);
+    const bool inline_mergeable_definition =
+        binding.is_inline || binding.is_constexpr;
     const bool odr_mergeable_definition =
         (binding.odr_mergeable_definition && linkage_template_identity) ||
         linkage == symbol_linkage::SL_WEAK ||
-        linkage_template_identity;
+        linkage_template_identity ||
+        inline_mergeable_definition;
     if(odr_mergeable_definition && linkage == symbol_linkage::SL_EXTERNAL) {
       linkage = symbol_linkage::SL_WEAK;
     }
@@ -21468,6 +21474,7 @@ private:
         original->exclude_from_explicit_instantiation ||
         materialized->exclude_from_explicit_instantiation;
     original->is_constexpr = original->is_constexpr || materialized->is_constexpr;
+    original->is_inline = original->is_inline || materialized->is_inline;
     original->odr_mergeable_definition =
         original->odr_mergeable_definition ||
         materialized->odr_mergeable_definition;

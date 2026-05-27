@@ -71,6 +71,7 @@ struct FunctionSemanticFlags
   bool is_final = false;
   bool is_defaulted = false;
   bool is_constexpr = false;
+  bool is_inline = false;
   const CppAstNode * function_qualifier = nullptr;
 };
 
@@ -309,6 +310,7 @@ struct FunctionBinding
   MemberAccess access = MA_PUBLIC;
   bool is_method = false;
   bool is_constexpr = false;
+  bool is_inline = false;
   bool is_constructor = false;
   bool is_inherited_constructor = false;
   bool is_destructor = false;

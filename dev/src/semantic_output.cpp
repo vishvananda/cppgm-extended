@@ -284,6 +284,7 @@ symbol_linkage::FunctionRefQualifier symbol_linkage_ref_qualifier(RefQualifier q
 }
 
 symbol_linkage::SymbolLinkage output_function_symbol_linkage(const FunctionBinding & binding);
+bool node_decl_spec_contains_token(const CppAstNode * node, ETokenType token);
 
 bool output_function_prefers_local_object_binding(const FunctionBinding & binding)
 {
@@ -2577,8 +2578,15 @@ const CppAstNode * function_binding_decl_specifiers(const FunctionBinding & bind
 
 bool function_binding_is_inline(const FunctionBinding & binding)
 {
+  if(binding.is_inline) {
+    return true;
+  }
   const CppAstNode * specifiers = function_binding_decl_specifiers(binding);
-  return specifiers && decl_spec_contains_token(*specifiers, KW_INLINE);
+  if(specifiers && decl_spec_contains_token(*specifiers, KW_INLINE)) {
+    return true;
+  }
+  return binding.declaration_node != binding.definition_node &&
+         node_decl_spec_contains_token(binding.declaration_node, KW_INLINE);
 }
 
 bool node_decl_spec_contains_token(const CppAstNode * node,
@@ -2655,6 +2663,7 @@ symbol_linkage::SymbolLinkage output_function_symbol_linkage(const FunctionBindi
       (linkage_template_identity || !explicit_specialization_binding)) ||
      binding_defines_inline_like_class_member(binding) ||
      binding_defines_inline_like_friend(binding) ||
+     binding.is_inline ||
      binding.is_constexpr ||
      node_decl_spec_contains_token(declaration, KW_INLINE) ||
      node_decl_spec_contains_token(declaration, KW_CONSTEXPR)) {
@@ -2989,7 +2998,8 @@ bool should_emit_free_function_definition(SemanticContext & ctx,
   const bool lazy_inline_free_definition =
       !binding.owner_class &&
       !binding.lexical_access_class &&
-      (node_decl_spec_contains_token(declaration, KW_INLINE) ||
+      (binding.is_inline ||
+       node_decl_spec_contains_token(declaration, KW_INLINE) ||
        node_decl_spec_contains_token(declaration, KW_CONSTEXPR));
   if(binding.is_deleted) {
     return false;
