@@ -68,6 +68,12 @@ two equivalent facts do not become different substitutions just because the
 input file used different local labels. The standalone `abimangle` build also
 depends only on this ABI naming layer, not on the parser or semantic frontend.
 
+Production symbol naming also uses the ABI model. `symbol_linkage` builds
+`abi_mangle` model records from semantic bindings and calls the shared encoder;
+there is no separate `itanium_mangle_ir` production path. When a production
+name cannot be expressed through the standalone fact format, that is a paX
+fact-surface gap to close with a focused test and model field.
+
 The standalone ABI tests are numbered from simpler names toward more complete
 ABI situations. Each checked-in test file covers exactly one mangled name:
 `100-*` covers basic names and types, `200-*` local entities, `300-*`

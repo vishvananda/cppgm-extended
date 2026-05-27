@@ -1,12 +1,15 @@
 #pragma once
 
+// Typed ABI model and Itanium encoder shared by production symbol linkage and
+// the standalone ABI naming assignment.
+
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace itanium_mangle_ir {
+namespace abi_mangle {
 
 struct DependentExpression;
 struct FunctionEncoding;
@@ -4331,4 +4334,4 @@ inline bool emit_function_encoding_body(const FunctionEncoding & function,
   return true;
 }
 
-}  // namespace itanium_mangle_ir
+}  // namespace abi_mangle
