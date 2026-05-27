@@ -17,6 +17,7 @@
 
 #include "callsem_output.h"
 #include "callsemantic_internal.h"
+#include "class_template_mangle_info.h"
 #include "cpp_decl_bridge.h"
 #include "pack_parameter_analysis.h"
 #include "parser_trace.h"
@@ -5290,6 +5291,56 @@ bool lookup_rewritten_bound_type_argument(Scope & scope,
     return false;
   }
 
+  const auto type_argument_text_matches =
+      [&](const TypePtr & type, const std::string & target) -> bool
+  {
+    if(!type) {
+      return false;
+    }
+    const std::string rendered =
+        strip_elaborated_type_prefix(
+            trim_space(reparseable_type_argument_text(type)));
+    return !rendered.empty() && rendered == target;
+  };
+  const auto syntax_text_matches =
+      [&](const TemplateArgumentSyntax * syntax, const std::string & target) -> bool
+  {
+    if(!syntax) {
+      return false;
+    }
+    const std::string syntax_text =
+        strip_elaborated_type_prefix(
+            trim_space(!syntax->source_text.empty() ?
+                           syntax->source_text :
+                           syntax->text));
+    return !syntax_text.empty() && syntax_text == target;
+  };
+  const auto find_class_template_argument_type =
+      [&](const TypePtr & bound_type, TypePtr & found_type) -> bool
+  {
+    std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+        named_type_class_template_specialization_mangle_info_const(bound_type);
+    if(!mangle_info) {
+      return false;
+    }
+    for(std::size_t i = 0; i < mangle_info->arguments.size(); ++i) {
+      const TemplateArgument & argument = mangle_info->arguments[i];
+      if(argument.kind != TemplateArgument::TA_TYPE || !argument.type) {
+        continue;
+      }
+      const TemplateArgumentSyntax * syntax =
+          i < mangle_info->argument_syntaxes.size() ?
+              &mangle_info->argument_syntaxes[i] :
+              argument.source_syntax.get();
+      if(syntax_text_matches(syntax, name) ||
+         type_argument_text_matches(argument.type, name)) {
+        found_type = argument.type;
+        return true;
+      }
+    }
+    return false;
+  };
+
   for(Scope * current = &scope; current; current = current->parent) {
     if(current->namespace_scope || current->parent == nullptr) {
       break;
@@ -5305,6 +5356,9 @@ bool lookup_rewritten_bound_type_argument(Scope & scope,
       }
       if(trim_space(reparseable_type_argument_text(found->second)) == name) {
         out = found->second;
+        return true;
+      }
+      if(find_class_template_argument_type(found->second, out)) {
         return true;
       }
     }
