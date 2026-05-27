@@ -111,6 +111,32 @@ should become focused mangling tests in the ABI assignment branch.
   - Focused test: mangle a function template instantiated with a function-local
     class, and a nested template owner containing a function-local class.
 
+- `pa33/tests/compile/600-hosted-deque-member-template-include.t`
+  - Gap: libc++ owner-template self references such as
+    `__deque_iterator<..., _BlockSize>::__block_size` could spell the owner
+    template argument with the dependent value text instead of matching the
+    current owner template parameter slot.
+  - Focused test: mangle a class-template static data member and special member
+    where the final NTTP owner argument is the same dependent template
+    parameter.
+
+- clang/libc++ test-through hosted bitset/deque owners
+  - Gap: current-class lookup could reject a named type that was exactly the
+    active class type, which blocked typed ABI IR for libc++ member owners such
+    as `__bitset<_Size == 0 ? ...>::__bitset`.
+  - Focused test: mangle a special member of a class-template owner whose
+    dependent NTTP argument is a conditional expression from the owner parameter
+    list.
+
+- `pa33/tests/compile/600-hosted-forward-as-tuple-rvalue-ref.t`
+  - Gap: alias-template substitution replaced `_Tp` inside a type-id by editing
+    only the leaf text. That dropped the template-id/semantic payload for
+    arguments such as `__remove_cvref_t<_Tp>`, so nested libc++ aliases like
+    `_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>` could not lower
+    `!__is_same(...)` through typed ABI IR.
+  - Focused test: mangle an `enable_if` NTTP default whose condition goes
+    through nested alias templates and a builtin type trait expression.
+
 ## Current status
 
 - `CPPGM_SKIP_DEV_REBUILD=1 make test-report` passes all tests:

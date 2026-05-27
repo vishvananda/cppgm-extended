@@ -595,6 +595,29 @@ static bool text_matches_type_parameter_name(const string & text,
           text.compare(class_prefix_size, name.size(), name) == 0);
 }
 
+static bool template_parameter_identifier_matches(
+    const TemplateParameterInfo & parameter,
+    const string & raw_name)
+{
+  const string name = trim_elaborated_type_prefix(raw_name);
+  if(name.empty()) {
+    return false;
+  }
+  if((!parameter.name.empty() &&
+      text_matches_type_parameter_name(name, parameter.name)) ||
+     (!parameter.placeholder_key.empty() &&
+      name == parameter.placeholder_key)) {
+    return true;
+  }
+  for(size_t i = 0; i < parameter.alternate_names.size(); ++i) {
+    if(!parameter.alternate_names[i].empty() &&
+       name == parameter.alternate_names[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static string remove_space_chars(const string & text)
 {
   string out;
@@ -3024,6 +3047,11 @@ static TypePtr lookup_scope_named_type_for_mangling(
     if(found == scope->named_types.end() || !found->second) {
       continue;
     }
+    if(scope->class_info &&
+       scope->class_info->type &&
+       scope->class_info->type == found->second) {
+      return found->second;
+    }
     if(trim_elaborated_type_prefix(found->second->named_display) == stripped &&
        trim_elaborated_type_prefix(found->second->named_key) == stripped) {
       return TypePtr();
@@ -3339,17 +3367,8 @@ static bool syntax_name_matches_template_parameter(
   {
     for(size_t i = 0; i < parameters.size(); ++i) {
       const TemplateParameterInfo & parameter = parameters[i];
-      if(parameter.name.empty()) {
-        continue;
-      }
-      if(text_matches_type_parameter_name(stripped, parameter.name) ||
-         stripped == parameter.placeholder_key) {
+      if(template_parameter_identifier_matches(parameter, stripped)) {
         return true;
-      }
-      for(size_t j = 0; j < parameter.alternate_names.size(); ++j) {
-        if(stripped == parameter.alternate_names[j]) {
-          return true;
-        }
       }
     }
     return false;
@@ -4285,15 +4304,12 @@ static bool template_argument_syntax_is_parameter_name(
     const TemplateArgumentSyntax & syntax,
     const TemplateParameterInfo & parameter)
 {
-  if(parameter.name.empty()) {
-    return false;
-  }
   string stripped = trim_elaborated_type_prefix(syntax.text);
   if(stripped.size() >= 3 &&
      stripped.compare(stripped.size() - 3, 3, "...") == 0) {
     stripped = trim_space(stripped.substr(0, stripped.size() - 3));
   }
-  if(text_matches_type_parameter_name(stripped, parameter.name)) {
+  if(template_parameter_identifier_matches(parameter, stripped)) {
     return true;
   }
 
@@ -4305,13 +4321,14 @@ static bool template_argument_syntax_is_parameter_name(
        specifiers.children.size() == 1) {
       const string value =
           trim_elaborated_type_prefix(specifiers.children[0].value);
-      if(text_matches_type_parameter_name(value, parameter.name)) {
+      if(template_parameter_identifier_matches(parameter, value)) {
         return true;
       }
     }
   }
   if(syntax.expression &&
-     trim_space(syntax.expression->value) == parameter.name) {
+     template_parameter_identifier_matches(
+         parameter, trim_space(syntax.expression->value))) {
     return true;
   }
   return false;
@@ -4362,9 +4379,7 @@ static TemplateArgumentSyntax alias_template_argument_replacement_syntax(
 static bool alias_parameter_text_matches(const string & text,
                                          const TemplateParameterInfo & parameter)
 {
-  const string stripped = trim_elaborated_type_prefix(text);
-  return !parameter.name.empty() &&
-         text_matches_type_parameter_name(stripped, parameter.name);
+  return template_parameter_identifier_matches(parameter, text);
 }
 
 static bool template_id_syntax_from_component_text(const string & text,
@@ -4565,6 +4580,10 @@ static bool substitute_alias_template_arguments_in_node(
     CppAstNode & node,
     const vector<TemplateParameterInfo> & parameters,
     const vector<TemplateArgumentSyntax> & arguments);
+static bool substitute_alias_template_type_id_node(
+    CppAstNode & node,
+    const vector<TemplateParameterInfo> & parameters,
+    const vector<TemplateArgumentSyntax> & arguments);
 
 static bool substitute_alias_template_arguments_in_syntax(
     TemplateArgumentSyntax & syntax,
@@ -4632,6 +4651,9 @@ static bool substitute_alias_template_arguments_in_node(
     const vector<TemplateArgumentSyntax> & arguments)
 {
   bool changed = false;
+  if(substitute_alias_template_type_id_node(node, parameters, arguments)) {
+    return true;
+  }
   const bool attached_semantic =
       attach_dependent_builtin_type_transform_argument_for_mangling(
           node,
@@ -4701,6 +4723,122 @@ static TemplateArgumentSyntax alias_template_argument_replacement_syntax(
     const DependentAliasTemplateArgumentSyntax & argument)
 {
   return dependent_alias_argument_syntax_for_mangling(argument);
+}
+
+static bool type_id_ast_is_template_type_parameter(
+    const CppAstNode & node,
+    const TemplateParameterInfo & parameter)
+{
+  if(parameter.kind != TemplateParameterInfo::TP_TYPE ||
+     node.kind != CppAstKind::type_id ||
+     node.children.size() != 1) {
+    return false;
+  }
+
+  const CppAstNode & specifiers = node.children[0];
+  if(specifiers.kind != CppAstKind::type_specifier_seq &&
+     specifiers.kind != CppAstKind::decl_specifier_seq) {
+    return false;
+  }
+
+  const CppAstNode * type_name = nullptr;
+  for(size_t i = 0; i < specifiers.children.size(); ++i) {
+    const CppAstNode & child = specifiers.children[i];
+    if(child.value == "const" ||
+       child.value == "volatile" ||
+       child.value == "typename" ||
+       child.value == "class" ||
+       child.value == "struct") {
+      continue;
+    }
+    if(type_name) {
+      return false;
+    }
+    type_name = &child;
+  }
+
+  return type_name &&
+         template_parameter_identifier_matches(parameter, type_name->value);
+}
+
+static bool make_type_id_node_from_template_argument_syntax_for_mangling(
+    const TemplateArgumentSyntax & syntax,
+    CppAstNode & out)
+{
+  if(syntax.type_id) {
+    out = clone_ast_node_for_mangling(*syntax.type_id);
+    return true;
+  }
+
+  const TypePtr semantic_type = syntax.resolved_type;
+  const string text = trim_space(syntax.text);
+  if(text.empty()) {
+    return false;
+  }
+
+  out = make_semantic_type_id_node_for_mangling(semantic_type, text);
+  if(out.children.empty() || out.children[0].children.empty()) {
+    return static_cast<bool>(semantic_type);
+  }
+
+  CppAstNode & type_name = out.children[0].children[0];
+  if(syntax.template_id) {
+    type_name.qualified_name_syntax.reset(
+        new QualifiedName(syntax.template_id->name));
+    type_name.template_id_syntax.reset(
+        new TemplateIdSyntax(
+            clone_template_id_syntax_for_mangling(*syntax.template_id)));
+  }
+  if(semantic_type) {
+    out.semantic_type = semantic_type;
+    out.children[0].semantic_type = semantic_type;
+    type_name.semantic_type = semantic_type;
+  }
+  return syntax.template_id || semantic_type;
+}
+
+static bool substitute_alias_template_type_id_node(
+    CppAstNode & node,
+    const vector<TemplateParameterInfo> & parameters,
+    const vector<TemplateArgumentSyntax> & arguments)
+{
+  const size_t count = std::min(parameters.size(), arguments.size());
+  for(size_t i = 0; i < count; ++i) {
+    if(!type_id_ast_is_template_type_parameter(node, parameters[i])) {
+      continue;
+    }
+    CppAstNode replacement_type_id;
+    if(!make_type_id_node_from_template_argument_syntax_for_mangling(
+           arguments[i], replacement_type_id)) {
+      return false;
+    }
+    node = replacement_type_id;
+    return true;
+  }
+  return false;
+}
+
+static bool substitute_dependent_alias_template_type_id_node(
+    CppAstNode & node,
+    const vector<TemplateParameterInfo> & parameters,
+    const vector<DependentAliasTemplateArgumentSyntax> & arguments)
+{
+  const size_t count = std::min(parameters.size(), arguments.size());
+  for(size_t i = 0; i < count; ++i) {
+    if(!type_id_ast_is_template_type_parameter(node, parameters[i])) {
+      continue;
+    }
+    const TemplateArgumentSyntax replacement =
+        dependent_alias_argument_syntax_for_mangling(arguments[i]);
+    CppAstNode replacement_type_id;
+    if(!make_type_id_node_from_template_argument_syntax_for_mangling(
+           replacement, replacement_type_id)) {
+      return false;
+    }
+    node = replacement_type_id;
+    return true;
+  }
+  return false;
 }
 
 static bool substitute_dependent_alias_template_arguments_in_node(
@@ -4781,6 +4919,11 @@ static bool substitute_dependent_alias_template_arguments_in_node(
 {
   bool changed = false;
   bool attached_semantic = false;
+  if(substitute_dependent_alias_template_type_id_node(node,
+                                                     parameters,
+                                                     arguments)) {
+    return true;
+  }
   string builtin_name;
   string builtin_arg_text;
   if(parse_unary_builtin_type_transform_syntax_text(node.value,
@@ -7704,17 +7847,20 @@ static bool try_build_owner_non_type_template_argument_ir(
       *mangle_ctx->owner_template_arguments;
   for(size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
     const TemplateParameterInfo & parameter = parameters[i];
+    const TemplateArgument & argument = arguments[i];
+    const bool matches_parameter =
+        template_parameter_identifier_matches(parameter, stripped);
+    const bool matches_dependent_self_argument =
+        argument.kind == TemplateArgument::TA_VALUE &&
+        argument.dependent &&
+        trim_elaborated_type_prefix(argument.text) == stripped;
     if(parameter.kind != TemplateParameterInfo::TP_NON_TYPE ||
-       parameter.name.empty() ||
-       (stripped != parameter.name && stripped != parameter.placeholder_key)) {
+       (!matches_parameter && !matches_dependent_self_argument)) {
       continue;
     }
 
-    const TemplateArgument & argument = arguments[i];
     if(owner_template_argument_index_is_suppressed(mangle_ctx, i) ||
-       (argument.kind == TemplateArgument::TA_VALUE &&
-        argument.dependent &&
-        trim_elaborated_type_prefix(argument.text) == parameter.name)) {
+       matches_dependent_self_argument) {
       itanium_mangle_ir::DependentExpression expression =
           itanium_mangle_ir::DependentExpression::template_parameter(i);
       if(pack_expansion) {
