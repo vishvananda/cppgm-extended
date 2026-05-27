@@ -13634,7 +13634,7 @@ private:
     for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
         it != type_replacements.end();
         ++it) {
-      if(ast_node_value_names_pack_identifier(out, it->first)) {
+      if(ast_node_value_names_pack_identifier(node, it->first)) {
         out.semantic_type = it->second;
         out.value = lookup_reparseable_text_for_type_argument(scope, it->second);
         out.qualified_name_syntax.reset();
