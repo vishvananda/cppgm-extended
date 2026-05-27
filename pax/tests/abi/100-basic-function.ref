@@ -1,6 +1,0 @@
-case global_no_params
-mangled _Z1fv
-case namespace_params
-mangled _ZN2ns1fEiPc
-case c_linkage
-mangled puts

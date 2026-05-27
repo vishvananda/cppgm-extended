@@ -1,4 +1,3 @@
-case dependent_bitset_words
 let-expr N template-param 0
 let-expr words_per_word literal 64
 let-expr word_index binary dv N words_per_word
