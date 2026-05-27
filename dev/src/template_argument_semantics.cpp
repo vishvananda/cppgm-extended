@@ -7977,6 +7977,46 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
        leaf_function_type_call_result(callee_type, arg_infos, out, category)) {
       return true;
     }
+    TypePtr object_type = callee_type ?
+        strip_top_level_cv(remove_reference_type(callee_type)) :
+        TypePtr();
+    if(object_type && object_type->kind == Type::TK_NAMED) {
+      vector<FunctionBinding *> call_operators;
+      if(service_lookup_leaf_member_function_bindings(
+             services, object_type, "operator()", call_operators)) {
+        FunctionBinding * selected = nullptr;
+        if(select_unique_leaf_function_binding(
+               services,
+               scope,
+               call_operators,
+               arg_infos,
+               true,
+               object_type,
+               semantic_conversion::is_const_object_type(object_type),
+               callee_category == semantic_conversion::VC_LVALUE,
+               false,
+               selected) &&
+           selected) {
+          TypePtr function_type = strip_top_level_cv(selected->type);
+          if(function_type &&
+             function_type->kind == Type::TK_FUNCTION &&
+             function_type->inner &&
+             semantic_conversion::result_value_category_for_function_result(
+                 function_type->inner, category)) {
+            out = function_type->inner;
+            if(services.witness_context.session != nullptr &&
+               out &&
+               !service_type_depends_on_template_parameter(services, out)) {
+              note_structured_bool_value_member_if_needed(
+                  services,
+                  template_api::make_template_environment(scope),
+                  out);
+            }
+            return out != nullptr;
+          }
+        }
+      }
+    }
     return false;
   }
 
