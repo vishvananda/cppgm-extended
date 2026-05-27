@@ -9201,6 +9201,9 @@ bool constexpr_value_to_template_argument_integral(const TypePtr & target_type,
 
 bool is_data_member_pointer_template_argument_type(const TypePtr & type)
 {
+  if(!type) {
+    return false;
+  }
   TypePtr base = strip_top_level_cv(remove_reference_type(type));
   return base &&
          base->kind == Type::TK_MEMBER_POINTER &&
@@ -24665,6 +24668,50 @@ const CppAstNode * single_type_name_from_type_id(const CppAstNode & type_id)
   return &specifiers->children[0];
 }
 
+bool type_id_is_single_qualified_type_name(const CppAstNode & type_id)
+{
+  const CppAstNode * type_name = single_type_name_from_type_id(type_id);
+  const QualifiedName * qualified =
+      type_name ? cppast_qualified_name_syntax(*type_name) : nullptr;
+  return qualified && !qualified->qualifiers.empty();
+}
+
+bool is_qualified_member_binary_cast_ambiguity(const CppAstNode & expr)
+{
+  return expr.kind == CppAstKind::cast_expression &&
+         expr.children.size() == 2 &&
+         expr.children[0].kind == CppAstKind::type_id &&
+         expr.children[1].kind == CppAstKind::unary_expression &&
+         expr.children[1].children.size() == 1 &&
+         expr.children[1].has_token &&
+         (expr.children[1].simple_type == OP_PLUS ||
+          expr.children[1].simple_type == OP_MINUS) &&
+         type_id_is_single_qualified_type_name(expr.children[0]);
+}
+
+bool expression_has_qualified_member_binary_cast_ambiguity(
+    const CppAstNode & expr)
+{
+  if(is_qualified_member_binary_cast_ambiguity(expr)) {
+    return true;
+  }
+  if(expr.kind == CppAstKind::parenthesized_expression &&
+     expr.children.size() == 1) {
+    return expression_has_qualified_member_binary_cast_ambiguity(
+        expr.children[0]);
+  }
+  if(expr.kind != CppAstKind::binary_expression) {
+    return false;
+  }
+  for(size_t i = 0; i < expr.children.size(); ++i) {
+    if(expression_has_qualified_member_binary_cast_ambiguity(
+           expr.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 NonTypeArgumentStatus evaluate_structured_template_member_bool_type_id(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -26196,6 +26243,7 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
     string * eval_error,
     const TypePtr & target_type)
 {
+  const TypePtr effective_target_type = target_type;
   Scope & raw_scope = scope.require();
   std::string expression_order_use_location;
   if(services.semantic_context) {
@@ -26208,7 +26256,8 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
   NonTypeArgumentStatus status = NT_ARG_EVAL_FAILED;
   bool skip_leaf_constant_discovery = false;
   const bool structured_bool_shortcut_allowed =
-      target_type && is_bool_type(remove_reference_type(target_type));
+      effective_target_type &&
+      is_bool_type(remove_reference_type(effective_target_type));
 	  const auto evaluate_structured_bool_shortcut =
 	      [&](const CppAstNode & candidate, bool & bool_value) -> NonTypeArgumentStatus
 	  {
@@ -26245,7 +26294,7 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
               scope,
               expr,
               value,
-              target_type);
+              effective_target_type);
       if(syntax_member_status == NT_ARG_EVALUATED ||
          syntax_member_status == NT_ARG_DEPENDENT) {
         status = syntax_member_status;
@@ -26263,7 +26312,7 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
                 scope,
                 expr_text,
                 value,
-                target_type);
+                effective_target_type);
         if(member_status == NT_ARG_EVALUATED ||
            member_status == NT_ARG_DEPENDENT) {
           if(member_status == NT_ARG_EVALUATED) {
@@ -26278,8 +26327,9 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
     if(status != NT_ARG_EVALUATED &&
        status != NT_ARG_DEPENDENT &&
        evaluate_constant_expression_leaf_impl(
-           services, raw_scope, expr, constexpr_value, target_type) &&
-       constexpr_value_to_template_argument_integral(target_type, constexpr_value, value)) {
+           services, raw_scope, expr, constexpr_value, effective_target_type) &&
+       constexpr_value_to_template_argument_integral(
+           effective_target_type, constexpr_value, value)) {
       status = NT_ARG_EVALUATED;
     }
     if(status != NT_ARG_EVALUATED &&
@@ -26293,13 +26343,148 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
         status = NT_ARG_EVALUATED;
         skip_leaf_constant_discovery =
             structured_template_member_bool_value_is_pure_trait(
-                services, scope, expr);
+              services, scope, expr);
+      }
+    }
+    if(status != NT_ARG_EVALUATED &&
+       status != NT_ARG_DEPENDENT &&
+       expr.kind == CppAstKind::parenthesized_expression &&
+       expr.children.size() == 1) {
+      const NonTypeArgumentStatus nested_status =
+          evaluate_non_type_argument_expression(
+              services,
+              scope,
+              expr.children[0],
+              value,
+              nullptr,
+              effective_target_type);
+      if(nested_status == NT_ARG_EVALUATED ||
+         nested_status == NT_ARG_DEPENDENT) {
+        status = nested_status;
+        if(status == NT_ARG_EVALUATED) {
+          note_template_trace_if_enabled(
+              [&](ostringstream & trace)
+              {
+                trace << "non-type-arg structured-parenthesized-fallback value="
+                      << value;
+              });
+        }
+      }
+    }
+    if(status != NT_ARG_EVALUATED &&
+       status != NT_ARG_DEPENDENT &&
+       is_qualified_member_binary_cast_ambiguity(expr)) {
+      const auto evaluate_member_value_type_id =
+          [&](const CppAstNode & type_id, long long & member_value)
+              -> NonTypeArgumentStatus
+          {
+            const CppAstNode * type_name = single_type_name_from_type_id(type_id);
+            if(!type_name) {
+              return NT_ARG_PARSE_FAILED;
+            }
+
+            CppAstNode id_expr = *type_name;
+            id_expr.kind = CppAstKind::id_expression;
+            try {
+              return evaluate_template_member_value_expression(
+                  services, scope, id_expr, member_value, TypePtr());
+            } catch(const TemplateSubstitutionFailure &) {
+              return NT_ARG_EVAL_FAILED;
+            } catch(const SemanticSoftFailure &) {
+              return NT_ARG_EVAL_FAILED;
+            } catch(const SemanticDiagnosticError &) {
+              return NT_ARG_EVAL_FAILED;
+            } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+              return NT_ARG_EVAL_FAILED;
+            } catch(const logic_error &) {
+              return NT_ARG_EVAL_FAILED;
+            }
+          };
+
+      long long lhs_value = 0;
+      long long rhs_value = 0;
+      const TypePtr untyped_target;
+      const NonTypeArgumentStatus lhs_status =
+          evaluate_member_value_type_id(expr.children[0], lhs_value);
+      const NonTypeArgumentStatus rhs_status =
+          lhs_status == NT_ARG_EVALUATED ?
+              evaluate_non_type_argument_expression(
+                  services,
+                  scope,
+                  expr.children[1].children[0],
+                  rhs_value,
+                  nullptr,
+                  untyped_target) :
+              NT_ARG_PARSE_FAILED;
+      if(lhs_status == NT_ARG_DEPENDENT || rhs_status == NT_ARG_DEPENDENT) {
+        status = NT_ARG_DEPENDENT;
+      } else if(lhs_status == NT_ARG_EVALUATED &&
+                rhs_status == NT_ARG_EVALUATED) {
+        constant_eval::ConstexprValue binary_value;
+        if(constant_eval::constexpr_value_apply_binary(
+               expr.children[1].simple_type == OP_PLUS ? OP_PLUS : OP_MINUS,
+               constant_eval::make_integral_value(
+                   lhs_value, make_fundamental(FT_LONG_LONG_INT)),
+               constant_eval::make_integral_value(
+                   rhs_value, make_fundamental(FT_LONG_LONG_INT)),
+               binary_value) &&
+           constexpr_value_to_template_argument_integral(
+               effective_target_type, binary_value, value)) {
+          status = NT_ARG_EVALUATED;
+          note_template_trace_if_enabled(
+              [&](ostringstream & trace)
+              {
+                trace << "non-type-arg structured-cast-ambiguity-fallback value="
+                      << value;
+              });
+        }
+      }
+    }
+    if(status != NT_ARG_EVALUATED &&
+       status != NT_ARG_DEPENDENT &&
+       expr.kind == CppAstKind::binary_expression &&
+       expr.children.size() == 2 &&
+       expr.has_token &&
+       expression_has_qualified_member_binary_cast_ambiguity(expr)) {
+      long long lhs_value = 0;
+      long long rhs_value = 0;
+      const TypePtr untyped_target;
+      const NonTypeArgumentStatus lhs_status =
+          evaluate_non_type_argument_expression(
+              services, scope, expr.children[0], lhs_value, nullptr, untyped_target);
+      const NonTypeArgumentStatus rhs_status =
+          lhs_status == NT_ARG_EVALUATED ?
+              evaluate_non_type_argument_expression(
+                  services, scope, expr.children[1], rhs_value, nullptr, untyped_target) :
+              NT_ARG_PARSE_FAILED;
+      if(lhs_status == NT_ARG_DEPENDENT || rhs_status == NT_ARG_DEPENDENT) {
+        status = NT_ARG_DEPENDENT;
+      } else if(lhs_status == NT_ARG_EVALUATED &&
+                rhs_status == NT_ARG_EVALUATED) {
+        constant_eval::ConstexprValue binary_value;
+        if(constant_eval::constexpr_value_apply_binary(
+               expr.simple_type,
+               constant_eval::make_integral_value(
+                   lhs_value, make_fundamental(FT_LONG_LONG_INT)),
+               constant_eval::make_integral_value(
+                   rhs_value, make_fundamental(FT_LONG_LONG_INT)),
+               binary_value) &&
+           constexpr_value_to_template_argument_integral(
+               effective_target_type, binary_value, value)) {
+          status = NT_ARG_EVALUATED;
+          note_template_trace_if_enabled(
+              [&](ostringstream & trace)
+              {
+                trace << "non-type-arg structured-binary-fallback value="
+                      << value;
+              });
+        }
       }
     }
     template_api::TemplateConstantEvaluationRequest request;
     request.scope = &raw_scope;
     request.expr = expr;
-    request.target_type = target_type;
+    request.target_type = effective_target_type;
     if(status != NT_ARG_EVALUATED &&
        status != NT_ARG_DEPENDENT) {
       bool initializer_evaluated = false;
@@ -26312,7 +26497,7 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
                                                         constexpr_value);
       }
       if(initializer_evaluated &&
-         constexpr_value_to_template_argument_integral(target_type,
+         constexpr_value_to_template_argument_integral(effective_target_type,
                                                        constexpr_value,
                                                        value)) {
         status = NT_ARG_EVALUATED;
@@ -26384,7 +26569,7 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
 
   if(status == NT_ARG_EVALUATED) {
     if(!encode_data_member_pointer_template_argument_if_needed(
-           target_type, expr, value)) {
+           effective_target_type, expr, value)) {
       if(eval_error) {
         *eval_error = "data member pointer template argument offset overflow";
       }
