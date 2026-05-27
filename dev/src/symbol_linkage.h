@@ -46,6 +46,8 @@ struct FunctionSymbolOptions
     std::string template_name;
     const std::vector<template_model::TemplateParameterInfo> * parameters = nullptr;
     const std::vector<template_model::TemplateArgument> * arguments = nullptr;
+    const std::vector<template_model::TemplateParameterInfo> * mangle_parameters = nullptr;
+    const std::vector<cpp_decl::TemplateArgumentSyntax> * argument_syntaxes = nullptr;
   };
 
   bool is_member_function = false;
@@ -63,6 +65,7 @@ struct FunctionSymbolOptions
   const std::map<std::string, std::size_t> * template_argument_pack_sizes = nullptr;
   const std::vector<template_model::TemplateParameterInfo> * owner_template_parameters = nullptr;
   const std::vector<template_model::TemplateArgument> * owner_template_arguments = nullptr;
+  const std::vector<template_model::TemplateParameterInfo> * owner_mangle_parameters = nullptr;
   std::string owner_template_name;
   std::vector<OwnerTemplateComponent> owner_template_components;
   const std::vector<std::pair<std::string, cpp_decl::TypePtr> > * parameter_pattern = nullptr;
@@ -98,8 +101,6 @@ std::string thread_local_wrapper_object_symbol_from_object_symbol(
     const std::string & object_symbol);
 std::string typeinfo_symbol_for_type(const cpp_decl::TypePtr & type);
 std::string vtable_object_symbol_for_type(const cpp_decl::TypePtr & type);
-bool mangle_itanium_type_encoding(const cpp_decl::TypePtr & type,
-                                  std::string & out);
 std::string virtual_override_thunk_object_symbol(const std::string & target_object_symbol,
                                                  long long this_adjust,
                                                  bool has_result_adjust = false,

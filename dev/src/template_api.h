@@ -42,6 +42,7 @@ struct ClassSpecializationSelection
   semantic_model::Scope * binding_scope = nullptr;
   const std::vector<template_model::TemplateParameterInfo> * parameters = nullptr;
   std::vector<template_model::TemplateArgument> arguments;
+  const std::vector<cpp_decl::TemplateArgumentSyntax> * argument_syntaxes = nullptr;
   std::map<std::string, std::size_t> pack_sizes;
   std::string selection_key;
   MatchKind kind = MS_PRIMARY;

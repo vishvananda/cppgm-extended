@@ -4704,6 +4704,18 @@ bool record_class_template_instantiation_state(
       info.instantiation_arg_texts[i] = (*dependent_argument_texts)[i];
     }
   }
+  if(dependent_argument_syntaxes) {
+    if(info.instantiation_arguments.empty()) {
+      info.instantiation_arguments = arguments;
+    }
+    const std::size_t count =
+        std::min(dependent_argument_syntaxes->size(),
+                 info.instantiation_arguments.size());
+    for(std::size_t i = 0; i < count; ++i) {
+      info.instantiation_arguments[i].source_syntax.reset(
+          new TemplateArgumentSyntax((*dependent_argument_syntaxes)[i]));
+    }
+  }
   const std::vector<TemplateArgument> & effective_arguments =
       info.instantiation_arguments.empty() ? arguments : info.instantiation_arguments;
   update_class_template_specialization_mangle_info(

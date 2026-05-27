@@ -212,6 +212,9 @@ bool apply_exact_dependent_partial_class_selection(
                                      exact_partial->declaring_scope;
   selection.parameters = &empty_template_parameters();
   selection.arguments.clear();
+  if(exact_partial->arg_syntaxes.size() == dependent_source_argument_texts->size()) {
+    selection.argument_syntaxes = &exact_partial->arg_syntaxes;
+  }
   selection.pack_sizes.clear();
   selection.selection_key.clear();
   selection.kind = MS_PARTIAL_SPECIALIZATION;
