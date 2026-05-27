@@ -15922,6 +15922,9 @@ string substituted_value_pack_argument_text(const ValueBinding & binding)
     }
     return to_string(binding.constant_value);
   }
+  if(!binding.non_type_template_argument_text.empty()) {
+    return binding.non_type_template_argument_text;
+  }
   return binding.name;
 }
 

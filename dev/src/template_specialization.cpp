@@ -3911,6 +3911,19 @@ bool try_expand_alias_template_pattern_structurally(
     out.expression.reset();
     return true;
   };
+  const auto dependent_class_instantiation_needs_structured_expansion =
+      [&](const TypePtr & type) -> bool
+  {
+    if(!type_has_dependent_non_type_template_argument(type_system, type)) {
+      return false;
+    }
+    template_api::TemplateNamedTypeMetadata info;
+    return template_api::describe_named_type_metadata(type_system.model,
+                                                      type,
+                                                      info) &&
+           info.source_template &&
+           !info.instantiation_arguments.empty();
+  };
   const auto mark_structural_substitution_failure =
       [&](Scope * lookup_scope, const std::string & member_name) -> void
   {
@@ -4397,7 +4410,8 @@ bool try_expand_alias_template_pattern_structurally(
           out = substituted_pattern;
           return true;
         }
-        if(allow_dependent_expansion) {
+        if(allow_dependent_expansion &&
+           !dependent_class_instantiation_needs_structured_expansion(pattern)) {
           out = substituted_pattern;
           return true;
         }

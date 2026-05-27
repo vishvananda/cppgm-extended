@@ -321,6 +321,9 @@ void bind_non_type_value(Scope & scope,
     }
   } else {
     binding.dependent_template_value = true;
+    if(!text.empty()) {
+      binding.non_type_template_argument_text = text;
+    }
   }
   bind_value(scope, name, binding, true);
 }
@@ -342,7 +345,7 @@ void bind_non_type_pack(Scope & scope,
                         value_type,
                         value,
                         dependent,
-                        !dependent ? bound_pack[i].text : std::string(),
+                        bound_pack[i].text,
                         !dependent ?
                             const_cast<FunctionBinding *>(bound_pack[i].function_value) :
                             nullptr,
@@ -389,7 +392,7 @@ void bind_template_argument_pack(Scope & scope,
                           value_type,
                           arguments[i].value,
                           arguments[i].dependent,
-                          !arguments[i].dependent ? arguments[i].text : std::string(),
+                          arguments[i].text,
                           !arguments[i].dependent ?
                               const_cast<FunctionBinding *>(arguments[i].function_value) :
                               nullptr,

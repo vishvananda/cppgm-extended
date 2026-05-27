@@ -2880,6 +2880,21 @@ std::string class_instantiation_key_for_metadata(
   return template_argument_key_for_instantiation_impl(ctx, info.instantiation_arguments);
 }
 
+std::string canonical_instantiation_arg_text_impl(
+    SemanticContext & ctx,
+    const TemplateArgument & argument)
+{
+  if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+    return ctx.instantiation_identity_text_for_type_argument(argument.type);
+  }
+  return template_model::template_argument_text(
+      argument,
+      [&ctx](const TypePtr & type)
+      {
+        return instantiation_argument_type_text(ctx, type);
+      });
+}
+
 std::vector<std::string> canonical_instantiation_arg_texts_impl(
     SemanticContext & ctx,
     const std::vector<TemplateArgument> & arguments)
@@ -2887,23 +2902,81 @@ std::vector<std::string> canonical_instantiation_arg_texts_impl(
   std::vector<std::string> out;
   out.reserve(arguments.size());
   for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].kind == TemplateArgument::TA_TYPE && arguments[i].type) {
-      out.push_back(ctx.instantiation_identity_text_for_type_argument(arguments[i].type));
-      continue;
-    }
-    out.push_back(template_model::template_argument_text(
-        arguments[i],
-        [&ctx](const TypePtr & type)
-        {
-          return instantiation_argument_type_text(ctx, type);
-        }));
+    out.push_back(canonical_instantiation_arg_text_impl(ctx, arguments[i]));
   }
   return out;
+}
+
+bool dependent_argument_source_text_matches_semantic_argument(
+    SemanticContext & ctx,
+    const TemplateArgument & argument,
+    const std::string & source_text)
+{
+  const std::string trimmed_source = semantic_utils::trim_space(source_text);
+  if(argument.kind != TemplateArgument::TA_TYPE ||
+     !argument.type ||
+     !named_type_is_template_parameter(argument.type) ||
+     trimmed_source.empty() ||
+     !callsemantic_internal::is_identifier_text(trimmed_source)) {
+    return true;
+  }
+  const std::string canonical =
+      ctx.instantiation_identity_text_for_type_argument(argument.type);
+  return canonical.empty() ||
+         template_argument_semantics::normalized_type_lookup_text_matches(
+             source_text,
+             canonical);
 }
 
 bool template_arguments_are_dependent_for_instantiation(
     SemanticContext & ctx,
     const std::vector<TemplateArgument> & arguments);
+
+std::string template_specialization_name_from_argument_texts(
+    const std::string & name,
+    const std::vector<std::string> & argument_texts)
+{
+  std::string out = name;
+  out += "<";
+  for(std::size_t i = 0; i < argument_texts.size(); ++i) {
+    if(i != 0) {
+      out += ", ";
+    }
+    out += argument_texts[i];
+  }
+  out += ">";
+  return callsemantic_internal::normalize_qualified_name_spacing(out);
+}
+
+void update_class_template_dependent_type_display_name(ClassInfo & info)
+{
+  TypePtr named = strip_top_level_cv(info.type);
+  if(!named ||
+     named->kind != Type::TK_NAMED ||
+     !info.source_template ||
+     !info.source_template->declaring_scope ||
+     info.instantiation_arg_texts.empty()) {
+    return;
+  }
+  if(info.source_template->parameters.size() != 1 ||
+     info.source_template->parameters[0].kind != TemplateParameterInfo::TP_TYPE ||
+     info.source_template->parameters[0].parameter_pack ||
+     info.instantiation_arguments.size() != 1 ||
+     info.instantiation_arguments[0].kind != TemplateArgument::TA_TYPE ||
+     !named_type_is_template_parameter(info.instantiation_arguments[0].type)) {
+    return;
+  }
+  const std::string specialization_name =
+      template_specialization_name_from_argument_texts(
+          info.source_template->name,
+          info.instantiation_arg_texts);
+  const std::string display_qualified_name =
+      semantic_lookup::scope_qualified_name(*info.source_template->declaring_scope,
+                                            specialization_name);
+  named->named_display =
+      callsemantic_internal::normalize_qualified_name_spacing(
+          info.class_kind + " " + display_qualified_name);
+}
 
 void update_class_template_dependent_type_metadata(
     SemanticContext & ctx,
@@ -2960,6 +3033,7 @@ void update_class_template_dependent_type_metadata(
       info.type,
       info.source_template,
       dependent_argument_syntaxes);
+  update_class_template_dependent_type_display_name(info);
 }
 
 bool type_contains_forced_structured_mangling(const TypePtr & type)
@@ -5665,10 +5739,23 @@ bool record_class_template_instantiation_state(
           canonical_instantiation_arg_texts_impl(ctx, arguments);
     }
     const std::size_t count =
-        std::min(dependent_argument_texts->size(),
-                 info.instantiation_arg_texts.size());
+        std::min(std::min(dependent_argument_texts->size(),
+                          info.instantiation_arg_texts.size()),
+                 arguments.size());
     for(std::size_t i = 0; i < count; ++i) {
-      info.instantiation_arg_texts[i] = (*dependent_argument_texts)[i];
+      const std::string & source_text = (*dependent_argument_texts)[i];
+      info.instantiation_arg_texts[i] =
+          dependent_argument_source_text_matches_semantic_argument(
+              ctx,
+              arguments[i],
+              source_text) ?
+              source_text :
+              canonical_instantiation_arg_text_impl(ctx, arguments[i]);
+      if(i < info.instantiation_arguments.size() &&
+         info.instantiation_arguments[i].kind == TemplateArgument::TA_TYPE &&
+         info.instantiation_arguments[i].dependent) {
+        info.instantiation_arguments[i].text = info.instantiation_arg_texts[i];
+      }
     }
   }
   if(dependent_argument_syntaxes) {
