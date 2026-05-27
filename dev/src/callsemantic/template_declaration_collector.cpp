@@ -3182,13 +3182,23 @@ public:
             const vector<TemplateArgument> & arguments) -> bool
         {
           TypePtr instantiated_type;
-          return decl.type_pattern &&
-                 template_api::type::substitute_type(decl.type_pattern,
-                                                     decl.parameters,
-                                                     arguments,
-                                                     instantiated_type) &&
-                 instantiated_type &&
-                 callsemantic::types_equivalent_for_member_binding(instantiated_type, type);
+          if(!decl.type_pattern ||
+             !template_api::type::substitute_type(decl.type_pattern,
+                                                  decl.parameters,
+                                                  arguments,
+                                                  instantiated_type) ||
+             !instantiated_type) {
+            return false;
+          }
+          TypePtr resolved_instantiated_type;
+          if(template_api::type::resolve_instantiated_dependent_type(ctx,
+                                                                     scope,
+                                                                     instantiated_type,
+                                                                     resolved_instantiated_type) &&
+             resolved_instantiated_type) {
+            instantiated_type = resolved_instantiated_type;
+          }
+          return callsemantic::types_equivalent_for_member_binding(instantiated_type, type);
         };
     const auto record_explicit_function_specialization_binding =
         [&](const template_api::TemplateInstantiationResult & result) -> void

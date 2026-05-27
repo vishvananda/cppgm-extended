@@ -374,7 +374,7 @@ rebased Boost frontier branch.
   compare passes; perf check against
   `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
   passes (instructions `+0.23%`, RSS `+0.98%`, footprint `+1.37%`).
-- this commit: fixed the next Boost.Bloom runtime state frontier in
+- `3d58fd644`: fixed the next Boost.Bloom runtime state frontier in
   `test_construction`. Defaulted move construction for `filter` was classified
   with the copy-triviality predicate, so the generated `filter(filter&&)` body
   used `copyobj` for an `empty_value<Hash>` base even when the selected
@@ -393,6 +393,30 @@ rebased Boost frontier branch.
   `3115/3115`; strict direct-LowIR compare passes; perf check against
   `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
   passes (instructions `+0.28%`, RSS `+1.17%`, footprint `+1.35%`).
+- this commit: fixed the first Boost.Charconv compile frontier. The primary
+  `dragon_box_print_chars<Float, FloatTraits>` function template takes
+  `typename FloatTraits::carrier_uint`, while the explicit specializations in
+  `to_chars.cpp` spell the resolved integer type in the parameter list. After
+  explicit template arguments were substituted, the specialization matcher kept
+  the structured dependent member type
+  `dragonbox_float_traits<float>::carrier_uint` and compared it directly
+  against `std::uint32_t`, so no function template matched and collection
+  failed with `unknown function template explicit specialization`. The fix
+  resolves only the substituted explicit-specialization function type before
+  signature comparison, using the existing dependent-type resolver and adding
+  no source reparse path or tracking table. Validation: the no-STL reducer
+  failed before the fix and now compiles; PA22 regression
+  `518-explicit-specialization-dependent-param-typedef.t` passes; PA22
+  placement audit passes with `--fail-on-early`; PA22 direct-LowIR report
+  passes `444/444`; direct Boost `to_chars.cpp` advances to
+  `unsupported global array initializer for
+  boost::charconv::detail::extended_cache_long_impl<true>::multiplier_index_info_table`;
+  full `libs/charconv/test` rerun advances to that same next frontier with one
+  failed update; full direct-LowIR report passes `3116/3116`; strict
+  direct-LowIR compare passes after rerunning an isolated transient PA19 witness
+  failure cleanly; perf check against
+  `/tmp/cppgm-perf-baseline-boost-frontier-current-local-gate-20260525.json`
+  passes (instructions `+0.29%`, RSS `+2.07%`, footprint `+1.37%`).
 
 Local Boost wrapper state:
 
@@ -454,6 +478,8 @@ Local Boost wrapper state:
 | 11 | `libs/bimap/test` | pass | `test_bimap_range` now passes after the floating logical-branch fix, the Boost.Serialization `basic_iarchive.o` / `basic_oarchive.o` dependency objects now compile after the parenthesized member-callee fix, the explicit-instantiation object-root fix closes the missing archive weak symbols, `test_bimap_serialization` links and runs after the hosted `std::ostream&` virtual-base layout fix, and the two Xpressive frontiers are fixed. The final expected-fail bookkeeping issue was actually CPPGM accepting `test_bimap_info_1`, `test_bimap_mutable_1`, and `test_bimap_mutable_2`; inherited const-object overload selection now rejects those compile-fail probes. Full `JOBS=12 ./run-cppgm-b2.sh -a libs/bimap/test` passed on 2026-05-26 and updated 205 targets; log `/tmp/boost-bimap-full-after-inherited-cv.log`. |
 | 12 | `libs/bind/test` | pass | Full `JOBS=12 ./run-cppgm-b2.sh -a libs/bind/test` passed on 2026-05-26 and updated 303 targets. The remaining `apply_rv_test` / `apply_rv_test2` frontier closed after structural `__is_constructible` started treating function-reference targets as references; earlier Bind fixes closed overloaded logical operators, data-member pointer prvalue-object lowering, member-function pointer cv-qualified type mangling, typed member-function pointer source-argument metadata, same-object rvalue-reference casts, `nullptr_t` null constant ranking, and function-pointer by-value rvalue argument move-constructor output. |
 | 13 | `libs/bloom/test` | pass | Full `/usr/local/bin/timeout 600 env JOBS=12 ./run-cppgm-b2.sh -a libs/bloom/test` passed on 2026-05-27 from `/Users/vishvananda/boost_1_91_0` and updated 38 targets. `test_capacity` stayed fixed after the XMM call-argument shuffle, `test_construction` now passes after defaulted move construction calls the nontrivial hash-state move path, and `test_fpr` also passed in this run. |
+| 14 | `libs/callable_traits/test` | pass | `/usr/local/bin/timeout 600 env JOBS=12 ./run-cppgm-b2.sh -a libs/callable_traits/test` passed on 2026-05-27 from `/Users/vishvananda/boost_1_91_0`; B2 found 1 target already current. |
+| 15 | `libs/charconv/test` | frontier | Current rerun advances past the explicit `dragon_box_print_chars<float, dragonbox_float_traits<float>>` specialization failure and now has one failed update, `to_chars.o`, at `unsupported global array initializer for boost::charconv::detail::extended_cache_long_impl<true>::multiplier_index_info_table`. Log `/tmp/boost-frontier-charconv-after-explicit-specialization-20260527.log`. |
 
 ## Survey Regression Triage - 2026-05-25
 
