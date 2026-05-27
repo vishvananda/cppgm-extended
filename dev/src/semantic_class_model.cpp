@@ -521,6 +521,8 @@ bool has_virtual_destructor_for_host_abi(const ClassInfo & info)
 
 bool implicit_copy_constructor_is_deleted(SemanticContext & ctx,
                                           ClassInfo & info);
+bool implicit_move_constructor_is_deleted(SemanticContext & ctx,
+                                          ClassInfo & info);
 FunctionBinding * find_constructor_binding(ClassInfo & info,
                                            Type::Kind ref_kind);
 bool has_user_declared_move_constructor(const ClassInfo & info);
@@ -1043,6 +1045,108 @@ bool is_trivially_copy_constructible_type_for_host_abi_local(SemanticContext & c
     }
   }
   return true;
+}
+
+bool is_trivially_move_constructible_type_for_host_abi_impl(
+    SemanticContext & ctx,
+    const TypePtr & type,
+    std::set<ClassInfo *> & visiting)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(is_reference_type(base)) {
+    return true;
+  }
+  if(is_array_type(base)) {
+    return base->has_bound &&
+           is_trivially_move_constructible_type_for_host_abi_impl(ctx,
+                                                                  base->inner,
+                                                                  visiting);
+  }
+  if(base->kind == Type::TK_FUNCTION || is_void_type(base)) {
+    return false;
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     base->kind == Type::TK_POINTER ||
+     base->kind == Type::TK_BLOCK_POINTER ||
+     base->kind == Type::TK_MEMBER_POINTER) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  if(is_named_enum_type(ctx, base)) {
+    return true;
+  }
+  ClassInfo * info = ctx.complete_class_type(base);
+  if(!info) {
+    return false;
+  }
+  if(info->class_kind == "enum") {
+    return true;
+  }
+  if(!info->complete || info->is_polymorphic) {
+    return false;
+  }
+  if(visiting.count(info) != 0) {
+    return true;
+  }
+
+  FunctionBinding * move_ctor = nullptr;
+  if(!type_is_const_object(type)) {
+    move_ctor = find_constructor_binding(*info, Type::TK_RVALUE_REFERENCE);
+    if(move_ctor && move_ctor->synthesized && info->complete) {
+      move_ctor->is_deleted = implicit_move_constructor_is_deleted(ctx, *info);
+      move_ctor->has_definition = !move_ctor->is_deleted;
+    }
+    if(!move_ctor) {
+      move_ctor = ensure_implicit_move_constructor(ctx, *info);
+    }
+  }
+
+  if(!move_ctor || move_ctor->is_deleted) {
+    return is_trivially_copy_constructible_type_for_host_abi_local(ctx, base);
+  }
+
+  if(!move_ctor->synthesized && !move_ctor->is_defaulted) {
+    return false;
+  }
+
+  if(has_nontrivial_declared_destructor_for_host_abi(*info)) {
+    return false;
+  }
+
+  visiting.insert(info);
+  for(size_t i = 0; i < info->bases.size(); ++i) {
+    if(info->bases[i].is_virtual ||
+       !is_trivially_move_constructible_type_for_host_abi_impl(
+           ctx,
+           info->bases[i].type->type,
+           visiting)) {
+      visiting.erase(info);
+      return false;
+    }
+  }
+  for(size_t i = 0; i < info->fields.size(); ++i) {
+    if(!is_trivially_move_constructible_type_for_host_abi_impl(ctx,
+                                                               info->fields[i].type,
+                                                               visiting)) {
+      visiting.erase(info);
+      return false;
+    }
+  }
+  visiting.erase(info);
+  return true;
+}
+
+bool is_trivially_move_constructible_type_for_host_abi_local(SemanticContext & ctx,
+                                                             const TypePtr & type)
+{
+  std::set<ClassInfo *> visiting;
+  return is_trivially_move_constructible_type_for_host_abi_impl(ctx, type, visiting);
 }
 
 void bind_member_named_type(Scope & scope,
@@ -10596,6 +10700,12 @@ bool is_trivially_copy_constructible_type_for_host_abi(SemanticContext & ctx,
                                                        const TypePtr & type)
 {
   return is_trivially_copy_constructible_type_for_host_abi_local(ctx, type);
+}
+
+bool is_trivially_move_constructible_type_for_host_abi(SemanticContext & ctx,
+                                                       const TypePtr & type)
+{
+  return is_trivially_move_constructible_type_for_host_abi_local(ctx, type);
 }
 
 }  // namespace semantic_class_model

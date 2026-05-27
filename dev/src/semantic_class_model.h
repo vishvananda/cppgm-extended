@@ -232,6 +232,9 @@ bool is_trivially_destructible_type_for_host_abi(
 bool is_trivially_copy_constructible_type_for_host_abi(
     SemanticContext & ctx,
     const cpp_decl::TypePtr & type);
+bool is_trivially_move_constructible_type_for_host_abi(
+    SemanticContext & ctx,
+    const cpp_decl::TypePtr & type);
 semantic_model::FunctionBinding * ensure_implicit_copy_constructor(
     SemanticContext & ctx,
     semantic_model::ClassInfo & info);

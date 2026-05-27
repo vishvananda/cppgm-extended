@@ -680,7 +680,7 @@ bool is_trivial_constructor_binding(SemanticContext & ctx, FunctionBinding & bin
                                                                                      info.type);
     }
     if(move_like && implicit_like) {
-      return semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(ctx,
+      return semantic_class_model::is_trivially_move_constructible_type_for_host_abi(ctx,
                                                                                      info.type);
     }
     return false;
@@ -697,7 +697,7 @@ bool is_trivial_constructor_binding(SemanticContext & ctx, FunctionBinding & bin
   }
   if(move_like &&
      implicit_like) {
-    return semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(ctx,
+    return semantic_class_model::is_trivially_move_constructible_type_for_host_abi(ctx,
                                                                                    info.type);
   }
   return false;
@@ -2345,7 +2345,8 @@ DumpNode make_assignment_statement(const ExprInfo & lhs,
 
 bool field_eligible_for_trivial_storage_prefix_copy(SemanticContext & ctx,
                                                     const FieldInfo & field,
-                                                    bool assignment_like)
+                                                    bool assignment_like,
+                                                    bool move_like)
 {
   if(field.is_bit_field || is_reference_type(field.type)) {
     return false;
@@ -2358,12 +2359,18 @@ bool field_eligible_for_trivial_storage_prefix_copy(SemanticContext & ctx,
   if(assignment_like) {
     return is_trivially_copy_assignable_type(ctx, field.type);
   }
+  if(move_like) {
+    return semantic_class_model::is_trivially_move_constructible_type_for_host_abi(
+        ctx,
+        field.type);
+  }
   return is_trivially_copy_constructible_type(ctx, field.type);
 }
 
 LeadingTrivialStoragePrefix leading_trivial_storage_prefix(SemanticContext & ctx,
                                                            const ClassInfo & info,
-                                                           bool assignment_like)
+                                                           bool assignment_like,
+                                                           bool move_like)
 {
   LeadingTrivialStoragePrefix prefix;
   if(info.class_kind == "union" || info.is_polymorphic || !info.bases.empty()) {
@@ -2372,7 +2379,10 @@ LeadingTrivialStoragePrefix leading_trivial_storage_prefix(SemanticContext & ctx
 
   for(size_t i = 0; i < info.fields.size(); ++i) {
     const FieldInfo & field = info.fields[i];
-    if(!field_eligible_for_trivial_storage_prefix_copy(ctx, field, assignment_like)) {
+    if(!field_eligible_for_trivial_storage_prefix_copy(ctx,
+                                                       field,
+                                                       assignment_like,
+                                                       move_like)) {
       break;
     }
     prefix.field_count = i + 1;
@@ -4063,7 +4073,7 @@ void append_constructor_generated_statements(SemanticContext & ctx,
     }
     append_all_vptr_actions(ctx, info, this_expr, entry_point_kind, function_node);
     const LeadingTrivialStoragePrefix prefix =
-        leading_trivial_storage_prefix(ctx, info, false);
+        leading_trivial_storage_prefix(ctx, info, false, false);
     if(!prefix.empty()) {
       append_trivial_storage_prefix_copy_action(this_expr,
                                                 source_expr,
@@ -4141,7 +4151,7 @@ void append_constructor_generated_statements(SemanticContext & ctx,
     }
     append_all_vptr_actions(ctx, info, this_expr, entry_point_kind, function_node);
     const LeadingTrivialStoragePrefix prefix =
-        leading_trivial_storage_prefix(ctx, info, false);
+        leading_trivial_storage_prefix(ctx, info, false, true);
     if(!prefix.empty()) {
       append_trivial_storage_prefix_copy_action(this_expr,
                                                 source_expr,
@@ -4468,7 +4478,7 @@ void append_copy_assignment_generated_statements(SemanticContext & ctx,
   }
 
   const LeadingTrivialStoragePrefix prefix =
-      leading_trivial_storage_prefix(ctx, info, true);
+      leading_trivial_storage_prefix(ctx, info, true, false);
   if(!prefix.empty()) {
     append_trivial_storage_prefix_copy_action(this_expr,
                                               source_expr,
@@ -4548,7 +4558,7 @@ void append_move_assignment_generated_statements(SemanticContext & ctx,
   }
 
   const LeadingTrivialStoragePrefix prefix =
-      leading_trivial_storage_prefix(ctx, info, true);
+      leading_trivial_storage_prefix(ctx, info, true, false);
   if(!prefix.empty()) {
     append_trivial_storage_prefix_copy_action(this_expr,
                                               source_expr,
