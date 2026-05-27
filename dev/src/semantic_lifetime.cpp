@@ -1338,6 +1338,43 @@ bool analyze_direct_class_materialization_initializer(SemanticContext & ctx,
          out.node.kind == CallSemKind::initializer_list_object;
 }
 
+bool initializer_uses_copy_initialization(const CppAstNode * initializer)
+{
+  return initializer &&
+         initializer->kind == CppAstKind::initializer &&
+         initializer->uses_assignment_form;
+}
+
+ConstructorSelectionOptions class_initializer_constructor_options(
+    const CppAstNode * initializer,
+    const CppAstNode * payload,
+    bool uses_function_style_constructor_args)
+{
+  const bool is_copy_initialization =
+      initializer_uses_copy_initialization(initializer);
+  const bool is_copy_list_initialization =
+      is_copy_initialization &&
+      payload &&
+      payload->kind == CppAstKind::braced_init_list;
+  if(is_copy_list_initialization) {
+    return constructor_lifecycle_service::selection_options_for(
+        constructor_lifecycle_service::copy_list_initialization_profile(
+            "copy-list-initialization"));
+  }
+  if(is_copy_initialization && uses_function_style_constructor_args) {
+    return constructor_lifecycle_service::selection_options_for(
+        constructor_lifecycle_service::direct_initialization_profile(
+            "copy-initialization direct materialization"));
+  }
+  if(is_copy_initialization) {
+    return constructor_lifecycle_service::selection_options_for(
+        constructor_lifecycle_service::non_explicit_construction_profile(
+            "copy-initialization"));
+  }
+  return constructor_lifecycle_service::selection_options_for(
+      constructor_lifecycle_service::direct_initialization_profile());
+}
+
 void note_elided_direct_materialization_constructor_witness(
     SemanticContext & ctx,
     Scope & scope,
@@ -3164,10 +3201,10 @@ void append_target_initialization_actions(SemanticContext & ctx,
 
   if(info) {
     const bool is_copy_list_initialization =
-        initializer->kind == CppAstKind::initializer &&
-        initializer->uses_assignment_form &&
+        initializer_uses_copy_initialization(initializer) &&
         payload &&
         payload->kind == CppAstKind::braced_init_list;
+    bool uses_function_style_constructor_args = false;
     vector<const CppAstNode *> args;
     const CppAstNode * direct_braced_init = nullptr;
     if(payload) {
@@ -3189,7 +3226,9 @@ void append_target_initialization_actions(SemanticContext & ctx,
                                                            out);
         return;
       }
-      if(!extract_function_style_constructor_args(ctx, scope, type, *payload, args)) {
+      if(extract_function_style_constructor_args(ctx, scope, type, *payload, args)) {
+        uses_function_style_constructor_args = true;
+      } else {
         args = initializer_argument_nodes(*payload);
       }
       if(payload->kind == CppAstKind::braced_init_list) {
@@ -3197,12 +3236,9 @@ void append_target_initialization_actions(SemanticContext & ctx,
       }
     }
     ConstructorSelectionOptions ctor_options =
-        is_copy_list_initialization ?
-            constructor_lifecycle_service::selection_options_for(
-                constructor_lifecycle_service::copy_list_initialization_profile(
-                    "copy-list-initialization")) :
-            constructor_lifecycle_service::selection_options_for(
-                constructor_lifecycle_service::direct_initialization_profile());
+        class_initializer_constructor_options(initializer,
+                                             payload,
+                                             uses_function_style_constructor_args);
     if(!target_use_location.empty()) {
       ctor_options.source_witness_location = target_use_location;
       ctor_options.source_witness_direct_construction = true;
@@ -3926,8 +3962,7 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
   vector<const CppAstNode *> ctor_args_override;
   bool has_ctor_args_override = false;
   const bool is_copy_list_initialization =
-      initializer && initializer->kind == CppAstKind::initializer &&
-      initializer->uses_assignment_form &&
+      initializer_uses_copy_initialization(initializer) &&
       payload &&
       payload->kind == CppAstKind::braced_init_list;
   if(initializer && initializer->kind == CppAstKind::initializer &&
@@ -3963,12 +3998,9 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
     }
   }
   ConstructorSelectionOptions ctor_options =
-      is_copy_list_initialization ?
-          constructor_lifecycle_service::selection_options_for(
-              constructor_lifecycle_service::copy_list_initialization_profile(
-                  "copy-list-initialization")) :
-          constructor_lifecycle_service::selection_options_for(
-              constructor_lifecycle_service::direct_initialization_profile());
+      class_initializer_constructor_options(initializer,
+                                           payload,
+                                           has_ctor_args_override);
   if(!initializer && !object_use_location.empty()) {
     ctor_options.use_location = object_use_location;
   }
