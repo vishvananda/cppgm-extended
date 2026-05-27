@@ -3743,6 +3743,22 @@ bool storage_backed_primary_template_static_member(const ValueBinding & binding)
          template_api::class_has_template_identity(binding.owner_class);
 }
 
+bool can_inline_int128_static_member_initializer(const ValueBinding & binding)
+{
+  return is_int128_integral_type(binding.type) &&
+         binding.requires_constant_initializer &&
+         binding.constant_initializer &&
+         binding.constant_initializer_scope;
+}
+
+const CppAstNode & static_member_initializer_payload(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::initializer && node.children.size() == 1) {
+    return node.children[0];
+  }
+  return node;
+}
+
 bool qualifier_template_id_needs_constant_member_shortcut(
     const TemplateIdSyntax & template_id)
 {
@@ -4210,11 +4226,24 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
       binding.requires_constant_initializer ||
       is_const_object_type(remove_reference_type(binding.type));
   if(allow_constant_fold &&
+     !force_storage_load &&
+     can_inline_int128_static_member_initializer(binding)) {
+    const CppAstNode & payload =
+        static_member_initializer_payload(*binding.constant_initializer);
+    return ctx.analyze_expression_for_target(*binding.constant_initializer_scope,
+                                             payload,
+                                             strip_top_level_cv(binding.type));
+  }
+  if(allow_constant_fold &&
      constant_foldable_static_member &&
      (is_integral_type(binding.type) ||
       is_named_enum_type(ctx, strip_top_level_cv(binding.type)))) {
     bool can_fold = false;
-    if(!force_storage_load && binding.has_constant_value) {
+    const bool narrow_constant_value_allowed =
+        !is_int128_integral_type(binding.type);
+    if(!force_storage_load &&
+       narrow_constant_value_allowed &&
+       binding.has_constant_value) {
       folded_literal.text = to_string(binding.constant_value);
       folded_literal.has_int_value = true;
       folded_literal.int_value = binding.constant_value;
