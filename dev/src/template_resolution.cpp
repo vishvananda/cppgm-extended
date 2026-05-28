@@ -11692,6 +11692,22 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         }
         return false;
       };
+      const auto lookup_pattern_arg_type =
+          [&](const std::string & pattern_arg, TypePtr & pattern_arg_type) -> bool
+      {
+        pattern_arg_type.reset();
+        const std::string trimmed = trim_space(pattern_arg);
+        const DirectTemplateParameterMatch direct_pattern =
+            find_direct_template_parameter_from_arg(trimmed);
+        if(direct_pattern.parameter ||
+           callsemantic_internal::is_identifier_text(trimmed)) {
+          return false;
+        }
+
+        pattern_arg_type =
+            deduction_ops.lookup_type(*deduction_scope, trimmed, true);
+        return static_cast<bool>(pattern_arg_type);
+      };
       const auto resolve_direct_actual_template_argument =
           [&](const TemplateParameterInfo & parameter,
               const std::string & actual_arg,
@@ -11942,6 +11958,28 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
             }
           }
           return true;
+        }
+
+        if(pattern_arg.find("::") != std::string::npos ||
+           actual_arg.find("::") != std::string::npos) {
+          TypePtr pattern_arg_type;
+          TypePtr actual_arg_type;
+          if(lookup_pattern_arg_type(pattern_arg, pattern_arg_type) &&
+             lookup_actual_arg_type(actual_arg, actual_arg_type) &&
+             actual_arg_type &&
+             deduce_template_argument_impl(ctx,
+                                           parameters,
+                                           pattern_arg_type,
+                                           actual_arg_type,
+                                           deduced_types,
+                                           deduced_values,
+                                           deduction_scope,
+                                           partial_top_level_cv_deduction,
+                                           actual_lookup_scope,
+                                           deduced_pack_arguments,
+                                           allow_actual_base_deduction)) {
+            return true;
+          }
         }
 
         return false;

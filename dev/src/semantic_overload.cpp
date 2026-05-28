@@ -3929,6 +3929,22 @@ bool template_base_names_compatible(const string & pattern,
              unqualified_template_base_name(actual);
 }
 
+bool template_base_name_is_direct_template_template_parameter(
+    const vector<TemplateParameterInfo> & parameters,
+    const string & pattern)
+{
+  if(pattern.empty() || pattern.find("::") != string::npos) {
+    return false;
+  }
+  for(size_t i = 0; i < parameters.size(); ++i) {
+    if(parameters[i].kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+       parameters[i].name == pattern) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool type_has_template_base_named(SemanticContext & ctx,
                                   const TypePtr & type,
                                   const string & pattern_template,
@@ -4608,6 +4624,10 @@ bool constructor_template_matches_source_args_fast(SemanticContext & ctx,
 
   const string pattern_template = named_template_base_name(decl.params_pattern[0].second);
   if(pattern_template.empty()) {
+    return true;
+  }
+  if(template_base_name_is_direct_template_template_parameter(decl.parameters,
+                                                             pattern_template)) {
     return true;
   }
 
