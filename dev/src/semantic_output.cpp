@@ -99,6 +99,7 @@ void apply_local_static_guard_to_lifetime_actions(DumpNode & var_node)
   for(size_t i = 0; i < var_node.children.size(); ++i) {
     if(var_node.children[i].kind == CallSemKind::constructor_action ||
        var_node.children[i].kind == CallSemKind::destructor_action) {
+      var_node.children[i].is_thread_local = var_node.is_thread_local;
       set_callsem_local_static_guard_symbol(
           var_node.children[i],
           callsem_local_static_guard_symbol(var_node));

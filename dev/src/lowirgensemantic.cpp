@@ -7816,6 +7816,14 @@ private:
     return internal_symbol;
   }
 
+  string external_runtime_object_symbol(const string & helper_symbol)
+  {
+    const string internal_symbol =
+        symbol_linkage::internal_symbol_from_name("__external_runtime::" + helper_symbol);
+    external_object_symbols_[internal_symbol] = helper_symbol;
+    return internal_symbol;
+  }
+
   void note_external_runtime_function(const string & helper_symbol)
   {
     external_function_symbols_[
@@ -12290,10 +12298,10 @@ private:
     } else {
       TypePtr base = strip_top_level_cv(variable.semantic_type);
       if(base && base->kind == Type::TK_ARRAY) {
-      if(variable.children.size() != 1) {
-        throw logic_error("guarded static storage initializer arity");
-      }
-      const CallSemNode & init = variable.children[0];
+        if(variable.children.size() != 1) {
+          throw logic_error("guarded static storage initializer arity");
+        }
+        const CallSemNode & init = variable.children[0];
         if(init.kind != CallSemKind::braced_init_list) {
           throw logic_error("guarded static array initializer requires braced-init-list");
         }
@@ -12314,6 +12322,9 @@ private:
                   emit_scalar_storage_value(variable.semantic_type,
                                             variable.children[0]) + ", " + target_ptr);
       }
+    }
+    if(variable.is_thread_local) {
+      emit_thread_local_destructor_registration(variable.semantic_type, target_ptr);
     }
     emit_line("store i64 1, " + callsem_local_static_guard_symbol(variable));
     terminate("jump " + lowir_block_name(done_label));
@@ -12699,6 +12710,107 @@ private:
     register_constructor_unwind_cleanup(action);
   }
 
+  bool constructor_action_target_object(const CallSemNode & action,
+                                        const CallSemNode *& target_arg,
+                                        TypePtr & object_type) const
+  {
+    target_arg = nullptr;
+    object_type = TypePtr();
+    if(action.kind != CallSemKind::constructor_action ||
+       action.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & call = action.children[0];
+    if(call.kind != CallSemKind::call_expression || call.children.size() < 2) {
+      return false;
+    }
+    const CallSemNode & candidate = call.children[1];
+    TypePtr pointer_type = strip_top_level_cv(remove_reference_type(candidate.semantic_type));
+    if(!pointer_type || pointer_type->kind != Type::TK_POINTER ||
+       !pointer_type->inner) {
+      return false;
+    }
+    TypePtr candidate_type = strip_top_level_cv(pointer_type->inner);
+    if(!is_complete_class_value_type(candidate_type)) {
+      return false;
+    }
+    target_arg = &candidate;
+    object_type = candidate_type;
+    return true;
+  }
+
+  bool type_needs_thread_local_destructor_registration(const TypePtr & type) const
+  {
+    TypePtr base = strip_top_level_cv(remove_reference_type(type));
+    if(!base) {
+      return false;
+    }
+    if(base->kind == Type::TK_ARRAY) {
+      return base->inner &&
+             type_needs_thread_local_destructor_registration(base->inner);
+    }
+    return is_complete_class_value_type(base) &&
+           !destructor_symbol_for_runtime_call(base).empty();
+  }
+
+  void emit_thread_local_destructor_registration(const CallSemNode & action)
+  {
+    if(!action.is_thread_local) {
+      return;
+    }
+    const CallSemNode * target_arg = nullptr;
+    TypePtr object_type;
+    if(!constructor_action_target_object(action, target_arg, object_type)) {
+      return;
+    }
+    if(!type_needs_thread_local_destructor_registration(object_type)) {
+      return;
+    }
+    emit_thread_local_destructor_registration(object_type, emit_rvalue(*target_arg));
+  }
+
+  void emit_thread_local_destructor_registration(const TypePtr & type,
+                                                 const string & object_ptr)
+  {
+    TypePtr base = strip_top_level_cv(remove_reference_type(type));
+    if(!base || object_ptr.empty()) {
+      return;
+    }
+    if(base->kind == Type::TK_ARRAY) {
+      TypePtr element_type = strip_top_level_cv(base->inner);
+      if(!element_type) {
+        return;
+      }
+      const size_t element_size = backend_storage_size(element_type);
+      for(size_t i = 0; i < base->bound; ++i) {
+        const string element_ptr =
+            i == 0 ? object_ptr :
+                emit_temp_assignment("ptr",
+                                     string("index i8 ") + object_ptr + ", " +
+                                         to_string(element_size * i));
+        emit_thread_local_destructor_registration(element_type, element_ptr);
+      }
+      return;
+    }
+    if(!is_complete_class_value_type(base)) {
+      return;
+    }
+    const string dtor = destructor_symbol_for_runtime_call(base);
+    if(dtor.empty()) {
+      return;
+    }
+
+    const string dtor_ptr = emit_temp_assignment("ptr", string("addr ") + dtor);
+    const string dso_handle =
+        emit_temp_assignment("ptr",
+                             string("addr ") +
+                                 external_runtime_object_symbol("__dso_handle"));
+    emit_temp_assignment("i32",
+                         string("call i32 ") +
+                             external_runtime_symbol("__cxa_thread_atexit") + "(" +
+                             dtor_ptr + ", " + object_ptr + ", " + dso_handle + ")");
+  }
+
   void emit_action(const CallSemNode & action)
   {
     if(action.children.size() != 1) {
@@ -12719,6 +12831,7 @@ private:
       start_block(run_label);
       emit_constructor_action(action);
       if(current_block_ && !current_block_->terminated) {
+        emit_thread_local_destructor_registration(action);
         emit_line("store i64 1, " + callsem_local_static_guard_symbol(action));
         terminate("jump " + lowir_block_name(done_label));
       }
@@ -14135,6 +14248,13 @@ private:
       signature.params.push_back(make_lowir_parameter_text("%arg0", "i64"));
       return true;
     }
+    if(name == "__cxa_thread_atexit") {
+      signature.return_type = "i32";
+      signature.params.push_back(make_lowir_parameter_text("%arg0", "ptr"));
+      signature.params.push_back(make_lowir_parameter_text("%arg1", "ptr"));
+      signature.params.push_back(make_lowir_parameter_text("%arg2", "ptr"));
+      return true;
+    }
     if(name == "__cxa_throw") {
       signature.return_type = "void";
       signature.params.push_back(make_lowir_parameter_text("%arg0", "ptr"));
@@ -14592,14 +14712,21 @@ private:
         ++it) {
       LowIRFunctionSignatureText signature;
       signature.return_type = "ptr";
+      lowir_internal::FunctionDeclaration declaration =
+          make_function_declaration(
+              it->first,
+              signature,
+              false,
+              binding_for_thread_local_wrapper_symbol(it->first),
+              it->second);
+      map<string, string>::const_iterator object =
+          thread_local_wrapper_object_symbols_.find(it->first);
+      if(object != thread_local_wrapper_object_symbols_.end()) {
+        declaration.metadata.object_symbol = object->second;
+      }
       record_function_declaration(program,
                                   emitted_function_declarations,
-                                  make_function_declaration(
-                                      it->first,
-                                      signature,
-                                      false,
-                                      binding_for_thread_local_wrapper_symbol(it->first),
-                                      it->second));
+                                  declaration);
     }
 
     for(map<string, string>::const_iterator it = external_function_symbols_.begin();
@@ -14994,8 +15121,10 @@ private:
     }
 
     const string dtor = destructor_symbol(element_type);
-    for(size_t i = 0; i < constructed_count; ++i) {
-      append_global_array_destructor_action(node, array_type, i, dtor);
+    if(!node.is_thread_local) {
+      for(size_t i = 0; i < constructed_count; ++i) {
+        append_global_array_destructor_action(node, array_type, i, dtor);
+      }
     }
     return true;
   }
@@ -15082,10 +15211,23 @@ private:
                                           false,
                                           false,
                                           node.is_thread_local));
+    const string object_symbol = node_internal_symbol(node);
+    const bool guard_for_named_thread_local_object =
+        !object_symbol.empty() &&
+        guard_symbol == symbol_linkage::thread_local_guard_internal_symbol(object_symbol);
     if(node.is_thread_local) {
-      thread_local_wrapper_targets_[
-          symbol_linkage::thread_local_wrapper_internal_symbol(guard_symbol)] =
-              guard_symbol;
+      const string wrapper_internal =
+          symbol_linkage::thread_local_wrapper_internal_symbol(guard_symbol);
+      thread_local_wrapper_targets_[wrapper_internal] = guard_symbol;
+      if(!guard_for_named_thread_local_object) {
+        thread_local_wrapper_object_symbols_[wrapper_internal] = wrapper_internal;
+        set_exported_symbol(
+            wrapper_internal,
+            symbol_linkage::make_internal_symbol_identity(wrapper_internal,
+                                                          symbol_linkage::SL_WEAK),
+            "tls-guard-wrapper",
+            node.text);
+      }
     }
   }
 
@@ -15124,6 +15266,7 @@ private:
   vector<lowir_internal::ObjectAlias> object_aliases_;
   map<string, string> object_alias_targets_;
   map<string, string> thread_local_wrapper_targets_;
+  map<string, string> thread_local_wrapper_object_symbols_;
   vector<const CallSemNode *> function_nodes_;
   vector<const CallSemNode *> global_ctor_actions_;
   vector<const CallSemNode *> global_dtor_actions_;
@@ -18213,7 +18356,8 @@ private:
         } else if(callsem_local_static_guard_symbol(node).empty() &&
                   is_direct_global_class_materialization_child(node, node.children[i])) {
           append_global_object_materialization_constructor_action(node, node.children[i]);
-        } else if(node.children[i].kind == CallSemKind::destructor_action &&
+        } else if(!node.is_thread_local &&
+                  node.children[i].kind == CallSemKind::destructor_action &&
                   !node.children[i].trivial_lifecycle) {
           global_dtor_actions_.push_back(&node.children[i]);
         }
