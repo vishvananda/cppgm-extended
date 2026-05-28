@@ -472,6 +472,13 @@ Local Boost wrapper state:
   worktree's `dev/cppgm++`.
 - The wrapper routes C and assembly compile/preprocess actions to host clang,
   C++ compile/preprocess actions to `cppgm++`, and link actions to host clang++.
+- On this macOS host, freshly linked cppgm-generated Mach-O executables can
+  stall during direct launch. Runtime Boost verification should use Boost.Build
+  `testing.launcher=/bin/bash /Users/vishvananda/cppgm-boost-b2-frontier/scripts/cppgm_trusted_exec_launcher.sh`
+  with `JOBS=1`; the launcher copies each test executable onto the trusted
+  `/Users/vishvananda/cppgm-safe/dev/cppgm++` carrier, runs it, and restores the
+  carrier before the next action. Invoke the launcher through `/bin/bash`; direct
+  script execution can hit the same local launch issue.
 
 ## Sequential Process
 
@@ -632,6 +639,18 @@ Local Boost wrapper state:
   The current Container build-only frontier is clean; runtime execution still
   needs a separate full run/trusted-inode pass before row 22 is marked as a
   fully passing suite.
+- 2026-05-28 trusted runtime update: full Container runtime verification with
+  `/usr/local/bin/timeout 3600 env JOBS=1 ./run-cppgm-b2.sh
+  libs/container/test 'testing.launcher=/bin/bash
+  /Users/vishvananda/cppgm-boost-b2-frontier/scripts/cppgm_trusted_exec_launcher.sh'`
+  advances past the local fresh-executable stalls and runs the suite under B2.
+  The run updates 228 targets, with three real runtime failures remaining:
+  `static_vector_test` reports leaked `counting_value` instances at
+  `static_vector_test.cpp:784-808`, `map_test` aborts in
+  `adaptive_node_pool_impl.hpp:959` with
+  `n_free_nodes == m_totally_free_blocks`, and `devector_test` reports leaked
+  `test_elem_base` instances before aborting with `test_exception`. Log:
+  `/tmp/boost-frontier-container-runtime-trusted-full-20260528.log`.
 
 ## Survey Regression Triage - 2026-05-25
 
