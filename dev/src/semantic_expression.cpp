@@ -6748,12 +6748,43 @@ ExprInfo analyze_subscript_expression(SemanticContext & ctx,
   TypePtr pointer_type;
   TypePtr base_pointer_type = subscript_pointer_operand_type(base);
   TypePtr index_pointer_type = subscript_pointer_operand_type(index);
+  bool base_is_subscript_index =
+      base_type && is_integral_or_unscoped_enum_type(base_type);
+  bool index_is_subscript_index =
+      index_type && is_integral_or_unscoped_enum_type(index_type);
+  if(!base_pointer_type && index_is_subscript_index) {
+    ExprInfo converted_base;
+    TypePtr converted_pointer_type;
+    if(try_builtin_pointer_operand_conversion(ctx,
+                                              scope,
+                                              base,
+                                              converted_base,
+                                              converted_pointer_type)) {
+      base = converted_base;
+      base_pointer_type = converted_pointer_type;
+      base_type = value_conversion_type(base);
+      base_is_subscript_index =
+          base_type && is_integral_or_unscoped_enum_type(base_type);
+    }
+  }
+  if(!index_pointer_type && base_is_subscript_index) {
+    ExprInfo converted_index;
+    TypePtr converted_pointer_type;
+    if(try_builtin_pointer_operand_conversion(ctx,
+                                              scope,
+                                              index,
+                                              converted_index,
+                                              converted_pointer_type)) {
+      index = converted_index;
+      index_pointer_type = converted_pointer_type;
+      index_type = value_conversion_type(index);
+      index_is_subscript_index =
+          index_type && is_integral_or_unscoped_enum_type(index_type);
+    }
+  }
+
   const bool base_is_pointer = static_cast<bool>(base_pointer_type);
   const bool index_is_pointer = static_cast<bool>(index_pointer_type);
-  const bool base_is_subscript_index =
-      base_type && is_integral_or_unscoped_enum_type(base_type);
-  const bool index_is_subscript_index =
-      index_type && is_integral_or_unscoped_enum_type(index_type);
   if(base_is_pointer && index_is_subscript_index) {
     pointer_operand = base;
     index_operand = index;

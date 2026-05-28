@@ -817,6 +817,134 @@ bool binding_declares_explicit_function(const FunctionBinding & binding)
 
 }  // namespace
 
+bool try_builtin_pointer_operand_conversion(SemanticContext & ctx,
+                                            Scope & scope,
+                                            const ExprInfo & expr,
+                                            ExprInfo & out,
+                                            TypePtr & pointer_type,
+                                            const ArgumentConversionOptions & options)
+{
+  pointer_type = TypePtr();
+  if(!expr.type) {
+    return false;
+  }
+
+  TypePtr source_class_type = strip_top_level_cv(remove_reference_type(expr.type));
+  ClassInfo * source_class = ensure_complete_class_info(ctx, source_class_type);
+  if(!source_class) {
+    return false;
+  }
+
+  vector<TypePtr> target_pointer_types;
+  const auto append_target =
+      [&](const TypePtr & result_type)
+      {
+        TypePtr result_base = strip_top_level_cv(result_type);
+        if(!result_base || result_base->kind != Type::TK_POINTER) {
+          return;
+        }
+        for(size_t i = 0; i < target_pointer_types.size(); ++i) {
+          if(type_equals(target_pointer_types[i], result_base)) {
+            return;
+          }
+        }
+        target_pointer_types.push_back(result_base);
+      };
+
+  vector<MemberFunctionLookupResult> conversion_sets =
+      collect_visible_conversion_functions(ctx, *source_class);
+  for(size_t set_index = 0; set_index < conversion_sets.size(); ++set_index) {
+    const MemberFunctionLookupResult & visible = conversion_sets[set_index];
+    for(size_t i = 0; i < visible.functions.size(); ++i) {
+      append_target(conversion_function_result_type(visible.functions[i]));
+    }
+  }
+  if(target_pointer_types.empty()) {
+    return false;
+  }
+
+  struct Candidate
+  {
+    ExprInfo converted;
+    TypePtr pointer_type;
+    ConversionRank rank = CR_BAD;
+  };
+
+  vector<Candidate> candidates;
+  for(size_t i = 0; i < target_pointer_types.size(); ++i) {
+    ExprInfo converted;
+    ConversionRank rank = CR_BAD;
+    if(!try_argument_conversion(ctx,
+                                scope,
+                                target_pointer_types[i],
+                                expr,
+                                converted,
+                                rank,
+                                options)) {
+      continue;
+    }
+    TypePtr converted_type = strip_top_level_cv(value_conversion_type(converted));
+    if(!converted_type || converted_type->kind != Type::TK_POINTER) {
+      continue;
+    }
+    bool duplicate = false;
+    for(size_t j = 0; j < candidates.size(); ++j) {
+      if(type_equals(candidates[j].pointer_type, converted_type)) {
+        duplicate = true;
+        break;
+      }
+    }
+    if(duplicate) {
+      continue;
+    }
+
+    Candidate candidate;
+    candidate.converted = converted;
+    candidate.pointer_type = converted_type;
+    candidate.rank = rank;
+    candidates.push_back(candidate);
+  }
+  if(candidates.empty()) {
+    return false;
+  }
+
+  size_t best = 0;
+  bool ambiguous = false;
+  for(size_t i = 1; i < candidates.size(); ++i) {
+    bool current_better = false;
+    bool best_better = false;
+    if(candidates[i].rank < candidates[best].rank) {
+      current_better = true;
+    } else if(candidates[i].rank > candidates[best].rank) {
+      best_better = true;
+    } else {
+      int qual_pref = compare_parameter_qualification_preference(
+          candidates[i].pointer_type,
+          candidates[best].pointer_type);
+      if(qual_pref < 0) {
+        current_better = true;
+      } else if(qual_pref > 0) {
+        best_better = true;
+      }
+    }
+
+    if(current_better && !best_better) {
+      best = i;
+      ambiguous = false;
+    } else if((current_better && best_better) ||
+              (!current_better && !best_better)) {
+      ambiguous = true;
+    }
+  }
+  if(ambiguous) {
+    return false;
+  }
+
+  out = candidates[best].converted;
+  pointer_type = candidates[best].pointer_type;
+  return true;
+}
+
 bool member_pointer_exact_qualification_compatible(const TypePtr & target,
                                                    const TypePtr & source);
 bool member_pointer_inheritance_conversion(SemanticContext & ctx,
