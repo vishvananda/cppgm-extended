@@ -3873,6 +3873,36 @@ bool try_expand_alias_template_pattern_structurally(
     }
     return false;
   };
+  const auto current_owner_member_alias =
+      [&](AliasTemplateDecl * alias_template_decl) -> AliasTemplateDecl *
+  {
+    if(!alias_template_decl ||
+       !alias_template_decl->declaring_scope ||
+       !alias_template_decl->declaring_scope->class_info ||
+       !alias_template_decl->declaring_scope->class_info->source_template ||
+       alias_template_decl->name.empty() ||
+       !effective_body_scope.valid()) {
+      return alias_template_decl;
+    }
+    ClassInfo * original_owner =
+        alias_template_decl->declaring_scope->class_info;
+    AliasTemplateDecl * current =
+        template_argument_semantics::lookup_alias_template(
+            services,
+            effective_body_scope.require(),
+            alias_template_decl->name);
+    if(!current ||
+       current == alias_template_decl ||
+       !current->declaring_scope ||
+       !current->declaring_scope->class_info) {
+      return alias_template_decl;
+    }
+    ClassInfo * current_owner = current->declaring_scope->class_info;
+    if(current_owner->source_template == original_owner->source_template) {
+      return current;
+    }
+    return alias_template_decl;
+  };
 
   TypePtr direct_member_alias_owner;
   std::vector<std::string> direct_member_alias_members;
@@ -4353,7 +4383,8 @@ bool try_expand_alias_template_pattern_structurally(
            substituted_alias_template_decl &&
            substituted_alias_template_decl != &alias_template) {
           AliasTemplateDecl * nested_alias_template =
-              static_cast<AliasTemplateDecl *>(substituted_alias_template_decl);
+              current_owner_member_alias(
+                  static_cast<AliasTemplateDecl *>(substituted_alias_template_decl));
           std::vector<std::string> nested_arg_texts;
           std::vector<TemplateArgumentSyntax> nested_arg_syntaxes;
           nested_arg_texts.reserve(substituted_alias_args.size());
