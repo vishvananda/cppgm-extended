@@ -25,6 +25,7 @@ struct RuntimeSymbolTableEntry
   X("__cxa_current_exception_type", eh_current_exception_type, host_eh_runtime, nullptr) \
   X("__cxa_end_catch", eh_end_catch, host_eh_runtime, nullptr) \
   X("__cxa_rethrow", eh_rethrow, host_eh_runtime, nullptr) \
+  X("__cxa_thread_atexit", none, host_abi, nullptr) \
   X("__cxa_throw", eh_throw, host_eh_runtime, nullptr) \
   X("__gxx_personality_v0", eh_personality, host_eh_runtime, nullptr) \
   X("_Unwind_Resume", eh_resume, host_eh_runtime, nullptr) \
