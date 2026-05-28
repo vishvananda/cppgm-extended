@@ -6213,6 +6213,18 @@ private:
       return;
     }
 
+    if(node.kind == CallSemKind::binary_expression &&
+       callsem_has_token(node, OP_COMMA)) {
+      if(node.children.size() != 2) {
+        throw logic_error("binary-expression arity");
+      }
+      emit_discarded_expression(node.children[0]);
+      if(current_block_) {
+        emit_discarded_expression(node.children[1]);
+      }
+      return;
+    }
+
     if(emit_discarded_indirect_prvalue(node)) {
       return;
     }
@@ -6232,18 +6244,6 @@ private:
         is_indirect_value_type(discard_type) ||
         discard_base->kind == Type::TK_ARRAY)) {
       emit_lvalue_address(node);
-      return;
-    }
-
-    if(node.kind == CallSemKind::binary_expression &&
-       callsem_has_token(node, OP_COMMA)) {
-      if(node.children.size() != 2) {
-        throw logic_error("binary-expression arity");
-      }
-      emit_discarded_expression(node.children[0]);
-      if(current_block_) {
-        emit_discarded_expression(node.children[1]);
-      }
       return;
     }
 
