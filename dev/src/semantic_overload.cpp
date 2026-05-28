@@ -5665,7 +5665,7 @@ ExprInfo analyze_builtin_fixed_unsigned_call(SemanticContext & ctx,
   return make_builtin_call_result(ctx,
                                   builtin_name,
                                   make_fundamental(FT_INT),
-                                  vector<TypePtr>(1, value_arg.type),
+                                  vector<TypePtr>(1, param_type),
                                   vector<ExprInfo>(1, value_arg));
 }
 

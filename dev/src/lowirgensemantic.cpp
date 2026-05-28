@@ -9934,20 +9934,59 @@ private:
     return emit_classification_result(node, result);
   }
 
-  string emit_builtin_popcount_value(const CallSemNode & node)
+  TypePtr fixed_width_bit_builtin_type(const string & builtin_name)
+  {
+    if(builtin_name == "__builtin_clz" ||
+       builtin_name == "__builtin_ctz" ||
+       builtin_name == "__builtin_popcount") {
+      return make_fundamental(FT_UNSIGNED_INT);
+    }
+    if(builtin_name == "__builtin_clzl" ||
+       builtin_name == "__builtin_ctzl" ||
+       builtin_name == "__builtin_popcountl") {
+      return make_fundamental(FT_UNSIGNED_LONG_INT);
+    }
+    if(builtin_name == "__builtin_clzll" ||
+       builtin_name == "__builtin_ctzll" ||
+       builtin_name == "__builtin_popcountll") {
+      return make_fundamental(FT_UNSIGNED_LONG_LONG_INT);
+    }
+    return TypePtr();
+  }
+
+  TypePtr bit_builtin_operand_type(const string & builtin_name,
+                                   const CallSemNode & arg)
+  {
+    TypePtr forced = fixed_width_bit_builtin_type(builtin_name);
+    return forced ? forced : arg.semantic_type;
+  }
+
+  string emit_bit_builtin_operand_value(const CallSemNode & arg,
+                                        const TypePtr & value_type)
+  {
+    return emit_scalar_value_conversion(emit_rvalue(arg),
+                                        arg.semantic_type,
+                                        value_type,
+                                        true);
+  }
+
+  string emit_builtin_popcount_value(const string & builtin_name,
+                                     const CallSemNode & node)
   {
     if(node.children.size() != 2) {
       throw logic_error("__builtin_popcount child count");
     }
 
     const string result_type = lowir_type_for(node.semantic_type);
-    const string value_type = lowir_type_for(node.children[1].semantic_type);
-    const size_t bit_count = type_size(node.children[1].semantic_type) * 8;
+    TypePtr operand_type = bit_builtin_operand_type(builtin_name, node.children[1]);
+    const string value_type = lowir_type_for(operand_type);
+    const size_t bit_count = type_size(operand_type) * 8;
     if(bit_count == 0 || bit_count > 64) {
       throw logic_error("__builtin_popcount unsupported operand width");
     }
 
-    const string value = emit_rvalue(node.children[1]);
+    const string value =
+        emit_bit_builtin_operand_value(node.children[1], operand_type);
     const string value_slot = new_hidden_slot(value_type, "popcount_value");
     const string count_slot = new_hidden_slot(result_type, "popcount_count");
     const string check_label = new_block("popcount_check");
@@ -9987,20 +10026,23 @@ private:
                                 string("load ") + result_type + " " + count_slot);
   }
 
-  string emit_builtin_clzg_value(const CallSemNode & node)
+  string emit_builtin_clzg_value(const string & builtin_name,
+                                 const CallSemNode & node)
   {
     if(node.children.size() != 2 && node.children.size() != 3) {
       throw logic_error("__builtin_clzg child count");
     }
 
     const string result_type = lowir_type_for(node.semantic_type);
-    const string value_type = lowir_type_for(node.children[1].semantic_type);
-    const size_t bit_count = type_size(node.children[1].semantic_type) * 8;
+    TypePtr operand_type = bit_builtin_operand_type(builtin_name, node.children[1]);
+    const string value_type = lowir_type_for(operand_type);
+    const size_t bit_count = type_size(operand_type) * 8;
     if(bit_count == 0 || bit_count > 64) {
       throw logic_error("__builtin_clzg unsupported operand width");
     }
 
-    const string value = emit_rvalue(node.children[1]);
+    const string value =
+        emit_bit_builtin_operand_value(node.children[1], operand_type);
     const string zero_result =
         node.children.size() == 3
             ? emit_rvalue(node.children[2])
@@ -10067,20 +10109,23 @@ private:
                                 string("load ") + result_type + " " + result_slot);
   }
 
-  string emit_builtin_ctzg_value(const CallSemNode & node)
+  string emit_builtin_ctzg_value(const string & builtin_name,
+                                 const CallSemNode & node)
   {
     if(node.children.size() != 2 && node.children.size() != 3) {
       throw logic_error("__builtin_ctzg child count");
     }
 
     const string result_type = lowir_type_for(node.semantic_type);
-    const string value_type = lowir_type_for(node.children[1].semantic_type);
-    const size_t bit_count = type_size(node.children[1].semantic_type) * 8;
+    TypePtr operand_type = bit_builtin_operand_type(builtin_name, node.children[1]);
+    const string value_type = lowir_type_for(operand_type);
+    const size_t bit_count = type_size(operand_type) * 8;
     if(bit_count == 0 || bit_count > 64) {
       throw logic_error("__builtin_ctzg unsupported operand width");
     }
 
-    const string value = emit_rvalue(node.children[1]);
+    const string value =
+        emit_bit_builtin_operand_value(node.children[1], operand_type);
     const string zero_result =
         node.children.size() == 3
             ? emit_rvalue(node.children[2])
@@ -12134,19 +12179,19 @@ private:
            builtin_name == "__builtin_clzl" ||
            builtin_name == "__builtin_clzll" ||
            builtin_name == "__builtin_clzg") {
-          return emit_builtin_clzg_value(node);
+          return emit_builtin_clzg_value(builtin_name, node);
         }
         if(builtin_name == "__builtin_ctz" ||
            builtin_name == "__builtin_ctzl" ||
            builtin_name == "__builtin_ctzll" ||
            builtin_name == "__builtin_ctzg") {
-          return emit_builtin_ctzg_value(node);
+          return emit_builtin_ctzg_value(builtin_name, node);
         }
         if(builtin_name == "__builtin_popcount" ||
            builtin_name == "__builtin_popcountl" ||
            builtin_name == "__builtin_popcountll" ||
            builtin_name == "__builtin_popcountg") {
-          return emit_builtin_popcount_value(node);
+          return emit_builtin_popcount_value(builtin_name, node);
         }
         if(builtin_name == "__builtin_add_overflow" ||
            builtin_name == "__builtin_sub_overflow" ||

@@ -351,8 +351,30 @@ bool evaluate_constant_call_expression_value(
     }
   }
 
+  const auto fixed_width_bit_builtin_type =
+      [](const std::string & builtin_name) -> TypePtr
+  {
+    if(builtin_name == "__builtin_clz" ||
+       builtin_name == "__builtin_ctz" ||
+       builtin_name == "__builtin_popcount") {
+      return make_fundamental(FT_UNSIGNED_INT);
+    }
+    if(builtin_name == "__builtin_clzl" ||
+       builtin_name == "__builtin_ctzl" ||
+       builtin_name == "__builtin_popcountl") {
+      return make_fundamental(FT_UNSIGNED_LONG_INT);
+    }
+    if(builtin_name == "__builtin_clzll" ||
+       builtin_name == "__builtin_ctzll" ||
+       builtin_name == "__builtin_popcountll") {
+      return make_fundamental(FT_UNSIGNED_LONG_LONG_INT);
+    }
+    return TypePtr();
+  };
+
   const auto evaluate_builtin_bit_argument =
       [&](const constant_eval::ConstexprValue & arg,
+          const TypePtr & forced_type,
           unsigned long long & value,
           unsigned & bit_count) -> bool
   {
@@ -361,7 +383,8 @@ bool evaluate_constant_call_expression_value(
       return false;
     }
 
-    TypePtr value_type = strip_top_level_cv(arg.type);
+    TypePtr value_type = forced_type ? strip_top_level_cv(forced_type)
+                                     : strip_top_level_cv(arg.type);
     if(!value_type || !is_integral_type(value_type)) {
       return false;
     }
@@ -393,7 +416,10 @@ bool evaluate_constant_call_expression_value(
      args.size() == 1) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0],
+                                      fixed_width_bit_builtin_type(callee.value),
+                                      value,
+                                      bit_count)) {
       return false;
     }
     if(value == 0ULL) {
@@ -413,7 +439,10 @@ bool evaluate_constant_call_expression_value(
      args.size() == 1) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0],
+                                      fixed_width_bit_builtin_type(callee.value),
+                                      value,
+                                      bit_count)) {
       return false;
     }
     if(value == 0ULL) {
@@ -439,7 +468,10 @@ bool evaluate_constant_call_expression_value(
      args.size() == 1) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0],
+                                      fixed_width_bit_builtin_type(callee.value),
+                                      value,
+                                      bit_count)) {
       return false;
     }
     (void)bit_count;
@@ -510,7 +542,7 @@ bool evaluate_constant_call_expression_value(
      (args.size() == 1 || args.size() == 2)) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0], TypePtr(), value, bit_count)) {
       return false;
     }
 
@@ -536,7 +568,7 @@ bool evaluate_constant_call_expression_value(
      (args.size() == 1 || args.size() == 2)) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0], TypePtr(), value, bit_count)) {
       return false;
     }
 
