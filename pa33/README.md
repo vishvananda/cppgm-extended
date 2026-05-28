@@ -156,6 +156,25 @@ The checked-in PA33 tests cover:
 - object facts such as unwind sections, relocation classes, weak/undefined
   symbols, and vtable/RTTI ownership when a test includes an inspect sidecar
 
+### Host ABI Symbol Names
+
+PA33 extends the PA32 object contract into host C++ ABI/runtime behavior. The
+same ABI naming behavior from PA31 and PA32 is still observable for every C++
+symbol that the host linker, unwinder, RTTI system, or virtual-dispatch
+machinery can observe.
+
+The important observable result is that these entities have host ABI names that
+match the configured toolchain:
+
+- ordinary functions, methods, constructors, destructors, and function
+  templates
+- vtables, VTTs, RTTI objects, covariant thunks, non-virtual thunks, and
+  virtual-base thunks
+- exception, cleanup, and helper symbols that must interoperate with host-built
+  code
+- local classes, lambdas, dependent/template names, ABI tags, and inline
+  namespaces when they affect the host name
+
 ### Assignment Boundary
 
 PA33 owns practical host-linked C++ ABI/runtime behavior.
@@ -189,6 +208,12 @@ oracle, but some tests inspect object facts because host C++ ABI correctness is
 often decided before the program starts: symbol names, weak ownership, unwind
 sections, RTTI/vtable objects, and relocation classes must match the host
 toolchain's expectations closely enough for ordinary linking and unwinding.
+
+A recommended implementation style is to continue using the PA31 ABI naming
+layer before object emission. Feed semantic facts for the entity into the
+mangler, then let the object writer preserve the final raw symbol name. That
+keeps ABI spelling decisions close to semantic information and avoids a second
+name-construction path in object-format code.
 
 ### Stage Handoff
 

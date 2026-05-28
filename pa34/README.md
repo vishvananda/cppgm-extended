@@ -179,6 +179,24 @@ The default preprocessor references are intentionally host-agnostic. The test ha
 pin local host macro values such as platform-specific integer or floating-point
 limits.
 
+### Hosted ABI Name Guidance
+
+PA34 is mostly about accepting hosted headers, but compile-only hosted tests can
+still expose symbol-spelling problems through emitted objects and unresolved
+references. The `cppgm++ -c` path should continue producing host ABI names that
+PA32 and PA33 already made observable.
+
+A recommended implementation style is to keep the PA31 mangler in the
+compile-mode path while adding hosted parser, semantic, builtin, and lowering
+support. That style works best when hosted standard-library entities, inline
+namespaces, ABI-tagged declarations, dependent template names, local entities,
+and function template specializations keep the semantic information needed to
+name them.
+
+For compile-only tests, the immediate oracle may be successful object emission,
+but the object must carry host ABI names that PA35 can link and run without a
+separate hosted-only naming scheme.
+
 ### Assignment Boundary
 
 PA34 owns hosted compatibility needed before bootstrap, including:
@@ -221,6 +239,11 @@ surfaces: preprocessor probes, parser concessions, builtin traits/types, and
 then semantic/lowering cases. Keep fixes tied to the source pattern being
 exercised. Avoid making broad source-text special cases when an earlier
 semantic or template representation can carry the information directly.
+
+That same preference applies to hosted ABI names: keep type structure, template
+arguments, ABI tags, and local context available until the ABI naming layer can
+consume them. Reconstructing those facts later from pretty-printed strings tends
+to create fragile library-version-specific behavior.
 
 ### Stage Handoff
 
