@@ -12139,6 +12139,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           actual_instantiation.source_template &&
           (pattern_template_template_parameter->template_parameter_count == 0 ||
            pattern_template_template_parameter->template_parameter_count ==
+               static_cast<size_t>(-1) ||
+           pattern_template_template_parameter->template_parameter_count ==
                actual_instantiation.source_template->parameters.size());
       if(pattern_template_template_parameter &&
          pattern_template_id_available &&
