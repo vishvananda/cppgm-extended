@@ -144,6 +144,19 @@ should become focused mangling tests in the ABI assignment branch.
     which should encode as an Itanium vendor-qualified type
     (`U7_Atomic...`).
 
+- clang/libc++ self-host `parser_trace.o`
+  - Gap: libc++ `basic_string::compare(pos, n, basic_string, pos, n)`
+    forwards to a hidden `basic_string_view` member-template overload. The
+    in-class declaration used injected-class-name `basic_string` inside the
+    SFINAE NTTP default, while the out-of-class definition spelled the current
+    specialization as `basic_string<_CharT, _Traits, _Allocator>`. The
+    definition matcher treated those as different template heads, so the
+    member-template definition was not attached and the object referenced an
+    unresolved hidden libc++ symbol.
+  - Focused test: associate an out-of-class member-template definition whose
+    template-parameter list compares an injected class name against the explicit
+    current class-template specialization spelling.
+
 - `pa14/tests/general/200-lvalue-conditional-address.t`
 - `pa32/tests/general/200-host-namespaced-enum-template-arg-mangling.t`
 - `pa35/tests/link/700-hosted-iostream-runtime-symbol-link-smoke.t`
