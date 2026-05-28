@@ -28650,6 +28650,17 @@ private:
                                       use_info.selection.class_node);
         info->is_explicit_specialization =
             use_info.selection.kind == template_api::MS_EXPLICIT_SPECIALIZATION;
+        if(use_info.selection.binding_scope &&
+           use_info.selection.binding_scope->class_info &&
+           use_info.selection.binding_scope->class_info->source_template &&
+           !use_info.selection.binding_scope->class_info->instantiation_arguments.empty()) {
+          ClassInfo * declared_owner = use_info.selection.binding_scope->class_info;
+          template_api::binding::bind_template_arguments_into_scope(
+              *this,
+              *info->member_scope,
+              declared_owner->source_template->parameters,
+              declared_owner->instantiation_arguments);
+        }
         template_api::binding::bind_template_arguments_into_scope(
             *this,
             *info->member_scope,

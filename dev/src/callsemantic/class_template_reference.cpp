@@ -57,6 +57,25 @@ bool raw_class_template_reference_cache_enabled()
   return !value || !*value || std::string(value) != "0";
 }
 
+void bind_declaring_owner_template_arguments_into_scope(SemanticContext & ctx,
+                                                        Scope & target,
+                                                        const Scope * declaring_scope)
+{
+  ClassInfo * declared_owner =
+      declaring_scope ? declaring_scope->class_info : nullptr;
+  if(!declared_owner ||
+     !declared_owner->source_template ||
+     declared_owner->instantiation_arguments.empty()) {
+    return;
+  }
+
+  template_api::binding::bind_template_arguments_into_scope(
+      ctx,
+      target,
+      declared_owner->source_template->parameters,
+      declared_owner->instantiation_arguments);
+}
+
 string join_hotspot_arg_texts(const vector<string> & arg_texts)
 {
   ostringstream out;
@@ -2854,6 +2873,9 @@ public:
           }
           note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_resets);
           reset_instantiated_class_info(*info, decl.name, class_node);
+          bind_declaring_owner_template_arguments_into_scope(ctx,
+                                                             *info->member_scope,
+                                                             binding_scope);
           template_api::binding::bind_template_arguments_into_scope(*this,
                                                                    *info->member_scope,
                                                                    *bound_parameters,
@@ -2944,6 +2966,9 @@ public:
       note_performance_counter(
           &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);
     }
+      bind_declaring_owner_template_arguments_into_scope(ctx,
+                                                         *info->member_scope,
+                                                         binding_scope);
       template_api::binding::bind_template_arguments_into_scope(*this,
                                                                *info->member_scope,
                                                                *bound_parameters,

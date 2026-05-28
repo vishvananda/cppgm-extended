@@ -1037,6 +1037,10 @@ void bind_template_arguments_into_scope(
     const std::vector<TemplateArgument> & arguments,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr);
 
+void bind_declaring_owner_instantiation_context(SemanticContext & ctx,
+                                                Scope & scope,
+                                                const Scope & declaring_scope);
+
 Scope & bind_template_arguments(
     SemanticContext & ctx,
     Scope & declaring_scope,
@@ -5815,6 +5819,11 @@ bool refresh_forward_class_template_selection(SemanticContext & ctx,
   ctx.reset_instantiated_class_info(info, info.name, specialization.class_node);
   info.is_explicit_specialization =
       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION;
+  if(specialization.binding_scope) {
+    bind_declaring_owner_instantiation_context(ctx,
+                                               *info.member_scope,
+                                               *specialization.binding_scope);
+  }
   template_api::binding::bind_template_arguments_into_scope(
       ctx,
       *info.member_scope,
@@ -6774,6 +6783,23 @@ void bind_active_owner_instantiation_context(SemanticContext & ctx,
   }
 }
 
+void bind_declaring_owner_instantiation_context(SemanticContext & ctx,
+                                                Scope & scope,
+                                                const Scope & declaring_scope)
+{
+  ClassInfo * declared_owner = declaring_scope.class_info;
+  if(!declared_owner ||
+     !declared_owner->source_template ||
+     declared_owner->instantiation_arguments.empty()) {
+    return;
+  }
+
+  bind_template_arguments_into_scope(ctx,
+                                     scope,
+                                     declared_owner->source_template->parameters,
+                                     declared_owner->instantiation_arguments);
+}
+
 Scope & bind_template_arguments(SemanticContext & ctx,
                                 Scope & declaring_scope,
                                 const std::vector<TemplateParameterInfo> & parameters,
@@ -6838,10 +6864,15 @@ Scope & bind_class_template_arguments_for_instantiation(
   // local named types needed by those arguments should flow in.
   overlay_instantiation_local_named_types(
       ctx, scope, use_scope, &declaring_scope, arguments, &excluded_names);
+  bind_declaring_owner_instantiation_context(ctx, scope, declaring_scope);
   if(ClassInfo * current_owner =
          current_instantiation_owner_for_scope(
              ctx, declaring_scope, use_scope, nullptr)) {
     scope.class_info = current_owner;
+    bind_active_owner_instantiation_context(ctx,
+                                            scope,
+                                            declaring_scope,
+                                            *current_owner);
     if(!current_owner->name.empty()) {
       template_scope::bind_named_type(scope, current_owner->name, current_owner->type);
     }
@@ -6910,6 +6941,11 @@ ClassInfo * instantiate_builtin_initializer_list_template(
   ctx.reset_instantiated_class_info(*info, decl.name, decl.class_node);
   info->is_initializer_list = true;
   info->initializer_list_element_type = arguments[0].type;
+  if(decl.declaring_scope) {
+    bind_declaring_owner_instantiation_context(ctx,
+                                               *info->member_scope,
+                                               *decl.declaring_scope);
+  }
   bind_template_arguments_into_scope(ctx, *info->member_scope, decl.parameters, arguments);
 
   if(decl.class_node == nullptr ||
@@ -7188,6 +7224,7 @@ ClassInfo * instantiate_selected_class_template(
       template_arguments_are_dependent_for_instantiation(ctx, arguments);
   info->is_explicit_specialization =
       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION;
+  bind_declaring_owner_instantiation_context(ctx, *info->member_scope, *binding_scope);
   bind_template_arguments_into_scope(
       ctx, *info->member_scope, *bound_parameters, *bound_arguments, bound_pack_sizes);
   ctx.record_primary_alias_base_source_uses(decl);
