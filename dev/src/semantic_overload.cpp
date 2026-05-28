@@ -8340,6 +8340,47 @@ bool constructor_template_set_has_exact_owner(
                 });
 }
 
+bool constructor_template_set_accepts_argument_count(ClassInfo & info,
+                                                     size_t argument_count)
+{
+  vector<FunctionTemplateDecl *> constructor_templates =
+      collect_constructor_templates(info);
+  const bool has_exact_constructor_template_owner =
+      constructor_template_set_has_exact_owner(constructor_templates, info);
+  for(size_t i = 0; i < constructor_templates.size(); ++i) {
+    FunctionTemplateDecl * decl = constructor_templates[i];
+    if(!decl) {
+      continue;
+    }
+    if(has_exact_constructor_template_owner &&
+       decl->declaring_scope &&
+       decl->declaring_scope->class_info &&
+       decl->declaring_scope->class_info != &info) {
+      continue;
+    }
+    if(constructor_template_accepts_argument_count_fast(*decl, argument_count)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool exact_constructor_match_may_be_beaten_by_constructor_template(
+    const CandidateMatch & match)
+{
+  for(size_t i = 0; i < match.params.size(); ++i) {
+    const ExprInfo & source_arg = source_arg_for_compare(match, i);
+    if(source_arg.category == VC_LVALUE) {
+      continue;
+    }
+    TypePtr param_base = strip_top_level_cv(match.params[i]);
+    if(param_base && param_base->kind == Type::TK_LVALUE_REFERENCE) {
+      return true;
+    }
+  }
+  return false;
+}
+
 template <typename AppendCandidate>
 void append_constructor_template_candidates(
     SemanticContext & ctx,
@@ -8854,8 +8895,15 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
 
   if(!state.matches.empty()) {
     BestCandidateSelection exact_selection = select_best_candidate_match(ctx, state.matches);
-    if(!exact_selection.ambiguous &&
-       candidate_match_is_all_exact(state.matches[exact_selection.index])) {
+    const bool selected_exact =
+        !exact_selection.ambiguous &&
+        candidate_match_is_all_exact(state.matches[exact_selection.index]);
+    const bool constructor_template_may_beat_exact =
+        selected_exact &&
+        exact_constructor_match_may_be_beaten_by_constructor_template(
+            state.matches[exact_selection.index]) &&
+        constructor_template_set_accepts_argument_count(target_info, source_args.size());
+    if(selected_exact && !constructor_template_may_beat_exact) {
       FunctionBinding * chosen = state.matches[exact_selection.index].function;
       if(options.instantiate_bodies &&
          !rematerialize_candidate_match_args(ctx,
@@ -9356,8 +9404,16 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
 
   if(!state.matches.empty()) {
     BestCandidateSelection exact_selection = select_best_candidate_match(ctx, state.matches);
-    if(!exact_selection.ambiguous &&
-       candidate_match_is_all_exact(state.matches[exact_selection.index])) {
+    const bool selected_exact =
+        !exact_selection.ambiguous &&
+        candidate_match_is_all_exact(state.matches[exact_selection.index]);
+    const bool constructor_template_may_beat_exact =
+        selected_exact &&
+        exact_constructor_match_may_be_beaten_by_constructor_template(
+            state.matches[exact_selection.index]) &&
+        constructor_template_set_accepts_argument_count(target_info,
+                                                        effective_arg_nodes.size());
+    if(selected_exact && !constructor_template_may_beat_exact) {
       FunctionBinding * chosen =
           semantic_template_function::acquire_function_definition_binding(
               ctx,
