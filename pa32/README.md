@@ -167,8 +167,9 @@ PA32 is still before the broader host C++ ABI/runtime stage in PA33, but ordinar
 host object interoperability already requires correct raw symbol spelling for
 user-defined entities.
 
-For this assignment, use the PA31 ABI naming layer as part of the object-file
-contract:
+The object-file contract is that visible symbol names match the configured host
+ABI. The PA31 ABI naming layer is the recommended path for producing those
+names:
 
 - the host linker sees raw symbol names, not demangled intent
 - function templates must encode template-parameter references with the same
@@ -216,6 +217,14 @@ PA31 to derive concrete C++ object symbols, and retarget only the object
 emission details needed by the host object format. The observable contract is
 whether the host toolchain can consume and link the result, not whether your
 internal object pipeline has the same structure as the course implementation.
+
+One practical integration point is the compiler semantic/linkage layer: after
+semantic analysis determines the entity, owner scopes, function type, template
+arguments, local context, ABI tags, and special-name kind, that layer can feed
+those facts to the PA31 mangler and store the resulting raw symbol on the
+LowIR/object symbol. This keeps lower object-format and toolchain-driver code
+focused on preserving the spelling it was given instead of reconstructing C++
+ABI names from text fragments.
 
 ### Stage Handoff
 
