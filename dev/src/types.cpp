@@ -65,28 +65,28 @@ const size_t FundamentalTypeSizes[] =
 
 const bool FundamentalTypeSignedness[] =
 {
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  false,
-  false,
-  false,
-  false,
-  false,
-  false,
-  false,
-  true,
-  false,
-  false,
-  false,
-  false,
-  false,
-  false,
-  false,
-  false
+  true,   // signed char
+  true,   // short int
+  true,   // int
+  true,   // long int
+  true,   // long long int
+  true,   // __int128_t
+  false,  // unsigned char
+  false,  // unsigned short int
+  false,  // unsigned int
+  false,  // unsigned long int
+  false,  // unsigned long long int
+  false,  // __uint128_t
+  true,   // wchar_t
+  true,   // char
+  false,  // char16_t
+  false,  // char32_t
+  false,  // bool
+  false,  // float
+  false,  // double
+  false,  // long double
+  false,  // void
+  false   // nullptr_t
 };
 
 inline size_t fundamental_type_index(EFundamentalType type)

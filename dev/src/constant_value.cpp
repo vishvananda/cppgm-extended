@@ -122,10 +122,16 @@ TypePtr promoted_integral_type(const TypePtr & type)
   case FT_UNSIGNED_CHAR:
   case FT_SHORT_INT:
   case FT_UNSIGNED_SHORT_INT:
-  case FT_WCHAR_T:
   case FT_CHAR16_T:
-  case FT_CHAR32_T:
     return make_fundamental(FT_INT);
+  case FT_WCHAR_T:
+    if(type_is_signed(base->fundamental) ||
+       type_to_size(base->fundamental) < type_to_size(FT_INT)) {
+      return make_fundamental(FT_INT);
+    }
+    return make_fundamental(FT_UNSIGNED_INT);
+  case FT_CHAR32_T:
+    return make_fundamental(FT_UNSIGNED_INT);
   default:
     return TypePtr();
   }

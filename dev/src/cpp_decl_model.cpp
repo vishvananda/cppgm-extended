@@ -1069,7 +1069,6 @@ bool is_unsigned_integral_type(const TypePtr & type)
   case FT_BOOL:
   case FT_CHAR16_T:
   case FT_CHAR32_T:
-  case FT_WCHAR_T:
     return true;
 
   default:
