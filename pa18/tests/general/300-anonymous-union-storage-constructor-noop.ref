@@ -33,3 +33,5 @@ function @Value__Value(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN5
     store i32 %t1, %t3
     return void
 }
+alias object _ZN4NodeI5ValueEC2IS0_EERT_ = @Node_Value___Node__ov2
+alias object _ZN5ValueC2Ei = @Value__Value

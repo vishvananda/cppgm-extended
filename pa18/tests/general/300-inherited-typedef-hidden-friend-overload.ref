@@ -79,3 +79,4 @@ function @ns__Vec__begin(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNK2ns3
     call void @ns__It__It(%t1)
     return obj<1x1> $retobj__1
 }
+alias object _ZN2ns2ItC2Ev = @ns__It__It

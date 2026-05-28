@@ -43,3 +43,4 @@ function @forward_tag__forward_tag(%this : ptr) -> void [unwind=no, binding=weak
     store ptr %this, $this
     return void
 }
+alias object _ZN11forward_tagC2Ev = @forward_tag__forward_tag

@@ -44,3 +44,5 @@ function @Y__Y(%this : ptr) -> void [binding=weak, object=_ZN1YC1Ev] {
     store i32 3, %t2
     return void
 }
+alias object _ZN1XC2Ev = @X__X
+alias object _ZN1YC2Ev = @Y__Y

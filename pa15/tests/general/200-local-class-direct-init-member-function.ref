@@ -59,3 +59,6 @@ function @Lock__Lock(%this : ptr, %m : ptr [pass=reference]) -> void [binding=we
     store i32 %t3, %t5
     return void
 }
+alias object _ZN10AssocStateC2Ev = @AssocState__AssocState
+alias object _ZN1MC2Ev = @M__M
+alias object _ZN4LockC2ER1M = @Lock__Lock

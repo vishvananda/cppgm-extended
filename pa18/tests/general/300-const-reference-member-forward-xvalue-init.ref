@@ -40,3 +40,4 @@ function @fwd(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z3fwd
     %t1 = load ptr $value
     return ptr %t1
 }
+alias object _ZN6HolderC2EO4Item = @Holder__Holder

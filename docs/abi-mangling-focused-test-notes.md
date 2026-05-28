@@ -144,7 +144,58 @@ should become focused mangling tests in the ABI assignment branch.
     which should encode as an Itanium vendor-qualified type
     (`U7_Atomic...`).
 
+- `pa14/tests/general/200-lvalue-conditional-address.t`
+- `pa32/tests/general/200-host-namespaced-enum-template-arg-mangling.t`
+- `pa35/tests/link/700-hosted-iostream-runtime-symbol-link-smoke.t`
+  - Gap: public non-weak functions suppressed parameter-type substitution keys
+    too aggressively. The old behavior happened to fit weak emission, but
+    ordinary external functions need complete parameter substitutions so later
+    arguments can reuse earlier parameter encodings.
+  - Focused test: mangle a public overloaded function where a later parameter
+    should substitute a namespace-qualified or template-qualified earlier
+    parameter.
+
+- `pa18/tests/general/300-function-template-pack-ref-return.t`
+  - Gap: manual function-template mangling registered pack-expansion
+    substitutions through a rendered string key. After the string key was
+    removed, pack expansion parameters needed a typed substitution key that
+    matches the emitted `Dp` + inner type sequence.
+  - Focused test: mangle a function template whose trailing function parameter
+    pack is later reused by reference in the result or parameter list.
+
+- `pa18/tests/general/300-inline-dependent-pack-result-type.t`
+- `pa21/tests/general/400-explicit-type-arg-dependent-template-cv-suffix.t`
+- `pa21/tests/general/400-local-qualified-argument-replay.t`
+- `pa22/tests/general/500-type-pack-element-preserves-concrete-argument.t`
+- `pa22/tests/spec/400-explicit-type-arg-dependent-qualified-member-template-id.t`
+- `pa28/tests/general/300-member-function-pointer-pack-partial-specialization.t`
+  - Gap: copied template-parameter lists used pointer identity as part of the
+    typed substitution key. Replayed contexts and copied lambda/member-template
+    contexts need stable keys derived from the parameter-list shape instead.
+  - Focused test: mangle copied/replayed template contexts where the same
+    parameter slot appears in dependent owners, cv-qualified suffixes, pack
+    elements, local contexts, and member-function-pointer NTTPs.
+
+- `pa22/tests/general/200-explicit-function-template-arg-substitution.t`
+  - Gap: dependent result mangling sometimes needed typed result emission to
+    substitute an earlier parameter, but broad typed result emission also caused
+    incorrect source-name spellings for unresolved dependent names.
+  - Focused test: mangle a function-template specialization where the return
+    type structurally matches an earlier parameter type and must substitute it,
+    plus a neighboring case where unresolved dependent names must stay in the
+    existing expression-pattern path.
+
+- `pa26/tests/general/200-included-template-member-dual-capturing-lambda-call.t`
+- `pa27/tests/general/200-distinct-lambda-member-template-types.t`
+  - Gap: local entity context replay should emit template-parameter types
+    directly inside the replayed context while still registering substitutions
+    for later ABI components. Normal function type emission should keep the
+    usual substitution behavior.
+  - Focused test: mangle local lambda/member-template contexts that include
+    direct template-parameter parameter types and then reuse those parameters
+    outside the local entity context.
+
 ## Current status
 
-- `CPPGM_SKIP_DEV_REBUILD=1 make test-report` passes all tests:
-  `2934 / 2934`.
+- `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report` passes all tests:
+  `2992 / 2992`.

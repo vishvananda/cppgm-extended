@@ -78,3 +78,5 @@ function @lib__condition__operator_(%this : ptr, %other : ptr [pass=reference]) 
     %t6 = load ptr $this
     return ptr %t6
 }
+alias object _ZN3lib9conditionC2INS_4errcEEET_ = @lib__condition__condition__ov4
+alias object _ZN3lib9conditionC2Ei = @lib__condition__condition__ov2

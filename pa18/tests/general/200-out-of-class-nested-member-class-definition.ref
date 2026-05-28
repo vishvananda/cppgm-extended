@@ -49,3 +49,4 @@ function @O_int___S__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK1
     store ptr %this, $this
     return u8 1
 }
+alias object _ZN1OIiE1SC2ERS0_ = @O_int___S__S

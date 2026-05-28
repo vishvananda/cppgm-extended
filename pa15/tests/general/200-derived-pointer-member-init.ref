@@ -24,3 +24,4 @@ function @Iter__Iter(%this : ptr, %node : ptr) -> void [binding=weak, object=_ZN
     store ptr %t2, %t4
     return void
 }
+alias object _ZN4IterC2EP4Node = @Iter__Iter

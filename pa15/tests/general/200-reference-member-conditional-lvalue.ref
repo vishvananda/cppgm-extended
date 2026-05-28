@@ -68,3 +68,4 @@ function @R__R(%this : ptr, %x : ptr [pass=reference]) -> void [binding=weak, ob
     store ptr %t1, %t3
     return void
 }
+alias object _ZN1RC2ER1S = @R__R

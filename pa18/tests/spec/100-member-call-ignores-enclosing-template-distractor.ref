@@ -188,3 +188,4 @@ function @boost__exception_detail__error_info_container__error_info_container__b
     store ptr %t3, %t1
     return void
 }
+alias object _ZN5boost16exception_detail4implC2Ev = @boost__exception_detail__impl__impl

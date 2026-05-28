@@ -93,3 +93,5 @@ function @Property__Property(%this : ptr) -> void [binding=weak, object=_ZN8Prop
     store i64 %t1, %t3
     return void
 }
+alias object _ZN6HolderC2Ev = @Holder__Holder
+alias object _ZN8PropertyC2Ev = @Property__Property

@@ -44,3 +44,4 @@ function @call_pick(%t : obj<1x1>) -> i32 [binding=weak, object=_Z9call_pickIN3l
     %t3 = call i32 @lib__pick($argobj__1)
     return i32 %t3
 }
+alias object _ZN3lib3tagIiEC2Ev = @lib__tag_int___tag

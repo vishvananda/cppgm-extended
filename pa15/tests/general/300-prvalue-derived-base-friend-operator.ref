@@ -28,3 +28,4 @@ function @Derived__Derived(%this : ptr) -> void [unwind=no, binding=weak, object
     store ptr %this, $this
     return void
 }
+alias object _ZN7DerivedC2Ev = @Derived__Derived

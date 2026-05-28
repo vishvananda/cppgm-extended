@@ -91,3 +91,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @Entry__Entry(%t9, %t10, 2)
     return void
 }
+alias object _ZN5EntryC2EPKci = @Entry__Entry

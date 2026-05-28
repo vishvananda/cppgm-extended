@@ -66,3 +66,6 @@ function @box_int____box(%this : ptr) -> void [binding=weak, object=_ZN3boxIiED1
     store i32 %t5, @total
     return void
 }
+alias object _ZN3boxIiEC2Ev = @box_int___box
+alias object _ZN3boxIiEC2ERKS0_ = @box_int___box__ov2
+alias object _ZN3boxIiED2Ev = @box_int____box

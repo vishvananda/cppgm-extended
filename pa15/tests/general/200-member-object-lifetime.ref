@@ -54,3 +54,7 @@ function @YA___YA(%this : ptr) -> void [binding=weak, object=_ZN2YAD1Ev] {
     store i32 %t2, @gx
     return void
 }
+alias object _ZN2YBC2Ev = @YB__YB
+alias object _ZN2YBD2Ev = @YB___YB
+alias object _ZN2YAC2Ev = @YA__YA
+alias object _ZN2YAD2Ev = @YA___YA

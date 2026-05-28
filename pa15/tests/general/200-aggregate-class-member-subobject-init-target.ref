@@ -92,3 +92,5 @@ function @Second__Second(%this : ptr) -> void [binding=weak, object=_ZN6SecondC1
     store i32 7, %t2
     return void
 }
+alias object _ZN5FirstC2Ei = @First__First
+alias object _ZN6SecondC2Ev = @Second__Second

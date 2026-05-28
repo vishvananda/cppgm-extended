@@ -38,3 +38,5 @@ function @__cppgm_fini() -> void [role=fini, binding=internal] {
     call void @HeaderInit___HeaderInit(%t1)
     return void
 }
+alias object _ZN10HeaderInitD2Ev = @HeaderInit___HeaderInit
+alias object _ZN10HeaderInitC2Ev = @HeaderInit__HeaderInit

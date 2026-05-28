@@ -80,3 +80,5 @@ function @A__f(%this : ptr, %x : i32, %q : ptr [pass=reference]) -> i32 [binding
     %t9 = binary add i32 %t5, %t8
     return i32 %t9
 }
+alias object _ZN1AC2Ev = @A__A
+alias object _ZN1n1QC2Ei = @n__Q__Q

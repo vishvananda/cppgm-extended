@@ -169,3 +169,7 @@ function @value_box__value_box(%this : ptr) -> void [binding=weak, object=_ZN9va
     store i32 0, %t2
     return void
 }
+alias object _ZN10tiny_assocIh9value_boxEC2Ev = @tiny_assoc_unsigned_char__value_box___tiny_assoc
+alias object _ZN10tiny_assocIh9value_boxED2Ev = @tiny_assoc_unsigned_char__value_box____tiny_assoc
+alias object _ZN5entryIh9value_boxEC2ERKh = @entry_unsigned_char__value_box___entry
+alias object _ZN9value_boxC2Ev = @value_box__value_box

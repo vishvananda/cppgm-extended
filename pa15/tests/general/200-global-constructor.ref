@@ -38,3 +38,5 @@ function @__cppgm_fini() -> void [role=fini, binding=internal] {
     call void @YP___YP(%t1)
     return void
 }
+alias object _ZN2YPD2Ev = @YP___YP
+alias object _ZN2YPC2Ev = @YP__YP
