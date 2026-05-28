@@ -11772,6 +11772,31 @@ private:
                                       lowir_type_for(node.semantic_type) + " " +
                                       ptr + ", " + to_string(order));
         }
+        if(builtin_name == "__sync_lock_test_and_set") {
+          if(node.children.size() != 3) {
+            throw logic_error("__sync_lock_test_and_set child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__sync_lock_test_and_set");
+          const string ptr = emit_rvalue(node.children[1]);
+          const string value = emit_rvalue(node.children[2]);
+          return emit_temp_assignment(value_type,
+                                      string("atomic_exchange ") + value_type +
+                                      " " + ptr + ", " + value + ", 5");
+        }
+        if(builtin_name == "__sync_lock_release") {
+          if(node.children.size() != 2) {
+            throw logic_error("__sync_lock_release child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__sync_lock_release");
+          const string ptr = emit_rvalue(node.children[1]);
+          const string zero =
+              emit_temp_assignment(value_type, string("const ") + value_type + " 0");
+          emit_line(string("atomic_store ") + value_type +
+                    " " + zero + ", " + ptr + ", 5");
+          return "0";
+        }
         if(builtin_name == "__c11_atomic_init") {
           if(node.children.size() != 3) {
             throw logic_error("__c11_atomic_init child count");
