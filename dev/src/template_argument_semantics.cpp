@@ -6400,7 +6400,8 @@ bool structured_bool_constant_value_for_class_info(
     return true;
   }
 
-  if(template_name == "__is_nothrow_invocable") {
+  if(template_name == "__is_nothrow_invocable" &&
+     class_info_source_template_is_std_namespace_or_inline_child(info)) {
     return evaluate_structured_nothrow_invocable_trait(
         type_system,
         info.instantiation_arguments,

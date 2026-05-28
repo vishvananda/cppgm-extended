@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load ptr $p
     %t4 = call i64 @std__hash_X_____operator__(%t2, %t3)
     store i64 %t4, $v
-    branch 0, ^cond_then_1, ^cond_else_2
+    branch 1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 1, $cond__1

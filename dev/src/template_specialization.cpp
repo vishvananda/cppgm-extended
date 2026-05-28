@@ -890,7 +890,8 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
                                         Scope & match_scope,
                                         const std::string & pattern_text,
                                         const TemplateArgumentSyntax * pattern_syntax,
-                                        const TypePtr & actual_type);
+                                        const TypePtr & actual_type,
+                                        bool structural_only = false);
 
 std::string join_arg_texts(const std::vector<std::string> & items)
 {
@@ -5850,7 +5851,8 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
                                         Scope & match_scope,
                                         const std::string & pattern_text,
                                         const TemplateArgumentSyntax * pattern_syntax,
-                                        const TypePtr & actual_type)
+                                        const TypePtr & actual_type,
+                                        bool structural_only)
 {
   template_api::TemplateTypeSystem & type_system = service_type_system(services);
   const auto type_is_dependent =
@@ -6028,6 +6030,9 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
           &pattern_syntax->template_id->argument_syntaxes :
           nullptr;
   if(!parsed_pattern && !decompose_template_id_pair(normalized_pattern)) {
+    if(structural_only) {
+      return false;
+    }
     std::string expanded_pattern_text;
     if(pattern_decomposed &&
        expand_alias_template_pattern_id_impl(
@@ -6186,11 +6191,39 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       }
       TypePtr pattern_arg_type;
       TypePtr actual_arg_type;
-      if(resolve_pattern_arg_type(arg_index, pattern_arg, pattern_arg_type) &&
+      if(!structural_only &&
+         resolve_pattern_arg_type(arg_index, pattern_arg, pattern_arg_type) &&
          resolve_actual_arg_type(arg_index, actual_arg, actual_arg_type) &&
          pattern_arg_type && actual_arg_type &&
          type_equals(pattern_arg_type, actual_arg_type)) {
         continue;
+      }
+      bool pattern_arg_is_template_id =
+          pattern_arg_syntaxes &&
+          arg_index < pattern_arg_syntaxes->size() &&
+          (*pattern_arg_syntaxes)[arg_index].template_id;
+      if(pattern_arg_is_template_id &&
+         resolve_actual_arg_type(arg_index, actual_arg, actual_arg_type)) {
+        DeducedState nested_deduced = deduced;
+        Scope nested_match_scope =
+            make_partial_match_scope(partial.parameters,
+                                     *partial.pattern_scope,
+                                     nested_deduced);
+        const TemplateArgumentSyntax * nested_syntax =
+            pattern_arg_syntaxes && arg_index < pattern_arg_syntaxes->size() ?
+                &(*pattern_arg_syntaxes)[arg_index] :
+                nullptr;
+        if(deduce_from_named_template_id_text(services,
+                                              partial,
+                                              nested_deduced,
+                                              nested_match_scope,
+                                              pattern_arg,
+                                              nested_syntax,
+                                              actual_arg_type,
+                                              true)) {
+          deduced = nested_deduced;
+          continue;
+        }
       }
       if(pattern_arg != actual_arg) {
         return false;
