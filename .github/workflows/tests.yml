@@ -122,6 +122,7 @@ jobs:
           mkdir -p "$upload"
           {
             for exe in \
+              abimangle \
               pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 \
               cppgm++ lowir2cy86 lowiropt lowir2native cpplink cppeh; do
               printf 'dev/%s\n' "$exe"
@@ -252,6 +253,7 @@ jobs:
           set -euo pipefail
           tar -xzf "$RUNNER_TEMP/cppgm-build-artifact/cppgm-build.tar.gz"
           cat "$RUNNER_TEMP/cppgm-build-artifact/metadata.env"
+          test -x dev/abimangle
           test -x dev/cppgm++
 
       - name: Show compiler configuration
