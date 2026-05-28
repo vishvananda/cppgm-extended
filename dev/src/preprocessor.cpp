@@ -686,6 +686,7 @@ bool is_predefined_builtin_probe_name(const string & name)
          name == "__has_attribute" ||
          name == "__has_cpp_attribute" ||
          name == "__has_builtin" ||
+         name == "__is_identifier" ||
          name == "__building_module" ||
          name == "__has_include" ||
          name == "__has_include_next";
@@ -706,9 +707,12 @@ bool parse_builtin_name_tokens(const vector<EPPToken> & tokens,
   return true;
 }
 
+bool is_supported_builtin_type_trait_name(const string & name);
+
 bool is_supported_builtin_name(const string & name)
 {
-  return name == "__remove_cv" ||
+  return is_supported_builtin_type_trait_name(name) ||
+         name == "__remove_cv" ||
          name == "__remove_const" ||
          name == "__remove_cvref" ||
          name == "__decay" ||
@@ -775,6 +779,151 @@ bool is_supported_builtin_name(const string & name)
          name == "__builtin_labs" ||
          name == "__builtin_llabs" ||
          name == "__type_pack_element";
+}
+
+bool is_supported_builtin_type_trait_name(const string & name)
+{
+  static const set<string> supported = {
+      "__array_rank",
+      "__has_trivial_constructor",
+      "__has_trivial_destructor",
+      "__has_virtual_destructor",
+      "__is_abstract",
+      "__is_arithmetic",
+      "__is_array",
+      "__is_assignable",
+      "__is_base_of",
+      "__is_class",
+      "__is_compound",
+      "__is_const",
+      "__is_constructible",
+      "__is_convertible",
+      "__is_destructible",
+      "__is_empty",
+      "__is_enum",
+      "__is_final",
+      "__is_floating_point",
+      "__is_function",
+      "__is_fundamental",
+      "__is_integral",
+      "__is_literal_type",
+      "__is_lvalue_reference",
+      "__is_member_function_pointer",
+      "__is_member_object_pointer",
+      "__is_member_pointer",
+      "__is_nothrow_assignable",
+      "__is_nothrow_constructible",
+      "__is_nothrow_convertible",
+      "__is_nothrow_destructible",
+      "__is_object",
+      "__is_pod",
+      "__is_pointer",
+      "__is_polymorphic",
+      "__is_reference",
+      "__is_rvalue_reference",
+      "__is_same",
+      "__is_scalar",
+      "__is_signed",
+      "__is_standard_layout",
+      "__is_trivial",
+      "__is_trivially_assignable",
+      "__is_trivially_constructible",
+      "__is_trivially_copyable",
+      "__is_trivially_destructible",
+      "__is_union",
+      "__is_unsigned",
+      "__is_void",
+      "__is_volatile",
+      "__reference_binds_to_temporary",
+      "__reference_constructs_from_temporary",
+  };
+  return supported.count(name) != 0;
+}
+
+bool is_language_keyword_for_identifier_query(const string & name)
+{
+  static const set<string> keywords = {
+      "alignas",
+      "alignof",
+      "asm",
+      "auto",
+      "bool",
+      "break",
+      "case",
+      "catch",
+      "char",
+      "char16_t",
+      "char32_t",
+      "class",
+      "const",
+      "constexpr",
+      "const_cast",
+      "continue",
+      "decltype",
+      "default",
+      "delete",
+      "do",
+      "double",
+      "dynamic_cast",
+      "else",
+      "enum",
+      "explicit",
+      "export",
+      "extern",
+      "false",
+      "float",
+      "for",
+      "friend",
+      "goto",
+      "if",
+      "inline",
+      "int",
+      "long",
+      "mutable",
+      "namespace",
+      "new",
+      "noexcept",
+      "nullptr",
+      "operator",
+      "private",
+      "protected",
+      "public",
+      "register",
+      "reinterpret_cast",
+      "return",
+      "short",
+      "signed",
+      "sizeof",
+      "static",
+      "static_assert",
+      "static_cast",
+      "struct",
+      "switch",
+      "template",
+      "this",
+      "thread_local",
+      "throw",
+      "true",
+      "try",
+      "typedef",
+      "typeid",
+      "typename",
+      "union",
+      "unsigned",
+      "using",
+      "virtual",
+      "void",
+      "volatile",
+      "wchar_t",
+      "while",
+  };
+  return keywords.count(name) != 0;
+}
+
+bool is_identifier_builtin_query_result(const string & name)
+{
+  return !is_language_keyword_for_identifier_query(name) &&
+         !is_supported_builtin_type_trait_name(name);
 }
 
 bool is_supported_type_trait_feature_query(const string & name)
@@ -1535,6 +1684,17 @@ void Preprocessor::finish_if_directive()
             parse_builtin_name_tokens(argument, builtin_name) &&
             is_supported_builtin_name(builtin_name);
         rewritten.push_back(EPPToken{PP_INT_LITERAL, supported ? "1" : "0"});
+        i = next - 1;
+        continue;
+      }
+
+      if(item.data == "__is_identifier" &&
+         parse_builtin_argument_tokens(results, i + 1, argument, next)) {
+        string identifier_name;
+        const bool is_identifier =
+            parse_builtin_name_tokens(argument, identifier_name) &&
+            is_identifier_builtin_query_result(identifier_name);
+        rewritten.push_back(EPPToken{PP_INT_LITERAL, is_identifier ? "1" : "0"});
         i = next - 1;
         continue;
       }
