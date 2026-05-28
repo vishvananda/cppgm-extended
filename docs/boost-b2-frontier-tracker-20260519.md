@@ -82,10 +82,10 @@ rebased Boost frontier branch.
   recorded at `9584a346069eb783ae7b1f534c291ed90a2e81c7` after the
   Boost.Container `static_vector_test` runtime cleanup fix; median instructions
   `276,418,736,108`, RSS `1.11 GiB`, footprint `899.84 MiB`.
-- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-24c57f65a-20260528.json`
-  recorded at `24c57f65ad26d170caeab6987d9aa86e351fba7a` after the
+- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-7384ec2ae-20260528.json`
+  recorded at `7384ec2ae9dff962a600e68dfcb95698f21e6221` after the
   Boost.Container `map_test` global-pointer subscript runtime fix; median
-  instructions `276,616,716,796`, RSS `1.12 GiB`, footprint `899.54 MiB`.
+  instructions `276,136,809,540`, RSS `1.12 GiB`, footprint `899.96 MiB`.
 
 ## Local Gate Repairs
 
