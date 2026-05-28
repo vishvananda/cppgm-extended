@@ -1714,6 +1714,137 @@ int compare_template_id_head_specificity(const PartialDecl & current,
   return preference;
 }
 
+struct DirectCvTemplateParameterPattern
+{
+  bool valid = false;
+  int cv_rank = 0;
+};
+
+bool direct_cv_template_parameter_pattern(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::string & raw_text,
+    DirectCvTemplateParameterPattern & out)
+{
+  out = DirectCvTemplateParameterPattern();
+  std::string normalized = strip_elaborated_type_prefix(trim_space(raw_text));
+  if(normalized.empty()) {
+    return false;
+  }
+
+  std::vector<std::string> tokens;
+  std::string token;
+  for(std::size_t i = 0; i <= normalized.size(); ++i) {
+    const bool at_end = i == normalized.size();
+    const char ch = at_end ? ' ' : normalized[i];
+    if(ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
+      if(!token.empty()) {
+        tokens.push_back(token);
+        token.clear();
+      }
+      continue;
+    }
+    token.push_back(ch);
+  }
+
+  std::string parameter_name;
+  bool saw_const = false;
+  bool saw_volatile = false;
+  for(std::size_t i = 0; i < tokens.size(); ++i) {
+    if(tokens[i] == "const") {
+      if(saw_const) {
+        return false;
+      }
+      saw_const = true;
+      continue;
+    }
+    if(tokens[i] == "volatile") {
+      if(saw_volatile) {
+        return false;
+      }
+      saw_volatile = true;
+      continue;
+    }
+    if(tokens[i] == "typename") {
+      continue;
+    }
+    if(!parameter_name.empty()) {
+      return false;
+    }
+    parameter_name = tokens[i];
+  }
+
+  if(parameter_name.empty() || (!saw_const && !saw_volatile)) {
+    return false;
+  }
+
+  const TemplateParameterInfo * parameter =
+      find_template_parameter_by_name(parameters, parameter_name);
+  if(!parameter ||
+     parameter->kind != TemplateParameterInfo::TP_TYPE ||
+     parameter->parameter_pack) {
+    return false;
+  }
+
+  out.valid = true;
+  out.cv_rank = (saw_const ? 1 : 0) + (saw_volatile ? 1 : 0);
+  return true;
+}
+
+template <typename PartialDecl>
+int compare_direct_cv_parameter_template_id_specificity(const PartialDecl & current,
+                                                        const PartialDecl & best)
+{
+  if(current.arg_syntaxes.empty() || best.arg_syntaxes.empty()) {
+    return 0;
+  }
+
+  int preference = 0;
+  const std::size_t limit =
+      std::min(std::min(current.arg_texts.size(), best.arg_texts.size()),
+               std::min(current.arg_syntaxes.size(), best.arg_syntaxes.size()));
+  for(std::size_t i = 0; i < limit; ++i) {
+    DirectCvTemplateParameterPattern current_cv;
+    DirectCvTemplateParameterPattern best_cv;
+    const bool current_is_cv_parameter =
+        direct_cv_template_parameter_pattern(current.parameters,
+                                             current.arg_texts[i],
+                                             current_cv);
+    const bool best_is_cv_parameter =
+        direct_cv_template_parameter_pattern(best.parameters,
+                                             best.arg_texts[i],
+                                             best_cv);
+
+    TemplateIdHeadPattern current_head;
+    TemplateIdHeadPattern best_head;
+    const bool current_is_template_id =
+        template_argument_template_id_head_pattern(current.parameters,
+                                                   &current.arg_syntaxes[i],
+                                                   current_head) &&
+        current_head.valid;
+    const bool best_is_template_id =
+        template_argument_template_id_head_pattern(best.parameters,
+                                                   &best.arg_syntaxes[i],
+                                                   best_head) &&
+        best_head.valid;
+
+    int argument_preference = 0;
+    if(current_is_cv_parameter && best_is_template_id) {
+      argument_preference = -1;
+    } else if(best_is_cv_parameter && current_is_template_id) {
+      argument_preference = 1;
+    }
+    if(argument_preference == 0) {
+      continue;
+    }
+    if(preference != 0 && preference != argument_preference) {
+      return 0;
+    }
+    preference = argument_preference;
+  }
+
+  return preference;
+}
+
 const TemplateParameterInfo * direct_template_parameter_from_argument_syntax(
     const std::vector<TemplateParameterInfo> & parameters,
     const TemplateArgumentSyntax & syntax)
@@ -5751,6 +5882,11 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
     if(direct_constraint_specificity != 0) {
       return direct_constraint_specificity;
     }
+    const int direct_cv_template_id_specificity =
+        compare_direct_cv_parameter_template_id_specificity(current, best);
+    if(direct_cv_template_id_specificity != 0) {
+      return direct_cv_template_id_specificity;
+    }
     const int template_id_head_specificity =
         compare_template_id_head_specificity(current, best);
     if(template_id_head_specificity != 0) {
@@ -5799,6 +5935,11 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
       compare_direct_template_parameter_constraint_specificity(current, best);
   if(direct_constraint_specificity != 0) {
     return direct_constraint_specificity;
+  }
+  const int direct_cv_template_id_specificity =
+      compare_direct_cv_parameter_template_id_specificity(current, best);
+  if(direct_cv_template_id_specificity != 0) {
+    return direct_cv_template_id_specificity;
   }
   const int template_id_head_specificity =
       compare_template_id_head_specificity(current, best);
