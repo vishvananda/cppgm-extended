@@ -15,11 +15,13 @@
 #include "cpp_decl_bridge.h"
 #include "cppast_dump.h"
 #include "callsemantic_internal.h"
+#include "callsemantic/function_registry.h"
 #include "pack_parameter_analysis.h"
 #include "rtti_names.h"
 #include "semantic_class_model.h"
 #include "semantic_context.h"
 #include "semantic_dependent_type.h"
+#include "semantic_errors.h"
 #include "semantic_hotspot.h"
 #include "semantic_lifetime.h"
 #include "semantic_lookup.h"
@@ -3457,6 +3459,185 @@ string function_binding_output_lookup_name(const FunctionBinding & binding)
       binding.display_name;
 }
 
+bool function_binding_has_output_definition_source(const FunctionBinding & binding)
+{
+  return binding.has_definition ||
+         binding.definition_node ||
+         binding.body ||
+         (binding.source_template && binding.source_template->body);
+}
+
+Scope * root_scope_for_output_lookup(Scope * scope)
+{
+  Scope * current = scope;
+  while(current && current->parent) {
+    current = current->parent;
+  }
+  return current;
+}
+
+Scope * qualified_function_namespace_scope_for_output_lookup(
+    FunctionBinding & binding)
+{
+  Scope * seed = binding.declaration_scope;
+  if(!seed && binding.source_template) {
+    seed = binding.source_template->declaring_scope;
+  }
+  Scope * root = root_scope_for_output_lookup(seed);
+  if(!root) {
+    return nullptr;
+  }
+
+  QualifiedName qualified;
+  if(!function_binding_qualified_name_syntax_for_symbol(binding, qualified)) {
+    return nullptr;
+  }
+  if(qualified.qualifiers.empty()) {
+    return nullptr;
+  }
+
+  QualifiedName namespace_name;
+  namespace_name.rooted = true;
+  if(qualified.qualifiers.size() == 1) {
+    namespace_name.name = qualified.qualifiers[0];
+  } else {
+    namespace_name.qualifiers.assign(qualified.qualifiers.begin(),
+                                     qualified.qualifiers.end() - 1);
+    namespace_name.name = qualified.qualifiers.back();
+  }
+  return semantic_lookup::lookup_namespace_name(*root, namespace_name);
+}
+
+bool function_binding_types_match_for_output(const FunctionBinding & candidate,
+                                             const FunctionBinding & binding)
+{
+  return candidate.ref_qualifier == binding.ref_qualifier &&
+         callsemantic::types_equivalent_for_member_binding(candidate.type,
+                                                           binding.type);
+}
+
+bool function_template_parameter_shapes_match(const FunctionTemplateDecl & candidate,
+                                              const FunctionTemplateDecl & source)
+{
+  if(candidate.parameters.size() != source.parameters.size()) {
+    return false;
+  }
+  for(size_t i = 0; i < candidate.parameters.size(); ++i) {
+    if(candidate.parameters[i].kind != source.parameters[i].kind ||
+       candidate.parameters[i].parameter_pack != source.parameters[i].parameter_pack) {
+      return false;
+    }
+  }
+  return true;
+}
+
+FunctionBinding * find_defined_namespace_function_binding_for_output(
+    FunctionBinding & binding,
+    Scope & namespace_scope,
+    const string & lookup_name)
+{
+  const vector<FunctionBinding *> * found =
+      find_direct_function_set(namespace_scope, lookup_name);
+  if(!found) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < found->size(); ++i) {
+    FunctionBinding * candidate = (*found)[i];
+    if(candidate == &binding ||
+       candidate->owner_class ||
+       !function_binding_has_output_definition_source(*candidate) ||
+       !function_binding_types_match_for_output(*candidate, binding)) {
+      continue;
+    }
+    return candidate;
+  }
+  return nullptr;
+}
+
+FunctionBinding * materialize_defined_namespace_function_template_for_output(
+    SemanticContext & ctx,
+    FunctionBinding & binding,
+    Scope & namespace_scope,
+    const string & lookup_name)
+{
+  if(!binding.source_template) {
+    return nullptr;
+  }
+  const vector<FunctionTemplateDecl *> * templates =
+      find_direct_function_template_set(namespace_scope, lookup_name);
+  if(!templates) {
+    return nullptr;
+  }
+
+  for(size_t i = 0; i < templates->size(); ++i) {
+    FunctionTemplateDecl * candidate_template = (*templates)[i];
+    if(!candidate_template ||
+       candidate_template == binding.source_template ||
+       !candidate_template->body ||
+       !function_template_parameter_shapes_match(*candidate_template,
+                                                 *binding.source_template)) {
+      continue;
+    }
+
+    FunctionBinding * candidate = nullptr;
+    try {
+      candidate =
+          semantic_template_function::acquire_function_template_binding(
+              ctx,
+              *candidate_template,
+              binding.instantiation_arguments,
+              &namespace_scope,
+              binding.instantiation_pack_sizes.empty() ?
+                  nullptr :
+                  &binding.instantiation_pack_sizes,
+              true,
+              nullptr);
+    } catch(const TemplateSubstitutionFailure &) {
+      continue;
+    }
+    if(candidate == &binding ||
+       !candidate ||
+       candidate->owner_class ||
+       !function_binding_has_output_definition_source(*candidate) ||
+       !function_binding_types_match_for_output(*candidate, binding)) {
+      continue;
+    }
+    return candidate;
+  }
+  return nullptr;
+}
+
+FunctionBinding * find_defined_namespace_function_for_output_binding(
+    SemanticContext & ctx,
+    FunctionBinding & binding,
+    const string & lookup_name)
+{
+  if(binding.owner_class ||
+     lookup_name.empty() ||
+     !binding.source_template ||
+     binding.source_template->body ||
+     binding.has_definition ||
+     binding.definition_node ||
+     binding.body) {
+    return nullptr;
+  }
+  Scope * namespace_scope =
+      qualified_function_namespace_scope_for_output_lookup(binding);
+  if(!namespace_scope) {
+    return nullptr;
+  }
+  if(FunctionBinding * candidate =
+         find_defined_namespace_function_binding_for_output(binding,
+                                                            *namespace_scope,
+                                                            lookup_name)) {
+    return candidate;
+  }
+  return materialize_defined_namespace_function_template_for_output(ctx,
+                                                                   binding,
+                                                                   *namespace_scope,
+                                                                   lookup_name);
+}
+
 string canonical_variable_output_name(const string & parsed_name,
                                       const ValueBinding * binding)
 {
@@ -5801,6 +5982,11 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
      (upgraded->declaration_node || upgraded->definition_node || upgraded->body ||
       upgraded->has_definition)) {
     resolved = upgraded;
+  } else if(FunctionBinding * namespace_upgraded =
+                find_defined_namespace_function_for_output_binding(ctx,
+                                                                   *resolved,
+                                                                   lookup_name)) {
+    resolved = namespace_upgraded;
   } else if(parser_trace::enabled("output.require") &&
             resolved->owner_class &&
             resolved->name.find("operator[]") != std::string::npos &&
