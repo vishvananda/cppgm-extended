@@ -79,6 +79,76 @@ const CppAstNode * function_parameter_clause_in_declarator(const CppAstNode & no
   return found;
 }
 
+bool declarator_has_direct_child_kind(const CppAstNode & node, CppAstKind kind)
+{
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(node.children[i].kind == kind) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool declarator_is_transparent_parenthesized_name(const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::declarator) {
+    return false;
+  }
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::ptr_operator ||
+       child.kind == CppAstKind::array_suffix ||
+       child.kind == CppAstKind::parameter_clause) {
+      return false;
+    }
+  }
+
+  if(declarator_has_direct_child_kind(node, CppAstKind::identifier)) {
+    return true;
+  }
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind == CppAstKind::nested_declarator &&
+       child.children.size() == 1 &&
+       declarator_is_transparent_parenthesized_name(child.children[0])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool declarator_declares_function_entity(const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::declarator) {
+    return false;
+  }
+
+  const bool has_direct_parameter_clause =
+      declarator_has_direct_child_kind(node, CppAstKind::parameter_clause);
+  if(has_direct_parameter_clause &&
+     declarator_has_direct_child_kind(node, CppAstKind::identifier)) {
+    return true;
+  }
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.kind != CppAstKind::nested_declarator ||
+       child.children.size() != 1) {
+      continue;
+    }
+    if(has_direct_parameter_clause &&
+       declarator_is_transparent_parenthesized_name(child.children[0])) {
+      return true;
+    }
+    if(declarator_declares_function_entity(child.children[0])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 class TemplateDeclarationCollector
 {
 public:
@@ -1886,11 +1956,11 @@ public:
     bool has_trailing_function_parameter_pack = false;
     const bool method_like_template =
         parse_scope->class_info &&
-        find_descendant_kind(*declarator, CppAstKind::parameter_clause) != nullptr;
+        declarator_declares_function_entity(*declarator);
     const bool nonmember_function_like_template =
         !special_member_template &&
         !method_like_template &&
-        function_parameter_clause_in_declarator(*declarator) != nullptr;
+        declarator_declares_function_entity(*declarator);
     const bool is_friend_template =
         parse_scope->class_info &&
         specifiers &&

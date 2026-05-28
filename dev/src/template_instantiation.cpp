@@ -4886,6 +4886,7 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
       selected_partial_specialization(decl, info);
   const std::map<std::string, OutOfClassStaticMemberDecl> & static_member_definitions =
       partial ? partial->static_member_definitions : decl.static_member_definitions;
+  bool missing_member = false;
   for(std::map<std::string, OutOfClassStaticMemberDecl>::const_iterator it =
           static_member_definitions.begin();
       it != static_member_definitions.end();
@@ -4900,6 +4901,7 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
     if(!member) {
+      missing_member = true;
       continue;
     }
     const std::string specialization_key =
@@ -4953,7 +4955,11 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
         ctx.source_location_for_node(*it->second.initializer),
         witness::SourceUseOwnership::SourceOwned);
   }
-  info.out_of_class_static_member_definitions_applied = true;
+  info.out_of_class_static_member_definitions_applied =
+      !missing_member ||
+      (info.complete &&
+       !info.reference_member_collection_in_progress &&
+       !info.full_member_collection_in_progress);
 }
 
 void apply_out_of_class_member_function_definitions(
