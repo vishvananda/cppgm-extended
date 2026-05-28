@@ -7591,6 +7591,70 @@ bool leaf_function_type_call_result(
   return out != nullptr;
 }
 
+bool leaf_named_enum_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  return base &&
+         base->kind == Type::TK_NAMED &&
+         base->named_key.compare(0, 5, "enum ") == 0;
+}
+
+bool leaf_scalar_or_member_pointer_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  return base &&
+         (base->kind == Type::TK_MEMBER_POINTER ||
+          is_integral_type(base) ||
+          is_floating_type(base) ||
+          is_pointer_type(base) ||
+          leaf_named_enum_type(base) ||
+          (base->kind == Type::TK_FUNDAMENTAL &&
+           base->fundamental == FT_NULLPTR_T));
+}
+
+bool leaf_zero_arg_type_initialization_result(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TypePtr & target,
+    TypePtr & out)
+{
+  out.reset();
+  TypePtr base = strip_top_level_cv(target);
+  if(!base) {
+    return false;
+  }
+
+  if(is_reference_type(base) ||
+     base->kind == Type::TK_ARRAY ||
+     base->kind == Type::TK_FUNCTION) {
+    return false;
+  }
+
+  if(is_void_type(base) ||
+     base->kind == Type::TK_FUNDAMENTAL ||
+     leaf_scalar_or_member_pointer_type(base)) {
+    out = target;
+    return true;
+  }
+
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  long long constructible = 0;
+  if(!evaluate_builtin_type_trait(services,
+                                  scope,
+                                  "__is_constructible",
+                                  vector<TypePtr>(1, target),
+                                  constructible) ||
+     constructible == 0) {
+    return false;
+  }
+
+  out = target;
+  return true;
+}
+
 bool append_leaf_function_template_instantiations_from_candidates(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -7902,9 +7966,12 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
                        target));
       if(resolved_target &&
          target) {
-        out = target;
+        if(!leaf_zero_arg_type_initialization_result(
+               services, scope, target, out)) {
+          return false;
+        }
         category = semantic_conversion::VC_PRVALUE;
-        return true;
+        return out != nullptr;
       }
     }
 
