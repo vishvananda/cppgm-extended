@@ -3711,6 +3711,20 @@ void collect_partial_order_placeholder_keys(const TypePtr & type,
     if(base->named_key.find("partial-order ") == 0) {
       out.insert(base->named_key);
     }
+    for(size_t i = 0; i < base->named_dependent_alias_arguments.size(); ++i) {
+      collect_partial_order_placeholder_keys(
+          base->named_dependent_alias_arguments[i].type, out);
+    }
+    for(size_t i = 0; i < base->named_dependent_class_arguments.size(); ++i) {
+      collect_partial_order_placeholder_keys(
+          base->named_dependent_class_arguments[i].type, out);
+    }
+    for(size_t i = 0;
+        i < base->named_dependent_template_template_arguments.size();
+        ++i) {
+      collect_partial_order_placeholder_keys(
+          base->named_dependent_template_template_arguments[i].type, out);
+    }
     return;
   case Type::TK_FUNCTION:
     collect_partial_order_placeholder_keys(base->inner, out);
@@ -3737,6 +3751,192 @@ void collect_partial_order_placeholder_keys(const TypePtr & type,
   case Type::TK_FUNDAMENTAL:
     return;
   }
+}
+
+std::string normalize_template_parameter_reference_text(std::string text)
+{
+  text = semantic_utils::trim_space(text);
+  if(text.size() >= 3 && text.compare(text.size() - 3, 3, "...") == 0) {
+    text.erase(text.size() - 3);
+    text = semantic_utils::trim_space(text);
+  }
+  const std::string dependent_prefix = "dependent type ";
+  if(text.compare(0, dependent_prefix.size(), dependent_prefix) == 0) {
+    text = semantic_utils::trim_space(text.substr(dependent_prefix.size()));
+  }
+  if(text.compare(0, 9, "typename ") == 0) {
+    text = semantic_utils::trim_space(text.substr(9));
+  }
+  return text;
+}
+
+const TemplateParameterInfo * type_parameter_pack_for_reference_text(
+    const vector<TemplateParameterInfo> & parameters,
+    const std::string & text)
+{
+  const std::string normalized =
+      normalize_template_parameter_reference_text(text);
+  if(normalized.empty()) {
+    return nullptr;
+  }
+  const TemplateParameterInfo * parameter =
+      find_template_parameter(parameters, normalized);
+  if(!parameter) {
+    parameter = find_template_parameter_by_name(parameters, normalized);
+  }
+  return parameter &&
+         parameter->kind == TemplateParameterInfo::TP_TYPE &&
+         parameter->parameter_pack ?
+             parameter :
+             nullptr;
+}
+
+const TemplateParameterInfo * direct_type_parameter_pack_reference(
+    const vector<TemplateParameterInfo> & parameters,
+    const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED) {
+    return nullptr;
+  }
+
+  const TemplateParameterInfo * parameter = nullptr;
+  if(!base->named_semantic_payload.empty()) {
+    parameter = type_parameter_pack_for_reference_text(
+        parameters, base->named_semantic_payload);
+  }
+  if(!parameter) {
+    parameter = type_parameter_pack_for_reference_text(
+        parameters, base->named_key);
+  }
+  if(!parameter && base->named_display != base->named_key) {
+    parameter = type_parameter_pack_for_reference_text(
+        parameters, base->named_display);
+  }
+  return parameter;
+}
+
+void collect_type_parameter_pack_references(const vector<TemplateParameterInfo> & parameters,
+                                            const TypePtr & type,
+                                            std::set<const TemplateParameterInfo *> & out)
+{
+  if(!type) {
+    return;
+  }
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    base = type;
+  }
+  switch(base->kind) {
+  case Type::TK_NAMED:
+  {
+    const TemplateParameterInfo * direct =
+        direct_type_parameter_pack_reference(parameters, base);
+    if(direct) {
+      out.insert(direct);
+    }
+    for(size_t i = 0; i < base->named_dependent_alias_arguments.size(); ++i) {
+      collect_type_parameter_pack_references(
+          parameters, base->named_dependent_alias_arguments[i].type, out);
+    }
+    for(size_t i = 0; i < base->named_dependent_class_arguments.size(); ++i) {
+      collect_type_parameter_pack_references(
+          parameters, base->named_dependent_class_arguments[i].type, out);
+    }
+    for(size_t i = 0;
+        i < base->named_dependent_template_template_arguments.size();
+        ++i) {
+      collect_type_parameter_pack_references(
+          parameters, base->named_dependent_template_template_arguments[i].type, out);
+    }
+    return;
+  }
+  case Type::TK_FUNCTION:
+    collect_type_parameter_pack_references(parameters, base->inner, out);
+    for(size_t i = 0; i < base->params.size(); ++i) {
+      collect_type_parameter_pack_references(parameters, base->params[i], out);
+    }
+    return;
+  case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+  case Type::TK_ARRAY:
+  case Type::TK_ATOMIC:
+  case Type::TK_CV:
+    collect_type_parameter_pack_references(parameters, base->inner, out);
+    if(base->owner) {
+      collect_type_parameter_pack_references(parameters, base->owner, out);
+    }
+    return;
+  case Type::TK_MEMBER_POINTER:
+    collect_type_parameter_pack_references(parameters, base->owner, out);
+    collect_type_parameter_pack_references(parameters, base->inner, out);
+    return;
+  case Type::TK_FUNDAMENTAL:
+    return;
+  }
+}
+
+size_t count_function_template_type_parameter_pack_references(
+    const FunctionTemplateDecl & decl)
+{
+  std::set<const TemplateParameterInfo *> references;
+  for(size_t i = 0; i < decl.params_pattern.size(); ++i) {
+    collect_type_parameter_pack_references(decl.parameters,
+                                           decl.params_pattern[i].second,
+                                           references);
+  }
+  return references.size();
+}
+
+bool function_template_declares_type_parameter_pack(const FunctionTemplateDecl & decl)
+{
+  for(size_t i = 0; i < decl.parameters.size(); ++i) {
+    if(decl.parameters[i].kind == TemplateParameterInfo::TP_TYPE &&
+       decl.parameters[i].parameter_pack) {
+      return true;
+    }
+  }
+  return false;
+}
+
+int compare_function_template_type_pack_pattern_preference(
+    const CandidateMatch & current,
+    const CandidateMatch & best)
+{
+  if(!current.function || !best.function ||
+     !current.function->source_template || !best.function->source_template) {
+    return 0;
+  }
+
+  const bool current_declares_pack =
+      function_template_declares_type_parameter_pack(
+          *current.function->source_template);
+  const bool best_declares_pack =
+      function_template_declares_type_parameter_pack(
+          *best.function->source_template);
+  if(!current_declares_pack && !best_declares_pack) {
+    return 0;
+  }
+
+  const size_t current_packs =
+      current_declares_pack ?
+          count_function_template_type_parameter_pack_references(
+              *current.function->source_template) :
+          0;
+  const size_t best_packs =
+      best_declares_pack ?
+          count_function_template_type_parameter_pack_references(
+              *best.function->source_template) :
+          0;
+  if(current_packs == 0 && best_packs != 0) {
+    return -1;
+  }
+  if(best_packs == 0 && current_packs != 0) {
+    return 1;
+  }
+  return 0;
 }
 
 int compare_partial_order_placeholder_specificity(const vector<TypePtr> & current_params,
@@ -6861,6 +7061,11 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
                                                       best_transformed_params);
     if(placeholder_specificity != 0) {
       return placeholder_specificity;
+    }
+    const int type_pack_pattern_preference =
+        compare_function_template_type_pack_pattern_preference(current, best);
+    if(type_pack_pattern_preference != 0) {
+      return type_pack_pattern_preference;
     }
     const int parameter_count_preference =
         compare_function_template_parameter_count_preference(current, best);

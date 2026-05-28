@@ -56,6 +56,11 @@ bool build_partial_ordering_placeholder_arguments(
       argument.type = parameters[i].value_type;
       argument.text = key.str();
       argument.dependent = true;
+    } else if(parameters[i].kind ==
+              template_model::TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+      argument.kind = template_model::TemplateArgument::TA_CLASS_TEMPLATE;
+      argument.text = key.str();
+      argument.dependent = true;
     } else {
       return false;
     }

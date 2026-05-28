@@ -10922,6 +10922,23 @@ bool make_substituted_template_template_specialization_type(
                                     substituted_arguments);
     return out != nullptr;
   }
+  if((replacement.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+      replacement.kind == TemplateArgument::TA_ALIAS_TEMPLATE) &&
+     replacement.dependent &&
+     !replacement.text.empty()) {
+    const string head = trim_space(replacement.text);
+    const string display =
+        template_template_specialization_text(head, substituted_arguments);
+    out = make_semantic_named(display.empty() ? head : display,
+                              Type::NSK_DEPENDENT_TYPE,
+                              display.empty() ? head : display,
+                              true);
+    set_named_type_dependent_template_template_parameter(out,
+                                                         head,
+                                                         substituted_arguments.size(),
+                                                         substituted_arguments);
+    return out != nullptr;
+  }
   return false;
 }
 
