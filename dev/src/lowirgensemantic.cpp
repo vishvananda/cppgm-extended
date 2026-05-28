@@ -14041,6 +14041,77 @@ private:
     emit_statement(node);
   }
 
+  static string gnu_asm_unsupported_message(const CallSemNode & node)
+  {
+    ostringstream out;
+    out << "GNU asm statement lowering unsupported in PA31 host compatibility";
+    if(!node.text.empty()) {
+      out << " [qualifiers " << node.text << "]";
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      out << " [clause" << i << " " << node.children[i].text << "]";
+    }
+    return out.str();
+  }
+
+  static bool is_supported_gnu_asm_qualifier_text(const string & text)
+  {
+    const string trimmed = semantic_utils::trim_space(text);
+    return trimmed.empty() ||
+           trimmed == "volatile" ||
+           trimmed == "__volatile" ||
+           trimmed == "__volatile__";
+  }
+
+  static string gnu_asm_clause_text(const CallSemNode & node, size_t index)
+  {
+    if(index >= node.children.size()) {
+      return string();
+    }
+    if(node.children[index].kind != CallSemKind::asm_clause) {
+      throw logic_error("malformed GNU asm statement");
+    }
+    return semantic_utils::trim_space(node.children[index].text);
+  }
+
+  static bool is_supported_no_operand_gnu_asm_template(const string & text)
+  {
+    return text == "\"\"" ||
+           text == "\"nop\"" ||
+           text == "\"pause\"" ||
+           text == "\"rep; nop\"" ||
+           text == "\"yield\"";
+  }
+
+  static bool is_supported_no_operand_gnu_asm_clobber(const string & text)
+  {
+    return text.empty() || text == "\"memory\"";
+  }
+
+  bool emit_supported_gnu_asm_statement(const CallSemNode & node)
+  {
+    if(node.children.empty() || node.children.size() > 4) {
+      return false;
+    }
+    if(!is_supported_gnu_asm_qualifier_text(node.text)) {
+      return false;
+    }
+
+    const string asm_template = gnu_asm_clause_text(node, 0);
+    const string outputs = gnu_asm_clause_text(node, 1);
+    const string inputs = gnu_asm_clause_text(node, 2);
+    const string clobbers = gnu_asm_clause_text(node, 3);
+    if(!is_supported_no_operand_gnu_asm_template(asm_template) ||
+       !outputs.empty() ||
+       !inputs.empty() ||
+       !is_supported_no_operand_gnu_asm_clobber(clobbers)) {
+      return false;
+    }
+
+    emit_line("atomic_signal_fence 5");
+    return true;
+  }
+
   void emit_statement(const CallSemNode & node)
   {
     ScopedLowIRCurrentStatement current_stmt(node);
@@ -14136,12 +14207,10 @@ private:
     }
 
     if(node.kind == CallSemKind::asm_statement) {
-      ostringstream out;
-      out << "GNU asm statement lowering unsupported in PA32 host compatibility";
-      if(!node.text.empty()) {
-        out << " [text " << node.text << "]";
+      if(emit_supported_gnu_asm_statement(node)) {
+        return;
       }
-      throw logic_error(out.str());
+      throw logic_error(gnu_asm_unsupported_message(node));
     }
 
     if(node.kind == CallSemKind::constructor_action ||

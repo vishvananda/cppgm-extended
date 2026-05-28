@@ -1990,9 +1990,17 @@ void analyze_statement_impl(SemanticContext & ctx,
   }
 
   if(node.kind == CppAstKind::asm_statement) {
-    out.children.push_back(make_located_dump_node(CallSemKind::asm_statement,
-                                                  node,
-                                                  node_text(node)));
+    DumpNode asm_node = make_located_dump_node(CallSemKind::asm_statement,
+                                               node,
+                                               node_text(node));
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(node.children[i].kind == CppAstKind::asm_clause) {
+        asm_node.children.push_back(make_located_dump_node(CallSemKind::asm_clause,
+                                                           node.children[i],
+                                                           node_text(node.children[i])));
+      }
+    }
+    out.children.push_back(std::move(asm_node));
     return;
   }
 

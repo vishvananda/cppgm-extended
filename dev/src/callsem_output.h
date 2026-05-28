@@ -25,6 +25,7 @@ enum CallValueCategory
 #define CALL_SEM_KIND_LIST(X) \
   X(invalid, "<invalid>") \
   X(assignment_expression, "assignment-expression") \
+  X(asm_clause, "asm-clause") \
   X(asm_statement, "asm-statement") \
   X(binary_expression, "binary-expression") \
   X(break_statement, "break-statement") \
