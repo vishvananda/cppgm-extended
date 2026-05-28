@@ -25009,27 +25009,8 @@ private:
       QualifiedName specialization_name = target_template_id->name;
       vector<string> arg_texts = target_template_id->arguments;
 
-      QualifiedName owner_scope_name;
-      owner_scope_name.rooted = specialization_name.rooted;
-      if(!specialization_name.qualifiers.empty()) {
-        owner_scope_name.name = specialization_name.qualifiers.back();
-        owner_scope_name.qualifiers.assign(specialization_name.qualifiers.begin(),
-                                           specialization_name.qualifiers.end() - 1);
-      }
-      Scope * target_scope = &scope;
-      if(specialization_name.rooted || !specialization_name.qualifiers.empty()) {
-        target_scope =
-            owner_scope_name.name.empty() && owner_scope_name.qualifiers.empty() ?
-                root.get() :
-                semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
-                    *this, scope, owner_scope_name);
-      }
       ClassTemplateDecl * primary =
-          target_scope ?
-              semantic_lookup::lookup_class_template(*this,
-                                                    *target_scope,
-                                                    specialization_name.name) :
-              nullptr;
+          semantic_lookup::lookup_class_template(*this, scope, specialization_name);
       if(!primary) {
         if(parser_trace::enabled("template.resolve")) {
           parser_trace::note("template.resolve",
