@@ -12968,8 +12968,7 @@ private:
       }
       const GlobalBinding * global = find_global_binding(node);
       if(global) {
-        return emit_decay_pointer(
-            emit_temp_assignment("ptr", string("addr ") + global->storage));
+        return emit_rvalue(node);
       }
     }
     return emit_rvalue(node);
