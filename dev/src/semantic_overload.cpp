@@ -11540,6 +11540,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           member_name,
           member_template_id);
     }
+    if(!target.qualified && candidates.size() > 1) {
+      remove_hidden_using_base_member_function_candidates(candidates, *class_info);
+    }
     if(candidates.empty() &&
        !looks_like_operator_function_name(target.lookup_name)) {
       try {

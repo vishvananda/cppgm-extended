@@ -791,17 +791,18 @@ bool member_function_types_same_non_object_signature(const TypePtr & lhs,
   return true;
 }
 
-void remove_hidden_using_base_member_functions(MemberCallableLookupResult & result,
-                                               const ClassInfo & current)
+void remove_hidden_using_base_member_function_candidates_impl(
+    vector<FunctionBinding *> & functions,
+    const ClassInfo & current)
 {
-  if(result.functions.size() < 2) {
+  if(functions.size() < 2) {
     return;
   }
 
   bool has_current_member = false;
   bool has_base_member = false;
-  for(size_t i = 0; i < result.functions.size(); ++i) {
-    FunctionBinding * function = result.functions[i];
+  for(size_t i = 0; i < functions.size(); ++i) {
+    FunctionBinding * function = functions[i];
     if(function && function->owner_class == &current) {
       has_current_member = true;
     } else if(function) {
@@ -816,13 +817,13 @@ void remove_hidden_using_base_member_functions(MemberCallableLookupResult & resu
   }
 
   vector<FunctionBinding *> filtered;
-  filtered.reserve(result.functions.size());
-  for(size_t i = 0; i < result.functions.size(); ++i) {
-    FunctionBinding * function = result.functions[i];
+  filtered.reserve(functions.size());
+  for(size_t i = 0; i < functions.size(); ++i) {
+    FunctionBinding * function = functions[i];
     bool hidden = false;
     if(function && function->owner_class != &current) {
-      for(size_t j = 0; j < result.functions.size(); ++j) {
-        FunctionBinding * direct = result.functions[j];
+      for(size_t j = 0; j < functions.size(); ++j) {
+        FunctionBinding * direct = functions[j];
         if(direct && direct->owner_class == &current &&
            function->ref_qualifier == direct->ref_qualifier &&
            member_function_types_same_non_object_signature(function->type,
@@ -836,7 +837,13 @@ void remove_hidden_using_base_member_functions(MemberCallableLookupResult & resu
       filtered.push_back(function);
     }
   }
-  result.functions.swap(filtered);
+  functions.swap(filtered);
+}
+
+void remove_hidden_using_base_member_functions(MemberCallableLookupResult & result,
+                                               const ClassInfo & current)
+{
+  remove_hidden_using_base_member_function_candidates_impl(result.functions, current);
 }
 
 bool direct_function_set_has_access_overrides(const Scope & scope,
@@ -3047,6 +3054,13 @@ bool same_inline_namespace_function_template_entity(const FunctionTemplateDecl *
                                                         lhs->parameters,
                                                         rhs->type_pattern,
                                                         rhs->parameters));
+}
+
+void remove_hidden_using_base_member_function_candidates(
+    vector<FunctionBinding *> & functions,
+    const ClassInfo & current)
+{
+  remove_hidden_using_base_member_function_candidates_impl(functions, current);
 }
 
 vector<FunctionBinding *> & direct_function_set_slot(Scope & scope, const string & name)
