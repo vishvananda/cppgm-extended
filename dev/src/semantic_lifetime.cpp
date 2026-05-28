@@ -4331,9 +4331,8 @@ void append_constructor_generated_statements(SemanticContext & ctx,
   }
 
   if(info.class_kind == "union") {
-    const FieldInfo * active_field = semantic_class_model::first_aggregate_field(info);
-    const CppAstNode * active_initializer =
-        active_field ? active_field->default_initializer : nullptr;
+    const FieldInfo * active_field = nullptr;
+    const CppAstNode * active_initializer = nullptr;
     if(binding.ctor_initializer) {
       for(size_t i = 0; i < binding.ctor_initializer->children.size(); ++i) {
         const CppAstNode & init = binding.ctor_initializer->children[i];
@@ -4351,6 +4350,15 @@ void append_constructor_generated_statements(SemanticContext & ctx,
           break;
         }
         if(active_field) {
+          break;
+        }
+      }
+    }
+    if(!active_field) {
+      for(size_t i = 0; i < info.fields.size(); ++i) {
+        if(info.fields[i].default_initializer) {
+          active_field = &info.fields[i];
+          active_initializer = info.fields[i].default_initializer;
           break;
         }
       }
