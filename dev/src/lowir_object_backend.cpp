@@ -5151,12 +5151,9 @@ void force_external_binding_for_function_declaration_imports(
        !symbol_linkage::has_object_symbol(symbol)) {
       continue;
     }
-    // Weak generic declarations are inline/template surfaces that may not have
-    // a host out-of-line provider. Declarations that require host binding must
-    // be emitted as strong in LowIR.
-    if(symbol_linkage::has_weak_linkage(symbol)) {
-      continue;
-    }
+    // Declaration-only functions have no local fallback in this object.  Even
+    // when the source entity has ODR/weak linkage, a call import must be strong
+    // so the host linker keeps the provider library under --as-needed.
     symbol.linkage = symbol_linkage::SL_EXTERNAL;
     symbol.prefer_local_object_binding = false;
   }
