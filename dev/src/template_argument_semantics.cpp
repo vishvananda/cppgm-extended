@@ -17095,8 +17095,15 @@ Scope * resolve_qualified_scope_for_class_or_namespace_impl(
         return service_type_depends_on_template_parameter(services, type);
       };
 
+  Scope * current = &scope;
+  if(qualified.rooted) {
+    while(current->parent) {
+      current = current->parent;
+    }
+  }
+
   string qualifier_text = qualified.rooted ? "::" : string();
-  Scope * resolved_scope = qualified.rooted ? nullptr : &scope;
+  Scope * resolved_scope = current;
   for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
     if(i != 0) {
       qualifier_text += "::";
