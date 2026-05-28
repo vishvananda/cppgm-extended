@@ -7951,6 +7951,19 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         },
         instantiation_context);
   }
+  const auto source_decl_uses_instantiation_owner_template = [&]() -> bool
+  {
+    ClassInfo * source_owner =
+        source_decl->declaring_scope ?
+            source_decl->declaring_scope->class_info :
+            nullptr;
+    return instantiation_owner &&
+           instantiation_owner->source_template &&
+           source_owner &&
+           (source_owner == instantiation_owner ||
+            source_owner->source_template == instantiation_owner->source_template ||
+            source_owner->class_node == instantiation_owner->source_template->class_node);
+  };
   auto resolve_instantiated_params = [&]()
   {
     template_api::with_template_services(
@@ -7984,18 +7997,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                 params[i].second = substituted;
               }
             }
-            ClassInfo * source_owner =
-                source_decl->declaring_scope ?
-                    source_decl->declaring_scope->class_info :
-                    nullptr;
-            const bool same_owner_template =
-                instantiation_owner &&
-                instantiation_owner->source_template &&
-                source_owner &&
-                (source_owner == instantiation_owner ||
-                 source_owner->source_template == instantiation_owner->source_template ||
-                 source_owner->class_node == instantiation_owner->source_template->class_node);
-            if(same_owner_template &&
+            if(source_decl_uses_instantiation_owner_template() &&
                !instantiation_owner->instantiation_arguments.empty()) {
               TypePtr owner_substituted;
               if(template_argument_semantics::substitute_type(
@@ -8142,6 +8144,45 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                inst_scope, result_type, source_decl->parameters, arguments, substituted)) {
           result_type = substituted;
         }
+      }
+      if(template_argument_semantics::type_depends_on_template_parameter(ctx, result_type) &&
+         source_decl_uses_instantiation_owner_template() &&
+         !instantiation_owner->instantiation_arguments.empty()) {
+        template_api::with_template_services(
+            ctx,
+            [&](template_api::TemplateServices & services)
+            {
+              std::vector<TemplateParameterInfo> combined_parameters;
+              std::vector<TemplateArgument> combined_arguments;
+              combined_parameters.insert(combined_parameters.end(),
+                                         source_decl->parameters.begin(),
+                                         source_decl->parameters.end());
+              combined_arguments.insert(combined_arguments.end(),
+                                        arguments.begin(),
+                                        arguments.end());
+              combined_parameters.insert(
+                  combined_parameters.end(),
+                  instantiation_owner->source_template->parameters.begin(),
+                  instantiation_owner->source_template->parameters.end());
+              combined_arguments.insert(
+                  combined_arguments.end(),
+                  instantiation_owner->instantiation_arguments.begin(),
+                  instantiation_owner->instantiation_arguments.end());
+              if(combined_parameters.size() == combined_arguments.size() &&
+                 !combined_parameters.empty()) {
+                TypePtr class_substituted;
+                if(substitute_owner_arguments_in_class_type(ctx,
+                                                            services,
+                                                            inst_scope,
+                                                            combined_parameters,
+                                                            combined_arguments,
+                                                            result_type,
+                                                            class_substituted) &&
+                   class_substituted) {
+                  result_type = class_substituted;
+                }
+              }
+            });
       }
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
