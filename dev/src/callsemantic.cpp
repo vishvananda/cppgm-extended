@@ -9250,10 +9250,11 @@ private:
                       prefer_overload_suffix,
                       nullptr,
                       nullptr);
-    FunctionBinding * binding = find_matching_function(*info.member_scope,
-                                                       simple_name,
-                                                       normalized_declared_type,
-                                                       template_identity);
+    FunctionBinding * binding =
+        find_matching_static_member_function(*info.member_scope,
+                                             simple_name,
+                                             normalized_declared_type,
+                                             template_identity);
     if(!binding) {
       throw logic_error("missing static member function binding");
     }
@@ -19547,6 +19548,40 @@ private:
                                        RQ_NONE);
   }
 
+  FunctionBinding * find_matching_static_member_function(
+      Scope & scope,
+      const string & name,
+      const TypePtr & type,
+      const FunctionTemplateRegistrationIdentity & template_identity =
+          FunctionTemplateRegistrationIdentity(),
+      bool require_definition = false)
+  {
+    const string canonical_name = canonical_function_lookup_name(name);
+    map<string, vector<FunctionBinding *> >::iterator found =
+        scope.function_sets.find(canonical_name);
+    if(found == scope.function_sets.end()) {
+      return nullptr;
+    }
+
+    for(size_t i = 0; i < found->second.size(); ++i) {
+      FunctionBinding * candidate = found->second[i];
+      if(!candidate ||
+         candidate->is_method ||
+         candidate->is_constructor ||
+         candidate->is_destructor ||
+         (require_definition && !candidate->has_definition) ||
+         !types_equivalent_for_member_binding(candidate->type, type) ||
+         candidate->ref_qualifier != RQ_NONE ||
+         !template_api::function_binding_matches_instantiation_identity(
+             *candidate,
+             template_identity)) {
+        continue;
+      }
+      return candidate;
+    }
+    return nullptr;
+  }
+
   FunctionBinding * find_matching_class_function(ClassInfo & info,
                                                  const string & name,
                                                  const TypePtr & type,
@@ -21555,6 +21590,11 @@ private:
       FunctionBinding * current)
   {
     FunctionBinding * refreshed = nullptr;
+    const bool static_member_key =
+        key.owner_class &&
+        !key.is_method &&
+        !key.is_constructor &&
+        !key.is_destructor;
     if(key.owner_class &&
        (key.is_method || key.is_constructor || key.is_destructor)) {
       const string member_name =
@@ -21579,12 +21619,17 @@ private:
           key.display_name.empty() ?
               unqualified_member_name(canonical_function_lookup_name(key.name)) :
               key.display_name;
-      refreshed = find_matching_function(*key.declaration_scope,
-                                         lookup_name,
-                                         key.type,
-                                         key.template_identity);
+      refreshed = key.is_method || key.is_constructor || key.is_destructor ?
+          find_matching_function(*key.declaration_scope,
+                                 lookup_name,
+                                 key.type,
+                                 key.template_identity) :
+          find_matching_static_member_function(*key.declaration_scope,
+                                               lookup_name,
+                                               key.type,
+                                               key.template_identity);
     }
-    if(!refreshed && key.declaration_scope) {
+    if(!refreshed && key.declaration_scope && !static_member_key) {
       refreshed = find_matching_function(*key.declaration_scope,
                                          key.name,
                                          key.type,
@@ -21672,8 +21717,12 @@ private:
              candidate->template_bound_template_names.size() +
              candidate->values.size();
     };
+    const bool registering_static_member_function =
+        scope.class_info && declaration_marks_static(declaration_node);
     FunctionBinding * existing =
-        find_matching_function(scope, name, type, template_identity);
+        registering_static_member_function ?
+            find_matching_static_member_function(scope, name, type, template_identity) :
+            find_matching_function(scope, name, type, template_identity);
     const string qualified_name = scope_qualified_name(scope, name);
     const bool inherits_existing_c_linkage =
         existing &&
@@ -26300,11 +26349,12 @@ private:
             binding->display_name.empty() ?
                 unqualified_member_name(canonical_function_lookup_name(binding->name)) :
                 binding->display_name;
-        upgraded = template_api::find_defined_function_matching_template_identity(
-            *this,
+        upgraded = find_matching_static_member_function(
             *binding->declaration_scope,
             lookup_name,
-            *binding);
+            binding->type,
+            template_api::function_binding_registration_identity(*binding),
+            true);
       }
     } else if(binding->declaration_scope) {
       upgraded = template_api::find_defined_function_matching_template_identity(

@@ -5943,9 +5943,12 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
   }
   const string lookup_name =
       function_binding_output_lookup_name(*binding);
+  const bool class_method_binding =
+      binding->owner_class &&
+      (binding->is_method || binding->is_constructor || binding->is_destructor);
 
   FunctionBinding * resolved = nullptr;
-  if(binding->owner_class && !lookup_name.empty()) {
+  if(class_method_binding && !lookup_name.empty()) {
     resolved = ctx.find_exact_class_function(*binding->owner_class,
                                              lookup_name,
                                              binding->type,
@@ -5959,7 +5962,10 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
   }
 
   FunctionBinding * upgraded = nullptr;
-  if(resolved->owner_class) {
+  const bool resolved_class_method =
+      resolved->owner_class &&
+      (resolved->is_method || resolved->is_constructor || resolved->is_destructor);
+  if(resolved_class_method) {
     if(!lookup_name.empty()) {
       upgraded = template_api::find_defined_class_function_matching_template_identity(
           ctx,
@@ -5967,7 +5973,7 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
           lookup_name,
           *resolved);
     }
-  } else if(resolved->declaration_scope) {
+  } else if(!resolved->owner_class && resolved->declaration_scope) {
     const string lookup_name = function_binding_output_lookup_name(*resolved);
     if(!lookup_name.empty()) {
       upgraded = template_api::find_defined_function_matching_template_identity(
@@ -5977,15 +5983,19 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
           *resolved);
     }
   }
+  FunctionBinding * namespace_upgraded = nullptr;
+  if(!resolved->owner_class) {
+    namespace_upgraded =
+        find_defined_namespace_function_for_output_binding(ctx,
+                                                           *resolved,
+                                                           lookup_name);
+  }
   if(upgraded &&
      upgraded != resolved &&
      (upgraded->declaration_node || upgraded->definition_node || upgraded->body ||
       upgraded->has_definition)) {
     resolved = upgraded;
-  } else if(FunctionBinding * namespace_upgraded =
-                find_defined_namespace_function_for_output_binding(ctx,
-                                                                   *resolved,
-                                                                   lookup_name)) {
+  } else if(namespace_upgraded) {
     resolved = namespace_upgraded;
   } else if(parser_trace::enabled("output.require") &&
             resolved->owner_class &&
@@ -6340,7 +6350,8 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
         binding_owner = canonicalize_output_class_info(ctx, binding_owner);
         if(binding &&
            binding_owner &&
-        binding->owner_class != binding_owner &&
+           binding->owner_class != binding_owner &&
+           (binding->is_method || binding->is_constructor || binding->is_destructor) &&
            !function_binding_output_lookup_name(*binding).empty()) {
           const string owner_lookup_name = function_binding_output_lookup_name(*binding);
           FunctionBinding * owner_binding =
