@@ -5173,7 +5173,7 @@ ExprInfo analyze_id_expression(SemanticContext & ctx,
   const QualifiedName * qualified = cppast_qualified_name_syntax(node);
   if(qualified &&
      !qualified->qualifiers.empty() &&
-     !node.qualifier_template_id_syntaxes.empty()) {
+     node.qualifier_template_id_syntaxes.size() == 1) {
     const TemplateIdSyntax & qualifier_template_id =
         node.qualifier_template_id_syntaxes.back();
     const bool use_folded_member_value =

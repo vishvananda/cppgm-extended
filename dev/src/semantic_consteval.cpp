@@ -2455,6 +2455,14 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
                                                        value);
         }
         if(lookup_qualifier_template_compatible) {
+          const bool prefer_structured_qualified_lookup =
+              node != nullptr &&
+              node->kind == CppAstKind::id_expression &&
+              node->qualifier_template_id_syntaxes.size() > 1;
+          if(prefer_structured_qualified_lookup &&
+             ctx.lookup_constant_value_node(scope, name, node, value)) {
+            return true;
+          }
           if(ctx.lookup_constant_template_member_value(
                  scope,
                  *lookup_qualifier_template_id,
@@ -2463,7 +2471,8 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
                  value)) {
             return true;
           }
-          if(ctx.lookup_constant_value_node(scope, name, node, value)) {
+          if(!prefer_structured_qualified_lookup &&
+             ctx.lookup_constant_value_node(scope, name, node, value)) {
             return true;
           }
         }
