@@ -12467,10 +12467,6 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
             return false;
           }
           const std::string actual_arg = trim_space(actual_args_for_match[actual_index]);
-          if(pattern_arg == actual_arg) {
-            ++actual_index;
-            continue;
-          }
           const TemplateArgument * structured_pattern =
               pattern_structured_args ? &(*pattern_structured_args)[i] : nullptr;
           const TemplateArgument * structured_actual =
@@ -12506,6 +12502,11 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                                                      deduced_values)) {
               return false;
             }
+            ++actual_index;
+            continue;
+          }
+
+          if(pattern_arg == actual_arg) {
             ++actual_index;
             continue;
           }
