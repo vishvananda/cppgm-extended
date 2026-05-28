@@ -78,6 +78,10 @@ rebased Boost frontier branch.
   recorded at `257413d6f542692159283354ab92a40111e0110d` after the
   Boost.Container using-imported same-signature member fix; median instructions
   `275,448,058,735`, RSS `1.12 GiB`, footprint `894.49 MiB`.
+- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-9584a3460-20260528.json`
+  recorded at `9584a346069eb783ae7b1f534c291ed90a2e81c7` after the
+  Boost.Container `static_vector_test` runtime cleanup fix; median instructions
+  `276,418,736,108`, RSS `1.11 GiB`, footprint `899.84 MiB`.
 
 ## Local Gate Repairs
 
@@ -540,7 +544,7 @@ Local Boost wrapper state:
 | 19 | `libs/compute/test` | pass | `/usr/local/bin/timeout 600 env JOBS=12 ./run-cppgm-b2.sh -a libs/compute/test` passed on 2026-05-27 from `/Users/vishvananda/boost_1_91_0`; B2 found 2 targets already current. Log `/tmp/boost-frontier-compute-current-20260527.log`. |
 | 20 | `libs/concept_check/test` | pass | `/usr/local/bin/timeout 600 env JOBS=8 ./run-cppgm-b2.sh -a libs/concept_check/test` on 2026-05-27 compiled and linked the suite, with expected-fail compile tests failing as intended and `stl_concept_covering` passing under B2. A local macOS Developer Tools permission issue later explained the fresh-executable direct-launch stalls observed while validating remaining linked positives; rerun directly if this row needs refreshed evidence. |
 | 21 | `libs/config/test` | pass | `/usr/local/bin/timeout 900 env JOBS=8 ./run-cppgm-b2.sh -a libs/config/test` on 2026-05-27 rebuilt the suite through compile and link. A local macOS Developer Tools permission issue later explained the fresh-executable direct-launch stalls observed during runtime validation; rerun directly if this row needs refreshed evidence. |
-| 22 | `libs/container/test` | active | Current build-only frontier is clean after the accumulated Container fixes; latest full build-only `/usr/local/bin/timeout 1200 env JOBS=8 ./run-cppgm-b2.sh -a libs/container/test testing.execute=off` passed and updated 167 targets, log `/tmp/boost-frontier-container-buildonly-after-devector-20260528.log`. Runtime validation is now direct after the local macOS Developer Tools permission fix; focused `static_vector_test` passes after the call-argument temporary cleanup fix, log `/tmp/boost-frontier-container-static-vector-after-call-arg-cleanup-20260528.log`. Remaining known direct runtime frontiers are `map_test` `adaptive_node_pool_impl.hpp:959` free-node invariant abort and `devector_test` leaked `test_elem_base` / `test_exception` abort. A fresh full runtime rerun is needed before the suite is marked passing. |
+| 22 | `libs/container/test` | active | Current build-only frontier is clean after the accumulated Container fixes; latest full build-only `/usr/local/bin/timeout 1200 env JOBS=8 ./run-cppgm-b2.sh -a libs/container/test testing.execute=off` passed and updated 167 targets, log `/tmp/boost-frontier-container-buildonly-after-devector-20260528.log`. Runtime validation is now direct after the local macOS Developer Tools permission fix; focused `static_vector_test` passes after the call-argument temporary cleanup fix, and the fresh full direct runtime rerun `/usr/local/bin/timeout 3600 env JOBS=8 ./run-cppgm-b2.sh -a libs/container/test` updated 321 targets, skipped 2, and failed only `map_test.run` and `devector_test.run`. Remaining direct runtime frontiers are `map_test` `adaptive_node_pool_impl.hpp:959` free-node invariant abort and `devector_test` uncaught `boost::container::test_exception`. Logs: `/tmp/boost-frontier-container-static-vector-after-call-arg-cleanup-20260528.log`, `/tmp/boost-frontier-container-runtime-direct-after-static-vector-20260528.log`. |
 | 23 | `libs/container_hash/test` | active | Build-only is clean after the range/type-name, inactive union member, constexpr function-pointer array, and static-member-definition fixes. Full build-only `/usr/local/bin/timeout 900 env JOBS=8 ./run-cppgm-b2.sh -a libs/container_hash/test testing.execute=off` passes and updates 163 targets, including the expected `namespace_fail_test` compile-fail path. Runtime execution remains pending after the local macOS Developer Tools permission issue was resolved. Logs: `/tmp/boost-frontier-container-hash-buildonly-current-20260528.log`, `/tmp/boost-frontier-container-hash-tn-holder-cv-after-20260528.log`, `/tmp/boost-frontier-container-hash-buildonly-after-tn-holder-cv-20260528.log`, `/tmp/boost-frontier-container-hash-template-example-current-20260528.log`, `/tmp/boost-frontier-container-hash-template-after-union-storage-20260528.log`, `/tmp/boost-frontier-container-hash-template-after-fnptr-template-array-20260528.log`, `/tmp/boost-frontier-container-hash-template-after-static-retry-20260528.log`, `/tmp/boost-frontier-container-hash-buildonly-after-static-member-definitions-20260528.log`. |
 
 - 2026-05-28 scoped-allocator update: the `std::__1::get<0ul, int>`
@@ -659,6 +663,15 @@ Local Boost wrapper state:
   Remaining known Container runtime frontiers no longer include focused
   `static_vector_test`, but full runtime verification still needs a fresh
   direct rerun.
+- 2026-05-28 full runtime rerun after static_vector: direct
+  `/usr/local/bin/timeout 3600 env JOBS=8 ./run-cppgm-b2.sh -a
+  libs/container/test` updates 321 targets, skips 2, and fails only
+  `map_test.run` and `devector_test.run`; log
+  `/tmp/boost-frontier-container-runtime-direct-after-static-vector-20260528.log`.
+  `static_vector_test` stays passing in the full suite. Remaining Container
+  runtime frontiers are `map_test` aborting at
+  `adaptive_node_pool_impl.hpp:959` and `devector_test` terminating with
+  uncaught `boost::container::test_exception`.
 
 ## Survey Regression Triage - 2026-05-25
 
