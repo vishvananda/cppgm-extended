@@ -553,6 +553,7 @@ Local Boost wrapper state:
 | 24 | `libs/context/test` | pass | `/usr/local/bin/timeout 900 env JOBS=8 ./run-cppgm-b2.sh -a libs/context/test` on 2026-05-28 passed from the current tree after configuration checks; B2 found 1 target already current. Log `/tmp/boost-frontier-context-current-20260528.log`. |
 | 25 | `libs/contract/test` | pass | `/usr/local/bin/timeout 900 env JOBS=8 ./run-cppgm-b2.sh -a libs/contract/test` on 2026-05-28 passed from the current tree after configuration checks; B2 found 1 target already current. Log `/tmp/boost-frontier-contract-current-20260528.log`. |
 | 26 | `libs/conversion/test` | pass | `/usr/local/bin/timeout 900 env JOBS=8 ./run-cppgm-b2.sh -a libs/conversion/test` on 2026-05-28 passed from the current tree and updated 18 targets. The `implicit_cast_fail` and `implicit_cast_fail2` diagnostics are expected-fail compile probes, and B2 reported all expected-fail and runtime targets passed. Log `/tmp/boost-frontier-conversion-current-20260528.log`. |
+| 27 | `libs/convert/test` | pass | `/usr/local/bin/timeout 900 env JOBS=8 ./run-cppgm-b2.sh -a libs/convert/test` on 2026-05-28 passed from the current tree after configuration checks; B2 found 1 target already current. Log `/tmp/boost-frontier-convert-current-20260528.log`. |
 
 - 2026-05-28 scoped-allocator update: the `std::__1::get<0ul, int>`
   output/link frontier in row 22 is fixed. Focused build-only
