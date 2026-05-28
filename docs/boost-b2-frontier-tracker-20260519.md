@@ -74,6 +74,10 @@ rebased Boost frontier branch.
   The previous named `/tmp` baselines were no longer present, so this is a fresh
   comparison point for subsequent frontier fixes rather than a before/after
   regression check for `dcdd5d3e6`.
+- active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-257413d6f-20260527.json`
+  recorded at `257413d6f542692159283354ab92a40111e0110d` after the
+  Boost.Container using-imported same-signature member fix; median instructions
+  `275,448,058,735`, RSS `1.12 GiB`, footprint `894.49 MiB`.
 
 ## Local Gate Repairs
 
