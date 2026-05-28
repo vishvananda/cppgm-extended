@@ -135,21 +135,41 @@ global @__strlit__1 [binding=internal] = {
 function @force(%lazy : ptr [pass=reference], %out : ptr [pass=reference]) -> void [binding=strong, object=_Z5forceRK23array_reference_cv_lazyR25array_reference_cv_stream] {
   slot $lazy : ptr
   slot $out : ptr
-  slot $tmpobj__1 : obj<24x8>
+  slot $call__1 : ptr
+  slot $tmpobj__2 : obj<24x8>
 
   block ^entry:
     store ptr %lazy, $lazy
     store ptr %out, $out
-    %t1 = addr $tmpobj__1
+    eh_try ^call_unwind_dispatch_1
+    %t1 = addr $tmpobj__2
     %t2 = load ptr $lazy
     %t3 = addr @__strlit__1
     call void @operator__(%t1, %t2, %t3)
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^call_unwind_dispatch_1:
+    resume
+
+  block ^call_unwind_end_2:
+    eh_try ^call_unwind_dispatch_3
     %t4 = load ptr $out
     %t5 = load ptr %t1
     %t6 = index i8 %t5, 16
     %t7 = load ptr %t6
     %t8 = call ptr %t7(%t1, %t4) as (%arg0 : ptr, %arg1 : ptr [pass=reference]) -> ptr
+    store ptr %t8, $call__1
+    %t9 = load ptr $call__1
     call void @array_reference_cv_lazy_impl_array_reference_cv_lazy__char__4___char_const_____4_____array_reference_cv_lazy_impl(%t1)
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^call_unwind_dispatch_3:
+    call void @array_reference_cv_lazy_impl_array_reference_cv_lazy__char__4___char_const_____4_____array_reference_cv_lazy_impl(%t1)
+    resume
+
+  block ^call_unwind_end_4:
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

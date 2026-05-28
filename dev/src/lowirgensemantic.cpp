@@ -7220,11 +7220,125 @@ private:
     return false;
   }
 
+  bool argument_may_register_materialized_temporary_cleanup(
+      const TypePtr & param_type,
+      const CallSemNode & arg) const
+  {
+    if(!current_cleanup_scope_is_full_expression()) {
+      return false;
+    }
+
+    TypePtr param_base = strip_top_level_cv(param_type);
+    if(is_reference_type(param_type)) {
+      TypePtr referent_type = remove_reference_type(param_type);
+      TypePtr object_type = strip_top_level_cv(remove_reference_type(referent_type));
+      if(!object_type ||
+         !is_complete_class_value_type(object_type) ||
+         !destructor_runtime_call_required(object_type)) {
+        return false;
+      }
+
+      if((arg.is_base_subobject || arg.is_virtual_base_subobject) &&
+         arg.value_category != CVC_LVALUE) {
+        return false;
+      }
+      if(is_reference_type(arg.semantic_type) ||
+         arg.value_category == CVC_LVALUE) {
+        return false;
+      }
+
+      if(param_base && is_indirect_value_type(param_base->inner)) {
+        return arg.value_category == CVC_PRVALUE;
+      }
+      return is_complete_class_value_type(referent_type);
+    }
+
+    if(param_base &&
+       param_base->kind == Type::TK_POINTER &&
+       is_class_like_value_type(arg.semantic_type)) {
+      TypePtr object_type = strip_top_level_cv(remove_reference_type(arg.semantic_type));
+      if(!object_type ||
+         !is_complete_class_value_type(object_type) ||
+         !destructor_runtime_call_required(object_type)) {
+        return false;
+      }
+      if(is_reference_type(arg.semantic_type) ||
+         arg.value_category == CVC_LVALUE) {
+        return false;
+      }
+      return is_special_class_materialization_node(arg) ||
+             arg.kind == CallSemKind::call_expression;
+    }
+
+    return false;
+  }
+
+  bool argument_subtree_may_materialize_cleanup(const CallSemNode & node) const
+  {
+    if(node.value_category == CVC_PRVALUE &&
+       !is_reference_type(node.semantic_type)) {
+      TypePtr object_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
+      if(object_type &&
+         is_complete_class_value_type(object_type) &&
+         destructor_runtime_call_required(object_type)) {
+        return true;
+      }
+    }
+
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(argument_subtree_may_materialize_cleanup(node.children[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool call_expression_arguments_may_register_host_unwind_cleanup(
+      const CallSemNode & node) const
+  {
+    if(!use_host_eh_runtime() ||
+       cleanup_emission_depth_ != 0 ||
+       node.kind != CallSemKind::call_expression ||
+       node.children.empty()) {
+      return false;
+    }
+
+    TypePtr function_type;
+    if(!resolve_callable_function_type(node.children[0].semantic_type, function_type) ||
+       !function_type) {
+      return false;
+    }
+
+    const bool constructor_call =
+        node.children[0].kind == CallSemKind::callee &&
+        is_constructor_function_name(node.children[0].text);
+    for(size_t i = 1; i < node.children.size(); ++i) {
+      const size_t param_index = constructor_call ? i : (i - 1);
+      if(param_index >= function_type->params.size()) {
+        continue;
+      }
+      if(argument_may_register_materialized_temporary_cleanup(
+             function_type->params[param_index],
+             node.children[i])) {
+        return true;
+      }
+      if(argument_subtree_may_materialize_cleanup(node.children[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool call_expression_needs_host_unwind_wrapper(const CallSemNode & node) const
   {
-    return node.kind == CallSemKind::call_expression &&
-           current_scope_has_host_unwind_cleanups() &&
-           !call_expression_is_known_nothrow(node);
+    if(node.kind != CallSemKind::call_expression) {
+      return false;
+    }
+    if(current_scope_has_host_unwind_cleanups() &&
+       !call_expression_is_known_nothrow(node)) {
+      return true;
+    }
+    return call_expression_arguments_may_register_host_unwind_cleanup(node);
   }
 
   bool call_expression_is_known_nothrow(const CallSemNode & node) const
@@ -7416,6 +7530,17 @@ private:
     shared_host_call_unwind_dispatch_label_ = dispatch_label;
     shared_host_call_unwind_host_dispatch_depth_ = host_dispatch_depth;
     shared_host_call_unwind_created_dispatch_ = created_dispatch;
+  }
+
+  void open_host_unwind_region_for_emitted_call_if_needed(const CallSemNode & node)
+  {
+    if(!use_host_eh_runtime() ||
+       shared_host_call_unwind_region_open_ ||
+       !current_scope_has_host_unwind_cleanups() ||
+       call_expression_is_known_nothrow(node)) {
+      return;
+    }
+    open_shared_host_call_unwind_region();
   }
 
   bool has_host_eh_dispatch_target() const
@@ -7624,6 +7749,7 @@ private:
           bridge_call << ", " << bridge_args[i];
         }
         bridge_call << ")";
+        open_host_unwind_region_for_emitted_call_if_needed(node);
         emit_line(bridge_call.str());
         return;
       }
@@ -7680,6 +7806,7 @@ private:
       if(explicit_indirect_call_signature) {
         op << lowir_call_signature_suffix_for_call(node, function_type);
       }
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       const string result = emit_temp_assignment(direct_object_result_type, op.str());
       emit_line("copyobj " + storage_span_text(object_type) + " " + result + ", " + target_ptr);
       return;
@@ -7725,6 +7852,7 @@ private:
         op << bridge_args[i];
       }
       op << ")";
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       emit_line(op.str());
       return;
     }
@@ -7777,6 +7905,7 @@ private:
     if(explicit_indirect_call_signature) {
       op << lowir_call_signature_suffix_for_call(node, function_type);
     }
+    open_host_unwind_region_for_emitted_call_if_needed(node);
     emit_line(op.str());
   }
 
@@ -7843,6 +7972,7 @@ private:
         op << bridge_args[i];
       }
       op << ")";
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       emit_line(op.str());
       return;
     }
@@ -7863,6 +7993,7 @@ private:
     if(explicit_indirect_call_signature) {
       op << lowir_call_signature_suffix_for_call(node, function_type);
     }
+    open_host_unwind_region_for_emitted_call_if_needed(node);
     emit_line(op.str());
   }
 
@@ -8791,6 +8922,7 @@ private:
       if(bridge_args.size() >= 2) {
         bridge_args[1] = host_num_put_bridge_iterator_storage_ptr(bridge_args[1]);
       }
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       emit_line("call void @" + host_num_put_bridge + "(" +
                 emit_storage_address(result_slot) + ", " +
                 bridge_args[0] + ", " +
@@ -8856,9 +8988,11 @@ private:
     }
 
     if(raw_result_lowir_type == "void") {
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       emit_line(op.str());
       return "0";
     }
+    open_host_unwind_region_for_emitted_call_if_needed(node);
     return emit_temp_assignment(raw_result_lowir_type, op.str());
   }
 
