@@ -22811,6 +22811,7 @@ private:
           {
             size_t scope_index;
             size_t parameter_index;
+            string name;
             string key;
           };
           vector<DirectParameterBinding> direct_bindings;
@@ -22831,6 +22832,7 @@ private:
               DirectParameterBinding binding;
               binding.scope_index = chain.size() - depth;
               binding.parameter_index = parameter_index;
+              binding.name = it->first;
               binding.key = key;
               local_bindings.push_back(binding);
             }
@@ -22850,14 +22852,37 @@ private:
           }
 
           map<string, string> template_parameter_placeholders;
+          map<string, string> template_parameter_name_placeholders;
           for(size_t i = 0; i < direct_bindings.size(); ++i) {
             if(template_parameter_placeholders.count(direct_bindings[i].key) != 0) {
               continue;
             }
-            template_parameter_placeholders[direct_bindings[i].key] =
+            const string placeholder =
                 string("__cppgm_scope_tparam_") +
                 to_string(template_parameter_placeholders.size());
+            template_parameter_placeholders[direct_bindings[i].key] = placeholder;
+            if(!direct_bindings[i].name.empty()) {
+              template_parameter_name_placeholders[direct_bindings[i].name] =
+                  placeholder;
+            }
           }
+
+          auto canonicalize_text_template_parameter_names =
+              [&](const string & text) -> string
+              {
+                string out = text;
+                for(map<string, string>::const_iterator it =
+                        template_parameter_name_placeholders.begin();
+                    it != template_parameter_name_placeholders.end();
+                    ++it) {
+                  bool changed = false;
+                  out = replace_identifier_token_text(out,
+                                                      it->first,
+                                                      it->second,
+                                                      changed);
+                }
+                return out;
+              };
 
           function<string(const TypePtr &)> canonical_type_text =
               [&](const TypePtr & type) -> string
@@ -22879,7 +22904,8 @@ private:
                 case Type::TK_FUNDAMENTAL:
                   return describe_type(type);
                 case Type::TK_NAMED:
-                  return trim_space(normalize_type_lookup_name(type->named_display));
+                  return canonicalize_text_template_parameter_names(
+                      trim_space(normalize_type_lookup_name(type->named_display)));
                 case Type::TK_CV:
                 {
                   string out = canonical_type_text(type->inner);
@@ -22912,6 +22938,40 @@ private:
                 return describe_type(type);
               };
 
+          auto injected_class_name_text =
+              [&](const ClassInfo & info) -> string
+              {
+                if(!info.source_template || info.name.empty()) {
+                  return string();
+                }
+                const vector<TemplateParameterInfo> & class_parameters =
+                    info.source_template->parameters;
+                if(class_parameters.empty()) {
+                  return string();
+                }
+                string out = info.name + "<";
+                for(size_t i = 0; i < class_parameters.size(); ++i) {
+                  if(i != 0) {
+                    out += ", ";
+                  }
+                  const TemplateParameterInfo & parameter = class_parameters[i];
+                  string parameter_name = parameter.name;
+                  if(parameter_name.empty() && !parameter.placeholder_key.empty()) {
+                    parameter_name = parameter.placeholder_key;
+                  }
+                  map<string, string>::const_iterator found =
+                      template_parameter_name_placeholders.find(parameter_name);
+                  out += found == template_parameter_name_placeholders.end() ?
+                      parameter_name :
+                      found->second;
+                  if(parameter.parameter_pack) {
+                    out += "...";
+                  }
+                }
+                out += ">";
+                return out;
+              };
+
           string out =
               canonicalize_template_parameter_redeclaration_text(parameters, text);
           vector<pair<string, string> > replacements;
@@ -22930,7 +22990,28 @@ private:
                 seen_names.insert(name);
                 continue;
               }
-              const string replacement = canonical_type_text(it->second);
+              const string replacement =
+                  (current->class_info &&
+                   current->class_info->source_template &&
+                   name == current->class_info->name) ?
+                      injected_class_name_text(*current->class_info) :
+                      canonical_type_text(it->second);
+              seen_names.insert(name);
+              if(replacement.empty() || replacement == name) {
+                continue;
+              }
+              replacements.push_back(make_pair(name, replacement));
+            }
+            if(current->class_info && current->class_info->source_template) {
+              const string & name = current->class_info->name;
+              if(name.empty() ||
+                 seen_names.count(name) != 0 ||
+                 !contains_identifier_token(out, name)) {
+                seen_names.insert(name);
+                continue;
+              }
+              const string replacement =
+                  injected_class_name_text(*current->class_info);
               seen_names.insert(name);
               if(replacement.empty() || replacement == name) {
                 continue;
