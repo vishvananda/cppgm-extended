@@ -767,6 +767,93 @@ bool member_lookup_present(const MemberVariableTemplateLookupResult & result)
   return result.variable_template != nullptr;
 }
 
+bool member_function_types_same_non_object_signature(const TypePtr & lhs,
+                                                     const TypePtr & rhs)
+{
+  TypePtr lhs_base = strip_top_level_cv(lhs);
+  TypePtr rhs_base = strip_top_level_cv(rhs);
+  if(!lhs_base || !rhs_base ||
+     lhs_base->kind != Type::TK_FUNCTION ||
+     rhs_base->kind != Type::TK_FUNCTION ||
+     lhs_base->variadic != rhs_base->variadic ||
+     lhs_base->prototype_relaxed != rhs_base->prototype_relaxed ||
+     lhs_base->function_const != rhs_base->function_const ||
+     lhs_base->function_volatile != rhs_base->function_volatile ||
+     lhs_base->params.size() != rhs_base->params.size() ||
+     lhs_base->params.empty()) {
+    return false;
+  }
+  for(size_t i = 1; i < lhs_base->params.size(); ++i) {
+    if(!type_equals(lhs_base->params[i], rhs_base->params[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void remove_hidden_using_base_member_functions(MemberCallableLookupResult & result,
+                                               const ClassInfo & current)
+{
+  if(result.functions.size() < 2) {
+    return;
+  }
+
+  bool has_current_member = false;
+  bool has_base_member = false;
+  for(size_t i = 0; i < result.functions.size(); ++i) {
+    FunctionBinding * function = result.functions[i];
+    if(function && function->owner_class == &current) {
+      has_current_member = true;
+    } else if(function) {
+      has_base_member = true;
+    }
+    if(has_current_member && has_base_member) {
+      break;
+    }
+  }
+  if(!has_current_member || !has_base_member) {
+    return;
+  }
+
+  vector<FunctionBinding *> filtered;
+  filtered.reserve(result.functions.size());
+  for(size_t i = 0; i < result.functions.size(); ++i) {
+    FunctionBinding * function = result.functions[i];
+    bool hidden = false;
+    if(function && function->owner_class != &current) {
+      for(size_t j = 0; j < result.functions.size(); ++j) {
+        FunctionBinding * direct = result.functions[j];
+        if(direct && direct->owner_class == &current &&
+           function->ref_qualifier == direct->ref_qualifier &&
+           member_function_types_same_non_object_signature(function->type,
+                                                           direct->type)) {
+          hidden = true;
+          break;
+        }
+      }
+    }
+    if(!hidden) {
+      filtered.push_back(function);
+    }
+  }
+  result.functions.swap(filtered);
+}
+
+bool direct_function_set_has_access_overrides(const Scope & scope,
+                                              const string & name)
+{
+  if(scope.function_set_access_overrides.empty()) {
+    return false;
+  }
+  if(!function_lookup_name_needs_canonicalization(name)) {
+    return scope.function_set_access_overrides.find(name) !=
+        scope.function_set_access_overrides.end();
+  }
+  const string canonical_name = canonical_function_lookup_name(name);
+  return scope.function_set_access_overrides.find(canonical_name) !=
+      scope.function_set_access_overrides.end();
+}
+
 bool is_enclosing_current_specialization_type(Scope & scope,
                                               const TypePtr & type)
 {
@@ -3193,11 +3280,15 @@ MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,
       [&name](ClassInfo & current) -> MemberCallableLookupResult
       {
         MemberCallableLookupResult result;
+        bool direct_function_set_has_using_imports = false;
         if(current.member_scope) {
           const vector<FunctionBinding *> * found_functions =
               find_direct_function_set(*current.member_scope, name);
           if(found_functions && !found_functions->empty()) {
             result.functions = *found_functions;
+            direct_function_set_has_using_imports =
+                found_functions->size() > 1 &&
+                direct_function_set_has_access_overrides(*current.member_scope, name);
           }
           const vector<FunctionTemplateDecl *> * found_templates =
               find_direct_function_template_set(*current.member_scope, name);
@@ -3211,6 +3302,9 @@ MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,
           if(found_methods != current.methods.end() && !found_methods->second.empty()) {
             result.functions = found_methods->second;
           }
+        }
+        if(direct_function_set_has_using_imports) {
+          remove_hidden_using_base_member_functions(result, current);
         }
         if(member_lookup_present(result)) {
           result.declared_in = &current;

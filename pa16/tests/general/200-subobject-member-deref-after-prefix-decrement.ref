@@ -33,9 +33,7 @@ function @Iter__operator__(%this : ptr) -> ptr [binding=weak, object=_ZN4ItermmE
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load i32 %t2
     %t4 = binary sub i32 %t3, 1
+    store i32 %t4, %t2
     %t5 = load ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
-    %t7 = load ptr $this
-    return ptr %t7
+    return ptr %t5
 }
