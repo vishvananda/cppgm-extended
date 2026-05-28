@@ -11,22 +11,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $holder
     %t2 = addr $arg__1
     call void @Counter__Counter(%t2)
+    eh_try ^call_unwind_dispatch_1
     call void @Holder__Holder(%t1, 5, %t2)
     call void @Counter___Counter(%t2)
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^call_unwind_dispatch_1:
+    call void @Counter___Counter(%t2)
+    resume
+
+  block ^call_unwind_end_2:
     %t3 = load i32 @Counter__count
     %t4 = cmp ne i32 %t3, 5
-    branch %t4, ^if_then_1, ^if_else_2
+    branch %t4, ^if_then_3, ^if_else_4
 
-  block ^if_then_1:
+  block ^if_then_3:
     %t5 = load i32 @Counter__count
     %t6 = addr $holder
     call void @Holder___Holder(%t6)
     return i32 %t5
 
-  block ^if_else_2:
-    jump ^if_end_3
+  block ^if_else_4:
+    jump ^if_end_5
 
-  block ^if_end_3:
+  block ^if_end_5:
     %t7 = addr $holder
     call void @Holder___Holder(%t7)
     %t8 = load i32 @Counter__count

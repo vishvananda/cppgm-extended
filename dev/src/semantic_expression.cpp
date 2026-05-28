@@ -3739,6 +3739,12 @@ bool pure_constant_only_value_binding(const ValueBinding & binding)
          !binding.owner_class;
 }
 
+bool id_expression_binding_allows_constant_fold(const ValueBinding & binding)
+{
+  return pure_constant_only_value_binding(binding) ||
+         (binding.kind == ValueBinding::VK_VARIABLE && binding.owner_class);
+}
+
 bool value_binding_is_enumerator(const ValueBinding & binding)
 {
   return binding.kind == ValueBinding::VK_VARIABLE &&
@@ -3882,7 +3888,7 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
                                                         const CppAstNode & node,
   bool & allow_constant_fold)
 {
-  allow_constant_fold = true;
+  allow_constant_fold = false;
   const QualifiedName * qualified = cppast_qualified_name_syntax(node);
   const string qualified_use_location =
       qualified ? qualified_template_use_location(ctx, node, *qualified) :
@@ -3899,6 +3905,7 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
   const ValueBinding * binding =
       structured_qualified_lookup ? nullptr : ctx.lookup_value(scope, node.value);
   if(binding) {
+    allow_constant_fold = id_expression_binding_allows_constant_fold(*binding);
     return binding;
   }
 
@@ -3917,16 +3924,22 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
         }
       }
       if(qualifier_info->member_scope) {
-        allow_constant_fold =
+        const bool qualifier_scope_can_fold =
             !ctx.scope_has_template_placeholders(*qualifier_info->member_scope);
         map<string, ValueBinding>::const_iterator found =
             qualifier_info->member_scope->values.find(qualified->name);
         if(found != qualifier_info->member_scope->values.end()) {
+          allow_constant_fold =
+              qualifier_scope_can_fold &&
+              id_expression_binding_allows_constant_fold(found->second);
           return &found->second;
         }
         MemberValueLookupResult member =
             lookup_member_value(*qualifier_info, qualified->name);
         if(member.binding && member.binding->kind != ValueBinding::VK_FIELD) {
+          allow_constant_fold =
+              qualifier_scope_can_fold &&
+              id_expression_binding_allows_constant_fold(*member.binding);
           return member.binding;
         }
         return nullptr;
@@ -3947,6 +3960,8 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
   const ValueBinding * qualified_binding =
       lookup_qualified_value_binding(ctx, scope, *qualified);
   if(qualified_binding) {
+    allow_constant_fold =
+        id_expression_binding_allows_constant_fold(*qualified_binding);
     return qualified_binding;
   }
 
@@ -3965,16 +3980,22 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
     }
   }
 
-  allow_constant_fold =
+  const bool target_scope_can_fold =
       target->class_info &&
       !ctx.scope_has_template_placeholders(*target->class_info->member_scope);
   map<string, ValueBinding>::const_iterator found = target->values.find(qualified->name);
   if(found != target->values.end()) {
+    allow_constant_fold =
+        target_scope_can_fold &&
+        id_expression_binding_allows_constant_fold(found->second);
     return &found->second;
   }
 
   MemberValueLookupResult member = lookup_member_value(*target->class_info, qualified->name);
   if(member.binding && member.binding->kind != ValueBinding::VK_FIELD) {
+    allow_constant_fold =
+        target_scope_can_fold &&
+        id_expression_binding_allows_constant_fold(*member.binding);
     return member.binding;
   }
 

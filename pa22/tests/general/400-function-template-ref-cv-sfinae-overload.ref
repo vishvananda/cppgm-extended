@@ -1,12 +1,10 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : i32
   slot $cond__1 : i32
-  slot $refarg__2 : i32
 
   block ^entry:
     store i32 0, $value
-    store i32 0, $refarg__2
-    %t1 = addr $refarg__2
+    %t1 = addr $value
     %t2 = call i32 @caller_int_const___call(%t1)
     %t3 = cmp eq i32 %t2, 2
     branch %t3, ^cond_then_1, ^cond_else_2

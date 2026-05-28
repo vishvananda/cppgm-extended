@@ -8,10 +8,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $b
     %t2 = addr $b
     %t3 = call i32 @box_4___get(%t2)
-    %t4 = binary add i32 3, 1
-    %t5 = binary mul i32 4, %t4
-    %t6 = cmp eq i32 %t3, %t5
-    branch %t6, ^cond_then_1, ^cond_else_2
+    %t4 = load i32 @K
+    %t5 = binary add i32 %t4, 1
+    %t6 = binary mul i32 4, %t5
+    %t7 = cmp eq i32 %t3, %t6
+    branch %t7, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -22,8 +23,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
-    return i32 %t7
+    %t8 = load i32 $cond__1
+    return i32 %t8
 }
 function @box_4___get(%this : ptr) -> i32 [binding=weak, object=_ZN3boxILi4EE3getEv] {
   slot $this : ptr
