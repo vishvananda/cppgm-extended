@@ -619,8 +619,12 @@ bool template_argument_range_fragment_mode(
       return false;
     }
     size_t call_end = pos;
-    return skip_balanced_group_in_range(tokens, pos, effective_end, call_end) &&
-           call_end == effective_end;
+    if(!skip_balanced_group_in_range(tokens, pos, effective_end, call_end)) {
+      return false;
+    }
+    return call_end == effective_end ||
+           (call_end < effective_end &&
+            token_forces_template_argument_expression_syntax(tokens.peek(call_end)));
   };
 
   const RecogToken & first = tokens.peek(range.first);
