@@ -61,3 +61,4 @@ function @YBase__YBase__base_entry(%this : ptr, %op : i32) -> void [binding=weak
     store i32 %t1, %t3
     return void
 }
+alias object _ZN8YDerivedC2Ev = @YDerived__YDerived

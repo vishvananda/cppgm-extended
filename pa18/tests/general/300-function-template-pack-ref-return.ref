@@ -28,3 +28,4 @@ function @N__tuple_int_____tuple(%this : ptr) -> void [unwind=no, binding=weak, 
     store ptr %this, $this
     return void
 }
+alias object _ZN1N5tupleIJRiEEC2Ev = @N__tuple_int_____tuple

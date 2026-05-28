@@ -47,3 +47,4 @@ function @iter__iter(%this : ptr, %value : ptr [pass=reference]) -> void [bindin
     store ptr %t1, %t3
     return void
 }
+alias object _ZN4iterC2ER4cons = @iter__iter

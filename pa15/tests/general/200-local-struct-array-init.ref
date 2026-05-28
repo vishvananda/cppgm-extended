@@ -79,3 +79,4 @@ function @Pair__Pair__ov2(%this : ptr, %prefix : ptr, %kind : i32) -> void [unwi
     store i32 %t4, %t6
     return void
 }
+alias object _ZN4PairC2EPKc1E = @Pair__Pair__ov2

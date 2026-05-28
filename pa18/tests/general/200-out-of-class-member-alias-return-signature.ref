@@ -47,3 +47,4 @@ function @pair_node_base____node_base_____pair(%this : ptr) -> void [unwind=no, 
     store ptr %this, $this
     return void
 }
+alias object _ZN4pairIP9node_baseS1_EC2Ev = @pair_node_base____node_base_____pair

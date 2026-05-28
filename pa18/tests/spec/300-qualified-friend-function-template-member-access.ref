@@ -45,3 +45,4 @@ function @N__detail__read(%box : obj<4x4>) -> i32 [binding=weak, object=_ZN1N6de
     %t4 = load i32 %t3
     return i32 %t4
 }
+alias object _ZN1N3BoxIiEC2Ei = @N__Box_int___Box

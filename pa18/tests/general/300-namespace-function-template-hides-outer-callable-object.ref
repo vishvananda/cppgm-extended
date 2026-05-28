@@ -75,3 +75,5 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     %t2 = addr @outer__static_const_outer__impl__printer___value
     return void
 }
+alias object _ZN5tokenC2Ev = @token__token
+alias object _ZN5outer4impl7printerC2Ev = @outer__impl__printer__printer

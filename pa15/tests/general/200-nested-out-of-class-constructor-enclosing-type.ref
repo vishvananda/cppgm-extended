@@ -27,3 +27,4 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Outer__Buffer__Buffer(%t2, $argobj__1)
     return i32 0
 }
+alias object _ZN5Outer6BufferC2ENS_5TokenE = @Outer__Buffer__Buffer

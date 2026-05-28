@@ -26,3 +26,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @Cell__Cell(%t1)
     return void
 }
+alias object _ZN4CellC2Ev = @Cell__Cell

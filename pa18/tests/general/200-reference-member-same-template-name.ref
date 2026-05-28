@@ -57,3 +57,4 @@ function @deref(%i : ptr [pass=reference]) -> ptr [binding=weak, object=_Z5deref
     %t4 = index i8 [projection=field] %t3, 0
     return ptr %t4
 }
+alias object _ZN4iterI4consIs3nilEEC2ERS2_ = @iter_cons_short_int__nil____iter

@@ -2227,6 +2227,10 @@ inline bool emit_function_encoding(const FunctionEncoding & function,
 inline bool emit_function_encoding_body(const FunctionEncoding & function,
                                         std::string & out,
                                         SubstitutionSink * sink);
+inline bool emit_local_entity_context_function_encoding_body(
+    const FunctionEncoding & function,
+    std::string & out,
+    SubstitutionSink * sink);
 
 inline bool type_needs_member_expression_template_name_registration(
     const Type & type);
@@ -3187,7 +3191,9 @@ inline bool emit_local_entity_context_fragment(
 {
   if(context_function) {
     out += 'Z';
-    if(!emit_function_encoding_body(*context_function, out, sink)) {
+    if(!emit_local_entity_context_function_encoding_body(*context_function,
+                                                         out,
+                                                         sink)) {
       return false;
     }
     out += 'E';
@@ -3436,6 +3442,39 @@ struct SuppressTemplateParameterTypeSubstitutionSink : SubstitutionSink
       const override
   {
     return true;
+  }
+
+  SubstitutionSink * inner;
+};
+
+struct EmitTemplateParameterTypeDirectSubstitutionSink : SubstitutionSink
+{
+  explicit EmitTemplateParameterTypeDirectSubstitutionSink(SubstitutionSink * inner)
+      : inner(inner)
+  {
+  }
+
+  bool emit_substitution(const SubstitutionKey & key,
+                         std::string & out) override
+  {
+    if(key.kind == SubstitutionKey::SK_TYPE_TEMPLATE_PARAMETER) {
+      return false;
+    }
+    return inner && inner->emit_substitution(key, out);
+  }
+
+  void register_substitution(const SubstitutionKey & key) override
+  {
+    if(inner) {
+      inner->register_substitution(key);
+    }
+  }
+
+  bool suppress_template_parameter_type_substitution_in_template_argument()
+      const override
+  {
+    return inner &&
+           inner->suppress_template_parameter_type_substitution_in_template_argument();
   }
 
   SubstitutionSink * inner;
@@ -4321,6 +4360,17 @@ inline bool emit_function_encoding(const FunctionEncoding & function,
   return emit_function_encoding_body(function, out, sink);
 }
 
+inline bool emit_local_entity_context_function_type(const Type & type,
+                                                    std::string & out,
+                                                    SubstitutionSink * sink)
+{
+  if(type.kind == Type::TK_TEMPLATE_PARAMETER && sink) {
+    EmitTemplateParameterTypeDirectSubstitutionSink direct_sink(sink);
+    return emit_type(type, out, &direct_sink);
+  }
+  return emit_type(type, out, sink);
+}
+
 inline bool emit_function_encoding_body(const FunctionEncoding & function,
                                         std::string & out,
                                         SubstitutionSink * sink)
@@ -4334,6 +4384,31 @@ inline bool emit_function_encoding_body(const FunctionEncoding & function,
   }
   for(std::size_t i = 0; i < function.parameter_types.size(); ++i) {
     if(!emit_type(function.parameter_types[i], out, sink)) {
+      return false;
+    }
+  }
+  if(function.variadic) {
+    out += 'z';
+  }
+  return true;
+}
+
+inline bool emit_local_entity_context_function_encoding_body(
+    const FunctionEncoding & function,
+    std::string & out,
+    SubstitutionSink * sink)
+{
+  if(!emit_function_name(function, out, sink)) {
+    return false;
+  }
+  if(function.parameter_types.empty()) {
+    out += function.variadic ? 'z' : 'v';
+    return true;
+  }
+  for(std::size_t i = 0; i < function.parameter_types.size(); ++i) {
+    if(!emit_local_entity_context_function_type(function.parameter_types[i],
+                                               out,
+                                               sink)) {
       return false;
     }
   }

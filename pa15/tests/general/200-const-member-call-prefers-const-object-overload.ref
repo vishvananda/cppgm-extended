@@ -49,3 +49,4 @@ function @S__f__ov2(%this : ptr, %__param1 : ptr) -> i32 [binding=weak, object=_
     %t4 = load i32 %t3
     return i32 %t4
 }
+alias object _ZN1SC2Ev = @S__S

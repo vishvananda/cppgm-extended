@@ -64,3 +64,4 @@ function @Base__Base__base_entry(%this : ptr, %field : ptr) -> void [binding=wea
     store ptr %t1, %t3
     return void
 }
+alias object _ZN7DerivedC2Ev = @Derived__Derived

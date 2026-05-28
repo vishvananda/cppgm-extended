@@ -58,3 +58,5 @@ function @Control_Node___Control(%this : ptr, %p : ptr) -> void [binding=weak, o
     store ptr %t1, %t3
     return void
 }
+alias object _ZN5OwnerI4NodeEC2EPS0_ = @Owner_Node___Owner
+alias object _ZN7ControlI4NodeEC2EPS0_ = @Control_Node___Control

@@ -33,3 +33,4 @@ function @Holder__Holder(%this : ptr, %box : ptr [pass=reference]) -> void [bind
     store ptr %t1, %t3
     return void
 }
+alias object _ZN6HolderC2ER3Box = @Holder__Holder

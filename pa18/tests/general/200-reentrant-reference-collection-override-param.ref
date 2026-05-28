@@ -212,3 +212,6 @@ function @pa18_reentrant_override_base__pa18_reentrant_override_base__base_entry
     store ptr %t3, %t1
     return void
 }
+alias object _ZN31pa18_reentrant_override_derivedD2Ev = @pa18_reentrant_override_derived___pa18_reentrant_override_derived
+alias object _ZN28pa18_reentrant_override_baseD2Ev = @pa18_reentrant_override_base___pa18_reentrant_override_base
+alias object _ZN31pa18_reentrant_override_derivedC2Ev = @pa18_reentrant_override_derived__pa18_reentrant_override_derived

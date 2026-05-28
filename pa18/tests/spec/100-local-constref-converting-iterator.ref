@@ -61,3 +61,5 @@ function @use_const_ref(%__param0 : ptr [pass=reference]) -> void [binding=weak,
     store ptr %__param0, $__param0
     return void
 }
+alias object _ZN8map_iterIZN7builder1fEvE10value_typeEC2Ev = @map_iter_builder__value_type__local_17887723607189993837___map_iter
+alias object _ZN14map_const_iterIZN7builder1fEvE10value_typeEC2E8map_iterIS1_E = @map_const_iter_builder__value_type__local_17887723607189993837___map_const_iter__ov2

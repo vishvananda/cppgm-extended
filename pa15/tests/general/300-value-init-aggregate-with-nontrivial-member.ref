@@ -126,3 +126,6 @@ function @value_init_nontrivial_member__value_init_nontrivial_member(%this : ptr
     store i32 42, %t2
     return void
 }
+alias object _ZN28value_init_aggregate_wrapperC2Ev = @value_init_aggregate_wrapper__value_init_aggregate_wrapper
+alias object _ZN29value_init_aggregate_with_intC2Ev = @value_init_aggregate_with_int__value_init_aggregate_with_int
+alias object _ZN28value_init_nontrivial_memberC2Ev = @value_init_nontrivial_member__value_init_nontrivial_member

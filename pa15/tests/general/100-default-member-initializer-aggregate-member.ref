@@ -91,3 +91,4 @@ function @X__X(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1XC1Ev] 
     store i8 0, %t13
     return void
 }
+alias object _ZN1XC2Ev = @X__X

@@ -55,3 +55,4 @@ function @ttp_deduce__box_double___self(%this : ptr) -> ptr [binding=weak, objec
     %t1 = load ptr $this
     return ptr %t1
 }
+alias object _ZN10ttp_deduce3boxIdEC2Ev = @ttp_deduce__box_double___box

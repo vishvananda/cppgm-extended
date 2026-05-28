@@ -19,3 +19,4 @@ function @YP__YP(%this : ptr) -> void [binding=weak, object=_ZN2YPC1Ev] {
     store i32 3, %t2
     return void
 }
+alias object _ZN2YPC2Ev = @YP__YP

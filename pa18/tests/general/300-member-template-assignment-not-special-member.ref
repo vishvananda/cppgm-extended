@@ -94,3 +94,4 @@ function @box__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -> ptr
     %t3 = load ptr $this
     return ptr %t3
 }
+alias object _ZN3boxC2Ev = @box__box

@@ -50,3 +50,4 @@ function @Base__Base__base_entry(%this : ptr, %v : i32) -> void [binding=weak, o
     store i32 %t1, %t3
     return void
 }
+alias object _ZN7DerivedC2Ei = @Derived__Derived

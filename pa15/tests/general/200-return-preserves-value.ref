@@ -20,3 +20,4 @@ function @YP___YP(%this : ptr) -> void [binding=weak, object=_ZN2YPD1Ev] {
     store i32 9, @gx
     return void
 }
+alias object _ZN2YPD2Ev = @YP___YP

@@ -63,3 +63,5 @@ function @lib__String__String(%this : ptr) -> void [binding=weak, object=_ZN3lib
     store i32 0, %t2
     return void
 }
+alias object _ZN6HolderC2Ev = @Holder__Holder
+alias object _ZN3lib6StringC2Ev = @lib__String__String

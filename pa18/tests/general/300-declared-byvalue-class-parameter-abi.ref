@@ -34,3 +34,4 @@ function @api__Handle__Handle__ov2(%this : ptr, %scope_in : ptr [pass=reference]
     store ptr %t1, %t3
     return void
 }
+alias object _ZN3api6HandleC2ER5Scope = @api__Handle__Handle__ov2

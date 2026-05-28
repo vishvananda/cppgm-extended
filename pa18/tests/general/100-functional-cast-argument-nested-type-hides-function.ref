@@ -65,3 +65,4 @@ function @host__shadow_maker__operator__(%this : ptr) -> void [binding=weak, obj
     store i32 17, %t3
     return void
 }
+alias object _ZN4host12shadow_makerC2EPi = @host__shadow_maker__shadow_maker

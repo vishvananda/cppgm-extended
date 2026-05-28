@@ -153,3 +153,7 @@ function @Element___Element(%this : ptr) -> void [binding=weak, object=_ZN7Eleme
     store i32 %t2, @destroyed
     return void
 }
+alias object _ZN6HolderC2Ev = @Holder__Holder
+alias object _ZN6HolderD2Ev = @Holder___Holder
+alias object _ZN7ElementC2Ev = @Element__Element
+alias object _ZN7ElementD2Ev = @Element___Element

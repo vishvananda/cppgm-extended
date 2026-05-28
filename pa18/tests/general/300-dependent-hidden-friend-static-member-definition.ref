@@ -63,3 +63,4 @@ function @hidden_friend_current_instantiation__operator__(%__param0 : ptr [pass=
     store ptr %__param1, $__param1
     return u8 1
 }
+alias object _ZN4IterIilEC2Ev = @Iter_int__long_int___Iter

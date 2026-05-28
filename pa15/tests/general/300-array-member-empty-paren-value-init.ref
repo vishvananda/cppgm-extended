@@ -116,3 +116,4 @@ function @Bits__Bits(%this : ptr) -> void [binding=weak, object=_ZN4BitsC1Ev] {
     store i64 0, %t16
     return void
 }
+alias object _ZN4BitsC2Ev = @Bits__Bits

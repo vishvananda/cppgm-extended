@@ -62,3 +62,4 @@ function @Owner__get(%this : ptr) -> ptr [binding=weak, object=_ZN5Owner3getEv] 
     %t2 = index i8 [projection=field] %t1, 8
     return ptr %t2
 }
+alias object _ZN5OwnerC2Ev = @Owner__Owner

@@ -56,3 +56,5 @@ function @RefPair_int___RefPair__ov2(%this : ptr, %__param1 : ptr [pass=referenc
     store ptr %t5, %t7
     return void
 }
+alias object _ZN7RefPairIiEC2EPiRi = @RefPair_int___RefPair
+alias object _ZN7RefPairIiEC2EOS0_ = @RefPair_int___RefPair__ov2

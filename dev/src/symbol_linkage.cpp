@@ -1068,6 +1068,31 @@ static bool try_emit_special_type_encoding_ir(const TypePtr & type, string & out
   return try_emit_type_encoding_ir(type, out, &mangle_ctx);
 }
 
+static string template_parameter_scope_payload(
+    const vector<TemplateParameterInfo> * parameters)
+{
+  if(!parameters || parameters->empty()) {
+    return string();
+  }
+  string out = "template-parameters:";
+  for(size_t i = 0; i < parameters->size(); ++i) {
+    const TemplateParameterInfo & parameter = (*parameters)[i];
+    if(i != 0) {
+      out += ';';
+    }
+    out += to_string(static_cast<int>(parameter.kind));
+    out += ':';
+    out += parameter.parameter_pack ? 'P' : '-';
+    out += ':';
+    out += parameter.name;
+    out += ':';
+    out += parameter.placeholder_key;
+    out += ':';
+    out += to_string(parameter.template_parameter_count);
+  }
+  return out;
+}
+
 static string template_parameter_type_substitution_key(
     const vector<TemplateParameterInfo> * parameters,
     size_t index,
@@ -1079,7 +1104,7 @@ static string template_parameter_type_substitution_key(
     key << "index:" << index
         << ";pack:" << (parameter.parameter_pack ? 1 : 0)
         << ";scope:"
-        << reinterpret_cast<uintptr_t>(parameters);
+        << template_parameter_scope_payload(parameters);
   } else {
     key << "name:" << parameter.name;
   }
@@ -1104,11 +1129,6 @@ static bool template_parameter_lists_match(
   return true;
 }
 
-static string pack_expansion_type_substitution_key(const string & pattern_key)
-{
-  return string("type:pack-expansion(") + pattern_key + ")";
-}
-
 static bool try_emit_type_encoding_ir_impl(const TypePtr & type,
                                            string & out,
                                            const TypeMangleContext * mangle_ctx,
@@ -1120,7 +1140,8 @@ static bool try_emit_itanium_function_symbol_ir(
     const TypePtr & type,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * captured_state = nullptr);
+    MangleSubstitutionState * captured_state = nullptr,
+    bool complete_plain_parameter_substitutions = false);
 static bool emit_itanium_function_encoding_with_substitutions(
     const QualifiedName & qualified_name,
     const string & display_name,
@@ -7334,20 +7355,31 @@ static bool try_emit_static_member_object_symbol_ir(
     const string & member_name,
     string & out);
 
+static abi_mangle::SubstitutionKey template_parameter_substitution_key(
+    size_t index,
+    const vector<TemplateParameterInfo> * parameters)
+{
+  abi_mangle::SubstitutionKey key =
+      abi_mangle::SubstitutionKey::type_template_parameter(index);
+  const string scope_payload = template_parameter_scope_payload(parameters);
+  if(!scope_payload.empty()) {
+    key.payload = scope_payload;
+  }
+  return key;
+}
+
 static abi_mangle::Type template_parameter_type_ir(
     size_t index,
     const TemplateParameterInfo & parameter,
     const vector<TemplateParameterInfo> * parameters,
     bool register_substitution)
 {
-  abi_mangle::Type out =
-      abi_mangle::Type::template_parameter(index);
+  (void)parameter;
+  abi_mangle::Type out = abi_mangle::Type::template_parameter(index);
   if(register_substitution) {
     abi_mangle::set_substitution(
         out,
-        abi_mangle::SubstitutionKey::type_template_parameter(
-            index,
-            reinterpret_cast<uintptr_t>(parameters)));
+        template_parameter_substitution_key(index, parameters));
   }
   return out;
 }
@@ -12637,6 +12669,26 @@ static bool try_mangle_context_free_type_ir(const TypePtr & type,
   return abi_mangle::emit_type(ir_type, out, &sink);
 }
 
+static bool type_ir_substitution_key_for_type(
+    const TypePtr & type,
+    const TypeMangleContext * mangle_ctx,
+    abi_mangle::SubstitutionKey & key)
+{
+  abi_mangle::Type ir_type;
+  return try_build_type_ir(type, mangle_ctx, ir_type) &&
+         abi_mangle::make_type_substitution_key(ir_type, key) &&
+         !key.empty();
+}
+
+static bool type_is_direct_template_parameter_ir(
+    const TypePtr & type,
+    const TypeMangleContext * mangle_ctx)
+{
+  abi_mangle::Type ir_type;
+  return try_build_template_parameter_type_ir(type, mangle_ctx, ir_type) &&
+         ir_type.kind == abi_mangle::Type::TK_TEMPLATE_PARAMETER;
+}
+
 static bool build_type_substitution_key_impl(const TypePtr & type,
                                              const TypeMangleContext * mangle_ctx,
                                              string & out,
@@ -16049,7 +16101,8 @@ static bool try_emit_itanium_function_symbol_ir(
     const TypePtr & type,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * captured_state)
+    MangleSubstitutionState * captured_state,
+    bool complete_plain_parameter_substitutions)
 {
   MangleSubstitutionState local_state;
   MangleSubstitutionState * state = captured_state ? captured_state : &local_state;
@@ -16069,13 +16122,15 @@ static bool try_emit_itanium_function_symbol_ir(
     return false;
   }
 
+  const bool suppress_type_substitution_keys =
+      !complete_plain_parameter_substitutions;
   if(try_mangle_plain_function_ir(qualified,
                                   display_name,
                                   type,
                                   options,
                                   out,
                                   state,
-                                  captured_state == nullptr)) {
+                                  suppress_type_substitution_keys)) {
     return true;
   }
 
@@ -16262,7 +16317,52 @@ static bool try_emit_itanium_function_symbol_ir(
       const bool nondependent_enable_if_alias_result =
           alias_enable_if_result_dependency.found &&
           !alias_enable_if_result_dependency.dependent;
-      if(has_result_type_pattern &&
+      TypePtr hybrid_return_type =
+          hybridize_pattern_type_with_actual(pattern_type->inner,
+                                             actual_function_type->inner,
+                                             &mangle_ctx);
+      bool typed_return_substitutes_parameter = false;
+      if(type_has_structured_dependent_qualified_member(hybrid_return_type) ||
+         type_has_dependent_class_template_nested_owner_mangle_state(
+             hybrid_return_type)) {
+        abi_mangle::SubstitutionKey return_key;
+        if(type_ir_substitution_key_for_type(hybrid_return_type,
+                                             &mangle_ctx,
+                                             return_key)) {
+          for(size_t i = 0; i < options.parameter_pattern->size(); ++i) {
+            const size_t actual_index = i + param_start;
+            TypePtr actual_param =
+                actual_index < actual_function_type->params.size() ?
+                    actual_function_type->params[actual_index] :
+                    TypePtr();
+            const TypePtr hybrid_param_type =
+                hybridize_pattern_type_with_actual(
+                    (*options.parameter_pattern)[i].second,
+                    actual_param,
+                    &mangle_ctx);
+            abi_mangle::SubstitutionKey param_key;
+            if(type_ir_substitution_key_for_type(hybrid_param_type,
+                                                 &mangle_ctx,
+                                                 param_key) &&
+               param_key == return_key) {
+              typed_return_substitutes_parameter = true;
+              break;
+            }
+          }
+        }
+      }
+      if(typed_return_substitutes_parameter) {
+        const size_t structured_begin = candidate.size();
+        mangled_return = try_emit_type_encoding_ir_impl(hybrid_return_type,
+                                             candidate,
+                                             &mangle_ctx,
+                                             state);
+        if(!mangled_return) {
+          candidate.resize(structured_begin);
+        }
+      }
+      if(!mangled_return &&
+         has_result_type_pattern &&
          result_pattern_depends &&
          !nondependent_enable_if_alias_result) {
         const size_t structured_begin = candidate.size();
@@ -16305,10 +16405,6 @@ static bool try_emit_itanium_function_symbol_ir(
         }
       }
       if(!mangled_return) {
-        const TypePtr hybrid_return_type =
-            hybridize_pattern_type_with_actual(pattern_type->inner,
-                                               actual_function_type->inner,
-                                               &mangle_ctx);
         if(!try_emit_type_encoding_ir_impl(hybrid_return_type, candidate, &mangle_ctx, state)) {
           return false;
         }
@@ -16358,17 +16454,16 @@ static bool try_emit_itanium_function_symbol_ir(
       const bool emit_trailing_function_parameter_pack =
           trailing_function_parameter_pack &&
           parameter_type_mentions_direct_template_parameter;
-      string pack_substitution_key;
+      abi_mangle::SubstitutionKey pack_substitution_key;
       if(emit_trailing_function_parameter_pack) {
-        string parameter_substitution_key;
-        if(build_type_substitution_key(hybrid_param_type,
-                                       &mangle_ctx,
-                                       parameter_substitution_key)) {
-          pack_substitution_key =
-              pack_expansion_type_substitution_key(parameter_substitution_key);
-          if(emit_registered_substitution(state, pack_substitution_key, candidate)) {
-            continue;
-          }
+        abi_mangle::Type parameter_ir;
+        if(try_build_type_ir(hybrid_param_type, &mangle_ctx, parameter_ir)) {
+          abi_mangle::Type pack_ir =
+              parameter_ir.kind == abi_mangle::Type::TK_PACK_EXPANSION ?
+                  parameter_ir :
+                  abi_mangle::Type::pack_expansion(parameter_ir);
+          abi_mangle::make_type_substitution_key(pack_ir,
+                                                 pack_substitution_key);
         }
         candidate += "Dp";
       }
@@ -16428,6 +16523,14 @@ static bool try_emit_itanium_function_symbol_ir(
         }
       }
       if(!mangled_param &&
+         type_is_direct_template_parameter_ir(hybrid_param_type, &mangle_ctx)) {
+        mangled_param =
+            try_emit_type_encoding_ir_impl(hybrid_param_type,
+                                           candidate,
+                                           &mangle_ctx,
+                                           state);
+      }
+      if(!mangled_param &&
          parameter_decl_pattern &&
          ast_node_mentions_direct_template_parameter(*parameter_decl_pattern,
                                                      &mangle_ctx)) {
@@ -16441,7 +16544,11 @@ static bool try_emit_itanium_function_symbol_ir(
         if(!mangled_param) {
           candidate.resize(structured_begin);
           if(actual_param && !type_has_dependent_mangle_state(actual_param) &&
-             try_emit_type_encoding_ir_impl(actual_param, candidate, &mangle_ctx, state)) {
+             try_emit_type_encoding_ir_impl(
+                 actual_param,
+                 candidate,
+                 &mangle_ctx,
+                 state)) {
             mangled_param = true;
           } else {
             throw logic_error(
@@ -16451,11 +16558,15 @@ static bool try_emit_itanium_function_symbol_ir(
         }
       }
       if(!mangled_param &&
-         !try_emit_type_encoding_ir_impl(hybrid_param_type, candidate, &mangle_ctx, state)) {
+         !try_emit_type_encoding_ir_impl(
+             hybrid_param_type,
+             candidate,
+             &mangle_ctx,
+             state)) {
         return false;
       }
       if(!pack_substitution_key.empty()) {
-        register_substitution_key(state, pack_substitution_key);
+        register_ir_substitution_key(state, pack_substitution_key);
       }
     }
     if((pattern_type && pattern_type->variadic) ||
@@ -16479,7 +16590,11 @@ static bool try_emit_itanium_function_symbol_ir(
                                                                 candidate)) {
       continue;
     }
-    if(!try_emit_type_encoding_ir_impl(type->params[i], candidate, &mangle_ctx, state)) {
+    if(!try_emit_type_encoding_ir_impl(
+           type->params[i],
+           candidate,
+           &mangle_ctx,
+           state)) {
       if(parser_trace::enabled("symbol.linkage")) {
         ostringstream trace;
         trace << "mangle-itanium-function parameter-type-failed"
@@ -16855,7 +16970,9 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
                                           display_name,
                                           type,
                                           options,
-                                          out.object_symbol);
+                                          out.object_symbol,
+                                          nullptr,
+                                          linkage != SL_WEAK);
     }
   } else if(qualified_name == "main" && display_name == "main") {
     out.object_symbol = "main";
@@ -16867,7 +16984,9 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
                                             display_name,
                                             type,
                                             options,
-                                            out.object_symbol) &&
+                                            out.object_symbol,
+                                            nullptr,
+                                            linkage != SL_WEAK) &&
        linkage == SL_WEAK) {
       throw logic_error("failed to build ABI IR function symbol for weak function " +
                         qualified_name);
