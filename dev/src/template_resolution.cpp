@@ -11438,6 +11438,37 @@ bool deduction_top_level_cv_flags(const TypePtr & type,
   return true;
 }
 
+bool strip_pattern_top_level_cv_for_deduction(const TypePtr & pattern,
+                                             const TypePtr & actual,
+                                             TypePtr & pattern_base,
+                                             TypePtr & adjusted_actual)
+{
+  bool pattern_const = false;
+  bool pattern_volatile = false;
+  if(!deduction_top_level_cv_flags(pattern,
+                                   pattern_base,
+                                   pattern_const,
+                                   pattern_volatile) ||
+     (!pattern_const && !pattern_volatile)) {
+    return false;
+  }
+
+  TypePtr actual_base;
+  bool actual_const = false;
+  bool actual_volatile = false;
+  if(!deduction_top_level_cv_flags(actual,
+                                   actual_base,
+                                   actual_const,
+                                   actual_volatile)) {
+    return false;
+  }
+
+  adjusted_actual = apply_cv(actual_base,
+                             actual_const && !pattern_const,
+                             actual_volatile && !pattern_volatile);
+  return true;
+}
+
 template <typename DeductionContext>
 bool deduce_template_argument_impl(DeductionContext & ctx,
                                    const std::vector<TemplateParameterInfo> & parameters,
@@ -11466,10 +11497,14 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
        (pattern_volatile && !actual_volatile)) {
       return false;
     }
+    TypePtr adjusted_actual =
+        apply_cv(actual_cv_inner,
+                 actual_const && !pattern_const,
+                 actual_volatile && !pattern_volatile);
     return deduce_template_argument_impl(ctx,
                                          parameters,
                                          pattern_cv_inner,
-                                         actual_cv_inner,
+                                         adjusted_actual,
                                          deduced_types,
                                          deduced_values,
                                          deduction_scope,
@@ -11504,23 +11539,13 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
     }
     if(parameter && parameter->kind == TemplateParameterInfo::TP_TYPE) {
       TypePtr deduced_type = actual;
-      TypePtr actual_cv_inner;
       TypePtr pattern_cv_inner;
-      bool pattern_named_const = false;
-      bool pattern_named_volatile = false;
-      bool actual_const = false;
-      bool actual_volatile = false;
-      if(deduction_top_level_cv_flags(pattern,
-                                      pattern_cv_inner,
-                                      pattern_named_const,
-                                      pattern_named_volatile) &&
-         deduction_top_level_cv_flags(actual,
-                                      actual_cv_inner,
-                                      actual_const,
-                                      actual_volatile) &&
-         ((pattern_named_const && actual_const) ||
-          (pattern_named_volatile && actual_volatile))) {
-        deduced_type = actual_cv_inner;
+      TypePtr adjusted_actual;
+      if(strip_pattern_top_level_cv_for_deduction(pattern,
+                                                  actual,
+                                                  pattern_cv_inner,
+                                                  adjusted_actual)) {
+        deduced_type = adjusted_actual;
       }
       DeducedTypeMap::iterator found = deduced_types.find(parameter->name);
       if(found == deduced_types.end()) {
@@ -13237,17 +13262,10 @@ bool deduce_function_template_arguments_uncached(
       apply_function_template_call_deduction_adjustments(decl, args[i], pattern, actual);
       TypePtr cv_inner;
       TypePtr actual_cv_inner;
-      bool pattern_const = false;
-      bool pattern_volatile = false;
-      bool actual_const = false;
-      bool actual_volatile = false;
-      if(top_level_cv_flags(pattern, cv_inner, pattern_const, pattern_volatile) &&
-         top_level_cv_flags(actual,
-                            actual_cv_inner,
-                            actual_const,
-                            actual_volatile) &&
-         ((pattern_const && actual_const) ||
-          (pattern_volatile && actual_volatile))) {
+      if(strip_pattern_top_level_cv_for_deduction(pattern,
+                                                  actual,
+                                                  cv_inner,
+                                                  actual_cv_inner)) {
         pattern = cv_inner;
         actual = actual_cv_inner;
       }
@@ -13845,17 +13863,10 @@ bool deduce_function_template_arguments_with_explicit(
       apply_function_template_call_deduction_adjustments(decl, args[i], pattern, actual);
       TypePtr cv_inner;
       TypePtr actual_cv_inner;
-      bool pattern_const = false;
-      bool pattern_volatile = false;
-      bool actual_const = false;
-      bool actual_volatile = false;
-      if(top_level_cv_flags(pattern, cv_inner, pattern_const, pattern_volatile) &&
-         top_level_cv_flags(actual,
-                            actual_cv_inner,
-                            actual_const,
-                            actual_volatile) &&
-         ((pattern_const && actual_const) ||
-          (pattern_volatile && actual_volatile))) {
+      if(strip_pattern_top_level_cv_for_deduction(pattern,
+                                                  actual,
+                                                  cv_inner,
+                                                  actual_cv_inner)) {
         pattern = cv_inner;
         actual = actual_cv_inner;
       }
