@@ -1,0 +1,38 @@
+declare global @table_void___positions [binding=weak, object=_ZN5tableIvE9positionsE]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = call i64 @table_void___call(42, 1)
+    %t2 = cmp eq i64 %t1, 13
+    branch %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t3 = load i32 $cond__1
+    return i32 %t3
+}
+function @table_void___call(%hash : i64, %index : i64) -> i64 [binding=weak, object=_ZN5tableIvE4callEmm] {
+  slot $hash : i64
+  slot $index : i64
+
+  block ^entry:
+    store i64 %hash, $hash
+    store i64 %index, $index
+    %t1 = load i64 $hash
+    %t2 = addr @table_void___positions
+    %t3 = unary decay ptr %t2
+    %t4 = load i64 $index
+    %t5 = index ptr [projection=array_element] %t3, %t4
+    %t6 = load ptr %t5
+    %t7 = call i64 %t6(%t1) as (%arg0 : i64) -> i64
+    return i64 %t7
+}

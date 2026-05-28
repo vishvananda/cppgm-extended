@@ -694,10 +694,13 @@ bool template_argument_range_fragment_mode(
          next.is_simple(OP_AMP) ||
          next.is_simple(OP_LAND) ||
          next.is_simple(OP_LPAREN) ||
-         next.is_simple(OP_LSQUARE) ||
          next.is_simple(OP_DOTS) ||
          is_cv_qualifier(next)) {
         mode = CppAstParser::TAF_PARSE_TYPE_THEN_EXPRESSION;
+        return true;
+      }
+      if(next.is_simple(OP_LSQUARE)) {
+        mode = CppAstParser::TAF_PARSE_BOTH;
         return true;
       }
     }
@@ -727,9 +730,12 @@ bool template_argument_range_fragment_mode(
        next.is_simple(OP_DOTS) ||
        next.is_simple(OP_LPAREN) ||
        next.is_simple(OP_LBRACE) ||
-       next.is_simple(OP_LSQUARE) ||
        is_cv_qualifier(next)) {
       mode = CppAstParser::TAF_PARSE_TYPE_THEN_EXPRESSION;
+      return true;
+    }
+    if(next.is_simple(OP_LSQUARE)) {
+      mode = CppAstParser::TAF_PARSE_BOTH;
       return true;
     }
     }

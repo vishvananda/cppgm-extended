@@ -304,6 +304,15 @@ bool evaluate_constexpr_value_member_conversion(SemanticContext & ctx,
                                                 const TypePtr & target,
                                                 constant_eval::ConstexprValue & out);
 
+bool evaluate_constexpr_function_address_expression(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & expr,
+    constant_eval::ConstexprValue & out,
+    bool allow_implicit_decay);
+
+bool target_is_function_pointer(const TypePtr & target);
+
 bool evaluate_value_initialized_type(SemanticContext & ctx,
                                      Scope & scope,
                                      constant_eval::Evaluator & evaluator,
@@ -1556,6 +1565,12 @@ bool evaluate_typed_initializer_value(SemanticContext & ctx,
     out.type = target;
     return true;
   }
+  if(target_is_function_pointer(target) &&
+     evaluate_constexpr_function_address_expression(ctx, scope, *payload, value, true) &&
+     constant_eval::constexpr_value_cast(value, target, out)) {
+    out.type = target;
+    return true;
+  }
   if(!evaluator.eval_expr(*payload, value)) {
     return false;
   }
@@ -2144,15 +2159,20 @@ bool evaluate_constexpr_function_address_expression(
     SemanticContext & ctx,
     Scope & scope,
     const CppAstNode & expr,
-    constant_eval::ConstexprValue & out)
+    constant_eval::ConstexprValue & out,
+    bool allow_implicit_decay = false)
 {
-  if(expr.kind != CppAstKind::unary_expression ||
-     expr.children.size() != 1 ||
-     !node_has_simple_type(expr, OP_AMP)) {
+  const CppAstNode * operand = nullptr;
+  if(expr.kind == CppAstKind::unary_expression &&
+     expr.children.size() == 1 &&
+     node_has_simple_type(expr, OP_AMP)) {
+    operand = &expr.children[0];
+  } else if(allow_implicit_decay) {
+    operand = &expr;
+  } else {
     return false;
   }
 
-  const CppAstNode * operand = &expr.children[0];
   if(operand->kind == CppAstKind::parenthesized_expression &&
      operand->children.size() == 1) {
     operand = &operand->children[0];
@@ -2199,6 +2219,16 @@ bool evaluate_constexpr_function_address_expression(
   }
   out = constant_eval::make_pointer_value(make_pointer(function_type), identity, 0);
   return true;
+}
+
+bool target_is_function_pointer(const TypePtr & target)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(target));
+  if(!base || base->kind != Type::TK_POINTER) {
+    return false;
+  }
+  TypePtr pointee = strip_top_level_cv(base->inner);
+  return pointee && pointee->kind == Type::TK_FUNCTION;
 }
 
 bool evaluate_default_special_expression(SemanticContext & ctx,
