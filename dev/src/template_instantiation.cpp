@@ -3167,6 +3167,9 @@ void record_class_template_argument_state(
   info.instantiation_key = key;
   info.instantiation_arg_texts = canonical_instantiation_arg_texts_impl(ctx, arguments);
   info.instantiation_arguments = arguments;
+  info.instantiation_binding_arguments = arguments;
+  info.instantiation_binding_pack_sizes.clear();
+  info.has_instantiation_binding_arguments = true;
   const bool force_structured_mangling =
       template_arguments_contain_forced_structured_mangling(arguments);
   clear_class_template_cached_lambda_mangle_metadata(info, arguments);
@@ -3183,6 +3186,20 @@ void record_class_template_argument_state(
       info,
       arguments,
       template_arguments_are_dependent_for_instantiation(ctx, arguments));
+}
+
+void record_class_template_binding_state(
+    ClassInfo & info,
+    const std::vector<TemplateArgument> & arguments,
+    const std::map<std::string, std::size_t> * pack_sizes)
+{
+  info.instantiation_binding_arguments = arguments;
+  if(pack_sizes) {
+    info.instantiation_binding_pack_sizes = *pack_sizes;
+  } else {
+    info.instantiation_binding_pack_sizes.clear();
+  }
+  info.has_instantiation_binding_arguments = true;
 }
 
 void attach_function_template_registration_identity(
@@ -5737,6 +5754,9 @@ bool record_class_template_instantiation_state(
     info.instantiation_arguments = arguments;
     clear_class_template_cached_lambda_mangle_metadata(info, arguments);
   }
+  if(refresh_arguments || !info.has_instantiation_binding_arguments) {
+    record_class_template_binding_state(info, arguments, nullptr);
+  }
   if(dependent_argument_texts && !dependent_argument_texts->empty()) {
     if(info.instantiation_arg_texts.size() < arguments.size()) {
       info.instantiation_arg_texts =
@@ -5819,6 +5839,9 @@ bool refresh_forward_class_template_selection(SemanticContext & ctx,
   ctx.reset_instantiated_class_info(info, info.name, specialization.class_node);
   info.is_explicit_specialization =
       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION;
+  record_class_template_binding_state(info,
+                                      specialization.arguments,
+                                      &specialization.pack_sizes);
   if(specialization.binding_scope) {
     bind_declaring_owner_instantiation_context(ctx,
                                                *info.member_scope,
@@ -6747,6 +6770,37 @@ void bind_template_arguments_into_scope(
   bind_argument_local_named_types(type_system, scope, arguments);
 }
 
+struct ClassTemplateBindingContext
+{
+  const std::vector<TemplateParameterInfo> * parameters = nullptr;
+  const std::vector<TemplateArgument> * arguments = nullptr;
+  const std::map<std::string, std::size_t> * pack_sizes = nullptr;
+};
+
+bool class_template_binding_context(const ClassInfo & info,
+                                    ClassTemplateBindingContext & out)
+{
+  if(!info.source_template || info.instantiation_arguments.empty()) {
+    return false;
+  }
+
+  out.parameters = &info.source_template->parameters;
+  out.arguments = &info.instantiation_arguments;
+  out.pack_sizes = nullptr;
+
+  if(info.has_instantiation_binding_arguments) {
+    out.arguments = &info.instantiation_binding_arguments;
+    out.pack_sizes = &info.instantiation_binding_pack_sizes;
+  }
+
+  if(const PartialClassTemplateSpecializationDecl * partial =
+         selected_partial_specialization(*info.source_template, info)) {
+    out.parameters = &partial->parameters;
+  }
+
+  return out.parameters && out.arguments;
+}
+
 void bind_active_owner_instantiation_context(SemanticContext & ctx,
                                              Scope & scope,
                                              const Scope & declaring_scope,
@@ -6760,11 +6814,13 @@ void bind_active_owner_instantiation_context(SemanticContext & ctx,
     return;
   }
 
-  if(!active_owner.instantiation_arguments.empty()) {
+  ClassTemplateBindingContext binding;
+  if(class_template_binding_context(active_owner, binding)) {
     bind_template_arguments_into_scope(ctx,
                                        scope,
-                                       active_owner.source_template->parameters,
-                                       active_owner.instantiation_arguments);
+                                       *binding.parameters,
+                                       *binding.arguments,
+                                       binding.pack_sizes);
   }
 
   if(!active_owner.member_scope) {
@@ -6788,16 +6844,20 @@ void bind_declaring_owner_instantiation_context(SemanticContext & ctx,
                                                 const Scope & declaring_scope)
 {
   ClassInfo * declared_owner = declaring_scope.class_info;
-  if(!declared_owner ||
-     !declared_owner->source_template ||
-     declared_owner->instantiation_arguments.empty()) {
+  if(!declared_owner) {
+    return;
+  }
+
+  ClassTemplateBindingContext binding;
+  if(!class_template_binding_context(*declared_owner, binding)) {
     return;
   }
 
   bind_template_arguments_into_scope(ctx,
                                      scope,
-                                     declared_owner->source_template->parameters,
-                                     declared_owner->instantiation_arguments);
+                                     *binding.parameters,
+                                     *binding.arguments,
+                                     binding.pack_sizes);
 }
 
 Scope & bind_template_arguments(SemanticContext & ctx,
@@ -7220,6 +7280,7 @@ ClassInfo * instantiate_selected_class_template(
       selected_partial_mangle_context ? bound_parameters : nullptr,
       selected_partial_mangle_context ? bound_arguments : nullptr,
       selected_partial_mangle_context ? bound_pack_sizes : nullptr);
+  record_class_template_binding_state(*info, *bound_arguments, bound_pack_sizes);
   info->dependent_instantiation =
       template_arguments_are_dependent_for_instantiation(ctx, arguments);
   info->is_explicit_specialization =

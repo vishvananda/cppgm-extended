@@ -513,6 +513,9 @@ struct ClassInfo
   std::size_t instantiation_specialization_epoch = 0;
   std::vector<std::string> instantiation_arg_texts;
   std::vector<template_model::TemplateArgument> instantiation_arguments;
+  std::vector<template_model::TemplateArgument> instantiation_binding_arguments;
+  std::map<std::string, std::size_t> instantiation_binding_pack_sizes;
+  bool has_instantiation_binding_arguments = false;
   std::vector<template_model::TemplateValueDependency> template_value_dependencies;
   std::string first_qualifier_use_location;
   mutable SourceDeclAnchorCache declaration_anchor;

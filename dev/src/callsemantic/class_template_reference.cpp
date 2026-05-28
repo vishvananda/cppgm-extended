@@ -57,6 +57,35 @@ bool raw_class_template_reference_cache_enabled()
   return !value || !*value || std::string(value) != "0";
 }
 
+const PartialClassTemplateSpecializationDecl * selected_partial_specialization(
+    const ClassTemplateDecl & decl,
+    const ClassInfo & info)
+{
+  if(!info.template_output_node || info.template_output_node == decl.class_node) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < decl.partial_specializations.size(); ++i) {
+    if(decl.partial_specializations[i].class_node == info.template_output_node) {
+      return &decl.partial_specializations[i];
+    }
+  }
+  return nullptr;
+}
+
+void record_class_template_binding_state(
+    ClassInfo & info,
+    const vector<TemplateArgument> & arguments,
+    const map<string, size_t> * pack_sizes)
+{
+  info.instantiation_binding_arguments = arguments;
+  if(pack_sizes) {
+    info.instantiation_binding_pack_sizes = *pack_sizes;
+  } else {
+    info.instantiation_binding_pack_sizes.clear();
+  }
+  info.has_instantiation_binding_arguments = true;
+}
+
 void bind_declaring_owner_template_arguments_into_scope(SemanticContext & ctx,
                                                         Scope & target,
                                                         const Scope * declaring_scope)
@@ -69,11 +98,27 @@ void bind_declaring_owner_template_arguments_into_scope(SemanticContext & ctx,
     return;
   }
 
+  const vector<TemplateParameterInfo> * parameters =
+      &declared_owner->source_template->parameters;
+  const vector<TemplateArgument> * arguments =
+      &declared_owner->instantiation_arguments;
+  const map<string, size_t> * pack_sizes = nullptr;
+  if(declared_owner->has_instantiation_binding_arguments) {
+    arguments = &declared_owner->instantiation_binding_arguments;
+    pack_sizes = &declared_owner->instantiation_binding_pack_sizes;
+  }
+  if(const PartialClassTemplateSpecializationDecl * partial =
+         selected_partial_specialization(*declared_owner->source_template,
+                                         *declared_owner)) {
+    parameters = &partial->parameters;
+  }
+
   template_api::binding::bind_template_arguments_into_scope(
       ctx,
       target,
-      declared_owner->source_template->parameters,
-      declared_owner->instantiation_arguments);
+      *parameters,
+      *arguments,
+      pack_sizes);
 }
 
 string join_hotspot_arg_texts(const vector<string> & arg_texts)
@@ -2902,6 +2947,9 @@ public:
         note_performance_counter(
             &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);
       }
+      record_class_template_binding_state(*info,
+                                          *bound_arguments,
+                                          bound_pack_sizes);
       record_selected_class_template_base_source_uses(decl, specialization);
       note_class_use(info);
       return info;
@@ -2966,18 +3014,21 @@ public:
       note_performance_counter(
           &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);
     }
-      bind_declaring_owner_template_arguments_into_scope(ctx,
-                                                         *info->member_scope,
-                                                         binding_scope);
-      template_api::binding::bind_template_arguments_into_scope(*this,
-                                                               *info->member_scope,
-                                                               *bound_parameters,
-                                                               *bound_arguments,
-                                                               bound_pack_sizes);
-      record_selected_class_template_base_source_uses(decl, specialization);
-      note_class_use(info);
-      return info;
-    }
+    record_class_template_binding_state(*info,
+                                        *bound_arguments,
+                                        bound_pack_sizes);
+    bind_declaring_owner_template_arguments_into_scope(ctx,
+                                                       *info->member_scope,
+                                                       binding_scope);
+    template_api::binding::bind_template_arguments_into_scope(*this,
+                                                             *info->member_scope,
+                                                             *bound_parameters,
+                                                             *bound_arguments,
+                                                             bound_pack_sizes);
+    record_selected_class_template_base_source_uses(decl, specialization);
+    note_class_use(info);
+    return info;
+  }
 
 
   ClassInfo * instantiate_class_template(
