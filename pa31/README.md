@@ -110,7 +110,10 @@ Definition forms:
 - `let-type <id> ...`: a type fact
 - `let-arg <id> ...`: a template-argument fact
 - `let-expr <id> ...`: a dependent-expression fact
-- `let-context <id> ...`: a local or lambda context fact
+- `let-context <id> function ...`: a local or lambda context named by a
+  function target
+- `let-context <id> raw <context-fragment>`: a local or lambda context already
+  normalized as an Itanium local-name context fragment
 - `let-entity <id> ...`: an entity fact used by entity-valued template
   arguments and dependent expressions
 
@@ -143,6 +146,14 @@ function path C::operator
 conversion-terminal int
 ```
 
+Complex function encodings may also be written as a `function encoding` target
+followed by normalized component lines. Template-id components use
+`name-template ... <arg-ref>...`; function-template arguments use
+`function-template-arg <arg-ref>`, with `function-template-prefix <key>` when
+the function-template prefix is substitutable; local entities use
+`local-context ...` or `lambda-context ...` followed by the same terminal,
+qualifier, result, and parameter lines as ordinary functions.
+
 `operator-terminal <name>` names the C++ operator semantically. Supported names
 include `plus`, `minus`, `address-of`, `deref`, `new`, `new-array`,
 `delete`, `delete-array`, `multiply`, `divide`, `remainder`, `bit-or`,
@@ -162,6 +173,10 @@ marker, not as an Itanium code.
 
 Thunks, wrappers, typeinfo, and vtable names are described as ABI facts instead
 of already-mangled names.
+
+Raw external symbols may be carried with `let-entity <id> symbol <mangled-name>`
+when a template argument or dependent expression names an entity that is already
+known by ABI symbol rather than by a source-level qualified name.
 
 The fact format is deliberately small, but it is still an ABI entity graph. It
 should not become a second C++ parser.

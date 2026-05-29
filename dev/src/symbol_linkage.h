@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "abi_mangle.h"
 #include "cpp_decl_model.h"
 #include "template_model.h"
 
@@ -81,11 +82,29 @@ struct FunctionSymbolOptions
 std::shared_ptr<void> make_lambda_context_function_symbol_options(
     const FunctionSymbolOptions & options);
 
+class AbiMangleFactCaptureScope
+{
+public:
+  explicit AbiMangleFactCaptureScope(bool enabled);
+  ~AbiMangleFactCaptureScope();
+
+private:
+  bool previous_enabled;
+};
+
 struct SymbolIdentity
 {
+  struct AbiMangleFactEntry
+  {
+    std::string object_symbol;
+    abi_mangle::AbiMangleTarget target;
+  };
+  typedef std::vector<AbiMangleFactEntry> AbiMangleFactEntries;
+
   std::string internal_symbol;
   std::string object_symbol;
   std::string thread_local_wrapper_object_symbol;
+  std::shared_ptr<AbiMangleFactEntries> abi_mangle_facts;
   bool keep_internal_alias = false;
   bool prefer_local_object_binding = false;
   SymbolLinkage linkage = SL_EXTERNAL;

@@ -3,7 +3,6 @@
 #include "cli_batch_frontend.h"
 #include "abi_mangle.h"
 #include "cpp_batch_frontend.h"
-#include "cpp_decl_model.h"
 #include "cpp_driver_frontend.h"
 #include "cpp_text_generators.h"
 #include "cpp_tool_cli.h"
@@ -210,160 +209,6 @@ string abi_fact_label_component(string text)
   return text;
 }
 
-string abi_qualified_name_text(const cpp_decl::QualifiedName & qualified)
-{
-  string out = qualified.rooted ? "::" : string();
-  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    out += qualified.qualifiers[i];
-    out += "::";
-  }
-  out += qualified.name;
-  return out;
-}
-
-string abi_node_qualified_name_text(const CallSemNode & node)
-{
-  if(!callsem_resolved_name(node).empty()) {
-    return callsem_resolved_name(node);
-  }
-  const shared_ptr<cpp_decl::QualifiedName> & qualified =
-      callsem_qualified_name_syntax(node);
-  if(qualified) {
-    return abi_qualified_name_text(*qualified);
-  }
-  return node.text.str();
-}
-
-bool abi_builtin_type(EFundamentalType type, abi_mangle::AbiBuiltinType & out)
-{
-  switch(type) {
-  case FT_SIGNED_CHAR: out = abi_mangle::ABI_BUILTIN_SIGNED_CHAR; return true;
-  case FT_SHORT_INT: out = abi_mangle::ABI_BUILTIN_SHORT; return true;
-  case FT_INT: out = abi_mangle::ABI_BUILTIN_INT; return true;
-  case FT_LONG_INT: out = abi_mangle::ABI_BUILTIN_LONG; return true;
-  case FT_LONG_LONG_INT: out = abi_mangle::ABI_BUILTIN_LONG_LONG; return true;
-  case FT_INT128: out = abi_mangle::ABI_BUILTIN_INT128; return true;
-  case FT_UNSIGNED_CHAR: out = abi_mangle::ABI_BUILTIN_UNSIGNED_CHAR; return true;
-  case FT_UNSIGNED_SHORT_INT: out = abi_mangle::ABI_BUILTIN_UNSIGNED_SHORT; return true;
-  case FT_UNSIGNED_INT: out = abi_mangle::ABI_BUILTIN_UNSIGNED_INT; return true;
-  case FT_UNSIGNED_LONG_INT: out = abi_mangle::ABI_BUILTIN_UNSIGNED_LONG; return true;
-  case FT_UNSIGNED_LONG_LONG_INT: out = abi_mangle::ABI_BUILTIN_UNSIGNED_LONG_LONG; return true;
-  case FT_UINT128: out = abi_mangle::ABI_BUILTIN_UINT128; return true;
-  case FT_WCHAR_T: out = abi_mangle::ABI_BUILTIN_WCHAR; return true;
-  case FT_CHAR: out = abi_mangle::ABI_BUILTIN_CHAR; return true;
-  case FT_CHAR16_T: out = abi_mangle::ABI_BUILTIN_CHAR16; return true;
-  case FT_CHAR32_T: out = abi_mangle::ABI_BUILTIN_CHAR32; return true;
-  case FT_BOOL: out = abi_mangle::ABI_BUILTIN_BOOL; return true;
-  case FT_FLOAT: out = abi_mangle::ABI_BUILTIN_FLOAT; return true;
-  case FT_DOUBLE: out = abi_mangle::ABI_BUILTIN_DOUBLE; return true;
-  case FT_LONG_DOUBLE: out = abi_mangle::ABI_BUILTIN_LONG_DOUBLE; return true;
-  case FT_VOID: out = abi_mangle::ABI_BUILTIN_VOID; return true;
-  case FT_NULLPTR_T: out = abi_mangle::ABI_BUILTIN_NULLPTR; return true;
-  }
-  return false;
-}
-
-bool abi_type_from_cpp_type(const cpp_decl::TypePtr & type,
-                            abi_mangle::AbiType & out)
-{
-  if(!type) {
-    return false;
-  }
-
-  switch(type->kind) {
-  case cpp_decl::Type::TK_FUNDAMENTAL:
-    out.kind = abi_mangle::ABI_TYPE_BUILTIN;
-    return abi_builtin_type(type->fundamental, out.builtin_type);
-
-  case cpp_decl::Type::TK_NAMED:
-    if(type->named_display.empty() || type->named_lambda_mangle) {
-      return false;
-    }
-    out.kind = abi_mangle::ABI_TYPE_NAMED;
-    out.name = type->named_display;
-    return true;
-
-  case cpp_decl::Type::TK_CV: {
-    abi_mangle::AbiType inner;
-    if(!abi_type_from_cpp_type(type->inner, inner)) {
-      return false;
-    }
-    if(type->cv_volatile) {
-      abi_mangle::AbiType wrapper;
-      wrapper.kind = abi_mangle::ABI_TYPE_VOLATILE;
-      wrapper.child_types.push_back(std::move(inner));
-      inner = std::move(wrapper);
-    }
-    if(type->cv_const) {
-      out.kind = abi_mangle::ABI_TYPE_CONST;
-      out.child_types.push_back(std::move(inner));
-    } else {
-      out = std::move(inner);
-    }
-    return true;
-  }
-
-  case cpp_decl::Type::TK_ATOMIC:
-    out.kind = abi_mangle::ABI_TYPE_VENDOR_QUALIFIED;
-    out.name = "_Atomic";
-    out.vendor_qualifier = abi_mangle::ABI_VENDOR_QUALIFIER_ATOMIC;
-    out.child_types.push_back(abi_mangle::AbiType());
-    return abi_type_from_cpp_type(type->inner, out.child_types.back());
-
-  case cpp_decl::Type::TK_POINTER:
-    out.kind = abi_mangle::ABI_TYPE_POINTER;
-    out.child_types.push_back(abi_mangle::AbiType());
-    return abi_type_from_cpp_type(type->inner, out.child_types.back());
-
-  case cpp_decl::Type::TK_LVALUE_REFERENCE:
-    out.kind = abi_mangle::ABI_TYPE_LVALUE_REFERENCE;
-    out.child_types.push_back(abi_mangle::AbiType());
-    return abi_type_from_cpp_type(type->inner, out.child_types.back());
-
-  case cpp_decl::Type::TK_RVALUE_REFERENCE:
-    out.kind = abi_mangle::ABI_TYPE_RVALUE_REFERENCE;
-    out.child_types.push_back(abi_mangle::AbiType());
-    return abi_type_from_cpp_type(type->inner, out.child_types.back());
-
-  case cpp_decl::Type::TK_ARRAY:
-    if(!type->has_bound) {
-      return false;
-    }
-    out.kind = abi_mangle::ABI_TYPE_ARRAY;
-    out.array_bound.kind = abi_mangle::ABI_ARRAY_BOUND_INTEGER;
-    out.array_bound.integer_value = type->bound;
-    out.child_types.push_back(abi_mangle::AbiType());
-    return abi_type_from_cpp_type(type->inner, out.child_types.back());
-
-  case cpp_decl::Type::TK_FUNCTION:
-    out.kind = abi_mangle::ABI_TYPE_FUNCTION;
-    out.variadic = type->variadic;
-    out.child_types.reserve(type->params.size() + 1);
-    out.child_types.push_back(abi_mangle::AbiType());
-    if(!abi_type_from_cpp_type(type->inner, out.child_types.back())) {
-      return false;
-    }
-    for(size_t i = 0; i < type->params.size(); ++i) {
-      out.child_types.push_back(abi_mangle::AbiType());
-      if(!abi_type_from_cpp_type(type->params[i], out.child_types.back())) {
-        return false;
-      }
-    }
-    return true;
-
-  case cpp_decl::Type::TK_MEMBER_POINTER:
-    out.kind = abi_mangle::ABI_TYPE_MEMBER_POINTER;
-    out.child_types.push_back(abi_mangle::AbiType());
-    out.child_types.push_back(abi_mangle::AbiType());
-    return abi_type_from_cpp_type(type->owner, out.child_types[0]) &&
-           abi_type_from_cpp_type(type->inner, out.child_types[1]);
-
-  case cpp_decl::Type::TK_BLOCK_POINTER:
-    return false;
-  }
-  return false;
-}
-
 bool node_is_ordinary_abi_function(const CallSemNode & node)
 {
   if(node.kind != CallSemKind::function_definition &&
@@ -378,88 +223,61 @@ bool node_is_ordinary_abi_function(const CallSemNode & node)
   return symbol_linkage::has_exported_object_symbol(callsem_symbol(node));
 }
 
+bool append_abi_symbol_fact_cases(
+    const symbol_linkage::SymbolIdentity & symbol,
+    abi_mangle::AbiMangleTargetKind target_kind,
+    abi_mangle::AbiFactFile & file,
+    set<string> & seen)
+{
+  if(symbol.linkage == symbol_linkage::SL_INTERNAL) {
+    return false;
+  }
+  if(!symbol.abi_mangle_facts) {
+    return false;
+  }
+  bool appended = false;
+  for(size_t i = 0; i < symbol.abi_mangle_facts->size(); ++i) {
+    const symbol_linkage::SymbolIdentity::AbiMangleFactEntry & entry =
+        (*symbol.abi_mangle_facts)[i];
+    if(entry.target.kind != target_kind || entry.object_symbol.empty()) {
+      continue;
+    }
+    const string key =
+        to_string(static_cast<int>(entry.target.kind)) + ":" + entry.object_symbol;
+    if(!seen.insert(key).second) {
+      appended = true;
+      continue;
+    }
+    abi_mangle::AbiFactCase fact_case;
+    fact_case.label = abi_fact_label_component(
+        symbol.internal_symbol.empty() ? entry.object_symbol : symbol.internal_symbol);
+    fact_case.target = entry.target;
+    file.cases.push_back(std::move(fact_case));
+    appended = true;
+  }
+  return appended;
+}
+
 bool append_abi_function_case(const CallSemNode & node,
                               abi_mangle::AbiFactFile & file,
                               set<string> & seen)
 {
-  if(!node_is_ordinary_abi_function(node)) {
-    return false;
-  }
-  cpp_decl::TypePtr type = strip_top_level_cv(node.semantic_type);
-  if(!type || type->kind != cpp_decl::Type::TK_FUNCTION) {
-    return false;
-  }
-  const string qualified_name = abi_node_qualified_name_text(node);
-  if(qualified_name.empty() ||
-     qualified_name == "main" ||
-     callsem_symbol(node).internal_symbol == "@main" ||
-     qualified_name.find("operator") != string::npos) {
-    return false;
-  }
-  const string key = string("function:") + callsem_symbol(node).object_symbol;
-  if(!seen.insert(key).second) {
-    return true;
-  }
-
-  abi_mangle::AbiFactCase fact_case;
-  fact_case.label = abi_fact_label_component(callsem_symbol(node).internal_symbol);
-  fact_case.target.kind = abi_mangle::ABI_MANGLE_FUNCTION;
-  fact_case.target.function.form = abi_mangle::ABI_FUNCTION_PATH;
-  fact_case.target.function.c_linkage = node.is_c_linkage;
-  fact_case.target.function.qualified_name = qualified_name;
-  fact_case.target.function.variadic = type->variadic;
-  fact_case.target.function.nested_const = node.is_const_method || type->function_const;
-  fact_case.target.function.nested_volatile =
-      node.is_volatile_method || type->function_volatile;
-  fact_case.target.function.abi_tags = callsem_abi_tags(node);
-  fact_case.target.function.parameter_types.reserve(type->params.size());
-  for(size_t i = 0; i < type->params.size(); ++i) {
-    fact_case.target.function.parameter_types.push_back(abi_mangle::AbiType());
-    if(!abi_type_from_cpp_type(type->params[i],
-                               fact_case.target.function.parameter_types.back())) {
-      return false;
-    }
-  }
-  file.cases.push_back(std::move(fact_case));
-  return true;
+  return node_is_ordinary_abi_function(node) &&
+         append_abi_symbol_fact_cases(callsem_symbol(node),
+                                      abi_mangle::ABI_MANGLE_FUNCTION,
+                                      file,
+                                      seen);
 }
 
 bool append_abi_variable_case(const CallSemNode & node,
                               abi_mangle::AbiFactFile & file,
                               set<string> & seen)
 {
-  if(node.kind != CallSemKind::variable ||
-     !symbol_linkage::has_exported_object_symbol(callsem_symbol(node))) {
-    return false;
-  }
-  const string qualified_name = abi_node_qualified_name_text(node);
-  if(qualified_name.empty()) {
-    return false;
-  }
-  const string key = string("variable:") + callsem_symbol(node).object_symbol;
-  if(seen.insert(key).second) {
-    abi_mangle::AbiFactCase fact_case;
-    fact_case.label = abi_fact_label_component(callsem_symbol(node).internal_symbol);
-    fact_case.target.kind = abi_mangle::ABI_MANGLE_VARIABLE;
-    fact_case.target.qualified_name = qualified_name;
-    fact_case.target.c_linkage = node.is_c_linkage;
-    file.cases.push_back(std::move(fact_case));
-  }
-  if(node.is_thread_local &&
-     !callsem_symbol(node).thread_local_wrapper_object_symbol.empty()) {
-    const string tls_key =
-        string("tls-wrapper:") +
-        callsem_symbol(node).thread_local_wrapper_object_symbol;
-    if(seen.insert(tls_key).second) {
-      abi_mangle::AbiFactCase fact_case;
-      fact_case.label =
-          abi_fact_label_component(callsem_symbol(node).internal_symbol + "__tls_wrapper");
-      fact_case.target.kind = abi_mangle::ABI_MANGLE_THREAD_LOCAL_WRAPPER;
-      fact_case.target.qualified_name = qualified_name;
-      file.cases.push_back(std::move(fact_case));
-    }
-  }
-  return true;
+  return node.kind == CallSemKind::variable &&
+         append_abi_symbol_fact_cases(callsem_symbol(node),
+                                      abi_mangle::ABI_MANGLE_VARIABLE,
+                                      file,
+                                      seen);
 }
 
 void collect_abi_fact_cases(const CallSemNode & node,
@@ -476,6 +294,7 @@ void collect_abi_fact_cases(const CallSemNode & node,
 string generate_abi_fact_text_from_cpp_sources(const vector<string> & inputs,
                                                const CppPreprocessOptions & options)
 {
+  symbol_linkage::AbiMangleFactCaptureScope abi_fact_capture(true);
   const vector<CallSemNode> translation_units =
       analyze_cpp_sources(inputs, options, true);
   abi_mangle::AbiFactFile file;

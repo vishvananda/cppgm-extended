@@ -29,6 +29,12 @@ namespace symbol_linkage {
 
 namespace {
 
+bool & abi_mangle_fact_capture_enabled_ref()
+{
+  static thread_local bool enabled = false;
+  return enabled;
+}
+
 bool is_identifier_char(char ch)
 {
   return std::isalnum(static_cast<unsigned char>(ch)) || ch == '_';
@@ -70,6 +76,17 @@ string exported_object_symbol(const SymbolIdentity & symbol)
 bool has_weak_linkage(const SymbolIdentity & symbol)
 {
   return symbol.linkage == SL_WEAK;
+}
+
+AbiMangleFactCaptureScope::AbiMangleFactCaptureScope(bool enabled)
+    : previous_enabled(abi_mangle_fact_capture_enabled_ref())
+{
+  abi_mangle_fact_capture_enabled_ref() = enabled;
+}
+
+AbiMangleFactCaptureScope::~AbiMangleFactCaptureScope()
+{
+  abi_mangle_fact_capture_enabled_ref() = previous_enabled;
 }
 
 string mangle_symbol_name(const string & text)
@@ -1141,7 +1158,8 @@ static bool try_emit_itanium_function_symbol_ir(
     const FunctionSymbolOptions & options,
     string & out,
     MangleSubstitutionState * captured_state = nullptr,
-    bool complete_plain_parameter_substitutions = false);
+    bool complete_plain_parameter_substitutions = false,
+    abi_mangle::AbiMangleTarget * captured_target = nullptr);
 static bool emit_itanium_function_encoding_with_substitutions(
     const QualifiedName & qualified_name,
     const string & display_name,
@@ -3518,6 +3536,68 @@ static bool ast_node_mentions_function_parameter(const CppAstNode & node,
   for(size_t i = 0; i < node.children.size(); ++i) {
     if(ast_node_mentions_function_parameter(node.children[i], mangle_ctx)) {
       return true;
+    }
+  }
+  return false;
+}
+
+static bool declarator_type_syntax_mentions_function_parameter(
+    const CppAstNode & node,
+    const TypeMangleContext * mangle_ctx)
+{
+  if(node.kind == CppAstKind::identifier) {
+    return false;
+  }
+  size_t ignored_index = 0;
+  if(node.kind == CppAstKind::id_expression &&
+     function_parameter_index_for_name(node.value, mangle_ctx, ignored_index)) {
+    return true;
+  }
+  if(node.conversion_type_id_syntax &&
+     ast_node_mentions_function_parameter(*node.conversion_type_id_syntax,
+                                          mangle_ctx)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_node_mentions_function_parameter(node.qualifier_type_syntaxes[i],
+                                            mangle_ctx)) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    if(ast_node_mentions_function_parameter(node.exception_type_id_syntaxes[i],
+                                            mangle_ctx)) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(declarator_type_syntax_mentions_function_parameter(node.children[i],
+                                                          mangle_ctx)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool parameter_declaration_type_mentions_function_parameter(
+    const CppAstNode & declaration,
+    const TypeMangleContext * mangle_ctx)
+{
+  if(declaration.kind != CppAstKind::parameter_declaration) {
+    return ast_node_mentions_function_parameter(declaration, mangle_ctx);
+  }
+  for(size_t i = 0; i < declaration.children.size(); ++i) {
+    const CppAstNode & child = declaration.children[i];
+    if(child.kind == CppAstKind::decl_specifier_seq ||
+       child.kind == CppAstKind::type_specifier_seq) {
+      if(ast_node_mentions_function_parameter(child, mangle_ctx)) {
+        return true;
+      }
+    } else if(child.kind == CppAstKind::declarator ||
+              child.kind == CppAstKind::abstract_declarator) {
+      if(declarator_type_syntax_mentions_function_parameter(child, mangle_ctx)) {
+        return true;
+      }
     }
   }
   return false;
@@ -6409,29 +6489,25 @@ static string non_type_template_parameter_decl_specifier_text(
     const TemplateParameterInfo & parameter);
 static bool type_has_dependent_mangle_state(const TypePtr & type);
 
-static bool emit_type_id_ir_from_ast(
+static bool build_type_id_ir_from_ast(
     const CppAstNode & type_id,
     const TypePtr & actual_type,
     const TypeMangleContext * mangle_ctx,
-    MangleSubstitutionState * state,
-    string & out)
+    abi_mangle::Type & out)
 {
-  abi_mangle::Type ir_type;
   if(!try_build_actual_owner_template_reference_type_id_ast_ir(
-         type_id, actual_type, mangle_ctx, ir_type) &&
-     !try_build_type_id_ast_ir(type_id, mangle_ctx, ir_type)) {
+         type_id, actual_type, mangle_ctx, out) &&
+     !try_build_type_id_ast_ir(type_id, mangle_ctx, out)) {
     return false;
   }
-  MangleIrSubstitutionSink sink(state);
-  return abi_mangle::emit_type(ir_type, out, &sink);
+  return true;
 }
 
-static bool emit_parameter_declaration_ir_from_ast(
+static bool build_parameter_declaration_ir_from_ast(
     const CppAstNode & declaration,
     const TypePtr & actual_type,
     const TypeMangleContext * mangle_ctx,
-    MangleSubstitutionState * state,
-    string & out)
+    abi_mangle::Type & out)
 {
   if(declaration.kind != CppAstKind::parameter_declaration) {
     return false;
@@ -6462,11 +6538,79 @@ static bool emit_parameter_declaration_ir_from_ast(
     abstract.kind = CppAstKind::abstract_declarator;
     type_id.children.push_back(abstract);
   }
-  return emit_type_id_ir_from_ast(type_id,
-                                  actual_type,
-                                  mangle_ctx,
-                                  state,
-                                  out);
+  return build_type_id_ir_from_ast(type_id, actual_type, mangle_ctx, out);
+}
+
+static bool emit_type_ir(const abi_mangle::Type & type,
+                         MangleSubstitutionState * state,
+                         string & out)
+{
+  MangleIrSubstitutionSink sink(state);
+  return abi_mangle::emit_type(type, out, &sink);
+}
+
+static bool build_and_emit_type_ir(const TypePtr & type,
+                                   const TypeMangleContext * mangle_ctx,
+                                   MangleSubstitutionState * state,
+                                   string & out,
+                                   abi_mangle::Type * captured_type = nullptr)
+{
+  abi_mangle::Type ir_type;
+  if(!try_build_type_ir(type, mangle_ctx, ir_type)) {
+    return false;
+  }
+  if(!emit_type_ir(ir_type, state, out)) {
+    return false;
+  }
+  if(captured_type) {
+    *captured_type = ir_type;
+  }
+  return true;
+}
+
+static bool build_and_emit_type_id_ir_from_ast(
+    const CppAstNode & type_id,
+    const TypePtr & actual_type,
+    const TypeMangleContext * mangle_ctx,
+    MangleSubstitutionState * state,
+    string & out,
+    abi_mangle::Type * captured_type = nullptr)
+{
+  abi_mangle::Type ir_type;
+  if(!build_type_id_ir_from_ast(type_id, actual_type, mangle_ctx, ir_type)) {
+    return false;
+  }
+  if(!emit_type_ir(ir_type, state, out)) {
+    return false;
+  }
+  if(captured_type) {
+    *captured_type = ir_type;
+  }
+  return true;
+}
+
+static bool build_and_emit_parameter_declaration_ir_from_ast(
+    const CppAstNode & declaration,
+    const TypePtr & actual_type,
+    const TypeMangleContext * mangle_ctx,
+    MangleSubstitutionState * state,
+    string & out,
+    abi_mangle::Type * captured_type = nullptr)
+{
+  abi_mangle::Type ir_type;
+  if(!build_parameter_declaration_ir_from_ast(declaration,
+                                              actual_type,
+                                              mangle_ctx,
+                                              ir_type)) {
+    return false;
+  }
+  if(!emit_type_ir(ir_type, state, out)) {
+    return false;
+  }
+  if(captured_type) {
+    *captured_type = ir_type;
+  }
+  return true;
 }
 
 static bool try_mangle_dependent_expression_ast_template_argument(
@@ -13409,6 +13553,39 @@ static void adopt_actual_class_template_owner_for_hybrid_named_type(
                                           dependent_arguments);
 }
 
+static bool named_type_is_concrete_owner_type_parameter(
+    const TypePtr & type,
+    const TypeMangleContext * mangle_ctx)
+{
+  if(!type || type->kind != Type::TK_NAMED ||
+     !mangle_ctx ||
+     !mangle_ctx->owner_template_parameters ||
+     !mangle_ctx->owner_template_arguments) {
+    return false;
+  }
+  const string selected = selected_named_type_text(type);
+  if(selected.empty()) {
+    return false;
+  }
+  const vector<TemplateParameterInfo> & parameters =
+      *mangle_ctx->owner_template_parameters;
+  const vector<TemplateArgument> & arguments =
+      *mangle_ctx->owner_template_arguments;
+  for(size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
+    const TemplateParameterInfo & parameter = parameters[i];
+    if(parameter.kind != TemplateParameterInfo::TP_TYPE ||
+       parameter.name.empty() ||
+       !text_matches_type_parameter_name(selected, parameter.name)) {
+      continue;
+    }
+    return !template_argument_is_self_type_parameter(arguments[i],
+                                                    parameter,
+                                                    TypePtr(),
+                                                    selected);
+  }
+  return false;
+}
+
 static TypePtr hybridize_pattern_type_with_actual(const TypePtr & pattern_type,
                                                   const TypePtr & actual_type,
                                                   const TypeMangleContext * mangle_ctx)
@@ -13419,9 +13596,20 @@ static TypePtr hybridize_pattern_type_with_actual(const TypePtr & pattern_type,
 
   switch(pattern_type->kind) {
   case Type::TK_NAMED: {
+    if(actual_type &&
+       !type_has_dependent_mangle_state(actual_type) &&
+       named_type_is_concrete_owner_type_parameter(pattern_type, mangle_ctx)) {
+      return actual_type;
+    }
+
     string template_param_code;
     if(try_mangle_template_parameter_type(pattern_type, mangle_ctx, template_param_code)) {
       return pattern_type;
+    }
+    if(actual_type &&
+       !type_has_dependent_mangle_state(actual_type) &&
+       pattern_type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER) {
+      return actual_type;
     }
 
     if(actual_type &&
@@ -15121,7 +15309,8 @@ static bool try_mangle_function_name_prefix_ir(
     const string & display_name,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * state)
+    MangleSubstitutionState * state,
+    abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   if((!display_name.empty() && display_name != qualified.name) ||
      compact_operator_name(display_name.empty() ? qualified.name : display_name)
@@ -15146,6 +15335,9 @@ static bool try_mangle_function_name_prefix_ir(
   if(!emit_function_name_ir(function, state, candidate)) {
     return false;
   }
+  if(captured_function) {
+    *captured_function = function;
+  }
   out.swap(candidate);
   return true;
 }
@@ -15155,7 +15347,8 @@ static bool try_mangle_member_function_name_prefix_ir(
     const string & display_name,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * state)
+    MangleSubstitutionState * state,
+    abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   if((!display_name.empty() && display_name != qualified.name) ||
      compact_operator_name(display_name.empty() ? qualified.name : display_name)
@@ -15181,6 +15374,9 @@ static bool try_mangle_member_function_name_prefix_ir(
   string candidate;
   if(!emit_function_name_ir(function, state, candidate)) {
     return false;
+  }
+  if(captured_function) {
+    *captured_function = function;
   }
   out.swap(candidate);
   return true;
@@ -15220,7 +15416,8 @@ static bool try_mangle_lambda_call_operator_name_prefix_ir(
     const string & display_name,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * state)
+    MangleSubstitutionState * state,
+    abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   if(qualified.rooted ||
      display_name != "operator()" ||
@@ -15247,6 +15444,9 @@ static bool try_mangle_lambda_call_operator_name_prefix_ir(
   if(!emit_function_name_ir(function, state, candidate)) {
     return false;
   }
+  if(captured_function) {
+    *captured_function = function;
+  }
   out.swap(candidate);
   return true;
 }
@@ -15255,7 +15455,8 @@ static bool try_mangle_special_member_name_prefix_ir(
     const QualifiedName & qualified,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * state)
+    MangleSubstitutionState * state,
+    abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   if(qualified.rooted ||
      qualified.qualifiers.empty() ||
@@ -15323,6 +15524,9 @@ static bool try_mangle_special_member_name_prefix_ir(
     }
     return false;
   }
+  if(captured_function) {
+    *captured_function = function;
+  }
   out.swap(candidate);
   return true;
 }
@@ -15333,7 +15537,8 @@ static bool try_mangle_local_class_member_name_prefix_ir(
     const TypePtr & type,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * state)
+    MangleSubstitutionState * state,
+    abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   if(qualified.rooted ||
      qualified.qualifiers.empty() ||
@@ -15428,6 +15633,9 @@ static bool try_mangle_local_class_member_name_prefix_ir(
   if(!emit_function_name_ir(function, state, candidate)) {
     return false;
   }
+  if(captured_function) {
+    *captured_function = function;
+  }
   out.swap(candidate);
   return true;
 }
@@ -15438,7 +15646,8 @@ static bool try_mangle_operator_name_prefix_ir(
     const TypePtr & type,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * state)
+    MangleSubstitutionState * state,
+    abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   const string compact =
       compact_operator_name(display_name.empty() ? qualified.name : display_name);
@@ -15512,6 +15721,9 @@ static bool try_mangle_operator_name_prefix_ir(
   if(!emit_function_name_ir(function, state, candidate)) {
     return false;
   }
+  if(captured_function) {
+    *captured_function = function;
+  }
   out.swap(candidate);
   return true;
 }
@@ -15522,7 +15734,8 @@ static bool try_mangle_conversion_operator_name_prefix_ir(
     const TypePtr & type,
     const FunctionSymbolOptions & options,
     string & out,
-    MangleSubstitutionState * state)
+    MangleSubstitutionState * state,
+    abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   const string compact =
       compact_operator_name(display_name.empty() ? qualified.name : display_name);
@@ -15618,6 +15831,9 @@ static bool try_mangle_conversion_operator_name_prefix_ir(
   if(!emit_function_name_ir(function, state, candidate)) {
     return false;
   }
+  if(captured_function) {
+    *captured_function = function;
+  }
   out.swap(candidate);
   return true;
 }
@@ -15628,7 +15844,8 @@ static bool try_mangle_plain_function_ir(const QualifiedName & qualified,
                                          const FunctionSymbolOptions & options,
                                          string & out,
                                          MangleSubstitutionState * state,
-                                         bool suppress_type_substitution_keys)
+                                         bool suppress_type_substitution_keys,
+                                         abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   if(qualified.rooted ||
      qualified.name.empty() ||
@@ -15679,6 +15896,9 @@ static bool try_mangle_plain_function_ir(const QualifiedName & qualified,
   string candidate;
   if(!emit_function_encoding_ir(function, state, candidate)) {
     return false;
+  }
+  if(captured_function) {
+    *captured_function = function;
   }
   out.swap(candidate);
   return true;
@@ -16121,7 +16341,8 @@ static bool try_emit_owner_type_parameter_pack_function_parameter_ir(
     const TypePtr & type,
     const TypeMangleContext * mangle_ctx,
     MangleSubstitutionState * state,
-    string & out)
+    string & out,
+    abi_mangle::Type * captured_type = nullptr)
 {
   if(!type_mentions_owner_type_template_parameter_pack(type, mangle_ctx)) {
     return false;
@@ -16136,7 +16357,26 @@ static bool try_emit_owner_type_parameter_pack_function_parameter_ir(
           pattern :
           abi_mangle::Type::pack_expansion(pattern);
   MangleIrSubstitutionSink sink(state);
-  return abi_mangle::emit_type(expansion, out, &sink);
+  if(!abi_mangle::emit_type(expansion, out, &sink)) {
+    return false;
+  }
+  if(captured_type) {
+    *captured_type = expansion;
+  }
+  return true;
+}
+
+static void capture_function_mangle_target(
+    abi_mangle::AbiMangleTarget * captured_target,
+    const string & qualified_name_label,
+    const abi_mangle::FunctionEncoding & function)
+{
+  if(!captured_target) {
+    return;
+  }
+  captured_target->kind = abi_mangle::ABI_MANGLE_FUNCTION;
+  captured_target->qualified_name = qualified_name_label;
+  captured_target->function = function;
 }
 
 static bool try_emit_itanium_function_symbol_ir(
@@ -16147,8 +16387,12 @@ static bool try_emit_itanium_function_symbol_ir(
     const FunctionSymbolOptions & options,
     string & out,
     MangleSubstitutionState * captured_state,
-    bool complete_plain_parameter_substitutions)
+    bool complete_plain_parameter_substitutions,
+    abi_mangle::AbiMangleTarget * captured_target)
 {
+  if(captured_target) {
+    *captured_target = abi_mangle::AbiMangleTarget();
+  }
   MangleSubstitutionState local_state;
   MangleSubstitutionState * state = captured_state ? captured_state : &local_state;
   if(!type || type->kind != Type::TK_FUNCTION || type->function_const ||
@@ -16170,18 +16414,25 @@ static bool try_emit_itanium_function_symbol_ir(
 
   const bool suppress_type_substitution_keys =
       !complete_plain_parameter_substitutions;
+  const bool capture_function = captured_target != nullptr;
+  abi_mangle::FunctionEncoding captured_function;
   if(try_mangle_plain_function_ir(qualified,
                                   display_name,
                                   type,
                                   options,
                                   out,
                                   state,
-                                  suppress_type_substitution_keys)) {
+                                  suppress_type_substitution_keys,
+                                  capture_function ? &captured_function : nullptr)) {
+    capture_function_mangle_target(captured_target,
+                                   qualified_name_label,
+                                   captured_function);
     return true;
   }
 
   string candidate;
   bool candidate_ok = false;
+  bool have_captured_function = false;
   const FunctionNameIrPath selected_path =
       select_function_name_ir_path(qualified, display_name, type, options);
   switch(selected_path) {
@@ -16190,27 +16441,35 @@ static bool try_emit_itanium_function_symbol_ir(
                                                       display_name,
                                                       options,
                                                       candidate,
-                                                      state);
+                                                      state,
+                                                      capture_function ? &captured_function :
+                                                                         nullptr);
     break;
   case FNIP_SIMPLE_MEMBER:
     candidate_ok = try_mangle_member_function_name_prefix_ir(qualified,
                                                              display_name,
                                                              options,
                                                              candidate,
-                                                             state);
+                                                             state,
+                                                             capture_function ? &captured_function :
+                                                                                nullptr);
     break;
   case FNIP_LAMBDA_CALL:
     candidate_ok = try_mangle_lambda_call_operator_name_prefix_ir(qualified,
                                                                   display_name,
                                                                   options,
                                                                   candidate,
-                                                                  state);
+                                                                  state,
+                                                                  capture_function ? &captured_function :
+                                                                                     nullptr);
     break;
   case FNIP_SPECIAL_MEMBER:
     candidate_ok = try_mangle_special_member_name_prefix_ir(qualified,
                                                             options,
                                                             candidate,
-                                                            state);
+                                                            state,
+                                                            capture_function ? &captured_function :
+                                                                               nullptr);
     break;
   case FNIP_LOCAL_CLASS_MEMBER:
     candidate_ok = try_mangle_local_class_member_name_prefix_ir(qualified,
@@ -16218,7 +16477,9 @@ static bool try_emit_itanium_function_symbol_ir(
                                                                 type,
                                                                 options,
                                                                 candidate,
-                                                                state);
+                                                                state,
+                                                                capture_function ? &captured_function :
+                                                                                   nullptr);
     break;
   case FNIP_FIXED_OPERATOR:
     candidate_ok = try_mangle_operator_name_prefix_ir(qualified,
@@ -16226,7 +16487,9 @@ static bool try_emit_itanium_function_symbol_ir(
                                                       type,
                                                       options,
                                                       candidate,
-                                                      state);
+                                                      state,
+                                                      capture_function ? &captured_function :
+                                                                         nullptr);
     break;
   case FNIP_CONVERSION_OPERATOR:
     candidate_ok = try_mangle_conversion_operator_name_prefix_ir(qualified,
@@ -16234,7 +16497,9 @@ static bool try_emit_itanium_function_symbol_ir(
                                                                  type,
                                                                  options,
                                                                  candidate,
-                                                                 state);
+                                                                 state,
+                                                                 capture_function ? &captured_function :
+                                                                                    nullptr);
     break;
   case FNIP_NONE:
     candidate_ok = false;
@@ -16268,6 +16533,7 @@ static bool try_emit_itanium_function_symbol_ir(
     }
     return false;
   }
+  have_captured_function = capture_function;
 
   TypeMangleContext mangle_ctx;
   mangle_ctx.lexical_scope = function_type_lexical_scope(qualified, options);
@@ -16322,6 +16588,8 @@ static bool try_emit_itanium_function_symbol_ir(
         return false;
       }
       bool mangled_return = false;
+      bool have_captured_return_type = false;
+      abi_mangle::Type captured_return_type;
       const bool has_result_type_pattern =
           options.result_type_pattern &&
           options.result_type_pattern->kind != CppAstKind::invalid &&
@@ -16399,12 +16667,15 @@ static bool try_emit_itanium_function_symbol_ir(
       }
       if(typed_return_substitutes_parameter) {
         const size_t structured_begin = candidate.size();
-        mangled_return = try_emit_type_encoding_ir_impl(hybrid_return_type,
-                                             candidate,
-                                             &mangle_ctx,
-                                             state);
+        mangled_return = build_and_emit_type_ir(hybrid_return_type,
+                                                &mangle_ctx,
+                                                state,
+                                                candidate,
+                                                &captured_return_type);
         if(!mangled_return) {
           candidate.resize(structured_begin);
+        } else {
+          have_captured_return_type = true;
         }
       }
       if(!mangled_return &&
@@ -16420,29 +16691,35 @@ static bool try_emit_itanium_function_symbol_ir(
            dependent_enable_if_result) {
           result_ctx.suppress_current_type_id_substitution_registration = true;
         }
-        mangled_return = emit_type_id_ir_from_ast(
+        mangled_return = build_and_emit_type_id_ir_from_ast(
             *options.result_type_pattern,
             actual_function_type->inner,
             &result_ctx,
             state,
-            candidate);
+            candidate,
+            &captured_return_type);
         if(!mangled_return) {
           candidate.resize(structured_begin);
           if(actual_function_type->inner &&
              !type_has_dependent_mangle_state(actual_function_type->inner) &&
-             try_emit_type_encoding_ir_impl(actual_function_type->inner,
-                                  candidate,
-                                  &result_ctx,
-                                  state)) {
+             build_and_emit_type_ir(actual_function_type->inner,
+                                    &result_ctx,
+                                    state,
+                                    candidate,
+                                    &captured_return_type)) {
             mangled_return = true;
           } else if(type_ast_references_alias_template(*options.result_type_pattern,
                                                        &result_ctx) &&
-                    try_emit_type_encoding_ir_impl(actual_function_type->inner,
-                                         candidate,
-                                         &result_ctx,
-                                         state)) {
+                    build_and_emit_type_ir(actual_function_type->inner,
+                                           &result_ctx,
+                                           state,
+                                           candidate,
+                                           &captured_return_type)) {
             mangled_return = true;
           }
+          have_captured_return_type = mangled_return;
+        } else {
+          have_captured_return_type = true;
         }
         if(!mangled_return) {
           throw logic_error(
@@ -16451,9 +16728,18 @@ static bool try_emit_itanium_function_symbol_ir(
         }
       }
       if(!mangled_return) {
-        if(!try_emit_type_encoding_ir_impl(hybrid_return_type, candidate, &mangle_ctx, state)) {
+        if(!build_and_emit_type_ir(hybrid_return_type,
+                                   &mangle_ctx,
+                                   state,
+                                   candidate,
+                                   &captured_return_type)) {
           return false;
         }
+        have_captured_return_type = true;
+      }
+      if(have_captured_function && have_captured_return_type) {
+        captured_function.has_result_type = true;
+        captured_function.result_type = captured_return_type;
       }
     }
     if(options.parameter_pattern->empty()) {
@@ -16472,6 +16758,15 @@ static bool try_emit_itanium_function_symbol_ir(
                     (!pattern_type && actual_function_type->variadic)) ?
           'z' :
           'v';
+      if(have_captured_function) {
+        captured_function.variadic =
+            (pattern_type && pattern_type->variadic) ||
+            (!pattern_type && actual_function_type->variadic);
+        captured_function.parameter_types.clear();
+        capture_function_mangle_target(captured_target,
+                                       qualified_name_label,
+                                       captured_function);
+      }
       out.swap(candidate);
       return true;
     }
@@ -16492,8 +16787,9 @@ static bool try_emit_itanium_function_symbol_ir(
                                                       &mangle_ctx);
       const bool parameter_decl_mentions_function_parameter =
           parameter_decl_pattern &&
-          ast_node_mentions_function_parameter(*parameter_decl_pattern,
-                                               &mangle_ctx);
+          parameter_declaration_type_mentions_function_parameter(
+              *parameter_decl_pattern,
+              &mangle_ctx);
       const TypePtr hybrid_param_type =
           hybridize_pattern_type_with_actual((*options.parameter_pattern)[i].second,
                                              actual_param,
@@ -16522,108 +16818,152 @@ static bool try_emit_itanium_function_symbol_ir(
         candidate += "Dp";
       }
       bool mangled_param = false;
+      bool have_captured_param_type = false;
+      abi_mangle::Type captured_param_type;
       if(trailing_function_parameter_pack &&
          !emit_trailing_function_parameter_pack &&
          actual_param &&
          !type_has_dependent_mangle_state(actual_param)) {
         if(parameter_decl_mentions_direct_template_parameter) {
-          mangled_param = emit_parameter_declaration_ir_from_ast(
+          mangled_param = build_and_emit_parameter_declaration_ir_from_ast(
               *parameter_decl_pattern,
               actual_param,
               &mangle_ctx,
               state,
-              candidate);
+              candidate,
+              &captured_param_type);
+          have_captured_param_type = mangled_param;
         }
         if(!mangled_param) {
-          mangled_param = try_emit_type_encoding_ir_impl(actual_param,
-                                               candidate,
-                                               &mangle_ctx,
-                                               state);
+          mangled_param = build_and_emit_type_ir(actual_param,
+                                                 &mangle_ctx,
+                                                 state,
+                                                 candidate,
+                                                 &captured_param_type);
+          have_captured_param_type = mangled_param;
         }
       }
       if(owner_template_only_pattern &&
          actual_param &&
          (!type_has_dependent_mangle_state(actual_param) ||
           type_has_concrete_template_id_spelling_for_mangling(actual_param, &mangle_ctx))) {
-        mangled_param = try_emit_type_encoding_ir_impl(actual_param,
-                                             candidate,
-                                             &mangle_ctx,
-                                             state);
+        mangled_param = build_and_emit_type_ir(actual_param,
+                                               &mangle_ctx,
+                                               state,
+                                               candidate,
+                                               &captured_param_type);
+        have_captured_param_type = mangled_param;
       }
       if(type_has_structured_dependent_qualified_member(hybrid_param_type)) {
         const size_t structured_begin = candidate.size();
         // Prefer preserved dependent template/member state over re-reading type
         // syntax; this keeps pack, alias, and substitution handling typed.
-        mangled_param = try_emit_type_encoding_ir_impl(hybrid_param_type,
-                                             candidate,
-                                             &mangle_ctx,
-                                             state);
+        mangled_param = build_and_emit_type_ir(hybrid_param_type,
+                                               &mangle_ctx,
+                                               state,
+                                               candidate,
+                                               &captured_param_type);
         if(!mangled_param) {
           candidate.resize(structured_begin);
+          have_captured_param_type = false;
+        } else {
+          have_captured_param_type = true;
         }
       }
       if(!mangled_param &&
          type_has_dependent_class_template_nested_owner_mangle_state(
              hybrid_param_type)) {
         const size_t structured_begin = candidate.size();
-        mangled_param = try_emit_type_encoding_ir_impl(hybrid_param_type,
-                                             candidate,
-                                             &mangle_ctx,
-                                             state);
+        mangled_param = build_and_emit_type_ir(hybrid_param_type,
+                                               &mangle_ctx,
+                                               state,
+                                               candidate,
+                                               &captured_param_type);
         if(!mangled_param) {
           candidate.resize(structured_begin);
+          have_captured_param_type = false;
+        } else {
+          have_captured_param_type = true;
         }
       }
       if(!mangled_param &&
          type_is_direct_template_parameter_ir(hybrid_param_type, &mangle_ctx)) {
         mangled_param =
-            try_emit_type_encoding_ir_impl(hybrid_param_type,
-                                           candidate,
-                                           &mangle_ctx,
-                                           state);
+            build_and_emit_type_ir(hybrid_param_type,
+                                   &mangle_ctx,
+                                   state,
+                                   candidate,
+                                   &captured_param_type);
+        have_captured_param_type = mangled_param;
       }
       if(!mangled_param &&
          parameter_decl_pattern &&
          (parameter_decl_mentions_direct_template_parameter ||
           parameter_decl_mentions_function_parameter)) {
         const size_t structured_begin = candidate.size();
-        mangled_param = emit_parameter_declaration_ir_from_ast(
+        mangled_param = build_and_emit_parameter_declaration_ir_from_ast(
             *parameter_decl_pattern,
             actual_param,
             &mangle_ctx,
             state,
-            candidate);
+            candidate,
+            &captured_param_type);
         if(!mangled_param) {
           candidate.resize(structured_begin);
           if(actual_param && !type_has_dependent_mangle_state(actual_param) &&
-             try_emit_type_encoding_ir_impl(
+             build_and_emit_type_ir(
                  actual_param,
-                 candidate,
                  &mangle_ctx,
-                 state)) {
+                 state,
+                 candidate,
+                 &captured_param_type)) {
             mangled_param = true;
+            have_captured_param_type = true;
           } else {
             throw logic_error(
                 string("dependent function parameter declaration reached unstructured ABI text mangler: ") +
                 ast_node_diagnostic_label(*parameter_decl_pattern));
           }
+        } else {
+          have_captured_param_type = true;
         }
       }
       if(!mangled_param &&
-         !try_emit_type_encoding_ir_impl(
+         !build_and_emit_type_ir(
              hybrid_param_type,
-             candidate,
              &mangle_ctx,
-             state)) {
+             state,
+             candidate,
+             &captured_param_type)) {
         return false;
+      }
+      if(!mangled_param) {
+        have_captured_param_type = true;
       }
       if(!pack_substitution_key.empty()) {
         register_ir_substitution_key(state, pack_substitution_key);
+      }
+      if(have_captured_function && have_captured_param_type) {
+        if(emit_trailing_function_parameter_pack &&
+           captured_param_type.kind != abi_mangle::Type::TK_PACK_EXPANSION) {
+          captured_param_type =
+              abi_mangle::Type::pack_expansion(captured_param_type);
+          attach_context_free_type_ir_substitution(captured_param_type);
+        }
+        captured_function.parameter_types.push_back(captured_param_type);
       }
     }
     if((pattern_type && pattern_type->variadic) ||
        (!pattern_type && actual_function_type->variadic)) {
       candidate += 'z';
+    }
+    if(have_captured_function) {
+      captured_function.variadic =
+          (pattern_type && pattern_type->variadic) ||
+          (!pattern_type && actual_function_type->variadic);
+      capture_function_mangle_target(captured_target,
+                                     qualified_name_label,
+                                     captured_function);
     }
     out.swap(candidate);
     return true;
@@ -16631,22 +16971,34 @@ static bool try_emit_itanium_function_symbol_ir(
 
   if(type->params.size() <= param_start) {
     candidate += type->variadic ? 'z' : 'v';
+    if(have_captured_function) {
+      captured_function.variadic = type->variadic;
+      captured_function.parameter_types.clear();
+      capture_function_mangle_target(captured_target,
+                                     qualified_name_label,
+                                     captured_function);
+    }
     out.swap(candidate);
     return true;
   }
 
   for(size_t i = param_start; i < type->params.size(); ++i) {
+    abi_mangle::Type captured_param_type;
     if(try_emit_owner_type_parameter_pack_function_parameter_ir(type->params[i],
                                                                 &mangle_ctx,
                                                                 state,
-                                                                candidate)) {
+                                                                candidate,
+                                                                &captured_param_type)) {
+      if(have_captured_function) {
+        captured_function.parameter_types.push_back(captured_param_type);
+      }
       continue;
     }
-    if(!try_emit_type_encoding_ir_impl(
-           type->params[i],
-           candidate,
-           &mangle_ctx,
-           state)) {
+    if(!build_and_emit_type_ir(type->params[i],
+                               &mangle_ctx,
+                               state,
+                               candidate,
+                               &captured_param_type)) {
       if(parser_trace::enabled("symbol.linkage")) {
         ostringstream trace;
         trace << "mangle-itanium-function parameter-type-failed"
@@ -16662,9 +17014,18 @@ static bool try_emit_itanium_function_symbol_ir(
       }
       return false;
     }
+    if(have_captured_function) {
+      captured_function.parameter_types.push_back(captured_param_type);
+    }
   }
   if(type->variadic) {
     candidate += 'z';
+  }
+  if(have_captured_function) {
+    captured_function.variadic = type->variadic;
+    capture_function_mangle_target(captured_target,
+                                   qualified_name_label,
+                                   captured_function);
   }
   out.swap(candidate);
   return true;
@@ -17059,6 +17420,57 @@ static SymbolIdentity c_linkage_identity(const string & raw_name,
   return out;
 }
 
+static void append_abi_mangle_fact(SymbolIdentity & symbol,
+                                   const string & object_symbol,
+                                   const abi_mangle::AbiMangleTarget & target)
+{
+  if(object_symbol.empty() || target.kind == abi_mangle::ABI_MANGLE_NONE) {
+    return;
+  }
+  SymbolIdentity::AbiMangleFactEntry entry;
+  entry.object_symbol = object_symbol;
+  entry.target = target;
+  if(!symbol.abi_mangle_facts) {
+    symbol.abi_mangle_facts.reset(
+        new SymbolIdentity::AbiMangleFactEntries);
+  }
+  symbol.abi_mangle_facts->push_back(entry);
+}
+
+static void append_c_function_abi_mangle_fact(SymbolIdentity & symbol,
+                                              const string & qualified_name)
+{
+  if(!abi_mangle_fact_capture_enabled_ref()) {
+    return;
+  }
+  abi_mangle::AbiMangleTarget target;
+  target.kind = abi_mangle::ABI_MANGLE_FUNCTION;
+  target.c_linkage = true;
+  target.qualified_name = qualified_name;
+  append_abi_mangle_fact(symbol, symbol.object_symbol, target);
+}
+
+static void append_function_abi_mangle_fact(SymbolIdentity & symbol,
+                                            const abi_mangle::AbiMangleTarget & target)
+{
+  append_abi_mangle_fact(symbol, symbol.object_symbol, target);
+}
+
+static void append_variable_abi_mangle_fact(SymbolIdentity & symbol,
+                                            const string & object_symbol,
+                                            const string & qualified_name,
+                                            bool is_c_linkage)
+{
+  if(!abi_mangle_fact_capture_enabled_ref()) {
+    return;
+  }
+  abi_mangle::AbiMangleTarget target;
+  target.kind = abi_mangle::ABI_MANGLE_VARIABLE;
+  target.c_linkage = is_c_linkage;
+  target.qualified_name = qualified_name;
+  append_abi_mangle_fact(symbol, object_symbol, target);
+}
+
 static const char * linkage_name(SymbolLinkage linkage)
 {
   switch(linkage) {
@@ -17098,6 +17510,7 @@ SymbolIdentity make_c_function_symbol_identity(const string & name,
                                                SymbolLinkage linkage)
 {
   SymbolIdentity out = c_linkage_identity(name, linkage);
+  append_c_function_abi_mangle_fact(out, name);
   note_symbol_linkage_event("function", name, name, true, out);
   return out;
 }
@@ -17114,6 +17527,7 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
   (void)symbol_key;
   if(is_c_linkage) {
     SymbolIdentity out = c_linkage_identity(display_name, linkage);
+    append_c_function_abi_mangle_fact(out, qualified_name);
     note_symbol_linkage_event("function", qualified_name, display_name, true, out);
     return out;
   }
@@ -17121,34 +17535,46 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
   SymbolIdentity out;
   out.internal_symbol = internal_symbol_from_name(qualified_name);
   out.linkage = linkage;
+  bool emitted_object_symbol = false;
+  const bool capture_abi_fact = abi_mangle_fact_capture_enabled_ref();
+  abi_mangle::AbiMangleTarget emitted_abi_target;
   if(linkage == SL_INTERNAL) {
     if(!uses_builtin_runtime_override(display_name)) {
-      try_emit_itanium_function_symbol_ir(qualified,
-                                          qualified_name,
-                                          display_name,
-                                          type,
-                                          options,
-                                          out.object_symbol,
-                                          nullptr,
-                                          linkage != SL_WEAK);
+      emitted_object_symbol =
+          try_emit_itanium_function_symbol_ir(qualified,
+                                              qualified_name,
+                                              display_name,
+                                              type,
+                                              options,
+                                              out.object_symbol,
+                                              nullptr,
+                                              linkage != SL_WEAK,
+                                              capture_abi_fact ? &emitted_abi_target :
+                                                                 nullptr);
     }
   } else if(qualified_name == "main" && display_name == "main") {
     out.object_symbol = "main";
     out.keep_internal_alias = true;
   } else if(!uses_builtin_runtime_override(display_name) &&
             (linkage == SL_WEAK || linkage == SL_EXTERNAL)) {
-    if(!try_emit_itanium_function_symbol_ir(qualified,
+    emitted_object_symbol =
+        try_emit_itanium_function_symbol_ir(qualified,
                                             qualified_name,
                                             display_name,
                                             type,
                                             options,
                                             out.object_symbol,
                                             nullptr,
-                                            linkage != SL_WEAK) &&
-       linkage == SL_WEAK) {
+                                            linkage != SL_WEAK,
+                                            capture_abi_fact ? &emitted_abi_target :
+                                                               nullptr);
+    if(!emitted_object_symbol && linkage == SL_WEAK) {
       throw logic_error("failed to build ABI IR function symbol for weak function " +
                         qualified_name);
     }
+  }
+  if(emitted_object_symbol && capture_abi_fact) {
+    append_function_abi_mangle_fact(out, emitted_abi_target);
   }
   note_symbol_linkage_event("function", qualified_name, display_name, false, out);
   return out;
@@ -17188,6 +17614,7 @@ SymbolIdentity make_scoped_variable_symbol_identity(const semantic_model::Scope 
 
   if(is_c_linkage) {
     SymbolIdentity out = c_linkage_identity(name, linkage);
+    append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, true);
     note_symbol_linkage_event("variable", qualified_name, name, true, out);
     return out;
   }
@@ -17202,6 +17629,7 @@ SymbolIdentity make_scoped_variable_symbol_identity(const semantic_model::Scope 
     throw logic_error("failed to mangle scoped variable symbol from semantic scope " +
                       qualified_name);
   }
+  append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, false);
   note_symbol_linkage_event("variable", qualified_name, name, false, out);
   return out;
 }
@@ -17218,6 +17646,7 @@ SymbolIdentity make_static_member_variable_symbol_identity(
           owner_class.qualified_name + "::" + member_name;
   if(is_c_linkage) {
     SymbolIdentity out = c_linkage_identity(member_name, linkage);
+    append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, true);
     note_symbol_linkage_event("variable", qualified_name, member_name, true, out);
     return out;
   }
@@ -17231,6 +17660,7 @@ SymbolIdentity make_static_member_variable_symbol_identity(
     throw logic_error("failed to mangle static member variable symbol from semantic owner " +
                       qualified_name);
   }
+  append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, false);
   note_symbol_linkage_event("variable", qualified_name, member_name, false, out);
   return out;
 }
