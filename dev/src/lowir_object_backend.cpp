@@ -5134,8 +5134,21 @@ void force_external_binding_for_function_declaration_imports(
     defined_functions.insert(source_program.functions[i].name);
   }
 
+  set<string> defined_thread_local_globals;
+  for(size_t i = 0; i < source_program.globals.size(); ++i) {
+    if(source_program.globals[i].storage == lowir_internal::GSM_THREAD_LOCAL) {
+      defined_thread_local_globals.insert(source_program.globals[i].name);
+    }
+  }
+
   set<string> declaration_only_functions;
   for(size_t i = 0; i < source_program.function_declarations.size(); ++i) {
+    const string & tls_target =
+        source_program.function_declarations[i].metadata.tls_for_symbol;
+    if(!tls_target.empty() &&
+       defined_thread_local_globals.count(tls_target) != 0) {
+      continue;
+    }
     const string & name = source_program.function_declarations[i].name;
     if(defined_functions.count(name) == 0) {
       declaration_only_functions.insert(name);
@@ -5630,6 +5643,22 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
     } else if(tls_info.abi == ThreadLocalSectionInfo::ABI_ELF &&
               symbol.binding == machine_object::Symbol::SB_GLOBAL) {
       symbol.binding = machine_object::Symbol::SB_WEAK;
+    }
+    if(parser_trace::enabled("object.symbol")) {
+      ostringstream trace;
+      trace << "kind=tls-wrapper"
+            << " internal=" << program.globals[i].thread_local_wrapper_symbol
+            << " object=" << symbol.name
+            << " binding=" << object_binding_name(symbol.binding);
+      if(exported != exports.end()) {
+        trace << " exported-linkage="
+              << (exported->second.linkage == symbol_linkage::SL_INTERNAL ? "internal" :
+                  exported->second.linkage == symbol_linkage::SL_WEAK ? "weak" :
+                  "external");
+      } else {
+        trace << " exported-linkage=none";
+      }
+      parser_trace::note("object.symbol", string(), trace.str());
     }
     object.symbols.push_back(symbol);
     defined_symbols[symbol.name] = true;

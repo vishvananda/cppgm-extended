@@ -507,6 +507,23 @@ rebased Boost frontier branch.
   test CPPGM_SKIP_DEV_REBUILD=1` passes `48/48`. Full direct-LowIR
   `test-report` is still partway through the rebase cleanup and currently
   reports `3173/3257`; perf is deferred until that gate is clean again.
+- `49ee6db36`: routed `--emit-abi-facts` through the structured ABI model
+  instead of rebuilding facts in the `cppgm++` driver. `abi_mangle.h` now
+  carries the minimal assignment-facing ABI surface, `abi_model.h` layers the
+  encoder helpers on that surface, function/local/lambda contexts and raw
+  symbol entities round-trip through facts, and normal mangling avoids fact
+  collection unless `--emit-abi-facts` is requested. Validation:
+  `make -C dev abimangle cppgm++ -j8`; PA31 ABI fact suite passes `55/55`;
+  direct `--emit-abi-facts` smoke for a function-template pointer result
+  round-trips through `dev/abimangle`.
+- this commit: repaired the PA35 hosted inline `thread_local` deque destructor
+  gate after the ABI rebase cleanup. The test now uses the hosted `std::atexit`
+  declaration instead of redeclaring a conflicting SDK prototype, function-local
+  static storage in weak/inline/template functions now gets weak storage
+  identity, and the object backend no longer forces defining-TU `tls_for`
+  accessors to external linkage. Validation: focused PA35 reducer passes;
+  PA32 thread-local static member and duplicate-local-wrapper guards pass; PA30
+  function-local static scalar/class guards pass.
 
 Local Boost wrapper state:
 

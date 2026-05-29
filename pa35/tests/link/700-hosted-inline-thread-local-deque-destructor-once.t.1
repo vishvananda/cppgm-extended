@@ -1,6 +1,6 @@
 #include "700-hosted-inline-thread-local-deque-destructor-once.helper.h"
 
-extern "C" int atexit(void (*)()) noexcept;
+#include <cstdlib>
 extern "C" void _Exit(int);
 
 int inline_tls_deque_constructed = 0;
@@ -21,7 +21,7 @@ void check_inline_tls_deque_destructor()
 
 int main()
 {
-  if(atexit(check_inline_tls_deque_destructor) != 0) {
+  if(std::atexit(check_inline_tls_deque_destructor) != 0) {
     return 10;
   }
 

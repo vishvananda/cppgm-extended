@@ -270,6 +270,36 @@ string local_static_guard_internal_symbol(const Scope & scope,
   return local_static_internal_symbol(scope, name, declaration_node) + "__guard";
 }
 
+bool scope_has_internal_namespace_linkage(const Scope * scope)
+{
+  for(const Scope * current = scope; current; current = current->parent) {
+    if(current->namespace_scope && current->name == "<unnamed>") {
+      return true;
+    }
+  }
+  return false;
+}
+
+symbol_linkage::SymbolLinkage local_static_storage_linkage(const Scope & scope)
+{
+  const FunctionBinding * function = scope.function;
+  if(!function) {
+    return symbol_linkage::SL_INTERNAL;
+  }
+  if(function->symbol.linkage == symbol_linkage::SL_INTERNAL ||
+     scope_has_internal_namespace_linkage(function->declaration_scope)) {
+    return symbol_linkage::SL_INTERNAL;
+  }
+  if(symbol_linkage::has_weak_linkage(function->symbol) ||
+     function->odr_mergeable_definition ||
+     function->is_inline ||
+     function->is_constexpr ||
+     template_api::function_binding_has_linkage_template_identity(function)) {
+    return symbol_linkage::SL_WEAK;
+  }
+  return symbol_linkage::SL_INTERNAL;
+}
+
 void postprocess_anonymous_union_storage(SemanticContext & ctx,
                                          Scope & scope,
                                          const CppAstNode & original_node)
@@ -1356,7 +1386,7 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       if(use_global_static_storage) {
         binding.symbol = symbol_linkage::make_internal_symbol_identity(
             local_static_internal_symbol(scope, name, &init_decl),
-            symbol_linkage::SL_INTERNAL);
+            local_static_storage_linkage(scope));
         if(is_thread_local) {
           binding.symbol.thread_local_wrapper_object_symbol =
               symbol_linkage::thread_local_wrapper_internal_symbol(
