@@ -204,6 +204,9 @@ bool try_resolve_non_type_template_parameter_type(
     const TemplateParameterInfo & parameter,
     TypePtr & out);
 
+TypePtr adjusted_non_type_template_parameter_type_for_resolution(
+    const TypePtr & type);
+
 struct ExplicitFunctionTemplateArgumentBindings
 {
   std::vector<TemplateArgument> fixed_arguments;
@@ -5712,6 +5715,45 @@ enum FastResolveTemplateArgumentsStatus
   FRTA_FAILURE
 };
 
+bool try_substitute_non_type_parameter_type_from_prefix_arguments(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<TemplateArgument> & resolved_arguments,
+    std::size_t parameter_index,
+    TypePtr & out)
+{
+  out.reset();
+  if(parameter_index >= parameters.size() ||
+     parameter_index > resolved_arguments.size() ||
+     parameters[parameter_index].kind != TemplateParameterInfo::TP_NON_TYPE ||
+     !parameters[parameter_index].value_type) {
+    return false;
+  }
+
+  TypePtr substituted;
+  if(!template_argument_semantics::substitute_type(
+         scope.require(),
+         parameters[parameter_index].value_type,
+         parameters,
+         resolved_arguments,
+         substituted) ||
+     !substituted) {
+    return false;
+  }
+  substituted =
+      adjusted_non_type_template_parameter_type_for_resolution(substituted);
+  template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+      services, scope, substituted);
+  if(!substituted ||
+     template_argument_semantics::type_depends_on_template_parameter(
+         service_type_system(services), substituted)) {
+    return false;
+  }
+  out = substituted;
+  return true;
+}
+
 FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
     template_api::TemplateServices & services,
     template_api::TemplateTypeSystem & type_system,
@@ -5863,7 +5905,14 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
       }
     } else if(parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE) {
       TypePtr bound_value_type;
-      if(!try_resolve_non_type_template_parameter_type(
+      if(!try_substitute_non_type_parameter_type_from_prefix_arguments(
+             services,
+             template_api::make_template_environment(bound_scope),
+             parameters,
+             resolved,
+             i,
+             bound_value_type) &&
+         !try_resolve_non_type_template_parameter_type(
              services,
              template_api::make_template_environment(bound_scope),
              parameters[i],
@@ -10916,6 +10965,21 @@ bool resolve_template_arguments(
     }
 
     TemplateArgument arg;
+    TemplateParameterInfo adjusted_parameter;
+    const TemplateParameterInfo * parameter_for_resolution = &parameters[i];
+    TypePtr prefix_value_type;
+    if(parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE &&
+       try_substitute_non_type_parameter_type_from_prefix_arguments(
+           services,
+           template_api::make_template_environment(bound_scope),
+           parameters,
+           out,
+           i,
+           prefix_value_type)) {
+      adjusted_parameter = parameters[i];
+      adjusted_parameter.value_type = prefix_value_type;
+      parameter_for_resolution = &adjusted_parameter;
+    }
     const ScopedTemplateArgumentUseLocation argument_use_location(
         source_locations_active ?
             current_source_location(cache_texts[text_index], text_index) :
@@ -10924,7 +10988,7 @@ bool resolve_template_arguments(
            services,
            type_system,
            scope,
-           parameters[i],
+           *parameter_for_resolution,
            cache_texts[text_index],
            resolution_inputs.syntax_for(text_index),
            resolution_inputs.type_for(text_index),
@@ -10933,7 +10997,7 @@ bool resolve_template_arguments(
             services,
             scope,
             template_api::make_template_environment(bound_scope),
-            parameters[i],
+            *parameter_for_resolution,
             cache_texts[text_index],
             resolution_inputs.syntax_for(text_index),
             arg)) {
@@ -11137,7 +11201,14 @@ bool resolve_template_arguments(
       }
     } else {
       TypePtr bound_value_type;
-      if(!try_resolve_non_type_template_parameter_type(
+      if(!try_substitute_non_type_parameter_type_from_prefix_arguments(
+             services,
+             default_argument_env,
+             parameters,
+             out,
+             i,
+             bound_value_type) &&
+         !try_resolve_non_type_template_parameter_type(
              services, default_argument_env, parameters[i], bound_value_type)) {
         if(!non_type_template_parameter_is_still_dependent(
                services, default_argument_env, parameters[i])) {
