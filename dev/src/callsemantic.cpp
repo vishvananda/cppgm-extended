@@ -235,6 +235,33 @@ string ast_leaf_text_for_default_argument(const CppAstNode & node)
   return text;
 }
 
+bool special_definition_flags(const CppAstNode & node,
+                              bool & is_defaulted,
+                              bool & is_deleted)
+{
+  is_defaulted = false;
+  is_deleted = false;
+  const CppAstNode * special_definition =
+      find_child_kind(node, CppAstKind::special_definition);
+  if(!special_definition) {
+    return false;
+  }
+  is_defaulted = special_definition->value == "default";
+  is_deleted = special_definition->value == "delete";
+  return is_defaulted || is_deleted;
+}
+
+const CppAstNode * single_special_initializer(const CppAstNode * initializer)
+{
+  if(!initializer ||
+     initializer->kind != CppAstKind::initializer ||
+     initializer->children.size() != 1 ||
+     initializer->children[0].kind != CppAstKind::special_initializer) {
+    return nullptr;
+  }
+  return &initializer->children[0];
+}
+
 using callsemantic::source_selection_kind_for_match_kind;
 using callsemantic::find_function_body_node;
 using callsemantic::find_descendant_kind;
@@ -24834,12 +24861,40 @@ private:
       } else {
         declaration_target.name = name;
       }
-      if(!is_typedef &&
-         !semantic_lookup::resolve_qualified_namespace_entity_target(*this,
-                                                                    scope,
-                                                                    declaration_target,
-                                                                    declaration_scope,
-                                                                    declaration_name)) {
+      const bool declaration_target_resolved =
+          is_typedef ||
+          semantic_lookup::resolve_qualified_namespace_entity_target(*this,
+                                                                     scope,
+                                                                     declaration_target,
+                                                                     declaration_scope,
+                                                                     declaration_name);
+      if(!declaration_target_resolved) {
+        if(type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION &&
+           single_special_initializer(initializer)) {
+          vector<pair<string, TypePtr> > params;
+          vector<const CppAstNode *> default_args;
+          const CppAstNode * parameter_clause =
+              find_child_kind(init_decl.children[0], CppAstKind::parameter_clause);
+          if(parameter_clause &&
+             !parse_parameter_clause(*parse_scope,
+                                     *parameter_clause,
+                                     params,
+                                     &default_args,
+                                     reference_function_parameter_types_only)) {
+            throw logic_error("unsupported namespace-scope parameter-clause");
+          }
+          if(collect_out_of_class_method_special_initializer(scope,
+                                                             *parse_scope,
+                                                             node,
+                                                             init_decl.children[0],
+                                                             name,
+                                                             type,
+                                                             params,
+                                                             is_c_linkage,
+                                                             initializer)) {
+            continue;
+          }
+        }
         throw logic_error("missing qualified declaration target");
       }
 
@@ -24850,13 +24905,28 @@ private:
         vector<const CppAstNode *> default_args;
         const CppAstNode * parameter_clause =
             find_child_kind(init_decl.children[0], CppAstKind::parameter_clause);
+        const bool has_special_initializer =
+            single_special_initializer(initializer) != nullptr;
+        Scope & parameter_scope = has_special_initializer ? *parse_scope : scope;
         if(parameter_clause &&
-           !parse_parameter_clause(scope,
+           !parse_parameter_clause(parameter_scope,
                                    *parameter_clause,
                                    params,
                                    &default_args,
                                    reference_function_parameter_types_only)) {
           throw logic_error("unsupported namespace-scope parameter-clause");
+        }
+        if(has_special_initializer &&
+           collect_out_of_class_method_special_initializer(scope,
+                                                           *parse_scope,
+                                                           node,
+                                                           init_decl.children[0],
+                                                           name,
+                                                           type,
+                                                           params,
+                                                           is_c_linkage,
+                                                           initializer)) {
+          continue;
         }
         register_function(*declaration_scope,
                           declaration_name,
@@ -25559,6 +25629,129 @@ private:
                           "invalid deduced function template explicit instantiation arguments");
   }
 
+  void apply_out_of_class_defaulted_or_deleted_member_definition(
+      Scope & parse_scope,
+      FunctionBinding & binding,
+      const CppAstNode & node,
+      const CppAstNode & declarator,
+      const vector<pair<string, TypePtr> > & params,
+      bool is_c_linkage,
+      bool is_defaulted,
+      bool is_deleted,
+      const string & diagnostic_tag)
+  {
+    if(!is_defaulted && !is_deleted) {
+      throw logic_error("missing special member default/delete marker");
+    }
+    if(!explicit_function_nothrow_specifications_match(
+           binding,
+           declarator_function_qualifier(declarator))) {
+      throw logic_error(string("mismatched function exception specification ") +
+                        diagnostic_tag +
+                        semantic_trace::current_location_note(*this, &declarator) +
+                        semantic_trace::previous_function_location_note(
+                            *this, "previous declaration", &binding));
+    }
+    if((is_defaulted && (binding.has_definition || binding.is_deleted)) ||
+       (is_deleted && (binding.has_definition || binding.is_deleted))) {
+      throw logic_error(string("duplicate class member definition") +
+                        semantic_trace::current_location_note(*this, &declarator) +
+                        semantic_trace::previous_function_location_note(
+                            *this, "previous definition", &binding));
+    }
+
+    refresh_definition_parameter_names(binding, params);
+    record_definition_parameter_aliases(binding, params);
+    binding.parameter_syntax_node = &declarator;
+    if(!binding.function_qualifier) {
+      binding.function_qualifier = declarator_function_qualifier(declarator);
+    }
+    binding.is_deleted = binding.is_deleted || is_deleted;
+    binding.is_defaulted = binding.is_defaulted || is_defaulted;
+
+    if(is_deleted) {
+      return;
+    }
+
+    binding.body = nullptr;
+    binding.ctor_initializer = nullptr;
+    binding.has_definition = true;
+    binding.definition_node = &node;
+    binding.definition_abi_tags.clear();
+    append_function_declaration_abi_tags(binding.definition_abi_tags, &node);
+    upgrade_function_symbol_linkage(
+        &binding,
+        function_symbol_linkage(parse_scope,
+                                &node,
+                                nullptr,
+                                is_c_linkage,
+                                binding.function_qualifier,
+                                function_template_registration_identity(binding),
+                                true,
+                                binding.lexical_access_class));
+  }
+
+  bool collect_out_of_class_method_special_initializer(
+      Scope & scope,
+      Scope & parse_scope,
+      const CppAstNode & node,
+      const CppAstNode & declarator,
+      const string & parsed_name,
+      const TypePtr & type,
+      const vector<pair<string, TypePtr> > & params,
+      bool is_c_linkage,
+      const CppAstNode * initializer)
+  {
+    const CppAstNode * special = single_special_initializer(initializer);
+    if(!special) {
+      return false;
+    }
+    const bool is_defaulted = special->value == "default";
+    const bool is_deleted = special->value == "delete";
+    if(!is_defaulted && !is_deleted) {
+      return false;
+    }
+
+    const CppAstNode * function_identifier =
+        find_descendant_kind(declarator, CppAstKind::identifier);
+    string out_of_class_lookup_name = parsed_name;
+    if(function_identifier &&
+       function_identifier->value.find("::") != string::npos &&
+       function_identifier->value.find("operator") != string::npos &&
+       out_of_class_lookup_name.find("operator") == string::npos) {
+      out_of_class_lookup_name = function_identifier->value;
+    }
+
+    FunctionBinding * method_binding = nullptr;
+    if(!resolve_out_of_class_method_binding_from_declarator_syntax(
+           scope,
+           out_of_class_lookup_name,
+           function_identifier,
+           type,
+           declarator_is_const_method(declarator),
+           declarator_is_volatile_method(declarator),
+           semantic_class_model::declarator_ref_qualifier(declarator),
+           method_binding)) {
+      return false;
+    }
+
+    emit_out_of_class_owner_class_use_if_needed(scope,
+                                                out_of_class_lookup_name,
+                                                &node,
+                                                method_binding->owner_class);
+    apply_out_of_class_defaulted_or_deleted_member_definition(
+        parse_scope,
+        *method_binding,
+        node,
+        declarator,
+        params,
+        is_c_linkage,
+        is_defaulted,
+        is_deleted,
+        "[cs-method-special-init]");
+    return true;
+  }
+
   void collect_function_definition(Scope & scope,
                                    const CppAstNode & node,
                                    bool is_c_linkage) override
@@ -25840,7 +26033,11 @@ private:
   {
     const CppAstNode * declarator = find_child_kind(node, CppAstKind::declarator);
     const CppAstNode * body = find_function_body_node(node);
-    if(!declarator || !body) {
+    bool is_defaulted = false;
+    bool is_deleted = false;
+    const bool has_special_definition =
+        special_definition_flags(node, is_defaulted, is_deleted);
+    if(!declarator || (!body && !has_special_definition)) {
       throw logic_error("special-member-definition missing children");
     }
 
@@ -25892,6 +26089,19 @@ private:
                           semantic_trace::current_location_note(*this, declarator) +
                           semantic_trace::previous_function_location_note(
                               *this, "previous declaration", binding));
+      }
+      if(!body) {
+        apply_out_of_class_defaulted_or_deleted_member_definition(
+            *parse_scope,
+            *binding,
+            node,
+            *declarator,
+            params,
+            false,
+            is_defaulted,
+            is_deleted,
+            "[cs-conversion-special]");
+        return;
       }
       if(binding->has_definition) {
         throw logic_error(string("duplicate class member definition") +
@@ -25982,6 +26192,19 @@ private:
                     source_location_for_node(*binding->definition_node) :
                     string("<none>"));
       parser_trace::note("class.collect", std::string(), trace.str());
+    }
+    if(!body) {
+      apply_out_of_class_defaulted_or_deleted_member_definition(
+          *parse_scope,
+          *binding,
+          node,
+          *declarator,
+          params,
+          false,
+          is_defaulted,
+          is_deleted,
+          "[cs-special]");
+      return;
     }
     if(binding->has_definition) {
       throw logic_error(string("duplicate class member definition") +

@@ -109,6 +109,17 @@ void apply_local_static_guard_to_lifetime_actions(DumpNode & var_node)
   }
 }
 
+const CppAstNode * single_special_initializer(const CppAstNode * initializer)
+{
+  if(!initializer ||
+     initializer->kind != CppAstKind::initializer ||
+     initializer->children.size() != 1 ||
+     initializer->children[0].kind != CppAstKind::special_initializer) {
+    return nullptr;
+  }
+  return &initializer->children[0];
+}
+
 bool namespace_variable_type_has_class_lifetime(SemanticContext & ctx,
                                                 const TypePtr & type);
 
@@ -5490,6 +5501,36 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
         alias_node.semantic_type = type;
         out.children.push_back(std::move(alias_node));
       } else if(type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION) {
+        if(single_special_initializer(initializer)) {
+          FunctionBinding * method_binding = nullptr;
+          const CppAstNode * function_identifier =
+              find_descendant_kind(init_decl.children[0], CppAstKind::identifier);
+          string out_of_class_lookup_name = name;
+          if(function_identifier &&
+             function_identifier->value.find("::") != string::npos &&
+             function_identifier->value.find("operator") != string::npos &&
+             out_of_class_lookup_name.find("operator") == string::npos) {
+            out_of_class_lookup_name = function_identifier->value;
+          }
+          if(ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
+                 scope,
+                 out_of_class_lookup_name,
+                 function_identifier,
+                 type,
+                 declarator_is_const_method(init_decl.children[0]),
+                 declarator_is_volatile_method(init_decl.children[0]),
+                 declarator_ref_qualifier(init_decl.children[0]),
+                 method_binding)) {
+            analyze_function_binding_output_impl(ctx,
+                                                 state,
+                                                 method_binding->declaration_scope ?
+                                                     *method_binding->declaration_scope :
+                                                     scope,
+                                                 *method_binding,
+                                                 out);
+            continue;
+          }
+        }
         FunctionBinding * binding = rebound_function_binding ?
             rebound_function_binding :
             find_namespace_function_binding_by_node(scope, name, init_decl);
@@ -5677,7 +5718,10 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
     analyze_function_definition(ctx, state, scope, node, out);
     return;
   }
-  if(node.kind == CppAstKind::special_member_definition) {
+  if(node.kind == CppAstKind::special_member_definition ||
+     (node.kind == CppAstKind::special_member_declaration &&
+      !ctx.is_conversion_function_name(node.value) &&
+      find_child_kind(node, CppAstKind::special_definition))) {
     analyze_special_member_definition(ctx, state, scope, node, out);
     return;
   }

@@ -1067,7 +1067,10 @@ void collect_declaration(SemanticContext & ctx,
     ctx.collect_function_definition(scope, effective_child, is_c_linkage);
     return;
   }
-  if(effective_child.kind == CppAstKind::special_member_definition) {
+  if(effective_child.kind == CppAstKind::special_member_definition ||
+     (effective_child.kind == CppAstKind::special_member_declaration &&
+      !ctx.is_conversion_function_name(effective_child.value) &&
+      find_child(effective_child, CppAstKind::special_definition))) {
     ctx.collect_special_member_definition(scope, effective_child);
     return;
   }
