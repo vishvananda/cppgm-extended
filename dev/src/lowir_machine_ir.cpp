@@ -6443,12 +6443,14 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
               mi.operands.push_back(reg(rhs));
             }
             out.push_back(mi);
+            emit_normalize_integer_temp(inst.type.text, XR_RCX, out);
             if(dst != XR_RAX) {
               mi = make_instruction(mir::Instruction::MI_MOV);
               mi.operands.push_back(reg(XR_RAX));
               mi.operands.push_back(reg(dst));
               out.push_back(mi);
             }
+            emit_normalize_integer_temp(inst.type.text, XR_RAX, out);
             if(inst.op == "div" || inst.op == "mod") {
               mi = make_instruction(mir::Instruction::MI_CQO);
             } else {
