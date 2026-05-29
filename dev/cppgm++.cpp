@@ -232,26 +232,29 @@ bool append_abi_symbol_fact_cases(
   if(symbol.linkage == symbol_linkage::SL_INTERNAL) {
     return false;
   }
-  if(!symbol.abi_mangle_facts) {
+  const size_t fact_count = symbol_linkage::abi_mangle_fact_count(symbol);
+  if(fact_count == 0) {
     return false;
   }
   bool appended = false;
-  for(size_t i = 0; i < symbol.abi_mangle_facts->size(); ++i) {
-    const symbol_linkage::SymbolIdentity::AbiMangleFactEntry & entry =
-        (*symbol.abi_mangle_facts)[i];
-    if(entry.target.kind != target_kind || entry.object_symbol.empty()) {
+  for(size_t i = 0; i < fact_count; ++i) {
+    const abi_mangle::AbiMangleTarget & target =
+        symbol_linkage::abi_mangle_fact_target(symbol, i);
+    const string & object_symbol =
+        symbol_linkage::abi_mangle_fact_object_symbol(symbol, i);
+    if(target.kind != target_kind || object_symbol.empty()) {
       continue;
     }
     const string key =
-        to_string(static_cast<int>(entry.target.kind)) + ":" + entry.object_symbol;
+        to_string(static_cast<int>(target.kind)) + ":" + object_symbol;
     if(!seen.insert(key).second) {
       appended = true;
       continue;
     }
     abi_mangle::AbiFactCase fact_case;
     fact_case.label = abi_fact_label_component(
-        symbol.internal_symbol.empty() ? entry.object_symbol : symbol.internal_symbol);
-    fact_case.target = entry.target;
+        symbol.internal_symbol.empty() ? object_symbol : symbol.internal_symbol);
+    fact_case.target = target;
     file.cases.push_back(std::move(fact_case));
     appended = true;
   }

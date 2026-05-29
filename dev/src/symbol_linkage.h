@@ -1,14 +1,18 @@
 #pragma once
 
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <utility>
 #include <string>
 #include <vector>
 
-#include "abi_mangle.h"
 #include "cpp_decl_model.h"
 #include "template_model.h"
+
+namespace abi_mangle {
+struct AbiMangleTarget;
+}
 
 namespace semantic_model {
 struct ClassInfo;
@@ -94,17 +98,20 @@ private:
 
 struct SymbolIdentity
 {
-  struct AbiMangleFactEntry
-  {
-    std::string object_symbol;
-    abi_mangle::AbiMangleTarget target;
-  };
-  typedef std::vector<AbiMangleFactEntry> AbiMangleFactEntries;
+  struct AbiMangleFactEntry;
+  struct AbiMangleFactEntries;
+
+  SymbolIdentity();
+  SymbolIdentity(const SymbolIdentity & rhs);
+  SymbolIdentity(SymbolIdentity && rhs) noexcept;
+  SymbolIdentity & operator=(const SymbolIdentity & rhs);
+  SymbolIdentity & operator=(SymbolIdentity && rhs) noexcept;
+  ~SymbolIdentity();
 
   std::string internal_symbol;
   std::string object_symbol;
   std::string thread_local_wrapper_object_symbol;
-  std::shared_ptr<AbiMangleFactEntries> abi_mangle_facts;
+  std::unique_ptr<AbiMangleFactEntries> abi_mangle_facts;
   bool keep_internal_alias = false;
   bool prefer_local_object_binding = false;
   SymbolLinkage linkage = SL_EXTERNAL;
@@ -157,6 +164,19 @@ std::string construction_vtable_object_symbol(const semantic_model::ClassInfo & 
                                               const semantic_model::ClassInfo & base_class);
 std::string vtt_object_symbol_for_type(const cpp_decl::TypePtr & type);
 std::string vtt_object_symbol(const semantic_model::ClassInfo & class_info);
+std::size_t abi_mangle_fact_count(const SymbolIdentity & symbol);
+const std::string & abi_mangle_fact_object_symbol(const SymbolIdentity & symbol,
+                                                  std::size_t index);
+unsigned abi_mangle_fact_target_kind(const SymbolIdentity & symbol,
+                                     std::size_t index);
+const std::string & abi_mangle_fact_target_qualified_name(
+    const SymbolIdentity & symbol,
+    std::size_t index);
+bool abi_mangle_fact_target_c_linkage(const SymbolIdentity & symbol,
+                                      std::size_t index);
+const abi_mangle::AbiMangleTarget & abi_mangle_fact_target(
+    const SymbolIdentity & symbol,
+    std::size_t index);
 SymbolIdentity make_c_function_symbol_identity(const std::string & name,
                                                SymbolLinkage linkage = SL_EXTERNAL);
 SymbolIdentity make_function_symbol_identity(const cpp_decl::QualifiedName & qualified_name,

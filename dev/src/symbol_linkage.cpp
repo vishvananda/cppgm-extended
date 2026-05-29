@@ -27,6 +27,62 @@ using namespace template_model;
 
 namespace symbol_linkage {
 
+struct SymbolIdentity::AbiMangleFactEntry
+{
+  string object_symbol;
+  abi_mangle::AbiMangleTarget target;
+};
+
+struct SymbolIdentity::AbiMangleFactEntries
+{
+  vector<AbiMangleFactEntry> entries;
+};
+
+SymbolIdentity::SymbolIdentity() = default;
+
+SymbolIdentity::SymbolIdentity(SymbolIdentity && rhs) noexcept = default;
+
+SymbolIdentity & SymbolIdentity::operator=(SymbolIdentity && rhs) noexcept =
+    default;
+
+SymbolIdentity::~SymbolIdentity() = default;
+
+static unique_ptr<SymbolIdentity::AbiMangleFactEntries> clone_abi_mangle_facts(
+    const unique_ptr<SymbolIdentity::AbiMangleFactEntries> & facts)
+{
+  unique_ptr<SymbolIdentity::AbiMangleFactEntries> out;
+  if(facts) {
+    out.reset(new SymbolIdentity::AbiMangleFactEntries(*facts));
+  }
+  return out;
+}
+
+SymbolIdentity::SymbolIdentity(const SymbolIdentity & rhs)
+    : internal_symbol(rhs.internal_symbol),
+      object_symbol(rhs.object_symbol),
+      thread_local_wrapper_object_symbol(rhs.thread_local_wrapper_object_symbol),
+      abi_mangle_facts(clone_abi_mangle_facts(rhs.abi_mangle_facts)),
+      keep_internal_alias(rhs.keep_internal_alias),
+      prefer_local_object_binding(rhs.prefer_local_object_binding),
+      linkage(rhs.linkage)
+{
+}
+
+SymbolIdentity & SymbolIdentity::operator=(const SymbolIdentity & rhs)
+{
+  if(this == &rhs) {
+    return *this;
+  }
+  internal_symbol = rhs.internal_symbol;
+  object_symbol = rhs.object_symbol;
+  thread_local_wrapper_object_symbol = rhs.thread_local_wrapper_object_symbol;
+  abi_mangle_facts = clone_abi_mangle_facts(rhs.abi_mangle_facts);
+  keep_internal_alias = rhs.keep_internal_alias;
+  prefer_local_object_binding = rhs.prefer_local_object_binding;
+  linkage = rhs.linkage;
+  return *this;
+}
+
 namespace {
 
 bool & abi_mangle_fact_capture_enabled_ref()
@@ -315,6 +371,55 @@ string vtt_object_symbol(const semantic_model::ClassInfo & class_info)
 string vtt_object_symbol_for_type(const TypePtr & type)
 {
   return special_type_symbol_for_type(abi_mangle::SPECIAL_VTT, type);
+}
+
+static const SymbolIdentity::AbiMangleFactEntry & abi_mangle_fact_entry_at(
+    const SymbolIdentity & symbol,
+    size_t index)
+{
+  if(!symbol.abi_mangle_facts ||
+     index >= symbol.abi_mangle_facts->entries.size()) {
+    throw logic_error("ABI mangle fact index out of range");
+  }
+  return symbol.abi_mangle_facts->entries[index];
+}
+
+size_t abi_mangle_fact_count(const SymbolIdentity & symbol)
+{
+  return symbol.abi_mangle_facts ? symbol.abi_mangle_facts->entries.size() : 0;
+}
+
+const string & abi_mangle_fact_object_symbol(const SymbolIdentity & symbol,
+                                             size_t index)
+{
+  return abi_mangle_fact_entry_at(symbol, index).object_symbol;
+}
+
+unsigned abi_mangle_fact_target_kind(const SymbolIdentity & symbol,
+                                     size_t index)
+{
+  return static_cast<unsigned>(
+      abi_mangle_fact_entry_at(symbol, index).target.kind);
+}
+
+const string & abi_mangle_fact_target_qualified_name(
+    const SymbolIdentity & symbol,
+    size_t index)
+{
+  return abi_mangle_fact_entry_at(symbol, index).target.qualified_name;
+}
+
+bool abi_mangle_fact_target_c_linkage(const SymbolIdentity & symbol,
+                                      size_t index)
+{
+  return abi_mangle_fact_entry_at(symbol, index).target.c_linkage;
+}
+
+const abi_mangle::AbiMangleTarget & abi_mangle_fact_target(
+    const SymbolIdentity & symbol,
+    size_t index)
+{
+  return abi_mangle_fact_entry_at(symbol, index).target;
 }
 
 static bool text_uses_only_simple_mangleable_chars(const string & text)
@@ -17688,7 +17793,7 @@ static void append_abi_mangle_fact(SymbolIdentity & symbol,
     symbol.abi_mangle_facts.reset(
         new SymbolIdentity::AbiMangleFactEntries);
   }
-  symbol.abi_mangle_facts->push_back(entry);
+  symbol.abi_mangle_facts->entries.push_back(entry);
 }
 
 static void append_c_function_abi_mangle_fact(SymbolIdentity & symbol,

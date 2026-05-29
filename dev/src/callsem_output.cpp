@@ -131,28 +131,23 @@ bool callsem_symbol_identity_equal(const symbol_linkage::SymbolIdentity & lhs,
      lhs.object_symbol != rhs.object_symbol ||
      lhs.thread_local_wrapper_object_symbol !=
          rhs.thread_local_wrapper_object_symbol ||
-     static_cast<bool>(lhs.abi_mangle_facts) !=
-         static_cast<bool>(rhs.abi_mangle_facts) ||
+     symbol_linkage::abi_mangle_fact_count(lhs) !=
+         symbol_linkage::abi_mangle_fact_count(rhs) ||
      lhs.keep_internal_alias != rhs.keep_internal_alias ||
      lhs.prefer_local_object_binding != rhs.prefer_local_object_binding ||
      lhs.linkage != rhs.linkage) {
     return false;
   }
-  if(!lhs.abi_mangle_facts) {
-    return true;
-  }
-  if(lhs.abi_mangle_facts->size() != rhs.abi_mangle_facts->size()) {
-    return false;
-  }
-  for(size_t i = 0; i < lhs.abi_mangle_facts->size(); ++i) {
-    const symbol_linkage::SymbolIdentity::AbiMangleFactEntry & lhs_fact =
-        (*lhs.abi_mangle_facts)[i];
-    const symbol_linkage::SymbolIdentity::AbiMangleFactEntry & rhs_fact =
-        (*rhs.abi_mangle_facts)[i];
-    if(lhs_fact.object_symbol != rhs_fact.object_symbol ||
-       lhs_fact.target.kind != rhs_fact.target.kind ||
-       lhs_fact.target.qualified_name != rhs_fact.target.qualified_name ||
-       lhs_fact.target.c_linkage != rhs_fact.target.c_linkage) {
+  const size_t abi_fact_count = symbol_linkage::abi_mangle_fact_count(lhs);
+  for(size_t i = 0; i < abi_fact_count; ++i) {
+    if(symbol_linkage::abi_mangle_fact_object_symbol(lhs, i) !=
+           symbol_linkage::abi_mangle_fact_object_symbol(rhs, i) ||
+       symbol_linkage::abi_mangle_fact_target_kind(lhs, i) !=
+           symbol_linkage::abi_mangle_fact_target_kind(rhs, i) ||
+       symbol_linkage::abi_mangle_fact_target_qualified_name(lhs, i) !=
+           symbol_linkage::abi_mangle_fact_target_qualified_name(rhs, i) ||
+       symbol_linkage::abi_mangle_fact_target_c_linkage(lhs, i) !=
+           symbol_linkage::abi_mangle_fact_target_c_linkage(rhs, i)) {
       return false;
     }
   }
@@ -166,22 +161,21 @@ uint64_t callsem_symbol_identity_hash(
   value = callsem_hash_string(value, symbol.internal_symbol);
   value = callsem_hash_string(value, symbol.object_symbol);
   value = callsem_hash_string(value, symbol.thread_local_wrapper_object_symbol);
-  const size_t abi_fact_count =
-      symbol.abi_mangle_facts ? symbol.abi_mangle_facts->size() : 0;
+  const size_t abi_fact_count = symbol_linkage::abi_mangle_fact_count(symbol);
   value = callsem_hash_mix(value, abi_fact_count);
   for(size_t i = 0; i < abi_fact_count; ++i) {
-    const symbol_linkage::SymbolIdentity::AbiMangleFactEntry & fact =
-        (*symbol.abi_mangle_facts)[i];
-    value = callsem_hash_string(value, fact.object_symbol);
-    value = callsem_hash_mix(
-        value,
-        static_cast<unsigned>(fact.target.kind));
     value = callsem_hash_string(
         value,
-        fact.target.qualified_name);
+        symbol_linkage::abi_mangle_fact_object_symbol(symbol, i));
     value = callsem_hash_mix(
         value,
-        fact.target.c_linkage ? 1 : 0);
+        symbol_linkage::abi_mangle_fact_target_kind(symbol, i));
+    value = callsem_hash_string(
+        value,
+        symbol_linkage::abi_mangle_fact_target_qualified_name(symbol, i));
+    value = callsem_hash_mix(
+        value,
+        symbol_linkage::abi_mangle_fact_target_c_linkage(symbol, i) ? 1 : 0);
   }
   value = callsem_hash_mix(value, symbol.keep_internal_alias ? 1 : 0);
   value = callsem_hash_mix(value, symbol.prefer_local_object_binding ? 1 : 0);
