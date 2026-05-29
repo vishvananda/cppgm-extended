@@ -1,7 +1,7 @@
 global @__strlit__1 [binding=internal] = {
-  u32 97
-  u32 98
-  u32 0
+  i32 97
+  i32 98
+  i32 0
 }
 global @wide : ptr [binding=internal, object=_Z4wide] = addr @__strlit__1
 

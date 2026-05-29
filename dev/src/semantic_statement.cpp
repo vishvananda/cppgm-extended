@@ -1324,7 +1324,10 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       while(static_storage_base && static_storage_base->kind == Type::TK_ARRAY) {
         static_storage_base = strip_top_level_cv(static_storage_base->inner);
       }
+      const bool is_reference_declaration =
+          is_reference_type(strip_top_level_cv(type));
       const bool has_class_lifetime =
+          !is_reference_declaration &&
           direct_storage_type && ctx.complete_class_type(direct_storage_type);
       const bool has_automatic_array_class_lifetime =
           direct_storage_type != static_storage_base &&

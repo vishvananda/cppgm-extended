@@ -4,7 +4,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    branch 1, ^cond_then_1, ^cond_else_2
+    %t1 = load u8 @k
+    branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -15,6 +16,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t1 = load i32 $cond__1
-    return i32 %t1
+    %t2 = load i32 $cond__1
+    return i32 %t2
 }
