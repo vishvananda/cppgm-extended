@@ -1085,6 +1085,53 @@ const CppAstNode * synthesize_braced_init_span(const CppAstNode & payload,
   return &synthesized_nodes.back();
 }
 
+bool array_accepts_string_literal(const TypePtr & array_type,
+                                  EFundamentalType literal_element_type);
+
+bool string_literal_directly_initializes_array(const TypePtr & type,
+                                               const CppAstNode & child)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_ARRAY || !base->has_bound ||
+     child.kind != CppAstKind::literal) {
+    return false;
+  }
+
+  QuoteLiteralData literal;
+  try
+  {
+    literal = parse_quote_literal(child.value);
+  }
+  catch(const logic_error &)
+  {
+    return false;
+  }
+
+  if(literal.quote != '"' || !literal.ud_suffix.empty() ||
+     !array_accepts_string_literal(base, string_literal_element_type(literal))) {
+    return false;
+  }
+
+  return quote_literal_string_unit_count(literal) + 1 <= base->bound;
+}
+
+bool aggregate_field_can_use_brace_elision(SemanticContext & ctx,
+                                           const FieldInfo & field)
+{
+  const FieldInfo * input_field =
+      semantic_class_model::aggregate_input_field(ctx, field);
+  TypePtr field_type = strip_top_level_cv(input_field ? input_field->type : field.type);
+  if(!field_type) {
+    return false;
+  }
+  if(field_type->kind == Type::TK_ARRAY && field_type->has_bound) {
+    return true;
+  }
+
+  ClassInfo * nested_info = ctx.class_info_for_type(field_type);
+  return nested_info && ctx.can_synthesize_aggregate_constructor(*nested_info);
+}
+
 size_t aggregate_brace_elision_capacity(SemanticContext & ctx,
                                         const FieldInfo & field)
 {
@@ -1112,6 +1159,9 @@ bool initializer_clause_directly_initializes_aggregate_field(SemanticContext & c
 {
   const FieldInfo * input_field = semantic_class_model::aggregate_input_field(ctx, field);
   const TypePtr target_type = input_field ? input_field->type : field.type;
+  if(string_literal_directly_initializes_array(target_type, child)) {
+    return true;
+  }
   try
   {
     ExprInfo expr = ctx.analyze_expression_for_target(scope, child, target_type);
@@ -1165,10 +1215,12 @@ bool build_positional_aggregate_initializer_plan(
   }
 
   const size_t remaining_children = payload.children.size() - child_index;
+  const bool can_use_brace_elision =
+      aggregate_field_can_use_brace_elision(ctx, info.fields[field_index]);
   const size_t max_consume =
       std::min(aggregate_brace_elision_capacity(ctx, info.fields[field_index]),
                remaining_children);
-  if(max_consume > 1 &&
+  if(can_use_brace_elision &&
      initializer_clause_directly_initializes_aggregate_field(ctx,
                                                             scope,
                                                             info.fields[field_index],
@@ -1176,13 +1228,17 @@ bool build_positional_aggregate_initializer_plan(
      try_assign(&child, 1)) {
     return true;
   }
-  for(size_t consume = max_consume; consume > 1; --consume) {
+  const size_t min_elided_consume = can_use_brace_elision ? 1 : 2;
+  for(size_t consume = max_consume; consume >= min_elided_consume; --consume) {
     const CppAstNode * grouped =
         synthesize_braced_init_span(payload, child_index, consume, synthesized_nodes);
     if(try_assign(grouped, consume)) {
       return true;
     }
     synthesized_nodes.pop_back();
+    if(consume == min_elided_consume) {
+      break;
+    }
   }
 
   return try_assign(&child, 1);
