@@ -86,6 +86,9 @@ rebased Boost frontier branch.
   recorded at `7384ec2ae9dff962a600e68dfcb95698f21e6221` after the
   Boost.Container `map_test` global-pointer subscript runtime fix; median
   instructions `276,136,809,540`, RSS `1.12 GiB`, footprint `899.96 MiB`.
+- 2026-05-29 rebase cleanup gate: full direct-LowIR `test-report` passes
+  `3266/3266` after the structured ABI fact/member-template completion, TLS
+  declaration-wrapper export repair, and ABI LowIR reference refresh.
 
 ## Local Gate Repairs
 
