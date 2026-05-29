@@ -128,3 +128,6 @@ function @bound_void__member_fn_int__X________int__X___X_____bound(%this : ptr, 
     store ptr %t5, %t7
     return void
 }
+alias object _ZN8type_tagIvEC2Ev = @type_tag_void___type_tag
+alias object _ZN9member_fnIM1XFivEiS0_EC2ES2_ = @member_fn_int__X________int__X___member_fn
+alias object _ZN5boundIv9member_fnIM1XFivEiS1_EPS1_EC2ES4_S5_ = @bound_void__member_fn_int__X________int__X___X_____bound

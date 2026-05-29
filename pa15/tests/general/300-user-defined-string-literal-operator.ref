@@ -7,7 +7,7 @@ global @__strlit__1 [binding=internal] = {
   i8 0
 }
 
-function @udl_check__operator___pick(%text : ptr, %size : i64) -> i32 [binding=internal] {
+function @udl_check__operator___pick(%text : ptr, %size : i64) -> i32 [binding=strong, object=_ZN9udl_checkli5_pickEPKcm] {
   slot $text : ptr
   slot $size : i64
 

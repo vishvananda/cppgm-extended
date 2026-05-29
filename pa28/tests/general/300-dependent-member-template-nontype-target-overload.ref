@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load i32 $cond__1
     return i32 %t2
 }
-function @member_callable___wrap__ov2(%__param0 : ptr, %__param1 : i64) -> void [binding=weak, object=_ZN6memberI8callableE4wrapILMS0_KFvlE0ElEEvPvT0_] {
+function @member_callable___wrap__ov2(%__param0 : ptr, %__param1 : i64) -> void [binding=weak, object=_ZN6memberI8callableE4wrapIXadL_ZNKS0_1fElEElEEvPvT0_] {
   slot $__param0 : ptr
   slot $__param1 : i64
 

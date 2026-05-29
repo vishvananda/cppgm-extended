@@ -29,14 +29,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @member_record__int__1___member(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN34member_3crecord_2c_20int_2c_201_3e6memberEU196member_3crecord_2c_20int_2c_201_3e_3a_3amember_7ctype_3dfunction_20of_20_28pointer_20to_20struct_20member_3crecord_2c_20int_2c_201_3e_29_20returning_20void_7cctor_7cowner_2dinst_3drecord_7cint_7c1] {
+function @member_record__int__1___member(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6memberI6recordiXadL_ZNS0_2idEEEEC1Ev] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @member_base_record__int__1___operator__(%this : ptr, %x : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN39member_base_3crecord_2c_20int_2c_201_3e14operator_28_29EU295member_base_3crecord_2c_20int_2c_201_3e_3a_3aoperator_28_29_7ctype_3dfunction_20of_20_28pointer_20to_20const_20struct_20member_base_3crecord_2c_20int_2c_201_3e_2c_20lvalue_2dreference_20to_20struct_20record_29_20returning_20lvalue_2dreference_20to_20int_7cconst_7cowner_2dinst_3drecord_7cint_7c1] {
+function @member_base_record__int__1___operator__(%this : ptr, %x : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK11member_baseI6recordiLi1EEclERS0_] {
   slot $this : ptr
   slot $x : ptr
 
@@ -48,3 +48,4 @@ function @member_base_record__int__1___operator__(%this : ptr, %x : ptr [pass=re
     %t3 = index i8 [projection=field] %t1, %t2
     return ptr %t3
 }
+alias object _ZN6memberI6recordiXadL_ZNS0_2idEEEEC2Ev = @member_record__int__1___member

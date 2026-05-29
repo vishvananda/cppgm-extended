@@ -32,7 +32,7 @@ function @interface_x__interface_x__ov3(%this : ptr, %that : ptr [pass=reference
     store ptr %t4, %t6
     return void
 }
-function @example__member_interface_x__vtable__info_target____wrap__ov2(%c : ptr, %a0 : i32) -> void [binding=weak, object=_ZN7example6memberIN11interface_x6vtable4infoI6targetEEE4wrapILMS4_KFviE0EiEENS5_6resultEPvT0_] {
+function @example__member_interface_x__vtable__info_target____wrap__ov2(%c : ptr, %a0 : i32) -> void [binding=weak, object=_ZN7example6memberIN11interface_x6vtable4infoI6targetEEE4wrapIXadL_ZNKS4_4callEiEEiEEvPvT0_] {
   slot $c : ptr
   slot $a0 : i32
 

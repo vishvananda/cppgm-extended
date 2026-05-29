@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @value() -> u32 [binding=weak, object=_Z5valueILj2EEiv] {
+function @value() -> u32 [binding=weak, object=_Z5valueILj2EEjv] {
   block ^entry:
     return u32 2
 }

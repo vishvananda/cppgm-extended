@@ -535,6 +535,14 @@ rebased Boost frontier branch.
   import the ABI wrapper symbol. Validation: `make -C dev cppgm++ -j8`;
   focused PA32 `200-thread-local-static-member-store.t` passes, and the use TU
   imports `_ZTWN7Counter5valueE` instead of the internal `__tls_wrapper` name.
+- this commit: refreshed the remaining direct-LowIR references after the ABI
+  structured-mangling rewrite and TLS wrapper cleanup. The updates are limited
+  to hosted operator/literal object symbols, unsigned NTTP function signatures,
+  weak function-template local statics, conversion-template aliases, and typed
+  member-pointer NTTP spellings. Validation:
+  `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 CPPGM_SKIP_DEV_REBUILD=1
+  ACTIVE_TEST_REPORT_PAS='pa15 pa20 pa22 pa28 pa32' ... make
+  test-report-nobuild` passes `803/803`.
 - this commit: repaired the PA35 hosted inline `thread_local` deque destructor
   gate after the ABI rebase cleanup. The test now uses the hosted `std::atexit`
   declaration instead of redeclaring a conflicting SDK prototype, function-local
