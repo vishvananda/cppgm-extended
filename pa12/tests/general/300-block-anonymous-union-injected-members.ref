@@ -23,9 +23,4 @@ translation-unit
   function-definition __anonymous_union_type__7_17::__anonymous_union_type__7_17 function of (pointer to union __anonymous_union_type__7_17) returning void
     parameter this pointer to union __anonymous_union_type__7_17
     compound-statement
-      expression-statement
-        assignment-expression lvalue int OP_ASS:=
-          member-expression lvalue int t
-            id-expression prvalue pointer to union __anonymous_union_type__7_17 this
-          literal prvalue int 0
 end translation unit

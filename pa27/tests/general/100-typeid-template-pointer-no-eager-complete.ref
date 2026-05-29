@@ -1,7 +1,7 @@
 declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____pointer_type_info [binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
 
-global @__typeinfo_name__pointer_to_struct_lazy_tuple_int___ [storage=readonly, binding=weak, object=_ZTSP10lazy_tupleIJA_iEE] = {
+global @__typeinfo_name_type_P10lazy_tupleIJA_iEE [storage=readonly, binding=weak, object=_ZTSP10lazy_tupleIJA_iEE] = {
   i8 80
   i8 49
   i8 48
@@ -24,7 +24,7 @@ global @__typeinfo_name__pointer_to_struct_lazy_tuple_int___ [storage=readonly, 
   i8 69
   i8 0
 }
-global @__typeinfo_name__struct_lazy_tuple_int___ [storage=readonly, binding=weak, object=_ZTS10lazy_tupleIJA_iEE] = {
+global @__typeinfo_name_type_10lazy_tupleIJA_iEE [storage=readonly, binding=weak, object=_ZTS10lazy_tupleIJA_iEE] = {
   i8 49
   i8 48
   i8 108
@@ -46,23 +46,23 @@ global @__typeinfo_name__struct_lazy_tuple_int___ [storage=readonly, binding=wea
   i8 69
   i8 0
 }
-global @__rtti_struct_lazy_tuple_int___ [storage=readonly, binding=weak, object=_ZTI10lazy_tupleIJA_iEE] = {
+global @__rtti_type_10lazy_tupleIJA_iEE [storage=readonly, binding=weak, object=_ZTI10lazy_tupleIJA_iEE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_lazy_tuple_int___
+  ptr addr @__typeinfo_name_type_10lazy_tupleIJA_iEE
 }
-global @__rtti_pointer_to_struct_lazy_tuple_int___ [storage=readonly, binding=weak, object=_ZTIP10lazy_tupleIJA_iEE] = {
+global @__rtti_type_P10lazy_tupleIJA_iEE [storage=readonly, binding=weak, object=_ZTIP10lazy_tupleIJA_iEE] = {
   ptr addr @__external_rtti_vtable____pointer_type_info + 16
-  ptr addr @__typeinfo_name__pointer_to_struct_lazy_tuple_int___
+  ptr addr @__typeinfo_name_type_P10lazy_tupleIJA_iEE
   i32 8
-  ptr addr @__rtti_struct_lazy_tuple_int___
+  ptr addr @__rtti_type_10lazy_tupleIJA_iEE
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = addr @__rtti_pointer_to_struct_lazy_tuple_int___
-    %t2 = addr @__rtti_pointer_to_struct_lazy_tuple_int___
+    %t1 = addr @__rtti_type_P10lazy_tupleIJA_iEE
+    %t2 = addr @__rtti_type_P10lazy_tupleIJA_iEE
     %t3 = cmp eq ptr %t1, %t2
     branch %t3, ^cond_then_1, ^cond_else_2
 

@@ -485,6 +485,14 @@ rebased Boost frontier branch.
   `500-user-std-invocable-variable-template-not-builtin-bad.t` still passes;
   PA16/PA33 direct-LowIR report passes `1345/1345`; strict direct-LowIR compare
   passes.
+- this commit: restored the current-branch direct-LowIR report gate before
+  starting the `origin/main` integration. The accumulated Boost frontier fixes
+  had left stale PA12 semantic refs for local const/anonymous-union output, PA26
+  LowIR refs for range/array/lambda cleanup and conversion ordering, and PA27
+  refs for structured RTTI symbol names plus host-throw cleanup output.
+  Validation: serial full `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1
+  CPPGM_SKIP_DEV_REBUILD=1 ... make test-report-nobuild` passes `3192/3192`;
+  strict direct-LowIR compare passes for PA18, PA19, PA21, and PA22.
 
 Local Boost wrapper state:
 

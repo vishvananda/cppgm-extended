@@ -116,11 +116,9 @@ function @Iter__operator__(%this : ptr) -> ptr [binding=weak, object=_ZN4IterppE
     %t3 = load ptr %t2
     %t4 = binary mul i64 1, 4
     %t5 = index i8 %t3, %t4
+    store ptr %t5, %t2
     %t6 = load ptr $this
-    %t7 = index i8 [projection=field] %t6, 0
-    store ptr %t5, %t7
-    %t8 = load ptr $this
-    return ptr %t8
+    return ptr %t6
 }
 function @Range__begin(%this : ptr) -> obj<8x8> [binding=weak, object=_ZN5Range5beginEv] {
   slot $this : ptr
