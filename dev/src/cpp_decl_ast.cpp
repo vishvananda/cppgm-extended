@@ -672,6 +672,16 @@ bool parse_declarator_core(const CppAstNode & node,
       if(!child.has_token) {
         return false;
       }
+      if(!suffixes.empty() && suffixes.back().kind == DeclaratorSuffix::SK_FUNCTION) {
+        if(child.simple_type == KW_CONST) {
+          suffixes.back().function_const = true;
+        } else if(child.simple_type == KW_VOLATILE) {
+          suffixes.back().function_volatile = true;
+        } else {
+          return false;
+        }
+        continue;
+      }
       if(!prefixes.empty() &&
          (prefixes.back().kind == PtrOperator::PK_POINTER ||
           prefixes.back().kind == PtrOperator::PK_MEMBER_POINTER ||
@@ -680,16 +690,6 @@ bool parse_declarator_core(const CppAstNode & node,
           prefixes.back().cv_const = true;
         } else if(child.simple_type == KW_VOLATILE) {
           prefixes.back().cv_volatile = true;
-        } else {
-          return false;
-        }
-        continue;
-      }
-      if(!suffixes.empty() && suffixes.back().kind == DeclaratorSuffix::SK_FUNCTION) {
-        if(child.simple_type == KW_CONST) {
-          suffixes.back().function_const = true;
-        } else if(child.simple_type == KW_VOLATILE) {
-          suffixes.back().function_volatile = true;
         } else {
           return false;
         }
