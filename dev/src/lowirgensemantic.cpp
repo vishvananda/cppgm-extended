@@ -1619,6 +1619,9 @@ bool is_null_pointer_global_initializer(const CallSemNode & node)
   if(!is_pointer_type(node.semantic_type) || node.kind != CallSemKind::literal) {
     return false;
   }
+  if(node.text == "nullptr") {
+    return true;
+  }
   if(node.has_int_value && callsem_int_value(node) == 0) {
     return true;
   }
