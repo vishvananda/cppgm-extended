@@ -20359,6 +20359,19 @@ private:
          arithmetic_result_base->fundamental == FT_UINT128);
     if(node.kind == CallSemKind::id_expression &&
        node.value_category == CVC_LVALUE &&
+       base &&
+       (is_integral_type(base) || is_named_enum_scalar_type(base))) {
+      if(node.has_int_value) {
+        out = to_string(callsem_int_value(node));
+        return true;
+      }
+      if(node.has_uint_value) {
+        out = to_string(callsem_uint_value(node));
+        return true;
+      }
+    }
+    if(node.kind == CallSemKind::id_expression &&
+       node.value_category == CVC_LVALUE &&
        base && base->kind == Type::TK_ARRAY) {
       out = node_internal_symbol(node);
       is_addr = true;

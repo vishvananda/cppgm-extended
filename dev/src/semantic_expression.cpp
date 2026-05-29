@@ -4265,6 +4265,12 @@ ExprInfo make_value_binding_expr(SemanticContext & ctx,
     set_dump_symbol(result.node, symbol);
     result.node.is_thread_local = binding.is_thread_local;
   }
+  if(binding.has_constant_value &&
+     constant_binding_type &&
+     (is_integral_type(constant_binding_type) ||
+      is_named_enum_type(ctx, constant_binding_type))) {
+    set_callsem_int_value(result.node, binding.constant_value);
+  }
   result.node.implicit_return_move_eligible =
       binding_supports_implicit_return_move(binding);
   set_expr_metadata(result.node, result.type, result.category);
