@@ -2544,9 +2544,8 @@ bool CppAstParser::can_start_decl_specifier_seq() const
   const bool named_candidate =
       token.is_simple(OP_COLON2) ||
       (token.is_identifier() &&
-       !value_name_preferred &&
        (next.is_simple(OP_COLON2) ||
-        next.is_simple(OP_LT)));
+        (!value_name_preferred && next.is_simple(OP_LT))));
   const bool result = is_decltype_token(token) ||
          (is_gnu_typeof_token(token) && next.is_simple(OP_LPAREN)) ||
          (token.is_identifier() && token.source == "_Atomic" &&
