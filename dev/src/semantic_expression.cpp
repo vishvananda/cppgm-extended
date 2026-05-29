@@ -2584,6 +2584,18 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
     return;
   }
 
+  if(node.kind == CppAstKind::compound_statement) {
+    std::set<std::string> active_declared_names = declared_names;
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      collect_implicit_lambda_capture_names(
+          ctx, scope, node.children[i], active_declared_names, out, seen);
+      if(node.children[i].kind == CppAstKind::simple_declaration) {
+        collect_declared_names(node.children[i], active_declared_names);
+      }
+    }
+    return;
+  }
+
   if(node.kind == CppAstKind::id_expression) {
     const QualifiedName * qualified = cppast_qualified_name_syntax(node);
     if(!qualified || (!qualified->rooted && qualified->qualifiers.empty())) {

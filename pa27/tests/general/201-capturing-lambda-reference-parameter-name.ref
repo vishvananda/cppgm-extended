@@ -1,0 +1,91 @@
+function @run(%items : ptr, %count : i32) -> i32 [binding=strong, object=_Z3runP4Itemi] {
+  slot $items : ptr
+  slot $count : i32
+  slot $parameter : ptr
+  slot $outer : obj<16x8>
+
+  block ^entry:
+    store ptr %items, $items
+    store i32 %count, $count
+    %t1 = load ptr $items
+    store ptr %t1, $parameter
+    %t2 = addr $outer
+    %t3 = load ptr $items
+    store ptr %t3, %t2
+    %t4 = index i8 %t2, 8
+    %t5 = load i32 $count
+    store i32 %t5, %t4
+    %t6 = addr $outer
+    %t7 = call i32 @__lambda_run_t34_38__operator__(%t6)
+    %t8 = load ptr $parameter
+    %t9 = binary mul i64 0, 4
+    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load i32 %t11
+    %t13 = binary add i32 %t7, %t12
+    return i32 %t13
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $items : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $items
+    call void @Item__Item__ov4(%t1, 7)
+    %t2 = addr $items
+    %t3 = unary decay ptr %t2
+    %t4 = call i32 @run(%t3, 1)
+    return i32 %t4
+}
+function @__lambda_run_t34_38__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZ3runP4ItemiENK3$_0clEv] {
+  slot $this : ptr
+  slot $match : obj<8x8>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $match
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 8
+    store ptr %t3, %t1
+    %t4 = addr $match
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load ptr %t6
+    %t8 = call i32 @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__operator__(%t4, %t7)
+    return i32 %t8
+}
+function @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__operator__(%this : ptr, %source : ptr) -> i32 [binding=weak, object=_ZZZ3runP4ItemiENK3$_0clEvENKUlPKS_E_clES3_] {
+  slot $this : ptr
+  slot $source : ptr
+  slot $parameter : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %source, $source
+    %t1 = load ptr $source
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=reference_field] %t2, 0
+    %t4 = load ptr %t3
+    %t5 = load i32 %t4
+    %t6 = binary sub i32 %t5, 1
+    %t7 = binary mul i64 %t6, 4
+    %t8 = index i8 [projection=array_element] %t1, %t7
+    store ptr %t8, $parameter
+    %t9 = load ptr $parameter
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = load i32 %t10
+    return i32 %t11
+}
+function @Item__Item__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN4ItemC1Ei] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+alias object _ZN4ItemC2Ei = @Item__Item__ov4
