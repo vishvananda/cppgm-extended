@@ -6050,10 +6050,10 @@ bool function_binding_has_unconditional_nothrow(const FunctionBinding & binding)
   return text == "noexcept" || text == "throw()" || text == "noexcept(true)";
 }
 
-bool class_info_source_template_is_std_namespace_or_inline_child(const ClassInfo & info)
+bool class_info_source_template_declared_in_std_namespace_or_inline_child(
+    const ClassInfo & info)
 {
-  if(!info.source_template ||
-     !info.source_template->comes_from_standard_include_path) {
+  if(!info.source_template) {
     return false;
   }
   const Scope * current =
@@ -6074,6 +6074,13 @@ bool class_info_source_template_is_std_namespace_or_inline_child(const ClassInfo
     }
   }
   return true;
+}
+
+bool class_info_source_template_is_std_namespace_or_inline_child(const ClassInfo & info)
+{
+  return info.source_template &&
+         info.source_template->comes_from_standard_include_path &&
+         class_info_source_template_declared_in_std_namespace_or_inline_child(info);
 }
 
 semantic_conversion::ExprInfo make_declval_trait_expr_info(const TypePtr & source)
@@ -6391,6 +6398,11 @@ bool structured_bool_constant_value_for_class_info(
 {
   const string template_name =
       info.source_template ? info.source_template->name : string();
+  const bool source_is_std_trait =
+      class_info_source_template_is_std_namespace_or_inline_child(info);
+  const bool source_is_reserved_builtin_trait =
+      template_name.compare(0, 2, "__") == 0 &&
+      !class_info_source_template_declared_in_std_namespace_or_inline_child(info);
   if(template_name == "integral_constant" &&
      info.instantiation_arguments.size() == 2 &&
      info.instantiation_arguments[0].kind == TemplateArgument::TA_TYPE &&
@@ -6401,7 +6413,7 @@ bool structured_bool_constant_value_for_class_info(
   }
 
   if(template_name == "__is_nothrow_invocable" &&
-     class_info_source_template_is_std_namespace_or_inline_child(info)) {
+     (source_is_std_trait || source_is_reserved_builtin_trait)) {
     return evaluate_structured_nothrow_invocable_trait(
         type_system,
         info.instantiation_arguments,
@@ -6411,9 +6423,9 @@ bool structured_bool_constant_value_for_class_info(
         evaluation_incomplete);
   }
 
-  if((template_name == "__is_invocable_r" ||
-      template_name == "is_invocable_r") &&
-     class_info_source_template_is_std_namespace_or_inline_child(info)) {
+  if((template_name == "__is_invocable_r" &&
+      (source_is_std_trait || source_is_reserved_builtin_trait)) ||
+     (template_name == "is_invocable_r" && source_is_std_trait)) {
     return evaluate_structured_invocable_r_trait(
         type_system,
         info.instantiation_arguments,

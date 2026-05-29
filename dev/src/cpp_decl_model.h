@@ -148,6 +148,7 @@ struct Type
   bool named_has_layout;
   std::size_t named_alignment;
   std::size_t named_size;
+  TypePtr named_enum_underlying_type;
   bool named_is_empty;
   std::vector<HostAbiChunk> named_host_abi_chunks;
   bool definitely_not_class;

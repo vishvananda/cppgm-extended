@@ -9787,15 +9787,15 @@ private:
     const bool scoped = find_child_kind(node, CppAstKind::enum_key) != nullptr;
 
     const string enum_name = node.value.empty() ? next_anonymous_enum_name() : node.value;
+    TypePtr enum_underlying_type = make_fundamental(FT_INT);
     size_t enum_alignment = 4;
     size_t enum_size = 4;
     if(const CppAstNode * underlying = find_child_kind(node, CppAstKind::type_id)) {
-      TypePtr underlying_type;
-      if(!parse_type_id(scope, *underlying, underlying_type)) {
+      if(!parse_type_id(scope, *underlying, enum_underlying_type)) {
         throw logic_error("unsupported enum underlying type");
       }
-      enum_alignment = type_alignment(underlying_type);
-      enum_size = type_size(underlying_type);
+      enum_alignment = type_alignment(enum_underlying_type);
+      enum_size = type_size(enum_underlying_type);
     }
     TypePtr enum_type = node.value.empty() ? TypePtr() : direct_named_type(scope, node.value);
     if(enum_type) {
@@ -9816,6 +9816,7 @@ private:
         durable_scope.named_types[node.value] = enum_type;
       }
     }
+    enum_type->named_enum_underlying_type = enum_underlying_type;
     if(durable_scope.class_info && durable_scope.class_info->type) {
       TypePtr base = strip_top_level_cv(enum_type);
       if(base && base->kind == Type::TK_NAMED) {

@@ -1938,6 +1938,7 @@ void register_builtin_functions(Scope & scope,
                  true,
                  sizeof(unsigned long),
                  sizeof(unsigned long));
+  align_val_type->named_enum_underlying_type = size_type;
   const TypePtr bool_type = make_fundamental(FT_BOOL);
   const TypePtr int_type = make_fundamental(FT_INT);
   const TypePtr long_type = make_fundamental(FT_LONG_INT);
@@ -3464,7 +3465,9 @@ bool try_builtin_type_transform(SemanticContext & ctx,
     if(!base || !is_named_enum_type(ctx, base)) {
       return false;
     }
-    out = make_fundamental(FT_INT);
+    out = base->named_enum_underlying_type ?
+        base->named_enum_underlying_type :
+        make_fundamental(FT_INT);
     return true;
   }
 
