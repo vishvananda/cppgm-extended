@@ -4717,10 +4717,20 @@ void append_vtable_output_node(SemanticContext & ctx,
     if(object_symbol.empty()) {
       throw logic_error("failed to mangle vtable symbol for " + describe_type(rtti_base));
     }
+    string internal_symbol =
+        symbol_linkage::internal_symbol_from_name(table.key + "::vtable");
+    if(symbol_linkage::type_needs_structural_internal_symbol(rtti_base)) {
+      const string structural_symbol =
+          symbol_linkage::internal_symbol_from_type_encoding("__vtable_type",
+                                                             rtti_base);
+      if(!structural_symbol.empty()) {
+        internal_symbol = structural_symbol;
+      }
+    }
     set_dump_symbol(
         table_node,
         symbol_linkage::make_object_symbol_identity(
-            symbol_linkage::internal_symbol_from_name(table.key + "::vtable"),
+            internal_symbol,
             object_symbol,
             primary_vtable_linkage));
   }

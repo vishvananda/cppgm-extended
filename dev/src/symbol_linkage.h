@@ -97,6 +97,9 @@ std::string exported_object_symbol(const SymbolIdentity & symbol);
 bool has_weak_linkage(const SymbolIdentity & symbol);
 std::string mangle_symbol_name(const std::string & text);
 std::string internal_symbol_from_name(const std::string & name);
+bool type_needs_structural_internal_symbol(const cpp_decl::TypePtr & type);
+std::string internal_symbol_from_type_encoding(const std::string & prefix,
+                                               const cpp_decl::TypePtr & type);
 std::string thread_local_wrapper_internal_symbol(const std::string & variable_internal_symbol);
 std::string thread_local_guard_internal_symbol(const std::string & variable_internal_symbol);
 std::string thread_local_wrapper_object_symbol_for_qualified_name(

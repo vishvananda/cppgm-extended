@@ -16885,6 +16885,112 @@ bool mangle_itanium_name_encoding(const QualifiedName & qualified_name, string &
   return try_emit_qualified_name_encoding_ir(qualified_name, out);
 }
 
+static bool type_needs_structural_internal_symbol_impl(
+    const TypePtr & type,
+    vector<const Type *> & active_types);
+
+static bool template_argument_needs_structural_internal_symbol(
+    const TemplateArgument & argument,
+    vector<const Type *> & active_types)
+{
+  switch(argument.kind) {
+  case TemplateArgument::TA_TYPE:
+    return type_needs_structural_internal_symbol_impl(argument.type,
+                                                      active_types);
+
+  case TemplateArgument::TA_VALUE:
+    return argument.function_value || argument.value_binding ||
+           !argument.value_dependencies.empty();
+
+  case TemplateArgument::TA_CLASS_TEMPLATE:
+  case TemplateArgument::TA_ALIAS_TEMPLATE:
+    return false;
+  }
+  return false;
+}
+
+static bool class_template_arguments_need_structural_internal_symbol(
+    const TypePtr & type,
+    vector<const Type *> & active_types)
+{
+  shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
+      named_type_class_template_specialization_mangle_info_const(type);
+  if(!info) {
+    return false;
+  }
+  for(size_t i = 0; i < info->arguments.size(); ++i) {
+    if(template_argument_needs_structural_internal_symbol(info->arguments[i],
+                                                          active_types)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool type_needs_structural_internal_symbol_impl(
+    const TypePtr & type,
+    vector<const Type *> & active_types)
+{
+  if(!type) {
+    return false;
+  }
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(find(active_types.begin(), active_types.end(), base.get()) !=
+     active_types.end()) {
+    return false;
+  }
+
+  switch(base->kind) {
+  case Type::TK_POINTER:
+  case Type::TK_MEMBER_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+  case Type::TK_ARRAY:
+  case Type::TK_FUNCTION:
+    return true;
+
+  case Type::TK_ATOMIC:
+    return type_needs_structural_internal_symbol_impl(base->inner,
+                                                      active_types);
+
+  case Type::TK_NAMED:
+    active_types.push_back(base.get());
+    {
+      const bool needs =
+          class_template_arguments_need_structural_internal_symbol(base,
+                                                                   active_types);
+      active_types.pop_back();
+      return needs;
+    }
+
+  case Type::TK_FUNDAMENTAL:
+  case Type::TK_CV:
+    return false;
+  }
+  return false;
+}
+
+bool type_needs_structural_internal_symbol(const TypePtr & type)
+{
+  vector<const Type *> active_types;
+  return type_needs_structural_internal_symbol_impl(type, active_types);
+}
+
+string internal_symbol_from_type_encoding(const string & prefix,
+                                          const TypePtr & type)
+{
+  string encoding;
+  if(!mangle_itanium_type_encoding(type, encoding) || encoding.empty()) {
+    return string();
+  }
+  return string("@") + mangle_symbol_name(prefix) + "_" +
+         mangle_symbol_name(encoding);
+}
+
 static bool emit_itanium_function_encoding_with_substitutions(
     const QualifiedName & qualified_name,
     const string & display_name,

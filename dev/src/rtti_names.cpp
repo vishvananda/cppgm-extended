@@ -1,5 +1,7 @@
 #include "rtti_names.h"
 
+#include "symbol_linkage.h"
+
 using namespace std;
 using namespace cpp_decl;
 
@@ -25,5 +27,13 @@ string rtti_symbol_for_display_name(const string & name)
 
 string rtti_symbol_for_type(const TypePtr & type)
 {
+  if(symbol_linkage::type_needs_structural_internal_symbol(type)) {
+    const string structural_symbol =
+        symbol_linkage::internal_symbol_from_type_encoding("__rtti_type",
+                                                           type);
+    if(!structural_symbol.empty()) {
+      return structural_symbol;
+    }
+  }
   return rtti_symbol_for_display_name(describe_type(type));
 }

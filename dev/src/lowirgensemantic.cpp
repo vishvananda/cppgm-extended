@@ -454,6 +454,14 @@ string lowir_name(const string & qualified)
   return symbol_linkage::internal_symbol_from_name(qualified);
 }
 
+string lowir_type_encoding_name(const string & prefix, const TypePtr & type)
+{
+  if(!symbol_linkage::type_needs_structural_internal_symbol(type)) {
+    return string();
+  }
+  return symbol_linkage::internal_symbol_from_type_encoding(prefix, type);
+}
+
 TypePtr std_terminate_function_type()
 {
   return make_function(make_fundamental(FT_VOID), vector<TypePtr>(), false);
@@ -17027,8 +17035,12 @@ private:
     if(object_symbol.empty()) {
       throw logic_error("failed to derive host typeinfo name symbol for " + describe_type(type));
     }
+    const string structural_symbol =
+        lowir_type_encoding_name("__typeinfo_name_type", type);
     const string internal_symbol =
-        lowir_name(string("__typeinfo_name::") + describe_type(type));
+        structural_symbol.empty() ?
+            lowir_name(string("__typeinfo_name::") + describe_type(type)) :
+            structural_symbol;
     if(!has_global_name(internal_symbol)) {
       LowIRGlobal global = make_data_global(internal_symbol, true);
       const string encoded_name = object_symbol.substr(4);
@@ -17246,9 +17258,13 @@ private:
       }
       const string host_symbol = symbol_linkage::typeinfo_symbol_for_type(type);
       if(!host_symbol.empty()) {
+        const string structural_symbol =
+            lowir_type_encoding_name("__external_rtti_type", type);
         const string external_symbol =
-            symbol_linkage::internal_symbol_from_name("__external_rtti::" +
-                                                      describe_type(type));
+            structural_symbol.empty() ?
+                symbol_linkage::internal_symbol_from_name("__external_rtti::" +
+                                                          describe_type(type)) :
+                structural_symbol;
         external_object_symbols_[external_symbol] = host_symbol;
         return external_symbol;
       }
@@ -17260,8 +17276,13 @@ private:
     if(host_symbol.empty()) {
       return internal_symbol;
     }
+    const string structural_symbol =
+        lowir_type_encoding_name("__external_rtti_type", type);
     const string external_symbol =
-        symbol_linkage::internal_symbol_from_name("__external_rtti::" + describe_type(type));
+        structural_symbol.empty() ?
+            symbol_linkage::internal_symbol_from_name("__external_rtti::" +
+                                                      describe_type(type)) :
+            structural_symbol;
     external_object_symbols_[external_symbol] = host_symbol;
     return external_symbol;
   }
