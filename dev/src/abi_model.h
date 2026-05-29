@@ -8,19 +8,19 @@
 
 namespace abi_mangle {
 
-inline void set_substitution(Type & type, const SubstitutionKey & key)
+inline void set_substitution(Type & type, SubstitutionKey key)
 {
   if(!type.substitution || !type.substitution.unique()) {
     type.substitution.reset(type.substitution ?
         new Type::SubstitutionMetadata(*type.substitution) :
         new Type::SubstitutionMetadata);
   }
-  type.substitution->key = key;
+  type.substitution->key = std::move(key);
 }
 
-inline Type with_substitution(Type type, const SubstitutionKey & key)
+inline Type with_substitution(Type type, SubstitutionKey key)
 {
-  set_substitution(type, key);
+  set_substitution(type, std::move(key));
   return type;
 }
 
@@ -251,8 +251,6 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     if(!make_type_substitution_key(*type.inner, inner_key)) {
       return false;
     }
-    std::vector<SubstitutionKey> children;
-    children.push_back(inner_key);
     out = SubstitutionKey::type(
         std::string("pack-expansion:") + inner_key.structural_text());
     return true;
@@ -917,12 +915,22 @@ inline bool make_dependent_expression_substitution_key(
 }
 
 inline bool emit_type(const Type & type, std::string & out, SubstitutionSink * sink);
+inline bool emit_type_owned(Type & type, std::string & out, SubstitutionSink * sink);
+inline bool emit_type_body_owned(Type & type, std::string & out, SubstitutionSink * sink);
 inline bool emit_class_template_argument(
     const Type::ClassTemplateArgument & argument,
     std::string & out,
     SubstitutionSink * sink);
+inline bool emit_class_template_argument_owned(
+    Type::ClassTemplateArgument & argument,
+    std::string & out,
+    SubstitutionSink * sink);
 inline bool emit_class_template_arguments(
     const std::vector<Type::ClassTemplateArgument> & arguments,
+    std::string & out,
+    SubstitutionSink * sink);
+inline bool emit_class_template_arguments_owned(
+    std::vector<Type::ClassTemplateArgument> & arguments,
     std::string & out,
     SubstitutionSink * sink);
 inline bool emit_template_argument(const TemplateArgument & argument,
@@ -973,9 +981,15 @@ inline bool emit_function_name(const FunctionEncoding & function,
 inline bool emit_function_encoding(const FunctionEncoding & function,
                                    std::string & out,
                                    SubstitutionSink * sink);
+inline bool emit_function_encoding_owned(FunctionEncoding & function,
+                                         std::string & out,
+                                         SubstitutionSink * sink);
 inline bool emit_function_encoding_body(const FunctionEncoding & function,
                                         std::string & out,
                                         SubstitutionSink * sink);
+inline bool emit_function_encoding_body_owned(FunctionEncoding & function,
+                                             std::string & out,
+                                             SubstitutionSink * sink);
 inline bool emit_local_entity_context_function_encoding_body(
     const FunctionEncoding & function,
     std::string & out,
@@ -1069,6 +1083,11 @@ struct LookupOnlySubstitutionSink : public SubstitutionSink
     (void)key;
   }
 
+  void register_substitution_owned(SubstitutionKey key) override
+  {
+    (void)key;
+  }
+
   bool suppress_template_parameter_type_substitution_in_template_argument()
       const override
   {
@@ -1089,6 +1108,10 @@ struct NoLookupSubstitutionSink : public SubstitutionSink
   }
 
   void register_substitution(const SubstitutionKey &) override
+  {
+  }
+
+  void register_substitution_owned(SubstitutionKey) override
   {
   }
 
@@ -1113,7 +1136,7 @@ inline bool emit_name_component(const Type::NameComponent & component,
   if(component.source_name.empty()) {
     return false;
   }
-  const SubstitutionKey key =
+  SubstitutionKey key =
       component.substitution_name.empty() ?
           SubstitutionKey::none() :
           SubstitutionKey::named(component.substitution_name);
@@ -1129,7 +1152,7 @@ inline bool emit_name_component(const Type::NameComponent & component,
     return false;
   }
   if(sink && !key.empty()) {
-    sink->register_substitution(key);
+    sink->register_substitution_owned(std::move(key));
   }
   return true;
 }
@@ -1170,7 +1193,7 @@ inline bool emit_template_name_component(const Type & type,
       !metadata->template_name_is_template_parameter)) {
     return false;
   }
-  const SubstitutionKey key =
+  SubstitutionKey key =
       metadata->template_name_is_template_parameter ?
           SubstitutionKey::none() :
       metadata->template_name_substitution.empty() ?
@@ -1189,7 +1212,7 @@ inline bool emit_template_name_component(const Type & type,
     return false;
   }
   if(sink && !key.empty()) {
-    sink->register_substitution(key);
+    sink->register_substitution_owned(std::move(key));
   }
   return true;
 }
@@ -1323,9 +1346,10 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
           template_arguments_need_member_expression_template_name_registration(
               metadata->template_arguments))) {
         if(!metadata->template_name_ir_substitution.empty()) {
-          sink->register_substitution(metadata->template_name_ir_substitution);
-        } else if(!metadata->template_name_substitution.empty()) {
           sink->register_substitution(
+              metadata->template_name_ir_substitution.get());
+        } else if(!metadata->template_name_substitution.empty()) {
+          sink->register_substitution_owned(
               SubstitutionKey::named(metadata->template_name_substitution));
         }
       }
@@ -1347,9 +1371,10 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
         template_arguments_need_member_expression_template_name_registration(
             metadata->template_arguments))) {
       if(!metadata->template_name_ir_substitution.empty()) {
-        sink->register_substitution(metadata->template_name_ir_substitution);
-      } else if(!metadata->template_name_substitution.empty()) {
         sink->register_substitution(
+            metadata->template_name_ir_substitution.get());
+      } else if(!metadata->template_name_substitution.empty()) {
+        sink->register_substitution_owned(
             SubstitutionKey::named(metadata->template_name_substitution));
       }
     }
@@ -1711,14 +1736,14 @@ inline bool emit_class_template_specialization_type(const Type & type,
       metadata->prefix_components.size() == 1 &&
       metadata->prefix_components[0].std_abbrev;
   const bool nested = !metadata->prefix_components.empty() && !direct_std_prefix;
-  const SubstitutionKey template_key =
+  SubstitutionKey template_key =
       metadata->template_name_is_template_parameter ?
           SubstitutionKey::type_template_parameter(
               metadata->template_name_parameter_index) :
       metadata->template_name_substitution.empty() ?
           SubstitutionKey::none() :
           SubstitutionKey::named(metadata->template_name_substitution);
-  const SubstitutionKey template_prefix_key =
+  SubstitutionKey template_prefix_key =
       nested &&
               !metadata->template_name_substitution.empty() &&
               class_template_arguments_contain_pack_expansion(
@@ -1730,7 +1755,7 @@ inline bool emit_class_template_specialization_type(const Type & type,
   }
   if(sink && !template_key.empty() && sink->emit_substitution(template_key, out)) {
     if(!template_prefix_key.empty()) {
-      sink->register_substitution(template_prefix_key);
+      sink->register_substitution_owned(std::move(template_prefix_key));
     }
     if(!emit_class_template_arguments(metadata->template_arguments, out, sink)) {
       return false;
@@ -1763,12 +1788,115 @@ inline bool emit_class_template_specialization_type(const Type & type,
     return false;
   }
   if(sink && !template_key.empty()) {
-    sink->register_substitution(template_key);
+    sink->register_substitution_owned(std::move(template_key));
   }
   if(sink && !template_prefix_key.empty()) {
-    sink->register_substitution(template_prefix_key);
+    sink->register_substitution_owned(std::move(template_prefix_key));
   }
   if(!emit_class_template_arguments(metadata->template_arguments, out, sink)) {
+    return false;
+  }
+  if(nested) {
+    out += 'E';
+  }
+  return true;
+}
+
+inline bool emit_class_template_specialization_type_owned(Type & type,
+                                                          std::string & out,
+                                                          SubstitutionSink * sink)
+{
+  Type::NameMetadata * metadata = type.name.get();
+  if(!metadata) {
+    return false;
+  }
+  if(type.name_owner) {
+    out += 'N';
+    if(!emit_type_as_name_prefix_body(type, out, sink)) {
+      return false;
+    }
+    out += 'E';
+    return true;
+  }
+
+  if(!metadata->standard_substitution.empty()) {
+    out += metadata->standard_substitution;
+    if(metadata->standard_substitution_includes_arguments) {
+      return true;
+    }
+    return emit_class_template_arguments_owned(metadata->template_arguments,
+                                               out,
+                                               sink);
+  }
+
+  const bool direct_std_prefix =
+      metadata->prefix_components.size() == 1 &&
+      metadata->prefix_components[0].std_abbrev;
+  const bool nested = !metadata->prefix_components.empty() && !direct_std_prefix;
+  SubstitutionKey template_key =
+      metadata->template_name_is_template_parameter ?
+          SubstitutionKey::type_template_parameter(
+              metadata->template_name_parameter_index) :
+      metadata->template_name_substitution.empty() ?
+          SubstitutionKey::none() :
+          SubstitutionKey::named(metadata->template_name_substitution);
+  SubstitutionKey template_prefix_key =
+      nested &&
+              !metadata->template_name_substitution.empty() &&
+              class_template_arguments_contain_pack_expansion(
+                  metadata->template_arguments) ?
+          SubstitutionKey::prefix(metadata->template_name_substitution) :
+          SubstitutionKey::none();
+  if(nested) {
+    out += 'N';
+  }
+  if(sink && !template_key.empty() && sink->emit_substitution(template_key, out)) {
+    if(!template_prefix_key.empty()) {
+      sink->register_substitution_owned(std::move(template_prefix_key));
+    }
+    if(!emit_class_template_arguments_owned(metadata->template_arguments,
+                                            out,
+                                            sink)) {
+      return false;
+    }
+    if(nested) {
+      out += 'E';
+    }
+    return true;
+  }
+  if(!emit_name_prefix_components(metadata->prefix_components, out, sink)) {
+    return false;
+  }
+  if(metadata->template_name_is_template_parameter) {
+    if(sink && !template_key.empty() &&
+       sink->emit_substitution(template_key, out)) {
+      if(!emit_class_template_arguments_owned(metadata->template_arguments,
+                                              out,
+                                              sink)) {
+        return false;
+      }
+      if(nested) {
+        out += 'E';
+      }
+      return true;
+    }
+    out += 'T';
+    if(metadata->template_name_parameter_index > 0) {
+      out += std::to_string(metadata->template_name_parameter_index - 1);
+    }
+    out += '_';
+  } else if(!emit_source_name(metadata->template_name, out)) {
+    return false;
+  }
+  if(sink && !template_key.empty()) {
+    sink->register_substitution_owned(std::move(template_key));
+  }
+  if(sink && !template_prefix_key.empty()) {
+    sink->register_substitution_owned(std::move(template_prefix_key));
+  }
+  if(!emit_class_template_arguments_owned(metadata->template_arguments,
+                                          out,
+                                          sink)) {
     return false;
   }
   if(nested) {
@@ -1942,6 +2070,29 @@ inline bool emit_integral_template_value(const Type * value_type,
     const std::size_t begin = out.size();
     out += 'L';
     if(!emit_type(*value_type, out, sink)) {
+      out.resize(begin);
+      return false;
+    }
+    out += std::to_string(value);
+    out += 'E';
+    return true;
+  }
+
+  out += "Li";
+  out += std::to_string(value);
+  out += 'E';
+  return true;
+}
+
+inline bool emit_integral_template_value_owned(Type * value_type,
+                                               long long value,
+                                               std::string & out,
+                                               SubstitutionSink * sink)
+{
+  if(value_type) {
+    const std::size_t begin = out.size();
+    out += 'L';
+    if(!emit_type_owned(*value_type, out, sink)) {
       out.resize(begin);
       return false;
     }
@@ -2180,6 +2331,191 @@ inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSin
   return false;
 }
 
+inline bool emit_type_body_owned(Type & type, std::string & out, SubstitutionSink * sink)
+{
+  switch(type.kind) {
+  case Type::TK_BUILTIN:
+    if(type.builtin_code[0] == '\0') {
+      return false;
+    }
+    out += type.builtin_code;
+    return true;
+
+  case Type::TK_CV:
+    if(!type.inner) {
+      return false;
+    }
+    if(type.cv_const) {
+      out += 'K';
+    }
+    if(type.cv_volatile) {
+      out += 'V';
+    }
+    return emit_type_owned(*type.inner, out, sink);
+
+  case Type::TK_POINTER:
+    if(!type.inner) {
+      return false;
+    }
+    out += 'P';
+    return emit_type_owned(*type.inner, out, sink);
+
+  case Type::TK_LVALUE_REFERENCE:
+    if(!type.inner) {
+      return false;
+    }
+    out += 'R';
+    return emit_type_owned(*type.inner, out, sink);
+
+  case Type::TK_RVALUE_REFERENCE:
+    if(!type.inner) {
+      return false;
+    }
+    out += 'O';
+    return emit_type_owned(*type.inner, out, sink);
+
+  case Type::TK_ARRAY:
+    if(!type.inner) {
+      return false;
+    }
+    out += 'A';
+    out += type.array_bound;
+    out += '_';
+    return emit_type_owned(*type.inner, out, sink);
+
+  case Type::TK_FUNCTION:
+    if(!type.inner) {
+      return false;
+    }
+    out += 'F';
+    if(!emit_type_owned(*type.inner, out, sink)) {
+      return false;
+    }
+    if(type.params.empty()) {
+      out += type.variadic ? 'z' : 'v';
+    } else {
+      for(std::size_t i = 0; i < type.params.size(); ++i) {
+        if(!emit_type_owned(type.params[i], out, sink)) {
+          return false;
+        }
+      }
+      if(type.variadic) {
+        out += 'z';
+      }
+    }
+    if(type.function_lvalue_ref) {
+      out += 'R';
+    } else if(type.function_rvalue_ref) {
+      out += 'O';
+    }
+    out += 'E';
+    return true;
+
+  case Type::TK_MEMBER_POINTER:
+    if(!type.owner || !type.inner) {
+      return false;
+    }
+    out += 'M';
+    return emit_type_owned(*type.owner, out, sink) &&
+           emit_type_owned(*type.inner, out, sink);
+
+  case Type::TK_VENDOR_QUALIFIED:
+    if(type.vendor_qualifier_name.empty() || !type.inner) {
+      return false;
+    }
+    out += 'U';
+    if(!emit_source_name(type.vendor_qualifier_name, out)) {
+      return false;
+    }
+    return emit_type_owned(*type.inner, out, sink);
+
+  case Type::TK_BUILTIN_TYPE_TRANSFORM:
+    if(type.builtin_transform_name.empty() || !type.inner) {
+      return false;
+    }
+    out += 'u';
+    if(!emit_source_name(type.builtin_transform_name, out)) {
+      return false;
+    }
+    out += 'I';
+    if(!emit_type_owned(*type.inner, out, sink)) {
+      return false;
+    }
+    out += 'E';
+    return true;
+
+  case Type::TK_PACK_EXPANSION:
+    if(!type.inner) {
+      return false;
+    }
+    out += "Dp";
+    return emit_type_owned(*type.inner, out, sink);
+
+  case Type::TK_TEMPLATE_PARAMETER:
+    out += 'T';
+    if(type.template_parameter_index > 0) {
+      out += std::to_string(type.template_parameter_index - 1);
+    }
+    out += '_';
+    return true;
+
+  case Type::TK_NAMED:
+    return emit_named_type(type, out, sink);
+
+  case Type::TK_CLASS_TEMPLATE_SPECIALIZATION:
+    return emit_class_template_specialization_type_owned(type, out, sink);
+
+  case Type::TK_DECLTYPE_EXPRESSION:
+    if(!type.expression) {
+      return false;
+    }
+    out += "DT";
+    if(!emit_dependent_expression_body(*type.expression, out, sink)) {
+      return false;
+    }
+    out += 'E';
+    return true;
+
+  case Type::TK_LAMBDA_CLOSURE:
+    if(!type.lambda ||
+       (type.lambda->context_fragment.empty() &&
+        !type.lambda->context_function)) {
+      return false;
+    }
+    if(!emit_local_entity_context_fragment(type.lambda->context_fragment,
+                                           type.lambda->context_substitution_slots,
+                                           type.lambda->context_function,
+                                           out,
+                                           sink)) {
+      return false;
+    }
+    if(!type.lambda->source_name.empty()) {
+      if(!emit_source_name(type.lambda->source_name, out)) {
+        return false;
+      }
+    } else {
+      out += "Ul";
+      if(type.params.empty()) {
+        out += 'v';
+      } else {
+        for(std::size_t i = 0; i < type.params.size(); ++i) {
+          if(!emit_type_owned(type.params[i], out, sink)) {
+            return false;
+          }
+        }
+      }
+      out += 'E';
+      out += type.lambda->discriminator;
+      out += '_';
+    }
+    return true;
+
+  case Type::TK_INVALID:
+    return false;
+  }
+  return false;
+}
+
 inline bool emit_type(const Type & type, std::string & out, SubstitutionSink * sink)
 {
   const SubstitutionKey & substitution_key = type_substitution_key(type);
@@ -2196,6 +2532,29 @@ inline bool emit_type(const Type & type, std::string & out, SubstitutionSink * s
 
   if(sink && !substitution_key.empty()) {
     sink->register_substitution(substitution_key);
+  }
+  return true;
+}
+
+inline bool emit_type_owned(Type & type, std::string & out, SubstitutionSink * sink)
+{
+  SubstitutionKey * const substitution_key =
+      type.substitution ? &type.substitution->key : nullptr;
+  if(sink &&
+     substitution_key &&
+     !substitution_key->empty() &&
+     sink->emit_substitution(*substitution_key, out)) {
+    return true;
+  }
+
+  const std::size_t begin = out.size();
+  if(!emit_type_body_owned(type, out, sink)) {
+    out.resize(begin);
+    return false;
+  }
+
+  if(sink && substitution_key && !substitution_key->empty()) {
+    sink->register_substitution_owned(std::move(*substitution_key));
   }
   return true;
 }
@@ -2231,6 +2590,14 @@ struct SuppressTemplateParameterTypeSubstitutionSink : SubstitutionSink
     inner->register_substitution(key);
   }
 
+  void register_substitution_owned(SubstitutionKey key) override
+  {
+    if(key.kind == SubstitutionKey::SK_TYPE_TEMPLATE_PARAMETER || !inner) {
+      return;
+    }
+    inner->register_substitution_owned(std::move(key));
+  }
+
   bool suppress_template_parameter_type_substitution_in_template_argument()
       const override
   {
@@ -2263,6 +2630,13 @@ struct EmitTemplateParameterTypeDirectSubstitutionSink : SubstitutionSink
     }
   }
 
+  void register_substitution_owned(SubstitutionKey key) override
+  {
+    if(inner) {
+      inner->register_substitution_owned(std::move(key));
+    }
+  }
+
   bool suppress_template_parameter_type_substitution_in_template_argument()
       const override
   {
@@ -2290,6 +2664,13 @@ struct TypeTraitOperandSubstitutionSink : SubstitutionSink
   {
     if(inner) {
       inner->register_substitution(key);
+    }
+  }
+
+  void register_substitution_owned(SubstitutionKey key) override
+  {
+    if(inner) {
+      inner->register_substitution_owned(std::move(key));
     }
   }
 
@@ -2422,6 +2803,86 @@ inline bool emit_class_template_argument(
   return false;
 }
 
+inline bool emit_class_template_argument_owned(
+    Type::ClassTemplateArgument & argument,
+    std::string & out,
+    SubstitutionSink * sink)
+{
+  switch(argument.kind) {
+  case Type::ClassTemplateArgument::CTAK_TYPE: {
+    if(!argument.type) {
+      return false;
+    }
+    SuppressTemplateParameterTypeSubstitutionSink argument_sink(sink);
+    return emit_type_owned(
+        *argument.type,
+        out,
+        sink &&
+                sink->suppress_template_parameter_type_substitution_in_template_argument() ?
+            &argument_sink :
+            sink);
+  }
+
+  case Type::ClassTemplateArgument::CTAK_ARGUMENT_PACK:
+    if(!argument.metadata) {
+      return false;
+    }
+    out += 'J';
+    for(std::size_t i = 0; i < argument.metadata->pack_arguments.size(); ++i) {
+      if(!emit_class_template_argument_owned(
+             argument.metadata->pack_arguments[i],
+             out,
+             sink)) {
+        return false;
+      }
+    }
+    out += 'E';
+    return true;
+
+  case Type::ClassTemplateArgument::CTAK_INTEGRAL_VALUE: {
+    if(!argument.type) {
+      return false;
+    }
+    return emit_integral_template_value_owned(argument.type.get(),
+                                             argument.integral_value,
+                                             out,
+                                             sink);
+  }
+
+  case Type::ClassTemplateArgument::CTAK_DEPENDENT_INTEGRAL_VALUE:
+    if(!argument.parameter_type) {
+      return false;
+    }
+    out += "Tn";
+    if(!sink ? !emit_type_owned(*argument.parameter_type, out, sink) :
+              !sink->emit_dependent_parameter_type(*argument.parameter_type, out)) {
+      return false;
+    }
+    return emit_integral_template_value_owned(argument.type.get(),
+                                             argument.integral_value,
+                                             out,
+                                             sink);
+
+  case Type::ClassTemplateArgument::CTAK_TEMPLATE_ENTITY:
+    if(argument.metadata && argument.metadata->template_owner_type) {
+      return emit_member_template_entity_name(
+          *argument.metadata->template_owner_type,
+          argument.metadata->template_name,
+          argument.metadata->template_name_substitution,
+          out,
+          sink);
+    }
+    return emit_class_template_argument(argument, out, sink);
+
+  case Type::ClassTemplateArgument::CTAK_DEPENDENT_EXPRESSION:
+  case Type::ClassTemplateArgument::CTAK_UNTYPED_INTEGRAL_VALUE:
+  case Type::ClassTemplateArgument::CTAK_EXTERNAL_ENTITY:
+  case Type::ClassTemplateArgument::CTAK_INVALID:
+    return emit_class_template_argument(argument, out, sink);
+  }
+  return false;
+}
+
 inline bool emit_class_template_arguments(
     const std::vector<Type::ClassTemplateArgument> & arguments,
     std::string & out,
@@ -2430,6 +2891,21 @@ inline bool emit_class_template_arguments(
   out += 'I';
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(!emit_class_template_argument(arguments[i], out, sink)) {
+      return false;
+    }
+  }
+  out += 'E';
+  return true;
+}
+
+inline bool emit_class_template_arguments_owned(
+    std::vector<Type::ClassTemplateArgument> & arguments,
+    std::string & out,
+    SubstitutionSink * sink)
+{
+  out += 'I';
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(!emit_class_template_argument_owned(arguments[i], out, sink)) {
       return false;
     }
   }
@@ -2895,7 +3371,7 @@ inline bool emit_dependent_expression_body(const DependentExpression & expressio
     }
     if(!expression.template_arguments.empty()) {
       if(sink && !expression.suppress_template_prefix_substitution) {
-        sink->register_substitution(
+        sink->register_substitution_owned(
             SubstitutionKey::function_template_prefix(expression.text));
       }
       if(!emit_template_arguments(expression.template_arguments, out, sink)) {
@@ -2917,7 +3393,7 @@ inline bool emit_dependent_expression_body(const DependentExpression & expressio
     }
     if(!expression.template_arguments.empty()) {
       if(sink && !expression.suppress_template_prefix_substitution) {
-        sink->register_substitution(
+        sink->register_substitution_owned(
             SubstitutionKey::function_template_prefix(expression.text));
       }
       if(!emit_template_arguments(expression.template_arguments, out, sink)) {
@@ -3009,7 +3485,7 @@ inline bool emit_dependent_expression_body(const DependentExpression & expressio
       return false;
     }
     if(sink && !expression.suppress_template_prefix_substitution) {
-      sink->register_substitution(
+      sink->register_substitution_owned(
           SubstitutionKey::function_template_prefix(expression.text));
     }
     if(!emit_template_arguments(expression.template_arguments, out, sink)) {
@@ -3111,13 +3587,13 @@ inline SubstitutionKey function_name_component_prefix_key(
     return SubstitutionKey::none();
   }
   if(!component.complete_ir_substitution_key.empty()) {
-    return component.complete_ir_substitution_key;
+    return component.complete_ir_substitution_key.get();
   }
   if(!component.complete_substitution_name.empty()) {
     return SubstitutionKey::named(component.complete_substitution_name);
   }
   if(!component.ir_substitution_key.empty()) {
-    return component.ir_substitution_key;
+    return component.ir_substitution_key.get();
   }
   if(!component.substitution_name.empty()) {
     return SubstitutionKey::named(component.substitution_name);
@@ -3129,7 +3605,7 @@ inline SubstitutionKey function_name_component_name_key(
     const FunctionNameComponent & component)
 {
   if(!component.ir_substitution_key.empty()) {
-    return component.ir_substitution_key;
+    return component.ir_substitution_key.get();
   }
   return component.substitution_name.empty() ?
       SubstitutionKey::none() :
@@ -3140,7 +3616,7 @@ inline SubstitutionKey function_name_component_complete_key(
     const FunctionNameComponent & component)
 {
   if(!component.complete_ir_substitution_key.empty()) {
-    return component.complete_ir_substitution_key;
+    return component.complete_ir_substitution_key.get();
   }
   return component.complete_substitution_name.empty() ?
       SubstitutionKey::none() :
@@ -3165,26 +3641,26 @@ inline bool emit_function_name_component(const FunctionNameComponent & component
        !emit_template_arguments(component.template_arguments, out, sink)) {
       return false;
     }
-    const SubstitutionKey complete_key =
+    SubstitutionKey complete_key =
         function_name_component_complete_key(component);
     if(sink &&
        !component.standard_substitution_includes_arguments &&
        !complete_key.empty()) {
-      sink->register_substitution(complete_key);
+      sink->register_substitution_owned(std::move(complete_key));
     }
     return true;
   }
 
-  const SubstitutionKey name_key = function_name_component_name_key(component);
+  SubstitutionKey name_key = function_name_component_name_key(component);
   if(sink && !name_key.empty() && sink->emit_substitution(name_key, out)) {
     if(!component.template_arguments.empty() &&
        !emit_template_arguments(component.template_arguments, out, sink)) {
       return false;
     }
-    const SubstitutionKey complete_key =
+    SubstitutionKey complete_key =
         function_name_component_complete_key(component);
     if(sink && !complete_key.empty()) {
-      sink->register_substitution(complete_key);
+      sink->register_substitution_owned(std::move(complete_key));
     }
     return true;
   }
@@ -3192,16 +3668,16 @@ inline bool emit_function_name_component(const FunctionNameComponent & component
     return false;
   }
   if(sink && !name_key.empty()) {
-    sink->register_substitution(name_key);
+    sink->register_substitution_owned(std::move(name_key));
   }
   if(!component.template_arguments.empty() &&
      !emit_template_arguments(component.template_arguments, out, sink)) {
     return false;
   }
-  const SubstitutionKey complete_key =
+  SubstitutionKey complete_key =
       function_name_component_complete_key(component);
   if(sink && !complete_key.empty()) {
-    sink->register_substitution(complete_key);
+    sink->register_substitution_owned(std::move(complete_key));
   }
   return true;
 }
@@ -3294,11 +3770,11 @@ inline bool emit_function_name(const FunctionEncoding & function,
                                                lambda_key)) {
         return false;
       }
-      sink->register_substitution(lambda_key);
+      sink->register_substitution_owned(std::move(lambda_key));
     }
-    if(function.has_conversion_type) {
+    if(function.has_conversion_type && function.conversion_type) {
       out += "cv";
-      if(!emit_type(function.conversion_type, out, nullptr)) {
+      if(!emit_type(*function.conversion_type, out, nullptr)) {
         return false;
       }
     } else if(!function.terminal_source_name.empty()) {
@@ -3319,7 +3795,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
     emit_abi_tags(function.abi_tags, out);
     if(!function.template_arguments.empty()) {
       if(sink && !function.template_prefix_key.empty()) {
-        sink->register_substitution(function.template_prefix_key);
+        sink->register_substitution(function.template_prefix_key.get());
       }
       if(!emit_template_arguments(function.template_arguments, out, sink)) {
         return false;
@@ -3351,7 +3827,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
     if(!function.template_arguments.empty() &&
        sink &&
        !function.template_prefix_key.empty() &&
-       sink->emit_substitution(function.template_prefix_key, out)) {
+       sink->emit_substitution(function.template_prefix_key.get(), out)) {
       if(!emit_template_arguments(function.template_arguments, out, sink)) {
         return false;
       }
@@ -3371,9 +3847,9 @@ inline bool emit_function_name(const FunctionEncoding & function,
         return false;
       }
     }
-    if(function.has_conversion_type) {
+    if(function.has_conversion_type && function.conversion_type) {
       out += "cv";
-      if(!emit_type(function.conversion_type,
+      if(!emit_type(*function.conversion_type,
                     out,
                     nullptr)) {
         return false;
@@ -3394,7 +3870,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
     emit_abi_tags(function.abi_tags, out);
     if(!function.template_arguments.empty()) {
       if(sink && !function.template_prefix_key.empty()) {
-        sink->register_substitution(function.template_prefix_key);
+        sink->register_substitution(function.template_prefix_key.get());
       }
       if(!emit_template_arguments(function.template_arguments, out, sink)) {
         return false;
@@ -3413,12 +3889,12 @@ inline bool emit_function_name(const FunctionEncoding & function,
   if(!function.template_arguments.empty() &&
      sink &&
      !function.template_prefix_key.empty() &&
-     sink->emit_substitution(function.template_prefix_key, out)) {
+     sink->emit_substitution(function.template_prefix_key.get(), out)) {
     return emit_template_arguments(function.template_arguments, out, sink);
   }
-  if(function.has_conversion_type) {
+  if(function.has_conversion_type && function.conversion_type) {
     out += "cv";
-    if(!emit_type(function.conversion_type,
+    if(!emit_type(*function.conversion_type,
                   out,
                   nullptr)) {
       return false;
@@ -3435,7 +3911,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
   emit_abi_tags(function.abi_tags, out);
   if(!function.template_arguments.empty()) {
     if(sink && !function.template_prefix_key.empty()) {
-      sink->register_substitution(function.template_prefix_key);
+      sink->register_substitution(function.template_prefix_key.get());
     }
     if(!emit_template_arguments(function.template_arguments, out, sink)) {
       return false;
@@ -3450,6 +3926,14 @@ inline bool emit_function_encoding(const FunctionEncoding & function,
 {
   out += "_Z";
   return emit_function_encoding_body(function, out, sink);
+}
+
+inline bool emit_function_encoding_owned(FunctionEncoding & function,
+                                         std::string & out,
+                                         SubstitutionSink * sink)
+{
+  out += "_Z";
+  return emit_function_encoding_body_owned(function, out, sink);
 }
 
 inline bool emit_local_entity_context_function_type(const Type & type,
@@ -3471,7 +3955,7 @@ inline bool emit_function_encoding_body(const FunctionEncoding & function,
     return false;
   }
   if(function.has_result_type &&
-     !emit_type(function.result_type, out, sink)) {
+     (!function.result_type || !emit_type(*function.result_type, out, sink))) {
     return false;
   }
   if(function.parameter_types.empty()) {
@@ -3480,6 +3964,33 @@ inline bool emit_function_encoding_body(const FunctionEncoding & function,
   }
   for(std::size_t i = 0; i < function.parameter_types.size(); ++i) {
     if(!emit_type(function.parameter_types[i], out, sink)) {
+      return false;
+    }
+  }
+  if(function.variadic) {
+    out += 'z';
+  }
+  return true;
+}
+
+inline bool emit_function_encoding_body_owned(FunctionEncoding & function,
+                                             std::string & out,
+                                             SubstitutionSink * sink)
+{
+  if(!emit_function_name(function, out, sink)) {
+    return false;
+  }
+  if(function.has_result_type &&
+     (!function.result_type ||
+      !emit_type_owned(*function.result_type, out, sink))) {
+    return false;
+  }
+  if(function.parameter_types.empty()) {
+    out += function.variadic ? 'z' : 'v';
+    return true;
+  }
+  for(std::size_t i = 0; i < function.parameter_types.size(); ++i) {
+    if(!emit_type_owned(function.parameter_types[i], out, sink)) {
       return false;
     }
   }

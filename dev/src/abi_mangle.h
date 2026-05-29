@@ -299,10 +299,10 @@ struct SubstitutionSlot
 {
   SubstitutionKey ir_key;
 
-  static SubstitutionSlot typed(const SubstitutionKey & key)
+  static SubstitutionSlot typed(SubstitutionKey key)
   {
     SubstitutionSlot slot;
-    slot.ir_key = key;
+    slot.ir_key = std::move(key);
     return slot;
   }
 
@@ -312,11 +312,76 @@ struct SubstitutionSlot
   }
 };
 
+struct OptionalSubstitutionKey
+{
+  OptionalSubstitutionKey() {}
+
+  OptionalSubstitutionKey(const OptionalSubstitutionKey & rhs)
+      : key(rhs.key ? new SubstitutionKey(*rhs.key) : nullptr)
+  {
+  }
+
+  OptionalSubstitutionKey(OptionalSubstitutionKey && rhs) noexcept
+      : key(std::move(rhs.key))
+  {
+  }
+
+  OptionalSubstitutionKey & operator=(const OptionalSubstitutionKey & rhs)
+  {
+    if(this == &rhs) {
+      return *this;
+    }
+    key.reset(rhs.key ? new SubstitutionKey(*rhs.key) : nullptr);
+    return *this;
+  }
+
+  OptionalSubstitutionKey & operator=(OptionalSubstitutionKey && rhs) noexcept
+  {
+    if(this != &rhs) {
+      key = std::move(rhs.key);
+    }
+    return *this;
+  }
+
+  OptionalSubstitutionKey & operator=(SubstitutionKey value)
+  {
+    if(value.empty()) {
+      key.reset();
+    } else {
+      key.reset(new SubstitutionKey(std::move(value)));
+    }
+    return *this;
+  }
+
+  bool empty() const
+  {
+    return !key || key->empty();
+  }
+
+  const SubstitutionKey & get() const
+  {
+    return key ? *key : empty_key();
+  }
+
+private:
+  std::unique_ptr<SubstitutionKey> key;
+
+  static const SubstitutionKey & empty_key()
+  {
+    static const SubstitutionKey empty;
+    return empty;
+  }
+};
+
 struct SubstitutionSink
 {
   virtual ~SubstitutionSink() {}
   virtual bool emit_substitution(const SubstitutionKey & key, std::string & out) = 0;
   virtual void register_substitution(const SubstitutionKey & key) = 0;
+  virtual void register_substitution_owned(SubstitutionKey key)
+  {
+    register_substitution(key);
+  }
   virtual bool emit_dependent_parameter_type(const Type & type,
                                              std::string & out);
   virtual bool suppress_template_parameter_type_substitution_in_template_argument()
@@ -428,44 +493,44 @@ struct Type
       return *argument.metadata;
     }
 
-    static ClassTemplateArgument type_arg(const Type & type)
+    static ClassTemplateArgument type_arg(Type type)
     {
       ClassTemplateArgument argument;
       argument.kind = CTAK_TYPE;
-      argument.type.reset(new Type(type));
+      argument.type.reset(new Type(std::move(type)));
       return argument;
     }
 
-    static ClassTemplateArgument integral_value_arg(const Type & type,
+    static ClassTemplateArgument integral_value_arg(Type type,
                                                     long long value)
     {
       ClassTemplateArgument argument;
       argument.kind = CTAK_INTEGRAL_VALUE;
-      argument.type.reset(new Type(type));
+      argument.type.reset(new Type(std::move(type)));
       argument.integral_value = value;
       return argument;
     }
 
     static ClassTemplateArgument dependent_integral_value_arg(
-        const Type & parameter_type,
-        const Type & value_type,
+        Type parameter_type,
+        Type value_type,
         long long value)
     {
       ClassTemplateArgument argument;
       argument.kind = CTAK_DEPENDENT_INTEGRAL_VALUE;
-      argument.parameter_type.reset(new Type(parameter_type));
-      argument.type.reset(new Type(value_type));
+      argument.parameter_type.reset(new Type(std::move(parameter_type)));
+      argument.type.reset(new Type(std::move(value_type)));
       argument.integral_value = value;
       return argument;
     }
 
     static ClassTemplateArgument dependent_untyped_integral_value_arg(
-        const Type & parameter_type,
+        Type parameter_type,
         long long value)
     {
       ClassTemplateArgument argument;
       argument.kind = CTAK_DEPENDENT_INTEGRAL_VALUE;
-      argument.parameter_type.reset(new Type(parameter_type));
+      argument.parameter_type.reset(new Type(std::move(parameter_type)));
       argument.integral_value = value;
       return argument;
     }
@@ -479,33 +544,33 @@ struct Type
     }
 
     static ClassTemplateArgument dependent_expression_arg(
-        const DependentExpression & expression);
+        DependentExpression expression);
 
     static ClassTemplateArgument template_entity_arg(
-        const std::vector<NameComponent> & prefix_components,
-        const std::string & name,
-        const std::string & substitution)
+        std::vector<NameComponent> prefix_components,
+        std::string name,
+        std::string substitution)
     {
       ClassTemplateArgument argument;
       argument.kind = CTAK_TEMPLATE_ENTITY;
       Metadata & metadata = ensure_metadata(argument);
-      metadata.prefix_components = prefix_components;
-      metadata.template_name = name;
-      metadata.template_name_substitution = substitution;
+      metadata.prefix_components = std::move(prefix_components);
+      metadata.template_name = std::move(name);
+      metadata.template_name_substitution = std::move(substitution);
       return argument;
     }
 
     static ClassTemplateArgument member_template_entity_arg(
-        const Type & owner,
-        const std::string & name,
-        const std::string & substitution)
+        Type owner,
+        std::string name,
+        std::string substitution)
     {
       ClassTemplateArgument argument;
       argument.kind = CTAK_TEMPLATE_ENTITY;
       Metadata & metadata = ensure_metadata(argument);
-      metadata.template_owner_type.reset(new Type(owner));
-      metadata.template_name = name;
-      metadata.template_name_substitution = substitution;
+      metadata.template_owner_type.reset(new Type(std::move(owner)));
+      metadata.template_name = std::move(name);
+      metadata.template_name_substitution = std::move(substitution);
       return argument;
     }
 
@@ -520,23 +585,23 @@ struct Type
       return argument;
     }
 
-    static ClassTemplateArgument external_entity_arg(const std::string & symbol,
+    static ClassTemplateArgument external_entity_arg(std::string symbol,
                                                      bool address_of)
     {
       ClassTemplateArgument argument;
       argument.kind = CTAK_EXTERNAL_ENTITY;
       Metadata & metadata = ensure_metadata(argument);
-      metadata.external_entity_symbol = symbol;
+      metadata.external_entity_symbol = std::move(symbol);
       metadata.external_entity_address_of = address_of;
       return argument;
     }
 
     static ClassTemplateArgument external_member_entity_arg(
-        const std::string & symbol,
+        std::string symbol,
         bool address_of,
-        const Type & owner_type,
-        const std::string & member_name,
-        const std::vector<Type> & parameter_types,
+        Type owner_type,
+        std::string member_name,
+        std::vector<Type> parameter_types,
         bool is_function,
         bool function_const,
         bool function_volatile,
@@ -546,9 +611,9 @@ struct Type
     {
       ClassTemplateArgument argument = external_entity_arg(symbol, address_of);
       Metadata & metadata = ensure_metadata(argument);
-      metadata.external_entity_owner_type.reset(new Type(owner_type));
-      metadata.external_entity_member_name = member_name;
-      metadata.external_entity_parameter_types = parameter_types;
+      metadata.external_entity_owner_type.reset(new Type(std::move(owner_type)));
+      metadata.external_entity_member_name = std::move(member_name);
+      metadata.external_entity_parameter_types = std::move(parameter_types);
       metadata.external_entity_is_member = true;
       metadata.external_entity_is_function = is_function;
       metadata.external_entity_function_const = function_const;
@@ -560,12 +625,12 @@ struct Type
     }
 
     static ClassTemplateArgument argument_pack(
-        const std::vector<ClassTemplateArgument> & arguments)
+        std::vector<ClassTemplateArgument> arguments)
     {
       ClassTemplateArgument argument;
       argument.kind = CTAK_ARGUMENT_PACK;
       Metadata & metadata = ensure_metadata(argument);
-      metadata.pack_arguments = arguments;
+      metadata.pack_arguments = std::move(arguments);
       return argument;
     }
   };
@@ -590,7 +655,7 @@ struct Type
     std::vector<NameComponent> prefix_components;
     std::string template_name;
     std::string template_name_substitution;
-    SubstitutionKey template_name_ir_substitution;
+    OptionalSubstitutionKey template_name_ir_substitution;
     std::vector<ClassTemplateArgument> template_arguments;
     std::string standard_substitution;
     bool standard_substitution_includes_arguments = false;
@@ -639,107 +704,107 @@ struct Type
     return type;
   }
 
-  static Type cv(bool is_const, bool is_volatile, const Type & inner)
+  static Type cv(bool is_const, bool is_volatile, Type inner)
   {
     Type type;
     type.kind = TK_CV;
     type.cv_const = is_const;
     type.cv_volatile = is_volatile;
-    type.inner.reset(new Type(inner));
+    type.inner.reset(new Type(std::move(inner)));
     return type;
   }
 
-  static Type pointer(const Type & inner)
+  static Type pointer(Type inner)
   {
     Type type;
     type.kind = TK_POINTER;
-    type.inner.reset(new Type(inner));
+    type.inner.reset(new Type(std::move(inner)));
     return type;
   }
 
-  static Type lvalue_reference(const Type & inner)
+  static Type lvalue_reference(Type inner)
   {
     Type type;
     type.kind = TK_LVALUE_REFERENCE;
-    type.inner.reset(new Type(inner));
+    type.inner.reset(new Type(std::move(inner)));
     return type;
   }
 
-  static Type rvalue_reference(const Type & inner)
+  static Type rvalue_reference(Type inner)
   {
     Type type;
     type.kind = TK_RVALUE_REFERENCE;
-    type.inner.reset(new Type(inner));
+    type.inner.reset(new Type(std::move(inner)));
     return type;
   }
 
-  static Type array(const std::string & bound, const Type & inner)
+  static Type array(std::string bound, Type inner)
   {
     Type type;
     type.kind = TK_ARRAY;
-    type.array_bound = bound;
-    type.inner.reset(new Type(inner));
+    type.array_bound = std::move(bound);
+    type.inner.reset(new Type(std::move(inner)));
     return type;
   }
 
-  static Type array(const std::string & bound,
-                    const std::string & substitution_bound_key,
-                    const Type & inner)
+  static Type array(std::string bound,
+                    std::string substitution_bound_key,
+                    Type inner)
   {
-    Type type = array(bound, inner);
-    type.array_substitution_bound_key = substitution_bound_key;
+    Type type = array(std::move(bound), std::move(inner));
+    type.array_substitution_bound_key = std::move(substitution_bound_key);
     return type;
   }
 
-  static Type function(const Type & result,
-                       const std::vector<Type> & params,
+  static Type function(Type result,
+                       std::vector<Type> params,
                        bool variadic,
                        bool lvalue_ref = false,
                        bool rvalue_ref = false)
   {
     Type type;
     type.kind = TK_FUNCTION;
-    type.inner.reset(new Type(result));
-    type.params = params;
+    type.inner.reset(new Type(std::move(result)));
+    type.params = std::move(params);
     type.variadic = variadic;
     type.function_lvalue_ref = lvalue_ref;
     type.function_rvalue_ref = rvalue_ref;
     return type;
   }
 
-  static Type member_pointer(const Type & owner, const Type & member)
+  static Type member_pointer(Type owner, Type member)
   {
     Type type;
     type.kind = TK_MEMBER_POINTER;
-    type.owner.reset(new Type(owner));
-    type.inner.reset(new Type(member));
+    type.owner.reset(new Type(std::move(owner)));
+    type.inner.reset(new Type(std::move(member)));
     return type;
   }
 
-  static Type vendor_qualified(const std::string & name, const Type & inner)
+  static Type vendor_qualified(std::string name, Type inner)
   {
     Type type;
     type.kind = TK_VENDOR_QUALIFIED;
-    type.vendor_qualifier_name = name;
-    type.inner.reset(new Type(inner));
+    type.vendor_qualifier_name = std::move(name);
+    type.inner.reset(new Type(std::move(inner)));
     return type;
   }
 
-  static Type builtin_type_transform(const std::string & name,
-                                     const Type & argument)
+  static Type builtin_type_transform(std::string name,
+                                     Type argument)
   {
     Type type;
     type.kind = TK_BUILTIN_TYPE_TRANSFORM;
-    type.builtin_transform_name = name;
-    type.inner.reset(new Type(argument));
+    type.builtin_transform_name = std::move(name);
+    type.inner.reset(new Type(std::move(argument)));
     return type;
   }
 
-  static Type pack_expansion(const Type & pattern)
+  static Type pack_expansion(Type pattern)
   {
     Type type;
     type.kind = TK_PACK_EXPANSION;
-    type.inner.reset(new Type(pattern));
+    type.inner.reset(new Type(std::move(pattern)));
     return type;
   }
 
@@ -751,48 +816,48 @@ struct Type
     return type;
   }
 
-  static Type named_type(const std::vector<NameComponent> & prefix_components,
-                         const std::string & name,
-                         const std::string & substitution)
+  static Type named_type(std::vector<NameComponent> prefix_components,
+                         std::string name,
+                         std::string substitution)
   {
     Type type;
     type.kind = TK_NAMED;
     NameMetadata & metadata = ensure_name_metadata(type);
-    metadata.prefix_components = prefix_components;
-    metadata.template_name = name;
-    metadata.template_name_substitution = substitution;
+    metadata.prefix_components = std::move(prefix_components);
+    metadata.template_name = std::move(name);
+    metadata.template_name_substitution = std::move(substitution);
     return type;
   }
 
-  static Type member_named_type(const Type & owner,
-                                const std::string & name,
-                                const std::string & substitution)
+  static Type member_named_type(Type owner,
+                                std::string name,
+                                std::string substitution)
   {
     Type type;
     type.kind = TK_NAMED;
-    type.name_owner.reset(new Type(owner));
+    type.name_owner.reset(new Type(std::move(owner)));
     NameMetadata & metadata = ensure_name_metadata(type);
-    metadata.template_name = name;
-    metadata.template_name_substitution = substitution;
+    metadata.template_name = std::move(name);
+    metadata.template_name_substitution = std::move(substitution);
     return type;
   }
 
   static Type class_template_specialization(
-      const std::vector<NameComponent> & prefix_components,
-      const std::string & template_name,
-      const std::string & template_name_substitution,
-      const std::vector<ClassTemplateArgument> & arguments,
-      const std::string & standard_substitution,
+      std::vector<NameComponent> prefix_components,
+      std::string template_name,
+      std::string template_name_substitution,
+      std::vector<ClassTemplateArgument> arguments,
+      std::string standard_substitution,
       bool standard_substitution_includes_arguments)
   {
     Type type;
     type.kind = TK_CLASS_TEMPLATE_SPECIALIZATION;
     NameMetadata & metadata = ensure_name_metadata(type);
-    metadata.prefix_components = prefix_components;
-    metadata.template_name = template_name;
-    metadata.template_name_substitution = template_name_substitution;
-    metadata.template_arguments = arguments;
-    metadata.standard_substitution = standard_substitution;
+    metadata.prefix_components = std::move(prefix_components);
+    metadata.template_name = std::move(template_name);
+    metadata.template_name_substitution = std::move(template_name_substitution);
+    metadata.template_arguments = std::move(arguments);
+    metadata.standard_substitution = std::move(standard_substitution);
     metadata.standard_substitution_includes_arguments =
         standard_substitution_includes_arguments;
     return type;
@@ -800,30 +865,30 @@ struct Type
 
   static Type template_parameter_class_template_specialization(
       std::size_t template_parameter_index,
-      const std::vector<ClassTemplateArgument> & arguments)
+      std::vector<ClassTemplateArgument> arguments)
   {
     Type type;
     type.kind = TK_CLASS_TEMPLATE_SPECIALIZATION;
     NameMetadata & metadata = ensure_name_metadata(type);
     metadata.template_name_is_template_parameter = true;
     metadata.template_name_parameter_index = template_parameter_index;
-    metadata.template_arguments = arguments;
+    metadata.template_arguments = std::move(arguments);
     return type;
   }
 
   static Type member_class_template_specialization(
-      const Type & owner,
-      const std::string & template_name,
-      const std::string & template_name_substitution,
-      const std::vector<ClassTemplateArgument> & arguments)
+      Type owner,
+      std::string template_name,
+      std::string template_name_substitution,
+      std::vector<ClassTemplateArgument> arguments)
   {
     Type type;
     type.kind = TK_CLASS_TEMPLATE_SPECIALIZATION;
-    type.name_owner.reset(new Type(owner));
+    type.name_owner.reset(new Type(std::move(owner)));
     NameMetadata & metadata = ensure_name_metadata(type);
-    metadata.template_name = template_name;
-    metadata.template_name_substitution = template_name_substitution;
-    metadata.template_arguments = arguments;
+    metadata.template_name = std::move(template_name);
+    metadata.template_name_substitution = std::move(template_name_substitution);
+    metadata.template_arguments = std::move(arguments);
     return type;
   }
 
@@ -903,43 +968,43 @@ struct TemplateArgument
     return *argument.metadata;
   }
 
-  static TemplateArgument type_arg(const Type & type)
+  static TemplateArgument type_arg(Type type)
   {
     TemplateArgument argument;
     argument.kind = TAK_TYPE;
-    argument.value_type.reset(new Type(type));
+    argument.value_type.reset(new Type(std::move(type)));
     return argument;
   }
 
-  static TemplateArgument integral_value_arg(const Type & type, long long value)
+  static TemplateArgument integral_value_arg(Type type, long long value)
   {
     TemplateArgument argument;
     argument.kind = TAK_INTEGRAL_VALUE;
-    argument.value_type.reset(new Type(type));
+    argument.value_type.reset(new Type(std::move(type)));
     argument.integral_value = value;
     return argument;
   }
 
   static TemplateArgument dependent_integral_value_arg(
-      const Type & parameter_type,
-      const Type & value_type,
+      Type parameter_type,
+      Type value_type,
       long long value)
   {
     TemplateArgument argument;
     argument.kind = TAK_DEPENDENT_INTEGRAL_VALUE;
-    argument.parameter_type.reset(new Type(parameter_type));
-    argument.value_type.reset(new Type(value_type));
+    argument.parameter_type.reset(new Type(std::move(parameter_type)));
+    argument.value_type.reset(new Type(std::move(value_type)));
     argument.integral_value = value;
     return argument;
   }
 
   static TemplateArgument dependent_untyped_integral_value_arg(
-      const Type & parameter_type,
+      Type parameter_type,
       long long value)
   {
     TemplateArgument argument;
     argument.kind = TAK_DEPENDENT_INTEGRAL_VALUE;
-    argument.parameter_type.reset(new Type(parameter_type));
+    argument.parameter_type.reset(new Type(std::move(parameter_type)));
     argument.integral_value = value;
     return argument;
   }
@@ -953,33 +1018,33 @@ struct TemplateArgument
   }
 
   static TemplateArgument dependent_expression_arg(
-      const DependentExpression & expression);
+      DependentExpression expression);
 
   static TemplateArgument template_entity_arg(
-      const std::vector<Type::NameComponent> & prefix_components,
-      const std::string & name,
-      const std::string & substitution)
+      std::vector<Type::NameComponent> prefix_components,
+      std::string name,
+      std::string substitution)
   {
     TemplateArgument argument;
     argument.kind = TAK_TEMPLATE_ENTITY;
     Metadata & metadata = ensure_metadata(argument);
-    metadata.prefix_components = prefix_components;
-    metadata.template_name = name;
-    metadata.template_name_substitution = substitution;
+    metadata.prefix_components = std::move(prefix_components);
+    metadata.template_name = std::move(name);
+    metadata.template_name_substitution = std::move(substitution);
     return argument;
   }
 
   static TemplateArgument member_template_entity_arg(
-      const Type & owner,
-      const std::string & name,
-      const std::string & substitution)
+      Type owner,
+      std::string name,
+      std::string substitution)
   {
     TemplateArgument argument;
     argument.kind = TAK_TEMPLATE_ENTITY;
     Metadata & metadata = ensure_metadata(argument);
-    metadata.template_owner_type.reset(new Type(owner));
-    metadata.template_name = name;
-    metadata.template_name_substitution = substitution;
+    metadata.template_owner_type.reset(new Type(std::move(owner)));
+    metadata.template_name = std::move(name);
+    metadata.template_name_substitution = std::move(substitution);
     return argument;
   }
 
@@ -994,23 +1059,23 @@ struct TemplateArgument
     return argument;
   }
 
-  static TemplateArgument external_entity_arg(const std::string & symbol,
+  static TemplateArgument external_entity_arg(std::string symbol,
                                               bool address_of)
   {
     TemplateArgument argument;
     argument.kind = TAK_EXTERNAL_ENTITY;
     Metadata & metadata = ensure_metadata(argument);
-    metadata.external_entity_symbol = symbol;
+    metadata.external_entity_symbol = std::move(symbol);
     metadata.external_entity_address_of = address_of;
     return argument;
   }
 
   static TemplateArgument external_member_entity_arg(
-      const std::string & symbol,
+      std::string symbol,
       bool address_of,
-      const Type & owner_type,
-      const std::string & member_name,
-      const std::vector<Type> & parameter_types,
+      Type owner_type,
+      std::string member_name,
+      std::vector<Type> parameter_types,
       bool is_function,
       bool function_const,
       bool function_volatile,
@@ -1020,9 +1085,9 @@ struct TemplateArgument
   {
     TemplateArgument argument = external_entity_arg(symbol, address_of);
     Metadata & metadata = ensure_metadata(argument);
-    metadata.external_entity_owner_type.reset(new Type(owner_type));
-    metadata.external_entity_member_name = member_name;
-    metadata.external_entity_parameter_types = parameter_types;
+    metadata.external_entity_owner_type.reset(new Type(std::move(owner_type)));
+    metadata.external_entity_member_name = std::move(member_name);
+    metadata.external_entity_parameter_types = std::move(parameter_types);
     metadata.external_entity_is_member = true;
     metadata.external_entity_is_function = is_function;
     metadata.external_entity_function_const = function_const;
@@ -1034,12 +1099,12 @@ struct TemplateArgument
   }
 
   static TemplateArgument argument_pack(
-      const std::vector<TemplateArgument> & arguments)
+      std::vector<TemplateArgument> arguments)
   {
     TemplateArgument argument;
     argument.kind = TAK_ARGUMENT_PACK;
     Metadata & metadata = ensure_metadata(argument);
-    metadata.pack_arguments = arguments;
+    metadata.pack_arguments = std::move(arguments);
     return argument;
   }
 };
@@ -1098,164 +1163,164 @@ struct DependentExpression
     return expression;
   }
 
-  static DependentExpression literal(const std::string & text)
+  static DependentExpression literal(std::string text)
   {
     DependentExpression expression;
     expression.kind = EK_LITERAL;
-    expression.text = text;
+    expression.text = std::move(text);
     return expression;
   }
 
-  static DependentExpression typed_integral_value(const Type & type,
+  static DependentExpression typed_integral_value(Type type,
                                                   long long value)
   {
     DependentExpression expression;
     expression.kind = EK_INTEGRAL_VALUE;
-    expression.owner_type.reset(new Type(type));
+    expression.owner_type.reset(new Type(std::move(type)));
     expression.integral_value = value;
     return expression;
   }
 
-  static DependentExpression member(const Type & owner,
+  static DependentExpression member(Type owner,
                                     bool close_owner,
-                                    const std::string & name)
+                                    std::string name)
   {
     DependentExpression expression;
     expression.kind = EK_MEMBER;
-    expression.owner_type.reset(new Type(owner));
+    expression.owner_type.reset(new Type(std::move(owner)));
     expression.close_member_owner = close_owner;
-    expression.text = name;
+    expression.text = std::move(name);
     return expression;
   }
 
   static DependentExpression object_member(
-      const std::string & op_code,
-      const DependentExpression & object,
-      const std::string & name,
-      const std::vector<TemplateArgument> & template_arguments)
+      std::string op_code,
+      DependentExpression object,
+      std::string name,
+      std::vector<TemplateArgument> template_arguments)
   {
     DependentExpression expression;
     expression.kind = EK_OBJECT_MEMBER;
-    expression.op_code = op_code;
-    expression.inner.reset(new DependentExpression(object));
-    expression.text = name;
-    expression.template_arguments = template_arguments;
+    expression.op_code = std::move(op_code);
+    expression.inner.reset(new DependentExpression(std::move(object)));
+    expression.text = std::move(name);
+    expression.template_arguments = std::move(template_arguments);
     return expression;
   }
 
-  static DependentExpression unary(const std::string & op_code,
-                                   const DependentExpression & inner)
+  static DependentExpression unary(std::string op_code,
+                                   DependentExpression inner)
   {
     DependentExpression expression;
     expression.kind = EK_UNARY;
-    expression.op_code = op_code;
-    expression.inner.reset(new DependentExpression(inner));
+    expression.op_code = std::move(op_code);
+    expression.inner.reset(new DependentExpression(std::move(inner)));
     return expression;
   }
 
-  static DependentExpression pack_expansion(const DependentExpression & inner)
+  static DependentExpression pack_expansion(DependentExpression inner)
   {
     DependentExpression expression;
     expression.kind = EK_PACK_EXPANSION;
-    expression.inner.reset(new DependentExpression(inner));
+    expression.inner.reset(new DependentExpression(std::move(inner)));
     return expression;
   }
 
-  static DependentExpression binary(const std::string & op_code,
-                                    const DependentExpression & left,
-                                    const DependentExpression & right)
+  static DependentExpression binary(std::string op_code,
+                                    DependentExpression left,
+                                    DependentExpression right)
   {
     DependentExpression expression;
     expression.kind = EK_BINARY;
-    expression.op_code = op_code;
-    expression.inner.reset(new DependentExpression(left));
-    expression.arguments.push_back(right);
+    expression.op_code = std::move(op_code);
+    expression.inner.reset(new DependentExpression(std::move(left)));
+    expression.arguments.push_back(std::move(right));
     return expression;
   }
 
-  static DependentExpression conditional(const DependentExpression & condition,
-                                         const DependentExpression & true_expr,
-                                         const DependentExpression & false_expr)
+  static DependentExpression conditional(DependentExpression condition,
+                                         DependentExpression true_expr,
+                                         DependentExpression false_expr)
   {
     DependentExpression expression;
     expression.kind = EK_CONDITIONAL;
-    expression.inner.reset(new DependentExpression(condition));
-    expression.arguments.push_back(true_expr);
-    expression.arguments.push_back(false_expr);
+    expression.inner.reset(new DependentExpression(std::move(condition)));
+    expression.arguments.push_back(std::move(true_expr));
+    expression.arguments.push_back(std::move(false_expr));
     return expression;
   }
 
-  static DependentExpression call(const DependentExpression & callee,
-                                  const std::vector<DependentExpression> & arguments)
+  static DependentExpression call(DependentExpression callee,
+                                  std::vector<DependentExpression> arguments)
   {
     DependentExpression expression;
     expression.kind = EK_CALL;
-    expression.inner.reset(new DependentExpression(callee));
-    expression.arguments = arguments;
+    expression.inner.reset(new DependentExpression(std::move(callee)));
+    expression.arguments = std::move(arguments);
     return expression;
   }
 
   static DependentExpression conversion(
-      const Type & type,
-      const std::vector<DependentExpression> & arguments)
+      Type type,
+      std::vector<DependentExpression> arguments)
   {
     DependentExpression expression;
     expression.kind = EK_CONVERSION;
     expression.op_code = "cv";
-    expression.owner_type.reset(new Type(type));
-    expression.arguments = arguments;
+    expression.owner_type.reset(new Type(std::move(type)));
+    expression.arguments = std::move(arguments);
     return expression;
   }
 
   static DependentExpression cast(
-      const std::string & op_code,
-      const Type & type,
-      const DependentExpression & argument)
+      std::string op_code,
+      Type type,
+      DependentExpression argument)
   {
     DependentExpression expression;
     expression.kind = EK_CONVERSION;
-    expression.op_code = op_code;
-    expression.owner_type.reset(new Type(type));
-    expression.arguments.push_back(argument);
+    expression.op_code = std::move(op_code);
+    expression.owner_type.reset(new Type(std::move(type)));
+    expression.arguments.push_back(std::move(argument));
     return expression;
   }
 
   static DependentExpression template_id(
-      const std::string & name,
-      const std::vector<TemplateArgument> & arguments)
+      std::string name,
+      std::vector<TemplateArgument> arguments)
   {
     DependentExpression expression;
     expression.kind = EK_TEMPLATE_ID;
-    expression.text = name;
-    expression.template_arguments = arguments;
+    expression.text = std::move(name);
+    expression.template_arguments = std::move(arguments);
     return expression;
   }
 
   static DependentExpression type_trait(
-      const std::string & name,
-      const std::vector<Type> & arguments)
+      std::string name,
+      std::vector<Type> arguments)
   {
     DependentExpression expression;
     expression.kind = EK_TYPE_TRAIT;
-    expression.text = name;
-    expression.type_arguments = arguments;
+    expression.text = std::move(name);
+    expression.type_arguments = std::move(arguments);
     return expression;
   }
 
-  static DependentExpression sizeof_type(const Type & type)
+  static DependentExpression sizeof_type(Type type)
   {
     DependentExpression expression;
     expression.kind = EK_SIZEOF_TYPE;
-    expression.owner_type.reset(new Type(type));
+    expression.owner_type.reset(new Type(std::move(type)));
     return expression;
   }
 
-  static DependentExpression external_entity(const std::string & symbol,
+  static DependentExpression external_entity(std::string symbol,
                                              bool address_of)
   {
     DependentExpression expression;
     expression.kind = EK_EXTERNAL_ENTITY;
-    expression.text = symbol;
+    expression.text = std::move(symbol);
     expression.external_entity_address_of = address_of;
     return expression;
   }
@@ -1263,20 +1328,20 @@ struct DependentExpression
 
 inline Type::ClassTemplateArgument
 Type::ClassTemplateArgument::dependent_expression_arg(
-    const DependentExpression & expression)
+    DependentExpression expression)
 {
   ClassTemplateArgument argument;
   argument.kind = CTAK_DEPENDENT_EXPRESSION;
-  argument.expression.reset(new DependentExpression(expression));
+  argument.expression.reset(new DependentExpression(std::move(expression)));
   return argument;
 }
 
 inline TemplateArgument TemplateArgument::dependent_expression_arg(
-    const DependentExpression & expression)
+    DependentExpression expression)
 {
   TemplateArgument argument;
   argument.kind = TAK_DEPENDENT_EXPRESSION;
-  argument.expression.reset(new DependentExpression(expression));
+  argument.expression.reset(new DependentExpression(std::move(expression)));
   return argument;
 }
 
@@ -1285,19 +1350,19 @@ struct FunctionNameComponent
   std::string source_name;
   std::string substitution_name;
   std::string complete_substitution_name;
-  SubstitutionKey ir_substitution_key;
-  SubstitutionKey complete_ir_substitution_key;
+  OptionalSubstitutionKey ir_substitution_key;
+  OptionalSubstitutionKey complete_ir_substitution_key;
   std::string standard_substitution;
   bool std_abbrev = false;
   bool standard_substitution_includes_arguments = false;
   std::vector<TemplateArgument> template_arguments;
 
-  static FunctionNameComponent source(const std::string & name,
-                                      const std::string & substitution)
+  static FunctionNameComponent source(std::string name,
+                                      std::string substitution)
   {
     FunctionNameComponent component;
-    component.source_name = name;
-    component.substitution_name = substitution;
+    component.source_name = std::move(name);
+    component.substitution_name = std::move(substitution);
     return component;
   }
 
@@ -1310,19 +1375,19 @@ struct FunctionNameComponent
   }
 
   static FunctionNameComponent template_component(
-      const std::string & name,
-      const std::string & substitution,
-      const std::string & complete_substitution,
-      const std::vector<TemplateArgument> & arguments,
-      const std::string & standard_substitution,
+      std::string name,
+      std::string substitution,
+      std::string complete_substitution,
+      std::vector<TemplateArgument> arguments,
+      std::string standard_substitution,
       bool standard_substitution_includes_arguments)
   {
     FunctionNameComponent component;
-    component.source_name = name;
-    component.substitution_name = substitution;
-    component.complete_substitution_name = complete_substitution;
-    component.template_arguments = arguments;
-    component.standard_substitution = standard_substitution;
+    component.source_name = std::move(name);
+    component.substitution_name = std::move(substitution);
+    component.complete_substitution_name = std::move(complete_substitution);
+    component.template_arguments = std::move(arguments);
+    component.standard_substitution = std::move(standard_substitution);
     component.standard_substitution_includes_arguments =
         standard_substitution_includes_arguments;
     return component;
@@ -1399,12 +1464,12 @@ struct FunctionEncoding
   std::string terminal_source_name;
   FunctionOperatorTerminal operator_terminal = FUNCTION_OPERATOR_NONE;
   std::string operator_literal_suffix;
-  Type conversion_type;
+  std::shared_ptr<Type> conversion_type;
   bool has_conversion_type = false;
-  Type result_type;
+  std::shared_ptr<Type> result_type;
   bool has_result_type = false;
   std::vector<TemplateArgument> template_arguments;
-  SubstitutionKey template_prefix_key;
+  OptionalSubstitutionKey template_prefix_key;
   std::vector<std::string> abi_tags;
   std::vector<Type> parameter_types;
   std::shared_ptr<LambdaMetadata> lambda;

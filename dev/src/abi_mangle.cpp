@@ -1235,7 +1235,8 @@ void parse_function_path(FunctionEncoding & function,
         throw logic_error("function path result requires a type");
       }
       function.has_result_type = true;
-      function.result_type = parse_single_type_token(ctx, words[++i]);
+      function.result_type.reset(
+          new Type(parse_single_type_token(ctx, words[++i])));
     } else if(words[i] == "variadic" || words[i] == "varargs") {
       function.variadic = true;
     } else if(ctx.args.count(words[i])) {
@@ -1658,7 +1659,7 @@ void apply_fact_words(AbiFactCase & fact_case,
   if(command == "conversion-terminal") {
     FunctionEncoding & function = target_function(fact_case);
     function.has_conversion_type = true;
-    function.conversion_type = parse_type_spec(ctx, words, 1);
+    function.conversion_type.reset(new Type(parse_type_spec(ctx, words, 1)));
     return;
   }
   if(command == "param") {
@@ -1668,7 +1669,7 @@ void apply_fact_words(AbiFactCase & fact_case,
   if(command == "result") {
     FunctionEncoding & function = target_function(fact_case);
     function.has_result_type = true;
-    function.result_type = parse_type_spec(ctx, words, 1);
+    function.result_type.reset(new Type(parse_type_spec(ctx, words, 1)));
     return;
   }
   throw logic_error("unknown ABI fact command '" + command + "'");
@@ -2545,9 +2546,9 @@ struct FactSerializer
     for(size_t i = 0; i < function.template_arguments.size(); ++i) {
       words.push_back(arg_ref(function.template_arguments[i]));
     }
-    if(function.has_result_type) {
+    if(function.has_result_type && function.result_type) {
       words.push_back("result");
-      words.push_back(type_ref(function.result_type));
+      words.push_back(type_ref(*function.result_type));
     }
     for(size_t i = 0; i < function.parameter_types.size(); ++i) {
       words.push_back(type_ref(function.parameter_types[i]));
@@ -2752,10 +2753,10 @@ struct FactSerializer
       }
       add_line(words);
     }
-    if(function.has_conversion_type) {
+    if(function.has_conversion_type && function.conversion_type) {
       vector<string> words;
       words.push_back("conversion-terminal");
-      words.push_back(type_ref(function.conversion_type));
+      words.push_back(type_ref(*function.conversion_type));
       add_line(words);
     }
     if(function.nested_const ||
@@ -2778,15 +2779,17 @@ struct FactSerializer
     }
     for(size_t i = 0; i < function.template_arguments.size(); ++i) {
       if(i == 0 && !function.template_prefix_key.empty()) {
-        if(function.template_prefix_key.kind !=
+        const SubstitutionKey & template_prefix_key =
+            function.template_prefix_key.get();
+        if(template_prefix_key.kind !=
            SubstitutionKey::SK_FUNCTION_TEMPLATE_PREFIX) {
           throw logic_error("invalid ABI function template prefix key");
         }
         vector<string> words;
         words.push_back("function-template-prefix");
-        words.push_back(function.template_prefix_key.payload.empty() ?
+        words.push_back(template_prefix_key.payload.empty() ?
                         "-" :
-                        function.template_prefix_key.payload);
+                        template_prefix_key.payload);
         add_line(words);
       }
       vector<string> words;
@@ -2794,10 +2797,10 @@ struct FactSerializer
       words.push_back(arg_ref(function.template_arguments[i]));
       add_line(words);
     }
-    if(function.has_result_type) {
+    if(function.has_result_type && function.result_type) {
       vector<string> words;
       words.push_back("result");
-      words.push_back(type_ref(function.result_type));
+      words.push_back(type_ref(*function.result_type));
       add_line(words);
     }
     for(size_t i = 0; i < function.parameter_types.size(); ++i) {
