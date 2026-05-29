@@ -6087,19 +6087,14 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
         out_name.name = actual_class.source_template->name;
       }
       out_template_name_text = source_template_name;
-      if(const std::vector<std::string> * const metadata_arg_texts =
-             template_metadata::argument_texts(actual_class)) {
-        out_args = *metadata_arg_texts;
-      } else {
-        out_args.reserve(actual_class.instantiation_arguments.size());
-        for(std::size_t i = 0; i < actual_class.instantiation_arguments.size(); ++i) {
-          const std::string arg_text =
-              argument_text(actual_class.instantiation_arguments[i]);
-          if(arg_text.empty()) {
-            return false;
-          }
-          out_args.push_back(arg_text);
+      out_args.reserve(actual_class.instantiation_arguments.size());
+      for(std::size_t i = 0; i < actual_class.instantiation_arguments.size(); ++i) {
+        const std::string arg_text =
+            argument_text(actual_class.instantiation_arguments[i]);
+        if(arg_text.empty()) {
+          return false;
         }
+        out_args.push_back(arg_text);
       }
       return true;
     }
@@ -6163,17 +6158,17 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     pattern_decomposed = true;
     return pattern_template_id_matches(pattern_name);
   };
+  const TemplateIdSyntax * parsed_pattern_id =
+      pattern_syntax ? template_argument_template_id_syntax(*pattern_syntax) : nullptr;
   bool parsed_pattern = false;
-  if(pattern_syntax && pattern_syntax->template_id) {
-    pattern_name = pattern_syntax->template_id->name;
-    pattern_args = pattern_syntax->template_id->arguments;
+  if(parsed_pattern_id) {
+    pattern_name = parsed_pattern_id->name;
+    pattern_args = parsed_pattern_id->arguments;
     pattern_decomposed = true;
     parsed_pattern = pattern_template_id_matches(pattern_name);
   }
   const std::vector<TemplateArgumentSyntax> * pattern_arg_syntaxes =
-      pattern_syntax && pattern_syntax->template_id ?
-          &pattern_syntax->template_id->argument_syntaxes :
-          nullptr;
+      parsed_pattern_id ? &parsed_pattern_id->argument_syntaxes : nullptr;
   if(!parsed_pattern && !decompose_template_id_pair(normalized_pattern)) {
     if(structural_only) {
       return false;
@@ -6336,17 +6331,27 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       }
       TypePtr pattern_arg_type;
       TypePtr actual_arg_type;
-      if(!structural_only &&
-         resolve_pattern_arg_type(arg_index, pattern_arg, pattern_arg_type) &&
+      if(resolve_pattern_arg_type(arg_index, pattern_arg, pattern_arg_type) &&
          resolve_actual_arg_type(arg_index, actual_arg, actual_arg_type) &&
-         pattern_arg_type && actual_arg_type &&
-         type_equals(pattern_arg_type, actual_arg_type)) {
-        continue;
+         pattern_arg_type && actual_arg_type) {
+        if(type_equals(pattern_arg_type, actual_arg_type)) {
+          continue;
+        }
+        if(type_pattern_has_deducible_template_parameter(type_system, pattern_arg_type)) {
+          DeducedState nested_type_deduced = deduced;
+          if(deduce_type_pattern_to_state(partial.parameters,
+                                          pattern_arg_type,
+                                          actual_arg_type,
+                                          nested_type_deduced)) {
+            deduced = nested_type_deduced;
+            continue;
+          }
+        }
       }
       bool pattern_arg_is_template_id =
           pattern_arg_syntaxes &&
           arg_index < pattern_arg_syntaxes->size() &&
-          (*pattern_arg_syntaxes)[arg_index].template_id;
+          template_argument_template_id_syntax((*pattern_arg_syntaxes)[arg_index]);
       if(pattern_arg_is_template_id &&
          resolve_actual_arg_type(arg_index, actual_arg, actual_arg_type)) {
         DeducedState nested_deduced = deduced;
