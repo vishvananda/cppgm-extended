@@ -383,6 +383,7 @@ size_t type_lookup_hash(const TypePtr & type)
     hash_combine(seed, type->prototype_relaxed ? 1 : 0);
     hash_combine(seed, type->function_const ? 1 : 0);
     hash_combine(seed, type->function_volatile ? 1 : 0);
+    hash_combine(seed, static_cast<size_t>(type->function_ref_qualifier));
     hash_combine(seed, type_lookup_hash(type->inner));
     hash_combine(seed, type->params.size());
     for(size_t i = 0; i < type->params.size(); ++i) {
@@ -779,6 +780,7 @@ bool member_function_types_same_non_object_signature(const TypePtr & lhs,
      lhs_base->prototype_relaxed != rhs_base->prototype_relaxed ||
      lhs_base->function_const != rhs_base->function_const ||
      lhs_base->function_volatile != rhs_base->function_volatile ||
+     lhs_base->function_ref_qualifier != rhs_base->function_ref_qualifier ||
      lhs_base->params.size() != rhs_base->params.size() ||
      lhs_base->params.empty()) {
     return false;
@@ -2698,6 +2700,7 @@ bool same_inline_namespace_template_parameter_type(
        lhs_type->prototype_relaxed != rhs_type->prototype_relaxed ||
        lhs_type->function_const != rhs_type->function_const ||
        lhs_type->function_volatile != rhs_type->function_volatile ||
+       lhs_type->function_ref_qualifier != rhs_type->function_ref_qualifier ||
        lhs_type->params.size() != rhs_type->params.size() ||
        !same_inline_namespace_template_parameter_type(lhs_type->inner,
                                                       lhs_parameters,
@@ -2880,6 +2883,7 @@ bool same_function_template_entity_type_impl(
        lhs->prototype_relaxed != rhs->prototype_relaxed ||
        lhs->function_const != rhs->function_const ||
        lhs->function_volatile != rhs->function_volatile ||
+       lhs->function_ref_qualifier != rhs->function_ref_qualifier ||
        lhs->params.size() != rhs->params.size() ||
        !same_function_template_entity_type_impl(lhs->inner,
                                                 lhs_parameters,
@@ -3006,7 +3010,8 @@ bool same_inline_namespace_function_template_entity(const FunctionTemplateDecl *
     return lhs_type->variadic == rhs_type->variadic &&
            lhs_type->prototype_relaxed == rhs_type->prototype_relaxed &&
            lhs_type->function_const == rhs_type->function_const &&
-           lhs_type->function_volatile == rhs_type->function_volatile;
+           lhs_type->function_volatile == rhs_type->function_volatile &&
+           lhs_type->function_ref_qualifier == rhs_type->function_ref_qualifier;
   };
   if(lhs == rhs) {
     return true;

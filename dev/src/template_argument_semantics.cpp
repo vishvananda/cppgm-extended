@@ -11353,7 +11353,8 @@ bool substitute_type_impl(const TypePtr & type,
                         type->variadic,
                         type->function_const,
                         type->function_volatile,
-                        type->prototype_relaxed);
+                        type->prototype_relaxed,
+                        type->function_ref_qualifier);
     return true;
   }
   }
@@ -21450,7 +21451,8 @@ bool resolve_instantiated_dependent_type(template_api::TemplateServices & servic
                         type->variadic,
                         type->function_const,
                         type->function_volatile,
-                        type->prototype_relaxed);
+                        type->prototype_relaxed,
+                        type->function_ref_qualifier);
     return true;
   }
   }

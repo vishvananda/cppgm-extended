@@ -7259,7 +7259,12 @@ static bool try_build_context_free_type_ir(const TypePtr & type,
       }
       params.push_back(param);
     }
-    out = abi_mangle::Type::function(result, params, type->variadic);
+    out = abi_mangle::Type::function(
+        result,
+        params,
+        type->variadic,
+        type->function_ref_qualifier == FTRQ_LVALUE,
+        type->function_ref_qualifier == FTRQ_RVALUE);
     apply_function_type_cv_ir(type, out);
     return attach_semantic_type_ir_substitution(type, mangle_ctx, out);
   }
@@ -12555,7 +12560,12 @@ static bool try_build_wrapped_type_ir(const TypePtr & type,
       }
       params.push_back(param);
     }
-    out = abi_mangle::Type::function(result, params, type->variadic);
+    out = abi_mangle::Type::function(
+        result,
+        params,
+        type->variadic,
+        type->function_ref_qualifier == FTRQ_LVALUE,
+        type->function_ref_qualifier == FTRQ_RVALUE);
     apply_function_type_cv_ir(type, out);
     return attach_semantic_type_ir_substitution(type, mangle_ctx, out);
   }
@@ -14249,7 +14259,9 @@ static bool build_structural_type_substitution_key(
     }
     out = abi_mangle::SubstitutionKey::type_function(std::move(result_key),
                                                      std::move(param_keys),
-                                                     type->variadic);
+                                                     type->variadic,
+                                                     type->function_ref_qualifier == FTRQ_LVALUE,
+                                                     type->function_ref_qualifier == FTRQ_RVALUE);
     apply_function_type_cv_substitution_key(type, out);
     return true;
   }
@@ -15623,7 +15635,8 @@ static bool try_mangle_plain_function_ir(const QualifiedName & qualified,
   if(!function_type ||
      function_type->kind != Type::TK_FUNCTION ||
      function_type->function_const ||
-     function_type->function_volatile) {
+     function_type->function_volatile ||
+     function_type->function_ref_qualifier != FTRQ_NONE) {
     return false;
   }
 
@@ -16122,7 +16135,7 @@ static bool try_emit_itanium_function_symbol_ir(
   MangleSubstitutionState local_state;
   MangleSubstitutionState * state = captured_state ? captured_state : &local_state;
   if(!type || type->kind != Type::TK_FUNCTION || type->function_const ||
-     type->function_volatile) {
+     type->function_volatile || type->function_ref_qualifier != FTRQ_NONE) {
     if(parser_trace::enabled("symbol.linkage")) {
       ostringstream trace;
       trace << "mangle-itanium-function invalid-type"
@@ -16131,7 +16144,8 @@ static bool try_emit_itanium_function_symbol_ir(
             << " has-type=" << (type ? "yes" : "no")
             << " kind=" << (type ? to_string(static_cast<int>(type->kind)) : string("<none>"))
             << " const=" << (type && type->function_const ? "yes" : "no")
-            << " volatile=" << (type && type->function_volatile ? "yes" : "no");
+            << " volatile=" << (type && type->function_volatile ? "yes" : "no")
+            << " refq=" << (type ? static_cast<int>(type->function_ref_qualifier) : 0);
       parser_trace::note("symbol.linkage", string(), trace.str());
     }
     return false;

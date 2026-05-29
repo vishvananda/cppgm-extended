@@ -57,6 +57,13 @@ struct DependentAliasTemplateArgumentSyntax
   bool source_defaulted = false;
 };
 
+enum FunctionTypeRefQualifier
+{
+  FTRQ_NONE,
+  FTRQ_LVALUE,
+  FTRQ_RVALUE
+};
+
 struct Type
 {
   struct HostAbiChunk
@@ -125,6 +132,7 @@ struct Type
       prototype_relaxed(false),
       function_const(false),
       function_volatile(false),
+      function_ref_qualifier(FTRQ_NONE),
       named_dependent_template_template_parameter_arity(static_cast<std::size_t>(-1)),
       named_dependent_qualified_leading_typename(false)
   {}
@@ -152,6 +160,7 @@ struct Type
   bool prototype_relaxed;
   bool function_const;
   bool function_volatile;
+  FunctionTypeRefQualifier function_ref_qualifier;
   std::vector<TypePtr> params;
   TypePtr inner;
   TypePtr owner;
@@ -261,7 +270,8 @@ TypePtr make_function(const TypePtr & result_type,
                       bool variadic,
                       bool function_const = false,
                       bool function_volatile = false,
-                      bool prototype_relaxed = false);
+                      bool prototype_relaxed = false,
+                      FunctionTypeRefQualifier function_ref_qualifier = FTRQ_NONE);
 TypePtr make_lvalue_reference_raw(const TypePtr & base);
 TypePtr make_rvalue_reference_raw(const TypePtr & base);
 TypePtr apply_cv(const TypePtr & base, bool cv_const, bool cv_volatile);
@@ -367,7 +377,8 @@ struct DeclaratorSuffix
       bound_value(0),
       variadic(false),
       function_const(false),
-      function_volatile(false)
+      function_volatile(false),
+      function_ref_qualifier(FTRQ_NONE)
   {}
 
   Kind kind;
@@ -380,6 +391,7 @@ struct DeclaratorSuffix
   bool variadic;
   bool function_const;
   bool function_volatile;
+  FunctionTypeRefQualifier function_ref_qualifier;
 };
 
 struct Declarator

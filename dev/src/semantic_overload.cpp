@@ -3333,7 +3333,8 @@ TypePtr callable_function_type_for_member_pointer(const TypePtr & member_pointer
                        base->inner->variadic,
                        base->inner->function_const,
                        base->inner->function_volatile,
-                       base->inner->prototype_relaxed);
+                       base->inner->prototype_relaxed,
+                       base->inner->function_ref_qualifier);
 }
 
 ClassInfo * canonicalize_constructor_target(SemanticContext & ctx,
@@ -7641,7 +7642,8 @@ TypePtr member_pointer_function_type(FunctionBinding & binding)
                                          stripped_function_type->variadic,
                                          binding.is_const_method,
                                          binding.is_volatile_method,
-                                         stripped_function_type->prototype_relaxed);
+                                         stripped_function_type->prototype_relaxed,
+                                         stripped_function_type->function_ref_qualifier);
   }
   return member_function_type;
 }

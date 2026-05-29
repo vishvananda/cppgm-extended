@@ -5072,6 +5072,11 @@ private:
       if(type->function_volatile) {
         out << " volatile";
       }
+      if(type->function_ref_qualifier == FTRQ_LVALUE) {
+        out << " &";
+      } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+        out << " &&";
+      }
       inner.after += out.str();
       return inner;
     }
@@ -13374,10 +13379,13 @@ private:
   {
     TemplateArgumentSyntax out;
     out.text = source.text;
+    out.source_text = source.source_text;
     out.pack_expansion = source.pack_expansion;
+    out.dependent = source.dependent;
     out.has_source_token_start = source.has_source_token_start;
     out.source_token_start = source.source_token_start;
     out.source_location_id = source.source_location_id;
+    out.resolved_type = source.resolved_type;
     if(source.template_id) {
       out.template_id.reset(new TemplateIdSyntax(
           clone_template_id_syntax(*source.template_id)));
@@ -13466,8 +13474,36 @@ private:
                 typed_value_binding_pack_text(it->second),
                 changed);
           }
-          return text;
-        };
+      return text;
+    };
+
+    if(syntax.argument_syntaxes.empty() && !syntax.arguments.empty()) {
+      bool needs_carried_syntax = false;
+      for(size_t i = 0; i < syntax.arguments.size() && !needs_carried_syntax; ++i) {
+        const string original = trim_space(syntax.arguments[i]);
+        for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+            it != type_replacements.end();
+            ++it) {
+          if(original == it->first || original == it->first + "...") {
+            needs_carried_syntax = true;
+            break;
+          }
+        }
+      }
+      if(needs_carried_syntax) {
+        syntax.argument_syntaxes.reserve(syntax.arguments.size());
+        for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+          TemplateArgumentSyntax argument;
+          argument.text = trim_space(syntax.arguments[i]);
+          argument.source_text = argument.text;
+          if(argument.text.size() >= 3 &&
+             argument.text.substr(argument.text.size() - 3) == "...") {
+            argument.pack_expansion = true;
+          }
+          syntax.argument_syntaxes.push_back(argument);
+        }
+      }
+    }
 
     for(size_t i = 0; i < syntax.arguments.size(); ++i) {
       syntax.arguments[i] = rewrite_text(syntax.arguments[i]);
@@ -13480,13 +13516,52 @@ private:
             it != type_replacements.end();
             ++it) {
           if(ast_node_mentions_pack_identifier(*argument.type_id, it->first)) {
+            const string replacement =
+                lookup_reparseable_text_for_type_argument(scope, it->second);
+            if(argument.source_text.empty()) {
+              argument.source_text = trim_space(argument.text);
+            }
+            argument.text = replacement;
+            argument.pack_expansion = false;
+            argument.dependent = false;
+            argument.resolved_type = it->second;
+            argument.expression.reset();
             argument.type_id.reset(new CppAstNode(
                 make_pack_type_id_node(
                     it->second,
-                    lookup_reparseable_text_for_type_argument(scope, it->second))));
+                    replacement)));
             break;
           }
         }
+      }
+      for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+          it != type_replacements.end();
+          ++it) {
+        const string original_text = trim_space(argument.source_text.empty() ?
+                                                   argument.text :
+                                                   argument.source_text);
+        const bool direct_pack_argument =
+            original_text == it->first ||
+            original_text == it->first + "..." ||
+            (argument.expression &&
+             argument.expression->kind == CppAstKind::id_expression &&
+             trim_space(argument.expression->value) == it->first);
+        if(!direct_pack_argument) {
+          continue;
+        }
+        const string replacement =
+            lookup_reparseable_text_for_type_argument(scope, it->second);
+        if(argument.source_text.empty()) {
+          argument.source_text = original_text;
+        }
+        argument.text = replacement;
+        argument.pack_expansion = false;
+        argument.dependent = false;
+        argument.resolved_type = it->second;
+        argument.expression.reset();
+        argument.type_id.reset(new CppAstNode(
+            make_pack_type_id_node(it->second, replacement)));
+        break;
       }
       if(argument.template_id) {
         rewrite_template_id_syntax_pack_arguments(*argument.template_id,
@@ -19822,6 +19897,8 @@ private:
       out += (type->function_const ? "1" : "0");
       out += ":";
       out += (type->function_volatile ? "1" : "0");
+      out += ":";
+      out += static_cast<char>('0' + static_cast<int>(type->function_ref_qualifier));
       for(size_t i = 0; i < type->params.size(); ++i) {
         out += "|";
         if(!append_dependent_type_resolution_cache_key(out, type->params[i], active)) {
@@ -20255,6 +20332,7 @@ private:
          lhs_function->prototype_relaxed != rhs_function->prototype_relaxed ||
          lhs_function->function_const != rhs_function->function_const ||
          lhs_function->function_volatile != rhs_function->function_volatile ||
+         lhs_function->function_ref_qualifier != rhs_function->function_ref_qualifier ||
          lhs_function->params.size() != rhs_function->params.size()) {
         return false;
       }
@@ -22952,6 +23030,7 @@ private:
              lhs->prototype_relaxed != rhs->prototype_relaxed ||
              lhs->function_const != rhs->function_const ||
              lhs->function_volatile != rhs->function_volatile ||
+             lhs->function_ref_qualifier != rhs->function_ref_qualifier ||
              lhs->params.size() != rhs->params.size() ||
              !explicit_param_types_match(lhs->inner, rhs->inner)) {
             return false;
@@ -23746,6 +23825,7 @@ private:
          lhs->prototype_relaxed != rhs->prototype_relaxed ||
          lhs->function_const != rhs->function_const ||
          lhs->function_volatile != rhs->function_volatile ||
+         lhs->function_ref_qualifier != rhs->function_ref_qualifier ||
          lhs->params.size() != rhs->params.size() ||
          !out_of_class_special_member_template_param_types_match(
              lhs->inner, lhs_parameters, rhs->inner, rhs_parameters)) {

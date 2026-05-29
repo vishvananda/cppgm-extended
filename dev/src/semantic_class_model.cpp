@@ -1581,7 +1581,8 @@ TypePtr substitute_current_class_template_pattern_type(SemanticContext & ctx,
                          type->variadic,
                          type->function_const,
                          type->function_volatile,
-                         type->prototype_relaxed);
+                         type->prototype_relaxed,
+                         type->function_ref_qualifier);
   }
   }
 
@@ -5456,7 +5457,8 @@ TypePtr method_function_type(const TypePtr & class_type,
                        function_type->variadic,
                        function_type->function_const,
                        function_type->function_volatile,
-                       function_type->prototype_relaxed);
+                       function_type->prototype_relaxed,
+                       function_type->function_ref_qualifier);
 }
 
 std::string unqualified_conversion_operator_member_name(const std::string & name)

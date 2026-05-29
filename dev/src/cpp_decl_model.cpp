@@ -324,6 +324,11 @@ TypeSpelling spell_template_argument_type(const TypePtr & type)
     if(type->function_volatile) {
       inner.after += " volatile";
     }
+    if(type->function_ref_qualifier == FTRQ_LVALUE) {
+      inner.after += " &";
+    } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+      inner.after += " &&";
+    }
     return inner;
   }
   }
@@ -764,7 +769,8 @@ TypePtr make_function(const TypePtr & result_type,
                       bool variadic,
                       bool function_const,
                       bool function_volatile,
-                      bool prototype_relaxed)
+                      bool prototype_relaxed,
+                      FunctionTypeRefQualifier function_ref_qualifier)
 {
   TypePtr result(new Type(Type::TK_FUNCTION));
   result->inner = result_type;
@@ -773,6 +779,7 @@ TypePtr make_function(const TypePtr & result_type,
   result->prototype_relaxed = prototype_relaxed;
   result->function_const = function_const;
   result->function_volatile = function_volatile;
+  result->function_ref_qualifier = function_ref_qualifier;
   result->definitely_not_class = true;
   return result;
 }
@@ -908,6 +915,7 @@ bool type_equals(const TypePtr & lhs, const TypePtr & rhs)
        lhs->prototype_relaxed != rhs->prototype_relaxed ||
        lhs->function_const != rhs->function_const ||
        lhs->function_volatile != rhs->function_volatile ||
+       lhs->function_ref_qualifier != rhs->function_ref_qualifier ||
        lhs->params.size() != rhs->params.size() ||
        !type_equals(lhs->inner, rhs->inner)) {
       return false;
@@ -1308,6 +1316,11 @@ string describe_type(const TypePtr & type)
     }
     if(type->function_volatile) {
       result += " volatile";
+    }
+    if(type->function_ref_qualifier == FTRQ_LVALUE) {
+      result += " &";
+    } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+      result += " &&";
     }
     result += " returning ";
     result += describe_type(type->inner);

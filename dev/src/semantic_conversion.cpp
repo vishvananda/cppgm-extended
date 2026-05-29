@@ -735,7 +735,8 @@ TypePtr build_conversion_function_template_target_type(SemanticContext & ctx,
                        function_type->variadic,
                        function_type->function_const,
                        function_type->function_volatile,
-                       function_type->prototype_relaxed);
+                       function_type->prototype_relaxed,
+                       function_type->function_ref_qualifier);
 }
 
 TypePtr conversion_function_template_deduction_target_type(const TypePtr & target)
@@ -767,7 +768,8 @@ void update_conversion_function_template_binding_result(
                                function_type->variadic,
                                function_type->function_const,
                                function_type->function_volatile,
-                               function_type->prototype_relaxed);
+                               function_type->prototype_relaxed,
+                               function_type->function_ref_qualifier);
 }
 
 ClassInfo * ensure_complete_class_info(SemanticContext & ctx, const TypePtr & type)

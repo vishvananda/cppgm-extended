@@ -251,6 +251,11 @@ TypeSpellingParts spell_reparseable_type_argument(const TypePtr & type)
     if(type->function_volatile) {
       out << " volatile";
     }
+    if(type->function_ref_qualifier == FTRQ_LVALUE) {
+      out << " &";
+    } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+      out << " &&";
+    }
     inner.after += out.str();
     return inner;
   }

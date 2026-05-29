@@ -235,7 +235,7 @@ bool deduce_type_pattern_to_state(
   }
 
   TypePtr pattern_base = strip_top_level_cv(pattern);
-  TypePtr actual_base = strip_top_level_cv(actual);
+  TypePtr actual_base = actual;
   if(!pattern_base || !actual_base) {
     return false;
   }
@@ -298,6 +298,7 @@ bool deduce_type_pattern_to_state(
        pattern_base->prototype_relaxed != actual_base->prototype_relaxed ||
        pattern_base->function_const != actual_base->function_const ||
        pattern_base->function_volatile != actual_base->function_volatile ||
+       pattern_base->function_ref_qualifier != actual_base->function_ref_qualifier ||
        !deduce_type_pattern_to_state(parameters,
                                      pattern_base->inner,
                                      actual_base->inner,
@@ -1222,6 +1223,7 @@ bool deduce_from_function_type_pattern(template_api::TemplateServices & services
      pattern_base->prototype_relaxed != actual_base->prototype_relaxed ||
      pattern_base->function_const != actual_base->function_const ||
      pattern_base->function_volatile != actual_base->function_volatile ||
+     pattern_base->function_ref_qualifier != actual_base->function_ref_qualifier ||
      pattern_base->params.empty()) {
     return false;
   }
@@ -5128,7 +5130,9 @@ bool try_expand_alias_template_pattern_structurally(
                           params,
                           pattern->variadic,
                           pattern->function_const,
-                          pattern->function_volatile);
+                          pattern->function_volatile,
+                          false,
+                          pattern->function_ref_qualifier);
       return true;
     }
     }

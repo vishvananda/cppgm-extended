@@ -698,6 +698,23 @@ bool parse_declarator_core(const CppAstNode & node,
       return false;
     }
 
+    if(child.kind == CppAstKind::ref_qualifier) {
+      if(!child.has_token ||
+         suffixes.empty() ||
+         suffixes.back().kind != DeclaratorSuffix::SK_FUNCTION ||
+         suffixes.back().function_ref_qualifier != FTRQ_NONE) {
+        return false;
+      }
+      if(child.simple_type == OP_AMP) {
+        suffixes.back().function_ref_qualifier = FTRQ_LVALUE;
+      } else if(child.simple_type == OP_LAND) {
+        suffixes.back().function_ref_qualifier = FTRQ_RVALUE;
+      } else {
+        return false;
+      }
+      continue;
+    }
+
     if(child.kind == CppAstKind::nullability_qualifier) {
       if(prefixes.empty()) {
         return false;
@@ -807,7 +824,9 @@ bool parse_declarator_core(const CppAstNode & node,
                           suffix.params,
                           suffix.variadic,
                           suffix.function_const,
-                          suffix.function_volatile);
+                          suffix.function_volatile,
+                          false,
+                          suffix.function_ref_qualifier);
     } else {
       out = make_array(out, suffix.has_bound,
                        suffix.has_bound ? static_cast<size_t>(suffix.bound_value) : 0,

@@ -80,6 +80,20 @@ using callsemantic_internal::replace_identifier_token_text;
 using semantic_trace::scope_bindings_for_diagnostic;
 using semantic_trace::scope_name_for_diagnostic;
 
+FunctionTypeRefQualifier function_type_ref_qualifier_from_method_ref(
+    RefQualifier qualifier)
+{
+  switch(qualifier) {
+  case RQ_LVALUE:
+    return FTRQ_LVALUE;
+  case RQ_RVALUE:
+    return FTRQ_RVALUE;
+  case RQ_NONE:
+    return FTRQ_NONE;
+  }
+  return FTRQ_NONE;
+}
+
 bool resolve_template_argument(SemanticContext & ctx,
                                Scope & argument_scope,
                                Scope & parameter_scope,
@@ -908,16 +922,20 @@ bool member_function_binding_matches_target(FunctionBinding * binding,
 
   TypePtr member_function_type = binding->declared_type;
   TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
+  const FunctionTypeRefQualifier binding_ref_qualifier =
+      function_type_ref_qualifier_from_method_ref(binding->ref_qualifier);
   if(stripped_function_type &&
      stripped_function_type->kind == Type::TK_FUNCTION &&
      (stripped_function_type->function_const != binding->is_const_method ||
-      stripped_function_type->function_volatile != binding->is_volatile_method)) {
+      stripped_function_type->function_volatile != binding->is_volatile_method ||
+      stripped_function_type->function_ref_qualifier != binding_ref_qualifier)) {
     member_function_type = make_function(stripped_function_type->inner,
                                          stripped_function_type->params,
                                          stripped_function_type->variadic,
                                          binding->is_const_method,
                                          binding->is_volatile_method,
-                                         stripped_function_type->prototype_relaxed);
+                                         stripped_function_type->prototype_relaxed,
+                                         binding_ref_qualifier);
   }
   return type_equals(strip_top_level_cv(member_function_type),
                      strip_top_level_cv(function_type));
@@ -953,7 +971,9 @@ bool member_function_template_target_type_for_deduction(
     return false;
   }
   if(target_base->function_const != decl.is_const_method ||
-     target_base->function_volatile != decl.is_volatile_method) {
+     target_base->function_volatile != decl.is_volatile_method ||
+     target_base->function_ref_qualifier !=
+         function_type_ref_qualifier_from_method_ref(decl.ref_qualifier)) {
     return false;
   }
 
@@ -962,13 +982,15 @@ bool member_function_template_target_type_for_deduction(
   if(pattern_base &&
      pattern_base->kind == Type::TK_FUNCTION &&
      (pattern_base->function_const != target_base->function_const ||
-      pattern_base->function_volatile != target_base->function_volatile)) {
+      pattern_base->function_volatile != target_base->function_volatile ||
+      pattern_base->function_ref_qualifier != target_base->function_ref_qualifier)) {
     out = make_function(target_base->inner,
                         target_base->params,
                         target_base->variadic,
                         pattern_base->function_const,
                         pattern_base->function_volatile,
-                        target_base->prototype_relaxed);
+                        target_base->prototype_relaxed,
+                        pattern_base->function_ref_qualifier);
   }
   return true;
 }
@@ -1576,16 +1598,20 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
         }
         TypePtr member_function_type = binding->declared_type;
         TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
+        const FunctionTypeRefQualifier binding_ref_qualifier =
+            function_type_ref_qualifier_from_method_ref(binding->ref_qualifier);
         if(stripped_function_type &&
            stripped_function_type->kind == Type::TK_FUNCTION &&
            (stripped_function_type->function_const != binding->is_const_method ||
-            stripped_function_type->function_volatile != binding->is_volatile_method)) {
+            stripped_function_type->function_volatile != binding->is_volatile_method ||
+            stripped_function_type->function_ref_qualifier != binding_ref_qualifier)) {
           member_function_type = make_function(stripped_function_type->inner,
                                                stripped_function_type->params,
                                                stripped_function_type->variadic,
                                                binding->is_const_method,
                                                binding->is_volatile_method,
-                                               stripped_function_type->prototype_relaxed);
+                                               stripped_function_type->prototype_relaxed,
+                                               binding_ref_qualifier);
         }
         if(!type_equals(strip_top_level_cv(member_function_type),
                         strip_top_level_cv(target_base->inner))) {
@@ -2538,6 +2564,7 @@ std::uint64_t type_syntax_fingerprint(const TypePtr & type,
     hash_combine(seed, type->prototype_relaxed);
     hash_combine(seed, type->function_const);
     hash_combine(seed, type->function_volatile);
+    hash_combine(seed, static_cast<int>(type->function_ref_qualifier));
     hash_combine(seed,
                  type_syntax_fingerprint(type->inner,
                                          include_source_identity,
@@ -5580,11 +5607,11 @@ PreExpansionResolveStatus try_resolve_pre_expansion_simple_type_arguments(
     const std::string simple_name =
         strip_elaborated_type_prefix(trim_space(texts[index]));
     TypePtr type;
-    if(is_identifier_text(simple_name)) {
-      lookup_direct_bound_type_argument(raw_scope, simple_name, type);
-    }
-    if(!type && syntax && syntax->resolved_type) {
+    if(syntax && syntax->resolved_type) {
       type = syntax->resolved_type;
+    }
+    if(!type && is_identifier_text(simple_name)) {
+      lookup_direct_bound_type_argument(raw_scope, simple_name, type);
     }
 
     std::string owner_name;
@@ -9174,7 +9201,8 @@ TypePtr partially_resolve_function_template_deduction_pattern(SemanticContext & 
                              pattern->variadic,
                              pattern->function_const,
                              pattern->function_volatile,
-                             pattern->prototype_relaxed);
+                             pattern->prototype_relaxed,
+                             pattern->function_ref_qualifier);
   }
   }
 
@@ -12758,6 +12786,7 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
        pattern_base->prototype_relaxed != actual_base->prototype_relaxed ||
        pattern_base->function_const != actual_base->function_const ||
        pattern_base->function_volatile != actual_base->function_volatile ||
+       pattern_base->function_ref_qualifier != actual_base->function_ref_qualifier ||
        !deduce_template_argument_impl(ctx,
                                       parameters,
                                       pattern_base->inner,
@@ -12954,7 +12983,8 @@ bool deduce_function_template_target_function_type_with_trailing_pack(
   if(pattern_base->variadic != target_base->variadic ||
      pattern_base->prototype_relaxed != target_base->prototype_relaxed ||
      pattern_base->function_const != target_base->function_const ||
-     pattern_base->function_volatile != target_base->function_volatile) {
+     pattern_base->function_volatile != target_base->function_volatile ||
+     pattern_base->function_ref_qualifier != target_base->function_ref_qualifier) {
     return false;
   }
 

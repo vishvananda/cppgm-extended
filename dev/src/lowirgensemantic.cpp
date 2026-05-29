@@ -544,7 +544,8 @@ TypePtr callable_function_type_for_member_pointer(const TypePtr & member_pointer
                        base->inner->variadic,
                        base->inner->function_const,
                        base->inner->function_volatile,
-                       base->inner->prototype_relaxed);
+                       base->inner->prototype_relaxed,
+                       base->inner->function_ref_qualifier);
 }
 
 TypePtr exception_object_type(const TypePtr & type)
@@ -1029,6 +1030,11 @@ void append_stable_function_type_key(std::ostringstream & out, const TypePtr & t
     }
     if(type->function_volatile) {
       out << ";volatile";
+    }
+    if(type->function_ref_qualifier == FTRQ_LVALUE) {
+      out << ";&";
+    } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+      out << ";&&";
     }
     return;
   }

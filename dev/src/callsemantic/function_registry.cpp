@@ -239,6 +239,7 @@ bool types_equivalent_for_member_binding(const TypePtr & lhs,
        lhs->prototype_relaxed != rhs->prototype_relaxed ||
        lhs->function_const != rhs->function_const ||
        lhs->function_volatile != rhs->function_volatile ||
+       lhs->function_ref_qualifier != rhs->function_ref_qualifier ||
        lhs->params.size() != rhs->params.size() ||
        !types_equivalent_for_member_binding(lhs->inner, rhs->inner)) {
       return false;
@@ -270,6 +271,7 @@ bool function_types_equivalent_for_member_signature(const TypePtr & lhs,
      lhs->prototype_relaxed != rhs->prototype_relaxed ||
      lhs->function_const != rhs->function_const ||
      lhs->function_volatile != rhs->function_volatile ||
+     lhs->function_ref_qualifier != rhs->function_ref_qualifier ||
      lhs->params.size() != rhs->params.size()) {
     return false;
   }

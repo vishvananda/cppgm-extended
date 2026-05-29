@@ -115,11 +115,20 @@ struct SubstitutionKey
 
   static SubstitutionKey type_function(SubstitutionKey result,
                                        std::vector<SubstitutionKey> params,
-                                       bool variadic)
+                                       bool variadic,
+                                       bool lvalue_ref = false,
+                                       bool rvalue_ref = false)
   {
     SubstitutionKey key;
     key.kind = SK_TYPE_FUNCTION;
     key.payload = variadic ? "z" : "v";
+    if(lvalue_ref) {
+      key.payload += "R";
+    } else if(rvalue_ref) {
+      key.payload += "O";
+    } else {
+      key.payload += "-";
+    }
     key.children.reserve(params.size() + 1);
     key.children.push_back(std::move(result));
     for(std::size_t i = 0; i < params.size(); ++i) {
@@ -584,6 +593,8 @@ struct Type
   bool cv_const = false;
   bool cv_volatile = false;
   bool variadic = false;
+  bool function_lvalue_ref = false;
+  bool function_rvalue_ref = false;
   std::shared_ptr<Type> inner;
   std::shared_ptr<Type> owner;
   std::shared_ptr<Type> name_owner;
@@ -667,13 +678,17 @@ struct Type
 
   static Type function(const Type & result,
                        const std::vector<Type> & params,
-                       bool variadic)
+                       bool variadic,
+                       bool lvalue_ref = false,
+                       bool rvalue_ref = false)
   {
     Type type;
     type.kind = TK_FUNCTION;
     type.inner.reset(new Type(result));
     type.params = params;
     type.variadic = variadic;
+    type.function_lvalue_ref = lvalue_ref;
+    type.function_rvalue_ref = rvalue_ref;
     return type;
   }
 
@@ -1495,7 +1510,9 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     }
     out = SubstitutionKey::type_function(std::move(result_key),
                                          std::move(param_keys),
-                                         type.variadic);
+                                         type.variadic,
+                                         type.function_lvalue_ref,
+                                         type.function_rvalue_ref);
     return true;
   }
 
@@ -3278,6 +3295,11 @@ inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSin
       if(type.variadic) {
         out += 'z';
       }
+    }
+    if(type.function_lvalue_ref) {
+      out += 'R';
+    } else if(type.function_rvalue_ref) {
+      out += 'O';
     }
     out += 'E';
     return true;

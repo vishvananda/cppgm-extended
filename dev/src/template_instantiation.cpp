@@ -534,7 +534,8 @@ bool substitute_owner_arguments_in_class_type(
                         type->variadic,
                         type->function_const,
                         type->function_volatile,
-                        type->prototype_relaxed);
+                        type->prototype_relaxed,
+                        type->function_ref_qualifier);
     return true;
   }
 
@@ -1748,7 +1749,8 @@ TypePtr rebind_out_of_class_member_self_or_nested_type_tree(
                              type->variadic,
                              type->function_const,
                              type->function_volatile,
-                             type->prototype_relaxed);
+                             type->prototype_relaxed,
+                             type->function_ref_qualifier);
       }
     }
     break;
@@ -2148,7 +2150,8 @@ TypePtr instantiate_stored_member_declared_type(
                                           function_type->variadic,
                                           function_type->function_const,
                                           function_type->function_volatile,
-                                          function_type->prototype_relaxed);
+                                          function_type->prototype_relaxed,
+                                          function_type->function_ref_qualifier);
           }
         }
       }
@@ -4051,7 +4054,8 @@ bool refresh_instantiated_function_parameter_clause(
                          function_type->variadic,
                          function_type->function_const,
                          function_type->function_volatile,
-                         function_type->prototype_relaxed);
+                         function_type->prototype_relaxed,
+                         function_type->function_ref_qualifier);
   }
 
   return true;
@@ -4232,6 +4236,7 @@ bool template_parameter_type_shape_matches(
        lhs_base->prototype_relaxed != rhs_base->prototype_relaxed ||
        lhs_base->function_const != rhs_base->function_const ||
        lhs_base->function_volatile != rhs_base->function_volatile ||
+       lhs_base->function_ref_qualifier != rhs_base->function_ref_qualifier ||
        lhs_base->params.size() != rhs_base->params.size() ||
        !template_parameter_type_shape_matches(lhs_base->inner,
                                               lhs_parameters,
@@ -8388,7 +8393,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                            function_base->variadic,
                            function_base->function_const,
                            function_base->function_volatile,
-                           function_base->prototype_relaxed);
+                           function_base->prototype_relaxed,
+                           function_base->function_ref_qualifier);
     }
   }
   const std::vector<std::string> parameter_aliases =
