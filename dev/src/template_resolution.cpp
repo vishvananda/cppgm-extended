@@ -11286,6 +11286,10 @@ bool resolve_function_explicit_template_arguments(
   }
 
   const std::size_t pack_index = first_template_parameter_pack_index(decl.parameters);
+  if(pack_index == decl.parameters.size() &&
+     explicit_arg_texts.size() > decl.parameters.size()) {
+    return false;
+  }
   if(pack_index == decl.parameters.size() ||
      explicit_arg_texts.size() <= pack_index) {
     std::vector<TemplateParameterInfo> explicit_parameters(
