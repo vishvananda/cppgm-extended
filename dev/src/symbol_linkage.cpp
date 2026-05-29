@@ -4271,6 +4271,35 @@ static const semantic_model::AliasTemplateDecl * lookup_alias_template_for_templ
         return found;
       }
     }
+    if(!mangle_ctx->lexical_scope.empty()) {
+      QualifiedName lexical;
+      if(semantic_utils::split_qualified_name_text(mangle_ctx->lexical_scope, lexical) &&
+         !lexical.rooted &&
+         !lexical.name.empty()) {
+        const semantic_model::Scope * scope = root_scope(mangle_ctx->lookup_scope);
+        vector<string> parts = lexical.qualifiers;
+        parts.push_back(lexical.name);
+        size_t part_index = 0;
+        if(scope &&
+           scope->namespace_scope &&
+           !scope->name.empty() &&
+           !parts.empty() &&
+           scope->name == parts[0]) {
+          part_index = 1;
+        }
+        for(size_t i = part_index; scope && i < parts.size(); ++i) {
+          map<string, semantic_model::Scope *>::const_iterator ns_found =
+              scope->namespace_bindings.find(parts[i]);
+          scope = ns_found == scope->namespace_bindings.end() ? nullptr : ns_found->second;
+        }
+        if(scope) {
+          if(const semantic_model::AliasTemplateDecl * found =
+                 find_unqualified_alias_template_in_mangle_scope(*scope, base_name)) {
+            return found;
+          }
+        }
+      }
+    }
     return nullptr;
   }
 
@@ -9141,7 +9170,38 @@ find_member_class_template_decl_for_mangling(
            find_unqualified_class_template_in_mangle_scope(
                *owner_template->declaring_scope,
                name)) {
+      if(nearest_member_class_scope(found->declaring_scope)) {
+        return found;
+      }
+    }
+  }
+  return nullptr;
+}
+
+static const semantic_model::AliasTemplateDecl *
+find_member_alias_template_decl_for_mangling(
+    const semantic_model::ClassTemplateDecl * owner_template,
+    const string & name)
+{
+  if(!owner_template || name.empty()) {
+    return nullptr;
+  }
+  if(owner_template->pattern_scope) {
+    if(const semantic_model::AliasTemplateDecl * found =
+           find_unqualified_alias_template_in_mangle_scope(
+               *owner_template->pattern_scope,
+               name)) {
       return found;
+    }
+  }
+  if(owner_template->declaring_scope) {
+    if(const semantic_model::AliasTemplateDecl * found =
+           find_unqualified_alias_template_in_mangle_scope(
+               *owner_template->declaring_scope,
+               name)) {
+      if(nearest_member_class_scope(found->declaring_scope)) {
+        return found;
+      }
     }
   }
   return nullptr;
@@ -9199,8 +9259,14 @@ static bool try_build_qualified_template_id_type_ast_ir(
   const semantic_model::ClassTemplateDecl * member_template_decl =
       find_member_class_template_decl_for_mangling(owner_template_decl,
                                                   base_name);
+  const semantic_model::AliasTemplateDecl * member_alias_template_decl =
+      find_member_alias_template_decl_for_mangling(owner_template_decl,
+                                                  base_name);
   const vector<TemplateParameterInfo> * member_template_parameters =
-      member_template_decl ? &member_template_decl->parameters : nullptr;
+      member_alias_template_decl ? &member_alias_template_decl->parameters :
+      member_template_decl && !member_template_decl->parameters.empty() ?
+          &member_template_decl->parameters :
+          nullptr;
   vector<abi_mangle::Type::ClassTemplateArgument> arguments;
   if(!build_template_id_class_arguments_ir_for_member_type(template_id,
                                                            mangle_ctx,
