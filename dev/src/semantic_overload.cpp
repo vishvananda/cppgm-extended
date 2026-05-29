@@ -4306,6 +4306,80 @@ vector<MemberFunctionLookupResult> collect_visible_conversion_function_sets_for_
   return out;
 }
 
+TypePtr function_binding_result_type(FunctionBinding * binding)
+{
+  if(!binding) {
+    return TypePtr();
+  }
+  TypePtr function_type = strip_top_level_cv(binding->type);
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    function_type = strip_top_level_cv(binding->declared_type);
+  }
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    return TypePtr();
+  }
+  return function_type->inner;
+}
+
+TypePtr explicit_conversion_member_target_type(SemanticContext & ctx,
+                                               Scope & scope,
+                                               const CppAstNode & member_identifier)
+{
+  const QualifiedName * qualified_name =
+      cppast_qualified_name_syntax(member_identifier);
+  const string member_name =
+      qualified_name && !qualified_name->name.empty() ?
+          qualified_name->name :
+          semantic_utils::unqualified_member_name(member_identifier.value);
+  if(!ctx.is_conversion_function_name(member_name)) {
+    return TypePtr();
+  }
+
+  if(const CppAstNode * conversion_type_id =
+         cppast_conversion_type_id_syntax(member_identifier)) {
+    TypePtr parsed_type;
+    if(ctx.parse_type_id(scope, *conversion_type_id, parsed_type, false, false)) {
+      return parsed_type;
+    }
+  }
+
+  const string suffix = semantic_utils::trim_space(member_name.substr(8));
+  if(suffix.empty() || suffix == "new" || suffix == "delete") {
+    return TypePtr();
+  }
+  return ctx.lookup_type(scope, suffix);
+}
+
+bool collect_explicit_conversion_member_call_candidates(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    const TypePtr & target_type,
+    MemberFunctionLookupResult & out)
+{
+  if(!target_type) {
+    return false;
+  }
+
+  vector<MemberFunctionLookupResult> visible_sets =
+      collect_visible_conversion_function_sets_for_call(ctx, info);
+  for(size_t i = 0; i < visible_sets.size(); ++i) {
+    MemberFunctionLookupResult & set = visible_sets[i];
+    for(size_t j = 0; j < set.functions.size(); ++j) {
+      FunctionBinding * function = set.functions[j];
+      if(!type_equals(function_binding_result_type(function), target_type)) {
+        continue;
+      }
+      if(out.functions.empty()) {
+        out.declared_in = set.declared_in;
+        out.path_access = set.path_access;
+        out.path_offset = set.path_offset;
+      }
+      out.functions.push_back(function);
+    }
+  }
+  return !out.functions.empty();
+}
+
 struct CachedConstructorConversionResult
 {
   bool attempted = false;
@@ -11541,6 +11615,38 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           &member_callee_node.children[1],
           member_name,
           member_template_id);
+    }
+    if(candidates.empty() && !member_template_id) {
+      if(TypePtr conversion_target =
+             explicit_conversion_member_target_type(ctx,
+                                                    scope,
+                                                    member_callee_node.children[1])) {
+        ClassInfo * conversion_lookup_class =
+            target.qualified ? target.target_class : class_info;
+        MemberFunctionLookupResult conversion_candidates;
+        if(conversion_lookup_class &&
+           collect_explicit_conversion_member_call_candidates(ctx,
+                                                             *conversion_lookup_class,
+                                                             conversion_target,
+                                                             conversion_candidates)) {
+          conversion_candidates.path_access =
+              combine_member_access(target.path_access,
+                                    conversion_candidates.path_access);
+          conversion_candidates.path_offset += target.path_offset;
+          member_candidates = conversion_candidates;
+          candidates = conversion_candidates.functions;
+          bool same_lookup_name = !candidates.empty();
+          for(size_t i = 1; i < candidates.size(); ++i) {
+            if(candidates[i]->name != candidates[0]->name) {
+              same_lookup_name = false;
+              break;
+            }
+          }
+          if(same_lookup_name) {
+            member_access_lookup_name = candidates[0]->name;
+          }
+        }
+      }
     }
     if(!target.qualified && candidates.size() > 1) {
       remove_hidden_using_base_member_function_candidates(candidates, *class_info);
