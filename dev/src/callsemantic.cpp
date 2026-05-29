@@ -4732,7 +4732,8 @@ private:
       return false;
     }
     const string unqualified = unqualified_member_name(name);
-    return unqualified != "operator new" &&
+    return !is_literal_operator_function_name(unqualified) &&
+           unqualified != "operator new" &&
            unqualified != "operator new[]" &&
            unqualified != "operator delete" &&
            unqualified != "operator delete[]" &&

@@ -272,7 +272,7 @@ function @view_char__traits___operator_(%this : ptr, %other : ptr [pass=referenc
     %t3 = load ptr $this
     return ptr %t3
 }
-function @string_like_char__traits___operatorView_CharT_Traits_(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZN33string_like_3cchar_2c_20traits_3e46operator_20struct_20view_3cchar_2c_20traits_3eEU331string_like_3cchar_2c_20traits_3e_3a_3aoperator_20struct_20view_3cchar_2c_20traits_3e_7ctype_3dfunction_20of_20_28pointer_20to_20const_20struct_20string_like_3cchar_2c_20traits_3e_29_20returning_20struct_20view_3cchar_2c_20traits_3e_7cconst_7ctemplate_3doperatorView_3cCharT_2cTraits_3e_7cowner_2dinst_3dchar_7ctraits_7cinst_3dview] {
+function @string_like_char__traits___operatorView_CharT_Traits_(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZNK11string_likeIc6traitsEcvT_Ic6traitsEI4viewEET_IcS0_Ev] {
   slot $this : ptr
 
   block ^entry:
@@ -373,3 +373,8 @@ function @string_like_char__traits___size(%this : ptr) -> i64 [binding=weak, obj
     %t1 = convert sext i64 i32 4
     return i64 %t1
 }
+alias object _ZN11string_likeIc6traitsEC2Ev = @string_like_char__traits___string_like
+alias object _ZN4viewIc6traitsEC2Ev = @view_char__traits___view
+alias object _ZN4viewIc6traitsEC2ERKS1_ = @view_char__traits___view__ov2
+alias object _ZN4viewIc6traitsEC2EPKcm = @view_char__traits___view__ov3
+alias object _ZN11string_likeIc6traitsEC2I4viewEET_IcS0_E = @string_like_char__traits___string_like__ov4

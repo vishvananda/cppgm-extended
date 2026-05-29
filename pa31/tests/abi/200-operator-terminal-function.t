@@ -1,3 +1,3 @@
 function path C::operator
-operator-terminal pl
+operator-terminal plus
 param int

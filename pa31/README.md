@@ -47,6 +47,11 @@ helpers under `dev/src/`. Do not edit generated `.my` files. Test inputs and
 references are part of the handout unless your instructor asks you to add or
 update tests.
 
+The assignment-facing scaffold is the fact data model and the declared
+parse/serialize/mangle API in `dev/src/abi_mangle.h`. Encoding tables,
+Itanium terminal spelling, compiler semantic lowering, and other implementation
+logic are intentionally outside the PA31 wrapper and test harness.
+
 There is no separate reference binary in the starter kit. The checked-in
 `.ref.*` files are the oracle.
 
@@ -112,7 +117,7 @@ Definition forms:
 Target forms:
 
 - `type ...`
-- `function ...` with optional following `param ...` lines
+- `function ...` with optional following terminal and `param ...` lines
 - `variable ...`
 - `typeinfo ...`
 - `vtable ...`
@@ -122,9 +127,41 @@ Target forms:
 - `thunk ... function ...`
 - `virtual-base-thunk ... function ...`
 
-Operator facts use semantic names such as `operator-call`, not raw Itanium
-terminal fragments. Thunks, wrappers, typeinfo, and vtable names are described
-as ABI facts instead of already-mangled names.
+Function operator terminals use semantic names, not raw Itanium terminal
+fragments:
+
+```text
+function path C::operator
+operator-terminal plus
+param int
+
+function path operator
+operator-terminal literal _digits
+param ulonglong
+
+function path C::operator
+conversion-terminal int
+```
+
+`operator-terminal <name>` names the C++ operator semantically. Supported names
+include `plus`, `minus`, `address-of`, `deref`, `new`, `new-array`,
+`delete`, `delete-array`, `multiply`, `divide`, `remainder`, `bit-or`,
+`bit-xor`, assignment operators, shifts, comparisons, logical operators,
+`increment`, `decrement`, `comma`, `member-pointer`, `arrow`, `call`, and
+`index`. For operators whose Itanium terminal depends on unary versus binary
+use, the encoder chooses from the parameter count and member/non-member shape;
+explicit names such as `unary-plus`, `binary-plus`, `unary-minus`,
+`binary-minus`, `bit-and`, and `multiply` may be used when the shape should be
+unambiguous.
+
+Literal operators are written as `operator-terminal literal <suffix>`, where
+`<suffix>` is the unencoded suffix source name such as `_digits`. Conversion
+operators remain separate `conversion-terminal <type>` facts. Local and lambda
+call-operator contexts continue to use `operator-call` as a semantic terminal
+marker, not as an Itanium code.
+
+Thunks, wrappers, typeinfo, and vtable names are described as ABI facts instead
+of already-mangled names.
 
 The fact format is deliberately small, but it is still an ABI entity graph. It
 should not become a second C++ parser.

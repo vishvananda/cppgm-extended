@@ -1299,6 +1299,58 @@ struct FunctionNameComponent
   }
 };
 
+enum FunctionOperatorTerminal
+{
+  FUNCTION_OPERATOR_NONE,
+  FUNCTION_OPERATOR_NEW,
+  FUNCTION_OPERATOR_NEW_ARRAY,
+  FUNCTION_OPERATOR_DELETE,
+  FUNCTION_OPERATOR_DELETE_ARRAY,
+  FUNCTION_OPERATOR_UNARY_PLUS,
+  FUNCTION_OPERATOR_PLUS,
+  FUNCTION_OPERATOR_UNARY_MINUS,
+  FUNCTION_OPERATOR_MINUS,
+  FUNCTION_OPERATOR_ADDRESS_OF,
+  FUNCTION_OPERATOR_BIT_AND,
+  FUNCTION_OPERATOR_DEREFERENCE,
+  FUNCTION_OPERATOR_MULTIPLY,
+  FUNCTION_OPERATOR_DIVIDE,
+  FUNCTION_OPERATOR_REMAINDER,
+  FUNCTION_OPERATOR_BIT_OR,
+  FUNCTION_OPERATOR_BIT_XOR,
+  FUNCTION_OPERATOR_ASSIGN,
+  FUNCTION_OPERATOR_PLUS_ASSIGN,
+  FUNCTION_OPERATOR_MINUS_ASSIGN,
+  FUNCTION_OPERATOR_MULTIPLY_ASSIGN,
+  FUNCTION_OPERATOR_DIVIDE_ASSIGN,
+  FUNCTION_OPERATOR_REMAINDER_ASSIGN,
+  FUNCTION_OPERATOR_BIT_AND_ASSIGN,
+  FUNCTION_OPERATOR_BIT_OR_ASSIGN,
+  FUNCTION_OPERATOR_BIT_XOR_ASSIGN,
+  FUNCTION_OPERATOR_SHIFT_LEFT,
+  FUNCTION_OPERATOR_SHIFT_RIGHT,
+  FUNCTION_OPERATOR_SHIFT_LEFT_ASSIGN,
+  FUNCTION_OPERATOR_SHIFT_RIGHT_ASSIGN,
+  FUNCTION_OPERATOR_EQUAL,
+  FUNCTION_OPERATOR_NOT_EQUAL,
+  FUNCTION_OPERATOR_LESS,
+  FUNCTION_OPERATOR_GREATER,
+  FUNCTION_OPERATOR_LESS_EQUAL,
+  FUNCTION_OPERATOR_GREATER_EQUAL,
+  FUNCTION_OPERATOR_LOGICAL_NOT,
+  FUNCTION_OPERATOR_BIT_NOT,
+  FUNCTION_OPERATOR_LOGICAL_AND,
+  FUNCTION_OPERATOR_LOGICAL_OR,
+  FUNCTION_OPERATOR_INCREMENT,
+  FUNCTION_OPERATOR_DECREMENT,
+  FUNCTION_OPERATOR_COMMA,
+  FUNCTION_OPERATOR_MEMBER_POINTER,
+  FUNCTION_OPERATOR_ARROW,
+  FUNCTION_OPERATOR_CALL,
+  FUNCTION_OPERATOR_INDEX,
+  FUNCTION_OPERATOR_LITERAL
+};
+
 struct FunctionEncoding
 {
   struct LambdaMetadata
@@ -1315,6 +1367,8 @@ struct FunctionEncoding
   std::vector<FunctionNameComponent> name_components;
   std::string terminal_fragment;
   std::string terminal_source_name;
+  FunctionOperatorTerminal operator_terminal = FUNCTION_OPERATOR_NONE;
+  std::string operator_literal_suffix;
   Type conversion_type;
   bool has_conversion_type = false;
   std::vector<TemplateArgument> template_arguments;
@@ -2233,6 +2287,25 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
     std::string & out,
     SubstitutionSink * sink);
 inline bool emit_source_name(const std::string & name, std::string & out);
+inline bool emit_function_operator_terminal(
+    FunctionOperatorTerminal terminal,
+    const std::string & literal_suffix,
+    std::string & out);
+inline bool function_operator_terminal_from_cpp_spelling(
+    const std::string & compact_spelling,
+    std::size_t explicit_parameter_count,
+    bool member_function,
+    FunctionOperatorTerminal & out,
+    std::string & literal_suffix);
+inline bool function_operator_terminal_from_semantic_name(
+    const std::string & name,
+    std::size_t explicit_parameter_count,
+    bool member_function,
+    FunctionOperatorTerminal & out);
+inline bool function_operator_terminal_substitution_text(
+    FunctionOperatorTerminal terminal,
+    const std::string & literal_suffix,
+    std::string & out);
 inline void emit_abi_tags(const std::vector<std::string> & abi_tags,
                           std::string & out);
 inline bool emit_function_name(const FunctionEncoding & function,
@@ -3782,6 +3855,268 @@ inline bool emit_source_name(const std::string & name, std::string & out)
   return true;
 }
 
+inline bool emit_function_operator_terminal(
+    FunctionOperatorTerminal terminal,
+    const std::string & literal_suffix,
+    std::string & out)
+{
+  const char * code = nullptr;
+  switch(terminal) {
+  case FUNCTION_OPERATOR_NEW: code = "nw"; break;
+  case FUNCTION_OPERATOR_NEW_ARRAY: code = "na"; break;
+  case FUNCTION_OPERATOR_DELETE: code = "dl"; break;
+  case FUNCTION_OPERATOR_DELETE_ARRAY: code = "da"; break;
+  case FUNCTION_OPERATOR_UNARY_PLUS: code = "ps"; break;
+  case FUNCTION_OPERATOR_PLUS: code = "pl"; break;
+  case FUNCTION_OPERATOR_UNARY_MINUS: code = "ng"; break;
+  case FUNCTION_OPERATOR_MINUS: code = "mi"; break;
+  case FUNCTION_OPERATOR_ADDRESS_OF: code = "ad"; break;
+  case FUNCTION_OPERATOR_BIT_AND: code = "an"; break;
+  case FUNCTION_OPERATOR_DEREFERENCE: code = "de"; break;
+  case FUNCTION_OPERATOR_MULTIPLY: code = "ml"; break;
+  case FUNCTION_OPERATOR_DIVIDE: code = "dv"; break;
+  case FUNCTION_OPERATOR_REMAINDER: code = "rm"; break;
+  case FUNCTION_OPERATOR_BIT_OR: code = "or"; break;
+  case FUNCTION_OPERATOR_BIT_XOR: code = "eo"; break;
+  case FUNCTION_OPERATOR_ASSIGN: code = "aS"; break;
+  case FUNCTION_OPERATOR_PLUS_ASSIGN: code = "pL"; break;
+  case FUNCTION_OPERATOR_MINUS_ASSIGN: code = "mI"; break;
+  case FUNCTION_OPERATOR_MULTIPLY_ASSIGN: code = "mL"; break;
+  case FUNCTION_OPERATOR_DIVIDE_ASSIGN: code = "dV"; break;
+  case FUNCTION_OPERATOR_REMAINDER_ASSIGN: code = "rM"; break;
+  case FUNCTION_OPERATOR_BIT_AND_ASSIGN: code = "aN"; break;
+  case FUNCTION_OPERATOR_BIT_OR_ASSIGN: code = "oR"; break;
+  case FUNCTION_OPERATOR_BIT_XOR_ASSIGN: code = "eO"; break;
+  case FUNCTION_OPERATOR_SHIFT_LEFT: code = "ls"; break;
+  case FUNCTION_OPERATOR_SHIFT_RIGHT: code = "rs"; break;
+  case FUNCTION_OPERATOR_SHIFT_LEFT_ASSIGN: code = "lS"; break;
+  case FUNCTION_OPERATOR_SHIFT_RIGHT_ASSIGN: code = "rS"; break;
+  case FUNCTION_OPERATOR_EQUAL: code = "eq"; break;
+  case FUNCTION_OPERATOR_NOT_EQUAL: code = "ne"; break;
+  case FUNCTION_OPERATOR_LESS: code = "lt"; break;
+  case FUNCTION_OPERATOR_GREATER: code = "gt"; break;
+  case FUNCTION_OPERATOR_LESS_EQUAL: code = "le"; break;
+  case FUNCTION_OPERATOR_GREATER_EQUAL: code = "ge"; break;
+  case FUNCTION_OPERATOR_LOGICAL_NOT: code = "nt"; break;
+  case FUNCTION_OPERATOR_BIT_NOT: code = "co"; break;
+  case FUNCTION_OPERATOR_LOGICAL_AND: code = "aa"; break;
+  case FUNCTION_OPERATOR_LOGICAL_OR: code = "oo"; break;
+  case FUNCTION_OPERATOR_INCREMENT: code = "pp"; break;
+  case FUNCTION_OPERATOR_DECREMENT: code = "mm"; break;
+  case FUNCTION_OPERATOR_COMMA: code = "cm"; break;
+  case FUNCTION_OPERATOR_MEMBER_POINTER: code = "pm"; break;
+  case FUNCTION_OPERATOR_ARROW: code = "pt"; break;
+  case FUNCTION_OPERATOR_CALL: code = "cl"; break;
+  case FUNCTION_OPERATOR_INDEX: code = "ix"; break;
+  case FUNCTION_OPERATOR_LITERAL:
+    out += "li";
+    return emit_source_name(literal_suffix, out);
+  case FUNCTION_OPERATOR_NONE:
+    break;
+  }
+  if(!code) {
+    return false;
+  }
+  out += code;
+  return true;
+}
+
+inline bool function_operator_terminal_from_semantic_name(
+    const std::string & name,
+    std::size_t explicit_parameter_count,
+    bool member_function,
+    FunctionOperatorTerminal & out)
+{
+  const bool unary_shape =
+      member_function ? explicit_parameter_count == 0 :
+                        explicit_parameter_count == 1;
+  if(name == "plus") {
+    out = unary_shape ? FUNCTION_OPERATOR_UNARY_PLUS : FUNCTION_OPERATOR_PLUS;
+    return true;
+  }
+  if(name == "minus") {
+    out = unary_shape ? FUNCTION_OPERATOR_UNARY_MINUS : FUNCTION_OPERATOR_MINUS;
+    return true;
+  }
+  if(name == "address-of" || name == "address") {
+    out = unary_shape ? FUNCTION_OPERATOR_ADDRESS_OF : FUNCTION_OPERATOR_BIT_AND;
+    return true;
+  }
+  if(name == "deref" || name == "dereference") {
+    out = unary_shape ? FUNCTION_OPERATOR_DEREFERENCE :
+                        FUNCTION_OPERATOR_MULTIPLY;
+    return true;
+  }
+
+  struct Entry
+  {
+    const char * name;
+    FunctionOperatorTerminal terminal;
+  };
+  static const Entry entries[] = {
+      {"new", FUNCTION_OPERATOR_NEW},
+      {"new-array", FUNCTION_OPERATOR_NEW_ARRAY},
+      {"delete", FUNCTION_OPERATOR_DELETE},
+      {"delete-array", FUNCTION_OPERATOR_DELETE_ARRAY},
+      {"unary-plus", FUNCTION_OPERATOR_UNARY_PLUS},
+      {"binary-plus", FUNCTION_OPERATOR_PLUS},
+      {"negate", FUNCTION_OPERATOR_UNARY_MINUS},
+      {"unary-minus", FUNCTION_OPERATOR_UNARY_MINUS},
+      {"binary-minus", FUNCTION_OPERATOR_MINUS},
+      {"bit-and", FUNCTION_OPERATOR_BIT_AND},
+      {"multiply", FUNCTION_OPERATOR_MULTIPLY},
+      {"divide", FUNCTION_OPERATOR_DIVIDE},
+      {"remainder", FUNCTION_OPERATOR_REMAINDER},
+      {"mod", FUNCTION_OPERATOR_REMAINDER},
+      {"bit-or", FUNCTION_OPERATOR_BIT_OR},
+      {"bit-xor", FUNCTION_OPERATOR_BIT_XOR},
+      {"assign", FUNCTION_OPERATOR_ASSIGN},
+      {"plus-assign", FUNCTION_OPERATOR_PLUS_ASSIGN},
+      {"minus-assign", FUNCTION_OPERATOR_MINUS_ASSIGN},
+      {"multiply-assign", FUNCTION_OPERATOR_MULTIPLY_ASSIGN},
+      {"divide-assign", FUNCTION_OPERATOR_DIVIDE_ASSIGN},
+      {"remainder-assign", FUNCTION_OPERATOR_REMAINDER_ASSIGN},
+      {"mod-assign", FUNCTION_OPERATOR_REMAINDER_ASSIGN},
+      {"bit-and-assign", FUNCTION_OPERATOR_BIT_AND_ASSIGN},
+      {"bit-or-assign", FUNCTION_OPERATOR_BIT_OR_ASSIGN},
+      {"bit-xor-assign", FUNCTION_OPERATOR_BIT_XOR_ASSIGN},
+      {"shift-left", FUNCTION_OPERATOR_SHIFT_LEFT},
+      {"shift-right", FUNCTION_OPERATOR_SHIFT_RIGHT},
+      {"shift-left-assign", FUNCTION_OPERATOR_SHIFT_LEFT_ASSIGN},
+      {"shift-right-assign", FUNCTION_OPERATOR_SHIFT_RIGHT_ASSIGN},
+      {"equal", FUNCTION_OPERATOR_EQUAL},
+      {"not-equal", FUNCTION_OPERATOR_NOT_EQUAL},
+      {"less", FUNCTION_OPERATOR_LESS},
+      {"greater", FUNCTION_OPERATOR_GREATER},
+      {"less-equal", FUNCTION_OPERATOR_LESS_EQUAL},
+      {"greater-equal", FUNCTION_OPERATOR_GREATER_EQUAL},
+      {"logical-not", FUNCTION_OPERATOR_LOGICAL_NOT},
+      {"bit-not", FUNCTION_OPERATOR_BIT_NOT},
+      {"logical-and", FUNCTION_OPERATOR_LOGICAL_AND},
+      {"logical-or", FUNCTION_OPERATOR_LOGICAL_OR},
+      {"increment", FUNCTION_OPERATOR_INCREMENT},
+      {"decrement", FUNCTION_OPERATOR_DECREMENT},
+      {"comma", FUNCTION_OPERATOR_COMMA},
+      {"member-pointer", FUNCTION_OPERATOR_MEMBER_POINTER},
+      {"arrow", FUNCTION_OPERATOR_ARROW},
+      {"call", FUNCTION_OPERATOR_CALL},
+      {"index", FUNCTION_OPERATOR_INDEX}};
+  for(std::size_t i = 0; i < sizeof(entries) / sizeof(entries[0]); ++i) {
+    if(name == entries[i].name) {
+      out = entries[i].terminal;
+      return true;
+    }
+  }
+  return false;
+}
+
+inline bool function_operator_terminal_from_cpp_spelling(
+    const std::string & compact_spelling,
+    std::size_t explicit_parameter_count,
+    bool member_function,
+    FunctionOperatorTerminal & out,
+    std::string & literal_suffix)
+{
+  literal_suffix.clear();
+  const std::string literal_prefix = "operator\"\"";
+  if(compact_spelling.compare(0,
+                              literal_prefix.size(),
+                              literal_prefix) == 0) {
+    literal_suffix = compact_spelling.substr(literal_prefix.size());
+    out = FUNCTION_OPERATOR_LITERAL;
+    return !literal_suffix.empty();
+  }
+  if(compact_spelling == "operator+") {
+    out = (member_function ? explicit_parameter_count == 0 :
+                             explicit_parameter_count == 1) ?
+        FUNCTION_OPERATOR_UNARY_PLUS : FUNCTION_OPERATOR_PLUS;
+    return true;
+  }
+  if(compact_spelling == "operator-") {
+    out = (member_function ? explicit_parameter_count == 0 :
+                             explicit_parameter_count == 1) ?
+        FUNCTION_OPERATOR_UNARY_MINUS : FUNCTION_OPERATOR_MINUS;
+    return true;
+  }
+  if(compact_spelling == "operator&") {
+    out = (member_function ? explicit_parameter_count == 0 :
+                             explicit_parameter_count == 1) ?
+        FUNCTION_OPERATOR_ADDRESS_OF : FUNCTION_OPERATOR_BIT_AND;
+    return true;
+  }
+  if(compact_spelling == "operator*") {
+    out = (member_function ? explicit_parameter_count == 0 :
+                             explicit_parameter_count == 1) ?
+        FUNCTION_OPERATOR_DEREFERENCE : FUNCTION_OPERATOR_MULTIPLY;
+    return true;
+  }
+
+  struct Entry
+  {
+    const char * spelling;
+    FunctionOperatorTerminal terminal;
+  };
+  static const Entry entries[] = {
+      {"operatornew", FUNCTION_OPERATOR_NEW},
+      {"operatornew[]", FUNCTION_OPERATOR_NEW_ARRAY},
+      {"operatordelete", FUNCTION_OPERATOR_DELETE},
+      {"operatordelete[]", FUNCTION_OPERATOR_DELETE_ARRAY},
+      {"operator/", FUNCTION_OPERATOR_DIVIDE},
+      {"operator%", FUNCTION_OPERATOR_REMAINDER},
+      {"operator|", FUNCTION_OPERATOR_BIT_OR},
+      {"operator^", FUNCTION_OPERATOR_BIT_XOR},
+      {"operator=", FUNCTION_OPERATOR_ASSIGN},
+      {"operator+=", FUNCTION_OPERATOR_PLUS_ASSIGN},
+      {"operator-=", FUNCTION_OPERATOR_MINUS_ASSIGN},
+      {"operator*=", FUNCTION_OPERATOR_MULTIPLY_ASSIGN},
+      {"operator/=", FUNCTION_OPERATOR_DIVIDE_ASSIGN},
+      {"operator%=", FUNCTION_OPERATOR_REMAINDER_ASSIGN},
+      {"operator&=", FUNCTION_OPERATOR_BIT_AND_ASSIGN},
+      {"operator|=", FUNCTION_OPERATOR_BIT_OR_ASSIGN},
+      {"operator^=", FUNCTION_OPERATOR_BIT_XOR_ASSIGN},
+      {"operator<<", FUNCTION_OPERATOR_SHIFT_LEFT},
+      {"operator>>", FUNCTION_OPERATOR_SHIFT_RIGHT},
+      {"operator<<=", FUNCTION_OPERATOR_SHIFT_LEFT_ASSIGN},
+      {"operator>>=", FUNCTION_OPERATOR_SHIFT_RIGHT_ASSIGN},
+      {"operator==", FUNCTION_OPERATOR_EQUAL},
+      {"operator!=", FUNCTION_OPERATOR_NOT_EQUAL},
+      {"operator<", FUNCTION_OPERATOR_LESS},
+      {"operator>", FUNCTION_OPERATOR_GREATER},
+      {"operator<=", FUNCTION_OPERATOR_LESS_EQUAL},
+      {"operator>=", FUNCTION_OPERATOR_GREATER_EQUAL},
+      {"operator!", FUNCTION_OPERATOR_LOGICAL_NOT},
+      {"operator~", FUNCTION_OPERATOR_BIT_NOT},
+      {"operator&&", FUNCTION_OPERATOR_LOGICAL_AND},
+      {"operator||", FUNCTION_OPERATOR_LOGICAL_OR},
+      {"operator++", FUNCTION_OPERATOR_INCREMENT},
+      {"operator--", FUNCTION_OPERATOR_DECREMENT},
+      {"operator,", FUNCTION_OPERATOR_COMMA},
+      {"operator->*", FUNCTION_OPERATOR_MEMBER_POINTER},
+      {"operator->", FUNCTION_OPERATOR_ARROW},
+      {"operator()", FUNCTION_OPERATOR_CALL},
+      {"operator[]", FUNCTION_OPERATOR_INDEX}};
+  for(std::size_t i = 0; i < sizeof(entries) / sizeof(entries[0]); ++i) {
+    if(compact_spelling == entries[i].spelling) {
+      out = entries[i].terminal;
+      return true;
+    }
+  }
+  return false;
+}
+
+inline bool function_operator_terminal_substitution_text(
+    FunctionOperatorTerminal terminal,
+    const std::string & literal_suffix,
+    std::string & out)
+{
+  std::string terminal_text;
+  if(!emit_function_operator_terminal(terminal, literal_suffix, terminal_text)) {
+    return false;
+  }
+  out = std::string("operator-name:") + terminal_text;
+  return true;
+}
+
 inline bool emit_dependent_expression_body(const DependentExpression & expression,
                                            std::string & out,
                                            SubstitutionSink * sink)
@@ -4255,6 +4590,12 @@ inline bool emit_function_name(const FunctionEncoding & function,
       if(!emit_source_name(function.terminal_source_name, out)) {
         return false;
       }
+    } else if(function.operator_terminal != FUNCTION_OPERATOR_NONE) {
+      if(!emit_function_operator_terminal(function.operator_terminal,
+                                          function.operator_literal_suffix,
+                                          out)) {
+        return false;
+      }
     } else {
       out += function.terminal_fragment.empty() ?
           std::string("cl") :
@@ -4322,6 +4663,12 @@ inline bool emit_function_name(const FunctionEncoding & function,
                     nullptr)) {
         return false;
       }
+    } else if(function.operator_terminal != FUNCTION_OPERATOR_NONE) {
+      if(!emit_function_operator_terminal(function.operator_terminal,
+                                          function.operator_literal_suffix,
+                                          out)) {
+        return false;
+      }
     } else if(!function.terminal_fragment.empty()) {
       out += function.terminal_fragment;
     } else if(!emit_function_name_component(function.name_components[terminal],
@@ -4343,7 +4690,9 @@ inline bool emit_function_name(const FunctionEncoding & function,
     }
     return true;
   }
-  if(function.name_fragment.empty()) {
+  if(function.name_fragment.empty() &&
+     function.operator_terminal == FUNCTION_OPERATOR_NONE &&
+     !function.has_conversion_type) {
     return false;
   }
   if(!function.template_arguments.empty() &&
@@ -4357,6 +4706,12 @@ inline bool emit_function_name(const FunctionEncoding & function,
     if(!emit_type(function.conversion_type,
                   out,
                   nullptr)) {
+      return false;
+    }
+  } else if(function.operator_terminal != FUNCTION_OPERATOR_NONE) {
+    if(!emit_function_operator_terminal(function.operator_terminal,
+                                        function.operator_literal_suffix,
+                                        out)) {
       return false;
     }
   } else {

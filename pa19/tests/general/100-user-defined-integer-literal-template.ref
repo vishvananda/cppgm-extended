@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @operator___digits() -> i32 [binding=weak, object=_Z14operator_20intU127operator_20int_7ctype_3dfunction_20of_20_28_29_20returning_20int_7ctemplate_3doperator_22_22_digits_7cinst_3d48_7c120_7c48_7c48] {
+function @operator___digits() -> i32 [binding=weak, object=_Zli7_digitsIJLc48ELc120ELc48ELc48EEEiv] {
   block ^entry:
     %t1 = const i64 4
     %t2 = convert trunc i32 i64 %t1

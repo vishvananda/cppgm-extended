@@ -637,8 +637,8 @@ AbiFunctionTerminal terminal_from_fact_word(const string & word)
   if(word == "operator-assign") {
     return ABI_FUNCTION_TERMINAL_OPERATOR_ASSIGN;
   }
-  if(word == "operator-code") {
-    return ABI_FUNCTION_TERMINAL_OPERATOR_CODE;
+  if(word == "operator") {
+    return ABI_FUNCTION_TERMINAL_OPERATOR;
   }
   if(word == "conversion") {
     return ABI_FUNCTION_TERMINAL_CONVERSION;
@@ -670,8 +670,8 @@ string terminal_word_from_fact_terminal(AbiFunctionTerminal terminal)
     return "operator-call";
   case ABI_FUNCTION_TERMINAL_OPERATOR_ASSIGN:
     return "operator-assign";
-  case ABI_FUNCTION_TERMINAL_OPERATOR_CODE:
-    return "operator-code";
+  case ABI_FUNCTION_TERMINAL_OPERATOR:
+    return "operator";
   case ABI_FUNCTION_TERMINAL_CONVERSION:
     return "conversion";
   case ABI_FUNCTION_TERMINAL_CONSTRUCTOR_COMPLETE:
@@ -1545,11 +1545,19 @@ void apply_fact_words(AbiFactCase & fact_case, const vector<string> & words)
     if(!target_has_function(fact_case.target.kind)) {
       throw logic_error("operator-terminal appears before function fact");
     }
-    if(words.size() != 2) {
-      throw logic_error("operator-terminal requires one Itanium operator code");
+    if(words.size() < 2 || words.size() > 3) {
+      throw logic_error("operator-terminal requires an operator name");
     }
-    fact_case.target.function.terminal = ABI_FUNCTION_TERMINAL_OPERATOR_CODE;
-    fact_case.target.function.terminal_operator_code = words[1];
+    fact_case.target.function.terminal = ABI_FUNCTION_TERMINAL_OPERATOR;
+    fact_case.target.function.terminal_operator_name = words[1];
+    if(words[1] == "literal") {
+      if(words.size() != 3) {
+        throw logic_error("literal operator-terminal requires a suffix");
+      }
+      fact_case.target.function.terminal_literal_suffix = words[2];
+    } else if(words.size() != 2) {
+      throw logic_error("operator-terminal suffix is only valid for literal");
+    }
     return;
   }
   if(command == "conversion-terminal") {
@@ -1867,10 +1875,13 @@ void append_function_target_words(vector<string> & words,
 void append_function_modifier_lines(vector<vector<string> > & lines,
                                     const AbiFunction & function)
 {
-  if(function.terminal == ABI_FUNCTION_TERMINAL_OPERATOR_CODE) {
+  if(function.terminal == ABI_FUNCTION_TERMINAL_OPERATOR) {
     vector<string> terminal_words;
     terminal_words.push_back("operator-terminal");
-    terminal_words.push_back(function.terminal_operator_code);
+    terminal_words.push_back(function.terminal_operator_name);
+    if(function.terminal_operator_name == "literal") {
+      terminal_words.push_back(function.terminal_literal_suffix);
+    }
     lines.push_back(terminal_words);
   } else if(function.terminal == ABI_FUNCTION_TERMINAL_CONVERSION) {
     vector<string> terminal_words;
@@ -3160,7 +3171,7 @@ string direct_terminal_code(AbiFunctionTerminal terminal)
     return "cl";
   case ABI_FUNCTION_TERMINAL_OPERATOR_ASSIGN:
     return "aS";
-  case ABI_FUNCTION_TERMINAL_OPERATOR_CODE:
+  case ABI_FUNCTION_TERMINAL_OPERATOR:
   case ABI_FUNCTION_TERMINAL_CONVERSION:
     break;
   case ABI_FUNCTION_TERMINAL_CONSTRUCTOR_COMPLETE:
@@ -3231,6 +3242,27 @@ void direct_emit_abi_tags(const vector<string> & tags, string & out)
   }
 }
 
+bool direct_emit_semantic_operator_terminal(const AbiFunction & function,
+                                            bool member_function,
+                                            string & out)
+{
+  abi_mangle::FunctionOperatorTerminal terminal =
+      abi_mangle::FUNCTION_OPERATOR_NONE;
+  if(function.terminal_operator_name == "literal") {
+    terminal = abi_mangle::FUNCTION_OPERATOR_LITERAL;
+  } else if(!abi_mangle::function_operator_terminal_from_semantic_name(
+                function.terminal_operator_name,
+                function.parameter_types.size(),
+                member_function,
+                terminal)) {
+    return false;
+  }
+  return abi_mangle::emit_function_operator_terminal(
+      terminal,
+      function.terminal_literal_suffix,
+      out);
+}
+
 bool direct_emit_function_name_for_function(const DirectFactContext & ctx,
                                             DirectEncoder & encoder,
                                             const AbiFunction & function,
@@ -3261,11 +3293,11 @@ bool direct_emit_function_name_for_function(const DirectFactContext & ctx,
     }
   }
 
-  if(function.terminal == ABI_FUNCTION_TERMINAL_OPERATOR_CODE) {
-    if(function.terminal_operator_code.empty()) {
+  if(function.terminal == ABI_FUNCTION_TERMINAL_OPERATOR) {
+    if(function.terminal_operator_name.empty() ||
+       !direct_emit_semantic_operator_terminal(function, nested, out)) {
       return false;
     }
-    out += function.terminal_operator_code;
   } else if(function.terminal == ABI_FUNCTION_TERMINAL_CONVERSION) {
     out += "cv";
     if(!direct_emit_type(ctx, encoder, function.conversion_type, out)) {

@@ -959,11 +959,24 @@ string remove_space_chars(string text)
   return text;
 }
 
+bool is_literal_operator_function_name(const string & name)
+{
+  const string compact = remove_space_chars(unqualified_member_name(name));
+  const string literal_operator_prefix = "operator\"\"";
+  return compact.compare(0,
+                         literal_operator_prefix.size(),
+                         literal_operator_prefix) == 0 &&
+         compact.size() > literal_operator_prefix.size();
+}
+
 bool is_builtin_operator_function_name(const string & name)
 {
   const string compact = remove_space_chars(unqualified_member_name(name));
   if(compact.compare(0, 8, "operator") != 0) {
     return false;
+  }
+  if(is_literal_operator_function_name(name)) {
+    return true;
   }
 
   static const set<string> operator_names = {

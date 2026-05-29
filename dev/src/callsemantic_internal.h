@@ -136,6 +136,7 @@ bool recog_token_text_needs_separator(const RecogToken & lhs,
                                       const RecogToken & rhs);
 std::string remove_space_chars(std::string text);
 bool is_builtin_operator_function_name(const std::string & name);
+bool is_literal_operator_function_name(const std::string & name);
 bool is_conversion_function_name(const std::string & name);
 std::string append_diagnostic_context_message(const std::string & message);
 std::string replace_identifier_token_text(const std::string & text,

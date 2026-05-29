@@ -493,6 +493,20 @@ rebased Boost frontier branch.
   Validation: serial full `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1
   CPPGM_SKIP_DEV_REBUILD=1 ... make test-report-nobuild` passes `3192/3192`;
   strict direct-LowIR compare passes for PA18, PA19, PA21, and PA22.
+- this commit: moved PA31 function operator terminals and compiler symbol
+  linkage off raw Itanium terminal snippets. PA31 facts now spell
+  `operator-terminal plus` or `operator-terminal literal _suffix`, the exported
+  ABI fact scaffold stores semantic operator names and literal suffixes, and
+  symbol linkage lowers C++ operator spellings through typed ABI operator
+  terminals. The same cleanup repaired hosted literal-operator classification
+  and added focused ABI guards for dependent parameter-declaration `decltype`
+  and template-template conversion target mangling. Validation:
+  `make -C dev cppgm++ abimangle -j8`; focused direct-LowIR checks for the
+  PA19 literal operator, PA22 conversion-operator/template-template reducers,
+  PA18 `decltype` parameter reducer, and the new PA31 ABI facts; `make -C pa31
+  test CPPGM_SKIP_DEV_REBUILD=1` passes `48/48`. Full direct-LowIR
+  `test-report` is still partway through the rebase cleanup and currently
+  reports `3173/3257`; perf is deferred until that gate is clean again.
 
 Local Boost wrapper state:
 

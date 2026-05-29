@@ -271,7 +271,7 @@ enum AbiFunctionTerminal
   ABI_FUNCTION_TERMINAL_SOURCE_NAME,
   ABI_FUNCTION_TERMINAL_OPERATOR_CALL,
   ABI_FUNCTION_TERMINAL_OPERATOR_ASSIGN,
-  ABI_FUNCTION_TERMINAL_OPERATOR_CODE,
+  ABI_FUNCTION_TERMINAL_OPERATOR,
   ABI_FUNCTION_TERMINAL_CONVERSION,
   ABI_FUNCTION_TERMINAL_CONSTRUCTOR_COMPLETE,
   ABI_FUNCTION_TERMINAL_CONSTRUCTOR_BASE,
@@ -290,7 +290,11 @@ struct AbiFunction
   std::string discriminator;
   std::string source_name;
   AbiFunctionTerminal terminal = ABI_FUNCTION_TERMINAL_SOURCE_NAME;
-  std::string terminal_operator_code;
+  // Semantic operator-terminal name, for example "plus" or "literal".
+  std::string terminal_operator_name;
+  // Unencoded literal-operator suffix used only when terminal_operator_name is
+  // "literal", for example "_digits".
+  std::string terminal_literal_suffix;
   AbiType conversion_type;
   std::vector<AbiType> lambda_signature_parameter_types;
   bool has_result_type = false;

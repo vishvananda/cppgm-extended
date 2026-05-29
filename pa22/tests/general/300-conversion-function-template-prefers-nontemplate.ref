@@ -98,3 +98,6 @@ function @box_int__long_int__char___box__ov2(%this : ptr, %v : i32) -> void [bin
     store i32 %t1, %t3
     return void
 }
+alias object _ZN3boxIilcEC2Ev = @box_int__long_int__char___box
+alias object _ZN6sourceIiEC2Ei = @source_int___source
+alias object _ZN3boxIilcEC2Ei = @box_int__long_int__char___box__ov2

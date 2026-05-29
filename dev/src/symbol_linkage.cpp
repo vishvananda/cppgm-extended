@@ -9572,6 +9572,57 @@ static bool try_build_dependent_class_template_type_ir(
   return true;
 }
 
+static bool try_build_dependent_template_template_parameter_type_ir(
+    const TypePtr & type,
+    const TypeMangleContext * mangle_ctx,
+    abi_mangle::Type & out)
+{
+  string parameter_name;
+  size_t parameter_arity = static_cast<size_t>(-1);
+  vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
+  if(!named_type_dependent_template_template_parameter(type,
+                                                       parameter_name,
+                                                       parameter_arity,
+                                                       dependent_arguments)) {
+    return false;
+  }
+
+  size_t template_parameter_index = 0;
+  const TemplateParameterInfo * template_parameter = nullptr;
+  if(!try_find_template_template_parameter_index(parameter_name,
+                                                mangle_ctx,
+                                                template_parameter_index,
+                                                template_parameter)) {
+    return false;
+  }
+
+  vector<TemplateParameterInfo> template_template_parameters;
+  const vector<TemplateParameterInfo> * argument_parameters = nullptr;
+  if(template_parameter &&
+     template_parameter->template_parameter_count != 0 &&
+     template_parameter->template_parameter_count != static_cast<size_t>(-1)) {
+    template_template_parameters.resize(
+        template_parameter->template_parameter_count);
+    argument_parameters = &template_template_parameters;
+  } else if(parameter_arity != static_cast<size_t>(-1)) {
+    template_template_parameters.resize(parameter_arity);
+    argument_parameters = &template_template_parameters;
+  }
+
+  vector<abi_mangle::Type::ClassTemplateArgument> arguments;
+  if(!build_dependent_template_arguments_ir(dependent_arguments,
+                                            argument_parameters,
+                                            mangle_ctx,
+                                            arguments)) {
+    return false;
+  }
+
+  out = abi_mangle::Type::template_parameter_class_template_specialization(
+      template_parameter_index,
+      arguments);
+  return true;
+}
+
 static bool try_build_dependent_qualified_member_type_ir(
     const TypePtr & type,
     const TypeMangleContext * mangle_ctx,
@@ -12635,6 +12686,11 @@ static bool try_build_type_ir(const TypePtr & type,
   if(try_build_dependent_alias_type_ir(type, mangle_ctx, out)) {
     return true;
   }
+  if(try_build_dependent_template_template_parameter_type_ir(type,
+                                                            mangle_ctx,
+                                                            out)) {
+    return true;
+  }
   if(try_build_dependent_class_template_type_ir(type, mangle_ctx, out)) {
     return true;
   }
@@ -14395,82 +14451,23 @@ static size_t operator_explicit_parameter_count(const QualifiedName & qualified,
   return count;
 }
 
-static bool fixed_operator_mangle_code(const string & compact,
-                                       size_t explicit_param_count,
-                                       bool is_member_function,
-                                       string & out)
+static bool fixed_operator_mangle_terminal(
+    const string & compact,
+    size_t explicit_param_count,
+    bool is_member_function,
+    abi_mangle::FunctionOperatorTerminal & terminal,
+    string & literal_suffix)
 {
-  if(compact == "operator+") {
-    out = (is_member_function ? explicit_param_count == 0 :
-                                explicit_param_count == 1) ? "ps" : "pl";
-    return true;
+  if(!abi_mangle::function_operator_terminal_from_cpp_spelling(
+         compact,
+         explicit_param_count,
+         is_member_function,
+         terminal,
+         literal_suffix)) {
+    return false;
   }
-  if(compact == "operator-") {
-    out = (is_member_function ? explicit_param_count == 0 :
-                                explicit_param_count == 1) ? "ng" : "mi";
-    return true;
-  }
-  if(compact == "operator&") {
-    out = (is_member_function ? explicit_param_count == 0 :
-                                explicit_param_count == 1) ? "ad" : "an";
-    return true;
-  }
-  if(compact == "operator*") {
-    out = (is_member_function ? explicit_param_count == 0 :
-                                explicit_param_count == 1) ? "de" : "ml";
-    return true;
-  }
-
-  static const struct {
-    const char * name;
-    const char * code;
-  } kOperatorCodes[] = {
-      {"operatornew", "nw"},
-      {"operatornew[]", "na"},
-      {"operatordelete", "dl"},
-      {"operatordelete[]", "da"},
-      {"operator/", "dv"},
-      {"operator%", "rm"},
-      {"operator|", "or"},
-      {"operator^", "eo"},
-      {"operator=", "aS"},
-      {"operator+=", "pL"},
-      {"operator-=", "mI"},
-      {"operator*=", "mL"},
-      {"operator/=", "dV"},
-      {"operator%=", "rM"},
-      {"operator&=", "aN"},
-      {"operator|=", "oR"},
-      {"operator^=", "eO"},
-      {"operator<<", "ls"},
-      {"operator>>", "rs"},
-      {"operator<<=", "lS"},
-      {"operator>>=", "rS"},
-      {"operator==", "eq"},
-      {"operator!=", "ne"},
-      {"operator<", "lt"},
-      {"operator>", "gt"},
-      {"operator<=", "le"},
-      {"operator>=", "ge"},
-      {"operator!", "nt"},
-      {"operator~", "co"},
-      {"operator&&", "aa"},
-      {"operator||", "oo"},
-      {"operator++", "pp"},
-      {"operator--", "mm"},
-      {"operator,", "cm"},
-      {"operator->*", "pm"},
-      {"operator->", "pt"},
-      {"operator()", "cl"},
-      {"operator[]", "ix"}};
-
-  for(size_t i = 0; i < sizeof(kOperatorCodes) / sizeof(kOperatorCodes[0]); ++i) {
-    if(compact == kOperatorCodes[i].name) {
-      out = kOperatorCodes[i].code;
-      return true;
-    }
-  }
-  return false;
+  return terminal != abi_mangle::FUNCTION_OPERATOR_LITERAL ||
+         is_identifier_text_for_mangling(literal_suffix);
 }
 
 static bool template_value_argument_needs_entity_identity(
@@ -15364,15 +15361,19 @@ static bool try_mangle_local_class_member_name_prefix_ir(
 
   const string compact = compact_operator_name(display_or_name);
   if(compact.compare(0, 8, "operator") == 0) {
-    string operator_code;
-    if(fixed_operator_mangle_code(compact,
-                                  operator_explicit_parameter_count(
-                                      qualified,
-                                      type,
-                                      options),
-                                  true,
-                                  operator_code)) {
-      function.terminal_fragment = operator_code;
+    abi_mangle::FunctionOperatorTerminal operator_terminal =
+        abi_mangle::FUNCTION_OPERATOR_NONE;
+    string operator_literal_suffix;
+    if(fixed_operator_mangle_terminal(compact,
+                                      operator_explicit_parameter_count(
+                                          qualified,
+                                          type,
+                                          options),
+                                      true,
+                                      operator_terminal,
+                                      operator_literal_suffix)) {
+      function.operator_terminal = operator_terminal;
+      function.operator_literal_suffix = operator_literal_suffix;
     } else {
       TypeMangleContext mangle_ctx;
       mangle_ctx.lexical_scope = function_type_lexical_scope(qualified,
@@ -15450,22 +15451,26 @@ static bool try_mangle_operator_name_prefix_ir(
 
   const size_t explicit_param_count =
       operator_explicit_parameter_count(qualified, type, options);
-  string operator_code;
-  if(!fixed_operator_mangle_code(compact,
-                                 explicit_param_count,
-                                 options.is_member_function,
-                                 operator_code)) {
+  abi_mangle::FunctionOperatorTerminal operator_terminal =
+      abi_mangle::FUNCTION_OPERATOR_NONE;
+  string operator_literal_suffix;
+  if(!fixed_operator_mangle_terminal(compact,
+                                     explicit_param_count,
+                                     options.is_member_function,
+                                     operator_terminal,
+                                     operator_literal_suffix)) {
     return false;
   }
 
   abi_mangle::FunctionEncoding function;
   function.abi_tags = options.abi_tags;
-  function.terminal_fragment = operator_code;
+  function.operator_terminal = operator_terminal;
+  function.operator_literal_suffix = operator_literal_suffix;
   if(options.is_member_function) {
     apply_member_function_nested_qualifiers_ir(options, function);
   }
   if(qualified.qualifiers.empty()) {
-    function.name_fragment = operator_code;
+    function.name_fragment = "operator";
   } else {
     if(!build_function_name_components_ir(qualified, options, false, function)) {
       return false;
@@ -15492,9 +15497,15 @@ static bool try_mangle_operator_name_prefix_ir(
            function.template_arguments)) {
       return false;
     }
+    string operator_key;
+    if(!abi_mangle::function_operator_terminal_substitution_text(
+           function.operator_terminal,
+           function.operator_literal_suffix,
+           operator_key)) {
+      return false;
+    }
     function.template_prefix_key =
-        abi_mangle::SubstitutionKey::function_template_prefix(
-            string("operator-name:") + operator_code);
+        abi_mangle::SubstitutionKey::function_template_prefix(operator_key);
   }
 
   string candidate;
@@ -15515,16 +15526,19 @@ static bool try_mangle_conversion_operator_name_prefix_ir(
 {
   const string compact =
       compact_operator_name(display_name.empty() ? qualified.name : display_name);
-  string fixed_code;
+  abi_mangle::FunctionOperatorTerminal fixed_terminal =
+      abi_mangle::FUNCTION_OPERATOR_NONE;
+  string fixed_literal_suffix;
   if(qualified.rooted ||
      compact.compare(0, 8, "operator") != 0 ||
-     fixed_operator_mangle_code(compact,
-                                operator_explicit_parameter_count(
-                                    qualified,
-                                    type,
-                                    options),
-                                options.is_member_function,
-                                fixed_code) ||
+     fixed_operator_mangle_terminal(compact,
+                                    operator_explicit_parameter_count(
+                                        qualified,
+                                        type,
+                                        options),
+                                    options.is_member_function,
+                                    fixed_terminal,
+                                    fixed_literal_suffix) ||
      !function_options_are_fixed_operator_name_ir_candidate(options) ||
      !options.is_member_function ||
      qualified.qualifiers.empty()) {
@@ -15735,13 +15749,16 @@ static FunctionNameIrPath select_function_name_ir_path(
     if(!function_options_are_fixed_operator_name_ir_candidate(options)) {
       return FNIP_NONE;
     }
-    string fixed_code;
+    abi_mangle::FunctionOperatorTerminal fixed_terminal =
+        abi_mangle::FUNCTION_OPERATOR_NONE;
+    string fixed_literal_suffix;
     const bool fixed_operator =
-        fixed_operator_mangle_code(
+        fixed_operator_mangle_terminal(
             compact,
             operator_explicit_parameter_count(qualified, type, options),
             options.is_member_function,
-            fixed_code);
+            fixed_terminal,
+            fixed_literal_suffix);
     if(fixed_operator) {
       return options.is_member_function && qualified.qualifiers.empty() ?
           FNIP_NONE :
@@ -16469,6 +16486,14 @@ static bool try_emit_itanium_function_symbol_ir(
                   i < options.parameter_declarations_pattern->size() ?
               (*options.parameter_declarations_pattern)[i] :
               nullptr;
+      const bool parameter_decl_mentions_direct_template_parameter =
+          parameter_decl_pattern &&
+          ast_node_mentions_direct_template_parameter(*parameter_decl_pattern,
+                                                      &mangle_ctx);
+      const bool parameter_decl_mentions_function_parameter =
+          parameter_decl_pattern &&
+          ast_node_mentions_function_parameter(*parameter_decl_pattern,
+                                               &mangle_ctx);
       const TypePtr hybrid_param_type =
           hybridize_pattern_type_with_actual((*options.parameter_pattern)[i].second,
                                              actual_param,
@@ -16501,9 +16526,7 @@ static bool try_emit_itanium_function_symbol_ir(
          !emit_trailing_function_parameter_pack &&
          actual_param &&
          !type_has_dependent_mangle_state(actual_param)) {
-        if(parameter_decl_pattern &&
-           ast_node_mentions_direct_template_parameter(*parameter_decl_pattern,
-                                                       &mangle_ctx)) {
+        if(parameter_decl_mentions_direct_template_parameter) {
           mangled_param = emit_parameter_declaration_ir_from_ast(
               *parameter_decl_pattern,
               actual_param,
@@ -16561,8 +16584,8 @@ static bool try_emit_itanium_function_symbol_ir(
       }
       if(!mangled_param &&
          parameter_decl_pattern &&
-         ast_node_mentions_direct_template_parameter(*parameter_decl_pattern,
-                                                     &mangle_ctx)) {
+         (parameter_decl_mentions_direct_template_parameter ||
+          parameter_decl_mentions_function_parameter)) {
         const size_t structured_begin = candidate.size();
         mangled_param = emit_parameter_declaration_ir_from_ast(
             *parameter_decl_pattern,
