@@ -4104,6 +4104,7 @@ private:
   string shared_host_call_unwind_dispatch_label_;
   size_t shared_host_call_unwind_host_dispatch_depth_ = 0;
   bool shared_host_call_unwind_created_dispatch_ = false;
+  bool shared_host_call_unwind_include_constructor_cleanups_ = false;
   TypePtr function_result_type_;
   const CallSemNode * named_return_slot_variable_ = nullptr;
   bool direct_object_return_ = false;
@@ -7493,6 +7494,8 @@ private:
       return;
     }
     const bool created_dispatch = shared_host_call_unwind_created_dispatch_;
+    const bool include_constructor_cleanups =
+        shared_host_call_unwind_include_constructor_cleanups_;
     const string dispatch_label = shared_host_call_unwind_dispatch_label_;
     const size_t host_dispatch_depth = shared_host_call_unwind_host_dispatch_depth_;
     emit_line("eh_end");
@@ -7506,26 +7509,32 @@ private:
     shared_host_call_unwind_dispatch_label_.clear();
     shared_host_call_unwind_host_dispatch_depth_ = 0;
     shared_host_call_unwind_created_dispatch_ = false;
+    shared_host_call_unwind_include_constructor_cleanups_ = false;
     if(created_dispatch) {
       const string end_label = new_block("call_unwind_end");
       terminate_no_close("jump " + lowir_block_name(end_label));
       emit_shared_call_unwind_dispatch_block(dispatch_label,
-                                             false,
+                                             include_constructor_cleanups,
                                              host_dispatch_depth);
       start_block(end_label);
     }
   }
 
-  void open_shared_host_call_unwind_region()
+  void open_shared_host_call_unwind_region(
+      bool include_constructor_cleanups = false)
   {
     if(shared_host_call_unwind_region_open_) {
-      return;
+      if(!include_constructor_cleanups ||
+         shared_host_call_unwind_include_constructor_cleanups_) {
+        return;
+      }
+      close_shared_host_call_unwind_region();
     }
     const size_t host_dispatch_depth =
         use_host_eh_runtime() ? host_eh_region_depth_ + 1 : 0;
     bool created_dispatch = false;
     const string dispatch_label =
-        shared_call_unwind_dispatch_label(false,
+        shared_call_unwind_dispatch_label(include_constructor_cleanups,
                                           host_dispatch_depth,
                                           created_dispatch);
     emit_line("eh_try " + lowir_block_name(dispatch_label));
@@ -7536,6 +7545,8 @@ private:
     shared_host_call_unwind_dispatch_label_ = dispatch_label;
     shared_host_call_unwind_host_dispatch_depth_ = host_dispatch_depth;
     shared_host_call_unwind_created_dispatch_ = created_dispatch;
+    shared_host_call_unwind_include_constructor_cleanups_ =
+        include_constructor_cleanups;
   }
 
   void open_host_unwind_region_for_emitted_call_if_needed(const CallSemNode & node)
@@ -14324,10 +14335,14 @@ private:
       const bool use_host_throw = use_host_eh_runtime();
       string throw_value;
       if(use_host_throw) {
+        const bool include_constructor_cleanups =
+            is_constructor_function_ &&
+            throw_will_escape_current_function() &&
+            !constructor_unwind_cleanups_.empty();
         throw_value = emit_host_throw_value(node.children[0]);
-        emit_explicit_host_throw_cleanups();
-        if(is_constructor_function_ && throw_will_escape_current_function()) {
-          emit_constructor_unwind_cleanups();
+        if(current_scope_has_host_unwind_cleanups() ||
+           include_constructor_cleanups) {
+          open_shared_host_call_unwind_region(include_constructor_cleanups);
         }
       } else {
         string lowir_throw_type;
