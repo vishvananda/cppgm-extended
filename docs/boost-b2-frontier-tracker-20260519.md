@@ -516,6 +516,17 @@ rebased Boost frontier branch.
   `make -C dev abimangle cppgm++ -j8`; PA31 ABI fact suite passes `55/55`;
   direct `--emit-abi-facts` smoke for a function-template pointer result
   round-trips through `dev/abimangle`.
+- this commit: completed the structured ABI route for member template-template
+  arguments. Template argument semantics now carries a resolved member-template
+  owner type into the ABI model, ABI facts serialize it as
+  `member-template-entity`, and mangling emits the nested owner/member template
+  name instead of falling back to source-text reconstruction. This repairs the
+  PA22 member-alias SFINAE reducer whose `quote_trait<identity>::fn` argument
+  could not be encoded after the ABI rewrite. Validation:
+  `make -C dev cppgm++ abimangle -j8`; focused PA22 reducer with
+  `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1`; new PA31 class-template and
+  function-template ABI fact tests; existing PA31 template-template guard; full
+  `make -C pa31 test CPPGM_SKIP_DEV_REBUILD=1` passes `57/57`.
 - this commit: repaired the PA35 hosted inline `thread_local` deque destructor
   gate after the ABI rebase cleanup. The test now uses the hosted `std::atexit`
   declaration instead of redeclaring a conflicting SDK prototype, function-local

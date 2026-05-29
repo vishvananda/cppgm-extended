@@ -7027,8 +7027,13 @@ static bool try_build_template_entity_argument_name_ir(
     const TemplateArgument & argument,
     vector<abi_mangle::Type::NameComponent> & prefix_components,
     string & template_name,
-    string & template_name_substitution)
+    string & template_name_substitution,
+    const TypeMangleContext * mangle_ctx = nullptr,
+    abi_mangle::Type * template_owner = nullptr)
 {
+  if(template_owner) {
+    *template_owner = abi_mangle::Type();
+  }
   if(argument.dependent || !argument.template_decl) {
     return false;
   }
@@ -7052,6 +7057,25 @@ static bool try_build_template_entity_argument_name_ir(
     template_name = trim_space(decl->name);
   } else {
     return false;
+  }
+
+  if(argument.template_owner_type) {
+    if(!template_owner ||
+       !try_build_type_ir(argument.template_owner_type, mangle_ctx, *template_owner)) {
+      return false;
+    }
+    template_name_substitution = !argument.text.empty() ?
+        trim_space(argument.text) :
+        string();
+    if(template_name_substitution.empty()) {
+      const string owner_text = selected_named_type_text(argument.template_owner_type);
+      template_name_substitution = owner_text.empty() ?
+          template_name :
+          append_qualified_component_text(owner_text,
+                                          canonical_component_text(template_name));
+    }
+    prefix_components.clear();
+    return !template_name.empty();
   }
 
   string prefix_text;
@@ -8452,6 +8476,13 @@ static bool class_template_argument_ir_to_template_argument_ir(
     if(in.metadata->template_name_is_template_parameter) {
       out = abi_mangle::TemplateArgument::
           template_parameter_template_arg(in.metadata->template_parameter_index);
+      return true;
+    }
+    if(in.metadata->template_owner_type) {
+      out = abi_mangle::TemplateArgument::member_template_entity_arg(
+          *in.metadata->template_owner_type,
+          in.metadata->template_name,
+          in.metadata->template_name_substitution);
       return true;
     }
     out = abi_mangle::TemplateArgument::template_entity_arg(
@@ -12038,16 +12069,24 @@ static bool try_build_class_template_argument_ir(
     vector<abi_mangle::Type::NameComponent> prefix_components;
     string template_name;
     string template_name_substitution;
+    abi_mangle::Type template_owner;
     if(!try_build_template_entity_argument_name_ir(argument,
                                                    prefix_components,
                                                    template_name,
-                                                   template_name_substitution)) {
+                                                   template_name_substitution,
+                                                   mangle_ctx,
+                                                   &template_owner)) {
       return false;
     }
-    out = abi_mangle::Type::ClassTemplateArgument::template_entity_arg(
-        prefix_components,
-        template_name,
-        template_name_substitution);
+    out = template_owner.kind == abi_mangle::Type::TK_INVALID ?
+        abi_mangle::Type::ClassTemplateArgument::template_entity_arg(
+            prefix_components,
+            template_name,
+            template_name_substitution) :
+        abi_mangle::Type::ClassTemplateArgument::member_template_entity_arg(
+            template_owner,
+            template_name,
+            template_name_substitution);
     return true;
   }
   }
@@ -12226,16 +12265,24 @@ static bool try_build_function_template_argument_ir(
     vector<abi_mangle::Type::NameComponent> prefix_components;
     string template_name;
     string template_name_substitution;
+    abi_mangle::Type template_owner;
     if(!try_build_template_entity_argument_name_ir(argument,
                                                    prefix_components,
                                                    template_name,
-                                                   template_name_substitution)) {
+                                                   template_name_substitution,
+                                                   mangle_ctx,
+                                                   &template_owner)) {
       return false;
     }
-    out = abi_mangle::TemplateArgument::template_entity_arg(
-        prefix_components,
-        template_name,
-        template_name_substitution);
+    out = template_owner.kind == abi_mangle::Type::TK_INVALID ?
+        abi_mangle::TemplateArgument::template_entity_arg(
+            prefix_components,
+            template_name,
+            template_name_substitution) :
+        abi_mangle::TemplateArgument::member_template_entity_arg(
+            template_owner,
+            template_name,
+            template_name_substitution);
     return true;
   }
   }
@@ -13715,7 +13762,8 @@ static bool template_argument_has_dependent_mangle_state(
 
   case TemplateArgument::TA_CLASS_TEMPLATE:
   case TemplateArgument::TA_ALIAS_TEMPLATE:
-    return argument.template_decl == nullptr;
+    return argument.template_decl == nullptr ||
+           type_has_dependent_mangle_state(argument.template_owner_type);
   }
 
   return false;
@@ -13985,18 +14033,25 @@ static bool try_mangle_template_argument_impl(const TemplateArgument & arg,
     vector<abi_mangle::Type::NameComponent> prefix_components;
     string template_name;
     string template_name_substitution;
+    abi_mangle::Type template_owner;
     if(try_build_template_entity_argument_name_ir(arg,
                                                   prefix_components,
                                                   template_name,
-                                                  template_name_substitution)) {
+                                                  template_name_substitution,
+                                                  mangle_ctx,
+                                                  &template_owner)) {
       MangleIrSubstitutionSink sink(state);
-      return abi_mangle::emit_template_argument(
-          abi_mangle::TemplateArgument::template_entity_arg(
-              prefix_components,
-              template_name,
-              template_name_substitution),
-          out,
-          &sink);
+      abi_mangle::TemplateArgument argument =
+          template_owner.kind == abi_mangle::Type::TK_INVALID ?
+              abi_mangle::TemplateArgument::template_entity_arg(
+                  prefix_components,
+                  template_name,
+                  template_name_substitution) :
+              abi_mangle::TemplateArgument::member_template_entity_arg(
+                  template_owner,
+                  template_name,
+                  template_name_substitution);
+      return abi_mangle::emit_template_argument(argument, out, &sink);
     }
     if(arg.text.empty()) {
       return false;

@@ -178,6 +178,11 @@ Raw external symbols may be carried with `let-entity <id> symbol <mangled-name>`
 when a template argument or dependent expression names an entity that is already
 known by ABI symbol rather than by a source-level qualified name.
 
+Template-template arguments may name either a namespace-scope template with
+`let-arg <id> template-entity <qualified-name>` or a member template of an
+already-structured owner type with
+`let-arg <id> member-template-entity <owner-type> <member-name> <substitution>`.
+
 The fact format is deliberately small, but it is still an ABI entity graph. It
 should not become a second C++ parser.
 

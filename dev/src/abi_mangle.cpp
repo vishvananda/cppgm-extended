@@ -430,6 +430,12 @@ Type::ClassTemplateArgument class_arg_from_template_arg(const TemplateArgument &
       return Type::ClassTemplateArgument::template_parameter_template_arg(
           arg.metadata->template_parameter_index);
     }
+    if(arg.metadata->template_owner_type) {
+      return Type::ClassTemplateArgument::member_template_entity_arg(
+          *arg.metadata->template_owner_type,
+          arg.metadata->template_name,
+          arg.metadata->template_name_substitution);
+    }
     return Type::ClassTemplateArgument::template_entity_arg(
         arg.metadata->prefix_components,
         arg.metadata->template_name,
@@ -499,6 +505,12 @@ TemplateArgument template_arg_from_class_arg(const Type::ClassTemplateArgument &
     if(arg.metadata->template_name_is_template_parameter) {
       return TemplateArgument::template_parameter_template_arg(
           arg.metadata->template_parameter_index);
+    }
+    if(arg.metadata->template_owner_type) {
+      return TemplateArgument::member_template_entity_arg(
+          *arg.metadata->template_owner_type,
+          arg.metadata->template_name,
+          arg.metadata->template_name_substitution);
     }
     return TemplateArgument::template_entity_arg(arg.metadata->prefix_components,
                                                  arg.metadata->template_name,
@@ -871,6 +883,15 @@ TemplateArgument parse_template_argument_fact(const ParseContext & ctx,
         prefix_components_for_parts(parts, parts.size() - 1),
         parts.back(),
         join_qualified_parts(parts, parts.size()));
+  }
+  if(kind == "member-template-entity") {
+    if(words.size() < 5 || words.size() > 6) {
+      throw logic_error("member-template-entity template argument requires owner type, member name, and optional substitution");
+    }
+    return TemplateArgument::member_template_entity_arg(
+        parse_single_type_token(ctx, words[3]),
+        words[4],
+        words.size() == 6 ? dash_empty(words[5]) : words[4]);
   }
   if(kind == "template-param-template") {
     if(words.size() != 4) {
@@ -2293,6 +2314,13 @@ struct FactSerializer
       if(argument.metadata->template_name_is_template_parameter) {
         words.push_back("template-param-template");
         words.push_back(to_string(argument.metadata->template_parameter_index));
+      } else if(argument.metadata->template_owner_type) {
+        words.push_back("member-template-entity");
+        words.push_back(type_ref(*argument.metadata->template_owner_type));
+        words.push_back(argument.metadata->template_name);
+        words.push_back(argument.metadata->template_name_substitution.empty() ?
+                        "-" :
+                        argument.metadata->template_name_substitution);
       } else {
         words.push_back("template-entity");
         words.push_back(qualified_type_name(argument.metadata->prefix_components,

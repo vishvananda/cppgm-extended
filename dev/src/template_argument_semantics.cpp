@@ -2884,6 +2884,62 @@ bool resolve_member_template_owner_type_text(
          out;
 }
 
+bool resolve_template_template_argument_owner_type(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const string & text,
+    TypePtr & out)
+{
+  out.reset();
+  const string normalized = normalize_template_template_argument_lookup_text(text);
+  const size_t split = semantic_utils::top_level_scope_split(normalized);
+  if(split == string::npos) {
+    return false;
+  }
+
+  const string owner_text = trim_space(normalized.substr(0, split));
+  if(owner_text.empty()) {
+    return false;
+  }
+  if(!resolve_member_template_owner_type_text(services,
+                                              scope,
+                                              owner_text,
+                                              true,
+                                              out) ||
+     !out) {
+    return false;
+  }
+  if(service_type_depends_on_template_parameter(services, out)) {
+    TypePtr resolved_owner;
+    if(resolve_instantiated_dependent_type(services,
+                                           scope,
+                                           out,
+                                           resolved_owner) &&
+       resolved_owner) {
+      out = resolved_owner;
+    }
+  }
+  return out && !service_type_depends_on_template_parameter(services, out);
+}
+
+void attach_template_template_argument_owner_type(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const string & text,
+    TemplateArgument & argument)
+{
+  if(argument.template_owner_type) {
+    return;
+  }
+  TypePtr owner_type;
+  if(resolve_template_template_argument_owner_type(services,
+                                                   scope,
+                                                   text,
+                                                   owner_type)) {
+    argument.template_owner_type = owner_type;
+  }
+}
+
 bool try_resolve_qualified_member_template_id_type(
     template_api::TemplateServices & services,
     Scope & lookup_scope,
@@ -21824,6 +21880,7 @@ bool resolve_member_template_template_argument_text(
       alias_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
     out.template_decl = alias_template;
+    out.template_owner_type = owner_type;
     out.text = normalized;
     note_template_trace_if_enabled(
         [&](ostringstream & trace)
@@ -21854,6 +21911,7 @@ bool resolve_member_template_template_argument_text(
       class_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_CLASS_TEMPLATE;
     out.template_decl = class_template;
+    out.template_owner_type = owner_type;
     out.text = normalized;
     note_template_trace_if_enabled(
         [&](ostringstream & trace)
@@ -21904,6 +21962,15 @@ bool resolve_template_template_argument_text(
         semantic_lookup::scope_qualified_name(*alias_template->declaring_scope,
                                               alias_template->name) :
         alias_template->name;
+    if(has_structured_qualified_name) {
+      template_api::SemanticContextTemplateServices storage(ctx);
+      template_api::TemplateServices services = storage.bundle();
+      attach_template_template_argument_owner_type(
+          services,
+          template_api::make_template_environment(scope),
+          trimmed,
+          out);
+    }
     note_template_trace_if_enabled(
         [&](ostringstream & trace)
         {
@@ -21925,6 +21992,15 @@ bool resolve_template_template_argument_text(
         semantic_lookup::scope_qualified_name(*class_template->declaring_scope,
                                               class_template->name) :
         class_template->name;
+    if(has_structured_qualified_name) {
+      template_api::SemanticContextTemplateServices storage(ctx);
+      template_api::TemplateServices services = storage.bundle();
+      attach_template_template_argument_owner_type(
+          services,
+          template_api::make_template_environment(scope),
+          trimmed,
+          out);
+    }
     note_template_trace_if_enabled(
         [&](ostringstream & trace)
         {
@@ -22008,6 +22084,10 @@ bool resolve_template_template_argument_text(
         semantic_lookup::scope_qualified_name(*alias_template->declaring_scope,
                                               alias_template->name) :
         alias_template->name;
+    attach_template_template_argument_owner_type(services,
+                                                 scope,
+                                                 trimmed,
+                                                 out);
     note_template_trace_if_enabled(
         [&](ostringstream & trace)
         {
@@ -22027,6 +22107,10 @@ bool resolve_template_template_argument_text(
         semantic_lookup::scope_qualified_name(*class_template->declaring_scope,
                                               class_template->name) :
         class_template->name;
+    attach_template_template_argument_owner_type(services,
+                                                 scope,
+                                                 trimmed,
+                                                 out);
     note_template_trace_if_enabled(
         [&](ostringstream & trace)
         {

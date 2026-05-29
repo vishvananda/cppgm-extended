@@ -1917,6 +1917,7 @@ void hash_template_argument_for_scope_cache(std::size_t & seed,
   hash_combine(seed, argument.value);
   hash_combine(seed, argument.text);
   hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.template_decl));
+  hash_type_ptr_for_scope_cache(seed, argument.template_owner_type);
   hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.function_value));
   hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.value_binding));
 }
@@ -8495,8 +8496,14 @@ bool template_arguments_equivalent(const TemplateArgument & lhs,
            lhs.value == rhs.value &&
            lhs.text == rhs.text;
   }
+  const bool owners_match =
+      (!lhs.template_owner_type && !rhs.template_owner_type) ||
+      (lhs.template_owner_type &&
+       rhs.template_owner_type &&
+       type_equals(lhs.template_owner_type, rhs.template_owner_type));
   return lhs.template_decl == rhs.template_decl &&
-         lhs.text == rhs.text;
+         lhs.text == rhs.text &&
+         owners_match;
 }
 
 bool pack_argument_matches_scalar_deduction(SemanticContext & ctx,
@@ -12095,8 +12102,14 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                  lhs.value == rhs.value &&
                  lhs.text == rhs.text;
         }
+        const bool owners_match =
+            (!lhs.template_owner_type && !rhs.template_owner_type) ||
+            (lhs.template_owner_type &&
+             rhs.template_owner_type &&
+             type_equals(lhs.template_owner_type, rhs.template_owner_type));
         return lhs.template_decl == rhs.template_decl &&
-               lhs.text == rhs.text;
+               lhs.text == rhs.text &&
+               owners_match;
       };
       const auto record_deduced_template_pack_arguments =
           [&](const TemplateParameterInfo & parameter,

@@ -391,6 +391,7 @@ struct Type
     struct Metadata
     {
       std::vector<NameComponent> prefix_components;
+      std::shared_ptr<Type> template_owner_type;
       std::string template_name;
       std::string template_name_substitution;
       std::string external_entity_symbol;
@@ -489,6 +490,20 @@ struct Type
       argument.kind = CTAK_TEMPLATE_ENTITY;
       Metadata & metadata = ensure_metadata(argument);
       metadata.prefix_components = prefix_components;
+      metadata.template_name = name;
+      metadata.template_name_substitution = substitution;
+      return argument;
+    }
+
+    static ClassTemplateArgument member_template_entity_arg(
+        const Type & owner,
+        const std::string & name,
+        const std::string & substitution)
+    {
+      ClassTemplateArgument argument;
+      argument.kind = CTAK_TEMPLATE_ENTITY;
+      Metadata & metadata = ensure_metadata(argument);
+      metadata.template_owner_type.reset(new Type(owner));
       metadata.template_name = name;
       metadata.template_name_substitution = substitution;
       return argument;
@@ -851,6 +866,7 @@ struct TemplateArgument
   struct Metadata
   {
     std::vector<Type::NameComponent> prefix_components;
+    std::shared_ptr<Type> template_owner_type;
     std::string template_name;
     std::string template_name_substitution;
     std::string external_entity_symbol;
@@ -948,6 +964,20 @@ struct TemplateArgument
     argument.kind = TAK_TEMPLATE_ENTITY;
     Metadata & metadata = ensure_metadata(argument);
     metadata.prefix_components = prefix_components;
+    metadata.template_name = name;
+    metadata.template_name_substitution = substitution;
+    return argument;
+  }
+
+  static TemplateArgument member_template_entity_arg(
+      const Type & owner,
+      const std::string & name,
+      const std::string & substitution)
+  {
+    TemplateArgument argument;
+    argument.kind = TAK_TEMPLATE_ENTITY;
+    Metadata & metadata = ensure_metadata(argument);
+    metadata.template_owner_type.reset(new Type(owner));
     metadata.template_name = name;
     metadata.template_name_substitution = substitution;
     return argument;

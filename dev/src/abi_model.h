@@ -401,6 +401,20 @@ inline bool make_class_template_argument_substitution_key(
               std::to_string(argument.metadata->template_parameter_index));
       return !out.empty();
     }
+    if(argument.metadata->template_owner_type) {
+      SubstitutionKey owner_key;
+      if(!make_type_substitution_key(*argument.metadata->template_owner_type,
+                                     owner_key)) {
+        return false;
+      }
+      out = SubstitutionKey::template_argument_template(
+          0,
+          std::string("member-template:") +
+              owner_key.structural_text() +
+              "::" +
+              argument.metadata->template_name);
+      return !out.empty();
+    }
     out = SubstitutionKey::template_argument_template(
         0,
         argument.metadata->template_name_substitution.empty() ?
@@ -525,6 +539,20 @@ inline bool make_template_argument_substitution_key(
           0,
           std::string("template-parameter:") +
               std::to_string(argument.metadata->template_parameter_index));
+      return !out.empty();
+    }
+    if(argument.metadata->template_owner_type) {
+      SubstitutionKey owner_key;
+      if(!make_type_substitution_key(*argument.metadata->template_owner_type,
+                                     owner_key)) {
+        return false;
+      }
+      out = SubstitutionKey::template_argument_template(
+          0,
+          std::string("member-template:") +
+              owner_key.structural_text() +
+              "::" +
+              argument.metadata->template_name);
       return !out.empty();
     }
     out = SubstitutionKey::template_argument_template(
@@ -969,6 +997,11 @@ inline bool class_template_argument_needs_member_expression_template_name_regist
     return true;
   }
   if(argument.metadata) {
+    if(argument.metadata->template_owner_type &&
+       type_needs_member_expression_template_name_registration(
+           *argument.metadata->template_owner_type)) {
+      return true;
+    }
     for(std::size_t i = 0; i < argument.metadata->pack_arguments.size(); ++i) {
       if(class_template_argument_needs_member_expression_template_name_registration(
              argument.metadata->pack_arguments[i])) {
@@ -1488,10 +1521,15 @@ inline bool class_template_argument_shape_contains_template_parameter_ref(
 
   case Type::ClassTemplateArgument::CTAK_DEPENDENT_EXPRESSION:
   case Type::ClassTemplateArgument::CTAK_UNTYPED_INTEGRAL_VALUE:
-  case Type::ClassTemplateArgument::CTAK_TEMPLATE_ENTITY:
   case Type::ClassTemplateArgument::CTAK_EXTERNAL_ENTITY:
   case Type::ClassTemplateArgument::CTAK_INVALID:
     return false;
+
+  case Type::ClassTemplateArgument::CTAK_TEMPLATE_ENTITY:
+    return argument.metadata &&
+           argument.metadata->template_owner_type &&
+           type_contains_template_parameter_ref(
+               *argument.metadata->template_owner_type);
   }
   return false;
 }
@@ -1585,6 +1623,10 @@ inline bool class_template_argument_contains_pack_expansion(
     return true;
   }
   if(argument.metadata) {
+    if(argument.metadata->template_owner_type &&
+       type_contains_pack_expansion(*argument.metadata->template_owner_type)) {
+      return true;
+    }
     for(std::size_t i = 0; i < argument.metadata->pack_arguments.size(); ++i) {
       if(class_template_argument_contains_pack_expansion(
              argument.metadata->pack_arguments[i])) {
@@ -1767,6 +1809,28 @@ inline bool emit_template_entity_name(
   if(nested) {
     out += 'E';
   }
+  return true;
+}
+
+inline bool emit_member_template_entity_name(
+    const Type & owner_type,
+    const std::string & template_name,
+    const std::string & template_name_substitution,
+    std::string & out,
+    SubstitutionSink * sink)
+{
+  if(template_name.empty()) {
+    return false;
+  }
+  out += 'N';
+  if(!emit_type_as_name_prefix_body(owner_type, out, sink) ||
+     !emit_name_component(
+         Type::NameComponent::source(template_name, template_name_substitution),
+         out,
+         sink)) {
+    return false;
+  }
+  out += 'E';
   return true;
 }
 
@@ -2305,6 +2369,14 @@ inline bool emit_class_template_argument(
       out += '_';
       return true;
     }
+    if(argument.metadata->template_owner_type) {
+      return emit_member_template_entity_name(
+          *argument.metadata->template_owner_type,
+          argument.metadata->template_name,
+          argument.metadata->template_name_substitution,
+          out,
+          sink);
+    }
     return emit_template_entity_name(argument.metadata->prefix_components,
                                      argument.metadata->template_name,
                                      argument.metadata->template_name_substitution,
@@ -2418,6 +2490,14 @@ inline bool emit_template_argument(const TemplateArgument & argument,
       }
       out += '_';
       return true;
+    }
+    if(argument.metadata->template_owner_type) {
+      return emit_member_template_entity_name(
+          *argument.metadata->template_owner_type,
+          argument.metadata->template_name,
+          argument.metadata->template_name_substitution,
+          out,
+          sink);
     }
     return emit_template_entity_name(argument.metadata->prefix_components,
                                      argument.metadata->template_name,
