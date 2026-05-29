@@ -527,6 +527,14 @@ rebased Boost frontier branch.
   `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1`; new PA31 class-template and
   function-template ABI fact tests; existing PA31 template-template guard; full
   `make -C pa31 test CPPGM_SKIP_DEV_REBUILD=1` passes `57/57`.
+- this commit: restored declaration-only `thread_local` wrapper imports after
+  the ABI export cleanup. The in-memory LowIR program already carried the
+  wrapper declaration metadata, but the object backend translated undefined
+  symbols through `program.exported_symbols`; synthesized wrapper declarations
+  now add the matching export identity so multi-TU static member TLS references
+  import the ABI wrapper symbol. Validation: `make -C dev cppgm++ -j8`;
+  focused PA32 `200-thread-local-static-member-store.t` passes, and the use TU
+  imports `_ZTWN7Counter5valueE` instead of the internal `__tls_wrapper` name.
 - this commit: repaired the PA35 hosted inline `thread_local` deque destructor
   gate after the ABI rebase cleanup. The test now uses the hosted `std::atexit`
   declaration instead of redeclaring a conflicting SDK prototype, function-local

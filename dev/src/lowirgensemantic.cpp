@@ -15727,6 +15727,11 @@ private:
                                   binding,
                                   target_symbol);
     declaration.metadata.object_symbol = wrapper_object;
+    program.exported_symbols.push_back(
+        symbol_linkage::make_object_symbol_identity(
+            wrapper_internal,
+            wrapper_object,
+            variable_symbol.linkage));
     record_function_declaration(program,
                                 emitted_function_declarations,
                                 declaration);
