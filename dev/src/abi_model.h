@@ -3579,48 +3579,84 @@ inline void emit_abi_tags(const std::vector<std::string> & abi_tags,
   }
 }
 
-inline SubstitutionKey function_name_component_prefix_key(
-    const FunctionNameComponent & component)
+inline bool emit_function_name_component_prefix_substitution(
+    const FunctionNameComponent & component,
+    std::string & out,
+    SubstitutionSink * sink)
 {
-  if(!component.standard_substitution.empty() &&
-     component.standard_substitution_includes_arguments) {
-    return SubstitutionKey::none();
+  if(!sink ||
+     (!component.standard_substitution.empty() &&
+      component.standard_substitution_includes_arguments)) {
+    return false;
   }
   if(!component.complete_ir_substitution_key.empty()) {
-    return component.complete_ir_substitution_key.get();
+    return sink->emit_substitution(
+        component.complete_ir_substitution_key.get(),
+        out);
   }
   if(!component.complete_substitution_name.empty()) {
-    return SubstitutionKey::named(component.complete_substitution_name);
+    const SubstitutionKey key =
+        SubstitutionKey::named(component.complete_substitution_name);
+    return sink->emit_substitution(key, out);
   }
   if(!component.ir_substitution_key.empty()) {
-    return component.ir_substitution_key.get();
+    return sink->emit_substitution(component.ir_substitution_key.get(), out);
   }
   if(!component.substitution_name.empty()) {
-    return SubstitutionKey::named(component.substitution_name);
+    const SubstitutionKey key =
+        SubstitutionKey::named(component.substitution_name);
+    return sink->emit_substitution(key, out);
   }
-  return SubstitutionKey::none();
+  return false;
 }
 
-inline SubstitutionKey function_name_component_name_key(
-    const FunctionNameComponent & component)
+inline bool emit_function_name_component_name_substitution(
+    const FunctionNameComponent & component,
+    std::string & out,
+    SubstitutionSink * sink)
 {
+  if(!sink) {
+    return false;
+  }
   if(!component.ir_substitution_key.empty()) {
-    return component.ir_substitution_key.get();
+    return sink->emit_substitution(component.ir_substitution_key.get(), out);
   }
-  return component.substitution_name.empty() ?
-      SubstitutionKey::none() :
-      SubstitutionKey::named(component.substitution_name);
+  if(!component.substitution_name.empty()) {
+    const SubstitutionKey key =
+        SubstitutionKey::named(component.substitution_name);
+    return sink->emit_substitution(key, out);
+  }
+  return false;
 }
 
-inline SubstitutionKey function_name_component_complete_key(
-    const FunctionNameComponent & component)
+inline void register_function_name_component_name_substitution(
+    const FunctionNameComponent & component,
+    SubstitutionSink * sink)
 {
-  if(!component.complete_ir_substitution_key.empty()) {
-    return component.complete_ir_substitution_key.get();
+  if(!sink) {
+    return;
   }
-  return component.complete_substitution_name.empty() ?
-      SubstitutionKey::none() :
-      SubstitutionKey::named(component.complete_substitution_name);
+  if(!component.ir_substitution_key.empty()) {
+    sink->register_substitution(component.ir_substitution_key.get());
+  } else if(!component.substitution_name.empty()) {
+    sink->register_substitution_owned(
+        SubstitutionKey::named(component.substitution_name));
+  }
+}
+
+inline void register_function_name_component_complete_substitution(
+    const FunctionNameComponent & component,
+    SubstitutionSink * sink)
+{
+  if(!sink) {
+    return;
+  }
+  if(!component.complete_ir_substitution_key.empty()) {
+    sink->register_substitution(component.complete_ir_substitution_key.get());
+  } else if(!component.complete_substitution_name.empty()) {
+    sink->register_substitution_owned(
+        SubstitutionKey::named(component.complete_substitution_name));
+  }
 }
 
 inline bool emit_function_name_component(const FunctionNameComponent & component,
@@ -3641,44 +3677,29 @@ inline bool emit_function_name_component(const FunctionNameComponent & component
        !emit_template_arguments(component.template_arguments, out, sink)) {
       return false;
     }
-    SubstitutionKey complete_key =
-        function_name_component_complete_key(component);
-    if(sink &&
-       !component.standard_substitution_includes_arguments &&
-       !complete_key.empty()) {
-      sink->register_substitution_owned(std::move(complete_key));
+    if(!component.standard_substitution_includes_arguments) {
+      register_function_name_component_complete_substitution(component, sink);
     }
     return true;
   }
 
-  SubstitutionKey name_key = function_name_component_name_key(component);
-  if(sink && !name_key.empty() && sink->emit_substitution(name_key, out)) {
+  if(emit_function_name_component_name_substitution(component, out, sink)) {
     if(!component.template_arguments.empty() &&
        !emit_template_arguments(component.template_arguments, out, sink)) {
       return false;
     }
-    SubstitutionKey complete_key =
-        function_name_component_complete_key(component);
-    if(sink && !complete_key.empty()) {
-      sink->register_substitution_owned(std::move(complete_key));
-    }
+    register_function_name_component_complete_substitution(component, sink);
     return true;
   }
   if(!emit_source_name(component.source_name, out)) {
     return false;
   }
-  if(sink && !name_key.empty()) {
-    sink->register_substitution_owned(std::move(name_key));
-  }
+  register_function_name_component_name_substitution(component, sink);
   if(!component.template_arguments.empty() &&
      !emit_template_arguments(component.template_arguments, out, sink)) {
     return false;
   }
-  SubstitutionKey complete_key =
-      function_name_component_complete_key(component);
-  if(sink && !complete_key.empty()) {
-    sink->register_substitution_owned(std::move(complete_key));
-  }
+  register_function_name_component_complete_substitution(component, sink);
   return true;
 }
 
@@ -3690,12 +3711,9 @@ inline bool emit_function_name_prefix_components(
   std::size_t start = 0;
   if(sink) {
     for(std::size_t len = components.size(); len > 0; --len) {
-      const SubstitutionKey key =
-          function_name_component_prefix_key(components[len - 1]);
-      if(key.empty()) {
-        continue;
-      }
-      if(sink->emit_substitution(key, out)) {
+      if(emit_function_name_component_prefix_substitution(components[len - 1],
+                                                          out,
+                                                          sink)) {
         start = len;
         break;
       }
