@@ -1253,6 +1253,9 @@ inline bool emit_type_as_name_prefix_body(const Type & type,
            emit_class_template_arguments(metadata->template_arguments, out, sink);
   }
 
+  case Type::TK_BUILTIN_TYPE_TRANSFORM:
+    return emit_type(type, out, sink);
+
   default:
     return false;
   }

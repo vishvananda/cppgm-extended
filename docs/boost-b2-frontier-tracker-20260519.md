@@ -89,6 +89,13 @@ rebased Boost frontier branch.
 - 2026-05-29 rebase cleanup gate: full direct-LowIR `test-report` passes
   `3266/3266` after the structured ABI fact/member-template completion, TLS
   declaration-wrapper export repair, and ABI LowIR reference refresh.
+- 2026-05-29 perf-gate build repair: ABI model emission now supports member
+  types under builtin transform owners, unblocking the self-compile benchmark's
+  libc++ `__try_key_extraction_impl` weak symbol. The post-rebase perf check
+  builds and currently fails comparison to
+  `/tmp/cppgm-perf-baseline-boost-frontier-current-7384ec2ae-20260528.json`
+  with instructions `+4.98%` and RSS `+4.56%`; profiling against the
+  pre-rebase baseline follows.
 
 ## Local Gate Repairs
 

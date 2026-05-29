@@ -182,6 +182,9 @@ Template-template arguments may name either a namespace-scope template with
 `let-arg <id> template-entity <qualified-name>` or a member template of an
 already-structured owner type with
 `let-arg <id> member-template-entity <owner-type> <member-name> <substitution>`.
+Member type facts use the same structured owner rule, so `type member <owner>
+<name>` may be rooted in a dependent template specialization or builtin
+transform type such as `__remove_const<T>`.
 
 The fact format is deliberately small, but it is still an ABI entity graph. It
 should not become a second C++ parser.
