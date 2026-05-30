@@ -43,7 +43,15 @@ vector<HostEhCallSite> add_no_landingpad_gaps(const vector<HostEhCallSite> & cal
   if(call_sites.empty()) {
     return out;
   }
-  size_t cursor = call_sites[0].start;
+  // Cover the whole function, starting from offset 0, with no-landing-pad
+  // ("continue unwinding") gaps.  The Itanium personality treats an IP that is
+  // not present in any call-site region as "call terminate", so every in-range
+  // address an unwinder can observe must be covered.  In particular our cleanup
+  // (landing-pad) blocks are laid out *before* the throwing call site that
+  // targets them, so the trailing _Unwind_Resume continuation lands in the head
+  // region preceding the first call site; leaving that head uncovered makes a
+  // resume from a constructor-unwind cleanup spuriously terminate.
+  size_t cursor = 0;
   for(size_t i = 0; i < call_sites.size(); ++i) {
     const HostEhCallSite & call_site = call_sites[i];
     if(call_site.start < cursor) {
