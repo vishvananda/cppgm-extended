@@ -56,3 +56,4 @@ function @three__three(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN
     store ptr %this, $this
     return void
 }
+alias object _ZN5threeC2Ev = @three__three

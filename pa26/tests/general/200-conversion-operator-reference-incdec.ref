@@ -57,3 +57,4 @@ function @Counter__operatorunsigned_(%this : ptr) -> ptr [binding=weak, object=_
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
+alias object _ZN7CounterC2Ej = @Counter__Counter

@@ -39,3 +39,4 @@ function @any_like__any_like__ov4(%this : ptr, %__param1 : obj<1x1>) -> void [bi
     store i32 2, %t2
     return void
 }
+alias object _ZN8any_likeC2IiJEEE15in_place_type_tIT_EDpOT0_ = @any_like__any_like__ov4

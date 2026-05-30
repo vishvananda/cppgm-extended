@@ -23,3 +23,4 @@ function @value___value(%this : ptr) -> void [binding=weak, object=_ZN5valueD1Ev
     store i32 %t2, @destroyed
     return void
 }
+alias object _ZN5valueD2Ev = @value___value

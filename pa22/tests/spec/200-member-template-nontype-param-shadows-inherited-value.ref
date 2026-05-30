@@ -73,3 +73,5 @@ function @detail__result__result(%this : ptr, %v : i64) -> void [binding=weak, o
     store i64 %t1, %t3
     return void
 }
+alias object _ZN4mpl_6size_tILm1EEC2Ev = @mpl___size_t_1___size_t
+alias object _ZN6detail6resultC2Em = @detail__result__result

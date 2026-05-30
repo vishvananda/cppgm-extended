@@ -126,3 +126,6 @@ function @movable__movable__ov3(%this : ptr, %other : ptr [pass=reference]) -> v
     store i32 %t6, %t8
     return void
 }
+alias object _ZN4pairI7movableS0_EC2IS0_S0_EEOT_OT0_ = @pair_movable__movable___pair__ov2
+alias object _ZN7movableC2Ei = @movable__movable
+alias object _ZN7movableC2EOS_ = @movable__movable__ov3

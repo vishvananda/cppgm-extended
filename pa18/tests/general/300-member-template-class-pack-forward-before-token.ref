@@ -88,3 +88,5 @@ function @string__string(%this : ptr, %v : i32) -> void [binding=weak, object=_Z
     store i32 %t1, %t3
     return void
 }
+alias object _ZN10error_codeC2Ei = @error_code__error_code
+alias object _ZN6stringC2Ei = @string__string

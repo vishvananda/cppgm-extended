@@ -77,3 +77,5 @@ function @completion_message_void_error_code____completion_message(%this : ptr, 
     copyobj 4x4 %t3, %t2
     return void
 }
+alias object _ZN18completion_payloadIFv10error_codeEEC2EO18completion_messageIS1_E = @completion_payload_void_error_code____completion_payload
+alias object _ZN18completion_messageIFv10error_codeEEC2IRS0_EEiOT_ = @completion_message_void_error_code____completion_message

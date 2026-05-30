@@ -217,3 +217,5 @@ function @Item___Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemD1Ev] {
     store i32 %t12, @destroyed
     return void
 }
+alias object _ZN4ItemC2Ev = @Item__Item
+alias object _ZN4ItemD2Ev = @Item___Item

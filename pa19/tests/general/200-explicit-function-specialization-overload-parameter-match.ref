@@ -57,3 +57,5 @@ function @service__service(%this : ptr) -> void [binding=weak, object=_ZN7servic
     store i32 0, %t2
     return void
 }
+alias object _ZN7contextC2Ev = @context__context
+alias object _ZN7serviceC2Ev = @service__service

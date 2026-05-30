@@ -8198,12 +8198,15 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               << (template_argument_semantics::type_depends_on_template_parameter(ctx, result_type) ? "yes" : "no");
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
+      const bool result_type_still_dependent =
+          template_argument_semantics::type_depends_on_template_parameter(ctx,
+                                                                         result_type);
       const bool source_result_mentions_template_parameter =
+          result_type_still_dependent &&
           source_decl->result_type_pattern.kind != CppAstKind::invalid &&
           ast_mentions_template_parameter_name(source_decl->result_type_pattern,
                                                source_decl->parameters);
-      if((template_argument_semantics::type_depends_on_template_parameter(ctx, result_type) ||
-          source_result_mentions_template_parameter) &&
+      if(result_type_still_dependent &&
          source_decl->result_type_pattern.kind != CppAstKind::invalid) {
         TypePtr parsed_result;
         const bool parsed_result_type =

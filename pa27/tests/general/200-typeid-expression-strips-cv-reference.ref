@@ -91,3 +91,5 @@ function @Foo__Foo__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [unw
     copyobj 4x4 %t2, %t1
     return void
 }
+alias object _ZN3FooC2Ei = @Foo__Foo
+alias object _ZN3FooC2ERKS_ = @Foo__Foo__ov2

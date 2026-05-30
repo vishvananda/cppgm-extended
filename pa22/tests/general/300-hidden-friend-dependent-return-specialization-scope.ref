@@ -32,3 +32,4 @@ function @any_completion_executor__any_completion_executor__ov3(%this : ptr, %__
     store ptr %this, $this
     return void
 }
+alias object _ZN23any_completion_executorC2I15any_io_executorvEET_ = @any_completion_executor__any_completion_executor__ov3

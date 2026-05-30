@@ -76,3 +76,4 @@ function @op_impl__work__handler___op__ov2__base_entry(%this : ptr, %impl : ptr 
     %t6 = index i8 [projection=field] %t5, 2
     return void
 }
+alias object _ZN2opI4impl4work7handlerJFviEEEC2IS0_S1_S2_EEOT_OT0_OT1_ = @op_impl__work__handler__void_int____op__ov2

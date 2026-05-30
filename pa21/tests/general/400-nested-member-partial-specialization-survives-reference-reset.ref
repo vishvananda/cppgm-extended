@@ -49,3 +49,4 @@ function @service__wrapper_object_const__void___get(%this : ptr) -> i32 [binding
     store ptr %this, $this
     return i32 7
 }
+alias object _ZN7service7wrapperIK6objectvEC2ERS2_ = @service__wrapper_object_const__void___wrapper

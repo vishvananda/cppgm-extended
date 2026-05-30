@@ -131,3 +131,6 @@ function @std__initializer_list_item___size(%this : ptr) -> i64 [binding=weak, o
     %t3 = load i64 %t2
     return i64 %t3
 }
+alias object _ZN8any_like6holderI7payloadEC2I4itemJRiEEESt16initializer_listIT_EDpOT0_ = @any_like__holder_payload___holder__ov2
+alias object _ZN4itemC2Ei = @item__item__ov2
+alias object _ZN7payloadC2ESt16initializer_listI4itemEi = @payload__payload__ov2

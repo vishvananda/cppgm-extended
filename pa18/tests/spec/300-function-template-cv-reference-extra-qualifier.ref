@@ -60,3 +60,4 @@ function @ref_view_int_const_volatile___ref_view(%this : ptr, %value : ptr [pass
     store ptr %t1, %t3
     return void
 }
+alias object _ZN8ref_viewIKViEC2ERS0_ = @ref_view_int_const_volatile___ref_view

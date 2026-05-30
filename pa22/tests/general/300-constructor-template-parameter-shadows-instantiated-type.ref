@@ -51,3 +51,5 @@ function @A_int___A(%this : ptr, %__param1 : i32) -> void [binding=weak, object=
     store i32 %__param1, $__param1
     return void
 }
+alias object _ZN7adaptorI1AIiELm1EEC2IiEEOT_ = @adaptor_A_int___1___adaptor__ov4
+alias object _ZN1AIiEC2Ei = @A_int___A

@@ -114,3 +114,5 @@ function @Holder__Holder__ov2(%this : ptr, %other : ptr [pass=reference]) -> voi
     store ptr 0, %t7
     return void
 }
+alias object _ZN6HolderC2EPi = @Holder__Holder
+alias object _ZN6HolderC2EOS_ = @Holder__Holder__ov2

@@ -71,3 +71,4 @@ function @overloaded_member_pointer_target_init__C__C(%this : ptr) -> void [bind
     store i32 0, %t2
     return void
 }
+alias object _ZN37overloaded_member_pointer_target_init1CC2Ev = @overloaded_member_pointer_target_init__C__C

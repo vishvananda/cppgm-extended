@@ -55,3 +55,4 @@ function @initiation__operator__(%this : ptr, %__param1 : i32) -> void [binding=
     store i32 %__param1, $__param1
     return void
 }
+alias object _ZN12async_resultI8appendedI6binderIiEEE12init_wrapperI10initiationEC2ES6_ = @async_result_appended_binder_int_____init_wrapper_initiation___init_wrapper

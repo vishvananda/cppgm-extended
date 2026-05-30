@@ -206,3 +206,9 @@ function @Stateful__Stateful__ov3(%this : ptr, %other : ptr [pass=reference]) ->
     store i32 %t6, %t8
     return void
 }
+alias object _ZN10BaseHolderC2Ev = @BaseHolder__BaseHolder
+alias object _ZN10BaseHolderC2EOS_ = @BaseHolder__BaseHolder__ov2
+alias object _ZN12MemberHolderC2Ev = @MemberHolder__MemberHolder
+alias object _ZN12MemberHolderC2EOS_ = @MemberHolder__MemberHolder__ov2
+alias object _ZN8StatefulC2Ei = @Stateful__Stateful
+alias object _ZN8StatefulC2EOS_ = @Stateful__Stateful__ov3

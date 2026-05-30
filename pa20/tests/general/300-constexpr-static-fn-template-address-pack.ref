@@ -45,3 +45,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @table__table(%t1, %t2)
     return void
 }
+alias object _ZN5tableC2EPFvvE = @table__table

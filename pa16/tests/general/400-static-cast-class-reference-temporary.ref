@@ -39,3 +39,4 @@ function @wrapper__wrapper(%this : ptr, %p : ptr [pass=reference]) -> void [bind
     store i32 %t3, %t5
     return void
 }
+alias object _ZN7wrapperC2ERK7tracked = @wrapper__wrapper

@@ -46,3 +46,4 @@ function @Accumulator__add(%this : ptr, %value : i32) -> i32 [binding=weak, obje
     %t5 = binary add i32 %t3, %t4
     return i32 %t5
 }
+alias object _ZN11AccumulatorC2Ev = @Accumulator__Accumulator

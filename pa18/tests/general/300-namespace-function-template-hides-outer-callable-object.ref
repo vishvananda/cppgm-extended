@@ -68,4 +68,3 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     return void
 }
 alias object _ZN5tokenC2Ev = @token__token
-alias object _ZN5outer4impl7printerC2Ev = @outer__impl__printer__printer

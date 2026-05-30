@@ -33,3 +33,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     return void
 }
+alias object _ZN3boxC2I5valueEERKT_ = @box__box__ov3

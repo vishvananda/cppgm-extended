@@ -39,3 +39,4 @@ function @Fun__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, object=_Z
     %t2 = binary add i32 %t1, 1
     return i32 %t2
 }
+alias object _ZN3FunC2Ev = @Fun__Fun

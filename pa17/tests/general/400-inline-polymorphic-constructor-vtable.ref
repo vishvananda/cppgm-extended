@@ -186,3 +186,7 @@ function @Base___Base(%this : ptr) -> void [binding=weak, object=_ZN4BaseD1Ev] {
     store ptr %t3, %t1
     return void
 }
+alias object _ZN4ImplC2Ev = @Impl__Impl
+alias object _ZN4ImplD2Ev = @Impl___Impl
+alias object _ZN4BaseC2Ev = @Base__Base
+alias object _ZN4BaseD2Ev = @Base___Base

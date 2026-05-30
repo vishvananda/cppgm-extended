@@ -22,3 +22,4 @@ function @detail__initiation__initiation(%this : ptr) -> void [unwind=no, bindin
     store ptr %this, $this
     return void
 }
+alias object _ZN6detail10initiationC2Ev = @detail__initiation__initiation

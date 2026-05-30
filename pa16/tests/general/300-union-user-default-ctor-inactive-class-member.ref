@@ -14,3 +14,4 @@ function @Storage__Storage(%this : ptr) -> void [binding=weak, object=_ZN7Storag
     store ptr %this, $this
     return void
 }
+alias object _ZN7StorageC2Ev = @Storage__Storage

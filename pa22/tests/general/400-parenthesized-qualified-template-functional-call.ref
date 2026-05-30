@@ -44,3 +44,5 @@ function @outer__inner__empty_work__empty_work(%this : ptr) -> void [unwind=no, 
     store ptr %this, $this
     return void
 }
+alias object _ZN5outer5inner8dispatchIiEC2ERKi = @outer__inner__dispatch_int___dispatch
+alias object _ZN5outer5inner10empty_workC2Ev = @outer__inner__empty_work__empty_work

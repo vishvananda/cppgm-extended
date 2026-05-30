@@ -66,3 +66,4 @@ function @state_ref__state_ref(%this : ptr, %source : ptr [pass=reference]) -> v
     store i32 %t2, %t4
     return void
 }
+alias object _ZN9state_refC2ERi = @state_ref__state_ref

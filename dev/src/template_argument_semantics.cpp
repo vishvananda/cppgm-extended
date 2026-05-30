@@ -10127,6 +10127,41 @@ string substituted_dependent_argument_type_text(const TypePtr & type)
   return trim_space(reparseable_type_argument_text(type));
 }
 
+bool dependent_template_id_syntax_from_type(const TypePtr & type,
+                                            const string & text,
+                                            TemplateIdSyntax & out)
+{
+  out = TemplateIdSyntax();
+  void * template_decl = nullptr;
+  vector<DependentAliasTemplateArgumentSyntax> arguments;
+  if(!named_type_dependent_alias_template(type, template_decl, arguments) &&
+     !named_type_dependent_class_template(type, template_decl, arguments)) {
+    return false;
+  }
+
+  QualifiedName name;
+  vector<string> arg_texts;
+  if(!semantic_utils::split_top_level_template_id_text(text, name, arg_texts) ||
+     arg_texts.size() != arguments.size()) {
+    return false;
+  }
+
+  out.name = name;
+  out.arguments = arg_texts;
+  out.argument_syntaxes.reserve(arguments.size());
+  for(size_t i = 0; i < arguments.size(); ++i) {
+    TemplateArgumentSyntax syntax =
+        clone_argument_syntax_for_template_substitution(arguments[i].syntax);
+    if(syntax.text.empty()) {
+      syntax.text = trim_space(arguments[i].text.empty() ?
+                                   arg_texts[i] :
+                                   arguments[i].text);
+    }
+    out.argument_syntaxes.push_back(syntax);
+  }
+  return true;
+}
+
 void update_dependent_argument_with_type(
     DependentAliasTemplateArgumentSyntax & argument,
     const TypePtr & type)
@@ -10141,7 +10176,14 @@ void update_dependent_argument_with_type(
     argument.syntax.text = argument_text;
     argument.syntax.type_id.reset(
         new CppAstNode(make_substituted_type_id_node(type, argument_text)));
-    argument.syntax.template_id.reset();
+    TemplateIdSyntax nested_template_id;
+    if(dependent_template_id_syntax_from_type(type,
+                                              argument_text,
+                                              nested_template_id)) {
+      argument.syntax.template_id.reset(new TemplateIdSyntax(nested_template_id));
+    } else {
+      argument.syntax.template_id.reset();
+    }
     argument.syntax.expression.reset();
   }
   argument.syntax.pack_expansion = false;
@@ -10509,8 +10551,31 @@ bool substitute_dependent_argument_text_and_syntax(
       if(arguments[i].dependent) {
         binding.non_type_template_argument_text = binding.name;
       } else {
-        binding.has_constant_value = true;
-        binding.constant_value = arguments[i].value;
+        // Member-pointer, pointer, reference and other non-integral non-type
+        // arguments cannot be represented by a single integral constant, so
+        // preserve their symbolic argument text (e.g. "&target::id") rather
+        // than collapsing to constant_value 0. Mirrors bind_non_type_value.
+        const TypePtr nttp_base =
+            strip_top_level_cv(remove_reference_type(arguments[i].type));
+        const bool reference_nttp =
+            arguments[i].type &&
+            (arguments[i].type->kind == Type::TK_LVALUE_REFERENCE ||
+             arguments[i].type->kind == Type::TK_RVALUE_REFERENCE);
+        const bool prefer_textual_binding =
+            !arguments[i].text.empty() &&
+            (reference_nttp ||
+             (nttp_base &&
+              !is_integral_type(nttp_base) &&
+              !is_bool_type(nttp_base) &&
+              !(nttp_base->kind == Type::TK_NAMED &&
+                (nttp_base->named_key.compare(0, 5, "enum ") == 0 ||
+                 nttp_base->named_display.compare(0, 5, "enum ") == 0))));
+        if(prefer_textual_binding) {
+          binding.non_type_template_argument_text = arguments[i].text;
+        } else {
+          binding.has_constant_value = true;
+          binding.constant_value = arguments[i].value;
+        }
       }
       value_replacements[parameters[i].name] = binding;
     }
@@ -11212,10 +11277,30 @@ bool substitute_type_impl(const TypePtr & type,
 {
   const TemplateParameterInfo * parameter = find_substitution_parameter(parameters, type);
   if(parameter) {
-    for(size_t i = 0; i < parameters.size() && i < arguments.size(); ++i) {
-      if(parameters[i].name == parameter->name &&
-         arguments[i].kind == TemplateArgument::TA_TYPE) {
-        out = arguments[i].type;
+    // A leading parameter pack expands to several flattened arguments, so a
+    // named parameter that follows the pack no longer aligns positionally with
+    // its argument. Locate the (single) expanded pack and shift the argument
+    // index for any parameter that appears after it.
+    size_t pack_parameter_index = parameters.size();
+    for(size_t i = 0; i < parameters.size(); ++i) {
+      if(parameters[i].parameter_pack) {
+        pack_parameter_index = i;
+        break;
+      }
+    }
+    const size_t expansion_offset =
+        arguments.size() > parameters.size() ?
+            arguments.size() - parameters.size() :
+            0;
+    for(size_t i = 0; i < parameters.size(); ++i) {
+      if(parameters[i].name != parameter->name) {
+        continue;
+      }
+      const size_t argument_index =
+          (pack_parameter_index < i) ? i + expansion_offset : i;
+      if(argument_index < arguments.size() &&
+         arguments[argument_index].kind == TemplateArgument::TA_TYPE) {
+        out = arguments[argument_index].type;
         return true;
       }
     }
@@ -13075,6 +13160,32 @@ bool try_resolve_alias_template_id_locally(
   const auto validate_non_propagating_dependent_alias_arguments =
       [&]() -> bool
   {
+    const auto alias_pattern_mentions_parameter =
+        [&](const TemplateParameterInfo & parameter) -> bool
+    {
+      if(!alias_template->type_id) {
+        return false;
+      }
+      if(!parameter.name.empty() &&
+         expression_node_mentions_identifier(*alias_template->type_id,
+                                             parameter.name)) {
+        return true;
+      }
+      if(!parameter.placeholder_key.empty() &&
+         expression_node_mentions_identifier(*alias_template->type_id,
+                                             parameter.placeholder_key)) {
+        return true;
+      }
+      for(size_t j = 0; j < parameter.alternate_names.size(); ++j) {
+        if(!parameter.alternate_names[j].empty() &&
+           expression_node_mentions_identifier(*alias_template->type_id,
+                                               parameter.alternate_names[j])) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     for(size_t i = 0; i < arg_texts.size() && i < alias_template->parameters.size(); ++i) {
       if(alias_template->parameters[i].kind != TemplateParameterInfo::TP_TYPE) {
         continue;
@@ -13109,6 +13220,10 @@ bool try_resolve_alias_template_id_locally(
       const std::vector<TemplateArgumentSyntax> * nested_arg_syntaxes = nullptr;
       const bool validated_argument_is_dependent =
           service_type_depends_on_template_parameter(services, validated_argument_type);
+      if(validated_argument_is_dependent &&
+         !alias_pattern_mentions_parameter(alias_template->parameters[i])) {
+        return false;
+      }
       if(arg_syntaxes &&
          i < arg_syntaxes->size() &&
          (*arg_syntaxes)[i].template_id) {
@@ -18484,8 +18599,31 @@ bool substitute_expression_node_for_template_arguments(
       if(arguments[i].dependent) {
         binding.non_type_template_argument_text = binding.name;
       } else {
-        binding.has_constant_value = true;
-        binding.constant_value = arguments[i].value;
+        // Member-pointer, pointer, reference and other non-integral non-type
+        // arguments cannot be represented by a single integral constant, so
+        // preserve their symbolic argument text (e.g. "&target::id") rather
+        // than collapsing to constant_value 0. Mirrors bind_non_type_value.
+        const TypePtr nttp_base =
+            strip_top_level_cv(remove_reference_type(arguments[i].type));
+        const bool reference_nttp =
+            arguments[i].type &&
+            (arguments[i].type->kind == Type::TK_LVALUE_REFERENCE ||
+             arguments[i].type->kind == Type::TK_RVALUE_REFERENCE);
+        const bool prefer_textual_binding =
+            !arguments[i].text.empty() &&
+            (reference_nttp ||
+             (nttp_base &&
+              !is_integral_type(nttp_base) &&
+              !is_bool_type(nttp_base) &&
+              !(nttp_base->kind == Type::TK_NAMED &&
+                (nttp_base->named_key.compare(0, 5, "enum ") == 0 ||
+                 nttp_base->named_display.compare(0, 5, "enum ") == 0))));
+        if(prefer_textual_binding) {
+          binding.non_type_template_argument_text = arguments[i].text;
+        } else {
+          binding.has_constant_value = true;
+          binding.constant_value = arguments[i].value;
+        }
       }
       value_replacements[parameters[i].name] = binding;
     }
@@ -19029,87 +19167,6 @@ const vector<TypePtr> * lookup_type_pack(Scope & scope, const string & name)
   return nullptr;
 }
 
-bool expand_bound_type_pack_pattern_text(Scope & scope,
-                                         const string & pattern,
-                                         vector<string> & out)
-{
-  vector<pair<string, const vector<TypePtr> *> > packs;
-  vector<pair<string, const vector<ValueBinding> *> > value_packs;
-  const callsemantic_internal::IdentifierTokenSet identifiers =
-      callsemantic_internal::collect_identifier_tokens(pattern);
-  set<string> seen_type_pack_names;
-  set<string> seen_value_pack_names;
-  for(Scope * current = &scope; current; current = current->parent) {
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-    for(map<string, vector<TypePtr> >::const_iterator pack =
-            current->named_type_packs.begin();
-        pack != current->named_type_packs.end();
-        ++pack) {
-      const string & pack_name = pack->first;
-      if(pack_name.empty() ||
-         seen_type_pack_names.count(pack_name) != 0 ||
-         !identifiers.contains(pack_name)) {
-        continue;
-      }
-      seen_type_pack_names.insert(pack_name);
-      packs.push_back(make_pair(pack_name, &pack->second));
-    }
-    for(map<string, vector<ValueBinding> >::const_iterator pack =
-            current->named_value_packs.begin();
-        pack != current->named_value_packs.end();
-        ++pack) {
-      const string & pack_name = pack->first;
-      if(pack_name.empty() ||
-         seen_value_pack_names.count(pack_name) != 0 ||
-         !identifiers.contains(pack_name)) {
-        continue;
-      }
-      seen_value_pack_names.insert(pack_name);
-      value_packs.push_back(make_pair(pack_name, &pack->second));
-    }
-  }
-
-  if(packs.empty() && value_packs.empty()) {
-    return false;
-  }
-
-  const size_t pack_size =
-      !packs.empty() ? packs[0].second->size() : value_packs[0].second->size();
-  for(size_t i = 1; i < packs.size(); ++i) {
-    if(packs[i].second->size() != pack_size) {
-      return false;
-    }
-  }
-  for(size_t i = 0; i < value_packs.size(); ++i) {
-    if(value_packs[i].second->size() != pack_size) {
-      return false;
-    }
-  }
-
-  for(size_t i = 0; i < pack_size; ++i) {
-    string rewritten = pattern;
-    bool changed = false;
-    for(size_t j = 0; j < packs.size(); ++j) {
-      rewritten = replace_identifier_token_text(
-          rewritten,
-          packs[j].first,
-          reparseable_type_argument_text((*(packs[j].second))[i]),
-          changed);
-    }
-    for(size_t j = 0; j < value_packs.size(); ++j) {
-      rewritten = replace_identifier_token_text(
-          rewritten,
-          value_packs[j].first,
-          substituted_value_pack_argument_text((*(value_packs[j].second))[i]),
-          changed);
-    }
-    out.push_back(changed ? rewritten : pattern);
-  }
-  return true;
-}
-
 bool find_identifier_token_occurrence(const string & text,
                                       const string & name,
                                       std::size_t & pos)
@@ -19272,6 +19329,15 @@ bool apply_type_pack_bool_member_pattern(template_api::TemplateServices & servic
 {
   out.clear();
   string trimmed = trim_space(pattern);
+  // libstdc++'s __or_fn/__and_fn SFINAE use !bool(B::value) and bool(B::value)
+  // as the enable_if condition; fold the leading logical negation(s) so the
+  // bool member value is evaluated on the typed path instead of leaking to the
+  // legacy text non-type-argument evaluator.
+  bool negate = false;
+  while(!trimmed.empty() && trimmed[0] == '!') {
+    negate = !negate;
+    trimmed = trim_space(trimmed.substr(1));
+  }
   if(trimmed.size() > 6 &&
      trimmed.compare(0, 5, "bool(") == 0 &&
      trimmed[trimmed.size() - 1] == ')') {
@@ -19293,6 +19359,9 @@ bool apply_type_pack_bool_member_pattern(template_api::TemplateServices & servic
           value);
   if(status != NT_ARG_EVALUATED) {
     return false;
+  }
+  if(negate) {
+    value = !value;
   }
   out = value ? "1" : "0";
   return true;
@@ -23390,6 +23459,19 @@ NonTypeArgumentStatus evaluate_structured_bool_template_argument(
     const TemplateArgumentSyntax & syntax,
     bool & out)
 {
+  if(syntax.resolved_type) {
+    const NonTypeArgumentStatus type_status =
+        evaluate_structured_bool_constant_type(
+            services,
+            scope,
+            syntax.resolved_type,
+            out);
+    if(type_status == NT_ARG_EVALUATED ||
+       type_status == NT_ARG_DEPENDENT) {
+      return type_status;
+    }
+  }
+
   if(syntax.template_id) {
     const NonTypeArgumentStatus template_status =
         evaluate_structured_bool_template_value(
@@ -25667,12 +25749,45 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(SemanticContext & ctx,
                                                       string * eval_error,
                                                       const TypePtr & target_type)
 {
-  const string trimmed = trim_space(text);
+  string trimmed = trim_space(text);
+  // libstdc++'s __or_fn/__and_fn SFINAE wrap the condition as !bool(B::value)
+  // or bool(B::value). Fold those wrappers so the inner member value drives
+  // evaluation and dependency tracking (a dependent operand stays dependent
+  // instead of reaching the throw below).
+  bool negate = false;
+  bool bool_cast = false;
+  for(;;) {
+    if(!trimmed.empty() && trimmed[0] == '!') {
+      negate = !negate;
+      trimmed = trim_space(trimmed.substr(1));
+      continue;
+    }
+    if(trimmed.size() > 6 &&
+       trimmed.compare(0, 5, "bool(") == 0 &&
+       trimmed[trimmed.size() - 1] == ')') {
+      bool_cast = true;
+      trimmed = trim_space(trimmed.substr(5, trimmed.size() - 6));
+      continue;
+    }
+    break;
+  }
+  const auto finish = [&](NonTypeArgumentStatus status) -> NonTypeArgumentStatus
+  {
+    if(status == NT_ARG_EVALUATED) {
+      if(bool_cast) {
+        value = value != 0 ? 1 : 0;
+      }
+      if(negate) {
+        value = value != 0 ? 0 : 1;
+      }
+    }
+    return status;
+  };
   if(try_evaluate_integral_text(trimmed, value)) {
-    return NT_ARG_EVALUATED;
+    return finish(NT_ARG_EVALUATED);
   }
   if(try_evaluate_integral_text_with_pack_scope(scope, trimmed, value)) {
-    return NT_ARG_EVALUATED;
+    return finish(NT_ARG_EVALUATED);
   }
   const auto evaluate_builtin_trait_text =
       [&]() -> NonTypeArgumentStatus
@@ -25708,7 +25823,7 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(SemanticContext & ctx,
             trace << " value=" << value;
           }
         });
-    return builtin_status;
+    return finish(builtin_status);
   }
 
   const NonTypeArgumentStatus member_value_status =
@@ -25724,7 +25839,7 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(SemanticContext & ctx,
                 target_type);
           });
   if(member_value_status != NT_ARG_PARSE_FAILED) {
-    return member_value_status;
+    return finish(member_value_status);
   }
 
   (void)ctx;
@@ -26922,12 +27037,44 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(
     const TypePtr & target_type)
 {
   Scope & raw_scope = scope.require();
-  const string trimmed = trim_space(text);
+  string trimmed = trim_space(text);
+  // Fold libstdc++'s !bool(B::value)/bool(B::value) SFINAE wrappers so the inner
+  // member value drives evaluation and dependency tracking (a dependent operand
+  // stays dependent instead of reaching the throw below).
+  bool negate = false;
+  bool bool_cast = false;
+  for(;;) {
+    if(!trimmed.empty() && trimmed[0] == '!') {
+      negate = !negate;
+      trimmed = trim_space(trimmed.substr(1));
+      continue;
+    }
+    if(trimmed.size() > 6 &&
+       trimmed.compare(0, 5, "bool(") == 0 &&
+       trimmed[trimmed.size() - 1] == ')') {
+      bool_cast = true;
+      trimmed = trim_space(trimmed.substr(5, trimmed.size() - 6));
+      continue;
+    }
+    break;
+  }
+  const auto finish = [&](NonTypeArgumentStatus status) -> NonTypeArgumentStatus
+  {
+    if(status == NT_ARG_EVALUATED) {
+      if(bool_cast) {
+        value = value != 0 ? 1 : 0;
+      }
+      if(negate) {
+        value = value != 0 ? 0 : 1;
+      }
+    }
+    return status;
+  };
   if(try_evaluate_integral_text(trimmed, value)) {
-    return NT_ARG_EVALUATED;
+    return finish(NT_ARG_EVALUATED);
   }
   if(try_evaluate_integral_text_with_pack_scope(raw_scope, trimmed, value)) {
-    return NT_ARG_EVALUATED;
+    return finish(NT_ARG_EVALUATED);
   }
   const auto evaluate_builtin_trait_text =
       [&]() -> NonTypeArgumentStatus
@@ -26965,14 +27112,14 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(
             trace << " value=" << value;
           }
         });
-    return builtin_status;
+    return finish(builtin_status);
   }
 
   const NonTypeArgumentStatus member_value_status =
       evaluate_template_member_value_text(
           services, scope, trimmed, value, target_type);
   if(member_value_status != NT_ARG_PARSE_FAILED) {
-    return member_value_status;
+    return finish(member_value_status);
   }
 
   throw logic_error("legacy non-type template argument text evaluation: " + trimmed);
@@ -28135,6 +28282,145 @@ bool parse_type_argument_text(template_api::TemplateServices & services,
   return out != nullptr;
 }
 
+// Masks the operands of sizeof... expressions so a pack that only appears as a
+// sizeof...(pack) operand is not mistaken for an expansion driver.
+string mask_sizeof_pack_operands(const string & text)
+{
+  string masked = text;
+  const string prefix = "sizeof...";
+  size_t pos = 0;
+  while((pos = masked.find(prefix, pos)) != string::npos) {
+    size_t open = pos + prefix.size();
+    while(open < masked.size() &&
+          std::isspace(static_cast<unsigned char>(masked[open]))) {
+      ++open;
+    }
+    if(open >= masked.size() || masked[open] != '(') {
+      pos += prefix.size();
+      continue;
+    }
+    size_t close = open + 1;
+    int depth = 1;
+    for(; close < masked.size(); ++close) {
+      if(masked[close] == '(') {
+        ++depth;
+      } else if(masked[close] == ')') {
+        --depth;
+        if(depth == 0) {
+          ++close;
+          break;
+        }
+      }
+    }
+    if(depth != 0) {
+      break;
+    }
+    for(size_t i = pos; i < close; ++i) {
+      masked[i] = ' ';
+    }
+    pos = close;
+  }
+  return masked;
+}
+
+// Expands a type-pack pattern that is driven by one or more bound *value* packs
+// (e.g. "typename typelist_element<last_idx - Ints, Typelist>::type"). For each
+// element index every referenced pack is rebound as its i-th element in a child
+// scope and the original pattern is resolved through the typed type resolver, so
+// the expansion stays on the typed path: type packs keep their TypePtr identity
+// (no reparseable-text round-trip) and value packs supply their typed value
+// bindings. Returns true when the pattern referenced at least one bound value
+// pack and every element resolved to a type; otherwise leaves `out` untouched
+// and returns false so the caller can try another strategy.
+bool expand_value_pack_driven_type_pattern(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const string & pattern,
+    vector<ExpandedTypeArgumentInput> & out)
+{
+  const string masked = mask_sizeof_pack_operands(pattern);
+  vector<pair<string, const vector<TypePtr> *> > type_packs;
+  vector<pair<string, const vector<ValueBinding> *> > value_packs;
+  set<string> seen_type_pack_names;
+  set<string> seen_value_pack_names;
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    for(const auto & pack : current->named_type_packs) {
+      const string & pack_name = pack.first;
+      if(pack_name.empty() ||
+         seen_type_pack_names.count(pack_name) != 0 ||
+         !callsemantic_internal::contains_identifier_token(masked, pack_name)) {
+        continue;
+      }
+      seen_type_pack_names.insert(pack_name);
+      type_packs.push_back(make_pair(pack_name, &pack.second));
+    }
+    for(const auto & pack : current->named_value_packs) {
+      const string & pack_name = pack.first;
+      if(pack_name.empty() ||
+         seen_value_pack_names.count(pack_name) != 0 ||
+         !callsemantic_internal::contains_identifier_token(masked, pack_name)) {
+        continue;
+      }
+      seen_value_pack_names.insert(pack_name);
+      value_packs.push_back(make_pair(pack_name, &pack.second));
+    }
+  }
+
+  if(value_packs.empty()) {
+    return false;
+  }
+
+  const size_t pack_size = value_packs.front().second->size();
+  for(size_t i = 0; i < type_packs.size(); ++i) {
+    if(type_packs[i].second->size() != pack_size) {
+      return false;
+    }
+  }
+  for(size_t i = 1; i < value_packs.size(); ++i) {
+    if(value_packs[i].second->size() != pack_size) {
+      return false;
+    }
+  }
+
+  vector<ExpandedTypeArgumentInput> expanded;
+  expanded.reserve(pack_size);
+  for(size_t i = 0; i < pack_size; ++i) {
+    Scope element_scope(&scope, "", false);
+    for(size_t j = 0; j < type_packs.size(); ++j) {
+      template_scope::bind_named_type(element_scope,
+                                      type_packs[j].first,
+                                      (*(type_packs[j].second))[i]);
+    }
+    for(size_t j = 0; j < value_packs.size(); ++j) {
+      ValueBinding element = (*(value_packs[j].second))[i];
+      element.name = value_packs[j].first;
+      template_scope::bind_value(element_scope,
+                                 value_packs[j].first,
+                                 element,
+                                 true);
+    }
+    TypePtr resolved;
+    if(!parse_type_argument_text(
+           services,
+           template_api::make_template_environment(element_scope),
+           pattern,
+           resolved) ||
+       !resolved) {
+      return false;
+    }
+    ExpandedTypeArgumentInput input;
+    input.type = resolved;
+    input.text = reparseable_type_argument_text(resolved);
+    expanded.push_back(input);
+  }
+
+  out.insert(out.end(), expanded.begin(), expanded.end());
+  return true;
+}
+
 vector<ExpandedTypeArgumentInput> expand_bound_type_pack_arguments(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -28155,6 +28441,16 @@ vector<ExpandedTypeArgumentInput> expand_bound_type_pack_arguments(
         }
         continue;
       }
+      const vector<ValueBinding> * bound_value_pack =
+          lookup_value_pack(scope, pattern);
+      if(bound_value_pack) {
+        for(size_t j = 0; j < bound_value_pack->size(); ++j) {
+          ExpandedTypeArgumentInput input;
+          input.text = substituted_value_pack_argument_text((*bound_value_pack)[j]);
+          out.push_back(input);
+        }
+        continue;
+      }
       vector<ExpandedTypeArgumentInput> typed_expanded_patterns;
       if(expand_bound_type_pack_type_pattern(
              services, scope, pattern, typed_expanded_patterns)) {
@@ -28163,13 +28459,16 @@ vector<ExpandedTypeArgumentInput> expand_bound_type_pack_arguments(
                    typed_expanded_patterns.end());
         continue;
       }
-      vector<string> expanded_patterns;
-      if(expand_bound_type_pack_pattern_text(scope, pattern, expanded_patterns)) {
-        for(size_t j = 0; j < expanded_patterns.size(); ++j) {
-          ExpandedTypeArgumentInput input;
-          input.text = expanded_patterns[j];
-          out.push_back(input);
-        }
+      // A value pack can drive the expansion of a non-trivial type pattern
+      // (e.g. typename X<expr-with-Ns...>::type). Rebind each pack element in a
+      // child scope and resolve through the typed resolver so type identity is
+      // preserved without any source-text rewrite + reparse.
+      vector<ExpandedTypeArgumentInput> value_driven_patterns;
+      if(expand_value_pack_driven_type_pattern(
+             services, scope, pattern, value_driven_patterns)) {
+        out.insert(out.end(),
+                   value_driven_patterns.begin(),
+                   value_driven_patterns.end());
         continue;
       }
     }
@@ -28241,45 +28540,7 @@ vector<string> expand_bound_expression_pack_texts(template_api::TemplateServices
   }
 
   const string pattern = trim_space(trimmed.substr(0, trimmed.size() - 3));
-  const auto pattern_mentions_expansion_pack =
-      [](const string & text, const string & pack_name) -> bool
-      {
-        string masked = text;
-        const string prefix = "sizeof...";
-        size_t pos = 0;
-        while((pos = masked.find(prefix, pos)) != string::npos) {
-          size_t open = pos + prefix.size();
-          while(open < masked.size() &&
-                std::isspace(static_cast<unsigned char>(masked[open]))) {
-            ++open;
-          }
-          if(open >= masked.size() || masked[open] != '(') {
-            pos += prefix.size();
-            continue;
-          }
-          size_t close = open + 1;
-          int depth = 1;
-          for(; close < masked.size(); ++close) {
-            if(masked[close] == '(') {
-              ++depth;
-            } else if(masked[close] == ')') {
-              --depth;
-              if(depth == 0) {
-                ++close;
-                break;
-              }
-            }
-          }
-          if(depth != 0) {
-            break;
-          }
-          for(size_t i = pos; i < close; ++i) {
-            masked[i] = ' ';
-          }
-          pos = close;
-        }
-        return callsemantic_internal::contains_identifier_token(masked, pack_name);
-      };
+  const string masked = mask_sizeof_pack_operands(pattern);
   vector<pair<string, const vector<TypePtr> *> > packs;
   vector<pair<string, const vector<ValueBinding> *> > value_packs;
   set<string> seen_type_pack_names;
@@ -28292,7 +28553,7 @@ vector<string> expand_bound_expression_pack_texts(template_api::TemplateServices
       const string & pack_name = pack.first;
       if(pack_name.empty() ||
          seen_type_pack_names.count(pack_name) != 0 ||
-         !pattern_mentions_expansion_pack(pattern, pack_name)) {
+         !callsemantic_internal::contains_identifier_token(masked, pack_name)) {
         continue;
       }
       seen_type_pack_names.insert(pack_name);
@@ -28302,7 +28563,7 @@ vector<string> expand_bound_expression_pack_texts(template_api::TemplateServices
       const string & pack_name = pack.first;
       if(pack_name.empty() ||
          seen_value_pack_names.count(pack_name) != 0 ||
-         !pattern_mentions_expansion_pack(pattern, pack_name)) {
+         !callsemantic_internal::contains_identifier_token(masked, pack_name)) {
         continue;
       }
       seen_value_pack_names.insert(pack_name);
@@ -28939,11 +29200,18 @@ ExpandedTemplateArgumentInputs expand_template_argument_inputs(
         const bool unchanged = trimmed_expanded_text == trimmed_text;
         const bool expression_unchanged =
             trimmed_expanded_text == trim_space(type_expanded_texts[j]);
-        out.texts.push_back(trimmed_expanded_text);
-        out.type_arguments.push_back(
+        TypePtr expanded_argument_type =
             expression_unchanged && j < type_expanded_inputs.size() ?
                 type_expanded_inputs[j].type :
-                TypePtr());
+                TypePtr();
+        if(!expanded_argument_type &&
+           expression_unchanged &&
+           type_expanded_syntax &&
+           type_expanded_syntax->resolved_type) {
+          expanded_argument_type = type_expanded_syntax->resolved_type;
+        }
+        out.texts.push_back(trimmed_expanded_text);
+        out.type_arguments.push_back(expanded_argument_type);
         if(syntaxes) {
           if(expression_unchanged &&
              type_expanded_syntax &&

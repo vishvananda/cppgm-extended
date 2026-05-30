@@ -44,3 +44,4 @@ function @take(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
+alias object _ZN6tuples5tupleIiiiNS_9null_typeES1_S1_S1_S1_S1_S1_EC2Eiii = @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type___tuple

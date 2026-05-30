@@ -77,3 +77,6 @@ function @tuple_like_first__second__third___tag__tag(%this : ptr) -> void [unwin
     store ptr %this, $this
     return void
 }
+alias object _ZN3keyIJ5first6second5thirdEEC2IJRS0_RS1_RS2_ETnN9enable_ifIXsr7acceptsIDpOT_EE5valueEiE4typeELi0EEEDpSA_ = @key_first__second__third___key__ov2
+alias object _ZN10tuple_likeIJ5first6second5thirdEEC2ENS3_3tagERKS0_RKS1_RKS2_ = @tuple_like_first__second__third___tuple_like
+alias object _ZN10tuple_likeIJ5first6second5thirdEE3tagC2Ev = @tuple_like_first__second__third___tag__tag

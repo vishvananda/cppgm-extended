@@ -39,3 +39,5 @@ function @second__second(%this : ptr) -> void [unwind=no, binding=weak, object=_
     store ptr %this, $this
     return void
 }
+alias object _ZN8pair_boxI6second5firstEC2Ev = @pair_box_second__first___pair_box
+alias object _ZN6secondC2Ev = @second__second

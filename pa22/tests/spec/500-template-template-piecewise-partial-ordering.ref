@@ -158,3 +158,7 @@ function @variadic_piecewise_t__variadic_piecewise_t(%this : ptr) -> void [unwin
     store ptr %this, $this
     return void
 }
+alias object _ZN11fixed_tupleIi15fixed_null_typeS0_EC2Ev = @fixed_tuple_int__fixed_null_type__fixed_null_type___fixed_tuple
+alias object _ZN14variadic_tupleIi18variadic_null_typeS0_EC2Ev = @variadic_tuple_int__variadic_null_type__variadic_null_type___variadic_tuple
+alias object _ZN17fixed_piecewise_tC2Ev = @fixed_piecewise_t__fixed_piecewise_t
+alias object _ZN20variadic_piecewise_tC2Ev = @variadic_piecewise_t__variadic_piecewise_t

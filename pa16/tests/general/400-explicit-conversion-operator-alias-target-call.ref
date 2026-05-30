@@ -64,3 +64,4 @@ function @compile_traits__compile_traits(%this : ptr) -> void [unwind=no, bindin
     store ptr %this, $this
     return void
 }
+alias object _ZN14compile_traitsC2Ev = @compile_traits__compile_traits

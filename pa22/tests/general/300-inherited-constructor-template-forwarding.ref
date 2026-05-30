@@ -69,3 +69,5 @@ function @arg__arg(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3argC
     store i32 %t1, %t3
     return void
 }
+alias object _ZN7derivedIiEC2I3argEEOT_ = @derived_int___derived__ov3
+alias object _ZN3argC2Ei = @arg__arg

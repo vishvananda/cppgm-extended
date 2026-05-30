@@ -82,3 +82,8 @@ function @tag__tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3tag
     store ptr %this, $this
     return void
 }
+alias object _ZN2ns5tupleIiNS_6markerEEC2Ev = @ns__tuple_int__ns__marker___tuple
+alias object _ZN2ns5tupleINS_6markerES1_EC2Ev = @ns__tuple_ns__marker__ns__marker___tuple
+alias object _ZN3boxIiEC2IN2ns5tupleEEENS3_IiNS2_6markerEEE = @box_int___box__ov3
+alias object _ZN3boxIiEC2IN2ns5tupleEEE3tagNS3_IiNS2_6markerEEENS3_IS5_S5_EE = @box_int___box__ov4
+alias object _ZN3tagC2Ev = @tag__tag

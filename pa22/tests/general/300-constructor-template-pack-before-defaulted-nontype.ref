@@ -43,3 +43,4 @@ function @tuple_like_first_arg__second_arg___tuple_like(%this : ptr, %__param1 :
     store i32 2, %t2
     return void
 }
+alias object _ZN10tuple_likeIJ9first_arg10second_argEEC2IJRS0_RS1_ETnPN9enable_ifIXsr15are_convertibleIDpOT_EE5valueEvE4typeELPv0EEEDpS8_ = @tuple_like_first_arg__second_arg___tuple_like

@@ -202,3 +202,9 @@ function @AssignRange_Iterator__int____AssignRange(%this : ptr) -> void [binding
     call void @Iterator___Iterator(%t4)
     return void
 }
+alias object _ZN11AssignRangeI8IteratoriEC2ERKS0_S3_Ri = @AssignRange_Iterator__int___AssignRange
+alias object _ZN8IteratorC2ERKS_ = @Iterator__Iterator__ov2
+alias object _ZN8IteratorD2Ev = @Iterator___Iterator
+alias object _ZN6BufferC2Ev = @Buffer__Buffer
+alias object _ZN8IteratorC2Ev = @Iterator__Iterator
+alias object _ZN11AssignRangeI8IteratoriED2Ev = @AssignRange_Iterator__int____AssignRange

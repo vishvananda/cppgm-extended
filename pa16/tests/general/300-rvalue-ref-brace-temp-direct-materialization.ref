@@ -89,3 +89,4 @@ function @Base__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [bi
     %t8 = load ptr $this
     return ptr %t8
 }
+alias object _ZN3BoxC2Ev = @Box__Box

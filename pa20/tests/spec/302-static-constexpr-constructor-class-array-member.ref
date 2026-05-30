@@ -50,3 +50,4 @@ function @uint128__uint128__ov3(%this : ptr, %high_ : i64, %low_ : i64) -> void 
     store i64 %t4, %t6
     return void
 }
+alias object _ZN7uint128C2Emm = @uint128__uint128__ov3

@@ -47,3 +47,4 @@ function @tuples__tuple_int__int___tuple__ov2(%this : ptr, %first : i32, %second
     store i32 %t4, %t6
     return void
 }
+alias object _ZN6tuples5tupleIiiEC2Eii = @tuples__tuple_int__int___tuple__ov2

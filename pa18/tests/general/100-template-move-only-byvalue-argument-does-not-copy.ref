@@ -103,3 +103,7 @@ function @box_move_only___box__ov2(%this : ptr, %other : ptr [pass=reference]) -
     call void @move_only__move_only__ov2(%t2, %t4)
     return void
 }
+alias object _ZN3boxI9move_onlyEC2EOS0_ = @box_move_only___box
+alias object _ZN9move_onlyC2EPi = @move_only__move_only
+alias object _ZN9move_onlyC2EOS_ = @move_only__move_only__ov2
+alias object _ZN3boxI9move_onlyEC2EOS1_ = @box_move_only___box__ov2

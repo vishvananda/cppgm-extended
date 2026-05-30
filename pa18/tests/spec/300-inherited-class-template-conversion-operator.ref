@@ -123,3 +123,6 @@ function @arg2__arg2(%this : ptr) -> void [binding=weak, object=_ZN4arg2C1Ev] {
     store i32 11, %t2
     return void
 }
+alias object _ZN14convertible_toI4arg2S_I4arg110empty_baseEEC2Ev = @convertible_to_arg2__convertible_to_arg1__empty_base____convertible_to
+alias object _ZN4arg1C2Ev = @arg1__arg1
+alias object _ZN4arg2C2Ev = @arg2__arg2

@@ -35,3 +35,5 @@ function @piecewise_construct_t__piecewise_construct_t(%this : ptr) -> void [unw
     store ptr %this, $this
     return void
 }
+alias object _ZN5tupleC2Ev = @tuple____tuple
+alias object _ZN21piecewise_construct_tC2Ev = @piecewise_construct_t__piecewise_construct_t

@@ -147,3 +147,4 @@ function @terminal__insert_(%this : ptr, %__param1 : i32, %position : ptr, %valu
     %t6 = load i32 %t5
     return i32 %t6
 }
+alias object _ZN3tagC2Ev = @tag__tag

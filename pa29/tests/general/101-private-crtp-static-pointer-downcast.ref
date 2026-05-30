@@ -98,3 +98,5 @@ function @holder_object___final(%this : ptr) -> ptr [binding=weak, object=_ZN6ho
     %t2 = index i8 [projection=base_subobject] %t1, -4
     return ptr %t2
 }
+alias object _ZN6objectC2Ev = @object__object
+alias object _ZN6holderI6objectEC2Ev = @holder_object___holder

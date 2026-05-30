@@ -41,3 +41,4 @@ function @any_completion_executor__any_completion_executor__ov3(%this : ptr, %__
     store i32 1, %t2
     return void
 }
+alias object _ZN23any_completion_executorC2I8executorEET_N10constraintIXsr4typeE5valueEE4typeE = @any_completion_executor__any_completion_executor__ov3

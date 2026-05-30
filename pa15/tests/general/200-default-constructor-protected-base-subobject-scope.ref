@@ -80,3 +80,6 @@ function @maker___maker(%this : ptr) -> void [binding=weak, object=_ZN5makerD1Ev
     store ptr %this, $this
     return void
 }
+alias object _ZN5makerC2Ev = @maker__maker
+alias object _ZN10io_contextC2ERK13service_maker = @io_context__io_context
+alias object _ZN5makerD2Ev = @maker___maker

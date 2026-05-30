@@ -126,3 +126,8 @@ function @Counter__Counter__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -
     store i32 %t2, @Counter__count
     return void
 }
+alias object _ZN7CounterC2Ev = @Counter__Counter
+alias object _ZN7CounterD2Ev = @Counter___Counter
+alias object _ZN6HolderC2EiRK7Counter = @Holder__Holder
+alias object _ZN6HolderD2Ev = @Holder___Holder
+alias object _ZN7CounterC2ERKS_ = @Counter__Counter__ov2

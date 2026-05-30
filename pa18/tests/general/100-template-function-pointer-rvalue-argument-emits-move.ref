@@ -118,3 +118,7 @@ function @holder_int____holder(%this : ptr) -> void [binding=weak, object=_ZN6ho
     store ptr %this, $this
     return void
 }
+alias object _ZN6holderIiEC2Ev = @holder_int___holder
+alias object _ZN6holderIiEC2ERKS0_ = @holder_int___holder__ov2
+alias object _ZN6holderIiEC2EOS0_ = @holder_int___holder__ov3
+alias object _ZN6holderIiED2Ev = @holder_int____holder

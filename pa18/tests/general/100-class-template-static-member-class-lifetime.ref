@@ -40,3 +40,4 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     call void @holder__holder(%t1)
     return void
 }
+alias object _ZN6holderC2Ev = @holder__holder
