@@ -6386,6 +6386,82 @@ unsigned long long vtable_address_point_offset_for_virtual_bases(const ClassInfo
   return (static_cast<unsigned long long>(info.virtual_base_subobjects.size()) + 2ULL) * 8ULL;
 }
 
+// Number of VTT entries contributed by `base`'s construction sub-VTT, computed
+// recursively so multi-level virtual-inheritance diamonds reserve the full sub
+// tree (a base whose own bases also require construction VTTs contributes more
+// than `1 + vbase_count` entries).
+std::string construction_section_key(const ClassInfo & dynamic_class,
+                                     const ClassInfo & base_class,
+                                     size_t base_offset,
+                                     size_t section_index)
+{
+  std::ostringstream out;
+  out << construction_vtable_key(dynamic_class, base_class, base_offset)
+      << "::s" << section_index;
+  return out.str();
+}
+
+size_t construction_subvtt_entry_count(const ClassInfo & base)
+{
+  size_t count = 1;  // primary construction section
+  for(size_t i = 0; i < base.bases.size(); ++i) {
+    if(direct_base_uses_construction_vtt(base.bases[i]) && base.bases[i].type) {
+      count += construction_subvtt_entry_count(*base.bases[i].type);
+    }
+  }
+  if(base.vtables.size() > 1) {
+    count += base.vtables.size() - 1;  // secondary / virtual-base sections
+  }
+  return count;
+}
+
+// Append, in Itanium VTT order, the sub-VTT for `view_class` located at
+// `view_offset_in_dynamic` within `dynamic_class`.  The top-level call (for the
+// dynamic class itself) references the class's own vtable section keys; nested
+// calls reference per-(dynamic, base, offset) construction-vtable section keys
+// so the embedded sub-VTTs carry dynamic-relative virtual-base offsets.  The
+// entry order matches `append_all_vptr_actions` so the regenerated base ctors
+// read the slots they were emitted to expect.
+void append_subvtt_entries(SemanticContext & ctx,
+                           ClassInfo & dynamic_class,
+                           ClassInfo & view_class,
+                           size_t view_offset_in_dynamic,
+                           bool is_top_level,
+                           unsigned long long address_point_offset,
+                           std::vector<std::pair<std::string, unsigned long long> > & out)
+{
+  if(view_class.vtables.empty()) {
+    return;
+  }
+  out.push_back(std::make_pair(
+      is_top_level ? view_class.vtables[0].key
+                   : construction_section_key(dynamic_class, view_class,
+                                              view_offset_in_dynamic, 0),
+      address_point_offset));
+
+  for(size_t i = 0; i < view_class.bases.size(); ++i) {
+    const BaseInfo & base = view_class.bases[i];
+    if(!direct_base_uses_construction_vtt(base) || !base.type) {
+      continue;
+    }
+    append_subvtt_entries(ctx,
+                          dynamic_class,
+                          *base.type,
+                          view_offset_in_dynamic + base.offset,
+                          false,
+                          address_point_offset,
+                          out);
+  }
+
+  for(size_t i = 1; i < view_class.vtables.size(); ++i) {
+    out.push_back(std::make_pair(
+        is_top_level ? view_class.vtables[i].key
+                     : construction_section_key(dynamic_class, view_class,
+                                                view_offset_in_dynamic, i),
+        address_point_offset));
+  }
+}
+
 }  // namespace
 
 void collect_vtt_entries(SemanticContext & ctx,
@@ -6400,41 +6476,53 @@ void collect_construction_vtables(SemanticContext & ctx,
     return;
   }
 
-  for(size_t i = 0; i < dynamic_class.bases.size(); ++i) {
+  // Pre-order walk of every base subobject (at any depth) that itself requires
+  // a construction VTT.  Each such subobject S at offset `S_off` gets a full
+  // construction-vtable group: a copy of S's own vtable sections (which already
+  // carry S's as-of-base final overriders) relocated to `S_off` within
+  // `dynamic_class`.  The emission recomputes offset-to-top and virtual-base
+  // offsets from `dynamic_class` + the relocated view offset, and each section
+  // gets a distinct internal symbol via its construction section key, so a
+  // multi-level diamond produces the full set of construction vtables that the
+  // recursive VTT (and the regenerated base ctors) reference.
+  std::vector<std::pair<ClassInfo *, size_t> > stack;
+  for(size_t i = dynamic_class.bases.size(); i-- > 0;) {
     const BaseInfo & base = dynamic_class.bases[i];
-    if(!direct_base_uses_construction_vtt(base)) {
-      continue;
+    if(direct_base_uses_construction_vtt(base) && base.type) {
+      stack.push_back(std::make_pair(base.type, base.offset));
     }
-
-    VTableInfo table;
-    table.key = construction_vtable_key(dynamic_class, *base.type, base.offset);
-    table.view_type = base.type;
-    table.view_offset = base.offset;
-    for(size_t j = 0; j < base.type->vtable_entries.size(); ++j) {
-      FunctionBinding * base_virtual = base.type->vtable_entries[j];
-      FunctionBinding * final = find_final_overrider(ctx, dynamic_class, *base_virtual);
-      size_t target_offset = 0;
-      MemberAccess target_access = MA_PUBLIC;
-      if(!semantic_lookup::find_unique_base_path(dynamic_class,
-                                                 final->owner_class,
-                                                 target_offset,
-                                                 target_access)) {
-        throw std::logic_error("missing construction final overrider path");
+  }
+  while(!stack.empty()) {
+    ClassInfo & base_class = *stack.back().first;
+    const size_t base_offset = stack.back().second;
+    stack.pop_back();
+    for(size_t i = 0; i < base_class.vtables.size(); ++i) {
+      VTableInfo table = base_class.vtables[i];
+      size_t section_offset = base_offset + base_class.vtables[i].view_offset;
+      // A shared virtual-base section lives at the virtual base's offset within
+      // the dynamic class, not at `base_offset` plus its offset inside the base
+      // subobject (the virtual base is relocated relative to the base when the
+      // base becomes a subobject of a more-derived class).
+      if(table.view_type) {
+        for(size_t v = 0; v < dynamic_class.virtual_base_subobjects.size(); ++v) {
+          const SubobjectInfo & vb = dynamic_class.virtual_base_subobjects[v];
+          if(vb.type == table.view_type ||
+             (vb.type && vb.type->qualified_name == table.view_type->qualified_name)) {
+            section_offset = vb.offset;
+            break;
+          }
+        }
       }
-      VTableSlotInfo slot;
-      slot.function = final;
-      slot.this_adjust =
-          static_cast<long long>(target_offset) - static_cast<long long>(base.offset);
-      table.slots.push_back(slot);
+      table.view_offset = section_offset;
+      table.key = construction_section_key(dynamic_class, base_class, base_offset, i);
+      out.push_back(table);
     }
-    table.use_extended_layout = class_uses_extended_virtual_abi(*base.type);
-    for(size_t j = 0; j < table.slots.size(); ++j) {
-      if(table.slots[j].this_adjust != 0) {
-        table.use_extended_layout = true;
-        break;
+    for(size_t i = base_class.bases.size(); i-- > 0;) {
+      const BaseInfo & inner = base_class.bases[i];
+      if(direct_base_uses_construction_vtt(inner) && inner.type) {
+        stack.push_back(std::make_pair(inner.type, base_offset + inner.offset));
       }
     }
-    out.push_back(table);
   }
 }
 
@@ -6458,8 +6546,7 @@ bool find_vtt_direct_base_slice_offset(SemanticContext & ctx,
       out_byte_offset = entry_index * 8;
       return true;
     }
-    entry_index += 1;
-    entry_index += base.type->virtual_base_subobjects.size();
+    entry_index += construction_subvtt_entry_count(*base.type);
   }
 
   return false;
@@ -6496,33 +6583,10 @@ void collect_vtt_entries(SemanticContext & ctx,
 
   const unsigned long long address_point_offset =
       vtable_address_point_offset_for_virtual_bases(info);
-  out.push_back(std::make_pair(info.vtables[0].key, address_point_offset));
-
-  for(size_t i = 0; i < info.bases.size(); ++i) {
-    const BaseInfo & base = info.bases[i];
-    if(!direct_base_uses_construction_vtt(base)) {
-      continue;
-    }
-
-    out.push_back(make_pair(construction_vtable_key(info, *base.type, base.offset),
-                            address_point_offset));
-    for(size_t j = 0; j < base.type->virtual_base_subobjects.size(); ++j) {
-      const SubobjectInfo & virtual_base = base.type->virtual_base_subobjects[j];
-      if(!virtual_base.type) {
-        continue;
-      }
-      size_t actual_offset = 0;
-      if(!resolve_complete_subobject_offset(info, *virtual_base.type, actual_offset)) {
-        throw std::logic_error("missing VTT virtual base view offset");
-      }
-      out.push_back(make_pair(vtable_view_key(info, *virtual_base.type, actual_offset),
-                              address_point_offset));
-    }
-  }
-
-  for(size_t i = 1; i < info.vtables.size(); ++i) {
-    out.push_back(make_pair(info.vtables[i].key, address_point_offset));
-  }
+  // Emit the VTT in recursive Itanium order so multi-level virtual-inheritance
+  // diamonds embed each direct base's full sub-VTT (and the base ctors, which
+  // pass their bases recursively-sized slices, read consistent entries).
+  append_subvtt_entries(ctx, info, info, 0, true, address_point_offset, out);
 }
 
 void finalize_class_layout(SemanticContext & ctx,

@@ -4885,19 +4885,17 @@ void analyze_vtable_output(SemanticContext & ctx,
   collect_construction_vtables(ctx, info, construction_tables);
   for(size_t i = 0; i < construction_tables.size(); ++i) {
     const VTableInfo & table = construction_tables[i];
-    const string object_symbol =
-        symbol_linkage::construction_vtable_object_symbol(info,
-                                                          table.view_offset,
-                                                          table.view_type ?
-                                                              *table.view_type :
-                                                              info);
-    if(object_symbol.empty()) {
-      throw logic_error("failed to mangle construction vtable symbol for " + info.qualified_name);
-    }
+    // Each construction-vtable section gets a distinct internal symbol derived
+    // from its (dynamic, base, offset, section) key.  The Itanium `_ZTC`
+    // mangling keys only on (dynamic, offset, base) and so collides between a
+    // base's secondary section and a deeper base's primary section in a
+    // multi-level diamond; an internal per-section symbol avoids that while
+    // the recursive VTT references the same key.  (Hosted/cross-module interop,
+    // which needs the canonical `_ZTC` group symbol, also requires modeling the
+    // external base vtable layout and is handled separately.)
     const symbol_linkage::SymbolIdentity table_symbol =
-        symbol_linkage::make_object_symbol_identity(
+        symbol_linkage::make_internal_symbol_identity(
             symbol_linkage::internal_symbol_from_name(table.key + "::vtable"),
-            object_symbol,
             symbol_linkage::SL_WEAK);
     append_vtable_output_node(ctx,
                               state,
