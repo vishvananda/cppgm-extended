@@ -6278,19 +6278,21 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
             slots[extra] = binding;
           }
         }
-      } else if(primary_base && overridden && overridden->has_virtual_slot) {
+      } else if(overridden && overridden->has_virtual_slot &&
+                (primary_base || !binding->is_destructor)) {
         binding->has_virtual_slot = true;
         binding->virtual_slot = overridden->virtual_slot;
       } else {
-        // Reached when there is no non-virtual polymorphic primary base, so
-        // this class introduces its own primary vptr.  A virtual that overrides
-        // only a virtual-base slot (e.g. a destructor in `struct S : virtual
-        // Base`) must still occupy a slot in this class's own primary vtable
-        // section -- the Itanium ABI places such a virtual in every vtable
-        // section (primary, each secondary, each virtual base).  Without this
-        // the primary section is emitted empty and the slot lives only in the
-        // virtual-base view, which breaks construction of further derived
-        // classes (notably the basic_istream/ostream/iostream chain).
+        // Reached for a destructor of a class that introduces its own primary
+        // vptr (no non-virtual polymorphic primary base) and whose destructor
+        // overrides only a virtual-base slot.  The Itanium ABI places the
+        // destructor in every vtable section (primary, each secondary, each
+        // virtual base); without giving it a primary slot here the primary
+        // section is emitted empty, which propagates empty primary vtables up
+        // the basic_istream/ostream/iostream chain.  A non-destructor virtual
+        // that overrides only a virtual-base slot stays in the virtual-base
+        // section (the branch above) so it is not clobbered by the destructor's
+        // primary slot 0 and remains dispatchable through that section.
         binding->has_virtual_slot = true;
         binding->virtual_slot = slots.size();
         slots.push_back(binding);
