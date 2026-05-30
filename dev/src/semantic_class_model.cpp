@@ -6278,10 +6278,19 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
             slots[extra] = binding;
           }
         }
-      } else if(overridden && overridden->has_virtual_slot) {
+      } else if(primary_base && overridden && overridden->has_virtual_slot) {
         binding->has_virtual_slot = true;
         binding->virtual_slot = overridden->virtual_slot;
       } else {
+        // Reached when there is no non-virtual polymorphic primary base, so
+        // this class introduces its own primary vptr.  A virtual that overrides
+        // only a virtual-base slot (e.g. a destructor in `struct S : virtual
+        // Base`) must still occupy a slot in this class's own primary vtable
+        // section -- the Itanium ABI places such a virtual in every vtable
+        // section (primary, each secondary, each virtual base).  Without this
+        // the primary section is emitted empty and the slot lives only in the
+        // virtual-base view, which breaks construction of further derived
+        // classes (notably the basic_istream/ostream/iostream chain).
         binding->has_virtual_slot = true;
         binding->virtual_slot = slots.size();
         slots.push_back(binding);

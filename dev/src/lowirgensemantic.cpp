@@ -2953,7 +2953,14 @@ public:
         resolve_current_function_virtual_base_layout();
     if(function_node_->uses_vtt_parameter) {
       current_vtt_param_ = "%__vtt";
-      function_.params.push_back(make_lowir_parameter_text(current_vtt_param_, "ptr"));
+      // Itanium places the VTT immediately after `this`, before the
+      // user-visible parameters (constructors/destructors that take a VTT have
+      // no indirect-result slot, so `this` is params[0]).  Inserting here keeps
+      // cppgm++'s own ctor definitions ABI-compatible with the matching
+      // call-site insertion and with externally-defined hosted ctors.
+      const size_t vtt_param_index = function_.params.empty() ? 0u : 1u;
+      function_.params.insert(function_.params.begin() + vtt_param_index,
+                              make_lowir_parameter_text(current_vtt_param_, "ptr"));
     }
     if(function_node_->has_special_member_entry_point_kind &&
        callsem_special_member_entry_point_kind(*function_node_) ==
@@ -3777,7 +3784,8 @@ private:
 
   void append_vtt_argument(const CallSemNode & call,
                            size_t object_arg_index,
-                           vector<string> & args)
+                           vector<string> & args,
+                           size_t vtt_insert_index = static_cast<size_t>(-1))
   {
     if(call.kind != CallSemKind::call_expression || call.children.size() < 2) {
       return;
@@ -3793,24 +3801,34 @@ private:
           callsem_vtt_object_symbol(callee);
     }
 
+    string vtt_arg;
     const CallSemNode & object_arg = call.children[object_arg_index];
     if(!current_vtt_param_.empty() && root_is_current_this(object_arg)) {
-      args.push_back(emit_vtt_slice_address(current_vtt_param_,
-                                            callsem_vtt_slice_offset(callee)));
-      return;
-    }
-
-    if(callsem_vtt_owner_type(callee)) {
-      const string external_vtt =
-          symbol_linkage::vtt_object_symbol_for_type(callsem_vtt_owner_type(callee));
-      if(!external_vtt.empty()) {
-        external_object_symbols_[callsem_vtt_symbol(callee)] = external_vtt;
+      vtt_arg = emit_vtt_slice_address(current_vtt_param_,
+                                       callsem_vtt_slice_offset(callee));
+    } else {
+      if(callsem_vtt_owner_type(callee)) {
+        const string external_vtt =
+            symbol_linkage::vtt_object_symbol_for_type(callsem_vtt_owner_type(callee));
+        if(!external_vtt.empty()) {
+          external_object_symbols_[callsem_vtt_symbol(callee)] = external_vtt;
+        }
       }
+      const string vtt_base =
+          emit_temp_assignment("ptr", string("addr ") + callsem_vtt_symbol(callee));
+      vtt_arg = emit_vtt_slice_address(vtt_base, callsem_vtt_slice_offset(callee));
     }
 
-    const string vtt_base =
-        emit_temp_assignment("ptr", string("addr ") + callsem_vtt_symbol(callee));
-    args.push_back(emit_vtt_slice_address(vtt_base, callsem_vtt_slice_offset(callee)));
+    // The Itanium ABI passes the VTT immediately after `this`, before the
+    // user-visible constructor arguments.  Constructor call sites pass
+    // `vtt_insert_index == 1`; this matches both externally-defined (hosted
+    // libstdc++) ctors and cppgm++'s own ctor definitions, whose VTT parameter
+    // is likewise positioned right after `this`.
+    if(vtt_insert_index <= args.size()) {
+      args.insert(args.begin() + vtt_insert_index, vtt_arg);
+    } else {
+      args.push_back(vtt_arg);
+    }
   }
 
   string direct_parameter_virtual_base_layout_symbol(const CallSemNode & callee) const
@@ -7849,7 +7867,7 @@ private:
         append_variadic_call_argument_value(args, node.children[i]);
       }
     }
-    append_vtt_argument(node, 1, args);
+    append_vtt_argument(node, 1, args, 1);
     if(!constructor_call) {
       // `args[0]` is the indirect result slot in this path, so the receiver
       // object for any hidden virtual-base helpers begins at `args[1]`.
@@ -7980,7 +7998,7 @@ private:
         append_variadic_call_argument_value(args, node.children[i]);
       }
     }
-    append_vtt_argument(node, 1, args);
+    append_vtt_argument(node, 1, args, 1);
     append_parameter_virtual_base_arguments(node, false, args);
 
     ostringstream op;
@@ -8915,7 +8933,7 @@ private:
         emit_zero_storage_bytes(args[0], backend_storage_size(target_type));
       }
     }
-    append_vtt_argument(node, 1, args);
+    append_vtt_argument(node, 1, args, 1);
     if(!constructor_call || constructor_base_entry_call) {
       append_hidden_virtual_base_arguments(node, args, 0);
     }
