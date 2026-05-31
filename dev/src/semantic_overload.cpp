@@ -7988,6 +7988,19 @@ void append_function_template_call_candidates_impl(
           }
         }
       };
+  const auto ensure_template_lookup_reference_members =
+      [&](Scope * qualified_scope) -> void
+      {
+        if(!qualified_scope ||
+           !qualified_scope->class_info ||
+           !qualified_scope->class_info->member_scope ||
+           qualified_scope->class_info->reference_members_collected ||
+           qualified_scope->class_info->reference_member_collection_in_progress ||
+           qualified_scope->class_info->full_member_collection_in_progress) {
+          return;
+        }
+        ctx.ensure_class_reference_members(*qualified_scope->class_info);
+      };
   if(use_preselected_member_templates) {
     const vector<FunctionTemplateDecl *> * found =
         find_direct_function_template_set(lookup_scope, template_name);
@@ -8002,6 +8015,7 @@ void append_function_template_call_candidates_impl(
                                              *name_node,
                                              false);
     if(qualified_scope && qualified_scope->class_info) {
+      ensure_template_lookup_reference_members(qualified_scope);
       MemberFunctionTemplateLookupResult result =
           lookup_visible_member_function_templates(*qualified_scope->class_info,
                                                    qualified_template_name.name);
@@ -8018,6 +8032,7 @@ void append_function_template_call_candidates_impl(
                                                        lookup_scope,
                                                        qualified_template_name);
     if(qualified_scope && qualified_scope->class_info) {
+      ensure_template_lookup_reference_members(qualified_scope);
       MemberFunctionTemplateLookupResult result =
           lookup_visible_member_function_templates(*qualified_scope->class_info,
                                                    qualified_template_name.name);

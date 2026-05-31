@@ -5774,6 +5774,37 @@ bool try_substitute_non_type_parameter_type_from_prefix_arguments(
   return true;
 }
 
+bool unresolved_non_type_parameter_type_can_remain_dependent(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<TemplateArgument> & resolved_arguments,
+    std::size_t parameter_index)
+{
+  if(parameter_index >= parameters.size()) {
+    return false;
+  }
+
+  template_api::TemplateTypeSystem & type_system =
+      service_type_system(services);
+  const bool dependent_prefix =
+      template_model::template_arguments_are_dependent(
+          resolved_arguments,
+          [&type_system](const TypePtr & type) -> bool
+          {
+            return template_argument_semantics::
+                type_depends_on_template_parameter(type_system, type);
+          });
+  if(!dependent_prefix &&
+     !template_argument_semantics::scope_has_template_placeholders(
+         services, scope)) {
+    return false;
+  }
+
+  return non_type_template_parameter_is_still_dependent(
+      services, scope, parameters[parameter_index]);
+}
+
 FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
     template_api::TemplateServices & services,
     template_api::TemplateTypeSystem & type_system,
@@ -7573,6 +7604,13 @@ bool non_type_template_parameter_is_still_dependent(
         return false;
       }
     } catch(const TemplateSubstitutionFailure &) {
+      if(parser_trace::enabled("template.resolve")) {
+        std::ostringstream trace;
+        trace << "non-type-param-dependent name=" << parameter.name
+              << " structural-substitution-failure=yes";
+        parser_trace::note("template.resolve", std::string(), trace.str());
+      }
+      return false;
     } catch(const SemanticSoftFailure &) {
     } catch(const SemanticDiagnosticError &) {
     }
@@ -8905,9 +8943,17 @@ bool finalize_deduced_function_template_arguments(
       }
       if(!resolved_bound_value_type) {
         const bool still_dependent =
-            non_type_template_parameter_is_still_dependent(ctx,
-                                                           bound_scope,
-                                                           decl.parameters[i]);
+            template_api::with_template_services(
+                ctx,
+                [&](template_api::TemplateServices & services)
+                {
+                  return unresolved_non_type_parameter_type_can_remain_dependent(
+                      services,
+                      template_api::make_template_environment(bound_scope),
+                      decl.parameters,
+                      out,
+                      i);
+                });
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
           trace << "finalize-non-type-param name=" << decl.parameters[i].name
@@ -9106,8 +9152,12 @@ void bind_known_deductions_into_scope(SemanticContext & ctx,
     if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
       std::map<std::string, TypePtr>::iterator existing =
           scope.named_types.find(parameter.name);
+      const bool existing_type_is_template_bound =
+          scope.template_bound_type_names.find(parameter.name) !=
+          scope.template_bound_type_names.end();
       if(existing != scope.named_types.end() &&
          existing->second &&
+         !existing_type_is_template_bound &&
          !template_argument_semantics::type_depends_on_template_parameter(ctx, existing->second)) {
         continue;
       }
@@ -9130,7 +9180,11 @@ void bind_known_deductions_into_scope(SemanticContext & ctx,
 
     std::map<std::string, ValueBinding>::iterator existing_value =
         scope.values.find(parameter.name);
+    const bool existing_value_is_template_bound =
+        scope.template_bound_value_names.find(parameter.name) !=
+        scope.template_bound_value_names.end();
     if(existing_value != scope.values.end() &&
+       !existing_value_is_template_bound &&
        !existing_value->second.dependent_template_value &&
        !template_argument_semantics::type_depends_on_template_parameter(ctx, existing_value->second.type)) {
       continue;
@@ -11348,8 +11402,8 @@ bool resolve_template_arguments(
              bound_value_type) &&
          !try_resolve_non_type_template_parameter_type(
              services, default_argument_env, parameters[i], bound_value_type)) {
-        if(!non_type_template_parameter_is_still_dependent(
-               services, default_argument_env, parameters[i])) {
+        if(!unresolved_non_type_parameter_type_can_remain_dependent(
+               services, default_argument_env, parameters, out, i)) {
           note_cache_failure();
           return false;
         }
@@ -11800,7 +11854,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         deduced_types[parameter->name] = deduced_type;
         return true;
       }
-      return type_equals(found->second, deduced_type);
+      const bool matches_existing = type_equals(found->second, deduced_type);
+      return matches_existing;
     }
 
     TypePtr pattern_named_cv_inner;

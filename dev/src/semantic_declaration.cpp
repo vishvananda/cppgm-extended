@@ -15,8 +15,11 @@
 #include "semantic_lookup.h"
 #include "semantic_model.h"
 #include "semantic_scope_mutation.h"
+#include "semantic_fallback_audit.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
+#include "template_argument_semantics.h"
+#include "template_services.h"
 #include "template_witness.h"
 
 using namespace std;
@@ -253,9 +256,41 @@ bool evaluate_static_assert_integral_fallback(SemanticContext & ctx,
   return false;
 }
 
+bool evaluate_structured_static_assert_condition(SemanticContext & ctx,
+                                                 Scope & scope,
+                                                 const CppAstNode & expr,
+                                                 bool & out)
+{
+  try {
+    const template_argument_semantics::NonTypeArgumentStatus status =
+        template_api::with_template_services(
+            ctx,
+            [&](template_api::TemplateServices & services)
+            {
+              const template_argument_semantics::NonTypeArgumentStatus status =
+                  template_argument_semantics::
+                  evaluate_structured_bool_condition_expression(
+                      services,
+                      template_api::make_template_environment(scope),
+                      expr,
+                      out);
+              return status;
+            });
+    return status == template_argument_semantics::NT_ARG_EVALUATED;
+  } catch(const TemplateSubstitutionFailure &) {
+    return false;
+  } catch(const SemanticSoftFailure &) {
+    return false;
+  } catch(const SemanticDiagnosticError &) {
+    return false;
+  } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+    return false;
+  }
+}
+
 bool static_assert_condition_depends_on_template_parameter(SemanticContext & ctx,
-                                                           Scope & scope,
-                                                           const CppAstNode & expr)
+                                                          Scope & scope,
+                                                          const CppAstNode & expr)
 {
   if(expr.semantic_type &&
      ctx.type_depends_on_template_parameter(expr.semantic_type)) {
@@ -789,6 +824,12 @@ void analyze_static_assert_declaration(SemanticContext & ctx,
       if(evaluate_known_static_member_constant(ctx, scope, node.children[0], known_value)) {
         evaluated = constant_eval::constexpr_value_truthy(known_value, truthy);
       }
+    }
+    if(!evaluated) {
+      evaluated = evaluate_structured_static_assert_condition(ctx,
+                                                              scope,
+                                                              node.children[0],
+                                                              truthy);
     }
     if(!evaluated) {
       long long integral_value = 0;

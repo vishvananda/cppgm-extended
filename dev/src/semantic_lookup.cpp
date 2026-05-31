@@ -1511,6 +1511,17 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
         return resolved;
       }
     }
+    if(scope.class_info && found->second) {
+      TypePtr resolved =
+          semantic_class_model::resolve_instantiated_member_alias_type(
+              ctx,
+              lookup_scope,
+              found->second,
+              scope.class_info);
+      if(resolved && !ctx.type_depends_on_template_parameter(resolved)) {
+        return resolved;
+      }
+    }
     return found->second;
   }
 
@@ -1523,6 +1534,15 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
                            ensure_current,
                            &lookup_scope);
     if(member.type) {
+      TypePtr resolved =
+          semantic_class_model::resolve_instantiated_member_alias_type(
+              ctx,
+              lookup_scope,
+              member.type,
+              scope.class_info);
+      if(resolved && !ctx.type_depends_on_template_parameter(resolved)) {
+        return resolved;
+      }
       return member.type;
     }
   }

@@ -11629,8 +11629,7 @@ private:
   {
     const QualifiedName * qualified = cppast_qualified_name_syntax(node);
     if(!qualified ||
-       (!qualified->rooted && qualified->qualifiers.empty()) ||
-       !node_has_template_id_qualifier_syntax(node)) {
+       (!qualified->rooted && qualified->qualifiers.empty())) {
       if(const TemplateIdSyntax * template_id = cppast_template_id_syntax(node)) {
         if(!template_id->name.name.empty()) {
           return lookup_function_templates(scope, template_id->name);
@@ -14481,8 +14480,7 @@ private:
   {
     const QualifiedName * qualified = cppast_qualified_name_syntax(node);
     if(!qualified ||
-       (!qualified->rooted && qualified->qualifiers.empty()) ||
-       !node_has_template_id_qualifier_syntax(node)) {
+       (!qualified->rooted && qualified->qualifiers.empty())) {
       return lookup_functions_impl(scope,
                                    name,
                                    options,
@@ -14630,6 +14628,11 @@ private:
 
     vector<FunctionBinding *> out;
     if(current_scope->class_info) {
+      if(leaf_name == "operator=") {
+        ensure_implicit_special_members(*current_scope->class_info);
+        ensure_implicit_copy_assignment(*current_scope->class_info);
+        ensure_implicit_move_assignment(*current_scope->class_info);
+      }
       MemberFunctionLookupResult result =
           semantic_lookup::lookup_class_scoped_functions(*current_scope->class_info,
                                                          leaf_name);

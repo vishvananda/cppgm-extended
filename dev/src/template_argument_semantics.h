@@ -133,6 +133,12 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
     std::string * eval_error = nullptr,
     const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
 
+NonTypeArgumentStatus evaluate_structured_bool_condition_expression(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & expr,
+    bool & out);
+
 bool note_constant_value_member_instantiations_in_expression(
     template_api::TemplateServices & services,
     semantic_model::Scope & scope,
