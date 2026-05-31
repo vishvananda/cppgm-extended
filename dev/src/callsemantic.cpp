@@ -14633,13 +14633,23 @@ private:
         ensure_implicit_copy_assignment(*current_scope->class_info);
         ensure_implicit_move_assignment(*current_scope->class_info);
       }
-      MemberFunctionLookupResult result =
-          semantic_lookup::lookup_class_scoped_functions(*current_scope->class_info,
-                                                         leaf_name);
-      if(!result.functions.empty()) {
-        out = result.functions;
+      MemberFunctionTemplateLookupResult template_result =
+          semantic_lookup::lookup_visible_member_function_templates(
+              *current_scope->class_info,
+              leaf_name);
+      if(!template_result.templates.empty()) {
+        out = semantic_lookup::lookup_visible_member_functions(
+                  *current_scope->class_info,
+                  leaf_name).functions;
       } else {
-        out = lookup_direct_functions(*current_scope, leaf_name);
+        MemberFunctionLookupResult result =
+            semantic_lookup::lookup_class_scoped_functions(*current_scope->class_info,
+                                                           leaf_name);
+        if(!result.functions.empty()) {
+          out = result.functions;
+        } else {
+          out = lookup_direct_functions(*current_scope, leaf_name);
+        }
       }
     } else {
       semantic_lookup::lookup_functions_in_scopes(

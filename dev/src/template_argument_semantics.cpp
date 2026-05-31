@@ -5886,7 +5886,8 @@ void append_structured_bool_value_dependencies_for_qualified_value(
                              std::string(),
                              "structured-bool-qualified template-id owner resolved");
         }
-        if(!source_template_id_dependent) {
+        if(!source_template_id_dependent ||
+           !service_type_depends_on_template_parameter(services, owner_type)) {
           append_structured_bool_value_dependency_for_type(services,
                                                            scope,
                                                            owner_type,
@@ -6042,17 +6043,13 @@ void note_template_value_dependency_for_witness(
   if(dependency.value_binding) {
     dependency.value_binding->witness_member_value_instantiation_noted = true;
   }
-  if(template_api::template_witness_detail::
-         current_lifecycle_pause_depth_storage() != 0) {
-    return;
-  }
+  const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
   const witness::ScopedTemplateWitnessEntryContext entry_context(
       witness::make_template_closure_entry_context(
           witness::TemplateClosureReason::TrackInstantiation,
           dependency.entity,
           dependency.decl_location,
           dependency.entity_has_template_identity));
-  const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
   witness::note_template_witness_log_event(
       witness::TemplateWitnessLogEventKind::VariableInstantiation,
       dependency.decl_location,
@@ -12278,49 +12275,73 @@ std::string alias_template_decl_location(
   return template_api::normalize_template_witness_source_location(location);
 }
 
+bool argument_syntax_has_pack_expanded_source_text(
+    const TemplateArgumentSyntax & syntax);
+
 struct TemplateIdSyntaxOccurrence
 {
   const TemplateIdSyntax * syntax = nullptr;
+  bool from_pack_expanded_argument = false;
 };
 
 void collect_template_id_syntax_occurrences(const CppAstNode & node,
-                                            std::vector<TemplateIdSyntaxOccurrence> & out);
+                                            std::vector<TemplateIdSyntaxOccurrence> & out,
+                                            bool from_pack_expanded_argument = false);
 
 void collect_template_id_syntax_occurrences(const TemplateIdSyntax & syntax,
-                                            std::vector<TemplateIdSyntaxOccurrence> & out)
+                                            std::vector<TemplateIdSyntaxOccurrence> & out,
+                                            bool from_pack_expanded_argument = false)
 {
   TemplateIdSyntaxOccurrence occurrence;
   occurrence.syntax = &syntax;
+  occurrence.from_pack_expanded_argument = from_pack_expanded_argument;
   out.push_back(occurrence);
   for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     const TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+    const bool nested_from_pack_expanded_argument =
+        from_pack_expanded_argument ||
+        argument_syntax_has_pack_expanded_source_text(argument);
     if(argument.template_id) {
-      collect_template_id_syntax_occurrences(*argument.template_id, out);
+      collect_template_id_syntax_occurrences(*argument.template_id,
+                                             out,
+                                             nested_from_pack_expanded_argument);
     }
     if(argument.type_id) {
-      collect_template_id_syntax_occurrences(*argument.type_id, out);
+      collect_template_id_syntax_occurrences(*argument.type_id,
+                                             out,
+                                             nested_from_pack_expanded_argument);
     }
     if(argument.expression) {
-      collect_template_id_syntax_occurrences(*argument.expression, out);
+      collect_template_id_syntax_occurrences(*argument.expression,
+                                             out,
+                                             nested_from_pack_expanded_argument);
     }
   }
 }
 
 void collect_template_id_syntax_occurrences(const CppAstNode & node,
-                                            std::vector<TemplateIdSyntaxOccurrence> & out)
+                                            std::vector<TemplateIdSyntaxOccurrence> & out,
+                                            bool from_pack_expanded_argument)
 {
   if(node.template_id_syntax) {
-    collect_template_id_syntax_occurrences(*node.template_id_syntax, out);
+    collect_template_id_syntax_occurrences(*node.template_id_syntax,
+                                           out,
+                                           from_pack_expanded_argument);
   }
   for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
     collect_template_id_syntax_occurrences(node.qualifier_template_id_syntaxes[i],
-                                           out);
+                                           out,
+                                           from_pack_expanded_argument);
   }
   for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
-    collect_template_id_syntax_occurrences(node.qualifier_type_syntaxes[i], out);
+    collect_template_id_syntax_occurrences(node.qualifier_type_syntaxes[i],
+                                           out,
+                                           from_pack_expanded_argument);
   }
   for(std::size_t i = 0; i < node.children.size(); ++i) {
-    collect_template_id_syntax_occurrences(node.children[i], out);
+    collect_template_id_syntax_occurrences(node.children[i],
+                                           out,
+                                           from_pack_expanded_argument);
   }
 }
 
@@ -12329,20 +12350,25 @@ void collect_template_id_syntax_occurrences(
     std::vector<TemplateIdSyntaxOccurrence> & out)
 {
   for(std::size_t i = 0; i < syntaxes.size(); ++i) {
+    const bool from_pack_expanded_argument =
+        argument_syntax_has_pack_expanded_source_text(syntaxes[i]);
     if(syntaxes[i].template_id) {
-      collect_template_id_syntax_occurrences(*syntaxes[i].template_id, out);
+      collect_template_id_syntax_occurrences(*syntaxes[i].template_id,
+                                             out,
+                                             from_pack_expanded_argument);
     }
     if(syntaxes[i].type_id) {
-      collect_template_id_syntax_occurrences(*syntaxes[i].type_id, out);
+      collect_template_id_syntax_occurrences(*syntaxes[i].type_id,
+                                             out,
+                                             from_pack_expanded_argument);
     }
     if(syntaxes[i].expression) {
-      collect_template_id_syntax_occurrences(*syntaxes[i].expression, out);
+      collect_template_id_syntax_occurrences(*syntaxes[i].expression,
+                                             out,
+                                             from_pack_expanded_argument);
     }
   }
 }
-
-bool argument_syntax_has_pack_expanded_source_text(
-    const TemplateArgumentSyntax & syntax);
 
 bool template_id_syntax_has_pack_expanded_source_text(
     const TemplateIdSyntax & syntax)
@@ -12428,59 +12454,136 @@ bool argument_syntaxes_have_pack_expanded_source_text(
   return false;
 }
 
+std::string argument_syntax_pack_source_text(const TemplateArgumentSyntax & syntax)
+{
+  std::string source = trim_space(syntax.source_text);
+  if(!source.empty()) {
+    return source;
+  }
+  if(syntax.type_id) {
+    source = trim_space(node_text(*syntax.type_id));
+    if(!source.empty()) {
+      return source;
+    }
+  }
+  if(syntax.template_id) {
+    source = trim_space(template_id_syntax_lookup_text(*syntax.template_id));
+    if(!source.empty()) {
+      return source;
+    }
+  }
+  if(syntax.expression) {
+    source = trim_space(node_text(*syntax.expression));
+    if(!source.empty()) {
+      return source;
+    }
+  }
+  return trim_space(syntax.text);
+}
+
+bool argument_text_mentions_bound_pack(
+    template_api::TemplateEnvironmentHandle scope,
+    const std::string & text)
+{
+  if(!scope.valid() || text.empty()) {
+    return false;
+  }
+  const callsemantic_internal::IdentifierTokenSet identifiers =
+      callsemantic_internal::collect_identifier_tokens(text);
+  for(Scope * current = &scope.require(); current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    for(std::map<std::string, std::vector<TypePtr> >::const_iterator it =
+            current->named_type_packs.begin();
+        it != current->named_type_packs.end();
+        ++it) {
+      if(!it->first.empty() && identifiers.contains(it->first)) {
+        return true;
+      }
+    }
+    for(std::map<std::string, std::vector<ValueBinding> >::const_iterator it =
+            current->named_value_packs.begin();
+        it != current->named_value_packs.end();
+        ++it) {
+      if(!it->first.empty() && identifiers.contains(it->first)) {
+        return true;
+      }
+    }
+    for(std::map<std::string, std::size_t>::const_iterator it =
+            current->named_pack_sizes.begin();
+        it != current->named_pack_sizes.end();
+        ++it) {
+      if(!it->first.empty() && identifiers.contains(it->first)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool argument_syntax_has_pack_expanded_bound_source(
+    template_api::TemplateEnvironmentHandle scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  const std::string source = argument_syntax_pack_source_text(syntax);
+  const std::string text = trim_space(syntax.text);
+  if(!source.empty() &&
+     compact_source_argument_key(source) != compact_source_argument_key(text) &&
+     argument_text_mentions_bound_pack(scope, source)) {
+    return true;
+  }
+  if(syntax.template_id) {
+    for(std::size_t i = 0; i < syntax.template_id->argument_syntaxes.size(); ++i) {
+      if(argument_syntax_has_pack_expanded_bound_source(
+             scope,
+             syntax.template_id->argument_syntaxes[i])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool argument_syntaxes_have_pack_expanded_bound_source(
+    template_api::TemplateEnvironmentHandle scope,
+    const std::vector<TemplateArgumentSyntax> * syntaxes)
+{
+  if(!syntaxes) {
+    return false;
+  }
+  for(std::size_t i = 0; i < syntaxes->size(); ++i) {
+    if(argument_syntax_has_pack_expanded_bound_source(scope, (*syntaxes)[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool argument_texts_mention_bound_pack(
+    template_api::TemplateEnvironmentHandle scope,
+    const std::vector<std::string> & texts)
+{
+  for(std::size_t i = 0; i < texts.size(); ++i) {
+    if(argument_text_mentions_bound_pack(scope, texts[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool argument_texts_have_instantiated_pack_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const std::vector<std::string> & texts)
 {
-  const auto text_mentions_bound_pack =
-      [](template_api::TemplateEnvironmentHandle scope,
-         const std::string & text) -> bool
-  {
-    if(!scope.valid() || text.empty()) {
-      return false;
-    }
-    const callsemantic_internal::IdentifierTokenSet identifiers =
-        callsemantic_internal::collect_identifier_tokens(text);
-    for(Scope * current = &scope.require(); current; current = current->parent) {
-      if(current->namespace_scope || current->parent == nullptr) {
-        break;
-      }
-      for(std::map<std::string, std::vector<TypePtr> >::const_iterator it =
-              current->named_type_packs.begin();
-          it != current->named_type_packs.end();
-          ++it) {
-        if(!it->first.empty() && identifiers.contains(it->first)) {
-          return true;
-        }
-      }
-      for(std::map<std::string, std::vector<ValueBinding> >::const_iterator it =
-              current->named_value_packs.begin();
-          it != current->named_value_packs.end();
-          ++it) {
-        if(!it->first.empty() && identifiers.contains(it->first)) {
-          return true;
-        }
-      }
-      for(std::map<std::string, std::size_t>::const_iterator it =
-              current->named_pack_sizes.begin();
-          it != current->named_pack_sizes.end();
-          ++it) {
-        if(!it->first.empty() && identifiers.contains(it->first)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
   bool has_pack_syntax = false;
   for(std::size_t i = 0; i < texts.size(); ++i) {
     if(texts[i].find("...") == std::string::npos) {
       continue;
     }
     has_pack_syntax = true;
-    if(text_mentions_bound_pack(scope, texts[i])) {
+    if(argument_text_mentions_bound_pack(scope, texts[i])) {
       return true;
     }
     if(alias_argument_text_mentions_template_dependency(services,
@@ -12603,6 +12706,7 @@ void record_nested_alias_template_source_uses_for_arguments(
     bool has_exact_source_arguments = false;
     bool exact_source_arguments = false;
     bool exact_source_arguments_have_pack_syntax = false;
+    bool exact_source_arguments_mention_bound_pack = false;
     if(const std::vector<std::string> * exact_source_args =
            template_api::current_template_id_source_arguments_ptr(
                use_location,
@@ -12617,6 +12721,10 @@ void record_nested_alias_template_source_uses_for_arguments(
       std::vector<std::string> canonical_exact_source_args = *exact_source_args;
       canonicalize_alias_template_source_argument_texts(nested_alias->parameters,
                                                canonical_exact_source_args);
+      exact_source_arguments_mention_bound_pack =
+          argument_texts_mention_bound_pack(
+              template_api::make_template_environment(scope),
+              canonical_exact_source_args);
       exact_source_arguments =
           source_arguments_compact_match(canonical_exact_source_args,
                                          source_arg_texts);
@@ -12627,7 +12735,8 @@ void record_nested_alias_template_source_uses_for_arguments(
     }
     if(has_exact_source_arguments &&
        !exact_source_arguments &&
-       exact_source_arguments_have_pack_syntax) {
+       (exact_source_arguments_have_pack_syntax ||
+        exact_source_arguments_mention_bound_pack)) {
       return;
     }
     mark_alias_template_id_occurrence_argument_facts(
@@ -12686,7 +12795,8 @@ void record_nested_alias_template_source_uses_for_arguments(
     if(!syntax || syntax->name.name.empty()) {
       continue;
     }
-    if(template_id_syntax_has_pack_expanded_source_text(*syntax)) {
+    if(syntax_occurrences[i].from_pack_expanded_argument ||
+       template_id_syntax_has_pack_expanded_source_text(*syntax)) {
       continue;
     }
     const std::string syntax_location =
@@ -12828,10 +12938,14 @@ void record_direct_alias_template_source_use_if_needed(
           source_argument_texts);
   const bool pack_expanded_source =
       argument_syntaxes_have_pack_expanded_source_text(
+          explicit_argument_syntaxes) ||
+      argument_syntaxes_have_pack_expanded_bound_source(
+          scope,
           explicit_argument_syntaxes);
   bool has_exact_source_arguments = false;
   bool exact_source_arguments = false;
   bool exact_source_arguments_have_pack_syntax = false;
+  bool exact_source_arguments_mention_bound_pack = false;
   if(const std::vector<std::string> * exact_source_args =
          template_api::current_template_id_source_arguments_ptr(
              use_location,
@@ -12846,6 +12960,9 @@ void record_direct_alias_template_source_use_if_needed(
     std::vector<std::string> canonical_exact_source_args = *exact_source_args;
     canonicalize_alias_template_source_argument_texts(alias_template.parameters,
                                              canonical_exact_source_args);
+    exact_source_arguments_mention_bound_pack =
+        argument_texts_mention_bound_pack(scope,
+                                          canonical_exact_source_args);
     exact_source_arguments =
         source_arguments_compact_match(canonical_exact_source_args,
                                        source_argument_texts);
@@ -12860,7 +12977,8 @@ void record_direct_alias_template_source_use_if_needed(
   }
   if(has_exact_source_arguments &&
      !exact_source_arguments &&
-     exact_source_arguments_have_pack_syntax) {
+     (exact_source_arguments_have_pack_syntax ||
+      exact_source_arguments_mention_bound_pack)) {
     return;
   }
   mark_alias_template_id_occurrence_argument_facts(
@@ -17299,6 +17417,7 @@ void substitute_type_pack_template_id_arguments(
     const string source_argument_text =
         i < source_arguments.size() ? trim_space(source_arguments[i]) :
                                       string();
+    bool keep_source_type_syntax_for_resolved_type = false;
     for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
         it != type_replacements.end();
         ++it) {
@@ -17327,9 +17446,12 @@ void substitute_type_pack_template_id_arguments(
         }
         argument.pack_expansion = false;
         argument.resolved_type = it->second;
+        keep_source_type_syntax_for_resolved_type = true;
         argument.expression.reset();
-        argument.type_id.reset(new CppAstNode(
-            make_substituted_type_id_node(it->second, replacement)));
+        if(!argument.type_id) {
+          argument.type_id.reset(new CppAstNode(
+              make_substituted_type_id_node(it->second, replacement)));
+        }
       }
       string pattern_text =
           callsemantic_internal::contains_identifier_token(source_syntax_text,
@@ -17356,18 +17478,20 @@ void substitute_type_pack_template_id_arguments(
         }
         argument.pack_expansion = false;
         argument.resolved_type = pattern_type;
+        keep_source_type_syntax_for_resolved_type = true;
         const string pattern_type_text =
             reparseable_type_argument_text(pattern_type);
         if(!pattern_type_text.empty()) {
           argument.text = pattern_type_text;
         }
-        if(!argument.template_id) {
+        if(!argument.template_id && !argument.type_id) {
           argument.expression.reset();
           argument.type_id.reset(new CppAstNode(
               make_substituted_type_id_node(pattern_type, argument.text)));
         }
       }
-      if(argument.type_id &&
+      if(!keep_source_type_syntax_for_resolved_type &&
+         argument.type_id &&
          expression_node_mentions_identifier(*argument.type_id, it->first)) {
         CppAstNode rewritten_type;
         map<string, TypePtr> single;
@@ -31262,7 +31386,7 @@ static const TemplateArgumentSyntax * carry_substituted_bound_type_argument_synt
   syntax.text = text;
   syntax.pack_expansion = false;
   syntax.resolved_type = out_type;
-  if(!syntax.template_id && !syntax.expression) {
+  if(!syntax.template_id && !syntax.type_id && !syntax.expression) {
     syntax.type_id.reset(new CppAstNode(
         make_substituted_type_id_node(out_type, text)));
   }
@@ -31291,7 +31415,7 @@ static const TemplateArgumentSyntax * carry_resolved_type_argument_syntax(
   syntax.text = type_text.empty() ? text : type_text;
   syntax.pack_expansion = false;
   syntax.resolved_type = out_type;
-  if(!syntax.template_id && !syntax.expression) {
+  if(!syntax.template_id && !syntax.type_id && !syntax.expression) {
     syntax.type_id.reset(new CppAstNode(
         make_substituted_type_id_node(out_type, syntax.text)));
   }

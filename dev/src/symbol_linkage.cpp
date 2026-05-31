@@ -11205,6 +11205,20 @@ static bool try_build_template_argument_syntax_ir(
     out = abi_mangle::Type::ClassTemplateArgument::type_arg(std::move(type));
     return true;
   }
+  if(!known_non_type_parameter &&
+     mangle_ctx &&
+     mangle_ctx->prefer_source_template_parameter_expression_arguments &&
+     syntax.type_id &&
+     ast_node_mentions_direct_template_parameter(*syntax.type_id, mangle_ctx) &&
+     try_build_type_id_ast_ir(*syntax.type_id, mangle_ctx, type)) {
+    if(!(syntax.pack_expansion &&
+         pack_expansion_text_resolves_to_concrete_owner_pack(source_or_text,
+                                                             mangle_ctx))) {
+      wrap_pack_expansion_type_ir_if_needed(syntax.pack_expansion, type);
+    }
+    out = abi_mangle::Type::ClassTemplateArgument::type_arg(std::move(type));
+    return true;
+  }
   if(syntax.resolved_type &&
      try_build_type_ir(syntax.resolved_type, mangle_ctx, type)) {
     wrap_pack_expansion_type_ir_if_needed(syntax.pack_expansion, type);
