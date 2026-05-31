@@ -5337,7 +5337,9 @@ bool lookup_rewritten_bound_type_argument(Scope & scope,
     const std::string rendered =
         strip_elaborated_type_prefix(
             trim_space(reparseable_type_argument_text(type)));
-    return !rendered.empty() && rendered == target;
+    return !rendered.empty() &&
+           template_argument_semantics::normalized_type_lookup_text_matches(
+               rendered, target);
   };
   const auto syntax_text_matches =
       [&](const TemplateArgumentSyntax * syntax, const std::string & target) -> bool
@@ -5350,7 +5352,9 @@ bool lookup_rewritten_bound_type_argument(Scope & scope,
             trim_space(!syntax->source_text.empty() ?
                            syntax->source_text :
                            syntax->text));
-    return !syntax_text.empty() && syntax_text == target;
+    return !syntax_text.empty() &&
+           template_argument_semantics::normalized_type_lookup_text_matches(
+               syntax_text, target);
   };
   const auto find_class_template_argument_type =
       [&](const TypePtr & bound_type, TypePtr & found_type) -> bool
@@ -5397,6 +5401,16 @@ bool lookup_rewritten_bound_type_argument(Scope & scope,
       }
       if(find_class_template_argument_type(found->second, out)) {
         return true;
+      }
+    }
+    for(std::map<std::string, std::vector<TypePtr> >::const_iterator pack =
+            current->named_type_packs.begin();
+        pack != current->named_type_packs.end();
+        ++pack) {
+      for(std::size_t i = 0; i < pack->second.size(); ++i) {
+        if(find_class_template_argument_type(pack->second[i], out)) {
+          return true;
+        }
       }
     }
   }
@@ -10557,21 +10571,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
         return false;
       }
     }
-  }
-
-  if(!type &&
-     !is_identifier_text(trimmed) &&
-     !type_mentions_placeholders &&
-     !type_mentions_dependent_bindings &&
-     !should_defer_unresolved_type_lookup(
-         services, template_api::make_template_environment(raw_argument_scope), trimmed)) {
-    semantic_fallback_audit::hard_fail(
-        "explicit-type-argument-text-fallback",
-        std::string(),
-        "explicit type template argument resolution reached text fallback"
-        " [arg " + trimmed + "]"
-        " [scope " + scope_name_for_diagnostic(raw_argument_scope) + "]"
-        " [bindings " + scope_bindings_for_diagnostic(raw_argument_scope) + "]");
   }
 
   resolve_type_argument_if_needed(type);

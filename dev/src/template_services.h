@@ -850,8 +850,16 @@ private:
       }
       if(i < request.source_arg_syntaxes.size()) {
         argument.syntax = request.source_arg_syntaxes[i];
-      } else {
+      } else if(request.resolved_arguments[i].kind !=
+                template_model::TemplateArgument::TA_TYPE) {
         argument.syntax.text = argument.text;
+      }
+      if(request.resolved_arguments[i].kind == template_model::TemplateArgument::TA_TYPE &&
+         request.resolved_arguments[i].type) {
+        argument.syntax.resolved_type = request.resolved_arguments[i].type;
+        if(argument.syntax.text.empty()) {
+          argument.syntax.text = argument.text;
+        }
       }
       if(request.resolved_arguments[i].dependent) {
         argument.syntax.dependent = true;

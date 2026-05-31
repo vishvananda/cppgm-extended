@@ -12381,14 +12381,18 @@ private:
             dependent_source_arg_syntaxes.reserve(
                 expanded_source_args.texts.size());
             for(size_t i = 0; i < expanded_source_args.texts.size(); ++i) {
+              TemplateArgumentSyntax carried_syntax;
               if(const TemplateArgumentSyntax * syntax =
                      expanded_source_args.syntax_for(i)) {
-                dependent_source_arg_syntaxes.push_back(*syntax);
-              } else {
-                TemplateArgumentSyntax fallback_syntax;
-                fallback_syntax.text = dependent_source_arg_texts[i];
-                dependent_source_arg_syntaxes.push_back(fallback_syntax);
+                carried_syntax = *syntax;
               }
+              if(TypePtr expanded_type = expanded_source_args.type_for(i)) {
+                carried_syntax.resolved_type = expanded_type;
+                if(carried_syntax.text.empty()) {
+                  carried_syntax.text = trim_space(dependent_source_arg_texts[i]);
+                }
+              }
+              dependent_source_arg_syntaxes.push_back(carried_syntax);
             }
             dependent_source_arg_syntaxes_ptr =
                 &dependent_source_arg_syntaxes;
@@ -12425,7 +12429,7 @@ private:
            source_index < dependent_source_arg_syntaxes_ptr->size()) {
           dependent_argument.syntax =
               (*dependent_source_arg_syntaxes_ptr)[source_index];
-        } else {
+        } else if(arguments[source_index].kind != TemplateArgument::TA_TYPE) {
           dependent_argument.syntax.text = dependent_argument.text;
         }
         if(arguments[source_index].kind == TemplateArgument::TA_VALUE &&
@@ -12436,6 +12440,14 @@ private:
               arguments[source_index].expression->source_location_id;
           dependent_argument.syntax.expression.reset(
               new CppAstNode(*arguments[source_index].expression));
+        }
+        if(arguments[source_index].kind == TemplateArgument::TA_TYPE &&
+           arguments[source_index].type &&
+           !dependent_argument.syntax.resolved_type) {
+          dependent_argument.syntax.resolved_type = arguments[source_index].type;
+          if(dependent_argument.syntax.text.empty()) {
+            dependent_argument.syntax.text = dependent_argument.text;
+          }
         }
         dependent_arguments.push_back(dependent_argument);
       }
@@ -12933,8 +12945,16 @@ private:
         dependent_argument.syntax = (*source_arg_syntaxes)[i];
       } else if(arguments[i].source_syntax) {
         dependent_argument.syntax = *arguments[i].source_syntax;
-      } else {
+      } else if(arguments[i].kind != TemplateArgument::TA_TYPE) {
         dependent_argument.syntax.text = dependent_argument.text;
+      }
+      if(arguments[i].kind == TemplateArgument::TA_TYPE &&
+         arguments[i].type &&
+         !dependent_argument.syntax.resolved_type) {
+        dependent_argument.syntax.resolved_type = arguments[i].type;
+        if(dependent_argument.syntax.text.empty()) {
+          dependent_argument.syntax.text = dependent_argument.text;
+        }
       }
       if(arguments[i].dependent) {
         dependent_argument.syntax.dependent = true;
@@ -13315,10 +13335,12 @@ private:
     CppAstNode type_id;
     type_id.kind = CppAstKind::type_id;
     type_id.value = text;
+    type_id.semantic_type = type;
 
     CppAstNode specifiers;
     specifiers.kind = CppAstKind::type_specifier_seq;
     specifiers.value = text;
+    specifiers.semantic_type = type;
 
     CppAstNode type_name;
     type_name.kind = CppAstKind::type_name;
@@ -13328,6 +13350,26 @@ private:
     specifiers.children.push_back(type_name);
     type_id.children.push_back(specifiers);
     return type_id;
+  }
+
+  TypePtr type_id_node_semantic_type(const CppAstNode & node) const
+  {
+    if(node.semantic_type) {
+      return node.semantic_type;
+    }
+    if(node.kind != CppAstKind::type_id || node.children.empty()) {
+      return TypePtr();
+    }
+    const CppAstNode & specifiers = node.children[0];
+    if(specifiers.semantic_type) {
+      return specifiers.semantic_type;
+    }
+    if(specifiers.kind != CppAstKind::type_specifier_seq ||
+       specifiers.children.size() != 1 ||
+       specifiers.children[0].kind != CppAstKind::type_name) {
+      return TypePtr();
+    }
+    return specifiers.children[0].semantic_type;
   }
 
   TemplateArgumentSyntax clone_template_argument_syntax(
@@ -13466,36 +13508,54 @@ private:
     }
     for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
       TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
+      const string original_text = trim_space(argument.source_text.empty() ?
+                                                 argument.text :
+                                                 argument.source_text);
       argument.text = rewrite_text(argument.text);
+      bool type_id_rewritten = false;
       if(argument.type_id) {
         for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
             it != type_replacements.end();
             ++it) {
           if(ast_node_mentions_pack_identifier(*argument.type_id, it->first)) {
+            TypePtr pattern_type = type_id_node_semantic_type(*argument.type_id);
+            TypePtr substituted_type;
+            if(!pattern_type ||
+               !template_argument_semantics::substitute_named_type_parameters(
+                   pattern_type,
+                   type_replacements,
+                   substituted_type) ||
+               !substituted_type) {
+              continue;
+            }
             const string replacement =
-                lookup_reparseable_text_for_type_argument(scope, it->second);
+                lookup_reparseable_text_for_type_argument(scope, substituted_type);
+            if(replacement.empty()) {
+              continue;
+            }
             if(argument.source_text.empty()) {
-              argument.source_text = trim_space(argument.text);
+              argument.source_text = original_text;
             }
             argument.text = replacement;
             argument.pack_expansion = false;
             argument.dependent = false;
-            argument.resolved_type = it->second;
+            argument.resolved_type = substituted_type;
             argument.expression.reset();
             argument.type_id.reset(new CppAstNode(
                 make_pack_type_id_node(
-                    it->second,
+                    substituted_type,
                     replacement)));
+            type_id_rewritten = true;
             break;
           }
         }
       }
+      if(type_id_rewritten) {
+        continue;
+      }
       for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
           it != type_replacements.end();
           ++it) {
-        const string original_text = trim_space(argument.source_text.empty() ?
-                                                   argument.text :
-                                                   argument.source_text);
         const bool direct_pack_argument =
             original_text == it->first ||
             original_text == it->first + "..." ||

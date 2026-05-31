@@ -4944,8 +4944,16 @@ bool try_expand_alias_template_pattern_structurally(
           }
           if(argument.source_syntax) {
             dependent_argument.syntax = *argument.source_syntax;
-          } else {
+          } else if(argument.kind != TemplateArgument::TA_TYPE) {
             dependent_argument.syntax.text = dependent_argument.text;
+          }
+          if(argument.kind == TemplateArgument::TA_TYPE &&
+             argument.type &&
+             !dependent_argument.syntax.resolved_type) {
+            dependent_argument.syntax.resolved_type = argument.type;
+            if(dependent_argument.syntax.text.empty()) {
+              dependent_argument.syntax.text = dependent_argument.text;
+            }
           }
           if(argument.kind == TemplateArgument::TA_VALUE &&
              argument.expression &&

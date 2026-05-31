@@ -3018,8 +3018,16 @@ void update_class_template_dependent_type_metadata(
     }
     if(argument_syntaxes && i < argument_syntaxes->size()) {
       dependent_argument.syntax = (*argument_syntaxes)[i];
-    } else {
+    } else if(arguments[i].kind != TemplateArgument::TA_TYPE) {
       dependent_argument.syntax.text = dependent_argument.text;
+    }
+    if(arguments[i].kind == TemplateArgument::TA_TYPE &&
+       arguments[i].type &&
+       !dependent_argument.syntax.resolved_type) {
+      dependent_argument.syntax.resolved_type = arguments[i].type;
+      if(dependent_argument.syntax.text.empty()) {
+        dependent_argument.syntax.text = dependent_argument.text;
+      }
     }
     if(arguments[i].dependent) {
       dependent_argument.syntax.dependent = true;

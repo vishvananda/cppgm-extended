@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -92,6 +93,10 @@ bool substitute_expression_node_for_template_arguments(
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     CppAstNode & out);
+bool substitute_named_type_parameters(
+    const cpp_decl::TypePtr & type,
+    const std::map<std::string, cpp_decl::TypePtr> & type_replacements,
+    cpp_decl::TypePtr & out);
 
 // template-boundary-audit: begin text_recovery_bridge
 std::string lookup_text_for_type_argument(template_api::TemplateTypeSystem & type_system,
