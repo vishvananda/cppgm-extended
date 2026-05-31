@@ -28417,6 +28417,28 @@ bool expand_value_pack_driven_type_pattern(
     expanded.push_back(input);
   }
 
+  // Non-bool static data members referenced by the pattern (e.g. `last_idx` in
+  // `typelist_element<last_idx - Ints, Typelist>::type`) are odr-used by this
+  // expansion and must be witnessed as variable-instantiations.  The typed
+  // per-element resolution above evaluates them but, unlike the syntax-driven
+  // non-pack path, does not collect them, so note them explicitly here to keep
+  // the witness output stable.
+  if(services.witness_context.session != nullptr) {
+    for(Scope * current = &scope; current; current = current->parent) {
+      if(current->namespace_scope || current->parent == nullptr) {
+        break;
+      }
+      for(const auto & value_member : current->values) {
+        if(!value_member.first.empty() &&
+           callsemantic_internal::contains_identifier_token(masked,
+                                                            value_member.first)) {
+          note_non_bool_static_value_dependency_for_witness(services,
+                                                            value_member.second);
+        }
+      }
+    }
+  }
+
   out.insert(out.end(), expanded.begin(), expanded.end());
   return true;
 }
