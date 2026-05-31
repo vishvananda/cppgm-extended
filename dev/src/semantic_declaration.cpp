@@ -253,48 +253,6 @@ bool evaluate_static_assert_integral_fallback(SemanticContext & ctx,
   return false;
 }
 
-string compact_static_assert_condition_text(const string & text)
-{
-  string out;
-  out.reserve(text.size());
-  for(size_t i = 0; i < text.size(); ++i) {
-    if(text[i] != ' ' &&
-       text[i] != '\t' &&
-       text[i] != '\n' &&
-       text[i] != '\r') {
-      out.push_back(text[i]);
-    }
-  }
-  return out;
-}
-
-bool evaluate_static_assert_text_fallback(SemanticContext & ctx,
-                                          Scope & scope,
-                                          const CppAstNode & expr,
-                                          bool & truthy)
-{
-  if(!scope.class_info ||
-     scope.class_info->qualified_name.find("__check_valid_allocator") == string::npos) {
-    return false;
-  }
-  string condition = compact_static_assert_condition_text(
-      ctx.describe_expression_for_diagnostic(expr));
-  const string typename_token = "typename";
-  for(size_t pos = condition.find(typename_token);
-      pos != string::npos;
-      pos = condition.find(typename_token, pos)) {
-    condition.erase(pos, typename_token.size());
-  }
-  if(condition.find("is_same<") == 0 &&
-     condition.find("__rebind_alloc<") != string::npos &&
-     condition.size() >= 7 &&
-     condition.compare(condition.size() - 7, 7, "::value") == 0) {
-    truthy = true;
-    return true;
-  }
-  return false;
-}
-
 bool static_assert_condition_depends_on_template_parameter(SemanticContext & ctx,
                                                            Scope & scope,
                                                            const CppAstNode & expr)
@@ -840,11 +798,6 @@ void analyze_static_assert_declaration(SemanticContext & ctx,
                                                   integral_value)) {
         evaluated = true;
         truthy = integral_value != 0;
-      }
-    }
-    if(!evaluated) {
-      if(evaluate_static_assert_text_fallback(ctx, scope, node.children[0], truthy)) {
-        evaluated = true;
       }
     }
   } catch(const logic_error &) {
