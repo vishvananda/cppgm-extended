@@ -573,7 +573,7 @@ function @_GLOBAL__N_1__D___D(%this : ptr) -> void [unwind=no, binding=internal,
     call void @_GLOBAL__N_1__V___V__base_entry(%t21)
     return void
 }
-function @_GLOBAL__N_1__AB__mark(%this : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_12AB4markEv] {
+function @_GLOBAL__N_1__AB__mark(%this : ptr) -> void [unwind=no, binding=internal, object=_ZN12_GLOBAL__N_12AB4markEv] {
   slot $this : ptr
 
   block ^entry:

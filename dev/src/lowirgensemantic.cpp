@@ -2965,13 +2965,25 @@ public:
     if(function_node_->has_special_member_entry_point_kind &&
        callsem_special_member_entry_point_kind(*function_node_) ==
            symbol_linkage::SMEK_BASE) {
+      // A base constructor receives caller-supplied virtual-base pointers:
+      // during construction the vtable (and its vbase-offset slots) is not yet
+      // installed, so the complete-object constructor passes each virtual base's
+      // address explicitly.
       for(size_t i = 0; i < function_virtual_base_layout->size(); ++i) {
         const string param_temp = string("%__vbptr") + to_string(i);
         function_.params.push_back(make_lowir_parameter_text(param_temp, "ptr"));
         hidden_virtual_base_params_[(*function_virtual_base_layout)[i].first] = param_temp;
       }
     } else if(!function_node_->has_special_member_entry_point_kind &&
+              !function_node_->is_virtual_member_function &&
               !function_virtual_base_layout->empty()) {
+      // A non-virtual member function is always called with its static type
+      // known, so the caller can compute and pass each virtual base pointer.
+      // A virtual member function cannot take such parameters: it is reached
+      // through dynamic dispatch and this-adjusting/vbase-view thunks that carry
+      // only `this`.  A virtual method's class is always polymorphic, so it
+      // instead locates its virtual bases through the vtable's vbase-offset slot
+      // (the dynamic path in the virtual-base member-access code below).
       for(size_t i = 0; i < function_virtual_base_layout->size(); ++i) {
         const string param_temp = string("%__vbptr") + to_string(i);
         function_.params.push_back(make_lowir_parameter_text(param_temp, "ptr"));
@@ -3767,8 +3779,18 @@ private:
     if(virtual_base_layout->empty()) {
       return;
     }
+    // A non-base special member (complete constructor/destructor) takes a VTT,
+    // not __vbptr parameters.
     if(callee.has_special_member_entry_point_kind &&
        callsem_special_member_entry_point_kind(callee) != symbol_linkage::SMEK_BASE) {
+      return;
+    }
+    // A virtual member function locates its virtual bases through the vtable and
+    // has no __vbptr parameters -- it is reached via dynamic dispatch and
+    // this-adjusting/vbase-view thunks that carry only `this`.  Appending the
+    // hidden arguments here would desync the call from the callee's signature.
+    // (Base constructors and non-virtual methods do take __vbptr arguments.)
+    if(callee.is_virtual_member_function || callee.is_virtual_dispatch) {
       return;
     }
     const CallSemNode & object_arg = call.children[1];
@@ -12564,6 +12586,21 @@ private:
               throw logic_error("missing current object root for virtual base member");
             }
             const string root_ptr = emit_pointer_operand(*current_root);
+            // A fully constructed object locates its virtual base through the
+            // vtable's vbase-offset slot.  This is correct even when the current
+            // class is itself a base subobject of a more-derived complete object
+            // -- where the static offset (the virtual base's position within a
+            // standalone instance of this class) would be wrong.  Constructors
+            // run before the vtable is installed and so took the hidden-parameter
+            // branch above instead.
+            string dynamic_vbase;
+            if(try_emit_dynamic_external_virtual_base_pointer(node.children[0].semantic_type,
+                                                              root_ptr,
+                                                              virtual_base.first,
+                                                              dynamic_vbase)) {
+              return address_from_parameter_hidden_virtual_base(dynamic_vbase,
+                                                                virtual_base.second);
+            }
             const unsigned long long total_offset = offset->second + virtual_base.second;
             return emit_index_address_with_projection("i8",
                                                       root_ptr,
@@ -12644,6 +12681,20 @@ private:
               throw logic_error("missing current object root for virtual base member");
             }
             const string root_ptr = emit_pointer_operand(*current_root);
+            // See the analogous branch above: a constructed object reaches its
+            // virtual base through the vtable's vbase-offset slot, which stays
+            // correct when this class is a base subobject of a derived object.
+            string dynamic_vbase;
+            if(try_emit_dynamic_external_virtual_base_pointer(node.children[0].semantic_type,
+                                                              root_ptr,
+                                                              qualified_name,
+                                                              dynamic_vbase)) {
+              return emit_index_address_with_projection("i8",
+                                                        dynamic_vbase,
+                                                        0,
+                                                        lowir_internal::IPK_BASE_SUBOBJECT,
+                                                        false);
+            }
             return emit_index_address_with_projection("i8",
                                                       root_ptr,
                                                       offset->second,

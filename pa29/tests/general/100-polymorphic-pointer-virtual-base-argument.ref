@@ -169,7 +169,7 @@ function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] 
     store ptr %t15, %t13
     return void
 }
-function @D__danchor(%this : ptr, %__vbptr0 : ptr) -> i32 [binding=weak, object=_ZN1D7danchorEv] {
+function @D__danchor(%this : ptr) -> i32 [binding=weak, object=_ZN1D7danchorEv] {
   slot $this : ptr
 
   block ^entry:
@@ -206,7 +206,7 @@ function @Holder__read(%this : ptr) -> i32 [binding=weak, object=_ZN6Holder4read
     %t8 = call i32 @read_value(%t3, %t7)
     return i32 %t8
 }
-function @B__banchor(%this : ptr, %__vbptr0 : ptr) -> i32 [binding=weak, object=_ZN1B7banchorEv] {
+function @B__banchor(%this : ptr) -> i32 [binding=weak, object=_ZN1B7banchorEv] {
   slot $this : ptr
 
   block ^entry:
