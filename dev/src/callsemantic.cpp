@@ -4339,14 +4339,8 @@ private:
                *const_cast<Analyzer *>(this), *info)) {
           return true;
         }
-        if(template_model::template_arguments_are_dependent(
-               info->instantiation_arguments,
-               [&](const TypePtr & argument_type)
-               {
-                 return argument_type != type &&
-                        type_depends_on_template_parameter(argument_type);
-               })) {
-          return true;
+        if(!info->instantiation_arguments.empty()) {
+          return false;
         }
       }
       return false;
@@ -28896,6 +28890,10 @@ private:
           &semantic_metrics::AnalyzerCounters::complete_class_type_already_complete);
       sync_query_type_layout(info);
       return info;
+    }
+    if(info->dependent_instantiation) {
+      note_performance_counter(&semantic_metrics::AnalyzerCounters::complete_class_type_no_class);
+      return nullptr;
     }
     DIAG_CONTEXT("complete_class_type [" +
                  (type ? describe_type(type) : string("<null-type>")) + "]");
