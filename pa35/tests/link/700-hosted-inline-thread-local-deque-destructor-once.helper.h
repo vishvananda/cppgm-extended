@@ -1,8 +1,8 @@
 #include <deque>
+#include <cstdlib>
 
 extern int inline_tls_deque_constructed;
 extern int inline_tls_deque_destroyed;
-extern "C" void _Exit(int);
 
 struct InlineTlsDequeProbe {
   std::deque<int> values;
@@ -16,7 +16,7 @@ struct InlineTlsDequeProbe {
   {
     ++inline_tls_deque_destroyed;
     if(inline_tls_deque_destroyed != 1) {
-      _Exit(80 + inline_tls_deque_destroyed);
+      std::_Exit(80 + inline_tls_deque_destroyed);
     }
   }
 };

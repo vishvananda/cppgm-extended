@@ -1327,7 +1327,8 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
       }
       return emit_class_template_arguments(metadata->template_arguments, out, sink);
     }
-    if(metadata->template_name.empty()) {
+    if(metadata->template_name.empty() &&
+       !metadata->template_name_is_template_parameter) {
       return false;
     }
     if(type.name_owner) {
@@ -1338,7 +1339,13 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
       if(!emit_type_as_name_prefix(*type.name_owner, out, member_owner_sink)) {
         return false;
       }
-      if(!emit_source_name(metadata->template_name, out)) {
+      if(metadata->template_name_is_template_parameter) {
+        out += 'T';
+        if(metadata->template_name_parameter_index > 0) {
+          out += std::to_string(metadata->template_name_parameter_index - 1);
+        }
+        out += '_';
+      } else if(!emit_source_name(metadata->template_name, out)) {
         return false;
       }
       if(sink &&
@@ -1363,7 +1370,13 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
                                            owner_name_sink)) {
       return false;
     }
-    if(!emit_source_name(metadata->template_name, out)) {
+    if(metadata->template_name_is_template_parameter) {
+      out += 'T';
+      if(metadata->template_name_parameter_index > 0) {
+        out += std::to_string(metadata->template_name_parameter_index - 1);
+      }
+      out += '_';
+    } else if(!emit_source_name(metadata->template_name, out)) {
       return false;
     }
     if(sink &&

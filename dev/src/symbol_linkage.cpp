@@ -6802,6 +6802,13 @@ static bool emit_type_ir(const abi_mangle::Type & type,
   return abi_mangle::emit_type(type, out, &sink);
 }
 
+static bool type_ir_can_be_emitted(const abi_mangle::Type & type)
+{
+  MangleSubstitutionState state;
+  string ignored;
+  return emit_type_ir(type, &state, ignored) && !ignored.empty();
+}
+
 static bool build_and_emit_type_ir(const TypePtr & type,
                                    const TypeMangleContext * mangle_ctx,
                                    MangleSubstitutionState * state,
@@ -11932,6 +11939,23 @@ static bool try_build_non_type_template_parameter_type_ir(
     const TypeMangleContext * mangle_ctx,
     abi_mangle::Type & out)
 {
+  const auto build_value_type_ir =
+      [&]() -> bool
+      {
+        if(!parameter.value_type) {
+          return false;
+        }
+        abi_mangle::Type value_type_ir;
+        if(!try_build_template_argument_type_ir(parameter.value_type,
+                                                mangle_ctx,
+                                                value_type_ir) ||
+           !type_ir_can_be_emitted(value_type_ir)) {
+          return false;
+        }
+        out = std::move(value_type_ir);
+        return true;
+      };
+
   if(parameter.non_type_decl_specifier_seq &&
      try_build_type_specifier_seq_ast_ir(*parameter.non_type_decl_specifier_seq,
                                          mangle_ctx,
@@ -11958,7 +11982,10 @@ static bool try_build_non_type_template_parameter_type_ir(
         }
       }
     }
-    return true;
+    if(type_ir_can_be_emitted(out) || build_value_type_ir()) {
+      return true;
+    }
+    return false;
   }
   if(parser_trace::enabled("symbol.linkage")) {
     ostringstream trace;
@@ -11977,9 +12004,7 @@ static bool try_build_non_type_template_parameter_type_ir(
   if(!parameter.value_type) {
     return false;
   }
-  if(try_build_template_argument_type_ir(parameter.value_type,
-                                         mangle_ctx,
-                                         out)) {
+  if(build_value_type_ir()) {
     return true;
   }
   if(parser_trace::enabled("symbol.linkage")) {

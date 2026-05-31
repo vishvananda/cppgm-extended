@@ -511,6 +511,12 @@ std::string default_type_argument_text_from_ast(
      node.kind == CppAstKind::type_id) {
     return ast_leaf_text(node);
   }
+  if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+    const std::string text = ast_leaf_text(node);
+    if(!text.empty()) {
+      return text;
+    }
+  }
   return node_text(node);
 }
 
@@ -8865,8 +8871,25 @@ bool finalize_deduced_function_template_arguments(
       }
     } else if(decl.parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE) {
       TypePtr bound_value_type;
-      if(!try_resolve_non_type_template_parameter_type(
-             ctx, bound_scope, decl.parameters[i], bound_value_type)) {
+      bool resolved_bound_value_type =
+          template_api::with_template_services(
+              ctx,
+              [&](template_api::TemplateServices & services)
+              {
+                return try_substitute_non_type_parameter_type_from_prefix_arguments(
+                    services,
+                    template_api::make_template_environment(bound_scope),
+                    decl.parameters,
+                    out,
+                    i,
+                    bound_value_type);
+              });
+      if(!resolved_bound_value_type) {
+        resolved_bound_value_type =
+            try_resolve_non_type_template_parameter_type(
+                ctx, bound_scope, decl.parameters[i], bound_value_type);
+      }
+      if(!resolved_bound_value_type) {
         const bool still_dependent =
             non_type_template_parameter_is_still_dependent(ctx,
                                                            bound_scope,
@@ -8901,6 +8924,25 @@ bool finalize_deduced_function_template_arguments(
             make_default_template_argument_syntax(decl.parameters[i],
                                                   child,
                                                   default_text);
+        TemplateArgumentSyntax dependency_default_syntax = default_syntax;
+        CppAstNode substituted_default_expression;
+        std::string substituted_default_text;
+        const bool have_substituted_default_expression =
+            template_argument_semantics::
+                substitute_expression_node_for_template_arguments(
+                    bound_scope,
+                    child,
+                    decl.parameters,
+                    out,
+                    substituted_default_expression);
+        if(have_substituted_default_expression) {
+          substituted_default_text =
+              default_argument_expression_text(substituted_default_expression);
+          dependency_default_syntax =
+              make_default_template_argument_syntax(decl.parameters[i],
+                                                    substituted_default_expression,
+                                                    substituted_default_text);
+        }
         long long value = 0;
         bool evaluated = false;
         std::string eval_error;
@@ -8915,7 +8957,7 @@ bool finalize_deduced_function_template_arguments(
                     return template_argument_semantics::evaluate_non_type_argument_syntax(
                         services,
                         template_api::make_template_environment(bound_scope),
-                        default_syntax,
+                        dependency_default_syntax,
                         value,
                         &eval_error,
                         bound_value_type);
@@ -8925,34 +8967,106 @@ bool finalize_deduced_function_template_arguments(
           evaluated = false;
         }
         if(!evaluated) {
+          const CppAstNode & dependency_expression =
+              have_substituted_default_expression ?
+                  substituted_default_expression :
+                  child;
           if(value_status != template_argument_semantics::NT_ARG_DEPENDENT &&
-             !default_argument_expression_is_still_dependent(ctx, bound_scope, child)) {
+             !default_argument_expression_is_still_dependent(ctx,
+                                                            bound_scope,
+                                                            dependency_expression)) {
             return false;
           }
           arg.kind = TemplateArgument::TA_VALUE;
           arg.type = bound_value_type;
-          arg.text = node_text(child);
+          if(have_substituted_default_expression) {
+            arg.expression.reset(new CppAstNode(substituted_default_expression));
+          }
+          arg.text = have_substituted_default_expression ?
+                         substituted_default_text :
+                         default_text;
           arg.dependent = true;
+          attach_template_argument_source_syntax(&default_syntax, arg);
         } else {
           arg.kind = TemplateArgument::TA_VALUE;
           arg.type = bound_value_type;
           arg.value = value;
           arg.text = typed_non_type_template_argument_text(ctx, bound_value_type, value);
+          if(have_substituted_default_expression) {
+            arg.expression.reset(new CppAstNode(substituted_default_expression));
+          }
+          attach_template_argument_source_syntax(&default_syntax, arg);
         }
         arg.source_defaulted = true;
       }
     } else if(decl.parameters[i].kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
       DeducedPackArgumentMap::const_iterator found =
           deduced_pack_arguments.find(decl.parameters[i].name);
-      if(found == deduced_pack_arguments.end() ||
-         found->second.size() != 1 ||
-         (found->second[0].kind != TemplateArgument::TA_CLASS_TEMPLATE &&
-          found->second[0].kind != TemplateArgument::TA_ALIAS_TEMPLATE)) {
-        trace_finalize_failure(std::string("missing-template-template-parameter name=") +
-                               decl.parameters[i].name);
-        return false;
+      if(found != deduced_pack_arguments.end() &&
+         found->second.size() == 1 &&
+         (found->second[0].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+          found->second[0].kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+        arg = found->second[0];
+      } else {
+        if(!decl.parameters[i].default_argument ||
+           decl.parameters[i].default_argument->children.empty()) {
+          trace_finalize_failure(std::string("missing-template-template-parameter name=") +
+                                 decl.parameters[i].name);
+          return false;
+        }
+        const CppAstNode & child = decl.parameters[i].default_argument->children[0];
+        const std::string original_default_text =
+            default_type_argument_text_from_ast(decl.parameters[i], child);
+        const TemplateArgumentSyntax original_default_syntax =
+            make_default_template_argument_syntax(decl.parameters[i],
+                                                  child,
+                                                  original_default_text);
+        std::string prepared_default_text = original_default_text;
+        TemplateArgumentSyntax prepared_default_syntax;
+        const TemplateArgumentSyntax * prepared_default_syntax_ptr =
+            &original_default_syntax;
+        if(!original_default_text.empty()) {
+          std::vector<TemplateParameterInfo> prefix_parameters(
+              decl.parameters.begin(),
+              decl.parameters.begin() + i);
+          std::vector<TemplateArgument> prefix_arguments(out.begin(), out.end());
+          if(make_substituted_default_template_argument_syntax(
+                 ctx,
+                 bound_scope,
+                 decl.parameters[i],
+                 child,
+                 original_default_text,
+                 prefix_parameters,
+                 prefix_arguments,
+                 prepared_default_syntax)) {
+            prepared_default_text = prepared_default_syntax.text;
+            prepared_default_syntax_ptr = &prepared_default_syntax;
+          }
+        }
+        try {
+          if(prepared_default_text.empty() ||
+             !resolve_template_argument(ctx,
+                                        bound_scope,
+                                        bound_scope,
+                                        decl.parameters[i],
+                                        prepared_default_text,
+                                        prepared_default_syntax_ptr,
+                                        arg)) {
+            trace_finalize_failure(
+                std::string("default-template-template-resolution-failed name=") +
+                decl.parameters[i].name +
+                " text=" + prepared_default_text);
+            return false;
+          }
+        } catch(const TemplateSubstitutionFailure &) {
+          trace_finalize_failure(
+              std::string("default-template-template-resolution-failed name=") +
+              decl.parameters[i].name +
+              " text=" + prepared_default_text);
+          return false;
+        }
+        arg.source_defaulted = true;
       }
-      arg = found->second[0];
     } else {
       return false;
     }
