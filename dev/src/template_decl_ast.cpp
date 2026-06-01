@@ -270,16 +270,22 @@ TemplateArgumentSyntax clone_template_argument_syntax(
 {
   TemplateArgumentSyntax out;
   out.text = source.text;
+  out.source_text = source.source_text;
   out.pack_expansion = source.pack_expansion;
+  out.dependent = source.dependent;
   out.has_source_token_start = source.has_source_token_start;
   out.source_token_start = source.source_token_start;
   out.source_location_id = source.source_location_id;
+  out.resolved_type = source.resolved_type;
   if(source.template_id) {
     out.template_id.reset(new TemplateIdSyntax(
         clone_template_id_syntax(*source.template_id)));
   }
   if(source.type_id) {
     out.type_id.reset(new CppAstNode(clone_pack_substitution_node(*source.type_id)));
+  }
+  if(source.source_type_id) {
+    out.source_type_id = source.source_type_id;
   }
   if(source.expression) {
     out.expression.reset(new CppAstNode(clone_pack_substitution_node(*source.expression)));

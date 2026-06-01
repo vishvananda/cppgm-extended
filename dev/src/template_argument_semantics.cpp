@@ -2067,11 +2067,12 @@ vector<string> source_argument_texts_for_occurrence(
   }
   const size_t limit = std::min(out.size(), arg_syntaxes->size());
   for(size_t i = 0; i < limit; ++i) {
+    const bool has_preserved_source_text =
+        !semantic_utils::trim_space((*arg_syntaxes)[i].source_text).empty();
     string text = semantic_utils::trim_space(
-        (*arg_syntaxes)[i].source_text.empty() ?
-            (*arg_syntaxes)[i].text :
-            (*arg_syntaxes)[i].source_text);
-    if((*arg_syntaxes)[i].expression) {
+        has_preserved_source_text ? (*arg_syntaxes)[i].source_text :
+                                    (*arg_syntaxes)[i].text);
+    if(!has_preserved_source_text && (*arg_syntaxes)[i].expression) {
       const string expression_text =
           semantic_utils::trim_space(
               callsemantic_internal::describe_expression_for_diagnostic(
@@ -2082,7 +2083,7 @@ vector<string> source_argument_texts_for_occurrence(
         text = expression_text;
       }
     }
-    if((*arg_syntaxes)[i].type_id) {
+    if(!has_preserved_source_text && (*arg_syntaxes)[i].type_id) {
       const string type_text =
           semantic_utils::trim_space(node_text(*(*arg_syntaxes)[i].type_id));
       if(!type_text.empty() &&
@@ -2095,7 +2096,8 @@ vector<string> source_argument_texts_for_occurrence(
     if(text.empty()) {
       continue;
     }
-    if(i < out.size() &&
+    if(!has_preserved_source_text &&
+       i < out.size() &&
        !out[i].empty() &&
        compact_source_argument_key(text) !=
            compact_source_argument_key(out[i])) {
@@ -15846,6 +15848,28 @@ bool substitute_sizeof_pack_count_expression_node(
   return true;
 }
 
+bool source_syntax_preservation_enabled()
+{
+  return template_api::current_template_witness_session() != nullptr;
+}
+
+void ensure_template_id_argument_syntaxes_for_source_preservation(
+    TemplateIdSyntax & syntax,
+    bool preserve_source_syntax)
+{
+  if(!preserve_source_syntax ||
+     !syntax.argument_syntaxes.empty() ||
+     syntax.arguments.empty()) {
+    return;
+  }
+  syntax.argument_syntaxes.reserve(syntax.arguments.size());
+  for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+    TemplateArgumentSyntax argument;
+    argument.text = trim_space(syntax.arguments[i]);
+    syntax.argument_syntaxes.push_back(argument);
+  }
+}
+
 void substitute_sizeof_pack_counts_template_id_arguments(
     TemplateIdSyntax & syntax,
     const map<string, size_t> & pack_size_replacements)
@@ -15853,6 +15877,10 @@ void substitute_sizeof_pack_counts_template_id_arguments(
   if(pack_size_replacements.empty()) {
     return;
   }
+  const bool preserve_source_syntax = source_syntax_preservation_enabled();
+  ensure_template_id_argument_syntaxes_for_source_preservation(
+      syntax,
+      preserve_source_syntax);
   for(size_t i = 0; i < syntax.arguments.size(); ++i) {
     bool changed = false;
     syntax.arguments[i] = replace_sizeof_pack_count_text(syntax.arguments[i],
@@ -15867,7 +15895,7 @@ void substitute_sizeof_pack_counts_template_id_arguments(
                                        pack_size_replacements,
                                        text_changed);
     if(text_changed) {
-      if(argument.source_text.empty()) {
+      if(preserve_source_syntax && argument.source_text.empty()) {
         argument.source_text = argument.text;
       }
       argument.text = trim_space(rewritten_text);
@@ -16973,6 +17001,10 @@ void substitute_value_pack_template_id_arguments(
     TemplateIdSyntax & syntax,
     const map<string, ValueBinding> & value_replacements)
 {
+  const bool preserve_source_syntax = source_syntax_preservation_enabled();
+  ensure_template_id_argument_syntaxes_for_source_preservation(
+      syntax,
+      preserve_source_syntax);
   for(size_t i = 0; i < syntax.arguments.size(); ++i) {
     string rewritten = syntax.arguments[i];
     bool changed = false;
@@ -16990,6 +17022,8 @@ void substitute_value_pack_template_id_arguments(
   for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
     bool pack_expansion_consumed = false;
+    const string original_argument_text =
+        preserve_source_syntax ? trim_space(argument.text) : string();
     for(map<string, ValueBinding>::const_iterator it = value_replacements.begin();
         it != value_replacements.end();
         ++it) {
@@ -17005,6 +17039,11 @@ void substitute_value_pack_template_id_arguments(
           it->first,
           substituted_value_pack_argument_text(it->second),
           argument_changed);
+      if(argument_changed &&
+         preserve_source_syntax &&
+         argument.source_text.empty()) {
+        argument.source_text = original_argument_text;
+      }
       if(argument.type_id &&
          expression_node_mentions_identifier(*argument.type_id, it->first)) {
         CppAstNode rewritten_type;
@@ -17277,6 +17316,7 @@ void substitute_type_pack_template_id_arguments(
   };
 
   const vector<string> source_arguments = syntax.arguments;
+  const bool preserve_source_syntax = source_syntax_preservation_enabled();
   if(syntax.argument_syntaxes.empty() && !syntax.arguments.empty()) {
     bool needs_carried_syntax = false;
     for(size_t i = 0; i < syntax.arguments.size() && !needs_carried_syntax; ++i) {
@@ -17355,6 +17395,9 @@ void substitute_type_pack_template_id_arguments(
       argument.text = replace_identifier_token_text_preserving_sizeof_pack_operands(
           argument.text, it->first, replacement, argument_text_changed);
       if(argument_text_changed) {
+        if(preserve_source_syntax && argument.source_text.empty()) {
+          argument.source_text = original_argument_text;
+        }
         resolved_type_maybe_stale = true;
       }
       if(direct_type_pack_argument) {
@@ -27242,18 +27285,20 @@ NonTypeArgumentStatus evaluate_standard_type_trait_template_value(
     return relocatable_status;
   }
 
-  const NonTypeArgumentStatus libcpp_member_type_detector_status =
-      evaluate_libcpp_allocator_member_type_detector_template_value(
-          services, scope, syntax, out);
-  if(libcpp_member_type_detector_status != NT_ARG_PARSE_FAILED) {
-    return libcpp_member_type_detector_status;
-  }
+  if(syntax.name.name.compare(0, 6, "__has_") == 0) {
+    const NonTypeArgumentStatus libcpp_member_type_detector_status =
+        evaluate_libcpp_allocator_member_type_detector_template_value(
+            services, scope, syntax, out);
+    if(libcpp_member_type_detector_status != NT_ARG_PARSE_FAILED) {
+      return libcpp_member_type_detector_status;
+    }
 
-  const NonTypeArgumentStatus libcpp_member_call_detector_status =
-      evaluate_libcpp_allocator_member_call_detector_template_value(
-          services, scope, syntax, out);
-  if(libcpp_member_call_detector_status != NT_ARG_PARSE_FAILED) {
-    return libcpp_member_call_detector_status;
+    const NonTypeArgumentStatus libcpp_member_call_detector_status =
+        evaluate_libcpp_allocator_member_call_detector_template_value(
+            services, scope, syntax, out);
+    if(libcpp_member_call_detector_status != NT_ARG_PARSE_FAILED) {
+      return libcpp_member_call_detector_status;
+    }
   }
 
   if(standard_constructibility_shorthand_name(syntax.name.name)) {

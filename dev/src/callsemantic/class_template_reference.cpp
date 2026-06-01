@@ -2084,8 +2084,14 @@ public:
       const bool explicit_specialization_source_use =
           specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION ||
           resolved_info->is_explicit_specialization;
+      const bool nested_recovery_is_qualified_member_owner =
+          nested_argument_recovery &&
+          callbacks.template_id_at_location_is_qualified_member_owner &&
+          callbacks.template_id_at_location_is_qualified_member_owner(
+              use_location);
       if(nested_argument_recovery &&
          !explicit_specialization_source_use &&
+         !nested_recovery_is_qualified_member_owner &&
          !trace_enabled) {
         return;
       }
@@ -2169,6 +2175,10 @@ public:
       const bool source_use_spells_template =
           source_location_points_at_identifier(chosen_use_location,
                                                anchor_identifier);
+      const bool source_template_id_is_qualified_member_owner =
+          callbacks.template_id_at_location_is_qualified_member_owner &&
+          callbacks.template_id_at_location_is_qualified_member_owner(
+              chosen_use_location);
       if(source_capture_enabled && !source_use_spells_template) {
         return;
       }
@@ -2413,6 +2423,7 @@ public:
           }
         }
         if(!drop_noncanonical_source_arguments &&
+           !source_template_id_is_qualified_member_owner &&
            !source_arg_syntaxes &&
            binding_arg_texts == &recovered_source_arg_texts) {
           const std::size_t compare_count =
@@ -2556,7 +2567,8 @@ public:
                    "primary");
       if(syntax_backed_source_capture_enabled &&
          (!nested_argument_recovery ||
-          explicit_specialization_source_use)) {
+          explicit_specialization_source_use ||
+          source_template_id_is_qualified_member_owner)) {
         template_api::ClassSpecializationSelection visible_selection =
             specialization;
         const bool nested_partial_source_argument =

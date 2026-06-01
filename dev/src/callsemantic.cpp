@@ -2385,6 +2385,23 @@ private:
                                                      std::string(1, ch));
   }
 
+  bool source_location_identifier_preceded_by_scope_operator(
+      const std::string & location,
+      const std::string & identifier) const
+  {
+    if(token_sequence == nullptr ||
+       !source_location_points_at_identifier(location, identifier)) {
+      return false;
+    }
+    std::size_t index = 0;
+    if(!source_location_tokens().token_index_at_source_location(location,
+                                                                index) ||
+       index == 0) {
+      return false;
+    }
+    return token_sequence->peek(index - 1).source == "::";
+  }
+
   bool source_location_identifier_followed_by_indirection_type_suffix(
       const std::string & location,
       const std::string & identifier) const
@@ -11237,6 +11254,11 @@ private:
 	    if(!witness::source_location_capture_enabled(witness_context, location)) {
 	      return;
 	    }
+    if(source_location_in_current_template_body_range(location) &&
+       !scope_has_template_placeholders(scope) &&
+       scope_is_inside_source_template_context(scope)) {
+      return;
+    }
 	    witness::ClassUseSourceDecision decision;
 	    bool built_class_use = false;
 	    try {
@@ -11277,6 +11299,9 @@ private:
       witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
       bool clear_template_id_occurrence = false)
   {
+    if(node.kind == CppAstKind::pack_expansion_expression) {
+      return;
+    }
     if(const TemplateIdSyntax * syntax = cppast_template_id_syntax(node)) {
       emit_nested_class_use_source_events_from_template_id_syntax(
           scope,
@@ -11963,6 +11988,22 @@ private:
       const bool exact_source_event_location =
           semantic_trace::source_location_points_at_identifier(source_event_location,
                                                                decl.name);
+      std::string alias_template_name =
+          template_api::alias_template_witness_entity(&decl);
+      if(exact_source_event_location &&
+         source_location_identifier_preceded_by_scope_operator(
+             source_event_location,
+             decl.name) &&
+         decl.declaring_scope &&
+         decl.declaring_scope->class_info) {
+        const std::string owner =
+            template_api::class_witness_output_qualified_name(
+                *this,
+                *decl.declaring_scope->class_info);
+        if(!owner.empty()) {
+          alias_template_name = owner + "::" + decl.name;
+        }
+      }
       const auto alias_owner_is_current_scope = [&]() -> bool
       {
         if(!decl.declaring_scope || !decl.declaring_scope->class_info) {
@@ -12039,8 +12080,7 @@ private:
                         request.template_id_occurrence);
               });
         }
-        request.template_name =
-            template_api::alias_template_witness_entity(&decl);
+        request.template_name = alias_template_name;
         request.origin =
             witness::AliasUseEmissionOrigin::QualifiedSourceTemplateId;
         const semantic_model::SourceDeclAnchorCache & decl_anchor =
@@ -12206,6 +12246,17 @@ private:
             << " dependent=" << (dependent_arguments ? "yes" : "no");
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
+    string scope_sensitive_alias_cache_key;
+    const auto scoped_alias_cache_key =
+        [&]() -> const string &
+    {
+      if(scope_sensitive_alias_cache_key.empty()) {
+        std::ostringstream out;
+        out << key << "\nuse-scope:" << use_scope.instance_id;
+        scope_sensitive_alias_cache_key = out.str();
+      }
+      return scope_sensitive_alias_cache_key;
+    };
     map<string, TypePtr>::iterator found = instantiations.find(key);
 
     Scope * inst_scope =
@@ -12280,106 +12331,211 @@ private:
       }
     };
     bind_enclosing_class_template_arguments();
-    function<bool(const TypePtr &, int)> type_contains_dependent_qualified_member =
-        [&](const TypePtr & type, int depth) -> bool
+    struct DependentQualifiedMemberTypeProbe
     {
-      if(depth > 32) {
-        return false;
-      }
-      TypePtr base = strip_top_level_cv(type);
-      if(!base) {
-        return false;
+      explicit DependentQualifiedMemberTypeProbe(
+          const vector<TemplateParameterInfo> & parameters)
+        : parameters(parameters)
+      {}
+
+      const vector<TemplateParameterInfo> & parameters;
+
+      bool named_type_matches_alias_parameter(const TypePtr & type) const
+      {
+        TypePtr base = strip_top_level_cv(type);
+        if(!base || base->kind != Type::TK_NAMED) {
+          return false;
+        }
+        const auto matches_text =
+            [&](const string & text) -> bool
+        {
+          if(text.empty()) {
+            return false;
+          }
+          if(template_model::find_template_parameter(parameters, text) ||
+             find_template_parameter_by_name(parameters, text)) {
+            return true;
+          }
+          const string stripped = strip_elaborated_type_prefix(trim_space(text));
+          return stripped != text &&
+                 !stripped.empty() &&
+                 (template_model::find_template_parameter(parameters, stripped) ||
+                  find_template_parameter_by_name(parameters, stripped));
+        };
+        return matches_text(base->named_key) ||
+               matches_text(base->named_display) ||
+               matches_text(base->named_semantic_payload);
       }
 
-      if(base->kind == Type::TK_NAMED) {
-        TypePtr dependent_owner;
-        vector<string> dependent_members;
-        bool leading_typename = false;
-        if(named_type_dependent_qualified_member(base,
-                                                dependent_owner,
-                                                dependent_members,
-                                                leading_typename)) {
+      bool mentions_alias_parameter(const TypePtr & type, int depth = 0) const
+      {
+        if(depth > 32) {
+          return false;
+        }
+        TypePtr base = strip_top_level_cv(type);
+        if(!base) {
+          return false;
+        }
+        if(named_type_matches_alias_parameter(base)) {
           return true;
         }
-
-        void * alias_template_decl = nullptr;
-        vector<DependentAliasTemplateArgumentSyntax> alias_args;
-        if(named_type_dependent_alias_template(base,
-                                              alias_template_decl,
-                                              alias_args)) {
+        if(base->kind == Type::TK_NAMED) {
+          const vector<DependentAliasTemplateArgumentSyntax> & alias_args =
+              base->named_dependent_alias_arguments;
           for(size_t i = 0; i < alias_args.size(); ++i) {
-            if(type_contains_dependent_qualified_member(alias_args[i].type,
-                                                        depth + 1) ||
-               type_contains_dependent_qualified_member(
-                   alias_args[i].syntax.resolved_type,
-                   depth + 1)) {
+            if(mentions_alias_parameter(alias_args[i].type, depth + 1) ||
+               mentions_alias_parameter(alias_args[i].syntax.resolved_type,
+                                        depth + 1)) {
               return true;
             }
           }
-        }
-
-        void * class_template_decl = nullptr;
-        vector<DependentAliasTemplateArgumentSyntax> class_args;
-        if(named_type_dependent_class_template(base,
-                                              class_template_decl,
-                                              class_args)) {
+          const vector<DependentAliasTemplateArgumentSyntax> & class_args =
+              base->named_dependent_class_arguments;
           for(size_t i = 0; i < class_args.size(); ++i) {
-            if(type_contains_dependent_qualified_member(class_args[i].type,
-                                                        depth + 1) ||
-               type_contains_dependent_qualified_member(
-                   class_args[i].syntax.resolved_type,
-                   depth + 1)) {
+            if(mentions_alias_parameter(class_args[i].type, depth + 1) ||
+               mentions_alias_parameter(class_args[i].syntax.resolved_type,
+                                        depth + 1)) {
               return true;
             }
           }
+          if(mentions_alias_parameter(base->named_dependent_qualified_owner,
+                                      depth + 1)) {
+            return true;
+          }
         }
-
-        if(type_contains_dependent_qualified_member(
-               base->named_dependent_qualified_owner,
-               depth + 1) ||
-           type_contains_dependent_qualified_member(base->inner, depth + 1) ||
-           type_contains_dependent_qualified_member(base->owner, depth + 1)) {
-          return true;
-        }
-      }
-
-      switch(base->kind) {
-      case Type::TK_CV:
-      case Type::TK_ATOMIC:
-      case Type::TK_POINTER:
-      case Type::TK_BLOCK_POINTER:
-      case Type::TK_LVALUE_REFERENCE:
-      case Type::TK_RVALUE_REFERENCE:
-      case Type::TK_ARRAY:
-        return type_contains_dependent_qualified_member(base->inner, depth + 1);
-
-      case Type::TK_MEMBER_POINTER:
-        return type_contains_dependent_qualified_member(base->owner, depth + 1) ||
-               type_contains_dependent_qualified_member(base->inner, depth + 1);
-
-      case Type::TK_FUNCTION:
-        if(type_contains_dependent_qualified_member(base->inner, depth + 1)) {
+        if(mentions_alias_parameter(base->inner, depth + 1) ||
+           mentions_alias_parameter(base->owner, depth + 1)) {
           return true;
         }
         for(size_t i = 0; i < base->params.size(); ++i) {
-          if(type_contains_dependent_qualified_member(base->params[i], depth + 1)) {
+          if(mentions_alias_parameter(base->params[i], depth + 1)) {
             return true;
           }
         }
         return false;
+      }
 
-      case Type::TK_NAMED:
-      case Type::TK_FUNDAMENTAL:
+      bool contains_scope_sensitive_member(const TypePtr & type,
+                                           int depth = 0) const
+      {
+        if(depth > 32) {
+          return false;
+        }
+        TypePtr base = strip_top_level_cv(type);
+        if(!base) {
+          return false;
+        }
+
+        if(base->kind == Type::TK_NAMED) {
+          if(base->named_semantic_kind == Type::NSK_DEPENDENT_TYPE &&
+             base->named_dependent_qualified_owner &&
+             !base->named_dependent_qualified_members.empty()) {
+            return !mentions_alias_parameter(
+                base->named_dependent_qualified_owner);
+          }
+
+          if(base->named_semantic_kind == Type::NSK_DEPENDENT_ALIAS &&
+             base->named_dependent_alias_template_decl) {
+            const vector<DependentAliasTemplateArgumentSyntax> & alias_args =
+                base->named_dependent_alias_arguments;
+            for(size_t i = 0; i < alias_args.size(); ++i) {
+              if(contains_scope_sensitive_member(alias_args[i].type,
+                                                 depth + 1) ||
+                 contains_scope_sensitive_member(
+                     alias_args[i].syntax.resolved_type,
+                     depth + 1)) {
+                return true;
+              }
+            }
+          }
+
+          if(base->named_dependent_class_template_decl) {
+            const vector<DependentAliasTemplateArgumentSyntax> & class_args =
+                base->named_dependent_class_arguments;
+            for(size_t i = 0; i < class_args.size(); ++i) {
+              if(contains_scope_sensitive_member(class_args[i].type,
+                                                 depth + 1) ||
+                 contains_scope_sensitive_member(
+                     class_args[i].syntax.resolved_type,
+                     depth + 1)) {
+                return true;
+              }
+            }
+          }
+
+          if(contains_scope_sensitive_member(
+                 base->named_dependent_qualified_owner,
+                 depth + 1) ||
+             contains_scope_sensitive_member(base->inner, depth + 1) ||
+             contains_scope_sensitive_member(base->owner, depth + 1)) {
+            return true;
+          }
+        }
+
+        switch(base->kind) {
+        case Type::TK_CV:
+        case Type::TK_ATOMIC:
+        case Type::TK_POINTER:
+        case Type::TK_BLOCK_POINTER:
+        case Type::TK_LVALUE_REFERENCE:
+        case Type::TK_RVALUE_REFERENCE:
+        case Type::TK_ARRAY:
+          return contains_scope_sensitive_member(base->inner, depth + 1);
+
+        case Type::TK_MEMBER_POINTER:
+          return contains_scope_sensitive_member(base->owner, depth + 1) ||
+                 contains_scope_sensitive_member(base->inner, depth + 1);
+
+        case Type::TK_FUNCTION:
+          if(contains_scope_sensitive_member(base->inner, depth + 1)) {
+            return true;
+          }
+          for(size_t i = 0; i < base->params.size(); ++i) {
+            if(contains_scope_sensitive_member(base->params[i], depth + 1)) {
+              return true;
+            }
+          }
+          return false;
+
+        case Type::TK_NAMED:
+        case Type::TK_FUNDAMENTAL:
+          return false;
+        }
         return false;
       }
-      return false;
     };
+    const DependentQualifiedMemberTypeProbe dependent_qualified_member_probe(
+        decl.parameters);
+    if(!decl.dependent_qualified_member_scope_sensitive_cached) {
+      decl.dependent_qualified_member_scope_sensitive =
+          dependent_qualified_member_probe.contains_scope_sensitive_member(
+            decl.resolved_type_pattern);
+      decl.dependent_qualified_member_scope_sensitive_cached = true;
+    }
+    const bool alias_pattern_scope_sensitive =
+        decl.dependent_qualified_member_scope_sensitive;
+    if(found == instantiations.end() && alias_pattern_scope_sensitive) {
+      found = instantiations.find(scoped_alias_cache_key());
+    }
     const auto dependent_alias_cache_is_scope_sensitive =
         [&](const TypePtr & candidate) -> bool
     {
       return candidate &&
              type_depends_on_template_parameter(candidate) &&
-             type_contains_dependent_qualified_member(candidate, 0);
+             (alias_pattern_scope_sensitive ||
+              (!decl.resolved_type_pattern &&
+               dependent_qualified_member_probe.contains_scope_sensitive_member(
+                   candidate)));
+    };
+    const auto cache_alias_instantiation =
+        [&](const TypePtr & value) -> bool
+    {
+      if(dependent_alias_cache_is_scope_sensitive(value)) {
+        instantiations[scoped_alias_cache_key()] = value;
+        return false;
+      }
+      instantiations[key] = value;
+      return true;
     };
     const auto make_dependent_alias_specialization = [&]() -> TypePtr
     {
@@ -12486,19 +12642,29 @@ private:
     TypePtr alias;
     const string type_id_text = decl.type_id ? node_text(*decl.type_id) : string();
     const string spaced_type_id_text = decl.type_id ? spaced_node_text(*decl.type_id) : string();
-    auto substituted_alias_type_id_node =
-        [&](CppAstNode & storage) -> const CppAstNode *
+    bool substituted_alias_type_id_attempted = false;
+    bool substituted_alias_type_id_available = false;
+    CppAstNode substituted_alias_type_id_storage;
+    const auto substituted_alias_type_id_node =
+        [&]() -> const CppAstNode *
     {
       if(!decl.type_id) {
         return nullptr;
       }
+      if(substituted_alias_type_id_attempted) {
+        return substituted_alias_type_id_available ?
+            &substituted_alias_type_id_storage :
+            decl.type_id;
+      }
+      substituted_alias_type_id_attempted = true;
       if(template_argument_semantics::substitute_expression_node_for_template_arguments(
              *inst_scope,
              *decl.type_id,
              decl.parameters,
              arguments,
-             storage)) {
-        return &storage;
+             substituted_alias_type_id_storage)) {
+        substituted_alias_type_id_available = true;
+        return &substituted_alias_type_id_storage;
       }
       return decl.type_id;
     };
@@ -12506,9 +12672,7 @@ private:
 	        [&](TypePtr & out) -> bool
 	    {
 	      out.reset();
-	      CppAstNode substituted_type_id;
-	      const CppAstNode * type_id_node =
-	          substituted_alias_type_id_node(substituted_type_id);
+	      const CppAstNode * type_id_node = substituted_alias_type_id_node();
 	      if(!type_id_node) {
 	        return false;
 	      }
@@ -12538,9 +12702,7 @@ private:
 	        [&](TypePtr & out) -> bool
 	    {
 	      out.reset();
-	      CppAstNode substituted_type_id;
-	      const CppAstNode * type_id_node =
-	          substituted_alias_type_id_node(substituted_type_id);
+	      const CppAstNode * type_id_node = substituted_alias_type_id_node();
 	      if(!type_id_node) {
 	        return false;
 	      }
@@ -12774,17 +12936,17 @@ private:
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
     if(found != instantiations.end() &&
+       found->first == key &&
        dependent_alias_cache_is_scope_sensitive(found->second)) {
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
-        trace << "instantiate-alias-template-scope-sensitive-cache-skip name="
+        trace << "instantiate-alias-template-scope-sensitive-cache-redirect name="
               << decl.name
               << " key=" << key
               << " alias=" << describe_type(found->second);
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
-      instantiations.erase(found);
-      found = instantiations.end();
+      found = instantiations.find(scoped_alias_cache_key());
     }
     if(found != instantiations.end()) {
       if(parser_trace::enabled("template.resolve")) {
@@ -12814,9 +12976,7 @@ private:
          resolved_alias_pattern_has_dependent_non_type_argument ||
          (member_alias_template && resolved_alias_pattern_is_dependent))) {
       alias = make_dependent_alias_specialization();
-      if(!dependent_alias_cache_is_scope_sensitive(alias)) {
-        instantiations[key] = alias;
-      }
+      cache_alias_instantiation(alias);
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "instantiate-alias-template-defer-dependent name=" << decl.name
@@ -12907,9 +13067,7 @@ private:
     if(!decl.type_id || !alias) {
       if(dependent_arguments) {
         alias = make_dependent_alias_specialization();
-        if(!dependent_alias_cache_is_scope_sensitive(alias)) {
-          instantiations[key] = alias;
-        }
+        cache_alias_instantiation(alias);
         note_alias_use(alias);
         return alias;
       }
@@ -12930,15 +13088,12 @@ private:
       }
       throw_substitution_failure(out.str(), std::string(), "callsemantic");
     }
-    const bool cached_alias = !dependent_alias_cache_is_scope_sensitive(alias);
-    if(cached_alias) {
-      instantiations[key] = alias;
-    }
+    const bool base_cached_alias = cache_alias_instantiation(alias);
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
-      trace << (cached_alias ?
+      trace << (base_cached_alias ?
                     "instantiate-alias-template-store name=" :
-                    "instantiate-alias-template-no-cache name=")
+                    "instantiate-alias-template-store-scoped name=")
             << decl.name
             << " key=" << key
             << " alias=" << describe_type(alias);
@@ -13463,6 +13618,9 @@ private:
       out.type_id.reset(new CppAstNode(
           clone_pack_substitution_node(*source.type_id)));
     }
+    if(source.source_type_id) {
+      out.source_type_id = source.source_type_id;
+    }
     if(source.expression) {
       out.expression.reset(new CppAstNode(
           clone_pack_substitution_node(*source.expression)));
@@ -13474,6 +13632,7 @@ private:
   {
     TemplateIdSyntax out;
     out.name = source.name;
+    out.source_location_id = source.source_location_id;
     out.arguments = source.arguments;
     out.argument_syntaxes.reserve(source.argument_syntaxes.size());
     for(size_t i = 0; i < source.argument_syntaxes.size(); ++i) {
@@ -13607,6 +13766,9 @@ private:
             if(argument.source_text.empty()) {
               argument.source_text = original_text;
             }
+            if(!argument.source_type_id && argument.type_id) {
+              argument.source_type_id = argument.type_id;
+            }
             argument.text = replacement;
             argument.pack_expansion = false;
             argument.dependent = false;
@@ -13640,6 +13802,9 @@ private:
             lookup_reparseable_text_for_type_argument(scope, it->second);
         if(argument.source_text.empty()) {
           argument.source_text = original_text;
+        }
+        if(!argument.source_type_id && argument.type_id) {
+          argument.source_type_id = argument.type_id;
         }
         argument.text = replacement;
         argument.pack_expansion = false;
@@ -14343,16 +14508,22 @@ private:
       vector<FunctionBinding *> out =
           lookup_qualified_class_or_namespace_generic<vector<FunctionBinding *> >(
           scope, qualified,
-          [&lookup_visible_member_functions_with_implicit](Scope & target,
-                                                           const string & lookup_name)
+          [this](Scope & target, const string & lookup_name)
               -> vector<FunctionBinding *>
           {
             if(target.class_info) {
-              MemberFunctionLookupResult result =
-                  lookup_visible_member_functions_with_implicit(*target.class_info,
-                                                                lookup_name);
-              if(!result.functions.empty()) {
-                return result.functions;
+              if(lookup_name == "operator=") {
+                ensure_implicit_special_members(*target.class_info);
+                ensure_implicit_copy_assignment(*target.class_info);
+                ensure_implicit_move_assignment(*target.class_info);
+              }
+              MemberCallableLookupResult callables =
+                  lookup_visible_member_callables(*target.class_info, lookup_name);
+              if(!callables.templates.empty()) {
+                return callables.functions;
+              }
+              if(!callables.functions.empty()) {
+                return callables.functions;
               }
               return lookup_direct_functions(target, lookup_name);
             }
@@ -14705,14 +14876,11 @@ private:
         ensure_implicit_copy_assignment(*current_scope->class_info);
         ensure_implicit_move_assignment(*current_scope->class_info);
       }
-      MemberFunctionTemplateLookupResult template_result =
-          semantic_lookup::lookup_visible_member_function_templates(
-              *current_scope->class_info,
-              leaf_name);
-      if(!template_result.templates.empty()) {
-        out = semantic_lookup::lookup_visible_member_functions(
-                  *current_scope->class_info,
-                  leaf_name).functions;
+      MemberCallableLookupResult callables =
+          semantic_lookup::lookup_visible_member_callables(*current_scope->class_info,
+                                                           leaf_name);
+      if(!callables.templates.empty()) {
+        out = callables.functions;
       } else {
         MemberFunctionLookupResult result =
             semantic_lookup::lookup_class_scoped_functions(*current_scope->class_info,

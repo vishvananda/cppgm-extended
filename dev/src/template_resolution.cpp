@@ -509,13 +509,132 @@ std::string ast_leaf_text(const CppAstNode & node)
   return text;
 }
 
+std::string ast_declarator_text(const CppAstNode & node);
+
+std::string ast_parameter_clause_text(const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::parameter_clause) {
+    return ast_leaf_text(node);
+  }
+  std::ostringstream out;
+  out << "(";
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(i != 0) {
+      out << ", ";
+    }
+    if(node.children[i].kind == CppAstKind::parameter_pack) {
+      out << "...";
+    } else {
+      out << ast_leaf_text(node.children[i]);
+    }
+  }
+  out << ")";
+  return out.str();
+}
+
+std::string ast_array_suffix_text(const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::array_suffix) {
+    return ast_leaf_text(node);
+  }
+  std::ostringstream out;
+  out << "[";
+  if(!node.children.empty()) {
+    out << ast_leaf_text(node.children[0]);
+  }
+  out << "]";
+  return out.str();
+}
+
+void append_ast_declarator_fragment(std::string & out,
+                                    const std::string & fragment)
+{
+  if(fragment.empty()) {
+    return;
+  }
+  if(!out.empty()) {
+    const char last = out[out.size() - 1];
+    const char first = fragment[0];
+    if((std::isalnum(static_cast<unsigned char>(last)) || last == '_' ||
+        last == '>') &&
+       (std::isalnum(static_cast<unsigned char>(first)) || first == '_' ||
+        first == ':' || first == '<')) {
+      out += " ";
+    }
+  }
+  out += fragment;
+}
+
+std::string ast_declarator_text(const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::declarator &&
+     node.kind != CppAstKind::abstract_declarator) {
+    return ast_leaf_text(node);
+  }
+
+  std::string out = node_text(node);
+  if(!out.empty()) {
+    return out;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    std::string fragment;
+    if(child.kind == CppAstKind::parameter_clause) {
+      fragment = ast_parameter_clause_text(child);
+    } else if(child.kind == CppAstKind::array_suffix) {
+      fragment = ast_array_suffix_text(child);
+    } else if(child.kind == CppAstKind::nested_declarator &&
+              !child.children.empty()) {
+      fragment = std::string("(") + ast_declarator_text(child.children[0]) + ")";
+    } else if(child.kind == CppAstKind::parameter_pack) {
+      fragment = "...";
+    } else {
+      fragment = ast_leaf_text(child);
+    }
+    append_ast_declarator_fragment(out, trim_space(fragment));
+  }
+  return out;
+}
+
+std::string ast_type_id_text(const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::type_id) {
+    return ast_leaf_text(node);
+  }
+  const CppAstNode * specifiers =
+      cpp_decl::find_child(node, CppAstKind::type_specifier_seq);
+  if(!specifiers) {
+    specifiers = cpp_decl::find_child(node, CppAstKind::decl_specifier_seq);
+  }
+  std::string text = specifiers ? ast_leaf_text(*specifiers) : node_text(node);
+  const CppAstNode * declarator =
+      cpp_decl::find_child(node, CppAstKind::abstract_declarator);
+  if(!declarator) {
+    declarator = cpp_decl::find_child(node, CppAstKind::declarator);
+  }
+  const std::string declarator_text =
+      declarator ? trim_space(ast_declarator_text(*declarator)) : std::string();
+  if(!declarator_text.empty()) {
+    if(!text.empty() &&
+       declarator_text[0] != '(' &&
+       declarator_text[0] != '[') {
+      text += " ";
+    }
+    text += declarator_text;
+  }
+  if(text.empty()) {
+    text = ast_leaf_text(node);
+  }
+  return text;
+}
+
 std::string default_type_argument_text_from_ast(
     const TemplateParameterInfo & parameter,
     const CppAstNode & node)
 {
   if(parameter.kind == TemplateParameterInfo::TP_TYPE &&
      node.kind == CppAstKind::type_id) {
-    return ast_leaf_text(node);
+    return ast_type_id_text(node);
   }
   if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
     const std::string text = ast_leaf_text(node);
@@ -534,11 +653,12 @@ std::vector<std::string> source_argument_texts_for_template_id_syntax(
       std::min(syntax.argument_syntaxes.size(), syntax.arguments.size());
   out.reserve(syntax.arguments.size());
   for(std::size_t i = 0; i < syntax_count; ++i) {
+    const bool has_preserved_source_text =
+        !trim_space(syntax.argument_syntaxes[i].source_text).empty();
     std::string text = trim_space(
-        syntax.argument_syntaxes[i].source_text.empty() ?
-            syntax.argument_syntaxes[i].text :
-            syntax.argument_syntaxes[i].source_text);
-    if(syntax.argument_syntaxes[i].expression) {
+        has_preserved_source_text ? syntax.argument_syntaxes[i].source_text :
+                                    syntax.argument_syntaxes[i].text);
+    if(!has_preserved_source_text && syntax.argument_syntaxes[i].expression) {
       const std::string expression_text =
           trim_space(callsemantic_internal::describe_expression_for_diagnostic(
               *syntax.argument_syntaxes[i].expression));
@@ -5759,7 +5879,10 @@ bool try_substitute_non_type_parameter_type_from_prefix_arguments(
 
   Scope & raw_scope = scope.require();
   const TemplateParameterInfo & parameter = parameters[parameter_index];
-  if(parameter.non_type_decl_specifier_seq) {
+  if(parameter.non_type_decl_specifier_seq &&
+     template_argument_semantics::type_depends_on_template_parameter(
+         service_type_system(services),
+         parameter.value_type)) {
     CppAstNode substituted_specifiers;
     if(template_argument_semantics::substitute_expression_node_for_template_arguments(
            raw_scope,
@@ -10732,17 +10855,23 @@ bool resolve_template_argument(template_api::TemplateServices & services,
      template_argument_semantics::type_depends_on_template_parameter(type_system, type) &&
      !template_argument_semantics::scope_has_template_placeholders(
          services, template_api::make_template_environment(raw_argument_scope))) {
-    TypePtr resolved_before_failure;
-    if(template_argument_semantics::resolve_instantiated_dependent_type(
-           services,
-           argument_scope,
-           type,
-           resolved_before_failure) &&
-       resolved_before_failure &&
-       !template_argument_semantics::type_depends_on_template_parameter(
-           type_system,
-           resolved_before_failure)) {
-      type = resolved_before_failure;
+    compute_type_dependency_flags();
+    if(!type_mentions_placeholders &&
+       !type_mentions_dependent_bindings &&
+       !should_defer_unresolved_type_lookup(
+           services, template_api::make_template_environment(raw_argument_scope), trimmed)) {
+      TypePtr resolved_before_failure;
+      if(template_argument_semantics::resolve_instantiated_dependent_type(
+             services,
+             argument_scope,
+             type,
+             resolved_before_failure) &&
+         resolved_before_failure &&
+         !template_argument_semantics::type_depends_on_template_parameter(
+             type_system,
+             resolved_before_failure)) {
+        type = resolved_before_failure;
+      }
     }
   }
 

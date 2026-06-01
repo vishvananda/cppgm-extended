@@ -827,6 +827,7 @@ struct AliasTemplateDecl
     bool allow_dependent_expansion = false;
     StableAliasExpansionScopeKey match_scope;
     StableAliasExpansionScopeKey argument_scope;
+    StableAliasExpansionScopeKey resolution_scope;
     std::vector<StableAliasExpansionArgumentKey> arguments;
 
     bool operator<(const StableAliasExpansionKey & other) const
@@ -844,6 +845,12 @@ struct AliasTemplateDecl
         return true;
       }
       if(other.argument_scope < argument_scope) {
+        return false;
+      }
+      if(resolution_scope < other.resolution_scope) {
+        return true;
+      }
+      if(other.resolution_scope < resolution_scope) {
         return false;
       }
       return arguments < other.arguments;
@@ -871,6 +878,8 @@ struct AliasTemplateDecl
   std::vector<template_model::TemplateParameterInfo> parameters;
   std::map<std::string, cpp_decl::TypePtr> instantiations;
   std::map<std::string, cpp_decl::TypePtr> reference_instantiations;
+  mutable bool dependent_qualified_member_scope_sensitive_cached = false;
+  mutable bool dependent_qualified_member_scope_sensitive = false;
   mutable std::map<StableSubstitutionKey, StableSubstitutionFailure>
       stable_substitution_failures;
   mutable std::map<StableAliasExpansionKey, StableAliasExpansionValue>

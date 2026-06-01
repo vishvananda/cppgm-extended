@@ -37,6 +37,7 @@ struct TemplateArgumentSyntax
   uint32_t source_location_id = 0;
   std::shared_ptr<TemplateIdSyntax> template_id;
   std::shared_ptr<CppAstNode> type_id;
+  std::shared_ptr<CppAstNode> source_type_id;
   std::shared_ptr<CppAstNode> expression;
   TypePtr resolved_type;
 };

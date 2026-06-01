@@ -143,8 +143,117 @@ inline Kind kind_for_name(const std::string & name)
 
 inline Kind kind_for_alias_template_name(const std::string & name)
 {
-  const AliasInfo * alias = find_alias_template(name);
-  return alias ? alias->kind : BTK_UNKNOWN;
+  switch(name.size()) {
+  case 7:
+    return name == "decay_t" ? BTK_DECAY : BTK_UNKNOWN;
+  case 9:
+    return name == "__decay_t" ? BTK_DECAY : BTK_UNKNOWN;
+  case 11:
+    return name == "remove_cv_t" ? BTK_REMOVE_CV : BTK_UNKNOWN;
+  case 13:
+    if(name == "__remove_cv_t") {
+      return BTK_REMOVE_CV;
+    }
+    return name == "add_pointer_t" ? BTK_ADD_POINTER : BTK_UNKNOWN;
+  case 14:
+    if(name == "remove_const_t") {
+      return BTK_REMOVE_CONST;
+    }
+    return name == "remove_cvref_t" ? BTK_REMOVE_CVREF : BTK_UNKNOWN;
+  case 15:
+    if(name == "__add_pointer_t") {
+      return BTK_ADD_POINTER;
+    }
+    if(name == "remove_extent_t") {
+      return BTK_REMOVE_EXTENT;
+    }
+    return name == "type_identity_t" ? BTK_IDENTITY : BTK_UNKNOWN;
+  case 16:
+    if(name == "__remove_const_t") {
+      return BTK_REMOVE_CONST;
+    }
+    if(name == "__remove_cvref_t") {
+      return BTK_REMOVE_CVREF;
+    }
+    return name == "remove_pointer_t" ? BTK_REMOVE_POINTER : BTK_UNKNOWN;
+  case 17:
+    if(name == "__remove_extent_t") {
+      return BTK_REMOVE_EXTENT;
+    }
+    if(name == "__type_identity_t") {
+      return BTK_IDENTITY;
+    }
+    return name == "remove_volatile_t" ? BTK_REMOVE_VOLATILE : BTK_UNKNOWN;
+  case 18:
+    if(name == "__remove_pointer_t") {
+      return BTK_REMOVE_POINTER;
+    }
+    return name == "remove_reference_t" ? BTK_REMOVE_REFERENCE : BTK_UNKNOWN;
+  case 19:
+    return name == "__remove_volatile_t" ? BTK_REMOVE_VOLATILE : BTK_UNKNOWN;
+  case 20:
+    if(name == "__libcpp_remove_cv_t") {
+      return BTK_REMOVE_CV;
+    }
+    if(name == "__remove_const_ref_t") {
+      return BTK_REMOVE_CONST_REF;
+    }
+    if(name == "__remove_reference_t") {
+      return BTK_REMOVE_REFERENCE;
+    }
+    return name == "remove_all_extents_t" ? BTK_REMOVE_ALL_EXTENTS : BTK_UNKNOWN;
+  case 22:
+    if(name == "__libcpp_add_pointer_t") {
+      return BTK_ADD_POINTER;
+    }
+    if(name == "__remove_all_extents_t") {
+      return BTK_REMOVE_ALL_EXTENTS;
+    }
+    if(name == "add_lvalue_reference_t") {
+      return BTK_ADD_LVALUE_REFERENCE;
+    }
+    return name == "add_rvalue_reference_t" ? BTK_ADD_RVALUE_REFERENCE :
+                                             BTK_UNKNOWN;
+  case 23:
+    if(name == "__libcpp_remove_const_t") {
+      return BTK_REMOVE_CONST;
+    }
+    return name == "__libcpp_remove_cvref_t" ? BTK_REMOVE_CVREF : BTK_UNKNOWN;
+  case 24:
+    if(name == "__add_lvalue_reference_t") {
+      return BTK_ADD_LVALUE_REFERENCE;
+    }
+    if(name == "__add_rvalue_reference_t") {
+      return BTK_ADD_RVALUE_REFERENCE;
+    }
+    return name == "__libcpp_remove_extent_t" ? BTK_REMOVE_EXTENT :
+                                               BTK_UNKNOWN;
+  case 25:
+    return name == "__libcpp_remove_pointer_t" ? BTK_REMOVE_POINTER :
+                                                BTK_UNKNOWN;
+  case 26:
+    return name == "__libcpp_remove_volatile_t" ? BTK_REMOVE_VOLATILE :
+                                                  BTK_UNKNOWN;
+  case 27:
+    if(name == "__libcpp_remove_const_ref_t") {
+      return BTK_REMOVE_CONST_REF;
+    }
+    return name == "__libcpp_remove_reference_t" ? BTK_REMOVE_REFERENCE :
+                                                  BTK_UNKNOWN;
+  case 29:
+    return name == "__libcpp_remove_all_extents_t" ?
+               BTK_REMOVE_ALL_EXTENTS :
+               BTK_UNKNOWN;
+  case 31:
+    if(name == "__libcpp_add_lvalue_reference_t") {
+      return BTK_ADD_LVALUE_REFERENCE;
+    }
+    return name == "__libcpp_add_rvalue_reference_t" ?
+               BTK_ADD_RVALUE_REFERENCE :
+               BTK_UNKNOWN;
+  default:
+    return BTK_UNKNOWN;
+  }
 }
 
 inline bool is_supported_name(const std::string & name)

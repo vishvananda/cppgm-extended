@@ -4004,6 +4004,7 @@ static TemplateIdSyntax clone_template_id_syntax_for_mangling(
 {
   TemplateIdSyntax out;
   out.name = source.name;
+  out.source_location_id = source.source_location_id;
   out.arguments = source.arguments;
   out.argument_syntaxes.reserve(source.argument_syntaxes.size());
   for(size_t i = 0; i < source.argument_syntaxes.size(); ++i) {
@@ -4031,6 +4032,9 @@ static TemplateArgumentSyntax clone_template_argument_syntax_for_mangling(
   }
   if(source.type_id) {
     out.type_id.reset(new CppAstNode(clone_ast_node_for_mangling(*source.type_id)));
+  }
+  if(source.source_type_id) {
+    out.source_type_id = source.source_type_id;
   }
   if(source.expression) {
     out.expression.reset(new CppAstNode(clone_ast_node_for_mangling(*source.expression)));
@@ -11178,6 +11182,22 @@ static bool try_build_template_argument_syntax_ir(
                      syntax.source_text :
                      syntax.text);
   if(!known_non_type_parameter &&
+     mangle_ctx &&
+     mangle_ctx->prefer_source_template_parameter_expression_arguments &&
+     syntax.source_type_id) {
+    CppAstNode source_type_id = clone_ast_node_for_mangling(*syntax.source_type_id);
+    clear_default_type_argument_semantics_for_mangling(source_type_id);
+    if(try_build_type_id_ast_ir(source_type_id, mangle_ctx, type)) {
+      if(!(syntax.pack_expansion &&
+           pack_expansion_text_resolves_to_concrete_owner_pack(source_or_text,
+                                                               mangle_ctx))) {
+        wrap_pack_expansion_type_ir_if_needed(syntax.pack_expansion, type);
+      }
+      out = abi_mangle::Type::ClassTemplateArgument::type_arg(std::move(type));
+      return true;
+    }
+  }
+  if(!known_non_type_parameter &&
      !source_or_text.empty() &&
      try_build_template_parameter_type_text_ir(source_or_text,
                                                mangle_ctx,
@@ -11956,36 +11976,50 @@ static bool try_build_non_type_template_parameter_type_ir(
         return true;
       };
 
-  if(parameter.non_type_decl_specifier_seq &&
-     try_build_type_specifier_seq_ast_ir(*parameter.non_type_decl_specifier_seq,
-                                         mangle_ctx,
-                                         out)) {
-    const CppAstNode * declarator =
-        parameter.non_type_declarator ? parameter.non_type_declarator :
-                                        parameter.non_type_abstract_declarator;
-    if(declarator &&
-       (declarator->kind == CppAstKind::declarator ||
-        declarator->kind == CppAstKind::abstract_declarator)) {
-      for(size_t i = 0; i < declarator->children.size(); ++i) {
-        const CppAstNode & child = declarator->children[i];
-        if(child.kind != CppAstKind::ptr_operator) {
-          continue;
-        }
-        if(child.has_token && child.simple_type == OP_STAR) {
-          out = abi_mangle::Type::pointer(std::move(out));
-        } else if(child.has_token && child.simple_type == OP_AMP) {
-          out = abi_mangle::Type::lvalue_reference(std::move(out));
-        } else if(child.has_token && child.simple_type == OP_LAND) {
-          out = abi_mangle::Type::rvalue_reference(std::move(out));
-        } else {
-          return false;
+  const bool dependent_syntax =
+      non_type_template_parameter_type_syntax_is_dependent(parameter, mangle_ctx);
+  if(parameter.non_type_decl_specifier_seq) {
+    CppAstNode source_specifier_seq;
+    const CppAstNode * specifier_seq = parameter.non_type_decl_specifier_seq;
+    if(dependent_syntax) {
+      source_specifier_seq =
+          clone_ast_node_for_mangling(*parameter.non_type_decl_specifier_seq);
+      clear_default_type_argument_semantics_for_mangling(source_specifier_seq);
+      specifier_seq = &source_specifier_seq;
+    }
+    if(try_build_type_specifier_seq_ast_ir(*specifier_seq,
+                                           mangle_ctx,
+                                           out)) {
+      const CppAstNode * declarator =
+          parameter.non_type_declarator ? parameter.non_type_declarator :
+                                          parameter.non_type_abstract_declarator;
+      if(declarator &&
+         (declarator->kind == CppAstKind::declarator ||
+          declarator->kind == CppAstKind::abstract_declarator)) {
+        for(size_t i = 0; i < declarator->children.size(); ++i) {
+          const CppAstNode & child = declarator->children[i];
+          if(child.kind != CppAstKind::ptr_operator) {
+            continue;
+          }
+          if(child.has_token && child.simple_type == OP_STAR) {
+            out = abi_mangle::Type::pointer(std::move(out));
+          } else if(child.has_token && child.simple_type == OP_AMP) {
+            out = abi_mangle::Type::lvalue_reference(std::move(out));
+          } else if(child.has_token && child.simple_type == OP_LAND) {
+            out = abi_mangle::Type::rvalue_reference(std::move(out));
+          } else {
+            return false;
+          }
         }
       }
+      if(type_ir_can_be_emitted(out) ||
+         (!dependent_syntax && build_value_type_ir())) {
+        return true;
+      }
+      return false;
+    } else if(dependent_syntax) {
+      return false;
     }
-    if(type_ir_can_be_emitted(out) || build_value_type_ir()) {
-      return true;
-    }
-    return false;
   }
   if(parser_trace::enabled("symbol.linkage")) {
     ostringstream trace;
