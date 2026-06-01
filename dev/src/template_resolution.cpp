@@ -5757,9 +5757,81 @@ bool try_substitute_non_type_parameter_type_from_prefix_arguments(
     return false;
   }
 
+  Scope & raw_scope = scope.require();
+  const TemplateParameterInfo & parameter = parameters[parameter_index];
+  if(parameter.non_type_decl_specifier_seq) {
+    CppAstNode substituted_specifiers;
+    if(template_argument_semantics::substitute_expression_node_for_template_arguments(
+           raw_scope,
+           *parameter.non_type_decl_specifier_seq,
+           parameters,
+           resolved_arguments,
+           substituted_specifiers)) {
+      TypePtr base;
+      if(template_decl_ast::parse_type_specifier_seq(services,
+                                                     raw_scope,
+                                                     raw_scope,
+                                                     substituted_specifiers,
+                                                     base,
+                                                     true,
+                                                     true) &&
+         base) {
+        TypePtr reparsed = base;
+        bool parsed_declarator = true;
+        if(parameter.non_type_declarator) {
+          CppAstNode substituted_declarator;
+          std::string ignored_name;
+          parsed_declarator =
+              template_argument_semantics::substitute_expression_node_for_template_arguments(
+                  raw_scope,
+                  *parameter.non_type_declarator,
+                  parameters,
+                  resolved_arguments,
+                  substituted_declarator) &&
+              template_decl_ast::parse_declarator(services,
+                                                  raw_scope,
+                                                  raw_scope,
+                                                  substituted_declarator,
+                                                  base,
+                                                  ignored_name,
+                                                  reparsed,
+                                                  true);
+        } else if(parameter.non_type_abstract_declarator) {
+          CppAstNode substituted_declarator;
+          parsed_declarator =
+              template_argument_semantics::substitute_expression_node_for_template_arguments(
+                  raw_scope,
+                  *parameter.non_type_abstract_declarator,
+                  parameters,
+                  resolved_arguments,
+                  substituted_declarator) &&
+              template_decl_ast::parse_abstract_declarator(services,
+                                                           raw_scope,
+                                                           raw_scope,
+                                                           substituted_declarator,
+                                                           base,
+                                                           reparsed,
+                                                           true);
+        }
+        if(parsed_declarator && reparsed) {
+          reparsed =
+              adjusted_non_type_template_parameter_type_for_resolution(reparsed);
+          template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+              services, scope, reparsed);
+          if(reparsed &&
+             !template_argument_semantics::type_depends_on_template_parameter(
+                 service_type_system(services), reparsed)) {
+            out = reparsed;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
   TypePtr substituted;
   if(template_argument_semantics::substitute_type(
-         scope.require(),
+         raw_scope,
          parameters[parameter_index].value_type,
          parameters,
          resolved_arguments,
@@ -10495,6 +10567,26 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       return false;
     }
   }
+  const TemplateIdSyntax * structured_template_id =
+      syntax && syntax->template_id ? syntax->template_id.get() : nullptr;
+  if(!structured_template_id && syntax && syntax->type_id) {
+    const std::string type_id_text =
+        !syntax->text.empty() ? syntax->text : trimmed;
+    structured_template_id =
+        bare_template_id_syntax_for_type_argument(*syntax->type_id,
+                                                  type_id_text);
+  }
+  if(!type && structured_template_id) {
+    attempted_structured_type_syntax = true;
+    template_argument_semantics::resolve_template_id_syntax_type(
+        services,
+        raw_argument_scope,
+        *structured_template_id,
+        true,
+        syntax_source_location,
+        type);
+    resolve_type_argument_if_needed(type);
+  }
   if(!type && syntax && syntax->type_id) {
     attempted_structured_type_syntax = true;
     try {
@@ -10507,17 +10599,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       }
       type = make_deferred_dependent_type_argument(trimmed);
     }
-    resolve_type_argument_if_needed(type);
-  }
-  if(!type && syntax && syntax->template_id) {
-    attempted_structured_type_syntax = true;
-    template_argument_semantics::resolve_template_id_syntax_type(
-        services,
-        raw_argument_scope,
-        *syntax->template_id,
-        true,
-        syntax_source_location,
-        type);
     resolve_type_argument_if_needed(type);
   }
   if(!type && syntax && syntax->expression) {
@@ -10645,6 +10726,24 @@ bool resolve_template_argument(template_api::TemplateServices & services,
      template_argument_semantics::type_depends_on_template_parameter(type_system, type)) {
     resolve_instantiated_dependent_template_owner_type_argument(
         services, argument_scope, syntax, type);
+  }
+
+  if(type &&
+     template_argument_semantics::type_depends_on_template_parameter(type_system, type) &&
+     !template_argument_semantics::scope_has_template_placeholders(
+         services, template_api::make_template_environment(raw_argument_scope))) {
+    TypePtr resolved_before_failure;
+    if(template_argument_semantics::resolve_instantiated_dependent_type(
+           services,
+           argument_scope,
+           type,
+           resolved_before_failure) &&
+       resolved_before_failure &&
+       !template_argument_semantics::type_depends_on_template_parameter(
+           type_system,
+           resolved_before_failure)) {
+      type = resolved_before_failure;
+    }
   }
 
   if(type &&

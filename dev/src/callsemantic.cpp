@@ -7394,87 +7394,19 @@ private:
                 });
           }
 
-          if((parsed_template_id.name == "__libcpp_remove_reference_t" ||
-              parsed_template_id.name == "remove_reference_t") &&
-	             parsed_arg_texts.size() == 1) {
-	            TypePtr arg_type;
-	            if(!resolve_exact_type_arg(0, arg_type)) {
-	              return false;
-	            }
-	            fast_alias = remove_reference_type(arg_type);
-	            return true;
-          }
-
-          if((parsed_template_id.name == "__type_identity_t" ||
-              parsed_template_id.name == "type_identity_t") &&
-	             parsed_arg_texts.size() == 1) {
-	            TypePtr arg_type;
-	            if(!resolve_exact_type_arg(0, arg_type)) {
-	              return false;
-	            }
-	            fast_alias = arg_type;
-	            return true;
-          }
-
-          if((parsed_template_id.name == "__libcpp_remove_cv_t" ||
-              parsed_template_id.name == "__remove_cv_t" ||
-              parsed_template_id.name == "remove_cv_t") &&
-	             parsed_arg_texts.size() == 1) {
-	            TypePtr arg_type;
-	            if(!resolve_exact_type_arg(0, arg_type)) {
-	              return false;
-	            }
-	            fast_alias = strip_top_level_cv(arg_type);
-	            return true;
-          }
-
-          if((parsed_template_id.name == "__libcpp_remove_cvref_t" ||
-              parsed_template_id.name == "__remove_cvref_t" ||
-              parsed_template_id.name == "remove_cvref_t") &&
-	             parsed_arg_texts.size() == 1) {
-	            TypePtr arg_type;
-	            if(!resolve_exact_type_arg(0, arg_type)) {
-	              return false;
-	            }
-	            fast_alias = strip_top_level_cv(remove_reference_type(arg_type));
-	            return true;
-          }
-
-          if((parsed_template_id.name == "__libcpp_remove_const_ref_t" ||
-              parsed_template_id.name == "__remove_const_ref_t") &&
-	             parsed_arg_texts.size() == 1) {
-	            TypePtr arg_type;
-	            if(!resolve_exact_type_arg(0, arg_type)) {
-	              return false;
-	            }
-	            TypePtr no_ref = remove_reference_type(arg_type);
-            fast_alias = no_ref && no_ref->kind == Type::TK_CV ?
-                make_cv(no_ref->inner, false, no_ref->cv_volatile) :
-                no_ref;
-            return fast_alias != nullptr;
-          }
-
-          if((parsed_template_id.name == "__decay_t" ||
-              parsed_template_id.name == "decay_t") &&
-	             parsed_arg_texts.size() == 1) {
-	            TypePtr arg_type;
-	            if(!resolve_exact_type_arg(0, arg_type)) {
-	              return false;
-	            }
-	            TypePtr decayed = remove_reference_type(arg_type);
-            TypePtr decayed_base = strip_top_level_cv(decayed);
-            if(!decayed_base) {
+          const builtin_type_transforms::Kind unary_transform_kind =
+              builtin_type_transforms::kind_for_alias_template_name(
+                  parsed_template_id.name);
+          if(unary_transform_kind != builtin_type_transforms::BTK_UNKNOWN &&
+             parsed_arg_texts.size() == 1) {
+            TypePtr arg_type;
+            if(!resolve_exact_type_arg(0, arg_type)) {
               return false;
             }
-            if(decayed_base->kind == Type::TK_ARRAY ||
-               decayed_base->kind == Type::TK_FUNCTION) {
-              fast_alias = make_pointer(decayed_base->kind == Type::TK_ARRAY ?
-                                            decayed_base->inner :
-                                            decayed_base);
-            } else {
-              fast_alias = decayed_base;
-            }
-            return true;
+            return semantic_builtins::apply_builtin_type_transform_kind(
+                unary_transform_kind,
+                arg_type,
+                fast_alias);
           }
 
           if((parsed_template_id.name == "__conditional_t" ||
@@ -12348,6 +12280,107 @@ private:
       }
     };
     bind_enclosing_class_template_arguments();
+    function<bool(const TypePtr &, int)> type_contains_dependent_qualified_member =
+        [&](const TypePtr & type, int depth) -> bool
+    {
+      if(depth > 32) {
+        return false;
+      }
+      TypePtr base = strip_top_level_cv(type);
+      if(!base) {
+        return false;
+      }
+
+      if(base->kind == Type::TK_NAMED) {
+        TypePtr dependent_owner;
+        vector<string> dependent_members;
+        bool leading_typename = false;
+        if(named_type_dependent_qualified_member(base,
+                                                dependent_owner,
+                                                dependent_members,
+                                                leading_typename)) {
+          return true;
+        }
+
+        void * alias_template_decl = nullptr;
+        vector<DependentAliasTemplateArgumentSyntax> alias_args;
+        if(named_type_dependent_alias_template(base,
+                                              alias_template_decl,
+                                              alias_args)) {
+          for(size_t i = 0; i < alias_args.size(); ++i) {
+            if(type_contains_dependent_qualified_member(alias_args[i].type,
+                                                        depth + 1) ||
+               type_contains_dependent_qualified_member(
+                   alias_args[i].syntax.resolved_type,
+                   depth + 1)) {
+              return true;
+            }
+          }
+        }
+
+        void * class_template_decl = nullptr;
+        vector<DependentAliasTemplateArgumentSyntax> class_args;
+        if(named_type_dependent_class_template(base,
+                                              class_template_decl,
+                                              class_args)) {
+          for(size_t i = 0; i < class_args.size(); ++i) {
+            if(type_contains_dependent_qualified_member(class_args[i].type,
+                                                        depth + 1) ||
+               type_contains_dependent_qualified_member(
+                   class_args[i].syntax.resolved_type,
+                   depth + 1)) {
+              return true;
+            }
+          }
+        }
+
+        if(type_contains_dependent_qualified_member(
+               base->named_dependent_qualified_owner,
+               depth + 1) ||
+           type_contains_dependent_qualified_member(base->inner, depth + 1) ||
+           type_contains_dependent_qualified_member(base->owner, depth + 1)) {
+          return true;
+        }
+      }
+
+      switch(base->kind) {
+      case Type::TK_CV:
+      case Type::TK_ATOMIC:
+      case Type::TK_POINTER:
+      case Type::TK_BLOCK_POINTER:
+      case Type::TK_LVALUE_REFERENCE:
+      case Type::TK_RVALUE_REFERENCE:
+      case Type::TK_ARRAY:
+        return type_contains_dependent_qualified_member(base->inner, depth + 1);
+
+      case Type::TK_MEMBER_POINTER:
+        return type_contains_dependent_qualified_member(base->owner, depth + 1) ||
+               type_contains_dependent_qualified_member(base->inner, depth + 1);
+
+      case Type::TK_FUNCTION:
+        if(type_contains_dependent_qualified_member(base->inner, depth + 1)) {
+          return true;
+        }
+        for(size_t i = 0; i < base->params.size(); ++i) {
+          if(type_contains_dependent_qualified_member(base->params[i], depth + 1)) {
+            return true;
+          }
+        }
+        return false;
+
+      case Type::TK_NAMED:
+      case Type::TK_FUNDAMENTAL:
+        return false;
+      }
+      return false;
+    };
+    const auto dependent_alias_cache_is_scope_sensitive =
+        [&](const TypePtr & candidate) -> bool
+    {
+      return candidate &&
+             type_depends_on_template_parameter(candidate) &&
+             type_contains_dependent_qualified_member(candidate, 0);
+    };
     const auto make_dependent_alias_specialization = [&]() -> TypePtr
     {
       vector<string> dependent_source_arg_texts =
@@ -12453,15 +12486,34 @@ private:
     TypePtr alias;
     const string type_id_text = decl.type_id ? node_text(*decl.type_id) : string();
     const string spaced_type_id_text = decl.type_id ? spaced_node_text(*decl.type_id) : string();
+    auto substituted_alias_type_id_node =
+        [&](CppAstNode & storage) -> const CppAstNode *
+    {
+      if(!decl.type_id) {
+        return nullptr;
+      }
+      if(template_argument_semantics::substitute_expression_node_for_template_arguments(
+             *inst_scope,
+             *decl.type_id,
+             decl.parameters,
+             arguments,
+             storage)) {
+        return &storage;
+      }
+      return decl.type_id;
+    };
 	    auto resolve_nested_alias_type_id_syntax =
 	        [&](TypePtr & out) -> bool
 	    {
 	      out.reset();
-	      if(!decl.type_id) {
+	      CppAstNode substituted_type_id;
+	      const CppAstNode * type_id_node =
+	          substituted_alias_type_id_node(substituted_type_id);
+	      if(!type_id_node) {
 	        return false;
 	      }
 	      const TemplateIdSyntax * syntax =
-	          first_template_id_syntax_in_subtree(*decl.type_id);
+	          first_template_id_syntax_in_subtree(*type_id_node);
 	      if(!syntax || syntax->name.name.empty()) {
 	        return false;
 	      }
@@ -12486,11 +12538,14 @@ private:
 	        [&](TypePtr & out) -> bool
 	    {
 	      out.reset();
-	      if(!decl.type_id) {
+	      CppAstNode substituted_type_id;
+	      const CppAstNode * type_id_node =
+	          substituted_alias_type_id_node(substituted_type_id);
+	      if(!type_id_node) {
 	        return false;
 	      }
 	      const TemplateIdSyntax * syntax =
-	          first_template_id_syntax_in_subtree(*decl.type_id);
+	          first_template_id_syntax_in_subtree(*type_id_node);
 	      if(!syntax || syntax->name.name.empty()) {
 	        return false;
 	      }
@@ -12506,7 +12561,7 @@ private:
 	        }
 	        return out;
 	      };
-	      if(compact(spaced_node_text(*decl.type_id)) !=
+	      if(compact(spaced_node_text(*type_id_node)) !=
 	         compact(template_id_syntax_text_preserving_spacing(*syntax))) {
 	        return false;
 	      }
@@ -12718,6 +12773,19 @@ private:
             << " spaced=" << spaced_type_id_text;
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
+    if(found != instantiations.end() &&
+       dependent_alias_cache_is_scope_sensitive(found->second)) {
+      if(parser_trace::enabled("template.resolve")) {
+        std::ostringstream trace;
+        trace << "instantiate-alias-template-scope-sensitive-cache-skip name="
+              << decl.name
+              << " key=" << key
+              << " alias=" << describe_type(found->second);
+        parser_trace::note("template.resolve", std::string(), trace.str());
+      }
+      instantiations.erase(found);
+      found = instantiations.end();
+    }
     if(found != instantiations.end()) {
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
@@ -12746,7 +12814,9 @@ private:
          resolved_alias_pattern_has_dependent_non_type_argument ||
          (member_alias_template && resolved_alias_pattern_is_dependent))) {
       alias = make_dependent_alias_specialization();
-      instantiations[key] = alias;
+      if(!dependent_alias_cache_is_scope_sensitive(alias)) {
+        instantiations[key] = alias;
+      }
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "instantiate-alias-template-defer-dependent name=" << decl.name
@@ -12837,7 +12907,9 @@ private:
     if(!decl.type_id || !alias) {
       if(dependent_arguments) {
         alias = make_dependent_alias_specialization();
-        instantiations[key] = alias;
+        if(!dependent_alias_cache_is_scope_sensitive(alias)) {
+          instantiations[key] = alias;
+        }
         note_alias_use(alias);
         return alias;
       }
@@ -12858,10 +12930,16 @@ private:
       }
       throw_substitution_failure(out.str(), std::string(), "callsemantic");
     }
-    instantiations[key] = alias;
+    const bool cached_alias = !dependent_alias_cache_is_scope_sensitive(alias);
+    if(cached_alias) {
+      instantiations[key] = alias;
+    }
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
-      trace << "instantiate-alias-template-store name=" << decl.name
+      trace << (cached_alias ?
+                    "instantiate-alias-template-store name=" :
+                    "instantiate-alias-template-no-cache name=")
+            << decl.name
             << " key=" << key
             << " alias=" << describe_type(alias);
       parser_trace::note("template.resolve", std::string(), trace.str());

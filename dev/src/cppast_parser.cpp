@@ -8,6 +8,7 @@
 
 using namespace std;
 
+#include "builtin_type_transforms.h"
 #include "cpp_syntax.h"
 #include "cppast_parser.h"
 #include "file_timing.h"
@@ -1381,22 +1382,7 @@ bool is_builtin_type_transform_identifier(const RecogToken & token)
     return false;
   }
 
-  return token.source == "__remove_cv" ||
-         token.source == "__remove_const" ||
-         token.source == "__remove_volatile" ||
-         token.source == "__remove_extent" ||
-         token.source == "__remove_all_extents" ||
-         token.source == "__remove_pointer" ||
-         token.source == "__remove_reference" ||
-         token.source == "__remove_reference_t" ||
-         token.source == "__remove_cvref" ||
-         token.source == "__decay" ||
-         token.source == "__make_unsigned" ||
-         token.source == "__make_signed" ||
-         token.source == "__add_pointer" ||
-         token.source == "__underlying_type" ||
-         token.source == "__add_lvalue_reference" ||
-         token.source == "__add_rvalue_reference";
+  return builtin_type_transforms::is_supported_name(token.source);
 }
 
 void annotate_builtin_type_transform_node(CppAstNode & node,

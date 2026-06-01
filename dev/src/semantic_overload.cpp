@@ -3527,10 +3527,25 @@ bool same_function_candidate_entity(FunctionBinding * lhs, FunctionBinding * rhs
      type_equals(lhs->type, rhs->type)) {
     if(has_template_source) {
       if(!lhs->source_template ||
-         !rhs->source_template ||
-         !same_inline_namespace_function_template_entity(lhs->source_template,
-                                                        rhs->source_template)) {
+         !rhs->source_template) {
         return false;
+      }
+      if(!same_inline_namespace_function_template_entity(lhs->source_template,
+                                                        rhs->source_template)) {
+        const bool same_instantiated_owner =
+            lhs->owner_class &&
+            rhs->owner_class &&
+            lhs->owner_class->qualified_name == rhs->owner_class->qualified_name;
+        const bool same_source_location =
+            !lhs->source_template->debug_decl_location.empty() &&
+            lhs->source_template->debug_decl_location ==
+                rhs->source_template->debug_decl_location;
+        if(!same_instantiated_owner ||
+           !same_source_location ||
+           lhs->template_instantiation_key != rhs->template_instantiation_key) {
+          return false;
+        }
+        return true;
       }
       return lhs->source_template == rhs->source_template ||
              lhs->template_instantiation_key == rhs->template_instantiation_key;
@@ -7199,9 +7214,16 @@ bool should_use_template_deduction_target_aware_argument_analysis(
     payload = &node.children[0];
   }
   if(payload->kind == CppAstKind::braced_init_list &&
-     target &&
-     ctx.type_depends_on_template_parameter(target)) {
-    return false;
+     target) {
+    TypePtr initializer_list_element;
+    if(ctx.is_initializer_list_type(target, &initializer_list_element, nullptr) &&
+       initializer_list_element &&
+       ctx.type_depends_on_template_parameter(initializer_list_element)) {
+      return false;
+    }
+    if(ctx.type_depends_on_template_parameter(target)) {
+      return false;
+    }
   }
   return true;
 }
@@ -8607,15 +8629,16 @@ vector<FunctionTemplateDecl *> collect_constructor_templates(ClassInfo & info)
 {
   vector<FunctionTemplateDecl *> constructor_templates =
       lookup_direct_function_templates(*info.member_scope, info.name);
-  if(!constructor_templates.empty()) {
-    return constructor_templates;
-  }
   for(map<string, vector<FunctionTemplateDecl *> >::const_iterator it =
           info.member_scope->function_templates.begin();
       it != info.member_scope->function_templates.end();
       ++it) {
     for(size_t i = 0; i < it->second.size(); ++i) {
-      if(it->second[i] && it->second[i]->is_constructor) {
+      if(it->second[i] &&
+         it->second[i]->is_constructor &&
+         find(constructor_templates.begin(),
+              constructor_templates.end(),
+              it->second[i]) == constructor_templates.end()) {
         constructor_templates.push_back(it->second[i]);
       }
     }

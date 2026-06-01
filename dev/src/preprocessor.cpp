@@ -9,6 +9,7 @@
 using namespace std;
 
 #include "cppgm_builtin_host_config.h"
+#include "builtin_type_transforms.h"
 #include "encoding.h"
 #include "file_timing.h"
 #include "types.h"
@@ -712,12 +713,7 @@ bool is_supported_builtin_type_trait_name(const string & name);
 bool is_supported_builtin_name(const string & name)
 {
   return is_supported_builtin_type_trait_name(name) ||
-         name == "__remove_cv" ||
-         name == "__remove_const" ||
-         name == "__remove_cvref" ||
-         name == "__decay" ||
-         name == "__remove_reference" ||
-         name == "__remove_reference_t" ||
+         builtin_type_transforms::is_supported_name(name) ||
          name == "__integer_pack" ||
          name == "__is_pod" ||
          name == "__is_constructible" ||

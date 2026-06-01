@@ -9,8 +9,10 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "builtin_type_transforms.h"
 #include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
+#include "cpp_decl_model.h"
 #include "cppast_parser.h"
 #include "constructor_lifecycle_service.h"
 #include "semantic_class_model.h"
@@ -61,7 +63,7 @@ ExprInfo make_builtin_trait_expr_info(const TypePtr & source)
   return expr;
 }
 
-TypePtr make_dependent_builtin_type_transform_type(
+TypePtr make_dependent_builtin_type_transform_type_impl(
     const std::string & builtin_name,
     const std::string & arg_text,
     const TypePtr & arg_type)
@@ -87,13 +89,22 @@ TypePtr make_dependent_builtin_type_transform_type(
 bool should_defer_builtin_type_transform_for_dependent_arg(
     const std::string & builtin_name)
 {
-  return builtin_name == "__remove_reference" ||
-         builtin_name == "__remove_reference_t" ||
-         builtin_name == "__remove_cv" ||
-         builtin_name == "__remove_const" ||
-         builtin_name == "__remove_volatile" ||
-         builtin_name == "__remove_cvref" ||
-         builtin_name == "__decay";
+  return builtin_type_transforms::should_defer_dependent_operand(builtin_name);
+}
+
+bool is_builtin_type_transform_dependent_operand(SemanticContext & ctx,
+                                                 const TypePtr & type)
+{
+  if(!type) {
+    return false;
+  }
+  if(ctx.type_depends_on_template_parameter(type)) {
+    return true;
+  }
+  TypePtr base = strip_top_level_cv(type);
+  return base &&
+         base->kind == Type::TK_NAMED &&
+         named_type_is_template_parameter(base);
 }
 
 bool resolve_type_pack_element_argument_type(SemanticContext & ctx,
@@ -686,13 +697,6 @@ TypePtr map_signedness_builtin_transform(const std::string & builtin_name,
   TypePtr base = strip_top_level_cv(arg_type);
   if(!base) {
     return TypePtr();
-  }
-
-  if(base->kind == Type::TK_NAMED &&
-     base->named_key.find("template-parameter ") == 0) {
-    return make_named(builtin_name + "(" + describe_type(arg_type) + ")",
-                      "builtin " + builtin_name + " " + base->named_key,
-                      true);
   }
 
   if(base->kind != Type::TK_FUNDAMENTAL) {
@@ -1783,6 +1787,203 @@ bool try_expand_builtin_type_trait_call_arg(SemanticContext & ctx,
 }
 
 }  // namespace
+
+TypePtr make_dependent_builtin_type_transform_type(
+    const std::string & builtin_name,
+    const std::string & arg_text,
+    const TypePtr & arg_type)
+{
+  return make_dependent_builtin_type_transform_type_impl(
+      builtin_name, arg_text, arg_type);
+}
+
+bool describe_dependent_builtin_type_transform(const TypePtr & type,
+                                               std::string & builtin_name,
+                                               TypePtr & arg_type)
+{
+  builtin_name.clear();
+  arg_type.reset();
+  TypePtr base = strip_top_level_cv(type);
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     base->named_semantic_kind != Type::NSK_DEPENDENT_TYPE) {
+    return false;
+  }
+
+  const std::string payload = named_type_semantic_payload(base);
+  if(payload.compare(0,
+                     sizeof(kDependentBuiltinTypeTransformPrefix) - 1,
+                     kDependentBuiltinTypeTransformPrefix) != 0) {
+    return false;
+  }
+
+  const size_t name_begin = sizeof(kDependentBuiltinTypeTransformPrefix) - 1;
+  const size_t name_end = payload.find('|', name_begin);
+  builtin_name =
+      payload.substr(name_begin,
+                     name_end == std::string::npos ? std::string::npos :
+                                                      name_end - name_begin);
+  arg_type = base->inner;
+  return !builtin_name.empty() && arg_type;
+}
+
+bool is_dependent_builtin_type_transform_type(const TypePtr & type)
+{
+  std::string builtin_name;
+  TypePtr arg_type;
+  return describe_dependent_builtin_type_transform(type,
+                                                   builtin_name,
+                                                   arg_type);
+}
+
+bool is_supported_builtin_type_transform_name(const std::string & name)
+{
+  return builtin_type_transforms::is_supported_name(name);
+}
+
+bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
+                                       const TypePtr & arg_type,
+                                       TypePtr & out)
+{
+  out.reset();
+  if(!arg_type) {
+    return false;
+  }
+
+  switch(kind) {
+  case builtin_type_transforms::BTK_REMOVE_CV:
+    out = strip_top_level_cv(arg_type);
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_REMOVE_CONST:
+    out = arg_type->kind == Type::TK_CV ?
+        make_cv(arg_type->inner, false, arg_type->cv_volatile) :
+        arg_type;
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_REMOVE_VOLATILE:
+    out = arg_type->kind == Type::TK_CV ?
+        make_cv(arg_type->inner, arg_type->cv_const, false) :
+        arg_type;
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_REMOVE_EXTENT:
+  {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    out = base->kind == Type::TK_ARRAY ? base->inner : arg_type;
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_REMOVE_ALL_EXTENTS:
+  {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    while(base && base->kind == Type::TK_ARRAY) {
+      base = strip_top_level_cv(base->inner);
+    }
+    out = base ? base : arg_type;
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_REMOVE_REFERENCE:
+    out = remove_reference_type(arg_type);
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_REMOVE_CONST_REF:
+  {
+    TypePtr no_ref = remove_reference_type(arg_type);
+    out = no_ref && no_ref->kind == Type::TK_CV ?
+        make_cv(no_ref->inner, false, no_ref->cv_volatile) :
+        no_ref;
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_REMOVE_CVREF:
+    out = strip_top_level_cv(remove_reference_type(arg_type));
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_DECAY:
+    out = apply_decay_type_transform(arg_type);
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_ADD_POINTER:
+  {
+    TypePtr pointee = remove_reference_type(arg_type);
+    if(!pointee) {
+      return false;
+    }
+    out = make_pointer(pointee);
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_REMOVE_POINTER:
+  {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    out = base->kind == Type::TK_POINTER ? base->inner : arg_type;
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_MAKE_UNSIGNED:
+  case builtin_type_transforms::BTK_MAKE_SIGNED:
+    out = map_signedness_builtin_transform(
+        kind == builtin_type_transforms::BTK_MAKE_UNSIGNED ?
+            "__make_unsigned" :
+            "__make_signed",
+        arg_type);
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_ADD_LVALUE_REFERENCE:
+  case builtin_type_transforms::BTK_ADD_RVALUE_REFERENCE:
+  {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    if(is_void_type(base) || base->kind == Type::TK_LVALUE_REFERENCE) {
+      out = arg_type;
+      return true;
+    }
+    if(base->kind == Type::TK_RVALUE_REFERENCE) {
+      out = kind == builtin_type_transforms::BTK_ADD_LVALUE_REFERENCE ?
+          make_lvalue_reference_raw(base->inner) :
+          arg_type;
+      return true;
+    }
+    out = kind == builtin_type_transforms::BTK_ADD_LVALUE_REFERENCE ?
+        make_lvalue_reference_raw(arg_type) :
+        make_rvalue_reference_raw(arg_type);
+    return true;
+  }
+
+  case builtin_type_transforms::BTK_IDENTITY:
+    out = arg_type;
+    return true;
+
+  case builtin_type_transforms::BTK_UNDERLYING_TYPE:
+  case builtin_type_transforms::BTK_UNKNOWN:
+    break;
+  }
+
+  return false;
+}
+
+bool apply_builtin_type_transform(const std::string & name,
+                                  const TypePtr & arg_type,
+                                  TypePtr & out)
+{
+  return apply_builtin_type_transform_kind(
+      builtin_type_transforms::kind_for_name(name),
+      arg_type,
+      out);
+}
 
 TypePtr gnu_complex_type_for_component(const TypePtr & component_type)
 {
@@ -3361,103 +3562,15 @@ bool try_builtin_type_transform(SemanticContext & ctx,
     return false;
   }
   if(should_defer_builtin_type_transform_for_dependent_arg(builtin_name) &&
-     ctx.type_depends_on_template_parameter(arg_type)) {
-    out = make_dependent_builtin_type_transform_type(
+     is_builtin_type_transform_dependent_operand(ctx, arg_type)) {
+    out = make_dependent_builtin_type_transform_type_impl(
         builtin_name,
         arg_text,
         arg_type);
     return static_cast<bool>(out);
   }
 
-  if(builtin_name == "__remove_cv") {
-    out = strip_top_level_cv(arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_const") {
-    if(arg_type->kind == Type::TK_CV) {
-      out = make_cv(arg_type->inner, false, arg_type->cv_volatile);
-    } else {
-      out = arg_type;
-    }
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_volatile") {
-    if(arg_type->kind == Type::TK_CV) {
-      out = make_cv(arg_type->inner, arg_type->cv_const, false);
-    } else {
-      out = arg_type;
-    }
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_extent") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    out = base->kind == Type::TK_ARRAY ? base->inner : arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_all_extents") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    while(base && base->kind == Type::TK_ARRAY) {
-      base = strip_top_level_cv(base->inner);
-    }
-    out = base ? base : arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_reference" || builtin_name == "__remove_reference_t") {
-    out = remove_reference_type(arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_cvref") {
-    out = strip_top_level_cv(remove_reference_type(arg_type));
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__decay") {
-    out = apply_decay_type_transform(arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__add_pointer") {
-    TypePtr pointee = remove_reference_type(arg_type);
-    if(!pointee) {
-      return false;
-    }
-    out = make_pointer(pointee);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_pointer") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    out = base->kind == Type::TK_POINTER ? base->inner : arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__make_unsigned" || builtin_name == "__make_signed") {
-    out = map_signedness_builtin_transform(builtin_name, arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__add_lvalue_reference" || builtin_name == "__add_rvalue_reference") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    if(is_void_type(base) || base->kind == Type::TK_LVALUE_REFERENCE) {
-      out = arg_type;
-      return true;
-    }
-    if(base->kind == Type::TK_RVALUE_REFERENCE) {
-      out = builtin_name == "__add_lvalue_reference" ?
-          make_lvalue_reference_raw(base->inner) :
-          arg_type;
-      return true;
-    }
-    out = builtin_name == "__add_lvalue_reference" ?
-        make_lvalue_reference_raw(arg_type) :
-        make_rvalue_reference_raw(arg_type);
+  if(apply_builtin_type_transform(builtin_name, arg_type, out)) {
     return true;
   }
   if(builtin_name == "__underlying_type") {

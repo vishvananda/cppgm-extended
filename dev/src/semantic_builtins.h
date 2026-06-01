@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "builtin_type_transforms.h"
 #include "callsem_output.h"
 #include "cpp_decl_model.h"
 #include "semantic_conversion.h"
@@ -55,7 +56,16 @@ bool evaluate_builtin_type_trait(SemanticContext & ctx,
                                  long long & out);
 bool is_supported_builtin_type_trait_name(const std::string & name);
 cpp_decl::TypePtr builtin_type_trait_result_type(const std::string & name);
+bool is_supported_builtin_type_transform_name(const std::string & name);
 
+cpp_decl::TypePtr make_dependent_builtin_type_transform_type(
+    const std::string & builtin_name,
+    const std::string & arg_text,
+    const cpp_decl::TypePtr & arg_type);
+bool describe_dependent_builtin_type_transform(const cpp_decl::TypePtr & type,
+                                               std::string & builtin_name,
+                                               cpp_decl::TypePtr & arg_type);
+bool is_dependent_builtin_type_transform_type(const cpp_decl::TypePtr & type);
 bool try_parse_builtin_type_trait_call_arg(SemanticContext & ctx,
                                            semantic_model::Scope & scope,
                                            const CppAstNode & arg,
@@ -76,6 +86,12 @@ bool try_parse_builtin_type_trait_text(SemanticContext & ctx,
                                        std::string & trait_name,
                                        std::vector<cpp_decl::TypePtr> & types);
 
+bool apply_builtin_type_transform(const std::string & name,
+                                  const cpp_decl::TypePtr & arg_type,
+                                  cpp_decl::TypePtr & out);
+bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
+                                       const cpp_decl::TypePtr & arg_type,
+                                       cpp_decl::TypePtr & out);
 bool try_builtin_type_transform(SemanticContext & ctx,
                                 semantic_model::Scope & scope,
                                 const std::string & text,

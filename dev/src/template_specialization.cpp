@@ -13,6 +13,7 @@
 #include "parser_trace.h"
 #include "semantic_lookup.h"
 #include "semantic_conversion.h"
+#include "semantic_builtins.h"
 #include "semantic_errors.h"
 #include "semantic_fallback_audit.h"
 #include "semantic_utils.h"
@@ -187,16 +188,35 @@ const TemplateParameterInfo * type_pattern_template_parameter(
     return nullptr;
   }
 
+  const auto find_parameter_by_text =
+      [&parameters](const std::string & raw) -> const TemplateParameterInfo *
+  {
+    const std::string text = semantic_utils::trim_space(raw);
+    if(text.empty()) {
+      return nullptr;
+    }
+    const TemplateParameterInfo * parameter =
+        find_template_parameter(parameters, text);
+    if(!parameter) {
+      parameter = find_template_parameter_by_name(parameters, text);
+    }
+    const std::string stripped = semantic_utils::strip_elaborated_type_prefix(text);
+    if(!parameter && stripped != text) {
+      parameter = find_template_parameter(parameters, stripped);
+    }
+    if(!parameter && stripped != text) {
+      parameter = find_template_parameter_by_name(parameters, stripped);
+    }
+    return parameter;
+  };
+
   const TemplateParameterInfo * parameter =
-      find_template_parameter(parameters, base->named_key);
+      find_parameter_by_text(named_type_semantic_payload(base));
   if(!parameter) {
-    parameter = find_template_parameter_by_name(parameters, base->named_key);
+    parameter = find_parameter_by_text(base->named_key);
   }
   if(!parameter && base->named_display != base->named_key) {
-    parameter = find_template_parameter(parameters, base->named_display);
-  }
-  if(!parameter && base->named_display != base->named_key) {
-    parameter = find_template_parameter_by_name(parameters, base->named_display);
+    parameter = find_parameter_by_text(base->named_display);
   }
   return parameter && parameter->kind == TemplateParameterInfo::TP_TYPE ?
              parameter :
@@ -3262,6 +3282,73 @@ bool type_has_dependent_non_type_template_argument(
   return false;
 }
 
+bool type_contains_dependent_qualified_member(const TypePtr & type,
+                                              int depth = 0)
+{
+  if(depth > 32) {
+    return false;
+  }
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+
+  if(base->kind == Type::TK_NAMED) {
+    TypePtr dependent_owner;
+    std::vector<std::string> dependent_members;
+    bool leading_typename = false;
+    if(named_type_dependent_qualified_member(base,
+                                             dependent_owner,
+                                             dependent_members,
+                                             leading_typename)) {
+      return true;
+    }
+
+    void * alias_template_decl = nullptr;
+    std::vector<DependentAliasTemplateArgumentSyntax> alias_args;
+    if(named_type_dependent_alias_template(base,
+                                           alias_template_decl,
+                                           alias_args)) {
+      for(std::size_t i = 0; i < alias_args.size(); ++i) {
+        if(type_contains_dependent_qualified_member(alias_args[i].type,
+                                                    depth + 1)) {
+          return true;
+        }
+      }
+    }
+
+    void * class_template_decl = nullptr;
+    std::vector<DependentAliasTemplateArgumentSyntax> class_args;
+    if(named_type_dependent_class_template(base,
+                                           class_template_decl,
+                                           class_args)) {
+      for(std::size_t i = 0; i < class_args.size(); ++i) {
+        if(type_contains_dependent_qualified_member(class_args[i].type,
+                                                    depth + 1)) {
+          return true;
+        }
+      }
+    }
+
+    if(type_contains_dependent_qualified_member(
+           base->named_dependent_qualified_owner,
+           depth + 1)) {
+      return true;
+    }
+  }
+
+  if(type_contains_dependent_qualified_member(base->inner, depth + 1) ||
+     type_contains_dependent_qualified_member(base->owner, depth + 1)) {
+    return true;
+  }
+  for(std::size_t i = 0; i < base->params.size(); ++i) {
+    if(type_contains_dependent_qualified_member(base->params[i], depth + 1)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool dependent_non_type_argument_is_direct_parameter(
     const std::vector<TemplateParameterInfo> & parameters,
     std::string text)
@@ -3814,6 +3901,10 @@ bool try_expand_alias_template_pattern_structurally(
     if(!has_alias_expansion_cache_key || text.empty() || !type) {
       return;
     }
+    if(type_is_dependent(type) &&
+       type_contains_dependent_qualified_member(type)) {
+      return;
+    }
     AliasTemplateDecl::StableAliasExpansionValue value;
     value.kind = AliasTemplateDecl::StableAliasExpansionValue::EK_SUCCESS;
     value.expanded_text = text;
@@ -3821,9 +3912,12 @@ bool try_expand_alias_template_pattern_structurally(
     alias_template.stable_alias_expansions[alias_expansion_cache_key] = value;
   };
   const auto cache_alias_dependent_defer =
-      [&]() -> void
+      [&](const TypePtr & type) -> void
   {
     if(!has_alias_expansion_cache_key) {
+      return;
+    }
+    if(type_contains_dependent_qualified_member(type)) {
       return;
     }
     AliasTemplateDecl::StableAliasExpansionValue value;
@@ -3896,16 +3990,7 @@ bool try_expand_alias_template_pattern_structurally(
   const auto find_type_parameter =
       [&](const TypePtr & type) -> const TemplateParameterInfo *
   {
-    if(!type || type->kind != Type::TK_NAMED) {
-      return nullptr;
-    }
-    const TemplateParameterInfo * parameter =
-        find_template_parameter(alias_template.parameters, type->named_key);
-    if(!parameter && type->named_display != type->named_key) {
-      parameter = find_template_parameter_by_name(alias_template.parameters,
-                                                  type->named_display);
-    }
-    return parameter;
+    return type_pattern_template_parameter(alias_template.parameters, type);
   };
   const auto find_non_type_parameter =
       [&](const TemplateArgument & argument) -> const TemplateParameterInfo *
@@ -4722,29 +4807,42 @@ bool try_expand_alias_template_pattern_structurally(
       out = scope_bound_type;
       return true;
     }
-    const bool dependent_builtin_transform =
-        pattern_base &&
-        pattern_base->kind == Type::TK_NAMED &&
-        pattern_base->named_semantic_kind == Type::NSK_DEPENDENT_TYPE &&
-        pattern_base->named_semantic_payload.find("$builtin-type-transform:") == 0;
-    if(dependent_builtin_transform) {
+    std::string builtin_transform_name;
+    TypePtr builtin_transform_arg;
+    if(semantic_builtins::describe_dependent_builtin_type_transform(
+           pattern,
+           builtin_transform_name,
+           builtin_transform_arg)) {
       TypePtr resolved = pattern;
-      if(pattern_base->inner) {
+      if(builtin_transform_arg) {
         TypePtr substituted_inner;
-        if(substitute_type(pattern_base->inner, substituted_inner) &&
+        if(substitute_type(builtin_transform_arg, substituted_inner) &&
            substituted_inner) {
-          TypePtr substituted_pattern(new Type(*pattern_base));
-          substituted_pattern->inner = substituted_inner;
-          resolved = substituted_pattern;
+          TypePtr immediate_transform;
+          if(semantic_builtins::apply_builtin_type_transform(
+                 builtin_transform_name,
+                 substituted_inner,
+                 immediate_transform) &&
+             immediate_transform) {
+            out = immediate_transform;
+            return true;
+          }
+          resolved =
+              semantic_builtins::make_dependent_builtin_type_transform_type(
+                  builtin_transform_name,
+                  type_text(substituted_inner),
+                  substituted_inner);
         }
       }
-      if(template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+      TypePtr resolved_transform;
+      if(template_argument_semantics::resolve_instantiated_dependent_type(
              services,
              effective_body_scope,
-             resolved) &&
-         resolved &&
-         !type_is_dependent(resolved)) {
-        out = resolved;
+             resolved,
+             resolved_transform) &&
+         resolved_transform &&
+         !type_is_dependent(resolved_transform)) {
+        out = resolved_transform;
         return true;
       }
     }
@@ -5177,7 +5275,7 @@ bool try_expand_alias_template_pattern_structurally(
               << " substituted=" << describe_type(substituted);
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
-      cache_alias_dependent_defer();
+      cache_alias_dependent_defer(substituted);
       return false;
     }
     if(type_has_dependent_non_type_template_argument(type_system, substituted) &&
@@ -5192,7 +5290,7 @@ bool try_expand_alias_template_pattern_structurally(
               << " substituted=" << describe_type(substituted);
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
-      cache_alias_dependent_defer();
+      cache_alias_dependent_defer(substituted);
       return false;
     }
     if(parser_trace::enabled("template.resolve")) {

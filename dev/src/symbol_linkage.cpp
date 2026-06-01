@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "class_template_mangle_info.h"
+#include "builtin_type_transforms.h"
 #include "cpp_decl_bridge.h"
 #include "parser_trace.h"
 #include "abi_model.h"
@@ -5862,22 +5863,7 @@ static bool type_has_concrete_template_id_spelling_for_mangling(
 
 static bool is_mangleable_builtin_type_transform_name(const string & name)
 {
-  return name == "__remove_cv" ||
-         name == "__remove_const" ||
-         name == "__remove_volatile" ||
-         name == "__remove_extent" ||
-         name == "__remove_all_extents" ||
-         name == "__remove_pointer" ||
-         name == "__remove_reference" ||
-         name == "__remove_reference_t" ||
-         name == "__remove_cvref" ||
-         name == "__decay" ||
-         name == "__make_signed" ||
-         name == "__make_unsigned" ||
-         name == "__add_pointer" ||
-         name == "__underlying_type" ||
-         name == "__add_lvalue_reference" ||
-         name == "__add_rvalue_reference";
+  return builtin_type_transforms::is_supported_name(name);
 }
 
 static bool parse_unary_builtin_type_transform_syntax_text(

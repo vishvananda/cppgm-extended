@@ -170,6 +170,8 @@ bool expression_node_mentions_identifier(const CppAstNode & node,
                                          const string & name);
 bool argument_syntax_mentions_identifier(const TemplateArgumentSyntax & syntax,
                                          const string & name);
+bool template_id_syntax_mentions_identifier(const TemplateIdSyntax & syntax,
+                                            const string & name);
 
 string base_specifier_type_lookup_key(const string & text)
 {
@@ -223,7 +225,19 @@ bool argument_syntax_mentions_current_template_bound_name(
       scope,
       [&](const string & name)
       {
-        return argument_syntax_mentions_identifier(syntax, name);
+        if(syntax.template_id &&
+           template_id_syntax_mentions_identifier(*syntax.template_id, name)) {
+          return true;
+        }
+        if(syntax.type_id &&
+           expression_node_mentions_identifier(*syntax.type_id, name)) {
+          return true;
+        }
+        if(syntax.expression &&
+           expression_node_mentions_identifier(*syntax.expression, name)) {
+          return true;
+        }
+        return false;
       });
 }
 
@@ -3463,6 +3477,25 @@ bool resolve_template_id_syntax_type(template_api::TemplateServices & services,
   return false;
 }
 
+bool simple_structured_type_argument_name(const TemplateArgumentSyntax & syntax,
+                                          string & out)
+{
+  out.clear();
+  if(!syntax.type_id) {
+    return false;
+  }
+  const CppAstNode * type_name = single_type_name_child(*syntax.type_id);
+  if(!type_name || type_name->template_id_syntax) {
+    return false;
+  }
+  const QualifiedName * qualified = cppast_qualified_name_syntax(*type_name);
+  if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+    return false;
+  }
+  out = strip_elaborated_type_prefix(trim_space(type_name->value));
+  return is_identifier_text(out);
+}
+
 bool resolve_type_argument_syntax_type(template_api::TemplateServices & services,
                                        template_api::TemplateEnvironmentHandle scope,
                                        const TemplateArgumentSyntax & syntax,
@@ -3473,29 +3506,94 @@ bool resolve_type_argument_syntax_type(template_api::TemplateServices & services
   if(!scope.valid()) {
     return false;
   }
+  const auto type_is_dependent =
+      [&services](const TypePtr & type) -> bool
+      {
+        return service_type_depends_on_template_parameter(services, type);
+      };
+  const auto resolve_if_instantiated =
+      [&](TypePtr & type) -> void
+      {
+        if(type && type_is_dependent(type)) {
+          resolve_instantiated_dependent_type_if_needed(services, scope, type);
+        }
+      };
+  const auto resolve_structured_syntax =
+      [&]() -> bool
+      {
+        if(syntax.type_id) {
+          return parse_type_id_node_for_templates(services,
+                                                  scope.require(),
+                                                  *syntax.type_id,
+                                                  out,
+                                                  reference_class_templates_only) &&
+                 out != nullptr;
+        }
+        if(syntax.template_id) {
+          return resolve_template_id_syntax_type(services,
+                                                 scope.require(),
+                                                 *syntax.template_id,
+                                                 reference_class_templates_only,
+                                                 string(),
+                                                 out,
+                                                 scope) &&
+                 out != nullptr;
+        }
+        return false;
+      };
+  const auto resolve_structured_bound_identifier =
+      [&]() -> bool
+      {
+        string name;
+        if(!simple_structured_type_argument_name(syntax, name)) {
+          return false;
+        }
+        TypePtr bound = lookup_exact_bound_type_name(scope.require(), name);
+        if(!bound) {
+          bound = lookup_exact_local_type_name(services, scope.require(), name);
+        }
+        if(!bound) {
+          return false;
+        }
+        resolve_if_instantiated(bound);
+        out = bound;
+        return true;
+      };
   if(syntax.resolved_type &&
      !argument_syntax_mentions_current_template_bound_name(scope.require(),
                                                            syntax)) {
-    out = syntax.resolved_type;
+    TypePtr carried = syntax.resolved_type;
+    resolve_if_instantiated(carried);
+    if(type_is_dependent(carried) &&
+       (syntax.type_id || syntax.template_id)) {
+      TypePtr structured;
+      if(resolve_structured_syntax() && out) {
+        structured = out;
+        resolve_if_instantiated(structured);
+        if(!type_is_dependent(structured)) {
+          out = structured;
+          return true;
+        }
+      }
+      if(resolve_structured_bound_identifier()) {
+        return true;
+      }
+    }
+    out = carried ? carried : syntax.resolved_type;
     return true;
   }
-  if(syntax.type_id) {
-    return parse_type_id_node_for_templates(services,
-                                            scope.require(),
-                                            *syntax.type_id,
-                                            out,
-                                            reference_class_templates_only) &&
-           out != nullptr;
-  }
-  if(syntax.template_id) {
-    return resolve_template_id_syntax_type(services,
-                                           scope.require(),
-                                           *syntax.template_id,
-                                           reference_class_templates_only,
-                                           string(),
-                                           out,
-                                           scope) &&
-           out != nullptr;
+  if(resolve_structured_syntax()) {
+    TypePtr structured = out;
+    resolve_if_instantiated(structured);
+    if(!type_is_dependent(structured)) {
+      out = structured;
+      return true;
+    }
+    if(resolve_structured_bound_identifier()) {
+      return true;
+    }
+    out = structured;
+    return true;
   }
   const auto resolve_exact_bound_identifier =
       [&](const string & text) -> bool
@@ -9977,19 +10075,6 @@ void substitute_value_pack_template_id_arguments(
     TemplateIdSyntax & syntax,
     const map<string, ValueBinding> & value_replacements);
 
-bool is_dependent_builtin_type_transform_type(const TypePtr & type)
-{
-  if(!type ||
-     !named_type_is_dependent_type(type) ||
-     !type->inner) {
-    return false;
-  }
-
-  static const char prefix[] = "$builtin-type-transform:";
-  const string payload = named_type_semantic_payload(type);
-  return payload.compare(0, sizeof(prefix) - 1, prefix) == 0;
-}
-
 bool substitute_dependent_alias_type(const TypePtr & type,
                                      const vector<TemplateParameterInfo> & parameters,
                                      const vector<TemplateArgument> & arguments,
@@ -10907,6 +10992,32 @@ bool substitute_dependent_argument_text_and_syntax(
      pack_size_replacements.empty()) {
     return true;
   }
+
+  const auto direct_type_replacement_for_argument =
+      [&]() -> TypePtr
+      {
+        std::string direct_name = trim_space(argument.text);
+        if(direct_name.empty()) {
+          direct_name = trim_space(argument.syntax.text);
+        }
+        if(direct_name.size() >= 3 &&
+           direct_name.compare(direct_name.size() - 3, 3, "...") == 0) {
+          direct_name = trim_space(direct_name.substr(0, direct_name.size() - 3));
+        }
+        if(!is_identifier_text(direct_name)) {
+          return TypePtr();
+        }
+        map<string, TypePtr>::const_iterator found =
+            type_replacements.find(direct_name);
+        return found != type_replacements.end() ? found->second : TypePtr();
+      };
+
+  if(TypePtr direct_type = direct_type_replacement_for_argument()) {
+    update_dependent_argument_with_type(argument, direct_type);
+    changed = true;
+    return true;
+  }
+
   argument.syntax.resolved_type.reset();
 
   string rewritten_text = argument.text;
@@ -11706,14 +11817,33 @@ bool substitute_type_impl(const TypePtr & type,
       out = substituted_alias;
       return true;
     }
-    if(is_dependent_builtin_type_transform_type(type)) {
+    string builtin_transform_name;
+    TypePtr builtin_transform_arg;
+    if(semantic_builtins::describe_dependent_builtin_type_transform(
+           type,
+           builtin_transform_name,
+           builtin_transform_arg)) {
       TypePtr inner;
-      if(!substitute_type_impl(type->inner, parameters, arguments, scope, inner)) {
+      if(!substitute_type_impl(builtin_transform_arg,
+                               parameters,
+                               arguments,
+                               scope,
+                               inner)) {
         return false;
       }
-      TypePtr substituted(new Type(*type));
-      substituted->inner = inner;
-      out = substituted;
+      TypePtr resolved_transform;
+      if(semantic_builtins::apply_builtin_type_transform(
+             builtin_transform_name,
+             inner,
+             resolved_transform) &&
+         resolved_transform) {
+        out = resolved_transform;
+        return true;
+      }
+      out = semantic_builtins::make_dependent_builtin_type_transform_type(
+          builtin_transform_name,
+          reparseable_type_argument_text(inner),
+          inner);
       return true;
     }
     out = type;
@@ -11983,41 +12113,9 @@ bool try_resolve_concrete_unary_type_transform_template_id(
     return false;
   }
 
-  const auto name_matches =
-      [&](std::initializer_list<const char *> names) -> bool
-  {
-    for(const char * name : names) {
-      if(template_id.name == name) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  if(!name_matches({"__libcpp_remove_reference_t", "__remove_reference_t",
-                    "remove_reference_t",
-                    "__libcpp_remove_cv_t", "__remove_cv_t", "remove_cv_t",
-                    "__libcpp_remove_const_t", "__remove_const_t",
-                    "remove_const_t",
-                    "__libcpp_remove_volatile_t", "__remove_volatile_t",
-                    "remove_volatile_t",
-                    "__libcpp_remove_const_ref_t", "__remove_const_ref_t",
-                    "__libcpp_remove_cvref_t", "__remove_cvref_t",
-                    "remove_cvref_t",
-                    "__libcpp_remove_pointer_t", "__remove_pointer_t",
-                    "remove_pointer_t",
-                    "__libcpp_remove_extent_t", "__remove_extent_t",
-                    "remove_extent_t",
-                    "__libcpp_remove_all_extents_t", "__remove_all_extents_t",
-                    "remove_all_extents_t",
-                    "__decay_t", "decay_t",
-                    "__libcpp_add_pointer_t", "__add_pointer_t",
-                    "add_pointer_t",
-                    "__libcpp_add_lvalue_reference_t",
-                    "__add_lvalue_reference_t", "add_lvalue_reference_t",
-                    "__libcpp_add_rvalue_reference_t",
-                    "__add_rvalue_reference_t", "add_rvalue_reference_t",
-                    "type_identity_t", "__type_identity_t"})) {
+  const builtin_type_transforms::Kind transform_kind =
+      builtin_type_transforms::kind_for_alias_template_name(template_id.name);
+  if(transform_kind == builtin_type_transforms::BTK_UNKNOWN) {
     return false;
   }
 
@@ -12048,126 +12146,9 @@ bool try_resolve_concrete_unary_type_transform_template_id(
     return false;
   }
 
-  if(name_matches({"__libcpp_remove_reference_t", "__remove_reference_t",
-                   "remove_reference_t"})) {
-    out = remove_reference_type(arg_type);
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_remove_cv_t", "__remove_cv_t", "remove_cv_t"})) {
-    out = strip_top_level_cv(arg_type);
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_remove_const_t", "__remove_const_t",
-                   "remove_const_t"})) {
-    out = arg_type->kind == Type::TK_CV ?
-        make_cv(arg_type->inner, false, arg_type->cv_volatile) :
-        arg_type;
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_remove_volatile_t", "__remove_volatile_t",
-                   "remove_volatile_t"})) {
-    out = arg_type->kind == Type::TK_CV ?
-        make_cv(arg_type->inner, arg_type->cv_const, false) :
-        arg_type;
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_remove_cvref_t", "__remove_cvref_t",
-                   "remove_cvref_t"})) {
-    out = strip_top_level_cv(remove_reference_type(arg_type));
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_remove_const_ref_t", "__remove_const_ref_t"})) {
-    TypePtr no_ref = remove_reference_type(arg_type);
-    out = no_ref && no_ref->kind == Type::TK_CV ?
-        make_cv(no_ref->inner, false, no_ref->cv_volatile) :
-        no_ref;
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_remove_pointer_t", "__remove_pointer_t",
-                   "remove_pointer_t"})) {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    out = base->kind == Type::TK_POINTER ? base->inner : arg_type;
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_remove_extent_t", "__remove_extent_t",
-                   "remove_extent_t"})) {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    out = base->kind == Type::TK_ARRAY ? base->inner : arg_type;
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_remove_all_extents_t", "__remove_all_extents_t",
-                   "remove_all_extents_t"})) {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    while(base && base->kind == Type::TK_ARRAY) {
-      base = strip_top_level_cv(base->inner);
-    }
-    out = base ? base : arg_type;
-    return out != nullptr;
-  }
-  if(name_matches({"__decay_t", "decay_t"})) {
-    TypePtr decayed = remove_reference_type(arg_type);
-    TypePtr decayed_base = strip_top_level_cv(decayed);
-    if(!decayed_base) {
-      return false;
-    }
-    if(decayed_base->kind == Type::TK_ARRAY) {
-      out = make_pointer(decayed_base->inner);
-      return out != nullptr;
-    }
-    if(decayed_base->kind == Type::TK_FUNCTION) {
-      out = make_pointer(decayed_base);
-      return out != nullptr;
-    }
-    out = decayed_base;
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_add_pointer_t", "__add_pointer_t",
-                   "add_pointer_t"})) {
-    TypePtr pointee = remove_reference_type(arg_type);
-    if(!pointee) {
-      return false;
-    }
-    out = make_pointer(pointee);
-    return out != nullptr;
-  }
-  if(name_matches({"__libcpp_add_lvalue_reference_t",
-                   "__add_lvalue_reference_t", "add_lvalue_reference_t",
-                   "__libcpp_add_rvalue_reference_t",
-                   "__add_rvalue_reference_t", "add_rvalue_reference_t"})) {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    const bool lvalue =
-        name_matches({"__libcpp_add_lvalue_reference_t",
-                      "__add_lvalue_reference_t",
-                      "add_lvalue_reference_t"});
-    if(is_void_type(base) || base->kind == Type::TK_LVALUE_REFERENCE) {
-      out = arg_type;
-      return true;
-    }
-    if(base->kind == Type::TK_RVALUE_REFERENCE) {
-      out = lvalue ? make_lvalue_reference_raw(base->inner) : arg_type;
-      return true;
-    }
-    out = lvalue ? make_lvalue_reference_raw(arg_type) : make_rvalue_reference_raw(arg_type);
-    return true;
-  }
-  if(name_matches({"type_identity_t", "__type_identity_t"})) {
-    out = arg_type;
-    return true;
-  }
-
-  return false;
+  return semantic_builtins::apply_builtin_type_transform_kind(transform_kind,
+                                                             arg_type,
+                                                             out);
 }
 
 void append_alias_template_source_bindings(
@@ -16320,157 +16301,6 @@ CppAstNode make_substituted_value_expression_node(const ValueBinding & binding)
   return out;
 }
 
-bool parse_unary_builtin_type_transform_syntax(const string & text,
-                                               string & builtin_name,
-                                               string & arg_text)
-{
-  builtin_name.clear();
-  arg_text.clear();
-
-  const string trimmed = trim_space(text);
-  const size_t open = trimmed.find('(');
-  if(open == string::npos || open == 0 || trimmed.empty() ||
-     trimmed[trimmed.size() - 1] != ')') {
-    return false;
-  }
-
-  int depth = 0;
-  for(size_t i = open; i < trimmed.size(); ++i) {
-    if(trimmed[i] == '(') {
-      ++depth;
-    } else if(trimmed[i] == ')') {
-      --depth;
-      if(depth == 0 && i + 1 != trimmed.size()) {
-        return false;
-      }
-      if(depth < 0) {
-        return false;
-      }
-    }
-  }
-  if(depth != 0) {
-    return false;
-  }
-
-  builtin_name = trim_space(trimmed.substr(0, open));
-  arg_text = trim_space(trimmed.substr(open + 1, trimmed.size() - open - 2));
-  return !builtin_name.empty() && !arg_text.empty();
-}
-
-bool apply_context_free_builtin_type_transform(const string & builtin_name,
-                                               const TypePtr & arg_type,
-                                               TypePtr & out)
-{
-  out.reset();
-  if(!arg_type) {
-    return false;
-  }
-
-  if(builtin_name == "__remove_cv") {
-    out = strip_top_level_cv(arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_const") {
-    out = arg_type->kind == Type::TK_CV ?
-        make_cv(arg_type->inner, false, arg_type->cv_volatile) :
-        arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_volatile") {
-    out = arg_type->kind == Type::TK_CV ?
-        make_cv(arg_type->inner, arg_type->cv_const, false) :
-        arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_reference" ||
-     builtin_name == "__remove_reference_t") {
-    out = remove_reference_type(arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_cvref") {
-    out = strip_top_level_cv(remove_reference_type(arg_type));
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__decay") {
-    TypePtr decayed = remove_reference_type(arg_type);
-    TypePtr decayed_base = strip_top_level_cv(decayed);
-    if(!decayed_base) {
-      return false;
-    }
-    if(decayed_base->kind == Type::TK_ARRAY) {
-      out = make_pointer(decayed_base->inner);
-    } else if(decayed_base->kind == Type::TK_FUNCTION) {
-      out = make_pointer(decayed_base);
-    } else {
-      out = decayed_base;
-    }
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__add_pointer") {
-    TypePtr pointee = remove_reference_type(arg_type);
-    if(!pointee) {
-      return false;
-    }
-    out = make_pointer(pointee);
-    return true;
-  }
-  if(builtin_name == "__remove_pointer") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    out = base->kind == Type::TK_POINTER ? base->inner : arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__add_lvalue_reference" ||
-     builtin_name == "__add_rvalue_reference") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    if(is_void_type(base) || base->kind == Type::TK_LVALUE_REFERENCE) {
-      out = arg_type;
-      return true;
-    }
-    if(base->kind == Type::TK_RVALUE_REFERENCE) {
-      out = builtin_name == "__add_lvalue_reference" ?
-          make_lvalue_reference_raw(base->inner) :
-          arg_type;
-      return true;
-    }
-    out = builtin_name == "__add_lvalue_reference" ?
-        make_lvalue_reference_raw(arg_type) :
-        make_rvalue_reference_raw(arg_type);
-    return true;
-  }
-  return false;
-}
-
-bool resolve_substituted_builtin_type_transform_syntax(
-    const string & text,
-    const map<string, TypePtr> & type_replacements,
-    TypePtr & out)
-{
-  out.reset();
-  string builtin_name;
-  string arg_text;
-  if(!parse_unary_builtin_type_transform_syntax(text, builtin_name, arg_text)) {
-    return false;
-  }
-
-  TypePtr arg_type;
-  map<string, TypePtr>::const_iterator direct = type_replacements.find(arg_text);
-  if(direct != type_replacements.end()) {
-    arg_type = direct->second;
-  } else if(!resolve_substituted_builtin_type_transform_syntax(arg_text,
-                                                               type_replacements,
-                                                               arg_type)) {
-    return false;
-  }
-
-  return apply_context_free_builtin_type_transform(builtin_name, arg_type, out);
-}
-
 bool substitute_qualified_name_qualifier_type(
     CppAstNode & node,
     size_t qualifier_index,
@@ -16597,6 +16427,42 @@ bool substitute_named_type_parameters_only(
         changed = !type_equals(type, out);
         return true;
       }
+    }
+    string builtin_transform_name;
+    TypePtr builtin_transform_arg;
+    if(semantic_builtins::describe_dependent_builtin_type_transform(
+           type,
+           builtin_transform_name,
+           builtin_transform_arg)) {
+      TypePtr inner;
+      bool inner_changed = false;
+      if(!substitute_named_type_parameters_only(builtin_transform_arg,
+                                                parameters,
+                                                type_replacements,
+                                                inner,
+                                                inner_changed)) {
+        return false;
+      }
+      if(!inner_changed) {
+        out = type;
+        return true;
+      }
+
+      TypePtr resolved_transform;
+      if(semantic_builtins::apply_builtin_type_transform(
+             builtin_transform_name,
+             inner,
+             resolved_transform) &&
+         resolved_transform) {
+        out = resolved_transform;
+      } else {
+        out = semantic_builtins::make_dependent_builtin_type_transform_type(
+            builtin_transform_name,
+            reparseable_type_argument_text(inner),
+            inner);
+      }
+      changed = true;
+      return true;
     }
     out = type;
     return true;
@@ -16943,12 +16809,6 @@ bool substitute_type_pack_expression_node(
     }
   }
   refresh_qualified_name_qualifier_template_id_texts(out);
-  TypePtr transformed_type;
-  if(resolve_substituted_builtin_type_transform_syntax(out.value,
-                                                       type_replacements,
-                                                       transformed_type)) {
-    out.semantic_type = transformed_type;
-  }
   for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
@@ -17000,11 +16860,6 @@ bool substitute_type_pack_expression_node(
     if(value_changed) {
       out.value = substituted_value;
     }
-  }
-  if(resolve_substituted_builtin_type_transform_syntax(out.value,
-                                                       type_replacements,
-                                                       transformed_type)) {
-    out.semantic_type = transformed_type;
   }
 
   vector<CppAstNode> children;
@@ -17469,7 +17324,7 @@ void substitute_type_pack_template_id_arguments(
   }
   for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
-    bool argument_changed = false;
+    bool resolved_type_maybe_stale = false;
     bool pack_expansion_consumed = false;
     const string original_argument_text = trim_space(argument.text);
     const string source_syntax_text = trim_space(argument.source_text);
@@ -17496,8 +17351,12 @@ void substitute_type_pack_template_id_arguments(
           (original_argument_text == it->first ||
            original_argument_text == it->first + "...");
       const string replacement = reparseable_type_argument_text(it->second);
+      bool argument_text_changed = false;
       argument.text = replace_identifier_token_text_preserving_sizeof_pack_operands(
-          argument.text, it->first, replacement, argument_changed);
+          argument.text, it->first, replacement, argument_text_changed);
+      if(argument_text_changed) {
+        resolved_type_maybe_stale = true;
+      }
       if(direct_type_pack_argument) {
         argument.text = replacement;
         if(argument.source_text.empty()) {
@@ -17508,7 +17367,8 @@ void substitute_type_pack_template_id_arguments(
         keep_source_type_syntax_for_resolved_type = true;
         argument.expression.reset();
         bool carried_typed_node = false;
-        if(argument.type_id) {
+        if(argument.type_id &&
+           expression_node_mentions_identifier(*argument.type_id, it->first)) {
           CppAstNode rewritten_type;
           map<string, TypePtr> single;
           single[it->first] = it->second;
@@ -17521,6 +17381,7 @@ void substitute_type_pack_template_id_arguments(
                (!replacement.empty() || rewritten_type.semantic_type)) {
               argument.type_id.reset(new CppAstNode(rewritten_type));
               carried_typed_node = true;
+              resolved_type_maybe_stale = true;
             }
           }
         }
@@ -17580,6 +17441,7 @@ void substitute_type_pack_template_id_arguments(
             erase_parameter_pack_marker_nodes(rewritten_type);
           }
           argument.type_id.reset(new CppAstNode(rewritten_type));
+          resolved_type_maybe_stale = true;
           const string rewritten_type_text = trim_space(node_text(rewritten_type));
           if(!rewritten_type_text.empty()) {
             argument.text = rewritten_type_text;
@@ -17587,6 +17449,7 @@ void substitute_type_pack_template_id_arguments(
         } else {
           argument.type_id.reset(new CppAstNode(
               make_substituted_type_id_node(it->second, replacement)));
+          resolved_type_maybe_stale = true;
         }
       }
       if(argument.expression &&
@@ -17599,14 +17462,20 @@ void substitute_type_pack_template_id_arguments(
                                                 single,
                                                 rewritten_expr)) {
           argument.expression.reset(new CppAstNode(rewritten_expr));
+          resolved_type_maybe_stale = true;
         }
       }
     }
     if(argument.template_id) {
+      const string nested_before =
+          template_id_syntax_lookup_text(*argument.template_id);
       substitute_type_pack_template_id_arguments(*argument.template_id,
                                                  scope,
                                                  type_replacements);
       argument.text = template_id_syntax_lookup_text(*argument.template_id);
+      if(argument.text != nested_before) {
+        resolved_type_maybe_stale = true;
+      }
     }
     if(pack_expansion_consumed) {
       string text = trim_space(argument.text);
@@ -17615,6 +17484,11 @@ void substitute_type_pack_template_id_arguments(
       }
       argument.text = text;
       argument.pack_expansion = false;
+      resolved_type_maybe_stale = true;
+    }
+    if(resolved_type_maybe_stale &&
+       !keep_source_type_syntax_for_resolved_type) {
+      argument.resolved_type.reset();
     }
   }
   if(!syntax.argument_syntaxes.empty()) {
@@ -21539,36 +21413,14 @@ DependentNamedTypeResolutionStatus resolve_dependent_builtin_type_transform(
     TypePtr & out)
 {
   out.reset();
-  if(!type || !named_type_is_dependent_type(type)) {
+  string builtin_name;
+  TypePtr arg_type;
+  if(!semantic_builtins::describe_dependent_builtin_type_transform(type,
+                                                                   builtin_name,
+                                                                   arg_type)) {
     return DependentNamedTypeResolutionStatus::Fallback;
   }
 
-  static const char prefix[] = "$builtin-type-transform:";
-  const string payload = named_type_semantic_payload(type);
-  if(payload.compare(0, sizeof(prefix) - 1, prefix) != 0) {
-    return DependentNamedTypeResolutionStatus::Fallback;
-  }
-
-  const size_t name_begin = sizeof(prefix) - 1;
-  const size_t name_end = payload.find('|', name_begin);
-  const string builtin_name =
-      payload.substr(name_begin,
-                     name_end == string::npos ? string::npos :
-                                                name_end - name_begin);
-  if(builtin_name != "__remove_reference" &&
-     builtin_name != "__remove_reference_t" &&
-     builtin_name != "__remove_cv" &&
-     builtin_name != "__remove_const" &&
-     builtin_name != "__remove_volatile" &&
-     builtin_name != "__remove_cvref" &&
-     builtin_name != "__decay") {
-    return DependentNamedTypeResolutionStatus::KeepDependent;
-  }
-
-  TypePtr arg_type = type->inner;
-  if(!arg_type) {
-    return DependentNamedTypeResolutionStatus::KeepDependent;
-  }
   if(service_type_depends_on_template_parameter(services, arg_type)) {
     TypePtr resolved_arg;
     if(resolve_instantiated_dependent_type(services, scope, arg_type, resolved_arg) &&
@@ -21580,33 +21432,10 @@ DependentNamedTypeResolutionStatus resolve_dependent_builtin_type_transform(
     return DependentNamedTypeResolutionStatus::KeepDependent;
   }
 
-  if(builtin_name == "__decay") {
-    TypePtr decayed = remove_reference_type(arg_type);
-    TypePtr decayed_base = strip_top_level_cv(decayed);
-    if(!decayed_base) {
-      return DependentNamedTypeResolutionStatus::KeepDependent;
-    }
-    if(decayed_base->kind == Type::TK_ARRAY) {
-      out = make_pointer(decayed_base->inner);
-    } else if(decayed_base->kind == Type::TK_FUNCTION) {
-      out = make_pointer(decayed_base);
-    } else {
-      out = decayed_base;
-    }
-  } else if(builtin_name == "__remove_cv") {
-    out = strip_top_level_cv(arg_type);
-  } else if(builtin_name == "__remove_const") {
-    out = arg_type->kind == Type::TK_CV ?
-        make_cv(arg_type->inner, false, arg_type->cv_volatile) :
-        arg_type;
-  } else if(builtin_name == "__remove_volatile") {
-    out = arg_type->kind == Type::TK_CV ?
-        make_cv(arg_type->inner, arg_type->cv_const, false) :
-        arg_type;
-  } else if(builtin_name == "__remove_cvref") {
-    out = strip_top_level_cv(remove_reference_type(arg_type));
-  } else {
-    out = remove_reference_type(arg_type);
+  if(!semantic_builtins::apply_builtin_type_transform(builtin_name,
+                                                      arg_type,
+                                                      out)) {
+    return DependentNamedTypeResolutionStatus::KeepDependent;
   }
   return out ? DependentNamedTypeResolutionStatus::Resolved :
                DependentNamedTypeResolutionStatus::KeepDependent;
@@ -22280,6 +22109,94 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   const bool keep_local_type_placeholders_dependent =
       mentions_local_dependent_type_placeholder(services, raw_scope, text);
   const string normalized_text = normalize_type_lookup_name(text);
+  const auto normalize_bound_type_lookup_name =
+      [](const string & raw) -> string
+  {
+    string candidate = normalize_type_lookup_name(trim_space(raw));
+    string stripped_typename_text;
+    if(strip_leading_typename_text(candidate, stripped_typename_text)) {
+      candidate = normalize_type_lookup_name(trim_space(stripped_typename_text));
+    }
+    return normalize_type_lookup_name(
+        strip_elaborated_type_prefix(trim_space(candidate)));
+  };
+  const auto try_resolve_exact_bound_type_name =
+      [&](const string & raw,
+          TypePtr & resolved) -> DependentNamedTypeResolutionStatus
+  {
+    resolved.reset();
+    const string lookup_name = normalize_bound_type_lookup_name(raw);
+    if(lookup_name.empty() || !is_identifier_text(lookup_name)) {
+      return DependentNamedTypeResolutionStatus::Fallback;
+    }
+
+    Scope * exact_bound_scope = nullptr;
+    TypePtr exact_bound;
+    const bool have_exact_bound =
+        lookup_exact_bound_type_name_with_scope(
+            raw_scope, lookup_name, exact_bound_scope, exact_bound);
+    if(!have_exact_bound) {
+      exact_bound = lookup_exact_bound_type_name(raw_scope, lookup_name);
+    }
+    if(!exact_bound) {
+      return DependentNamedTypeResolutionStatus::Fallback;
+    }
+    if(have_exact_bound &&
+       exact_bound_scope == &raw_scope &&
+       type_is_dependent(exact_bound)) {
+      return DependentNamedTypeResolutionStatus::KeepDependent;
+    }
+
+    TypePtr resolved_exact;
+    if(resolve_instantiated_dependent_type(services, scope, exact_bound, resolved_exact) &&
+       resolved_exact &&
+       !type_is_dependent(resolved_exact)) {
+      resolved = resolved_exact;
+      return DependentNamedTypeResolutionStatus::Resolved;
+    }
+    if(type_is_dependent(exact_bound)) {
+      return DependentNamedTypeResolutionStatus::KeepDependent;
+    }
+    resolved = exact_bound;
+    return DependentNamedTypeResolutionStatus::Resolved;
+  };
+  if(TypePtr named = strip_top_level_cv(type)) {
+    if(named_type_is_template_parameter(named)) {
+      vector<string> lookup_names;
+      const auto append_lookup_name =
+          [&lookup_names](const string & raw) -> void
+      {
+        const string lookup_name = trim_space(raw);
+        if(lookup_name.empty() ||
+           find(lookup_names.begin(), lookup_names.end(), lookup_name) !=
+               lookup_names.end()) {
+          return;
+        }
+        lookup_names.push_back(lookup_name);
+      };
+      append_lookup_name(named_type_semantic_payload(named));
+      append_lookup_name(named->named_display);
+      append_lookup_name(normalized_text);
+
+      bool saw_dependent_bound = false;
+      for(size_t i = 0; i < lookup_names.size(); ++i) {
+        TypePtr resolved_bound;
+        switch(try_resolve_exact_bound_type_name(lookup_names[i], resolved_bound)) {
+        case DependentNamedTypeResolutionStatus::Resolved:
+          out = resolved_bound;
+          return DependentNamedTypeResolutionStatus::Resolved;
+        case DependentNamedTypeResolutionStatus::KeepDependent:
+          saw_dependent_bound = true;
+          break;
+        case DependentNamedTypeResolutionStatus::Fallback:
+          break;
+        }
+      }
+      if(saw_dependent_bound) {
+        return DependentNamedTypeResolutionStatus::KeepDependent;
+      }
+    }
+  }
   {
     string cv_core_name;
     bool top_const = false;
@@ -22497,32 +22414,15 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
     }
   }
   if(is_identifier_text(normalized_text)) {
-    Scope * exact_bound_scope = nullptr;
     TypePtr exact_bound;
-    const bool have_exact_bound =
-        lookup_exact_bound_type_name_with_scope(
-            raw_scope, normalized_text, exact_bound_scope, exact_bound);
-    if(!have_exact_bound) {
-      exact_bound = lookup_exact_bound_type_name(raw_scope, normalized_text);
-    }
-    if(exact_bound) {
-      if(have_exact_bound &&
-         exact_bound_scope == &raw_scope &&
-         type_is_dependent(exact_bound)) {
-        return DependentNamedTypeResolutionStatus::KeepDependent;
-      }
-      TypePtr resolved_exact;
-      if(resolve_instantiated_dependent_type(services, scope, exact_bound, resolved_exact) &&
-         resolved_exact &&
-         !type_is_dependent(resolved_exact)) {
-        out = resolved_exact;
-        return DependentNamedTypeResolutionStatus::Resolved;
-      }
-      if(type_is_dependent(exact_bound)) {
-        return DependentNamedTypeResolutionStatus::KeepDependent;
-      }
+    switch(try_resolve_exact_bound_type_name(normalized_text, exact_bound)) {
+    case DependentNamedTypeResolutionStatus::Resolved:
       out = exact_bound;
       return DependentNamedTypeResolutionStatus::Resolved;
+    case DependentNamedTypeResolutionStatus::KeepDependent:
+      return DependentNamedTypeResolutionStatus::KeepDependent;
+    case DependentNamedTypeResolutionStatus::Fallback:
+      break;
     }
 
     template_api::TemplateTypeLookupRequest request;
@@ -25034,6 +24934,56 @@ bool try_resolve_concrete_enable_if_alias_template_id(
     syntax.argument_syntaxes = *arg_syntaxes;
   }
 
+  const TemplateArgumentSyntax * condition_syntax =
+      arg_syntaxes && !arg_syntaxes->empty() ? &(*arg_syntaxes)[0] : nullptr;
+  const auto make_dependent_alias =
+      [&]() -> bool
+      {
+        vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
+        dependent_arguments.reserve(arg_texts.size());
+        for(size_t i = 0; i < arg_texts.size(); ++i) {
+          DependentAliasTemplateArgumentSyntax dependent_argument;
+          dependent_argument.text = trim_space(arg_texts[i]);
+          if(arg_syntaxes && i < arg_syntaxes->size()) {
+            dependent_argument.syntax = (*arg_syntaxes)[i];
+          }
+          if(dependent_argument.syntax.text.empty()) {
+            dependent_argument.syntax.text = dependent_argument.text;
+          }
+          if(i == 1) {
+            TypePtr type_argument;
+            if(resolve_standard_meta_type_argument(
+                   services, raw_scope, syntax, i, type_argument) &&
+               type_argument) {
+              dependent_argument.type = type_argument;
+              dependent_argument.syntax.resolved_type = type_argument;
+            }
+          }
+          dependent_arguments.push_back(dependent_argument);
+        }
+
+        ostringstream display;
+        display << alias_decl->name << "<";
+        for(size_t i = 0; i < dependent_arguments.size(); ++i) {
+          if(i != 0) {
+            display << ", ";
+          }
+          display << dependent_arguments[i].text;
+        }
+        display << ">";
+        const string display_text = display.str();
+        const string qualified_text =
+            alias_decl->declaring_scope ?
+                semantic_lookup::scope_qualified_name(*alias_decl->declaring_scope,
+                                                      display_text) :
+                display_text;
+        out = make_dependent_alias_type(display_text,
+                                        qualified_text,
+                                        alias_decl,
+                                        dependent_arguments);
+        return out != nullptr;
+      };
+
   bool condition_value = false;
   NonTypeArgumentStatus condition_status = NT_ARG_PARSE_FAILED;
   if(!resolve_standard_meta_bool_argument_from_syntax(services,
@@ -25041,8 +24991,6 @@ bool try_resolve_concrete_enable_if_alias_template_id(
                                                       syntax,
                                                       condition_value,
                                                       &condition_status)) {
-    const TemplateArgumentSyntax * condition_syntax =
-        arg_syntaxes && !arg_syntaxes->empty() ? &(*arg_syntaxes)[0] : nullptr;
     if(condition_status == NT_ARG_DEPENDENT ||
        (condition_syntax &&
         template_argument_syntax_mentions_template_dependency(
@@ -25050,49 +24998,7 @@ bool try_resolve_concrete_enable_if_alias_template_id(
             scope,
             *condition_syntax,
             false))) {
-      vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
-      dependent_arguments.reserve(arg_texts.size());
-      for(size_t i = 0; i < arg_texts.size(); ++i) {
-        DependentAliasTemplateArgumentSyntax dependent_argument;
-        dependent_argument.text = trim_space(arg_texts[i]);
-        if(arg_syntaxes && i < arg_syntaxes->size()) {
-          dependent_argument.syntax = (*arg_syntaxes)[i];
-        }
-        if(dependent_argument.syntax.text.empty()) {
-          dependent_argument.syntax.text = dependent_argument.text;
-        }
-        if(i == 1) {
-          TypePtr type_argument;
-          if(resolve_standard_meta_type_argument(
-                 services, raw_scope, syntax, i, type_argument) &&
-             type_argument) {
-            dependent_argument.type = type_argument;
-            dependent_argument.syntax.resolved_type = type_argument;
-          }
-        }
-        dependent_arguments.push_back(dependent_argument);
-      }
-
-      ostringstream display;
-      display << alias_decl->name << "<";
-      for(size_t i = 0; i < dependent_arguments.size(); ++i) {
-        if(i != 0) {
-          display << ", ";
-        }
-        display << dependent_arguments[i].text;
-      }
-      display << ">";
-      const string display_text = display.str();
-      const string qualified_text =
-          alias_decl->declaring_scope ?
-              semantic_lookup::scope_qualified_name(*alias_decl->declaring_scope,
-                                                    display_text) :
-              display_text;
-      out = make_dependent_alias_type(display_text,
-                                      qualified_text,
-                                      alias_decl,
-                                      dependent_arguments);
-      return out != nullptr;
+      return make_dependent_alias();
     }
     return false;
   }
@@ -25985,12 +25891,26 @@ NonTypeArgumentStatus evaluate_libstdcxx_tuple_constraints_member_call(
   return NT_ARG_EVALUATED;
 }
 
+std::string libcpp_pair_construction_member_leaf_name(std::string name)
+{
+  name = trim_space(name);
+  static const std::string template_prefix = "template ";
+  if(name.compare(0, template_prefix.size(), template_prefix) == 0) {
+    name = trim_space(name.substr(template_prefix.size()));
+  }
+  return name;
+}
+
 bool libcpp_pair_construction_member_name(const std::string & name)
 {
-  return name == "__is_pair_constructible" ||
-         name == "__is_implicit" ||
-         name == "__enable_default" ||
-         name == "__enable_implicit_default";
+  const std::string leaf_name =
+      libcpp_pair_construction_member_leaf_name(name);
+  return leaf_name == "__is_pair_constructible" ||
+         leaf_name == "__is_implicit" ||
+         leaf_name == "__enable_explicit" ||
+         leaf_name == "__enable_implicit" ||
+         leaf_name == "__enable_default" ||
+         leaf_name == "__enable_implicit_default";
 }
 
 bool expression_maybe_libcpp_pair_construction_member_call(
@@ -26029,6 +25949,35 @@ NonTypeArgumentStatus resolve_libcpp_pair_construction_owner_type(
 
   ClassInfo * owner_info =
       class_info_for_named_type(services, strip_top_level_cv(owner_type));
+  if(owner_info &&
+     owner_info->name == "_CheckArgs" &&
+     owner_info->enclosing_scope &&
+     owner_info->enclosing_scope->class_info) {
+    ClassInfo * pair_info = owner_info->enclosing_scope->class_info;
+    if(pair_info &&
+       pair_info->source_template &&
+       pair_info->source_template->name == "pair" &&
+       class_info_source_template_is_std_namespace_or_inline_child(*pair_info) &&
+       pair_info->instantiation_arguments.size() == 2) {
+      target_types.reserve(2);
+      for(std::size_t i = 0; i < pair_info->instantiation_arguments.size(); ++i) {
+        const TemplateArgument & argument = pair_info->instantiation_arguments[i];
+        if(argument.kind != TemplateArgument::TA_TYPE || !argument.type) {
+          return argument.dependent ? NT_ARG_DEPENDENT : NT_ARG_EVAL_FAILED;
+        }
+        TypePtr target_type = argument.type;
+        resolve_instantiated_dependent_type_if_needed(services, scope, target_type);
+        if(!target_type) {
+          return NT_ARG_EVAL_FAILED;
+        }
+        if(service_type_depends_on_template_parameter(services, target_type)) {
+          return NT_ARG_DEPENDENT;
+        }
+        target_types.push_back(target_type);
+      }
+      return NT_ARG_EVALUATED;
+    }
+  }
   if(!owner_info ||
      !owner_info->source_template ||
      owner_info->source_template->name != "__check_pair_construction" ||
@@ -26181,7 +26130,8 @@ NonTypeArgumentStatus evaluate_libcpp_pair_construction_member_call(
   const TemplateIdSyntax * member_template_id =
       cppast_template_id_syntax(*callee);
   const QualifiedName * qualified = cppast_qualified_name_syntax(*callee);
-  const std::string member_name = member_template_id->name.name;
+  const std::string member_name =
+      libcpp_pair_construction_member_leaf_name(member_template_id->name.name);
 
   std::vector<TypePtr> target_types;
   const NonTypeArgumentStatus owner_status =
@@ -26240,34 +26190,73 @@ NonTypeArgumentStatus evaluate_libcpp_pair_construction_member_call(
       member_name == "__is_pair_constructible" ?
           "__is_constructible" :
           "__is_convertible";
-  for(std::size_t i = 0; i < target_types.size(); ++i) {
-    bool value = false;
-    const NonTypeArgumentStatus status =
-        member_name == "__is_pair_constructible" ?
-            evaluate_libstdcxx_tuple_constraints_trait_pair(
-                services,
-                scope.require(),
-                builtin_name,
-                target_types[i],
-                source_types[i],
-                value) :
-            evaluate_libstdcxx_tuple_constraints_trait_pair(
-                services,
-                scope.require(),
-                builtin_name,
-                source_types[i],
-                target_types[i],
-                value);
+  const auto evaluate_all_pairwise =
+      [&](const std::string & trait_name,
+          bool constructible_order,
+          bool & all_true) -> NonTypeArgumentStatus
+      {
+        all_true = true;
+        for(std::size_t i = 0; i < target_types.size(); ++i) {
+          bool value = false;
+          const NonTypeArgumentStatus status =
+              constructible_order ?
+                  evaluate_libstdcxx_tuple_constraints_trait_pair(
+                      services,
+                      scope.require(),
+                      trait_name,
+                      target_types[i],
+                      source_types[i],
+                      value) :
+                  evaluate_libstdcxx_tuple_constraints_trait_pair(
+                      services,
+                      scope.require(),
+                      trait_name,
+                      source_types[i],
+                      target_types[i],
+                      value);
+          if(status != NT_ARG_EVALUATED) {
+            return status;
+          }
+          if(!value) {
+            all_true = false;
+            return NT_ARG_EVALUATED;
+          }
+        }
+        return NT_ARG_EVALUATED;
+      };
+
+  if(member_name == "__enable_explicit" ||
+     member_name == "__enable_implicit") {
+    bool constructible = false;
+    NonTypeArgumentStatus status =
+        evaluate_all_pairwise("__is_constructible", true, constructible);
     if(status != NT_ARG_EVALUATED) {
       return status;
     }
-    if(!value) {
+    if(!constructible) {
       out = false;
       return NT_ARG_EVALUATED;
     }
+
+    bool implicit = false;
+    status = evaluate_all_pairwise("__is_convertible", false, implicit);
+    if(status != NT_ARG_EVALUATED) {
+      return status;
+    }
+    out = member_name == "__enable_implicit" ? implicit : !implicit;
+    return NT_ARG_EVALUATED;
   }
 
-  out = true;
+  bool all_true = false;
+  const NonTypeArgumentStatus status =
+      evaluate_all_pairwise(builtin_name,
+                            member_name == "__is_pair_constructible",
+                            all_true);
+  if(status != NT_ARG_EVALUATED) {
+    return status;
+  }
+
+  out = all_true;
   return NT_ARG_EVALUATED;
 }
 
@@ -26460,6 +26449,187 @@ NonTypeArgumentStatus evaluate_libcpp_has_destroy_variable_template_value(
       allocator_type,
       false,
       false,
+      false,
+      selected) &&
+      selected;
+  return NT_ARG_EVALUATED;
+}
+
+const char * libcpp_allocator_member_type_detector_member_name(
+    const string & template_name)
+{
+  if(template_name == "__has_pointer") return "pointer";
+  if(template_name == "__has_const_pointer") return "const_pointer";
+  if(template_name == "__has_void_pointer") return "void_pointer";
+  if(template_name == "__has_const_void_pointer") return "const_void_pointer";
+  if(template_name == "__has_size_type") return "size_type";
+  if(template_name == "__has_alloc_traits_difference_type") return "difference_type";
+  if(template_name == "__has_propagate_on_container_copy_assignment") {
+    return "propagate_on_container_copy_assignment";
+  }
+  if(template_name == "__has_propagate_on_container_move_assignment") {
+    return "propagate_on_container_move_assignment";
+  }
+  if(template_name == "__has_propagate_on_container_swap") {
+    return "propagate_on_container_swap";
+  }
+  if(template_name == "__has_is_always_equal") return "is_always_equal";
+  return nullptr;
+}
+
+NonTypeArgumentStatus evaluate_libcpp_allocator_member_type_detector_template_value(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TemplateIdSyntax & syntax,
+    bool & out)
+{
+  const char * member_name =
+      libcpp_allocator_member_type_detector_member_name(syntax.name.name);
+  if(!member_name ||
+     syntax.arguments.size() != 1 ||
+     syntax.argument_syntaxes.size() != syntax.arguments.size() ||
+     !is_standard_library_class_template(services, scope.require(), syntax)) {
+    return NT_ARG_PARSE_FAILED;
+  }
+
+  TypePtr owner_type;
+  if(!resolve_structured_type_trait_argument(
+         services, scope, syntax.argument_syntaxes[0], owner_type)) {
+    return template_id_syntax_mentions_template_dependency(
+               services, scope, syntax, false) ?
+        NT_ARG_DEPENDENT :
+        NT_ARG_PARSE_FAILED;
+  }
+
+  TypePtr member_type;
+  bool member_lookup_complete = false;
+  out = lookup_concrete_member_type_for_trait(services,
+                                              scope,
+                                              owner_type,
+                                              member_name,
+                                              member_type,
+                                              member_lookup_complete);
+  if(!out && !member_lookup_complete) {
+    return NT_ARG_PARSE_FAILED;
+  }
+  return NT_ARG_EVALUATED;
+}
+
+const char * libcpp_allocator_member_call_detector_member_name(
+    const string & template_name)
+{
+  if(template_name == "__has_allocate_hint") return "allocate";
+  if(template_name == "__has_construct") return "construct";
+  if(template_name == "__has_destroy") return "destroy";
+  if(template_name == "__has_max_size") return "max_size";
+  if(template_name == "__has_select_on_container_copy_construction") {
+    return "select_on_container_copy_construction";
+  }
+  return nullptr;
+}
+
+size_t libcpp_allocator_member_call_detector_min_argument_count(
+    const string & template_name)
+{
+  if(template_name == "__has_max_size" ||
+     template_name == "__has_select_on_container_copy_construction") {
+    return 1;
+  }
+  if(template_name == "__has_destroy") {
+    return 2;
+  }
+  if(template_name == "__has_allocate_hint") {
+    return 3;
+  }
+  if(template_name == "__has_construct") {
+    return 1;
+  }
+  return 0;
+}
+
+NonTypeArgumentStatus evaluate_libcpp_allocator_member_call_detector_template_value(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TemplateIdSyntax & syntax,
+    bool & out)
+{
+  const char * member_name =
+      libcpp_allocator_member_call_detector_member_name(syntax.name.name);
+  const size_t min_argument_count =
+      libcpp_allocator_member_call_detector_min_argument_count(syntax.name.name);
+  if(!member_name ||
+     min_argument_count == 0 ||
+     syntax.arguments.size() < min_argument_count ||
+     syntax.argument_syntaxes.size() != syntax.arguments.size() ||
+     !is_standard_library_class_template(services, scope.require(), syntax)) {
+    return NT_ARG_PARSE_FAILED;
+  }
+
+  TemplateIdSyntax expanded =
+      clone_template_id_for_template_substitution(syntax);
+  expand_bound_packs_in_template_id_syntax(services, scope.require(), expanded);
+  if(expanded.arguments.size() < min_argument_count ||
+     expanded.argument_syntaxes.size() != expanded.arguments.size()) {
+    return template_id_syntax_mentions_template_dependency(
+               services, scope, expanded, false) ?
+        NT_ARG_DEPENDENT :
+        NT_ARG_PARSE_FAILED;
+  }
+
+  TypePtr allocator_type;
+  if(!resolve_structured_type_trait_argument(
+         services, scope, expanded.argument_syntaxes[0], allocator_type)) {
+    return template_id_syntax_mentions_template_dependency(
+               services, scope, expanded, false) ?
+        NT_ARG_DEPENDENT :
+        NT_ARG_PARSE_FAILED;
+  }
+
+  vector<pair<TypePtr, semantic_conversion::ValueCategory> > arg_infos;
+  arg_infos.reserve(expanded.arguments.size() - 1);
+  for(size_t i = 1; i < expanded.arguments.size(); ++i) {
+    TypePtr arg_type;
+    if(!resolve_structured_type_trait_argument(
+           services, scope, expanded.argument_syntaxes[i], arg_type)) {
+      return template_id_syntax_mentions_template_dependency(
+                 services, scope, expanded, false) ?
+          NT_ARG_DEPENDENT :
+          NT_ARG_PARSE_FAILED;
+    }
+    const semantic_conversion::ExprInfo declval_arg =
+        make_declval_trait_expr_info(arg_type);
+    if(!declval_arg.type) {
+      return NT_ARG_PARSE_FAILED;
+    }
+    arg_infos.push_back(make_pair(declval_arg.type, declval_arg.category));
+  }
+
+  const semantic_conversion::ExprInfo object_expr =
+      make_declval_trait_expr_info(allocator_type);
+  TypePtr object_type =
+      object_expr.type ? remove_reference_type(object_expr.type) : TypePtr();
+  if(!object_type ||
+     service_type_depends_on_template_parameter(services, object_type)) {
+    return NT_ARG_DEPENDENT;
+  }
+
+  vector<FunctionBinding *> functions;
+  if(!service_lookup_leaf_member_function_bindings(
+         services, object_type, member_name, functions)) {
+    out = false;
+    return NT_ARG_EVALUATED;
+  }
+
+  FunctionBinding * selected = nullptr;
+  out = select_unique_leaf_function_binding(
+      services,
+      scope.require(),
+      functions,
+      arg_infos,
+      true,
+      object_type,
+      semantic_conversion::is_const_object_type(object_type),
+      object_expr.category == semantic_conversion::VC_LVALUE,
       false,
       selected) &&
       selected;
@@ -27070,6 +27240,20 @@ NonTypeArgumentStatus evaluate_standard_type_trait_template_value(
           services, scope, syntax, out);
   if(relocatable_status != NT_ARG_PARSE_FAILED) {
     return relocatable_status;
+  }
+
+  const NonTypeArgumentStatus libcpp_member_type_detector_status =
+      evaluate_libcpp_allocator_member_type_detector_template_value(
+          services, scope, syntax, out);
+  if(libcpp_member_type_detector_status != NT_ARG_PARSE_FAILED) {
+    return libcpp_member_type_detector_status;
+  }
+
+  const NonTypeArgumentStatus libcpp_member_call_detector_status =
+      evaluate_libcpp_allocator_member_call_detector_template_value(
+          services, scope, syntax, out);
+  if(libcpp_member_call_detector_status != NT_ARG_PARSE_FAILED) {
+    return libcpp_member_call_detector_status;
   }
 
   if(standard_constructibility_shorthand_name(syntax.name.name)) {
@@ -28770,6 +28954,10 @@ static bool template_argument_syntax_mentions_template_dependency(
   }
   if(syntax.dependent) {
     return true;
+  }
+  if(syntax.resolved_type) {
+    return service_type_depends_on_template_parameter(services,
+                                                      syntax.resolved_type);
   }
   if(syntax.type_id &&
      type_id_ast_mentions_template_dependency(services, scope, *syntax.type_id)) {
@@ -31598,7 +31786,9 @@ static const TemplateArgumentSyntax * carry_substituted_bound_type_argument_synt
   syntax.text = text;
   syntax.pack_expansion = false;
   syntax.resolved_type = out_type;
-  if(!syntax.template_id && !syntax.type_id && !syntax.expression) {
+  if(!syntax.text.empty()) {
+    syntax.template_id.reset();
+    syntax.expression.reset();
     syntax.type_id.reset(new CppAstNode(
         make_substituted_type_id_node(out_type, text)));
   }
@@ -31627,7 +31817,9 @@ static const TemplateArgumentSyntax * carry_resolved_type_argument_syntax(
   syntax.text = type_text.empty() ? text : type_text;
   syntax.pack_expansion = false;
   syntax.resolved_type = out_type;
-  if(!syntax.template_id && !syntax.type_id && !syntax.expression) {
+  if(!syntax.text.empty()) {
+    syntax.template_id.reset();
+    syntax.expression.reset();
     syntax.type_id.reset(new CppAstNode(
         make_substituted_type_id_node(out_type, syntax.text)));
   }
@@ -32006,13 +32198,12 @@ vector<TemplateArgumentSyntax> expand_type_pack_argument_syntaxes(
           type_replacements.find(direct_pack_name);
       if(direct != type_replacements.end()) {
         syntax.resolved_type = direct->second;
-        if(!syntax.type_id ||
-           expression_node_mentions_identifier(*syntax.type_id, direct_pack_name)) {
-          const string replacement =
-              reparseable_type_argument_text(direct->second);
-          syntax.type_id.reset(new CppAstNode(
-              make_substituted_type_id_node(direct->second, replacement)));
-        }
+        const string replacement =
+            reparseable_type_argument_text(direct->second);
+        syntax.template_id.reset();
+        syntax.expression.reset();
+        syntax.type_id.reset(new CppAstNode(
+            make_substituted_type_id_node(direct->second, replacement)));
       }
     }
     expanded.push_back(syntax);
