@@ -4279,20 +4279,12 @@ bool try_expand_alias_template_pattern_structurally(
                                             direct_member_alias_members,
                                             direct_member_alias_leading_typename) &&
       !direct_member_alias_members.empty();
-  bool cacheable_non_dependent_arguments = false;
-  if(direct_dependent_member_alias) {
-    cacheable_non_dependent_arguments =
-        !template_arguments_are_dependent(
-          arguments,
-          [&type_is_dependent](const TypePtr & type)
-          {
-            return type_is_dependent(type);
-          });
-  }
   AliasTemplateDecl::StableSubstitutionKey substitution_failure_cache_key;
+  // A failed lookup for a dependent-member alias target (e.g. typename T::type)
+  // is sensitive to class completion and selected specialization state.
   const bool has_substitution_failure_cache_key =
+      false &&
       direct_dependent_member_alias &&
-      cacheable_non_dependent_arguments &&
       stable_substitution_key_for_arguments(arguments,
                                             substitution_failure_cache_key);
   if(has_substitution_failure_cache_key) {

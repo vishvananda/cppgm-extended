@@ -11480,6 +11480,155 @@ static bool try_build_constant_sizeof_ir_type_expression(
   return true;
 }
 
+static bool build_dependent_template_id_expression_arguments_ir(
+    const TemplateIdSyntax & template_id,
+    const TypeMangleContext * mangle_ctx,
+    vector<abi_mangle::TemplateArgument> & out)
+{
+  vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
+  dependent_arguments.reserve(template_id.argument_syntaxes.size());
+  for(size_t i = 0; i < template_id.argument_syntaxes.size(); ++i) {
+    DependentAliasTemplateArgumentSyntax argument;
+    argument.syntax = template_id.argument_syntaxes[i];
+    argument.text = argument.syntax.text;
+    if(argument.text.empty() && i < template_id.arguments.size()) {
+      argument.text = template_id.arguments[i];
+      argument.syntax.text = argument.text;
+    }
+    if(argument.syntax.type_id && argument.syntax.type_id->semantic_type) {
+      argument.type = argument.syntax.type_id->semantic_type;
+    } else if(argument.syntax.resolved_type) {
+      argument.type = argument.syntax.resolved_type;
+    }
+    dependent_arguments.push_back(std::move(argument));
+  }
+
+  vector<abi_mangle::Type::ClassTemplateArgument> class_arguments;
+  TypeMangleContext expression_argument_ctx_storage;
+  const TypeMangleContext * expression_argument_ctx = mangle_ctx;
+  if(mangle_ctx) {
+    expression_argument_ctx_storage = *mangle_ctx;
+    expression_argument_ctx_storage
+        .prefer_source_template_parameter_expression_arguments = true;
+    expression_argument_ctx = &expression_argument_ctx_storage;
+  }
+  if(!build_dependent_template_arguments_ir(dependent_arguments,
+                                            nullptr,
+                                            expression_argument_ctx,
+                                            class_arguments)) {
+    return false;
+  }
+  out.clear();
+  out.reserve(class_arguments.size());
+  for(size_t i = 0; i < class_arguments.size(); ++i) {
+    abi_mangle::TemplateArgument argument;
+    if(!class_template_argument_ir_to_template_argument_ir(
+           class_arguments[i],
+           argument)) {
+      return false;
+    }
+    out.push_back(std::move(argument));
+  }
+  return true;
+}
+
+static bool scope_declares_expression_name(
+    const semantic_model::Scope & scope,
+    const string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  if(scope.values.find(name) != scope.values.end() ||
+     scope.function_sets.find(name) != scope.function_sets.end() ||
+     scope.function_templates.find(name) != scope.function_templates.end()) {
+    return true;
+  }
+  return scope.class_info &&
+         scope.class_info->methods.find(name) != scope.class_info->methods.end();
+}
+
+static bool lookup_current_class_member_expression_owner(
+    const string & name,
+    const TypeMangleContext * mangle_ctx,
+    const semantic_model::ClassInfo *& out)
+{
+  out = nullptr;
+  if(name.empty() || !mangle_ctx || !mangle_ctx->lookup_scope) {
+    return false;
+  }
+
+  for(const semantic_model::Scope * current = mangle_ctx->lookup_scope;
+      current;
+      current = current->parent) {
+    const bool declares_name = scope_declares_expression_name(*current, name);
+    if(current->class_info &&
+       current->class_info->member_scope.get() == current &&
+       declares_name) {
+      out = current->class_info;
+      return out && out->type;
+    }
+    if(declares_name) {
+      return false;
+    }
+  }
+  return false;
+}
+
+static bool try_build_current_class_member_expression_ir(
+    const CppAstNode & node,
+    const TypeMangleContext * mangle_ctx,
+    abi_mangle::DependentExpression & out)
+{
+  if(node.kind != CppAstKind::id_expression &&
+     node.kind != CppAstKind::identifier) {
+    return false;
+  }
+  const QualifiedName * qualified = cppast_qualified_name_syntax(node);
+  if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
+    return false;
+  }
+
+  const TemplateIdSyntax * template_id = cppast_template_id_syntax(node);
+  if(template_id &&
+     (template_id->name.rooted || !template_id->name.qualifiers.empty())) {
+    return false;
+  }
+
+  const string member_name =
+      template_id ? trim_space(strip_leading_template_disambiguator(
+                        template_id->name.name)) :
+                    trim_space(node.value);
+  const semantic_model::ClassInfo * owner_class = nullptr;
+  if(member_name.empty() ||
+     !lookup_current_class_member_expression_owner(member_name,
+                                                   mangle_ctx,
+                                                   owner_class)) {
+    return false;
+  }
+
+  abi_mangle::Type owner;
+  if(!try_build_type_ir(owner_class->type, mangle_ctx, owner)) {
+    return false;
+  }
+  bool close_owner = !abi_mangle::type_contains_template_parameter_ref(owner);
+  abi_mangle::DependentExpression member =
+      abi_mangle::DependentExpression::member(std::move(owner),
+                                              close_owner,
+                                              member_name);
+  if(member.owner_type && member.owner_type->name_owner) {
+    member.close_member_owner = false;
+  }
+  if(template_id &&
+     !build_dependent_template_id_expression_arguments_ir(*template_id,
+                                                          mangle_ctx,
+                                                          member.template_arguments)) {
+    return false;
+  }
+  out = std::move(member);
+  return true;
+}
+
 static bool try_build_dependent_expression_ir(
     const CppAstNode & node,
     const TypeMangleContext * mangle_ctx,
@@ -11547,6 +11696,18 @@ static bool try_build_dependent_expression_ir(
       return false;
     }
     out = abi_mangle::DependentExpression::pack_expansion(inner);
+    return true;
+  }
+  if(node.kind == CppAstKind::type_trait_expression &&
+     node.simple_type == KW_NOEXCEPT &&
+     node.children.size() == 1) {
+    abi_mangle::DependentExpression inner;
+    if(!try_build_dependent_expression_ir(node.children[0],
+                                          mangle_ctx,
+                                          inner)) {
+      return false;
+    }
+    out = abi_mangle::DependentExpression::unary("nx", std::move(inner));
     return true;
   }
   if(node.kind == CppAstKind::type_trait_expression &&
@@ -11899,49 +12060,16 @@ static bool try_build_dependent_expression_ir(
       return true;
     }
 
+    if(try_build_current_class_member_expression_ir(node, mangle_ctx, out)) {
+      return true;
+    }
+
     if(const TemplateIdSyntax * template_id = cppast_template_id_syntax(node)) {
-      vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
-      dependent_arguments.reserve(template_id->argument_syntaxes.size());
-      for(size_t i = 0; i < template_id->argument_syntaxes.size(); ++i) {
-        DependentAliasTemplateArgumentSyntax argument;
-        argument.syntax = template_id->argument_syntaxes[i];
-        argument.text = argument.syntax.text;
-        if(argument.text.empty() && i < template_id->arguments.size()) {
-          argument.text = template_id->arguments[i];
-          argument.syntax.text = argument.text;
-        }
-        if(argument.syntax.type_id && argument.syntax.type_id->semantic_type) {
-          argument.type = argument.syntax.type_id->semantic_type;
-        } else if(argument.syntax.resolved_type) {
-          argument.type = argument.syntax.resolved_type;
-        }
-        dependent_arguments.push_back(std::move(argument));
-      }
-      vector<abi_mangle::Type::ClassTemplateArgument> class_arguments;
-      TypeMangleContext expression_argument_ctx_storage;
-      const TypeMangleContext * expression_argument_ctx = mangle_ctx;
-      if(mangle_ctx) {
-        expression_argument_ctx_storage = *mangle_ctx;
-        expression_argument_ctx_storage
-            .prefer_source_template_parameter_expression_arguments = true;
-        expression_argument_ctx = &expression_argument_ctx_storage;
-      }
-      if(!build_dependent_template_arguments_ir(dependent_arguments,
-                                                nullptr,
-                                                expression_argument_ctx,
-                                                class_arguments)) {
-        return false;
-      }
       vector<abi_mangle::TemplateArgument> arguments;
-      arguments.reserve(class_arguments.size());
-      for(size_t i = 0; i < class_arguments.size(); ++i) {
-        abi_mangle::TemplateArgument argument;
-        if(!class_template_argument_ir_to_template_argument_ir(
-               class_arguments[i],
-               argument)) {
-          return false;
-        }
-        arguments.push_back(std::move(argument));
+      if(!build_dependent_template_id_expression_arguments_ir(*template_id,
+                                                              mangle_ctx,
+                                                              arguments)) {
+        return false;
       }
       out = abi_mangle::DependentExpression::template_id(
           trim_space(template_id->name.name),

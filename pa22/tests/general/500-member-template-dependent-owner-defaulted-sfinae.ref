@@ -43,10 +43,10 @@ function @post(%ctx : ptr [pass=reference], %token : ptr [pass=reference]) -> i3
     %t5 = load ptr $token
     %t6 = addr $arg__3
     call void @empty_work_function__empty_work_function(%t6)
-    %t7 = call i32 @async_result_initiate__ov2(%t1, %t5, %t6)
+    %t7 = call i32 @async_result_initiate__ov3(%t1, %t5, %t6)
     return i32 %t7
 }
-function @async_result_initiate__ov2(%initiation : ptr [pass=reference], %token : ptr [pass=reference], %args : ptr [pass=reference]) -> i32 [binding=weak, object=_Z21async_result_initiateI8initiateI8executorE7handlerJ19empty_work_functionEEiOT_OT0_DpOT1_] {
+function @async_result_initiate__ov3(%initiation : ptr [pass=reference], %token : ptr [pass=reference], %args : ptr [pass=reference]) -> i32 [binding=weak, object=_Z21async_result_initiateI8initiateI8executorE7handlerJ19empty_work_functionEEiOT_OT0_DpOT1_] {
   slot $initiation : ptr
   slot $token : ptr
   slot $args : ptr
@@ -76,15 +76,6 @@ function @initiate_executor___operator__(%this : ptr, %__param1 : ptr [pass=refe
     store ptr %__param4, $__param4
     return i32 1
 }
-function @initiate_executor___initiate(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8initiateI8executorEC1ERKS0_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
 function @empty_work_function__empty_work_function(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN19empty_work_functionC1Ev] {
   slot $this : ptr
 
@@ -102,6 +93,15 @@ function @context__get_executor(%this : ptr) -> obj<1x1> [binding=weak, object=_
     call void @executor__executor(%t1)
     return obj<1x1> $retobj__1
 }
+function @initiate_executor___initiate(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8initiateI8executorEC1ERKS0_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
 function @executor__executor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8executorC1Ev] {
   slot $this : ptr
 
@@ -109,6 +109,6 @@ function @executor__executor(%this : ptr) -> void [unwind=no, binding=weak, obje
     store ptr %this, $this
     return void
 }
-alias object _ZN8initiateI8executorEC2ERKS0_ = @initiate_executor___initiate
 alias object _ZN19empty_work_functionC2Ev = @empty_work_function__empty_work_function
+alias object _ZN8initiateI8executorEC2ERKS0_ = @initiate_executor___initiate
 alias object _ZN8executorC2Ev = @executor__executor

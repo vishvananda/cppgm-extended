@@ -52,6 +52,7 @@ inline const Info * all(std::size_t & count)
       {"__remove_reference", BTK_REMOVE_REFERENCE, true},
       {"__remove_reference_t", BTK_REMOVE_REFERENCE, true},
       {"__remove_cvref", BTK_REMOVE_CVREF, true},
+      {"__remove_const_ref_t", BTK_REMOVE_CONST_REF, true},
       {"__decay", BTK_DECAY, true},
       {"__make_unsigned", BTK_MAKE_UNSIGNED, true},
       {"__make_signed", BTK_MAKE_SIGNED, true},
@@ -254,6 +255,48 @@ inline Kind kind_for_alias_template_name(const std::string & name)
   default:
     return BTK_UNKNOWN;
   }
+}
+
+inline const char * canonical_dependent_transform_name_for_kind(Kind kind)
+{
+  switch(kind) {
+  case BTK_REMOVE_CV:
+    return "__remove_cv";
+  case BTK_REMOVE_CONST:
+    return "__remove_const";
+  case BTK_REMOVE_VOLATILE:
+    return "__remove_volatile";
+  case BTK_REMOVE_EXTENT:
+    return "__remove_extent";
+  case BTK_REMOVE_ALL_EXTENTS:
+    return "__remove_all_extents";
+  case BTK_REMOVE_POINTER:
+    return "__remove_pointer";
+  case BTK_REMOVE_REFERENCE:
+    return "__remove_reference_t";
+  case BTK_REMOVE_CVREF:
+    return "__remove_cvref";
+  case BTK_DECAY:
+    return "__decay";
+  case BTK_MAKE_UNSIGNED:
+    return "__make_unsigned";
+  case BTK_MAKE_SIGNED:
+    return "__make_signed";
+  case BTK_ADD_POINTER:
+    return "__add_pointer";
+  case BTK_UNDERLYING_TYPE:
+    return "__underlying_type";
+  case BTK_ADD_LVALUE_REFERENCE:
+    return "__add_lvalue_reference";
+  case BTK_ADD_RVALUE_REFERENCE:
+    return "__add_rvalue_reference";
+  case BTK_REMOVE_CONST_REF:
+    return "__remove_const_ref_t";
+  case BTK_IDENTITY:
+  case BTK_UNKNOWN:
+    return nullptr;
+  }
+  return nullptr;
 }
 
 inline bool is_supported_name(const std::string & name)

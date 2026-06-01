@@ -1456,8 +1456,21 @@ public:
       declarator = find_child_kind(inner, CppAstKind::declarator);
       body = find_function_body_node(inner);
       ctor_initializer = find_child_kind(inner, CppAstKind::ctor_initializer);
-      special_member_is_constructor = inner.value == scope.class_info->name;
-      special_member_is_destructor = inner.value == (string("~") + scope.class_info->name);
+      const string class_name =
+          strip_trailing_top_level_template_arguments(
+              unqualified_member_name(scope.class_info->name));
+      const string member_name = unqualified_member_name(inner.value);
+      const string stripped_member_name =
+          strip_trailing_top_level_template_arguments(member_name);
+      special_member_is_constructor =
+          member_name == class_name || stripped_member_name == class_name;
+      if(member_name == (string("~") + class_name)) {
+        special_member_is_destructor = true;
+      } else if(member_name.size() > 1 && member_name[0] == '~') {
+        special_member_is_destructor =
+            strip_trailing_top_level_template_arguments(member_name.substr(1)) ==
+            class_name;
+      }
       special_member_is_conversion = is_conversion_function_name(inner.value);
       if(!special_member_is_constructor &&
          !special_member_is_destructor &&
@@ -3486,7 +3499,6 @@ public:
         }
         parser_trace::note("destroy.collect", std::string(), trace.str());
       }
-
       vector<TemplateParameterInfo> merged_parameters = existing->parameters;
       if(!merge_template_parameter_redeclarations(merged_parameters, template_parameters)) {
         // Keep the existing parameter spellings for function templates. Their

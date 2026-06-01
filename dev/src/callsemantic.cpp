@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <limits>
@@ -12514,6 +12515,14 @@ private:
     }
     const bool alias_pattern_scope_sensitive =
         decl.dependent_qualified_member_scope_sensitive;
+    const bool member_alias_pattern_needs_instantiated_member_scope =
+        decl.declaring_scope &&
+        decl.declaring_scope->class_info &&
+        decl.declaring_scope->class_info->source_template &&
+        !decl.declaring_scope->class_info->instantiation_arguments.empty() &&
+        decl.resolved_type_pattern &&
+        dependent_qualified_member_probe.mentions_alias_parameter(
+            decl.resolved_type_pattern);
     if(found == instantiations.end() && alias_pattern_scope_sensitive) {
       found = instantiations.find(scoped_alias_cache_key());
     }
@@ -12639,6 +12648,62 @@ private:
           &decl,
           dependent_arguments);
     };
+    const auto try_resolve_builtin_type_transform_alias = [&]() -> TypePtr
+    {
+      const builtin_type_transforms::Kind transform_kind =
+          builtin_type_transforms::kind_for_alias_template_name(decl.name);
+      if(transform_kind == builtin_type_transforms::BTK_UNKNOWN ||
+         decl.parameters.size() != 1 ||
+         decl.parameters[0].kind != TemplateParameterInfo::TP_TYPE ||
+         arguments.size() != 1 ||
+         arguments[0].kind != TemplateArgument::TA_TYPE ||
+         !arguments[0].type) {
+        return TypePtr();
+      }
+
+      TypePtr argument_type = arguments[0].type;
+      if(!type_depends_on_template_parameter(argument_type)) {
+        TypePtr concrete;
+        if(semantic_builtins::apply_builtin_type_transform_kind(transform_kind,
+                                                               argument_type,
+                                                               concrete) &&
+           concrete) {
+          return concrete;
+        }
+      }
+
+      if(transform_kind == builtin_type_transforms::BTK_IDENTITY) {
+        return argument_type;
+      }
+
+      const char * transform_name =
+          builtin_type_transforms::canonical_dependent_transform_name_for_kind(
+              transform_kind);
+      if(!transform_name) {
+        return TypePtr();
+      }
+      const string argument_text =
+          source_arg_texts && !source_arg_texts->empty() ?
+              (*source_arg_texts)[0] :
+              template_argument_text(arguments[0]);
+      return semantic_builtins::make_dependent_builtin_type_transform_type(
+          transform_name,
+          argument_text,
+          argument_type);
+    };
+    if(TypePtr builtin_alias = try_resolve_builtin_type_transform_alias()) {
+      cache_alias_instantiation(builtin_alias);
+      if(parser_trace::enabled("template.resolve")) {
+        std::ostringstream trace;
+        trace << "instantiate-alias-template-builtin-transform name="
+              << decl.name
+              << " key=" << key
+              << " alias=" << describe_type(builtin_alias);
+        parser_trace::note("template.resolve", std::string(), trace.str());
+      }
+      note_alias_use(builtin_alias);
+      return builtin_alias;
+    }
     TypePtr alias;
     const string type_id_text = decl.type_id ? node_text(*decl.type_id) : string();
     const string spaced_type_id_text = decl.type_id ? spaced_node_text(*decl.type_id) : string();
@@ -12657,12 +12722,19 @@ private:
             decl.type_id;
       }
       substituted_alias_type_id_attempted = true;
-      if(template_argument_semantics::substitute_expression_node_for_template_arguments(
-             *inst_scope,
-             *decl.type_id,
-             decl.parameters,
-             arguments,
-             substituted_alias_type_id_storage)) {
+      if(template_api::with_template_services(
+             *this,
+             [&](template_api::TemplateServices & services)
+             {
+               return template_argument_semantics::
+                   substitute_type_id_node_for_template_arguments(
+                       services,
+                       *inst_scope,
+                       *decl.type_id,
+                       decl.parameters,
+                       arguments,
+                       substituted_alias_type_id_storage);
+             })) {
         substituted_alias_type_id_available = true;
         return &substituted_alias_type_id_storage;
       }
@@ -12787,6 +12859,10 @@ private:
 	          source_capture_pause;
 	      const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
 	          class_source_capture_pause;
+	      const CppAstNode * type_id_node = substituted_alias_type_id_node();
+	      if(!type_id_node) {
+	        return false;
+	      }
 	      vector<string> structural_arg_texts =
 	          canonical_instantiation_arg_texts(arguments);
 	      vector<TemplateArgumentSyntax> structural_arg_syntaxes;
@@ -12809,6 +12885,7 @@ private:
 	      alias_name.name = decl.name;
 	      TypePtr structural_alias;
 	      const bool structural_expanded =
+	          !member_alias_pattern_needs_instantiated_member_scope &&
 	          decl.declaring_scope &&
 	          template_api::with_template_services(
 	             *this,
@@ -12835,7 +12912,7 @@ private:
 	          {
 	            return type_depends_on_template_parameter(type);
 	          };
-	      if(!parse_type_id_ast(*decl.type_id, hooks, out) || !out) {
+	      if(!parse_type_id_ast(*type_id_node, hooks, out) || !out) {
 	        return false;
 	      }
 	      out = refine_instantiated_alias(out);
@@ -25044,9 +25121,9 @@ private:
           declaration_identifier ? cppast_qualified_name_syntax(*declaration_identifier) : nullptr;
       parsed_as_variable =
           parse_variable_declaration_type(*parse_scope,
-                                         prepared_specifiers.resolved_specifiers,
-                                         init_decl.children[0],
-                                         initializer,
+                                          prepared_specifiers.resolved_specifiers,
+                                          init_decl.children[0],
+                                          initializer,
                                          true,
                                          name,
                                          type,

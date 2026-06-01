@@ -93,6 +93,13 @@ bool substitute_expression_node_for_template_arguments(
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     CppAstNode & out);
+bool substitute_type_id_node_for_template_arguments(
+    template_api::TemplateServices & services,
+    semantic_model::Scope & scope,
+    const CppAstNode & node,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<template_model::TemplateArgument> & arguments,
+    CppAstNode & out);
 bool substitute_named_type_parameters(
     const cpp_decl::TypePtr & type,
     const std::map<std::string, cpp_decl::TypePtr> & type_replacements,

@@ -7146,16 +7146,16 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
   }
   if(current.function->type && best.function->type &&
      type_equals(current.function->type, best.function->type)) {
+    const int type_pack_pattern_preference =
+        compare_function_template_type_pack_pattern_preference(current, best);
+    if(type_pack_pattern_preference != 0) {
+      return type_pack_pattern_preference;
+    }
     const int placeholder_specificity =
         compare_partial_order_placeholder_specificity(current_transformed_params,
                                                       best_transformed_params);
     if(placeholder_specificity != 0) {
       return placeholder_specificity;
-    }
-    const int type_pack_pattern_preference =
-        compare_function_template_type_pack_pattern_preference(current, best);
-    if(type_pack_pattern_preference != 0) {
-      return type_pack_pattern_preference;
     }
     const int parameter_count_preference =
         compare_function_template_parameter_count_preference(current, best);
@@ -8390,6 +8390,21 @@ void append_function_template_call_candidates_impl(
                     active_owner);
           }
           catch(const TemplateSubstitutionFailure & e)
+          {
+            if(parser_trace::enabled("template.resolve")) {
+              std::ostringstream trace;
+              trace << "candidate-instantiation-failed name=" << candidate_template.name
+                    << " explicit=" << (has_explicit_args ? "yes" : "no")
+                    << " error=" << e.what();
+              parser_trace::note("template.resolve", trace_location, trace.str());
+            }
+            append_template_function_candidate_drop(ctx,
+                                                    &candidate_template,
+                                                    "substitution_failure",
+                                                    &combination_drops);
+            return;
+          }
+          catch(const logic_error & e)
           {
             if(parser_trace::enabled("template.resolve")) {
               std::ostringstream trace;

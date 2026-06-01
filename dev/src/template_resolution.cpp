@@ -11367,25 +11367,25 @@ bool resolve_template_arguments(
                 current_source_location(cache_texts[text_index], text_index) :
                 std::string());
         if(!try_resolve_expanded_type_template_argument(
-               services,
-               type_system,
-               scope,
+	               services,
+	               type_system,
+	               scope,
                parameters[i],
                cache_texts[text_index],
                resolution_inputs.syntax_for(text_index),
-               resolution_inputs.type_for(text_index),
-               arg) &&
-           !template_resolution::resolve_template_argument(
+	               resolution_inputs.type_for(text_index),
+	               arg) &&
+	           !template_resolution::resolve_template_argument(
                 services,
                 scope,
                 template_api::make_template_environment(bound_scope),
                 parameters[i],
-                cache_texts[text_index],
-                resolution_inputs.syntax_for(text_index),
-                arg)) {
-          note_cache_failure();
-          return false;
-        }
+	                cache_texts[text_index],
+	                resolution_inputs.syntax_for(text_index),
+	                arg)) {
+	          note_cache_failure();
+	          return false;
+	        }
         out.push_back(arg);
         ++text_index;
       }
@@ -11431,9 +11431,9 @@ bool resolve_template_arguments(
             scope,
             template_api::make_template_environment(bound_scope),
             *parameter_for_resolution,
-            cache_texts[text_index],
-            resolution_inputs.syntax_for(text_index),
-            arg)) {
+		    cache_texts[text_index],
+		    resolution_inputs.syntax_for(text_index),
+		    arg)) {
       note_cache_failure();
       return false;
     }
