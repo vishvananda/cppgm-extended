@@ -8543,8 +8543,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         });
         if(parsed_result_type && parsed_result) {
           TypePtr resolved_result;
-          if(include_body &&
-             recover_instantiation_bound_type(ctx,
+          if(recover_instantiation_bound_type(ctx,
                                              inst_scope,
                                              parsed_result,
                                              resolved_result) &&
