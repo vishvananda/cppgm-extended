@@ -35,7 +35,6 @@ It is intentionally more operational than the process doc:
 | `pa21` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa22` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa23` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
-| `pa24` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa25` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa26` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
 | `pa27` | pass_a_complete | pass_b_complete | pass_c_complete | pending | Pass A findings recorded below. |
@@ -86,7 +85,7 @@ Coordinator summary:
   `tests/general/`, updated moved path references in refs and witness refs, and
   updated READMEs.
 - `pa23`: kept the intentional `tests/strict` and `tests/structural` role split.
-- `pa24` through `pa33`: moved broad milestone/ABI/runtime suites from
+- `pa25` through `pa33`: moved broad milestone/ABI/runtime suites from
   `tests/spec/` to `tests/general/` and updated README descriptions.
 - `pa34`: kept `tests/preproc` and `tests/compile` as meaningful public role
   buckets, removed the untested internal `tests/frontier` discovery surface
@@ -591,33 +590,11 @@ Pass D deferred test buildout.
 - `next actions`:
   - Pass B: ensure the README and harness text keep the strict/structural distinction explicit
 
-### `pa24`
+### `pa24` (folded)
 
-- `owner/boundary summary`:
-  - `cpplink` object/link pipeline over compiler-owned objects
-  - first practical separate-compilation/link contract
-- `primary oracle`:
-  - runtime/link behavior over generated objects
-- `secondary smokes`:
-  - object inspection is useful but not the primary contract here
-- `current harness mode`:
-  - source-driven compile/link/run with checked-in expected outputs
-- `current numbering bands`:
-  - `100-195`: one coherent small link/runtime band
-- `pass_a findings`:
-  - boundary and primary oracle look correct
-  - README already no longer depends on `tests/derived`
-  - cleanup target should be a single `tests/` directory rather than `tests/spec`
-  - numbering is coherent and has no duplicate IDs
-- `misplaced tests`:
-  - none identified yet
-- `planned new tests`:
-  - deferred to Pass D
-  - reserve `200-249` if later cleanup reveals small missing separate-compilation/link owners
-- `defer reason`:
-  - later host-toolchain assignments may still cause ownership moves
-- `next actions`:
-  - Pass B: normalize README wording to the final single-`tests/` layout
+PA24 was folded out by the assignment restructure. Its standalone `cpplink`
+object/link contract is no longer student-facing; the relevant source-driven
+separate-compilation behaviors now live in PA30.
 
 ### `pa25`
 

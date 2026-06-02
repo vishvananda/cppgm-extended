@@ -109,7 +109,7 @@ Focus:
 - Do not implement LowIR parsing, lowering, optimization, or machine code
   generation.
 
-### Slice D: Linker And EH Tool Scaffolds
+### Slice D: Retired Linker And EH Tool Scaffolds
 
 Owns:
 
@@ -118,10 +118,9 @@ Owns:
 
 Focus:
 
-- Check PA24 and PA25 command-line surfaces.
-- Scaffold `-c`, `-o`, target/debug dump style options, input collection, help,
-  and batch-not-implemented behavior where useful.
-- Do not implement linking, EH lowering, runtime layout, or object generation.
+- These sidecars are no longer exported after PA24 was folded into PA30 and
+  PA25 was refocused on `cppgm++ -c` host-EH facts.
+- Keep them only if an internal maintainer tool still needs a scaffold smoke.
 
 ### Slice E: Export Packaging Audit
 

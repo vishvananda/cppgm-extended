@@ -101,7 +101,7 @@ To build checkpoints through a point:
 ```sh
 make through-cy86 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
 make through-cppgm++ CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
-make through-cppeh CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
+make through-lowir2native CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
 ```
 
 To run preservation tests through an assignment stage:
@@ -136,11 +136,9 @@ The checkpoint used for each assignment stage is:
 - `nsdecl-self`: PA7
 - `nsinit-self`: PA8
 - `cy86-self`: PA9
-- `cppgm++-self`: PA10-PA12, PA14-PA22, and PA26-PA35
+- `cppgm++-self`: PA10-PA12, PA14-PA22, and PA25-PA35
 - `lowir2cy86-self`: PA13
 - `lowir2native-self`: PA23 and PA37
-- `cpplink-self`: PA24
-- `cppeh-self`: PA25
 - `lowiropt-self`: PA36
 
 Checkpoint source sets are fixed by `../dev/frontend_source_sets.mk`. Do not

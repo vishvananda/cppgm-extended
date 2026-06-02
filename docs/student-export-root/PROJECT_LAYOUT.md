@@ -10,8 +10,8 @@ assignment harnesses.
 - `dev/src/`: shared compiler implementation files and support headers
 - `dev/frontend_source_sets.mk`: per-tool lists of `dev/src/*.cpp` files to
   link into each compiler binary
-- `pa1/` through `pa38/`: assignment handouts, Makefiles, tests, scripts, and
-  reference fixtures
+- `paN/`: assignment handouts, Makefiles, tests, scripts, and reference
+  fixtures for the active milestones
 - `cppgm.tests/`: shared course tests used by assignment harnesses
 - `doc/`: public reference material, including `doc/n3485.txt`
 - `obj/`: generated build artifacts
@@ -33,7 +33,7 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 - PA6-PA9: grammar recognition, namespace semantics, and CY86 output
 - PA10-PA12: AST, types, lookup, conversions, calls, and overload resolution
 - PA13-PA22: LowIR, C++ lowering, object model, templates, and constexpr
-- PA23-PA25: native backend, linking, and host exception metadata
+- PA23-PA25: native backend and host exception metadata
 - PA26-PA30: C++11 language closure and compile/link driver integration
 - PA31-PA35: ABI naming, host ABI, and hosted compatibility
 - PA36-PA37: LowIR and machine-backend optimization
@@ -66,13 +66,12 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 | PA21 | `cppgm++ --emit-lowir` | template entities and specialization model |
 | PA22 | `cppgm++ --emit-lowir` | deduction, substitution, and SFINAE completion |
 | PA23 | `lowir2native` | native backend from LowIR |
-| PA24 | `cpplink` | separate compilation and linking |
 | PA25 | `cppgm++ -c` | host exception metadata and runtime-helper facts |
 | PA26 | `cppgm++ --emit-lowir` | core language closure |
 | PA27 | `cppgm++ --emit-lowir` | advanced language closure |
 | PA28 | `cppgm++ --emit-lowir` | non-virtual multi-base object model |
 | PA29 | `cppgm++ --emit-lowir` | virtual/RTTI object-model completion |
-| PA30 | `cppgm++` | compile/link driver integration |
+| PA30 | `cppgm++` | separate compilation and compile/link driver integration |
 | PA31 | `abimangle` | standalone ABI name construction |
 | PA32 | `cppgm++ -c` | host-linkable object interoperability |
 | PA33 | `cppgm++ -c` | host C++ ABI and runtime behavior |

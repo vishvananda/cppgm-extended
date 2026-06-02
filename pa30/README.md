@@ -43,7 +43,7 @@ You will want to reuse:
 - the PA10 AST and PA11/PA12 semantic foundation
 - the PA14-PA29 LowIR lowering path
 - the PA23 native backend
-- the PA24/PA25 object emission, linking, and runtime support path
+- the object emission, linking, and runtime support path used by `cppgm++`
 
 The tests assume a POSIX-like shell environment with `make`, `bash`,
 `perl`, and a working host C/C++ compiler for test helper objects. The harness
@@ -241,6 +241,8 @@ This validates:
 - consistency between direct source linking and explicit separate compilation
 - consistency between mixed source/object linking and explicit separate
   compilation
+- cross-translation-unit data relocations that feed indirect calls
+- namespace-scope startup hooks across translation units
 
 ### Assignment Boundary
 

@@ -28,7 +28,7 @@ You will want to reuse:
 
 - the full C++ language pipeline through PA32
 - the PA32 host-compatible `cppgm++ -c` path
-- the PA23/PA24 native object emission path
+- the PA23 native backend and PA30 object-emission path
 - the PA25 exception/runtime lowering concepts
 
 The tests assume a POSIX-like shell environment with `make`, `bash`,

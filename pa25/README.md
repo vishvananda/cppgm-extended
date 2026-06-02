@@ -29,7 +29,7 @@ library assignment and not the old private `cppeh` linker/runtime pipeline.
 
 ### Prerequisites
 
-Complete PA24 before starting this assignment.
+Complete PA23 before starting this assignment.
 
 You will want to reuse:
 

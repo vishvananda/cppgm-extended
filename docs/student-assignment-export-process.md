@@ -221,8 +221,6 @@ preserving the `paN` symlink layout. The current scaffold sidecars are:
 - [cppgm++-scaffold.cpp](../dev/cppgm++-scaffold.cpp)
 - [lowir2cy86-scaffold.cpp](../dev/lowir2cy86-scaffold.cpp)
 - [lowir2native-scaffold.cpp](../dev/lowir2native-scaffold.cpp)
-- [cpplink-scaffold.cpp](../dev/cpplink-scaffold.cpp)
-- [cppeh-scaffold.cpp](../dev/cppeh-scaffold.cpp)
 - [lowiropt-scaffold.cpp](../dev/lowiropt-scaffold.cpp)
 
 Those scaffold files are intended to copy directly into the exported tree without

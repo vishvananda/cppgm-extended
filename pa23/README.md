@@ -74,10 +74,8 @@ Not yet required here:
 - link-map dumping
 - the private exception/runtime ABI path
 
-Those later pipeline surfaces are owned by:
-
-- PA24 `cpplink`
-- PA25 `cppeh`
+Those later pipeline surfaces are owned by the later `cppgm++` object,
+compile/link, and host-EH assignments.
 
 ### Input / Command-Line Arguments
 
@@ -504,10 +502,10 @@ Inputs that rely on those features have undefined behaviour for this milestone.
 
 The intended next stages are:
 
-- PA24 `cpplink`, which adds separate compilation and linking on top of the PA23 native
-  backend path
-- PA25 `cppeh`, which layers the first compiler-private exception/runtime ABI on top of
-  that object/link pipeline
+- PA25 host EH facts, which validates the host-EH metadata emitted in
+  `cppgm++ -c` objects
+- PA30 `cppgm++` compile/link mode, which adds source-driven separate
+  compilation and linking on top of the native backend path
 
 So PA23 should leave behind:
 
@@ -515,18 +513,8 @@ So PA23 should leave behind:
 - a stable `LowIR -> machine IR` boundary that later optimization passes can target
 - reusable target-specific code/data emission layers
 - no renewed dependence on CY86 for the main compiler path
-- a backend test corpus that already catches the basic execution-level arithmetic and
-  conversion bugs before the source-driven toolchain stages
-
-PA24 `cpplink` then introduces:
-
-- `cpplink -c` for deterministic `LowIR -> object` emission
-- `cpplink` link mode for linking those objects into native executables
-
-PA25 `cppeh` then extends that split compile/link path with:
-
-- compiler-private EH/runtime object support
-- the first `cppgm_eh_*`-style runtime-owned execution path
+- a backend test corpus that already catches the basic execution-level
+  arithmetic and conversion bugs before the source-driven toolchain stages
 
 ### Design Notes (Non-Normative)
 

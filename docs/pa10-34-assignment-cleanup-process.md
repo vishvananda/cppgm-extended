@@ -465,7 +465,6 @@ This high-level table records pass status only.
 | `pa21` | pending | pending | pending | pending |  |
 | `pa22` | pending | pending | pending | pending |  |
 | `pa23` | pending | pending | pending | pending |  |
-| `pa24` | pending | pending | pending | pending |  |
 | `pa25` | pending | pending | pending | pending |  |
 | `pa26` | pending | pending | pending | pending |  |
 | `pa27` | pending | pending | pending | pending |  |
