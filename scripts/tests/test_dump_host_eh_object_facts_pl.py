@@ -173,6 +173,62 @@ class DumpHostEhObjectFactsPlTests(unittest.TestCase):
         self.assertIn("object 1 lsda call_site_has_cleanup", lines)
         self.assertNotIn("object 1 lsda type_table", lines)
 
+    def test_plan_selects_objects_and_reports_private_symbols(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-host-eh-plan.") as temp_dir:
+            temp = Path(temp_dir)
+            one = temp / "one.o"
+            two = temp / "two.o"
+            one.write_bytes(b"\x7fELF" + b"\0" * 64)
+            two.write_bytes(b"\x7fELF" + b"\0" * 64)
+            plan = temp / "facts.plan"
+            plan.write_text("object 2\n")
+
+            write_executable(
+                temp / "nm",
+                textwrap.dedent(
+                    """\
+                    #!/usr/bin/env python3
+                    import pathlib
+                    import sys
+                    obj = pathlib.Path(sys.argv[-1]).name
+                    if obj == "one.o":
+                        sys.stdout.write("                 U __cxa_throw\\n")
+                    else:
+                        sys.stdout.write("                 U _Unwind_Resume\\n")
+                        sys.stdout.write("0000000000000000 T cppgm_eh_private_probe\\n")
+                    """
+                ),
+            )
+            write_executable(
+                temp / "readelf",
+                textwrap.dedent(
+                    """\
+                    #!/usr/bin/env python3
+                    import sys
+                    if sys.argv[1:2] == ["-SW"]:
+                        sys.stdout.write("  [ 1] .text PROGBITS 0000000000000000 000040\\n")
+                    """
+                ),
+            )
+
+            env = os.environ.copy()
+            env["PATH"] = f"{temp}:{env.get('PATH', '')}"
+            result = subprocess.run(
+                ["perl", str(SCRIPT), "--plan", str(plan), str(one), str(two)],
+                cwd=REPO_ROOT,
+                env=env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=False,
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        lines = set(result.stdout.splitlines())
+        self.assertFalse(any(line.startswith("object 1 ") for line in lines))
+        self.assertIn("object 2 undef _Unwind_Resume", lines)
+        self.assertIn("object 2 private_symbol cppgm_eh_private_probe", lines)
+
 
 if __name__ == "__main__":
     unittest.main()
