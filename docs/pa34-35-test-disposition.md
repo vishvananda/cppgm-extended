@@ -32,19 +32,24 @@ pa35 during self-host debugging.
   owns the feature (or **DROP** if covered there). These are not hosted-area
   material.
 
-> **constexpr-pure caveat:** L1 `constexpr-pure` rows are *candidates* — confirm
-> the asserted expression folds to a constant expression before recasting to
-> `static_assert`; if it routes through a non-`constexpr` library call, it is L2.
+> **Revised L1 strategy (2026-06-02):** L1's purpose is **compile-time conformance for
+> hard headers** — does cppgm++ parse/instantiate the header correctly? The `static_assert`
+> is only an **anti-cheat anchor**: it must require the header's types to be present and
+> correct so the test can't pass on an empty TU. The anchor need **not** assert a runtime
+> value — a **type-trait / `decltype` / `sizeof` / `is_constructible` / type-identity** check
+> is compile-time-evaluable even when the container's *operations* are not `constexpr`
+> (libc++ at gnu++11). So **most** header tests are L1, anchored on the API surface they
+> exercised; no `main` needed, empty `.ref`, exit SUCCESS. L2 is reserved for tests whose
+> conformance target is a **runtime observable**: stdout/IO, cross-TU linkage, or ABI/symbol
+> surface.
 
 | Bucket | Target | Modification |
 |---|---|---|
 | `static_assert` | L1 | Keep — already compile-time-checked. |
-| `constexpr-pure` | L1 | Recast `return E?0:1;` → `static_assert(E)` (verify E is constexpr). |
-| `runtime-state` | L2 | Keep computation; link + run + assert exit status. |
-| `I/O` | L2 | Keep; link + run + assert stdout. |
-| `cross-TU` | L2 | Keep; cross-TU link + run + assert. |
-| `calls-no-result` | TRIAGE | Add a checkable result, or DROP if dup. |
-| `declare-only` | TRIAGE | Exercise + assert, or DROP if redundant. |
+| `constexpr-pure` / `runtime-state` / `calls-no-result` / `declare-only` | L1 | Recast the exercised surface as a cheat-proof **compile-time anchor** (`static_assert` over traits / `decltype` / `sizeof` / `is_constructible` / type identity). No `main`. → `pa34/tests/compile`. |
+| `I/O` | L2 | Running is the point (verify stdout). Keep link + run + assert stdout. → `pa35/tests/link`. |
+| `cross-TU` | L2 | Keep; cross-TU link + run + assert. → `pa35/tests/link`. |
+| ABI / symbol-surface | L2 / pa31 | Mangling → `pa31` abimangle DSL; link symbol-inspect stays `pa35/tests/link`. |
 | _no header_ | RELOCATE | Move to owning core PA; DROP if already covered. |
 
 ---
