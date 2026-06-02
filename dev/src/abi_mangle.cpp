@@ -328,9 +328,17 @@ vector<FunctionNameComponent> function_components_for_qualified(const string & q
 Type named_type_from_qualified(const string & qualified_name)
 {
   const vector<string> parts = split_qualified_name(qualified_name);
-  return Type::named_type(prefix_components_for_parts(parts, parts.size() - 1),
-                          parts.back(),
-                          join_qualified_parts(parts, parts.size()));
+  Type out = Type::named_type(prefix_components_for_parts(parts, parts.size() - 1),
+                              parts.back(),
+                              join_qualified_parts(parts, parts.size()));
+  // A named class/enum type is a substitutable component: give it a whole-type
+  // substitution key so a repeated occurrence emits a back-reference (S_/S0_/...)
+  // instead of re-spelling. The key matches the qualified substitution name the
+  // trailing name-component registers during spelling, so emit_type's existing
+  // pre-check/register handles compression consistently.
+  set_substitution(out,
+                   SubstitutionKey::named(join_qualified_parts(parts, parts.size())));
+  return out;
 }
 
 vector<Type::ClassTemplateArgument> class_args_from_refs(const ParseContext & ctx,
@@ -741,13 +749,21 @@ Type parse_type_spec(const ParseContext & ctx, const vector<string> & words, siz
     }
     vector<string> refs(words.begin() + begin + 2, words.end());
     const vector<string> parts = split_qualified_name(words[begin + 1]);
-    return Type::class_template_specialization(
+    Type out = Type::class_template_specialization(
         prefix_components_for_parts(parts, parts.size() - 1),
         parts.back(),
         join_qualified_parts(parts, parts.size()),
         class_args_from_refs(ctx, refs),
         string(),
         false);
+    // A class-template specialization is a substitutable component: give it a
+    // whole-type substitution key so a repeated occurrence back-references it
+    // (e.g. RS4_) instead of re-spelling its components.
+    SubstitutionKey key;
+    if(make_type_substitution_key(out, key)) {
+      set_substitution(out, key);
+    }
+    return out;
   }
   if(kind == "template-param-template") {
     if(begin + 3 > words.size()) {
@@ -763,13 +779,18 @@ Type parse_type_spec(const ParseContext & ctx, const vector<string> & words, siz
     }
     vector<string> refs(words.begin() + begin + 4, words.end());
     const vector<string> parts = split_qualified_name(words[begin + 3]);
-    return Type::class_template_specialization(
+    Type out = Type::class_template_specialization(
         prefix_components_for_parts(parts, parts.size() - 1),
         parts.back(),
         join_qualified_parts(parts, parts.size()),
         class_args_from_refs(ctx, refs),
         std_substitution_from_word(words[begin + 1]),
         boolean_word(words[begin + 2]));
+    SubstitutionKey key;
+    if(make_type_substitution_key(out, key)) {
+      set_substitution(out, key);
+    }
+    return out;
   }
   if(kind == "member") {
     if(begin + 3 != words.size()) {
