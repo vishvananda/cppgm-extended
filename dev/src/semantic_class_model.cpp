@@ -9951,6 +9951,14 @@ void populate_class_info(SemanticContext & ctx,
     trace_class_collection_event(ctx, "populate-class-complete-skip", info, node);
     return;
   }
+  if(info.full_member_collection_in_progress ||
+     info.reference_member_collection_in_progress) {
+    trace_class_collection_event(ctx,
+                                 "populate-class-in-progress-skip",
+                                 info,
+                                 node);
+    return;
+  }
   if(info.reference_members_collected && !info.complete &&
      info.dependent_instantiation) {
     trace_class_collection_event(ctx, "populate-class-dependent-skip", info, node);
@@ -9964,6 +9972,7 @@ void populate_class_info(SemanticContext & ctx,
     ctx.discard_class_function_bindings_for_reset(info);
     reset_reference_member_state_for_full_collection(info);
   }
+  bool full_collection_finished = false;
   struct FullCollectionGuard
   {
     ClassInfo & info;
@@ -9978,6 +9987,17 @@ void populate_class_info(SemanticContext & ctx,
       info.full_member_collection_in_progress = previous;
     }
   } full_collection_guard(info);
+  struct FullCollectionAbortCleanup
+  {
+    ClassInfo & info;
+    bool & finished;
+    ~FullCollectionAbortCleanup()
+    {
+      if(!finished && !info.complete && !info.reference_members_collected) {
+        reset_reference_member_state_for_full_collection(info);
+      }
+    }
+  } full_collection_abort_cleanup{info, full_collection_finished};
 
   {
     semantic_metrics::ScopedClassDemand class_demand(
@@ -10270,6 +10290,7 @@ void populate_class_info(SemanticContext & ctx,
     info.reference_members_collected = true;
     ctx.finalize_dependent_class_shape(info);
     trace_class_collection_event(ctx, "populate-class-dependent-finalized", info, node);
+    full_collection_finished = true;
     return;
   }
 
@@ -10293,6 +10314,7 @@ void populate_class_info(SemanticContext & ctx,
     info.reference_members_collected = true;
     ctx.finalize_dependent_class_shape(info);
     trace_class_collection_event(ctx, "populate-class-dependent-layout", info, node);
+    full_collection_finished = true;
     return;
   }
   trace_class_collection_event(ctx, "populate-class-finalize-layout", info, node);
@@ -10304,6 +10326,7 @@ void populate_class_info(SemanticContext & ctx,
   info.reference_members_collected = true;
   template_api::note_anonymous_member_class_events_if_owner_logged(ctx, info);
   trace_class_collection_event(ctx, "populate-class-done", info, node);
+  full_collection_finished = true;
 }
 
 void collect_class_declaration(SemanticContext & ctx,

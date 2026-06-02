@@ -240,6 +240,9 @@ protected:
   void attach_qualified_name_syntax_from_span(CppAstNode & node,
                                               std::size_t start,
                                               std::size_t end);
+  void attach_builtin_type_transform_syntax_from_span(CppAstNode & node,
+                                                      std::size_t start,
+                                                      std::size_t end);
   bool parse_angle_clause_text(std::string & out);
   bool can_open_nested_template_angle_at(std::size_t boundary) const;
   bool looks_like_unknown_nested_template_id_at(std::size_t boundary) const;

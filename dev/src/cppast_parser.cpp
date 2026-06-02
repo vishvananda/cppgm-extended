@@ -5453,6 +5453,7 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
       }
       CppAstNode type_name = make_node(CppAstKind::type_name, name);
       annotate_builtin_type_transform_node(type_name, tokens, name_start);
+      attach_builtin_type_transform_syntax_from_span(type_name, name_start, pos);
       type_name.has_leading_typename = true;
       attach_qualified_name_syntax_from_span(type_name, name_start, pos);
       set_span(type_name, name_start);
@@ -5477,6 +5478,7 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
     if(parse_type_name_text(name)) {
       CppAstNode type_name = make_node(CppAstKind::type_name, name);
       annotate_builtin_type_transform_node(type_name, tokens, name_start);
+      attach_builtin_type_transform_syntax_from_span(type_name, name_start, pos);
       attach_qualified_name_syntax_from_span(type_name, name_start, pos);
       set_span(type_name, name_start);
       out.children.push_back(std::move(type_name));
@@ -5607,6 +5609,8 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
       }
       CppAstNode specifier = make_node(CppAstKind::decl_specifier, name);
       specifier.has_leading_typename = true;
+      annotate_builtin_type_transform_node(specifier, tokens, name_start);
+      attach_builtin_type_transform_syntax_from_span(specifier, name_start, pos);
       attach_qualified_name_syntax_from_span(specifier, name_start, pos);
       set_span(specifier, name_start);
       out.children.push_back(std::move(specifier));
@@ -5658,6 +5662,8 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
         } else {
           CppAstNode specifier = make_node(CppAstKind::decl_specifier, name);
           annotate_builtin_type_transform_node(specifier, tokens, type_name_start);
+          attach_builtin_type_transform_syntax_from_span(
+              specifier, type_name_start, pos);
           attach_qualified_name_syntax_from_span(specifier, type_name_start, pos);
           set_span(specifier, type_name_start);
           out.children.push_back(std::move(specifier));
@@ -10520,6 +10526,35 @@ bool CppAstParser::parse_qualified_name_text(string & out,
     out = token_span_text(start, pos);
   }
   return true;
+}
+
+void CppAstParser::attach_builtin_type_transform_syntax_from_span(
+    CppAstNode & node,
+    size_t start,
+    size_t end)
+{
+  const RecogToken & identifier = tokens.peek(start);
+  if(!is_builtin_type_transform_identifier(identifier) ||
+     !tokens.peek(start + 1).is_simple(OP_LPAREN) ||
+     end <= start + 3) {
+    return;
+  }
+
+  const size_t saved = pos;
+  pos = start + 2;
+  CppAstNode operand;
+  const bool parsed =
+      parse_type_id(operand) &&
+      consume_simple(OP_RPAREN) &&
+      pos == end;
+  pos = saved;
+
+  if(!parsed) {
+    return;
+  }
+
+  node.builtin_type_transform_name = identifier.source;
+  node.base_type_syntax.reset(new CppAstNode(std::move(operand)));
 }
 
 void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
