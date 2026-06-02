@@ -1,0 +1,17 @@
+translation-unit
+  function-call at pa18/tests/general/100-partial-explicit-function-template-id-call.t:15:10
+    callee g
+    selected instantiation
+    bind #1 = int source=deduced
+    bind #2 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity g
+  function-instantiation
+    entity f
+  function-instantiation
+    entity g
+  require-definition
+    entity f
+  require-definition
+    entity g

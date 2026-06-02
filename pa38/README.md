@@ -136,7 +136,7 @@ The checkpoint used for each assignment stage is:
 - `nsdecl-self`: PA7
 - `nsinit-self`: PA8
 - `cy86-self`: PA9
-- `cppgm++-self`: PA10-PA12, PA14-PA22, and PA25-PA35
+- `cppgm++-self`: PA10-PA12, PA14-PA22, PA24, and PA25-PA35
 - `lowir2cy86-self`: PA13
 - `lowir2native-self`: PA23 and PA37
 - `lowiropt-self`: PA36

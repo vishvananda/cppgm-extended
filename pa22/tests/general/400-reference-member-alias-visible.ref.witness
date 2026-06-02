@@ -1,5 +1,0 @@
-translation-unit
-  class-use at pa22/tests/general/400-reference-member-alias-visible.t:3:1
-    template Vec
-    selected primary
-    bind #1 = int source=explicit

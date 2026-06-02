@@ -136,8 +136,7 @@ Boundary and Out Of Scope sections below.
 When adding your own tests, useful PA21 themes include alias/variable template
 entities, class partial specialization selection,
 explicit-instantiation ownership, constructor/member-template specialization
-ownership, and partial ordering boundaries. Larger generic-library integration
-cases can go in `tests/general/`.
+ownership, and partial ordering boundaries.
 
 ### Assignment Boundary
 
@@ -169,6 +168,8 @@ The following are explicitly out of scope for PA21:
 - initializer-list template behavior
 - hosted/vendor-only extensions that happen to use templates
 - post-C++11 template-language features
+- broad multi-feature integration cases whose main assertion is that several
+  completed template features compose
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 

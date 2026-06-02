@@ -138,9 +138,8 @@ by test role:
   provided C++ language test in this directory starts with a leading comment of the
   form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
   governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader cross-feature and realistic
-  generic-program tests that are useful for PA18 but are not one-rule spec
-  probes.
+- `tests/general/` contains broader first-tier generic-program tests that are
+  useful for PA18 but are not one-rule spec probes.
 
 The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated

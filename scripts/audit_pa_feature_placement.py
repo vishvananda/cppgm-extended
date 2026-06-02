@@ -19,10 +19,61 @@ from typing import Iterable
 
 DEFAULT_TRACKER = Path("docs/pa14-pa22-contract-test-audit-tracker.md")
 DEFAULT_PAS = tuple(f"pa{i}" for i in range(14, 23))
+STRICT_TEMPLATE_PAS = ("pa18", "pa19", "pa21", "pa22", "pa24")
 SEMANTIC_ONLY_PA_MAX = 12
 LOWIR_SOURCE_PAS = set(range(14, 23)) | set(range(26, 30))
 BACKEND_ONLY_PAS = {23}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
+
+TEMPLATE_CONCEPT_BY_FEATURE = {
+    "template.type": "basic-template",
+    "template.class": "basic-template",
+    "template.function": "basic-template",
+    "template.default_argument": "basic-template",
+    "template.dependent_name": "dependent-name",
+    "template.friend": "friend-template",
+    "template.current_instantiation": "current-instantiation",
+    "template.disambiguator": "dependent-name",
+    "template.function_partial_ordering": "function-partial-ordering",
+    "template.pack": "pack-expansion",
+    "template.template_parameter": "template-template-parameter",
+    "template.member_template": "member-template",
+    "template.nttp": "integral-nttp",
+    "template.nttp.pointer_member": "value-nttp",
+    "template.explicit_specialization": "explicit-specialization",
+    "template.specialization_timing": "specialization-timing",
+    "template.partial_specialization": "partial-specialization",
+    "template.alias": "alias-template",
+    "template.variable": "variable-template",
+    "template.current_specialization": "current-specialization",
+    "template.explicit_instantiation": "explicit-instantiation",
+    "template.specialization_partial_ordering": "specialization-partial-ordering",
+    "template.deduction_full": "function-deduction",
+    "template.detector_idiom": "detector-idiom",
+    "template.substitution": "substitution",
+    "template.conversion_deduction": "conversion-deduction",
+    "template.constructor_deduction": "constructor-deduction",
+    "template.no_eager_instantiation": "no-eager-instantiation",
+    "sfinae": "sfinae",
+    "template.braced_init_deduction": "braced-init-deduction",
+    "template.non_deduced_context": "non-deduced-context",
+}
+
+TEMPLATE_LATER_OR_COMPAT_FEATURES = {
+    "template.alignas_alignof",
+    "template.builtin_traits",
+    "template.initializer_list",
+    "class.inheritance.multiple",
+    "class.member_pointer",
+    "support.lambda",
+    "support.lambda.capture",
+    "support.attribute",
+    "support.auto",
+    "support.range_for",
+    "exception.try_catch",
+}
+
+TEMPLATE_INTEGRATION_BASIC_SUPPORT = {"basic-template"}
 
 
 @dataclass(frozen=True)
@@ -219,8 +270,10 @@ RULES: tuple[FeatureRule, ...] = (
                 path_patterns=(rx(r"(?:partial-specialization-order|class-partial-order|partial_order_class|function-type-partial-specialization-preference|repeated-argument)"),)),
     FeatureRule("template.deduction_full",
                 (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*(?:&&|decltype|enable_if|typename\s+[A-Za-z_][A-Za-z0-9_:<>]*::)[^)]*\)"),),
-                path_patterns=(rx(r"(?:forwarding-reference|explicit-template-args|nondeduced|non-deduced)"),)),
-    FeatureRule("template.detector_idiom", (rx(r"\b(?:void_t|detected_or|detector|is_detected)\b"),)),
+                path_patterns=(rx(r"(?:deduc|forwarding-reference|explicit-template-(?:args|id)|nondeduced|non-deduced|reference-cv|array-bound)"),)),
+    FeatureRule("template.detector_idiom",
+                (rx(r"\b(?:void_t|detected_or|detector|is_detected)\b"),),
+                path_patterns=(rx(r"(?:detected|detector|void-t|void_t)"),)),
     FeatureRule("template.substitution",
                 (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),)),
     FeatureRule("template.conversion_deduction",
@@ -229,7 +282,9 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("template.constructor_deduction", (),
                 path_patterns=(rx(r"constructor-template|converting-ctor|ctor-template"),)),
     FeatureRule("template.initializer_list", (rx(r"\binitializer_list\b"),)),
-    FeatureRule("template.no_eager_instantiation", (rx(r"\b(?:no_eager|unevaluated|dependent|static_assert\s*\(\s*false|sizeof\s*\([^)]*typename)"),)),
+    FeatureRule("template.no_eager_instantiation",
+                (rx(r"\b(?:no_eager|unevaluated|static_assert\s*\(\s*false|sizeof\s*\([^)]*typename)"),),
+                path_patterns=(rx(r"(?:no[-_]?eager|no[-_]?body|does-not-eagerly|not-instantiat|body-skip|unused-body)"),)),
     FeatureRule("sfinae", (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),)),
     FeatureRule("template.braced_init_deduction",
                 (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+"
@@ -557,6 +612,28 @@ def ref_text_for(path: Path) -> str:
     return ""
 
 
+def companion_source_text_for(path: Path) -> str:
+    """Return same-stem source sidecars that can carry the tested behavior."""
+    sidecar_suffixes = (
+        ".h",
+        ".hh",
+        ".hpp",
+        ".shared.h",
+        ".shared.hh",
+        ".shared.hpp",
+        ".cc",
+        ".cpp",
+        ".cxx",
+    )
+    chunks: list[str] = []
+    for sidecar in sorted(path.parent.glob(f"{path.stem}.*")):
+        if sidecar == path or sidecar.suffix.startswith(".ref"):
+            continue
+        if sidecar.name.endswith(sidecar_suffixes):
+            chunks.append(read_text(sidecar))
+    return "\n".join(chunks)
+
+
 def is_lowir_test(pa: str) -> bool:
     number = pa_number(pa)
     return number in LOWIR_SOURCE_PAS if number is not None else False
@@ -587,15 +664,129 @@ def placement_for(feature: FeatureMeta, current_pa: str, current_cluster: int | 
     return "ok", "owner reached"
 
 
+def template_concepts_for(detected_features: Iterable[str]) -> list[str]:
+    return sorted({
+        concept
+        for feature_id in detected_features
+        if (concept := TEMPLATE_CONCEPT_BY_FEATURE.get(feature_id))
+    })
+
+
+def review_template_concepts(concepts: Iterable[str]) -> list[str]:
+    review = set(concepts)
+    if len(review) > 1:
+        review.difference_update(TEMPLATE_INTEGRATION_BASIC_SUPPORT)
+    return sorted(review)
+
+
+def later_template_dependency_features(placements: Iterable[dict[str, object]]) -> list[str]:
+    later: list[str] = []
+    for placement in placements:
+        feature_id = str(placement["feature"])
+        if feature_id in TEMPLATE_LATER_OR_COMPAT_FEATURES:
+            later.append(feature_id)
+    return sorted(set(later))
+
+
+def latest_owner_label(feature_ids: Iterable[str], features: dict[str, FeatureMeta]) -> str:
+    owners: list[tuple[int, int, str]] = []
+    for feature_id in feature_ids:
+        meta = features.get(feature_id)
+        if not meta:
+            continue
+        owner_num = pa_number(meta.owner_pa)
+        if owner_num is None:
+            continue
+        owners.append((owner_num, meta.owner_cluster, meta.owner_pa))
+    if not owners:
+        return ""
+    owner_num, owner_cluster, owner_pa = max(owners)
+    return f"{owner_pa}:{owner_cluster}"
+
+
+def suggest_integration_cluster(concepts: Iterable[str], current_cluster: int | None) -> int:
+    concept_set = set(concepts)
+    if current_cluster is not None and current_cluster >= 500:
+        return 500
+    if concept_set & {"detector-idiom", "sfinae", "substitution", "no-eager-instantiation"}:
+        return 300
+    if concept_set & {
+        "function-deduction",
+        "function-partial-ordering",
+        "specialization-partial-ordering",
+        "non-deduced-context",
+        "braced-init-deduction",
+    }:
+        return 200
+    if concept_set & {
+        "alias-template",
+        "variable-template",
+        "member-template",
+        "pack-expansion",
+        "template-template-parameter",
+    }:
+        return 400
+    return 100
+
+
+def template_review_for(
+    detected_features: list[str],
+    placements: list[dict[str, object]],
+    current_cluster: int | None,
+    features: dict[str, FeatureMeta],
+) -> dict[str, object]:
+    concepts = template_concepts_for(detected_features)
+    review_concepts = review_template_concepts(concepts)
+    template_features = sorted(
+        feature_id for feature_id in detected_features
+        if feature_id in TEMPLATE_CONCEPT_BY_FEATURE
+    )
+    later_features = later_template_dependency_features(placements)
+    owner = latest_owner_label(template_features, features)
+    suggested_cluster: int | None = None
+    if not review_concepts:
+        bucket = "manual-review"
+        action = "Classify by source/ref review; no template concept was detected."
+    elif later_features:
+        bucket = "later-owner-or-split"
+        action = "Move later-owned behavior, or split/reduce to keep only the PA22 template assertion."
+    elif len(review_concepts) >= 2:
+        bucket = "pa24-integration-candidate"
+        suggested_cluster = suggest_integration_cluster(review_concepts, current_cluster)
+        action = "Review as multi-feature template integration; move to PA24 if concepts are essential together."
+    elif owner.startswith(("pa18", "pa19", "pa21")):
+        bucket = "basic-owner-candidate"
+        action = "Place in the owning basic template PA; keep if already there, otherwise move or renumber after review."
+    elif owner.startswith("pa22"):
+        bucket = "pa22-advanced-single-candidate"
+        action = "Place in PA22 and renumber if the current cluster is earlier than the owner cluster."
+    else:
+        bucket = "manual-review"
+        action = "Review manually; ownership is not resolved by the template classifier."
+    return {
+        "template_features": template_features,
+        "template_concepts": concepts,
+        "review_template_concepts": review_concepts,
+        "template_concept_arity": len(review_concepts),
+        "later_or_compat_features": later_features,
+        "latest_template_owner": owner,
+        "template_bucket": bucket,
+        "suggested_pa24_cluster": suggested_cluster,
+        "template_action": action,
+    }
+
+
 def row_for(path: Path,
             root: Path,
             features: dict[str, FeatureMeta]) -> dict[str, object]:
     source = read_text(path)
+    sidecar_source = companion_source_text_for(path)
+    detection_source = source if not sidecar_source else f"{source}\n{sidecar_source}"
     ref_text = ref_text_for(path)
     relative_path = path.relative_to(root)
     current_pa = current_pa_for(relative_path)
     current_cluster = cluster_for(path)
-    hits = detect_features(source, ref_text, relative_path.as_posix())
+    hits = detect_features(detection_source, ref_text, relative_path.as_posix())
     detected = sorted(hits)
     placements = []
     for feature_id in detected:
@@ -620,7 +811,7 @@ def row_for(path: Path,
         })
     review_statuses = {"violation", "cluster-early", "backend-owner", "unknown-feature"}
     semantic_notes = [p for p in placements if p["status"] == "semantic-owner"]
-    return {
+    row = {
         "path": path.relative_to(root).as_posix(),
         "current_pa": current_pa,
         "current_cluster": current_cluster,
@@ -630,7 +821,10 @@ def row_for(path: Path,
         "placements": placements,
         "needs_review": any(p["status"] in review_statuses for p in placements),
         "semantic_owner_notes": len(semantic_notes),
+        "source_sidecars_scanned": bool(sidecar_source),
     }
+    row.update(template_review_for(detected, placements, current_cluster, features))
+    return row
 
 
 def markdown_report(rows: list[dict[str, object]],
@@ -691,6 +885,128 @@ def markdown_report(rows: list[dict[str, object]],
     return "\n".join(lines) + "\n"
 
 
+def markdown_cell(value: object) -> str:
+    if isinstance(value, list):
+        text = ", ".join(str(item) for item in value)
+    elif value is None:
+        text = ""
+    else:
+        text = str(value)
+    return text.replace("|", "\\|")
+
+
+def selected_pas_for_rows(rows: Iterable[dict[str, object]]) -> list[str]:
+    pas = {str(row["current_pa"]) for row in rows}
+    return sorted(pas, key=lambda pa: pa_number(pa) or 0)
+
+
+def template_tracker_title(pas: list[str]) -> str:
+    if pas == ["pa22"]:
+        return "PA22 Template Placement Tracker"
+    if tuple(pas) == STRICT_TEMPLATE_PAS:
+        return "Strict Template Placement Tracker"
+    return "Template Placement Tracker"
+
+
+def template_tracker_output_path(pas: list[str]) -> str:
+    if pas == ["pa22"]:
+        return "docs/pa22-template-placement-tracker.md"
+    if tuple(pas) == STRICT_TEMPLATE_PAS:
+        return "docs/template-strict-placement-tracker.md"
+    return "docs/template-placement-tracker.md"
+
+
+def template_tracker_scope_label(pas: list[str]) -> str:
+    if pas == ["pa22"]:
+        return "PA22"
+    if tuple(pas) == STRICT_TEMPLATE_PAS:
+        return "the strict template PAs (`pa18 pa19 pa21 pa22 pa24`)"
+    return "the selected template PAs (`{}`)".format(" ".join(pas))
+
+
+def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[str]) -> str:
+    bucket_counts: dict[str, int] = {}
+    for row in rows:
+        bucket = str(row["template_bucket"])
+        bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
+    pas = selected_pas_for_rows(rows)
+    pa_args = " ".join(f"--pa {pa}" for pa in pas)
+    output_path = template_tracker_output_path(pas)
+    lines = [
+        f"# {template_tracker_title(pas)}",
+        "",
+        f"This tracker is the review queue for template test placement across {template_tracker_scope_label(pas)}.",
+        "It supports the split into:",
+        "",
+        "- PA18/PA19/PA21 basic template owners",
+        "- PA22 advanced single-feature template completion",
+        "- PA24 template integration, using the removed PA24 slot until final renumbering",
+        "- later owners, split/reduce, or drop decisions",
+        "",
+        "The table below was seeded by the template-placement audit mode.",
+        "Treat the bucket and cluster as review leads, not final move decisions.",
+        "After review starts, do not overwrite this tracker without preserving status and notes.",
+        "",
+        "Seed command:",
+        "",
+        "```sh",
+        f"python3 scripts/audit_pa_feature_placement.py {pa_args} --no-course --template-placement \\",
+        f"  --markdown-out {output_path} \\",
+        "  --csv-out /tmp/template-placement.csv \\",
+        "  --json-out /tmp/template-placement.json",
+        "```",
+        "",
+        "Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped · `[-]` deferred",
+        "",
+        "## Review Rules",
+        "",
+        "- A test goes to the earliest PA/cluster that owns the behavior it asserts.",
+        "- Support syntax does not control placement when it is already implemented and not essential to the expected output.",
+        "- If two or more template concepts are essential together, place the test in PA24 integration and cluster it by the feature combination.",
+        "- If a later non-template feature is essential, move later or split/reduce the test before keeping template coverage.",
+        "- Witness refs are golden; do not regenerate witness refs while moving tests.",
+        "",
+        "## PA24 Candidate Clusters",
+        "",
+        "| Cluster | Intended integration shape |",
+        "| --- | --- |",
+        "| 100 | dependent-name/entity interactions that do not fit a narrower later cluster |",
+        "| 200 | deduction, partial ordering, non-deduced contexts, and braced-init deduction combinations |",
+        "| 300 | SFINAE, substitution, detector idiom, and no-eager instantiation combinations |",
+        "| 400 | pack, member-template, template-template-parameter, alias-template, and variable-template compositions |",
+        "| 500 | library-shaped end-to-end reducers without hosted/builtin dependencies |",
+        "",
+        "## Generated Summary",
+        "",
+        f"- tests scanned: {len(rows)}",
+        f"- feature table entries without detector rules: {len(missing_rules)}",
+    ]
+    for bucket in sorted(bucket_counts):
+        lines.append(f"- {bucket}: {bucket_counts[bucket]}")
+    lines.extend([
+        "",
+        "## Review Queue",
+        "",
+        "| Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA24 Cluster | Action | Notes |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ])
+    for row in sorted(rows, key=lambda item: (str(item["template_bucket"]), str(item["path"]))):
+        current = f"{row['current_pa']}:{row['current_cluster']}"
+        lines.append(
+            "| [ ] | `{}` | `{}` | `{}` | {} | {} | `{}` | {} | {} |  |".format(
+                row["path"],
+                current,
+                row["template_bucket"],
+                markdown_cell(row["review_template_concepts"]),
+                markdown_cell(row["later_or_compat_features"]),
+                row["latest_template_owner"],
+                markdown_cell(row["suggested_pa24_cluster"]),
+                markdown_cell(row["template_action"]),
+            )
+        )
+    return "\n".join(lines) + "\n"
+
+
 def write_json(path: Path, rows: list[dict[str, object]], missing_rules: list[str]) -> None:
     payload = {
         "tests": rows,
@@ -700,10 +1016,45 @@ def write_json(path: Path, rows: list[dict[str, object]], missing_rules: list[st
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
+def write_csv(path: Path, rows: list[dict[str, object]], template_placement: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
+        if template_placement:
+            writer.writerow([
+                "path",
+                "current_pa",
+                "current_cluster",
+                "test_role",
+                "expected_exit",
+                "template_bucket",
+                "template_concept_arity",
+                "review_template_concepts",
+                "template_features",
+                "later_or_compat_features",
+                "latest_template_owner",
+                "suggested_pa24_cluster",
+                "template_action",
+                "source_sidecars_scanned",
+            ])
+            for row in rows:
+                writer.writerow([
+                    row["path"],
+                    row["current_pa"],
+                    row["current_cluster"],
+                    row["test_role"],
+                    row["expected_exit"],
+                    row["template_bucket"],
+                    row["template_concept_arity"],
+                    "; ".join(row["review_template_concepts"]),  # type: ignore[arg-type]
+                    "; ".join(row["template_features"]),  # type: ignore[arg-type]
+                    "; ".join(row["later_or_compat_features"]),  # type: ignore[arg-type]
+                    row["latest_template_owner"],
+                    row["suggested_pa24_cluster"] or "",
+                    row["template_action"],
+                    row["source_sidecars_scanned"],
+                ])
+            return
         writer.writerow([
             "path",
             "current_pa",
@@ -800,6 +1151,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--include-course", action="store_true", default=True)
     parser.add_argument("--no-course", action="store_false", dest="include_course")
     parser.add_argument("--include-ok", action="store_true", help="include ok/semantic-owner rows in markdown")
+    parser.add_argument(
+        "--template-placement",
+        action="store_true",
+        help="emit a per-test template-placement review queue instead of placement findings",
+    )
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--csv-out", type=Path)
     parser.add_argument("--markdown-out", type=Path)
@@ -834,8 +1190,12 @@ def main(argv: list[str]) -> int:
                    missing_rules)
     if args.csv_out:
         write_csv(args.csv_out if args.csv_out.is_absolute() else root / args.csv_out,
-                  rows)
-    report = markdown_report(rows, missing_rules, args.include_ok)
+                  rows,
+                  args.template_placement)
+    if args.template_placement:
+        report = template_tracker_report(rows, missing_rules)
+    else:
+        report = markdown_report(rows, missing_rules, args.include_ok)
     if args.markdown_out:
         out = args.markdown_out if args.markdown_out.is_absolute() else root / args.markdown_out
         out.parent.mkdir(parents=True, exist_ok=True)

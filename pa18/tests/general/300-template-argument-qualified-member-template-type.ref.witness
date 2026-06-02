@@ -1,5 +1,0 @@
-translation-unit
-  class-use at pa18/tests/general/300-template-argument-qualified-member-template-type.t:25:9
-    template iter
-    selected primary
-    bind #1 = int source=explicit

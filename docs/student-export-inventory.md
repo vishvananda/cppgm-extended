@@ -42,7 +42,7 @@ into per-PA inventory entries and mark unresolved decisions explicitly.
 | PA9 | `cy86` | `dev/cy86.cpp` | `dev/cy86-scaffold.cpp` | Scaffold exists. |
 | PA10-PA12 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Scaffold exists; README must explain staged `--emit-ast`, `--emit-types`, and `--emit-semantics` work. |
 | PA13 | `lowir2cy86` | `dev/lowir2cy86.cpp` | `dev/lowir2cy86-scaffold.cpp` | Scaffold exists. |
-| PA14-PA22 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
+| PA14-PA22, PA24 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
 | PA23 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists. |
 | PA25 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Reuses cumulative compile-mode scaffold; PA25 documents the host-EH facts contract separately. |
 | PA26-PA30 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
@@ -79,8 +79,8 @@ Each PA section should eventually include:
   PA10+.
 - Decide the exact `dev/src` support-file set exported with the cumulative
   `cppgm++`, `lowir2cy86`, and native-tool scaffolds.
-- Decide whether witness output is a public student oracle for PA18/PA19/PA21/PA22
-  or a maintainer-only strict validation surface.
+- Decide whether witness output is a public student oracle for
+  PA18/PA19/PA21/PA22/PA24 or a maintainer-only strict validation surface.
 - Decide how to expose loose LowIR validation in the student repo while keeping
   maintainer strict text comparison internal.
 - Decide how to expose structural MIR validation for PA37 while keeping
@@ -94,8 +94,8 @@ Each PA section should eventually include:
 
 ## Resolved Cleanup Notes
 
-- PA14-PA18 and PA23-PA30 grammar helper Makefiles/scripts now reference the
-  matching `paN.gram` file.
+- PA14-PA18, PA23, PA24, and PA26-PA30 Makefile/script grammar references now
+  point at the matching local `paN.gram` file.
 - Stale nested PA17 copies under `pa17/grammar/grammar/` and
   `pa17/scripts/scripts/` were removed.
 - The stale PA1-PA9 and PA23 `scripts/export_pa.sh` files were removed.
@@ -141,19 +141,20 @@ or approved shared infrastructure update.
 - Remaining decisions: loose LowIR validator packaging and cumulative
   scaffold/checkpoint policy for the shared `cppgm++` binary.
 
-### PA18-PA22
+### PA18-PA24
 
-- PA18-PA22 export cumulative `cppgm++ --emit-lowir -O0`; students edit
+- PA18-PA22 and PA24 export cumulative `cppgm++ --emit-lowir -O0`; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`.
 - PA18 and PA19 ship `pa18.gram`/`pa19.gram`, `grammar/`, tests, refs, and local
   support headers. PA20-PA22 inherit the PA19 syntax boundary and ship tests,
-  refs, and support headers without new grammar files.
+  refs, and support headers without new grammar files. PA24 uses the shared
+  source grammar and ships template-integration tests and refs.
 - README wording describes loose LowIR validation for students and leaves witness
   sidecars out of the required oracle unless export policy changes.
 - Remaining decisions: witness/test-strict packaging, course symlink behavior,
   and loose LowIR validator configuration.
 
-### PA23-PA29
+### PA23, PA25-PA29
 
 - PA23 exports `lowir2native`; students edit `dev/lowir2native.cpp` from
   `dev/lowir2native-scaffold.cpp`; support files include `pa23.gram`,

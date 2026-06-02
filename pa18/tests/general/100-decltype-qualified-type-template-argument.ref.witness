@@ -1,0 +1,13 @@
+translation-unit
+  function-call at pa18/tests/general/100-decltype-qualified-type-template-argument.t:13:10
+    callee compute
+    selected instantiation
+    bind #1 = int source=explicit
+    bind #2 = interval source=explicit
+template-closure-events
+  ensure-definition
+    entity compute
+  function-instantiation
+    entity compute
+  require-definition
+    entity compute

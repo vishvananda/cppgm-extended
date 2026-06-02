@@ -1,5 +1,0 @@
-translation-unit
-  class-use at pa18/tests/general/200-dependent-decltype-comma-expression.t:10:3
-    template wrap
-    selected primary
-    bind #1 = int source=explicit

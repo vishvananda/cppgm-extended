@@ -118,8 +118,9 @@ Owns:
 
 Focus:
 
-- These sidecars are no longer exported after PA24 was folded into PA30 and
-  PA25 was refocused on `cppgm++ -c` host-EH facts.
+- These old linker/EH sidecars are no longer exported after the standalone
+  cpplink assignment was folded into PA30 and PA25 was refocused on
+  `cppgm++ -c` host-EH facts.
 - Keep them only if an internal maintainer tool still needs a scaffold smoke.
 
 ### Slice E: Export Packaging Audit

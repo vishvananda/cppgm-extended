@@ -143,9 +143,6 @@ sanitize_linux_student_scripts() {
 
 pa_dirs=()
 for n in $(seq 1 38); do
-  if [ "$n" -eq 24 ]; then
-    continue
-  fi
   pa_dirs+=("pa$n")
 done
 
@@ -438,6 +435,7 @@ pa_ref_pairs=(
   pa21:cppgm++
   pa22:cppgm++
   pa23:lowir2native
+  pa24:cppgm++
   pa25:cppgm++
   pa26:cppgm++
   pa27:cppgm++
