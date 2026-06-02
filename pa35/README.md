@@ -197,9 +197,11 @@ Optional sidecars include:
 - `x.inspect.cmd` or `x.inspect.expect`: object/symbol checks
 
 Some PA35 tests inspect intermediate object files with `nm`-style expectations.
-These checks verify both positive ownership, such as a needed inline/template
-definition being present, and negative ownership, such as an unused hosted helper
-remaining absent from the defined-symbol table.
+These checks verify positive ownership — a needed inline/template definition is
+present and correctly ABI-spelled. (Earlier negative-ownership / elision checks,
+which asserted that unused hosted helpers stay absent from the defined-symbol
+table, have been dropped: which internal symbols an object omits is an
+implementation detail, not a conformance requirement.)
 
 The checked-in tests are hosted link/runtime smokes, ABI spelling checks, and
 object-inspection checks rather than direct N3485 clause tests.
@@ -208,9 +210,8 @@ object-inspection checks rather than direct N3485 clause tests.
 
 To complete PA35, implement hosted link/runtime behavior for:
 
-- emitted inline/template/header definitions from hosted headers
-- demand-driven emission of only the hosted inline/template/header definitions
-  needed by the current object
+- emitted inline/template/header definitions from hosted headers needed by the
+  current object
 - hosted standard-library code that compiles in PA34 but still has to link and
   run through the plain host toolchain
 - hosted link smokes where the main question is emitted symbol ownership, ABI
