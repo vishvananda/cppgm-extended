@@ -156,22 +156,29 @@ mangling-consistency oracle.
 
 ### → hosted-compat features PA (14) — home dir TBD (the 248-directed prereq set)
 
+> **Policy (clarified 2026-06-02): pa34 = static_assert ONLY** (L1 front-end conformance). A compat
+> builtin that cppgm++ can constexpr-evaluate → `pa34/tests/compile` static_assert. One that can
+> only be validated by **linking/running** stays in **`pa35/tests/link`** (the existing host-interop
+> link+run style via `run_cpphostinterop_tests_worker.pl`) for the deferred L1/L2 recategorization —
+> pa34 eventually splits into an L1 PA and a host-compatibility PA; the link host-compat tests land in
+> the latter. `pa34/tests/link` is **not** wired (only orphaned `.my` from an abandoned experiment).
+
 `__builtin_*` ×12 and `gnu-asm` symbol-label ×2; verified end-to-end, no `#include`.
 
-- [ ] 600-builtin-memcpy-strlen-link-smoke
-- [ ] 600-builtin-operator-new-delete-link-smoke
-- [ ] 600-gnu-asm-label-overload-link-smoke
-- [ ] 600-gnu-asm-leading-underscore-label-link-smoke
-- [ ] 700-dependent-alias-pack-invoke-result-link-smoke
-- [ ] 700-hosted-builtin-bitops-promote-runtime-smoke
-- [ ] 700-hosted-builtin-flt-rounds-runtime-smoke
-- [ ] 700-hosted-builtin-fp-classification-runtime-smoke
-- [ ] 700-hosted-builtin-fpclassify-runtime-smoke
-- [ ] 700-hosted-builtin-huge-val-runtime-smoke
-- [ ] 700-hosted-builtin-mul-overflow-runtime-smoke
-- [ ] 700-hosted-builtin-nans-runtime-smoke
-- [ ] 700-hosted-builtin-popcountg-runtime-smoke
-- [ ] 700-hosted-builtin-signbit-runtime-smoke
+- [-] 600-builtin-memcpy-strlen-link-smoke
+- [-] 600-builtin-operator-new-delete-link-smoke
+- [-] 600-gnu-asm-label-overload-link-smoke
+- [-] 600-gnu-asm-leading-underscore-label-link-smoke
+- [-] 700-dependent-alias-pack-invoke-result-link-smoke (uses `__builtin_invoke` + runtime → host-compat link, not template)
+- [x] 700-hosted-builtin-bitops-promote-runtime-smoke → `pa34/tests/compile/600-builtin-bitops-promote` (static_assert recast: `__builtin_clz*`/`popcount`; PASS)
+- [-] 700-hosted-builtin-flt-rounds-runtime-smoke (runtime FP env — not constexpr)
+- [-] 700-hosted-builtin-fp-classification-runtime-smoke
+- [-] 700-hosted-builtin-fpclassify-runtime-smoke
+- [-] 700-hosted-builtin-huge-val-runtime-smoke
+- [-] 700-hosted-builtin-mul-overflow-runtime-smoke (cppgm++ can't constexpr-eval)
+- [-] 700-hosted-builtin-nans-runtime-smoke (`__builtin_memcpy` bit-cast — not constexpr)
+- [x] 700-hosted-builtin-popcountg-runtime-smoke → `pa34/tests/compile/600-builtin-popcountg` (static_assert recast; constexpr in cppgm++; PASS)
+- [-] 700-hosted-builtin-signbit-runtime-smoke (cppgm++ can't constexpr-eval)
 
 ### → core PA (specific owner) / DROP (7) — per 13-item review
 
