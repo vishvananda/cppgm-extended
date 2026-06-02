@@ -1,0 +1,158 @@
+function @current(%it : ptr [pass=reference]) -> ptr [binding=strong, object=_Z7currentRP4cell] {
+  slot $it : ptr
+
+  block ^entry:
+    store ptr %it, $it
+    %t1 = load ptr $it
+    %t2 = load ptr %t1
+    return ptr %t2
+}
+function @copy_backward_like(%first : ptr, %last : ptr, %result : ptr) -> void [binding=strong, object=_Z18copy_backward_likeP4cellS0_S0_] {
+  slot $first : ptr
+  slot $last : ptr
+  slot $result : ptr
+  slot $last_iter : ptr
+
+  block ^entry:
+    store ptr %first, $first
+    store ptr %last, $last
+    store ptr %result, $result
+    %t1 = load ptr $last
+    store ptr %t1, $last_iter
+    jump ^while_cond_1
+
+  block ^while_cond_1:
+    %t2 = load ptr $first
+    %t3 = load ptr $last_iter
+    %t4 = cmp ne ptr %t2, %t3
+    branch %t4, ^while_body_2, ^while_end_3
+
+  block ^while_body_2:
+    %t5 = load ptr $result
+    %t6 = binary mul i64 1, 8
+    %t7 = binary sub i64 0, %t6
+    %t8 = index i8 %t5, %t7
+    store ptr %t8, $result
+    %t9 = load ptr $last_iter
+    %t10 = binary mul i64 1, 8
+    %t11 = binary sub i64 0, %t10
+    %t12 = index i8 %t9, %t11
+    store ptr %t12, $last_iter
+    %t13 = addr $last_iter
+    %t14 = call ptr @current(%t13)
+    %t15 = call ptr @cell__operator_(%t8, %t14)
+    jump ^while_cond_1
+
+  block ^while_end_3:
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $data : obj<32x4>
+  slot $p : ptr
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = addr $data
+    call void @cell__cell__ov2(%t1, 1, 1)
+    %t2 = index i8 %t1, 8
+    call void @cell__cell__ov2(%t2, 2, 2)
+    %t3 = index i8 %t1, 16
+    call void @cell__cell__ov2(%t3, 3, 4)
+    %t4 = index i8 %t1, 24
+    call void @cell__cell__ov2(%t4, 5, 5)
+    %t5 = addr $data
+    %t6 = unary decay ptr %t5
+    %t7 = binary mul i64 1, 8
+    %t8 = index i8 %t6, %t7
+    %t9 = addr $data
+    %t10 = unary decay ptr %t9
+    %t11 = binary mul i64 4, 8
+    %t12 = index i8 %t10, %t11
+    %t13 = addr $data
+    %t14 = unary decay ptr %t13
+    %t15 = binary mul i64 4, 8
+    %t16 = index i8 %t14, %t15
+    call void @copy_backward_like(%t8, %t12, %t16)
+    %t17 = addr $data
+    %t18 = unary decay ptr %t17
+    %t19 = binary mul i64 1, 8
+    %t20 = index i8 %t18, %t19
+    store ptr %t20, $p
+    %t21 = load ptr $p
+    %t22 = index i8 [projection=field] %t21, 0
+    %t23 = load i32 %t22
+    %t24 = cmp eq i32 %t23, 2
+    branch %t24, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t25 = load ptr $p
+    %t26 = index i8 [projection=field] %t25, 4
+    %t27 = load i32 %t26
+    %t28 = cmp eq i32 %t27, 2
+    %t29 = cmp ne i64 %t28, 0
+    store i64 %t29, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t30 = load i64 $land__2
+    branch %t30, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t31 = load i32 $cond__1
+    return i32 %t31
+}
+function @cell__cell__ov2(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=weak, object=_ZN4cellC1Eii] {
+  slot $this : ptr
+  slot $first : i32
+  slot $second : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %first, $first
+    store i32 %second, $second
+    %t1 = load i32 $first
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load i32 $second
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store i32 %t4, %t6
+    return void
+}
+function @cell__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN4cellaSERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 %t3, %t5
+    %t6 = load ptr $other
+    %t7 = index i8 [projection=field] %t6, 4
+    %t8 = load i32 %t7
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 4
+    store i32 %t8, %t10
+    %t11 = load ptr $this
+    return ptr %t11
+}
+alias object _ZN4cellC2Eii = @cell__cell__ov2

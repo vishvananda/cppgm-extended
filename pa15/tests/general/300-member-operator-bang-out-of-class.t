@@ -1,7 +1,10 @@
 struct Box {
   bool operator!() const;
 };
-
+bool Box::operator!() const
+{
+  return true;
+}
 int main()
 {
   Box box;
