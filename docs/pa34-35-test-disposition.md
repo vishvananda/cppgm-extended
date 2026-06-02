@@ -47,7 +47,7 @@ pa35 during self-host debugging.
 |---|---|---|
 | `static_assert` | L1 | Keep — already compile-time-checked. |
 | `constexpr-pure` / `runtime-state` / `calls-no-result` / `declare-only` | L1 | Recast the exercised surface as a cheat-proof **compile-time anchor** (`static_assert` over traits / `decltype` / `sizeof` / `is_constructible` / type identity). No `main`. → `pa34/tests/compile`. |
-| `I/O` | L2 | Running is the point (verify stdout). Keep link + run + assert stdout. → `pa35/tests/link`. |
+| `I/O` | L1 + L2 | **Split:** add an L1 compile-anchor for the hard header (→ `pa34/tests/compile`) AND keep an L2 run+verify-stdout (→ `pa35/tests/link`) — the runtime half catches pathological codegen (e.g. a chained `operator<<` that goes wrong). |
 | `cross-TU` | L2 | Keep; cross-TU link + run + assert. → `pa35/tests/link`. |
 | ABI / symbol-surface | L2 / pa31 | Mangling → `pa31` abimangle DSL; link symbol-inspect stays `pa35/tests/link`. |
 | _no header_ | RELOCATE | Move to owning core PA; DROP if already covered. |
