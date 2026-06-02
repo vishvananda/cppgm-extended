@@ -8,6 +8,27 @@ header-including tests + pa35's **128** `tests/link`. The **248** no-`#include`
 prerequisite tests are **not** listed (already directed; stay as the
 hosted-builtins prerequisite lesson).
 
+## L1/L2 sort — status (2026-06-02)
+
+The 123 header-bearing tests are sorted under the **compile-anchor L1 strategy** (L1 = compile the
+hard header + a cheat-proof trait/`decltype`/`sizeof` anchor; L2 = keep the runtime test, which is
+cheat-proof by running). Outcome:
+
+- **~70 L1 compile-anchors** in `pa34/tests/compile`: the 42-candidate table (≈35 converted, plus
+  already-`static_assert`/`#error`-guarded ones), **15 distinct-API anchors** for the hard I/O/STL
+  headers (ostream/sstream/istream/fstream/locale/iterator/stdexcept/set/cstdio/unordered_set/new/
+  iomanip/cstring), and **18 triage upgrades**. Each verified clean in cppgm++ **and** clang.
+- **L2 runtime tests kept** in `pa35/tests/link` (the pathological-codegen safety net); I/O tests are
+  **split** (L1 anchor added, L2 run kept); cross-TU stays L2.
+- **8 triage near-dups dropped** (each covered by a kept cluster exemplar).
+- **Remaining:** 2 symbol/mangling tests → pa31 abimangle DSL (`functional-include-symbol-surface`,
+  `standard-exception-ctor-mangling`) — recast or drop-if-covered; `300-include-next` stays a preproc
+  test; `vector-char-assign-initlist` stays L2 (its `<vector>` header is already L1-covered).
+- Surfaced cppgm++ gaps (anchored around): `is_copy_constructible<tuple<string&&>>`, constexpr
+  null-pointer equality, 3-arg `decltype(strtoull(...))` template-arg resolution.
+
+Commits `43357c176`…`e4d024094`; see git log. Per-row statuses below are the original first cut.
+
 > **Note.** The homes below are the automated first cut. For the 13 tests sent to
 > manual review (the 3 "abimangle review" flags + the 10 "core (review)"), the
 > **decisions of record** are in `assignment-restructure-plan.md` →
