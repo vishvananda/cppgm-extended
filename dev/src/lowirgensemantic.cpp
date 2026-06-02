@@ -14726,7 +14726,25 @@ private:
       }
 
       start_block(next_label);
-      terminate("resume");
+      if(use_host_eh_runtime()) {
+        emit_clear_current_exception();
+        const bool include_constructor_cleanups =
+            is_constructor_function_ &&
+            throw_will_escape_current_function() &&
+            !constructor_unwind_cleanups_.empty();
+        emit_call_unwind_dispatch_cleanups(include_constructor_cleanups);
+        if(has_host_eh_dispatch_target()) {
+          terminate("jump " + lowir_block_name(host_eh_dispatch_labels_.back()));
+        } else if(include_constructor_cleanups &&
+                  !constructor_function_try_dispatch_labels_.empty()) {
+          terminate("jump " +
+                    lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+        } else {
+          terminate("resume");
+        }
+      } else {
+        terminate("resume");
+      }
       start_block(end_label);
       return;
     }
