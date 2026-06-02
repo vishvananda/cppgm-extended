@@ -21,9 +21,15 @@ cheat-proof by running). Outcome:
 - **L2 runtime tests kept** in `pa35/tests/link` (the pathological-codegen safety net); I/O tests are
   **split** (L1 anchor added, L2 run kept); cross-TU stays L2.
 - **8 triage near-dups dropped** (each covered by a kept cluster exemplar).
-- **Remaining:** 2 symbol/mangling tests → pa31 abimangle DSL (`functional-include-symbol-surface`,
-  `standard-exception-ctor-mangling`) — recast or drop-if-covered; `300-include-next` stays a preproc
-  test; `vector-char-assign-initlist` stays L2 (its `<vector>` header is already L1-covered).
+- **Resolved (2026-06-02) — L1/L2 sort complete:** `standard-exception-ctor-mangling` → recast to
+  pa31 (`300-std-exception-string-constructors`: logic_error/runtime_error `(const std::string&)`
+  ctors, clang-verified). The object-file **elision/symbol-surface** tests were **dropped**
+  (functional-include-symbol-surface, forward-helper-symbol-surface, placement-new-symbol-surface,
+  abi-tag-class-template-member ×2 + nested-static-abi-tag) — asserting which internal symbols an
+  object omits is an implementation detail, not conformance. Absence assertions were stripped from
+  `unordered-set-pointer` + `local-lambda-std-function` (positive-ownership checks kept), and the
+  pa35 README's omission/negative-ownership note was removed. `300-include-next` stays a preproc
+  test; `vector-char-assign-initlist` stays L2 (`<vector>` already L1-covered).
 - Surfaced cppgm++ gaps (anchored around): `is_copy_constructible<tuple<string&&>>`, constexpr
   null-pointer equality, 3-arg `decltype(strtoull(...))` template-arg resolution.
 
