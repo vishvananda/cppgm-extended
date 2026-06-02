@@ -18313,11 +18313,16 @@ bool expand_bound_pack_expression_children(
     vector<CppAstNode> & expanded_children,
     bool & changed);
 
+bool scope_chain_has_bound_pack_arguments(Scope & scope);
+
 bool expand_bound_packs_in_template_id_syntax(
     template_api::TemplateServices & services,
     Scope & scope,
     TemplateIdSyntax & syntax)
 {
+  if(!scope_chain_has_bound_pack_arguments(scope)) {
+    return false;
+  }
   bool changed = false;
   const vector<string> source_texts = template_id_syntax_argument_texts(syntax);
   const ExpandedTemplateArgumentInputs expanded =
@@ -18390,6 +18395,9 @@ bool expand_bound_packs_in_argument_syntax(
     Scope & scope,
     TemplateArgumentSyntax & syntax)
 {
+  if(!scope_chain_has_bound_pack_arguments(scope)) {
+    return false;
+  }
   bool changed = false;
   if(syntax.template_id &&
      expand_bound_packs_in_template_id_syntax(services, scope, *syntax.template_id)) {
@@ -18420,6 +18428,9 @@ bool expand_bound_packs_in_expression_node(
     Scope & scope,
     CppAstNode & node)
 {
+  if(!scope_chain_has_bound_pack_arguments(scope)) {
+    return false;
+  }
   bool changed = false;
   if(node.template_id_syntax &&
      expand_bound_packs_in_template_id_syntax(
@@ -18887,6 +18898,21 @@ bool collect_value_pack_references_in_argument_syntax(
     }
   }
   return true;
+}
+
+bool scope_chain_has_bound_pack_arguments(Scope & scope)
+{
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(!current->named_type_packs.empty() ||
+       !current->named_value_packs.empty() ||
+       !current->named_pack_sizes.empty()) {
+      return true;
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return false;
 }
 
 bool scope_chain_has_template_bound_type_name(Scope * scope,
