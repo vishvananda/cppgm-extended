@@ -369,10 +369,19 @@ sub build_wrapped_text_request
 			        @inputs);
 		}
 
+		# Hosted-compat preprocessor tests (suffix "pp", e.g. pa34) must run with
+		# -E so the tool preprocesses instead of compiling+linking the directive-
+		# only source (which has no main). Mirrors the batch worker
+		# (run_cpphostcompat_preproc_worker.pl) so the bucket behaves identically
+		# with and without CPPGM_BATCH_TESTS.
+		my @mode_args = ($suffix eq 'pp') ? ('-E') : ();
+		my $test_base = $test;
+		$test_base =~ s/\.t$//;
 		return ("$test_out.stdout",
 		        "$test_out.stdout",
 		        "-",
-		        {},
+		        read_env_file("$test_base.env"),
+		        @mode_args,
 		        "-o",
 		        $test_out,
 		        $test);
