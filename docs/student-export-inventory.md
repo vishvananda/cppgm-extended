@@ -45,7 +45,7 @@ into per-PA inventory entries and mark unresolved decisions explicitly.
 | PA14-PA22 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
 | PA23 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists. |
 | PA24 | `cpplink` | `dev/cpplink.cpp` | `dev/cpplink-scaffold.cpp` | Scaffold exists. |
-| PA25 | `cppeh` | `dev/cppeh.cpp` | `dev/cppeh-scaffold.cpp` | Scaffold exists. |
+| PA25 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Reuses cumulative compile-mode scaffold; PA25 documents the host-EH facts contract separately. |
 | PA26-PA30 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
 | PA31 | `abimangle` | `dev/abimangle.cpp` | `dev/abimangle-scaffold.cpp` | Scaffold exists; optional typed ABI fact header is exported under `dev/src`. |
 | PA32-PA35 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
@@ -163,9 +163,10 @@ or approved shared infrastructure update.
 - PA24 exports `cpplink`; students edit `dev/cpplink.cpp` from
   `dev/cpplink-scaffold.cpp`; support files include `pa24.gram`, `grammar/`,
   `tests/general`, refs, and harness scripts.
-- PA25 exports `cppeh`; students edit `dev/cppeh.cpp` from
-  `dev/cppeh-scaffold.cpp`; support files include `pa25.gram`, `grammar/`,
-  `../pa13/lowir.md`, `tests/general`, refs, and harness scripts.
+- PA25 exports `cppgm++ -c`; students edit `dev/cppgm++.cpp` from
+  `dev/cppgm++-scaffold.cpp`; support files include `tests/general`, refs,
+  host object/symbol inspection helpers, and the earlier `cpplink`/`cppeh`
+  support used by LowIR-side backend smoke tests.
 - PA26-PA29 export cumulative `cppgm++ --emit-lowir -O0`; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include each
   PA's grammar/explorer where present, tests, refs, and harness scripts.
@@ -187,7 +188,7 @@ or approved shared infrastructure update.
   and Linux tools such as `ar`, `nm`, and `readelf`.
 - PA33 exports host C++ ABI/runtime behavior after host link; support files
   include `tests/general`, refs, host object/symbol inspection helpers, and
-  earlier `cpplink`/`cppeh` support used by the harness.
+  richer EH/runtime interaction tests beyond the basic PA25 host-EH facts.
 - PA34 exports hosted preprocess/compile compatibility; support files include
   `tests/preproc`, `tests/compile`, hosted compile scripts, and portability
   reference checks.

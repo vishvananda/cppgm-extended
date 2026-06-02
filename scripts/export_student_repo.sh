@@ -90,7 +90,7 @@ copy_tracked_paths() {
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         next if m{^pa9/extras/};
-        next if m{^pa33/tests/general/200-host-compact-unwind-large-frame-fallback(?:\.|$)};
+        next if m{^pa25/tests/general/200-host-compact-unwind-large-frame-fallback(?:\.|$)};
         print "$_\0";
       '
   ) | rsync -a --from0 --files-from=- "$repo_root/" "$dest/"
@@ -153,6 +153,7 @@ shared_scripts=(
   scripts/compare_results_common.pl
   scripts/compare_witness_results.pl
   scripts/cppgm-cmake-wrapper.sh
+  scripts/dump_host_eh_object_facts.pl
   scripts/ensure_reference_binaries.pl
   scripts/pa_run_check_targets.mk
   scripts/run_all_tests_common.pl
@@ -443,7 +444,7 @@ pa_ref_pairs=(
   pa22:cppgm++
   pa23:lowir2native
   pa24:cpplink
-  pa25:cppeh
+  pa25:cppgm++
   pa26:cppgm++
   pa27:cppgm++
   pa28:cppgm++

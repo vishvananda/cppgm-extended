@@ -139,7 +139,8 @@ Validation notes for this pass:
   - `PA19` now hands off to `PA20 constexpr`, then `PA21`/`PA22` template completion,
     then `PA23 nativebackend`
 - `pa25` / `pa26`
-  - no ownership move was needed; the private-EH to language-closure handoff is coherent
+  - PA25 has since been rewritten in place as the basic host-EH facts owner;
+    PA26 remains the next source-to-LowIR language-closure milestone
 - `pa30` / `pa32` / `pa33`
   - host object interop, then host ABI/runtime ownership, remains a clean monotonic sequence
   - clarified that broader hosted-header compatibility is later `PA34` / `PA35` work, not
@@ -621,16 +622,16 @@ Pass D deferred test buildout.
 ### `pa25`
 
 - `owner/boundary summary`:
-  - private EH/runtime ABI path through `cppeh`
-  - compiler-owned EH runtime surface, not host EH interop
+  - basic host-EH metadata and runtime-helper facts through `cppgm++ -c`
+  - host object EH surface, not the old private `cppeh` linker/runtime path
 - `primary oracle`:
-  - source-driven compile/link/run over the private EH path
+  - source-driven compile/link/run through the host C++ link driver
 - `secondary smokes`:
-  - normalized private-EH object facts are a useful review aid but not the public first oracle
+  - object inspection checks EH runtime imports, unwind/LSDA facts, and absence of private EH symbols
 - `current harness mode`:
   - source-driven compile/link/run with checked-in expected outputs
 - `current numbering bands`:
-  - `100-140`: one tight EH owner band
+  - `100-200`: basic host-EH fact owner band
 - `pass_a findings`:
   - boundary and primary oracle look correct
   - README already no longer depends on `tests/derived`
@@ -639,7 +640,7 @@ Pass D deferred test buildout.
 - `misplaced tests`:
   - none identified yet
 - `planned new tests`:
-  - deferred to Pass D only if later private-EH cleanup reveals a genuine owner gap
+  - deferred to Pass D only if later host-EH cleanup reveals a genuine owner gap
 - `defer reason`:
   - this assignment was recently reviewed explicitly and does not need speculative growth
 - `next actions`:

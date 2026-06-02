@@ -28,7 +28,7 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[D]` dropped (c
 
 - Collapse cross-TU link tests to single-TU; generate golden `.ref` via `cppgm++ --emit-lowir -O0`; verify the owning PA's `make test` (and `clang -fsyntax-only` for semantics).
 - **Run `python3 scripts/audit_pa_feature_placement.py` after placing** to catch a test placed before its feature's owning PA/cluster (`cluster-early`/`violation`). Move to the flagged owner PA/cluster. `semantic-owner` rows are informational (place by the enclosing LowIR feature).
-- EH/`try`/`catch` is now tracked as `exception.try_catch` (owner `pa25` = `cppeh`). **Caveat:** it over-flags non-LowIR tool-PAs that legitimately use EH for their own purpose — `pa10` (`--emit-ast`) parses the syntax, `pa13` (`lowir2cy86`) consumes EH LowIR. Treat flags only in LowIR-source PAs (pa14-22, pa26-29) as real placement risks; a test whose *headline* feature is later than pa25 (e.g. a lambda test, pa26) stays at that later PA since pa25 EH is then satisfied.
+- EH/`try`/`catch` is now tracked as `exception.try_catch` (owner `pa25` = host-EH facts for `cppgm++ -c`). **Caveat:** it over-flags non-LowIR tool-PAs that legitimately use EH for their own purpose — `pa10` (`--emit-ast`) parses the syntax, `pa13` (`lowir2cy86`) consumes EH LowIR. Treat flags only in LowIR-source PAs (pa14-22, pa26-29) as real placement risks; a test whose *headline* feature is later than pa25 (e.g. a lambda test, pa26) stays at that later PA since pa25 EH is then satisfied.
 
 ### Format-compatibility tiers (discovered 2026-06-01)
 
