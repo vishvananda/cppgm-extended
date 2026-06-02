@@ -68,6 +68,77 @@ std::string simple_type_identifier_from_specifiers(const CppAstNode & specifiers
   return specifiers.children[0].value;
 }
 
+bool scope_level_has_expression_binding(const Scope & scope, const std::string & name)
+{
+  return scope.values.find(name) != scope.values.end() ||
+         scope.function_sets.find(name) != scope.function_sets.end() ||
+         scope.function_templates.find(name) != scope.function_templates.end() ||
+         scope.variable_templates.find(name) != scope.variable_templates.end() ||
+         scope.template_bound_value_names.find(name) != scope.template_bound_value_names.end() ||
+         scope.template_bound_value_pack_names.find(name) !=
+             scope.template_bound_value_pack_names.end() ||
+         scope.named_value_packs.find(name) != scope.named_value_packs.end();
+}
+
+bool scope_level_has_type_binding(const Scope & scope, const std::string & name)
+{
+  return scope.named_types.find(name) != scope.named_types.end() ||
+         scope.class_templates.find(name) != scope.class_templates.end() ||
+         scope.alias_templates.find(name) != scope.alias_templates.end() ||
+         scope.template_bound_type_names.find(name) != scope.template_bound_type_names.end() ||
+         scope.template_bound_type_pack_names.find(name) !=
+             scope.template_bound_type_pack_names.end() ||
+         scope.named_type_packs.find(name) != scope.named_type_packs.end();
+}
+
+bool unqualified_lookup_prefers_expression_binding(const Scope & scope,
+                                                   const std::string & name)
+{
+  for(const Scope * current = &scope; current; current = current->parent) {
+    const bool has_expression = scope_level_has_expression_binding(*current, name);
+    const bool has_type = scope_level_has_type_binding(*current, name);
+    if(has_expression || has_type) {
+      return has_expression;
+    }
+  }
+  return false;
+}
+
+bool initializer_mentions_expression_binding(const Scope & scope, const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::id_expression &&
+     !node.qualified_name_syntax &&
+     !node.template_id_syntax &&
+     simple_identifier_text(node.value) &&
+     unqualified_lookup_prefers_expression_binding(scope, node.value)) {
+    return true;
+  }
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(initializer_mentions_expression_binding(scope, node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool should_recover_function_style_local_initializer(
+    Scope & scope,
+    const CppAstNode & declarator)
+{
+  CppAstNode stripped_declarator;
+  CppAstNode recovered_initializer;
+  std::string recovery_error;
+  if(!semantic_parameter_recovery::recover_function_style_initializer_declarator(
+         declarator,
+         stripped_declarator,
+         recovered_initializer,
+         recovery_error)) {
+    return false;
+  }
+  return initializer_mentions_expression_binding(scope, recovered_initializer);
+}
+
 class ScopedStatementTemplateUseLocation
 {
 public:
@@ -197,6 +268,36 @@ string local_static_guard_internal_symbol(const Scope & scope,
                                           const CppAstNode * declaration_node)
 {
   return local_static_internal_symbol(scope, name, declaration_node) + "__guard";
+}
+
+bool scope_has_internal_namespace_linkage(const Scope * scope)
+{
+  for(const Scope * current = scope; current; current = current->parent) {
+    if(current->namespace_scope && current->name == "<unnamed>") {
+      return true;
+    }
+  }
+  return false;
+}
+
+symbol_linkage::SymbolLinkage local_static_storage_linkage(const Scope & scope)
+{
+  const FunctionBinding * function = scope.function;
+  if(!function) {
+    return symbol_linkage::SL_INTERNAL;
+  }
+  if(function->symbol.linkage == symbol_linkage::SL_INTERNAL ||
+     scope_has_internal_namespace_linkage(function->declaration_scope)) {
+    return symbol_linkage::SL_INTERNAL;
+  }
+  if(symbol_linkage::has_weak_linkage(function->symbol) ||
+     function->odr_mergeable_definition ||
+     function->is_inline ||
+     function->is_constexpr ||
+     template_api::function_binding_has_linkage_template_identity(function)) {
+    return symbol_linkage::SL_WEAK;
+  }
+  return symbol_linkage::SL_INTERNAL;
 }
 
 void postprocess_anonymous_union_storage(SemanticContext & ctx,
@@ -512,6 +613,31 @@ bool switch_condition_expr_ok(SemanticContext & ctx, const ExprInfo & expr)
   return converted && (is_integral_type(converted) || is_named_enum_type(ctx, converted));
 }
 
+bool try_switch_condition_conversion(SemanticContext & ctx,
+                                     Scope & scope,
+                                     ExprInfo & expr)
+{
+  if(switch_condition_expr_ok(ctx, expr)) {
+    return true;
+  }
+
+  ExprInfo converted_expr;
+  ConversionRank rank = CR_BAD;
+  if(!ctx.try_argument_conversion(scope,
+                                  make_fundamental(FT_INT),
+                                  expr,
+                                  converted_expr,
+                                  rank)) {
+    return false;
+  }
+  if(!switch_condition_expr_ok(ctx, converted_expr)) {
+    return false;
+  }
+
+  expr = converted_expr;
+  return true;
+}
+
 void analyze_simple_declaration_statement(SemanticContext & ctx,
                                           Scope & scope,
                                           const CppAstNode & node,
@@ -706,7 +832,8 @@ void analyze_condition_declaration(SemanticContext & ctx,
                                    Scope & scope,
                                    const CppAstNode & node,
                                    DumpNode & out,
-                                   bool synthesize_condition_test = true)
+                                   bool synthesize_condition_test = true,
+                                   bool synthesize_switch_condition_test = false)
 {
   if(node.kind != CppAstKind::condition_declaration || node.children.size() < 3) {
     throw logic_error("unsupported condition-declaration");
@@ -760,12 +887,16 @@ void analyze_condition_declaration(SemanticContext & ctx,
     semantic_lifetime::analyze_initializer(ctx, scope, type, *initializer, out.children.back());
   }
 
-  if(!synthesize_condition_test) {
+  if(!synthesize_condition_test && !synthesize_switch_condition_test) {
     return;
   }
 
   ExprInfo condition_expr = ctx.analyze_expression(scope, make_id_expr_ast_node(name));
-  if(!condition_type_ok(ctx, scope, condition_expr)) {
+  const bool condition_ok =
+      synthesize_switch_condition_test ?
+          try_switch_condition_conversion(ctx, scope, condition_expr) :
+          condition_type_ok(ctx, scope, condition_expr);
+  if(!condition_ok) {
     throw logic_error("invalid condition declaration");
   }
   mutable_callsem_lowered_condition_test(out).reset(
@@ -786,13 +917,18 @@ void analyze_condition_node(SemanticContext & ctx,
   const CppAstNode & child = node.children[0];
   if(child.kind == CppAstKind::condition_declaration) {
     DumpNode condition_decl;
-    analyze_condition_declaration(ctx, scope, child, condition_decl, !allow_switch_condition);
+    analyze_condition_declaration(ctx,
+                                  scope,
+                                  child,
+                                  condition_decl,
+                                  !allow_switch_condition,
+                                  allow_switch_condition);
     out.children.push_back(std::move(condition_decl));
     return;
   }
 
   ExprInfo expr = ctx.analyze_expression(scope, child);
-  if(!(allow_switch_condition ? switch_condition_expr_ok(ctx, expr)
+  if(!(allow_switch_condition ? try_switch_condition_conversion(ctx, scope, expr)
                               : condition_type_ok(ctx, scope, expr))) {
     throw logic_error("invalid condition expression");
   }
@@ -821,6 +957,9 @@ TypePtr switch_condition_type(const DumpNode & condition)
   if(child.kind == CallSemKind::condition_declaration) {
     if(child.children.size() != 1 || child.children[0].kind != CallSemKind::variable) {
       throw logic_error("invalid switch condition declaration");
+    }
+    if(callsem_lowered_condition_test(child)) {
+      return callsem_lowered_condition_test(child)->semantic_type;
     }
     return child.children[0].semantic_type;
   }
@@ -1101,7 +1240,11 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
                                            is_typedef);
     const bool parsed_as_function =
         parsed_as_variable && type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION;
-    if(parsed_as_function && !initializer) {
+    const bool recover_function_style_initializer =
+        parsed_as_function &&
+        !initializer &&
+        should_recover_function_style_local_initializer(scope, init_decl.children[0]);
+    if(parsed_as_function && !initializer && !recover_function_style_initializer) {
       vector<pair<string, TypePtr> > params;
       vector<const CppAstNode *> default_args;
       const CppAstNode * parameter_clause =
@@ -1211,8 +1354,15 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       while(static_storage_base && static_storage_base->kind == Type::TK_ARRAY) {
         static_storage_base = strip_top_level_cv(static_storage_base->inner);
       }
+      const bool is_reference_declaration =
+          is_reference_type(strip_top_level_cv(type));
       const bool has_class_lifetime =
+          !is_reference_declaration &&
           direct_storage_type && ctx.complete_class_type(direct_storage_type);
+      const bool has_automatic_array_class_lifetime =
+          direct_storage_type != static_storage_base &&
+          static_storage_base &&
+          ctx.complete_class_type(static_storage_base);
       const bool is_thread_local =
           decl_spec_contains_token(prepared_specifiers.resolved_specifiers, KW_THREAD_LOCAL);
       long long constexpr_static_value = 0;
@@ -1236,7 +1386,7 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       if(use_global_static_storage) {
         binding.symbol = symbol_linkage::make_internal_symbol_identity(
             local_static_internal_symbol(scope, name, &init_decl),
-            symbol_linkage::SL_INTERNAL);
+            local_static_storage_linkage(scope));
         if(is_thread_local) {
           binding.symbol.thread_local_wrapper_object_symbol =
               symbol_linkage::thread_local_wrapper_internal_symbol(
@@ -1278,7 +1428,8 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
         if(initializer) {
           semantic_lifetime::analyze_initializer(ctx, scope, type, *initializer, var_node);
         }
-      } else if(ctx.complete_class_type(type)) {
+      } else if(ctx.complete_class_type(type) ||
+                (has_automatic_array_class_lifetime && !initializer)) {
         semantic_lifetime::analyze_object_lifetime_actions(
             ctx,
             scope,
@@ -1872,9 +2023,17 @@ void analyze_statement_impl(SemanticContext & ctx,
   }
 
   if(node.kind == CppAstKind::asm_statement) {
-    out.children.push_back(make_located_dump_node(CallSemKind::asm_statement,
-                                                  node,
-                                                  node_text(node)));
+    DumpNode asm_node = make_located_dump_node(CallSemKind::asm_statement,
+                                               node,
+                                               node_text(node));
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(node.children[i].kind == CppAstKind::asm_clause) {
+        asm_node.children.push_back(make_located_dump_node(CallSemKind::asm_clause,
+                                                           node.children[i],
+                                                           node_text(node.children[i])));
+      }
+    }
+    out.children.push_back(std::move(asm_node));
     return;
   }
 

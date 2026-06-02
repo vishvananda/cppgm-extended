@@ -674,6 +674,15 @@ public:
     try {
       const ScopedTemplateDependentTypeExprUseLocation use_location(
           request.use_location);
+      std::string order_use_location;
+      order_use_location =
+          template_api::normalize_template_witness_source_location(
+              ctx_.source_location_for_node(request.operand));
+      if(order_use_location.empty()) {
+        order_use_location = request.use_location;
+      }
+      const parser_trace::ScopedOrderUseLocation order_use_location_guard(
+          order_use_location);
       semantic_conversion::ExprInfo info =
           request.operand.kind == CppAstKind::call_expression ?
               ctx_.analyze_call_expression(scope,
@@ -841,8 +850,16 @@ private:
       }
       if(i < request.source_arg_syntaxes.size()) {
         argument.syntax = request.source_arg_syntaxes[i];
-      } else {
+      } else if(request.resolved_arguments[i].kind !=
+                template_model::TemplateArgument::TA_TYPE) {
         argument.syntax.text = argument.text;
+      }
+      if(request.resolved_arguments[i].kind == template_model::TemplateArgument::TA_TYPE &&
+         request.resolved_arguments[i].type) {
+        argument.syntax.resolved_type = request.resolved_arguments[i].type;
+        if(argument.syntax.text.empty()) {
+          argument.syntax.text = argument.text;
+        }
       }
       if(request.resolved_arguments[i].dependent) {
         argument.syntax.dependent = true;

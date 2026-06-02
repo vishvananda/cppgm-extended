@@ -516,6 +516,9 @@ bool parse_parameter_clause_ast(
         make_pair(name,
                   hooks.normalize_function_parameters ? normalize_parameter_type(type) :
                                                         type));
+    if(hooks.bind_parameter_name) {
+      hooks.bind_parameter_name(params.back().first, params.back().second);
+    }
     if(default_args_out) {
       default_args_out->push_back(find_child(child, CppAstKind::default_argument));
     }
@@ -669,6 +672,16 @@ bool parse_declarator_core(const CppAstNode & node,
       if(!child.has_token) {
         return false;
       }
+      if(!suffixes.empty() && suffixes.back().kind == DeclaratorSuffix::SK_FUNCTION) {
+        if(child.simple_type == KW_CONST) {
+          suffixes.back().function_const = true;
+        } else if(child.simple_type == KW_VOLATILE) {
+          suffixes.back().function_volatile = true;
+        } else {
+          return false;
+        }
+        continue;
+      }
       if(!prefixes.empty() &&
          (prefixes.back().kind == PtrOperator::PK_POINTER ||
           prefixes.back().kind == PtrOperator::PK_MEMBER_POINTER ||
@@ -682,17 +695,24 @@ bool parse_declarator_core(const CppAstNode & node,
         }
         continue;
       }
-      if(!suffixes.empty() && suffixes.back().kind == DeclaratorSuffix::SK_FUNCTION) {
-        if(child.simple_type == KW_CONST) {
-          suffixes.back().function_const = true;
-        } else if(child.simple_type == KW_VOLATILE) {
-          suffixes.back().function_volatile = true;
-        } else {
-          return false;
-        }
-        continue;
-      }
       return false;
+    }
+
+    if(child.kind == CppAstKind::ref_qualifier) {
+      if(!child.has_token ||
+         suffixes.empty() ||
+         suffixes.back().kind != DeclaratorSuffix::SK_FUNCTION ||
+         suffixes.back().function_ref_qualifier != FTRQ_NONE) {
+        return false;
+      }
+      if(child.simple_type == OP_AMP) {
+        suffixes.back().function_ref_qualifier = FTRQ_LVALUE;
+      } else if(child.simple_type == OP_LAND) {
+        suffixes.back().function_ref_qualifier = FTRQ_RVALUE;
+      } else {
+        return false;
+      }
+      continue;
     }
 
     if(child.kind == CppAstKind::nullability_qualifier) {
@@ -804,7 +824,9 @@ bool parse_declarator_core(const CppAstNode & node,
                           suffix.params,
                           suffix.variadic,
                           suffix.function_const,
-                          suffix.function_volatile);
+                          suffix.function_volatile,
+                          false,
+                          suffix.function_ref_qualifier);
     } else {
       out = make_array(out, suffix.has_bound,
                        suffix.has_bound ? static_cast<size_t>(suffix.bound_value) : 0,

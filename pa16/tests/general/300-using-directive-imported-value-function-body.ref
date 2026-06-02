@@ -2,8 +2,9 @@ global @N__K : i32 [binding=internal, object=_ZN1N1KE] = 3
 
 function @g() -> i32 [binding=strong, object=_Z1gv] {
   block ^entry:
-    %t1 = binary add i32 3, 1
-    return i32 %t1
+    %t1 = load i32 @N__K
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

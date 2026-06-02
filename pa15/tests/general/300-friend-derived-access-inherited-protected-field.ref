@@ -37,15 +37,12 @@ function @friend_inherited_reader__read(%this : ptr, %p : ptr [pass=reference]) 
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     %t5 = binary add i32 %t4, 1
+    store i32 %t5, %t3
     %t6 = load ptr $p
     %t7 = index i8 [projection=base_subobject] %t6, 0
     %t8 = index i8 [projection=field] %t7, 0
-    store i32 %t5, %t8
-    %t9 = load ptr $p
-    %t10 = index i8 [projection=base_subobject] %t9, 0
-    %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    return i32 %t12
+    %t9 = load i32 %t8
+    return i32 %t9
 }
 function @friend_inherited_property__friend_inherited_property(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN25friend_inherited_propertyC1Ei] {
   slot $this : ptr

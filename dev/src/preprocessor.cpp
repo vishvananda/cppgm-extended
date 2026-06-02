@@ -9,6 +9,7 @@
 using namespace std;
 
 #include "cppgm_builtin_host_config.h"
+#include "builtin_type_transforms.h"
 #include "encoding.h"
 #include "file_timing.h"
 #include "types.h"
@@ -80,6 +81,30 @@ string trim_whitespace(const string & text)
     --end;
   }
   return text.substr(start, end - start);
+}
+
+bool is_identifier_like_preprocessing_operator(const string & text)
+{
+  switch(text.size()) {
+  case 2:
+    return text == "or";
+  case 3:
+    return text == "and" || text == "new" || text == "not" || text == "xor";
+  case 5:
+    return text == "bitor" || text == "compl" || text == "or_eq";
+  case 6:
+    return text == "and_eq" || text == "bitand" || text == "delete" ||
+           text == "not_eq" || text == "xor_eq";
+  default:
+    return false;
+  }
+}
+
+bool is_defined_operand_token(EPPTokenType type, const string & data)
+{
+  return type == PP_IDENTIFIER ||
+         (type == PP_PREPROCESSING_OP &&
+          is_identifier_like_preprocessing_operator(data));
 }
 
 vector<string> parse_compiler_search_paths(const string & output)
@@ -223,6 +248,8 @@ bool should_import_host_predefined_macro(const string & name)
     return true;
   }
   return name == "__APPLE__" ||
+         name == "__APPLE_CC__" ||
+         name == "__APPLE_CPP__" ||
          name == "__MACH__" ||
          name == "__linux__" ||
          name == "__unix__" ||
@@ -660,6 +687,7 @@ bool is_predefined_builtin_probe_name(const string & name)
          name == "__has_attribute" ||
          name == "__has_cpp_attribute" ||
          name == "__has_builtin" ||
+         name == "__is_identifier" ||
          name == "__building_module" ||
          name == "__has_include" ||
          name == "__has_include_next";
@@ -680,14 +708,12 @@ bool parse_builtin_name_tokens(const vector<EPPToken> & tokens,
   return true;
 }
 
+bool is_supported_builtin_type_trait_name(const string & name);
+
 bool is_supported_builtin_name(const string & name)
 {
-  return name == "__remove_cv" ||
-         name == "__remove_const" ||
-         name == "__remove_cvref" ||
-         name == "__decay" ||
-         name == "__remove_reference" ||
-         name == "__remove_reference_t" ||
+  return is_supported_builtin_type_trait_name(name) ||
+         builtin_type_transforms::is_supported_name(name) ||
          name == "__integer_pack" ||
          name == "__is_pod" ||
          name == "__is_constructible" ||
@@ -738,6 +764,9 @@ bool is_supported_builtin_name(const string & name)
          name == "__builtin_invoke" ||
          name == "__builtin_offsetof" ||
          name == "__builtin_expect" ||
+         name == "__builtin_prefetch" ||
+         name == "__sync_lock_test_and_set" ||
+         name == "__sync_lock_release" ||
          name == "__builtin_assume_aligned" ||
          name == "__builtin_fabsf" ||
          name == "__builtin_fabs" ||
@@ -746,6 +775,151 @@ bool is_supported_builtin_name(const string & name)
          name == "__builtin_labs" ||
          name == "__builtin_llabs" ||
          name == "__type_pack_element";
+}
+
+bool is_supported_builtin_type_trait_name(const string & name)
+{
+  static const set<string> supported = {
+      "__array_rank",
+      "__has_trivial_constructor",
+      "__has_trivial_destructor",
+      "__has_virtual_destructor",
+      "__is_abstract",
+      "__is_arithmetic",
+      "__is_array",
+      "__is_assignable",
+      "__is_base_of",
+      "__is_class",
+      "__is_compound",
+      "__is_const",
+      "__is_constructible",
+      "__is_convertible",
+      "__is_destructible",
+      "__is_empty",
+      "__is_enum",
+      "__is_final",
+      "__is_floating_point",
+      "__is_function",
+      "__is_fundamental",
+      "__is_integral",
+      "__is_literal_type",
+      "__is_lvalue_reference",
+      "__is_member_function_pointer",
+      "__is_member_object_pointer",
+      "__is_member_pointer",
+      "__is_nothrow_assignable",
+      "__is_nothrow_constructible",
+      "__is_nothrow_convertible",
+      "__is_nothrow_destructible",
+      "__is_object",
+      "__is_pod",
+      "__is_pointer",
+      "__is_polymorphic",
+      "__is_reference",
+      "__is_rvalue_reference",
+      "__is_same",
+      "__is_scalar",
+      "__is_signed",
+      "__is_standard_layout",
+      "__is_trivial",
+      "__is_trivially_assignable",
+      "__is_trivially_constructible",
+      "__is_trivially_copyable",
+      "__is_trivially_destructible",
+      "__is_union",
+      "__is_unsigned",
+      "__is_void",
+      "__is_volatile",
+      "__reference_binds_to_temporary",
+      "__reference_constructs_from_temporary",
+  };
+  return supported.count(name) != 0;
+}
+
+bool is_language_keyword_for_identifier_query(const string & name)
+{
+  static const set<string> keywords = {
+      "alignas",
+      "alignof",
+      "asm",
+      "auto",
+      "bool",
+      "break",
+      "case",
+      "catch",
+      "char",
+      "char16_t",
+      "char32_t",
+      "class",
+      "const",
+      "constexpr",
+      "const_cast",
+      "continue",
+      "decltype",
+      "default",
+      "delete",
+      "do",
+      "double",
+      "dynamic_cast",
+      "else",
+      "enum",
+      "explicit",
+      "export",
+      "extern",
+      "false",
+      "float",
+      "for",
+      "friend",
+      "goto",
+      "if",
+      "inline",
+      "int",
+      "long",
+      "mutable",
+      "namespace",
+      "new",
+      "noexcept",
+      "nullptr",
+      "operator",
+      "private",
+      "protected",
+      "public",
+      "register",
+      "reinterpret_cast",
+      "return",
+      "short",
+      "signed",
+      "sizeof",
+      "static",
+      "static_assert",
+      "static_cast",
+      "struct",
+      "switch",
+      "template",
+      "this",
+      "thread_local",
+      "throw",
+      "true",
+      "try",
+      "typedef",
+      "typeid",
+      "typename",
+      "union",
+      "unsigned",
+      "using",
+      "virtual",
+      "void",
+      "volatile",
+      "wchar_t",
+      "while",
+  };
+  return keywords.count(name) != 0;
+}
+
+bool is_identifier_builtin_query_result(const string & name)
+{
+  return !is_language_keyword_for_identifier_query(name) &&
+         !is_supported_builtin_type_trait_name(name);
 }
 
 bool is_supported_type_trait_feature_query(const string & name)
@@ -780,6 +954,7 @@ bool is_supported_feature_query(const string & id, const string & name)
            name == "cxx_alignas" ||
            name == "cxx_alignof" ||
            name == "cxx_auto_type" ||
+           name == "__cxx_binary_literals__" ||
            name == "cxx_default_function_template_args" ||
            name == "cxx_defaulted_functions" ||
            name == "cxx_deleted_functions" ||
@@ -814,6 +989,7 @@ bool is_supported_feature_query(const string & id, const string & name)
            name == "cxx_alignas" ||
            name == "cxx_alignof" ||
            name == "cxx_auto_type" ||
+           name == "__cxx_binary_literals__" ||
            name == "cxx_default_function_template_args" ||
            name == "cxx_defaulted_functions" ||
            name == "cxx_deleted_functions" ||
@@ -1508,6 +1684,17 @@ void Preprocessor::finish_if_directive()
         continue;
       }
 
+      if(item.data == "__is_identifier" &&
+         parse_builtin_argument_tokens(results, i + 1, argument, next)) {
+        string identifier_name;
+        const bool is_identifier =
+            parse_builtin_name_tokens(argument, identifier_name) &&
+            is_identifier_builtin_query_result(identifier_name);
+        rewritten.push_back(EPPToken{PP_INT_LITERAL, is_identifier ? "1" : "0"});
+        i = next - 1;
+        continue;
+      }
+
       if((item.data == "__has_feature" || item.data == "__has_extension") &&
          parse_builtin_argument_tokens(results, i + 1, argument, next)) {
         string feature_name;
@@ -1845,7 +2032,7 @@ bool Preprocessor::process(const EPPTokenType type, const string & data,
         // fallthrough
       case DefinedState::NoParen:
       case DefinedState::Paren:
-        if(type == PP_IDENTIFIER) {
+        if(is_defined_operand_token(type, data)) {
           if(macroizer.macro_exists(data) ||
              is_predefined_builtin_probe_name(data))
             append_directive_token(PP_INT_LITERAL, "1");

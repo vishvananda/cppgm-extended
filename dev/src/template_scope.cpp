@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "parser_trace.h"
+#include "semantic_lookup.h"
 #include "template_binding.h"
 
 namespace template_scope {
@@ -320,6 +321,9 @@ void bind_non_type_value(Scope & scope,
     }
   } else {
     binding.dependent_template_value = true;
+    if(!text.empty()) {
+      binding.non_type_template_argument_text = text;
+    }
   }
   bind_value(scope, name, binding, true);
 }
@@ -341,7 +345,7 @@ void bind_non_type_pack(Scope & scope,
                         value_type,
                         value,
                         dependent,
-                        !dependent ? bound_pack[i].text : std::string(),
+                        bound_pack[i].text,
                         !dependent ?
                             const_cast<FunctionBinding *>(bound_pack[i].function_value) :
                             nullptr,
@@ -388,7 +392,7 @@ void bind_template_argument_pack(Scope & scope,
                           value_type,
                           arguments[i].value,
                           arguments[i].dependent,
-                          !arguments[i].dependent ? arguments[i].text : std::string(),
+                          arguments[i].text,
                           !arguments[i].dependent ?
                               const_cast<FunctionBinding *>(arguments[i].function_value) :
                               nullptr,
@@ -441,6 +445,10 @@ void bind_template_parameter_placeholders(
                           parameter.value_type,
                           0,
                           true);
+      if(parameter.parameter_pack) {
+        scope.template_bound_value_pack_names.insert(parameter.name);
+        bump_binding_fingerprint_epoch(scope);
+      }
     } else if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
       bind_template_template_placeholder(scope, parameter.name);
     }
@@ -473,6 +481,7 @@ void bind_value_pack(Scope & scope,
   scope.named_value_packs[name] = bound_pack;
   if(template_bound) {
     scope.template_bound_value_names.insert(name);
+    scope.template_bound_value_pack_names.insert(name);
   }
   bump_binding_fingerprint_epoch(scope);
 }
@@ -487,9 +496,11 @@ bool erase_template_parameter_binding(Scope & scope, const std::string & name)
   changed = scope.named_pack_sizes.erase(name) != 0 || changed;
   changed = scope.values.erase(name) != 0 || changed;
   changed = scope.template_bound_value_names.erase(name) != 0 || changed;
+  changed = scope.template_bound_value_pack_names.erase(name) != 0 || changed;
   changed = scope.class_templates.erase(name) != 0 || changed;
   changed = scope.alias_templates.erase(name) != 0 || changed;
   changed = scope.template_bound_template_names.erase(name) != 0 || changed;
+  changed = scope.template_bound_template_arguments.erase(name) != 0 || changed;
   if(changed) {
     bump_binding_fingerprint_epoch(scope);
   }
@@ -501,7 +512,9 @@ void bind_class_template(Scope & scope,
                          ClassTemplateDecl * decl)
 {
   scope.class_templates[name] = decl;
+  scope.alias_templates.erase(name);
   scope.template_bound_template_names.insert(name);
+  scope.template_bound_template_arguments.erase(name);
   bump_binding_fingerprint_epoch(scope);
 }
 
@@ -510,7 +523,9 @@ void bind_alias_template(Scope & scope,
                          AliasTemplateDecl * decl)
 {
   scope.alias_templates[name] = decl;
+  scope.class_templates.erase(name);
   scope.template_bound_template_names.insert(name);
+  scope.template_bound_template_arguments.erase(name);
   bump_binding_fingerprint_epoch(scope);
 }
 
@@ -525,13 +540,25 @@ void bind_template_template_argument(Scope & scope,
                                      const std::string & name,
                                      const TemplateArgument & argument)
 {
+  TemplateArgument stored_argument = argument;
   if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
-    scope.class_templates.erase(name);
-    bind_alias_template(scope, name, static_cast<AliasTemplateDecl *>(argument.template_decl));
+    AliasTemplateDecl * decl =
+        static_cast<AliasTemplateDecl *>(argument.template_decl);
+    bind_alias_template(scope, name, decl);
+    if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
+      stored_argument.text =
+          semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
+    }
   } else {
-    scope.alias_templates.erase(name);
-    bind_class_template(scope, name, static_cast<ClassTemplateDecl *>(argument.template_decl));
+    ClassTemplateDecl * decl =
+        static_cast<ClassTemplateDecl *>(argument.template_decl);
+    bind_class_template(scope, name, decl);
+    if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
+      stored_argument.text =
+          semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
+    }
   }
+  scope.template_bound_template_arguments[name] = stored_argument;
 }
 
 namespace {
@@ -621,6 +648,22 @@ void overlay_scope_bindings_impl(Scope & target,
         changed |= target.named_pack_sizes.insert(*found).second;
       }
     }
+    for(const auto & name : source.template_bound_value_pack_names) {
+      if(!allow_overlay_name(excluded_names, name)) {
+        continue;
+      }
+      std::map<std::string, std::size_t>::const_iterator size =
+          source.named_pack_sizes.find(name);
+      if(size != source.named_pack_sizes.end()) {
+        changed |= target.named_pack_sizes.insert(*size).second;
+      }
+      std::map<std::string, std::vector<ValueBinding> >::const_iterator pack =
+          source.named_value_packs.find(name);
+      if(pack != source.named_value_packs.end()) {
+        changed |= target.named_value_packs.insert(*pack).second;
+      }
+      changed |= target.template_bound_value_pack_names.insert(name).second;
+    }
   } else {
     changed |= overlay_selected_entries(target.named_pack_sizes,
                                         source.named_pack_sizes,
@@ -645,6 +688,12 @@ void overlay_scope_bindings_impl(Scope & target,
         changed |= target.template_bound_value_names.insert(name).second;
       }
     }
+  } else {
+    for(const auto & name : source.template_bound_value_pack_names) {
+      if(allow_overlay_name(excluded_names, name)) {
+        changed |= target.template_bound_value_pack_names.insert(name).second;
+      }
+    }
   }
 
   const std::set<std::string> * template_names =
@@ -656,6 +705,10 @@ void overlay_scope_bindings_impl(Scope & target,
                                         excluded_names);
     changed |= overlay_selected_entries(target.alias_templates,
                                         source.alias_templates,
+                                        template_names,
+                                        excluded_names);
+    changed |= overlay_selected_entries(target.template_bound_template_arguments,
+                                        source.template_bound_template_arguments,
                                         template_names,
                                         excluded_names);
     if(template_names) {
@@ -733,6 +786,24 @@ bool scope_has_type_parameter_pack_name(const Scope & scope,
   for(const Scope * current = &scope; current; current = current->parent) {
     if(current->template_bound_type_pack_names.count(name) != 0 ||
        current->named_type_packs.count(name) != 0) {
+      return true;
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return false;
+}
+
+bool scope_has_value_parameter_pack_name(const Scope & scope,
+                                         const std::string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  for(const Scope * current = &scope; current; current = current->parent) {
+    if(current->template_bound_value_pack_names.count(name) != 0 ||
+       current->named_value_packs.count(name) != 0) {
       return true;
     }
     if(current->namespace_scope || current->parent == nullptr) {

@@ -34,6 +34,7 @@ enum class RuntimeSymbolRole
   builtin_operator_delete_array_sized,
   builtin_operator_delete_array_aligned,
   builtin_operator_delete_array_sized_aligned,
+  builtin_bzero,
   builtin_memchr,
   builtin_memcmp,
   builtin_memcpy,

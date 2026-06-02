@@ -1,0 +1,35 @@
+global @tables_true___data [binding=weak, object=_ZN6tablesILb1EE4dataE] = {
+  u16 0
+  u16 0
+  u16 171
+  u16 244
+  u16 27324
+  u16 0
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr @tables_true___data
+    %t2 = unary decay ptr %t1
+    %t3 = binary mul i64 1, 4
+    %t4 = index i8 [projection=array_element] %t2, %t3
+    %t5 = index i8 [projection=field] %t4, 2
+    %t6 = load u16 %t5
+    %t7 = convert zext i32 u16 %t6
+    %t8 = cmp eq i32 %t7, 244
+    branch %t8, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t9 = load i32 $cond__1
+    return i32 %t9
+}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -92,6 +93,17 @@ bool substitute_expression_node_for_template_arguments(
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     const std::vector<template_model::TemplateArgument> & arguments,
     CppAstNode & out);
+bool substitute_type_id_node_for_template_arguments(
+    template_api::TemplateServices & services,
+    semantic_model::Scope & scope,
+    const CppAstNode & node,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    const std::vector<template_model::TemplateArgument> & arguments,
+    CppAstNode & out);
+bool substitute_named_type_parameters(
+    const cpp_decl::TypePtr & type,
+    const std::map<std::string, cpp_decl::TypePtr> & type_replacements,
+    cpp_decl::TypePtr & out);
 
 // template-boundary-audit: begin text_recovery_bridge
 std::string lookup_text_for_type_argument(template_api::TemplateTypeSystem & type_system,
@@ -127,6 +139,12 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
     long long & value,
     std::string * eval_error = nullptr,
     const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
+
+NonTypeArgumentStatus evaluate_structured_bool_condition_expression(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & expr,
+    bool & out);
 
 bool note_constant_value_member_instantiations_in_expression(
     template_api::TemplateServices & services,

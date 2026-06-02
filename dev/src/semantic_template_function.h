@@ -81,7 +81,8 @@ bool function_template_accepts_transformed_parameter_types(
     SemanticContext & ctx,
     semantic_model::FunctionTemplateDecl & decl,
     const std::vector<cpp_decl::TypePtr> & actual_params,
-    semantic_model::Scope * actual_lookup_scope = nullptr);
+    semantic_model::Scope * actual_lookup_scope = nullptr,
+    bool allow_prefix = false);
 
 void overlay_instantiation_use_scope_bindings(
     semantic_model::Scope & target,
@@ -102,7 +103,8 @@ semantic_model::FunctionBinding * acquire_function_template_binding(
     const std::vector<template_model::TemplateArgument> & arguments,
     semantic_model::Scope * use_scope = nullptr,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr,
-    bool include_body = true);
+    bool include_body = true,
+    semantic_model::ClassInfo * active_owner = nullptr);
 
 semantic_model::FunctionBinding * acquire_function_definition_binding(
     SemanticContext & ctx,

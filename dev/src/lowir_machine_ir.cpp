@@ -32,6 +32,7 @@ struct FunctionLayout
   map<string, string> aliased_object_return_slots;
   map<string, lir::Instruction> temp_def_instruction;
   map<string, lir::Operand> elided_direct_branch_load_sources;
+  set<string> address_taken_temps;
   set<string> direct_branch_temps;
   set<string> dead_call_result_temps;
   set<string> direct_call_arg_index_temps;
@@ -61,6 +62,14 @@ struct PreservedIntegerValue
   size_t spill_index = 0;
 };
 
+struct XmmCallArgMove
+{
+  string type;
+  XmmRegister dst = XMM_0;
+  mir::Operand src;
+  bool done = false;
+};
+
 bool call_source_reg_clobbered_before_call_piece(const vector<bool> & arg_in_reg,
                                                  const vector<size_t> & arg_reg_index,
                                                  size_t index,
@@ -82,6 +91,91 @@ bool call_source_reg_clobbered_before_call_piece(const vector<bool> & arg_in_reg
     }
   }
   return false;
+}
+
+bool pending_xmm_arg_source_uses_register(const vector<XmmCallArgMove> & moves,
+                                          XmmRegister reg)
+{
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(!moves[i].done &&
+       moves[i].src.kind == mir::Operand::OP_XMM &&
+       moves[i].src.xmm == reg) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool find_spare_xmm_arg_move_register(const vector<XmmCallArgMove> & moves,
+                                      XmmRegister & out)
+{
+  set<XmmRegister> used;
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(moves[i].done) {
+      continue;
+    }
+    used.insert(moves[i].dst);
+    if(moves[i].src.kind == mir::Operand::OP_XMM) {
+      used.insert(moves[i].src.xmm);
+    }
+  }
+
+  static const XmmRegister candidates[] = {
+    XMM_0, XMM_1, XMM_2, XMM_3, XMM_4, XMM_5, XMM_6, XMM_7
+  };
+  for(size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
+    if(used.count(candidates[i]) == 0) {
+      out = candidates[i];
+      return true;
+    }
+  }
+  return false;
+}
+
+bool xmm_arg_register_moves_have_cycle(vector<XmmCallArgMove> moves)
+{
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(moves[i].src.kind == mir::Operand::OP_XMM &&
+       moves[i].src.xmm == moves[i].dst) {
+      moves[i].done = true;
+    }
+  }
+
+  while(true) {
+    bool any_pending = false;
+    bool made_progress = false;
+    for(size_t i = 0; i < moves.size(); ++i) {
+      if(moves[i].done) {
+        continue;
+      }
+      any_pending = true;
+      if(!pending_xmm_arg_source_uses_register(moves, moves[i].dst)) {
+        moves[i].done = true;
+        made_progress = true;
+      }
+    }
+    if(!any_pending) {
+      return false;
+    }
+    if(!made_progress) {
+      return true;
+    }
+  }
+}
+
+bool xmm_arg_register_moves_need_stack_spill(vector<XmmCallArgMove> moves)
+{
+  if(!xmm_arg_register_moves_have_cycle(moves)) {
+    return false;
+  }
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(moves[i].src.kind == mir::Operand::OP_XMM &&
+       moves[i].src.xmm == moves[i].dst) {
+      moves[i].done = true;
+    }
+  }
+  XmmRegister spare = XMM_0;
+  return !find_spare_xmm_arg_move_register(moves, spare);
 }
 
 string target_text(const string & output_target)
@@ -569,7 +663,11 @@ map<string, string> collect_aliased_object_return_slots(const lir::Function & fu
 map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
     const set<string> & direct_branch_temps,
+    const map<string, string> & promoted_param_slots,
     const set<string> & thread_local_globals);
+set<string> collect_address_taken_temps(
+    const lir::Function & function,
+    const map<string, vector<lir::Parameter> > & function_params);
 bool operand_may_emit_tls_addr(const lir::Operand & operand,
                                const set<string> & thread_local_globals);
 bool instruction_may_emit_tls_addr(const lir::Instruction & inst,
@@ -609,6 +707,119 @@ void note_instruction_uses(map<string, TempInterval> & intervals,
   for(size_t i = 0; i < inst.args.size(); ++i) {
     note_operand_use(intervals, inst.args[i], position, inst.kind);
   }
+}
+
+map<string, string> collect_temp_result_types(const lir::Function & function)
+{
+  map<string, string> out;
+  for(size_t i = 0; i < function.params.size(); ++i) {
+    out[function.params[i].name] = function.params[i].type.text;
+  }
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+      const lir::Instruction & inst = function.blocks[bi].instructions[ii];
+      if(!inst.dest.empty()) {
+        out[inst.dest] = instruction_result_storage_type(inst);
+      }
+    }
+  }
+  return out;
+}
+
+void note_temp_address_required(set<string> & out, const lir::Operand & operand)
+{
+  if(operand.kind == lir::Operand::OP_TEMP) {
+    out.insert(operand.text);
+  }
+}
+
+void note_storage_address_required(set<string> & out,
+                                   const map<string, string> & temp_types,
+                                   const lir::Operand & operand)
+{
+  if(operand.kind != lir::Operand::OP_TEMP) {
+    return;
+  }
+  map<string, string>::const_iterator found = temp_types.find(operand.text);
+  if(found == temp_types.end() || found->second != "ptr") {
+    out.insert(operand.text);
+  }
+}
+
+vector<lir::Parameter> instruction_call_params(
+    const lir::Instruction & inst,
+    const map<string, vector<lir::Parameter> > & function_params)
+{
+  if(inst.has_call_signature) {
+    return inst.call_params;
+  }
+  if(inst.first.kind != lir::Operand::OP_GLOBAL) {
+    return vector<lir::Parameter>();
+  }
+  map<string, vector<lir::Parameter> >::const_iterator found =
+      function_params.find(inst.first.text);
+  return found == function_params.end() ? vector<lir::Parameter>() : found->second;
+}
+
+set<string> collect_address_taken_temps(
+    const lir::Function & function,
+    const map<string, vector<lir::Parameter> > & function_params)
+{
+  const map<string, string> temp_types = collect_temp_result_types(function);
+  set<string> out;
+
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+      const lir::Instruction & inst = function.blocks[bi].instructions[ii];
+      switch(inst.kind) {
+        case lir::Instruction::IK_ADDR:
+          note_temp_address_required(out, inst.first);
+          break;
+        case lir::Instruction::IK_LOAD:
+        case lir::Instruction::IK_ATOMIC_LOAD:
+          note_storage_address_required(out, temp_types, inst.first);
+          break;
+        case lir::Instruction::IK_STORE:
+        case lir::Instruction::IK_ATOMIC_STORE:
+          note_storage_address_required(out, temp_types, inst.second);
+          break;
+        case lir::Instruction::IK_ATOMIC_ADD_FETCH:
+        case lir::Instruction::IK_ATOMIC_EXCHANGE:
+          note_storage_address_required(out, temp_types, inst.first);
+          break;
+        case lir::Instruction::IK_ATOMIC_COMPARE_EXCHANGE:
+          note_storage_address_required(out, temp_types, inst.first);
+          note_storage_address_required(out, temp_types, inst.second);
+          break;
+        case lir::Instruction::IK_COPYOBJ:
+          note_storage_address_required(out, temp_types, inst.first);
+          note_storage_address_required(out, temp_types, inst.second);
+          break;
+        case lir::Instruction::IK_ZEROINIT:
+          note_storage_address_required(out, temp_types, inst.first);
+          break;
+        case lir::Instruction::IK_CALL: {
+          const vector<lir::Parameter> call_params =
+              instruction_call_params(inst, function_params);
+          for(size_t ai = 0; ai < inst.args.size(); ++ai) {
+            if(ai >= call_params.size()) {
+              continue;
+            }
+            const string & param_type = call_params[ai].type.text;
+            if(!scalar_abi_chunk_types(param_type).empty() ||
+               uses_storage_address_passing(call_params[ai].metadata.passing)) {
+              note_storage_address_required(out, temp_types, inst.args[ai]);
+            }
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  }
+
+  return out;
 }
 
 void note_direct_branch_source_uses(map<string, TempInterval> & intervals,
@@ -1356,18 +1567,24 @@ set<string> collect_direct_branch_temps(const lir::Function & function,
 map<string, lir::Operand> collect_elided_direct_branch_loads(
     const lir::Function & function,
     const set<string> & direct_branch_temps,
+    const map<string, string> & promoted_param_slots,
     const set<string> & thread_local_globals)
 {
   const map<string, TempDefInfo> def_info = collect_temp_def_info(function);
   map<string, size_t> raw_use_count;
+  map<string, size_t> raw_use_position;
+  map<string, size_t> direct_branch_use_position;
+  vector<size_t> caller_saved_clobber_positions;
+  size_t position = 0;
   for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
-    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii, ++position) {
       const lir::Instruction & inst = function.blocks[bi].instructions[ii];
       const auto note_raw_use =
           [&](const lir::Operand & operand)
           {
             if(operand.kind == lir::Operand::OP_TEMP) {
               ++raw_use_count[operand.text];
+              raw_use_position[operand.text] = position;
             }
           };
       note_raw_use(inst.first);
@@ -1376,11 +1593,36 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
       for(size_t ai = 0; ai < inst.args.size(); ++ai) {
         note_raw_use(inst.args[ai]);
       }
+      if(inst.kind == lir::Instruction::IK_BRANCH &&
+         inst.first.kind == lir::Operand::OP_TEMP &&
+         direct_branch_temps.count(inst.first.text) != 0) {
+        direct_branch_use_position[inst.first.text] = position;
+      }
+      if(inst.kind == lir::Instruction::IK_CALL ||
+         instruction_may_emit_tls_addr(inst, thread_local_globals) ||
+         instruction_may_emit_i128_helper_call(inst)) {
+        caller_saved_clobber_positions.push_back(position);
+      }
     }
   }
 
+  const auto caller_saved_clobber_between =
+      [&](size_t first, size_t last) -> bool
+      {
+        if(first >= last) {
+          return false;
+        }
+        vector<size_t>::const_iterator found =
+            upper_bound(caller_saved_clobber_positions.begin(),
+                        caller_saved_clobber_positions.end(),
+                        first);
+        return found != caller_saved_clobber_positions.end() && *found < last;
+      };
+
   auto is_elidable_direct_load =
-      [&](const lir::Operand & operand, const string & compare_type)
+      [&](const string & direct_branch_temp,
+          const lir::Operand & operand,
+          const string & compare_type)
       {
         if(operand.kind != lir::Operand::OP_TEMP) {
           return false;
@@ -1399,6 +1641,20 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
         if(def->second.first.kind == lir::Operand::OP_GLOBAL &&
            thread_local_globals.count(def->second.first.text) != 0) {
           return false;
+        }
+        if(def->second.first.kind == lir::Operand::OP_SLOT &&
+           promoted_param_slots.count(def->second.first.text) != 0) {
+          map<string, size_t>::const_iterator branch_use =
+              direct_branch_use_position.find(direct_branch_temp);
+          map<string, size_t>::const_iterator raw_use =
+              raw_use_position.find(operand.text);
+          const size_t use_position =
+              branch_use != direct_branch_use_position.end()
+                  ? branch_use->second
+                  : (raw_use == raw_use_position.end() ? def->second.position : raw_use->second);
+          if(caller_saved_clobber_between(def->second.position, use_position)) {
+            return false;
+          }
         }
         return def->second.first.kind == lir::Operand::OP_SLOT ||
                def->second.first.kind == lir::Operand::OP_GLOBAL;
@@ -1422,16 +1678,16 @@ map<string, lir::Operand> collect_elided_direct_branch_loads(
         !is_float_type(def->second.type) &&
         !is_i128_scalar_type(def->second.type);
     if(direct_cmp) {
-      if(is_elidable_direct_load(def->second.first, def->second.type)) {
+      if(is_elidable_direct_load(*it, def->second.first, def->second.type)) {
         out[def->second.first.text] =
             def_info.find(def->second.first.text)->second.first;
       }
-      if(is_elidable_direct_load(def->second.second, def->second.type)) {
+      if(is_elidable_direct_load(*it, def->second.second, def->second.type)) {
         out[def->second.second.text] =
             def_info.find(def->second.second.text)->second.first;
       }
     } else if(direct_integer_not &&
-              is_elidable_direct_load(def->second.first, def->second.type)) {
+              is_elidable_direct_load(*it, def->second.first, def->second.type)) {
       out[def->second.first.text] =
           def_info.find(def->second.first.text)->second.first;
     }
@@ -1565,7 +1821,8 @@ void assign_temp_registers(const lir::Function & function,
   for(size_t i = 0; i < intervals.size(); ++i) {
     const TempInterval & interval = intervals[i];
     if(layout.dead_call_result_temps.count(interval.name) != 0 ||
-       layout.direct_call_arg_index_temps.count(interval.name) != 0) {
+       layout.direct_call_arg_index_temps.count(interval.name) != 0 ||
+       layout.address_taken_temps.count(interval.name) != 0) {
       continue;
     }
     if(!is_register_allocatable_temp_type(interval.type)) {
@@ -1662,7 +1919,8 @@ void assign_float_temp_registers(const lir::Function & function,
   for(size_t i = 0; i < intervals.size(); ++i) {
     const TempInterval & interval = intervals[i];
     if(layout.dead_call_result_temps.count(interval.name) != 0 ||
-       layout.direct_call_arg_index_temps.count(interval.name) != 0) {
+       layout.direct_call_arg_index_temps.count(interval.name) != 0 ||
+       layout.address_taken_temps.count(interval.name) != 0) {
       continue;
     }
     if(!is_xmm_allocatable_temp_type(interval.type) ||
@@ -2306,19 +2564,21 @@ FunctionLayout build_layout(const lir::Function & function,
   layout.scratch_bytes = scratch_bytes_for(function);
   layout.host_eh_enabled = host_eh_enabled;
   layout.thread_local_globals = thread_local_globals;
+  layout.promoted_param_slots = collect_promoted_param_slots(function);
   layout.direct_branch_temps = collect_direct_branch_temps(function,
                                                            thread_local_globals);
   layout.elided_direct_branch_load_sources =
       collect_elided_direct_branch_loads(function,
                                          layout.direct_branch_temps,
+                                         layout.promoted_param_slots,
                                          thread_local_globals);
-  layout.promoted_param_slots = collect_promoted_param_slots(function);
   layout.aliased_param_slots = collect_aliased_object_param_slots(function);
   layout.dead_call_result_temps = collect_dead_call_result_temps(function);
   layout.direct_call_arg_index_temps =
       collect_direct_call_arg_index_temps(function,
                                          function_params,
                                          thread_local_globals);
+  layout.address_taken_temps = collect_address_taken_temps(function, function_params);
   const vector<mir::ParamBinding> param_bindings = collect_param_bindings(function);
   layout.forwarded_params = collect_forwarded_register_params(function, param_bindings);
   layout.variadic = function.boundary.arity == lir::CAM_VARIADIC;
@@ -2849,6 +3109,82 @@ mir::Instruction make_instruction(mir::Instruction::Opcode opcode)
   inst.opcode = opcode;
   maybe_set_machine_ir_debug_location(inst);
   return inst;
+}
+
+void emit_xmm_arg_move(const XmmCallArgMove & move,
+                       vector<mir::Instruction> & out)
+{
+  if(move.src.kind == mir::Operand::OP_XMM && move.src.xmm == move.dst) {
+    return;
+  }
+
+  mir::Instruction inst = make_instruction(mir::Instruction::MI_FMOV);
+  inst.type = move.type;
+  inst.operands.push_back(xmm(move.dst));
+  inst.operands.push_back(move.src);
+  out.push_back(inst);
+}
+
+void emit_xmm_arg_register_moves(vector<XmmCallArgMove> moves,
+                                 const mir::Operand * spill_slot,
+                                 vector<mir::Instruction> & out)
+{
+  for(size_t i = 0; i < moves.size(); ++i) {
+    if(moves[i].src.kind == mir::Operand::OP_XMM &&
+       moves[i].src.xmm == moves[i].dst) {
+      moves[i].done = true;
+    }
+  }
+
+  while(true) {
+    bool any_pending = false;
+    bool made_progress = false;
+    for(size_t i = 0; i < moves.size(); ++i) {
+      if(moves[i].done) {
+        continue;
+      }
+      any_pending = true;
+      if(!pending_xmm_arg_source_uses_register(moves, moves[i].dst)) {
+        emit_xmm_arg_move(moves[i], out);
+        moves[i].done = true;
+        made_progress = true;
+      }
+    }
+    if(!any_pending) {
+      return;
+    }
+    if(made_progress) {
+      continue;
+    }
+
+    size_t cycle = 0;
+    while(cycle < moves.size() && moves[cycle].done) {
+      ++cycle;
+    }
+    if(cycle == moves.size()) {
+      return;
+    }
+
+    XmmRegister spare = XMM_0;
+    if(find_spare_xmm_arg_move_register(moves, spare)) {
+      XmmCallArgMove save;
+      save.type = moves[cycle].type;
+      save.dst = spare;
+      save.src = moves[cycle].src;
+      emit_xmm_arg_move(save, out);
+      moves[cycle].src = xmm(spare);
+    } else {
+      if(spill_slot == nullptr) {
+        throw logic_error("xmm call argument cycle requires spill slot");
+      }
+      mir::Instruction save = make_instruction(mir::Instruction::MI_FMOV);
+      save.type = moves[cycle].type;
+      save.operands.push_back(*spill_slot);
+      save.operands.push_back(moves[cycle].src);
+      out.push_back(save);
+      moves[cycle].src = *spill_slot;
+    }
+  }
 }
 
 struct ScopedMachineIRSourceInstruction
@@ -6107,12 +6443,14 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
               mi.operands.push_back(reg(rhs));
             }
             out.push_back(mi);
+            emit_normalize_integer_temp(inst.type.text, XR_RCX, out);
             if(dst != XR_RAX) {
               mi = make_instruction(mir::Instruction::MI_MOV);
               mi.operands.push_back(reg(XR_RAX));
               mi.operands.push_back(reg(dst));
               out.push_back(mi);
             }
+            emit_normalize_integer_temp(inst.type.text, XR_RAX, out);
             if(inst.op == "div" || inst.op == "mod") {
               mi = make_instruction(mir::Instruction::MI_CQO);
             } else {
@@ -6481,6 +6819,17 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             stack_bytes += stack_arg_size(arg_type);
           }
         }
+        vector<XmmCallArgMove> xmm_arg_moves;
+        for(size_t i = 0; i < pieces.size(); ++i) {
+          if(!arg_in_xmm[i]) {
+            continue;
+          }
+          XmmCallArgMove move;
+          move.type = pieces[i].type;
+          move.dst = float_arg_register(arg_xmm_index[i]);
+          move.src = float_source_operand(layout, pieces[i].operand);
+          xmm_arg_moves.push_back(move);
+        }
         set<X64Register> blocked_arg_regs;
         for(size_t i = 0; i < pieces.size(); ++i) {
           if(arg_in_reg[i]) {
@@ -6539,13 +6888,19 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             reserved_preserve_regs.insert(preserved.reg);
           }
         }
-        const size_t stack_pad = stack_bytes == 0 || (stack_bytes % 16) == 0
+        const bool needs_xmm_arg_spill =
+            xmm_arg_register_moves_need_stack_spill(xmm_arg_moves);
+        const size_t xmm_arg_spill_bytes = needs_xmm_arg_spill ? 16 : 0;
+        const size_t stack_payload_bytes = stack_bytes + xmm_arg_spill_bytes;
+        const size_t stack_pad =
+            stack_payload_bytes == 0 || (stack_payload_bytes % 16) == 0
             ? 0
-            : 16 - (stack_bytes % 16);
-        if(stack_bytes + stack_pad != 0) {
+            : 16 - (stack_payload_bytes % 16);
+        if(stack_payload_bytes + stack_pad != 0) {
           mi = make_instruction(mir::Instruction::MI_SUB);
           mi.operands.push_back(reg(XR_RSP));
-          mi.operands.push_back(imm(static_cast<long long>(stack_bytes + stack_pad)));
+          mi.operands.push_back(
+              imm(static_cast<long long>(stack_payload_bytes + stack_pad)));
           out.push_back(mi);
         }
         if(!direct_symbol_call) {
@@ -6645,11 +7000,6 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             continue;
           }
           if(arg_in_xmm[i]) {
-            mi = make_instruction(mir::Instruction::MI_FMOV);
-            mi.type = arg_type;
-            mi.operands.push_back(xmm(float_arg_register(arg_xmm_index[i])));
-            mi.operands.push_back(float_source_operand(layout, pieces[i].operand));
-            out.push_back(mi);
             continue;
           }
           if(is_float_type(arg_type)) {
@@ -6741,6 +7091,13 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
             out.push_back(mi);
           }
         }
+        mir::Operand xmm_arg_spill_slot;
+        const mir::Operand * xmm_arg_spill_slot_ptr = nullptr;
+        if(needs_xmm_arg_spill) {
+          xmm_arg_spill_slot = deref_offset(XR_RSP, static_cast<long long>(stack_bytes));
+          xmm_arg_spill_slot_ptr = &xmm_arg_spill_slot;
+        }
+        emit_xmm_arg_register_moves(xmm_arg_moves, xmm_arg_spill_slot_ptr, out);
         const lir::FunctionBoundaryMetadata boundary = resolved_call_boundary(inst);
         if(boundary.arity == lir::CAM_VARIADIC) {
           mi = make_instruction(mir::Instruction::MI_MOV);
@@ -6763,10 +7120,11 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
           mi.operands.push_back(reg(indirect_target_reg));
           out.push_back(mi);
         }
-        if(stack_bytes + stack_pad != 0) {
+        if(stack_payload_bytes + stack_pad != 0) {
           mi = make_instruction(mir::Instruction::MI_ADD);
           mi.operands.push_back(reg(XR_RSP));
-          mi.operands.push_back(imm(static_cast<long long>(stack_bytes + stack_pad)));
+          mi.operands.push_back(
+              imm(static_cast<long long>(stack_payload_bytes + stack_pad)));
           out.push_back(mi);
         }
         if(!inst.call_returns_void &&

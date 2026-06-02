@@ -15,8 +15,11 @@
 #include "semantic_lookup.h"
 #include "semantic_model.h"
 #include "semantic_scope_mutation.h"
+#include "semantic_fallback_audit.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
+#include "template_argument_semantics.h"
+#include "template_services.h"
 #include "template_witness.h"
 
 using namespace std;
@@ -253,51 +256,41 @@ bool evaluate_static_assert_integral_fallback(SemanticContext & ctx,
   return false;
 }
 
-string compact_static_assert_condition_text(const string & text)
+bool evaluate_structured_static_assert_condition(SemanticContext & ctx,
+                                                 Scope & scope,
+                                                 const CppAstNode & expr,
+                                                 bool & out)
 {
-  string out;
-  out.reserve(text.size());
-  for(size_t i = 0; i < text.size(); ++i) {
-    if(text[i] != ' ' &&
-       text[i] != '\t' &&
-       text[i] != '\n' &&
-       text[i] != '\r') {
-      out.push_back(text[i]);
-    }
-  }
-  return out;
-}
-
-bool evaluate_static_assert_text_fallback(SemanticContext & ctx,
-                                          Scope & scope,
-                                          const CppAstNode & expr,
-                                          bool & truthy)
-{
-  if(!scope.class_info ||
-     scope.class_info->qualified_name.find("__check_valid_allocator") == string::npos) {
+  try {
+    const template_argument_semantics::NonTypeArgumentStatus status =
+        template_api::with_template_services(
+            ctx,
+            [&](template_api::TemplateServices & services)
+            {
+              const template_argument_semantics::NonTypeArgumentStatus status =
+                  template_argument_semantics::
+                  evaluate_structured_bool_condition_expression(
+                      services,
+                      template_api::make_template_environment(scope),
+                      expr,
+                      out);
+              return status;
+            });
+    return status == template_argument_semantics::NT_ARG_EVALUATED;
+  } catch(const TemplateSubstitutionFailure &) {
+    return false;
+  } catch(const SemanticSoftFailure &) {
+    return false;
+  } catch(const SemanticDiagnosticError &) {
+    return false;
+  } catch(const semantic_fallback_audit::SemanticFallbackError &) {
     return false;
   }
-  string condition = compact_static_assert_condition_text(
-      ctx.describe_expression_for_diagnostic(expr));
-  const string typename_token = "typename";
-  for(size_t pos = condition.find(typename_token);
-      pos != string::npos;
-      pos = condition.find(typename_token, pos)) {
-    condition.erase(pos, typename_token.size());
-  }
-  if(condition.find("is_same<") == 0 &&
-     condition.find("__rebind_alloc<") != string::npos &&
-     condition.size() >= 7 &&
-     condition.compare(condition.size() - 7, 7, "::value") == 0) {
-    truthy = true;
-    return true;
-  }
-  return false;
 }
 
 bool static_assert_condition_depends_on_template_parameter(SemanticContext & ctx,
-                                                           Scope & scope,
-                                                           const CppAstNode & expr)
+                                                          Scope & scope,
+                                                          const CppAstNode & expr)
 {
   if(expr.semantic_type &&
      ctx.type_depends_on_template_parameter(expr.semantic_type)) {
@@ -833,6 +826,12 @@ void analyze_static_assert_declaration(SemanticContext & ctx,
       }
     }
     if(!evaluated) {
+      evaluated = evaluate_structured_static_assert_condition(ctx,
+                                                              scope,
+                                                              node.children[0],
+                                                              truthy);
+    }
+    if(!evaluated) {
       long long integral_value = 0;
       if(evaluate_static_assert_integral_fallback(ctx,
                                                   scope,
@@ -840,11 +839,6 @@ void analyze_static_assert_declaration(SemanticContext & ctx,
                                                   integral_value)) {
         evaluated = true;
         truthy = integral_value != 0;
-      }
-    }
-    if(!evaluated) {
-      if(evaluate_static_assert_text_fallback(ctx, scope, node.children[0], truthy)) {
-        evaluated = true;
       }
     }
   } catch(const logic_error &) {
@@ -1067,7 +1061,10 @@ void collect_declaration(SemanticContext & ctx,
     ctx.collect_function_definition(scope, effective_child, is_c_linkage);
     return;
   }
-  if(effective_child.kind == CppAstKind::special_member_definition) {
+  if(effective_child.kind == CppAstKind::special_member_definition ||
+     (effective_child.kind == CppAstKind::special_member_declaration &&
+      !ctx.is_conversion_function_name(effective_child.value) &&
+      find_child(effective_child, CppAstKind::special_definition))) {
     ctx.collect_special_member_definition(scope, effective_child);
     return;
   }

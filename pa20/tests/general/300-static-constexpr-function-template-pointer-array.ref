@@ -1,0 +1,103 @@
+global @table_void___inv_sizes32 [binding=weak, object=_ZN5tableIvE11inv_sizes32E] = {
+  i64 1
+  i64 2
+}
+global @table_void___positions [binding=weak, object=_ZN5tableIvE9positionsE] = {
+  ptr addr @table_void___position
+}
+global @table_void___sizes [binding=weak, object=_ZN5tableIvE5sizesE] = {
+  i64 13
+  i64 29
+  i64 53
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = call i64 @table_void___call(42, 1)
+    %t2 = cmp eq i64 %t1, 15
+    branch %t2, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t3 = call i64 @table_void___call(42, 2)
+    %t4 = cmp eq i64 %t3, 42
+    %t5 = cmp ne i64 %t4, 0
+    store i64 %t5, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t6 = load i64 $land__2
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @table_void___call(%hash : i64, %index : i64) -> i64 [binding=weak, object=_ZN5tableIvE4callEmm] {
+  slot $hash : i64
+  slot $index : i64
+  slot $sizes_under_32bit : i64
+
+  block ^entry:
+    store i64 %hash, $hash
+    store i64 %index, $index
+    store i64 2, $sizes_under_32bit
+    %t1 = load i64 $index
+    %t2 = load i64 $sizes_under_32bit
+    %t3 = cmp ult i64 %t1, %t2
+    branch %t3, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t4 = load i64 $hash
+    %t5 = addr @table_void___inv_sizes32
+    %t6 = unary decay ptr %t5
+    %t7 = load i64 $index
+    %t8 = index i64 [projection=array_element] %t6, %t7
+    %t9 = load i64 %t8
+    %t10 = binary add i64 %t4, %t9
+    %t11 = addr @table_void___sizes
+    %t12 = unary decay ptr %t11
+    %t13 = load i64 $index
+    %t14 = index i64 [projection=array_element] %t12, %t13
+    %t15 = load i64 %t14
+    %t16 = binary umod i64 %t10, %t15
+    return i64 %t16
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t17 = load i64 $hash
+    %t18 = addr @table_void___positions
+    %t19 = unary decay ptr %t18
+    %t20 = load i64 $index
+    %t21 = load i64 $sizes_under_32bit
+    %t22 = binary sub i64 %t20, %t21
+    %t23 = index ptr [projection=array_element] %t19, %t22
+    %t24 = load ptr %t23
+    %t25 = call i64 %t24(%t17) as (%arg0 : i64) -> i64
+    return i64 %t25
+}
+function @table_void___position(%hash : i64) -> i64 [binding=weak, object=_ZN5tableIvE8positionILm2ELm53EEEmm] {
+  slot $hash : i64
+
+  block ^entry:
+    store i64 %hash, $hash
+    %t1 = load i64 $hash
+    %t2 = binary umod i64 %t1, 53
+    return i64 %t2
+}

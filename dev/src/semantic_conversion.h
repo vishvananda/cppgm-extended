@@ -47,6 +47,9 @@ ConversionRank standard_conversion_rank_non_reference(const cpp_decl::TypePtr & 
                                                       const ExprInfo & expr);
 ConversionRank standard_conversion_rank(const cpp_decl::TypePtr & target,
                                         const ExprInfo & expr);
+bool ref_qualifier_accepts_implicit_object(semantic_model::RefQualifier ref_qualifier,
+                                           const cpp_decl::TypePtr & implicit_object_parameter,
+                                           ValueCategory category);
 void apply_standard_conversion_result_metadata(SemanticContext & ctx,
                                                const cpp_decl::TypePtr & target,
                                                const ExprInfo & expr,
@@ -117,6 +120,13 @@ bool try_argument_conversion(SemanticContext & ctx,
                              ConversionRank & rank,
                              const ArgumentConversionOptions & options =
                                  ArgumentConversionOptions());
+bool try_builtin_pointer_operand_conversion(
+    SemanticContext & ctx,
+    Scope & scope,
+    const ExprInfo & expr,
+    ExprInfo & out,
+    cpp_decl::TypePtr & pointer_type,
+    const ArgumentConversionOptions & options = ArgumentConversionOptions());
 bool is_modifiable_lvalue(const ExprInfo & expr);
 bool result_value_category_for_function_result(const cpp_decl::TypePtr & result_type,
                                                ValueCategory & out);

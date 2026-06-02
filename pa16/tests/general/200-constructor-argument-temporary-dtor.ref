@@ -1,0 +1,133 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+global @Counter__count : i32 [binding=strong, object=_ZN7Counter5countE] = 0
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $holder : obj<5x1>
+  slot $arg__1 : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $holder
+    %t2 = addr $arg__1
+    call void @Counter__Counter(%t2)
+    eh_try ^call_unwind_dispatch_1
+    call void @Holder__Holder(%t1, 5, %t2)
+    call void @Counter___Counter(%t2)
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^call_unwind_dispatch_1:
+    call void @Counter___Counter(%t2)
+    resume
+
+  block ^call_unwind_end_2:
+    %t3 = load i32 @Counter__count
+    %t4 = cmp ne i32 %t3, 5
+    branch %t4, ^if_then_3, ^if_else_4
+
+  block ^if_then_3:
+    %t5 = load i32 @Counter__count
+    %t6 = addr $holder
+    call void @Holder___Holder(%t6)
+    return i32 %t5
+
+  block ^if_else_4:
+    jump ^if_end_5
+
+  block ^if_end_5:
+    %t7 = addr $holder
+    call void @Holder___Holder(%t7)
+    %t8 = load i32 @Counter__count
+    return i32 %t8
+}
+function @Counter__Counter(%this : ptr) -> void [binding=weak, object=_ZN7CounterC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @Counter__count
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @Counter__count
+    return void
+}
+function @Counter___Counter(%this : ptr) -> void [binding=weak, object=_ZN7CounterD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @Counter__count
+    %t2 = binary sub i32 %t1, 1
+    store i32 %t2, @Counter__count
+    return void
+}
+function @Holder__Holder(%this : ptr, %__param1 : i32, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZN6HolderC1EiRK7Counter] {
+  slot $this : ptr
+  slot $__param1 : i32
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    store ptr %value, $value
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $value
+    call void @Counter__Counter__ov2(%t2, %t3)
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 1
+    %t6 = load ptr $value
+    call void @Counter__Counter__ov2(%t5, %t6)
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 2
+    %t9 = load ptr $value
+    call void @Counter__Counter__ov2(%t8, %t9)
+    %t10 = load ptr $this
+    %t11 = index i8 [projection=field] %t10, 3
+    %t12 = load ptr $value
+    call void @Counter__Counter__ov2(%t11, %t12)
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=field] %t13, 4
+    %t15 = load ptr $value
+    call void @Counter__Counter__ov2(%t14, %t15)
+    return void
+}
+function @Holder___Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 4
+    call void @Counter___Counter(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 3
+    call void @Counter___Counter(%t4)
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 2
+    call void @Counter___Counter(%t6)
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 1
+    call void @Counter___Counter(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    call void @Counter___Counter(%t10)
+    return void
+}
+function @Counter__Counter__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN7CounterC1ERKS_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    %t1 = load i32 @Counter__count
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @Counter__count
+    return void
+}
+alias object _ZN7CounterC2Ev = @Counter__Counter
+alias object _ZN7CounterD2Ev = @Counter___Counter
+alias object _ZN6HolderC2EiRK7Counter = @Holder__Holder
+alias object _ZN6HolderD2Ev = @Holder___Holder
+alias object _ZN7CounterC2ERKS_ = @Counter__Counter__ov2

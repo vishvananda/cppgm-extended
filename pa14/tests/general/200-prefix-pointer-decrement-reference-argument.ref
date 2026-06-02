@@ -23,13 +23,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = binary sub i64 0, %t6
     %t8 = index i8 %t5, %t7
     store ptr %t8, $p
-    %t9 = call ptr @touch($p)
-    %t10 = addr $values
-    %t11 = unary decay ptr %t10
-    %t12 = binary mul i64 1, 4
-    %t13 = index i8 %t11, %t12
-    %t14 = cmp eq ptr %t9, %t13
-    branch %t14, ^cond_then_1, ^cond_else_2
+    %t9 = addr $p
+    %t10 = call ptr @touch(%t9)
+    %t11 = addr $values
+    %t12 = unary decay ptr %t11
+    %t13 = binary mul i64 1, 4
+    %t14 = index i8 %t12, %t13
+    %t15 = cmp eq ptr %t10, %t14
+    branch %t15, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -40,6 +41,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load i32 $cond__1
-    return i32 %t15
+    %t16 = load i32 $cond__1
+    return i32 %t16
 }

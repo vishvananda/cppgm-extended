@@ -3,7 +3,8 @@ global @A__B__C__i : i32 [binding=internal, object=_ZN1A1B1C1iE] = 2
 
 function @A__B__f() -> i32 [binding=strong, object=_ZN1A1B1fEv] {
   block ^entry:
-    return i32 2
+    %t1 = load i32 @A__B__C__i
+    return i32 %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

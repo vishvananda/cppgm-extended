@@ -1,0 +1,36 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $text : obj<2x1>
+  slot $value : ptr
+  slot $view : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $text
+    store i8 120, %t1
+    %t2 = index i8 %t1, 1
+    store i8 0, %t2
+    %t3 = addr $text
+    %t4 = unary decay ptr %t3
+    store ptr %t4, $value
+    %t5 = addr $value
+    store ptr %t5, $view
+    %t6 = load ptr $view
+    %t7 = load ptr %t6
+    %t8 = index i8 [projection=array_element] %t7, 0
+    %t9 = load i8 %t8
+    %t10 = convert sext i32 i8 %t9
+    %t11 = cmp eq i32 %t10, 120
+    branch %t11, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t12 = load i32 $cond__1
+    return i32 %t12
+}

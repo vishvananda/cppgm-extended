@@ -1,0 +1,96 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : obj<4x4>
+  slot $b : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $s
+    call void @source__source(%t1)
+    %t2 = addr $b
+    %t3 = addr $s
+    call void @binder_base__binder_base(%t2, %t3)
+    %t4 = addr $b
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load i32 %t6
+    %t8 = cmp eq i32 %t7, 13
+    branch %t8, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t9 = load i32 $cond__1
+    return i32 %t9
+}
+function @source__source(%this : ptr) -> void [binding=weak, object=_ZN6sourceC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @executor__executor(%t2)
+    return void
+}
+function @binder_base__binder_base(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN11binder_baseC1ER6source] {
+  slot $this : ptr
+  slot $other : ptr
+  slot $refcall__1 : obj<4x4>
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = addr $refcall__1
+    %t4 = load ptr $other
+    call void @source__get_executor(%t3, %t4)
+    call void @executor__executor__ov2(%t2, %t3)
+    return void
+}
+function @executor__executor(%this : ptr) -> void [binding=weak, object=_ZN8executorC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 11, %t2
+    return void
+}
+function @executor__executor__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN8executorC1ERKS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = binary add i32 %t3, 1
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    store i32 %t4, %t6
+    return void
+}
+function @source__get_executor(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZNK6source12get_executorEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @executor__executor__ov2(%ret, %t2)
+    return void
+}
+alias object _ZN6sourceC2Ev = @source__source
+alias object _ZN11binder_baseC2ER6source = @binder_base__binder_base
+alias object _ZN8executorC2Ev = @executor__executor
+alias object _ZN8executorC2ERKS_ = @executor__executor__ov2

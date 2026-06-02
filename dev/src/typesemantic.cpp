@@ -1051,19 +1051,20 @@ private:
       enum_prefix += node_text(*enum_key);
     }
 
+    TypePtr enum_underlying_type = make_fundamental(FT_INT);
     size_t enum_alignment = 4;
     size_t enum_size = 4;
     if(const CppAstNode * underlying = find_child_kind(node, CppAstKind::type_id)) {
-      TypePtr underlying_type;
-      if(!parse_type_id(scope, *underlying, underlying_type)) {
+      if(!parse_type_id(scope, *underlying, enum_underlying_type)) {
         throw logic_error("unsupported enum underlying type");
       }
-      enum_alignment = type_alignment(underlying_type);
-      enum_size = type_size(underlying_type);
+      enum_alignment = type_alignment(enum_underlying_type);
+      enum_size = type_size(enum_underlying_type);
     }
 
     TypePtr enum_type = make_enum_type(scope, enum_prefix, node.value, true,
                                        enum_alignment, enum_size);
+    enum_type->named_enum_underlying_type = enum_underlying_type;
     scope.named_types[node.value] = NamedTypeBinding(NTK_TYPE, enum_type);
     add_binding(scope, BK_TYPE, node.value, enum_type);
 

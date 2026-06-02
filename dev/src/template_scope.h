@@ -61,6 +61,9 @@ void bind_named_type(semantic_model::Scope & scope,
 bool scope_has_type_parameter_pack_name(const semantic_model::Scope & scope,
                                         const std::string & name);
 
+bool scope_has_value_parameter_pack_name(const semantic_model::Scope & scope,
+                                         const std::string & name);
+
 void bind_value(semantic_model::Scope & scope,
                 const std::string & name,
                 const semantic_model::ValueBinding & binding,

@@ -1,0 +1,69 @@
+declare function @consume(%arg0 : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=strong, object=_Z7consumeR1D]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $d
+    call void @D__D(%t1)
+    %t2 = addr $d
+    %t3 = index i8 %t2, 4
+    call void @consume(%t2, %t3)
+    return i32 0
+}
+function @D__D(%this : ptr) -> void [binding=weak, object=_ZN1DC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    call void @V__V__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    call void @A__A__base_entry(%t4)
+    return void
+}
+function @A__A__base_entry(%this : ptr) -> void [binding=weak, object=_ZN1AC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+function @A__A(%this : ptr) -> void [binding=weak, object=_ZN1AC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+function @V__V__base_entry(%this : ptr) -> void [binding=weak, object=_ZN1VC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 42, %t2
+    return void
+}
+function @V__V(%this : ptr) -> void [binding=weak, object=_ZN1VC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 42, %t2
+    return void
+}
+alias object _ZN1DC2Ev = @D__D
+alias object _ZN1AC2Ev = @A__A
+alias object _ZN1VC2Ev = @V__V

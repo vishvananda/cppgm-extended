@@ -45,6 +45,7 @@ struct RuntimeSymbolTableEntry
   X("cppgm_builtin_operator_delete_array_sized", builtin_operator_delete_array_sized, host_abi, "_ZdaPvm") \
   X("cppgm_builtin_operator_delete_array_aligned", builtin_operator_delete_array_aligned, host_abi, "_ZdaPvSt11align_val_t") \
   X("cppgm_builtin_operator_delete_array_sized_aligned", builtin_operator_delete_array_sized_aligned, host_abi, "_ZdaPvmSt11align_val_t") \
+  X("cppgm_builtin_bzero", builtin_bzero, host_libcall, "bzero") \
   X("cppgm_builtin_memchr", builtin_memchr, host_libcall, "memchr") \
   X("cppgm_builtin_memcmp", builtin_memcmp, host_libcall, "memcmp") \
   X("cppgm_builtin_memcpy", builtin_memcpy, host_libcall, "memcpy") \

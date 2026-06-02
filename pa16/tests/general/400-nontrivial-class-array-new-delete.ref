@@ -1,0 +1,221 @@
+declare function @operator_delete__(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete_array]
+declare function @operator_new__(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new_array]
+
+global @constructed : i32 [binding=internal, object=_Z11constructed] = zero
+global @destroyed : i32 [binding=internal, object=_Z9destroyed] = zero
+global @fail : i32 [binding=internal, object=_Z4fail] = zero
+global @expected : i32 [binding=internal, object=_Z8expected] = 3
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $items : ptr
+  slot $array_new_index__1 : i64
+  slot $ok : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $array_delete_index__4 : i64
+  slot $cond__5 : i32
+  slot $land__6 : i64
+  slot $land__7 : i64
+  slot $land__8 : i64
+
+  block ^entry:
+    %t1 = convert sext i64 i32 20
+    %t2 = call ptr @operator_new__(%t1)
+    %t3 = index i8 %t2, 8
+    %t4 = const i64 3
+    store i64 %t4, %t2
+    %t5 = const i64 3
+    store i64 0, $array_new_index__1
+    jump ^array_new_ctor_cond_1
+
+  block ^array_new_ctor_cond_1:
+    %t6 = load i64 $array_new_index__1
+    %t7 = cmp ult i64 %t6, %t5
+    branch %t7, ^array_new_ctor_body_2, ^array_new_ctor_end_3
+
+  block ^array_new_ctor_body_2:
+    %t8 = binary mul i64 %t6, 4
+    %t9 = index i8 %t3, %t8
+    call void @Item__Item(%t9)
+    %t10 = binary add i64 %t6, 1
+    store i64 %t10, $array_new_index__1
+    jump ^array_new_ctor_cond_1
+
+  block ^array_new_ctor_end_3:
+    store ptr %t3, $items
+    %t11 = load i32 @constructed
+    %t12 = cmp eq i32 %t11, 3
+    branch %t12, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t13 = load ptr $items
+    %t14 = binary mul i64 0, 4
+    %t15 = index i8 [projection=array_element] %t13, %t14
+    %t16 = index i8 [projection=field] %t15, 0
+    %t17 = load i32 %t16
+    %t18 = cmp eq i32 %t17, 1
+    %t19 = cmp ne i64 %t18, 0
+    store i64 %t19, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t20 = load i64 $land__3
+    branch %t20, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t21 = load ptr $items
+    %t22 = binary mul i64 2, 4
+    %t23 = index i8 [projection=array_element] %t21, %t22
+    %t24 = index i8 [projection=field] %t23, 0
+    %t25 = load i32 %t24
+    %t26 = cmp eq i32 %t25, 3
+    %t27 = cmp ne i64 %t26, 0
+    store i64 %t27, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t28 = load i64 $land__2
+    %t29 = convert zext i32 u8 %t28
+    store i32 %t29, $ok
+    %t30 = load ptr $items
+    %t31 = cmp ne ptr %t30, 0
+    branch %t31, ^array_delete_nonnull_10, ^array_delete_end_11
+
+  block ^array_delete_nonnull_10:
+    %t32 = index i8 %t30, -8
+    %t33 = load i64 %t32
+    store i64 %t33, $array_delete_index__4
+    jump ^array_delete_dtor_cond_12
+
+  block ^array_delete_dtor_cond_12:
+    %t34 = load i64 $array_delete_index__4
+    %t35 = cmp ne i64 %t34, 0
+    branch %t35, ^array_delete_dtor_body_13, ^array_delete_dtor_end_14
+
+  block ^array_delete_dtor_body_13:
+    %t36 = binary sub i64 %t34, 1
+    store i64 %t36, $array_delete_index__4
+    %t37 = binary mul i64 %t36, 4
+    %t38 = index i8 %t30, %t37
+    call void @Item___Item(%t38)
+    jump ^array_delete_dtor_cond_12
+
+  block ^array_delete_dtor_end_14:
+    call void @operator_delete__(%t32)
+    jump ^array_delete_end_11
+
+  block ^array_delete_end_11:
+    %t39 = load i32 $ok
+    branch %t39, ^land_rhs_24, ^land_short_25
+
+  block ^land_rhs_24:
+    %t40 = load i32 @fail
+    %t41 = cmp eq i64 %t40, 0
+    %t42 = cmp ne i64 %t41, 0
+    store i64 %t42, $land__8
+    jump ^land_end_26
+
+  block ^land_short_25:
+    store i64 0, $land__8
+    jump ^land_end_26
+
+  block ^land_end_26:
+    %t43 = load i64 $land__8
+    branch %t43, ^land_rhs_21, ^land_short_22
+
+  block ^land_rhs_21:
+    %t44 = load i32 @destroyed
+    %t45 = cmp eq i32 %t44, 6
+    %t46 = cmp ne i64 %t45, 0
+    store i64 %t46, $land__7
+    jump ^land_end_23
+
+  block ^land_short_22:
+    store i64 0, $land__7
+    jump ^land_end_23
+
+  block ^land_end_23:
+    %t47 = load i64 $land__7
+    branch %t47, ^land_rhs_18, ^land_short_19
+
+  block ^land_rhs_18:
+    %t48 = load i32 @expected
+    %t49 = cmp eq i32 %t48, 0
+    %t50 = cmp ne i64 %t49, 0
+    store i64 %t50, $land__6
+    jump ^land_end_20
+
+  block ^land_short_19:
+    store i64 0, $land__6
+    jump ^land_end_20
+
+  block ^land_end_20:
+    %t51 = load i64 $land__6
+    branch %t51, ^cond_then_15, ^cond_else_16
+
+  block ^cond_then_15:
+    store i32 0, $cond__5
+    jump ^cond_end_17
+
+  block ^cond_else_16:
+    store i32 1, $cond__5
+    jump ^cond_end_17
+
+  block ^cond_end_17:
+    %t52 = load i32 $cond__5
+    return i32 %t52
+}
+function @Item__Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @constructed
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @constructed
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    return void
+}
+function @Item___Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load i32 @expected
+    %t5 = cmp ne i32 %t3, %t4
+    branch %t5, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    store i32 1, @fail
+    jump ^if_end_3
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t6 = load i32 @expected
+    %t7 = binary sub i32 %t6, 1
+    store i32 %t7, @expected
+    %t8 = load i32 @destroyed
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = load i32 %t10
+    %t12 = binary add i32 %t8, %t11
+    store i32 %t12, @destroyed
+    return void
+}
+alias object _ZN4ItemC2Ev = @Item__Item
+alias object _ZN4ItemD2Ev = @Item___Item

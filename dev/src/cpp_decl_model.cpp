@@ -324,6 +324,11 @@ TypeSpelling spell_template_argument_type(const TypePtr & type)
     if(type->function_volatile) {
       inner.after += " volatile";
     }
+    if(type->function_ref_qualifier == FTRQ_LVALUE) {
+      inner.after += " &";
+    } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+      inner.after += " &&";
+    }
     return inner;
   }
   }
@@ -437,6 +442,16 @@ bool named_type_has_kind(const TypePtr & type, Type::NamedSemanticKind kind)
   return base && base->named_semantic_kind == kind;
 }
 
+bool template_id_syntax_has_metadata_payload(const TemplateIdSyntax & syntax)
+{
+  return syntax.name.rooted ||
+         !syntax.name.qualifiers.empty() ||
+         !syntax.name.name.empty() ||
+         syntax.source_location_id != 0 ||
+         !syntax.arguments.empty() ||
+         !syntax.argument_syntaxes.empty();
+}
+
 }  // namespace
 
 TypePtr make_dependent_qualified_member_type(
@@ -444,7 +459,8 @@ TypePtr make_dependent_qualified_member_type(
     const TypePtr & owner,
     const vector<string> & members,
     bool leading_typename,
-    const vector<TemplateIdSyntax> & member_template_ids)
+    const vector<TemplateIdSyntax> & member_template_ids,
+    const TemplateIdSyntax & owner_template_id)
 {
   ostringstream key;
   key << "$dqmember:" << template_argument_type_text(owner);
@@ -457,6 +473,10 @@ TypePtr make_dependent_qualified_member_type(
     base->named_semantic_kind = Type::NSK_DEPENDENT_TYPE;
     base->named_semantic_payload = key.str();
     base->named_dependent_qualified_owner = owner;
+    if(template_id_syntax_has_metadata_payload(owner_template_id)) {
+      base->named_dependent_qualified_owner_template_id.reset(
+          new TemplateIdSyntax(owner_template_id));
+    }
     base->named_dependent_qualified_members = members;
     base->named_dependent_qualified_member_template_ids = member_template_ids;
     base->named_dependent_qualified_leading_typename = leading_typename;
@@ -602,6 +622,43 @@ bool named_type_dependent_class_template(
   return true;
 }
 
+void set_named_type_dependent_template_template_parameter(
+    const TypePtr & type,
+    const string & parameter_name,
+    size_t parameter_arity,
+    const vector<DependentAliasTemplateArgumentSyntax> & arguments)
+{
+  TypePtr base = named_base(type);
+  if(!base) {
+    return;
+  }
+  base->named_dependent_template_template_parameter_name = parameter_name;
+  base->named_dependent_template_template_parameter_arity =
+      parameter_name.empty() ? static_cast<size_t>(-1) : parameter_arity;
+  base->named_dependent_template_template_arguments =
+      parameter_name.empty() ? vector<DependentAliasTemplateArgumentSyntax>() :
+                               arguments;
+}
+
+bool named_type_dependent_template_template_parameter(
+    const TypePtr & type,
+    string & parameter_name,
+    size_t & parameter_arity,
+    vector<DependentAliasTemplateArgumentSyntax> & arguments)
+{
+  TypePtr base = named_base(type);
+  if(!base || base->named_dependent_template_template_parameter_name.empty()) {
+    parameter_name.clear();
+    parameter_arity = static_cast<size_t>(-1);
+    arguments.clear();
+    return false;
+  }
+  parameter_name = base->named_dependent_template_template_parameter_name;
+  parameter_arity = base->named_dependent_template_template_parameter_arity;
+  arguments = base->named_dependent_template_template_arguments;
+  return true;
+}
+
 bool named_type_dependent_qualified_member(
     const TypePtr & type,
     TypePtr & owner,
@@ -712,7 +769,8 @@ TypePtr make_function(const TypePtr & result_type,
                       bool variadic,
                       bool function_const,
                       bool function_volatile,
-                      bool prototype_relaxed)
+                      bool prototype_relaxed,
+                      FunctionTypeRefQualifier function_ref_qualifier)
 {
   TypePtr result(new Type(Type::TK_FUNCTION));
   result->inner = result_type;
@@ -721,6 +779,7 @@ TypePtr make_function(const TypePtr & result_type,
   result->prototype_relaxed = prototype_relaxed;
   result->function_const = function_const;
   result->function_volatile = function_volatile;
+  result->function_ref_qualifier = function_ref_qualifier;
   result->definitely_not_class = true;
   return result;
 }
@@ -856,6 +915,7 @@ bool type_equals(const TypePtr & lhs, const TypePtr & rhs)
        lhs->prototype_relaxed != rhs->prototype_relaxed ||
        lhs->function_const != rhs->function_const ||
        lhs->function_volatile != rhs->function_volatile ||
+       lhs->function_ref_qualifier != rhs->function_ref_qualifier ||
        lhs->params.size() != rhs->params.size() ||
        !type_equals(lhs->inner, rhs->inner)) {
       return false;
@@ -1017,7 +1077,6 @@ bool is_unsigned_integral_type(const TypePtr & type)
   case FT_BOOL:
   case FT_CHAR16_T:
   case FT_CHAR32_T:
-  case FT_WCHAR_T:
     return true;
 
   default:
@@ -1257,6 +1316,11 @@ string describe_type(const TypePtr & type)
     }
     if(type->function_volatile) {
       result += " volatile";
+    }
+    if(type->function_ref_qualifier == FTRQ_LVALUE) {
+      result += " &";
+    } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+      result += " &&";
     }
     result += " returning ";
     result += describe_type(type->inner);

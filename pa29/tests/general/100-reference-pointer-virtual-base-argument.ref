@@ -11,14 +11,28 @@ function @read(%out : ptr, %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z4r
 }
 function @call(%ptr : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr) -> i32 [binding=strong, object=_Z4callRKP12StringStream] {
   slot $ptr : ptr
+  slot $basecast__1 : ptr
 
   block ^entry:
     store ptr %ptr, $ptr
     %t1 = load ptr $ptr
     %t2 = load ptr %t1
-    %t3 = index i8 [projection=base_subobject] %t2, 4
-    %t4 = call i32 @read(%t3, %__pvbptr0)
-    return i32 %t4
+    %t3 = cmp eq ptr %t2, 0
+    branch %t3, ^basecast_null_1, ^basecast_adjust_2
+
+  block ^basecast_null_1:
+    store ptr 0, $basecast__1
+    jump ^basecast_end_3
+
+  block ^basecast_adjust_2:
+    %t4 = index i8 [projection=base_subobject] %t2, 4
+    store ptr %t4, $basecast__1
+    jump ^basecast_end_3
+
+  block ^basecast_end_3:
+    %t5 = load ptr $basecast__1
+    %t6 = call i32 @read(%t5, %__pvbptr0)
+    return i32 %t6
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $stream : obj<16x4>

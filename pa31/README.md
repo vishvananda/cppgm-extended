@@ -47,6 +47,11 @@ helpers under `dev/src/`. Do not edit generated `.my` files. Test inputs and
 references are part of the handout unless your instructor asks you to add or
 update tests.
 
+The assignment-facing scaffold is the fact data model and the declared
+parse/serialize/mangle API in `dev/src/abi_mangle.h`. Encoding tables,
+Itanium terminal spelling, compiler semantic lowering, and other implementation
+logic are intentionally outside the PA31 wrapper and test harness.
+
 There is no separate reference binary in the starter kit. The checked-in
 `.ref.*` files are the oracle.
 
@@ -105,14 +110,17 @@ Definition forms:
 - `let-type <id> ...`: a type fact
 - `let-arg <id> ...`: a template-argument fact
 - `let-expr <id> ...`: a dependent-expression fact
-- `let-context <id> ...`: a local or lambda context fact
+- `let-context <id> function ...`: a local or lambda context named by a
+  function target
+- `let-context <id> raw <context-fragment>`: a local or lambda context already
+  normalized as an Itanium local-name context fragment
 - `let-entity <id> ...`: an entity fact used by entity-valued template
   arguments and dependent expressions
 
 Target forms:
 
 - `type ...`
-- `function ...` with optional following `param ...` lines
+- `function ...` with optional following terminal and `param ...` lines
 - `variable ...`
 - `typeinfo ...`
 - `vtable ...`
@@ -122,9 +130,61 @@ Target forms:
 - `thunk ... function ...`
 - `virtual-base-thunk ... function ...`
 
-Operator facts use semantic names such as `operator-call`, not raw Itanium
-terminal fragments. Thunks, wrappers, typeinfo, and vtable names are described
-as ABI facts instead of already-mangled names.
+Function operator terminals use semantic names, not raw Itanium terminal
+fragments:
+
+```text
+function path C::operator
+operator-terminal plus
+param int
+
+function path operator
+operator-terminal literal _digits
+param ulonglong
+
+function path C::operator
+conversion-terminal int
+```
+
+Complex function encodings may also be written as a `function encoding` target
+followed by normalized component lines. Template-id components use
+`name-template ... <arg-ref>...`; function-template arguments use
+`function-template-arg <arg-ref>`, with `function-template-prefix <key>` when
+the function-template prefix is substitutable; local entities use
+`local-context ...` or `lambda-context ...` followed by the same terminal,
+qualifier, result, and parameter lines as ordinary functions.
+
+`operator-terminal <name>` names the C++ operator semantically. Supported names
+include `plus`, `minus`, `address-of`, `deref`, `new`, `new-array`,
+`delete`, `delete-array`, `multiply`, `divide`, `remainder`, `bit-or`,
+`bit-xor`, assignment operators, shifts, comparisons, logical operators,
+`increment`, `decrement`, `comma`, `member-pointer`, `arrow`, `call`, and
+`index`. For operators whose Itanium terminal depends on unary versus binary
+use, the encoder chooses from the parameter count and member/non-member shape;
+explicit names such as `unary-plus`, `binary-plus`, `unary-minus`,
+`binary-minus`, `bit-and`, and `multiply` may be used when the shape should be
+unambiguous.
+
+Literal operators are written as `operator-terminal literal <suffix>`, where
+`<suffix>` is the unencoded suffix source name such as `_digits`. Conversion
+operators remain separate `conversion-terminal <type>` facts. Local and lambda
+call-operator contexts continue to use `operator-call` as a semantic terminal
+marker, not as an Itanium code.
+
+Thunks, wrappers, typeinfo, and vtable names are described as ABI facts instead
+of already-mangled names.
+
+Raw external symbols may be carried with `let-entity <id> symbol <mangled-name>`
+when a template argument or dependent expression names an entity that is already
+known by ABI symbol rather than by a source-level qualified name.
+
+Template-template arguments may name either a namespace-scope template with
+`let-arg <id> template-entity <qualified-name>` or a member template of an
+already-structured owner type with
+`let-arg <id> member-template-entity <owner-type> <member-name> <substitution>`.
+Member type facts use the same structured owner rule, so `type member <owner>
+<name>` may be rooted in a dependent template specialization or builtin
+transform type such as `__remove_const<T>`.
 
 The fact format is deliberately small, but it is still an ABI entity graph. It
 should not become a second C++ parser.

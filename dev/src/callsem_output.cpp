@@ -127,13 +127,31 @@ uint64_t callsem_hash_string(uint64_t value, const string & text)
 bool callsem_symbol_identity_equal(const symbol_linkage::SymbolIdentity & lhs,
                                    const symbol_linkage::SymbolIdentity & rhs)
 {
-  return lhs.internal_symbol == rhs.internal_symbol &&
-         lhs.object_symbol == rhs.object_symbol &&
-         lhs.thread_local_wrapper_object_symbol ==
-             rhs.thread_local_wrapper_object_symbol &&
-         lhs.keep_internal_alias == rhs.keep_internal_alias &&
-         lhs.prefer_local_object_binding == rhs.prefer_local_object_binding &&
-         lhs.linkage == rhs.linkage;
+  if(lhs.internal_symbol != rhs.internal_symbol ||
+     lhs.object_symbol != rhs.object_symbol ||
+     lhs.thread_local_wrapper_object_symbol !=
+         rhs.thread_local_wrapper_object_symbol ||
+     symbol_linkage::abi_mangle_fact_count(lhs) !=
+         symbol_linkage::abi_mangle_fact_count(rhs) ||
+     lhs.keep_internal_alias != rhs.keep_internal_alias ||
+     lhs.prefer_local_object_binding != rhs.prefer_local_object_binding ||
+     lhs.linkage != rhs.linkage) {
+    return false;
+  }
+  const size_t abi_fact_count = symbol_linkage::abi_mangle_fact_count(lhs);
+  for(size_t i = 0; i < abi_fact_count; ++i) {
+    if(symbol_linkage::abi_mangle_fact_object_symbol(lhs, i) !=
+           symbol_linkage::abi_mangle_fact_object_symbol(rhs, i) ||
+       symbol_linkage::abi_mangle_fact_target_kind(lhs, i) !=
+           symbol_linkage::abi_mangle_fact_target_kind(rhs, i) ||
+       symbol_linkage::abi_mangle_fact_target_qualified_name(lhs, i) !=
+           symbol_linkage::abi_mangle_fact_target_qualified_name(rhs, i) ||
+       symbol_linkage::abi_mangle_fact_target_c_linkage(lhs, i) !=
+           symbol_linkage::abi_mangle_fact_target_c_linkage(rhs, i)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 uint64_t callsem_symbol_identity_hash(
@@ -143,6 +161,22 @@ uint64_t callsem_symbol_identity_hash(
   value = callsem_hash_string(value, symbol.internal_symbol);
   value = callsem_hash_string(value, symbol.object_symbol);
   value = callsem_hash_string(value, symbol.thread_local_wrapper_object_symbol);
+  const size_t abi_fact_count = symbol_linkage::abi_mangle_fact_count(symbol);
+  value = callsem_hash_mix(value, abi_fact_count);
+  for(size_t i = 0; i < abi_fact_count; ++i) {
+    value = callsem_hash_string(
+        value,
+        symbol_linkage::abi_mangle_fact_object_symbol(symbol, i));
+    value = callsem_hash_mix(
+        value,
+        symbol_linkage::abi_mangle_fact_target_kind(symbol, i));
+    value = callsem_hash_string(
+        value,
+        symbol_linkage::abi_mangle_fact_target_qualified_name(symbol, i));
+    value = callsem_hash_mix(
+        value,
+        symbol_linkage::abi_mangle_fact_target_c_linkage(symbol, i) ? 1 : 0);
+  }
   value = callsem_hash_mix(value, symbol.keep_internal_alias ? 1 : 0);
   value = callsem_hash_mix(value, symbol.prefer_local_object_binding ? 1 : 0);
   value = callsem_hash_mix(value, static_cast<unsigned>(symbol.linkage));
@@ -736,6 +770,7 @@ string callsem_display_text(const CallSemNode & node)
   case CallSemKind::do_statement:
   case CallSemKind::for_init_statement:
   case CallSemKind::expression_statement:
+  case CallSemKind::asm_clause:
   case CallSemKind::statement_expression:
   case CallSemKind::asm_statement:
   case CallSemKind::return_statement:

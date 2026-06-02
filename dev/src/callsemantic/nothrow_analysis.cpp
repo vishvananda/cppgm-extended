@@ -236,6 +236,66 @@ bool assignment_is_nothrow(const TypePtr & type,
   return op && function_binding_is_nothrow(*op, visiting, callbacks);
 }
 
+bool copy_or_move_construction_is_nothrow(
+    const TypePtr & type,
+    bool move,
+    std::set<FunctionBinding *> & visiting,
+    const NothrowCallbacks & callbacks)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(is_reference_type(base)) {
+    return true;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    return base->has_bound &&
+           copy_or_move_construction_is_nothrow(base->inner,
+                                                move,
+                                                visiting,
+                                                callbacks);
+  }
+  if(base->kind == Type::TK_FUNCTION || is_void_type(base)) {
+    return false;
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_scalar_or_member_pointer_type(base, callbacks.type_traits())) {
+    return true;
+  }
+  if(!move &&
+     is_trivially_copy_constructible_type(base, callbacks.type_traits())) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+  ClassInfo * info = callbacks.complete_class_type(base);
+  if(!info || !info->complete) {
+    return false;
+  }
+
+  FunctionBinding * ctor = nullptr;
+  if(move && !type_is_const_object(type)) {
+    ctor = callbacks.move_constructor_for ?
+        callbacks.move_constructor_for(*info) :
+        nullptr;
+    if(!ctor && callbacks.ensure_implicit_move_constructor) {
+      ctor = callbacks.ensure_implicit_move_constructor(*info);
+    }
+  }
+  if(!ctor || ctor->is_deleted) {
+    ctor = callbacks.copy_constructor_for ?
+        callbacks.copy_constructor_for(*info) :
+        nullptr;
+    if(!ctor && callbacks.ensure_implicit_copy_constructor) {
+      ctor = callbacks.ensure_implicit_copy_constructor(*info);
+    }
+  }
+  return ctor && !ctor->is_deleted &&
+         function_binding_is_nothrow(*ctor, visiting, callbacks);
+}
+
 bool constructor_binding_is_implicitly_nothrow(
     FunctionBinding & binding,
     std::set<FunctionBinding *> & visiting,
@@ -255,6 +315,9 @@ bool constructor_binding_is_implicitly_nothrow(
   ClassInfo & info = *binding.owner_class;
   Scope & init_scope = *binding.declaration_scope;
   std::set<std::string> explicitly_initialized;
+  const bool copy_or_move_ctor =
+      binding.is_copy_constructor || binding.is_move_constructor;
+  const bool move_ctor = binding.is_move_constructor;
 
   if(binding.ctor_initializer) {
     for(std::size_t i = 0; i < binding.ctor_initializer->children.size(); ++i) {
@@ -322,10 +385,16 @@ bool constructor_binding_is_implicitly_nothrow(
        explicitly_initialized.count(qualified_name) != 0) {
       continue;
     }
-    if(!default_initialization_is_nothrow(info.bases[i].type->type,
+    const bool base_nothrow = copy_or_move_ctor ?
+        copy_or_move_construction_is_nothrow(info.bases[i].type->type,
+                                             move_ctor,
+                                             visiting,
+                                             callbacks) :
+        default_initialization_is_nothrow(info.bases[i].type->type,
                                           init_scope,
                                           visiting,
-                                          callbacks)) {
+                                          callbacks);
+    if(!base_nothrow) {
       return false;
     }
   }
@@ -334,7 +403,14 @@ bool constructor_binding_is_implicitly_nothrow(
     if(explicitly_initialized.count(info.fields[i].name) != 0) {
       continue;
     }
-    if(info.fields[i].default_initializer) {
+    if(copy_or_move_ctor) {
+      if(!copy_or_move_construction_is_nothrow(info.fields[i].type,
+                                               move_ctor,
+                                               visiting,
+                                               callbacks)) {
+        return false;
+      }
+    } else if(info.fields[i].default_initializer) {
       if(!initializer_is_nothrow(info.fields[i].type,
                                  init_scope,
                                  *info.fields[i].default_initializer,
@@ -342,11 +418,13 @@ bool constructor_binding_is_implicitly_nothrow(
                                  callbacks)) {
         return false;
       }
-    } else if(!default_initialization_is_nothrow(info.fields[i].type,
-                                                init_scope,
-                                                visiting,
-                                                callbacks)) {
-      return false;
+    } else {
+      if(!default_initialization_is_nothrow(info.fields[i].type,
+                                            init_scope,
+                                            visiting,
+                                            callbacks)) {
+        return false;
+      }
     }
   }
 

@@ -432,6 +432,7 @@ void census_callsem_node(const CallSemNode & node,
   census_type(callsem_materialization_source_type(node), census, seen_types);
   census_type(callsem_conversion_source_type(node), census, seen_types);
   census_type(callsem_initializer_list_element_type(node), census, seen_types);
+  census_type(callsem_typeid_operand_type(node), census, seen_types);
   if(callsem_lowered_condition_test(node)) {
     census_callsem_node(*callsem_lowered_condition_test(node),
                         kind + ".lowered_condition_test",
@@ -474,6 +475,7 @@ void census_scope(const Scope * scope,
                  set_storage_bytes(scope->template_bound_type_names) +
                  set_storage_bytes(scope->template_bound_type_pack_names) +
                  set_storage_bytes(scope->template_bound_value_names) +
+                 set_storage_bytes(scope->template_bound_value_pack_names) +
                  set_storage_bytes(scope->template_bound_template_names) +
                  map_storage_bytes(scope->values) +
                  map_storage_bytes(scope->namespace_bindings) +
@@ -529,6 +531,11 @@ void census_scope(const Scope * scope,
   }
   for(set<string>::const_iterator it = scope->template_bound_value_names.begin();
       it != scope->template_bound_value_names.end();
+      ++it) {
+    bytes += string_storage_bytes(*it);
+  }
+  for(set<string>::const_iterator it = scope->template_bound_value_pack_names.begin();
+      it != scope->template_bound_value_pack_names.end();
       ++it) {
     bytes += string_storage_bytes(*it);
   }
@@ -810,6 +817,55 @@ void census_alias_template(const AliasTemplateDecl & decl,
   census_scope(decl.pattern_scope, census, seen_scopes, seen_types);
 }
 
+size_t partial_class_template_specialization_payload_bytes(
+    const PartialClassTemplateSpecializationDecl & decl,
+    MemoryCensus & census,
+    unordered_set<const Type *> & seen_types)
+{
+  size_t bytes = vector_storage_bytes(decl.parameters) +
+                 vector_storage_bytes(decl.arg_texts) +
+                 vector_storage_bytes(decl.arg_syntaxes) +
+                 map_storage_bytes(decl.static_member_definitions) +
+                 map_storage_bytes(decl.witness_static_member_definitions) +
+                 map_storage_bytes(decl.member_function_definitions) +
+                 map_storage_bytes(decl.member_function_template_definitions);
+  for(size_t i = 0; i < decl.parameters.size(); ++i) {
+    bytes += template_parameter_payload_bytes(decl.parameters[i],
+                                             census,
+                                             seen_types);
+  }
+  for(size_t i = 0; i < decl.arg_texts.size(); ++i) {
+    bytes += string_storage_bytes(decl.arg_texts[i]);
+  }
+  for(map<string, OutOfClassStaticMemberDecl>::const_iterator
+          it = decl.static_member_definitions.begin();
+      it != decl.static_member_definitions.end();
+      ++it) {
+    bytes += string_storage_bytes(it->first);
+  }
+  for(map<string, OutOfClassStaticMemberDecl>::const_iterator
+          it = decl.witness_static_member_definitions.begin();
+      it != decl.witness_static_member_definitions.end();
+      ++it) {
+    bytes += string_storage_bytes(it->first);
+  }
+  for(map<string, vector<OutOfClassMemberFunctionDecl> >::const_iterator
+          defs = decl.member_function_definitions.begin();
+      defs != decl.member_function_definitions.end();
+      ++defs) {
+    bytes += string_storage_bytes(defs->first);
+    bytes += vector_storage_bytes(defs->second);
+  }
+  for(map<string, vector<OutOfClassMemberFunctionTemplateDefinition> >::const_iterator
+          defs = decl.member_function_template_definitions.begin();
+      defs != decl.member_function_template_definitions.end();
+      ++defs) {
+    bytes += string_storage_bytes(defs->first);
+    bytes += vector_storage_bytes(defs->second);
+  }
+  return bytes;
+}
+
 void census_class_template(const ClassTemplateDecl & decl,
                            MemoryCensus & census,
                            unordered_set<const Type *> & seen_types)
@@ -826,6 +882,7 @@ void census_class_template(const ClassTemplateDecl & decl,
                  vector_storage_bytes(decl.deduction_guides) +
                  map_storage_bytes(decl.static_member_definitions) +
                  map_storage_bytes(decl.member_class_definitions) +
+                 map_storage_bytes(decl.member_class_template_partial_specializations) +
                  map_storage_bytes(decl.member_function_definitions) +
                  map_storage_bytes(decl.member_function_template_definitions);
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
@@ -869,6 +926,22 @@ void census_class_template(const ClassTemplateDecl & decl,
       ++it) {
     bytes += string_storage_bytes(it->first);
   }
+  for(map<string, vector<PartialClassTemplateSpecializationDecl> >::const_iterator
+          it = decl.member_class_template_partial_specializations.begin();
+      it != decl.member_class_template_partial_specializations.end();
+      ++it) {
+    bytes += string_storage_bytes(it->first);
+    bytes += vector_storage_bytes(it->second);
+    for(vector<PartialClassTemplateSpecializationDecl>::const_iterator
+            partial = it->second.begin();
+        partial != it->second.end();
+        ++partial) {
+      bytes += partial_class_template_specialization_payload_bytes(
+          *partial,
+          census,
+          seen_types);
+    }
+  }
   for(map<string, vector<OutOfClassMemberFunctionDecl> >::const_iterator
           it = decl.member_function_definitions.begin();
       it != decl.member_function_definitions.end();
@@ -887,22 +960,9 @@ void census_class_template(const ClassTemplateDecl & decl,
           it = decl.partial_specializations.begin();
       it != decl.partial_specializations.end();
       ++it) {
-    bytes += map_storage_bytes(it->member_function_definitions) +
-             map_storage_bytes(it->member_function_template_definitions);
-    for(map<string, vector<OutOfClassMemberFunctionDecl> >::const_iterator
-            defs = it->member_function_definitions.begin();
-        defs != it->member_function_definitions.end();
-        ++defs) {
-      bytes += string_storage_bytes(defs->first);
-      bytes += vector_storage_bytes(defs->second);
-    }
-    for(map<string, vector<OutOfClassMemberFunctionTemplateDefinition> >::const_iterator
-            defs = it->member_function_template_definitions.begin();
-        defs != it->member_function_template_definitions.end();
-        ++defs) {
-      bytes += string_storage_bytes(defs->first);
-      bytes += vector_storage_bytes(defs->second);
-    }
+    bytes += partial_class_template_specialization_payload_bytes(*it,
+                                                                 census,
+                                                                 seen_types);
   }
   census.note("class_template", bytes);
 }
@@ -1218,6 +1278,8 @@ bool callsem_shallow_exact_equal(const CallSemNode & lhs, const CallSemNode & rh
              callsem_conversion_source_type(rhs).get() &&
          callsem_initializer_list_element_type(lhs).get() ==
              callsem_initializer_list_element_type(rhs).get() &&
+         callsem_typeid_operand_type(lhs).get() ==
+             callsem_typeid_operand_type(rhs).get() &&
          callsem_virtual_base_layout(lhs) == callsem_virtual_base_layout(rhs) &&
          symbol_identity_equal(callsem_symbol(lhs), callsem_symbol(rhs)) &&
          callsem_uint_value(lhs) == callsem_uint_value(rhs) &&
@@ -1266,6 +1328,7 @@ uint64_t hash_callsem_shallow_exact(const CallSemNode & node)
   hash = hash_mix(hash, hash_type_ptr_value(callsem_materialization_source_type(node)));
   hash = hash_mix(hash, hash_type_ptr_value(callsem_conversion_source_type(node)));
   hash = hash_mix(hash, hash_type_ptr_value(callsem_initializer_list_element_type(node)));
+  hash = hash_mix(hash, hash_type_ptr_value(callsem_typeid_operand_type(node)));
   const CallSemVirtualBaseLayout & virtual_base_layout =
       callsem_virtual_base_layout(node);
   hash = hash_mix(hash, virtual_base_layout.size());
@@ -1950,7 +2013,9 @@ private:
        callsem_conversion_source_type(lhs).get() !=
            callsem_conversion_source_type(rhs).get() ||
        callsem_initializer_list_element_type(lhs).get() !=
-           callsem_initializer_list_element_type(rhs).get()) {
+           callsem_initializer_list_element_type(rhs).get() ||
+       callsem_typeid_operand_type(lhs).get() !=
+           callsem_typeid_operand_type(rhs).get()) {
       variations.insert("type");
     }
     if(!symbol_identity_equal(callsem_symbol(lhs), callsem_symbol(rhs))) {
@@ -2205,7 +2270,9 @@ string callsem_provenance_variation_mask(const CallSemNode & lhs,
      callsem_materialization_source_type(lhs).get() !=
          callsem_materialization_source_type(rhs).get() ||
      callsem_conversion_source_type(lhs).get() !=
-         callsem_conversion_source_type(rhs).get()) {
+         callsem_conversion_source_type(rhs).get() ||
+     callsem_typeid_operand_type(lhs).get() !=
+         callsem_typeid_operand_type(rhs).get()) {
     variations.insert("type");
   }
   if(!symbol_identity_equal(callsem_symbol(lhs), callsem_symbol(rhs))) {

@@ -15,6 +15,7 @@ function @X__g(%this : ptr) -> i32 [binding=weak, object=_ZN1X1gEv] {
 
   block ^entry:
     store ptr %this, $this
-    %t1 = binary add i32 3, 1
-    return i32 %t1
+    %t1 = load i32 @N__K
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
 }

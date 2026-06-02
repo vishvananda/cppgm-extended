@@ -330,6 +330,13 @@ struct ControlTransferTarget
   size_t cleanup_depth = 0;
 };
 
+struct GotoTarget
+{
+  string label;
+  size_t cleanup_depth = 0;
+  bool has_cleanup_depth = false;
+};
+
 struct ParamAbiPlan
 {
   enum Kind
@@ -407,59 +414,52 @@ bool try_get_integral_literal_value(const CallSemNode & node, long long & out)
   return false;
 }
 
+bool string_literal_type_matches(const TypePtr & type,
+                                 const QuoteLiteralData & literal)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  TypePtr element;
+  if(base->kind == Type::TK_ARRAY || base->kind == Type::TK_POINTER) {
+    element = strip_top_level_cv(base->inner);
+  }
+  return element &&
+         element->kind == Type::TK_FUNDAMENTAL &&
+         element->fundamental == string_literal_element_type(literal);
+}
+
 bool try_parse_string_literal_node(const CallSemNode & node, QuoteLiteralData & out)
 {
   if(node.kind != CallSemKind::literal || node.text.find('"') == string::npos) {
     return false;
   }
-  TypePtr base = strip_top_level_cv(node.semantic_type);
-  if(!base || base->kind != Type::TK_ARRAY) {
+  const QuoteLiteralData literal = parse_quote_literal(node.text);
+  if(literal.quote != '"' || !literal.ud_suffix.empty() ||
+     !string_literal_type_matches(node.semantic_type, literal)) {
     return false;
   }
-  out = parse_quote_literal(node.text);
-  return out.quote == '"' && out.ud_suffix.empty();
+  out = literal;
+  return true;
 }
 
 vector<unsigned long long> string_literal_code_units(const QuoteLiteralData & literal)
 {
-  vector<unsigned long long> units;
-  switch(literal.enc) {
-  case 'u':
-    {
-      const u16string encoded = encode_utf16(literal.contents);
-      units.reserve(encoded.size());
-      for(size_t i = 0; i < encoded.size(); ++i) {
-        units.push_back(static_cast<unsigned long long>(encoded[i]));
-      }
-    }
-    break;
-
-  case 'U':
-  case 'L':
-    units.reserve(literal.contents.size());
-    for(size_t i = 0; i < literal.contents.size(); ++i) {
-      units.push_back(static_cast<unsigned long long>(literal.contents[i]));
-    }
-    break;
-
-  default:
-    {
-      const string encoded = encode_utf8(literal.contents);
-      units.reserve(encoded.size());
-      for(size_t i = 0; i < encoded.size(); ++i) {
-        units.push_back(
-            static_cast<unsigned long long>(
-                static_cast<unsigned char>(encoded[i])));
-      }
-    }
-    break;
-  }
-  return units;
+  return quote_literal_string_units(literal);
 }
 
 string lowir_name(const string & qualified)
 {
   return symbol_linkage::internal_symbol_from_name(qualified);
+}
+
+string lowir_type_encoding_name(const string & prefix, const TypePtr & type)
+{
+  if(!symbol_linkage::type_needs_structural_internal_symbol(type)) {
+    return string();
+  }
+  return symbol_linkage::internal_symbol_from_type_encoding(prefix, type);
 }
 
 TypePtr std_terminate_function_type()
@@ -552,7 +552,8 @@ TypePtr callable_function_type_for_member_pointer(const TypePtr & member_pointer
                        base->inner->variadic,
                        base->inner->function_const,
                        base->inner->function_volatile,
-                       base->inner->prototype_relaxed);
+                       base->inner->prototype_relaxed,
+                       base->inner->function_ref_qualifier);
 }
 
 TypePtr exception_object_type(const TypePtr & type)
@@ -1038,6 +1039,11 @@ void append_stable_function_type_key(std::ostringstream & out, const TypePtr & t
     if(type->function_volatile) {
       out << ";volatile";
     }
+    if(type->function_ref_qualifier == FTRQ_LVALUE) {
+      out << ";&";
+    } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+      out << ";&&";
+    }
     return;
   }
 
@@ -1466,6 +1472,11 @@ size_t backend_storage_alignment(const TypePtr & type)
   return type_alignment(base);
 }
 
+size_t class_array_new_cookie_size(const TypePtr & element_type)
+{
+  return max<size_t>(8, backend_storage_alignment(element_type));
+}
+
 string storage_span_text(const TypePtr & type)
 {
   ostringstream out;
@@ -1608,6 +1619,9 @@ bool is_null_pointer_global_initializer(const CallSemNode & node)
   if(!is_pointer_type(node.semantic_type) || node.kind != CallSemKind::literal) {
     return false;
   }
+  if(node.text == "nullptr") {
+    return true;
+  }
   if(node.has_int_value && callsem_int_value(node) == 0) {
     return true;
   }
@@ -1684,6 +1698,12 @@ bool is_host_runtime_rtti_class_type(const TypePtr & type)
 {
   const string qualified_name = class_qualified_name(type);
   return is_host_runtime_rtti_class_name(qualified_name);
+}
+
+bool is_standard_library_class_name(const string & input_name)
+{
+  const string qualified_name = canonical_host_runtime_rtti_class_name(input_name);
+  return qualified_name.compare(0, 5, "std::") == 0;
 }
 
 bool has_external_vtable_symbol_candidate_for_type(const TypePtr & semantic_type)
@@ -2032,6 +2052,7 @@ lowir_internal::FunctionBoundaryMetadata known_function_boundary_metadata(
       out.effects = lowir_internal::CFXM_READONLY;
       out.unwind = lowir_internal::CUM_NO;
       break;
+    case runtime_symbol_policy::RuntimeSymbolRole::builtin_bzero:
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memcpy:
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memmove:
       out.effects = lowir_internal::CFXM_READWRITE;
@@ -2069,7 +2090,8 @@ lowir_internal::FunctionBoundaryMetadata known_function_boundary_metadata(
      normalized == "__builtin_strlen") {
     out.effects = lowir_internal::CFXM_READONLY;
     out.unwind = lowir_internal::CUM_NO;
-  } else if(normalized == "__builtin_memcpy" ||
+  } else if(normalized == "__builtin_bzero" ||
+            normalized == "__builtin_memcpy" ||
             normalized == "__builtin_memmove") {
     out.effects = lowir_internal::CFXM_READWRITE;
     out.unwind = lowir_internal::CUM_NO;
@@ -2119,6 +2141,8 @@ lowir_internal::ParamCaptureMode known_parameter_capture_mode(const string & sym
                                                               size_t param_index)
 {
   switch(runtime_symbol_policy::classify(symbol).role) {
+    case runtime_symbol_policy::RuntimeSymbolRole::builtin_bzero:
+      return param_index == 0 ? lowir_internal::PCM_NOCAPTURE : lowir_internal::PCM_DEFAULT;
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memchr:
       return param_index == 0 ? lowir_internal::PCM_NOCAPTURE : lowir_internal::PCM_DEFAULT;
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memcmp:
@@ -2142,7 +2166,8 @@ lowir_internal::ParamCaptureMode known_parameter_capture_mode(const string & sym
   }
 
   const string normalized = runtime_symbol_policy::normalize_lookup_name(symbol);
-  if(normalized == "__builtin_memchr") {
+  if(normalized == "__builtin_bzero" ||
+     normalized == "__builtin_memchr") {
     return param_index == 0 ? lowir_internal::PCM_NOCAPTURE : lowir_internal::PCM_DEFAULT;
   }
   if(normalized == "__builtin_memcmp" ||
@@ -2162,6 +2187,8 @@ lowir_internal::ParamAccessMode known_parameter_access_mode(const string & symbo
                                                             size_t param_index)
 {
   switch(runtime_symbol_policy::classify(symbol).role) {
+    case runtime_symbol_policy::RuntimeSymbolRole::builtin_bzero:
+      return param_index == 0 ? lowir_internal::PAM_WRITE : lowir_internal::PAM_DEFAULT;
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memchr:
       return param_index == 0 ? lowir_internal::PAM_READ : lowir_internal::PAM_DEFAULT;
     case runtime_symbol_policy::RuntimeSymbolRole::builtin_memcmp:
@@ -2183,6 +2210,9 @@ lowir_internal::ParamAccessMode known_parameter_access_mode(const string & symbo
   }
 
   const string normalized = runtime_symbol_policy::normalize_lookup_name(symbol);
+  if(normalized == "__builtin_bzero") {
+    return param_index == 0 ? lowir_internal::PAM_WRITE : lowir_internal::PAM_DEFAULT;
+  }
   if(normalized == "__builtin_memchr") {
     return param_index == 0 ? lowir_internal::PAM_READ : lowir_internal::PAM_DEFAULT;
   }
@@ -2790,6 +2820,7 @@ public:
                        const vector<FunctionSymbolEntry> & function_symbol_entries,
                        const FunctionSymbolLookupIndex & function_symbol_lookup_index,
                        const map<string, const CallSemNode *> & function_symbol_nodes,
+                       const set<string> & c_linkage_function_symbols,
                        const map<string, vector<pair<string, unsigned long long> > > &
                            function_virtual_base_layouts,
                        const map<string, vector<pair<string, unsigned long long> > > &
@@ -2817,6 +2848,7 @@ public:
     , function_symbol_entries_(function_symbol_entries)
     , function_symbol_lookup_index_(function_symbol_lookup_index)
     , function_symbol_nodes_(function_symbol_nodes)
+    , c_linkage_function_symbols_(c_linkage_function_symbols)
     , function_virtual_base_layouts_(function_virtual_base_layouts)
     , class_virtual_base_layouts_(class_virtual_base_layouts)
     , function_parameter_virtual_base_layouts_(function_parameter_virtual_base_layouts)
@@ -2837,6 +2869,8 @@ public:
   {
     g_lowir_current_function_node = function_node_;
     function_.name = node_internal_symbol(*function_node_);
+    function_.metadata.object_output_root =
+        function_node_->is_explicit_instantiation_definition;
     function_.metadata.object_trivial_lifecycle =
         function_node_->object_trivial_lifecycle || function_node_->trivial_lifecycle;
     if(function_node_->has_source_location()) {
@@ -2904,8 +2938,7 @@ public:
         }
         VariableBinding binding =
             create_variable_binding(param_name, child.semantic_type, lowered_param_type);
-        if(abi_plan.kind == ParamAbiPlan::PAK_INDIRECT &&
-           param_passing != lowir_internal::PPM_BY_ADDRESS) {
+        if(abi_plan.kind == ParamAbiPlan::PAK_INDIRECT) {
           binding.uses_external_storage_address = true;
           binding.external_storage_address = abi_plan.inputs[0].first;
         }
@@ -2920,18 +2953,37 @@ public:
         resolve_current_function_virtual_base_layout();
     if(function_node_->uses_vtt_parameter) {
       current_vtt_param_ = "%__vtt";
-      function_.params.push_back(make_lowir_parameter_text(current_vtt_param_, "ptr"));
+      // Itanium places the VTT immediately after `this`, before the
+      // user-visible parameters (constructors/destructors that take a VTT have
+      // no indirect-result slot, so `this` is params[0]).  Inserting here keeps
+      // cppgm++'s own ctor definitions ABI-compatible with the matching
+      // call-site insertion and with externally-defined hosted ctors.
+      const size_t vtt_param_index = function_.params.empty() ? 0u : 1u;
+      function_.params.insert(function_.params.begin() + vtt_param_index,
+                              make_lowir_parameter_text(current_vtt_param_, "ptr"));
     }
     if(function_node_->has_special_member_entry_point_kind &&
        callsem_special_member_entry_point_kind(*function_node_) ==
            symbol_linkage::SMEK_BASE) {
+      // A base constructor receives caller-supplied virtual-base pointers:
+      // during construction the vtable (and its vbase-offset slots) is not yet
+      // installed, so the complete-object constructor passes each virtual base's
+      // address explicitly.
       for(size_t i = 0; i < function_virtual_base_layout->size(); ++i) {
         const string param_temp = string("%__vbptr") + to_string(i);
         function_.params.push_back(make_lowir_parameter_text(param_temp, "ptr"));
         hidden_virtual_base_params_[(*function_virtual_base_layout)[i].first] = param_temp;
       }
     } else if(!function_node_->has_special_member_entry_point_kind &&
+              !function_node_->is_virtual_member_function &&
               !function_virtual_base_layout->empty()) {
+      // A non-virtual member function is always called with its static type
+      // known, so the caller can compute and pass each virtual base pointer.
+      // A virtual member function cannot take such parameters: it is reached
+      // through dynamic dispatch and this-adjusting/vbase-view thunks that carry
+      // only `this`.  A virtual method's class is always polymorphic, so it
+      // instead locates its virtual bases through the vtable's vbase-offset slot
+      // (the dynamic path in the virtual-base member-access code below).
       for(size_t i = 0; i < function_virtual_base_layout->size(); ++i) {
         const string param_temp = string("%__vbptr") + to_string(i);
         function_.params.push_back(make_lowir_parameter_text(param_temp, "ptr"));
@@ -2962,6 +3014,7 @@ public:
                        const vector<FunctionSymbolEntry> & function_symbol_entries,
                        const FunctionSymbolLookupIndex & function_symbol_lookup_index,
                        const map<string, const CallSemNode *> & function_symbol_nodes,
+                       const set<string> & c_linkage_function_symbols,
                        const map<string, vector<pair<string, unsigned long long> > > &
                            function_virtual_base_layouts,
                        const map<string, vector<pair<string, unsigned long long> > > &
@@ -2989,6 +3042,7 @@ public:
     , function_symbol_entries_(function_symbol_entries)
     , function_symbol_lookup_index_(function_symbol_lookup_index)
     , function_symbol_nodes_(function_symbol_nodes)
+    , c_linkage_function_symbols_(c_linkage_function_symbols)
     , function_virtual_base_layouts_(function_virtual_base_layouts)
     , class_virtual_base_layouts_(class_virtual_base_layouts)
     , function_parameter_virtual_base_layouts_(function_parameter_virtual_base_layouts)
@@ -3028,13 +3082,13 @@ public:
       if(abi_plan.kind == ParamAbiPlan::PAK_INDIRECT) {
         if(!binding_has_external_storage_address(binding)) {
           const string & param_temp = abi_plan.inputs[0].first;
-          // By-address parameters are already materialized at the call boundary.
-          // The callee must copy from that incoming object storage into its local
-          // binding instead of moving from the caller-provided slot.
           emit_copy_construct_to_target(param_types_[i],
                                         emit_storage_address(binding.slots[0]),
                                         param_temp);
           register_class_object_cleanup(binding);
+        } else {
+          register_class_at_ptr_cleanup(param_types_[i],
+                                        binding.external_storage_address);
         }
       } else if(abi_plan.kind == ParamAbiPlan::PAK_DIRECT_OBJECT) {
         // The caller has already performed by-value parameter initialization at
@@ -3093,6 +3147,7 @@ public:
     }
     named_return_slot_variable_ =
         find_named_return_slot_variable(*function_node_, function_node_->semantic_type);
+    collect_goto_label_cleanup_depths_if_needed(*body, cleanup_scopes_.size());
     if(has_dynamic_exception_spec()) {
       const string dispatch_label = new_block("function_exception_dispatch");
       const string handler_entry_label =
@@ -3199,6 +3254,9 @@ public:
     push_cleanup_scope();
     push_binding_scope();
     for(size_t i = 0; i < actions.size(); ++i) {
+      collect_goto_label_cleanup_depths_if_needed(*actions[i], cleanup_scopes_.size());
+    }
+    for(size_t i = 0; i < actions.size(); ++i) {
       emit_statement(*actions[i]);
     }
     if(current_block_ && !current_block_->terminated) {
@@ -3257,6 +3315,19 @@ private:
 
     const VariableBinding * binding = find_local_binding(root->text);
     return binding && binding->is_parameter;
+  }
+
+  bool base_subobject_pointer_operand_may_be_null(const CallSemNode & node) const
+  {
+    if(root_is_current_this(node)) {
+      return false;
+    }
+    if(node.kind == CallSemKind::unary_expression &&
+       node.children.size() == 1 &&
+       callsem_has_token(node, OP_AMP)) {
+      return false;
+    }
+    return true;
   }
 
   string emit_pointer_operand(const CallSemNode & node)
@@ -3372,7 +3443,8 @@ private:
     return !qualified_name.empty() &&
            symbol_linkage::has_external_vtable_symbol_candidate(class_type) &&
            class_virtual_base_layouts_.count(qualified_name) != 0 &&
-           !class_has_local_function_definition(qualified_name) &&
+           (!class_has_local_function_definition(qualified_name) ||
+            is_standard_library_class_name(qualified_name)) &&
            vtables_.count(qualified_name) == 0;
   }
 
@@ -3621,13 +3693,13 @@ private:
     const string base_object_ptr =
         object_ptr ? *object_ptr : emit_pointer_operand(object_arg);
 
-    if(object_arg.is_reference_storage &&
-       !object_arg.is_reference_storage_target) {
+    if(expression_path_uses_reference_storage(object_arg)) {
       string dynamic_external;
       if(try_emit_dynamic_external_virtual_base_pointer(object_arg.semantic_type,
                                                         base_object_ptr,
                                                         virtual_base.first,
-                                                        dynamic_external)) {
+                                                        dynamic_external,
+                                                        true)) {
         if(virtual_base.second == 0) {
           return dynamic_external;
         }
@@ -3707,8 +3779,18 @@ private:
     if(virtual_base_layout->empty()) {
       return;
     }
+    // A non-base special member (complete constructor/destructor) takes a VTT,
+    // not __vbptr parameters.
     if(callee.has_special_member_entry_point_kind &&
        callsem_special_member_entry_point_kind(callee) != symbol_linkage::SMEK_BASE) {
+      return;
+    }
+    // A virtual member function locates its virtual bases through the vtable and
+    // has no __vbptr parameters -- it is reached via dynamic dispatch and
+    // this-adjusting/vbase-view thunks that carry only `this`.  Appending the
+    // hidden arguments here would desync the call from the callee's signature.
+    // (Base constructors and non-virtual methods do take __vbptr arguments.)
+    if(callee.is_virtual_member_function || callee.is_virtual_dispatch) {
       return;
     }
     const CallSemNode & object_arg = call.children[1];
@@ -3724,7 +3806,8 @@ private:
 
   void append_vtt_argument(const CallSemNode & call,
                            size_t object_arg_index,
-                           vector<string> & args)
+                           vector<string> & args,
+                           size_t vtt_insert_index = static_cast<size_t>(-1))
   {
     if(call.kind != CallSemKind::call_expression || call.children.size() < 2) {
       return;
@@ -3740,24 +3823,34 @@ private:
           callsem_vtt_object_symbol(callee);
     }
 
+    string vtt_arg;
     const CallSemNode & object_arg = call.children[object_arg_index];
     if(!current_vtt_param_.empty() && root_is_current_this(object_arg)) {
-      args.push_back(emit_vtt_slice_address(current_vtt_param_,
-                                            callsem_vtt_slice_offset(callee)));
-      return;
-    }
-
-    if(callsem_vtt_owner_type(callee)) {
-      const string external_vtt =
-          symbol_linkage::vtt_object_symbol_for_type(callsem_vtt_owner_type(callee));
-      if(!external_vtt.empty()) {
-        external_object_symbols_[callsem_vtt_symbol(callee)] = external_vtt;
+      vtt_arg = emit_vtt_slice_address(current_vtt_param_,
+                                       callsem_vtt_slice_offset(callee));
+    } else {
+      if(callsem_vtt_owner_type(callee)) {
+        const string external_vtt =
+            symbol_linkage::vtt_object_symbol_for_type(callsem_vtt_owner_type(callee));
+        if(!external_vtt.empty()) {
+          external_object_symbols_[callsem_vtt_symbol(callee)] = external_vtt;
+        }
       }
+      const string vtt_base =
+          emit_temp_assignment("ptr", string("addr ") + callsem_vtt_symbol(callee));
+      vtt_arg = emit_vtt_slice_address(vtt_base, callsem_vtt_slice_offset(callee));
     }
 
-    const string vtt_base =
-        emit_temp_assignment("ptr", string("addr ") + callsem_vtt_symbol(callee));
-    args.push_back(emit_vtt_slice_address(vtt_base, callsem_vtt_slice_offset(callee)));
+    // The Itanium ABI passes the VTT immediately after `this`, before the
+    // user-visible constructor arguments.  Constructor call sites pass
+    // `vtt_insert_index == 1`; this matches both externally-defined (hosted
+    // libstdc++) ctors and cppgm++'s own ctor definitions, whose VTT parameter
+    // is likewise positioned right after `this`.
+    if(vtt_insert_index <= args.size()) {
+      args.insert(args.begin() + vtt_insert_index, vtt_arg);
+    } else {
+      args.push_back(vtt_arg);
+    }
   }
 
   string direct_parameter_virtual_base_layout_symbol(const CallSemNode & callee) const
@@ -4001,6 +4094,7 @@ private:
   const vector<FunctionSymbolEntry> & function_symbol_entries_;
   const FunctionSymbolLookupIndex & function_symbol_lookup_index_;
   const map<string, const CallSemNode *> & function_symbol_nodes_;
+  const set<string> & c_linkage_function_symbols_;
   const map<string, vector<pair<string, unsigned long long> > > &
       function_virtual_base_layouts_;
   const map<string, vector<pair<string, unsigned long long> > > &
@@ -4040,7 +4134,7 @@ private:
   vector<unique_ptr<CallSemNode> > synthetic_nodes_;
   vector<ControlTransferTarget> break_targets_;
   vector<ControlTransferTarget> continue_targets_;
-  map<string, string> goto_targets_;
+  map<string, GotoTarget> goto_targets_;
   const map<const CallSemNode *, string> * active_switch_labels_ = nullptr;
   vector<vector<CleanupAction> > cleanup_scopes_;
   vector<size_t> cleanup_scope_normal_eh_end_counts_;
@@ -4061,6 +4155,7 @@ private:
   string shared_host_call_unwind_dispatch_label_;
   size_t shared_host_call_unwind_host_dispatch_depth_ = 0;
   bool shared_host_call_unwind_created_dispatch_ = false;
+  bool shared_host_call_unwind_include_constructor_cleanups_ = false;
   TypePtr function_result_type_;
   const CallSemNode * named_return_slot_variable_ = nullptr;
   bool direct_object_return_ = false;
@@ -5107,6 +5202,47 @@ private:
                                               false);
   }
 
+  string emit_null_preserving_index_address_with_projection(
+      const string & element_type,
+      const string & base_ptr,
+      const string & offset,
+      lowir_internal::IndexProjectionKind projection)
+  {
+    if(offset == "0") {
+      return emit_index_address_with_projection(element_type,
+                                                base_ptr,
+                                                offset,
+                                                projection,
+                                                false);
+    }
+
+    const string result_slot = new_hidden_slot("ptr", "basecast");
+    const string null_label = new_block("basecast_null");
+    const string adjust_label = new_block("basecast_adjust");
+    const string end_label = new_block("basecast_end");
+    const string is_null =
+        emit_temp_assignment("i64", string("cmp eq ptr ") + base_ptr + ", 0");
+    terminate(string("branch ") + is_null + ", " + lowir_block_name(null_label) + ", " +
+              lowir_block_name(adjust_label));
+
+    start_block(null_label);
+    emit_line("store ptr 0, " + result_slot);
+    terminate(string("jump ") + lowir_block_name(end_label));
+
+    start_block(adjust_label);
+    const string adjusted =
+        emit_index_address_with_projection(element_type,
+                                           base_ptr,
+                                           offset,
+                                           projection,
+                                           false);
+    emit_line("store ptr " + adjusted + ", " + result_slot);
+    terminate(string("jump ") + lowir_block_name(end_label));
+
+    start_block(end_label);
+    return emit_temp_assignment("ptr", string("load ptr ") + result_slot);
+  }
+
   string emit_decay_pointer(const string & ptr)
   {
     return emit_temp_assignment("ptr", string("unary decay ptr ") + ptr);
@@ -5294,6 +5430,13 @@ private:
   {
     if(node.kind == CallSemKind::call_expression &&
        is_reference_type(node.semantic_type)) {
+      const TypePtr result_object_type = indirect_call_result_object_type(node);
+      if(result_object_type) {
+        const string temp_ptr = new_hidden_object_address(result_object_type, "refcall");
+        emit_call_expression_to_target(node, temp_ptr);
+        register_materialized_temporary_cleanup_live(result_object_type, temp_ptr);
+        return temp_ptr;
+      }
       return emit_call_expression_raw(node);
     }
     if(node.is_base_subobject || node.is_virtual_base_subobject) {
@@ -5340,7 +5483,8 @@ private:
     }
     if(node.kind == CallSemKind::call_expression &&
        (is_indirect_value_type(node.semantic_type) ||
-        is_complete_class_value_type(node.semantic_type))) {
+        is_complete_class_value_type(node.semantic_type) ||
+        is_constructor_materialization_call(node))) {
       emit_call_expression_to_target(node, target_ptr);
       return;
     }
@@ -5504,6 +5648,21 @@ private:
   string emit_host_rtti_symbol_address(const TypePtr & type)
   {
     return emit_temp_assignment("ptr", string("addr ") + host_rtti_reference_symbol(type));
+  }
+
+  string host_typeid_rtti_reference_symbol(const TypePtr & type)
+  {
+    const string internal_symbol = rtti_symbol_for_type(type);
+    if(rtti_definition_symbols_.count(internal_symbol) != 0) {
+      return internal_symbol;
+    }
+    return host_rtti_reference_symbol(type);
+  }
+
+  string emit_host_typeid_rtti_symbol_address(const TypePtr & type)
+  {
+    return emit_temp_assignment("ptr", string("addr ") +
+                                host_typeid_rtti_reference_symbol(type));
   }
 
   string emit_host_dynamic_typeinfo_address(const string & object_ptr)
@@ -5775,12 +5934,36 @@ private:
     emit_line("call void " + dtor + "(" + object_ptr + ")");
   }
 
-  bool is_marked_scalar_delete_expression(const CallSemNode & node) const
+  bool is_operator_delete_array_callee(const CallSemNode & callee) const
+  {
+    const string lookup_name =
+        callsem_resolved_name(callee).empty() ? callee.text.str() :
+            callsem_resolved_name(callee);
+    if(lookup_name == "operator delete[]" || lookup_name == "operatordelete[]") {
+      return true;
+    }
+    const string & symbol = callsem_symbol(callee).internal_symbol;
+    return symbol.find("operator_delete_array") != string::npos;
+  }
+
+  bool is_marked_delete_expression(const CallSemNode & node) const
   {
     return node.kind == CallSemKind::call_expression &&
            callsem_has_token(node, KW_DELETE) &&
            node.children.size() == 2 &&
            node.children[0].kind == CallSemKind::callee;
+  }
+
+  bool is_marked_array_delete_expression(const CallSemNode & node) const
+  {
+    return is_marked_delete_expression(node) &&
+           is_operator_delete_array_callee(node.children[0]);
+  }
+
+  bool is_marked_scalar_delete_expression(const CallSemNode & node) const
+  {
+    return is_marked_delete_expression(node) &&
+           !is_operator_delete_array_callee(node.children[0]);
   }
 
   string emit_marked_scalar_delete_expression(const CallSemNode & node)
@@ -5847,6 +6030,85 @@ private:
                 delete_ptr + ")");
       terminate("jump " + lowir_block_name(end_label));
     }
+
+    start_block(end_label);
+    return "0";
+  }
+
+  string emit_marked_array_delete_expression(const CallSemNode & node)
+  {
+    if(!is_marked_array_delete_expression(node)) {
+      throw logic_error("expected marked array delete-expression");
+    }
+
+    TypePtr pointer_type =
+        strip_top_level_cv(remove_reference_type(node.children[1].semantic_type));
+    if(!pointer_type || pointer_type->kind != Type::TK_POINTER || !pointer_type->inner) {
+      throw logic_error("marked array delete-expression requires pointer operand");
+    }
+    TypePtr element_type = strip_top_level_cv(pointer_type->inner);
+    if(!element_type) {
+      throw logic_error("marked array delete-expression requires element type");
+    }
+
+    const string object_ptr = emit_rvalue(node.children[1]);
+    const string nonnull =
+        emit_temp_assignment("i64", string("cmp ne ptr ") + object_ptr + ", 0");
+    const string delete_label = new_block("array_delete_nonnull");
+    const string end_label = new_block("array_delete_end");
+    terminate("branch " + nonnull + ", " + lowir_block_name(delete_label) +
+              ", " + lowir_block_name(end_label));
+
+    start_block(delete_label);
+    const size_t cookie_size = class_array_new_cookie_size(element_type);
+    const string allocation_ptr =
+        emit_temp_assignment("ptr",
+                             string("index i8 ") + object_ptr + ", -" +
+                                 to_string(cookie_size));
+    const string element_count =
+        emit_temp_assignment("i64", string("load i64 ") + allocation_ptr);
+
+    const string dtor = destructor_symbol_for_runtime_call(element_type);
+    if(!dtor.empty()) {
+      const size_t element_size = backend_storage_size(element_type);
+      const string index_slot = new_hidden_slot("i64", "array_delete_index");
+      const string cond_label = new_block("array_delete_dtor_cond");
+      const string body_label = new_block("array_delete_dtor_body");
+      const string after_dtor_label = new_block("array_delete_dtor_end");
+
+      emit_line("store i64 " + element_count + ", " + index_slot);
+      terminate("jump " + lowir_block_name(cond_label));
+
+      start_block(cond_label);
+      const string index = emit_temp_assignment("i64", string("load i64 ") + index_slot);
+      const string keep_going =
+          emit_temp_assignment("i64", string("cmp ne i64 ") + index + ", 0");
+      terminate("branch " + keep_going + ", " + lowir_block_name(body_label) +
+                ", " + lowir_block_name(after_dtor_label));
+
+      start_block(body_label);
+      const string next =
+          emit_temp_assignment("i64", string("binary sub i64 ") + index + ", 1");
+      emit_line("store i64 " + next + ", " + index_slot);
+      string element_ptr = object_ptr;
+      if(element_size != 0) {
+        const string byte_offset =
+            emit_temp_assignment("i64",
+                                 string("binary mul i64 ") + next + ", " +
+                                     to_string(element_size));
+        element_ptr = emit_temp_assignment("ptr",
+                                           string("index i8 ") + object_ptr + ", " +
+                                               byte_offset);
+      }
+      emit_line("call void " + dtor + "(" + element_ptr + ")");
+      terminate("jump " + lowir_block_name(cond_label));
+
+      start_block(after_dtor_label);
+    }
+
+    emit_line("call void " + lookup_function_symbol(node.children[0]) + "(" +
+              allocation_ptr + ")");
+    terminate("jump " + lowir_block_name(end_label));
 
     start_block(end_label);
     return "0";
@@ -5982,10 +6244,6 @@ private:
       return;
     }
 
-    if(emit_discarded_indirect_prvalue(node)) {
-      return;
-    }
-
     TypePtr discard_type = node.semantic_type;
     if(is_void_type(discard_type)) {
       if(callsem_conversion_source_type(node)) {
@@ -6002,6 +6260,33 @@ private:
       emit_local_array_initializer(discard_type, node, temp_ptr);
       return;
     }
+
+    if(node.kind == CallSemKind::braced_init_list) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        emit_discarded_expression(node.children[i]);
+        if(!current_block_) {
+          return;
+        }
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::binary_expression &&
+       callsem_has_token(node, OP_COMMA)) {
+      if(node.children.size() != 2) {
+        throw logic_error("binary-expression arity");
+      }
+      emit_discarded_expression(node.children[0]);
+      if(current_block_) {
+        emit_discarded_expression(node.children[1]);
+      }
+      return;
+    }
+
+    if(emit_discarded_indirect_prvalue(node)) {
+      return;
+    }
+
     const bool can_discard_by_address =
         node.kind == CallSemKind::id_expression ||
         node.kind == CallSemKind::variable ||
@@ -6021,18 +6306,6 @@ private:
     }
 
     if(node.kind == CallSemKind::binary_expression &&
-       callsem_has_token(node, OP_COMMA)) {
-      if(node.children.size() != 2) {
-        throw logic_error("binary-expression arity");
-      }
-      emit_discarded_expression(node.children[0]);
-      if(current_block_) {
-        emit_discarded_expression(node.children[1]);
-      }
-      return;
-    }
-
-    if(node.kind == CallSemKind::binary_expression &&
        (callsem_has_token(node, OP_LAND) || callsem_has_token(node, OP_LOR))) {
       if(node.children.size() != 2) {
         throw logic_error("binary-expression arity");
@@ -6041,7 +6314,7 @@ private:
       const string rhs_label = new_block(is_land ? "land_rhs" : "lor_rhs");
       const string short_label = new_block(is_land ? "land_short" : "lor_short");
       const string end_label = new_block(is_land ? "land_end" : "lor_end");
-      const string lhs = emit_rvalue(node.children[0]);
+      const string lhs = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + lhs + ", " +
                 lowir_block_name(is_land ? rhs_label : short_label) + ", " +
                 lowir_block_name(is_land ? short_label : rhs_label));
@@ -6066,7 +6339,7 @@ private:
       const string then_label = new_block("discard_cond_then");
       const string else_label = new_block("discard_cond_else");
       const string end_label = new_block("discard_cond_end");
-      const string cond = emit_rvalue(node.children[0]);
+      const string cond = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + cond + ", " + lowir_block_name(then_label) + ", " +
                 lowir_block_name(else_label));
 
@@ -6157,7 +6430,7 @@ private:
       const string then_label = new_block("condobj_then");
       const string else_label = new_block("condobj_else");
       const string end_label = new_block("condobj_end");
-      const string cond = emit_rvalue(node.children[0]);
+      const string cond = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + cond + ", " + lowir_block_name(then_label) + ", " +
                 lowir_block_name(else_label));
 
@@ -6326,6 +6599,10 @@ private:
     }
 
     if(node.children.empty()) {
+      const TypePtr typeid_operand_type = callsem_typeid_operand_type(node);
+      if(use_host_eh_runtime() && typeid_operand_type) {
+        return emit_host_typeid_rtti_symbol_address(typeid_operand_type);
+      }
       return emit_rtti_symbol_address(node.text);
     }
 
@@ -6616,6 +6893,13 @@ private:
     if(is_reference_type(param_type)) {
       TypePtr referent_type = remove_reference_type(param_type);
       TypePtr referent_base = strip_top_level_cv(referent_type);
+      if(referent_base &&
+         referent_base->kind == Type::TK_ARRAY &&
+         arg.kind == CallSemKind::braced_init_list) {
+        const string temp_ptr = new_hidden_object_address(referent_type, "argarr");
+        emit_local_array_initializer(referent_type, arg, temp_ptr);
+        return temp_ptr;
+      }
       if((arg.is_base_subobject || arg.is_virtual_base_subobject) &&
          arg.value_category != CVC_LVALUE) {
         return emit_lvalue_address(arg);
@@ -6703,20 +6987,12 @@ private:
     if(is_indirect_value_type(param_type)) {
       TypePtr object_param_type =
           strip_top_level_cv(remove_reference_type(param_type));
-      if(is_complete_class_value_type(arg.semantic_type) &&
-         is_special_class_materialization_node(arg)) {
+      if(is_complete_class_value_type(object_param_type)) {
         const string temp_ptr = new_hidden_object_address(object_param_type, "arg");
         if(emit_special_class_value_to_target(arg, temp_ptr)) {
-          register_class_at_ptr_cleanup(object_param_type, temp_ptr);
           return temp_ptr;
         }
-      }
-      if(is_complete_class_value_type(object_param_type) &&
-         arg.value_category != CVC_LVALUE &&
-         !is_reference_type(arg.semantic_type)) {
-        const string temp_ptr = new_hidden_object_address(object_param_type, "arg");
         emit_storage_value_to_target(object_param_type, arg, temp_ptr);
-        register_class_at_ptr_cleanup(object_param_type, temp_ptr);
         return temp_ptr;
       }
       if(is_indirect_class_reference_type(arg.semantic_type)) {
@@ -7002,11 +7278,125 @@ private:
     return false;
   }
 
+  bool argument_may_register_materialized_temporary_cleanup(
+      const TypePtr & param_type,
+      const CallSemNode & arg) const
+  {
+    if(!current_cleanup_scope_is_full_expression()) {
+      return false;
+    }
+
+    TypePtr param_base = strip_top_level_cv(param_type);
+    if(is_reference_type(param_type)) {
+      TypePtr referent_type = remove_reference_type(param_type);
+      TypePtr object_type = strip_top_level_cv(remove_reference_type(referent_type));
+      if(!object_type ||
+         !is_complete_class_value_type(object_type) ||
+         !destructor_runtime_call_required(object_type)) {
+        return false;
+      }
+
+      if((arg.is_base_subobject || arg.is_virtual_base_subobject) &&
+         arg.value_category != CVC_LVALUE) {
+        return false;
+      }
+      if(is_reference_type(arg.semantic_type) ||
+         arg.value_category == CVC_LVALUE) {
+        return false;
+      }
+
+      if(param_base && is_indirect_value_type(param_base->inner)) {
+        return arg.value_category == CVC_PRVALUE;
+      }
+      return is_complete_class_value_type(referent_type);
+    }
+
+    if(param_base &&
+       param_base->kind == Type::TK_POINTER &&
+       is_class_like_value_type(arg.semantic_type)) {
+      TypePtr object_type = strip_top_level_cv(remove_reference_type(arg.semantic_type));
+      if(!object_type ||
+         !is_complete_class_value_type(object_type) ||
+         !destructor_runtime_call_required(object_type)) {
+        return false;
+      }
+      if(is_reference_type(arg.semantic_type) ||
+         arg.value_category == CVC_LVALUE) {
+        return false;
+      }
+      return is_special_class_materialization_node(arg) ||
+             arg.kind == CallSemKind::call_expression;
+    }
+
+    return false;
+  }
+
+  bool argument_subtree_may_materialize_cleanup(const CallSemNode & node) const
+  {
+    if(node.value_category == CVC_PRVALUE &&
+       !is_reference_type(node.semantic_type)) {
+      TypePtr object_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
+      if(object_type &&
+         is_complete_class_value_type(object_type) &&
+         destructor_runtime_call_required(object_type)) {
+        return true;
+      }
+    }
+
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(argument_subtree_may_materialize_cleanup(node.children[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool call_expression_arguments_may_register_host_unwind_cleanup(
+      const CallSemNode & node) const
+  {
+    if(!use_host_eh_runtime() ||
+       cleanup_emission_depth_ != 0 ||
+       node.kind != CallSemKind::call_expression ||
+       node.children.empty()) {
+      return false;
+    }
+
+    TypePtr function_type;
+    if(!resolve_callable_function_type(node.children[0].semantic_type, function_type) ||
+       !function_type) {
+      return false;
+    }
+
+    const bool constructor_call =
+        node.children[0].kind == CallSemKind::callee &&
+        is_constructor_function_name(node.children[0].text);
+    for(size_t i = 1; i < node.children.size(); ++i) {
+      const size_t param_index = constructor_call ? i : (i - 1);
+      if(param_index >= function_type->params.size()) {
+        continue;
+      }
+      if(argument_may_register_materialized_temporary_cleanup(
+             function_type->params[param_index],
+             node.children[i])) {
+        return true;
+      }
+      if(argument_subtree_may_materialize_cleanup(node.children[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool call_expression_needs_host_unwind_wrapper(const CallSemNode & node) const
   {
-    return node.kind == CallSemKind::call_expression &&
-           current_scope_has_host_unwind_cleanups() &&
-           !call_expression_is_known_nothrow(node);
+    if(node.kind != CallSemKind::call_expression) {
+      return false;
+    }
+    if(current_scope_has_host_unwind_cleanups() &&
+       !call_expression_is_known_nothrow(node)) {
+      return true;
+    }
+    return call_expression_arguments_may_register_host_unwind_cleanup(node);
   }
 
   bool call_expression_is_known_nothrow(const CallSemNode & node) const
@@ -7155,6 +7545,8 @@ private:
       return;
     }
     const bool created_dispatch = shared_host_call_unwind_created_dispatch_;
+    const bool include_constructor_cleanups =
+        shared_host_call_unwind_include_constructor_cleanups_;
     const string dispatch_label = shared_host_call_unwind_dispatch_label_;
     const size_t host_dispatch_depth = shared_host_call_unwind_host_dispatch_depth_;
     emit_line("eh_end");
@@ -7168,26 +7560,32 @@ private:
     shared_host_call_unwind_dispatch_label_.clear();
     shared_host_call_unwind_host_dispatch_depth_ = 0;
     shared_host_call_unwind_created_dispatch_ = false;
+    shared_host_call_unwind_include_constructor_cleanups_ = false;
     if(created_dispatch) {
       const string end_label = new_block("call_unwind_end");
       terminate_no_close("jump " + lowir_block_name(end_label));
       emit_shared_call_unwind_dispatch_block(dispatch_label,
-                                             false,
+                                             include_constructor_cleanups,
                                              host_dispatch_depth);
       start_block(end_label);
     }
   }
 
-  void open_shared_host_call_unwind_region()
+  void open_shared_host_call_unwind_region(
+      bool include_constructor_cleanups = false)
   {
     if(shared_host_call_unwind_region_open_) {
-      return;
+      if(!include_constructor_cleanups ||
+         shared_host_call_unwind_include_constructor_cleanups_) {
+        return;
+      }
+      close_shared_host_call_unwind_region();
     }
     const size_t host_dispatch_depth =
         use_host_eh_runtime() ? host_eh_region_depth_ + 1 : 0;
     bool created_dispatch = false;
     const string dispatch_label =
-        shared_call_unwind_dispatch_label(false,
+        shared_call_unwind_dispatch_label(include_constructor_cleanups,
                                           host_dispatch_depth,
                                           created_dispatch);
     emit_line("eh_try " + lowir_block_name(dispatch_label));
@@ -7198,6 +7596,19 @@ private:
     shared_host_call_unwind_dispatch_label_ = dispatch_label;
     shared_host_call_unwind_host_dispatch_depth_ = host_dispatch_depth;
     shared_host_call_unwind_created_dispatch_ = created_dispatch;
+    shared_host_call_unwind_include_constructor_cleanups_ =
+        include_constructor_cleanups;
+  }
+
+  void open_host_unwind_region_for_emitted_call_if_needed(const CallSemNode & node)
+  {
+    if(!use_host_eh_runtime() ||
+       shared_host_call_unwind_region_open_ ||
+       !current_scope_has_host_unwind_cleanups() ||
+       call_expression_is_known_nothrow(node)) {
+      return;
+    }
+    open_shared_host_call_unwind_region();
   }
 
   bool has_host_eh_dispatch_target() const
@@ -7306,9 +7717,12 @@ private:
             to_string(callsem_virtual_dispatch_view_offset(callee)));
   }
 
-  string host_num_put_bridge_iterator_bits_ptr(const string & iterator_arg_ptr)
+  string host_num_put_bridge_iterator_storage_ptr(const string & iterator_arg)
   {
-    return emit_temp_assignment("ptr", string("index i8 ") + iterator_arg_ptr + ", 8");
+    if(!iterator_arg.empty() && iterator_arg[0] == '$') {
+      return emit_storage_address(iterator_arg);
+    }
+    return iterator_arg;
   }
 
   void emit_call_expression_to_target_impl(const CallSemNode & node, const string & target_ptr)
@@ -7395,7 +7809,7 @@ private:
         note_runtime_bridge_support_symbol(host_num_put_bridge);
         vector<string> bridge_args = call_args;
         if(bridge_args.size() >= 2) {
-          bridge_args[1] = host_num_put_bridge_iterator_bits_ptr(bridge_args[1]);
+          bridge_args[1] = host_num_put_bridge_iterator_storage_ptr(bridge_args[1]);
         }
         ostringstream bridge_call;
         bridge_call << "call void @" << host_num_put_bridge << "(" << target_ptr;
@@ -7403,6 +7817,7 @@ private:
           bridge_call << ", " << bridge_args[i];
         }
         bridge_call << ")";
+        open_host_unwind_region_for_emitted_call_if_needed(node);
         emit_line(bridge_call.str());
         return;
       }
@@ -7459,6 +7874,7 @@ private:
       if(explicit_indirect_call_signature) {
         op << lowir_call_signature_suffix_for_call(node, function_type);
       }
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       const string result = emit_temp_assignment(direct_object_result_type, op.str());
       emit_line("copyobj " + storage_span_text(object_type) + " " + result + ", " + target_ptr);
       return;
@@ -7473,7 +7889,7 @@ private:
         append_variadic_call_argument_value(args, node.children[i]);
       }
     }
-    append_vtt_argument(node, 1, args);
+    append_vtt_argument(node, 1, args, 1);
     if(!constructor_call) {
       // `args[0]` is the indirect result slot in this path, so the receiver
       // object for any hidden virtual-base helpers begins at `args[1]`.
@@ -7494,7 +7910,7 @@ private:
       note_runtime_bridge_support_symbol(host_num_put_bridge);
       vector<string> bridge_args = args;
       if(bridge_args.size() >= 3) {
-        bridge_args[2] = host_num_put_bridge_iterator_bits_ptr(bridge_args[2]);
+        bridge_args[2] = host_num_put_bridge_iterator_storage_ptr(bridge_args[2]);
       }
       op << "@" << host_num_put_bridge << "(";
       for(size_t i = 0; i < bridge_args.size(); ++i) {
@@ -7504,6 +7920,7 @@ private:
         op << bridge_args[i];
       }
       op << ")";
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       emit_line(op.str());
       return;
     }
@@ -7556,6 +7973,7 @@ private:
     if(explicit_indirect_call_signature) {
       op << lowir_call_signature_suffix_for_call(node, function_type);
     }
+    open_host_unwind_region_for_emitted_call_if_needed(node);
     emit_line(op.str());
   }
 
@@ -7602,7 +8020,7 @@ private:
         append_variadic_call_argument_value(args, node.children[i]);
       }
     }
-    append_vtt_argument(node, 1, args);
+    append_vtt_argument(node, 1, args, 1);
     append_parameter_virtual_base_arguments(node, false, args);
 
     ostringstream op;
@@ -7612,7 +8030,7 @@ private:
       note_runtime_bridge_support_symbol(host_num_put_bridge);
       vector<string> bridge_args = args;
       if(bridge_args.size() >= 3) {
-        bridge_args[2] = host_num_put_bridge_iterator_bits_ptr(bridge_args[2]);
+        bridge_args[2] = host_num_put_bridge_iterator_storage_ptr(bridge_args[2]);
       }
       op << "@" << host_num_put_bridge << "(";
       for(size_t i = 0; i < bridge_args.size(); ++i) {
@@ -7622,6 +8040,7 @@ private:
         op << bridge_args[i];
       }
       op << ")";
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       emit_line(op.str());
       return;
     }
@@ -7642,6 +8061,7 @@ private:
     if(explicit_indirect_call_signature) {
       op << lowir_call_signature_suffix_for_call(node, function_type);
     }
+    open_host_unwind_region_for_emitted_call_if_needed(node);
     emit_line(op.str());
   }
 
@@ -7707,6 +8127,22 @@ private:
     TypePtr function_type;
     return resolve_callable_function_type(node.children[0].semantic_type, function_type) &&
            function_type && is_void_type(function_type->inner);
+  }
+
+  TypePtr indirect_call_result_object_type(const CallSemNode & node) const
+  {
+    if(node.kind != CallSemKind::call_expression || node.children.empty()) {
+      return TypePtr();
+    }
+    TypePtr function_type;
+    if(!resolve_callable_function_type(node.children[0].semantic_type, function_type) ||
+       !function_type ||
+       !function_type->inner ||
+       is_reference_type(function_type->inner) ||
+       !lowir_uses_indirect_result_boundary(function_type->inner)) {
+      return TypePtr();
+    }
+    return strip_top_level_cv(function_type->inner);
   }
 
   bool is_lowir_integral_scalar_type(const TypePtr & type) const
@@ -7808,8 +8244,30 @@ private:
                                 internal_symbol + "(" + value + ")");
   }
 
+  bool direct_runtime_function_symbol_available(const string & symbol) const
+  {
+    if(c_linkage_function_symbols_.count(symbol) == 0) {
+      return false;
+    }
+    if(function_symbol_nodes_.count(symbol) != 0 ||
+       function_symbol_lookup_index_.mapped_symbols.count(symbol) != 0) {
+      return true;
+    }
+    for(size_t i = 0; i < function_symbol_entries_.size(); ++i) {
+      if(function_symbol_entries_[i].symbol == symbol) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   string external_runtime_symbol(const string & helper_symbol)
   {
+    const string direct_symbol = "@" + helper_symbol;
+    if(direct_runtime_function_symbol_available(direct_symbol)) {
+      return direct_symbol;
+    }
+
     const string internal_symbol =
         symbol_linkage::internal_symbol_from_name("__external_runtime::" + helper_symbol);
     external_function_symbols_[internal_symbol] = helper_symbol;
@@ -8213,6 +8671,33 @@ private:
   string emit_scalar_storage_value(const TypePtr & target_type,
                                    const CallSemNode & node)
   {
+    if(is_reference_type(node.semantic_type) &&
+       !is_reference_type(target_type)) {
+      TypePtr referent_type = remove_reference_type(node.semantic_type);
+      TypePtr referent_base = strip_top_level_cv(referent_type);
+      TypePtr target_base = strip_top_level_cv(remove_reference_type(target_type));
+      if(referent_base &&
+         target_base &&
+         !is_indirect_value_type(referent_type) &&
+         !is_function_type(referent_base) &&
+         referent_base->kind != Type::TK_ARRAY &&
+         !is_indirect_value_type(target_type) &&
+         !is_function_type(target_base) &&
+         target_base->kind != Type::TK_ARRAY) {
+        const TypePtr loaded_type =
+            materialization_source_type_for(node, referent_type);
+        const string memory_type = lowir_memory_type_for(loaded_type);
+        const string loaded_value =
+            emit_temp_assignment(memory_type,
+                                 string("load ") + memory_type + " " +
+                                 emit_lvalue_address(node));
+        return emit_scalar_value_conversion(loaded_value,
+                                            loaded_type,
+                                            target_type,
+                                            true,
+                                            memory_type);
+      }
+    }
     return emit_scalar_value_conversion(emit_rvalue(node),
                                         node.semantic_type,
                                         target_type,
@@ -8470,7 +8955,7 @@ private:
         emit_zero_storage_bytes(args[0], backend_storage_size(target_type));
       }
     }
-    append_vtt_argument(node, 1, args);
+    append_vtt_argument(node, 1, args, 1);
     if(!constructor_call || constructor_base_entry_call) {
       append_hidden_virtual_base_arguments(node, args, 0);
     }
@@ -8503,8 +8988,9 @@ private:
       const string result_slot = new_hidden_slot(raw_result_lowir_type, "numput");
       vector<string> bridge_args = args;
       if(bridge_args.size() >= 2) {
-        bridge_args[1] = host_num_put_bridge_iterator_bits_ptr(bridge_args[1]);
+        bridge_args[1] = host_num_put_bridge_iterator_storage_ptr(bridge_args[1]);
       }
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       emit_line("call void @" + host_num_put_bridge + "(" +
                 emit_storage_address(result_slot) + ", " +
                 bridge_args[0] + ", " +
@@ -8570,9 +9056,11 @@ private:
     }
 
     if(raw_result_lowir_type == "void") {
+      open_host_unwind_region_for_emitted_call_if_needed(node);
       emit_line(op.str());
       return "0";
     }
+    open_host_unwind_region_for_emitted_call_if_needed(node);
     return emit_temp_assignment(raw_result_lowir_type, op.str());
   }
 
@@ -9514,20 +10002,59 @@ private:
     return emit_classification_result(node, result);
   }
 
-  string emit_builtin_popcount_value(const CallSemNode & node)
+  TypePtr fixed_width_bit_builtin_type(const string & builtin_name)
+  {
+    if(builtin_name == "__builtin_clz" ||
+       builtin_name == "__builtin_ctz" ||
+       builtin_name == "__builtin_popcount") {
+      return make_fundamental(FT_UNSIGNED_INT);
+    }
+    if(builtin_name == "__builtin_clzl" ||
+       builtin_name == "__builtin_ctzl" ||
+       builtin_name == "__builtin_popcountl") {
+      return make_fundamental(FT_UNSIGNED_LONG_INT);
+    }
+    if(builtin_name == "__builtin_clzll" ||
+       builtin_name == "__builtin_ctzll" ||
+       builtin_name == "__builtin_popcountll") {
+      return make_fundamental(FT_UNSIGNED_LONG_LONG_INT);
+    }
+    return TypePtr();
+  }
+
+  TypePtr bit_builtin_operand_type(const string & builtin_name,
+                                   const CallSemNode & arg)
+  {
+    TypePtr forced = fixed_width_bit_builtin_type(builtin_name);
+    return forced ? forced : arg.semantic_type;
+  }
+
+  string emit_bit_builtin_operand_value(const CallSemNode & arg,
+                                        const TypePtr & value_type)
+  {
+    return emit_scalar_value_conversion(emit_rvalue(arg),
+                                        arg.semantic_type,
+                                        value_type,
+                                        true);
+  }
+
+  string emit_builtin_popcount_value(const string & builtin_name,
+                                     const CallSemNode & node)
   {
     if(node.children.size() != 2) {
       throw logic_error("__builtin_popcount child count");
     }
 
     const string result_type = lowir_type_for(node.semantic_type);
-    const string value_type = lowir_type_for(node.children[1].semantic_type);
-    const size_t bit_count = type_size(node.children[1].semantic_type) * 8;
+    TypePtr operand_type = bit_builtin_operand_type(builtin_name, node.children[1]);
+    const string value_type = lowir_type_for(operand_type);
+    const size_t bit_count = type_size(operand_type) * 8;
     if(bit_count == 0 || bit_count > 64) {
       throw logic_error("__builtin_popcount unsupported operand width");
     }
 
-    const string value = emit_rvalue(node.children[1]);
+    const string value =
+        emit_bit_builtin_operand_value(node.children[1], operand_type);
     const string value_slot = new_hidden_slot(value_type, "popcount_value");
     const string count_slot = new_hidden_slot(result_type, "popcount_count");
     const string check_label = new_block("popcount_check");
@@ -9567,20 +10094,23 @@ private:
                                 string("load ") + result_type + " " + count_slot);
   }
 
-  string emit_builtin_clzg_value(const CallSemNode & node)
+  string emit_builtin_clzg_value(const string & builtin_name,
+                                 const CallSemNode & node)
   {
     if(node.children.size() != 2 && node.children.size() != 3) {
       throw logic_error("__builtin_clzg child count");
     }
 
     const string result_type = lowir_type_for(node.semantic_type);
-    const string value_type = lowir_type_for(node.children[1].semantic_type);
-    const size_t bit_count = type_size(node.children[1].semantic_type) * 8;
+    TypePtr operand_type = bit_builtin_operand_type(builtin_name, node.children[1]);
+    const string value_type = lowir_type_for(operand_type);
+    const size_t bit_count = type_size(operand_type) * 8;
     if(bit_count == 0 || bit_count > 64) {
       throw logic_error("__builtin_clzg unsupported operand width");
     }
 
-    const string value = emit_rvalue(node.children[1]);
+    const string value =
+        emit_bit_builtin_operand_value(node.children[1], operand_type);
     const string zero_result =
         node.children.size() == 3
             ? emit_rvalue(node.children[2])
@@ -9647,20 +10177,23 @@ private:
                                 string("load ") + result_type + " " + result_slot);
   }
 
-  string emit_builtin_ctzg_value(const CallSemNode & node)
+  string emit_builtin_ctzg_value(const string & builtin_name,
+                                 const CallSemNode & node)
   {
     if(node.children.size() != 2 && node.children.size() != 3) {
       throw logic_error("__builtin_ctzg child count");
     }
 
     const string result_type = lowir_type_for(node.semantic_type);
-    const string value_type = lowir_type_for(node.children[1].semantic_type);
-    const size_t bit_count = type_size(node.children[1].semantic_type) * 8;
+    TypePtr operand_type = bit_builtin_operand_type(builtin_name, node.children[1]);
+    const string value_type = lowir_type_for(operand_type);
+    const size_t bit_count = type_size(operand_type) * 8;
     if(bit_count == 0 || bit_count > 64) {
       throw logic_error("__builtin_ctzg unsupported operand width");
     }
 
-    const string value = emit_rvalue(node.children[1]);
+    const string value =
+        emit_bit_builtin_operand_value(node.children[1], operand_type);
     const string zero_result =
         node.children.size() == 3
             ? emit_rvalue(node.children[2])
@@ -9955,6 +10488,14 @@ private:
     return emit_temp_assignment("ptr", string("addr ") + storage);
   }
 
+  string emit_lvalue_storage_operand_address(const string & storage)
+  {
+    if(!storage.empty() && (storage[0] == '$' || storage[0] == '@')) {
+      return emit_storage_address(storage);
+    }
+    return storage;
+  }
+
   string emit_normalized_truthy(const CallSemNode & node)
   {
     const string value = emit_rvalue(node);
@@ -9968,6 +10509,15 @@ private:
       return emit_temp_assignment("i64", string("cmp ne ptr ") + value + ", 0");
     }
     return emit_temp_assignment("i64", string("cmp ne i64 ") + value + ", 0");
+  }
+
+  string emit_branch_condition_value(const CallSemNode & node)
+  {
+    const string value_type = lowir_value_type_for(node.semantic_type);
+    if(value_type == "f32" || value_type == "f64") {
+      return emit_normalized_truthy(node);
+    }
+    return emit_rvalue(node);
   }
 
   void emit_throw_object_to_storage(const TypePtr & throw_type,
@@ -10092,6 +10642,41 @@ private:
     return node.children[0].children[1];
   }
 
+  size_t array_new_cookie_size(const CallSemNode & node) const
+  {
+    TypePtr result_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
+    if(!result_type || result_type->kind != Type::TK_POINTER || !result_type->inner) {
+      throw logic_error("class array new-expression requires pointer result");
+    }
+    return class_array_new_cookie_size(result_type->inner);
+  }
+
+  unsigned long long array_new_constant_object_byte_count(const CallSemNode & node) const
+  {
+    const CallSemNode & byte_count_node = array_new_allocation_byte_count_node(node);
+    if(!byte_count_node.has_uint_value) {
+      throw logic_error("array new value-init requires constant allocation size");
+    }
+    const size_t cookie_size = array_new_cookie_size(node);
+    const unsigned long long byte_count = callsem_uint_value(byte_count_node);
+    if(byte_count < cookie_size) {
+      throw logic_error("class array new-expression allocation smaller than cookie");
+    }
+    return byte_count - cookie_size;
+  }
+
+  string array_new_dynamic_object_byte_count(const CallSemNode & node,
+                                             const string & evaluated_byte_count)
+  {
+    const size_t cookie_size = array_new_cookie_size(node);
+    if(evaluated_byte_count.empty()) {
+      throw logic_error("class array new-expression dynamic size was not captured");
+    }
+    return emit_temp_assignment("i64",
+                                string("binary sub i64 ") + evaluated_byte_count +
+                                    ", " + to_string(cookie_size));
+  }
+
   void emit_array_new_value_initialization(const CallSemNode & node,
                                            const string & object_ptr,
                                            const string & evaluated_byte_count)
@@ -10105,6 +10690,20 @@ private:
     }
 
     const CallSemNode & byte_count_node = array_new_allocation_byte_count_node(node);
+    if(node.has_uint_value) {
+      if(byte_count_node.has_uint_value) {
+        const unsigned long long object_byte_count =
+            array_new_constant_object_byte_count(node);
+        if(object_byte_count != 0) {
+          emit_zero_storage_bytes(object_ptr, object_byte_count);
+        }
+        return;
+      }
+      emit_dynamic_zero_storage_bytes(
+          object_ptr,
+          array_new_dynamic_object_byte_count(node, evaluated_byte_count));
+      return;
+    }
     if(byte_count_node.has_uint_value) {
       const unsigned long long byte_count = callsem_uint_value(byte_count_node);
       if(byte_count != 0) {
@@ -10120,6 +10719,94 @@ private:
     emit_dynamic_zero_storage_bytes(object_ptr, evaluated_byte_count);
   }
 
+  string array_new_element_count(const CallSemNode & node,
+                                 const string & evaluated_byte_count)
+  {
+    if(!node.has_uint_value || callsem_uint_value(node) == 0) {
+      throw logic_error("class array new-expression missing element size");
+    }
+    const unsigned long long element_size = callsem_uint_value(node);
+    const CallSemNode & byte_count_node = array_new_allocation_byte_count_node(node);
+    if(byte_count_node.has_uint_value) {
+      return emit_temp_assignment(
+          "i64",
+          string("const i64 ") +
+              to_string(array_new_constant_object_byte_count(node) / element_size));
+    }
+    const string object_byte_count =
+        array_new_dynamic_object_byte_count(node, evaluated_byte_count);
+    return emit_temp_assignment("i64",
+                                string("binary udiv i64 ") + object_byte_count +
+                                    ", " + to_string(element_size));
+  }
+
+  string emit_array_new_cookie_object_pointer(const CallSemNode & node,
+                                              const string & allocation_ptr,
+                                              const string & evaluated_byte_count)
+  {
+    const size_t cookie_size = array_new_cookie_size(node);
+    const string object_ptr =
+        emit_temp_assignment("ptr",
+                             string("index i8 ") + allocation_ptr + ", " +
+                                 to_string(cookie_size));
+    const string element_count = array_new_element_count(node, evaluated_byte_count);
+    emit_line("store i64 " + element_count + ", " + allocation_ptr);
+    return object_ptr;
+  }
+
+  void emit_array_new_default_construction(const CallSemNode & node,
+                                           const string & object_ptr,
+                                           const string & evaluated_byte_count)
+  {
+    if(!node.has_uint_value || node.children.size() == 1) {
+      return;
+    }
+    if(node.children.size() != 2 || node.children[1].kind != CallSemKind::callee) {
+      throw logic_error("class array new-expression constructor shape");
+    }
+
+    TypePtr result_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
+    if(!result_type || result_type->kind != Type::TK_POINTER || !result_type->inner) {
+      throw logic_error("class array new-expression requires pointer result");
+    }
+    const unsigned long long element_size = callsem_uint_value(node);
+    const string element_count = array_new_element_count(node, evaluated_byte_count);
+    const string index_slot = new_hidden_slot("i64", "array_new_index");
+    const string cond_label = new_block("array_new_ctor_cond");
+    const string body_label = new_block("array_new_ctor_body");
+    const string end_label = new_block("array_new_ctor_end");
+
+    emit_line("store i64 0, " + index_slot);
+    terminate("jump " + lowir_block_name(cond_label));
+
+    start_block(cond_label);
+    const string index = emit_temp_assignment("i64", string("load i64 ") + index_slot);
+    const string keep_going =
+        emit_temp_assignment("i64", string("cmp ult i64 ") + index + ", " + element_count);
+    terminate("branch " + keep_going + ", " + lowir_block_name(body_label) + ", " +
+              lowir_block_name(end_label));
+
+    start_block(body_label);
+    string element_ptr = object_ptr;
+    if(element_size != 0) {
+      const string byte_offset =
+          emit_temp_assignment("i64",
+                               string("binary mul i64 ") + index + ", " +
+                                   to_string(element_size));
+      element_ptr = emit_temp_assignment("ptr",
+                                         string("index i8 ") + object_ptr + ", " +
+                                             byte_offset);
+    }
+    emit_line("call void " + lookup_function_symbol(node.children[1]) + "(" +
+              element_ptr + ")");
+    const string next =
+        emit_temp_assignment("i64", string("binary add i64 ") + index + ", 1");
+    emit_line("store i64 " + next + ", " + index_slot);
+    terminate("jump " + lowir_block_name(cond_label));
+
+    start_block(end_label);
+  }
+
   string emit_call_expression_rvalue(const CallSemNode & node,
                                      const CallArgumentCapture * capture = nullptr)
   {
@@ -10132,6 +10819,60 @@ private:
     return emit_call_expression_value(node, function_type->inner, call_result);
   }
 
+  bool new_expression_allocation_is_known_nothrow(const CallSemNode & node) const
+  {
+    if(node.children.empty() ||
+       node.children[0].kind != CallSemKind::call_expression ||
+       node.children[0].children.empty() ||
+       !call_expression_is_known_nothrow(node.children[0])) {
+      return false;
+    }
+
+    TypePtr function_type;
+    if(!resolve_callable_function_type(node.children[0].children[0].semantic_type,
+                                       function_type) ||
+       !function_type ||
+       function_type->kind != Type::TK_FUNCTION) {
+      return false;
+    }
+    for(size_t i = 1; i < function_type->params.size(); ++i) {
+      const string param_class =
+          class_qualified_name(strip_top_level_cv(remove_reference_type(function_type->params[i])));
+      if(param_class == "std::nothrow_t" || param_class == "std::__1::nothrow_t") {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool begin_nothrow_new_initialization(const CallSemNode & node,
+                                        const string & object_ptr,
+                                        string & end_label)
+  {
+    if(!new_expression_allocation_is_known_nothrow(node)) {
+      return false;
+    }
+    const string nonnull =
+        emit_temp_assignment("i64", string("cmp ne ptr ") + object_ptr + ", 0");
+    const string init_label = new_block("new_init");
+    end_label = new_block("new_end");
+    terminate("branch " + nonnull + ", " + lowir_block_name(init_label) +
+              ", " + lowir_block_name(end_label));
+    start_block(init_label);
+    return true;
+  }
+
+  void finish_nothrow_new_initialization(const string & end_label)
+  {
+    if(end_label.empty()) {
+      return;
+    }
+    if(current_block_) {
+      terminate("jump " + lowir_block_name(end_label));
+    }
+    start_block(end_label);
+  }
+
   string emit_new_expression_value(const CallSemNode & node)
   {
     if(node.children.empty()) {
@@ -10140,8 +10881,10 @@ private:
 
     string captured_array_new_byte_count;
     string object_ptr;
-    if(node.children.size() == 1 &&
-       node.value_initializes_result &&
+    const bool needs_array_byte_count_capture =
+        (node.children.size() == 1 && node.value_initializes_result) ||
+        node.has_uint_value;
+    if(needs_array_byte_count_capture &&
        !array_new_allocation_byte_count_node(node).has_uint_value) {
       const string byte_count_slot = new_hidden_slot("i64", "array_new_size");
       CallArgumentCapture capture;
@@ -10154,8 +10897,36 @@ private:
     } else {
       object_ptr = emit_rvalue(node.children[0]);
     }
-    if(node.children.size() == 1) {
+    if(node.has_uint_value) {
+      const string allocation_ptr = object_ptr;
+      if(new_expression_allocation_is_known_nothrow(node)) {
+        const string result_slot = new_hidden_slot("ptr", "array_new_result");
+        emit_line("store ptr 0, " + result_slot);
+        string nothrow_end_label;
+        begin_nothrow_new_initialization(node, allocation_ptr, nothrow_end_label);
+        object_ptr = emit_array_new_cookie_object_pointer(node,
+                                                          allocation_ptr,
+                                                          captured_array_new_byte_count);
+        emit_line("store ptr " + object_ptr + ", " + result_slot);
+        emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
+        emit_array_new_default_construction(node, object_ptr, captured_array_new_byte_count);
+        finish_nothrow_new_initialization(nothrow_end_label);
+        return emit_temp_assignment("ptr", string("load ptr ") + result_slot);
+      }
+      object_ptr = emit_array_new_cookie_object_pointer(node,
+                                                        allocation_ptr,
+                                                        captured_array_new_byte_count);
       emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
+      emit_array_new_default_construction(node, object_ptr, captured_array_new_byte_count);
+      return object_ptr;
+    }
+    if(node.children.size() == 1) {
+      string nothrow_end_label;
+      if(node.value_initializes_result) {
+        begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
+      }
+      emit_array_new_value_initialization(node, object_ptr, captured_array_new_byte_count);
+      finish_nothrow_new_initialization(nothrow_end_label);
       return object_ptr;
     }
     if(node.children[1].kind != CallSemKind::callee) {
@@ -10163,10 +10934,13 @@ private:
       if(!result_type || result_type->kind != Type::TK_POINTER || !result_type->inner) {
         throw logic_error("new-expression scalar initializer requires pointer result");
       }
+      string nothrow_end_label;
+      begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
       emit_line("store " +
                 lowir_memory_type_for(result_type->inner) + " " +
-                emit_rvalue(node.children[1]) + ", " +
+                emit_scalar_storage_value(result_type->inner, node.children[1]) + ", " +
                 object_ptr);
+      finish_nothrow_new_initialization(nothrow_end_label);
       return object_ptr;
     }
 
@@ -10191,9 +10965,14 @@ private:
     }
 
     if(node.value_initializes_result && !is_empty_class_storage_type(result_type->inner)) {
+      string nothrow_end_label;
+      begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
       emit_zero_storage_bytes(object_ptr, backend_storage_size(result_type->inner));
+      finish_nothrow_new_initialization(nothrow_end_label);
     }
 
+    string nothrow_end_label;
+    begin_nothrow_new_initialization(node, object_ptr, nothrow_end_label);
     ostringstream op;
     op << "call void " << lookup_function_symbol(node.children[1]) << "(";
     for(size_t i = 0; i < args.size(); ++i) {
@@ -10204,6 +10983,7 @@ private:
     }
     op << ")";
     emit_line(op.str());
+    finish_nothrow_new_initialization(nothrow_end_label);
     return object_ptr;
   }
 
@@ -10295,14 +11075,22 @@ private:
       return emit_new_expression_value(node);
     }
 
+    const TypePtr indirect_result_object_type =
+        node.kind == CallSemKind::call_expression ?
+            indirect_call_result_object_type(node) :
+            TypePtr();
     if(node.kind == CallSemKind::call_expression &&
        (is_complete_class_value_type(node.semantic_type) ||
+        indirect_result_object_type ||
         is_constructor_materialization_call(node))) {
+      const TypePtr object_type =
+          indirect_result_object_type ?
+              indirect_result_object_type :
+              remove_reference_type(node.semantic_type);
       const string temp_ptr =
-          new_hidden_object_address(remove_reference_type(node.semantic_type), "arg");
+          new_hidden_object_address(object_type, "arg");
       emit_call_expression_to_target(node, temp_ptr);
-      register_materialized_temporary_cleanup_live(remove_reference_type(node.semantic_type),
-                                                   temp_ptr);
+      register_materialized_temporary_cleanup_live(object_type, temp_ptr);
       return temp_ptr;
     }
 
@@ -10484,6 +11272,10 @@ private:
                                string("load ") + memory_type + " " +
                                emit_lvalue_storage(node.children[0]));
       const string rhs = emit_rvalue(node.children[1]);
+      TypePtr lhs_type = remove_reference_type(node.children[0].semantic_type);
+      if(!lhs_type) {
+        lhs_type = node.children[0].semantic_type;
+      }
       const TypePtr lhs_value_type =
           lowir_value_conversion_type(node.children[0].semantic_type);
       const TypePtr rhs_value_type =
@@ -10492,10 +11284,6 @@ private:
       const bool rhs_integer_like =
           rhs_value_type &&
           (is_integral_type(rhs_value_type) || is_named_enum_scalar_type(rhs_value_type));
-      const string type = lowir_type_for(node.semantic_type);
-      const bool unsigned_integral =
-          is_lowir_unsigned_integral_scalar_type(
-              lowir_value_conversion_type(node.semantic_type));
       string next_value;
       if(callsem_has_token(node, OP_PLUSASS) && lhs_pointer && rhs_integer_like) {
         next_value =
@@ -10510,6 +11298,45 @@ private:
                                        node.children[1].semantic_type,
                                        node.children[0].semantic_type);
       } else {
+        const auto compound_binary_operand_type = [&]() -> TypePtr
+        {
+          if(callsem_has_token(node, OP_PLUSASS) ||
+             callsem_has_token(node, OP_MINUSASS) ||
+             callsem_has_token(node, OP_STARASS) ||
+             callsem_has_token(node, OP_DIVASS)) {
+            return semantic_conversion::common_arithmetic_result_type(lhs_value_type,
+                                                                      rhs_value_type);
+          }
+          if(callsem_has_token(node, OP_MODASS) ||
+             callsem_has_token(node, OP_XORASS) ||
+             callsem_has_token(node, OP_BANDASS) ||
+             callsem_has_token(node, OP_BORASS)) {
+            return semantic_conversion::common_integral_result_type(lhs_value_type,
+                                                                    rhs_value_type);
+          }
+          if(callsem_has_token(node, OP_LSHIFTASS) ||
+             callsem_has_token(node, OP_RSHIFTASS)) {
+            return semantic_conversion::promoted_integral_result_type(lhs_value_type);
+          }
+          return lowir_value_conversion_type(node.semantic_type);
+        };
+        TypePtr operand_type = compound_binary_operand_type();
+        if(!operand_type) {
+          operand_type = lowir_value_conversion_type(node.semantic_type);
+        }
+        const string type = lowir_type_for(operand_type);
+        const string lhs_operand =
+            emit_scalar_value_conversion(old_value,
+                                         node.children[0].semantic_type,
+                                         operand_type,
+                                         false,
+                                         memory_type);
+        const string rhs_operand =
+            emit_scalar_value_conversion(rhs,
+                                         node.children[1].semantic_type,
+                                         operand_type);
+        const bool unsigned_integral =
+            is_lowir_unsigned_integral_scalar_type(operand_type);
         string op;
         if(callsem_has_token(node, OP_PLUSASS)) {
           op = "add";
@@ -10534,9 +11361,14 @@ private:
         } else {
           throw logic_error("unsupported assignment-expression");
         }
-        next_value =
+        const string raw_next =
             emit_temp_assignment(type, string("binary ") + op + " " + type + " " +
-                                           old_value + ", " + rhs);
+                                           lhs_operand + ", " + rhs_operand);
+        next_value =
+            emit_scalar_value_conversion(raw_next,
+                                         operand_type,
+                                         lhs_type,
+                                         true);
       }
       if(is_bit_field_member_expression(node.children[0])) {
         emit_store_to_bit_field(node.children[0], next_value);
@@ -10645,17 +11477,20 @@ private:
       }
       if(callsem_has_token(node, OP_INC) || callsem_has_token(node, OP_DEC)) {
         const string memory_type = lowir_lvalue_memory_type(node.children[0]);
-        const string old_value = is_bit_field_member_expression(node.children[0]) ?
+        const bool bit_field_member = is_bit_field_member_expression(node.children[0]);
+        const string target = bit_field_member ?
+            string() :
+            emit_lvalue_storage(node.children[0]);
+        const string old_value = bit_field_member ?
             emit_bit_field_rvalue(node.children[0]) :
             emit_temp_assignment(memory_type,
                                  string("load ") + memory_type + " " +
-                                 emit_lvalue_storage(node.children[0]));
+                                 target);
         const string next_value =
             emit_incdec_next_value(node, memory_type, old_value);
-        if(is_bit_field_member_expression(node.children[0])) {
+        if(bit_field_member) {
           emit_store_to_bit_field(node.children[0], next_value);
         } else {
-          const string target = emit_lvalue_storage(node.children[0]);
           emit_line("store " + memory_type + " " + next_value +
                     ", " + target);
         }
@@ -10763,7 +11598,7 @@ private:
         const string rhs_label = new_block(is_land ? "land_rhs" : "lor_rhs");
         const string short_label = new_block(is_land ? "land_short" : "lor_short");
         const string end_label = new_block(is_land ? "land_end" : "lor_end");
-        const string lhs = emit_rvalue(node.children[0]);
+        const string lhs = emit_branch_condition_value(node.children[0]);
         terminate(string("branch ") + lhs + ", " +
                   lowir_block_name(is_land ? rhs_label : short_label) + ", " +
                 lowir_block_name(is_land ? short_label : rhs_label));
@@ -11053,7 +11888,7 @@ private:
       const string then_label = new_block("cond_then");
       const string else_label = new_block("cond_else");
       const string end_label = new_block("cond_end");
-      const string cond = emit_rvalue(node.children[0]);
+      const string cond = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + cond + ", " + lowir_block_name(then_label) + ", " +
                 lowir_block_name(else_label));
 
@@ -11132,6 +11967,9 @@ private:
       if(node.children.empty()) {
         throw logic_error("call-expression missing callee");
       }
+      if(is_marked_array_delete_expression(node)) {
+        return emit_marked_array_delete_expression(node);
+      }
       if(is_marked_scalar_delete_expression(node)) {
         return emit_marked_scalar_delete_expression(node);
       }
@@ -11180,6 +12018,31 @@ private:
                                       string("atomic_load ") +
                                       lowir_type_for(node.semantic_type) + " " +
                                       ptr + ", " + to_string(order));
+        }
+        if(builtin_name == "__sync_lock_test_and_set") {
+          if(node.children.size() != 3) {
+            throw logic_error("__sync_lock_test_and_set child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__sync_lock_test_and_set");
+          const string ptr = emit_rvalue(node.children[1]);
+          const string value = emit_rvalue(node.children[2]);
+          return emit_temp_assignment(value_type,
+                                      string("atomic_exchange ") + value_type +
+                                      " " + ptr + ", " + value + ", 5");
+        }
+        if(builtin_name == "__sync_lock_release") {
+          if(node.children.size() != 2) {
+            throw logic_error("__sync_lock_release child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__sync_lock_release");
+          const string ptr = emit_rvalue(node.children[1]);
+          const string zero =
+              emit_temp_assignment(value_type, string("const ") + value_type + " 0");
+          emit_line(string("atomic_store ") + value_type +
+                    " " + zero + ", " + ptr + ", 5");
+          return "0";
         }
         if(builtin_name == "__c11_atomic_init") {
           if(node.children.size() != 3) {
@@ -11384,19 +12247,19 @@ private:
            builtin_name == "__builtin_clzl" ||
            builtin_name == "__builtin_clzll" ||
            builtin_name == "__builtin_clzg") {
-          return emit_builtin_clzg_value(node);
+          return emit_builtin_clzg_value(builtin_name, node);
         }
         if(builtin_name == "__builtin_ctz" ||
            builtin_name == "__builtin_ctzl" ||
            builtin_name == "__builtin_ctzll" ||
            builtin_name == "__builtin_ctzg") {
-          return emit_builtin_ctzg_value(node);
+          return emit_builtin_ctzg_value(builtin_name, node);
         }
         if(builtin_name == "__builtin_popcount" ||
            builtin_name == "__builtin_popcountl" ||
            builtin_name == "__builtin_popcountll" ||
            builtin_name == "__builtin_popcountg") {
-          return emit_builtin_popcount_value(node);
+          return emit_builtin_popcount_value(builtin_name, node);
         }
         if(builtin_name == "__builtin_add_overflow" ||
            builtin_name == "__builtin_sub_overflow" ||
@@ -11410,6 +12273,15 @@ private:
           const string value = emit_rvalue(node.children[1]);
           emit_rvalue(node.children[2]);
           return value;
+        }
+        if(builtin_name == "__builtin_prefetch") {
+          if(node.children.size() < 2 || node.children.size() > 4) {
+            throw logic_error("__builtin_prefetch child count");
+          }
+          for(size_t i = 1; i < node.children.size(); ++i) {
+            emit_rvalue(node.children[i]);
+          }
+          return "0";
         }
         if(builtin_name == "__builtin_is_constant_evaluated") {
           if(node.children.size() != 1) {
@@ -11576,16 +12448,34 @@ private:
       return emit_typeid_value(node);
     }
 
+    const bool has_direct_special_lvalue_address =
+        node.value_category == CVC_LVALUE &&
+        (node.kind == CallSemKind::conditional_expression ||
+         (node.kind == CallSemKind::binary_expression &&
+          callsem_has_token(node, OP_COMMA)));
     if(is_complete_class_value_type(node.semantic_type) &&
        is_special_class_materialization_node(node) &&
-       !(node.kind == CallSemKind::conditional_expression &&
-         node.value_category == CVC_LVALUE)) {
+       !has_direct_special_lvalue_address) {
       const string temp_ptr = new_hidden_object_address(node.semantic_type, "tmpobj");
       if(emit_special_class_value_to_target(node, temp_ptr)) {
         register_materialized_temporary_cleanup_live(node.semantic_type, temp_ptr);
         return temp_ptr;
       }
     }
+
+    TypePtr member_pointer_access_type;
+    const bool has_member_pointer_access_shape =
+        node.kind == CallSemKind::binary_expression &&
+        node.children.size() == 2 &&
+        (callsem_has_token(node, OP_DOTSTAR) || callsem_has_token(node, OP_ARROWSTAR));
+    if(has_member_pointer_access_shape) {
+      member_pointer_access_type =
+          strip_top_level_cv(remove_reference_type(node.children[1].semantic_type));
+    }
+    const bool data_member_pointer_access =
+        member_pointer_access_type &&
+        member_pointer_access_type->kind == Type::TK_MEMBER_POINTER &&
+        !is_function_type(member_pointer_access_type->inner);
 
     TypePtr node_base = strip_top_level_cv(remove_reference_type(node.semantic_type));
     if(node.value_category != CVC_LVALUE &&
@@ -11598,7 +12488,8 @@ private:
        node.kind != CallSemKind::variable &&
        node.kind != CallSemKind::member_expression &&
        node.kind != CallSemKind::subscript_expression &&
-       node.kind != CallSemKind::conditional_expression) {
+       node.kind != CallSemKind::conditional_expression &&
+       !data_member_pointer_access) {
       const TypePtr materialized_type =
           materialization_source_type_for(node, node.semantic_type);
       const string memory_type = lowir_memory_type_for(materialized_type);
@@ -11695,6 +12586,21 @@ private:
               throw logic_error("missing current object root for virtual base member");
             }
             const string root_ptr = emit_pointer_operand(*current_root);
+            // A fully constructed object locates its virtual base through the
+            // vtable's vbase-offset slot.  This is correct even when the current
+            // class is itself a base subobject of a more-derived complete object
+            // -- where the static offset (the virtual base's position within a
+            // standalone instance of this class) would be wrong.  Constructors
+            // run before the vtable is installed and so took the hidden-parameter
+            // branch above instead.
+            string dynamic_vbase;
+            if(try_emit_dynamic_external_virtual_base_pointer(node.children[0].semantic_type,
+                                                              root_ptr,
+                                                              virtual_base.first,
+                                                              dynamic_vbase)) {
+              return address_from_parameter_hidden_virtual_base(dynamic_vbase,
+                                                                virtual_base.second);
+            }
             const unsigned long long total_offset = offset->second + virtual_base.second;
             return emit_index_address_with_projection("i8",
                                                       root_ptr,
@@ -11775,6 +12681,20 @@ private:
               throw logic_error("missing current object root for virtual base member");
             }
             const string root_ptr = emit_pointer_operand(*current_root);
+            // See the analogous branch above: a constructed object reaches its
+            // virtual base through the vtable's vbase-offset slot, which stays
+            // correct when this class is a base subobject of a derived object.
+            string dynamic_vbase;
+            if(try_emit_dynamic_external_virtual_base_pointer(node.children[0].semantic_type,
+                                                              root_ptr,
+                                                              qualified_name,
+                                                              dynamic_vbase)) {
+              return emit_index_address_with_projection("i8",
+                                                        dynamic_vbase,
+                                                        0,
+                                                        lowir_internal::IPK_BASE_SUBOBJECT,
+                                                        false);
+            }
             return emit_index_address_with_projection("i8",
                                                       root_ptr,
                                                       offset->second,
@@ -11822,22 +12742,27 @@ private:
         base = emit_lvalue_address(node.children[0]);
       }
       const string field_storage =
-          emit_index_address_with_projection("i8",
-                                             base,
-                                             offset,
-                                             projection,
-                                             false);
+          node.is_base_subobject &&
+                  base_type &&
+                  base_type->kind == Type::TK_POINTER &&
+                  base_subobject_pointer_operand_may_be_null(node.children[0]) ?
+              emit_null_preserving_index_address_with_projection("i8",
+                                                                 base,
+                                                                 offset,
+                                                                 projection) :
+              emit_index_address_with_projection("i8",
+                                                 base,
+                                                 offset,
+                                                 projection,
+                                                 false);
       if(node.is_reference_storage && !node.is_reference_storage_target) {
         return emit_temp_assignment("ptr", string("load ptr ") + field_storage);
       }
       return field_storage;
     }
 
-    if(node.kind == CallSemKind::binary_expression &&
-       node.children.size() == 2 &&
-       (callsem_has_token(node, OP_DOTSTAR) || callsem_has_token(node, OP_ARROWSTAR))) {
-      TypePtr member_pointer_type =
-          strip_top_level_cv(remove_reference_type(node.children[1].semantic_type));
+    if(has_member_pointer_access_shape) {
+      TypePtr member_pointer_type = member_pointer_access_type;
       if(!member_pointer_type ||
          member_pointer_type->kind != Type::TK_MEMBER_POINTER ||
          is_function_type(member_pointer_type->inner)) {
@@ -11866,14 +12791,22 @@ private:
       return field_storage;
     }
 
+    const TypePtr indirect_result_object_type =
+        node.kind == CallSemKind::call_expression ?
+            indirect_call_result_object_type(node) :
+            TypePtr();
     if(node.kind == CallSemKind::call_expression &&
        (is_indirect_value_type(node.semantic_type) ||
+        indirect_result_object_type ||
         is_constructor_materialization_call(node))) {
+      const TypePtr object_type =
+          indirect_result_object_type ?
+              indirect_result_object_type :
+              remove_reference_type(node.semantic_type);
       const string temp_ptr =
-          new_hidden_object_address(remove_reference_type(node.semantic_type), "tmpobj");
+          new_hidden_object_address(object_type, "tmpobj");
       emit_call_expression_to_target(node, temp_ptr);
-      register_materialized_temporary_cleanup_live(remove_reference_type(node.semantic_type),
-                                                   temp_ptr);
+      register_materialized_temporary_cleanup_live(object_type, temp_ptr);
       return temp_ptr;
     }
 
@@ -11912,7 +12845,7 @@ private:
       const string then_label = new_block("condaddr_then");
       const string else_label = new_block("condaddr_else");
       const string end_label = new_block("condaddr_end");
-      const string cond = emit_rvalue(node.children[0]);
+      const string cond = emit_branch_condition_value(node.children[0]);
       terminate(string("branch ") + cond + ", " + lowir_block_name(then_label) + ", " +
                 lowir_block_name(else_label));
 
@@ -11987,15 +12920,18 @@ private:
        (callsem_has_token(node, OP_INC) || callsem_has_token(node, OP_DEC)) &&
        node.value_category == CVC_LVALUE) {
       const string memory_type = lowir_lvalue_memory_type(node.children[0]);
-      const string old_value = is_bit_field_member_expression(node.children[0]) ?
+      const bool bit_field_member = is_bit_field_member_expression(node.children[0]);
+      const string target = bit_field_member ?
+          string() :
+          emit_lvalue_storage(node.children[0]);
+      const string old_value = bit_field_member ?
           emit_bit_field_rvalue(node.children[0]) :
           emit_temp_assignment(memory_type,
                                string("load ") + memory_type + " " +
-                               emit_lvalue_storage(node.children[0]));
+                               target);
       const string next_value =
           emit_incdec_next_value(node, memory_type, old_value);
-      const string target = emit_lvalue_storage(node.children[0]);
-      if(is_bit_field_member_expression(node.children[0])) {
+      if(bit_field_member) {
         emit_store_to_bit_field(node.children[0], next_value);
       } else {
         const string debug_name = direct_local_debug_name(node.children[0]);
@@ -12006,7 +12942,8 @@ private:
                                                               next_value);
         emit_line("store " + memory_type + " " + stored_value + ", " + target);
       }
-      return target;
+      return bit_field_member ? emit_lvalue_address(node.children[0]) :
+                                emit_lvalue_storage_operand_address(target);
     }
 
     ostringstream out;
@@ -12173,8 +13110,7 @@ private:
       }
       const GlobalBinding * global = find_global_binding(node);
       if(global) {
-        return emit_decay_pointer(
-            emit_temp_assignment("ptr", string("addr ") + global->storage));
+        return emit_rvalue(node);
       }
     }
     return emit_rvalue(node);
@@ -12208,6 +13144,7 @@ private:
         if(call.children.size() < 2) {
           throw logic_error("indirect value constructor action missing target");
         }
+        push_cleanup_scope(true);
         if(child.trivial_lifecycle) {
           if(call.children.size() > 3) {
             throw logic_error("unsupported trivial constructor action arity");
@@ -12229,6 +13166,10 @@ private:
             emit_constructor_action(child);
           }
         }
+        if(current_block_) {
+          emit_scope_cleanups(cleanup_scopes_.back());
+        }
+        pop_cleanup_scope();
       } else if(is_complete_class_value_type(variable.semantic_type) &&
                 child.kind == CallSemKind::destructor_action) {
         if(register_storage_cleanup) {
@@ -12298,14 +13239,20 @@ private:
     } else {
       TypePtr base = strip_top_level_cv(variable.semantic_type);
       if(base && base->kind == Type::TK_ARRAY) {
-        if(variable.children.size() != 1) {
-          throw logic_error("guarded static storage initializer arity");
+        if(variable.children.size() == 1 &&
+           variable.children[0].kind == CallSemKind::braced_init_list) {
+          const CallSemNode & init = variable.children[0];
+          emit_local_array_initializer(variable.semantic_type, init, target_ptr);
+        } else {
+          for(size_t i = 0; i < variable.children.size(); ++i) {
+            const CallSemNode & child = variable.children[i];
+            if(child.kind == CallSemKind::constructor_action) {
+              emit_constructor_action(child);
+            } else if(child.kind != CallSemKind::destructor_action) {
+              throw logic_error("guarded static array initializer action shape");
+            }
+          }
         }
-        const CallSemNode & init = variable.children[0];
-        if(init.kind != CallSemKind::braced_init_list) {
-          throw logic_error("guarded static array initializer requires braced-init-list");
-        }
-        emit_local_array_initializer(variable.semantic_type, init, target_ptr);
       } else if(is_reference_type(variable.semantic_type)) {
         if(variable.children.size() != 1) {
           throw logic_error("guarded static reference initializer arity");
@@ -12377,19 +13324,29 @@ private:
       return;
     }
     if(binding_is_array_storage(binding)) {
-      push_cleanup_scope(true);
-      if(variable.children.size() != 1 ||
-         variable.children[0].kind != CallSemKind::braced_init_list) {
-        throw logic_error("array initialization requires braced-init-list");
+      if(variable.children.size() == 1 &&
+         variable.children[0].kind == CallSemKind::braced_init_list) {
+        push_cleanup_scope(true);
+        const CallSemNode & init = variable.children[0];
+        emit_local_array_initializer(variable.semantic_type,
+                                     init,
+                                     emit_storage_address(binding.slots[0]));
+        if(current_block_) {
+          emit_scope_cleanups(cleanup_scopes_.back());
+        }
+        pop_cleanup_scope();
+        return;
       }
-      const CallSemNode & init = variable.children[0];
-      emit_local_array_initializer(variable.semantic_type,
-                                   init,
-                                   emit_storage_address(binding.slots[0]));
-      if(current_block_) {
-        emit_scope_cleanups(cleanup_scopes_.back());
+      for(size_t i = 0; i < variable.children.size(); ++i) {
+        const CallSemNode & child = variable.children[i];
+        if(child.kind == CallSemKind::constructor_action) {
+          emit_constructor_action(child);
+        } else if(child.kind == CallSemKind::destructor_action) {
+          register_bound_local_cleanup(child, variable.text, binding.slots[0]);
+        } else {
+          throw logic_error("array initialization action shape");
+        }
       }
-      pop_cleanup_scope();
       return;
     }
     push_cleanup_scope(true);
@@ -12496,38 +13453,63 @@ private:
                          is_land ? false_label : rhs_label);
 
       start_block(rhs_label);
-      push_cleanup_scope(true);
-      const bool needs_cleanup = !cleanup_scopes_.back().empty();
-      const string rhs_true_label =
-          needs_cleanup ?
-              new_block(is_land ? "land_rhs_true_cleanup" : "lor_rhs_true_cleanup") :
-              true_label;
-      const string rhs_false_label =
-          needs_cleanup ?
-              new_block(is_land ? "land_rhs_false_cleanup" : "lor_rhs_false_cleanup") :
-              false_label;
-      emit_truthy_branch(node.children[1], rhs_true_label, rhs_false_label);
-
-      if(needs_cleanup) {
-        start_block(rhs_true_label);
-        emit_scope_cleanups(cleanup_scopes_.back());
-        if(current_block_) {
-          terminate("jump " + lowir_block_name(true_label));
-        }
-
-        start_block(rhs_false_label);
-        emit_scope_cleanups(cleanup_scopes_.back());
-        if(current_block_) {
-          terminate("jump " + lowir_block_name(false_label));
-        }
+      if(is_short_circuit_truthy_expression(node.children[1])) {
+        emit_truthy_branch(node.children[1], true_label, false_label);
+      } else {
+        emit_simple_condition_branch(node.children[1], true_label, false_label);
       }
+      return;
+    }
+
+    const string cond_value = emit_branch_condition_value(node);
+    terminate("branch " + cond_value + ", " + lowir_block_name(true_label) + ", " +
+              lowir_block_name(false_label));
+  }
+
+  bool is_short_circuit_truthy_expression(const CallSemNode & node) const
+  {
+    return node.kind == CallSemKind::binary_expression &&
+           node.children.size() == 2 &&
+           (callsem_has_token(node, OP_LAND) || callsem_has_token(node, OP_LOR));
+  }
+
+  void emit_simple_condition_branch(const CallSemNode & node,
+                                    const string & true_label,
+                                    const string & false_label)
+  {
+    push_cleanup_scope(true);
+    const string cond_value = emit_branch_condition_value(node);
+    if(!current_block_) {
       pop_cleanup_scope();
       return;
     }
 
-    const string cond_value = emit_rvalue(node);
-    terminate("branch " + cond_value + ", " + lowir_block_name(true_label) + ", " +
-              lowir_block_name(false_label));
+    if(cleanup_scopes_.back().empty()) {
+      pop_cleanup_scope();
+      terminate("branch " + cond_value + ", " + lowir_block_name(true_label) + ", " +
+                lowir_block_name(false_label));
+      return;
+    }
+
+    const vector<CleanupAction> condition_cleanups = cleanup_scopes_.back();
+    pop_cleanup_scope();
+
+    const string true_cleanup_label = new_block("cond_true_cleanup");
+    const string false_cleanup_label = new_block("cond_false_cleanup");
+    terminate("branch " + cond_value + ", " + lowir_block_name(true_cleanup_label) + ", " +
+              lowir_block_name(false_cleanup_label));
+
+    start_block(true_cleanup_label);
+    emit_scope_cleanups(condition_cleanups);
+    if(current_block_) {
+      terminate("jump " + lowir_block_name(true_label));
+    }
+
+    start_block(false_cleanup_label);
+    emit_scope_cleanups(condition_cleanups);
+    if(current_block_) {
+      terminate("jump " + lowir_block_name(false_label));
+    }
   }
 
   void emit_condition_branch(const CallSemNode & condition,
@@ -12543,14 +13525,22 @@ private:
         throw logic_error("condition declaration shape");
       }
       emit_variable_declaration(child.children[0]);
-      emit_truthy_branch(callsem_lowered_condition_test(child) ?
-                             *callsem_lowered_condition_test(child) :
-                             child.children[0],
-                         true_label,
-                         false_label);
+      const CallSemNode & test =
+          callsem_lowered_condition_test(child) ?
+              *callsem_lowered_condition_test(child) :
+              child.children[0];
+      if(is_short_circuit_truthy_expression(test)) {
+        emit_truthy_branch(test, true_label, false_label);
+      } else {
+        emit_simple_condition_branch(test, true_label, false_label);
+      }
       return;
     }
-    emit_truthy_branch(child, true_label, false_label);
+    if(is_short_circuit_truthy_expression(child)) {
+      emit_truthy_branch(child, true_label, false_label);
+    } else {
+      emit_simple_condition_branch(child, true_label, false_label);
+    }
   }
 
   void emit_constructor_action_impl(const CallSemNode & action,
@@ -12915,10 +13905,169 @@ private:
         throw logic_error("switch condition declaration shape");
       }
       emit_variable_declaration(child.children[0]);
-      return emit_rvalue(child.children[0]);
+      return emit_rvalue(callsem_lowered_condition_test(child) ?
+                             *callsem_lowered_condition_test(child) :
+                             child.children[0]);
     }
 
     return emit_rvalue(child);
+  }
+
+  bool subtree_contains_goto_or_label(const CallSemNode & node) const
+  {
+    if(node.kind == CallSemKind::goto_statement ||
+       node.kind == CallSemKind::labeled_statement) {
+      return true;
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      if(subtree_contains_goto_or_label(node.children[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void note_goto_target_cleanup_depth(const string & name, size_t cleanup_depth)
+  {
+    GotoTarget & target = goto_targets_[name];
+    target.cleanup_depth = cleanup_depth;
+    target.has_cleanup_depth = true;
+  }
+
+  void collect_switch_goto_label_cleanup_depths(const CallSemNode & node,
+                                                size_t cleanup_depth)
+  {
+    if(node.kind == CallSemKind::compound_statement) {
+      collect_compound_goto_label_cleanup_depths(node, cleanup_depth);
+      return;
+    }
+
+    if(node.kind == CallSemKind::case_statement ||
+       node.kind == CallSemKind::default_statement) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_switch_goto_label_cleanup_depths(node.children[i], cleanup_depth);
+      }
+      return;
+    }
+
+    collect_goto_label_cleanup_depths(node, cleanup_depth);
+  }
+
+  void collect_entry_labeled_statement_cleanup_depths(const CallSemNode & node,
+                                                      size_t label_cleanup_depth,
+                                                      size_t statement_cleanup_depth)
+  {
+    if(node.kind != CallSemKind::labeled_statement) {
+      collect_goto_label_cleanup_depths(node, statement_cleanup_depth);
+      return;
+    }
+
+    note_goto_target_cleanup_depth(node.text, label_cleanup_depth);
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      collect_entry_labeled_statement_cleanup_depths(node.children[i],
+                                                     label_cleanup_depth,
+                                                     statement_cleanup_depth);
+    }
+  }
+
+  void collect_compound_goto_label_cleanup_depths(const CallSemNode & node,
+                                                  size_t cleanup_depth)
+  {
+    if(node.kind != CallSemKind::compound_statement &&
+       node.kind != CallSemKind::then_node &&
+       node.kind != CallSemKind::else_node) {
+      throw logic_error("compound goto label cleanup scan shape");
+    }
+
+    const size_t nested_cleanup_depth = cleanup_depth + 1;
+    bool at_block_entry = true;
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      const CallSemNode & child = node.children[i];
+      if(at_block_entry && child.kind == CallSemKind::labeled_statement) {
+        collect_entry_labeled_statement_cleanup_depths(child,
+                                                       cleanup_depth,
+                                                       nested_cleanup_depth);
+      } else {
+        collect_goto_label_cleanup_depths(child, nested_cleanup_depth);
+      }
+      if(child.kind != CallSemKind::labeled_statement) {
+        at_block_entry = false;
+      }
+    }
+  }
+
+  void collect_goto_label_cleanup_depths(const CallSemNode & node, size_t cleanup_depth)
+  {
+    if(node.kind == CallSemKind::labeled_statement) {
+      note_goto_target_cleanup_depth(node.text, cleanup_depth);
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_goto_label_cleanup_depths(node.children[i], cleanup_depth);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::compound_statement ||
+       node.kind == CallSemKind::then_node ||
+       node.kind == CallSemKind::else_node) {
+      collect_compound_goto_label_cleanup_depths(node, cleanup_depth);
+      return;
+    }
+
+    if(node.kind == CallSemKind::if_statement) {
+      const size_t nested_cleanup_depth = cleanup_depth + 1;
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_goto_label_cleanup_depths(node.children[i], nested_cleanup_depth);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::switch_statement) {
+      if(node.children.size() >= 2) {
+        collect_switch_goto_label_cleanup_depths(node.children[1], cleanup_depth);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::for_statement) {
+      const size_t nested_cleanup_depth = cleanup_depth + 1;
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_goto_label_cleanup_depths(node.children[i], nested_cleanup_depth);
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::try_statement) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        const CallSemNode & child = node.children[i];
+        if(child.kind == CallSemKind::compound_statement) {
+          collect_goto_label_cleanup_depths(child, cleanup_depth + 1);
+        } else if(child.kind == CallSemKind::catch_handler) {
+          collect_goto_label_cleanup_depths(child, cleanup_depth);
+        }
+      }
+      return;
+    }
+
+    if(node.kind == CallSemKind::catch_handler) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        if(node.children[i].kind == CallSemKind::compound_statement) {
+          collect_goto_label_cleanup_depths(node.children[i], cleanup_depth + 1);
+        }
+      }
+      return;
+    }
+
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      collect_goto_label_cleanup_depths(node.children[i], cleanup_depth);
+    }
+  }
+
+  void collect_goto_label_cleanup_depths_if_needed(const CallSemNode & node,
+                                                   size_t cleanup_depth)
+  {
+    if(subtree_contains_goto_or_label(node)) {
+      collect_goto_label_cleanup_depths(node, cleanup_depth);
+    }
   }
 
   void start_labeled_block(const string & label)
@@ -12929,15 +14078,18 @@ private:
     start_block(label);
   }
 
-  string ensure_goto_target(const string & name)
+  GotoTarget & ensure_goto_target(const string & name)
   {
-    map<string, string>::const_iterator found = goto_targets_.find(name);
+    map<string, GotoTarget>::iterator found = goto_targets_.find(name);
     if(found != goto_targets_.end()) {
+      if(found->second.label.empty()) {
+        found->second.label = new_block("goto");
+      }
       return found->second;
     }
-    const string label = new_block("goto");
-    goto_targets_[name] = label;
-    return label;
+    GotoTarget & target = goto_targets_[name];
+    target.label = new_block("goto");
+    return target;
   }
 
   void emit_switch_body(const CallSemNode & node,
@@ -12984,6 +14136,77 @@ private:
     }
 
     emit_statement(node);
+  }
+
+  static string gnu_asm_unsupported_message(const CallSemNode & node)
+  {
+    ostringstream out;
+    out << "GNU asm statement lowering unsupported in PA31 host compatibility";
+    if(!node.text.empty()) {
+      out << " [qualifiers " << node.text << "]";
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      out << " [clause" << i << " " << node.children[i].text << "]";
+    }
+    return out.str();
+  }
+
+  static bool is_supported_gnu_asm_qualifier_text(const string & text)
+  {
+    const string trimmed = semantic_utils::trim_space(text);
+    return trimmed.empty() ||
+           trimmed == "volatile" ||
+           trimmed == "__volatile" ||
+           trimmed == "__volatile__";
+  }
+
+  static string gnu_asm_clause_text(const CallSemNode & node, size_t index)
+  {
+    if(index >= node.children.size()) {
+      return string();
+    }
+    if(node.children[index].kind != CallSemKind::asm_clause) {
+      throw logic_error("malformed GNU asm statement");
+    }
+    return semantic_utils::trim_space(node.children[index].text);
+  }
+
+  static bool is_supported_no_operand_gnu_asm_template(const string & text)
+  {
+    return text == "\"\"" ||
+           text == "\"nop\"" ||
+           text == "\"pause\"" ||
+           text == "\"rep; nop\"" ||
+           text == "\"yield\"";
+  }
+
+  static bool is_supported_no_operand_gnu_asm_clobber(const string & text)
+  {
+    return text.empty() || text == "\"memory\"";
+  }
+
+  bool emit_supported_gnu_asm_statement(const CallSemNode & node)
+  {
+    if(node.children.empty() || node.children.size() > 4) {
+      return false;
+    }
+    if(!is_supported_gnu_asm_qualifier_text(node.text)) {
+      return false;
+    }
+
+    const string asm_template = gnu_asm_clause_text(node, 0);
+    const string outputs = gnu_asm_clause_text(node, 1);
+    const string inputs = gnu_asm_clause_text(node, 2);
+    const string clobbers = gnu_asm_clause_text(node, 3);
+    if(!is_supported_no_operand_gnu_asm_template(asm_template) ||
+       !outputs.empty() ||
+       !inputs.empty() ||
+       !is_supported_no_operand_gnu_asm_clobber(clobbers)) {
+      return false;
+    }
+
+    emit_line("atomic_signal_fence 5");
+    return true;
   }
 
   void emit_statement(const CallSemNode & node)
@@ -13081,12 +14304,10 @@ private:
     }
 
     if(node.kind == CallSemKind::asm_statement) {
-      ostringstream out;
-      out << "GNU asm statement lowering unsupported in PA32 host compatibility";
-      if(!node.text.empty()) {
-        out << " [text " << node.text << "]";
+      if(emit_supported_gnu_asm_statement(node)) {
+        return;
       }
-      throw logic_error(out.str());
+      throw logic_error(gnu_asm_unsupported_message(node));
     }
 
     if(node.kind == CallSemKind::constructor_action ||
@@ -13194,10 +14415,14 @@ private:
       const bool use_host_throw = use_host_eh_runtime();
       string throw_value;
       if(use_host_throw) {
+        const bool include_constructor_cleanups =
+            is_constructor_function_ &&
+            throw_will_escape_current_function() &&
+            !constructor_unwind_cleanups_.empty();
         throw_value = emit_host_throw_value(node.children[0]);
-        emit_explicit_host_throw_cleanups();
-        if(is_constructor_function_ && throw_will_escape_current_function()) {
-          emit_constructor_unwind_cleanups();
+        if(current_scope_has_host_unwind_cleanups() ||
+           include_constructor_cleanups) {
+          open_shared_host_call_unwind_region(include_constructor_cleanups);
         }
       } else {
         string lowir_throw_type;
@@ -13501,7 +14726,25 @@ private:
       }
 
       start_block(next_label);
-      terminate("resume");
+      if(use_host_eh_runtime()) {
+        emit_clear_current_exception();
+        const bool include_constructor_cleanups =
+            is_constructor_function_ &&
+            throw_will_escape_current_function() &&
+            !constructor_unwind_cleanups_.empty();
+        emit_call_unwind_dispatch_cleanups(include_constructor_cleanups);
+        if(has_host_eh_dispatch_target()) {
+          terminate("jump " + lowir_block_name(host_eh_dispatch_labels_.back()));
+        } else if(include_constructor_cleanups &&
+                  !constructor_function_try_dispatch_labels_.empty()) {
+          terminate("jump " +
+                    lowir_block_name(constructor_function_try_dispatch_labels_.back()));
+        } else {
+          terminate("resume");
+        }
+      } else {
+        terminate("resume");
+      }
       start_block(end_label);
       return;
     }
@@ -13733,7 +14976,19 @@ private:
     }
 
     if(node.kind == CallSemKind::goto_statement) {
-      terminate("jump " + lowir_block_name(ensure_goto_target(node.text)));
+      GotoTarget & target = ensure_goto_target(node.text);
+      if(!target.has_cleanup_depth) {
+        throw logic_error("goto target cleanup depth unavailable");
+      }
+      // A goto can enter a lexically deeper block at a label before that
+      // block has any active cleanup state. Only scopes active at the source
+      // statement can be cleaned here.
+      const size_t cleanup_depth =
+          target.cleanup_depth < cleanup_scopes_.size() ?
+              target.cleanup_depth :
+              cleanup_scopes_.size();
+      emit_cleanups_to_depth(cleanup_depth);
+      terminate("jump " + lowir_block_name(target.label));
       return;
     }
 
@@ -13741,7 +14996,12 @@ private:
       if(node.children.size() != 1) {
         throw logic_error("malformed labeled-statement");
       }
-      start_labeled_block(ensure_goto_target(node.text));
+      GotoTarget & target = ensure_goto_target(node.text);
+      if(!target.has_cleanup_depth) {
+        target.cleanup_depth = cleanup_scopes_.size();
+        target.has_cleanup_depth = true;
+      }
+      start_labeled_block(target.label);
       emit_statement(node.children[0]);
       return;
     }
@@ -13789,6 +15049,7 @@ public:
                                function_symbol_entries_,
                                function_symbol_lookup_index(),
                                function_symbol_nodes_,
+                               c_linkage_function_symbols_,
                                function_virtual_base_layouts_,
                                class_virtual_base_layouts_,
                                function_parameter_virtual_base_layouts_,
@@ -13816,6 +15077,7 @@ public:
                                function_symbols_, function_symbol_entries_,
                                function_symbol_lookup_index(),
                                function_symbol_nodes_,
+                               c_linkage_function_symbols_,
                                function_virtual_base_layouts_,
                                class_virtual_base_layouts_,
                                function_parameter_virtual_base_layouts_,
@@ -13846,6 +15108,7 @@ public:
                                function_symbols_, function_symbol_entries_,
                                function_symbol_lookup_index(),
                                function_symbol_nodes_,
+                               c_linkage_function_symbols_,
                                function_virtual_base_layouts_,
                                class_virtual_base_layouts_,
                                function_parameter_virtual_base_layouts_,
@@ -13917,6 +15180,8 @@ public:
           special_function_role_for_symbol(function.name),
           function_symbol_is_c_linkage(function.name),
           binding_for_defined_symbol(function.name));
+      out.metadata.object_output_root =
+          function.metadata.object_output_root;
       out.metadata.object_trivial_lifecycle =
           function.metadata.object_trivial_lifecycle;
       for(size_t pi = 0; pi < function.params.size(); ++pi) {
@@ -14549,6 +15814,11 @@ private:
                                   binding,
                                   target_symbol);
     declaration.metadata.object_symbol = wrapper_object;
+    program.exported_symbols.push_back(
+        symbol_linkage::make_object_symbol_identity(
+            wrapper_internal,
+            wrapper_object,
+            variable_symbol.linkage));
     record_function_declaration(program,
                                 emitted_function_declarations,
                                 declaration);
@@ -15199,6 +16469,426 @@ private:
     return true;
   }
 
+  struct GlobalAggregateArrayDataItem
+  {
+    size_t offset = 0;
+    size_t size = 0;
+    string text;
+  };
+
+  bool append_sorted_global_data_items(
+      vector<string> & data_items,
+      vector<GlobalAggregateArrayDataItem> & items,
+      size_t total_size)
+  {
+    sort(items.begin(),
+         items.end(),
+         [](const GlobalAggregateArrayDataItem & lhs,
+            const GlobalAggregateArrayDataItem & rhs)
+         {
+           return lhs.offset < rhs.offset;
+         });
+
+    size_t current_offset = 0;
+    for(size_t i = 0; i < items.size(); ++i) {
+      if(items[i].offset < current_offset ||
+         items[i].size > total_size ||
+         items[i].offset > total_size - items[i].size) {
+        return false;
+      }
+      if(items[i].offset > current_offset) {
+        data_items.push_back(string("zero ") +
+                             to_string(items[i].offset - current_offset));
+      }
+      data_items.push_back(items[i].text);
+      current_offset = items[i].offset + items[i].size;
+    }
+    if(current_offset < total_size) {
+      data_items.push_back(string("zero ") + to_string(total_size - current_offset));
+    }
+    return true;
+  }
+
+  const CallSemNode * global_array_assignment_subscript(const CallSemNode & node,
+                                                        const CallSemNode & variable) const
+  {
+    if(node.kind == CallSemKind::subscript_expression &&
+       node.children.size() == 2 &&
+       node_internal_symbol(node.children[0]) == node_internal_symbol(variable)) {
+      return &node;
+    }
+    if(node.kind == CallSemKind::member_expression && !node.children.empty()) {
+      return global_array_assignment_subscript(node.children[0], variable);
+    }
+    return nullptr;
+  }
+
+  bool format_global_data_item_for_value(const TypePtr & item_type,
+                                         const CallSemNode & value_node,
+                                         string & out)
+  {
+    string value;
+    bool is_addr = false;
+    long long addr_addend = 0;
+    if(!evaluate_global_initializer(value_node, value, is_addr, addr_addend)) {
+      return false;
+    }
+    if(is_addr) {
+      if(is_member_function_pointer_type(item_type)) {
+        if(addr_addend != 0) {
+          throw logic_error("member-function pointer global initializer addend unsupported");
+        }
+        vector<string> items;
+        append_member_function_pointer_global_data_items(items, value);
+        if(items.size() != 1) {
+          return false;
+        }
+        out = items[0];
+        return true;
+      }
+      out = string("ptr addr ") + format_global_address_operand(value, addr_addend);
+      return true;
+    }
+    if(is_pointer_type(item_type) && is_null_pointer_global_initializer(value_node)) {
+      out = string("zero ") + to_string(backend_storage_size(item_type));
+      return true;
+    }
+    out = lowir_memory_type_for(item_type) + " " + value;
+    return true;
+  }
+
+  bool collect_global_aggregate_array_assignment(
+      const CallSemNode & variable,
+      const TypePtr & array_type,
+      const CallSemNode & statement,
+      GlobalAggregateArrayDataItem & out)
+  {
+    TypePtr base = strip_top_level_cv(array_type);
+    if(!base || base->kind != Type::TK_ARRAY ||
+       statement.kind != CallSemKind::expression_statement ||
+       statement.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & assignment = statement.children[0];
+    if(assignment.kind != CallSemKind::assignment_expression ||
+       assignment.children.size() != 2 ||
+       !callsem_has_token(assignment, OP_ASS)) {
+      return false;
+    }
+
+    const CallSemNode & lhs = assignment.children[0];
+    if(lhs.kind != CallSemKind::member_expression ||
+       !lhs.has_uint_value ||
+       callsem_bit_field_width(lhs) != 0) {
+      return false;
+    }
+    const CallSemNode * subscript =
+        global_array_assignment_subscript(lhs, variable);
+    if(!subscript ||
+       subscript->children.size() != 2 ||
+       !subscript->children[1].has_uint_value) {
+      return false;
+    }
+
+    const unsigned long long raw_index =
+        callsem_uint_value(subscript->children[1]);
+    if(raw_index >= base->bound) {
+      throw logic_error("too many global array initializer elements");
+    }
+
+    TypePtr item_type = remove_reference_type(lhs.semantic_type);
+    TypePtr item_base = strip_top_level_cv(item_type);
+    if(!item_type ||
+       (item_base &&
+        (item_base->kind == Type::TK_ARRAY ||
+         is_complete_class_value_type(item_base)))) {
+      return false;
+    }
+
+    const size_t element_size = backend_storage_size(base->inner);
+    const size_t item_size = backend_storage_size(item_type);
+    const unsigned long long field_offset = callsem_uint_value(lhs);
+    if(field_offset > element_size ||
+       item_size > element_size - static_cast<size_t>(field_offset)) {
+      return false;
+    }
+
+    string item_text;
+    if(!format_global_data_item_for_value(item_type,
+                                          assignment.children[1],
+                                          item_text)) {
+      return false;
+    }
+
+    out.offset = static_cast<size_t>(raw_index) * element_size +
+                 static_cast<size_t>(field_offset);
+    out.size = item_size;
+    out.text = item_text;
+    return true;
+  }
+
+  bool global_array_element_address_index(const CallSemNode & expr,
+                                          const CallSemNode & variable,
+                                          unsigned long long & out) const
+  {
+    if(expr.kind != CallSemKind::unary_expression ||
+       !callsem_has_token(expr, OP_AMP) ||
+       expr.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & subscript = expr.children[0];
+    if(subscript.kind != CallSemKind::subscript_expression ||
+       subscript.children.size() != 2 ||
+       node_internal_symbol(subscript.children[0]) != node_internal_symbol(variable) ||
+       !subscript.children[1].has_uint_value) {
+      return false;
+    }
+    out = callsem_uint_value(subscript.children[1]);
+    return true;
+  }
+
+  const CallSemNode * function_node_for_static_constructor_callee(
+      const CallSemNode & callee) const
+  {
+    string symbol = callsem_symbol(callee).internal_symbol;
+    if(symbol.empty()) {
+      const string lookup_name =
+          callsem_resolved_name(callee).empty() ? callee.text.str() :
+              callsem_resolved_name(callee);
+      symbol = try_lookup_function_symbol_with_index(function_symbols_,
+                                                     function_symbol_entries_,
+                                                     function_symbol_lookup_index(),
+                                                     lookup_name,
+                                                     callee.semantic_type);
+    }
+    if(symbol.empty()) {
+      return nullptr;
+    }
+    map<string, const CallSemNode *>::const_iterator found =
+        function_symbol_nodes_.find(symbol);
+    return found == function_symbol_nodes_.end() ? nullptr : found->second;
+  }
+
+  const CallSemNode * compound_body_child(const CallSemNode & function) const
+  {
+    for(size_t i = 0; i < function.children.size(); ++i) {
+      if(function.children[i].kind == CallSemKind::compound_statement) {
+        return &function.children[i];
+      }
+    }
+    return nullptr;
+  }
+
+  bool constructor_static_parameters(const CallSemNode & constructor,
+                                     vector<const CallSemNode *> & out) const
+  {
+    out.clear();
+    for(size_t i = 0; i < constructor.children.size(); ++i) {
+      if(constructor.children[i].kind == CallSemKind::parameter) {
+        out.push_back(&constructor.children[i]);
+      }
+    }
+    return !out.empty() && out[0]->text == "this";
+  }
+
+  const CallSemNode * constructor_call_argument_for_parameter(
+      const vector<const CallSemNode *> & params,
+      const CallSemNode & call,
+      const CallSemNode & parameter) const
+  {
+    if(parameter.kind != CallSemKind::id_expression) {
+      return nullptr;
+    }
+    for(size_t i = 1; i < params.size(); ++i) {
+      if(params[i]->text == parameter.text) {
+        const size_t call_index = i + 1;
+        return call_index < call.children.size() ? &call.children[call_index] : nullptr;
+      }
+    }
+    return nullptr;
+  }
+
+  bool collect_global_class_array_constructor_assignment(
+      const CallSemNode & variable,
+      const TypePtr & array_type,
+      const CallSemNode & call,
+      const vector<const CallSemNode *> & params,
+      const CallSemNode & statement,
+      size_t element_offset,
+      GlobalAggregateArrayDataItem & out)
+  {
+    if(statement.kind != CallSemKind::expression_statement ||
+       statement.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & assignment = statement.children[0];
+    if(assignment.kind != CallSemKind::assignment_expression ||
+       assignment.children.size() != 2 ||
+       !callsem_has_token(assignment, OP_ASS)) {
+      return false;
+    }
+
+    const CallSemNode & lhs = assignment.children[0];
+    if(lhs.kind != CallSemKind::member_expression ||
+       lhs.children.size() != 1 ||
+       lhs.children[0].kind != CallSemKind::id_expression ||
+       lhs.children[0].text != "this" ||
+       !lhs.has_uint_value ||
+       callsem_bit_field_width(lhs) != 0) {
+      return false;
+    }
+
+    TypePtr item_type = remove_reference_type(lhs.semantic_type);
+    TypePtr item_base = strip_top_level_cv(item_type);
+    if(!item_type ||
+       (item_base &&
+        (item_base->kind == Type::TK_ARRAY ||
+         is_complete_class_value_type(item_base)))) {
+      return false;
+    }
+
+    const CallSemNode * value_node =
+        constructor_call_argument_for_parameter(params, call, assignment.children[1]);
+    if(value_node == nullptr) {
+      value_node = &assignment.children[1];
+    }
+
+    string item_text;
+    if(!format_global_data_item_for_value(item_type, *value_node, item_text)) {
+      return false;
+    }
+
+    const size_t element_size = backend_storage_size(array_type->inner);
+    const size_t item_size = backend_storage_size(item_type);
+    const unsigned long long field_offset = callsem_uint_value(lhs);
+    if(field_offset > element_size ||
+       item_size > element_size - static_cast<size_t>(field_offset)) {
+      return false;
+    }
+
+    out.offset = element_offset * element_size + static_cast<size_t>(field_offset);
+    out.size = item_size;
+    out.text = item_text;
+    return true;
+  }
+
+  bool collect_global_class_array_constructor_action(
+      const CallSemNode & variable,
+      const TypePtr & array_type,
+      const CallSemNode & action,
+      vector<GlobalAggregateArrayDataItem> & items)
+  {
+    if(action.kind != CallSemKind::constructor_action ||
+       action.children.size() != 1) {
+      return false;
+    }
+    const CallSemNode & call = action.children[0];
+    if(call.kind != CallSemKind::call_expression ||
+       call.children.size() < 2 ||
+       call.children[0].kind != CallSemKind::callee ||
+       !is_constructor_function_name(call.children[0].text)) {
+      return false;
+    }
+
+    unsigned long long raw_index = 0;
+    if(!global_array_element_address_index(call.children[1], variable, raw_index)) {
+      return false;
+    }
+    if(raw_index >= array_type->bound) {
+      throw logic_error("too many global array initializer elements");
+    }
+
+    const CallSemNode * constructor =
+        function_node_for_static_constructor_callee(call.children[0]);
+    if(constructor == nullptr) {
+      return false;
+    }
+    vector<const CallSemNode *> params;
+    if(!constructor_static_parameters(*constructor, params) ||
+       params.size() + 1 != call.children.size()) {
+      return false;
+    }
+
+    const CallSemNode * body = compound_body_child(*constructor);
+    if(body == nullptr) {
+      return false;
+    }
+    for(size_t i = 0; i < body->children.size(); ++i) {
+      GlobalAggregateArrayDataItem item;
+      if(!collect_global_class_array_constructor_assignment(
+             variable,
+             array_type,
+             call,
+             params,
+             body->children[i],
+             static_cast<size_t>(raw_index),
+             item)) {
+        return false;
+      }
+      items.push_back(item);
+    }
+    return true;
+  }
+
+  bool append_global_class_array_action_items(
+      vector<string> & data_items,
+      const CallSemNode & variable,
+      const TypePtr & array_type)
+  {
+    TypePtr base = strip_top_level_cv(array_type);
+    if(!base || base->kind != Type::TK_ARRAY ||
+       !is_complete_class_value_type(strip_top_level_cv(base->inner)) ||
+       variable.children.empty()) {
+      return false;
+    }
+
+    vector<GlobalAggregateArrayDataItem> items;
+    items.reserve(variable.children.size() * 2);
+    for(size_t i = 0; i < variable.children.size(); ++i) {
+      if(variable.children[i].kind != CallSemKind::constructor_action) {
+        return false;
+      }
+      if(!collect_global_class_array_constructor_action(variable,
+                                                        base,
+                                                        variable.children[i],
+                                                        items)) {
+        return false;
+      }
+    }
+    return append_sorted_global_data_items(data_items,
+                                           items,
+                                           backend_storage_size(array_type));
+  }
+
+  bool append_global_aggregate_array_assignment_items(
+      vector<string> & data_items,
+      const CallSemNode & variable,
+      const TypePtr & array_type)
+  {
+    TypePtr base = strip_top_level_cv(array_type);
+    if(!base || base->kind != Type::TK_ARRAY ||
+       !is_complete_class_value_type(strip_top_level_cv(base->inner)) ||
+       variable.children.empty()) {
+      return false;
+    }
+
+    vector<GlobalAggregateArrayDataItem> items;
+    items.reserve(variable.children.size());
+    for(size_t i = 0; i < variable.children.size(); ++i) {
+      GlobalAggregateArrayDataItem item;
+      if(!collect_global_aggregate_array_assignment(variable,
+                                                    array_type,
+                                                    variable.children[i],
+                                                    item)) {
+        return false;
+      }
+      items.push_back(item);
+    }
+    return append_sorted_global_data_items(data_items,
+                                           items,
+                                           backend_storage_size(array_type));
+  }
+
   void append_local_static_guard_global(const CallSemNode & node)
   {
     if(callsem_local_static_guard_symbol(node).empty()) {
@@ -15268,10 +16958,12 @@ private:
   map<string, string> thread_local_wrapper_targets_;
   map<string, string> thread_local_wrapper_object_symbols_;
   vector<const CallSemNode *> function_nodes_;
+  map<string, const CallSemNode *> copy_constructor_order_prerequisites_;
   vector<const CallSemNode *> global_ctor_actions_;
   vector<const CallSemNode *> global_dtor_actions_;
   vector<pair<string, const CallSemNode *> > thread_local_init_actions_;
   vector<unique_ptr<CallSemNode> > synthetic_nodes_;
+  unordered_set<string> emitted_function_symbols_;
   mutable FunctionSymbolLookupIndex function_symbol_lookup_index_;
   mutable bool function_symbol_lookup_index_dirty_ = true;
   mutable unordered_set<string> generated_function_symbol_cache_;
@@ -15438,8 +17130,12 @@ private:
     if(object_symbol.empty()) {
       throw logic_error("failed to derive host typeinfo name symbol for " + describe_type(type));
     }
+    const string structural_symbol =
+        lowir_type_encoding_name("__typeinfo_name_type", type);
     const string internal_symbol =
-        lowir_name(string("__typeinfo_name::") + describe_type(type));
+        structural_symbol.empty() ?
+            lowir_name(string("__typeinfo_name::") + describe_type(type)) :
+            structural_symbol;
     if(!has_global_name(internal_symbol)) {
       LowIRGlobal global = make_data_global(internal_symbol, true);
       const string encoded_name = object_symbol.substr(4);
@@ -15472,6 +17168,12 @@ private:
     } else if(is_named_enum_scalar_type(base)) {
       internal_name = "__external_rtti_vtable::__enum_type_info";
       object_symbol = "_ZTVN10__cxxabiv116__enum_type_infoE";
+    } else if(base && base->kind == Type::TK_FUNCTION) {
+      internal_name = "__external_rtti_vtable::__function_type_info";
+      object_symbol = "_ZTVN10__cxxabiv120__function_type_infoE";
+    } else if(base && base->kind == Type::TK_ARRAY) {
+      internal_name = "__external_rtti_vtable::__array_type_info";
+      object_symbol = "_ZTVN10__cxxabiv117__array_type_infoE";
     }
     if(!internal_name || !object_symbol) {
       return string();
@@ -15481,12 +17183,134 @@ private:
     return internal_symbol;
   }
 
+  static bool is_named_class_like_rtti_type(const TypePtr & type)
+  {
+    TypePtr base = strip_top_level_cv(type);
+    if(!base || base->kind != Type::TK_NAMED) {
+      return false;
+    }
+    return base->named_key.compare(0, 6, "class ") == 0 ||
+           base->named_key.compare(0, 7, "struct ") == 0 ||
+           base->named_key.compare(0, 6, "union ") == 0;
+  }
+
+  void ensure_host_incomplete_class_rtti_global(const TypePtr & type,
+                                                const char * reason,
+                                                const string & owner = string())
+  {
+    if(!emit_runtime_support_ || !type || !is_named_class_like_rtti_type(type)) {
+      return;
+    }
+
+    const string rtti_symbol = rtti_symbol_for_type(type);
+    const LowIRGlobal * existing = find_global_name(rtti_symbol);
+    if(existing && existing->kind == LowIRGlobal::LG_DATA &&
+       existing->data_items.size() >= 2) {
+      export_rtti_symbol(rtti_symbol, type, reason, owner);
+      return;
+    }
+
+    const string typeinfo_vtable_symbol =
+        symbol_linkage::internal_symbol_from_name(
+            "__external_rtti_vtable::__class_type_info");
+    external_object_symbols_[typeinfo_vtable_symbol] =
+        "_ZTVN10__cxxabiv117__class_type_infoE";
+
+    LowIRGlobal global = make_data_global(rtti_symbol, true);
+    global.data_items.push_back(string("ptr addr ") + typeinfo_vtable_symbol + " + 16");
+    global.data_items.push_back(string("ptr addr ") + ensure_host_typeinfo_name_global(type));
+
+    LowIRGlobal * replacement = find_global_name(rtti_symbol);
+    if(replacement) {
+      *replacement = global;
+    } else {
+      globals_.push_back(global);
+    }
+    export_rtti_symbol(rtti_symbol, type, reason, owner);
+  }
+
+  unsigned int host_pointer_rtti_flags_for_pointee(const TypePtr & pointee) const
+  {
+    unsigned int flags = 0;
+    TypePtr current = pointee;
+    if(current && current->kind == Type::TK_CV) {
+      if(current->cv_const) {
+        flags |= 0x1u;
+      }
+      if(current->cv_volatile) {
+        flags |= 0x2u;
+      }
+      current = current->inner;
+    }
+
+    TypePtr base = strip_top_level_cv(current);
+    if(base && is_named_class_like_rtti_type(base) && !base->named_has_layout) {
+      flags |= 0x8u;
+    }
+    return flags;
+  }
+
+  string host_pointer_pointee_typeinfo_reference_symbol(const TypePtr & pointee)
+  {
+    TypePtr base = strip_top_level_cv(pointee);
+    if(base && is_named_class_like_rtti_type(base) && !base->named_has_layout) {
+      ensure_host_incomplete_class_rtti_global(base, "pointer-rtti-pointee");
+      return rtti_symbol_for_type(base);
+    }
+    return host_typeinfo_reference_symbol(base);
+  }
+
+  bool ensure_host_pointer_rtti_global(const TypePtr & type,
+                                       const char * reason,
+                                       const string & owner = string())
+  {
+    TypePtr base = strip_top_level_cv(type);
+    if(!emit_runtime_support_ || !base || base->kind != Type::TK_POINTER ||
+       !base->inner) {
+      return false;
+    }
+
+    const string rtti_symbol = rtti_symbol_for_type(type);
+    const LowIRGlobal * existing = find_global_name(rtti_symbol);
+    if(existing && existing->kind == LowIRGlobal::LG_DATA &&
+       existing->data_items.size() >= 4) {
+      export_rtti_symbol(rtti_symbol, type, reason, owner);
+      return true;
+    }
+
+    const string typeinfo_vtable_symbol =
+        symbol_linkage::internal_symbol_from_name(
+            "__external_rtti_vtable::__pointer_type_info");
+    external_object_symbols_[typeinfo_vtable_symbol] =
+        "_ZTVN10__cxxabiv119__pointer_type_infoE";
+
+    LowIRGlobal global = make_data_global(rtti_symbol, true);
+    global.data_items.push_back(string("ptr addr ") + typeinfo_vtable_symbol + " + 16");
+    global.data_items.push_back(string("ptr addr ") + ensure_host_typeinfo_name_global(type));
+    global.data_items.push_back(
+        string("i32 ") + to_string(host_pointer_rtti_flags_for_pointee(base->inner)));
+    global.data_items.push_back(
+        string("ptr addr ") + host_pointer_pointee_typeinfo_reference_symbol(base->inner));
+
+    LowIRGlobal * replacement = find_global_name(rtti_symbol);
+    if(replacement) {
+      *replacement = global;
+    } else {
+      globals_.push_back(global);
+    }
+    export_rtti_symbol(rtti_symbol, type, reason, owner);
+    return true;
+  }
+
   bool ensure_host_nonclass_rtti_global(const TypePtr & type,
                                         const char * reason,
                                         const string & owner = string())
   {
     if(!emit_runtime_support_ || !type || is_complete_class_value_type(type)) {
       return false;
+    }
+    if(ensure_host_pointer_rtti_global(type, reason, owner)) {
+      return true;
     }
     const string typeinfo_vtable_symbol = host_nonclass_typeinfo_vtable_symbol(type);
     if(typeinfo_vtable_symbol.empty()) {
@@ -15529,9 +17353,13 @@ private:
       }
       const string host_symbol = symbol_linkage::typeinfo_symbol_for_type(type);
       if(!host_symbol.empty()) {
+        const string structural_symbol =
+            lowir_type_encoding_name("__external_rtti_type", type);
         const string external_symbol =
-            symbol_linkage::internal_symbol_from_name("__external_rtti::" +
-                                                      describe_type(type));
+            structural_symbol.empty() ?
+                symbol_linkage::internal_symbol_from_name("__external_rtti::" +
+                                                          describe_type(type)) :
+                structural_symbol;
         external_object_symbols_[external_symbol] = host_symbol;
         return external_symbol;
       }
@@ -15543,8 +17371,13 @@ private:
     if(host_symbol.empty()) {
       return internal_symbol;
     }
+    const string structural_symbol =
+        lowir_type_encoding_name("__external_rtti_type", type);
     const string external_symbol =
-        symbol_linkage::internal_symbol_from_name("__external_rtti::" + describe_type(type));
+        structural_symbol.empty() ?
+            symbol_linkage::internal_symbol_from_name("__external_rtti::" +
+                                                      describe_type(type)) :
+            structural_symbol;
     external_object_symbols_[external_symbol] = host_symbol;
     return external_symbol;
   }
@@ -16620,6 +18453,7 @@ private:
       for(size_t i = 0; i < translation_units_.size(); ++i) {
         collect_symbols(translation_units_[i]);
       }
+      build_constructor_copy_order_prerequisites();
     }
     {
       semantic_metrics::ScopedPhaseTimer phase("lowir.collect.virtual_runtime_classes");
@@ -17326,7 +19160,10 @@ private:
       if(!function_symbol.empty()) {
         note_referenced_function_signature(function_symbol, node.semantic_type);
         if(symbol_linkage::has_object_symbol(callsem_symbol(node))) {
-          set_exported_symbol(function_symbol, callsem_symbol(node), "function-id", node.text);
+          note_runtime_function_symbol_identity(function_symbol,
+                                                callsem_symbol(node),
+                                                "function-id",
+                                                node.text);
         }
         if(current_function.empty()) {
           referenced_function_symbols_.insert(function_symbol);
@@ -17456,6 +19293,7 @@ private:
 
   void emit_function_definition(const CallSemNode & node)
   {
+    emitted_function_symbols_.insert(node_internal_symbol(node));
     collect_static_storage_globals(node);
     collect_dynamic_typeid_fallback_support(node);
     if(symbol_linkage::has_object_symbol(callsem_symbol(node))) {
@@ -17471,6 +19309,7 @@ private:
                              function_symbols_, function_symbol_entries_,
                              function_symbol_lookup_index(),
                              function_symbol_nodes_,
+                             c_linkage_function_symbols_,
                              function_virtual_base_layouts_,
                              class_virtual_base_layouts_,
                              function_parameter_virtual_base_layouts_,
@@ -17492,6 +19331,114 @@ private:
     functions_.push_back(function);
   }
 
+  bool constructor_transfer_kind_for_lowir(const CallSemNode & node,
+                                           Type::Kind & ref_kind,
+                                           TypePtr & object_type) const
+  {
+    if(node.kind != CallSemKind::function_definition ||
+       !is_constructor_function_name(node.text)) {
+      return false;
+    }
+    TypePtr function_type = strip_top_level_cv(node.semantic_type);
+    if(!function_type ||
+       function_type->kind != Type::TK_FUNCTION ||
+       !is_void_type(function_type->inner) ||
+       function_type->params.size() < 2) {
+      return false;
+    }
+
+    TypePtr this_type = strip_top_level_cv(function_type->params[0]);
+    if(!this_type || this_type->kind != Type::TK_POINTER) {
+      return false;
+    }
+    object_type = strip_top_level_cv(this_type->inner);
+    if(!is_complete_class_value_type(object_type)) {
+      return false;
+    }
+
+    for(size_t i = 1; i < function_type->params.size(); ++i) {
+      if(same_class_reference_parameter_for_lowir(object_type,
+                                                  function_type->params[i],
+                                                  Type::TK_LVALUE_REFERENCE)) {
+        ref_kind = Type::TK_LVALUE_REFERENCE;
+        return true;
+      }
+      if(same_class_reference_parameter_for_lowir(object_type,
+                                                  function_type->params[i],
+                                                  Type::TK_RVALUE_REFERENCE)) {
+        ref_kind = Type::TK_RVALUE_REFERENCE;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const CallSemNode * referenced_copy_constructor_for_move(
+      const CallSemNode & move_node) const
+  {
+    map<string, const CallSemNode *>::const_iterator found =
+        copy_constructor_order_prerequisites_.find(node_internal_symbol(move_node));
+    if(found == copy_constructor_order_prerequisites_.end()) {
+      return nullptr;
+    }
+    const string copy_symbol = node_internal_symbol(*found->second);
+    if(emitted_function_symbols_.count(copy_symbol) != 0) {
+      return nullptr;
+    }
+    return found->second;
+  }
+
+  string constructor_order_key(const TypePtr & object_type,
+                               symbol_linkage::SpecialMemberEntryPointKind entry) const
+  {
+    return stable_function_type_key(object_type) + "#" +
+           to_string(static_cast<int>(entry));
+  }
+
+  void build_constructor_copy_order_prerequisites()
+  {
+    map<string, const CallSemNode *> copy_by_key;
+    vector<pair<string, string> > move_keys;
+    for(size_t i = 0; i < function_nodes_.size(); ++i) {
+      const CallSemNode & node = *function_nodes_[i];
+      if(node.kind != CallSemKind::function_definition) {
+        continue;
+      }
+      Type::Kind ref_kind = Type::TK_LVALUE_REFERENCE;
+      TypePtr object_type;
+      if(!constructor_transfer_kind_for_lowir(node, ref_kind, object_type)) {
+        continue;
+      }
+      const string key =
+          constructor_order_key(object_type, callsem_special_member_entry_point_kind(node));
+      if(ref_kind == Type::TK_LVALUE_REFERENCE) {
+        copy_by_key[key] = &node;
+      } else if(ref_kind == Type::TK_RVALUE_REFERENCE) {
+        move_keys.push_back(make_pair(node_internal_symbol(node), key));
+      }
+    }
+    for(size_t i = 0; i < move_keys.size(); ++i) {
+      map<string, const CallSemNode *>::const_iterator copy =
+          copy_by_key.find(move_keys[i].second);
+      if(copy != copy_by_key.end()) {
+        copy_constructor_order_prerequisites_[move_keys[i].first] = copy->second;
+      }
+    }
+  }
+
+  bool emit_function_definition_with_order_prerequisites(const CallSemNode & node)
+  {
+    const string symbol = node_internal_symbol(node);
+    if(emitted_function_symbols_.count(symbol) != 0) {
+      return false;
+    }
+    if(const CallSemNode * copy_node = referenced_copy_constructor_for_move(node)) {
+      emit_function_definition(*copy_node);
+    }
+    emit_function_definition(node);
+    return true;
+  }
+
   bool emit_referenced_output_on_use_function_definition_pass()
   {
     collect_reachable_function_symbols();
@@ -17508,8 +19455,7 @@ private:
          generated_function_symbol_exists(symbol)) {
         continue;
       }
-      emit_function_definition(node);
-      emitted = true;
+      emitted = emit_function_definition_with_order_prerequisites(node) || emitted;
     }
     return emitted;
   }
@@ -17572,6 +19518,12 @@ private:
 
   string external_runtime_symbol(const string & helper_symbol)
   {
+    const string direct_symbol = "@" + helper_symbol;
+    if(function_symbol_is_c_linkage(direct_symbol) &&
+       known_function_symbol_exists(direct_symbol)) {
+      return direct_symbol;
+    }
+
     const string internal_symbol =
         symbol_linkage::internal_symbol_from_name("__external_runtime::" + helper_symbol);
     external_function_symbols_[internal_symbol] = helper_symbol;
@@ -17842,7 +19794,7 @@ private:
       if(should_skip_unreferenced_output_on_use_function(node)) {
         return;
       }
-      emit_function_definition(node);
+      emit_function_definition_with_order_prerequisites(node);
       return;
     }
 
@@ -18300,6 +20252,8 @@ private:
     if(base && base->kind == Type::TK_ARRAY) {
       const GlobalBinding & binding = global_bindings_.find(node_internal_symbol(node))->second;
       LowIRGlobal global = make_data_global(binding.storage, false, binding.thread_local_storage);
+      const bool guarded_array =
+          !callsem_local_static_guard_symbol(node).empty();
       if(node.children.empty()) {
         global.data_items.push_back(string("zero ") + to_string(backend_storage_size(node.semantic_type)));
       } else if(node.children.size() == 1 &&
@@ -18308,7 +20262,7 @@ private:
         if(init.children.size() > base->bound) {
           throw logic_error("too many global array initializer elements");
         }
-        if(!callsem_local_static_guard_symbol(node).empty() &&
+        if(guarded_array &&
            is_complete_class_value_type(strip_top_level_cv(base->inner))) {
           global.data_items.push_back(
               string("zero ") + to_string(backend_storage_size(node.semantic_type)));
@@ -18326,8 +20280,21 @@ private:
           }
           throw logic_error("unsupported global array initializer for " + node.text);
         }
+      } else if(guarded_array &&
+                all_of(node.children.begin(),
+                       node.children.end(),
+                       [](const CallSemNode & child)
+                       {
+                         return child.kind == CallSemKind::constructor_action ||
+                                child.kind == CallSemKind::destructor_action;
+                       })) {
+        global.data_items.push_back(
+            string("zero ") + to_string(backend_storage_size(node.semantic_type)));
       } else {
-        throw logic_error("unsupported global array initializer for " + node.text);
+        if(!append_global_class_array_action_items(global.data_items, node, base) &&
+           !append_global_aggregate_array_assignment_items(global.data_items, node, base)) {
+          throw logic_error("unsupported global array initializer for " + node.text);
+        }
       }
       globals_.push_back(global);
       append_local_static_guard_global(node);
@@ -18485,6 +20452,19 @@ private:
         arithmetic_result_base->kind == Type::TK_FUNDAMENTAL &&
         (arithmetic_result_base->fundamental == FT_INT128 ||
          arithmetic_result_base->fundamental == FT_UINT128);
+    if(node.kind == CallSemKind::id_expression &&
+       node.value_category == CVC_LVALUE &&
+       base &&
+       (is_integral_type(base) || is_named_enum_scalar_type(base))) {
+      if(node.has_int_value) {
+        out = to_string(callsem_int_value(node));
+        return true;
+      }
+      if(node.has_uint_value) {
+        out = to_string(callsem_uint_value(node));
+        return true;
+      }
+    }
     if(node.kind == CallSemKind::id_expression &&
        node.value_category == CVC_LVALUE &&
        base && base->kind == Type::TK_ARRAY) {

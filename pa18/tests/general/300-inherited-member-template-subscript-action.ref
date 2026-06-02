@@ -1,0 +1,103 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $name : obj<4x4>
+  slot $tag : obj<4x4>
+  slot $arg__1 : obj<4x4>
+  slot $arg__2 : obj<1x1>
+  slot $cond__3 : i32
+
+  block ^entry:
+    %t1 = addr $name
+    call void @rule__rule(%t1)
+    %t2 = addr $tag
+    call void @rule__rule(%t2)
+    %t3 = addr $tag
+    %t4 = addr $arg__1
+    %t5 = addr $name
+    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t7 = addr $arg__2
+    call void @action__action(%t7)
+    %t8 = call obj<4x4> @parser_base_rule___operator__(%t6, %t7)
+    copyobj 4x4 %t8, %t4
+    %t9 = call ptr @rule__operator___ov3(%t3, %t4)
+    %t10 = addr $tag
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load i32 %t11
+    %t13 = cmp eq i32 %t12, 7
+    branch %t13, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__3
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__3
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t14 = load i32 $cond__3
+    return i32 %t14
+}
+function @parser_base_rule___operator__(%this : ptr, %action : ptr [pass=reference]) -> obj<4x4> [binding=weak, object=_ZNK11parser_baseI4ruleEixI6actionEE13parser_actionIS0_T_ERKS5_] {
+  slot $this : ptr
+  slot $action : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %action, $action
+    %t1 = addr $retobj__1
+    %t2 = load ptr $this
+    %t3 = load ptr $action
+    call void @parser_action_rule__action___parser_action(%t1, %t2, %t3)
+    return obj<4x4> $retobj__1
+}
+function @rule__operator___ov3(%this : ptr, %parser : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN4ruleaSI13parser_actionIS_6actionEEERS_RKT_] {
+  slot $this : ptr
+  slot $parser : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %parser, $parser
+    %t1 = load ptr $parser
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 %t3, %t5
+    %t6 = load ptr $this
+    return ptr %t6
+}
+function @action__action(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6actionC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @rule__rule(%this : ptr) -> void [binding=weak, object=_ZN4ruleC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @parser_action_rule__action___parser_action(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN13parser_actionI4rule6actionEC1ERKS0_RKS1_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    store ptr %__param2, $__param2
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+alias object _ZN6actionC2Ev = @action__action
+alias object _ZN4ruleC2Ev = @rule__rule
+alias object _ZN13parser_actionI4rule6actionEC2ERKS0_RKS1_ = @parser_action_rule__action___parser_action

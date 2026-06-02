@@ -1,0 +1,73 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main
+    mov rdi, rax
+    exit
+
+global @seen
+  storage scalar i32
+  init i32 0
+
+global @pair
+  storage data
+  item f64 1.0
+  item i32 2
+
+function @check
+  abi
+    param %p -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 64
+    scratch_bytes 48
+    preserve <gpr0>
+
+  block ^entry
+    mov r9, rdi
+    mov r8, rdi
+    fmov.f64 xmm0, [r8]
+    fcmp.f64 xmm0, 0.0
+    jp ^rhs
+    jne ^rhs
+    jmp ^end
+
+  block ^rhs
+    mov r8, r9
+    lea r8, [r8+<off0>]
+    load.i32 <gpr0>, [r8]
+    sext.i32 <gpr0>
+    cmp.i32 <gpr0>, 0
+    jne ^then
+    jmp ^end
+
+  block ^then
+    mov rax, 1
+    store.i32 @seen, rax
+    jmp ^end
+
+  block ^end
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+
+  block ^entry
+    mov r8, @pair
+    mov rdi, r8
+    call @check
+    cmp.i32 @seen, 1
+    je ^pass
+    jmp ^fail
+
+  block ^pass
+    mov rax, 0
+    ret rax
+
+  block ^fail
+    mov rax, 1
+    ret rax

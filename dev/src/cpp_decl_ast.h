@@ -22,6 +22,7 @@ struct AstDeclHooks
                      CppAstNode &,
                      std::vector<const CppAstNode *> *)> expand_parameter_clause_packs;
   std::function<bool(const std::string &)> type_name_is_parameter_pack;
+  std::function<void(const std::string &, const TypePtr &)> bind_parameter_name;
   bool normalize_function_parameters = false;
   bool allow_virtual_specifier = false;
 };

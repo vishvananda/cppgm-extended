@@ -272,10 +272,12 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
         boundary >= 2 && tokens.peek(boundary - 2).is_simple(OP_COLON2);
     bool unknown_nested = false;
 
-    if(known_value_template) {
+    if(explicit_template_prefix) {
+      result = true;
+    } else if(known_value_template) {
       result = false;
     } else if(known_value && qualified_member_prefix &&
-              !explicit_template_prefix && !known_type) {
+              !known_type) {
       unknown_nested =
           looks_like_unknown_nested_template_id_at_impl(tokens, boundary, lookup, cache);
       result = unknown_nested;

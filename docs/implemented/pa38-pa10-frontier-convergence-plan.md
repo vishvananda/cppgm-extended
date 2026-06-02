@@ -187,12 +187,16 @@ For each failure:
 4. Reduce away self-host scale and hosted-library noise where possible.
 5. Choose the earliest owning PA based on the underlying feature, not on the
    PA38 rung that exposed it.
-6. Add a minimal durable regression in that owner before or with the fix.
-7. Fix the implementation in `dev/`.
-8. Validate the owner regression and owner suite.
-9. Rerun the active PA38 frontier with
+6. Use `scripts/audit_pa_feature_placement.py --pa <pa> --include-ok
+   --fail-on-early` to check the proposed owner and filename cluster; treat the
+   report as a semantic placement aid, then adjust the reducer when it points at
+   an earlier owner or cluster.
+7. Add a minimal durable regression in that owner before or with the fix.
+8. Fix the implementation in `dev/`.
+9. Validate the owner regression and owner suite.
+10. Rerun the active PA38 frontier with
    `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1`.
-10. Commit the coherent fix batch before moving to an unrelated failure.
+11. Commit the coherent fix batch before moving to an unrelated failure.
 
 Do not change a PA38 test, skip a self-host stage, loosen comparison, or alter
 the self-host wrapper just to get past a failure. If the self-host target

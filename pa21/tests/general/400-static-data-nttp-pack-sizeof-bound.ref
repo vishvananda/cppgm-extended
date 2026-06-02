@@ -1,0 +1,15 @@
+global @literal_bytes_4__7____data [binding=weak, object=_ZN7literalI5bytesIJLh4ELh7EEEE4dataE] = {
+  u8 4
+  u8 7
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = addr @literal_bytes_4__7____data
+    %t2 = unary decay ptr %t1
+    %t3 = index u8 [projection=array_element] %t2, 1
+    %t4 = load u8 %t3
+    %t5 = convert zext i32 u8 %t4
+    %t6 = binary sub i32 %t5, 7
+    return i32 %t6
+}

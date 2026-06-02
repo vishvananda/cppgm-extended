@@ -8,6 +8,7 @@
 
 using namespace std;
 
+#include "builtin_type_transforms.h"
 #include "cpp_syntax.h"
 #include "cppast_parser.h"
 #include "file_timing.h"
@@ -619,8 +620,12 @@ bool template_argument_range_fragment_mode(
       return false;
     }
     size_t call_end = pos;
-    return skip_balanced_group_in_range(tokens, pos, effective_end, call_end) &&
-           call_end == effective_end;
+    if(!skip_balanced_group_in_range(tokens, pos, effective_end, call_end)) {
+      return false;
+    }
+    return call_end == effective_end ||
+           (call_end < effective_end &&
+            token_forces_template_argument_expression_syntax(tokens.peek(call_end)));
   };
 
   const RecogToken & first = tokens.peek(range.first);
@@ -695,6 +700,10 @@ bool template_argument_range_fragment_mode(
         mode = CppAstParser::TAF_PARSE_TYPE_THEN_EXPRESSION;
         return true;
       }
+      if(next.is_simple(OP_LSQUARE)) {
+        mode = CppAstParser::TAF_PARSE_BOTH;
+        return true;
+      }
     }
     if(parsed_name.name_has_template_suffix &&
        parsed_name.name_template_head_component.first <
@@ -722,9 +731,12 @@ bool template_argument_range_fragment_mode(
        next.is_simple(OP_DOTS) ||
        next.is_simple(OP_LPAREN) ||
        next.is_simple(OP_LBRACE) ||
-       next.is_simple(OP_LSQUARE) ||
        is_cv_qualifier(next)) {
       mode = CppAstParser::TAF_PARSE_TYPE_THEN_EXPRESSION;
+      return true;
+    }
+    if(next.is_simple(OP_LSQUARE)) {
+      mode = CppAstParser::TAF_PARSE_BOTH;
       return true;
     }
     }
@@ -1370,22 +1382,7 @@ bool is_builtin_type_transform_identifier(const RecogToken & token)
     return false;
   }
 
-  return token.source == "__remove_cv" ||
-         token.source == "__remove_const" ||
-         token.source == "__remove_volatile" ||
-         token.source == "__remove_extent" ||
-         token.source == "__remove_all_extents" ||
-         token.source == "__remove_pointer" ||
-         token.source == "__remove_reference" ||
-         token.source == "__remove_reference_t" ||
-         token.source == "__remove_cvref" ||
-         token.source == "__decay" ||
-         token.source == "__make_unsigned" ||
-         token.source == "__make_signed" ||
-         token.source == "__add_pointer" ||
-         token.source == "__underlying_type" ||
-         token.source == "__add_lvalue_reference" ||
-         token.source == "__add_rvalue_reference";
+  return builtin_type_transforms::is_supported_name(token.source);
 }
 
 void annotate_builtin_type_transform_node(CppAstNode & node,
@@ -1450,6 +1447,23 @@ bool is_gnu_complex_unary_operator_name(const string & text)
 {
   return text == "__real" || text == "__real__" ||
          text == "__imag" || text == "__imag__";
+}
+
+bool is_coroutine_contextual_keyword(const RecogToken & token,
+                                     const char * spelling)
+{
+  return token.is_identifier() && token.source == spelling;
+}
+
+bool can_parse_coroutine_contextual_keyword_in_template(
+    const RecogToken & token,
+    const char * spelling,
+    size_t template_declaration_depth,
+    bool known_value_name)
+{
+  return template_declaration_depth > 0 &&
+         is_coroutine_contextual_keyword(token, spelling) &&
+         !known_value_name;
 }
 
 void apply_leading_declaration_attributes(CppAstNode & node,
@@ -1621,7 +1635,10 @@ bool is_gnu_float_type_specifier_identifier(const RecogToken & token)
 
 bool is_gnu_int128_type_specifier_identifier(const RecogToken & token)
 {
-  return token.is_identifier() && token.source == "__int128";
+  return token.is_identifier() &&
+         (token.source == "__int128" ||
+          token.source == "__int128_t" ||
+          token.source == "__uint128_t");
 }
 
 bool is_gnu_extension_token(const RecogToken & token)
@@ -1705,6 +1722,33 @@ string current_class_trace_label(const vector<string> & class_name_stack)
     return "<none>";
   }
   return class_name_stack.back();
+}
+
+int nearest_name_scope_index(const template_angle_lookup::NameSetStack * primary,
+                             const template_angle_lookup::NameSetStack * inherited,
+                             text_intern::Atom atom)
+{
+  if(!atom) {
+    return -1;
+  }
+
+  const int inherited_size =
+      inherited ? static_cast<int>(inherited->size()) : 0;
+  if(primary) {
+    for(size_t i = primary->size(); i > 0; --i) {
+      if((*primary)[i - 1].count(atom) != 0) {
+        return inherited_size + static_cast<int>(i - 1);
+      }
+    }
+  }
+  if(inherited) {
+    for(size_t i = inherited->size(); i > 0; --i) {
+      if((*inherited)[i - 1].count(atom) != 0) {
+        return static_cast<int>(i - 1);
+      }
+    }
+  }
+  return -1;
 }
 
 }  // namespace
@@ -2478,16 +2522,16 @@ bool CppAstParser::can_start_decl_specifier_seq() const
   const bool known_value_template =
       is_known_value_template_parameter_identifier(token);
   const bool known_value = is_known_value_name_identifier(token);
+  const bool value_name_preferred =
+      unqualified_identifier_prefers_value_name(token);
   const bool known_type_name =
       is_known_type_name_identifier(token) ||
       is_template_type_parameter_name(token);
   const bool named_candidate =
       token.is_simple(OP_COLON2) ||
       (token.is_identifier() &&
-       !known_value_template &&
-       !known_value &&
        (next.is_simple(OP_COLON2) ||
-        next.is_simple(OP_LT)));
+        (!value_name_preferred && next.is_simple(OP_LT))));
   const bool result = is_decltype_token(token) ||
          (is_gnu_typeof_token(token) && next.is_simple(OP_LPAREN)) ||
          (token.is_identifier() && token.source == "_Atomic" &&
@@ -2503,6 +2547,7 @@ bool CppAstParser::can_start_decl_specifier_seq() const
          is_gnu_decl_specifier_identifier(token) ||
          (named_candidate && can_start_named_decl_specifier_seq()) ||
          (known_type_name &&
+          !value_name_preferred &&
           !next.is_simple(OP_COLON2) &&
           !next.is_simple(OP_LT)) ||
          (token.is_identifier() &&
@@ -2629,6 +2674,7 @@ bool CppAstParser::can_start_type_id() const
          token.is_simple(KW_ENUM) ||
          is_cv_qualifier(token) ||
          is_simple_type_specifier(token) ||
+         is_gnu_int128_type_specifier_identifier(token) ||
          is_known_type_name_identifier(token) ||
          is_template_type_parameter_name(token) ||
          token.is_simple(OP_COLON2) ||
@@ -2786,11 +2832,158 @@ bool CppAstParser::qualified_name_span_prefers_expression(std::size_t begin,
          !scoped_known_type;
 }
 
+bool CppAstParser::qualified_name_span_names_known_type(std::size_t begin,
+                                                        std::size_t end) const
+{
+  if(begin >= end) {
+    return false;
+  }
+
+  const template_angle_lookup::ScopedNameLookup lookup =
+      make_template_angle_lookup();
+  qualified_name_parser::QualifiedNameParseResult parsed;
+  qualified_name_parser::UnqualifiedNameOptions options;
+  options.allow_operator = false;
+  if(!qualified_name_parser::parse_qualified_name(tokens,
+                                                  begin,
+                                                  lookup,
+                                                  options,
+                                                  parsed) ||
+     parsed.end != end ||
+     parsed.name_kind != qualified_name_parser::UNQ_COMPONENT) {
+    return false;
+  }
+
+  const std::pair<std::size_t, std::size_t> name_range =
+      parsed.name_has_template_suffix ?
+          parsed.name_template_head_component :
+          parsed.name_component;
+  if(name_range.first >= name_range.second) {
+    return false;
+  }
+  const std::string name =
+      primary_name_text(token_span_text_spaced(name_range.first,
+                                               name_range.second));
+  if(name.empty()) {
+    return false;
+  }
+
+  const RecogToken & token = tokens.peek(name_range.first);
+  const bool scoped_known_type =
+      is_known_type_name_identifier(token) ||
+      is_template_type_parameter_name(token);
+  if(!parsed.rooted && parsed.qualifiers.empty()) {
+    return scoped_known_type;
+  }
+
+  std::string qualifier_text = parsed.rooted ? std::string("::") : std::string();
+  for(std::size_t i = 0; i < parsed.qualifiers.size(); ++i) {
+    if(!qualifier_text.empty() && qualifier_text != "::") {
+      qualifier_text += "::";
+    }
+    qualifier_text += token_span_text_spaced(parsed.qualifiers[i].first,
+                                             parsed.qualifiers[i].second);
+  }
+  const std::string namespace_key =
+      resolve_visible_namespace_scope_key(qualifier_text);
+  const auto qualifier_names_current_namespace =
+      [&]() -> bool
+      {
+        const std::string normalized = normalized_lookup_name(qualifier_text);
+        const std::string current_key = current_namespace_path_key();
+        if(normalized.empty() || current_key.empty()) {
+          return false;
+        }
+        if(parsed.rooted) {
+          return normalized == current_key;
+        }
+
+        for(std::size_t depth = namespace_path_stack.size(); ; --depth) {
+          std::string candidate;
+          for(std::size_t i = 0; i < depth; ++i) {
+            if(!candidate.empty()) {
+              candidate += "::";
+            }
+            candidate += namespace_path_stack[i];
+          }
+          if(!candidate.empty()) {
+            candidate += "::";
+          }
+          candidate += normalized;
+          if(candidate == current_key) {
+            return true;
+          }
+          if(depth == 0) {
+            break;
+          }
+        }
+        return false;
+      };
+  const bool active_namespace_qualifier = qualifier_names_current_namespace();
+  if(namespace_key.empty() ||
+     (!namespace_scope_exists(namespace_key) && !active_namespace_qualifier)) {
+    return scoped_known_type;
+  }
+
+  const auto type_found = namespace_type_name_scopes.find(namespace_key);
+  bool known_type =
+      type_found != namespace_type_name_scopes.end() &&
+      type_found->second.count(name) != 0;
+  if(active_namespace_qualifier) {
+    const std::size_t namespace_scope_index = namespace_path_stack.size();
+    known_type =
+        known_type ||
+        (namespace_scope_index < type_name_scopes.size() &&
+         type_name_scopes[namespace_scope_index].count(name) != 0);
+  }
+
+  return known_type || scoped_known_type;
+}
+
+bool CppAstParser::qualified_template_id_span_has_head_expression_lookup(
+    std::size_t begin,
+    std::size_t end) const
+{
+  if(begin >= end) {
+    return false;
+  }
+
+  const template_angle_lookup::ScopedNameLookup lookup =
+      make_template_angle_lookup();
+  for(std::size_t open = begin; open < end; ++open) {
+    if(!tokens.peek(open).is_simple(OP_LT)) {
+      continue;
+    }
+
+    std::size_t suffix_end = open;
+    std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
+    if(!template_angle::parse_template_id_suffix_ranges(tokens,
+                                                        open,
+                                                        lookup,
+                                                        suffix_end,
+                                                        arg_ranges) ||
+       suffix_end != end) {
+      continue;
+    }
+
+    if(qualified_name_span_prefers_expression(begin, open) ||
+       (!qualified_name_span_names_known_type(begin, open) &&
+        peek().is_simple(OP_LPAREN))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool CppAstParser::parenthesized_type_id_prefers_expression(
     const CppAstNode & type_id) const
 {
   if(qualified_name_span_prefers_expression(type_id.token_start,
                                             type_id.token_end)) {
+    return true;
+  }
+  if(qualified_template_id_span_has_head_expression_lookup(type_id.token_start,
+                                                           type_id.token_end)) {
     return true;
   }
 
@@ -2804,10 +2997,11 @@ bool CppAstParser::parenthesized_type_id_prefers_expression(
 
   const CppAstNode & head = type_id.children[0].children[0];
   const bool function_like_abstract_declarator =
-      type_id.kind == CppAstKind::type_id &&
-      type_id.children.size() == 2 &&
-      type_id.children[1].kind == CppAstKind::abstract_declarator &&
-      declarator_has_parameter_clause(type_id.children[1]);
+      type_id_has_function_style_abstract_declarator(type_id);
+  if(qualified_template_id_span_has_head_expression_lookup(head.token_start,
+                                                           head.token_end)) {
+    return true;
+  }
   const cpp_decl::QualifiedName * head_syntax = cppast_qualified_name_syntax(head);
   if(head_syntax &&
      (head_syntax->rooted || !head_syntax->qualifiers.empty()) &&
@@ -3363,6 +3557,15 @@ bool CppAstParser::declarator_has_parameter_clause(const CppAstNode & node) cons
     }
   }
   return false;
+}
+
+bool CppAstParser::type_id_has_function_style_abstract_declarator(
+    const CppAstNode & type_id) const
+{
+  return type_id.kind == CppAstKind::type_id &&
+         type_id.children.size() == 2 &&
+         type_id.children[1].kind == CppAstKind::abstract_declarator &&
+         declarator_has_parameter_clause(type_id.children[1]);
 }
 
 bool CppAstParser::parse_empty_declaration(CppAstNode & out)
@@ -5186,6 +5389,13 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
       continue;
     }
 
+    if(is_gnu_int128_type_specifier_identifier(token)) {
+      out.children.push_back(make_node(CppAstKind::type_specifier, token.source));
+      ++pos;
+      matched = true;
+      continue;
+    }
+
     if(is_decltype_token(token) ||
        (is_gnu_typeof_token(token) && peek(1).is_simple(OP_LPAREN))) {
       size_t decltype_start = pos;
@@ -5243,6 +5453,7 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
       }
       CppAstNode type_name = make_node(CppAstKind::type_name, name);
       annotate_builtin_type_transform_node(type_name, tokens, name_start);
+      attach_builtin_type_transform_syntax_from_span(type_name, name_start, pos);
       type_name.has_leading_typename = true;
       attach_qualified_name_syntax_from_span(type_name, name_start, pos);
       set_span(type_name, name_start);
@@ -5267,6 +5478,7 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
     if(parse_type_name_text(name)) {
       CppAstNode type_name = make_node(CppAstKind::type_name, name);
       annotate_builtin_type_transform_node(type_name, tokens, name_start);
+      attach_builtin_type_transform_syntax_from_span(type_name, name_start, pos);
       attach_qualified_name_syntax_from_span(type_name, name_start, pos);
       set_span(type_name, name_start);
       out.children.push_back(std::move(type_name));
@@ -5397,6 +5609,8 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
       }
       CppAstNode specifier = make_node(CppAstKind::decl_specifier, name);
       specifier.has_leading_typename = true;
+      annotate_builtin_type_transform_node(specifier, tokens, name_start);
+      attach_builtin_type_transform_syntax_from_span(specifier, name_start, pos);
       attach_qualified_name_syntax_from_span(specifier, name_start, pos);
       set_span(specifier, name_start);
       out.children.push_back(std::move(specifier));
@@ -5448,6 +5662,8 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
         } else {
           CppAstNode specifier = make_node(CppAstKind::decl_specifier, name);
           annotate_builtin_type_transform_node(specifier, tokens, type_name_start);
+          attach_builtin_type_transform_syntax_from_span(
+              specifier, type_name_start, pos);
           attach_qualified_name_syntax_from_span(specifier, type_name_start, pos);
           set_span(specifier, type_name_start);
           out.children.push_back(std::move(specifier));
@@ -6863,11 +7079,7 @@ bool CppAstParser::parse_parenthesized_type_id_or_expression(
       }
       const bool functional_cast_abstract_declarator =
           allow_expression &&
-          type_id.kind == CppAstKind::type_id &&
-          type_id.children.size() == 2 &&
-          type_id.children[1].kind == CppAstKind::abstract_declarator &&
-          type_id.children[1].children.size() == 1 &&
-          type_id.children[1].children[0].kind == CppAstKind::parameter_clause;
+          type_id_has_function_style_abstract_declarator(type_id);
       if(functional_cast_abstract_declarator) {
         pos = start + 1;
         CppAstNode expr;
@@ -6943,11 +7155,7 @@ bool CppAstParser::parse_decltype_or_typeof_operand_node(std::size_t specifier_s
     CppAstNode type_id;
     if(parse_type_id(type_id) && pos == operand_end) {
       const bool functional_cast_abstract_declarator =
-          type_id.kind == CppAstKind::type_id &&
-          type_id.children.size() == 2 &&
-          type_id.children[1].kind == CppAstKind::abstract_declarator &&
-          type_id.children[1].children.size() == 1 &&
-          type_id.children[1].children[0].kind == CppAstKind::parameter_clause;
+          type_id_has_function_style_abstract_declarator(type_id);
       if(parenthesized_type_id_prefers_expression(type_id) ||
          functional_cast_abstract_declarator) {
         pos = operand_start;
@@ -7281,6 +7489,13 @@ bool CppAstParser::parse_statement(CppAstNode & out)
   }
   if(peek().is_simple(KW_RETURN)) {
     return parse_return_statement(out);
+  }
+  if(can_parse_coroutine_contextual_keyword_in_template(
+         peek(),
+         "co_return",
+         template_declaration_depth,
+         is_known_value_name_identifier(peek()))) {
+    return parse_coroutine_return_statement(out);
   }
   if(parse_expression_statement(out)) {
     return true;
@@ -8031,6 +8246,39 @@ bool CppAstParser::parse_return_statement(CppAstNode & out)
   return true;
 }
 
+bool CppAstParser::parse_coroutine_return_statement(CppAstNode & out)
+{
+  size_t start = pos;
+  if(!can_parse_coroutine_contextual_keyword_in_template(
+         peek(),
+         "co_return",
+         template_declaration_depth,
+         is_known_value_name_identifier(peek()))) {
+    pos = start;
+    return false;
+  }
+  ++pos;
+
+  out = make_node(CppAstKind::coroutine_return_statement, "co_return");
+
+  if(!peek().is_simple(OP_SEMICOLON)) {
+    CppAstNode expression;
+    if(!parse_braced_init_list(expression) && !parse_expression(expression)) {
+      pos = start;
+      return false;
+    }
+    out.children.push_back(std::move(expression));
+  }
+
+  if(!consume_simple(OP_SEMICOLON)) {
+    pos = start;
+    return false;
+  }
+
+  set_span(out, start);
+  return true;
+}
+
 bool CppAstParser::parse_expression_statement(CppAstNode & out)
 {
   size_t start = pos;
@@ -8093,6 +8341,23 @@ bool CppAstParser::parse_assignment_expression(CppAstNode & out)
     } else {
       pos = after_throw;
     }
+    set_span(out, start);
+    return true;
+  }
+
+  if(can_parse_coroutine_contextual_keyword_in_template(
+         peek(),
+         "co_yield",
+         template_declaration_depth,
+         is_known_value_name_identifier(peek()))) {
+    ++pos;
+    out = make_node(CppAstKind::unary_expression, "co_yield");
+    CppAstNode operand;
+    if(!parse_braced_init_list(operand) && !parse_assignment_expression(operand)) {
+      pos = start;
+      return false;
+    }
+    out.children.push_back(std::move(operand));
     set_span(out, start);
     return true;
   }
@@ -8502,6 +8767,23 @@ bool CppAstParser::parse_unary_expression(CppAstNode & out)
     return true;
   }
 
+  if(can_parse_coroutine_contextual_keyword_in_template(
+         peek(),
+         "co_await",
+         template_declaration_depth,
+         is_known_value_name_identifier(peek()))) {
+    ++pos;
+    CppAstNode operand;
+    if(!parse_unary_expression(operand)) {
+      pos = start;
+      return false;
+    }
+    out = make_node(CppAstKind::unary_expression, "co_await");
+    out.children.push_back(std::move(operand));
+    set_span(out, start);
+    return true;
+  }
+
   if(peek().is_simple(KW_STATIC_CAST) || peek().is_simple(KW_DYNAMIC_CAST) ||
      peek().is_simple(KW_CONST_CAST) || peek().is_simple(KW_REINTERPET_CAST)) {
     if(!parse_keyword_cast_expression(out)) {
@@ -8558,33 +8840,45 @@ bool CppAstParser::parse_unary_expression(CppAstNode & out)
                                                  is_type_id,
                                                  false) &&
        is_type_id) {
-      if(parser_trace::enabled("parser.fragment")) {
-        std::ostringstream trace;
-        trace << "unary cast candidate type-id="
-              << token_span_text_spaced(type_id.token_start, type_id.token_end);
-        parser_trace::note("parser.fragment", tokens, start, trace.str());
-      }
-      CppAstNode operand;
-      if(!parse_unary_expression(operand)) {
-        if(parser_trace::enabled("parser.fragment")) {
-          std::ostringstream trace;
-          trace << "unary cast candidate rejected missing operand after type-id="
-                << token_span_text_spaced(type_id.token_start, type_id.token_end)
-                << " next=" << token_label(peek());
-          parser_trace::note("parser.fragment", tokens, pos, trace.str());
-        }
+      const bool postfix_after_parenthesized_functional_cast =
+          type_id_has_function_style_abstract_declarator(type_id) &&
+          (peek().is_simple(OP_LPAREN) ||
+           peek().is_simple(OP_LSQUARE) ||
+           peek().is_simple(OP_DOT) ||
+           peek().is_simple(OP_ARROW) ||
+           peek().is_simple(OP_INC) ||
+           peek().is_simple(OP_DEC));
+      if(postfix_after_parenthesized_functional_cast) {
         pos = start;
       } else {
-        out = make_node(CppAstKind::cast_expression);
-        set_node_simple_type(out, OP_LPAREN);
-        out.children.push_back(std::move(type_id));
-        out.children.push_back(std::move(operand));
-        if(!parse_postfix_suffixes(out, start)) {
-          pos = start;
-          return false;
+        if(parser_trace::enabled("parser.fragment")) {
+          std::ostringstream trace;
+          trace << "unary cast candidate type-id="
+                << token_span_text_spaced(type_id.token_start, type_id.token_end);
+          parser_trace::note("parser.fragment", tokens, start, trace.str());
         }
-        set_span(out, start);
-        return true;
+        CppAstNode operand;
+        if(!parse_unary_expression(operand)) {
+          if(parser_trace::enabled("parser.fragment")) {
+            std::ostringstream trace;
+            trace << "unary cast candidate rejected missing operand after type-id="
+                  << token_span_text_spaced(type_id.token_start, type_id.token_end)
+                  << " next=" << token_label(peek());
+            parser_trace::note("parser.fragment", tokens, pos, trace.str());
+          }
+          pos = start;
+        } else {
+          out = make_node(CppAstKind::cast_expression);
+          set_node_simple_type(out, OP_LPAREN);
+          out.children.push_back(std::move(type_id));
+          out.children.push_back(std::move(operand));
+          if(!parse_postfix_suffixes(out, start)) {
+            pos = start;
+            return false;
+          }
+          set_span(out, start);
+          return true;
+        }
       }
     }
     pos = start;
@@ -10234,6 +10528,35 @@ bool CppAstParser::parse_qualified_name_text(string & out,
   return true;
 }
 
+void CppAstParser::attach_builtin_type_transform_syntax_from_span(
+    CppAstNode & node,
+    size_t start,
+    size_t end)
+{
+  const RecogToken & identifier = tokens.peek(start);
+  if(!is_builtin_type_transform_identifier(identifier) ||
+     !tokens.peek(start + 1).is_simple(OP_LPAREN) ||
+     end <= start + 3) {
+    return;
+  }
+
+  const size_t saved = pos;
+  pos = start + 2;
+  CppAstNode operand;
+  const bool parsed =
+      parse_type_id(operand) &&
+      consume_simple(OP_RPAREN) &&
+      pos == end;
+  pos = saved;
+
+  if(!parsed) {
+    return;
+  }
+
+  node.builtin_type_transform_name = identifier.source;
+  node.base_type_syntax.reset(new CppAstNode(std::move(operand)));
+}
+
 void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
                                                           size_t start,
                                                           size_t end)
@@ -10448,6 +10771,43 @@ bool CppAstParser::is_known_value_name_identifier(const RecogToken & token) cons
       token) ||
          (external_name_lookup &&
           external_name_lookup->is_known_value_name_identifier(token));
+}
+
+bool CppAstParser::unqualified_identifier_prefers_value_name(
+    const RecogToken & token) const
+{
+  if(!token.is_identifier()) {
+    return false;
+  }
+
+  text_intern::Atom atom = token.cached_identifier_atom();
+  const int value_index =
+      std::max(nearest_name_scope_index(&value_name_scopes,
+                                        inherited_value_name_scopes,
+                                        atom),
+               nearest_name_scope_index(&template_value_parameter_scopes,
+                                        inherited_template_value_parameter_scopes,
+                                        atom));
+  const int type_index =
+      std::max(nearest_name_scope_index(&type_name_scopes,
+                                        inherited_type_name_scopes,
+                                        atom),
+               nearest_name_scope_index(&template_type_parameter_scopes,
+                                        inherited_template_type_parameter_scopes,
+                                        atom));
+
+  if(value_index >= 0 || type_index >= 0) {
+    return value_index >= type_index;
+  }
+
+  const bool fallback_value =
+      external_name_lookup &&
+      (external_name_lookup->is_known_value_name_identifier(token) ||
+       external_name_lookup->is_known_value_template_parameter_identifier(token));
+  const bool fallback_type =
+      external_name_lookup &&
+      external_name_lookup->is_known_type_name_identifier(token);
+  return fallback_value && !fallback_type;
 }
 
 void CppAstParser::collect_signature_type_hint_names(const CppAstNode & node,

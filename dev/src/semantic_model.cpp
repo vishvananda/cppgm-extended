@@ -11,6 +11,33 @@
 
 namespace semantic_model {
 
+namespace {
+
+Scope * nonmember_hidden_friend_entity_scope(const FunctionBinding & binding)
+{
+  if(binding.owner_class ||
+     !binding.source_template ||
+     binding.source_template->friend_access_classes.empty() ||
+     !binding.source_template->declaring_scope) {
+    return nullptr;
+  }
+
+  Scope * scope = binding.source_template->declaring_scope;
+  if(scope->class_info && scope->parent) {
+    const bool friend_declared_in_owner =
+        std::find(binding.source_template->friend_access_classes.begin(),
+                  binding.source_template->friend_access_classes.end(),
+                  scope->class_info) !=
+        binding.source_template->friend_access_classes.end();
+    if(friend_declared_in_owner) {
+      return scope->parent;
+    }
+  }
+  return scope;
+}
+
+}  // namespace
+
 bool text_mentions_template_parameter(
     const std::string & text,
     const std::vector<template_model::TemplateParameterInfo> & parameters)
@@ -86,7 +113,9 @@ Scope::Scope(const Scope & other)
     template_bound_type_names(other.template_bound_type_names),
     template_bound_type_pack_names(other.template_bound_type_pack_names),
     template_bound_value_names(other.template_bound_value_names),
+    template_bound_value_pack_names(other.template_bound_value_pack_names),
     template_bound_template_names(other.template_bound_template_names),
+    template_bound_template_arguments(other.template_bound_template_arguments),
     values(other.values),
     namespace_bindings(other.namespace_bindings),
     function_sets(other.function_sets),
@@ -117,7 +146,9 @@ Scope::Scope(Scope && other)
     template_bound_type_names(std::move(other.template_bound_type_names)),
     template_bound_type_pack_names(std::move(other.template_bound_type_pack_names)),
     template_bound_value_names(std::move(other.template_bound_value_names)),
+    template_bound_value_pack_names(std::move(other.template_bound_value_pack_names)),
     template_bound_template_names(std::move(other.template_bound_template_names)),
+    template_bound_template_arguments(std::move(other.template_bound_template_arguments)),
     values(std::move(other.values)),
     namespace_bindings(std::move(other.namespace_bindings)),
     function_sets(std::move(other.function_sets)),
@@ -154,7 +185,9 @@ Scope & Scope::operator=(Scope && other)
   template_bound_type_names = std::move(other.template_bound_type_names);
   template_bound_type_pack_names = std::move(other.template_bound_type_pack_names);
   template_bound_value_names = std::move(other.template_bound_value_names);
+  template_bound_value_pack_names = std::move(other.template_bound_value_pack_names);
   template_bound_template_names = std::move(other.template_bound_template_names);
+  template_bound_template_arguments = std::move(other.template_bound_template_arguments);
   values = std::move(other.values);
   namespace_bindings = std::move(other.namespace_bindings);
   function_sets = std::move(other.function_sets);
@@ -389,6 +422,10 @@ std::string function_binding_qualified_name_for_symbol(const FunctionBinding & b
   if(binding.owner_class && !binding.owner_class->qualified_name.empty()) {
     return binding.owner_class->qualified_name + "::" + simple_name;
   }
+  if(Scope * friend_entity_scope = nonmember_hidden_friend_entity_scope(binding)) {
+    return semantic_lookup::scope_symbol_qualified_name(*friend_entity_scope,
+                                                        simple_name);
+  }
   if(binding.declaration_scope && binding.name.find("::") == std::string::npos) {
     return semantic_lookup::scope_symbol_qualified_name(*binding.declaration_scope, simple_name);
   }
@@ -412,6 +449,11 @@ bool function_binding_qualified_name_syntax_for_symbol(
   }
   if(binding.owner_class) {
     return false;
+  }
+  if(Scope * friend_entity_scope = nonmember_hidden_friend_entity_scope(binding)) {
+    out = semantic_lookup::scope_symbol_qualified_name_syntax(*friend_entity_scope,
+                                                              simple_name);
+    return true;
   }
   if(binding.declaration_scope) {
     out = semantic_lookup::scope_symbol_qualified_name_syntax(*binding.declaration_scope,

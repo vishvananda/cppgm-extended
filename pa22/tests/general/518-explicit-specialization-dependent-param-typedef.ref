@@ -1,0 +1,78 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $buf : obj<8x1>
+  slot $r : obj<16x8>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $r
+    %t2 = addr $buf
+    %t3 = unary decay ptr %t2
+    %t4 = addr $buf
+    %t5 = unary decay ptr %t4
+    %t6 = index i8 %t5, 8
+    %t7 = call obj<16x8> @convert(1, 2, %t3, %t6)
+    copyobj 16x8 %t7, %t1
+    %t8 = addr $r
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load ptr %t9
+    %t11 = addr $buf
+    %t12 = unary decay ptr %t11
+    %t13 = index i8 %t12, 11
+    %t14 = cmp eq ptr %t10, %t13
+    branch %t14, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t15 = load i32 $cond__1
+    return i32 %t15
+}
+function @convert(%value : u32, %exponent : i32, %first : ptr, %last : ptr) -> obj<16x8> [binding=strong, object=_Z7convertIf12traits_floatE6resultNT0_12carrier_uintEiPcS4_] {
+  slot $value : u32
+  slot $exponent : i32
+  slot $first : ptr
+  slot $last : ptr
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store u32 %value, $value
+    store i32 %exponent, $exponent
+    store ptr %first, $first
+    store ptr %last, $last
+    %t1 = addr $retobj__1
+    %t2 = load ptr $last
+    %t3 = load u32 $value
+    %t4 = convert zext i64 u32 %t3
+    %t5 = index i8 %t2, %t4
+    %t6 = load i32 $exponent
+    %t7 = convert sext i64 i32 %t6
+    %t8 = index i8 %t5, %t7
+    call void @result__result__ov2(%t1, %t8, 0)
+    return obj<16x8> $retobj__1
+}
+function @result__result__ov2(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwind=no, binding=weak, object=_ZN6resultC1EPci] {
+  slot $this : ptr
+  slot $ptr : ptr
+  slot $ec : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %ptr, $ptr
+    store i32 %ec, $ec
+    %t1 = load ptr $ptr
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load i32 $ec
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store i32 %t4, %t6
+    return void
+}
+alias object _ZN6resultC2EPci = @result__result__ov2

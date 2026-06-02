@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   compare-cppgm-inception:
-    name: compare cppgm++ inception (advisory on PRs)
+    name: compare cppgm++ inception (non-required on PRs)
     runs-on: ubuntu-24.04
     container:
       image: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', '26.04') && 'ubuntu:26.04' || 'ubuntu:24.04' }}
@@ -119,7 +119,6 @@ jobs:
 
       - name: Compare cppgm++ inception
         id: compare
-        continue-on-error: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' }}
         run: |
           CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa38/restored-self-driver" \
             make -C pa38 compare-cppgm++-inception-from-restored-self \

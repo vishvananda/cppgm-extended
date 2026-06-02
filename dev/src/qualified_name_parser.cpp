@@ -159,7 +159,8 @@ struct QualifiedNameCursor : RecogTokenCursor
 
   bool parse_name_component(
       NameComponentParseResult & out,
-      bool suppress_unforced_template_id_crossing_logical_operator = false)
+      bool suppress_unforced_template_id_crossing_logical_operator = false,
+      bool allow_value_template_id_qualifier = false)
   {
     const size_t start = pos;
     const bool forced_template = consume_simple(KW_TEMPLATE);
@@ -174,6 +175,9 @@ struct QualifiedNameCursor : RecogTokenCursor
     out.name_component = make_pair(identifier_start, pos);
     out.end = pos;
     if(peek().is_simple(OP_LT)) {
+      size_t suffix_end = pos;
+      std::vector<std::pair<size_t, size_t> > arg_ranges;
+      bool parsed_suffix = false;
       const RecogToken & prev = tokens.peek(pos - 1);
       if(prev.is_identifier()) {
         const bool known_template = lookup.is_known_template_name_identifier(prev);
@@ -183,7 +187,18 @@ struct QualifiedNameCursor : RecogTokenCursor
         const bool known_value = lookup.is_known_value_name_identifier(prev);
         if((known_value_template || known_value) &&
            !known_template && !known_type) {
-          return true;
+          if(!allow_value_template_id_qualifier) {
+            return true;
+          }
+          parsed_suffix =
+              template_angle::parse_template_id_suffix_ranges(tokens,
+                                                              pos,
+                                                              lookup,
+                                                              suffix_end,
+                                                              arg_ranges);
+          if(!parsed_suffix || !tokens.peek(suffix_end).is_simple(OP_COLON2)) {
+            return true;
+          }
         }
         const bool crosses_logical_operator =
             !forced_template &&
@@ -197,13 +212,15 @@ struct QualifiedNameCursor : RecogTokenCursor
         }
       }
 
-      size_t suffix_end = pos;
-      std::vector<std::pair<size_t, size_t> > arg_ranges;
-      if(template_angle::parse_template_id_suffix_ranges(tokens,
-                                                         pos,
-                                                         lookup,
-                                                         suffix_end,
-                                                         arg_ranges)) {
+      if(!parsed_suffix) {
+        parsed_suffix =
+            template_angle::parse_template_id_suffix_ranges(tokens,
+                                                            pos,
+                                                            lookup,
+                                                            suffix_end,
+                                                            arg_ranges);
+      }
+      if(parsed_suffix) {
         pos = suffix_end;
         out.end = pos;
         out.has_template_suffix = true;
@@ -532,7 +549,8 @@ struct QualifiedNameCursor : RecogTokenCursor
       size_t decltype_end = component_start;
       bool parsed_component =
           parse_name_component(component,
-                               options.suppress_unforced_template_id_crossing_logical_operator);
+                               options.suppress_unforced_template_id_crossing_logical_operator,
+                               true);
       if(!parsed_component) {
         parsed_component = parse_decltype_specifier(decltype_end);
       }

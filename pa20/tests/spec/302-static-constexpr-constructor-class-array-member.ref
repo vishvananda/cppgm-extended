@@ -1,0 +1,53 @@
+global @cache_holder_true___cache [binding=weak, object=_ZN12cache_holderILb1EE5cacheE] = {
+  i64 1
+  i64 2
+  i64 3
+  i64 4
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr @cache_holder_true___cache
+    %t2 = unary decay ptr %t1
+    %t3 = binary mul i64 1, 16
+    %t4 = index i8 [projection=array_element] %t2, %t3
+    %t5 = index i8 [projection=field] %t4, 8
+    %t6 = load i64 %t5
+    %t7 = convert sext i64 i32 4
+    %t8 = cmp eq i64 %t6, %t7
+    branch %t8, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t9 = load i32 $cond__1
+    return i32 %t9
+}
+function @uint128__uint128__ov3(%this : ptr, %high_ : i64, %low_ : i64) -> void [binding=weak, object=_ZN7uint128C1Emm] {
+  slot $this : ptr
+  slot $high_ : i64
+  slot $low_ : i64
+
+  block ^entry:
+    store ptr %this, $this
+    store i64 %high_, $high_
+    store i64 %low_, $low_
+    %t1 = load i64 $high_
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i64 %t1, %t3
+    %t4 = load i64 $low_
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store i64 %t4, %t6
+    return void
+}
+alias object _ZN7uint128C2Emm = @uint128__uint128__ov3

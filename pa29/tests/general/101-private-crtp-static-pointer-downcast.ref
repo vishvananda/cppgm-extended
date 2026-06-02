@@ -1,0 +1,102 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $o : obj<12x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $o
+    call void @object__object(%t1)
+    %t2 = addr $o
+    %t3 = call i32 @object__run(%t2)
+    %t4 = cmp eq i32 %t3, 42
+    branch %t4, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load i32 $cond__1
+    return i32 %t5
+}
+function @object__object(%this : ptr) -> void [binding=weak, object=_ZN6objectC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @pad__pad__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 4
+    call void @holder_object___holder__base_entry(%t4)
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store i32 42, %t6
+    return void
+}
+function @object__run(%this : ptr) -> i32 [binding=weak, object=_ZN6object3runEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    %t3 = call i32 @holder_object___read(%t2)
+    return i32 %t3
+}
+function @holder_object___holder__base_entry(%this : ptr) -> void [binding=weak, object=_ZN6holderI6objectEC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 11, %t2
+    return void
+}
+function @holder_object___holder(%this : ptr) -> void [binding=weak, object=_ZN6holderI6objectEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 11, %t2
+    return void
+}
+function @holder_object___read(%this : ptr) -> i32 [binding=weak, object=_ZN6holderI6objectE4readEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = call ptr @holder_object___final(%t1)
+    %t3 = index i8 [projection=field] %t2, 8
+    %t4 = load i32 %t3
+    return i32 %t4
+}
+function @pad__pad__base_entry(%this : ptr) -> void [binding=weak, object=_ZN3padC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+function @holder_object___final(%this : ptr) -> ptr [binding=weak, object=_ZN6holderI6objectE5finalEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, -4
+    return ptr %t2
+}
+alias object _ZN6objectC2Ev = @object__object
+alias object _ZN6holderI6objectEC2Ev = @holder_object___holder

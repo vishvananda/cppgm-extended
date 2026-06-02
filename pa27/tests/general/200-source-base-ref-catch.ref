@@ -72,11 +72,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load ptr $throw_alloc__1
     %t5 = addr $d
     call void @D__D__ov2(%t4, %t5)
-    %t6 = addr $d
-    call void @D___D(%t6)
-    %t7 = addr @__rtti_class_D
-    %t8 = addr @D___D
-    call void @__external_runtime____cxa_throw(%t4, %t7, %t8)
+    eh_try ^call_unwind_dispatch_4
+    %t6 = addr @__rtti_class_D
+    %t7 = addr @D___D
+    call void @__external_runtime____cxa_throw(%t4, %t6, %t7)
+    eh_end
     eh_end
     return i32 0
 
@@ -85,20 +85,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^catch_entry_2
 
   block ^catch_entry_2:
-    %t9 = exception ptr
-    %t10 = call ptr @__external_runtime____cxa_begin_catch(%t9)
-    %t11 = exception_selector i32
-    %t12 = cmp eq i32 %t11, 1
-    branch %t12, ^catch_match_8, ^catch_next_7
+    %t8 = exception ptr
+    %t9 = call ptr @__external_runtime____cxa_begin_catch(%t8)
+    %t10 = exception_selector i32
+    %t11 = cmp eq i32 %t10, 1
+    branch %t11, ^catch_match_8, ^catch_next_7
 
   block ^catch_match_8:
-    store ptr %t10, $catch__2
+    store ptr %t9, $catch__2
     jump ^catch_body_6
 
   block ^catch_body_6:
     eh_cleanup ^catch_cleanup_9
-    %t13 = load ptr $catch__2
-    store ptr %t13, $b
+    %t12 = load ptr $catch__2
+    store ptr %t12, $b
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 0
@@ -109,6 +109,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^catch_next_7:
+    call void @__external_runtime____cxa_end_catch()
     resume
 
   block ^try_end_3:

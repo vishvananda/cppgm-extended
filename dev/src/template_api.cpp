@@ -3769,6 +3769,7 @@ void note_template_member_value_instantiation_if_needed(
     return;
   }
 
+  binding.witness_member_value_instantiation_noted = true;
   template_instantiation::replay_witness_static_member_definition_if_needed(ctx,
                                                                             binding);
   {

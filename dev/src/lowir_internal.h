@@ -160,6 +160,7 @@ struct SymbolMetadata
   std::string tls_for_symbol;
   bool keep_internal_alias = false;
   bool prefer_local_object_binding = false;
+  bool object_output_root = false;
   bool object_trivial_lifecycle = false;
 };
 

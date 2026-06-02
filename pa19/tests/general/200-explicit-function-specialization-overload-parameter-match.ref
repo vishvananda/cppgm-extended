@@ -1,0 +1,61 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $c : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $c
+    call void @context__context(%t1)
+    %t2 = addr $c
+    %t3 = call ptr @use_service__ov2(%t2)
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    %t6 = cmp eq i32 %t5, 3
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @use_service__ov2(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_Z11use_serviceI7serviceERT_R7context] {
+  slot $e : ptr
+
+  block ^entry:
+    store ptr %e, $e
+    %t1 = load ptr $e
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+function @context__context(%this : ptr) -> void [binding=weak, object=_ZN7contextC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @service__service(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 3, %t5
+    return void
+}
+function @service__service(%this : ptr) -> void [binding=weak, object=_ZN7serviceC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+alias object _ZN7contextC2Ev = @context__context
+alias object _ZN7serviceC2Ev = @service__service

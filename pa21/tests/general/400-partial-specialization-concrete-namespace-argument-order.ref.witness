@@ -9,4 +9,6 @@ translation-unit
     bind #1 = int source=explicit
 template-closure-events
   variable-instantiation
+    entity lib::wrapper<lib::box<int>, lib::box<int>, lib::detail::false_t>::value
+  variable-instantiation
     entity lib::wrapper<lib::box<int>>::value

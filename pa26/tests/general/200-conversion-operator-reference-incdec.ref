@@ -1,0 +1,60 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $counter : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $counter
+    call void @Counter__Counter(%t1, 3)
+    %t2 = addr $counter
+    %t3 = call ptr @Counter__operatorunsigned_(%t2)
+    %t4 = load u32 %t3
+    %t5 = binary add u32 %t4, 1
+    store u32 %t5, %t3
+    %t6 = addr $counter
+    %t7 = call ptr @Counter__operatorunsigned_(%t6)
+    %t8 = load u32 %t7
+    %t9 = binary add u32 %t8, 1
+    %t10 = addr $counter
+    %t11 = call ptr @Counter__operatorunsigned_(%t10)
+    store u32 %t9, %t11
+    %t12 = addr $counter
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load u32 %t13
+    %t15 = cmp eq u32 %t14, 5
+    branch %t15, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t16 = load i32 $cond__1
+    return i32 %t16
+}
+function @Counter__Counter(%this : ptr, %initial : u32) -> void [binding=weak, object=_ZN7CounterC1Ej] {
+  slot $this : ptr
+  slot $initial : u32
+
+  block ^entry:
+    store ptr %this, $this
+    store u32 %initial, $initial
+    %t1 = load u32 $initial
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store u32 %t1, %t3
+    return void
+}
+function @Counter__operatorunsigned_(%this : ptr) -> ptr [binding=weak, object=_ZN7CountercvRjEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+alias object _ZN7CounterC2Ej = @Counter__Counter

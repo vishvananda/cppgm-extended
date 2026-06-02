@@ -1,0 +1,79 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $i : obj<1x1>
+  slot $w : obj<1x1>
+  slot $h : obj<1x1>
+  slot $x : obj<3x1>
+
+  block ^entry:
+    %t1 = addr $i
+    %t2 = addr $w
+    %t3 = addr $h
+    %t4 = addr $x
+    %t5 = addr $i
+    %t6 = addr $w
+    %t7 = addr $h
+    call void @op_impl__work__handler__void_int____op__ov2(%t4, %t5, %t6, %t7)
+    %t8 = addr $x
+    call void @op_impl__work__handler__void_int____run(%t8)
+    return i32 0
+}
+function @op_impl__work__handler__void_int____run(%this : ptr) -> void [binding=weak, object=_ZN2opI4impl4work7handlerJFviEEE3runEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr $this
+    call void @impl__operator__(%t3, %t4)
+    return void
+}
+function @op_impl__work__handler__void_int____op__ov2(%this : ptr, %impl : ptr [pass=reference], %work : ptr [pass=reference], %handler : ptr [pass=reference]) -> void [binding=weak, object=_ZN2opI4impl4work7handlerJFviEEEC1IS0_S1_S2_EEOT_OT0_OT1_] {
+  slot $this : ptr
+  slot $impl : ptr
+  slot $work : ptr
+  slot $handler : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %impl, $impl
+    store ptr %work, $work
+    store ptr %handler, $handler
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = load ptr $impl
+    %t4 = load ptr $work
+    %t5 = load ptr $handler
+    call void @op_impl__work__handler___op__ov2__base_entry(%t2, %t3, %t4, %t5)
+    return void
+}
+function @impl__operator__(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4implclI2opIS_4work7handlerJFviEEEEEvRT_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+function @op_impl__work__handler___op__ov2__base_entry(%this : ptr, %impl : ptr [pass=reference], %work : ptr [pass=reference], %handler : ptr [pass=reference]) -> void [binding=weak, object=_ZN2opI4impl4work7handlerJEEC2IS0_S1_S2_EEOT_OT0_OT1_] {
+  slot $this : ptr
+  slot $impl : ptr
+  slot $work : ptr
+  slot $handler : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %impl, $impl
+    store ptr %work, $work
+    store ptr %handler, $handler
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 1
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 2
+    return void
+}
+alias object _ZN2opI4impl4work7handlerJFviEEEC2IS0_S1_S2_EEOT_OT0_OT1_ = @op_impl__work__handler__void_int____op__ov2

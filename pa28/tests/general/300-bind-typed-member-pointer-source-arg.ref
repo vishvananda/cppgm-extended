@@ -1,0 +1,133 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $x : obj<1x1>
+  slot $selected : obj<24x8>
+  slot $argobj__1 : obj<1x1>
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = addr $x
+    %t2 = addr $selected
+    %t3 = addr $argobj__1
+    call void @type_tag_void___type_tag(%t3)
+    %t4 = addr @X__f0
+    %t5 = copy i64 %t4
+    %t6 = convert zext i128 i64 %t5
+    %t7 = addr $x
+    call void @bind__ov3(%t2, $argobj__1, %t6, %t7)
+    %t8 = addr $selected
+    %t9 = index i8 [projection=field] %t8, 16
+    %t10 = load ptr %t9
+    %t11 = addr $x
+    %t12 = cmp eq ptr %t10, %t11
+    branch %t12, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t13 = load i32 $cond__2
+    return i32 %t13
+}
+function @type_tag_void___type_tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8type_tagIvEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @bind__ov3(%ret : ptr [pass=indirect_result], %__param0 : obj<1x1>, %f : i128, %a : ptr) -> void [binding=weak, object=_Z4bindIvi1XPS0_E5boundIv9member_fnIMS0_FivEiS0_ES1_E8type_tagIT_ES5_T2_] {
+  slot $__param0 : obj<1x1>
+  slot $f : i128
+  slot $a : ptr
+  slot $argobj__1 : obj<1x1>
+  slot $argobj__2 : obj<16x8>
+
+  block ^entry:
+    store i128 %f, $f
+    store ptr %a, $a
+    %t1 = addr $argobj__1
+    call void @type_tag_void___type_tag(%t1)
+    %t2 = addr $argobj__2
+    %t3 = load i128 $f
+    %t4 = call obj<16x8> @mem_fn(%t3)
+    copyobj 16x8 %t4, %t2
+    %t5 = load ptr $a
+    call void @bind(%ret, $argobj__1, $argobj__2, %t5)
+    return void
+}
+function @mem_fn(%f : i128) -> obj<16x8> [binding=weak, object=_Z6mem_fnIi1XE9member_fnIMS0_FivEiS0_ES3_] {
+  slot $f : i128
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store i128 %f, $f
+    %t1 = addr $retobj__1
+    %t2 = load i128 $f
+    call void @member_fn_int__X________int__X___member_fn(%t1, %t2)
+    return obj<16x8> $retobj__1
+}
+function @bind(%ret : ptr [pass=indirect_result], %__param0 : obj<1x1>, %f : obj<16x8>, %a : ptr) -> void [binding=weak, object=_Z4bindIv9member_fnIM1XFivEiS1_EPS1_E5boundIT_T0_T1_E8type_tagIS7_ES8_S9_] {
+  slot $__param0 : obj<1x1>
+  slot $f : obj<16x8>
+  slot $a : ptr
+  slot $argobj__1 : obj<16x8>
+
+  block ^entry:
+    %t1 = addr $f
+    copyobj 16x8 %f, %t1
+    store ptr %a, $a
+    %t2 = addr $argobj__1
+    %t3 = addr $f
+    copyobj 16x8 %t3, %t2
+    %t4 = load ptr $a
+    call void @bound_void__member_fn_int__X________int__X___X_____bound(%ret, $argobj__1, %t4)
+    return void
+}
+function @X__f0(%this : ptr) -> i32 [binding=weak, object=_ZN1X2f0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 7
+}
+function @member_fn_int__X________int__X___member_fn(%this : ptr, %f_ : i128) -> void [binding=weak, object=_ZN9member_fnIM1XFivEiS0_EC1ES2_] {
+  slot $this : ptr
+  slot $f_ : i128
+
+  block ^entry:
+    store ptr %this, $this
+    store i128 %f_, $f_
+    %t1 = load i128 $f_
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i128 %t1, %t3
+    return void
+}
+function @bound_void__member_fn_int__X________int__X___X_____bound(%this : ptr, %f_ : obj<16x8>, %a_ : ptr) -> void [binding=weak, object=_ZN5boundIv9member_fnIM1XFivEiS1_EPS1_EC1ES4_S5_] {
+  slot $this : ptr
+  slot $f_ : obj<16x8>
+  slot $a_ : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $f_
+    copyobj 16x8 %f_, %t1
+    store ptr %a_, $a_
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = addr $f_
+    copyobj 16x8 %t4, %t3
+    %t5 = load ptr $a_
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=field] %t6, 16
+    store ptr %t5, %t7
+    return void
+}
+alias object _ZN8type_tagIvEC2Ev = @type_tag_void___type_tag
+alias object _ZN9member_fnIM1XFivEiS0_EC2ES2_ = @member_fn_int__X________int__X___member_fn
+alias object _ZN5boundIv9member_fnIM1XFivEiS1_EPS1_EC2ES4_S5_ = @bound_void__member_fn_int__X________int__X___X_____bound

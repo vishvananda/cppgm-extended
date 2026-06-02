@@ -8,5 +8,5 @@ translation-unit
         variable x const int
           literal prvalue int 1
       return-statement
-        literal prvalue int 1
+        id-expression lvalue const int x
 end translation unit

@@ -1,0 +1,69 @@
+declare function @operator_delete__(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete_array]
+declare function @operator_new__(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new_array]
+
+function @count() -> u32 [binding=strong, object=_Z5countv] {
+  block ^entry:
+    return u32 3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $buckets : ptr
+  slot $array_new_size__1 : i64
+  slot $ok : i32
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = call u32 @count()
+    %t2 = binary mul u32 %t1, 16
+    %t3 = binary add u32 %t2, 8
+    %t4 = convert zext i64 u32 %t3
+    store i64 %t4, $array_new_size__1
+    %t5 = call ptr @operator_new__(%t4)
+    %t6 = load i64 $array_new_size__1
+    %t7 = index i8 %t5, 8
+    %t8 = binary sub i64 %t6, 8
+    %t9 = binary udiv i64 %t8, 16
+    store i64 %t9, %t5
+    store ptr %t7, $buckets
+    %t10 = load ptr $buckets
+    %t11 = load ptr $buckets
+    %t12 = binary mul i64 1, 16
+    %t13 = index i8 [projection=array_element] %t11, %t12
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = index i8 [projection=field] %t14, 0
+    store ptr %t10, %t15
+    %t16 = load ptr $buckets
+    %t17 = binary mul i64 1, 16
+    %t18 = index i8 [projection=array_element] %t16, %t17
+    %t19 = index i8 [projection=field] %t18, 0
+    %t20 = index i8 [projection=field] %t19, 0
+    %t21 = load ptr %t20
+    %t22 = load ptr $buckets
+    %t23 = cmp eq ptr %t21, %t22
+    %t24 = convert zext i32 u8 %t23
+    store i32 %t24, $ok
+    %t25 = load ptr $buckets
+    %t26 = cmp ne ptr %t25, 0
+    branch %t26, ^array_delete_nonnull_1, ^array_delete_end_2
+
+  block ^array_delete_nonnull_1:
+    %t27 = index i8 %t25, -8
+    %t28 = load i64 %t27
+    call void @operator_delete__(%t27)
+    jump ^array_delete_end_2
+
+  block ^array_delete_end_2:
+    %t29 = load i32 $ok
+    branch %t29, ^cond_then_3, ^cond_else_4
+
+  block ^cond_then_3:
+    store i32 0, $cond__2
+    jump ^cond_end_5
+
+  block ^cond_else_4:
+    store i32 1, $cond__2
+    jump ^cond_end_5
+
+  block ^cond_end_5:
+    %t30 = load i32 $cond__2
+    return i32 %t30
+}

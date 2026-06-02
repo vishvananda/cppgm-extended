@@ -163,6 +163,9 @@ MemberFunctionTemplateLookupResult lookup_visible_member_function_templates(
     const std::string & name);
 MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,
                                                            const std::string & name);
+void remove_hidden_using_base_member_function_candidates(
+    std::vector<FunctionBinding *> & functions,
+    const ClassInfo & current);
 MemberClassTemplateLookupResult lookup_member_class_template(SemanticContext & ctx,
                                                              ClassInfo & info,
                                                              const std::string & name);

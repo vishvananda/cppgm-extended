@@ -333,6 +333,73 @@ TypePtr reference_binding_source_type(const ExprInfo & expr)
   return remove_reference_type(expr.type);
 }
 
+bool top_level_cv_allows_reference_binding(const TypePtr & target_referent,
+                                           const TypePtr & source_object)
+{
+  TypePtr target_base;
+  TypePtr source_base;
+  bool target_const = false;
+  bool target_volatile = false;
+  bool source_const = false;
+  bool source_volatile = false;
+  if(!top_level_cv_flags(target_referent, target_base, target_const, target_volatile) ||
+     !top_level_cv_flags(source_object, source_base, source_const, source_volatile)) {
+    return false;
+  }
+  return (!source_const || target_const) && (!source_volatile || target_volatile);
+}
+
+bool pointer_pointee_cv_allows_base_conversion(const TypePtr & target_pointer,
+                                               const TypePtr & source_pointer,
+                                               TypePtr * target_pointee_base_out,
+                                               TypePtr * source_pointee_base_out)
+{
+  if(!target_pointer ||
+     !source_pointer ||
+     target_pointer->kind != Type::TK_POINTER ||
+     source_pointer->kind != Type::TK_POINTER) {
+    return false;
+  }
+
+  TypePtr target_pointee_base;
+  TypePtr source_pointee_base;
+  bool target_const = false;
+  bool target_volatile = false;
+  bool source_const = false;
+  bool source_volatile = false;
+  if(!top_level_cv_flags(target_pointer->inner,
+                         target_pointee_base,
+                         target_const,
+                         target_volatile) ||
+     !top_level_cv_flags(source_pointer->inner,
+                         source_pointee_base,
+                         source_const,
+                         source_volatile) ||
+     (source_const && !target_const) ||
+     (source_volatile && !target_volatile)) {
+    return false;
+  }
+
+  if(target_pointee_base_out) {
+    *target_pointee_base_out = target_pointee_base;
+  }
+  if(source_pointee_base_out) {
+    *source_pointee_base_out = source_pointee_base;
+  }
+  return true;
+}
+
+bool is_class_or_union_object_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED) {
+    return false;
+  }
+  return base->named_key.compare(0, 6, "class ") == 0 ||
+         base->named_key.compare(0, 7, "struct ") == 0 ||
+         base->named_key.compare(0, 6, "union ") == 0;
+}
+
 bool is_decay_only_lvalue_reference_source(const ExprInfo & expr)
 {
   if(expr.category != VC_LVALUE || !expr.type) {
@@ -342,6 +409,25 @@ bool is_decay_only_lvalue_reference_source(const ExprInfo & expr)
   return base &&
          (base->kind == Type::TK_ARRAY ||
           base->kind == Type::TK_FUNCTION);
+}
+
+bool reference_referent_accepts_temporary(const TypePtr & referent)
+{
+  return referent && type_is_const_object(referent);
+}
+
+bool nonvolatile_const_object_parameter(const TypePtr & implicit_object_parameter)
+{
+  TypePtr parameter = strip_top_level_cv(implicit_object_parameter);
+  if(parameter && parameter->kind == Type::TK_POINTER) {
+    parameter = parameter->inner;
+  }
+  TypePtr object_base;
+  bool object_const = false;
+  bool object_volatile = false;
+  return top_level_cv_flags(parameter, object_base, object_const, object_volatile) &&
+         object_const &&
+         !object_volatile;
 }
 
 bool is_scoped_enum_key(const std::string & key)
@@ -364,7 +450,8 @@ bool reference_target_accepts_result_category(const TypePtr & target,
     return false;
   }
   if(base->kind == Type::TK_LVALUE_REFERENCE) {
-    return result_category == VC_LVALUE || is_const_object_type(base->inner);
+    return result_category == VC_LVALUE ||
+           reference_referent_accepts_temporary(base->inner);
   }
   if(base->kind == Type::TK_RVALUE_REFERENCE) {
     return result_category != VC_LVALUE;
@@ -382,7 +469,7 @@ TypePtr reference_binding_converted_pointer_target(const TypePtr & target,
 
   const bool const_lvalue_reference =
       target_base->kind == Type::TK_LVALUE_REFERENCE &&
-      is_const_object_type(target_base->inner);
+      reference_referent_accepts_temporary(target_base->inner);
   const bool rvalue_reference =
       target_base->kind == Type::TK_RVALUE_REFERENCE &&
       expr.category != VC_LVALUE;
@@ -448,19 +535,153 @@ void collect_conversion_function_names(SemanticContext & ctx,
   }
 }
 
+TypePtr conversion_function_result_type(FunctionBinding * binding)
+{
+  if(!binding) {
+    return TypePtr();
+  }
+  TypePtr function_type = strip_top_level_cv(binding->type);
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    function_type = strip_top_level_cv(binding->declared_type);
+  }
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    return TypePtr();
+  }
+  return function_type->inner;
+}
+
+bool conversion_result_type_seen(const vector<TypePtr> & seen,
+                                 const TypePtr & result_type)
+{
+  for(size_t i = 0; i < seen.size(); ++i) {
+    if(type_equals(seen[i], result_type)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+struct VisibleConversionFunctionGroup
+{
+  MemberFunctionLookupResult result;
+  TypePtr result_type;
+};
+
+void append_direct_conversion_function_groups(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    vector<VisibleConversionFunctionGroup> & out,
+    vector<TypePtr> & direct_result_types)
+{
+  set<FunctionBinding *> seen_bindings;
+  const auto append_binding = [&](FunctionBinding * binding)
+  {
+    if(!binding || !seen_bindings.insert(binding).second) {
+      return;
+    }
+    TypePtr result_type = conversion_function_result_type(binding);
+    if(!result_type) {
+      return;
+    }
+    MemberFunctionLookupResult result;
+    result.functions.push_back(binding);
+    result.declared_in = &info;
+    result.path_access = MA_PUBLIC;
+    result.path_offset = 0;
+
+    VisibleConversionFunctionGroup group;
+    group.result = result;
+    group.result_type = result_type;
+    out.push_back(group);
+    if(!conversion_result_type_seen(direct_result_types, result_type)) {
+      direct_result_types.push_back(result_type);
+    }
+  };
+
+  for(map<string, vector<FunctionBinding *> >::const_iterator it = info.methods.begin();
+      it != info.methods.end(); ++it) {
+    if(!ctx.is_conversion_function_name(it->first)) {
+      continue;
+    }
+    for(size_t i = 0; i < it->second.size(); ++i) {
+      append_binding(it->second[i]);
+    }
+  }
+
+  if(info.member_scope) {
+    for(map<string, vector<FunctionBinding *> >::const_iterator it =
+            info.member_scope->function_sets.begin();
+        it != info.member_scope->function_sets.end();
+        ++it) {
+      if(!ctx.is_conversion_function_name(it->first)) {
+        continue;
+      }
+      for(size_t i = 0; i < it->second.size(); ++i) {
+        append_binding(it->second[i]);
+      }
+    }
+  }
+}
+
+void collect_visible_conversion_function_groups(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    set<ClassInfo *> & visited,
+    set<ClassInfo *> & visited_virtual,
+    vector<VisibleConversionFunctionGroup> & out)
+{
+  if(!visited.insert(&info).second) {
+    return;
+  }
+
+  vector<TypePtr> direct_result_types;
+  append_direct_conversion_function_groups(ctx, info, out, direct_result_types);
+
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    BaseInfo & base = info.bases[i];
+    if(!base.type) {
+      continue;
+    }
+    if(base.is_virtual && !visited_virtual.insert(base.type).second) {
+      continue;
+    }
+
+    vector<VisibleConversionFunctionGroup> base_groups;
+    collect_visible_conversion_function_groups(ctx,
+                                               *base.type,
+                                               visited,
+                                               visited_virtual,
+                                               base_groups);
+    for(size_t j = 0; j < base_groups.size(); ++j) {
+      if(conversion_result_type_seen(direct_result_types,
+                                     base_groups[j].result_type)) {
+        continue;
+      }
+      base_groups[j].result.path_access =
+          combine_member_access(base.access, base_groups[j].result.path_access);
+      base_groups[j].result.path_offset += base.offset;
+      out.push_back(base_groups[j]);
+    }
+  }
+}
+
 vector<MemberFunctionLookupResult> collect_visible_conversion_functions(SemanticContext & ctx,
                                                                        ClassInfo & info)
 {
   set<ClassInfo *> visited;
   set<ClassInfo *> visited_virtual;
-  set<string> names;
-  collect_conversion_function_names(ctx, info, visited, visited_virtual, names);
+  vector<VisibleConversionFunctionGroup> groups;
+  collect_visible_conversion_function_groups(ctx,
+                                             info,
+                                             visited,
+                                             visited_virtual,
+                                             groups);
 
   vector<MemberFunctionLookupResult> out;
-  for(set<string>::const_iterator it = names.begin(); it != names.end(); ++it) {
-    MemberFunctionLookupResult visible = lookup_member_functions(info, *it);
-    if(!visible.functions.empty()) {
-      out.push_back(visible);
+  out.reserve(groups.size());
+  for(size_t i = 0; i < groups.size(); ++i) {
+    if(!groups[i].result.functions.empty()) {
+      out.push_back(groups[i].result);
     }
   }
   return out;
@@ -514,7 +735,8 @@ TypePtr build_conversion_function_template_target_type(SemanticContext & ctx,
                        function_type->variadic,
                        function_type->function_const,
                        function_type->function_volatile,
-                       function_type->prototype_relaxed);
+                       function_type->prototype_relaxed,
+                       function_type->function_ref_qualifier);
 }
 
 TypePtr conversion_function_template_deduction_target_type(const TypePtr & target)
@@ -546,7 +768,8 @@ void update_conversion_function_template_binding_result(
                                function_type->variadic,
                                function_type->function_const,
                                function_type->function_volatile,
-                               function_type->prototype_relaxed);
+                               function_type->prototype_relaxed,
+                               function_type->function_ref_qualifier);
 }
 
 ClassInfo * ensure_complete_class_info(SemanticContext & ctx, const TypePtr & type)
@@ -596,12 +819,157 @@ bool binding_declares_explicit_function(const FunctionBinding & binding)
 
 }  // namespace
 
+bool try_builtin_pointer_operand_conversion(SemanticContext & ctx,
+                                            Scope & scope,
+                                            const ExprInfo & expr,
+                                            ExprInfo & out,
+                                            TypePtr & pointer_type,
+                                            const ArgumentConversionOptions & options)
+{
+  pointer_type = TypePtr();
+  if(!expr.type) {
+    return false;
+  }
+
+  TypePtr source_class_type = strip_top_level_cv(remove_reference_type(expr.type));
+  ClassInfo * source_class = ensure_complete_class_info(ctx, source_class_type);
+  if(!source_class) {
+    return false;
+  }
+
+  vector<TypePtr> target_pointer_types;
+  const auto append_target =
+      [&](const TypePtr & result_type)
+      {
+        TypePtr result_base = strip_top_level_cv(result_type);
+        if(!result_base || result_base->kind != Type::TK_POINTER) {
+          return;
+        }
+        for(size_t i = 0; i < target_pointer_types.size(); ++i) {
+          if(type_equals(target_pointer_types[i], result_base)) {
+            return;
+          }
+        }
+        target_pointer_types.push_back(result_base);
+      };
+
+  vector<MemberFunctionLookupResult> conversion_sets =
+      collect_visible_conversion_functions(ctx, *source_class);
+  for(size_t set_index = 0; set_index < conversion_sets.size(); ++set_index) {
+    const MemberFunctionLookupResult & visible = conversion_sets[set_index];
+    for(size_t i = 0; i < visible.functions.size(); ++i) {
+      append_target(conversion_function_result_type(visible.functions[i]));
+    }
+  }
+  if(target_pointer_types.empty()) {
+    return false;
+  }
+
+  struct Candidate
+  {
+    ExprInfo converted;
+    TypePtr pointer_type;
+    ConversionRank rank = CR_BAD;
+  };
+
+  vector<Candidate> candidates;
+  for(size_t i = 0; i < target_pointer_types.size(); ++i) {
+    ExprInfo converted;
+    ConversionRank rank = CR_BAD;
+    if(!try_argument_conversion(ctx,
+                                scope,
+                                target_pointer_types[i],
+                                expr,
+                                converted,
+                                rank,
+                                options)) {
+      continue;
+    }
+    TypePtr converted_type = strip_top_level_cv(value_conversion_type(converted));
+    if(!converted_type || converted_type->kind != Type::TK_POINTER) {
+      continue;
+    }
+    bool duplicate = false;
+    for(size_t j = 0; j < candidates.size(); ++j) {
+      if(type_equals(candidates[j].pointer_type, converted_type)) {
+        duplicate = true;
+        break;
+      }
+    }
+    if(duplicate) {
+      continue;
+    }
+
+    Candidate candidate;
+    candidate.converted = converted;
+    candidate.pointer_type = converted_type;
+    candidate.rank = rank;
+    candidates.push_back(candidate);
+  }
+  if(candidates.empty()) {
+    return false;
+  }
+
+  size_t best = 0;
+  bool ambiguous = false;
+  for(size_t i = 1; i < candidates.size(); ++i) {
+    bool current_better = false;
+    bool best_better = false;
+    if(candidates[i].rank < candidates[best].rank) {
+      current_better = true;
+    } else if(candidates[i].rank > candidates[best].rank) {
+      best_better = true;
+    } else {
+      int qual_pref = compare_parameter_qualification_preference(
+          candidates[i].pointer_type,
+          candidates[best].pointer_type);
+      if(qual_pref < 0) {
+        current_better = true;
+      } else if(qual_pref > 0) {
+        best_better = true;
+      }
+    }
+
+    if(current_better && !best_better) {
+      best = i;
+      ambiguous = false;
+    } else if((current_better && best_better) ||
+              (!current_better && !best_better)) {
+      ambiguous = true;
+    }
+  }
+  if(ambiguous) {
+    return false;
+  }
+
+  out = candidates[best].converted;
+  pointer_type = candidates[best].pointer_type;
+  return true;
+}
+
 bool member_pointer_exact_qualification_compatible(const TypePtr & target,
                                                    const TypePtr & source);
 bool member_pointer_inheritance_conversion(SemanticContext & ctx,
                                            const TypePtr & target,
                                            const TypePtr & source,
                                            size_t * out_offset);
+
+bool ref_qualifier_accepts_implicit_object(RefQualifier ref_qualifier,
+                                           const TypePtr & implicit_object_parameter,
+                                           ValueCategory category)
+{
+  switch(ref_qualifier) {
+  case RQ_NONE:
+    return true;
+  case RQ_LVALUE:
+    return category == VC_LVALUE ||
+           nonvolatile_const_object_parameter(implicit_object_parameter);
+  case RQ_RVALUE:
+    return category == VC_PRVALUE || category == VC_XVALUE;
+  }
+
+  return false;
+}
 
 TypePtr value_conversion_type(const ExprInfo & expr)
 {
@@ -655,6 +1023,12 @@ ConversionRank standard_conversion_rank_non_reference(const TypePtr & target,
   }
 
   TypePtr converted_base = strip_top_level_cv(converted);
+
+  if(target_base->kind == Type::TK_FUNDAMENTAL &&
+     target_base->fundamental == FT_NULLPTR_T &&
+     expr.null_pointer_constant) {
+    return CR_CONVERSION;
+  }
 
   if(target_base->kind == Type::TK_FUNDAMENTAL &&
      target_base->fundamental == FT_BOOL) {
@@ -728,13 +1102,14 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
   TypePtr base_target = strip_top_level_cv(target);
   if(base_target->kind == Type::TK_LVALUE_REFERENCE) {
     TypePtr source_type = reference_binding_source_type(expr);
-    if((expr.category == VC_LVALUE || is_const_object_type(base_target->inner)) &&
+    if((expr.category == VC_LVALUE ||
+        reference_referent_accepts_temporary(base_target->inner)) &&
        same_type_with_compatible_top_cv(base_target->inner, source_type)) {
       return CR_EXACT;
     }
 
     TypePtr referred_base = strip_top_level_cv(base_target->inner);
-    if(is_const_object_type(base_target->inner) &&
+    if(reference_referent_accepts_temporary(base_target->inner) &&
        base_target->inner != referred_base &&
        base_target->inner->kind == Type::TK_CV) {
       ConversionRank rank = standard_conversion_rank_non_reference(referred_base, expr);
@@ -751,10 +1126,12 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
   }
 
   if(base_target->kind == Type::TK_RVALUE_REFERENCE) {
+    bool decay_only_lvalue_source = false;
     if(expr.category == VC_LVALUE) {
       if(!is_decay_only_lvalue_reference_source(expr)) {
         return CR_BAD;
       }
+      decay_only_lvalue_source = true;
 
       TypePtr referred_base = strip_top_level_cv(base_target->inner);
       if(referred_base &&
@@ -762,6 +1139,14 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
           referred_base->kind == Type::TK_FUNCTION)) {
         return CR_BAD;
       }
+    }
+    TypePtr source_type = reference_binding_source_type(expr);
+    if(same_type_with_compatible_top_cv(base_target->inner, source_type)) {
+      return CR_EXACT;
+    }
+    if((expr.category != VC_PRVALUE && !decay_only_lvalue_source) ||
+       is_class_or_union_object_type(source_type)) {
+      return CR_BAD;
     }
     return standard_conversion_rank_non_reference(base_target->inner, expr);
   }
@@ -798,11 +1183,12 @@ void apply_standard_conversion_result_metadata(SemanticContext & ctx,
     if(target_base->kind == Type::TK_LVALUE_REFERENCE) {
       TypePtr source_type = reference_binding_source_type(expr);
       const bool direct_binding =
-          (expr.category == VC_LVALUE || is_const_object_type(referent_type)) &&
+          (expr.category == VC_LVALUE ||
+           reference_referent_accepts_temporary(referent_type)) &&
           same_type_with_compatible_top_cv(referent_type, source_type);
       TypePtr referred_base = strip_top_level_cv(referent_type);
       if(!direct_binding &&
-         is_const_object_type(referent_type) &&
+         reference_referent_accepts_temporary(referent_type) &&
          referred_base &&
          standard_conversion_rank_non_reference(referred_base, expr) != CR_BAD) {
         set_standard_converted_prvalue_result(ctx, referent_type, expr, out);
@@ -817,6 +1203,11 @@ void apply_standard_conversion_result_metadata(SemanticContext & ctx,
   }
 
   TypePtr expr_base = strip_top_level_cv(remove_reference_type(expr.type));
+  if(target_base && target_base->kind == Type::TK_FUNDAMENTAL &&
+     target_base->fundamental == FT_NULLPTR_T &&
+     expr.null_pointer_constant && expr_base && is_integral_type(expr_base)) {
+    ctx.set_expr_info_metadata(out, target_base, VC_PRVALUE);
+  }
   if(target_base && is_nullable_pointer_like_type(target_base) &&
      expr.null_pointer_constant && expr_base && is_integral_type(expr_base)) {
     ctx.set_expr_info_metadata(out, target_base, out.category);
@@ -835,7 +1226,11 @@ ConversionRank inheritance_conversion_rank(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_LVALUE_REFERENCE &&
-     (arg.category == VC_LVALUE || is_const_object_type(target_base->inner))) {
+     (arg.category == VC_LVALUE ||
+      reference_referent_accepts_temporary(target_base->inner))) {
+    if(!top_level_cv_allows_reference_binding(target_base->inner, arg_object_type)) {
+      return CR_BAD;
+    }
     ClassInfo * target_class =
         ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
     ClassInfo * arg_class = ensure_complete_class_info(ctx, arg_object_type);
@@ -845,6 +1240,9 @@ ConversionRank inheritance_conversion_rank(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_RVALUE_REFERENCE && arg.category != VC_LVALUE) {
+    if(!top_level_cv_allows_reference_binding(target_base->inner, arg_object_type)) {
+      return CR_BAD;
+    }
     ClassInfo * target_class =
         ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
     ClassInfo * arg_class = ensure_complete_class_info(ctx, arg_object_type);
@@ -856,14 +1254,10 @@ ConversionRank inheritance_conversion_rank(SemanticContext & ctx,
   if(target_base->kind == Type::TK_POINTER && arg_base->kind == Type::TK_POINTER) {
     TypePtr target_pointee_base;
     TypePtr arg_pointee_base;
-    bool target_const = false;
-    bool target_volatile = false;
-    bool arg_const = false;
-    bool arg_volatile = false;
-    if(top_level_cv_flags(target_base->inner, target_pointee_base, target_const, target_volatile) &&
-       top_level_cv_flags(arg_base->inner, arg_pointee_base, arg_const, arg_volatile) &&
-       (!arg_const || target_const) &&
-       (!arg_volatile || target_volatile)) {
+    if(pointer_pointee_cv_allows_base_conversion(target_base,
+                                                 arg_base,
+                                                 &target_pointee_base,
+                                                 &arg_pointee_base)) {
       ClassInfo * target_class = ctx.class_info_for_type(target_pointee_base);
       ClassInfo * arg_class = ctx.class_info_for_type(arg_pointee_base);
       if(!target_class) {
@@ -1208,10 +1602,16 @@ TypePtr promoted_integral_type(const TypePtr & type)
   case FT_UNSIGNED_CHAR:
   case FT_SHORT_INT:
   case FT_UNSIGNED_SHORT_INT:
-  case FT_WCHAR_T:
   case FT_CHAR16_T:
-  case FT_CHAR32_T:
     return make_fundamental(FT_INT);
+  case FT_WCHAR_T:
+    if(type_is_signed(base->fundamental) ||
+       type_to_size(base->fundamental) < type_to_size(FT_INT)) {
+      return make_fundamental(FT_INT);
+    }
+    return make_fundamental(FT_UNSIGNED_INT);
+  case FT_CHAR32_T:
+    return make_fundamental(FT_UNSIGNED_INT);
   default:
     return TypePtr();
   }
@@ -1608,7 +2008,11 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_LVALUE_REFERENCE &&
-     (expr.category == VC_LVALUE || is_const_object_type(target_base->inner))) {
+     (expr.category == VC_LVALUE ||
+      reference_referent_accepts_temporary(target_base->inner))) {
+    if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
+      return false;
+    }
     ClassInfo * target_class =
         ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
     ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
@@ -1626,6 +2030,9 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_RVALUE_REFERENCE && expr.category != VC_LVALUE) {
+    if(!top_level_cv_allows_reference_binding(target_base->inner, expr_object_type)) {
+      return false;
+    }
     ClassInfo * target_class =
         ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
     ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
@@ -1643,10 +2050,18 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
   }
 
   if(target_base->kind == Type::TK_POINTER && expr_base->kind == Type::TK_POINTER) {
+    TypePtr target_pointee_base;
+    TypePtr expr_pointee_base;
+    if(!pointer_pointee_cv_allows_base_conversion(target_base,
+                                                  expr_base,
+                                                  &target_pointee_base,
+                                                  &expr_pointee_base)) {
+      return false;
+    }
     ClassInfo * target_class =
-        ensure_complete_class_info(ctx, strip_top_level_cv(target_base->inner));
+        ensure_complete_class_info(ctx, target_pointee_base);
     ClassInfo * source_class =
-        ensure_complete_class_info(ctx, strip_top_level_cv(expr_base->inner));
+        ensure_complete_class_info(ctx, expr_pointee_base);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
     if(target_class && source_class && target_class != source_class &&
@@ -1766,7 +2181,7 @@ bool try_argument_conversion(SemanticContext & ctx,
   if(ref_target_base &&
      ref_target_base->kind == Type::TK_LVALUE_REFERENCE &&
      expr.category == VC_LVALUE &&
-     is_const_object_type(ref_target_base->inner)) {
+     reference_referent_accepts_temporary(ref_target_base->inner)) {
     TypePtr referred_base = strip_top_level_cv(ref_target_base->inner);
     TypePtr source_type = reference_binding_source_type(expr);
     TypePtr source_base;
@@ -2172,6 +2587,25 @@ bool try_argument_conversion(SemanticContext & ctx,
                   candidates[i].implicit_object_rank >
                       candidates[best].implicit_object_rank) {
           best_better = true;
+        } else if(candidates[i].conversion_function &&
+                  candidates[best].conversion_function) {
+          int object_qual_pref =
+              compare_qualification_conversion_preference(
+                  candidates[i].conversion_implicit_object_param,
+                  candidates[i].source_expr,
+                  candidates[best].conversion_implicit_object_param,
+                  candidates[best].source_expr);
+          if(object_qual_pref < 0) {
+            current_better = true;
+          } else if(object_qual_pref > 0) {
+            best_better = true;
+          } else if((candidates[i].conversion_function->source_template != nullptr) !=
+                    (candidates[best].conversion_function->source_template != nullptr)) {
+            current_better =
+                candidates[i].conversion_function->source_template == nullptr;
+            best_better =
+                candidates[best].conversion_function->source_template == nullptr;
+          }
         }
       }
     }

@@ -140,6 +140,7 @@ protected:
   bool parse_asm_statement(CppAstNode & out);
   bool parse_exception_declaration(CppAstNode & out);
   bool parse_return_statement(CppAstNode & out);
+  bool parse_coroutine_return_statement(CppAstNode & out);
   bool parse_expression_statement(CppAstNode & out);
   bool parse_assignment_expression(CppAstNode & out);
   bool parse_conditional_expression(CppAstNode & out);
@@ -180,6 +181,11 @@ protected:
   bool can_start_type_id() const;
   bool qualified_name_span_prefers_expression(std::size_t begin,
                                               std::size_t end) const;
+  bool qualified_name_span_names_known_type(std::size_t begin,
+                                            std::size_t end) const;
+  bool qualified_template_id_span_has_head_expression_lookup(
+      std::size_t begin,
+      std::size_t end) const;
   bool parenthesized_type_id_prefers_expression(
       const CppAstNode & type_id) const;
   bool can_start_named_decl_specifier_seq() const;
@@ -202,6 +208,8 @@ protected:
   bool can_start_attributed_decl_specifier_seq();
   bool can_start_structured_binding_declarator() const;
   bool declarator_has_parameter_clause(const CppAstNode & node) const;
+  bool type_id_has_function_style_abstract_declarator(
+      const CppAstNode & type_id) const;
   bool parse_condition_declaration_candidate(CppAstNode & out);
   bool parse_parenthesized_type_id_or_expression(CppAstNode & out,
                                                  bool & is_type_id,
@@ -232,6 +240,9 @@ protected:
   void attach_qualified_name_syntax_from_span(CppAstNode & node,
                                               std::size_t start,
                                               std::size_t end);
+  void attach_builtin_type_transform_syntax_from_span(CppAstNode & node,
+                                                      std::size_t start,
+                                                      std::size_t end);
   bool parse_angle_clause_text(std::string & out);
   bool can_open_nested_template_angle_at(std::size_t boundary) const;
   bool looks_like_unknown_nested_template_id_at(std::size_t boundary) const;
@@ -247,6 +258,7 @@ protected:
   bool is_known_type_name_identifier(const RecogToken & token) const;
   bool is_known_value_template_parameter_identifier(const RecogToken & token) const;
   bool is_known_value_name_identifier(const RecogToken & token) const;
+  bool unqualified_identifier_prefers_value_name(const RecogToken & token) const;
   template_angle_lookup::ScopedNameLookup make_template_angle_lookup(
       bool prefer_unknown_template_ids = false) const;
   struct SeededClassNameScopes

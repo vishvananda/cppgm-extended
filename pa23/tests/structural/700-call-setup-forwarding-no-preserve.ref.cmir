@@ -48,9 +48,7 @@ function @main
     sitofp.i64.f64 xmm0, r8
     sitofp.i64.f64 xmm1, r9
     mov rdi, r8
-    fmov.f64 xmm0, xmm0
     mov rsi, r9
-    fmov.f64 xmm1, xmm1
     call @mix
     mov <gpr0>, rax
     mov rdx, 50

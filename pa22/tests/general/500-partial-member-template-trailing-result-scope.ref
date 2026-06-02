@@ -1,0 +1,25 @@
+declare function @detail__async_initiate__ov3(%arg0 : ptr [pass=reference], %arg1 : ptr [pass=reference], %arg2 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6detail14async_initiateINS_6binderINS_7handlerEEEFviENS_10initiationEJiEEEDTclsr12async_resultINS_5decayIT_E4typeET0_EE8initiatescT1_fp_scS7_fp0_spscT2_fp1_EEOSB_RNS_13type_identityIS7_E4typeEDpOSC_]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $b : obj<1x1>
+  slot $arg__1 : obj<1x1>
+  slot $refarg__2 : i32
+
+  block ^entry:
+    %t1 = addr $b
+    %t2 = addr $arg__1
+    call void @detail__initiation__initiation(%t2)
+    %t3 = addr $b
+    store i32 1, $refarg__2
+    %t4 = addr $refarg__2
+    %t5 = call i32 @detail__async_initiate__ov3(%t2, %t3, %t4)
+    return i32 0
+}
+function @detail__initiation__initiation(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6detail10initiationC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN6detail10initiationC2Ev = @detail__initiation__initiation

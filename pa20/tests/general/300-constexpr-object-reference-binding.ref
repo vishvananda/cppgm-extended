@@ -1,0 +1,16 @@
+global @source__value : i32 [binding=strong, object=_ZN6source5valueE] = 4
+global @target__alias : ptr [binding=internal, object=_ZN6target5aliasE] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load ptr @target__alias
+    store i32 7, %t1
+    %t2 = load i32 @source__value
+    return i32 %t2
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @source__value
+    store ptr %t1, @target__alias
+    return void
+}

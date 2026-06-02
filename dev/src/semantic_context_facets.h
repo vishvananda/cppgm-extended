@@ -23,6 +23,7 @@ struct TemplateArgument;
 
 namespace semantic_conversion {
 struct ExprInfo;
+enum ConversionRank : int;
 }  // namespace semantic_conversion
 
 namespace semantic_overload {
@@ -30,11 +31,13 @@ struct CallAnalysisHints
 {
   const semantic_conversion::ExprInfo * explicit_member_base = nullptr;
   std::vector<const semantic_conversion::ExprInfo *> args;
+  std::vector<semantic_conversion::ConversionRank> * selected_ranks_out = nullptr;
   std::size_t explicit_member_arg_prefix = 0;
   std::string use_location;
   const semantic_model::ClassInfo * explicit_member_declared_in = nullptr;
   semantic_model::MemberAccess explicit_member_path_access =
       static_cast<semantic_model::MemberAccess>(0);
+  bool suppress_user_defined_output_materialization = false;
 };
 
 struct CallAnalysisOptions

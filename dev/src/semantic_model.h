@@ -59,6 +59,7 @@ struct FunctionSemanticFlags
 {
   MemberAccess access = MA_PUBLIC;
   bool is_constructor = false;
+  bool is_inherited_constructor = false;
   bool is_destructor = false;
   bool is_explicit = false;
   bool is_const_method = false;
@@ -70,6 +71,7 @@ struct FunctionSemanticFlags
   bool is_final = false;
   bool is_defaulted = false;
   bool is_constexpr = false;
+  bool is_inline = false;
   const CppAstNode * function_qualifier = nullptr;
 };
 
@@ -167,6 +169,7 @@ struct ValueBinding
   symbol_linkage::SymbolIdentity symbol;
   unsigned int output_requirements = ORK_NONE;
   bool definition_output_emitted = false;
+  mutable bool witness_member_value_instantiation_noted = false;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 
@@ -203,7 +206,9 @@ struct Scope
     template_bound_type_names = other.template_bound_type_names;
     template_bound_type_pack_names = other.template_bound_type_pack_names;
     template_bound_value_names = other.template_bound_value_names;
+    template_bound_value_pack_names = other.template_bound_value_pack_names;
     template_bound_template_names = other.template_bound_template_names;
+    template_bound_template_arguments = other.template_bound_template_arguments;
     values = other.values;
     namespace_bindings = other.namespace_bindings;
     function_sets = other.function_sets;
@@ -246,7 +251,9 @@ struct Scope
   std::set<std::string> template_bound_type_names;
   std::set<std::string> template_bound_type_pack_names;
   std::set<std::string> template_bound_value_names;
+  std::set<std::string> template_bound_value_pack_names;
   std::set<std::string> template_bound_template_names;
+  std::map<std::string, template_model::TemplateArgument> template_bound_template_arguments;
   std::map<std::string, ValueBinding> values;
   std::map<std::string, Scope *> namespace_bindings;
   std::map<std::string, std::vector<FunctionBinding *> > function_sets;
@@ -303,6 +310,7 @@ struct FunctionBinding
   MemberAccess access = MA_PUBLIC;
   bool is_method = false;
   bool is_constexpr = false;
+  bool is_inline = false;
   bool is_constructor = false;
   bool is_inherited_constructor = false;
   bool is_destructor = false;
@@ -505,6 +513,9 @@ struct ClassInfo
   std::size_t instantiation_specialization_epoch = 0;
   std::vector<std::string> instantiation_arg_texts;
   std::vector<template_model::TemplateArgument> instantiation_arguments;
+  std::vector<template_model::TemplateArgument> instantiation_binding_arguments;
+  std::map<std::string, std::size_t> instantiation_binding_pack_sizes;
+  bool has_instantiation_binding_arguments = false;
   std::vector<template_model::TemplateValueDependency> template_value_dependencies;
   std::string first_qualifier_use_location;
   mutable SourceDeclAnchorCache declaration_anchor;
@@ -537,6 +548,7 @@ struct FunctionTemplateDecl
   FunctionBinding * lexical_access_function = nullptr;
   MemberAccess access = MA_PUBLIC;
   bool is_constructor = false;
+  bool is_inherited_constructor = false;
   bool is_destructor = false;
   bool is_static_member = false;
   bool is_constexpr = false;
@@ -750,6 +762,114 @@ struct AliasTemplateDecl
     std::string member_name;
   };
 
+  struct StableAliasExpansionScopeKey
+  {
+    std::size_t instance_id = 0;
+    std::size_t binding_fingerprint = 0;
+
+    bool operator<(const StableAliasExpansionScopeKey & other) const
+    {
+      if(instance_id != other.instance_id) {
+        return instance_id < other.instance_id;
+      }
+      return binding_fingerprint < other.binding_fingerprint;
+    }
+  };
+
+  struct StableAliasExpansionArgumentKey
+  {
+    int kind = 0;
+    bool dependent = false;
+    bool source_defaulted = false;
+    const void * type_pointer = nullptr;
+    int type_code = 0;
+    const void * template_decl = nullptr;
+    const void * function_value = nullptr;
+    const void * value_binding = nullptr;
+    long long value = 0;
+    std::string text;
+
+    bool operator<(const StableAliasExpansionArgumentKey & other) const
+    {
+      if(kind != other.kind) {
+        return kind < other.kind;
+      }
+      if(dependent != other.dependent) {
+        return dependent < other.dependent;
+      }
+      if(source_defaulted != other.source_defaulted) {
+        return source_defaulted < other.source_defaulted;
+      }
+      if(type_code != other.type_code) {
+        return type_code < other.type_code;
+      }
+      if(value != other.value) {
+        return value < other.value;
+      }
+      if(text != other.text) {
+        return text < other.text;
+      }
+      if(type_pointer != other.type_pointer) {
+        return std::less<const void *>()(type_pointer, other.type_pointer);
+      }
+      if(template_decl != other.template_decl) {
+        return std::less<const void *>()(template_decl, other.template_decl);
+      }
+      if(function_value != other.function_value) {
+        return std::less<const void *>()(function_value, other.function_value);
+      }
+      return std::less<const void *>()(value_binding, other.value_binding);
+    }
+  };
+
+  struct StableAliasExpansionKey
+  {
+    bool allow_dependent_expansion = false;
+    StableAliasExpansionScopeKey match_scope;
+    StableAliasExpansionScopeKey argument_scope;
+    StableAliasExpansionScopeKey resolution_scope;
+    std::vector<StableAliasExpansionArgumentKey> arguments;
+
+    bool operator<(const StableAliasExpansionKey & other) const
+    {
+      if(allow_dependent_expansion != other.allow_dependent_expansion) {
+        return allow_dependent_expansion < other.allow_dependent_expansion;
+      }
+      if(match_scope < other.match_scope) {
+        return true;
+      }
+      if(other.match_scope < match_scope) {
+        return false;
+      }
+      if(argument_scope < other.argument_scope) {
+        return true;
+      }
+      if(other.argument_scope < argument_scope) {
+        return false;
+      }
+      if(resolution_scope < other.resolution_scope) {
+        return true;
+      }
+      if(other.resolution_scope < resolution_scope) {
+        return false;
+      }
+      return arguments < other.arguments;
+    }
+  };
+
+  struct StableAliasExpansionValue
+  {
+    enum Kind
+    {
+      EK_SUCCESS,
+      EK_DEPENDENT_DEFER
+    };
+
+    Kind kind = EK_SUCCESS;
+    std::string expanded_text;
+    cpp_decl::TypePtr expanded_type;
+  };
+
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
   std::string name;
@@ -758,8 +878,12 @@ struct AliasTemplateDecl
   std::vector<template_model::TemplateParameterInfo> parameters;
   std::map<std::string, cpp_decl::TypePtr> instantiations;
   std::map<std::string, cpp_decl::TypePtr> reference_instantiations;
+  mutable bool dependent_qualified_member_scope_sensitive_cached = false;
+  mutable bool dependent_qualified_member_scope_sensitive = false;
   mutable std::map<StableSubstitutionKey, StableSubstitutionFailure>
       stable_substitution_failures;
+  mutable std::map<StableAliasExpansionKey, StableAliasExpansionValue>
+      stable_alias_expansions;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 
@@ -844,6 +968,18 @@ struct PartialClassTemplateSpecializationDecl
 
 struct ClassTemplateDecl
 {
+  struct SpecializationSelectionCacheEntry
+  {
+    std::size_t specialization_epoch = 0;
+    const CppAstNode * class_node = nullptr;
+    Scope * binding_scope = nullptr;
+    const std::vector<template_model::TemplateParameterInfo> * parameters = nullptr;
+    std::vector<template_model::TemplateArgument> arguments;
+    std::map<std::string, std::size_t> pack_sizes;
+    std::string selection_key;
+    int kind = 0;
+  };
+
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
   std::string name;
@@ -853,6 +989,8 @@ struct ClassTemplateDecl
   std::map<std::string, ClassInfo *> reference_instantiations;
   std::map<std::string, ClassInfo *> fast_reference_cache;
   std::size_t specialization_epoch = 0;
+  mutable std::map<std::string, SpecializationSelectionCacheEntry>
+      specialization_selection_cache;
   std::set<std::string> suppress_implicit_instantiation_definitions;
   std::set<std::string> explicit_static_member_specializations;
   std::set<std::pair<std::string, std::string> >
@@ -864,6 +1002,8 @@ struct ClassTemplateDecl
   std::map<std::string, OutOfClassStaticMemberDecl>
       witness_static_member_definitions;
   std::map<std::string, OutOfClassMemberClassDecl> member_class_definitions;
+  std::map<std::string, std::vector<PartialClassTemplateSpecializationDecl> >
+      member_class_template_partial_specializations;
   std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> > member_function_definitions;
   std::map<std::string, std::vector<OutOfClassMemberFunctionTemplateDefinition> >
       member_function_template_definitions;

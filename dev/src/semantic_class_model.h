@@ -76,6 +76,7 @@ struct PreparedClassMemberFunctionDefinition
   cpp_decl::TypePtr declared_type;
   bool is_static_member = false;
   bool is_constexpr_member = false;
+  bool is_inline_member = false;
 };
 
 semantic_model::MemberAccess default_access_for_class_kind(const std::string & class_kind);
@@ -115,7 +116,8 @@ ClassFunctionOptions class_function_options(semantic_model::MemberAccess access,
                                             bool is_constructor = false,
                                             bool is_destructor = false,
                                             bool is_constexpr = false,
-                                            bool is_defaulted = false);
+                                            bool is_defaulted = false,
+                                            bool is_inline = false);
 void validate_method_virtual_syntax(const MethodSyntaxInfo & info);
 cpp_decl::TypePtr method_function_type(const cpp_decl::TypePtr & class_type,
                                        bool is_const_method,
@@ -230,6 +232,9 @@ bool is_trivially_destructible_type_for_host_abi(
     SemanticContext & ctx,
     const cpp_decl::TypePtr & type);
 bool is_trivially_copy_constructible_type_for_host_abi(
+    SemanticContext & ctx,
+    const cpp_decl::TypePtr & type);
+bool is_trivially_move_constructible_type_for_host_abi(
     SemanticContext & ctx,
     const cpp_decl::TypePtr & type);
 semantic_model::FunctionBinding * ensure_implicit_copy_constructor(

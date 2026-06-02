@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @RefPair_int___RefPair(%t1, %t2, %t3)
     %t4 = addr $moved
     %t5 = addr $source
-    call void @RefPair_int___RefPair__ov2(%t4, %t5)
+    copyobj 16x8 %t5, %t4
     %t6 = addr $moved
     %t7 = index i8 [projection=reference_field] %t6, 8
     %t8 = load ptr %t7
@@ -38,23 +38,4 @@ function @RefPair_int___RefPair(%this : ptr, %first_value : ptr, %second_value :
     store ptr %t4, %t6
     return void
 }
-function @RefPair_int___RefPair__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN7RefPairIiEC1EOS0_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
-    %t2 = load ptr $__param1
-    copyobj 8x8 %t2, %t1
-    %t3 = load ptr $__param1
-    %t4 = index i8 [projection=reference_field] %t3, 8
-    %t5 = load ptr %t4
-    %t6 = load ptr $this
-    %t7 = index i8 [projection=field] %t6, 8
-    store ptr %t5, %t7
-    return void
-}
 alias object _ZN7RefPairIiEC2EPiRi = @RefPair_int___RefPair
-alias object _ZN7RefPairIiEC2EOS0_ = @RefPair_int___RefPair__ov2

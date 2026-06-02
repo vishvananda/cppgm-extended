@@ -1,0 +1,74 @@
+function @overloaded_member_pointer_target_init__C__set(%this : ptr, %v : i32) -> void [binding=strong, object=_ZN37overloaded_member_pointer_target_init1C3setEi] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @overloaded_member_pointer_target_init__C__set__ov2(%this : ptr, %v : i64) -> void [binding=strong, object=_ZN37overloaded_member_pointer_target_init1C3setEl] {
+  slot $this : ptr
+  slot $v : i64
+
+  block ^entry:
+    store ptr %this, $this
+    store i64 %v, $v
+    %t1 = load i64 $v
+    %t2 = binary add i64 %t1, 1
+    %t3 = convert trunc i32 i64 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 %t3, %t5
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $setter : i128
+  slot $c : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr @overloaded_member_pointer_target_init__C__set
+    %t2 = copy i64 %t1
+    %t3 = convert zext i128 i64 %t2
+    store i128 %t3, $setter
+    %t4 = addr $c
+    call void @overloaded_member_pointer_target_init__C__C(%t4)
+    %t5 = addr $c
+    %t6 = load i128 $setter
+    %t7 = convert trunc i64 i128 %t6
+    %t8 = copy ptr %t7
+    call void %t8(%t5, 4) as (%arg0 : ptr, %arg1 : i32) -> void
+    %t9 = addr $c
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = load i32 %t10
+    %t12 = cmp eq i32 %t11, 4
+    branch %t12, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t13 = load i32 $cond__1
+    return i32 %t13
+}
+function @overloaded_member_pointer_target_init__C__C(%this : ptr) -> void [binding=weak, object=_ZN37overloaded_member_pointer_target_init1CC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+alias object _ZN37overloaded_member_pointer_target_init1CC2Ev = @overloaded_member_pointer_target_init__C__C

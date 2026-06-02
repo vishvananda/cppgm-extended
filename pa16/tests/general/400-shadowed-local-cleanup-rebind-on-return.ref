@@ -13,61 +13,66 @@ function @f(%pattern : ptr [pass=by_address], %actual : ptr [pass=by_address]) -
   slot $call__3 : ptr
 
   block ^entry:
-    %t1 = addr $pattern
-    call void @S__S__ov2(%t1, %pattern)
-    %t2 = addr $actual
-    call void @S__S__ov2(%t2, %actual)
-    %t3 = addr $pattern_cv_inner
-    call void @S__S(%t3)
-    %t4 = addr $actual_cv_inner
-    call void @S__S(%t4)
-    %t5 = addr $pattern_base
-    %t6 = addr $pattern
-    call void @S__S__ov2(%t5, %t6)
-    %t7 = addr $actual_base
-    %t8 = addr $actual
-    call void @S__S__ov2(%t7, %t8)
-    eh_try ^call_unwind_dispatch_4
-    %t9 = addr $pattern_base
-    %t10 = call u8 @S__operatorbool(%t9)
-    store u8 %t10, $call__1
-    %t11 = load u8 $call__1
+    %t1 = addr $pattern_cv_inner
+    eh_try ^call_unwind_dispatch_1
+    call void @S__S(%t1)
     eh_end
-    jump ^call_unwind_end_5
+    jump ^call_unwind_end_2
 
-  block ^call_unwind_dispatch_4:
-    %t12 = addr $actual
-    call void @S___S(%t12)
-    %t13 = addr $pattern
-    call void @S___S(%t13)
+  block ^call_unwind_dispatch_1:
+    call void @S___S(%actual)
+    call void @S___S(%pattern)
     resume
 
-  block ^call_unwind_end_5:
-    branch %t11, ^if_then_1, ^if_else_2
-
-  block ^if_then_1:
-    %t14 = addr $deduced_type
-    %t15 = addr $actual
-    call void @S__S__ov2(%t14, %t15)
-    %t16 = addr $actual_cv_inner__shadow2
-    call void @S__S(%t16)
-    %t17 = addr $pattern_cv_inner__shadow2
-    call void @S__S(%t17)
-    eh_try ^call_unwind_dispatch_4
-    %t18 = addr $actual_base
-    %t19 = call u8 @S__operatorbool(%t18)
-    store u8 %t19, $call__2
-    %t20 = load u8 $call__2
+  block ^call_unwind_end_2:
+    %t2 = addr $actual_cv_inner
+    eh_try ^call_unwind_dispatch_1
+    call void @S__S(%t2)
     eh_end
-    branch %t20, ^if_then_6, ^if_else_7
+    %t3 = addr $pattern_base
+    eh_try ^call_unwind_dispatch_1
+    call void @S__S__ov2(%t3, %pattern)
+    eh_end
+    %t4 = addr $actual_base
+    eh_try ^call_unwind_dispatch_1
+    call void @S__S__ov2(%t4, %actual)
+    eh_end
+    eh_try ^call_unwind_dispatch_1
+    %t5 = addr $pattern_base
+    %t6 = call u8 @S__operatorbool(%t5)
+    store u8 %t6, $call__1
+    %t7 = load u8 $call__1
+    eh_end
+    branch %t7, ^if_then_3, ^if_else_4
+
+  block ^if_then_3:
+    %t8 = addr $deduced_type
+    eh_try ^call_unwind_dispatch_1
+    call void @S__S__ov2(%t8, %actual)
+    eh_end
+    %t9 = addr $actual_cv_inner__shadow2
+    eh_try ^call_unwind_dispatch_1
+    call void @S__S(%t9)
+    eh_end
+    %t10 = addr $pattern_cv_inner__shadow2
+    eh_try ^call_unwind_dispatch_1
+    call void @S__S(%t10)
+    eh_end
+    eh_try ^call_unwind_dispatch_1
+    %t11 = addr $actual_base
+    %t12 = call u8 @S__operatorbool(%t11)
+    store u8 %t12, $call__2
+    %t13 = load u8 $call__2
+    eh_end
+    branch %t13, ^if_then_6, ^if_else_7
 
   block ^if_then_6:
-    eh_try ^call_unwind_dispatch_4
-    %t21 = addr $deduced_type
-    %t22 = addr $actual_cv_inner__shadow2
-    %t23 = call ptr @S__operator_(%t21, %t22)
-    store ptr %t23, $call__3
-    %t24 = load ptr $call__3
+    eh_try ^call_unwind_dispatch_1
+    %t14 = addr $deduced_type
+    %t15 = addr $actual_cv_inner__shadow2
+    %t16 = call ptr @S__operator_(%t14, %t15)
+    store ptr %t16, $call__3
+    %t17 = load ptr $call__3
     eh_end
     jump ^if_end_8
 
@@ -75,20 +80,16 @@ function @f(%pattern : ptr [pass=by_address], %actual : ptr [pass=by_address]) -
     jump ^if_end_8
 
   block ^if_end_8:
-    %t25 = addr $actual
-    call void @S___S(%t25)
-    %t26 = addr $pattern
-    call void @S___S(%t26)
+    call void @S___S(%actual)
+    call void @S___S(%pattern)
     return u8 1
 
-  block ^if_else_2:
-    jump ^if_end_3
+  block ^if_else_4:
+    jump ^if_end_5
 
-  block ^if_end_3:
-    %t27 = addr $actual
-    call void @S___S(%t27)
-    %t28 = addr $pattern
-    call void @S___S(%t28)
+  block ^if_end_5:
+    call void @S___S(%actual)
+    call void @S___S(%pattern)
     return u8 0
 }
 function @S__S(%this : ptr) -> void [binding=weak, object=_ZN1SC1Ev] {

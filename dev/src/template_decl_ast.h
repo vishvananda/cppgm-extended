@@ -37,6 +37,14 @@ bool parse_declarator(template_api::TemplateServices & services,
                       cpp_decl::TypePtr & type,
                       bool reference_class_templates_only = false);
 
+bool parse_abstract_declarator(template_api::TemplateServices & services,
+                               semantic_model::Scope & parse_scope,
+                               semantic_model::Scope & semantic_scope,
+                               const CppAstNode & abstract_declarator,
+                               const cpp_decl::TypePtr & base,
+                               cpp_decl::TypePtr & type,
+                               bool reference_class_templates_only = false);
+
 bool parse_type_specifier_seq(template_api::TemplateServices & services,
                               semantic_model::Scope & parse_scope,
                               semantic_model::Scope & semantic_scope,

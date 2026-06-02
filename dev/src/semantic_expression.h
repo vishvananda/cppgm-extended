@@ -43,6 +43,7 @@ semantic_conversion::ExprInfo analyze_member_expression(
 
 semantic_conversion::ExprInfo analyze_literal(
     SemanticContext & ctx,
+    semantic_model::Scope & scope,
     const CppAstNode & node);
 
 semantic_conversion::ExprInfo analyze_id_expression(

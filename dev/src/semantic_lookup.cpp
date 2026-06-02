@@ -383,6 +383,7 @@ size_t type_lookup_hash(const TypePtr & type)
     hash_combine(seed, type->prototype_relaxed ? 1 : 0);
     hash_combine(seed, type->function_const ? 1 : 0);
     hash_combine(seed, type->function_volatile ? 1 : 0);
+    hash_combine(seed, static_cast<size_t>(type->function_ref_qualifier));
     hash_combine(seed, type_lookup_hash(type->inner));
     hash_combine(seed, type->params.size());
     for(size_t i = 0; i < type->params.size(); ++i) {
@@ -747,11 +748,6 @@ bool member_lookup_present(const MemberFunctionLookupResult & result)
   return !result.functions.empty();
 }
 
-bool member_lookup_present(const MemberFunctionTemplateLookupResult & result)
-{
-  return !result.templates.empty();
-}
-
 bool member_lookup_present(const MemberCallableLookupResult & result)
 {
   return !result.functions.empty() || !result.templates.empty();
@@ -770,6 +766,101 @@ bool member_lookup_present(const MemberAliasTemplateLookupResult & result)
 bool member_lookup_present(const MemberVariableTemplateLookupResult & result)
 {
   return result.variable_template != nullptr;
+}
+
+bool member_function_types_same_non_object_signature(const TypePtr & lhs,
+                                                     const TypePtr & rhs)
+{
+  TypePtr lhs_base = strip_top_level_cv(lhs);
+  TypePtr rhs_base = strip_top_level_cv(rhs);
+  if(!lhs_base || !rhs_base ||
+     lhs_base->kind != Type::TK_FUNCTION ||
+     rhs_base->kind != Type::TK_FUNCTION ||
+     lhs_base->variadic != rhs_base->variadic ||
+     lhs_base->prototype_relaxed != rhs_base->prototype_relaxed ||
+     lhs_base->function_const != rhs_base->function_const ||
+     lhs_base->function_volatile != rhs_base->function_volatile ||
+     lhs_base->function_ref_qualifier != rhs_base->function_ref_qualifier ||
+     lhs_base->params.size() != rhs_base->params.size() ||
+     lhs_base->params.empty()) {
+    return false;
+  }
+  for(size_t i = 1; i < lhs_base->params.size(); ++i) {
+    if(!type_equals(lhs_base->params[i], rhs_base->params[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void remove_hidden_using_base_member_function_candidates_impl(
+    vector<FunctionBinding *> & functions,
+    const ClassInfo & current)
+{
+  if(functions.size() < 2) {
+    return;
+  }
+
+  bool has_current_member = false;
+  bool has_base_member = false;
+  for(size_t i = 0; i < functions.size(); ++i) {
+    FunctionBinding * function = functions[i];
+    if(function && function->owner_class == &current) {
+      has_current_member = true;
+    } else if(function) {
+      has_base_member = true;
+    }
+    if(has_current_member && has_base_member) {
+      break;
+    }
+  }
+  if(!has_current_member || !has_base_member) {
+    return;
+  }
+
+  vector<FunctionBinding *> filtered;
+  filtered.reserve(functions.size());
+  for(size_t i = 0; i < functions.size(); ++i) {
+    FunctionBinding * function = functions[i];
+    bool hidden = false;
+    if(function && function->owner_class != &current) {
+      for(size_t j = 0; j < functions.size(); ++j) {
+        FunctionBinding * direct = functions[j];
+        if(direct && direct->owner_class == &current &&
+           function->ref_qualifier == direct->ref_qualifier &&
+           member_function_types_same_non_object_signature(function->type,
+                                                           direct->type)) {
+          hidden = true;
+          break;
+        }
+      }
+    }
+    if(!hidden) {
+      filtered.push_back(function);
+    }
+  }
+  functions.swap(filtered);
+}
+
+void remove_hidden_using_base_member_functions(MemberCallableLookupResult & result,
+                                               const ClassInfo & current)
+{
+  remove_hidden_using_base_member_function_candidates_impl(result.functions, current);
+}
+
+bool direct_function_set_has_access_overrides(const Scope & scope,
+                                              const string & name)
+{
+  if(scope.function_set_access_overrides.empty()) {
+    return false;
+  }
+  if(!function_lookup_name_needs_canonicalization(name)) {
+    return scope.function_set_access_overrides.find(name) !=
+        scope.function_set_access_overrides.end();
+  }
+  const string canonical_name = canonical_function_lookup_name(name);
+  return scope.function_set_access_overrides.find(canonical_name) !=
+      scope.function_set_access_overrides.end();
 }
 
 bool is_enclosing_current_specialization_type(Scope & scope,
@@ -1197,6 +1288,120 @@ AliasTemplateDecl * lookup_alias_template_in_direct_or_inline_scope(Scope & scop
       });
 }
 
+template<typename DeclT, typename MapLookup>
+DeclT * lookup_inherited_member_template_decl(SemanticContext & ctx,
+                                              ClassInfo & info,
+                                              const string & name,
+                                              const MapLookup & map_lookup)
+{
+  set<ClassInfo *> visited_virtual;
+  vector<ClassInfo *> candidates;
+  vector<ClassInfo *> stack;
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    if(info.bases[i].type) {
+      stack.push_back(info.bases[i].type);
+    }
+  }
+
+  while(!stack.empty()) {
+    ClassInfo * current = stack.back();
+    stack.pop_back();
+    if(!current || current->reference_member_collection_in_progress) {
+      continue;
+    }
+    if(!current->reference_members_collected) {
+      ctx.ensure_class_reference_members(*current);
+    }
+    if(current->member_scope && map_lookup(*current->member_scope, name)) {
+      candidates.push_back(current);
+      continue;
+    }
+    for(size_t i = 0; i < current->bases.size(); ++i) {
+      BaseInfo & base = current->bases[i];
+      if(base.is_virtual && !visited_virtual.insert(base.type).second) {
+        continue;
+      }
+      if(base.type) {
+        stack.push_back(base.type);
+      }
+    }
+  }
+
+  if(candidates.empty()) {
+    return nullptr;
+  }
+  ClassInfo * declared_in = candidates[0];
+  for(size_t i = 1; i < candidates.size(); ++i) {
+    if(candidates[i] != declared_in) {
+      ostringstream out;
+      out << "ambiguous member template lookup";
+      out << " [root " << info.qualified_name << "]";
+      out << " [name " << name << "]";
+      out << " [candidates " << describe_class_candidate_list(candidates) << "]";
+      throw logic_error(out.str());
+    }
+  }
+  return declared_in && declared_in->member_scope ?
+      map_lookup(*declared_in->member_scope, name) :
+      nullptr;
+}
+
+ClassTemplateDecl * lookup_class_template_in_scope_or_inherited_members(
+    SemanticContext & ctx,
+    Scope & scope,
+    const string & name)
+{
+  if(ClassTemplateDecl * direct = lookup_direct_class_template(scope, name)) {
+    return direct;
+  }
+  if(!scope.class_info) {
+    return nullptr;
+  }
+  if(scope.class_info->member_scope &&
+     scope.class_info->member_scope.get() != &scope) {
+    if(ClassTemplateDecl * owner_direct =
+           lookup_direct_class_template(*scope.class_info->member_scope, name)) {
+      return owner_direct;
+    }
+  }
+  return lookup_inherited_member_template_decl<ClassTemplateDecl>(
+      ctx,
+      *scope.class_info,
+      name,
+      [](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
+      {
+        return lookup_direct_class_template(target, lookup_name);
+      });
+}
+
+AliasTemplateDecl * lookup_alias_template_in_scope_or_inherited_members(
+    SemanticContext & ctx,
+    Scope & scope,
+    const string & name)
+{
+  if(AliasTemplateDecl * direct = lookup_direct_alias_template(scope, name)) {
+    return direct;
+  }
+  if(!scope.class_info) {
+    return nullptr;
+  }
+  if(scope.class_info->member_scope &&
+     scope.class_info->member_scope.get() != &scope) {
+    if(AliasTemplateDecl * owner_direct =
+           lookup_direct_alias_template(*scope.class_info->member_scope, name)) {
+      return owner_direct;
+    }
+  }
+  return lookup_inherited_member_template_decl<AliasTemplateDecl>(
+      ctx,
+      *scope.class_info,
+      name,
+      [](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
+      {
+        return lookup_direct_alias_template(target, lookup_name);
+      });
+}
+
 template<typename DeclT, typename DirectLookup, typename SameEntity>
 DeclT * lookup_qualified_decl_with_using_directives(
     Scope & scope,
@@ -1306,6 +1511,17 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
         return resolved;
       }
     }
+    if(scope.class_info && found->second) {
+      TypePtr resolved =
+          semantic_class_model::resolve_instantiated_member_alias_type(
+              ctx,
+              lookup_scope,
+              found->second,
+              scope.class_info);
+      if(resolved && !ctx.type_depends_on_template_parameter(resolved)) {
+        return resolved;
+      }
+    }
     return found->second;
   }
 
@@ -1318,6 +1534,15 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
                            ensure_current,
                            &lookup_scope);
     if(member.type) {
+      TypePtr resolved =
+          semantic_class_model::resolve_instantiated_member_alias_type(
+              ctx,
+              lookup_scope,
+              member.type,
+              scope.class_info);
+      if(resolved && !ctx.type_depends_on_template_parameter(resolved)) {
+        return resolved;
+      }
       return member.type;
     }
   }
@@ -2495,6 +2720,7 @@ bool same_inline_namespace_template_parameter_type(
        lhs_type->prototype_relaxed != rhs_type->prototype_relaxed ||
        lhs_type->function_const != rhs_type->function_const ||
        lhs_type->function_volatile != rhs_type->function_volatile ||
+       lhs_type->function_ref_qualifier != rhs_type->function_ref_qualifier ||
        lhs_type->params.size() != rhs_type->params.size() ||
        !same_inline_namespace_template_parameter_type(lhs_type->inner,
                                                       lhs_parameters,
@@ -2677,6 +2903,7 @@ bool same_function_template_entity_type_impl(
        lhs->prototype_relaxed != rhs->prototype_relaxed ||
        lhs->function_const != rhs->function_const ||
        lhs->function_volatile != rhs->function_volatile ||
+       lhs->function_ref_qualifier != rhs->function_ref_qualifier ||
        lhs->params.size() != rhs->params.size() ||
        !same_function_template_entity_type_impl(lhs->inner,
                                                 lhs_parameters,
@@ -2803,7 +3030,8 @@ bool same_inline_namespace_function_template_entity(const FunctionTemplateDecl *
     return lhs_type->variadic == rhs_type->variadic &&
            lhs_type->prototype_relaxed == rhs_type->prototype_relaxed &&
            lhs_type->function_const == rhs_type->function_const &&
-           lhs_type->function_volatile == rhs_type->function_volatile;
+           lhs_type->function_volatile == rhs_type->function_volatile &&
+           lhs_type->function_ref_qualifier == rhs_type->function_ref_qualifier;
   };
   if(lhs == rhs) {
     return true;
@@ -2851,6 +3079,13 @@ bool same_inline_namespace_function_template_entity(const FunctionTemplateDecl *
                                                         lhs->parameters,
                                                         rhs->type_pattern,
                                                         rhs->parameters));
+}
+
+void remove_hidden_using_base_member_function_candidates(
+    vector<FunctionBinding *> & functions,
+    const ClassInfo & current)
+{
+  remove_hidden_using_base_member_function_candidates_impl(functions, current);
 }
 
 vector<FunctionBinding *> & direct_function_set_slot(Scope & scope, const string & name)
@@ -3055,30 +3290,25 @@ MemberFunctionLookupResult lookup_class_scoped_functions(ClassInfo & info,
 MemberFunctionLookupResult lookup_visible_member_functions(ClassInfo & info,
                                                            const string & name)
 {
-  MemberFunctionLookupResult scoped = lookup_class_scoped_functions(info, name);
-  if(!scoped.functions.empty()) {
-    return scoped;
-  }
-  return lookup_member_functions(info, name);
+  MemberCallableLookupResult callables = lookup_visible_member_callables(info, name);
+  MemberFunctionLookupResult result;
+  result.functions = callables.functions;
+  result.declared_in = callables.declared_in;
+  result.path_access = callables.path_access;
+  result.path_offset = callables.path_offset;
+  return result;
 }
 
 MemberFunctionTemplateLookupResult lookup_visible_member_function_templates(ClassInfo & info,
                                                                             const string & name)
 {
-  return lookup_member_in_hierarchy<MemberFunctionTemplateLookupResult>(
-      info,
-      [&name](ClassInfo & current) -> MemberFunctionTemplateLookupResult
-      {
-        const vector<FunctionTemplateDecl *> * found =
-            find_direct_function_template_set(*current.member_scope, name);
-        if(!found || found->empty()) {
-          return MemberFunctionTemplateLookupResult();
-        }
-        MemberFunctionTemplateLookupResult result;
-        result.templates = *found;
-        result.declared_in = &current;
-        return result;
-      });
+  MemberCallableLookupResult callables = lookup_visible_member_callables(info, name);
+  MemberFunctionTemplateLookupResult result;
+  result.templates = callables.templates;
+  result.declared_in = callables.declared_in;
+  result.path_access = callables.path_access;
+  result.path_offset = callables.path_offset;
+  return result;
 }
 
 MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,
@@ -3089,11 +3319,15 @@ MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,
       [&name](ClassInfo & current) -> MemberCallableLookupResult
       {
         MemberCallableLookupResult result;
+        bool direct_function_set_has_using_imports = false;
         if(current.member_scope) {
           const vector<FunctionBinding *> * found_functions =
               find_direct_function_set(*current.member_scope, name);
           if(found_functions && !found_functions->empty()) {
             result.functions = *found_functions;
+            direct_function_set_has_using_imports =
+                found_functions->size() > 1 &&
+                direct_function_set_has_access_overrides(*current.member_scope, name);
           }
           const vector<FunctionTemplateDecl *> * found_templates =
               find_direct_function_template_set(*current.member_scope, name);
@@ -3107,6 +3341,9 @@ MemberCallableLookupResult lookup_visible_member_callables(ClassInfo & info,
           if(found_methods != current.methods.end() && !found_methods->second.empty()) {
             result.functions = found_methods->second;
           }
+        }
+        if(direct_function_set_has_using_imports) {
+          remove_hidden_using_base_member_functions(result, current);
         }
         if(member_lookup_present(result)) {
           result.declared_in = &current;
@@ -3647,6 +3884,10 @@ bool member_access_allowed(const Scope * lexical_scope,
                            MemberAccess member_access,
                            MemberAccess path_access)
 {
+  if(member_access == MA_PUBLIC && path_access == MA_PUBLIC) {
+    return true;
+  }
+
   auto class_grants_access = [&](const ClassInfo * access_class) -> bool
   {
     if(!access_class) {
@@ -3704,7 +3945,7 @@ bool member_access_allowed(const Scope * lexical_scope,
     return true;
   }
 
-  return member_access == MA_PUBLIC && path_access == MA_PUBLIC;
+  return false;
 }
 
 bool member_access_allowed_through_object(const Scope * lexical_scope,
@@ -4684,11 +4925,11 @@ ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
     return lookup_unqualified_decl_with_entity_equivalence<ClassTemplateDecl>(
         scope,
         qualified.name,
-        [](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
+        [&ctx](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
         {
-          map<string, ClassTemplateDecl *>::iterator found =
-              target.class_templates.find(lookup_name);
-          return found == target.class_templates.end() ? nullptr : found->second;
+          return lookup_class_template_in_scope_or_inherited_members(ctx,
+                                                                     target,
+                                                                     lookup_name);
         },
         [](ClassTemplateDecl * lhs, ClassTemplateDecl * rhs) -> bool
         {
@@ -4715,11 +4956,22 @@ ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
       });
 }
 
-ClassTemplateDecl * lookup_class_template(SemanticContext &,
+ClassTemplateDecl * lookup_class_template(SemanticContext & ctx,
                                           Scope & scope,
                                           const string & name)
 {
-  return lookup_unqualified_class_template(scope, name);
+  return lookup_unqualified_decl_with_entity_equivalence<ClassTemplateDecl>(
+      scope, name,
+      [&ctx](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
+      {
+        return lookup_class_template_in_scope_or_inherited_members(ctx,
+                                                                   target,
+                                                                   lookup_name);
+      },
+      [](ClassTemplateDecl * lhs, ClassTemplateDecl * rhs) -> bool
+      {
+        return same_inline_namespace_class_template_entity(lhs, rhs);
+      });
 }
 
 ClassTemplateDecl * lookup_unqualified_class_template(Scope & scope,
@@ -4747,11 +4999,11 @@ AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
     return lookup_unqualified_decl_with_entity_equivalence<AliasTemplateDecl>(
         scope,
         qualified.name,
-        [](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
+        [&ctx](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
         {
-          map<string, AliasTemplateDecl *>::iterator found =
-              target.alias_templates.find(lookup_name);
-          return found == target.alias_templates.end() ? nullptr : found->second;
+          return lookup_alias_template_in_scope_or_inherited_members(ctx,
+                                                                     target,
+                                                                     lookup_name);
         },
         [](AliasTemplateDecl * lhs, AliasTemplateDecl * rhs) -> bool
         {
@@ -4778,11 +5030,22 @@ AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
       });
 }
 
-AliasTemplateDecl * lookup_alias_template(SemanticContext &,
+AliasTemplateDecl * lookup_alias_template(SemanticContext & ctx,
                                           Scope & scope,
                                           const string & name)
 {
-  return lookup_unqualified_alias_template(scope, name);
+  return lookup_unqualified_decl_with_entity_equivalence<AliasTemplateDecl>(
+      scope, name,
+      [&ctx](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
+      {
+        return lookup_alias_template_in_scope_or_inherited_members(ctx,
+                                                                   target,
+                                                                   lookup_name);
+      },
+      [](AliasTemplateDecl * lhs, AliasTemplateDecl * rhs) -> bool
+      {
+        return same_inline_namespace_alias_template_entity(lhs, rhs);
+      });
 }
 
 AliasTemplateDecl * lookup_unqualified_alias_template(Scope & scope,

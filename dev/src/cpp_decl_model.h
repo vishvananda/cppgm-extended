@@ -37,6 +37,7 @@ struct TemplateArgumentSyntax
   uint32_t source_location_id = 0;
   std::shared_ptr<TemplateIdSyntax> template_id;
   std::shared_ptr<CppAstNode> type_id;
+  std::shared_ptr<CppAstNode> source_type_id;
   std::shared_ptr<CppAstNode> expression;
   TypePtr resolved_type;
 };
@@ -55,6 +56,13 @@ struct DependentAliasTemplateArgumentSyntax
   TypePtr type;
   TemplateArgumentSyntax syntax;
   bool source_defaulted = false;
+};
+
+enum FunctionTypeRefQualifier
+{
+  FTRQ_NONE,
+  FTRQ_LVALUE,
+  FTRQ_RVALUE
 };
 
 struct Type
@@ -125,6 +133,8 @@ struct Type
       prototype_relaxed(false),
       function_const(false),
       function_volatile(false),
+      function_ref_qualifier(FTRQ_NONE),
+      named_dependent_template_template_parameter_arity(static_cast<std::size_t>(-1)),
       named_dependent_qualified_leading_typename(false)
   {}
 
@@ -139,6 +149,7 @@ struct Type
   bool named_has_layout;
   std::size_t named_alignment;
   std::size_t named_size;
+  TypePtr named_enum_underlying_type;
   bool named_is_empty;
   std::vector<HostAbiChunk> named_host_abi_chunks;
   bool definitely_not_class;
@@ -151,6 +162,7 @@ struct Type
   bool prototype_relaxed;
   bool function_const;
   bool function_volatile;
+  FunctionTypeRefQualifier function_ref_qualifier;
   std::vector<TypePtr> params;
   TypePtr inner;
   TypePtr owner;
@@ -159,11 +171,16 @@ struct Type
   std::vector<DependentAliasTemplateArgumentSyntax> named_dependent_alias_arguments;
   void * named_dependent_class_template_decl = nullptr;
   std::vector<DependentAliasTemplateArgumentSyntax> named_dependent_class_arguments;
+  std::string named_dependent_template_template_parameter_name;
+  std::size_t named_dependent_template_template_parameter_arity;
+  std::vector<DependentAliasTemplateArgumentSyntax>
+      named_dependent_template_template_arguments;
   std::shared_ptr<ClassTemplateSpecializationMangleInfo>
       named_class_template_specialization_mangle_info;
   TypePtr named_member_owner_type;
   std::string named_member_name;
   TypePtr named_dependent_qualified_owner;
+  std::shared_ptr<TemplateIdSyntax> named_dependent_qualified_owner_template_id;
   std::vector<std::string> named_dependent_qualified_members;
   std::vector<TemplateIdSyntax> named_dependent_qualified_member_template_ids;
   bool named_dependent_qualified_leading_typename;
@@ -199,7 +216,8 @@ TypePtr make_dependent_qualified_member_type(
     const std::vector<std::string> & members,
     bool leading_typename,
     const std::vector<TemplateIdSyntax> & member_template_ids =
-        std::vector<TemplateIdSyntax>());
+        std::vector<TemplateIdSyntax>(),
+    const TemplateIdSyntax & owner_template_id = TemplateIdSyntax());
 bool named_type_is_template_parameter(const TypePtr & type);
 bool named_type_is_partial_order_placeholder(const TypePtr & type);
 bool named_type_is_dependent_alias(const TypePtr & type);
@@ -223,6 +241,16 @@ bool named_type_dependent_class_template(
     const TypePtr & type,
     void *& class_template_decl,
     std::vector<DependentAliasTemplateArgumentSyntax> & arguments);
+void set_named_type_dependent_template_template_parameter(
+    const TypePtr & type,
+    const std::string & parameter_name,
+    std::size_t parameter_arity,
+    const std::vector<DependentAliasTemplateArgumentSyntax> & arguments);
+bool named_type_dependent_template_template_parameter(
+    const TypePtr & type,
+    std::string & parameter_name,
+    std::size_t & parameter_arity,
+    std::vector<DependentAliasTemplateArgumentSyntax> & arguments);
 bool named_type_dependent_qualified_member(
     const TypePtr & type,
     TypePtr & owner,
@@ -244,7 +272,8 @@ TypePtr make_function(const TypePtr & result_type,
                       bool variadic,
                       bool function_const = false,
                       bool function_volatile = false,
-                      bool prototype_relaxed = false);
+                      bool prototype_relaxed = false,
+                      FunctionTypeRefQualifier function_ref_qualifier = FTRQ_NONE);
 TypePtr make_lvalue_reference_raw(const TypePtr & base);
 TypePtr make_rvalue_reference_raw(const TypePtr & base);
 TypePtr apply_cv(const TypePtr & base, bool cv_const, bool cv_volatile);
@@ -350,7 +379,8 @@ struct DeclaratorSuffix
       bound_value(0),
       variadic(false),
       function_const(false),
-      function_volatile(false)
+      function_volatile(false),
+      function_ref_qualifier(FTRQ_NONE)
   {}
 
   Kind kind;
@@ -363,6 +393,7 @@ struct DeclaratorSuffix
   bool variadic;
   bool function_const;
   bool function_volatile;
+  FunctionTypeRefQualifier function_ref_qualifier;
 };
 
 struct Declarator

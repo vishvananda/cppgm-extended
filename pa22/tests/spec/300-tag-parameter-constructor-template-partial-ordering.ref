@@ -70,6 +70,7 @@ function @Count__Count(%this : ptr, %p : ptr, %d : obj<1x1>) -> void [binding=we
     resume
 
   block ^catch_next_5:
+    call void @__external_runtime____cxa_end_catch()
     resume
 
   block ^try_end_3:

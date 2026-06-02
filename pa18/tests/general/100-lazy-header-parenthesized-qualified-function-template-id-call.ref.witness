@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa18/tests/general/100-lazy-header-parenthesized-qualified-function-template-id-call.t:5:30
+    template LazyTemplateIdUser::TemplateIdBox
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity LazyTemplateIdUser::TemplateIdBox<int>::f
+  function-instantiation
+    entity LazyTemplateIdLib::template_id_min
+  function-instantiation
+    entity LazyTemplateIdUser::TemplateIdBox<int>::f
+  require-definition
+    entity LazyTemplateIdLib::template_id_min
+  require-definition
+    entity LazyTemplateIdUser::TemplateIdBox<int>::f

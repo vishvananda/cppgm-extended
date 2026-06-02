@@ -75,7 +75,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^condobj_end_3
 
   block ^condobj_end_3:
+    eh_try ^call_unwind_dispatch_4
     call void @S__S__ov2(%t1, %t2)
+    call void @S___S(%t2)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^call_unwind_dispatch_4:
+    call void @S___S(%t2)
+    resume
+
+  block ^call_unwind_end_5:
     return i32 0
 }
 alias object _ZN1SC2Ev = @S__S

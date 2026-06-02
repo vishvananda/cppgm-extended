@@ -1,0 +1,127 @@
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+
+global @constructed : i32 [binding=strong, object=_Z11constructed] = 0
+global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
+
+function @observed() -> i32 [binding=strong, object=_Z8observedv] {
+  block ^entry:
+    %t1 = load i32 @constructed
+    %t2 = binary mul i32 %t1, 10
+    %t3 = load i32 @destroyed
+    %t4 = binary add i32 %t2, %t3
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $elements : obj<3x1>
+  slot $call__1 : i32
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = addr $elements
+    %t2 = unary decay ptr %t1
+    %t3 = index i8 [projection=array_element] %t2, 0
+    call void @Element__Element(%t3)
+    %t4 = addr $elements
+    %t5 = unary decay ptr %t4
+    %t6 = index i8 [projection=array_element] %t5, 1
+    call void @Element__Element(%t6)
+    %t7 = addr $elements
+    %t8 = unary decay ptr %t7
+    %t9 = index i8 [projection=array_element] %t8, 2
+    call void @Element__Element(%t9)
+    eh_try ^call_unwind_dispatch_4
+    %t10 = call i32 @observed()
+    store i32 %t10, $call__1
+    %t11 = load i32 $call__1
+    %t12 = cmp ne i32 %t11, 30
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^call_unwind_dispatch_4:
+    %t13 = addr $elements
+    %t14 = unary decay ptr %t13
+    %t15 = index i8 [projection=array_element] %t14, 0
+    call void @Element___Element(%t15)
+    %t16 = addr $elements
+    %t17 = unary decay ptr %t16
+    %t18 = index i8 [projection=array_element] %t17, 1
+    call void @Element___Element(%t18)
+    %t19 = addr $elements
+    %t20 = unary decay ptr %t19
+    %t21 = index i8 [projection=array_element] %t20, 2
+    call void @Element___Element(%t21)
+    resume
+
+  block ^call_unwind_end_5:
+    branch %t12, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t22 = addr $elements
+    %t23 = unary decay ptr %t22
+    %t24 = index i8 [projection=array_element] %t23, 0
+    call void @Element___Element(%t24)
+    %t25 = addr $elements
+    %t26 = unary decay ptr %t25
+    %t27 = index i8 [projection=array_element] %t26, 1
+    call void @Element___Element(%t27)
+    %t28 = addr $elements
+    %t29 = unary decay ptr %t28
+    %t30 = index i8 [projection=array_element] %t29, 2
+    call void @Element___Element(%t30)
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t31 = addr $elements
+    %t32 = unary decay ptr %t31
+    %t33 = index i8 [projection=array_element] %t32, 0
+    call void @Element___Element(%t33)
+    %t34 = addr $elements
+    %t35 = unary decay ptr %t34
+    %t36 = index i8 [projection=array_element] %t35, 1
+    call void @Element___Element(%t36)
+    %t37 = addr $elements
+    %t38 = unary decay ptr %t37
+    %t39 = index i8 [projection=array_element] %t38, 2
+    call void @Element___Element(%t39)
+    %t40 = call i32 @observed()
+    %t41 = cmp eq i32 %t40, 33
+    branch %t41, ^cond_then_6, ^cond_else_7
+
+  block ^cond_then_6:
+    store i32 0, $cond__2
+    jump ^cond_end_8
+
+  block ^cond_else_7:
+    store i32 2, $cond__2
+    jump ^cond_end_8
+
+  block ^cond_end_8:
+    %t42 = load i32 $cond__2
+    return i32 %t42
+}
+function @Element__Element(%this : ptr) -> void [binding=weak, object=_ZN7ElementC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @constructed
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @constructed
+    return void
+}
+function @Element___Element(%this : ptr) -> void [binding=weak, object=_ZN7ElementD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @destroyed
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @destroyed
+    return void
+}
+alias object _ZN7ElementC2Ev = @Element__Element
+alias object _ZN7ElementD2Ev = @Element___Element

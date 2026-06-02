@@ -13,30 +13,40 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Outer__Outer(%t1)
     %t2 = addr $moved
     %t3 = addr $source
+    eh_try ^call_unwind_dispatch_1
     call void @Outer__Outer__ov3(%t2, %t3)
-    %t4 = addr $moved
-    %t5 = index i8 [projection=field] %t4, 0
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^call_unwind_dispatch_1:
+    %t4 = addr $source
+    call void @Outer___Outer(%t4)
+    resume
+
+  block ^call_unwind_end_2:
+    %t5 = addr $moved
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load ptr %t6
-    %t8 = load i32 %t7
-    %t9 = cmp eq i32 %t8, 7
-    branch %t9, ^cond_then_1, ^cond_else_2
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = load ptr %t7
+    %t9 = load i32 %t8
+    %t10 = cmp eq i32 %t9, 7
+    branch %t10, ^cond_then_3, ^cond_else_4
 
-  block ^cond_then_1:
+  block ^cond_then_3:
     store i32 0, $cond__1
-    jump ^cond_end_3
+    jump ^cond_end_5
 
-  block ^cond_else_2:
+  block ^cond_else_4:
     store i32 1, $cond__1
-    jump ^cond_end_3
+    jump ^cond_end_5
 
-  block ^cond_end_3:
-    %t10 = load i32 $cond__1
-    %t11 = addr $moved
-    call void @Outer___Outer(%t11)
-    %t12 = addr $source
+  block ^cond_end_5:
+    %t11 = load i32 $cond__1
+    %t12 = addr $moved
     call void @Outer___Outer(%t12)
-    return i32 %t10
+    %t13 = addr $source
+    call void @Outer___Outer(%t13)
+    return i32 %t11
 }
 function @Outer__Outer(%this : ptr) -> void [binding=weak, object=_ZN5OuterC1Ev] {
   slot $this : ptr

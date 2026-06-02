@@ -467,6 +467,7 @@ void parse_global_metadata(GlobalStorageMode & storage,
   bool saw_object = false;
   bool saw_keep_alias = false;
   bool saw_prefer_local = false;
+  bool saw_object_root = false;
   for(;;) {
     if(stream.eof()) {
       fail(line, "unterminated global metadata");
@@ -538,6 +539,14 @@ void parse_global_metadata(GlobalStorageMode & storage,
         fail(line, "unknown prefer_local mode '" + value + "'");
       }
       saw_prefer_local = true;
+    } else if(key == "object_root") {
+      if(saw_object_root) {
+        fail(line, "duplicate object_root metadata");
+      }
+      if(!parse_yes_no_text(value, metadata.object_output_root)) {
+        fail(line, "unknown object_root mode '" + value + "'");
+      }
+      saw_object_root = true;
     } else {
       fail(line, "unknown global metadata key '" + key + "'");
     }
@@ -564,6 +573,7 @@ void parse_function_metadata(FunctionBoundaryMetadata & boundary,
   bool saw_tls_for = false;
   bool saw_keep_alias = false;
   bool saw_prefer_local = false;
+  bool saw_object_root = false;
   while(stream.consume("[")) {
     for(;;) {
       if(stream.eof()) {
@@ -672,6 +682,14 @@ void parse_function_metadata(FunctionBoundaryMetadata & boundary,
           fail(line, "unknown prefer_local mode '" + value + "'");
         }
         saw_prefer_local = true;
+      } else if(key == "object_root") {
+        if(saw_object_root) {
+          fail(line, "duplicate object_root metadata");
+        }
+        if(!parse_yes_no_text(value, symbol.object_output_root)) {
+          fail(line, "unknown object_root mode '" + value + "'");
+        }
+        saw_object_root = true;
       } else {
         fail(line, "unknown function metadata key '" + key + "'");
       }
@@ -1473,7 +1491,8 @@ void parse_call_signature(Instruction & instruction,
      !metadata.object_symbol.empty() ||
      !metadata.tls_for_symbol.empty() ||
      metadata.keep_internal_alias ||
-     metadata.prefer_local_object_binding) {
+     metadata.prefer_local_object_binding ||
+     metadata.object_output_root) {
     fail(line, "call signature metadata does not allow symbol metadata");
   }
 }
@@ -2598,8 +2617,9 @@ void dump_global_metadata(GlobalStorageMode storage,
   const bool has_object = !metadata.object_symbol.empty();
   const bool has_keep_alias = metadata.keep_internal_alias;
   const bool has_prefer_local = metadata.prefer_local_object_binding;
+  const bool has_object_root = metadata.object_output_root;
   if(!has_storage && !has_role && !has_linkage && !has_binding &&
-     !has_object && !has_keep_alias && !has_prefer_local) {
+     !has_object && !has_keep_alias && !has_prefer_local && !has_object_root) {
     return;
   }
   out << " [";
@@ -2648,6 +2668,13 @@ void dump_global_metadata(GlobalStorageMode storage,
       out << ", ";
     }
     out << "prefer_local=yes";
+    need_comma = true;
+  }
+  if(has_object_root) {
+    if(need_comma) {
+      out << ", ";
+    }
+    out << "object_root=yes";
   }
   out << "]";
 }
@@ -2713,9 +2740,11 @@ void dump_function_metadata(const FunctionBoundaryMetadata & boundary,
   const bool has_tls_for = !metadata.tls_for_symbol.empty();
   const bool has_keep_alias = metadata.keep_internal_alias;
   const bool has_prefer_local = metadata.prefer_local_object_binding;
+  const bool has_object_root = metadata.object_output_root;
   if(!has_arity && !has_effects && !has_unwind && !has_return &&
      !has_role && !has_linkage && !has_binding &&
-     !has_object && !has_tls_for && !has_keep_alias && !has_prefer_local) {
+     !has_object && !has_tls_for && !has_keep_alias && !has_prefer_local &&
+     !has_object_root) {
     return;
   }
   out << " [";
@@ -2792,6 +2821,13 @@ void dump_function_metadata(const FunctionBoundaryMetadata & boundary,
       out << ", ";
     }
     out << "prefer_local=yes";
+    need_comma = true;
+  }
+  if(has_object_root) {
+    if(need_comma) {
+      out << ", ";
+    }
+    out << "object_root=yes";
   }
   out << "]";
 }

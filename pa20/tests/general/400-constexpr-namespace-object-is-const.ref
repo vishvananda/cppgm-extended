@@ -15,11 +15,8 @@ function @pick__ov2(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, ob
     return i32 0
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $refarg__1 : i32
-
   block ^entry:
-    store i32 1, $refarg__1
-    %t1 = addr $refarg__1
+    %t1 = addr @value
     %t2 = call i32 @pick__ov2(%t1)
     return i32 %t2
 }

@@ -9,8 +9,10 @@
 #include <sstream>
 #include <stdexcept>
 
+#include "builtin_type_transforms.h"
 #include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
+#include "cpp_decl_model.h"
 #include "cppast_parser.h"
 #include "constructor_lifecycle_service.h"
 #include "semantic_class_model.h"
@@ -61,7 +63,7 @@ ExprInfo make_builtin_trait_expr_info(const TypePtr & source)
   return expr;
 }
 
-TypePtr make_dependent_builtin_type_transform_type(
+TypePtr make_dependent_builtin_type_transform_type_impl(
     const std::string & builtin_name,
     const std::string & arg_text,
     const TypePtr & arg_type)
@@ -87,13 +89,22 @@ TypePtr make_dependent_builtin_type_transform_type(
 bool should_defer_builtin_type_transform_for_dependent_arg(
     const std::string & builtin_name)
 {
-  return builtin_name == "__remove_reference" ||
-         builtin_name == "__remove_reference_t" ||
-         builtin_name == "__remove_cv" ||
-         builtin_name == "__remove_const" ||
-         builtin_name == "__remove_volatile" ||
-         builtin_name == "__remove_cvref" ||
-         builtin_name == "__decay";
+  return builtin_type_transforms::should_defer_dependent_operand(builtin_name);
+}
+
+bool is_builtin_type_transform_dependent_operand(SemanticContext & ctx,
+                                                 const TypePtr & type)
+{
+  if(!type) {
+    return false;
+  }
+  if(ctx.type_depends_on_template_parameter(type)) {
+    return true;
+  }
+  TypePtr base = strip_top_level_cv(type);
+  return base &&
+         base->kind == Type::TK_NAMED &&
+         named_type_is_template_parameter(base);
 }
 
 bool resolve_type_pack_element_argument_type(SemanticContext & ctx,
@@ -688,13 +699,6 @@ TypePtr map_signedness_builtin_transform(const std::string & builtin_name,
     return TypePtr();
   }
 
-  if(base->kind == Type::TK_NAMED &&
-     base->named_key.find("template-parameter ") == 0) {
-    return make_named(builtin_name + "(" + describe_type(arg_type) + ")",
-                      "builtin " + builtin_name + " " + base->named_key,
-                      true);
-  }
-
   if(base->kind != Type::TK_FUNDAMENTAL) {
     return TypePtr();
   }
@@ -1108,6 +1112,89 @@ bool default_initialization_is_nothrow(SemanticContext & ctx,
                                        Scope & scope,
                                        const TypePtr & type,
                                        std::set<FunctionBinding *> & visiting);
+bool function_binding_is_nothrow(SemanticContext & ctx,
+                                 Scope & scope,
+                                 const FunctionBinding & binding,
+                                 std::set<FunctionBinding *> & visiting);
+
+FunctionBinding * find_constructor_for_trait(ClassInfo & info, bool want_move)
+{
+  std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
+      info.methods.find(info.name);
+  if(found == info.methods.end()) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < found->second.size(); ++i) {
+    FunctionBinding * binding = found->second[i];
+    if(binding &&
+       ((want_move && binding->is_move_constructor) ||
+        (!want_move && binding->is_copy_constructor))) {
+      return binding;
+    }
+  }
+  return nullptr;
+}
+
+bool copy_or_move_construction_type_is_nothrow(
+    SemanticContext & ctx,
+    Scope & scope,
+    const TypePtr & type,
+    bool move,
+    std::set<FunctionBinding *> & visiting)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(is_reference_type(base)) {
+    return true;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    return base->has_bound &&
+           copy_or_move_construction_type_is_nothrow(ctx,
+                                                     scope,
+                                                     base->inner,
+                                                     move,
+                                                     visiting);
+  }
+  if(base->kind == Type::TK_FUNCTION || is_void_type(base)) {
+    return false;
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_scalar_or_member_pointer_type(ctx, base)) {
+    return true;
+  }
+  if(!move &&
+     semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(
+         ctx, base)) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.complete_class_type(base);
+  if(!info || !info->complete) {
+    return false;
+  }
+  semantic_class_model::ensure_implicit_special_members(ctx, *info);
+
+  FunctionBinding * ctor = nullptr;
+  if(move && !type_is_const_object(type)) {
+    ctor = find_constructor_for_trait(*info, true);
+    if(!ctor) {
+      ctor = ctx.ensure_implicit_move_constructor(*info);
+    }
+  }
+  if(!ctor || ctor->is_deleted) {
+    ctor = find_constructor_for_trait(*info, false);
+    if(!ctor) {
+      ctor = ctx.ensure_implicit_copy_constructor(*info);
+    }
+  }
+  return ctor && !ctor->is_deleted &&
+         function_binding_is_nothrow(ctx, scope, *ctor, visiting);
+}
 
 bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
                                                Scope & scope,
@@ -1123,6 +1210,9 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
 
   const ClassInfo & info = *binding.owner_class;
   std::set<std::string> explicitly_initialized;
+  const bool copy_or_move_ctor =
+      binding.is_copy_constructor || binding.is_move_constructor;
+  const bool move_ctor = binding.is_move_constructor;
 
   if(binding.ctor_initializer) {
     for(size_t i = 0; i < binding.ctor_initializer->children.size(); ++i) {
@@ -1178,7 +1268,17 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
        explicitly_initialized.count(qualified_name) != 0) {
       continue;
     }
-    if(!default_initialization_is_nothrow(ctx, scope, info.bases[i].type->type, visiting)) {
+    const bool base_nothrow = copy_or_move_ctor ?
+        copy_or_move_construction_type_is_nothrow(ctx,
+                                                  scope,
+                                                  info.bases[i].type->type,
+                                                  move_ctor,
+                                                  visiting) :
+        default_initialization_is_nothrow(ctx,
+                                          scope,
+                                          info.bases[i].type->type,
+                                          visiting);
+    if(!base_nothrow) {
       return false;
     }
   }
@@ -1187,7 +1287,15 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
     if(explicitly_initialized.count(info.fields[i].name) != 0) {
       continue;
     }
-    if(info.fields[i].default_initializer) {
+    if(copy_or_move_ctor) {
+      if(!copy_or_move_construction_type_is_nothrow(ctx,
+                                                    scope,
+                                                    info.fields[i].type,
+                                                    move_ctor,
+                                                    visiting)) {
+        return false;
+      }
+    } else if(info.fields[i].default_initializer) {
           if(!initializer_is_nothrow(ctx,
                                      scope,
                                      info.fields[i].type,
@@ -1195,13 +1303,24 @@ bool constructor_binding_is_implicitly_nothrow(SemanticContext & ctx,
                                      visiting)) {
             return false;
           }
-    } else if(!default_initialization_is_nothrow(ctx, scope, info.fields[i].type, visiting)) {
-      return false;
+    } else {
+      if(!default_initialization_is_nothrow(ctx,
+                                            scope,
+                                            info.fields[i].type,
+                                            visiting)) {
+        return false;
+      }
     }
   }
 
   return true;
 }
+
+bool assignment_binding_is_implicitly_nothrow(
+    SemanticContext & ctx,
+    Scope & scope,
+    const FunctionBinding & binding,
+    std::set<FunctionBinding *> & visiting);
 
 bool function_binding_is_nothrow(SemanticContext & ctx,
                                  Scope & scope,
@@ -1221,6 +1340,8 @@ bool function_binding_is_nothrow(SemanticContext & ctx,
 
   const bool result = binding.is_constructor ?
       constructor_binding_is_implicitly_nothrow(ctx, scope, binding, visiting) :
+      (binding.is_copy_assignment || binding.is_move_assignment) ?
+          assignment_binding_is_implicitly_nothrow(ctx, scope, binding, visiting) :
       false;
   visiting.erase(mutable_binding);
   return result;
@@ -1258,6 +1379,99 @@ bool assignment_binding_accepts_rhs(SemanticContext & ctx,
 
   ExprInfo converted;
   return try_argument_conversion(ctx, scope, function_type->params[1], rhs, converted);
+}
+
+bool assignment_type_is_nothrow(SemanticContext & ctx,
+                                Scope & scope,
+                                const TypePtr & type,
+                                bool move,
+                                std::set<FunctionBinding *> & visiting)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base) {
+    return false;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    return assignment_type_is_nothrow(ctx, scope, base->inner, move, visiting);
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     is_scalar_or_member_pointer_type(ctx, base)) {
+    return true;
+  }
+  if(is_trivially_copy_assignable_type(ctx, base)) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  ClassInfo * info = ctx.complete_class_type(base);
+  if(!info || !info->complete) {
+    return false;
+  }
+  semantic_class_model::ensure_implicit_special_members(ctx, *info);
+  ctx.ensure_implicit_copy_assignment(*info);
+  if(move) {
+    ctx.ensure_implicit_move_assignment(*info);
+  }
+
+  FunctionBinding * op = find_assignment_operator_for_trait(*info, move);
+  if(!op && move) {
+    op = find_assignment_operator_for_trait(*info, false);
+  }
+  return op && function_binding_is_nothrow(ctx, scope, *op, visiting);
+}
+
+bool assignment_binding_is_implicitly_nothrow(
+    SemanticContext & ctx,
+    Scope & scope,
+    const FunctionBinding & binding,
+    std::set<FunctionBinding *> & visiting)
+{
+  if(!binding.owner_class ||
+     (!binding.is_copy_assignment && !binding.is_move_assignment)) {
+    return false;
+  }
+  const bool implicit_like =
+      binding.synthesized ||
+      binding.is_defaulted ||
+      (!binding.declaration_node && !binding.definition_node && !binding.body);
+  if(!implicit_like) {
+    return false;
+  }
+
+  ClassInfo & info = *binding.owner_class;
+  if(info.class_kind == "union") {
+    return false;
+  }
+
+  const bool move = binding.is_move_assignment;
+  for(size_t i = 0; i < info.bases.size(); ++i) {
+    if(info.bases[i].is_virtual ||
+       !info.bases[i].type ||
+       !assignment_type_is_nothrow(ctx,
+                                   scope,
+                                   info.bases[i].type->type,
+                                   move,
+                                   visiting)) {
+      return false;
+    }
+  }
+  for(size_t i = 0; i < info.fields.size(); ++i) {
+    TypePtr field_type = strip_top_level_cv(info.fields[i].type);
+    if(info.fields[i].is_bit_field ||
+       is_reference_type(field_type)) {
+      continue;
+    }
+    if(!assignment_type_is_nothrow(ctx,
+                                   scope,
+                                   info.fields[i].type,
+                                   move,
+                                   visiting)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 FunctionBinding * find_class_assignment_operator_for_trait(SemanticContext & ctx,
@@ -1574,6 +1788,203 @@ bool try_expand_builtin_type_trait_call_arg(SemanticContext & ctx,
 
 }  // namespace
 
+TypePtr make_dependent_builtin_type_transform_type(
+    const std::string & builtin_name,
+    const std::string & arg_text,
+    const TypePtr & arg_type)
+{
+  return make_dependent_builtin_type_transform_type_impl(
+      builtin_name, arg_text, arg_type);
+}
+
+bool describe_dependent_builtin_type_transform(const TypePtr & type,
+                                               std::string & builtin_name,
+                                               TypePtr & arg_type)
+{
+  builtin_name.clear();
+  arg_type.reset();
+  TypePtr base = strip_top_level_cv(type);
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     base->named_semantic_kind != Type::NSK_DEPENDENT_TYPE) {
+    return false;
+  }
+
+  const std::string payload = named_type_semantic_payload(base);
+  if(payload.compare(0,
+                     sizeof(kDependentBuiltinTypeTransformPrefix) - 1,
+                     kDependentBuiltinTypeTransformPrefix) != 0) {
+    return false;
+  }
+
+  const size_t name_begin = sizeof(kDependentBuiltinTypeTransformPrefix) - 1;
+  const size_t name_end = payload.find('|', name_begin);
+  builtin_name =
+      payload.substr(name_begin,
+                     name_end == std::string::npos ? std::string::npos :
+                                                      name_end - name_begin);
+  arg_type = base->inner;
+  return !builtin_name.empty() && arg_type;
+}
+
+bool is_dependent_builtin_type_transform_type(const TypePtr & type)
+{
+  std::string builtin_name;
+  TypePtr arg_type;
+  return describe_dependent_builtin_type_transform(type,
+                                                   builtin_name,
+                                                   arg_type);
+}
+
+bool is_supported_builtin_type_transform_name(const std::string & name)
+{
+  return builtin_type_transforms::is_supported_name(name);
+}
+
+bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
+                                       const TypePtr & arg_type,
+                                       TypePtr & out)
+{
+  out.reset();
+  if(!arg_type) {
+    return false;
+  }
+
+  switch(kind) {
+  case builtin_type_transforms::BTK_REMOVE_CV:
+    out = strip_top_level_cv(arg_type);
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_REMOVE_CONST:
+    out = arg_type->kind == Type::TK_CV ?
+        make_cv(arg_type->inner, false, arg_type->cv_volatile) :
+        arg_type;
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_REMOVE_VOLATILE:
+    out = arg_type->kind == Type::TK_CV ?
+        make_cv(arg_type->inner, arg_type->cv_const, false) :
+        arg_type;
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_REMOVE_EXTENT:
+  {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    out = base->kind == Type::TK_ARRAY ? base->inner : arg_type;
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_REMOVE_ALL_EXTENTS:
+  {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    while(base && base->kind == Type::TK_ARRAY) {
+      base = strip_top_level_cv(base->inner);
+    }
+    out = base ? base : arg_type;
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_REMOVE_REFERENCE:
+    out = remove_reference_type(arg_type);
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_REMOVE_CONST_REF:
+  {
+    TypePtr no_ref = remove_reference_type(arg_type);
+    out = no_ref && no_ref->kind == Type::TK_CV ?
+        make_cv(no_ref->inner, false, no_ref->cv_volatile) :
+        no_ref;
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_REMOVE_CVREF:
+    out = strip_top_level_cv(remove_reference_type(arg_type));
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_DECAY:
+    out = apply_decay_type_transform(arg_type);
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_ADD_POINTER:
+  {
+    TypePtr pointee = remove_reference_type(arg_type);
+    if(!pointee) {
+      return false;
+    }
+    out = make_pointer(pointee);
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_REMOVE_POINTER:
+  {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    out = base->kind == Type::TK_POINTER ? base->inner : arg_type;
+    return static_cast<bool>(out);
+  }
+
+  case builtin_type_transforms::BTK_MAKE_UNSIGNED:
+  case builtin_type_transforms::BTK_MAKE_SIGNED:
+    out = map_signedness_builtin_transform(
+        kind == builtin_type_transforms::BTK_MAKE_UNSIGNED ?
+            "__make_unsigned" :
+            "__make_signed",
+        arg_type);
+    return static_cast<bool>(out);
+
+  case builtin_type_transforms::BTK_ADD_LVALUE_REFERENCE:
+  case builtin_type_transforms::BTK_ADD_RVALUE_REFERENCE:
+  {
+    TypePtr base = strip_top_level_cv(arg_type);
+    if(!base) {
+      return false;
+    }
+    if(is_void_type(base) || base->kind == Type::TK_LVALUE_REFERENCE) {
+      out = arg_type;
+      return true;
+    }
+    if(base->kind == Type::TK_RVALUE_REFERENCE) {
+      out = kind == builtin_type_transforms::BTK_ADD_LVALUE_REFERENCE ?
+          make_lvalue_reference_raw(base->inner) :
+          arg_type;
+      return true;
+    }
+    out = kind == builtin_type_transforms::BTK_ADD_LVALUE_REFERENCE ?
+        make_lvalue_reference_raw(arg_type) :
+        make_rvalue_reference_raw(arg_type);
+    return true;
+  }
+
+  case builtin_type_transforms::BTK_IDENTITY:
+    out = arg_type;
+    return true;
+
+  case builtin_type_transforms::BTK_UNDERLYING_TYPE:
+  case builtin_type_transforms::BTK_UNKNOWN:
+    break;
+  }
+
+  return false;
+}
+
+bool apply_builtin_type_transform(const std::string & name,
+                                  const TypePtr & arg_type,
+                                  TypePtr & out)
+{
+  return apply_builtin_type_transform_kind(
+      builtin_type_transforms::kind_for_name(name),
+      arg_type,
+      out);
+}
+
 TypePtr gnu_complex_type_for_component(const TypePtr & component_type)
 {
   TypePtr base = strip_top_level_cv(component_type);
@@ -1728,6 +2139,7 @@ void register_builtin_functions(Scope & scope,
                  true,
                  sizeof(unsigned long),
                  sizeof(unsigned long));
+  align_val_type->named_enum_underlying_type = size_type;
   const TypePtr bool_type = make_fundamental(FT_BOOL);
   const TypePtr int_type = make_fundamental(FT_INT);
   const TypePtr long_type = make_fundamental(FT_LONG_INT);
@@ -1959,11 +2371,19 @@ void register_builtin_functions(Scope & scope,
   add_builtin("__builtin_memcmp", int_type, std::vector<TypePtr>{const_void_ptr, const_void_ptr, size_type});
   add_builtin("__builtin_memchr", void_ptr, std::vector<TypePtr>{const_void_ptr, int_type, size_type});
   add_builtin("__builtin_memset", void_ptr, std::vector<TypePtr>{void_ptr, int_type, size_type});
+  add_builtin("__builtin_bzero", make_fundamental(FT_VOID), std::vector<TypePtr>{void_ptr, size_type});
   add_builtin("__builtin_strcmp", int_type, std::vector<TypePtr>(2, const_char_ptr));
   add_builtin("__builtin_strchr", char_ptr, std::vector<TypePtr>{const_char_ptr, int_type});
   add_builtin("__builtin_strlen", size_type, std::vector<TypePtr>(1, const_char_ptr));
   add_builtin("__builtin_alloca", void_ptr, std::vector<TypePtr>{size_type});
   add_builtin("__builtin_expect", long_type, std::vector<TypePtr>{long_type, long_type});
+  add_builtin("__builtin_prefetch", make_fundamental(FT_VOID), std::vector<TypePtr>{const_void_ptr});
+  add_builtin("__builtin_prefetch",
+              make_fundamental(FT_VOID),
+              std::vector<TypePtr>{const_void_ptr, int_type});
+  add_builtin("__builtin_prefetch",
+              make_fundamental(FT_VOID),
+              std::vector<TypePtr>{const_void_ptr, int_type, int_type});
   add_builtin("__builtin_assume_aligned",
               void_ptr,
               std::vector<TypePtr>{const_void_ptr, size_type});
@@ -3142,103 +3562,15 @@ bool try_builtin_type_transform(SemanticContext & ctx,
     return false;
   }
   if(should_defer_builtin_type_transform_for_dependent_arg(builtin_name) &&
-     ctx.type_depends_on_template_parameter(arg_type)) {
-    out = make_dependent_builtin_type_transform_type(
+     is_builtin_type_transform_dependent_operand(ctx, arg_type)) {
+    out = make_dependent_builtin_type_transform_type_impl(
         builtin_name,
         arg_text,
         arg_type);
     return static_cast<bool>(out);
   }
 
-  if(builtin_name == "__remove_cv") {
-    out = strip_top_level_cv(arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_const") {
-    if(arg_type->kind == Type::TK_CV) {
-      out = make_cv(arg_type->inner, false, arg_type->cv_volatile);
-    } else {
-      out = arg_type;
-    }
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_volatile") {
-    if(arg_type->kind == Type::TK_CV) {
-      out = make_cv(arg_type->inner, arg_type->cv_const, false);
-    } else {
-      out = arg_type;
-    }
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_extent") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    out = base->kind == Type::TK_ARRAY ? base->inner : arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_all_extents") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    while(base && base->kind == Type::TK_ARRAY) {
-      base = strip_top_level_cv(base->inner);
-    }
-    out = base ? base : arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_reference" || builtin_name == "__remove_reference_t") {
-    out = remove_reference_type(arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_cvref") {
-    out = strip_top_level_cv(remove_reference_type(arg_type));
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__decay") {
-    out = apply_decay_type_transform(arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__add_pointer") {
-    TypePtr pointee = remove_reference_type(arg_type);
-    if(!pointee) {
-      return false;
-    }
-    out = make_pointer(pointee);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__remove_pointer") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    out = base->kind == Type::TK_POINTER ? base->inner : arg_type;
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__make_unsigned" || builtin_name == "__make_signed") {
-    out = map_signedness_builtin_transform(builtin_name, arg_type);
-    return static_cast<bool>(out);
-  }
-  if(builtin_name == "__add_lvalue_reference" || builtin_name == "__add_rvalue_reference") {
-    TypePtr base = strip_top_level_cv(arg_type);
-    if(!base) {
-      return false;
-    }
-    if(is_void_type(base) || base->kind == Type::TK_LVALUE_REFERENCE) {
-      out = arg_type;
-      return true;
-    }
-    if(base->kind == Type::TK_RVALUE_REFERENCE) {
-      out = builtin_name == "__add_lvalue_reference" ?
-          make_lvalue_reference_raw(base->inner) :
-          arg_type;
-      return true;
-    }
-    out = builtin_name == "__add_lvalue_reference" ?
-        make_lvalue_reference_raw(arg_type) :
-        make_rvalue_reference_raw(arg_type);
+  if(apply_builtin_type_transform(builtin_name, arg_type, out)) {
     return true;
   }
   if(builtin_name == "__underlying_type") {
@@ -3246,7 +3578,9 @@ bool try_builtin_type_transform(SemanticContext & ctx,
     if(!base || !is_named_enum_type(ctx, base)) {
       return false;
     }
-    out = make_fundamental(FT_INT);
+    out = base->named_enum_underlying_type ?
+        base->named_enum_underlying_type :
+        make_fundamental(FT_INT);
     return true;
   }
 

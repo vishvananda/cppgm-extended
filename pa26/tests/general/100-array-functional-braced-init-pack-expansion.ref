@@ -1,0 +1,100 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = call i32 @add_each()
+    %t2 = cmp eq i32 %t1, 1
+    branch %t2, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t3 = call i32 @add_each__ov2()
+    %t4 = cmp eq i32 %t3, 6
+    %t5 = cmp ne i64 %t4, 0
+    store i64 %t5, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t6 = load i64 $land__2
+    branch %t6, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t7 = load i32 $cond__1
+    return i32 %t7
+}
+function @add_each() -> i32 [binding=weak, object=_Z8add_eachv] {
+  slot $st : i32
+  slot $discardarr__1 : obj<4x4>
+
+  block ^entry:
+    store i32 1, $st
+    %t1 = addr $discardarr__1
+    store i32 0, %t1
+    %t2 = load i32 $st
+    return i32 %t2
+}
+function @add_each__ov2() -> i32 [binding=weak, object=_Z8add_eachIJicEEiv] {
+  slot $st : i32
+  slot $discardarr__1 : obj<12x4>
+
+  block ^entry:
+    store i32 1, $st
+    %t1 = addr $discardarr__1
+    store i32 0, %t1
+    %t2 = index i8 %t1, 4
+    %t3 = addr $st
+    %t4 = call i32 @add_impl(%t3)
+    store i32 %t4, %t2
+    %t5 = index i8 %t1, 8
+    %t6 = addr $st
+    %t7 = call i32 @add_impl__ov2(%t6)
+    store i32 %t7, %t5
+    %t8 = load i32 $st
+    return i32 %t8
+}
+function @add_impl(%st : ptr [pass=reference]) -> i32 [binding=weak, object=_Z8add_implIiEiRi] {
+  slot $st : ptr
+
+  block ^entry:
+    store ptr %st, $st
+    %t1 = load ptr $st
+    %t2 = load i32 %t1
+    %t3 = const i64 4
+    %t4 = convert sext i64 i32 %t2
+    %t5 = binary add i64 %t4, %t3
+    %t6 = convert trunc i32 i64 %t5
+    %t7 = load ptr $st
+    store i32 %t6, %t7
+    %t8 = load ptr $st
+    %t9 = load i32 %t8
+    return i32 %t9
+}
+function @add_impl__ov2(%st : ptr [pass=reference]) -> i32 [binding=weak, object=_Z8add_implIcEiRi] {
+  slot $st : ptr
+
+  block ^entry:
+    store ptr %st, $st
+    %t1 = load ptr $st
+    %t2 = load i32 %t1
+    %t3 = const i64 1
+    %t4 = convert sext i64 i32 %t2
+    %t5 = binary add i64 %t4, %t3
+    %t6 = convert trunc i32 i64 %t5
+    %t7 = load ptr $st
+    store i32 %t6, %t7
+    %t8 = load ptr $st
+    %t9 = load i32 %t8
+    return i32 %t9
+}

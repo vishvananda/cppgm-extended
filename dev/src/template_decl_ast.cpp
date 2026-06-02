@@ -11,6 +11,7 @@
 #include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
 #include "parser_trace.h"
+#include "semantic_class_model.h"
 #include "semantic_utils.h"
 #include "template_argument_semantics.h"
 #include "template_scope.h"
@@ -90,6 +91,18 @@ bool declarator_has_parameter_pack(const CppAstNode & declarator)
   }
   const CppAstNode * nested = cpp_decl::find_child(declarator, CppAstKind::nested_declarator);
   return nested && !nested->children.empty() && declarator_has_parameter_pack(nested->children[0]);
+}
+
+bool declarator_has_parameter_clause(const CppAstNode & declarator)
+{
+  for(std::size_t i = 0; i < declarator.children.size(); ++i) {
+    if(declarator.children[i].kind == CppAstKind::parameter_clause) {
+      return true;
+    }
+  }
+  const CppAstNode * nested = cpp_decl::find_child(declarator, CppAstKind::nested_declarator);
+  return nested && !nested->children.empty() &&
+         declarator_has_parameter_clause(nested->children[0]);
 }
 
 bool erase_parameter_pack_nodes(CppAstNode & current)
@@ -257,16 +270,22 @@ TemplateArgumentSyntax clone_template_argument_syntax(
 {
   TemplateArgumentSyntax out;
   out.text = source.text;
+  out.source_text = source.source_text;
   out.pack_expansion = source.pack_expansion;
+  out.dependent = source.dependent;
   out.has_source_token_start = source.has_source_token_start;
   out.source_token_start = source.source_token_start;
   out.source_location_id = source.source_location_id;
+  out.resolved_type = source.resolved_type;
   if(source.template_id) {
     out.template_id.reset(new TemplateIdSyntax(
         clone_template_id_syntax(*source.template_id)));
   }
   if(source.type_id) {
     out.type_id.reset(new CppAstNode(clone_pack_substitution_node(*source.type_id)));
+  }
+  if(source.source_type_id) {
+    out.source_type_id = source.source_type_id;
   }
   if(source.expression) {
     out.expression.reset(new CppAstNode(clone_pack_substitution_node(*source.expression)));
@@ -543,7 +562,17 @@ cpp_decl::AstDeclHooks make_decl_hooks(template_api::TemplateServices & services
                                        semantic_model::Scope & semantic_scope,
                                        semantic_model::Scope & parse_scope,
                                        bool reference_class_templates_only,
-                                       bool re_resolve_dependent_semantic_types = false);
+                                       bool re_resolve_dependent_semantic_types = false,
+                                       bool bind_parameter_names = false);
+
+semantic_model::Scope make_parameter_clause_scope(semantic_model::Scope & parent)
+{
+  semantic_model::Scope scope(&parent, "<parameter-clause>", false);
+  scope.class_info = parent.class_info;
+  scope.function = parent.function;
+  scope.namespace_scope = parent.namespace_scope;
+  return scope;
+}
 
 TypePtr lookup_decl_ast_type_node(template_api::TemplateServices & services,
                                   Scope & semantic_scope,
@@ -632,7 +661,8 @@ cpp_decl::AstDeclHooks make_decl_hooks(template_api::TemplateServices & services
                                        semantic_model::Scope & semantic_scope,
                                        semantic_model::Scope & parse_scope,
                                        bool reference_class_templates_only,
-                                       bool re_resolve_dependent_semantic_types)
+                                       bool re_resolve_dependent_semantic_types,
+                                       bool bind_parameter_names)
 {
   cpp_decl::AstDeclHooks hooks;
   template_api::TemplateTypeSystem * const type_system = &service_type_system(services);
@@ -727,6 +757,13 @@ cpp_decl::AstDeclHooks make_decl_hooks(template_api::TemplateServices & services
       {
         return template_scope::scope_has_type_parameter_pack_name(semantic_scope, name);
       };
+  if(bind_parameter_names) {
+    hooks.bind_parameter_name =
+        [&semantic_scope](const std::string & name, const TypePtr & type)
+        {
+          template_scope::bind_parameter_value(semantic_scope, name, type);
+        };
+  }
   hooks.normalize_function_parameters = true;
   return hooks;
 }
@@ -757,9 +794,15 @@ bool parse_parameter_clause(template_api::TemplateServices & services,
                             bool * variadic_out,
                             bool reference_class_templates_only)
 {
+  semantic_model::Scope parameter_scope = make_parameter_clause_scope(semantic_scope);
   return cpp_decl::parse_parameter_clause_ast(
       node,
-      make_decl_hooks(services, semantic_scope, parse_scope, reference_class_templates_only),
+      make_decl_hooks(services,
+                      parameter_scope,
+                      parse_scope,
+                      reference_class_templates_only,
+                      false,
+                      true),
       params,
       default_args_out,
       variadic_out);
@@ -774,11 +817,46 @@ bool parse_declarator(template_api::TemplateServices & services,
                       cpp_decl::TypePtr & type,
                       bool reference_class_templates_only)
 {
+  if(!declarator_has_parameter_clause(declarator)) {
+    return cpp_decl::parse_declarator_ast(
+        declarator,
+        make_decl_hooks(services,
+                        semantic_scope,
+                        parse_scope,
+                        reference_class_templates_only),
+        base,
+        name,
+        type);
+  }
+  semantic_model::Scope parameter_scope = make_parameter_clause_scope(semantic_scope);
   return cpp_decl::parse_declarator_ast(
       declarator,
-      make_decl_hooks(services, semantic_scope, parse_scope, reference_class_templates_only),
+      make_decl_hooks(services,
+                      parameter_scope,
+                      parse_scope,
+                      reference_class_templates_only,
+                      false,
+                      true),
       base,
       name,
+      type);
+}
+
+bool parse_abstract_declarator(template_api::TemplateServices & services,
+                               semantic_model::Scope & parse_scope,
+                               semantic_model::Scope & semantic_scope,
+                               const CppAstNode & abstract_declarator,
+                               const cpp_decl::TypePtr & base,
+                               cpp_decl::TypePtr & type,
+                               bool reference_class_templates_only)
+{
+  return cpp_decl::parse_abstract_declarator_ast(
+      abstract_declarator,
+      make_decl_hooks(services,
+                      semantic_scope,
+                      parse_scope,
+                      reference_class_templates_only),
+      base,
       type);
 }
 
@@ -848,6 +926,38 @@ bool parse_trailing_return_base(template_api::TemplateServices & services,
 
   is_typedef = false;
   semantic_model::Scope return_scope(&scope, "<trailing-return>", false);
+  return_scope.class_info = scope.class_info;
+  return_scope.namespace_scope = scope.namespace_scope;
+  FunctionBinding synthetic_function;
+  if(scope.class_info &&
+     scope.class_info->type &&
+     !cpp_decl::decl_spec_contains_token(specifiers, KW_STATIC)) {
+    const bool is_const_method =
+        semantic_class_model::declarator_is_const_method(declarator);
+    const bool is_volatile_method =
+        semantic_class_model::declarator_is_volatile_method(declarator);
+    TypePtr this_type =
+        make_pointer(make_cv(scope.class_info->type,
+                             is_const_method,
+                             is_volatile_method));
+    if(this_type) {
+      synthetic_function.name = "<trailing-return>";
+      synthetic_function.owner_class = scope.class_info;
+      synthetic_function.lexical_access_class = scope.class_info;
+      synthetic_function.is_method = true;
+      synthetic_function.is_const_method = is_const_method;
+      synthetic_function.is_volatile_method = is_volatile_method;
+      synthetic_function.ref_qualifier =
+          semantic_class_model::declarator_ref_qualifier(declarator);
+      synthetic_function.type =
+          make_function(make_fundamental(FT_VOID),
+                        std::vector<TypePtr>(1, this_type),
+                        false);
+      return_scope.function = &synthetic_function;
+      return_scope.values["this"] =
+          ValueBinding(ValueBinding::VK_PARAMETER, "this", this_type);
+    }
+  }
   const CppAstNode * parameter_clause =
       cpp_decl::find_child(declarator, CppAstKind::parameter_clause);
   if(parameter_clause) {

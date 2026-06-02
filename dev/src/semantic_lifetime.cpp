@@ -438,6 +438,30 @@ logic_error make_narrowing_initializer_error(const TypePtr & target_type,
   return logic_error(outmsg.str());
 }
 
+ExprInfo analyze_initializer_expression_for_target(SemanticContext & ctx,
+                                                   Scope & scope,
+                                                   const CppAstNode & init,
+                                                   const TypePtr & target_type,
+                                                   bool allow_explicit_conversion)
+{
+  ExprInfo result = ctx.analyze_expression_for_target(scope, init, target_type);
+  if(!allow_explicit_conversion || can_copy_initialize(ctx, target_type, result)) {
+    return result;
+  }
+
+  ExprInfo converted;
+  ConversionRank rank = CR_BAD;
+  if(ctx.try_argument_conversion(scope,
+                                 target_type,
+                                 result,
+                                 converted,
+                                 rank,
+                                 semantic_policy::allow_explicit_argument_conversion())) {
+    return converted;
+  }
+  return result;
+}
+
 std::string synthetic_parameter_name(const FunctionBinding & binding, std::size_t index)
 {
   return function_parameter_binding_name(binding, index);
@@ -656,7 +680,7 @@ bool is_trivial_constructor_binding(SemanticContext & ctx, FunctionBinding & bin
                                                                                      info.type);
     }
     if(move_like && implicit_like) {
-      return semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(ctx,
+      return semantic_class_model::is_trivially_move_constructible_type_for_host_abi(ctx,
                                                                                      info.type);
     }
     return false;
@@ -673,7 +697,7 @@ bool is_trivial_constructor_binding(SemanticContext & ctx, FunctionBinding & bin
   }
   if(move_like &&
      implicit_like) {
-    return semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(ctx,
+    return semantic_class_model::is_trivially_move_constructible_type_for_host_abi(ctx,
                                                                                    info.type);
   }
   return false;
@@ -1061,6 +1085,53 @@ const CppAstNode * synthesize_braced_init_span(const CppAstNode & payload,
   return &synthesized_nodes.back();
 }
 
+bool array_accepts_string_literal(const TypePtr & array_type,
+                                  EFundamentalType literal_element_type);
+
+bool string_literal_directly_initializes_array(const TypePtr & type,
+                                               const CppAstNode & child)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_ARRAY || !base->has_bound ||
+     child.kind != CppAstKind::literal) {
+    return false;
+  }
+
+  QuoteLiteralData literal;
+  try
+  {
+    literal = parse_quote_literal(child.value);
+  }
+  catch(const logic_error &)
+  {
+    return false;
+  }
+
+  if(literal.quote != '"' || !literal.ud_suffix.empty() ||
+     !array_accepts_string_literal(base, string_literal_element_type(literal))) {
+    return false;
+  }
+
+  return quote_literal_string_unit_count(literal) + 1 <= base->bound;
+}
+
+bool aggregate_field_can_use_brace_elision(SemanticContext & ctx,
+                                           const FieldInfo & field)
+{
+  const FieldInfo * input_field =
+      semantic_class_model::aggregate_input_field(ctx, field);
+  TypePtr field_type = strip_top_level_cv(input_field ? input_field->type : field.type);
+  if(!field_type) {
+    return false;
+  }
+  if(field_type->kind == Type::TK_ARRAY && field_type->has_bound) {
+    return true;
+  }
+
+  ClassInfo * nested_info = ctx.class_info_for_type(field_type);
+  return nested_info && ctx.can_synthesize_aggregate_constructor(*nested_info);
+}
+
 size_t aggregate_brace_elision_capacity(SemanticContext & ctx,
                                         const FieldInfo & field)
 {
@@ -1088,6 +1159,9 @@ bool initializer_clause_directly_initializes_aggregate_field(SemanticContext & c
 {
   const FieldInfo * input_field = semantic_class_model::aggregate_input_field(ctx, field);
   const TypePtr target_type = input_field ? input_field->type : field.type;
+  if(string_literal_directly_initializes_array(target_type, child)) {
+    return true;
+  }
   try
   {
     ExprInfo expr = ctx.analyze_expression_for_target(scope, child, target_type);
@@ -1141,10 +1215,12 @@ bool build_positional_aggregate_initializer_plan(
   }
 
   const size_t remaining_children = payload.children.size() - child_index;
+  const bool can_use_brace_elision =
+      aggregate_field_can_use_brace_elision(ctx, info.fields[field_index]);
   const size_t max_consume =
       std::min(aggregate_brace_elision_capacity(ctx, info.fields[field_index]),
                remaining_children);
-  if(max_consume > 1 &&
+  if(can_use_brace_elision &&
      initializer_clause_directly_initializes_aggregate_field(ctx,
                                                             scope,
                                                             info.fields[field_index],
@@ -1152,13 +1228,17 @@ bool build_positional_aggregate_initializer_plan(
      try_assign(&child, 1)) {
     return true;
   }
-  for(size_t consume = max_consume; consume > 1; --consume) {
+  const size_t min_elided_consume = can_use_brace_elision ? 1 : 2;
+  for(size_t consume = max_consume; consume >= min_elided_consume; --consume) {
     const CppAstNode * grouped =
         synthesize_braced_init_span(payload, child_index, consume, synthesized_nodes);
     if(try_assign(grouped, consume)) {
       return true;
     }
     synthesized_nodes.pop_back();
+    if(consume == min_elided_consume) {
+      break;
+    }
   }
 
   return try_assign(&child, 1);
@@ -1314,6 +1394,43 @@ bool analyze_direct_class_materialization_initializer(SemanticContext & ctx,
          out.node.kind == CallSemKind::initializer_list_object;
 }
 
+bool initializer_uses_copy_initialization(const CppAstNode * initializer)
+{
+  return initializer &&
+         initializer->kind == CppAstKind::initializer &&
+         initializer->uses_assignment_form;
+}
+
+ConstructorSelectionOptions class_initializer_constructor_options(
+    const CppAstNode * initializer,
+    const CppAstNode * payload,
+    bool uses_function_style_constructor_args)
+{
+  const bool is_copy_initialization =
+      initializer_uses_copy_initialization(initializer);
+  const bool is_copy_list_initialization =
+      is_copy_initialization &&
+      payload &&
+      payload->kind == CppAstKind::braced_init_list;
+  if(is_copy_list_initialization) {
+    return constructor_lifecycle_service::selection_options_for(
+        constructor_lifecycle_service::copy_list_initialization_profile(
+            "copy-list-initialization"));
+  }
+  if(is_copy_initialization && uses_function_style_constructor_args) {
+    return constructor_lifecycle_service::selection_options_for(
+        constructor_lifecycle_service::direct_initialization_profile(
+            "copy-initialization direct materialization"));
+  }
+  if(is_copy_initialization) {
+    return constructor_lifecycle_service::selection_options_for(
+        constructor_lifecycle_service::non_explicit_construction_profile(
+            "copy-initialization"));
+  }
+  return constructor_lifecycle_service::selection_options_for(
+      constructor_lifecycle_service::direct_initialization_profile());
+}
+
 void note_elided_direct_materialization_constructor_witness(
     SemanticContext & ctx,
     Scope & scope,
@@ -1413,6 +1530,21 @@ const CppAstNode * find_ctor_base_initializer(SemanticContext & ctx,
       const string unqualified_name =
           qualifier == string::npos ? template_name : template_name.substr(qualifier + 2);
       if(unqualified_name == base.name) {
+        return &init;
+      }
+    }
+    if(id->semantic_type) {
+      TypePtr semantic_type = id->semantic_type;
+      TypePtr resolved_type;
+      if(template_api::type::resolve_instantiated_dependent_type(ctx,
+                                                                 scope,
+                                                                 semantic_type,
+                                                                 resolved_type) &&
+         resolved_type) {
+        semantic_type = resolved_type;
+      }
+      if(semantic_type &&
+         type_equals(strip_top_level_cv(semantic_type), base.type)) {
         return &init;
       }
     }
@@ -2306,7 +2438,8 @@ DumpNode make_assignment_statement(const ExprInfo & lhs,
 
 bool field_eligible_for_trivial_storage_prefix_copy(SemanticContext & ctx,
                                                     const FieldInfo & field,
-                                                    bool assignment_like)
+                                                    bool assignment_like,
+                                                    bool move_like)
 {
   if(field.is_bit_field || is_reference_type(field.type)) {
     return false;
@@ -2319,12 +2452,18 @@ bool field_eligible_for_trivial_storage_prefix_copy(SemanticContext & ctx,
   if(assignment_like) {
     return is_trivially_copy_assignable_type(ctx, field.type);
   }
+  if(move_like) {
+    return semantic_class_model::is_trivially_move_constructible_type_for_host_abi(
+        ctx,
+        field.type);
+  }
   return is_trivially_copy_constructible_type(ctx, field.type);
 }
 
 LeadingTrivialStoragePrefix leading_trivial_storage_prefix(SemanticContext & ctx,
                                                            const ClassInfo & info,
-                                                           bool assignment_like)
+                                                           bool assignment_like,
+                                                           bool move_like)
 {
   LeadingTrivialStoragePrefix prefix;
   if(info.class_kind == "union" || info.is_polymorphic || !info.bases.empty()) {
@@ -2333,7 +2472,10 @@ LeadingTrivialStoragePrefix leading_trivial_storage_prefix(SemanticContext & ctx
 
   for(size_t i = 0; i < info.fields.size(); ++i) {
     const FieldInfo & field = info.fields[i];
-    if(!field_eligible_for_trivial_storage_prefix_copy(ctx, field, assignment_like)) {
+    if(!field_eligible_for_trivial_storage_prefix_copy(ctx,
+                                                       field,
+                                                       assignment_like,
+                                                       move_like)) {
       break;
     }
     prefix.field_count = i + 1;
@@ -2488,12 +2630,13 @@ bool build_string_literal_array_initializer(const TypePtr & type,
   const unsigned long long max_value =
       element_size >= sizeof(unsigned long long) ? ~0ULL :
       ((1ULL << (element_size * 8)) - 1ULL);
-  if(literal.contents.size() + 1 > base->bound) {
+  const vector<unsigned long long> & units = quote_literal_string_units(literal);
+  if(units.size() + 1 > base->bound) {
     throw logic_error("string literal too long");
   }
 
-  for(size_t i = 0; i < literal.contents.size(); ++i) {
-    const unsigned long long value = literal.contents[i];
+  for(size_t i = 0; i < units.size(); ++i) {
+    const unsigned long long value = units[i];
     if(value > max_value) {
       throw logic_error("string literal element out of range");
     }
@@ -3114,10 +3257,10 @@ void append_target_initialization_actions(SemanticContext & ctx,
 
   if(info) {
     const bool is_copy_list_initialization =
-        initializer->kind == CppAstKind::initializer &&
-        initializer->uses_assignment_form &&
+        initializer_uses_copy_initialization(initializer) &&
         payload &&
         payload->kind == CppAstKind::braced_init_list;
+    bool uses_function_style_constructor_args = false;
     vector<const CppAstNode *> args;
     const CppAstNode * direct_braced_init = nullptr;
     if(payload) {
@@ -3139,7 +3282,9 @@ void append_target_initialization_actions(SemanticContext & ctx,
                                                            out);
         return;
       }
-      if(!extract_function_style_constructor_args(ctx, scope, type, *payload, args)) {
+      if(extract_function_style_constructor_args(ctx, scope, type, *payload, args)) {
+        uses_function_style_constructor_args = true;
+      } else {
         args = initializer_argument_nodes(*payload);
       }
       if(payload->kind == CppAstKind::braced_init_list) {
@@ -3147,12 +3292,9 @@ void append_target_initialization_actions(SemanticContext & ctx,
       }
     }
     ConstructorSelectionOptions ctor_options =
-        is_copy_list_initialization ?
-            constructor_lifecycle_service::selection_options_for(
-                constructor_lifecycle_service::copy_list_initialization_profile(
-                    "copy-list-initialization")) :
-            constructor_lifecycle_service::selection_options_for(
-                constructor_lifecycle_service::direct_initialization_profile());
+        class_initializer_constructor_options(initializer,
+                                             payload,
+                                             uses_function_style_constructor_args);
     if(!target_use_location.empty()) {
       ctor_options.source_witness_location = target_use_location;
       ctor_options.source_witness_direct_construction = true;
@@ -3187,7 +3329,8 @@ void append_target_initialization_actions(SemanticContext & ctx,
     if(args.size() != 1) {
       throw logic_error("non-class member initializer requires one expression");
     }
-    ExprInfo init = ctx.analyze_expression_for_target(scope, *args[0], type);
+    ExprInfo init =
+        analyze_initializer_expression_for_target(ctx, scope, *args[0], type, true);
     if(!can_copy_initialize(ctx, type, init)) {
       if(parser_trace::enabled("lifetime.init")) {
         std::ostringstream trace;
@@ -3221,7 +3364,8 @@ void append_target_initialization_actions(SemanticContext & ctx,
     if(braced_scalar_initialization_has_narrowing_conversion(ctx, scope, *args[0], type, source_expr)) {
       throw make_narrowing_initializer_error(type, source_expr, *args[0]);
     }
-    ExprInfo init = ctx.analyze_expression_for_target(scope, *args[0], type);
+    ExprInfo init =
+        analyze_initializer_expression_for_target(ctx, scope, *args[0], type, true);
     if(!can_copy_initialize(ctx, type, init)) {
       if(parser_trace::enabled("lifetime.init")) {
         std::ostringstream trace;
@@ -3754,7 +3898,12 @@ void analyze_initializer(SemanticContext & ctx,
            ctx, scope, payload.children[0], type, source_expr)) {
       throw make_narrowing_initializer_error(type, source_expr, payload.children[0]);
     }
-    ExprInfo element = ctx.analyze_expression_for_target(scope, payload.children[0], type);
+    ExprInfo element =
+        analyze_initializer_expression_for_target(ctx,
+                                                  scope,
+                                                  payload.children[0],
+                                                  type,
+                                                  !node.uses_assignment_form);
     if(!can_copy_initialize(ctx, type, element)) {
       ostringstream outmsg;
       outmsg << "invalid initializer";
@@ -3772,7 +3921,12 @@ void analyze_initializer(SemanticContext & ctx,
     if(payload.children.size() != 1) {
       throw logic_error("scalar paren-initializer requires one expression");
     }
-    ExprInfo element = ctx.analyze_expression_for_target(scope, payload.children[0], type);
+    ExprInfo element =
+        analyze_initializer_expression_for_target(ctx,
+                                                  scope,
+                                                  payload.children[0],
+                                                  type,
+                                                  true);
     if(!can_copy_initialize(ctx, type, element)) {
       ostringstream outmsg;
       outmsg << "invalid initializer";
@@ -3806,6 +3960,28 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
                                      DumpNode & out,
                                      const std::string & object_use_location)
 {
+  TypePtr object_type = strip_top_level_cv(remove_reference_type(type));
+  if(object_type && object_type->kind == Type::TK_ARRAY) {
+    TypePtr element_type = object_type;
+    while(element_type && element_type->kind == Type::TK_ARRAY) {
+      element_type = strip_top_level_cv(element_type->inner);
+    }
+    if(!element_type || !ctx.complete_class_type(element_type)) {
+      return;
+    }
+
+    ExprInfo object = ctx.analyze_id_expression(scope, synthetic_identifier_node(name));
+    append_target_initialization_actions(ctx,
+                                         scope,
+                                         type,
+                                         initializer,
+                                         object,
+                                         out,
+                                         object_use_location);
+    append_destructor_actions_for_subobject(ctx, type, object, nullptr, true, out);
+    return;
+  }
+
   ClassInfo * info = ctx.complete_class_type(type);
   if(!info) {
     return;
@@ -3842,8 +4018,7 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
   vector<const CppAstNode *> ctor_args_override;
   bool has_ctor_args_override = false;
   const bool is_copy_list_initialization =
-      initializer && initializer->kind == CppAstKind::initializer &&
-      initializer->uses_assignment_form &&
+      initializer_uses_copy_initialization(initializer) &&
       payload &&
       payload->kind == CppAstKind::braced_init_list;
   if(initializer && initializer->kind == CppAstKind::initializer &&
@@ -3879,12 +4054,9 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
     }
   }
   ConstructorSelectionOptions ctor_options =
-      is_copy_list_initialization ?
-          constructor_lifecycle_service::selection_options_for(
-              constructor_lifecycle_service::copy_list_initialization_profile(
-                  "copy-list-initialization")) :
-          constructor_lifecycle_service::selection_options_for(
-              constructor_lifecycle_service::direct_initialization_profile());
+      class_initializer_constructor_options(initializer,
+                                           payload,
+                                           has_ctor_args_override);
   if(!initializer && !object_use_location.empty()) {
     ctor_options.use_location = object_use_location;
   }
@@ -3989,7 +4161,7 @@ void append_constructor_generated_statements(SemanticContext & ctx,
     }
     append_all_vptr_actions(ctx, info, this_expr, entry_point_kind, function_node);
     const LeadingTrivialStoragePrefix prefix =
-        leading_trivial_storage_prefix(ctx, info, false);
+        leading_trivial_storage_prefix(ctx, info, false, false);
     if(!prefix.empty()) {
       append_trivial_storage_prefix_copy_action(this_expr,
                                                 source_expr,
@@ -4067,7 +4239,7 @@ void append_constructor_generated_statements(SemanticContext & ctx,
     }
     append_all_vptr_actions(ctx, info, this_expr, entry_point_kind, function_node);
     const LeadingTrivialStoragePrefix prefix =
-        leading_trivial_storage_prefix(ctx, info, false);
+        leading_trivial_storage_prefix(ctx, info, false, true);
     if(!prefix.empty()) {
       append_trivial_storage_prefix_copy_action(this_expr,
                                                 source_expr,
@@ -4215,9 +4387,8 @@ void append_constructor_generated_statements(SemanticContext & ctx,
   }
 
   if(info.class_kind == "union") {
-    const FieldInfo * active_field = semantic_class_model::first_aggregate_field(info);
-    const CppAstNode * active_initializer =
-        active_field ? active_field->default_initializer : nullptr;
+    const FieldInfo * active_field = nullptr;
+    const CppAstNode * active_initializer = nullptr;
     if(binding.ctor_initializer) {
       for(size_t i = 0; i < binding.ctor_initializer->children.size(); ++i) {
         const CppAstNode & init = binding.ctor_initializer->children[i];
@@ -4235,6 +4406,15 @@ void append_constructor_generated_statements(SemanticContext & ctx,
           break;
         }
         if(active_field) {
+          break;
+        }
+      }
+    }
+    if(!active_field) {
+      for(size_t i = 0; i < info.fields.size(); ++i) {
+        if(info.fields[i].default_initializer) {
+          active_field = &info.fields[i];
+          active_initializer = info.fields[i].default_initializer;
           break;
         }
       }
@@ -4394,7 +4574,7 @@ void append_copy_assignment_generated_statements(SemanticContext & ctx,
   }
 
   const LeadingTrivialStoragePrefix prefix =
-      leading_trivial_storage_prefix(ctx, info, true);
+      leading_trivial_storage_prefix(ctx, info, true, false);
   if(!prefix.empty()) {
     append_trivial_storage_prefix_copy_action(this_expr,
                                               source_expr,
@@ -4474,7 +4654,7 @@ void append_move_assignment_generated_statements(SemanticContext & ctx,
   }
 
   const LeadingTrivialStoragePrefix prefix =
-      leading_trivial_storage_prefix(ctx, info, true);
+      leading_trivial_storage_prefix(ctx, info, true, false);
   if(!prefix.empty()) {
     append_trivial_storage_prefix_copy_action(this_expr,
                                               source_expr,

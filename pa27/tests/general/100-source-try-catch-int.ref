@@ -64,6 +64,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^catch_next_5:
+    call void @__external_runtime____cxa_end_catch()
     resume
 
   block ^try_end_3:

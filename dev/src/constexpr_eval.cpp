@@ -15,6 +15,7 @@ using namespace cpp_decl;
 namespace {
 
 const size_t kMaxConstexprLoopIterations = 100000;
+const size_t kMaxConstexprCallDepth = 512;
 
 string literal_storage_identity(const CppAstNode & node)
 {
@@ -54,9 +55,11 @@ bool parse_literal_value(const CppAstNode & node, ConstexprValue & out)
         const TypePtr char_type =
             make_cv(make_fundamental(element_type), true, false);
         vector<ConstexprValue> elements;
-        elements.reserve(literal.contents.size() + 1);
-        for(size_t i = 0; i < literal.contents.size(); ++i) {
-          elements.push_back(make_integral_value(static_cast<long long>(literal.contents[i]),
+        const vector<unsigned long long> & units =
+            quote_literal_string_units(literal);
+        elements.reserve(units.size() + 1);
+        for(size_t i = 0; i < units.size(); ++i) {
+          elements.push_back(make_integral_value(static_cast<long long>(units[i]),
                                                  make_fundamental(element_type)));
         }
         elements.push_back(make_integral_value(0, make_fundamental(element_type)));
@@ -371,9 +374,47 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
   }
 
   if(node.kind == CppAstKind::unary_expression && node.children.size() == 1 && node.has_token) {
+    if(hooks_.evaluate_special_expression &&
+       node.simple_type == OP_AMP &&
+       hooks_.evaluate_special_expression(*this, node, out)) {
+      return true;
+    }
+    if((node.simple_type == OP_INC || node.simple_type == OP_DEC) &&
+       node.children[0].kind == CppAstKind::id_expression) {
+      ConstexprValue current;
+      if(!lookup_value(node.children[0].value, &node.children[0], current)) {
+        return false;
+      }
+      ConstexprValue one = make_integral_value(1, make_fundamental(FT_INT));
+      ConstexprValue updated;
+      if(!constexpr_value_apply_binary(node.simple_type == OP_INC ? OP_PLUS : OP_MINUS,
+                                       current,
+                                       one,
+                                       updated) ||
+         !assign_local(node.children[0].value, updated)) {
+        return false;
+      }
+      out = updated;
+      return true;
+    }
     ConstexprValue operand;
     if(!eval_expr(node.children[0], operand)) {
       return false;
+    }
+    if(node.simple_type == OP_STAR &&
+       operand.kind == ConstexprValue::CV_POINTER &&
+       operand.pointer_offset < operand.array_elements.size()) {
+      out = operand.array_elements[operand.pointer_offset];
+      return true;
+    }
+    if(node.simple_type == OP_STAR &&
+       operand.kind == ConstexprValue::CV_POINTER &&
+       !operand.storage_identity.empty()) {
+      ConstexprValue storage;
+      if(lookup_value(operand.storage_identity, &node.children[0], storage) &&
+         array_element_value(storage, operand.pointer_offset, out)) {
+        return true;
+      }
     }
     return constexpr_value_apply_unary(node.simple_type, operand, out);
   }
@@ -607,6 +648,9 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
     if(evaluate_functional_type_initializer(true)) {
       return true;
     }
+    if(single_braced_argument && evaluate_functional_type_initializer(false)) {
+      return true;
+    }
 
     vector<ConstexprValue> args;
     const bool zero_arg_braced_type_init =
@@ -671,11 +715,7 @@ StatementResult Evaluator::exec_stmt(const CppAstNode & node, const TypePtr & re
     if(node.children.empty()) {
       return result;
     }
-    if(return_type &&
-       (node.children[0].kind == CppAstKind::initializer ||
-        node.children[0].kind == CppAstKind::paren_initializer ||
-        node.children[0].kind == CppAstKind::paren_argument_list ||
-        node.children[0].kind == CppAstKind::braced_init_list)) {
+    if(return_type && !is_void_type(return_type)) {
       if(!eval_initializer(node.children[0], result.value, return_type)) {
         result.kind = StatementResult::SR_FAIL;
         result.error = "failed to evaluate return expression";
@@ -966,7 +1006,8 @@ bool Evaluator::call(const FunctionInfo & function,
   }
 
   if(!function.body || function.variadic ||
-     function.params.size() != args.size() || call_depth_ >= 64) {
+     function.params.size() != args.size() ||
+     call_depth_ >= kMaxConstexprCallDepth) {
     if(use_override_hooks) {
       hooks_ = saved_hooks;
     }

@@ -35,7 +35,11 @@ bool template_arguments_are_dependent(
     }
     if((arguments[i].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
         arguments[i].kind == TemplateArgument::TA_ALIAS_TEMPLATE) &&
-       (arguments[i].dependent || arguments[i].template_decl == nullptr)) {
+       (arguments[i].dependent ||
+        arguments[i].template_decl == nullptr ||
+        (arguments[i].template_owner_type &&
+         type_is_dependent &&
+         type_is_dependent(arguments[i].template_owner_type)))) {
       return true;
     }
   }

@@ -1,0 +1,68 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<8x4>
+  slot $ref : ptr
+  slot $cond__1 : i32
+  slot $land__2 : i64
+
+  block ^entry:
+    %t1 = addr $value
+    %t2 = addr $value
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = unary decay ptr %t3
+    %t5 = index i32 [projection=array_element] %t4, 0
+    store i32 7, %t5
+    %t6 = addr $value
+    %t7 = call ptr @get_elems(%t6)
+    store ptr %t7, $ref
+    %t8 = load ptr $ref
+    %t9 = unary decay ptr %t8
+    %t10 = index i32 [projection=array_element] %t9, 1
+    store i32 5, %t10
+    %t11 = addr $value
+    %t12 = index i8 [projection=field] %t11, 0
+    %t13 = unary decay ptr %t12
+    %t14 = index i32 [projection=array_element] %t13, 0
+    %t15 = load i32 %t14
+    %t16 = cmp eq i32 %t15, 7
+    branch %t16, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t17 = addr $value
+    %t18 = index i8 [projection=field] %t17, 0
+    %t19 = unary decay ptr %t18
+    %t20 = index i32 [projection=array_element] %t19, 1
+    %t21 = load i32 %t20
+    %t22 = cmp eq i32 %t21, 5
+    %t23 = cmp ne i64 %t22, 0
+    store i64 %t23, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t24 = load i64 $land__2
+    branch %t24, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t25 = load i32 $cond__1
+    return i32 %t25
+}
+function @get_elems(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z9get_elemsIiERA2_T_R6holderIS0_E] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}

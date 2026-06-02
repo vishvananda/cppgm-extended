@@ -24,9 +24,4 @@ translation-unit
   function-definition __local_type1::__local_type1 function of (pointer to union __local_type1) returning void
     parameter this pointer to union __local_type1
     compound-statement
-      expression-statement
-        assignment-expression lvalue int OP_ASS:=
-          member-expression lvalue int t
-            id-expression prvalue pointer to union __local_type1 this
-          literal prvalue int 0
 end translation unit

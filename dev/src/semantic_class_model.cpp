@@ -1,6 +1,8 @@
 #include "semantic_class_model.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cstring>
 #include <functional>
 #include <map>
 #include <set>
@@ -42,6 +44,8 @@ using namespace semantic_lookup;
 using namespace semantic_model;
 
 namespace {
+
+const int kMaxReferenceMemberCollectionDepth = 512;
 
 struct ScopedTemplateUseLocation
 {
@@ -184,6 +188,36 @@ bool should_preserve_class_template_across_reference_reset(
 
   const CppAstNode * owner_node =
       info.template_output_node ? info.template_output_node : info.class_node;
+  if(decl && owner_node) {
+    for(std::map<std::string, ClassTemplateSpecializationDecl>::const_iterator it =
+            decl->explicit_specializations.begin();
+        it != decl->explicit_specializations.end();
+        ++it) {
+      if(it->second.class_node &&
+         !ast_node_contains(owner_node, it->second.class_node)) {
+        return true;
+      }
+    }
+    for(std::size_t i = 0; i < decl->partial_specializations.size(); ++i) {
+      const PartialClassTemplateSpecializationDecl & partial =
+          decl->partial_specializations[i];
+      if((partial.class_node &&
+          !ast_node_contains(owner_node, partial.class_node)) ||
+         !partial.static_member_definitions.empty() ||
+         !partial.witness_static_member_definitions.empty() ||
+         !partial.member_function_definitions.empty() ||
+         !partial.member_function_template_definitions.empty()) {
+        return true;
+      }
+    }
+    if(!decl->static_member_definitions.empty() ||
+       !decl->witness_static_member_definitions.empty() ||
+       !decl->member_class_definitions.empty() ||
+       !decl->member_function_definitions.empty() ||
+       !decl->member_function_template_definitions.empty()) {
+      return true;
+    }
+  }
   return decl &&
          decl->class_node &&
          owner_node &&
@@ -486,6 +520,8 @@ bool has_virtual_destructor_for_host_abi(const ClassInfo & info)
 }
 
 bool implicit_copy_constructor_is_deleted(SemanticContext & ctx,
+                                          ClassInfo & info);
+bool implicit_move_constructor_is_deleted(SemanticContext & ctx,
                                           ClassInfo & info);
 FunctionBinding * find_constructor_binding(ClassInfo & info,
                                            Type::Kind ref_kind);
@@ -1011,6 +1047,108 @@ bool is_trivially_copy_constructible_type_for_host_abi_local(SemanticContext & c
   return true;
 }
 
+bool is_trivially_move_constructible_type_for_host_abi_impl(
+    SemanticContext & ctx,
+    const TypePtr & type,
+    std::set<ClassInfo *> & visiting)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    return false;
+  }
+  if(is_reference_type(base)) {
+    return true;
+  }
+  if(is_array_type(base)) {
+    return base->has_bound &&
+           is_trivially_move_constructible_type_for_host_abi_impl(ctx,
+                                                                  base->inner,
+                                                                  visiting);
+  }
+  if(base->kind == Type::TK_FUNCTION || is_void_type(base)) {
+    return false;
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     base->kind == Type::TK_POINTER ||
+     base->kind == Type::TK_BLOCK_POINTER ||
+     base->kind == Type::TK_MEMBER_POINTER) {
+    return true;
+  }
+  if(base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  if(is_named_enum_type(ctx, base)) {
+    return true;
+  }
+  ClassInfo * info = ctx.complete_class_type(base);
+  if(!info) {
+    return false;
+  }
+  if(info->class_kind == "enum") {
+    return true;
+  }
+  if(!info->complete || info->is_polymorphic) {
+    return false;
+  }
+  if(visiting.count(info) != 0) {
+    return true;
+  }
+
+  FunctionBinding * move_ctor = nullptr;
+  if(!type_is_const_object(type)) {
+    move_ctor = find_constructor_binding(*info, Type::TK_RVALUE_REFERENCE);
+    if(move_ctor && move_ctor->synthesized && info->complete) {
+      move_ctor->is_deleted = implicit_move_constructor_is_deleted(ctx, *info);
+      move_ctor->has_definition = !move_ctor->is_deleted;
+    }
+    if(!move_ctor) {
+      move_ctor = ensure_implicit_move_constructor(ctx, *info);
+    }
+  }
+
+  if(!move_ctor || move_ctor->is_deleted) {
+    return is_trivially_copy_constructible_type_for_host_abi_local(ctx, base);
+  }
+
+  if(!move_ctor->synthesized && !move_ctor->is_defaulted) {
+    return false;
+  }
+
+  if(has_nontrivial_declared_destructor_for_host_abi(*info)) {
+    return false;
+  }
+
+  visiting.insert(info);
+  for(size_t i = 0; i < info->bases.size(); ++i) {
+    if(info->bases[i].is_virtual ||
+       !is_trivially_move_constructible_type_for_host_abi_impl(
+           ctx,
+           info->bases[i].type->type,
+           visiting)) {
+      visiting.erase(info);
+      return false;
+    }
+  }
+  for(size_t i = 0; i < info->fields.size(); ++i) {
+    if(!is_trivially_move_constructible_type_for_host_abi_impl(ctx,
+                                                               info->fields[i].type,
+                                                               visiting)) {
+      visiting.erase(info);
+      return false;
+    }
+  }
+  visiting.erase(info);
+  return true;
+}
+
+bool is_trivially_move_constructible_type_for_host_abi_local(SemanticContext & ctx,
+                                                             const TypePtr & type)
+{
+  std::set<ClassInfo *> visiting;
+  return is_trivially_move_constructible_type_for_host_abi_impl(ctx, type, visiting);
+}
+
 void bind_member_named_type(Scope & scope,
                             const std::string & name,
                             const TypePtr & type,
@@ -1443,7 +1581,8 @@ TypePtr substitute_current_class_template_pattern_type(SemanticContext & ctx,
                          type->variadic,
                          type->function_const,
                          type->function_volatile,
-                         type->prototype_relaxed);
+                         type->prototype_relaxed,
+                         type->function_ref_qualifier);
   }
   }
 
@@ -1472,16 +1611,56 @@ TypePtr lookup_visible_member_alias_owner_type(SemanticContext & ctx,
   if(name.empty()) {
     return TypePtr();
   }
-  if(current_info && current_info->member_scope) {
-    MemberTypeLookupResult member =
-        lookup_member_type(ctx, *current_info, name, true, &scope);
-    if(member.type) {
-      return member.type;
+  const auto lookup_in_class =
+      [&ctx, &scope, &name](ClassInfo & info) -> TypePtr
+  {
+    if(info.member_scope) {
+      MemberTypeLookupResult member =
+          lookup_member_type(ctx, info, name, true, &scope);
+      if(member.type) {
+        return member.type;
+      }
+      std::map<std::string, TypePtr>::const_iterator found =
+          info.member_scope->named_types.find(name);
+      if(found != info.member_scope->named_types.end()) {
+        return found->second;
+      }
     }
-    std::map<std::string, TypePtr>::const_iterator found =
-        current_info->member_scope->named_types.find(name);
-    if(found != current_info->member_scope->named_types.end()) {
-      return found->second;
+    return TypePtr();
+  };
+  if(current_info && current_info->member_scope) {
+    if(TypePtr direct = lookup_in_class(*current_info)) {
+      return direct;
+    }
+    std::set<ClassInfo *> visited;
+    const auto lookup_enclosing_class_scopes =
+        [&](Scope * start) -> TypePtr
+    {
+      for(Scope * current = start; current; current = current->parent) {
+        if(current->class_info &&
+           current->class_info != current_info &&
+           visited.insert(current->class_info).second) {
+          if(TypePtr found = lookup_in_class(*current->class_info)) {
+            return found;
+          }
+        }
+        if(current->namespace_scope || current->parent == nullptr) {
+          break;
+        }
+      }
+      return TypePtr();
+    };
+    if(TypePtr enclosing =
+           lookup_enclosing_class_scopes(current_info->enclosing_scope)) {
+      return enclosing;
+    }
+    if(current_info->source_template &&
+       current_info->source_template->declaring_scope) {
+      if(TypePtr declaring =
+             lookup_enclosing_class_scopes(
+                 current_info->source_template->declaring_scope)) {
+        return declaring;
+      }
     }
   }
   for(Scope * current = &scope; current; current = current->parent) {
@@ -1501,10 +1680,123 @@ TypePtr lookup_visible_member_alias_owner_type(SemanticContext & ctx,
   return TypePtr();
 }
 
+TypePtr try_rebase_dependent_member_alias_owner_root(SemanticContext & ctx,
+                                                     Scope & scope,
+                                                     const TypePtr & owner,
+                                                     ClassInfo * current_info,
+                                                     const TemplateIdSyntax * owner_template_id_hint)
+{
+  if(!owner || !current_info) {
+    return TypePtr();
+  }
+
+  TypePtr dependent_root;
+  std::vector<std::string> members;
+  bool leading_typename = false;
+  std::vector<TemplateIdSyntax> member_template_ids;
+  if(!named_type_dependent_qualified_member(owner,
+                                            dependent_root,
+                                            members,
+                                            leading_typename,
+                                            &member_template_ids) ||
+     !dependent_root ||
+     members.empty()) {
+    TypePtr owner_base = strip_top_level_cv(owner);
+    if(!owner_template_id_hint ||
+       !owner_base ||
+       owner_base->kind != Type::TK_NAMED) {
+      return TypePtr();
+    }
+    std::string owner_text =
+        !owner_base->named_display.empty() ? owner_base->named_display :
+                                             owner_base->named_key;
+    owner_text = strip_leading_typename_for_member_alias(owner_text);
+    owner_text = semantic_utils::trim_space(owner_text);
+    const std::size_t split = semantic_utils::top_level_scope_split(owner_text);
+    if(split == std::string::npos) {
+      return TypePtr();
+    }
+    std::string root_text =
+        semantic_utils::trim_space(owner_text.substr(0, split));
+    std::string member_text =
+        semantic_utils::trim_space(owner_text.substr(split + 2));
+    if(root_text.empty() ||
+       root_text.find("::") != std::string::npos ||
+       root_text.find('<') != std::string::npos ||
+       member_text.empty()) {
+      return TypePtr();
+    }
+    dependent_root = make_semantic_named(root_text,
+                                         Type::NSK_DEPENDENT_TYPE,
+                                         root_text,
+                                         true);
+    members.clear();
+    members.push_back(member_text);
+    member_template_ids.clear();
+    member_template_ids.push_back(*owner_template_id_hint);
+  }
+
+  TypePtr root_base = strip_top_level_cv(dependent_root);
+  if(!root_base || root_base->kind != Type::TK_NAMED) {
+    return TypePtr();
+  }
+  std::string root_name =
+      !root_base->named_display.empty() ? root_base->named_display :
+                                          root_base->named_key;
+  root_name = strip_leading_typename_for_member_alias(root_name);
+  root_name = semantic_utils::trim_space(root_name);
+  if(root_name.empty() ||
+     root_name.find("::") != std::string::npos ||
+     root_name.find('<') != std::string::npos) {
+    return TypePtr();
+  }
+
+  TypePtr visible_root =
+      lookup_visible_member_alias_owner_type(ctx, scope, root_name, current_info);
+  if(!visible_root ||
+     type_equals(visible_root, dependent_root)) {
+    return TypePtr();
+  }
+
+  TemplateIdSyntax owner_template_id;
+  if(TypePtr owner_base = strip_top_level_cv(owner)) {
+    if(owner_base->named_dependent_qualified_owner_template_id) {
+      owner_template_id = *owner_base->named_dependent_qualified_owner_template_id;
+    }
+  }
+  std::string display = callsemantic_internal::reparseable_type_argument_text(visible_root);
+  if(display.empty()) {
+    display = describe_type(visible_root);
+  }
+  for(std::size_t i = 0; i < members.size(); ++i) {
+    display += "::";
+    display += members[i];
+  }
+
+  TypePtr rebased = make_dependent_qualified_member_type(display,
+                                                         visible_root,
+                                                         members,
+                                                         leading_typename,
+                                                         member_template_ids,
+                                                         owner_template_id);
+  if(!rebased) {
+    return TypePtr();
+  }
+
+  TypePtr instantiated;
+  if(semantic_dependent_type::resolve_instantiated_dependent_type(
+         ctx, scope, rebased, instantiated) &&
+     instantiated) {
+    return instantiated;
+  }
+  return rebased;
+}
+
 TypePtr resolve_member_alias_owner_type(SemanticContext & ctx,
                                         Scope & scope,
                                         const TypePtr & owner,
-                                        ClassInfo * current_info = nullptr)
+                                        ClassInfo * current_info = nullptr,
+                                        const TemplateIdSyntax * owner_template_id_hint = nullptr)
 {
   TypePtr resolved = owner;
   if(resolved && ctx.type_depends_on_template_parameter(resolved)) {
@@ -1513,6 +1805,18 @@ TypePtr resolve_member_alias_owner_type(SemanticContext & ctx,
            ctx, scope, resolved, instantiated) &&
        instantiated) {
       resolved = instantiated;
+    }
+  }
+  if(resolved &&
+     ctx.type_depends_on_template_parameter(resolved) &&
+     current_info) {
+    if(TypePtr rebased =
+           try_rebase_dependent_member_alias_owner_root(ctx,
+                                                        scope,
+                                                        resolved,
+                                                        current_info,
+                                                        owner_template_id_hint)) {
+      resolved = rebased;
     }
   }
   if(resolved &&
@@ -1589,7 +1893,13 @@ TypePtr try_resolve_instantiated_member_alias_type(SemanticContext & ctx,
         lookup_visible_member_alias_owner_type(ctx, scope, owner_name, current_info);
   }
 
-  owner_type = resolve_member_alias_owner_type(ctx, scope, owner_type, current_info);
+  owner_type =
+      resolve_member_alias_owner_type(
+          ctx,
+          scope,
+          owner_type,
+          current_info,
+          base->named_dependent_qualified_owner_template_id.get());
   if(!owner_type) {
     return TypePtr();
   }
@@ -1914,6 +2224,57 @@ std::string qualified_scope_text(const QualifiedName & qualified)
   return out;
 }
 
+std::string constructor_lookup_class_name(SemanticContext & ctx,
+                                          const std::string & text)
+{
+  return normalize_special_member_class_name(
+      ctx,
+      semantic_utils::strip_trailing_top_level_template_arguments(
+          semantic_utils::unqualified_member_name(text)));
+}
+
+const BaseInfo * find_inherited_constructor_base_by_name(
+    SemanticContext & ctx,
+    ClassInfo & info,
+    const QualifiedName & qualified,
+    const std::string & constructor_target_name)
+{
+  if(qualified.qualifiers.empty()) {
+    return nullptr;
+  }
+
+  const std::string qualifier_leaf =
+      constructor_lookup_class_name(ctx, qualified.qualifiers.back());
+  const BaseInfo * match = nullptr;
+  for(std::size_t i = 0; i < info.bases.size(); ++i) {
+    const BaseInfo & base = info.bases[i];
+    if(!base.type || !base.type->type) {
+      continue;
+    }
+
+    const std::string base_name =
+        constructor_lookup_class_name(ctx, base.type->name);
+    const std::string base_qualified_name =
+        constructor_lookup_class_name(ctx, base.type->qualified_name);
+    const bool constructor_names_base =
+        constructor_target_name == base_name ||
+        constructor_target_name == base_qualified_name;
+    const bool qualifier_names_base =
+        qualifier_leaf.empty() ||
+        qualifier_leaf == base_name ||
+        qualifier_leaf == base_qualified_name;
+    if(!constructor_names_base || !qualifier_names_base) {
+      continue;
+    }
+
+    if(match) {
+      return nullptr;
+    }
+    match = &base;
+  }
+  return match;
+}
+
 const BaseInfo * find_inherited_constructor_base(SemanticContext & ctx,
                                                  ClassInfo & info,
                                                  const CppAstNode & node)
@@ -1939,12 +2300,14 @@ const BaseInfo * find_inherited_constructor_base(SemanticContext & ctx,
   if(!target_class) {
     target_class = ctx.complete_class_type(qualifier_type);
   }
-  if(!target_class) {
-    return nullptr;
-  }
-
   const std::string constructor_target_name =
       normalize_special_member_class_name(ctx, qualified.name);
+  if(!target_class) {
+    return find_inherited_constructor_base_by_name(ctx,
+                                                   info,
+                                                   qualified,
+                                                   constructor_target_name);
+  }
   bool names_constructor =
       constructor_target_name ==
           normalize_special_member_class_name(ctx, target_class->name) ||
@@ -1970,7 +2333,10 @@ const BaseInfo * find_inherited_constructor_base(SemanticContext & ctx,
     }
   }
 
-  return nullptr;
+  return find_inherited_constructor_base_by_name(ctx,
+                                                 info,
+                                                 qualified,
+                                                 constructor_target_name);
 }
 
 std::vector<std::pair<std::string, TypePtr> > inherited_constructor_params(
@@ -2007,6 +2373,67 @@ std::string inherited_constructor_parameter_name(
   return out.str();
 }
 
+CppAstNode make_synthetic_type_id_for_type(const TypePtr & type)
+{
+  CppAstNode type_id;
+  type_id.kind = CppAstKind::type_id;
+
+  CppAstNode specifiers;
+  specifiers.kind = CppAstKind::decl_specifier_seq;
+
+  CppAstNode type_name;
+  type_name.kind = CppAstKind::type_name;
+  type_name.value = type ? template_argument_type_text(type) : std::string();
+  type_name.semantic_type = type;
+  specifiers.children.push_back(type_name);
+  type_id.children.push_back(specifiers);
+  return type_id;
+}
+
+CppAstNode make_synthetic_rvalue_reference_type_id(const TypePtr & type)
+{
+  CppAstNode type_id = make_synthetic_type_id_for_type(type);
+
+  CppAstNode abstract;
+  abstract.kind = CppAstKind::abstract_declarator;
+
+  CppAstNode ptr_operator;
+  ptr_operator.kind = CppAstKind::ptr_operator;
+  ptr_operator.value = "&&";
+  ptr_operator.has_token = true;
+  ptr_operator.token_kind = RT_SIMPLE;
+  ptr_operator.simple_type = OP_LAND;
+  abstract.children.push_back(ptr_operator);
+  type_id.children.push_back(abstract);
+  return type_id;
+}
+
+CppAstNode make_inherited_constructor_argument_expression(
+    const std::vector<std::pair<std::string, TypePtr> > & params,
+    std::size_t index)
+{
+  CppAstNode id;
+  id.kind = CppAstKind::id_expression;
+  id.value = inherited_constructor_parameter_name(params, index);
+
+  if(index >= params.size() ||
+     !params[index].second ||
+     strip_top_level_cv(params[index].second)->kind == Type::TK_LVALUE_REFERENCE) {
+    return id;
+  }
+
+  CppAstNode cast;
+  cast.kind = CppAstKind::cast_expression;
+  cast.value = "static_cast";
+  cast.has_token = true;
+  cast.token_kind = RT_SIMPLE;
+  cast.simple_type = KW_STATIC_CAST;
+  cast.children.push_back(
+      make_synthetic_rvalue_reference_type_id(remove_reference_type(params[index].second)));
+  cast.children.push_back(id);
+  return cast;
+}
+
 CppAstNode make_inherited_constructor_initializer(
     const ClassInfo & base_info,
     const std::vector<std::pair<std::string, TypePtr> > & params)
@@ -2021,15 +2448,14 @@ CppAstNode make_inherited_constructor_initializer(
   mem_initializer_id.kind = CppAstKind::mem_initializer_id;
   mem_initializer_id.value = !base_info.qualified_name.empty() ?
       base_info.qualified_name : base_info.name;
+  mem_initializer_id.semantic_type = base_info.type;
   mem_initializer.children.push_back(mem_initializer_id);
 
   CppAstNode paren_args;
   paren_args.kind = CppAstKind::paren_argument_list;
   for(std::size_t i = 0; i < params.size(); ++i) {
-    CppAstNode arg;
-    arg.kind = CppAstKind::id_expression;
-    arg.value = inherited_constructor_parameter_name(params, i);
-    paren_args.children.push_back(arg);
+    paren_args.children.push_back(
+        make_inherited_constructor_argument_expression(params, i));
   }
   mem_initializer.children.push_back(paren_args);
   ctor_initializer.children.push_back(mem_initializer);
@@ -2050,61 +2476,94 @@ bool collect_inherited_constructors(SemanticContext & ctx,
   const std::string base_ctor_name = constructor_member_name_for_class(ctx, *base->type);
   std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
       base->type->methods.find(base_ctor_name);
-  if(found == base->type->methods.end()) {
-    return true;
-  }
 
   const std::string ctor_name = constructor_member_name_for_class(ctx, info);
-  for(std::size_t i = 0; i < found->second.size(); ++i) {
-    FunctionBinding * base_ctor = found->second[i];
-    if(!base_ctor || !base_ctor->is_constructor || base_ctor->is_deleted) {
-      continue;
-    }
+  if(found != base->type->methods.end()) {
+    for(std::size_t i = 0; i < found->second.size(); ++i) {
+      FunctionBinding * base_ctor = found->second[i];
+      if(!base_ctor || !base_ctor->is_constructor || base_ctor->is_deleted) {
+        continue;
+      }
 
-    const std::vector<std::pair<std::string, TypePtr> > explicit_params =
-        inherited_constructor_params(*base_ctor);
-    std::vector<TypePtr> effective_params;
-    effective_params.push_back(make_pointer(info.type));
-    for(std::size_t j = 0; j < explicit_params.size(); ++j) {
-      effective_params.push_back(explicit_params[j].second);
+      const std::vector<std::pair<std::string, TypePtr> > explicit_params =
+          inherited_constructor_params(*base_ctor);
+      std::vector<TypePtr> effective_params;
+      effective_params.push_back(make_pointer(info.type));
+      for(std::size_t j = 0; j < explicit_params.size(); ++j) {
+        effective_params.push_back(explicit_params[j].second);
+      }
+      if(ctx.find_exact_class_function(info,
+                                       ctor_name,
+                                       make_function(make_fundamental(FT_VOID),
+                                                     effective_params,
+                                                     false))) {
+        continue;
+      }
+
+      const CppAstNode * ctor_initializer =
+          ctx.own_synthetic_ast(make_inherited_constructor_initializer(*base->type,
+                                                                       explicit_params));
+
+      ClassFunctionOptions options;
+      options.access = access;
+      options.is_constructor = true;
+      options.is_inherited_constructor = true;
+      options.is_explicit = base_ctor->is_explicit;
+      options.is_constexpr = base_ctor->is_constexpr;
+
+      FunctionRegistrationRequest request;
+      request.owner_class = &info;
+      request.name = ctor_name;
+      request.declared_type = base_ctor->declared_type;
+      request.params = explicit_params;
+      request.default_arguments = inherited_constructor_default_arguments(*base_ctor);
+      request.ctor_initializer = ctor_initializer;
+      request.declaration_node = &node;
+      request.semantic_flags = options;
+      FunctionBinding * inherited = ctx.register_function_entity(request);
+      if(!inherited) {
+        continue;
+      }
+      inherited->ctor_initializer = ctor_initializer;
+      inherited->has_definition = true;
+      inherited->is_deleted = false;
+      inherited->is_inherited_constructor = true;
+      ctx.upgrade_function_symbol_linkage(inherited,
+                                          synthesized_class_member_symbol_linkage(info));
     }
-    if(ctx.find_exact_class_function(info,
-                                     ctor_name,
-                                     make_function(make_fundamental(FT_VOID),
-                                                   effective_params,
-                                                   false))) {
+  }
+
+  std::vector<FunctionTemplateDecl *> base_constructor_templates =
+      lookup_direct_function_templates(*base->type->member_scope, base_ctor_name);
+  if(base_constructor_templates.empty()) {
+    for(std::map<std::string, std::vector<FunctionTemplateDecl *> >::const_iterator it =
+            base->type->member_scope->function_templates.begin();
+        it != base->type->member_scope->function_templates.end();
+        ++it) {
+      for(std::size_t i = 0; i < it->second.size(); ++i) {
+        if(it->second[i] && it->second[i]->is_constructor) {
+          base_constructor_templates.push_back(it->second[i]);
+        }
+      }
+    }
+  }
+  for(std::size_t i = 0; i < base_constructor_templates.size(); ++i) {
+    FunctionTemplateDecl * base_ctor = base_constructor_templates[i];
+    if(!base_ctor || !base_ctor->is_constructor) {
       continue;
     }
 
     const CppAstNode * ctor_initializer =
-        ctx.own_synthetic_ast(make_inherited_constructor_initializer(*base->type,
-                                                                     explicit_params));
-
-    ClassFunctionOptions options;
-    options.access = access;
-    options.is_constructor = true;
-    options.is_explicit = base_ctor->is_explicit;
-    options.is_constexpr = base_ctor->is_constexpr;
-
-    FunctionRegistrationRequest request;
-    request.owner_class = &info;
-    request.name = ctor_name;
-    request.declared_type = base_ctor->declared_type;
-    request.params = explicit_params;
-    request.default_arguments = inherited_constructor_default_arguments(*base_ctor);
-    request.ctor_initializer = ctor_initializer;
-    request.declaration_node = &node;
-    request.semantic_flags = options;
-    FunctionBinding * inherited = ctx.register_function_entity(request);
-    if(!inherited) {
-      continue;
-    }
-    inherited->ctor_initializer = ctor_initializer;
-    inherited->has_definition = true;
-    inherited->is_deleted = false;
-    inherited->is_inherited_constructor = true;
-    ctx.upgrade_function_symbol_linkage(inherited,
-                                        synthesized_class_member_symbol_linkage(info));
+        ctx.own_synthetic_ast(make_inherited_constructor_initializer(
+            *base->type,
+            base_ctor->params_pattern));
+    ctx.register_inherited_constructor_template(
+        info,
+        *base_ctor,
+        ctor_name,
+        node,
+        ctor_initializer,
+        access);
   }
   return true;
 }
@@ -2164,6 +2623,35 @@ bool special_member_excluded_from_explicit_instantiation(const CppAstNode & node
   }
   const std::string text = node_text(node);
   return text.find("exclude_from_explicit_instantiation") != std::string::npos;
+}
+
+bool class_member_declaration_excluded_from_explicit_instantiation(
+    const CppAstNode & node)
+{
+  if(node.has_exclude_from_explicit_instantiation) {
+    return true;
+  }
+  const CppAstNode * specifiers = find_child(node, CppAstKind::decl_specifier_seq);
+  if(specifiers && specifiers->has_exclude_from_explicit_instantiation) {
+    return true;
+  }
+  const CppAstNode * member_specifiers = find_child(node, CppAstKind::member_specifiers);
+  if(member_specifiers &&
+     member_specifiers->has_exclude_from_explicit_instantiation) {
+    return true;
+  }
+  const std::string text = node_text(node);
+  return text.find("exclude_from_explicit_instantiation") != std::string::npos;
+}
+
+void apply_member_declaration_exclusion(FunctionBinding * binding,
+                                        const CppAstNode & declaration)
+{
+  if(binding) {
+    binding->exclude_from_explicit_instantiation =
+        binding->exclude_from_explicit_instantiation ||
+        class_member_declaration_excluded_from_explicit_instantiation(declaration);
+  }
 }
 
 const CppAstNode * find_anonymous_union_specifier(const CppAstNode & node)
@@ -2615,6 +3103,84 @@ bool should_defer_reference_class_alias_type_id(SemanticContext & ctx,
                                                      dependent_class);
 }
 
+bool class_alias_type_id_contains_decltype_or_typeof(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::decltype_specifier) {
+    return true;
+  }
+  const std::string & text = node.value;
+  const auto starts_with =
+      [&text](const char * prefix) -> bool
+      {
+        size_t offset = 0;
+        while(offset < text.size() &&
+              std::isspace(static_cast<unsigned char>(text[offset]))) {
+          ++offset;
+        }
+        const size_t prefix_size = std::strlen(prefix);
+        return text.size() >= offset + prefix_size &&
+               text.compare(offset, prefix_size, prefix) == 0;
+      };
+  if(starts_with("decltype") ||
+     starts_with("__typeof__") ||
+     starts_with("__typeof") ||
+     starts_with("__decltype__") ||
+     starts_with("__decltype")) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(class_alias_type_id_contains_decltype_or_typeof(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool class_alias_type_id_text_mentions_decltype_or_typeof(
+    const std::string & type_id_text)
+{
+  return type_id_text.find("decltype") != std::string::npos ||
+         type_id_text.find("__typeof") != std::string::npos ||
+         type_id_text.find("__decltype") != std::string::npos;
+}
+
+bool class_constant_noexcept_operand_can_use_template_fallback(
+    const CppAstNode & operand)
+{
+  const CppAstNode * current = &operand;
+  while(current->kind == CppAstKind::parenthesized_expression &&
+        current->children.size() == 1) {
+    current = &current->children[0];
+  }
+  return current->kind == CppAstKind::call_expression;
+}
+
+bool class_constant_noexcept_operand_is_well_formed(SemanticContext & ctx,
+                                                    Scope & scope,
+                                                    const CppAstNode & operand)
+{
+  TypePtr operand_type;
+  return template_api::with_template_services(
+      ctx,
+      [&](template_api::TemplateServices & services)
+      {
+        template_api::TemplateDependentTypeExprRequest request;
+        request.scope = &scope;
+        request.kind = template_api::TDTEK_DECLTYPE;
+        request.operand_was_parenthesized = false;
+        request.operand = operand;
+        return (template_argument_semantics::evaluate_dependent_type_expression_leaf(
+                    services,
+                    scope,
+                    request,
+                    operand_type) ||
+                services.recursive_semantic.evaluate_dependent_type_expression(
+                    request,
+                    operand_type)) &&
+               operand_type;
+      });
+}
+
 TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
                                            ClassInfo & info,
                                            const std::string & alias_name,
@@ -2640,7 +3206,26 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
         });
   }
   TypePtr alias;
-  if(ctx.parse_type_id(*info.member_scope, *type_id_for_parse, alias, true) && alias) {
+  bool parsed_alias = false;
+  const bool alias_needs_template_parse =
+      !type_id_text.empty() ?
+          class_alias_type_id_text_mentions_decltype_or_typeof(type_id_text) :
+          class_alias_type_id_contains_decltype_or_typeof(*type_id_for_parse);
+  if(alias_needs_template_parse) {
+    parsed_alias =
+        template_api::type::parse_type_id_node_for_templates(ctx,
+                                                             *info.member_scope,
+                                                             *type_id_for_parse,
+                                                             alias,
+                                                             true) &&
+        alias;
+  }
+  if(!parsed_alias) {
+    parsed_alias =
+        ctx.parse_type_id(*info.member_scope, *type_id_for_parse, alias, true) &&
+        alias;
+  }
+  if(parsed_alias && alias) {
     try {
       TypePtr canonical =
           canonicalize_member_typedef_type(ctx, *info.member_scope, alias, &info);
@@ -2774,6 +3359,38 @@ size_t align_up(size_t value, size_t alignment)
   return remainder == 0 ? value : value + (alignment - remainder);
 }
 
+bool build_alignment_expression_from_type_id(const CppAstNode & type_id,
+                                             CppAstNode & out)
+{
+  if(type_id.kind != CppAstKind::type_id ||
+     type_id.children.empty() ||
+     type_id.children[0].kind != CppAstKind::type_specifier_seq ||
+     type_id.children[0].children.size() != 1 ||
+     type_id.children[0].children[0].kind != CppAstKind::type_name) {
+    return false;
+  }
+
+  const CppAstNode & type_name = type_id.children[0].children[0];
+  const QualifiedName * qualified = cppast_qualified_name_syntax(type_name);
+  if(type_name.has_leading_typename ||
+     !qualified ||
+     (!qualified->rooted && qualified->qualifiers.empty())) {
+    return false;
+  }
+
+  out = CppAstNode();
+  out.kind = CppAstKind::id_expression;
+  out.value = type_name.value;
+  out.qualified_name_syntax = type_name.qualified_name_syntax;
+  out.template_id_syntax = type_name.template_id_syntax;
+  out.qualifier_template_id_syntaxes = type_name.qualifier_template_id_syntaxes;
+  out.qualifier_type_syntaxes = type_name.qualifier_type_syntaxes;
+  out.token_start = type_name.token_start;
+  out.token_end = type_name.token_end;
+  out.source_location_id = type_name.source_location_id;
+  return true;
+}
+
 size_t evaluate_declared_alignment(SemanticContext & ctx,
                                    Scope & scope,
                                    const CppAstNode * node)
@@ -2803,7 +3420,14 @@ size_t evaluate_declared_alignment(SemanticContext & ctx,
     }
 
     long long value = 0;
-    if(syntax && ctx.evaluate_constant_expression(scope, *syntax, value)) {
+    CppAstNode expression_syntax;
+    const CppAstNode * value_syntax = syntax;
+    if(syntax &&
+       syntax->kind == CppAstKind::type_id &&
+       build_alignment_expression_from_type_id(*syntax, expression_syntax)) {
+      value_syntax = &expression_syntax;
+    }
+    if(value_syntax && ctx.evaluate_constant_expression(scope, *value_syntax, value)) {
       if(value <= 0 || (value & (value - 1)) != 0) {
         throw std::logic_error("alignas requires positive power-of-two alignment");
       }
@@ -4695,6 +5319,7 @@ bool prepare_class_member_function_definition(
 
   out.is_static_member = decl_spec_contains_token(*out.specifiers, KW_STATIC);
   out.is_constexpr_member = decl_spec_contains_token(*out.specifiers, KW_CONSTEXPR);
+  out.is_inline_member = decl_spec_contains_token(*out.specifiers, KW_INLINE);
   prepare_method_parse_context(out.specifiers, *out.declarator, out.method);
 
   bool is_typedef = false;
@@ -4782,7 +5407,8 @@ ClassFunctionOptions class_function_options(MemberAccess access,
                                             bool is_constructor,
                                             bool is_destructor,
                                             bool is_constexpr,
-                                            bool is_defaulted)
+                                            bool is_defaulted,
+                                            bool is_inline)
 {
   ClassFunctionOptions options;
   options.access = access;
@@ -4790,6 +5416,7 @@ ClassFunctionOptions class_function_options(MemberAccess access,
   options.is_destructor = is_destructor;
   options.is_constexpr = is_constexpr;
   options.is_defaulted = is_defaulted;
+  options.is_inline = is_inline;
   if(!syntax) {
     return options;
   }
@@ -4830,7 +5457,8 @@ TypePtr method_function_type(const TypePtr & class_type,
                        function_type->variadic,
                        function_type->function_const,
                        function_type->function_volatile,
-                       function_type->prototype_relaxed);
+                       function_type->prototype_relaxed,
+                       function_type->function_ref_qualifier);
 }
 
 std::string unqualified_conversion_operator_member_name(const std::string & name)
@@ -4848,6 +5476,15 @@ std::string unqualified_conversion_operator_member_name(const std::string & name
       name;
 }
 
+std::string conversion_operator_identifier_member_name(const CppAstNode & identifier)
+{
+  const QualifiedName * qualified_name = cppast_qualified_name_syntax(identifier);
+  if(qualified_name && !qualified_name->name.empty()) {
+    return qualified_name->name;
+  }
+  return unqualified_conversion_operator_member_name(identifier.value);
+}
+
 bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
                                                Scope & scope,
                                                const CppAstNode & declarator,
@@ -4856,7 +5493,7 @@ bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
   const CppAstNode * identifier = find_child(declarator, CppAstKind::identifier);
   const std::string operator_name =
       identifier ?
-          unqualified_conversion_operator_member_name(identifier->value) :
+          conversion_operator_identifier_member_name(*identifier) :
           std::string();
   if(operator_name.compare(0, 8, "operator") != 0) {
     return false;
@@ -4975,6 +5612,11 @@ bool parse_conversion_operator_signature(
      member_name.empty()) {
     return false;
   }
+  const CppAstNode * identifier =
+      find_child(prepared_method.parse_declarator_node(), CppAstKind::identifier);
+  if(identifier) {
+    member_name = conversion_operator_identifier_member_name(*identifier);
+  }
   member_name =
       canonical_function_lookup_name(
           unqualified_conversion_operator_member_name(member_name));
@@ -5044,9 +5686,12 @@ void record_direct_base(ClassInfo & info,
   base.is_virtual = is_virtual;
   base.source_dependent = source_dependent;
   info.bases.push_back(base);
-  semantic_scope_mutation::bind_named_type(*info.member_scope,
-                                           base_class->name,
-                                           base_class->type);
+  if(info.member_scope->named_types.find(base_class->name) ==
+     info.member_scope->named_types.end()) {
+    semantic_scope_mutation::bind_named_type(*info.member_scope,
+                                             base_class->name,
+                                             base_class->type);
+  }
 }
 
 void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode & node)
@@ -5383,6 +6028,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.member_scope->template_bound_type_names.clear();
   info.member_scope->template_bound_type_pack_names.clear();
   info.member_scope->template_bound_value_names.clear();
+  info.member_scope->template_bound_value_pack_names.clear();
   info.member_scope->template_bound_template_names.clear();
   info.member_scope->values.clear();
   info.member_scope->namespace_bindings.clear();
@@ -5415,6 +6061,7 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
   std::map<std::string, std::vector<TypePtr> > preserved_named_type_packs;
   std::map<std::string, std::vector<ValueBinding> > preserved_named_value_packs;
   std::map<std::string, std::size_t> preserved_named_pack_sizes;
+  std::set<std::string> preserved_template_bound_value_pack_names;
   std::map<std::string, ValueBinding> preserved_values;
   std::map<std::string, ClassTemplateDecl *> preserved_class_templates;
   std::map<std::string, AliasTemplateDecl *> preserved_alias_templates;
@@ -5470,12 +6117,18 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
         preserved_named_value_packs[*it] = pack->second;
       }
     }
+    for(std::set<std::string>::const_iterator it =
+            info.member_scope->template_bound_value_pack_names.begin();
+        it != info.member_scope->template_bound_value_pack_names.end();
+        ++it) {
+      preserved_template_bound_value_pack_names.insert(*it);
+    }
     for(std::map<std::string, std::size_t>::const_iterator it =
             info.member_scope->named_pack_sizes.begin();
         it != info.member_scope->named_pack_sizes.end();
         ++it) {
       if(info.member_scope->template_bound_type_pack_names.count(it->first) != 0 ||
-         info.member_scope->template_bound_value_names.count(it->first) != 0) {
+         info.member_scope->template_bound_value_pack_names.count(it->first) != 0) {
         preserved_named_pack_sizes[it->first] = it->second;
       }
     }
@@ -5541,6 +6194,8 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
     info.member_scope->named_type_packs.swap(preserved_named_type_packs);
     info.member_scope->named_value_packs.swap(preserved_named_value_packs);
     info.member_scope->named_pack_sizes.swap(preserved_named_pack_sizes);
+    info.member_scope->template_bound_value_pack_names.swap(
+        preserved_template_bound_value_pack_names);
     info.member_scope->values.swap(preserved_values);
     info.member_scope->namespace_bindings.clear();
     info.member_scope->function_sets.clear();
@@ -5623,10 +6278,21 @@ void finalize_class_virtuals(SemanticContext & ctx, ClassInfo & info)
             slots[extra] = binding;
           }
         }
-      } else if(overridden && overridden->has_virtual_slot) {
+      } else if(overridden && overridden->has_virtual_slot &&
+                (primary_base || !binding->is_destructor)) {
         binding->has_virtual_slot = true;
         binding->virtual_slot = overridden->virtual_slot;
       } else {
+        // Reached for a destructor of a class that introduces its own primary
+        // vptr (no non-virtual polymorphic primary base) and whose destructor
+        // overrides only a virtual-base slot.  The Itanium ABI places the
+        // destructor in every vtable section (primary, each secondary, each
+        // virtual base); without giving it a primary slot here the primary
+        // section is emitted empty, which propagates empty primary vtables up
+        // the basic_istream/ostream/iostream chain.  A non-destructor virtual
+        // that overrides only a virtual-base slot stays in the virtual-base
+        // section (the branch above) so it is not clobbered by the destructor's
+        // primary slot 0 and remains dispatchable through that section.
         binding->has_virtual_slot = true;
         binding->virtual_slot = slots.size();
         slots.push_back(binding);
@@ -5731,6 +6397,82 @@ unsigned long long vtable_address_point_offset_for_virtual_bases(const ClassInfo
   return (static_cast<unsigned long long>(info.virtual_base_subobjects.size()) + 2ULL) * 8ULL;
 }
 
+// Number of VTT entries contributed by `base`'s construction sub-VTT, computed
+// recursively so multi-level virtual-inheritance diamonds reserve the full sub
+// tree (a base whose own bases also require construction VTTs contributes more
+// than `1 + vbase_count` entries).
+std::string construction_section_key(const ClassInfo & dynamic_class,
+                                     const ClassInfo & base_class,
+                                     size_t base_offset,
+                                     size_t section_index)
+{
+  std::ostringstream out;
+  out << construction_vtable_key(dynamic_class, base_class, base_offset)
+      << "::s" << section_index;
+  return out.str();
+}
+
+size_t construction_subvtt_entry_count(const ClassInfo & base)
+{
+  size_t count = 1;  // primary construction section
+  for(size_t i = 0; i < base.bases.size(); ++i) {
+    if(direct_base_uses_construction_vtt(base.bases[i]) && base.bases[i].type) {
+      count += construction_subvtt_entry_count(*base.bases[i].type);
+    }
+  }
+  if(base.vtables.size() > 1) {
+    count += base.vtables.size() - 1;  // secondary / virtual-base sections
+  }
+  return count;
+}
+
+// Append, in Itanium VTT order, the sub-VTT for `view_class` located at
+// `view_offset_in_dynamic` within `dynamic_class`.  The top-level call (for the
+// dynamic class itself) references the class's own vtable section keys; nested
+// calls reference per-(dynamic, base, offset) construction-vtable section keys
+// so the embedded sub-VTTs carry dynamic-relative virtual-base offsets.  The
+// entry order matches `append_all_vptr_actions` so the regenerated base ctors
+// read the slots they were emitted to expect.
+void append_subvtt_entries(SemanticContext & ctx,
+                           ClassInfo & dynamic_class,
+                           ClassInfo & view_class,
+                           size_t view_offset_in_dynamic,
+                           bool is_top_level,
+                           unsigned long long address_point_offset,
+                           std::vector<std::pair<std::string, unsigned long long> > & out)
+{
+  if(view_class.vtables.empty()) {
+    return;
+  }
+  out.push_back(std::make_pair(
+      is_top_level ? view_class.vtables[0].key
+                   : construction_section_key(dynamic_class, view_class,
+                                              view_offset_in_dynamic, 0),
+      address_point_offset));
+
+  for(size_t i = 0; i < view_class.bases.size(); ++i) {
+    const BaseInfo & base = view_class.bases[i];
+    if(!direct_base_uses_construction_vtt(base) || !base.type) {
+      continue;
+    }
+    append_subvtt_entries(ctx,
+                          dynamic_class,
+                          *base.type,
+                          view_offset_in_dynamic + base.offset,
+                          false,
+                          address_point_offset,
+                          out);
+  }
+
+  for(size_t i = 1; i < view_class.vtables.size(); ++i) {
+    out.push_back(std::make_pair(
+        is_top_level ? view_class.vtables[i].key
+                     : construction_section_key(dynamic_class, view_class,
+                                                view_offset_in_dynamic, i),
+        address_point_offset));
+  }
+}
+
 }  // namespace
 
 void collect_vtt_entries(SemanticContext & ctx,
@@ -5745,41 +6487,53 @@ void collect_construction_vtables(SemanticContext & ctx,
     return;
   }
 
-  for(size_t i = 0; i < dynamic_class.bases.size(); ++i) {
+  // Pre-order walk of every base subobject (at any depth) that itself requires
+  // a construction VTT.  Each such subobject S at offset `S_off` gets a full
+  // construction-vtable group: a copy of S's own vtable sections (which already
+  // carry S's as-of-base final overriders) relocated to `S_off` within
+  // `dynamic_class`.  The emission recomputes offset-to-top and virtual-base
+  // offsets from `dynamic_class` + the relocated view offset, and each section
+  // gets a distinct internal symbol via its construction section key, so a
+  // multi-level diamond produces the full set of construction vtables that the
+  // recursive VTT (and the regenerated base ctors) reference.
+  std::vector<std::pair<ClassInfo *, size_t> > stack;
+  for(size_t i = dynamic_class.bases.size(); i-- > 0;) {
     const BaseInfo & base = dynamic_class.bases[i];
-    if(!direct_base_uses_construction_vtt(base)) {
-      continue;
+    if(direct_base_uses_construction_vtt(base) && base.type) {
+      stack.push_back(std::make_pair(base.type, base.offset));
     }
-
-    VTableInfo table;
-    table.key = construction_vtable_key(dynamic_class, *base.type, base.offset);
-    table.view_type = base.type;
-    table.view_offset = base.offset;
-    for(size_t j = 0; j < base.type->vtable_entries.size(); ++j) {
-      FunctionBinding * base_virtual = base.type->vtable_entries[j];
-      FunctionBinding * final = find_final_overrider(ctx, dynamic_class, *base_virtual);
-      size_t target_offset = 0;
-      MemberAccess target_access = MA_PUBLIC;
-      if(!semantic_lookup::find_unique_base_path(dynamic_class,
-                                                 final->owner_class,
-                                                 target_offset,
-                                                 target_access)) {
-        throw std::logic_error("missing construction final overrider path");
+  }
+  while(!stack.empty()) {
+    ClassInfo & base_class = *stack.back().first;
+    const size_t base_offset = stack.back().second;
+    stack.pop_back();
+    for(size_t i = 0; i < base_class.vtables.size(); ++i) {
+      VTableInfo table = base_class.vtables[i];
+      size_t section_offset = base_offset + base_class.vtables[i].view_offset;
+      // A shared virtual-base section lives at the virtual base's offset within
+      // the dynamic class, not at `base_offset` plus its offset inside the base
+      // subobject (the virtual base is relocated relative to the base when the
+      // base becomes a subobject of a more-derived class).
+      if(table.view_type) {
+        for(size_t v = 0; v < dynamic_class.virtual_base_subobjects.size(); ++v) {
+          const SubobjectInfo & vb = dynamic_class.virtual_base_subobjects[v];
+          if(vb.type == table.view_type ||
+             (vb.type && vb.type->qualified_name == table.view_type->qualified_name)) {
+            section_offset = vb.offset;
+            break;
+          }
+        }
       }
-      VTableSlotInfo slot;
-      slot.function = final;
-      slot.this_adjust =
-          static_cast<long long>(target_offset) - static_cast<long long>(base.offset);
-      table.slots.push_back(slot);
+      table.view_offset = section_offset;
+      table.key = construction_section_key(dynamic_class, base_class, base_offset, i);
+      out.push_back(table);
     }
-    table.use_extended_layout = class_uses_extended_virtual_abi(*base.type);
-    for(size_t j = 0; j < table.slots.size(); ++j) {
-      if(table.slots[j].this_adjust != 0) {
-        table.use_extended_layout = true;
-        break;
+    for(size_t i = base_class.bases.size(); i-- > 0;) {
+      const BaseInfo & inner = base_class.bases[i];
+      if(direct_base_uses_construction_vtt(inner) && inner.type) {
+        stack.push_back(std::make_pair(inner.type, base_offset + inner.offset));
       }
     }
-    out.push_back(table);
   }
 }
 
@@ -5803,8 +6557,7 @@ bool find_vtt_direct_base_slice_offset(SemanticContext & ctx,
       out_byte_offset = entry_index * 8;
       return true;
     }
-    entry_index += 1;
-    entry_index += base.type->virtual_base_subobjects.size();
+    entry_index += construction_subvtt_entry_count(*base.type);
   }
 
   return false;
@@ -5841,33 +6594,10 @@ void collect_vtt_entries(SemanticContext & ctx,
 
   const unsigned long long address_point_offset =
       vtable_address_point_offset_for_virtual_bases(info);
-  out.push_back(std::make_pair(info.vtables[0].key, address_point_offset));
-
-  for(size_t i = 0; i < info.bases.size(); ++i) {
-    const BaseInfo & base = info.bases[i];
-    if(!direct_base_uses_construction_vtt(base)) {
-      continue;
-    }
-
-    out.push_back(make_pair(construction_vtable_key(info, *base.type, base.offset),
-                            address_point_offset));
-    for(size_t j = 0; j < base.type->virtual_base_subobjects.size(); ++j) {
-      const SubobjectInfo & virtual_base = base.type->virtual_base_subobjects[j];
-      if(!virtual_base.type) {
-        continue;
-      }
-      size_t actual_offset = 0;
-      if(!resolve_complete_subobject_offset(info, *virtual_base.type, actual_offset)) {
-        throw std::logic_error("missing VTT virtual base view offset");
-      }
-      out.push_back(make_pair(vtable_view_key(info, *virtual_base.type, actual_offset),
-                              address_point_offset));
-    }
-  }
-
-  for(size_t i = 1; i < info.vtables.size(); ++i) {
-    out.push_back(make_pair(info.vtables[i].key, address_point_offset));
-  }
+  // Emit the VTT in recursive Itanium order so multi-level virtual-inheritance
+  // diamonds embed each direct base's full sub-VTT (and the base ctors, which
+  // pass their bases recursively-sized slices, read consistent entries).
+  append_subvtt_entries(ctx, info, info, 0, true, address_point_offset, out);
 }
 
 void finalize_class_layout(SemanticContext & ctx,
@@ -7207,9 +7937,11 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                    false,
                                    false,
                                    is_constexpr_member,
-                                   false);
+                                   false,
+                                   decl_spec_contains_token(*specifiers, KW_INLINE));
         request.is_static_member = true;
-        ctx.register_function_entity(request);
+        apply_member_declaration_exclusion(ctx.register_function_entity(request),
+                                           node);
       } else {
         const bool is_defaulted =
             init_decl.children.size() == 2 &&
@@ -7237,10 +7969,13 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                                            false,
                                                            false,
                                                            is_constexpr_member,
-                                                           is_defaulted),
+                                                           is_defaulted,
+                                                           decl_spec_contains_token(*specifiers,
+                                                                                    KW_INLINE)),
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
+          apply_member_declaration_exclusion(binding, node);
         }
       }
       continue;
@@ -7601,10 +8336,12 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                    false,
                                    false,
                                    is_constexpr_member,
-                                   is_defaulted);
+                                   is_defaulted,
+                                   decl_spec_contains_token(*specifiers, KW_INLINE));
         request.is_static_member = true;
         if(FunctionBinding * binding = ctx.register_function_entity(request)) {
           binding->is_deleted = is_deleted;
+          apply_member_declaration_exclusion(binding, node);
         }
       } else {
         FunctionBinding * binding =
@@ -7621,10 +8358,13 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                                            false,
                                                            false,
                                                            is_constexpr_member,
-                                                           is_defaulted),
+                                                           is_defaulted,
+                                                           decl_spec_contains_token(*specifiers,
+                                                                                    KW_INLINE)),
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
+          apply_member_declaration_exclusion(binding, node);
         }
       }
       continue;
@@ -8031,7 +8771,7 @@ void ensure_class_reference_members(SemanticContext & ctx,
      info.reference_member_collection_in_progress || !reference_node) {
     return;
   }
-  if(reference_member_collection_depth > 64) {
+  if(reference_member_collection_depth > kMaxReferenceMemberCollectionDepth) {
     return;
   }
   if(semantic_metrics::AnalyzerCounters * counters = ctx.performance_counters()) {
@@ -8161,6 +8901,46 @@ void finalize_class_constant_members(SemanticContext & ctx,
             *binding.constant_initializer_scope,
             *binding.constant_initializer);
       };
+  const auto try_evaluate_noexcept_initializer =
+      [&](ValueBinding & binding, constant_eval::ConstexprValue & out) -> bool
+      {
+        if(!binding.constant_initializer || !binding.constant_initializer_scope) {
+          return false;
+        }
+        const CppAstNode * payload = binding.constant_initializer;
+        if(payload->kind == CppAstKind::initializer &&
+           payload->children.size() == 1) {
+          payload = &payload->children[0];
+        }
+        if(!payload ||
+           !node_has_simple_type(*payload, KW_NOEXCEPT) ||
+           payload->children.size() != 1) {
+          return false;
+        }
+
+        bool is_nothrow = false;
+        try {
+          if(ctx.expression_is_nothrow(*binding.constant_initializer_scope,
+                                       payload->children[0],
+                                       is_nothrow)) {
+            out = constant_eval::make_integral_value(is_nothrow ? 1 : 0,
+                                                     binding.type);
+            return true;
+          }
+        } catch(const std::logic_error &) {
+        }
+
+        if(!class_constant_noexcept_operand_can_use_template_fallback(
+               payload->children[0]) ||
+           !class_constant_noexcept_operand_is_well_formed(
+               ctx,
+               *binding.constant_initializer_scope,
+               payload->children[0])) {
+          return false;
+        }
+        out = constant_eval::make_integral_value(0, binding.type);
+        return true;
+      };
   const auto note_value_member_with_nested_member_type_dependency =
       [&](ValueBinding & binding, bool has_nested_member_type_dependency) -> void
       {
@@ -8208,6 +8988,7 @@ void finalize_class_constant_members(SemanticContext & ctx,
         const bool has_template_identity =
             template_api::value_or_owner_has_template_identity(&binding) ||
             template_api::class_has_template_identity(&info);
+        binding.witness_member_value_instantiation_noted = true;
         const ScopedTemplateWitnessLifecycleResume lifecycle_resume;
         const template_api::ScopedTemplateWitnessEntryContext entry_context(
             template_api::make_template_closure_entry_context(
@@ -8270,6 +9051,9 @@ void finalize_class_constant_members(SemanticContext & ctx,
                                                           *binding.constant_initializer,
                                                           binding.type,
                                                           value);
+      if(!evaluated) {
+        evaluated = try_evaluate_noexcept_initializer(binding, value);
+      }
     } catch(...) {
       binding.constant_value_in_progress = false;
       throw;
@@ -8523,9 +9307,11 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                                    false,
                                    false,
                                    is_constexpr_member,
-                                   false);
+                                   false,
+                                   decl_spec_contains_token(*specifiers, KW_INLINE));
         request.is_static_member = true;
-        ctx.register_function_entity(request);
+        apply_member_declaration_exclusion(ctx.register_function_entity(request),
+                                           node);
       } else {
         const bool is_defaulted =
             init_decl.children.size() == 2 &&
@@ -8553,10 +9339,13 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
                                                            false,
                                                            false,
                                                            is_constexpr_member,
-                                                           is_defaulted),
+                                                           is_defaulted,
+                                                           decl_spec_contains_token(*specifiers,
+                                                                                    KW_INLINE)),
                                     &init_decl);
         if(binding) {
           binding->is_deleted = is_deleted;
+          apply_member_declaration_exclusion(binding, node);
         }
       }
       continue;
@@ -8729,7 +9518,9 @@ void collect_class_method_definition(SemanticContext & ctx,
                              &prepared.method.syntax,
                              false,
                              false,
-                             prepared.is_constexpr_member);
+                             prepared.is_constexpr_member,
+                             false,
+                             prepared.is_inline_member);
 
   if(prepared.is_static_member) {
     FunctionRegistrationRequest request;
@@ -8743,6 +9534,7 @@ void collect_class_method_definition(SemanticContext & ctx,
     request.function_qualifier = prepared.method.syntax.function_qualifier;
     request.semantic_flags.access = access;
     request.semantic_flags.is_constexpr = prepared.is_constexpr_member;
+    request.semantic_flags.is_inline = prepared.is_inline_member;
     request.is_static_member = true;
     validate_member_function_static_asserts(ctx, ctx.register_function_entity(request));
   } else {
@@ -8815,7 +9607,9 @@ void collect_special_member(SemanticContext & ctx,
                              is_destructor,
                              member_specifiers &&
                                  decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR),
-                             is_defaulted);
+                             is_defaulted,
+                             member_specifiers &&
+                                 decl_spec_contains_token(*member_specifiers, KW_INLINE));
 
   FunctionBinding * binding =
       register_class_function(ctx,
@@ -8967,7 +9761,10 @@ void collect_class_reference_special_member(SemanticContext & ctx,
                                 false,
                                 false,
                                 member_specifiers &&
-                                    decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR)),
+                                    decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR),
+                                false,
+                                member_specifiers &&
+                                    decl_spec_contains_token(*member_specifiers, KW_INLINE)),
                             &node);
     trace_class_collection_event(ctx,
                                  "reference-conversion-operator-done",
@@ -9015,7 +9812,9 @@ void collect_class_reference_special_member(SemanticContext & ctx,
                                   is_destructor,
                                   member_specifiers &&
                                       decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR),
-                                  is_defaulted),
+                                  is_defaulted,
+                                  member_specifiers &&
+                                      decl_spec_contains_token(*member_specifiers, KW_INLINE)),
                               &node);
   if(binding) {
     binding->is_deleted = is_deleted;
@@ -9115,7 +9914,11 @@ void collect_conversion_operator_member(SemanticContext & ctx,
                                   false,
                                   member_specifiers &&
                                       decl_spec_contains_token(*member_specifiers,
-                                                               KW_CONSTEXPR)),
+                                                               KW_CONSTEXPR),
+                                  false,
+                                  member_specifiers &&
+                                      decl_spec_contains_token(*member_specifiers,
+                                                               KW_INLINE)),
                               &node);
   if(binding) {
     binding->display_name = semantic_utils::unqualified_member_name(node.value);
@@ -9148,6 +9951,14 @@ void populate_class_info(SemanticContext & ctx,
     trace_class_collection_event(ctx, "populate-class-complete-skip", info, node);
     return;
   }
+  if(info.full_member_collection_in_progress ||
+     info.reference_member_collection_in_progress) {
+    trace_class_collection_event(ctx,
+                                 "populate-class-in-progress-skip",
+                                 info,
+                                 node);
+    return;
+  }
   if(info.reference_members_collected && !info.complete &&
      info.dependent_instantiation) {
     trace_class_collection_event(ctx, "populate-class-dependent-skip", info, node);
@@ -9161,6 +9972,7 @@ void populate_class_info(SemanticContext & ctx,
     ctx.discard_class_function_bindings_for_reset(info);
     reset_reference_member_state_for_full_collection(info);
   }
+  bool full_collection_finished = false;
   struct FullCollectionGuard
   {
     ClassInfo & info;
@@ -9175,6 +9987,17 @@ void populate_class_info(SemanticContext & ctx,
       info.full_member_collection_in_progress = previous;
     }
   } full_collection_guard(info);
+  struct FullCollectionAbortCleanup
+  {
+    ClassInfo & info;
+    bool & finished;
+    ~FullCollectionAbortCleanup()
+    {
+      if(!finished && !info.complete && !info.reference_members_collected) {
+        reset_reference_member_state_for_full_collection(info);
+      }
+    }
+  } full_collection_abort_cleanup{info, full_collection_finished};
 
   {
     semantic_metrics::ScopedClassDemand class_demand(
@@ -9467,6 +10290,7 @@ void populate_class_info(SemanticContext & ctx,
     info.reference_members_collected = true;
     ctx.finalize_dependent_class_shape(info);
     trace_class_collection_event(ctx, "populate-class-dependent-finalized", info, node);
+    full_collection_finished = true;
     return;
   }
 
@@ -9490,6 +10314,7 @@ void populate_class_info(SemanticContext & ctx,
     info.reference_members_collected = true;
     ctx.finalize_dependent_class_shape(info);
     trace_class_collection_event(ctx, "populate-class-dependent-layout", info, node);
+    full_collection_finished = true;
     return;
   }
   trace_class_collection_event(ctx, "populate-class-finalize-layout", info, node);
@@ -9501,6 +10326,7 @@ void populate_class_info(SemanticContext & ctx,
   info.reference_members_collected = true;
   template_api::note_anonymous_member_class_events_if_owner_logged(ctx, info);
   trace_class_collection_event(ctx, "populate-class-done", info, node);
+  full_collection_finished = true;
 }
 
 void collect_class_declaration(SemanticContext & ctx,
@@ -10039,6 +10865,12 @@ bool is_trivially_copy_constructible_type_for_host_abi(SemanticContext & ctx,
                                                        const TypePtr & type)
 {
   return is_trivially_copy_constructible_type_for_host_abi_local(ctx, type);
+}
+
+bool is_trivially_move_constructible_type_for_host_abi(SemanticContext & ctx,
+                                                       const TypePtr & type)
+{
+  return is_trivially_move_constructible_type_for_host_abi_local(ctx, type);
 }
 
 }  // namespace semantic_class_model

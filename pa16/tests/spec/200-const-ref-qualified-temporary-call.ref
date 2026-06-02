@@ -1,0 +1,42 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $tmpobj__2 : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $tmpobj__2
+    call void @Fun__Fun(%t1)
+    %t2 = call i32 @Fun__operator__(%t1, 4)
+    %t3 = cmp eq i32 %t2, 5
+    branch %t3, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t4 = load i32 $cond__1
+    return i32 %t4
+}
+function @Fun__Fun(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3FunC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Fun__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZNKR3FunclEi] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
+}
+alias object _ZN3FunC2Ev = @Fun__Fun

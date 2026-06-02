@@ -15,11 +15,13 @@
 #include "cpp_decl_bridge.h"
 #include "cppast_dump.h"
 #include "callsemantic_internal.h"
+#include "callsemantic/function_registry.h"
 #include "pack_parameter_analysis.h"
 #include "rtti_names.h"
 #include "semantic_class_model.h"
 #include "semantic_context.h"
 #include "semantic_dependent_type.h"
+#include "semantic_errors.h"
 #include "semantic_hotspot.h"
 #include "semantic_lifetime.h"
 #include "semantic_lookup.h"
@@ -106,6 +108,20 @@ void apply_local_static_guard_to_lifetime_actions(DumpNode & var_node)
     }
   }
 }
+
+const CppAstNode * single_special_initializer(const CppAstNode * initializer)
+{
+  if(!initializer ||
+     initializer->kind != CppAstKind::initializer ||
+     initializer->children.size() != 1 ||
+     initializer->children[0].kind != CppAstKind::special_initializer) {
+    return nullptr;
+  }
+  return &initializer->children[0];
+}
+
+bool namespace_variable_type_has_class_lifetime(SemanticContext & ctx,
+                                                const TypePtr & type);
 
 std::string describe_scope_placeholder_origin(SemanticContext & ctx, Scope & scope)
 {
@@ -281,6 +297,7 @@ symbol_linkage::FunctionRefQualifier symbol_linkage_ref_qualifier(RefQualifier q
 }
 
 symbol_linkage::SymbolLinkage output_function_symbol_linkage(const FunctionBinding & binding);
+bool node_decl_spec_contains_token(const CppAstNode * node, ETokenType token);
 
 bool output_function_prefers_local_object_binding(const FunctionBinding & binding)
 {
@@ -821,46 +838,237 @@ void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
     }
   }
 
-  const bool has_pack_parameter =
-      !parameter_nodes.empty() &&
-      parameter_declaration_has_pack(*parameter_nodes.back());
-  const std::size_t fixed_param_count =
-      has_pack_parameter ? parameter_nodes.size() - 1 : parameter_nodes.size();
-  if(binding.params.size() < explicit_offset + fixed_param_count) {
-    return;
+  bool has_pack_parameter = false;
+  for(std::size_t i = 0; i < parameter_nodes.size(); ++i) {
+    if(parameter_declaration_has_pack(*parameter_nodes[i])) {
+      has_pack_parameter = true;
+      break;
+    }
   }
   if(!has_pack_parameter &&
      binding.params.size() != explicit_offset + params.size()) {
     return;
   }
 
-  const std::size_t direct_param_count =
-      std::min<std::size_t>(fixed_param_count, params.size());
-  for(std::size_t i = 0; i < direct_param_count; ++i) {
-    if(params[i].first.empty()) {
+  std::size_t binding_index = explicit_offset;
+  std::size_t parsed_param_index = 0;
+  for(std::size_t i = 0; i < parameter_nodes.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameter_nodes[i])) {
+      if(binding_index >= binding.params.size()) {
+        return;
+      }
+      std::string parameter_name;
+      if(parsed_param_index < params.size()) {
+        parameter_name = params[parsed_param_index].first;
+      }
+      if(parameter_name.empty()) {
+        parameter_name =
+            pack_parameter_analysis::parameter_declaration_name(*parameter_nodes[i]);
+      }
+      if(!parameter_name.empty() &&
+         (binding.parameter_aliases[binding_index].empty() ||
+          binding.parameter_aliases[binding_index] == binding.params[binding_index].first)) {
+        binding.parameter_aliases[binding_index] = parameter_name;
+      }
+      ++binding_index;
+      if(parsed_param_index < params.size()) {
+        ++parsed_param_index;
+      }
       continue;
     }
-    const std::size_t index = explicit_offset + i;
-    if(binding.parameter_aliases[index].empty() ||
-       binding.parameter_aliases[index] == binding.params[index].first) {
-      binding.parameter_aliases[index] = params[i].first;
+
+    const std::string pack_name =
+        pack_parameter_analysis::parameter_declaration_name(*parameter_nodes[i]);
+    if(pack_name.empty()) {
+      return;
+    }
+
+    std::size_t remaining_fixed_params = 0;
+    for(std::size_t j = i + 1; j < parameter_nodes.size(); ++j) {
+      if(!parameter_declaration_has_pack(*parameter_nodes[j])) {
+        ++remaining_fixed_params;
+      }
+    }
+    if(binding.params.size() < binding_index + remaining_fixed_params) {
+      return;
+    }
+    const std::size_t pack_size =
+        binding.params.size() - binding_index - remaining_fixed_params;
+    for(std::size_t j = 0; j < pack_size; ++j) {
+      const std::size_t index = binding_index + j;
+      binding.parameter_aliases[index] = pack_value_alias_name(pack_name, j);
+    }
+    binding_index += pack_size;
+    if(parsed_param_index < params.size()) {
+      parsed_param_index =
+          std::min<std::size_t>(params.size(), parsed_param_index + pack_size);
     }
   }
+}
 
-  if(!has_pack_parameter) {
+std::size_t count_remaining_fixed_function_parameters(
+    const std::vector<const CppAstNode *> & parameters,
+    std::size_t first_index)
+{
+  std::size_t count = 0;
+  for(std::size_t i = first_index; i < parameters.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameters[i])) {
+      ++count;
+    }
+  }
+  return count;
+}
+
+bool infer_function_parameter_value_pack_size(SemanticContext & ctx,
+                                              Scope & function_scope,
+                                              const FunctionBinding & binding,
+                                              const std::vector<const CppAstNode *> & parameters,
+                                              std::size_t parameter_index,
+                                              std::size_t binding_param_index,
+                                              const std::string & pack_name,
+                                              std::size_t & out_pack_size)
+{
+  std::map<std::string, std::size_t>::const_iterator found_size =
+      function_scope.named_pack_sizes.find(pack_name);
+  if(found_size != function_scope.named_pack_sizes.end()) {
+    out_pack_size = found_size->second;
+    return true;
+  }
+
+  if(infer_function_parameter_pack_size_from_type_bindings(ctx,
+                                                           function_scope,
+                                                           *parameters[parameter_index],
+                                                           out_pack_size)) {
+    return true;
+  }
+
+  const std::size_t remaining_fixed_params =
+      count_remaining_fixed_function_parameters(parameters, parameter_index + 1);
+  if(binding.params.size() < binding_param_index + remaining_fixed_params) {
+    return false;
+  }
+  out_pack_size = binding.params.size() - binding_param_index - remaining_fixed_params;
+  return true;
+}
+
+std::vector<const CppAstNode *> function_parameter_declarations(
+    const CppAstNode & parameter_clause)
+{
+  std::vector<const CppAstNode *> parameters;
+  for(size_t i = 0; i < parameter_clause.children.size(); ++i) {
+    if(parameter_clause.children[i].kind == CppAstKind::parameter_declaration) {
+      parameters.push_back(&parameter_clause.children[i]);
+    }
+  }
+  return parameters;
+}
+
+/*
+    The function-body output path sees already-instantiated function parameters,
+    including any implicit object parameter. Walk the source parameter clause in
+    lockstep with those concrete bindings so a pack may be followed by ordinary
+    parameters, e.g. Args... args, Token token.
+*/
+void bind_function_parameter_pack_sizes(SemanticContext & ctx,
+                                        Scope & function_scope,
+                                        const FunctionBinding & binding)
+{
+  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
+  if(!parameter_clause) {
     return;
   }
 
-  const std::string pack_name =
-      pack_parameter_analysis::parameter_declaration_name(*parameter_nodes.back());
-  if(pack_name.empty()) {
+  const std::vector<const CppAstNode *> parameters =
+      function_parameter_declarations(*parameter_clause);
+  if(parameters.empty()) {
     return;
   }
 
-  const std::size_t pack_size = binding.params.size() - explicit_offset - fixed_param_count;
-  for(std::size_t i = 0; i < pack_size; ++i) {
-    const std::size_t index = explicit_offset + fixed_param_count + i;
-    binding.parameter_aliases[index] = pack_value_alias_name(pack_name, i);
+  std::size_t binding_param_index = binding_explicit_parameter_offset(binding);
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameters[i])) {
+      if(binding_param_index < binding.params.size()) {
+        ++binding_param_index;
+      }
+      continue;
+    }
+
+    const std::string pack_name =
+        pack_parameter_analysis::parameter_declaration_name(*parameters[i]);
+    if(pack_name.empty()) {
+      return;
+    }
+
+    std::size_t pack_size = 0;
+    if(!infer_function_parameter_value_pack_size(ctx,
+                                                 function_scope,
+                                                 binding,
+                                                 parameters,
+                                                 i,
+                                                 binding_param_index,
+                                                 pack_name,
+                                                 pack_size)) {
+      return;
+    }
+    semantic_scope_mutation::bind_named_pack_size(function_scope, pack_name, pack_size);
+    binding_param_index += pack_size;
+  }
+}
+
+void bind_function_parameter_value_packs(SemanticContext & ctx,
+                                         Scope & function_scope,
+                                         const FunctionBinding & binding)
+{
+  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
+  if(!parameter_clause) {
+    return;
+  }
+
+  const std::vector<const CppAstNode *> parameters =
+      function_parameter_declarations(*parameter_clause);
+  if(parameters.empty()) {
+    return;
+  }
+
+  std::size_t binding_param_index = binding_explicit_parameter_offset(binding);
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(!parameter_declaration_has_pack(*parameters[i])) {
+      if(binding_param_index < binding.params.size()) {
+        ++binding_param_index;
+      }
+      continue;
+    }
+
+    const std::string pack_name =
+        pack_parameter_analysis::parameter_declaration_name(*parameters[i]);
+    if(pack_name.empty()) {
+      return;
+    }
+
+    std::size_t pack_size = 0;
+    if(!infer_function_parameter_value_pack_size(ctx,
+                                                 function_scope,
+                                                 binding,
+                                                 parameters,
+                                                 i,
+                                                 binding_param_index,
+                                                 pack_name,
+                                                 pack_size)) {
+      return;
+    }
+    if(binding.params.size() < binding_param_index + pack_size) {
+      return;
+    }
+
+    std::vector<ValueBinding> pack_bindings;
+    pack_bindings.reserve(pack_size);
+    for(std::size_t j = 0; j < pack_size; ++j) {
+      const TypePtr & element_type = binding.params[binding_param_index + j].second;
+      const std::string alias_name = pack_value_alias_name(pack_name, j);
+      pack_bindings.push_back(ValueBinding(ValueBinding::VK_PARAMETER, alias_name, element_type));
+    }
+    semantic_scope_mutation::bind_value_pack(function_scope, pack_name, pack_bindings);
+    binding_param_index += pack_size;
   }
 }
 
@@ -897,110 +1105,6 @@ void require_function_parameter_abi_output(SemanticContext & ctx,
       continue;
     }
   }
-}
-
-void bind_function_parameter_pack_sizes(SemanticContext & ctx,
-                                        Scope & function_scope,
-                                        const FunctionBinding & binding)
-{
-  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
-  if(!parameter_clause) {
-    return;
-  }
-
-  std::vector<const CppAstNode *> parameters;
-  for(size_t i = 0; i < parameter_clause->children.size(); ++i) {
-    if(parameter_clause->children[i].kind == CppAstKind::parameter_declaration) {
-      parameters.push_back(&parameter_clause->children[i]);
-    }
-  }
-  if(parameters.empty() || !parameter_declaration_has_pack(*parameters.back())) {
-    return;
-  }
-
-  const std::string pack_name =
-      pack_parameter_analysis::parameter_declaration_name(*parameters.back());
-  if(pack_name.empty()) {
-    return;
-  }
-
-  std::size_t pack_size = 0;
-  if(infer_function_parameter_pack_size_from_type_bindings(ctx,
-                                                           function_scope,
-                                                           *parameters.back(),
-                                                           pack_size)) {
-    semantic_scope_mutation::bind_named_pack_size(function_scope, pack_name, pack_size);
-    return;
-  }
-
-  const std::size_t explicit_param_offset = binding_explicit_parameter_offset(binding);
-  const std::size_t fixed_param_count = parameters.size() - 1;
-  if(binding.params.size() < explicit_param_offset + fixed_param_count) {
-    return;
-  }
-  semantic_scope_mutation::bind_named_pack_size(
-      function_scope,
-      pack_name,
-      binding.params.size() - explicit_param_offset - fixed_param_count);
-}
-
-void bind_function_parameter_value_packs(SemanticContext & ctx,
-                                         Scope & function_scope,
-                                         const FunctionBinding & binding)
-{
-  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
-  if(!parameter_clause) {
-    return;
-  }
-
-  std::vector<const CppAstNode *> parameters;
-  for(size_t i = 0; i < parameter_clause->children.size(); ++i) {
-    if(parameter_clause->children[i].kind == CppAstKind::parameter_declaration) {
-      parameters.push_back(&parameter_clause->children[i]);
-    }
-  }
-  if(parameters.empty() || !parameter_declaration_has_pack(*parameters.back())) {
-    return;
-  }
-
-  const std::string pack_name =
-      pack_parameter_analysis::parameter_declaration_name(*parameters.back());
-  if(pack_name.empty()) {
-    return;
-  }
-
-  std::size_t pack_size = 0;
-  std::map<std::string, std::size_t>::const_iterator found_size =
-      function_scope.named_pack_sizes.find(pack_name);
-  if(found_size != function_scope.named_pack_sizes.end()) {
-    pack_size = found_size->second;
-  } else if(infer_function_parameter_pack_size_from_type_bindings(ctx,
-                                                                  function_scope,
-                                                                  *parameters.back(),
-                                                                  pack_size)) {
-  } else {
-    const std::size_t explicit_param_offset = binding_explicit_parameter_offset(binding);
-    const std::size_t fixed_param_count = parameters.size() - 1;
-    if(binding.params.size() < explicit_param_offset + fixed_param_count) {
-      return;
-    }
-    pack_size = binding.params.size() - explicit_param_offset - fixed_param_count;
-  }
-
-  const std::size_t explicit_param_offset = binding_explicit_parameter_offset(binding);
-  const std::size_t fixed_param_count = parameters.size() - 1;
-  if(binding.params.size() < explicit_param_offset + fixed_param_count + pack_size) {
-    return;
-  }
-  std::vector<ValueBinding> pack_bindings;
-  pack_bindings.reserve(pack_size);
-  for(std::size_t i = 0; i < pack_size; ++i) {
-    const TypePtr & element_type =
-        binding.params[explicit_param_offset + fixed_param_count + i].second;
-    const std::string alias_name = pack_value_alias_name(pack_name, i);
-    pack_bindings.push_back(ValueBinding(ValueBinding::VK_PARAMETER, alias_name, element_type));
-  }
-  semantic_scope_mutation::bind_value_pack(function_scope, pack_name, pack_bindings);
 }
 
 bool variable_declaration_is_definition(const CppAstNode & specifiers,
@@ -1173,6 +1277,25 @@ bool is_complete_class_value_type_for_output(const TypePtr & type)
          base->named_key.compare(0, 6, "union ") == 0;
 }
 
+ClassInfo * complete_class_object_type_for_output(SemanticContext & ctx,
+                                                  const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base || base->kind != Type::TK_NAMED ||
+     (base->named_key.compare(0, 6, "class ") != 0 &&
+      base->named_key.compare(0, 7, "struct ") != 0 &&
+      base->named_key.compare(0, 6, "union ") != 0)) {
+    return nullptr;
+  }
+
+  ClassInfo * info = ctx.class_info_for_type(base);
+  if(info && info->complete) {
+    return info;
+  }
+  info = ctx.complete_class_type(base);
+  return info && info->complete ? info : nullptr;
+}
+
 bool is_indirect_value_type_for_output(const TypePtr & type)
 {
   return is_complete_class_value_type_for_output(type);
@@ -1254,7 +1377,9 @@ void require_nontrivial_destructor_definition(SemanticContext & ctx,
 void require_temporary_destructor_definition(SemanticContext & ctx,
                                              ClassInfo & info)
 {
-  if(FunctionBinding * dtor = find_destructor_binding(info)) {
+  ensure_implicit_special_members(ctx, info);
+  FunctionBinding * dtor = find_destructor_binding(info);
+  if(dtor) {
     ctx.require_function_definition(dtor, OutputReason::SyntheticDependency);
   }
 }
@@ -1982,6 +2107,14 @@ void collect_required_storage_value_to_target_support(SemanticContext & ctx,
   }
 
   if(is_reference_type(effective_target_type)) {
+    if(node.value_category != CVC_LVALUE &&
+       !is_reference_type(effective_node_type)) {
+      ClassInfo * info =
+          complete_class_object_type_for_output(ctx, effective_node_type);
+      if(info) {
+        require_temporary_destructor_definition(ctx, *info);
+      }
+    }
     return;
   }
 
@@ -2014,20 +2147,34 @@ void collect_required_call_argument_materialization_support(SemanticContext & ct
   }
 
   FunctionBinding * binding = find_direct_call_target_binding(ctx, node.children[0]);
-  if(!binding) {
-    return;
+  const size_t arg_count = node.children.size() - 1;
+  Scope * parameter_resolution_scope = resolution_scope;
+  std::vector<TypePtr> indirect_param_types;
+  const std::vector<std::pair<std::string, TypePtr> > * binding_params = nullptr;
+  if(binding) {
+    binding_params = &binding->params;
+    if(Scope * binding_scope = function_output_resolution_scope(binding)) {
+      parameter_resolution_scope = binding_scope;
+    }
+  } else {
+    TypePtr target_type = strip_top_level_cv(remove_reference_type(node.children[0].semantic_type));
+    if(target_type && target_type->kind == Type::TK_POINTER) {
+      target_type = strip_top_level_cv(target_type->inner);
+    }
+    if(!target_type || target_type->kind != Type::TK_FUNCTION) {
+      return;
+    }
+    indirect_param_types = target_type->params;
   }
 
-  const size_t arg_count = node.children.size() - 1;
-  const size_t param_count = binding->params.size();
+  const size_t param_count =
+      binding_params ? binding_params->size() : indirect_param_types.size();
   const size_t count = min(arg_count, param_count);
-  Scope * parameter_resolution_scope = function_output_resolution_scope(binding);
-  if(!parameter_resolution_scope) {
-    parameter_resolution_scope = resolution_scope;
-  }
   for(size_t i = 0; i < count; ++i) {
+    const TypePtr & param_type =
+        binding_params ? (*binding_params)[i].second : indirect_param_types[i];
     collect_required_storage_value_to_target_support(ctx,
-                                                     binding->params[i].second,
+                                                     param_type,
                                                      node.children[i + 1],
                                                      parameter_resolution_scope);
   }
@@ -2050,17 +2197,6 @@ void collect_required_parameter_materialization_support(SemanticContext & ctx,
       continue;
     }
 
-    FunctionBinding * copy = find_copy_constructor_binding(*info);
-    if(!copy && !is_trivially_copy_constructible_type(ctx, param_type)) {
-      copy = ctx.ensure_implicit_copy_constructor(*info);
-    }
-    if(copy) {
-      if(special_member_constructor_can_use_host_object_symbol(ctx, *copy)) {
-        require_host_constructor_declaration(ctx, copy);
-      } else if(!special_member_binding_has_trivial_lifecycle_output(ctx, *copy)) {
-        ctx.require_function_definition(copy, OutputReason::SyntheticDependency);
-      }
-    }
     if(FunctionBinding * dtor = find_destructor_binding(*info)) {
       if(!special_member_binding_has_trivial_lifecycle_output(ctx, *dtor)) {
         ctx.require_function_definition(dtor, OutputReason::SyntheticDependency);
@@ -2484,8 +2620,15 @@ const CppAstNode * function_binding_decl_specifiers(const FunctionBinding & bind
 
 bool function_binding_is_inline(const FunctionBinding & binding)
 {
+  if(binding.is_inline) {
+    return true;
+  }
   const CppAstNode * specifiers = function_binding_decl_specifiers(binding);
-  return specifiers && decl_spec_contains_token(*specifiers, KW_INLINE);
+  if(specifiers && decl_spec_contains_token(*specifiers, KW_INLINE)) {
+    return true;
+  }
+  return binding.declaration_node != binding.definition_node &&
+         node_decl_spec_contains_token(binding.declaration_node, KW_INLINE);
 }
 
 bool node_decl_spec_contains_token(const CppAstNode * node,
@@ -2562,6 +2705,7 @@ symbol_linkage::SymbolLinkage output_function_symbol_linkage(const FunctionBindi
       (linkage_template_identity || !explicit_specialization_binding)) ||
      binding_defines_inline_like_class_member(binding) ||
      binding_defines_inline_like_friend(binding) ||
+     binding.is_inline ||
      binding.is_constexpr ||
      node_decl_spec_contains_token(declaration, KW_INLINE) ||
      node_decl_spec_contains_token(declaration, KW_CONSTEXPR)) {
@@ -2678,13 +2822,34 @@ bool is_unrequired_constexpr_static_member_definition(const ValueBinding & bindi
           node_decl_spec_contains_token(binding.definition_node, KW_CONSTEXPR));
 }
 
+bool is_static_const_integral_member_with_initializer(SemanticContext & ctx,
+                                                      const ValueBinding & binding)
+{
+  if(!binding.owner_class ||
+     binding.kind != ValueBinding::VK_VARIABLE ||
+     !binding.constant_initializer ||
+     !type_is_const_object(binding.type)) {
+    return false;
+  }
+
+  TypePtr base = strip_top_level_cv(remove_reference_type(binding.type));
+  if(base && is_integral_type(base)) {
+    return true;
+  }
+  if(base && base->kind == Type::TK_NAMED) {
+    ClassInfo * info = ctx.class_info_for_type(base);
+    return info && info->class_kind == "enum";
+  }
+  return false;
+}
+
 void analyze_required_class_static_member_output(SemanticContext & ctx,
                                                  OutputState & state,
                                                  ClassInfo & info,
                                                  DumpNode & out)
 {
   (void)state;
-  if(!template_api::class_has_source_template_identity(&info)) {
+  if(!template_api::class_has_template_identity(&info)) {
     info.has_late_required_static_member_output = false;
     info.late_required_static_member_output_queued = false;
     return;
@@ -2698,11 +2863,21 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
         info.source_capture_header_instantiation_tracked &&
         witness::source_capture_enabled(ctx.template_witness_context()) &&
         !has_output_requirement(binding.output_requirements, ORK_DEFINITION);
+    const bool witness_only_unrequired_integral_constant =
+        witness::source_capture_enabled(ctx.template_witness_context()) &&
+        !class_has_required_member_output(info) &&
+        binding.name != "value" &&
+        !binding.witness_member_value_instantiation_noted &&
+        !binding.is_explicit_specialization &&
+        !template_api::class_is_explicit_specialization(&info) &&
+        !has_output_requirement(binding.output_requirements, ORK_DEFINITION) &&
+        is_static_const_integral_member_with_initializer(ctx, binding);
     if(binding.kind != ValueBinding::VK_VARIABLE ||
        binding.owner_class != &info ||
        !binding.definition_node ||
        binding.definition_output_emitted ||
        source_capture_header_static_member_output ||
+       witness_only_unrequired_integral_constant ||
        is_unrequired_constexpr_static_member_definition(binding)) {
       if(source_capture_header_static_member_output &&
          binding.kind == ValueBinding::VK_VARIABLE &&
@@ -2764,11 +2939,26 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
 
     long long constant_value = 0;
     constant_eval::ConstexprValue constexpr_value;
+    Scope * initializer_scope =
+        binding.constant_initializer_scope ?
+            binding.constant_initializer_scope :
+            info.member_scope.get();
+    const bool class_lifetime_type =
+        namespace_variable_type_has_class_lifetime(ctx, binding.type);
+    const bool needs_default_lifetime_actions =
+        class_lifetime_type &&
+        !binding.constant_initializer &&
+        (!semantic_class_model::is_trivially_default_constructible_type_for_host_abi(
+             ctx,
+             binding.type) ||
+         !semantic_class_model::is_trivially_destructible_type_for_host_abi(
+             ctx,
+             binding.type));
     if(binding.constant_initializer &&
-       binding.constant_initializer_scope &&
+       initializer_scope &&
        !ctx.complete_class_type(binding.type) &&
        !is_int128_integral_type(binding.type) &&
-       ctx.evaluate_initializer_constant_value(*binding.constant_initializer_scope,
+       ctx.evaluate_initializer_constant_value(*initializer_scope,
                                                *binding.constant_initializer,
                                                binding.type,
                                                constexpr_value) &&
@@ -2778,11 +2968,23 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
       literal_node.semantic_type = binding.type;
       literal_node.value_category = CVC_PRVALUE;
       var_node.children.push_back(std::move(literal_node));
+    } else if(!var_node.is_extern_declaration &&
+              initializer_scope &&
+              class_lifetime_type &&
+              (binding.constant_initializer || needs_default_lifetime_actions)) {
+      semantic_lifetime::analyze_object_lifetime_actions(
+          ctx,
+          *initializer_scope,
+          binding.name,
+          binding.type,
+          binding.constant_initializer,
+          var_node,
+          ctx.source_location_for_name_in_node(*binding.definition_node, binding.name));
     } else if(binding.constant_initializer &&
-              binding.constant_initializer_scope &&
+              initializer_scope &&
               !var_node.is_extern_declaration) {
       semantic_lifetime::analyze_initializer(ctx,
-                                             *binding.constant_initializer_scope,
+                                             *initializer_scope,
                                              binding.type,
                                              *binding.constant_initializer,
                                              var_node);
@@ -2838,7 +3040,8 @@ bool should_emit_free_function_definition(SemanticContext & ctx,
   const bool lazy_inline_free_definition =
       !binding.owner_class &&
       !binding.lexical_access_class &&
-      (node_decl_spec_contains_token(declaration, KW_INLINE) ||
+      (binding.is_inline ||
+       node_decl_spec_contains_token(declaration, KW_INLINE) ||
        node_decl_spec_contains_token(declaration, KW_CONSTEXPR));
   if(binding.is_deleted) {
     return false;
@@ -3267,6 +3470,185 @@ string function_binding_output_lookup_name(const FunctionBinding & binding)
       binding.display_name;
 }
 
+bool function_binding_has_output_definition_source(const FunctionBinding & binding)
+{
+  return binding.has_definition ||
+         binding.definition_node ||
+         binding.body ||
+         (binding.source_template && binding.source_template->body);
+}
+
+Scope * root_scope_for_output_lookup(Scope * scope)
+{
+  Scope * current = scope;
+  while(current && current->parent) {
+    current = current->parent;
+  }
+  return current;
+}
+
+Scope * qualified_function_namespace_scope_for_output_lookup(
+    FunctionBinding & binding)
+{
+  Scope * seed = binding.declaration_scope;
+  if(!seed && binding.source_template) {
+    seed = binding.source_template->declaring_scope;
+  }
+  Scope * root = root_scope_for_output_lookup(seed);
+  if(!root) {
+    return nullptr;
+  }
+
+  QualifiedName qualified;
+  if(!function_binding_qualified_name_syntax_for_symbol(binding, qualified)) {
+    return nullptr;
+  }
+  if(qualified.qualifiers.empty()) {
+    return nullptr;
+  }
+
+  QualifiedName namespace_name;
+  namespace_name.rooted = true;
+  if(qualified.qualifiers.size() == 1) {
+    namespace_name.name = qualified.qualifiers[0];
+  } else {
+    namespace_name.qualifiers.assign(qualified.qualifiers.begin(),
+                                     qualified.qualifiers.end() - 1);
+    namespace_name.name = qualified.qualifiers.back();
+  }
+  return semantic_lookup::lookup_namespace_name(*root, namespace_name);
+}
+
+bool function_binding_types_match_for_output(const FunctionBinding & candidate,
+                                             const FunctionBinding & binding)
+{
+  return candidate.ref_qualifier == binding.ref_qualifier &&
+         callsemantic::types_equivalent_for_member_binding(candidate.type,
+                                                           binding.type);
+}
+
+bool function_template_parameter_shapes_match(const FunctionTemplateDecl & candidate,
+                                              const FunctionTemplateDecl & source)
+{
+  if(candidate.parameters.size() != source.parameters.size()) {
+    return false;
+  }
+  for(size_t i = 0; i < candidate.parameters.size(); ++i) {
+    if(candidate.parameters[i].kind != source.parameters[i].kind ||
+       candidate.parameters[i].parameter_pack != source.parameters[i].parameter_pack) {
+      return false;
+    }
+  }
+  return true;
+}
+
+FunctionBinding * find_defined_namespace_function_binding_for_output(
+    FunctionBinding & binding,
+    Scope & namespace_scope,
+    const string & lookup_name)
+{
+  const vector<FunctionBinding *> * found =
+      find_direct_function_set(namespace_scope, lookup_name);
+  if(!found) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < found->size(); ++i) {
+    FunctionBinding * candidate = (*found)[i];
+    if(candidate == &binding ||
+       candidate->owner_class ||
+       !function_binding_has_output_definition_source(*candidate) ||
+       !function_binding_types_match_for_output(*candidate, binding)) {
+      continue;
+    }
+    return candidate;
+  }
+  return nullptr;
+}
+
+FunctionBinding * materialize_defined_namespace_function_template_for_output(
+    SemanticContext & ctx,
+    FunctionBinding & binding,
+    Scope & namespace_scope,
+    const string & lookup_name)
+{
+  if(!binding.source_template) {
+    return nullptr;
+  }
+  const vector<FunctionTemplateDecl *> * templates =
+      find_direct_function_template_set(namespace_scope, lookup_name);
+  if(!templates) {
+    return nullptr;
+  }
+
+  for(size_t i = 0; i < templates->size(); ++i) {
+    FunctionTemplateDecl * candidate_template = (*templates)[i];
+    if(!candidate_template ||
+       candidate_template == binding.source_template ||
+       !candidate_template->body ||
+       !function_template_parameter_shapes_match(*candidate_template,
+                                                 *binding.source_template)) {
+      continue;
+    }
+
+    FunctionBinding * candidate = nullptr;
+    try {
+      candidate =
+          semantic_template_function::acquire_function_template_binding(
+              ctx,
+              *candidate_template,
+              binding.instantiation_arguments,
+              &namespace_scope,
+              binding.instantiation_pack_sizes.empty() ?
+                  nullptr :
+                  &binding.instantiation_pack_sizes,
+              true,
+              nullptr);
+    } catch(const TemplateSubstitutionFailure &) {
+      continue;
+    }
+    if(candidate == &binding ||
+       !candidate ||
+       candidate->owner_class ||
+       !function_binding_has_output_definition_source(*candidate) ||
+       !function_binding_types_match_for_output(*candidate, binding)) {
+      continue;
+    }
+    return candidate;
+  }
+  return nullptr;
+}
+
+FunctionBinding * find_defined_namespace_function_for_output_binding(
+    SemanticContext & ctx,
+    FunctionBinding & binding,
+    const string & lookup_name)
+{
+  if(binding.owner_class ||
+     lookup_name.empty() ||
+     !binding.source_template ||
+     binding.source_template->body ||
+     binding.has_definition ||
+     binding.definition_node ||
+     binding.body) {
+    return nullptr;
+  }
+  Scope * namespace_scope =
+      qualified_function_namespace_scope_for_output_lookup(binding);
+  if(!namespace_scope) {
+    return nullptr;
+  }
+  if(FunctionBinding * candidate =
+         find_defined_namespace_function_binding_for_output(binding,
+                                                            *namespace_scope,
+                                                            lookup_name)) {
+    return candidate;
+  }
+  return materialize_defined_namespace_function_template_for_output(ctx,
+                                                                   binding,
+                                                                   *namespace_scope,
+                                                                   lookup_name);
+}
+
 string canonical_variable_output_name(const string & parsed_name,
                                       const ValueBinding * binding)
 {
@@ -3665,13 +4047,18 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
   ScopedDefinitionOutput output_guard(binding.definition_output_in_progress,
                                       binding.definition_output_emitted);
 
-  Scope * parent_scope = binding.is_method ?
-                             (binding.declaration_scope ?
-                                  binding.declaration_scope :
-                                  binding.owner_class->member_scope.get()) :
-                             (binding.declaration_scope ?
-                                  binding.declaration_scope :
-                                  &scope);
+  Scope * parent_scope = nullptr;
+  if(binding.is_method) {
+    parent_scope = binding.declaration_scope ?
+                       binding.declaration_scope :
+                       binding.owner_class->member_scope.get();
+  } else if(binding_defines_inline_like_friend(binding) &&
+            binding.lexical_access_class &&
+            binding.lexical_access_class->member_scope) {
+    parent_scope = binding.lexical_access_class->member_scope.get();
+  } else {
+    parent_scope = binding.declaration_scope ? binding.declaration_scope : &scope;
+  }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
     trace << "emit-binding-scope binding=" << static_cast<void *>(&binding)
@@ -3980,7 +4367,10 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
   output_guard.finish();
   binding.output_emitted = true;
   binding.cached_body_output.reset();
-  if(binding_has_out_of_class_member_definition(binding)) {
+  if(binding_has_out_of_class_member_definition(binding) ||
+     (binding.owner_class &&
+      binding.owner_class->is_polymorphic &&
+      (binding.is_constructor || binding.is_destructor))) {
     analyze_required_vtable_output(ctx, state, *binding.owner_class, out, &binding);
   }
 }
@@ -4338,10 +4728,20 @@ void append_vtable_output_node(SemanticContext & ctx,
     if(object_symbol.empty()) {
       throw logic_error("failed to mangle vtable symbol for " + describe_type(rtti_base));
     }
+    string internal_symbol =
+        symbol_linkage::internal_symbol_from_name(table.key + "::vtable");
+    if(symbol_linkage::type_needs_structural_internal_symbol(rtti_base)) {
+      const string structural_symbol =
+          symbol_linkage::internal_symbol_from_type_encoding("__vtable_type",
+                                                             rtti_base);
+      if(!structural_symbol.empty()) {
+        internal_symbol = structural_symbol;
+      }
+    }
     set_dump_symbol(
         table_node,
         symbol_linkage::make_object_symbol_identity(
-            symbol_linkage::internal_symbol_from_name(table.key + "::vtable"),
+            internal_symbol,
             object_symbol,
             primary_vtable_linkage));
   }
@@ -4485,19 +4885,17 @@ void analyze_vtable_output(SemanticContext & ctx,
   collect_construction_vtables(ctx, info, construction_tables);
   for(size_t i = 0; i < construction_tables.size(); ++i) {
     const VTableInfo & table = construction_tables[i];
-    const string object_symbol =
-        symbol_linkage::construction_vtable_object_symbol(info,
-                                                          table.view_offset,
-                                                          table.view_type ?
-                                                              *table.view_type :
-                                                              info);
-    if(object_symbol.empty()) {
-      throw logic_error("failed to mangle construction vtable symbol for " + info.qualified_name);
-    }
+    // Each construction-vtable section gets a distinct internal symbol derived
+    // from its (dynamic, base, offset, section) key.  The Itanium `_ZTC`
+    // mangling keys only on (dynamic, offset, base) and so collides between a
+    // base's secondary section and a deeper base's primary section in a
+    // multi-level diamond; an internal per-section symbol avoids that while
+    // the recursive VTT references the same key.  (Hosted/cross-module interop,
+    // which needs the canonical `_ZTC` group symbol, also requires modeling the
+    // external base vtable layout and is handled separately.)
     const symbol_linkage::SymbolIdentity table_symbol =
-        symbol_linkage::make_object_symbol_identity(
+        symbol_linkage::make_internal_symbol_identity(
             symbol_linkage::internal_symbol_from_name(table.key + "::vtable"),
-            object_symbol,
             symbol_linkage::SL_WEAK);
     append_vtable_output_node(ctx,
                               state,
@@ -4521,10 +4919,14 @@ void analyze_class_output_from_info_impl(SemanticContext & ctx,
   if(node.kind == CppAstKind::class_forward_declaration) {
     return;
   }
+  const bool source_capture_output =
+      witness::source_capture_enabled(ctx.template_witness_context());
+  const bool has_required_or_friend_output =
+      class_has_required_output(info) ||
+      class_has_immediate_friend_definition_output(ctx, info, node);
   if(!info.complete &&
-     !witness::source_capture_enabled(ctx.template_witness_context()) &&
-     !class_has_required_output(info) &&
-     !class_has_immediate_friend_definition_output(ctx, info, node)) {
+     !source_capture_output &&
+     !has_required_or_friend_output) {
     return;
   }
   if(!info.complete) {
@@ -4885,13 +5287,26 @@ void analyze_special_member_definition(SemanticContext & ctx,
     }
 
     FunctionBinding * binding = nullptr;
-    if(!ctx.resolve_out_of_class_method_binding(scope,
-                                                node.value,
-                                                declared_type,
-                                                syntax.is_const_method,
-                                                syntax.is_volatile_method,
-                                                syntax.ref_qualifier,
-                                                binding)) {
+    const CppAstNode * identifier = find_child(*declarator, CppAstKind::identifier);
+    const QualifiedName * qualified_name =
+        identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
+    const bool resolved =
+        qualified_name ?
+            ctx.resolve_out_of_class_method_binding(scope,
+                                                    *qualified_name,
+                                                    declared_type,
+                                                    syntax.is_const_method,
+                                                    syntax.is_volatile_method,
+                                                    syntax.ref_qualifier,
+                                                    binding) :
+            ctx.resolve_out_of_class_method_binding(scope,
+                                                    node.value,
+                                                    declared_type,
+                                                    syntax.is_const_method,
+                                                    syntax.is_volatile_method,
+                                                    syntax.ref_qualifier,
+                                                    binding);
+    if(!resolved) {
       throw logic_error("missing conversion operator binding");
     }
     analyze_function_binding_output_impl(ctx, state, scope, *binding, out);
@@ -5084,6 +5499,36 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
         alias_node.semantic_type = type;
         out.children.push_back(std::move(alias_node));
       } else if(type && strip_top_level_cv(type)->kind == Type::TK_FUNCTION) {
+        if(single_special_initializer(initializer)) {
+          FunctionBinding * method_binding = nullptr;
+          const CppAstNode * function_identifier =
+              find_descendant_kind(init_decl.children[0], CppAstKind::identifier);
+          string out_of_class_lookup_name = name;
+          if(function_identifier &&
+             function_identifier->value.find("::") != string::npos &&
+             function_identifier->value.find("operator") != string::npos &&
+             out_of_class_lookup_name.find("operator") == string::npos) {
+            out_of_class_lookup_name = function_identifier->value;
+          }
+          if(ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
+                 scope,
+                 out_of_class_lookup_name,
+                 function_identifier,
+                 type,
+                 declarator_is_const_method(init_decl.children[0]),
+                 declarator_is_volatile_method(init_decl.children[0]),
+                 declarator_ref_qualifier(init_decl.children[0]),
+                 method_binding)) {
+            analyze_function_binding_output_impl(ctx,
+                                                 state,
+                                                 method_binding->declaration_scope ?
+                                                     *method_binding->declaration_scope :
+                                                     scope,
+                                                 *method_binding,
+                                                 out);
+            continue;
+          }
+        }
         FunctionBinding * binding = rebound_function_binding ?
             rebound_function_binding :
             find_namespace_function_binding_by_node(scope, name, init_decl);
@@ -5271,7 +5716,10 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
     analyze_function_definition(ctx, state, scope, node, out);
     return;
   }
-  if(node.kind == CppAstKind::special_member_definition) {
+  if(node.kind == CppAstKind::special_member_definition ||
+     (node.kind == CppAstKind::special_member_declaration &&
+      !ctx.is_conversion_function_name(node.value) &&
+      find_child_kind(node, CppAstKind::special_definition))) {
     analyze_special_member_definition(ctx, state, scope, node, out);
     return;
   }
@@ -5547,9 +5995,12 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
   }
   const string lookup_name =
       function_binding_output_lookup_name(*binding);
+  const bool class_method_binding =
+      binding->owner_class &&
+      (binding->is_method || binding->is_constructor || binding->is_destructor);
 
   FunctionBinding * resolved = nullptr;
-  if(binding->owner_class && !lookup_name.empty()) {
+  if(class_method_binding && !lookup_name.empty()) {
     resolved = ctx.find_exact_class_function(*binding->owner_class,
                                              lookup_name,
                                              binding->type,
@@ -5563,7 +6014,10 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
   }
 
   FunctionBinding * upgraded = nullptr;
-  if(resolved->owner_class) {
+  const bool resolved_class_method =
+      resolved->owner_class &&
+      (resolved->is_method || resolved->is_constructor || resolved->is_destructor);
+  if(resolved_class_method) {
     if(!lookup_name.empty()) {
       upgraded = template_api::find_defined_class_function_matching_template_identity(
           ctx,
@@ -5571,7 +6025,7 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
           lookup_name,
           *resolved);
     }
-  } else if(resolved->declaration_scope) {
+  } else if(!resolved->owner_class && resolved->declaration_scope) {
     const string lookup_name = function_binding_output_lookup_name(*resolved);
     if(!lookup_name.empty()) {
       upgraded = template_api::find_defined_function_matching_template_identity(
@@ -5581,11 +6035,20 @@ FunctionBinding * resolve_output_function_binding(SemanticContext & ctx,
           *resolved);
     }
   }
+  FunctionBinding * namespace_upgraded = nullptr;
+  if(!resolved->owner_class) {
+    namespace_upgraded =
+        find_defined_namespace_function_for_output_binding(ctx,
+                                                           *resolved,
+                                                           lookup_name);
+  }
   if(upgraded &&
      upgraded != resolved &&
      (upgraded->declaration_node || upgraded->definition_node || upgraded->body ||
       upgraded->has_definition)) {
     resolved = upgraded;
+  } else if(namespace_upgraded) {
+    resolved = namespace_upgraded;
   } else if(parser_trace::enabled("output.require") &&
             resolved->owner_class &&
             resolved->name.find("operator[]") != std::string::npos &&
@@ -5939,7 +6402,8 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
         binding_owner = canonicalize_output_class_info(ctx, binding_owner);
         if(binding &&
            binding_owner &&
-        binding->owner_class != binding_owner &&
+           binding->owner_class != binding_owner &&
+           (binding->is_method || binding->is_constructor || binding->is_destructor) &&
            !function_binding_output_lookup_name(*binding).empty()) {
           const string owner_lookup_name = function_binding_output_lookup_name(*binding);
           FunctionBinding * owner_binding =

@@ -49,17 +49,23 @@ global @D____view__V__80__vtable [storage=readonly, binding=weak, object=@D____v
   ptr addr @__rtti_struct_D
   ptr addr @V__anchor
 }
-global @D____construction__B__0__vtable [storage=readonly, binding=weak, object=_ZTC1D0_1B] = {
+global @D____construction__B__0__s0__vtable [storage=readonly, binding=weak, object=@D____construction__B__0__s0__vtable] = {
   i64 80
   i64 0
   ptr addr @__rtti_struct_B
   ptr addr @B__banchor
   i64 0
 }
+global @D____construction__B__0__s1__vtable [storage=readonly, binding=weak, object=@D____construction__B__0__s1__vtable] = {
+  i64 0
+  i64 -80
+  ptr addr @__rtti_struct_V
+  ptr addr @V__anchor
+}
 global @D____vtt [storage=readonly, binding=weak, object=_ZTT1D] = {
   ptr addr @D__vtable + 24
-  ptr addr @D____construction__B__0__vtable + 24
-  ptr addr @D____view__V__80__vtable + 24
+  ptr addr @D____construction__B__0__s0__vtable + 24
+  ptr addr @D____construction__B__0__s1__vtable + 24
   ptr addr @D____view__V__80__vtable + 24
 }
 global @B__vtable [storage=readonly, binding=weak, object=_ZTV1B] = {
@@ -163,7 +169,7 @@ function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] 
     store ptr %t15, %t13
     return void
 }
-function @D__danchor(%this : ptr, %__vbptr0 : ptr) -> i32 [binding=weak, object=_ZN1D7danchorEv] {
+function @D__danchor(%this : ptr) -> i32 [binding=weak, object=_ZN1D7danchorEv] {
   slot $this : ptr
 
   block ^entry:
@@ -200,7 +206,7 @@ function @Holder__read(%this : ptr) -> i32 [binding=weak, object=_ZN6Holder4read
     %t8 = call i32 @read_value(%t3, %t7)
     return i32 %t8
 }
-function @B__banchor(%this : ptr, %__vbptr0 : ptr) -> i32 [binding=weak, object=_ZN1B7banchorEv] {
+function @B__banchor(%this : ptr) -> i32 [binding=weak, object=_ZN1B7banchorEv] {
   slot $this : ptr
 
   block ^entry:

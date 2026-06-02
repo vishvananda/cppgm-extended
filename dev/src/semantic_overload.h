@@ -50,6 +50,12 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
                                     const CppAstNode * name_node = nullptr,
                                     bool require_output_definition = true);
 
+bool resolve_member_function_id_for_target(SemanticContext & ctx,
+                                           semantic_model::Scope & scope,
+                                           const CppAstNode & unary_node,
+                                           const cpp_decl::TypePtr & target,
+                                           semantic_conversion::ExprInfo & out);
+
 void append_function_template_call_candidates(
     SemanticContext & ctx,
     semantic_model::Scope & lookup_scope,

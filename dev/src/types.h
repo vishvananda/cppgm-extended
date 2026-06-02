@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <string>
+#include <vector>
 
 // See 3.9.1: Fundamental Types
 enum EFundamentalType
@@ -62,12 +63,14 @@ struct QuoteLiteralData {
   char quote;
   char enc;
   std::u32string contents;
+  std::vector<unsigned long long> string_units;
   std::string ud_suffix;
   bool operator==(const QuoteLiteralData &other) const
   {
     return (quote == other.quote &&
             enc == other.enc &&
             contents == other.contents &&
+            string_units == other.string_units &&
             ud_suffix == other.ud_suffix);
   }
 };
@@ -84,6 +87,11 @@ inline QuoteLiteralData parse_quote_literal(const std::string& data)
 EFundamentalType string_literal_element_type(const QuoteLiteralData & literal);
 
 EFundamentalType character_literal_type(const QuoteLiteralData & literal);
+
+const std::vector<unsigned long long> &
+quote_literal_string_units(const QuoteLiteralData & literal);
+
+std::size_t quote_literal_string_unit_count(const QuoteLiteralData & literal);
 
 // FundamentalTypeOf: convert fundamental type T to EFundamentalType
 // for example: `FundamentalTypeOf<long int>()` will return `FT_LONG_INT`

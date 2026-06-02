@@ -251,6 +251,11 @@ TypeSpellingParts spell_reparseable_type_argument(const TypePtr & type)
     if(type->function_volatile) {
       out << " volatile";
     }
+    if(type->function_ref_qualifier == FTRQ_LVALUE) {
+      out << " &";
+    } else if(type->function_ref_qualifier == FTRQ_RVALUE) {
+      out << " &&";
+    }
     inner.after += out.str();
     return inner;
   }
@@ -853,7 +858,7 @@ bool infer_unknown_bound_array_size_impl(SemanticContext * ctx,
           } else if(element_fundamental != literal_type) {
             return false;
           }
-          out_bound = literal.contents.size() + 1;
+          out_bound = quote_literal_string_unit_count(literal) + 1;
           return true;
         }
         catch(const logic_error &)
@@ -954,11 +959,24 @@ string remove_space_chars(string text)
   return text;
 }
 
+bool is_literal_operator_function_name(const string & name)
+{
+  const string compact = remove_space_chars(unqualified_member_name(name));
+  const string literal_operator_prefix = "operator\"\"";
+  return compact.compare(0,
+                         literal_operator_prefix.size(),
+                         literal_operator_prefix) == 0 &&
+         compact.size() > literal_operator_prefix.size();
+}
+
 bool is_builtin_operator_function_name(const string & name)
 {
   const string compact = remove_space_chars(unqualified_member_name(name));
   if(compact.compare(0, 8, "operator") != 0) {
     return false;
+  }
+  if(is_literal_operator_function_name(name)) {
+    return true;
   }
 
   static const set<string> operator_names = {

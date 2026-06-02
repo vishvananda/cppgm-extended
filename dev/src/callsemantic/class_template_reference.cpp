@@ -57,6 +57,70 @@ bool raw_class_template_reference_cache_enabled()
   return !value || !*value || std::string(value) != "0";
 }
 
+const PartialClassTemplateSpecializationDecl * selected_partial_specialization(
+    const ClassTemplateDecl & decl,
+    const ClassInfo & info)
+{
+  if(!info.template_output_node || info.template_output_node == decl.class_node) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < decl.partial_specializations.size(); ++i) {
+    if(decl.partial_specializations[i].class_node == info.template_output_node) {
+      return &decl.partial_specializations[i];
+    }
+  }
+  return nullptr;
+}
+
+void record_class_template_binding_state(
+    ClassInfo & info,
+    const vector<TemplateArgument> & arguments,
+    const map<string, size_t> * pack_sizes)
+{
+  info.instantiation_binding_arguments = arguments;
+  if(pack_sizes) {
+    info.instantiation_binding_pack_sizes = *pack_sizes;
+  } else {
+    info.instantiation_binding_pack_sizes.clear();
+  }
+  info.has_instantiation_binding_arguments = true;
+}
+
+void bind_declaring_owner_template_arguments_into_scope(SemanticContext & ctx,
+                                                        Scope & target,
+                                                        const Scope * declaring_scope)
+{
+  ClassInfo * declared_owner =
+      declaring_scope ? declaring_scope->class_info : nullptr;
+  if(!declared_owner ||
+     !declared_owner->source_template ||
+     declared_owner->instantiation_arguments.empty()) {
+    return;
+  }
+
+  const vector<TemplateParameterInfo> * parameters =
+      &declared_owner->source_template->parameters;
+  const vector<TemplateArgument> * arguments =
+      &declared_owner->instantiation_arguments;
+  const map<string, size_t> * pack_sizes = nullptr;
+  if(declared_owner->has_instantiation_binding_arguments) {
+    arguments = &declared_owner->instantiation_binding_arguments;
+    pack_sizes = &declared_owner->instantiation_binding_pack_sizes;
+  }
+  if(const PartialClassTemplateSpecializationDecl * partial =
+         selected_partial_specialization(*declared_owner->source_template,
+                                         *declared_owner)) {
+    parameters = &partial->parameters;
+  }
+
+  template_api::binding::bind_template_arguments_into_scope(
+      ctx,
+      target,
+      *parameters,
+      *arguments,
+      pack_sizes);
+}
+
 string join_hotspot_arg_texts(const vector<string> & arg_texts)
 {
   ostringstream out;
@@ -1038,6 +1102,13 @@ public:
     info = nullptr;
     arguments.clear();
     key.clear();
+    const auto unresolved = [&]() -> bool
+    {
+      info = nullptr;
+      arguments.clear();
+      key.clear();
+      return false;
+    };
     const bool lazy_references = lazy_class_template_references_enabled();
     if(decl.instantiations.empty() &&
        (!lazy_references || decl.reference_instantiations.empty())) {
@@ -1089,7 +1160,7 @@ public:
                                         expanded_texts[text_index],
                                         expanded_inputs.syntax_for(text_index),
                                         arg)) {
-            return false;
+            return unresolved();
           }
           arguments.push_back(arg);
           ++text_index;
@@ -1098,7 +1169,7 @@ public:
       }
 
       if(text_index >= expanded_texts.size()) {
-        return false;
+        return unresolved();
       }
 
       TemplateArgument arg;
@@ -1108,7 +1179,7 @@ public:
                                     expanded_texts[text_index],
                                     expanded_inputs.syntax_for(text_index),
                                     arg)) {
-        return false;
+        return unresolved();
       }
       arguments.push_back(arg);
       bind_single_template_argument_into_scope(bound_scope, decl.parameters[i], arg);
@@ -2013,8 +2084,14 @@ public:
       const bool explicit_specialization_source_use =
           specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION ||
           resolved_info->is_explicit_specialization;
+      const bool nested_recovery_is_qualified_member_owner =
+          nested_argument_recovery &&
+          callbacks.template_id_at_location_is_qualified_member_owner &&
+          callbacks.template_id_at_location_is_qualified_member_owner(
+              use_location);
       if(nested_argument_recovery &&
          !explicit_specialization_source_use &&
+         !nested_recovery_is_qualified_member_owner &&
          !trace_enabled) {
         return;
       }
@@ -2098,6 +2175,10 @@ public:
       const bool source_use_spells_template =
           source_location_points_at_identifier(chosen_use_location,
                                                anchor_identifier);
+      const bool source_template_id_is_qualified_member_owner =
+          callbacks.template_id_at_location_is_qualified_member_owner &&
+          callbacks.template_id_at_location_is_qualified_member_owner(
+              chosen_use_location);
       if(source_capture_enabled && !source_use_spells_template) {
         return;
       }
@@ -2342,6 +2423,7 @@ public:
           }
         }
         if(!drop_noncanonical_source_arguments &&
+           !source_template_id_is_qualified_member_owner &&
            !source_arg_syntaxes &&
            binding_arg_texts == &recovered_source_arg_texts) {
           const std::size_t compare_count =
@@ -2485,7 +2567,8 @@ public:
                    "primary");
       if(syntax_backed_source_capture_enabled &&
          (!nested_argument_recovery ||
-          explicit_specialization_source_use)) {
+          explicit_specialization_source_use ||
+          source_template_id_is_qualified_member_owner)) {
         template_api::ClassSpecializationSelection visible_selection =
             specialization;
         const bool nested_partial_source_argument =
@@ -2847,6 +2930,9 @@ public:
           }
           note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_resets);
           reset_instantiated_class_info(*info, decl.name, class_node);
+          bind_declaring_owner_template_arguments_into_scope(ctx,
+                                                             *info->member_scope,
+                                                             binding_scope);
           template_api::binding::bind_template_arguments_into_scope(*this,
                                                                    *info->member_scope,
                                                                    *bound_parameters,
@@ -2873,6 +2959,9 @@ public:
         note_performance_counter(
             &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);
       }
+      record_class_template_binding_state(*info,
+                                          *bound_arguments,
+                                          bound_pack_sizes);
       record_selected_class_template_base_source_uses(decl, specialization);
       note_class_use(info);
       return info;
@@ -2937,15 +3026,21 @@ public:
       note_performance_counter(
           &semantic_metrics::AnalyzerCounters::class_template_canonical_arg_text_builds);
     }
-      template_api::binding::bind_template_arguments_into_scope(*this,
-                                                               *info->member_scope,
-                                                               *bound_parameters,
-                                                               *bound_arguments,
-                                                               bound_pack_sizes);
-      record_selected_class_template_base_source_uses(decl, specialization);
-      note_class_use(info);
-      return info;
-    }
+    record_class_template_binding_state(*info,
+                                        *bound_arguments,
+                                        bound_pack_sizes);
+    bind_declaring_owner_template_arguments_into_scope(ctx,
+                                                       *info->member_scope,
+                                                       binding_scope);
+    template_api::binding::bind_template_arguments_into_scope(*this,
+                                                             *info->member_scope,
+                                                             *bound_parameters,
+                                                             *bound_arguments,
+                                                             bound_pack_sizes);
+    record_selected_class_template_base_source_uses(decl, specialization);
+    note_class_use(info);
+    return info;
+  }
 
 
   ClassInfo * instantiate_class_template(

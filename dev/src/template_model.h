@@ -283,6 +283,7 @@ struct TemplateArgument
   Kind kind = TA_TYPE;
   cpp_decl::TypePtr type;
   void * template_decl = nullptr;
+  cpp_decl::TypePtr template_owner_type;
   const semantic_model::FunctionBinding * function_value = nullptr;
   const semantic_model::ValueBinding * value_binding = nullptr;
   std::string text;

@@ -184,6 +184,28 @@ bool expand_constexpr_function_body_packs(SemanticContext & ctx,
   return true;
 }
 
+bool evaluate_method_call_implicit_object(
+    constant_eval::Evaluator & evaluator,
+    const CppAstNode & callee,
+    constant_eval::ConstexprValue & out)
+{
+  if(callee.kind == CppAstKind::member_expression &&
+     callee.children.size() == 2) {
+    if(callee.children[0].kind == CppAstKind::id_expression &&
+       callee.children[0].value == "this") {
+      return evaluator.current_this_object(out);
+    }
+    return evaluator.eval_expr(callee.children[0], out);
+  }
+
+  if(callee.kind == CppAstKind::id_expression ||
+     callee.kind == CppAstKind::identifier) {
+    return evaluator.current_this_object(out);
+  }
+
+  return evaluator.eval_expr(callee, out);
+}
+
 }  // namespace
 
 bool evaluate_constant_call_expression_value(
@@ -329,8 +351,30 @@ bool evaluate_constant_call_expression_value(
     }
   }
 
+  const auto fixed_width_bit_builtin_type =
+      [](const std::string & builtin_name) -> TypePtr
+  {
+    if(builtin_name == "__builtin_clz" ||
+       builtin_name == "__builtin_ctz" ||
+       builtin_name == "__builtin_popcount") {
+      return make_fundamental(FT_UNSIGNED_INT);
+    }
+    if(builtin_name == "__builtin_clzl" ||
+       builtin_name == "__builtin_ctzl" ||
+       builtin_name == "__builtin_popcountl") {
+      return make_fundamental(FT_UNSIGNED_LONG_INT);
+    }
+    if(builtin_name == "__builtin_clzll" ||
+       builtin_name == "__builtin_ctzll" ||
+       builtin_name == "__builtin_popcountll") {
+      return make_fundamental(FT_UNSIGNED_LONG_LONG_INT);
+    }
+    return TypePtr();
+  };
+
   const auto evaluate_builtin_bit_argument =
       [&](const constant_eval::ConstexprValue & arg,
+          const TypePtr & forced_type,
           unsigned long long & value,
           unsigned & bit_count) -> bool
   {
@@ -339,7 +383,8 @@ bool evaluate_constant_call_expression_value(
       return false;
     }
 
-    TypePtr value_type = strip_top_level_cv(arg.type);
+    TypePtr value_type = forced_type ? strip_top_level_cv(forced_type)
+                                     : strip_top_level_cv(arg.type);
     if(!value_type || !is_integral_type(value_type)) {
       return false;
     }
@@ -371,7 +416,10 @@ bool evaluate_constant_call_expression_value(
      args.size() == 1) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0],
+                                      fixed_width_bit_builtin_type(callee.value),
+                                      value,
+                                      bit_count)) {
       return false;
     }
     if(value == 0ULL) {
@@ -391,7 +439,10 @@ bool evaluate_constant_call_expression_value(
      args.size() == 1) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0],
+                                      fixed_width_bit_builtin_type(callee.value),
+                                      value,
+                                      bit_count)) {
       return false;
     }
     if(value == 0ULL) {
@@ -417,7 +468,10 @@ bool evaluate_constant_call_expression_value(
      args.size() == 1) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0],
+                                      fixed_width_bit_builtin_type(callee.value),
+                                      value,
+                                      bit_count)) {
       return false;
     }
     (void)bit_count;
@@ -488,7 +542,7 @@ bool evaluate_constant_call_expression_value(
      (args.size() == 1 || args.size() == 2)) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0], TypePtr(), value, bit_count)) {
       return false;
     }
 
@@ -514,7 +568,7 @@ bool evaluate_constant_call_expression_value(
      (args.size() == 1 || args.size() == 2)) {
     unsigned long long value = 0;
     unsigned bit_count = 0;
-    if(!evaluate_builtin_bit_argument(args[0], value, bit_count)) {
+    if(!evaluate_builtin_bit_argument(args[0], TypePtr(), value, bit_count)) {
       return false;
     }
 
@@ -652,7 +706,7 @@ bool evaluate_constant_call_expression_value(
       TypePtr function_type = strip_top_level_cv(binding->type);
       info.return_type = function_type && function_type->kind == Type::TK_FUNCTION ?
           function_type->inner : TypePtr();
-      info.params = binding->params;
+      info.params = semantic_consteval::constexpr_function_parameters(*binding);
       CppAstNode expanded_body;
       info.body = constexpr_function_body(ctx, *binding);
       const bool body_has_pack_expansion =
@@ -751,7 +805,10 @@ bool evaluate_constant_call_expression_value(
   TypePtr function_type = strip_top_level_cv(binding->type);
   info.return_type = function_type && function_type->kind == Type::TK_FUNCTION ?
       function_type->inner : TypePtr();
-  info.params.assign(binding->params.begin() + explicit_param_offset, binding->params.end());
+  const std::vector<std::pair<std::string, TypePtr> > constexpr_params =
+      semantic_consteval::constexpr_function_parameters(*binding);
+  info.params.assign(constexpr_params.begin() + explicit_param_offset,
+                     constexpr_params.end());
   CppAstNode expanded_body;
   info.body = constexpr_function_body(ctx, *binding);
   const bool body_has_pack_expansion =
@@ -772,17 +829,7 @@ bool evaluate_constant_call_expression_value(
   info.is_method = binding->is_method;
   if(binding->is_method) {
     constant_eval::ConstexprValue implicit_object;
-    if(callee.kind == CppAstKind::member_expression &&
-       callee.children.size() == 2) {
-      if(callee.children[0].kind == CppAstKind::id_expression &&
-         callee.children[0].value == "this") {
-        if(!evaluator.current_this_object(implicit_object)) {
-          return false;
-        }
-      } else if(!evaluator.eval_expr(callee.children[0], implicit_object)) {
-        return false;
-      }
-    } else if(!evaluator.current_this_object(implicit_object)) {
+    if(!evaluate_method_call_implicit_object(evaluator, callee, implicit_object)) {
       return false;
     }
     info.has_implicit_object = true;

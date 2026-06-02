@@ -1,0 +1,48 @@
+function @plus_one(%x : i32) -> i32 [binding=strong, object=_Z8plus_onei] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
+}
+function @call(%h : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4callRK5Hooks] {
+  slot $h : ptr
+
+  block ^entry:
+    store ptr %h, $h
+    %t1 = load ptr $h
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = call i32 %t3(4) as (%arg0 : i32) -> i32
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $h : obj<8x8>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $h
+    %t2 = addr @plus_one
+    %t3 = unary decay ptr %t2
+    %t4 = addr $h
+    %t5 = index i8 [projection=field] %t4, 0
+    store ptr %t3, %t5
+    %t6 = addr $h
+    %t7 = call i32 @call(%t6)
+    %t8 = cmp eq i32 %t7, 5
+    branch %t8, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t9 = load i32 $cond__1
+    return i32 %t9
+}

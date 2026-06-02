@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @MoveOnly__MoveOnly(%t1)
     %t2 = addr $dest
     %t3 = addr $source
-    call void @MoveOnly__MoveOnly__ov3(%t2, %t3)
+    copyobj 4x4 %t3, %t2
     %t4 = addr $dest
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load i32 %t5
@@ -37,17 +37,4 @@ function @MoveOnly__MoveOnly(%this : ptr) -> void [binding=weak, object=_ZN8Move
     store i32 5, %t2
     return void
 }
-function @MoveOnly__MoveOnly__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN8MoveOnlyC1EOS_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
-    %t2 = load ptr $__param1
-    copyobj 4x4 %t2, %t1
-    return void
-}
 alias object _ZN8MoveOnlyC2Ev = @MoveOnly__MoveOnly
-alias object _ZN8MoveOnlyC2EOS_ = @MoveOnly__MoveOnly__ov3
