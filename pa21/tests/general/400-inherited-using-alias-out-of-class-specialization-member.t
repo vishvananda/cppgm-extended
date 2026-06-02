@@ -21,12 +21,12 @@ struct traits;
 
 template<>
 struct traits<char16_t> : traits_base<char16_t, uint_least16_t, static_cast<uint_least16_t>(0xffff)> {
-  static int compare(const char_type* lhs, const char_type* rhs, size_t n) noexcept;
+  static int compare(const char_type* lhs, const char_type* rhs, size_t n);
 };
 
 inline int traits<char16_t>::compare(const char_type* lhs,
                                      const char_type* rhs,
-                                     size_t n) noexcept {
+                                     size_t n) {
   for (; n; --n, ++lhs, ++rhs) {
     if (lt(*lhs, *rhs)) {
       return -1;

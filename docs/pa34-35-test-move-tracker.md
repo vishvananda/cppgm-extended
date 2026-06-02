@@ -9,6 +9,27 @@ move/rewrite, confirm it compiles/links cleanly in its new home, then check it o
 
 Status legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[D]` dropped (covered) · `[-]` deferred
 
+### abimangle conversion process (pa31)
+
+1. **Generate facts with `--emit-abi-facts`, don't hand-author them.**
+   `dev/cppgm++ --emit-abi-facts -o <facts.t> <source.cpp>` emits the fact DSL for the
+   entity directly from cppgm++'s own semantic model (correct inline-namespace spelling,
+   substitution structure, ctor/dtor variants, abi-tags). Hand-authoring is error-prone;
+   only edit the emitted facts to trim to the single name under test.
+2. **One name per test file.** Each `.t`/`.ref` covers exactly one mangled name. Only
+   *very closely related* names from the **same class** (e.g. multiple constructors,
+   ctor + dtor variants of one type) may share one file as multiple `case` blocks.
+   Otherwise split into separate files (free fn vs member, distinct owners → separate).
+3. **Oracle = clang on this host (libc++ `__1`).** Verify each `.ref` against
+   `clang++ -c … && nm | c++filt`. Files: `.t`, `.ref`, `.ref.exit_status` (=`EXIT_SUCCESS`)
+   are the only git-tracked ones; `.my*` are harness-generated.
+
+### templating/core rehoming process (pa14-22+)
+
+- Collapse cross-TU link tests to single-TU; generate golden `.ref` via `cppgm++ --emit-lowir -O0`; verify the owning PA's `make test` (and `clang -fsyntax-only` for semantics).
+- **Run `python3 scripts/audit_pa_feature_placement.py` after placing** to catch a test placed before its feature's owning PA/cluster (`cluster-early`/`violation`). Move to the flagged owner PA/cluster. `semantic-owner` rows are informational (place by the enclosing LowIR feature).
+- EH/`try`/`catch` is now tracked as `exception.try_catch` (owner `pa25` = `cppeh`). **Caveat:** it over-flags non-LowIR tool-PAs that legitimately use EH for their own purpose — `pa10` (`--emit-ast`) parses the syntax, `pa13` (`lowir2cy86`) consumes EH LowIR. Treat flags only in LowIR-source PAs (pa14-22, pa26-29) as real placement risks; a test whose *headline* feature is later than pa25 (e.g. a lambda test, pa26) stays at that later PA since pa25 EH is then satisfied.
+
 ### Format-compatibility tiers (discovered 2026-06-01)
 
 The pa35/link tests are **multi-TU** cppgm++ programs (`.t.1`/`.t.2`/`.shared.h`,
@@ -72,14 +93,14 @@ abi_tag + hand-declared-`std` Itanium-substitution; cross-TU link is the
 mangling-consistency oracle.
 
 - [x] 600-hosted-abi-tag-member-link-smoke → `pa31/tests/abi/200-abi-tagged-member-and-constructor` (abi_tag on const members + copy-ctor w/ `RKS_`; distinct from `200-abi-tagged-function`; PASS)
-- [ ] 600-hosted-basic-string-char-traits-abi-link-smoke  _(dedup vs `600-inline-namespace-basic-string-param`)_
-- [ ] 600-hosted-initializer-list-member-definition-link-smoke
-- [ ] 600-hosted-itanium-substitution-mangling-smoke
-- [ ] 600-hosted-std-initializer-list-abi-link-smoke
-- [ ] 600-hosted-std-vector-pair-abi-link-smoke
-- [ ] 600-hosted-template-angle-vector-pair-substitution-link-smoke
-- [ ] 600-hosted-vector-string-substitution-link-smoke
-- [ ] 600-hosted-pair-vector-arg-ranges-link-smoke  _(review item 7: from core→abimangle)_
+- [x] 600-hosted-basic-string-char-traits-abi-link-smoke → `pa31/tests/abi/300-std-string-parameter-substitution` (`accept_basic_string(const std::string&, std::string&)` → `…basic_stringIc…EERS5_`; the `RS5_` back-ref exercises the repeated-substitution fix; clang/libc++ `__1`-verified; PASS). Distinct from `600-inline-namespace-basic-string-param` (`__cxx11`/getline).
+- [x] 600-hosted-initializer-list-member-definition-link-smoke → mangling: `pa31/tests/abi/300-std-initializer-list-member-parameter` (`_ZN30InitializerListMemberLinkSmoke5totalESt16initializer_listIiE`, clang-verified; PASS). **NOTE: source `main` asserts `total({1,2,3})==6` (real behavior) — behavior half needs a core/templating home or coverage confirmation before deleting source.**
+- [x] 600-hosted-itanium-substitution-mangling-smoke → `pa31/tests/abi/300-namespace-class-and-string-substitution` (`mixed_subst_one(const nsrepro::Program&, const std::string&)` → inner `NS3_`; clang-verified; PASS). **Exposed + FIXED a real cppgm++-vs-clang bug** (abimangle-only): cv/ref param types weren't registered as Itanium subst candidates → inner `std::__1` ref was `NS1_` vs clang `NS3_`. Fixed in `abi_mangle.cpp` (`with_type_substitution_key` on cv/ref/pointer builders); codegen was already correct (no strict-audit churn). See memory `cvref-substitution-candidate-bug`.
+- [x] 600-hosted-std-initializer-list-abi-link-smoke → `pa31/tests/abi/300-std-initializer-list-parameter` (`_Z20sum_initializer_listSt16initializer_listIiE`, clang-verified; PASS). Pure link/mangle smoke (body `(void)values;return 0;` — no behavior); source removable.
+- [x] 600-hosted-std-vector-pair-abi-link-smoke → `pa31/tests/abi/300-std-vector-pair-substitution` (`accept_std_pair_ranges(const std::vector<std::pair<unsigned long,unsigned long>>&)` → `…6vectorINS_4pairImmEENS_9allocatorIS2_EEEE`; pair + allocator back-ref; clang-verified; PASS).
+- [D] 600-hosted-template-angle-vector-pair-substitution-link-smoke — **DUP of `300-std-vector-pair-substitution`**: its substitution-bearing type is `std::vector<std::pair<std::size_t,std::size_t>>` ≡ `vector<pair<unsigned long,unsigned long>>` (size_t=m). Remaining params are cppgm-internal types (IRecogTokenSequence/NameLookup), not a mangling concern. Covered.
+- [x] 600-hosted-vector-string-substitution-link-smoke → `pa31/tests/abi/300-std-vector-string-substitution` (`accept_texts(const std::vector<std::string>&)` → `…6vectorINS_12basic_string…EENS4_IS6_EEEE`; nested string+allocator back-refs; clang-verified; PASS).
+- [x] 600-hosted-pair-vector-arg-ranges-link-smoke → `pa31/tests/abi/300-user-inline-namespace-substitution` (`accept_arg_ranges(helper_inline_ns::v1::vec<helper_inline_ns::v1::pair<unsigned long,unsigned long>>&)` → `RN16helper_inline_ns2v13vecINS0_4pairImmEEEE`; user inline-ns `v1` mangled + `S0_` back-ref; clang-verified; PASS). _(review item 7)_ Behavior half (aggregate value) → `pa20/tests/general/100-inline-namespace-aggregate-member-value` (static_assert; **placement audit moved pa19→pa20**: full-constexpr fn owns pa20). Source removed.
 - [!] 700-hosted-abi-tag-class-template-member-link-smoke — **NOT a DSL fit**: tests abi_tag *suppression* (declared tag dropped on a class-template member). emit-abi-facts emits no tag → abimangle test would only check untagged template-member mangling (dup). Suppression is a cppgm++ propagation decision, not name construction. **Needs reclassification** (cppgm++ emit-abi-facts golden, or stays a symbol-emission test).
 - [!] 700-hosted-abi-tag-class-template-member-template-link-smoke — same suppression issue (`Box<int>::touch<1>()` untagged expected).
 - [x] 700-hosted-abi-tag-function-template-link-smoke → `pa31/tests/abi/300-abi-tagged-function-template` (`_Z15tagged_templateB9nqe220100IiET_S0_` — tag before template-args; PASS)
@@ -87,21 +108,32 @@ mangling-consistency oracle.
 - [ ] 700-hosted-local-class-template-mangling-link-smoke
 - [!] 700-hosted-nested-static-abi-tag-link-smoke — same suppression issue (`Box<int>::Cache::detach` untagged expected).
 
+> **Note (2026-06-02):** of the substitution subset, **6 are actually header-bearing**
+> (`<string>`/`<vector>`/`<utility>`), so they were mis-listed as no-header:
+> `600-hosted-itanium-substitution-mangling-smoke`, `…basic-string-char-traits…`,
+> `…vector-string-substitution…`, `…std-vector-pair…`, `…template-angle-vector-pair…`,
+> `…std-initializer-list…`. Their **mangling is fully captured in pa31** (above), so the
+> retained source is now a pure hosted **L2 link/run behavior** test — **moved to the
+> deferred hosted-L2 batch**, inspect/mangling no longer needed there. Sources kept (cannot
+> move pre-pa34). Only the two genuinely no-header behavior tests were fully rehomed +
+> source-removed: `…initializer-list-member…` → pa30 + pa31; `…pair-vector-arg-ranges…` →
+> pa20 (static_assert) + pa31.
+
 ### → templating (pa18-22) (13) — DROP if already covered
 
-- [ ] 600-hosted-template-lambda-helper-link-smoke
-- [ ] 600-hosted-using-namespace-vector-definition-link-smoke
-- [ ] 600-inline-class-template-member-link-smoke
-- [ ] 600-out-of-class-member-template-link-smoke
-- [ ] 600-template-aggregate-return-link-smoke
-- [ ] 600-template-inline-constructor-return-link-smoke
+- [x] 600-hosted-template-lambda-helper-link-smoke → `pa27/tests/general/200-function-template-lambda-decltype-eh-fallback` (lambda arg + decltype(fn()) return + try/catch fallback; **placement audit moved pa22→pa27**: lambda owns pa26, try/catch owns pa27 → latest wins; pa27 PASS)
+- [x] 600-hosted-using-namespace-vector-definition-link-smoke → `pa21/tests/general/100-using-directive-inline-namespace-class-template` (collapsed single-TU; using-directive finds inline-ns `vec`; cppgm+++clang clean; pa21 PASS)
+- [D] 600-inline-class-template-member-link-smoke — **exact duplicate** of existing `pa21/tests/general/400-inline-class-template-member-required-output.t`; source removed.
+- [x] 600-out-of-class-member-template-link-smoke → `pa18/tests/general/300-out-of-class-member-template-definition` (out-of-class member-template def; **placement audit moved cluster 100→300**: `template.member_template` owns pa18:300; pa18 PASS)
+- [x] 600-template-aggregate-return-link-smoke → `pa18/tests/general/100-function-template-returns-aggregate-class-template` (fn template returns aggregate via brace-init; pa18 PASS)
+- [x] 600-template-inline-constructor-return-link-smoke → `pa18/tests/general/100-function-template-returns-constructed-class-template` (fn template returns class via ctor + nested aggregate; pa18 PASS)
 - [ ] 700-function-template-substitution-index-link-smoke
 - [ ] 700-inline-namespace-function-template-param-link-smoke
-- [ ] 700-member-template-explicit-local-typedef-link-smoke
-- [ ] 700-nested-template-local-owner-symbol-link-smoke
-- [ ] 700-template-disambiguator-alias-enable-if-ctor
-- [ ] 700-dependent-alias-builtin-transform-link-smoke  _(review item 1: from abimangle→templating; needs compat `__remove_cvref` builtin available)_
-- [ ] 700-hosted-function-reference-parameter-link-smoke  _(review item 9: from core→templating)_
+- [x] 700-member-template-explicit-local-typedef-link-smoke → `pa22/tests/general/100-member-template-explicit-local-typedef-call` (explicit `.template` w/ local typedef; pa22 PASS individually)
+- [x] 700-nested-template-local-owner-symbol-link-smoke → `pa22/tests/general/100-nested-class-template-local-class-argument` (nested class template + local class as template arg; pa22 PASS individually)
+- [D] 700-template-disambiguator-alias-enable-if-ctor — covered by pa22 enable_if/alias + `__is_constructible` suite (300-constructor-template-*-enable-if-*, 500-qualified-member-function-value-fallback-sfinae); source removed.
+- [D] 700-dependent-alias-builtin-transform-link-smoke — covered: `__remove_cvref` alias already exercised by `pa22/500-internal-remove-cvref-alias-sfinae`; source removed. _(review item 1)_
+- [x] 700-hosted-function-reference-parameter-link-smoke → `pa21/tests/general/400-function-reference-template-parameter` (fn-ref template deduction; restores live coverage — existing `400-function-reference-deduction` is an orphaned .ref with **no .t**; pa21 PASS) _(review item 9)_
 
 ### → pa30 separate-compilation (3) — DROP if already covered
 
@@ -111,10 +143,10 @@ mangling-consistency oracle.
 
 ### → vtable/codegen (LowIR band) (4) — DROP if already covered
 
-- [ ] 600-polymorphic-constructor-vtable-link-smoke
-- [ ] 700-hosted-nonvirtual-mi-vtable-layout-hostcall
-- [ ] 700-hosted-pure-virtual-base-vtable-link-smoke
-- [ ] 700-secondary-base-virtual-dispatch-view
+- [D] 600-polymorphic-constructor-vtable-link-smoke — covered by `pa17/400-inline-polymorphic-constructor-vtable` (abstract base + override + vtable ctor) + `pa17/400-header-out-of-class-virtual-vtable`; source removed.
+- [x] 700-hosted-nonvirtual-mi-vtable-layout-hostcall → `pa17/tests/general/300-multiple-inheritance-vtable-layout` (MI vtable layout, distinct; pa17 PASS)
+- [D] 700-hosted-pure-virtual-base-vtable-link-smoke — covered by pa17 pure-virtual/virtual-dispatch suite (pa17/400 abstract base + 300-virtual-call-*); source removed.
+- [x] 700-secondary-base-virtual-dispatch-view → `pa17/tests/general/300-secondary-base-virtual-class-return` (MI secondary-base dispatch + class return; distinct; pa17 PASS)
 
 ### → backend / lowir2native (3) — DROP if already covered
 
