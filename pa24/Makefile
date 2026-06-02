@@ -21,14 +21,7 @@ include ../dev/frontend_source_sets.mk
 common_obj_basenames = $(FRONTEND_OBJ_BASENAMES_$(firstword $(TARGETS)))
 common_objs = $(addprefix $(OBJ)/$(1)/,$(addsuffix .o,$(common_obj_basenames)))
 
-all: $(TARGETS)
-
-$(TARGETS): %: $(OBJ)/release %.cpp $(call common_objs,release)
-	$(CXX) $(CC_FLAGS) $(INC) -o $@ $@.cpp $(call common_objs,release)
-
-$(addsuffix -debug,$(TARGETS)): CC_FLAGS += -D_DEBUG -g -pg
-$(addsuffix -debug,$(TARGETS)): %-debug: %.cpp $(OBJ)/debug $(call common_objs,debug)
-	$(CXX) $(CC_FLAGS) $(INC) -o $@ $< $(call common_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@

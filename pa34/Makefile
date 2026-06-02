@@ -91,13 +91,7 @@ runner_state_stamp = $(OBJ)/$(1)/.test_runner_mode
 link_objs = $(call common_objs,$(1)) $(call runner_obj,$(1))
 link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call link_prereqs,release)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call link_objs,release)
-
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call link_prereqs,debug)
-	$(CXX) $(ENTRY_DEBUG_CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call link_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@
@@ -174,7 +168,6 @@ define run_compile_course_bucket_batch
 	fi
 endef
 
-
 test: $(TEST_DEPS)
 	@bash scripts/check_preproc_refs_portable.sh $(PREPROC_TEST_ROOT)
 ifneq ($(CPPGM_BATCH_TESTS),)
@@ -199,7 +192,6 @@ test-batch: $(TEST_DEPS)
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
 	$(call run_preproc_course_bucket_batch,$(COURSE_PREPROC_TEST_ROOT))
 	$(call run_compile_course_bucket_batch,$(COURSE_COMPILE_TEST_ROOT))
-
 
 ref-test:
 	@scripts/run_all_tests.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)

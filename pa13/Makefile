@@ -38,14 +38,7 @@ include ../dev/frontend_source_sets.mk
 common_obj_basenames = $(FRONTEND_OBJ_BASENAMES_$(TARGET))
 common_objs = $(addprefix $(OBJ)/$(1)/,$(addsuffix .o,$(common_obj_basenames)))
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call common_objs,release)
-	$(CXX) $(CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call common_objs,release)
-
-$(TARGET)-debug: CC_FLAGS += -D_DEBUG -g -pg
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call common_objs,debug)
-	$(CXX) $(CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call common_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@
@@ -135,7 +128,6 @@ test-debuginfo: debuginfo-lowiropt-target debuginfo-cppgm-target debuginfo-lowir
 	@scripts/compare_results.pl ref my $(DEBUGINFO_EXECUTABLE_O1_TEST_ROOT)
 	@scripts/run_all_tests.pl scripts/cppgm-lldb-line-o2.sh my $(DEBUGINFO_EXECUTABLE_O2_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(DEBUGINFO_EXECUTABLE_O2_TEST_ROOT)
-
 
 clean:
 	-rm -f $(TARGET) $(TARGET)-debug $(OBJ)/release/*.o $(OBJ)/debug/*.o

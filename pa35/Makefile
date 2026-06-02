@@ -81,13 +81,7 @@ runner_state_stamp = $(OBJ)/$(1)/.test_runner_mode
 link_objs = $(call common_objs,$(1)) $(call runner_obj,$(1))
 link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call link_prereqs,release)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call link_objs,release)
-
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call link_prereqs,debug)
-	$(CXX) $(ENTRY_DEBUG_CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call link_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@
@@ -126,7 +120,6 @@ define run_link_course_bucket
 		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
 	fi
 endef
-
 
 test: $(TEST_DEPS)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(LINK_TEST_ROOT)

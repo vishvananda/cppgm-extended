@@ -21,14 +21,7 @@ include ../dev/frontend_source_sets.mk
 common_obj_basenames = $(FRONTEND_OBJ_BASENAMES_$(TARGET))
 common_objs = $(addprefix $(OBJ)/$(1)/,$(addsuffix .o,$(common_obj_basenames)))
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call common_objs,release)
-	$(CXX) $(CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call common_objs,release)
-
-$(TARGET)-debug: CC_FLAGS += -D_DEBUG -g -pg
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call common_objs,debug)
-	$(CXX) $(CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call common_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@
@@ -79,7 +72,6 @@ $(CPPGM_TEST_APP):
 
 dev-shared-target:
 	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ]; then true; else $(MAKE) -C ../dev $(TARGET) CXX=$(CXX) OBJ=$(OBJ); fi
-
 
 clean:
 	-rm -f $(TARGET) $(TARGET)-debug $(OBJ)/release/*.o $(OBJ)/debug/*.o
