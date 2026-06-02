@@ -17011,8 +17011,12 @@ static bool try_emit_itanium_function_symbol_ir(
     return false;
   }
 
-  const bool suppress_type_substitution_keys =
-      !complete_plain_parameter_substitutions;
+  // Convergence: parameter types now carry correct whole-type substitution keys
+  // (make_type_substitution_key builds named/class-template keys), so the typed
+  // plain-IR path can produce complete, clang-correct parameter substitutions
+  // (e.g. repeated std::string -> RS_/S4_). This was previously suppressed.
+  const bool suppress_type_substitution_keys = false;
+  (void)complete_plain_parameter_substitutions;
   const bool capture_function = captured_target != nullptr;
   abi_mangle::FunctionEncoding captured_function;
   if(try_mangle_plain_function_ir(qualified,
