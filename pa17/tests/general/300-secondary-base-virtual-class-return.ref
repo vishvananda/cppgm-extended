@@ -1,0 +1,392 @@
+declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
+declare function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @__cxa_pure_virtual(%ret : ptr [pass=indirect_result], %arg0 : ptr, %arg1 : i32) -> void [effects=readnone, unwind=no, return=noreturn, binding=strong]
+
+global @__typeinfo_name__struct_Derived [storage=readonly, binding=weak, object=_ZTS7Derived] = {
+  i8 55
+  i8 68
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__typeinfo_name__struct_Primary [storage=readonly, binding=weak, object=_ZTS7Primary] = {
+  i8 55
+  i8 80
+  i8 114
+  i8 105
+  i8 109
+  i8 97
+  i8 114
+  i8 121
+  i8 0
+}
+global @__rtti_struct_Primary [storage=readonly, binding=weak, object=_ZTI7Primary] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Primary
+}
+global @__typeinfo_name__struct_Secondary [storage=readonly, binding=weak, object=_ZTS9Secondary] = {
+  i8 57
+  i8 83
+  i8 101
+  i8 99
+  i8 111
+  i8 110
+  i8 100
+  i8 97
+  i8 114
+  i8 121
+  i8 0
+}
+global @__rtti_struct_Secondary [storage=readonly, binding=weak, object=_ZTI9Secondary] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Secondary
+}
+global @__rtti_struct_Derived [storage=readonly, binding=weak, object=_ZTI7Derived] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Derived
+  i32 0
+  i32 2
+  ptr addr @__rtti_struct_Primary
+  i64 2
+  ptr addr @__rtti_struct_Secondary
+  i64 2050
+}
+global @Derived__vtable [storage=readonly, binding=weak, object=_ZTV7Derived] = {
+  i64 0
+  ptr addr @__rtti_struct_Derived
+  ptr addr @Derived__make
+  ptr addr @Derived___Derived
+  ptr addr @Derived___Derived__deleting_entry
+}
+global @Derived____view__Secondary__8__vtable [storage=readonly, binding=weak, object=@Derived____view__Secondary__8__vtable] = {
+  ptr addr @_Derived__check__vtable_return_adjust
+  ptr addr @_Derived___Derived__vtable_return_adjust
+  ptr addr @_Derived___Derived__deleting_entry__vtable_return_adjust
+}
+global @Primary__vtable [storage=readonly, binding=weak, object=_ZTV7Primary] = {
+  i64 0
+  ptr addr @__rtti_struct_Primary
+  ptr addr @__cxa_pure_virtual
+  ptr addr @Primary___Primary
+  ptr addr @Primary___Primary__deleting_entry
+}
+global @Secondary__vtable [storage=readonly, binding=weak, object=_ZTV9Secondary] = {
+  i64 0
+  ptr addr @__rtti_struct_Secondary
+  ptr addr @__cxa_pure_virtual
+  ptr addr @Secondary___Secondary
+  ptr addr @Secondary___Secondary__deleting_entry
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<24x8>
+  slot $call__1 : u8
+  slot $call__2 : u8
+
+  block ^entry:
+    %t1 = addr $d
+    call void @Derived__Derived(%t1)
+    eh_try ^call_unwind_dispatch_4
+    %t2 = addr $d
+    %t3 = call u8 @Derived__run(%t2)
+    store u8 %t3, $call__1
+    %t4 = load u8 $call__1
+    %t5 = cmp eq i64 %t4, 0
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^call_unwind_dispatch_4:
+    %t6 = addr $d
+    call void @Derived___Derived(%t6)
+    resume
+
+  block ^call_unwind_end_5:
+    branch %t5, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t7 = addr $d
+    call void @Derived___Derived(%t7)
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    eh_try ^call_unwind_dispatch_4
+    %t8 = addr $d
+    %t9 = call u8 @Derived__run(%t8)
+    store u8 %t9, $call__2
+    %t10 = load u8 $call__2
+    %t11 = cmp eq i64 %t10, 0
+    eh_end
+    branch %t11, ^if_then_6, ^if_else_7
+
+  block ^if_then_6:
+    %t12 = addr $d
+    call void @Derived___Derived(%t12)
+    return i32 2
+
+  block ^if_else_7:
+    jump ^if_end_8
+
+  block ^if_end_8:
+    %t13 = addr $d
+    call void @Derived___Derived(%t13)
+    return i32 0
+}
+function @Derived__Derived(%this : ptr) -> void [binding=weak, object=_ZN7DerivedC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @Primary__Primary__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 8
+    call void @Secondary__Secondary__base_entry(%t4)
+    %t5 = load ptr $this
+    %t6 = addr @Derived__vtable
+    %t7 = index i8 %t6, 16
+    store ptr %t7, %t5
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=base_subobject] %t8, 8
+    %t10 = addr @Derived____view__Secondary__8__vtable
+    store ptr %t10, %t9
+    %t11 = load ptr $this
+    %t12 = index i8 [projection=field] %t11, 16
+    store i32 123, %t12
+    return void
+}
+function @Derived__check(%this : ptr, %tag : i32) -> u8 [binding=weak, object=_ZN7Derived5checkEi] {
+  slot $this : ptr
+  slot $tag : i32
+  slot $land__1 : i64
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %tag, $tag
+    %t1 = load i32 $tag
+    %t2 = cmp eq i32 %t1, 77
+    branch %t2, ^land_rhs_1, ^land_short_2
+
+  block ^land_rhs_1:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 16
+    %t5 = load i32 %t4
+    %t6 = cmp eq i32 %t5, 123
+    %t7 = cmp ne i64 %t6, 0
+    store i64 %t7, $land__1
+    jump ^land_end_3
+
+  block ^land_short_2:
+    store i64 0, $land__1
+    jump ^land_end_3
+
+  block ^land_end_3:
+    %t8 = load i64 $land__1
+    return u8 %t8
+}
+function @Derived__make(%ret : ptr [pass=indirect_result], %this : ptr, %tag : i32) -> void [binding=weak, object=_ZN7Derived4makeEi] {
+  slot $this : ptr
+  slot $tag : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %tag, $tag
+    call void @Box__Box(%ret)
+    %t1 = load i32 $tag
+    %t2 = convert sext i64 i32 %t1
+    %t3 = copy ptr %t2
+    %t4 = index i8 [projection=field] %ret, 0
+    store ptr %t3, %t4
+    return void
+}
+function @Derived__run(%this : ptr) -> u8 [binding=weak, object=_ZN7Derived3runEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 %t1, 8
+    %t3 = load ptr %t2
+    %t4 = load ptr %t3
+    %t5 = call u8 %t4(%t2, 77) as (%arg0 : ptr, %arg1 : i32) -> u8
+    return u8 %t5
+}
+function @Derived___Derived__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7DerivedD0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Derived__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 8
+    %t6 = addr @Derived____view__Secondary__8__vtable
+    store ptr %t6, %t5
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=base_subobject] %t7, 8
+    call void @Secondary___Secondary__base_entry(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=base_subobject] %t9, 0
+    call void @Primary___Primary__base_entry(%t10)
+    %t11 = load ptr $this
+    call void @operator_delete(%t11)
+    return void
+}
+function @Derived___Derived(%this : ptr) -> void [binding=weak, object=_ZN7DerivedD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Derived__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 8
+    %t6 = addr @Derived____view__Secondary__8__vtable
+    store ptr %t6, %t5
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=base_subobject] %t7, 8
+    call void @Secondary___Secondary__base_entry(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=base_subobject] %t9, 0
+    call void @Primary___Primary__base_entry(%t10)
+    return void
+}
+function @Primary__Primary__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7PrimaryC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Primary__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @Secondary__Secondary__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN9SecondaryC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Secondary__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store ptr 0, %t2
+    return void
+}
+function @Secondary___Secondary__base_entry(%this : ptr) -> void [binding=weak, object=_ZN9SecondaryD2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Secondary__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @Secondary___Secondary__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN9SecondaryD0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Secondary__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    call void @operator_delete(%t4)
+    return void
+}
+function @Secondary___Secondary(%this : ptr) -> void [binding=weak, object=_ZN9SecondaryD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Secondary__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @Primary___Primary__base_entry(%this : ptr) -> void [binding=weak, object=_ZN7PrimaryD2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Primary__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @Primary___Primary__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7PrimaryD0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Primary__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    call void @operator_delete(%t4)
+    return void
+}
+function @Primary___Primary(%this : ptr) -> void [binding=weak, object=_ZN7PrimaryD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Primary__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @_Derived___Derived__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N7DerivedD0Ev] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @Derived___Derived__deleting_entry(%t1)
+    return void
+}
+function @_Derived___Derived__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N7DerivedD1Ev] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @Derived___Derived(%t1)
+    return void
+}
+function @_Derived__check__vtable_return_adjust(%arg0 : ptr, %arg1 : i32) -> u8 [binding=weak, object=_ZThn8_N7Derived5checkEi] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    %t2 = call u8 @Derived__check(%t1, %arg1)
+    return u8 %t2
+}
+alias object _ZN7DerivedC2Ev = @Derived__Derived
+alias object _ZN7DerivedD2Ev = @Derived___Derived
+alias object _ZN3BoxC2Ev = @Box__Box
+alias object _ZN9SecondaryD2Ev = @Secondary___Secondary
+alias object _ZN7PrimaryD2Ev = @Primary___Primary

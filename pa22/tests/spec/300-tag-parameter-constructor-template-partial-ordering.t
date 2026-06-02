@@ -12,18 +12,10 @@ struct Count
 
 #line 1 "shared_count.hpp"
   template<class P, class D>
-  Count(P p, D d)
+  Count(P p, D)
     : pi_(0)
   {
-    try
-    {
-      pi_ = p;
-    }
-    catch(...)
-    {
-      d(p);
-      throw;
-    }
+    pi_ = p;
   }
 
 #line 1 "shared_count.hpp"

@@ -1,0 +1,38 @@
+global @global_stream [binding=strong, object=_Z13global_stream] = {
+  zero 1
+}
+global @global_passthrough : ptr [binding=strong, object=_Z18global_passthrough] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr @global_passthrough
+    branch %t1, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t2 = load i32 $cond__1
+    return i32 %t2
+}
+function @ns__passthrough(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2ns11passthroughIcNS_6traitsIcEEEERNS_6streamIT_T0_EES7_] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @ns__passthrough
+    store ptr %t1, @global_passthrough
+    return void
+}

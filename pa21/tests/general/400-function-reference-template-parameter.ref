@@ -1,0 +1,30 @@
+function @inc(%value : i32) -> i32 [binding=strong, object=_Z3inci] {
+  slot $value : i32
+
+  block ^entry:
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = addr @inc
+    %t2 = call i32 @apply(41, %t1)
+    %t3 = cmp ne i32 %t2, 42
+    %t4 = convert zext i32 u8 %t3
+    return i32 %t4
+}
+function @apply(%value : i32, %fn : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5applyIFiiEEiiRKT_] {
+  slot $value : i32
+  slot $fn : ptr
+
+  block ^entry:
+    store i32 %value, $value
+    store ptr %fn, $fn
+    %t1 = load i32 $value
+    %t2 = load ptr $fn
+    %t3 = unary decay ptr %t2
+    %t4 = call i32 %t3(%t1) as (%arg0 : i32) -> i32
+    return i32 %t4
+}

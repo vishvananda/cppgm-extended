@@ -1,0 +1,261 @@
+declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare function @hosted_vtable_layout_call_third(%arg0 : ptr) -> i32 [linkage=c, binding=strong]
+
+global @__typeinfo_name__struct_HostAbiBase [storage=readonly, binding=weak, object=_ZTS11HostAbiBase] = {
+  i8 49
+  i8 49
+  i8 72
+  i8 111
+  i8 115
+  i8 116
+  i8 65
+  i8 98
+  i8 105
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_struct_HostAbiBase [storage=readonly, binding=weak, object=_ZTI11HostAbiBase] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_HostAbiBase
+}
+global @HostAbiBase__vtable [storage=readonly, binding=strong, object=_ZTV11HostAbiBase] = {
+  i64 0
+  ptr addr @__rtti_struct_HostAbiBase
+  ptr addr @HostAbiBase__first
+  ptr addr @HostAbiBase__second
+  ptr addr @HostAbiBase__third
+}
+global @__typeinfo_name__struct_HostAbiOther [storage=readonly, binding=weak, object=_ZTS12HostAbiOther] = {
+  i8 49
+  i8 50
+  i8 72
+  i8 111
+  i8 115
+  i8 116
+  i8 65
+  i8 98
+  i8 105
+  i8 79
+  i8 116
+  i8 104
+  i8 101
+  i8 114
+  i8 0
+}
+global @__rtti_struct_HostAbiOther [storage=readonly, binding=weak, object=_ZTI12HostAbiOther] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_HostAbiOther
+}
+global @HostAbiOther__vtable [storage=readonly, binding=strong, object=_ZTV12HostAbiOther] = {
+  i64 0
+  ptr addr @__rtti_struct_HostAbiOther
+  ptr addr @HostAbiOther__other
+}
+global @__typeinfo_name__struct_HostAbiDerived [storage=readonly, binding=weak, object=_ZTS14HostAbiDerived] = {
+  i8 49
+  i8 52
+  i8 72
+  i8 111
+  i8 115
+  i8 116
+  i8 65
+  i8 98
+  i8 105
+  i8 68
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_struct_HostAbiDerived [storage=readonly, binding=weak, object=_ZTI14HostAbiDerived] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_HostAbiDerived
+  i32 0
+  i32 2
+  ptr addr @__rtti_struct_HostAbiBase
+  i64 2
+  ptr addr @__rtti_struct_HostAbiOther
+  i64 2050
+}
+global @HostAbiDerived__vtable [storage=readonly, binding=strong, object=_ZTV14HostAbiDerived] = {
+  i64 0
+  ptr addr @__rtti_struct_HostAbiDerived
+  ptr addr @HostAbiDerived__first
+  ptr addr @HostAbiDerived__second
+  ptr addr @HostAbiDerived__third
+}
+global @HostAbiDerived____view__HostAbiOther__8__vtable [storage=readonly, binding=weak, object=@HostAbiDerived____view__HostAbiOther__8__vtable] = {
+  ptr addr @_HostAbiDerived__other__vtable_return_adjust
+}
+global @derived [binding=internal, object=_Z7derived] = {
+  zero 16
+}
+
+function @HostAbiBase__first(%this : ptr) -> i32 [binding=strong, object=_ZN11HostAbiBase5firstEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 1
+}
+function @HostAbiBase__second(%this : ptr) -> i32 [binding=strong, object=_ZN11HostAbiBase6secondEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 2
+}
+function @HostAbiBase__third(%this : ptr) -> i32 [binding=strong, object=_ZN11HostAbiBase5thirdEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 3
+}
+function @HostAbiOther__other(%this : ptr) -> i32 [binding=strong, object=_ZN12HostAbiOther5otherEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 4
+}
+function @HostAbiDerived__first(%this : ptr) -> i32 [binding=strong, object=_ZN14HostAbiDerived5firstEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 10
+}
+function @HostAbiDerived__second(%this : ptr) -> i32 [binding=strong, object=_ZN14HostAbiDerived6secondEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 20
+}
+function @HostAbiDerived__third(%this : ptr) -> i32 [binding=strong, object=_ZN14HostAbiDerived5thirdEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 30
+}
+function @HostAbiDerived__other(%this : ptr) -> i32 [binding=strong, object=_ZN14HostAbiDerived5otherEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 40
+}
+function @cppgm_call_third(%base : ptr) -> i32 [binding=strong, object=_Z16cppgm_call_thirdP11HostAbiBase] {
+  slot $base : ptr
+
+  block ^entry:
+    store ptr %base, $base
+    %t1 = load ptr $base
+    %t2 = load ptr %t1
+    %t3 = index i8 %t2, 16
+    %t4 = load ptr %t3
+    %t5 = call i32 %t4(%t1) as (%arg0 : ptr) -> i32
+    return i32 %t5
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $base : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr @derived
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    store ptr %t2, $base
+    %t3 = load ptr $base
+    %t4 = call i32 @cppgm_call_third(%t3)
+    %t5 = cmp ne i32 %t4, 30
+    branch %t5, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t6 = load ptr $base
+    %t7 = call i32 @hosted_vtable_layout_call_third(%t6)
+    %t8 = cmp eq i32 %t7, 30
+    branch %t8, ^cond_then_4, ^cond_else_5
+
+  block ^cond_then_4:
+    store i32 0, $cond__1
+    jump ^cond_end_6
+
+  block ^cond_else_5:
+    store i32 2, $cond__1
+    jump ^cond_end_6
+
+  block ^cond_end_6:
+    %t9 = load i32 $cond__1
+    return i32 %t9
+}
+function @HostAbiDerived__HostAbiDerived(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN14HostAbiDerivedC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @HostAbiBase__HostAbiBase__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 8
+    call void @HostAbiOther__HostAbiOther__base_entry(%t4)
+    %t5 = load ptr $this
+    %t6 = addr @HostAbiDerived__vtable
+    %t7 = index i8 %t6, 16
+    store ptr %t7, %t5
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=base_subobject] %t8, 8
+    %t10 = addr @HostAbiDerived____view__HostAbiOther__8__vtable
+    store ptr %t10, %t9
+    return void
+}
+function @HostAbiBase__HostAbiBase__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11HostAbiBaseC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @HostAbiBase__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @HostAbiOther__HostAbiOther__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN12HostAbiOtherC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @HostAbiOther__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @_HostAbiDerived__other__vtable_return_adjust(%arg0 : ptr) -> i32 [binding=strong, object=_ZThn8_N14HostAbiDerived5otherEv] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    %t2 = call i32 @HostAbiDerived__other(%t1)
+    return i32 %t2
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @derived
+    call void @HostAbiDerived__HostAbiDerived(%t1)
+    return void
+}
+alias object _ZN14HostAbiDerivedC2Ev = @HostAbiDerived__HostAbiDerived
