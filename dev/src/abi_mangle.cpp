@@ -578,6 +578,27 @@ string array_bound_text(const ParseContext & ctx, const string & word)
   return word;
 }
 
+// cv-qualified, pointer, and reference types are Itanium substitution candidates:
+// each must be given a whole-type substitution key so it is counted (advancing later
+// seq-ids to match clang, which counts e.g. `const T` and `T&` as candidates) and is
+// back-referenced on repeat. The `template`/`std-template` builders already do this,
+// and codegen sets it on every constructed type; the plain cv/ref/pointer builders
+// historically did not, so a fresh type following a cv/ref *parameter* mangled with a
+// too-low S<n>_ (e.g. mixed_subst_one's inner std::__1 ref: NS1_ vs clang's NS3_).
+// Only these qualifier/indirection builders need this — array/member-pointer/vendor/
+// transform types reach the mangler as template arguments, which already register via
+// the class-template-argument path; wrapping those too would double-count them.
+// make_type_substitution_key returns false for non-substitutable kinds (builtins,
+// bare template params), so the call is a no-op there.
+Type with_type_substitution_key(Type out)
+{
+  SubstitutionKey key;
+  if(make_type_substitution_key(out, key)) {
+    set_substitution(out, key);
+  }
+  return out;
+}
+
 Type parse_single_type_token(const ParseContext & ctx, const string & text)
 {
   map<string, Type>::const_iterator named_ref = ctx.types.find(text);
@@ -585,19 +606,24 @@ Type parse_single_type_token(const ParseContext & ctx, const string & text)
     return named_ref->second;
   }
   if(starts_with(text, "ptr:")) {
-    return Type::pointer(parse_single_type_token(ctx, text.substr(4)));
+    return with_type_substitution_key(
+        Type::pointer(parse_single_type_token(ctx, text.substr(4))));
   }
   if(starts_with(text, "ref:")) {
-    return Type::lvalue_reference(parse_single_type_token(ctx, text.substr(4)));
+    return with_type_substitution_key(
+        Type::lvalue_reference(parse_single_type_token(ctx, text.substr(4))));
   }
   if(starts_with(text, "rref:")) {
-    return Type::rvalue_reference(parse_single_type_token(ctx, text.substr(5)));
+    return with_type_substitution_key(
+        Type::rvalue_reference(parse_single_type_token(ctx, text.substr(5))));
   }
   if(starts_with(text, "const:")) {
-    return Type::cv(true, false, parse_single_type_token(ctx, text.substr(6)));
+    return with_type_substitution_key(
+        Type::cv(true, false, parse_single_type_token(ctx, text.substr(6))));
   }
   if(starts_with(text, "volatile:")) {
-    return Type::cv(false, true, parse_single_type_token(ctx, text.substr(9)));
+    return with_type_substitution_key(
+        Type::cv(false, true, parse_single_type_token(ctx, text.substr(9))));
   }
   if(starts_with(text, "vendor:")) {
     const string rest = text.substr(7);
@@ -677,13 +703,13 @@ Type parse_type_spec(const ParseContext & ctx, const vector<string> & words, siz
       throw logic_error(kind + " type requires one operand");
     }
     Type child = parse_single_type_token(ctx, words[begin + 1]);
-    if(kind == "ptr") { return Type::pointer(child); }
-    if(kind == "ref") { return Type::lvalue_reference(child); }
-    if(kind == "rref") { return Type::rvalue_reference(child); }
-    if(kind == "const") { return Type::cv(true, false, child); }
-    if(kind == "volatile") { return Type::cv(false, true, child); }
+    if(kind == "ptr") { return with_type_substitution_key(Type::pointer(child)); }
+    if(kind == "ref") { return with_type_substitution_key(Type::lvalue_reference(child)); }
+    if(kind == "rref") { return with_type_substitution_key(Type::rvalue_reference(child)); }
+    if(kind == "const") { return with_type_substitution_key(Type::cv(true, false, child)); }
+    if(kind == "volatile") { return with_type_substitution_key(Type::cv(false, true, child)); }
     if(kind == "const-volatile" || kind == "cv") {
-      return Type::cv(true, true, child);
+      return with_type_substitution_key(Type::cv(true, true, child));
     }
     return Type::pack_expansion(child);
   }
