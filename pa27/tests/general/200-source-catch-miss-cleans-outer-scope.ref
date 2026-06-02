@@ -50,12 +50,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_entry_5:
     %t4 = exception ptr
-    %t5 = call ptr @__external_runtime____cxa_begin_catch(%t4)
-    %t6 = exception_selector i32
-    %t7 = cmp eq i32 %t6, 1
-    branch %t7, ^catch_body_7, ^catch_next_8
+    %t5 = exception_selector i32
+    %t6 = cmp eq i32 %t5, 1
+    branch %t6, ^catch_body_7, ^catch_next_8
 
   block ^catch_body_7:
+    %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_9
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -72,7 +72,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^catch_entry_2
 
   block ^catch_next_8:
-    call void @__external_runtime____cxa_end_catch()
     %t9 = addr $guard
     call void @Guard___Guard(%t9)
     jump ^catch_entry_2
@@ -89,12 +88,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_entry_2:
     %t11 = exception ptr
-    %t12 = call ptr @__external_runtime____cxa_begin_catch(%t11)
-    %t13 = exception_selector i32
-    %t14 = cmp eq i32 %t13, 2
-    branch %t14, ^catch_body_10, ^catch_next_11
+    %t12 = exception_selector i32
+    %t13 = cmp eq i32 %t12, 2
+    branch %t13, ^catch_body_10, ^catch_next_11
 
   block ^catch_body_10:
+    %t14 = call ptr @__external_runtime____cxa_begin_catch(%t11)
     eh_cleanup ^catch_cleanup_12
     %t15 = load i32 @destroyed
     %t16 = cmp eq i32 %t15, 1
@@ -120,7 +119,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^catch_next_11:
-    call void @__external_runtime____cxa_end_catch()
     resume
 
   block ^try_end_3:

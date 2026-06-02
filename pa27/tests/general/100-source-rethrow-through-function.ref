@@ -36,12 +36,12 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
 
   block ^catch_entry_2:
     %t3 = exception ptr
-    %t4 = call ptr @__external_runtime____cxa_begin_catch(%t3)
-    %t5 = exception_selector i32
-    %t6 = cmp eq i32 %t5, 1
-    branch %t6, ^catch_body_4, ^catch_next_5
+    %t4 = exception_selector i32
+    %t5 = cmp eq i32 %t4, 1
+    branch %t5, ^catch_body_4, ^catch_next_5
 
   block ^catch_body_4:
+    %t6 = call ptr @__external_runtime____cxa_begin_catch(%t3)
     eh_cleanup ^catch_cleanup_6
     call void @__external_runtime____cxa_rethrow()
     return i32 0
@@ -52,7 +52,6 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
     resume
 
   block ^catch_next_5:
-    call void @__external_runtime____cxa_end_catch()
     resume
 
   block ^try_end_3:
@@ -74,33 +73,28 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_entry_2:
     %t2 = exception ptr
-    %t3 = call ptr @__external_runtime____cxa_begin_catch(%t2)
-    %t4 = exception_selector i32
-    %t5 = cmp eq i32 %t4, 1
-    branch %t5, ^catch_match_6, ^catch_next_5
-
-  block ^catch_match_6:
-    store ptr %t3, $catch__1
-    jump ^catch_body_4
+    %t3 = exception_selector i32
+    %t4 = cmp eq i32 %t3, 1
+    branch %t4, ^catch_body_4, ^catch_next_5
 
   block ^catch_body_4:
-    eh_cleanup ^catch_cleanup_7
-    %t6 = load ptr $catch__1
-    %t7 = load i32 %t6
-    store i32 %t7, $x
-    %t8 = load i32 $x
-    %t9 = binary sub i32 %t8, 3
+    %t5 = call ptr @__external_runtime____cxa_begin_catch(%t2)
+    store ptr %t5, $catch__1
+    eh_cleanup ^catch_cleanup_6
+    %t6 = load i32 %t5
+    store i32 %t6, $x
+    %t7 = load i32 $x
+    %t8 = binary sub i32 %t7, 3
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t9
+    return i32 %t8
 
-  block ^catch_cleanup_7:
+  block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
   block ^catch_next_5:
-    call void @__external_runtime____cxa_end_catch()
     resume
 
   block ^try_end_3:
