@@ -168,9 +168,9 @@ Owns:
 
 Focus:
 
-- `lowir2native`, `cpplink`, `cppeh`, and later source-level runtime features
+- `lowir2native`, host-EH facts, and later source-level runtime features
 - native/object/runtime prerequisites
-- scaffold sidecars for `lowir2native`, `cpplink`, `cppeh`, and `cppgm++`
+- scaffold sidecars for `lowir2native` and `cppgm++`
 - grammar helper consistency
 
 ### Slice E: PA30-PA35

@@ -226,7 +226,7 @@ test-report: build
 		TEST_REPORT_SUBTEST_JOBS='$(TEST_REPORT_SUBTEST_JOBS)' \
 		ORDERED='$(ORDERED)'
 
-test-report-through-%: build
+test-report-through-%-nobuild:
 	@target='$*'; \
 	max=$${target#pa}; \
 	pas=''; \
@@ -242,7 +242,7 @@ test-report-through-%: build
 		TEST_REPORT_SUBTEST_JOBS='$(TEST_REPORT_SUBTEST_JOBS)' \
 		ORDERED='$(ORDERED)'
 
-test-report-through-%-nobuild:
+test-report-through-%: build
 	@target='$*'; \
 	max=$${target#pa}; \
 	pas=''; \

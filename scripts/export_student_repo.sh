@@ -143,6 +143,9 @@ sanitize_linux_student_scripts() {
 
 pa_dirs=()
 for n in $(seq 1 38); do
+  if [ "$n" -eq 24 ]; then
+    continue
+  fi
   pa_dirs+=("pa$n")
 done
 
@@ -213,8 +216,6 @@ scaffold_pairs=(
   cppgm++:cppgm++-scaffold.cpp
   lowir2cy86:lowir2cy86-scaffold.cpp
   lowir2native:lowir2native-scaffold.cpp
-  cpplink:cpplink-scaffold.cpp
-  cppeh:cppeh-scaffold.cpp
   lowiropt:lowiropt-scaffold.cpp
 )
 
@@ -230,7 +231,7 @@ cat > "$dest/dev/frontend_source_sets.mk" <<'EOF'
 # Add dev/src/foo.cpp to the tools that use it by adding `foo` below. For
 # subdirectories, use the path without `.cpp`, such as `parser/foo`.
 
-FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native cpplink cppeh
+FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native
 
 FRONTEND_OBJ_BASENAMES_abimangle :=
 FRONTEND_OBJ_BASENAMES_pptoken :=
@@ -246,8 +247,6 @@ FRONTEND_OBJ_BASENAMES_cppgm++ :=
 FRONTEND_OBJ_BASENAMES_lowiropt :=
 FRONTEND_OBJ_BASENAMES_lowir2cy86 :=
 FRONTEND_OBJ_BASENAMES_lowir2native :=
-FRONTEND_OBJ_BASENAMES_cpplink :=
-FRONTEND_OBJ_BASENAMES_cppeh :=
 EOF
 
 cat > "$dest/dev/Makefile" <<'EOF'
@@ -267,8 +266,6 @@ TARGETS = \
 	lowir2cy86 \
 	lowiropt \
 	lowir2native \
-	cppeh \
-	cpplink \
 	cppgm++ \
 	nsdecl \
 	nsinit \
@@ -396,8 +393,6 @@ reference_targets=(
   cppgm++
   lowir2cy86
   lowir2native
-  cpplink
-  cppeh
   lowiropt
 )
 
@@ -443,7 +438,6 @@ pa_ref_pairs=(
   pa21:cppgm++
   pa22:cppgm++
   pa23:lowir2native
-  pa24:cpplink
   pa25:cppgm++
   pa26:cppgm++
   pa27:cppgm++

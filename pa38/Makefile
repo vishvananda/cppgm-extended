@@ -11,8 +11,6 @@ TARGETS = \
 	lowiropt-self \
 	lowir2cy86-self \
 	lowir2native-self \
-	cpplink-self \
-	cppeh-self \
 	cppgm++-self
 
 DEFAULT_BUILD_JOBS = $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
@@ -95,14 +93,14 @@ PA38_OBJ_ROOT ?= $(PA38_OBJ_ROOT_BASE)/$(PA38_COMPILER_FLAVOR)
 PA38_BIN_ROOT ?= $(PA38_BIN_ROOT_BASE)/$(PA38_COMPILER_FLAVOR)
 PA38_OUTPUT_SUFFIX ?= -self
 
-CHECKPOINTS = pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native cpplink cppeh
+CHECKPOINTS = pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native
 TEST_TARGETS = $(addprefix test-,$(CHECKPOINTS))
 THROUGH_TARGETS = $(addprefix through-,$(CHECKPOINTS))
 TEST_THROUGH_TARGETS = $(addprefix test-through-,$(CHECKPOINTS))
 INCEPTION_TARGETS = $(addsuffix -inception,$(CHECKPOINTS))
 INCEPTION_COMPARE_TARGETS = $(addprefix compare-,$(INCEPTION_TARGETS))
-PA_STAGE_NAMES = pa1 pa2 pa3 pa4 pa5 pa6 pa7 pa8 pa9 pa10 pa11 pa12 pa13 pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa23 pa24 pa25 pa26 pa27 pa28 pa29 pa30 pa32 pa33 pa34 pa35 pa36 pa37
-PA38_BATCH_TEST_STAGE_NAMES = pa10 pa11 pa12 pa13 pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa23 pa24 pa25 pa26 pa27 pa28 pa29 pa30 pa32 pa33 pa34 pa35 pa36 pa37
+PA_STAGE_NAMES = pa1 pa2 pa3 pa4 pa5 pa6 pa7 pa8 pa9 pa10 pa11 pa12 pa13 pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa23 pa25 pa26 pa27 pa28 pa29 pa30 pa32 pa33 pa34 pa35 pa36 pa37
+PA38_BATCH_TEST_STAGE_NAMES = pa10 pa11 pa12 pa13 pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa23 pa25 pa26 pa27 pa28 pa29 pa30 pa32 pa33 pa34 pa35 pa36 pa37
 PA38_BATCH_TEST_ENV = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),CPPGM_BATCH_TESTS=1 WRAPPED_BATCH_STDIN=1,)
 pa38_stage_test_env = $(if $(filter $(1),$(PA38_BATCH_TEST_STAGE_NAMES)),$(PA38_BATCH_TEST_ENV),)
 PA_THROUGH_TARGETS = $(addprefix through-,$(PA_STAGE_NAMES))
@@ -123,8 +121,6 @@ PA38_PREV_cppgm++ = cy86
 PA38_PREV_lowiropt = cppgm++
 PA38_PREV_lowir2cy86 = cppgm++
 PA38_PREV_lowir2native = lowir2cy86
-PA38_PREV_cpplink = lowir2native
-PA38_PREV_cppeh = cpplink
 
 PA38_CHECKPOINT_FOR_pa1 = pptoken
 PA38_CHECKPOINT_FOR_pa2 = posttoken
@@ -149,8 +145,7 @@ PA38_CHECKPOINT_FOR_pa20 = cppgm++
 PA38_CHECKPOINT_FOR_pa21 = cppgm++
 PA38_CHECKPOINT_FOR_pa22 = cppgm++
 PA38_CHECKPOINT_FOR_pa23 = lowir2native
-PA38_CHECKPOINT_FOR_pa24 = cpplink
-PA38_CHECKPOINT_FOR_pa25 = cppeh
+PA38_CHECKPOINT_FOR_pa25 = cppgm++
 PA38_CHECKPOINT_FOR_pa26 = cppgm++
 PA38_CHECKPOINT_FOR_pa27 = cppgm++
 PA38_CHECKPOINT_FOR_pa28 = cppgm++
@@ -175,8 +170,6 @@ PA38_PRIMARY_STAGE_cppgm++ = pa10
 PA38_PRIMARY_STAGE_lowiropt = pa36
 PA38_PRIMARY_STAGE_lowir2cy86 = pa13
 PA38_PRIMARY_STAGE_lowir2native = pa23
-PA38_PRIMARY_STAGE_cpplink = pa24
-PA38_PRIMARY_STAGE_cppeh = pa25
 
 PA38_PREV_STAGE_pa1 =
 PA38_PREV_STAGE_pa2 = pa1
@@ -201,8 +194,7 @@ PA38_PREV_STAGE_pa20 = pa19
 PA38_PREV_STAGE_pa21 = pa20
 PA38_PREV_STAGE_pa22 = pa21
 PA38_PREV_STAGE_pa23 = pa22
-PA38_PREV_STAGE_pa24 = pa23
-PA38_PREV_STAGE_pa25 = pa24
+PA38_PREV_STAGE_pa25 = pa23
 PA38_PREV_STAGE_pa26 = pa25
 PA38_PREV_STAGE_pa27 = pa26
 PA38_PREV_STAGE_pa28 = pa27
@@ -238,7 +230,6 @@ PA38_STAGE_ARGS_pa20 = --emit-lowir -O0
 PA38_STAGE_ARGS_pa21 = --emit-lowir -O0
 PA38_STAGE_ARGS_pa22 = --emit-lowir -O0
 PA38_STAGE_ARGS_pa23 =
-PA38_STAGE_ARGS_pa24 =
 PA38_STAGE_ARGS_pa25 =
 PA38_STAGE_ARGS_pa26 = --emit-lowir -O0
 PA38_STAGE_ARGS_pa27 = --emit-lowir -O0
@@ -275,7 +266,6 @@ PA38_COURSE_STAGE_pa20 = course/pa20
 PA38_COURSE_STAGE_pa21 = course/pa21
 PA38_COURSE_STAGE_pa22 = course/pa22
 PA38_COURSE_STAGE_pa23 = course/pa23
-PA38_COURSE_STAGE_pa24 = course/pa24
 PA38_COURSE_STAGE_pa25 = course/pa25
 PA38_COURSE_STAGE_pa26 = course/pa26
 PA38_COURSE_STAGE_pa27 = course/pa27

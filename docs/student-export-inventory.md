@@ -44,7 +44,6 @@ into per-PA inventory entries and mark unresolved decisions explicitly.
 | PA13 | `lowir2cy86` | `dev/lowir2cy86.cpp` | `dev/lowir2cy86-scaffold.cpp` | Scaffold exists. |
 | PA14-PA22 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
 | PA23 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists. |
-| PA24 | `cpplink` | `dev/cpplink.cpp` | `dev/cpplink-scaffold.cpp` | Scaffold exists. |
 | PA25 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Reuses cumulative compile-mode scaffold; PA25 documents the host-EH facts contract separately. |
 | PA26-PA30 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
 | PA31 | `abimangle` | `dev/abimangle.cpp` | `dev/abimangle-scaffold.cpp` | Scaffold exists; optional typed ABI fact header is exported under `dev/src`. |
@@ -160,13 +159,9 @@ or approved shared infrastructure update.
   `dev/lowir2native-scaffold.cpp`; support files include `pa23.gram`,
   `grammar/`, `../pa13/lowir.md`, `tests/strict`, `tests/structural`, refs, and
   harness scripts.
-- PA24 exports `cpplink`; students edit `dev/cpplink.cpp` from
-  `dev/cpplink-scaffold.cpp`; support files include `pa24.gram`, `grammar/`,
-  `tests/general`, refs, and harness scripts.
 - PA25 exports `cppgm++ -c`; students edit `dev/cppgm++.cpp` from
   `dev/cppgm++-scaffold.cpp`; support files include `tests/general`, refs,
-  host object/symbol inspection helpers, and the earlier `cpplink`/`cppeh`
-  support used by LowIR-side backend smoke tests.
+  host object/symbol inspection helpers, and normalized host-EH fact dumping.
 - PA26-PA29 export cumulative `cppgm++ --emit-lowir -O0`; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include each
   PA's grammar/explorer where present, tests, refs, and harness scripts.
@@ -221,7 +216,7 @@ staged self-host ladder over checkpoint tools:
 
 - `pptoken`, `posttoken`, `ctrlexpr`, `macro`, `preproc`, `recog`, `nsdecl`,
   `nsinit`, `cy86`
-- `cppgm++`, `lowiropt`, `lowir2cy86`, `lowir2native`, `cpplink`, `cppeh`
+- `cppgm++`, `lowiropt`, `lowir2cy86`, `lowir2native`
 
 Source sets derive from `dev/frontend_source_sets.mk`, and generated checkpoint
 binaries live under `../obj/pa38/bin/selfhost/*-self`.
