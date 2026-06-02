@@ -2585,7 +2585,15 @@ inline bool emit_type_owned(Type & type, std::string & out, SubstitutionSink * s
   }
 
   if(sink && substitution_key && !substitution_key->empty()) {
-    sink->register_substitution_owned(std::move(*substitution_key));
+    if(type.substitution.unique()) {
+      sink->register_substitution_owned(std::move(*substitution_key));
+    } else {
+      // The SubstitutionMetadata record is shared (e.g. a cached parameter type
+      // reused for a repeated argument like f(C, C)); moving its key out would
+      // corrupt the other holders and make the repeat re-spell instead of
+      // back-referencing. Register a copy when the record is not uniquely owned.
+      sink->register_substitution(*substitution_key);
+    }
   }
   return true;
 }
