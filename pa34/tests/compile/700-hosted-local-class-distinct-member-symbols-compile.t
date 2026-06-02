@@ -1,6 +1,10 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <type_traits>
+
+static_assert(std::is_same<std::vector<int>::value_type, int>::value, "<vector> value_type");
+static_assert(std::is_same<std::string::value_type, char>::value, "<string> value_type");
 
 std::string f1()
 {
@@ -9,7 +13,6 @@ std::string f1()
   std::sort(v.begin(), v.end(), [](const Local& a, const Local& b) { return a.s < b.s; });
   return std::string();
 }
-
 std::string f2()
 {
   struct Local { std::string s; int x; };
@@ -17,8 +20,4 @@ std::string f2()
   std::sort(v.begin(), v.end(), [](const Local& a, const Local& b) { return a.s < b.s; });
   return std::string();
 }
-
-int main()
-{
-  return 0;
-}
+int main() { return 0; }
