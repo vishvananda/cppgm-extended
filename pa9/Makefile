@@ -35,14 +35,7 @@ link_objs = $(call common_objs,$(1)) $(call runner_obj,$(1))
 link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
 linux_sources = /cppgm/dev/cy86.cpp $(addprefix /cppgm/dev/src/,$(addsuffix .cpp,$(common_obj_basenames)))
 
-all: $(TARGET) $(LINUX_TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call link_prereqs,release)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call link_objs,release)
-
-$(TARGET)-debug: CC_FLAGS += -D_DEBUG -g -pg
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call link_prereqs,debug)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call link_objs,debug)
+all: dev-shared-target
 
 $(LINUX_TARGET): ../dev/cy86.cpp $(addprefix $(SRC)/,$(addsuffix .cpp,$(common_obj_basenames)))
 	docker run --rm -v $(REPO_ROOT):/cppgm $(DOCKER_IMAGE) bash -lc "g++ -O3 -std=gnu++11 -static -I/cppgm/dev/src -o /cppgm/pa9/$(LINUX_TARGET) $(linux_sources)"
@@ -109,7 +102,6 @@ ref-test:
 
 RUN_CHECK_DEPS = $(TEST_DEPS)
 include ../scripts/pa_run_check_targets.mk
-
 
 clean:
 	-rm -f $(TARGET) $(TARGET)-debug $(LINUX_TARGET) $(OBJ)/release/*.o $(OBJ)/debug/*.o

@@ -29,14 +29,7 @@ runner_state_stamp = $(OBJ)/$(1)/.test_runner_mode
 link_objs = $(call common_objs,$(1)) $(call runner_obj,$(1))
 link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call link_prereqs,release)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call link_objs,release)
-
-$(TARGET)-debug: CC_FLAGS += -D_DEBUG -g -pg
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call link_prereqs,debug)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call link_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@
@@ -86,7 +79,6 @@ ref-test:
 
 RUN_CHECK_DEPS = $(TEST_DEPS)
 include ../scripts/pa_run_check_targets.mk
-
 
 clean:
 	-rm -f $(TARGET) $(TARGET)-debug $(OBJ)/release/*.o $(OBJ)/debug/*.o

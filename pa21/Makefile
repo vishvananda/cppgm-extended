@@ -31,14 +31,7 @@ runner_state_stamp = $(OBJ)/$(1)/.test_runner_mode
 link_objs = $(call common_objs,$(1)) $(call runner_obj,$(1))
 link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call link_prereqs,release)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call link_objs,release)
-
-$(TARGET)-debug: CC_FLAGS += -D_DEBUG -g -pg
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call link_prereqs,debug)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call link_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@
@@ -69,7 +62,6 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/test_runner.cpp
 	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
-
 ifeq ($(COURSE_TEST_ROOT),)
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
@@ -97,7 +89,6 @@ test-strict: $(TEST_DEPS)
 	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
 	@test ! -f .test_failed
 endif
-
 
 ref-test:
 	@scripts/run_all_tests.pl $(REF_TEST_APP) ref tests

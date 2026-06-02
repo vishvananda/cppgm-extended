@@ -25,6 +25,10 @@ endif
 ifeq ($(origin CXX), default)
 CXX := $(HOST_CXX_DEFAULT)
 endif
+ifeq ($(origin CPPGM_HOST_CXX), undefined)
+CPPGM_HOST_CXX := $(CXX)
+endif
+export CPPGM_HOST_CXX
 CPPGM_STDLIB_FLAGS ?=
 REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
 CC_FLAGS = -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS)
@@ -53,14 +57,7 @@ include ../dev/frontend_source_sets.mk
 common_obj_basenames = $(FRONTEND_OBJ_BASENAMES_$(TARGET))
 common_objs = $(addprefix $(OBJ)/$(1)/,$(addsuffix .o,$(common_obj_basenames)))
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call common_objs,release)
-	$(CXX) $(CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call common_objs,release)
-
-$(TARGET)-debug: CC_FLAGS += -D_DEBUG -g -pg
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call common_objs,debug)
-	$(CXX) $(CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call common_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@

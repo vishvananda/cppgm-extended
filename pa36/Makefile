@@ -29,6 +29,10 @@ endif
 ifeq ($(origin CXX), default)
 CXX := $(HOST_CXX_DEFAULT)
 endif
+ifeq ($(origin CPPGM_HOST_CXX), undefined)
+CPPGM_HOST_CXX := $(CXX)
+endif
+export CPPGM_HOST_CXX
 CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
 REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
@@ -72,14 +76,7 @@ runner_state_stamp = $(OBJ)/$(1)/.test_runner_mode
 link_objs = $(call common_objs,$(1)) $(call runner_obj,$(1))
 link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
 
-all: $(TARGET)
-
-$(TARGET): $(OBJ)/release $(TARGET).cpp $(call link_prereqs,release)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET) $(TARGET).cpp $(call link_objs,release)
-
-$(TARGET)-debug: CC_FLAGS += -D_DEBUG -g -pg
-$(TARGET)-debug: $(OBJ)/debug $(TARGET).cpp $(call link_prereqs,debug)
-	$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $(TARGET)-debug $(TARGET).cpp $(call link_objs,debug)
+all: dev-shared-target
 
 $(OBJ)/release $(OBJ)/debug: %:
 	@- mkdir -p $@
@@ -118,7 +115,6 @@ define run_text_course_bucket
 		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(3): no tests"; fi; \
 	fi
 endef
-
 
 test: $(TEST_DEPS)
 	@CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(O0_TEST_ROOT)
