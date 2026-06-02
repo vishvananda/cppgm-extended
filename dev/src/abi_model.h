@@ -268,12 +268,30 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     out = type_substitution_key(type);
     return true;
 
-  case Type::TK_CLASS_TEMPLATE_SPECIALIZATION:
-    if(!type_has_substitution(type)) {
+  case Type::TK_CLASS_TEMPLATE_SPECIALIZATION: {
+    const Type::NameMetadata * metadata = type.name.get();
+    if(!metadata ||
+       (metadata->template_name.empty() &&
+        !metadata->template_name_is_template_parameter)) {
       return false;
     }
-    out = type_substitution_key(type);
-    return true;
+    std::vector<SubstitutionKey> argument_keys;
+    argument_keys.reserve(metadata->template_arguments.size());
+    for(std::size_t i = 0; i < metadata->template_arguments.size(); ++i) {
+      SubstitutionKey argument_key;
+      if(!make_class_template_argument_substitution_key(
+             metadata->template_arguments[i], argument_key)) {
+        return false;
+      }
+      argument_keys.push_back(std::move(argument_key));
+    }
+    out = SubstitutionKey::class_template_specialization(
+        0,
+        metadata->template_name_substitution.empty() ?
+            metadata->template_name : metadata->template_name_substitution,
+        std::move(argument_keys));
+    return !out.empty();
+  }
 
   case Type::TK_DECLTYPE_EXPRESSION:
     if(!type.expression) {
