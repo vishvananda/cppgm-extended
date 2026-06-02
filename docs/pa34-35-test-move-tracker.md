@@ -148,11 +148,11 @@ mangling-consistency oracle.
 - [D] 700-hosted-pure-virtual-base-vtable-link-smoke — covered by pa17 pure-virtual/virtual-dispatch suite (pa17/400 abstract base + 300-virtual-call-*); source removed.
 - [x] 700-secondary-base-virtual-dispatch-view → `pa17/tests/general/300-secondary-base-virtual-class-return` (MI secondary-base dispatch + class return; distinct; pa17 PASS)
 
-### → backend / lowir2native (3) — DROP if already covered
+### → backend / lowir2native (1 recast → pa37; 2 inspect-oracle stay in pa35/link)
 
-- [ ] 700-hosted-imported-global-got-load-link-smoke
-- [ ] 700-hosted-pcrel-data-reloc-link-smoke
-- [ ] 700-thread-local-store-register-pressure-runtime-smoke
+- [-] 700-hosted-imported-global-got-load-link-smoke — **stays in pa35/link** (L2): inspect-oracle test asserting the relocation *class* (`imported_data_got _Z1g`, not `data_pcrel`). lowir2native's single-module program path errors on the unresolved import (`ERROR: unresolved symbol _Z1g`), so GOT — a link-time, cross-object relocation — cannot be exercised there; pa37 also has no inspect oracle for relocation class. Object-backend/link concern.
+- [-] 700-hosted-pcrel-data-reloc-link-smoke — **stays in pa35/link** (L2): inspect-oracle test asserting the relocation *class* (`data_pcrel _Z1g`, not `branch_call`). `pa37/tests/o1/200-pcrel-global-data-load` covers the codegen/runtime of a pcrel global load, but not the relocation-class assertion (no inspect oracle in pa37). Distinct object-backend layer.
+- [x] 700-thread-local-store-register-pressure-runtime-smoke → `pa37/tests/o1/200-thread-local-store-register-pressure` (single complete TU, runtime-smoke exit=37; recast to minimal SSA LowIR — `tls_addr @g__tls_wrapper` + `store [r11]` with 5 live temps + `z` spilled across the TLS-helper call, `preserve rbx r12 r13 r14 r15`; lowir2native -O1 PASS). Source removed.
 
 ### → hosted-compat features PA (14) — home dir TBD (the 248-directed prereq set)
 
@@ -216,10 +216,10 @@ Listed in `docs/pa34-35-test-disposition.md`; do **after** the hosted L1/L2 spli
 | templating (pa18-22) | 13 |
 | pa30 separate-compilation | 3 |
 | vtable/codegen (LowIR band) | 4 |
-| backend / lowir2native | 3 |
+| backend / lowir2native | 1 |
 | hosted-compat features PA | 14 |
 | core PA / DROP | 7 |
-| → hosted L2 (reclassified header-bearing) | 3 |
+| → hosted L2 (reclassified header-bearing / inspect-oracle) | 5 |
 | **no-header RE-HOME subtotal** | **62** |
 | header-bearing (deferred) | 123 |
 | **total ad-hoc** | **185** |
