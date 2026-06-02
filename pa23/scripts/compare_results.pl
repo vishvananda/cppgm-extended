@@ -12,6 +12,20 @@ if (scalar(@ARGV) != 3)
 }
 
 my ($ref_suffix, $my_suffix, $tests_root) = @ARGV;
+
+if (-f $tests_root)
+{
+	my $mode = $tests_root =~ m{(?:^|/)structural/} ? "mir_structural_t" : "mir_t";
+	my $status = system("perl",
+	                    "$repo_root/scripts/compare_results_common.pl",
+	                    $mode,
+	                    $ref_suffix,
+	                    $my_suffix,
+	                    $tests_root);
+	exit($status >> 8) if $status != 0;
+	exit 0;
+}
+
 my @suites = (
 	["mir_t", "$tests_root/strict"],
 	["mir_structural_t", "$tests_root/structural"],
