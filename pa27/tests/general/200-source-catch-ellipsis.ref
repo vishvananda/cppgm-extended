@@ -35,12 +35,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_entry_2:
     %t3 = exception ptr
-    %t4 = call ptr @__external_runtime____cxa_begin_catch(%t3)
-    %t5 = exception_selector i32
-    %t6 = cmp eq i32 %t5, 1
-    branch %t6, ^catch_body_4, ^catch_next_5
+    %t4 = exception_selector i32
+    %t5 = cmp eq i32 %t4, 1
+    branch %t5, ^catch_body_4, ^catch_next_5
 
   block ^catch_body_4:
+    %t6 = call ptr @__external_runtime____cxa_begin_catch(%t3)
     eh_cleanup ^catch_cleanup_6
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -52,7 +52,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^catch_next_5:
-    call void @__external_runtime____cxa_end_catch()
     resume
 
   block ^try_end_3:

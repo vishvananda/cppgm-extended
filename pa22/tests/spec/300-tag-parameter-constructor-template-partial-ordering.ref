@@ -51,12 +51,12 @@ function @Count__Count(%this : ptr, %p : ptr, %d : obj<1x1>) -> void [binding=we
 
   block ^catch_entry_2:
     %t6 = exception ptr
-    %t7 = call ptr @__external_runtime____cxa_begin_catch(%t6)
-    %t8 = exception_selector i32
-    %t9 = cmp eq i32 %t8, 1
-    branch %t9, ^catch_body_4, ^catch_next_5
+    %t7 = exception_selector i32
+    %t8 = cmp eq i32 %t7, 1
+    branch %t8, ^catch_body_4, ^catch_next_5
 
   block ^catch_body_4:
+    %t9 = call ptr @__external_runtime____cxa_begin_catch(%t6)
     eh_cleanup ^catch_cleanup_6
     %t10 = addr $d
     %t11 = load ptr $p
@@ -70,7 +70,6 @@ function @Count__Count(%this : ptr, %p : ptr, %d : obj<1x1>) -> void [binding=we
     resume
 
   block ^catch_next_5:
-    call void @__external_runtime____cxa_end_catch()
     resume
 
   block ^try_end_3:
