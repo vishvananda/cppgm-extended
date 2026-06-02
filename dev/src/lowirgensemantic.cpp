@@ -5753,15 +5753,30 @@ private:
     return emit_temp_assignment("i32", "exception_selector i32");
   }
 
+  string emit_current_exception_pointer()
+  {
+    if(!use_host_eh_runtime()) {
+      throw logic_error("exception pointer only available for host EH runtime");
+    }
+    return emit_temp_assignment("ptr", "exception ptr");
+  }
+
+  string emit_begin_catch_for_exception(const string & exception_ptr)
+  {
+    if(!use_host_eh_runtime()) {
+      throw logic_error("begin catch only available for host EH runtime");
+    }
+    return emit_temp_assignment(
+        "ptr",
+        string("call ptr ") +
+            external_runtime_symbol("__cxa_begin_catch") + "(" +
+            exception_ptr + ")");
+  }
+
   string emit_current_exception_storage()
   {
     if(use_host_eh_runtime()) {
-      const string exception_ptr = emit_temp_assignment("ptr", "exception ptr");
-      return emit_temp_assignment(
-          "ptr",
-          string("call ptr ") +
-              external_runtime_symbol("__cxa_begin_catch") + "(" +
-              exception_ptr + ")");
+      return emit_begin_catch_for_exception(emit_current_exception_pointer());
     }
     return emit_temp_assignment("ptr", string("load ptr ") + emit_exception_storage_slot_address());
   }
@@ -14513,7 +14528,19 @@ private:
         terminate("jump " + lowir_block_name(handler_entry_label));
         start_block(handler_entry_label);
       }
-      const string current_storage = emit_current_exception_storage();
+      const string current_exception =
+          use_host_eh_runtime() ? emit_current_exception_pointer() : string();
+      string current_storage =
+          use_host_eh_runtime() ? string() : emit_current_exception_storage();
+      const auto ensure_current_storage = [&]() -> string
+      {
+        if(current_storage.empty()) {
+          current_storage = use_host_eh_runtime() ?
+              emit_begin_catch_for_exception(current_exception) :
+              emit_current_exception_storage();
+        }
+        return current_storage;
+      };
       string current_type;
       string current_selector;
       string next_label = dispatch_label;
@@ -14581,20 +14608,20 @@ private:
               emit_temp_assignment("i64",
                                    string("cmp eq i32 ") + current_selector + ", " +
                                        to_string(host_handler_selector));
-          if(needs_match_ptr) {
+          if(needs_match_ptr && !use_host_eh_runtime()) {
             const string hit_label = new_block("catch_match");
             terminate("branch " + match + ", " + lowir_block_name(hit_label) + ", " +
                       lowir_block_name(miss_label));
             start_block(hit_label);
-            emit_line("store ptr " + current_storage + ", " + match_ptr_slot);
+            emit_line("store ptr " + ensure_current_storage() + ", " + match_ptr_slot);
             terminate("jump " + lowir_block_name(body_label));
           } else {
             terminate("branch " + match + ", " + lowir_block_name(body_label) + ", " +
                       lowir_block_name(miss_label));
           }
         } else if(handler.text == "...") {
-          if(needs_match_ptr) {
-            emit_line("store ptr " + current_storage + ", " + match_ptr_slot);
+          if(needs_match_ptr && !use_host_eh_runtime()) {
+            emit_line("store ptr " + ensure_current_storage() + ", " + match_ptr_slot);
           }
           terminate("jump " + lowir_block_name(body_label));
         } else {
@@ -14622,10 +14649,11 @@ private:
             if(needs_match_ptr) {
               const long long offset =
                   candidate.has_int_value ? callsem_int_value(candidate) : 0;
+              const string storage = ensure_current_storage();
               const string adjusted =
-                  offset == 0 ? current_storage
+                  offset == 0 ? storage
                               : emit_temp_assignment("ptr",
-                                                     string("index i8 ") + current_storage + ", " +
+                                                     string("index i8 ") + storage + ", " +
                                                          to_string(offset));
               emit_line("store ptr " + adjusted + ", " + match_ptr_slot);
             }
@@ -14646,7 +14674,7 @@ private:
               terminate("branch " + match + ", " + lowir_block_name(hit_label) + ", " +
                         lowir_block_name(miss_label));
               start_block(hit_label);
-              emit_line("store ptr " + current_storage + ", " + match_ptr_slot);
+              emit_line("store ptr " + ensure_current_storage() + ", " + match_ptr_slot);
               terminate("jump " + lowir_block_name(body_label));
             } else {
               terminate("branch " + match + ", " + lowir_block_name(body_label) + ", " +
@@ -14658,6 +14686,13 @@ private:
         }
 
         start_block(body_label);
+        string host_catch_storage;
+        if(use_host_eh_runtime()) {
+          host_catch_storage = emit_begin_catch_for_exception(current_exception);
+          if(needs_match_ptr) {
+            emit_line("store ptr " + host_catch_storage + ", " + match_ptr_slot);
+          }
+        }
         const string cleanup_label =
             use_host_eh_runtime() ? new_block("catch_cleanup") : string();
         const size_t catch_cleanup_depth =
@@ -14672,13 +14707,20 @@ private:
         }
         register_clear_exception_cleanup();
         if(variable) {
+          const string catch_object =
+              use_host_eh_runtime() ? host_catch_storage :
+                                      emit_temp_assignment("ptr", string("load ptr ") +
+                                                                 match_ptr_slot);
           bind_catch_variable(*variable,
-                              emit_temp_assignment("ptr", string("load ptr ") + match_ptr_slot),
+                              catch_object,
                               0);
         } else if(materialize_unnamed_catch_object) {
+          const string catch_object =
+              use_host_eh_runtime() ? host_catch_storage :
+                                      emit_temp_assignment("ptr", string("load ptr ") +
+                                                                 match_ptr_slot);
           bind_unnamed_catch_object(handler.semantic_type,
-                                    emit_temp_assignment("ptr",
-                                                         string("load ptr ") + match_ptr_slot),
+                                    catch_object,
                                     0);
         }
         if(body) {
@@ -14727,7 +14769,6 @@ private:
 
       start_block(next_label);
       if(use_host_eh_runtime()) {
-        emit_clear_current_exception();
         const bool include_constructor_cleanups =
             is_constructor_function_ &&
             throw_will_escape_current_function() &&
