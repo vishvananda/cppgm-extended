@@ -1,9 +1,8 @@
 #include <algorithm>
-
-unsigned long grow(unsigned long current) {
-  return std::max(current, 2 * current);
-}
-
-int main() {
-  return grow(3) == 6 ? 0 : 1;
-}
+#include <type_traits>
+#include <utility>
+static_assert(
+  std::is_same<decltype(std::max(std::declval<unsigned long>(),
+                                 std::declval<unsigned long>())),
+               const unsigned long&>::value,
+  "std::max(T,T) deduces T and returns const T&");
