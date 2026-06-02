@@ -61,7 +61,8 @@ function @f
     add r14, rdx
     load.i64 rdx, [rbp-40]
     add r14, rdx
-    ret r14
+    mov rax, r14
+    ret rax
 
 function @main
   abi
@@ -80,4 +81,5 @@ function @main
     call @f
     mov r9, rax
     sext.i32 r9
-    ret r9
+    mov rax, r9
+    ret rax

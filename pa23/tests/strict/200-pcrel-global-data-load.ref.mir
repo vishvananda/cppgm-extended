@@ -19,4 +19,5 @@ function @main
   block ^entry
     load.i32 r8, @g
     sext.i32 r8
-    ret r8
+    mov rax, r8
+    ret rax
