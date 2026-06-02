@@ -16,7 +16,8 @@ The tested ABI/runtime surface includes:
 - virtual dispatch, vtable ownership, and imported/exported vtables
 - RTTI object ownership and `dynamic_cast` / `typeid`
 - covariant return adjustment
-- host exception handling in the exercised throw/catch/rethrow/cleanup subset
+- richer host exception handling in the exercised
+  rethrow/cleanup/noexcept/RTTI subset
 - host-compatible unwind and relocation facts where the tests inspect objects
 
 ### Prerequisites
@@ -41,10 +42,8 @@ If those are not set, the harness searches for common compilers such as
 also require `ar`, `nm`, and `readelf`. The checked-in tests assume the normal
 x86_64 Linux host C++ ABI.
 
-Some PA33 object-inspection tests use course-provided helper tools from earlier
-assignments, such as `cpplink` and `cppeh`, to compare the host exception object
-surface. Those helpers support the harness; the PA33 assignment binary is
-still `cppgm++`.
+The basic host-EH object-facts surface is owned by PA25. PA33 keeps the same
+host-link path but raises the contract to richer host ABI/runtime interactions.
 
 ### Starter Kit
 
@@ -118,7 +117,7 @@ make test
 To run one test through the shared check target:
 
 ```sh
-make check TEST=tests/general/100-host-eh-same-tu-throw-catch.t
+make check TEST=tests/general/200-host-eh-rethrow.t
 ```
 
 The local tests live in `tests/general/`. They cover host C++ ABI/runtime
@@ -144,9 +143,10 @@ Optional sidecars control or check the host flow:
 
 The checked-in PA33 tests cover:
 
-- same-TU and cross-TU host exception throw/catch behavior
-- cleanup, rethrow, noexcept termination, and foreign catch-all behavior in the
-  exercised subset
+- cleanup, rethrow, noexcept termination, and foreign catch-all behavior beyond
+  the basic PA25 host-EH facts surface
+- class, base, transitive-base, and virtual-base host exception catches
+- host EH interaction with RTTI, `typeid`, lambdas, templates, and control flow
 - virtual dispatch, imported/exported vtable ownership, and polymorphic header
   duplication
 - RTTI-driven `dynamic_cast` and `typeid`
@@ -184,8 +184,8 @@ To complete PA33, preserve this behavior within the supported subset:
 - virtual dispatch and imported/exported vtable ownership
 - RTTI-driven `dynamic_cast` / `typeid`
 - covariant return adjustment
-- ordinary host-linked throw/catch/rethrow behavior
-- cleanup and unwind behavior visible to the host runtime
+- ordinary host-linked rethrow and advanced catch behavior
+- cleanup and unwind interactions beyond the basic PA25 fact owners
 - foreign catch-all interaction in the tested subset
 
 If host link succeeds but the host C++ ABI/runtime behavior is wrong, the issue
@@ -195,6 +195,7 @@ belongs in PA33.
 
 The following are out of scope for PA33:
 
+- basic host-EH metadata/object facts, which belong in PA25
 - private course-only exception/runtime ABI details that are not visible through
   the host-linked program or object checks
 - hosted standard-library header/source compatibility, which belongs in PA34

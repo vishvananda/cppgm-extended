@@ -189,6 +189,9 @@ sub build_test_context
 	my $inspect_expect_file = -f "$test_base.inspect.expect.$host_tag"
 		? "$test_base.inspect.expect.$host_tag"
 		: (-f "$test_base.inspect.expect" ? "$test_base.inspect.expect" : '');
+	my $inspect_facts_file = -f "$test_base.inspect.facts.$host_tag"
+		? "$test_base.inspect.facts.$host_tag"
+		: (-f "$test_base.inspect.facts" ? "$test_base.inspect.facts" : '');
 	my $inspect_plan_file = -f "$test_base.inspect.plan.$host_tag"
 		? "$test_base.inspect.plan.$host_tag"
 		: (-f "$test_base.inspect.plan" ? "$test_base.inspect.plan" : '');
@@ -250,6 +253,7 @@ sub build_test_context
 		run_args => \@run_args,
 		inspect_cmd_file => $inspect_cmd_file,
 		inspect_expect_file => $inspect_expect_file,
+		inspect_facts_file => $inspect_facts_file,
 		inspect_plan_file => $inspect_plan_file,
 		need_helper_object => $need_helper_object,
 		need_helper_static => $need_helper_static,
@@ -480,7 +484,24 @@ sub finish_one_test
 	if ($impl_status == 0)
 	{
 		my $inspect_file = "$ctx->{test_base}.$suffix.inspect";
-		if ($ctx->{inspect_expect_file} ne '')
+		if ($ctx->{inspect_facts_file} ne '')
+		{
+			note_progress_state('inspect', $test);
+			$impl_status = run_command_capture(
+				cmd => ['perl',
+				        "$FindBin::Bin/dump_host_eh_object_facts.pl",
+				        '--plan',
+				        $ctx->{inspect_facts_file},
+				        @{$ctx->{objfiles}}],
+				stdout => $inspect_file,
+				stderr => $ctx->{impl_stderr},
+				env => $ctx->{env},
+				timeout => $ctx->{build_timeout},
+			);
+			write_numeric_status(impl_status_file($ctx), $impl_status)
+				if $impl_status != 0;
+		}
+		elsif ($ctx->{inspect_expect_file} ne '')
 		{
 			note_progress_state('inspect', $test);
 			$impl_status = run_command_capture(
