@@ -131,8 +131,7 @@ Boundary and Out Of Scope sections below.
 When adding your own tests, useful PA20 themes include C++11 `constexpr`
 declaration validity, literal type requirements, constant initialization, core
 constant-expression rejection, pointer/reference constant evaluation, and
-aggregate/object-valued constant evaluation. Broader evaluator stress cases
-belong in `tests/general/`.
+aggregate/object-valued constant evaluation.
 
 ### Assignment Boundary
 

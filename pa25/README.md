@@ -29,12 +29,13 @@ library assignment and not the old private `cppeh` linker/runtime pipeline.
 
 ### Prerequisites
 
-Complete PA23 before starting this assignment.
+Complete PA23 and PA24 before starting this assignment.
 
 You will want to reuse:
 
 - the PA13 LowIR parser and EH instruction model
 - the PA23 native backend and object-emission infrastructure
+- the PA24 template-integration LowIR surface
 - the host-linkable object path used by `cppgm++ -c`
 - the ABI naming and runtime-role classification used by host object emission
 

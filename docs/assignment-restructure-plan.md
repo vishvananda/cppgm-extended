@@ -288,6 +288,10 @@ extra basics split).
 `ROADMAP.md`, the feature-ownership table, and per-PA READMEs. Witness refs are
 golden — do not regenerate.)
 
+Implementation note: before final renumbering, the freed PA24 slot is reused in
+place as the template integration lesson. The old `cpplink` contract remains
+folded out; its salvaged tests stay in PA30.
+
 ## Salvage from pa24 → pa30
 
 7 of cpplink's 9 tests are already covered by pa30 (`duplicate-global-bad`,
@@ -439,6 +443,18 @@ pa26–29. Extend it to size the integration lesson:
 
 Output of that pass = the concrete move list (which pa22 tests → integration, in
 which cluster) and the integration lesson's size. **This is the next data step.**
+
+Tracker seeds:
+
+- `docs/template-strict-placement-tracker.md` is the all-strict context scan over
+  `pa18 pa19 pa21 pa22 pa24`, used to see whether earlier strict PAs already
+  contain PA22/PA24-shaped tests before moving PA22 coverage backward or
+  forward.
+- `docs/pa22-template-placement-tracker.md` is the concrete PA22 move/review
+  queue for the new PA24 integration split.
+
+Both are generated from the audit script's `--template-placement` mode and
+should be curated in place as each test is reviewed.
 
 ## Open decisions (remaining)
 

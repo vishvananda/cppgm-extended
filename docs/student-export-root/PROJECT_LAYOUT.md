@@ -32,8 +32,9 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 - PA1-PA5: preprocessing
 - PA6-PA9: grammar recognition, namespace semantics, and CY86 output
 - PA10-PA12: AST, types, lookup, conversions, calls, and overload resolution
-- PA13-PA22: LowIR, C++ lowering, object model, templates, and constexpr
-- PA23-PA25: native backend and host exception metadata
+- PA13-PA22 and PA24: LowIR, C++ lowering, object model, templates, constexpr,
+  and template integration
+- PA23 and PA25: native backend and host exception metadata
 - PA26-PA30: C++11 language closure and compile/link driver integration
 - PA31-PA35: ABI naming, host ABI, and hosted compatibility
 - PA36-PA37: LowIR and machine-backend optimization
@@ -66,6 +67,7 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 | PA21 | `cppgm++ --emit-lowir` | template entities and specialization model |
 | PA22 | `cppgm++ --emit-lowir` | deduction, substitution, and SFINAE completion |
 | PA23 | `lowir2native` | native backend from LowIR |
+| PA24 | `cppgm++ --emit-lowir` | template integration across PA18-PA22 features |
 | PA25 | `cppgm++ -c` | host exception metadata and runtime-helper facts |
 | PA26 | `cppgm++ --emit-lowir` | core language closure |
 | PA27 | `cppgm++ --emit-lowir` | advanced language closure |

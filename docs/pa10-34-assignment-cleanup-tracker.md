@@ -590,11 +590,39 @@ Pass D deferred test buildout.
 - `next actions`:
   - Pass B: ensure the README and harness text keep the strict/structural distinction explicit
 
-### `pa24` (folded)
+### `pa24`
 
-PA24 was folded out by the assignment restructure. Its standalone `cpplink`
-object/link contract is no longer student-facing; the relevant source-driven
-separate-compilation behaviors now live in PA30.
+- `owner/boundary summary`:
+  - template integration across the PA18, PA19, PA21, and PA22 feature set
+  - no new isolated template feature; this PA owns multi-feature composition
+    that previously made PA22 too broad
+- `primary oracle`:
+  - source-to-LowIR through `cppgm++ --emit-lowir -O0`
+- `secondary smokes`:
+  - strict witness comparison through the shared strict template harness
+- `current harness mode`:
+  - standard `cppgm++ --emit-lowir -O0` LowIR comparison
+- `current numbering bands`:
+  - `100`: dependent/entity interactions
+  - `200`: deduction, partial ordering, non-deduced, and braced-init
+    combinations
+  - `300`: SFINAE, substitution, detector, and no-eager combinations
+  - `400`: pack/member-template/template-template/alias/variable compositions
+  - `500`: library-shaped template reducers without hosted dependencies
+- `pass_a findings`:
+  - old standalone `cpplink` PA24 was folded out; its relevant
+    separate-compilation tests were salvaged into PA30
+  - the freed PA24 slot is now reused for template integration until final
+    renumbering
+- `misplaced tests`:
+  - first moved batch: PA22 cluster-500 template-integration reducers
+- `planned new tests`:
+  - continue the tracker-guided PA22 split; move only reviewed
+    multi-feature integration tests
+- `next actions`:
+  - finish test-by-test review in
+    `docs/template-strict-placement-tracker.md` and
+    `docs/pa22-template-placement-tracker.md`
 
 ### `pa25`
 

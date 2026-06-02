@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa18/tests/general/100-namespace-qualified-class-template-definition.t:14:13
+    template outer::v::C
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity outer::v::C<int>::f
+  function-instantiation
+    entity outer::v::C<int>::f
+  require-definition
+    entity outer::v::C<int>::f

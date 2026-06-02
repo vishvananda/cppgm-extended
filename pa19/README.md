@@ -124,9 +124,8 @@ by test role:
   provided C++ language test in this directory starts with a leading comment of the
   form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
   governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader cross-feature and realistic
-  metaprogramming tests that are useful for PA19 but are not one-rule spec
-  probes.
+- `tests/general/` contains broader metaprogramming tests that are useful for
+  PA19 but are not one-rule spec probes.
 
 The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
@@ -142,8 +141,7 @@ not the PA19 grading contract.
 
 When adding your own tests, useful PA19 themes include explicit specialization
 ordering and visibility, integral non-type argument equivalence, dependent
-non-type parameter types, and static data member specialization. Keep larger
-metaprogramming integration cases under `tests/general/`.
+non-type parameter types, and static data member specialization.
 
 ### PA19 Syntax Spec
 
@@ -239,6 +237,8 @@ The intended next stages are:
 - PA20: complete the language-level constant-evaluation model over the existing LowIR path
 - PA21 and PA22: finish the remaining template specialization, deduction, substitution, and
   SFINAE work on top of that constant-evaluation engine
+- PA24: check that the individual template features from PA18, PA19, PA21, and
+  PA22 compose without breaking their basic behavior
 - PA23: retarget the settled LowIR language surface to the real native backend
 
 So PA19 should leave behind:

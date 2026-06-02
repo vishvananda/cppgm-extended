@@ -8,8 +8,8 @@ translation units, reuses the PA11-PA21 semantic foundation, builds on the
 PA14-PA21 LowIR lowering path, and writes LowIR text.
 
 PA22 is the second half of template completion. Its job is to finish the
-remaining deduction/substitution behavior so ordinary generic C++11 code stops
-depending on a pragmatic template subset.
+remaining single-feature deduction/substitution behavior so ordinary generic
+C++11 code stops depending on a pragmatic template subset.
 
 PA22 still produces LowIR. It does not introduce a new output format.
 
@@ -102,9 +102,8 @@ PA22 tests live under `tests/`. The suite is split by test role:
   SFINAE tests. Each provided C++ language test in this directory starts with a
   leading comment of the form `// N3485 focus: 14.x.y [clause.name] ...` so a
   reviewer can find the governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader cross-feature and realistic
-  generic-program examples that are useful for PA22 but are not one-rule spec
-  probes.
+- `tests/general/` contains broader generic-program examples that are useful
+  for PA22 but are not one-rule spec probes.
 
 The `make test` target runs both directories through the LowIR validator. For
 successful tests, the validator checks the reference LowIR and your generated
@@ -135,12 +134,11 @@ When adding your own tests, useful PA22 themes include explicit template
 arguments mixed with deduced ones, function-address deduction, conversion
 function template deduction, constructor-template participation, richer
 non-deduced contexts, and compact `enable_if` / `void_t` / detector patterns.
-Broader template integration cases can go in `tests/general/`.
 
 ### Assignment Boundary
 
-PA22 owns the remainder of the standard template language over the implemented
-surface, including:
+PA22 owns the remaining advanced single-feature standard template behavior over
+the implemented surface, including:
 
 - full function-template deduction over the intended C++11 subset
 - function-template partial ordering
@@ -152,8 +150,9 @@ surface, including:
 - braced-init deduction in the supported template-call subset
 - pointer, reference, enum, and static-member non-type template argument values
   over the supported constant-expression subset
-- the remaining dependent-call, dependent-alias, and no-eager-instantiation
-  behavior needed for full template usability
+- dependent-call, dependent-alias, and no-eager-instantiation behavior when the
+  primary assertion is a single PA22-owned feature rather than a broad
+  multi-feature composition
 
 ### Out Of Scope
 
@@ -171,16 +170,18 @@ Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stage is PA23, which retargets the now-language-complete
-front-end from the CY86 scaffold path to the real native backend.
+The intended template follow-up is PA24, which checks that the PA18-PA22
+template features compose in realistic programs. The later backend stage retargets
+the language-complete front-end from the CY86 scaffold path to the real native
+backend.
 
 So PA22 should leave behind:
 
 - a complete standard template semantic layer
 - instantiated declarations that lower through the ordinary LowIR path without
   template subset special-casing
-- no remaining "finish template language later" gap before backend/toolchain
-  work
+- a clean handoff to PA24 for multi-feature template integration before
+  backend/toolchain work
 
 ### Design Notes (Non-Normative)
 

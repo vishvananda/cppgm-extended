@@ -145,16 +145,18 @@ Focus:
 - public grammar artifacts
 - student-visible output and error behavior
 
-### Slice C: PA18-PA22
+### Slice C: PA18-PA24
 
 Owns:
 
 - `pa18/README.md` through `pa22/README.md`
+- `pa24/README.md`
 - corresponding inventory sections
 
 Focus:
 
 - template and constexpr assignment boundaries
+- template integration boundary in PA24
 - strict/witness tests as maintainer validation versus student-facing tests
 - source-to-LowIR contract without exposing internal witness implementation as
   a required student oracle unless it ships
