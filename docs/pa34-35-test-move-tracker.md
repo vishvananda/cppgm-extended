@@ -105,7 +105,7 @@ mangling-consistency oracle.
 - [-] 700-hosted-abi-tag-class-template-member-template-link-smoke — **L2/host-compat (stay in pa35/link)**: validates abi_tag *suppression* on `Box<int>::touch<1>()` (clang + cppgm++ both emit untagged, verified). Not a pa31 fit (abimangle can't model dropping a declared tag → dup); abi_tag is pa34 (`support.attribute`) so no pre-pa34 LowIR home, and pa34 is static_assert-only (can't inspect a symbol). Needs the inspect oracle → deferred L1/L2 recategorization.
 - [x] 700-hosted-abi-tag-function-template-link-smoke → `pa31/tests/abi/300-abi-tagged-function-template` (`_Z15tagged_templateB9nqe220100IiET_S0_` — tag before template-args; PASS)
 - [x] 700-hosted-abi-tag-operator-template-link-smoke → `pa31/tests/abi/300-abi-tagged-operator-template` (`_ZNK4LessclB9nqe220100ImmEEbRKT_RKT0_`; PASS)
-- [ ] 700-hosted-local-class-template-mangling-link-smoke
+- [x] 700-hosted-local-class-template-mangling-link-smoke → `pa31/tests/abi/600-function-template-local-class-arg` (function template `g<X>` instantiated with a function-local class `X` from `f()` → `_Z1gIZ1fvE1XEiv`; emit-abi-facts `local-type` + function-template encoding; clang-verified; PASS). Source removed. Distinct from `600-function-local-class-template-arg` (that is a class-template *type*; this is a function-template *encoding*).
 - [-] 700-hosted-nested-static-abi-tag-link-smoke — **L2/host-compat (stay in pa35/link)**: validates abi_tag *suppression* on `Box<int>::Cache::detach` (clang + cppgm++ both emit untagged, verified). Not a pa31 fit (abimangle can't model dropping a declared tag → dup); abi_tag is pa34 (`support.attribute`) so no pre-pa34 LowIR home, and pa34 is static_assert-only (can't inspect a symbol). Needs the inspect oracle → deferred L1/L2 recategorization.
 
 > **Note (2026-06-02):** of the substitution subset, **6 are actually header-bearing**
@@ -127,8 +127,8 @@ mangling-consistency oracle.
 - [x] 600-out-of-class-member-template-link-smoke → `pa18/tests/general/300-out-of-class-member-template-definition` (out-of-class member-template def; **placement audit moved cluster 100→300**: `template.member_template` owns pa18:300; pa18 PASS)
 - [x] 600-template-aggregate-return-link-smoke → `pa18/tests/general/100-function-template-returns-aggregate-class-template` (fn template returns aggregate via brace-init; pa18 PASS)
 - [x] 600-template-inline-constructor-return-link-smoke → `pa18/tests/general/100-function-template-returns-constructed-class-template` (fn template returns class via ctor + nested aggregate; pa18 PASS)
-- [ ] 700-function-template-substitution-index-link-smoke
-- [ ] 700-inline-namespace-function-template-param-link-smoke
+- [x] 700-function-template-substitution-index-link-smoke → `pa31/tests/abi/300-function-template-substitution-index` (`ns::passthrough<char,ns::traits<char>>`: `stream<T,Traits>&` repeated in return+param → `S7_` back-ref → `_ZN2ns11passthroughIcNS_6traitsIcEEEERNS_6streamIT_T0_EES7_`; clang-verified; PASS). Source had been removed in ce4e44fd0 without a replacement; recovered from git history + recast.
+- [x] 700-inline-namespace-function-template-param-link-smoke → `pa21/tests/general/100-inline-namespace-function-template-parameter` (already migrated in an earlier rehome; tracker was stale; pa21 PASS).
 - [x] 700-member-template-explicit-local-typedef-link-smoke → `pa22/tests/general/100-member-template-explicit-local-typedef-call` (explicit `.template` w/ local typedef; pa22 PASS individually)
 - [x] 700-nested-template-local-owner-symbol-link-smoke → `pa22/tests/general/100-nested-class-template-local-class-argument` (nested class template + local class as template arg; pa22 PASS individually)
 - [D] 700-template-disambiguator-alias-enable-if-ctor — covered by pa22 enable_if/alias + `__is_constructible` suite (300-constructor-template-*-enable-if-*, 500-qualified-member-function-value-fallback-sfinae); source removed.
