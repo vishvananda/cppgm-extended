@@ -1,0 +1,20 @@
+translation-unit
+  class-use at pa24/tests/general/200-conversion-operator-using-alias.t:16:23
+    template AtomicBase
+    selected primary
+    bind #1 = char source=explicit
+  class-use at pa24/tests/general/200-conversion-operator-using-alias.t:19:11
+    template AtomicBase
+    selected primary
+    bind #1 = char source=explicit
+  class-use at pa24/tests/general/200-conversion-operator-using-alias.t:24:15
+    template Atomic
+    selected explicit
+    bind #1 = char source=explicit
+template-closure-events
+  ensure-definition
+    entity AtomicBase<char>::operator char
+  function-instantiation
+    entity AtomicBase<char>::operator char
+  require-definition
+    entity AtomicBase<char>::operator char

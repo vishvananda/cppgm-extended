@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa18/tests/general/100-forwarding-static-cast.t:7:10
+    callee f
+    selected instantiation
+    bind #1 = unsigned long source=explicit
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

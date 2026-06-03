@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa18/tests/general/100-local-type-alias-noop.t:9:3
+    callee f
+    selected instantiation
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

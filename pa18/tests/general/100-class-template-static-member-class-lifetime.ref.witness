@@ -1,0 +1,18 @@
+translation-unit
+  class-use at pa18/tests/general/100-class-template-static-member-class-lifetime.t:32:8
+    template stack
+    selected primary
+    bind #1 = object source=explicit
+  class-use at pa18/tests/general/100-class-template-static-member-class-lifetime.t:40:10
+    template stack
+    selected primary
+    bind #1 = object source=explicit
+template-closure-events
+  ensure-definition
+    entity stack<object>::value
+  function-instantiation
+    entity stack<object>::value
+  require-definition
+    entity stack<object>::value
+  variable-instantiation
+    entity stack<object>::top_

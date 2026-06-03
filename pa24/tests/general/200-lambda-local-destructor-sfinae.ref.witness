@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa24/tests/general/200-lambda-local-destructor-sfinae.t:25:33
+    template test_support::is_destructible
+    selected primary
+    bind #1 = Candidate source=explicit

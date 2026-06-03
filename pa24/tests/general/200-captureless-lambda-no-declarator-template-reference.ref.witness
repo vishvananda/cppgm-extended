@@ -1,0 +1,13 @@
+translation-unit
+  class-use at pa24/tests/general/200-captureless-lambda-no-declarator-template-reference.t:17:3
+    template optional_ref
+    selected partial
+    bind #1 = int & source=explicit
+    specialize #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity optional_ref<int &>::get
+  function-instantiation
+    entity optional_ref<int &>::get
+  require-definition
+    entity optional_ref<int &>::get

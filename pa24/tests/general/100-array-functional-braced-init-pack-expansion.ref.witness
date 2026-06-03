@@ -1,0 +1,20 @@
+translation-unit
+  function-call at pa24/tests/general/100-array-functional-braced-init-pack-expansion.t:16:10
+    callee add_each
+    selected instantiation
+    bind #1 = <> source=deduced
+  function-call at pa24/tests/general/100-array-functional-braced-init-pack-expansion.t:16:31
+    callee add_each
+    selected instantiation
+    bind #1 = <int, char> source=explicit
+template-closure-events
+  ensure-definition
+    entity add_each
+  function-instantiation
+    entity add_each
+  function-instantiation
+    entity add_impl
+  require-definition
+    entity add_each
+  require-definition
+    entity add_impl

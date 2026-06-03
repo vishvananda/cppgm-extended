@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa23/tests/general/200-member-function-template-address-explicit-pack.t:35:53
+    callee service_registry::get
+    selected instantiation
+    bind #1 = service source=explicit
+template-closure-events
+  ensure-definition
+    entity service_registry::get
+  function-instantiation
+    entity service_registry::create
+  function-instantiation
+    entity service_registry::get
+  require-definition
+    entity service_registry::create
+  require-definition
+    entity service_registry::get

@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa18/tests/general/100-rvalue-reference-return-slot-init-move.t:27:15
+    callee my_move
+    selected instantiation
+    bind #1 = Box source=deduced
+template-closure-events
+  ensure-definition
+    entity my_move
+  function-instantiation
+    entity my_move
+  require-definition
+    entity my_move

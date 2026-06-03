@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa18/tests/general/100-function-template-result-member-trailing-return.t:36:10
+    callee test
+    selected instantiation
+    bind #1 = handler source=deduced
+template-closure-events
+  ensure-definition
+    entity test
+  function-instantiation
+    entity result<handler>::get
+  function-instantiation
+    entity test
+  require-definition
+    entity result<handler>::get
+  require-definition
+    entity test
