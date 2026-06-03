@@ -183,6 +183,13 @@ Required instructions:
   the PA13 tests: `eh_try`, `eh_cleanup`, `eh_end`, `throw`,
   `exception`, and `resume`
 
+For `cmp`, the type written in the instruction is the operand comparison type,
+not the result type. For example, `%ok = cmp eq f80 %a, %b` compares two `f80`
+operands, but `%ok` is an integer truth value. PA13 adapters should materialize
+all `cmp` results as canonical `i64` values, `0` for false and `1` for true,
+including `f32`, `f64`, `f80`, pointer, and narrow integer comparisons. A later
+`branch %ok` or `return i64 %ok` should be able to consume that result directly.
+
 For the PA13 CY86 adapter, atomic operations may use a course-defined
 single-threaded interpretation:
 

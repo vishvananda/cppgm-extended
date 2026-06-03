@@ -898,6 +898,13 @@ Required PA13 comparison predicates:
 - `ugt`
 - `uge`
 
+For `cmp`, `<type>` is the comparison operand type, not the result type. The
+destination temporary is a canonical integer truth value and is materialized as
+`i64` `0` or `1`. This is true for floating comparisons such as
+`%ok = cmp eq f80 %a, %b`, pointer comparisons, and narrow integer comparisons;
+do not allocate or propagate the destination temporary as `f80`, `ptr`, `i16`,
+or the other operand type.
+
 For integer operations where signedness changes the result, the plain forms remain the signed
 operations:
 
