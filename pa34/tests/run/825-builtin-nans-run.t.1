@@ -1,0 +1,29 @@
+double nans_double()
+{
+  return __builtin_nans("");
+}
+
+float nans_float()
+{
+  return __builtin_nansf("");
+}
+
+long double nans_long_double()
+{
+  return __builtin_nansl("");
+}
+
+int main()
+{
+  // A NaN compares unequal to itself.
+  double d = nans_double();
+  float f = nans_float();
+  long double ld = nans_long_double();
+  if (d == d)
+    return 1;
+  if (f == f)
+    return 2;
+  if (ld == ld)
+    return 3;
+  return 0;
+}
