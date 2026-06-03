@@ -24,7 +24,9 @@ assignments before bootstrap:
   emission
 - `PA33 hostabi`, separating ordinary host object interop from host C++ ABI/runtime
   behavior
-- `PA36 hostedlink`, separating hosted source/header compatibility from hosted emitted-code
+- `PA35 hostedheaders`, separating heavy hosted-header compilation from smaller
+  hosted intrinsics/source compatibility
+- `PA36 hostedlink`, separating hosted header compilation from hosted emitted-code
   link/runtime behavior
 
 ---
@@ -701,7 +703,7 @@ linker accepts these objects" to "the ordinary host C++ ABI/runtime surface actu
 **Notes**:
 - This is distinct from PA25 private `exceptrt`, which still owns the private
   `cppgm_eh_*` internal runtime path.
-- This is also distinct from PA34/PA36 hosted compatibility; PA33 is about the ordinary
+- This is also distinct from PA34-PA36 hosted compatibility; PA33 is about the ordinary
   host C++ ABI/runtime path once host link succeeds at all.
 
 **Input**: host-linkable compiler from PA32
@@ -712,7 +714,7 @@ runtime surface
 
 ---
 
-## PA34: `hostedcompat` — Hosted Header and Vendor Compatibility
+## PA34: `hostedcompat` — Hosted Intrinsics and Source Compatibility
 
 **Goal**: Make the compiler source-compatible with the hosted standard-library and vendor
 extension environment needed for bootstrap.
@@ -729,7 +731,7 @@ extension environment needed for bootstrap.
   selected bootstrap standard library and CRT headers
 - Semantic and lowering compatibility for the hosted source patterns exercised by that
   environment
-- Curated hosted-header compile-smoke testing and escalating hosted source-compilation tests
+- Header-free hosted compile anchors and escalating hosted source-compilation tests
 
 **Notes**:
 - This milestone is about hosted compatibility, not the standard C++ language contract of
@@ -752,6 +754,30 @@ bootstrap
 
 ---
 
+## PA35: `hostedheaders` — Heavy Hosted Header Compilation
+
+**Goal**: Compile the heaviest real hosted standard-library headers end to end without
+requiring link/runtime correctness yet.
+
+**Topics**:
+- Heavy standard-library header parsing and semantic analysis
+- Template, trait, overload-resolution, and dependent-name depth exercised by headers such
+  as `<vector>`, `<unordered_map>`, `<tuple>`, `<random>`, and `<functional>`
+- Compile-only anchors that prove the header was genuinely consumed
+- Performance discipline for large hosted-header translation units
+
+**Notes**:
+- PA35 is still a compile-only assignment. Hosted header-emitted code that compiles but does
+  not link or run belongs to PA36.
+- Intrinsics, parser concessions, and header-free hosted anchors remain in PA34.
+
+**Input**: hosted source-compatible compiler from PA34
+**Output**: compiler that can compile heavy hosted headers to host objects
+
+**Dependencies**: PA34
+
+---
+
 ## PA36: `hostedlink` — Hosted Header Emission and Link Compatibility
 
 **Goal**: Once hosted headers preprocess and compile, make their emitted inline/template
@@ -771,10 +797,10 @@ code link and run correctly through the existing host toolchain path.
 - Current `tests/frontier`-style bootstrap reduction remains an internal maintainer tool,
   not a public assignment surface.
 
-**Input**: hosted source/header compatible compiler from PA34
+**Input**: heavy hosted-header compile-compatible compiler from PA35
 **Output**: hosted header-emitted code that links and runs through the plain host toolchain
 
-**Dependencies**: PA34
+**Dependencies**: PA35
 
 ---
 
@@ -878,8 +904,9 @@ PA6 (recog)
                                                                                                                 └─ PA32 (hostinterop)
                                                                                                                      └─ PA33 (hostabi)
                                                                                                                           └─ PA34 (hostedcompat)
-                                                                                                                               └─ PA36 (hostedlink)
-                                                                                                                                    └─ PA37 (lowiropt)
-                                                                                                                                         └─ PA38 (machineopt)
-                                                                                                                                              └─ PA39 (inception)
+                                                                                                                               └─ PA35 (hostedheaders)
+                                                                                                                                    └─ PA36 (hostedlink)
+                                                                                                                                         └─ PA37 (lowiropt)
+                                                                                                                                              └─ PA38 (machineopt)
+                                                                                                                                                   └─ PA39 (inception)
 ```

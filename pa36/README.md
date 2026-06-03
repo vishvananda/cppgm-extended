@@ -1,13 +1,13 @@
-## CPPGM Programming Assignment 35 (`cppgm++ -c`)
+## CPPGM Programming Assignment 36 (`cppgm++ -c`)
 
 ### Overview
 
 PA36 is the hosted header-emission and link/runtime compatibility assignment.
 
-By PA34, hosted headers and source should preprocess and compile. PA36 owns the
-next question: once hosted headers compile, do the emitted inline, template, and
-header-generated definitions also link and run correctly through the host
-toolchain?
+By PA34 and PA35, hosted source and heavy hosted headers should preprocess and
+compile. PA36 owns the next question: once hosted headers compile, do the
+emitted inline, template, and header-generated definitions also link and run
+correctly through the host toolchain?
 
 This milestone is narrower than a second general host ABI assignment. It is
 specifically about hosted header-emitted code on top of the ordinary host object
@@ -15,12 +15,13 @@ and ABI/runtime path established by PA32 and PA33.
 
 ### Prerequisites
 
-Complete PA34 before starting this assignment.
+Complete PA35 before starting this assignment.
 
 You will want to reuse:
 
 - the full earlier language, template, and lowering stack
 - the PA34 hosted preprocess/compile compatibility surface
+- the PA35 heavy hosted-header compile surface
 - the PA32/PA33 host object and ABI/runtime path
 - the PA36 demand-driven emitted-symbol model described below
 
@@ -212,8 +213,8 @@ To complete PA36, implement hosted link/runtime behavior for:
 
 - emitted inline/template/header definitions from hosted headers needed by the
   current object
-- hosted standard-library code that compiles in PA34 but still has to link and
-  run through the plain host toolchain
+- hosted standard-library code that compiles in PA34 or PA35 but still has to
+  link and run through the plain host toolchain
 - hosted link smokes where the main question is emitted symbol ownership, ABI
   spelling, or runtime behavior of hosted header-generated code
 
@@ -224,7 +225,8 @@ correctly, the issue belongs in PA36.
 
 The following are out of scope for PA36:
 
-- earlier hosted preprocess/compile compatibility already owned by PA34
+- earlier hosted preprocess/compile compatibility already owned by PA34 and
+  PA35
 - general host object or host ABI ownership outside the hosted-header-triggered
   surface already owned by PA32/PA33
 - build-system wrapper emulation
@@ -248,5 +250,6 @@ object/link stages.
 
 ### Stage Handoff
 
-The hosted compatibility work from PA34 and PA36 prepares the later optimizer
-and self-host stages to compile larger source bases with the course compiler.
+The hosted compatibility work from PA34, PA35, and PA36 prepares the later
+optimizer and self-host stages to compile larger source bases with the course
+compiler.
