@@ -5,7 +5,7 @@ It supports the split into:
 
 - PA18/PA19/PA21 basic template owners
 - PA22 advanced single-feature template completion
-- PA24 template integration, using the removed PA24 slot until final renumbering
+- PA23 template integration
 - later owners, split/reduce, or drop decisions
 
 The table below was seeded by the template-placement audit mode.
@@ -27,11 +27,11 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 
 - A test goes to the earliest PA/cluster that owns the behavior it asserts.
 - Support syntax does not control placement when it is already implemented and not essential to the expected output.
-- If two or more template concepts are essential together, place the test in PA24 integration and cluster it by the feature combination.
+- If two or more template concepts are essential together, place the test in PA23 integration and cluster it by the feature combination.
 - If a later non-template feature is essential, move later or split/reduce the test before keeping template coverage.
 - Witness refs are golden; do not regenerate witness refs while moving tests.
 
-## PA24 Candidate Clusters
+## PA23 Candidate Clusters
 
 | Cluster | Intended integration shape |
 | --- | --- |
@@ -51,7 +51,7 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 
 ## Review Queue
 
-| Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA24 Cluster | Action | Notes |
+| Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA23 Cluster | Action | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | [ ] | `pa22/tests/general/200-pack-expanded-base-instantiation.t` | `pa22:200` | `later-owner-or-split` | pack-expansion | template.alignas_alignof | `pa19:200` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
 | [ ] | `pa22/tests/general/500-dependent-template-id-no-eager-layout.t` | `pa22:500` | `later-owner-or-split` | alias-template, no-eager-instantiation | template.alignas_alignof | `pa22:300` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |

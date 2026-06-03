@@ -1,6 +1,6 @@
 #pragma once
 
-// Assignment-facing ABI fact data model for the PA31 standalone abimangle
+// Assignment-facing ABI fact data model for the PA30 standalone abimangle
 // tool. The encoder helpers live in abi_model.h; fact parsing and production
 // compiler mangling use these same records rather than a translated mirror.
 

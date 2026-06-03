@@ -42,14 +42,11 @@ into per-PA inventory entries and mark unresolved decisions explicitly.
 | PA9 | `cy86` | `dev/cy86.cpp` | `dev/cy86-scaffold.cpp` | Scaffold exists. |
 | PA10-PA12 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Scaffold exists; README must explain staged `--emit-ast`, `--emit-types`, and `--emit-semantics` work. |
 | PA13 | `lowir2cy86` | `dev/lowir2cy86.cpp` | `dev/lowir2cy86-scaffold.cpp` | Scaffold exists. |
-| PA14-PA22, PA24 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
-| PA23 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists. |
-| PA25 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Reuses cumulative compile-mode scaffold; PA25 documents the host-EH facts contract separately. |
-| PA26-PA30 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
-| PA31 | `abimangle` | `dev/abimangle.cpp` | `dev/abimangle-scaffold.cpp` | Scaffold exists; optional typed ABI fact header is exported under `dev/src`. |
-| PA32-PA35 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; hosted/toolchain support files and wrappers need explicit inventory. |
+| PA14-PA27, PA29, PA31-PA35 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
+| PA28 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists. |
+| PA30 | `abimangle` | `dev/abimangle.cpp` | `dev/abimangle-scaffold.cpp` | Scaffold exists; optional typed ABI fact header is exported under `dev/src`. |
 | PA36 | `lowiropt` | `dev/lowiropt.cpp` | `dev/lowiropt-scaffold.cpp` | Scaffold exists. |
-| PA37 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Reuses the PA23 backend entrypoint; export docs must explain the optimization extension. |
+| PA37 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Reuses the PA28 backend entrypoint; export docs must explain the optimization extension. |
 | PA38 | self-host ladder | multiple `dev/` tools and source sets | not a binary scaffold | Special export case. Needs an initial inventory audit, then a focused README rewrite around staged self-host validation rather than a single editable binary. |
 
 ## Per-PA Inventory Schema
@@ -73,14 +70,14 @@ Each PA section should eventually include:
 
 - Decide whether the student repo is exported as one cumulative working tree,
   one starter tree per assignment, or a cumulative tree with per-PA checkpoints.
-  This affects how the shared `cppgm++` scaffold is described for PA10-PA30 and PA32-PA35.
+  This affects how the shared `cppgm++` scaffold is described for PA10-PA29 and PA31-PA35.
 - Decide whether PA10-PA35 should ship checked-in refs only or also reference
   binaries. Current README wording treats checked-in refs as the oracle for
   PA10+.
 - Decide the exact `dev/src` support-file set exported with the cumulative
   `cppgm++`, `lowir2cy86`, and native-tool scaffolds.
 - Decide whether witness output is a public student oracle for
-  PA18/PA19/PA21/PA22/PA24 or a maintainer-only strict validation surface.
+  PA18/PA19/PA21/PA22/PA23 or a maintainer-only strict validation surface.
 - Decide how to expose loose LowIR validation in the student repo while keeping
   maintainer strict text comparison internal.
 - Decide how to expose structural MIR validation for PA37 while keeping
@@ -94,12 +91,12 @@ Each PA section should eventually include:
 
 ## Resolved Cleanup Notes
 
-- PA14-PA18, PA23, PA24, and PA26-PA30 Makefile/script grammar references now
+- PA14-PA29 Makefile/script grammar references now
   point at the matching local `paN.gram` file.
 - Stale nested PA17 copies under `pa17/grammar/grammar/` and
   `pa17/scripts/scripts/` were removed.
-- The stale PA1-PA9 and PA23 `scripts/export_pa.sh` files were removed.
-- The `cppgm++` scaffold now assigns compile/link driver mode to PA30.
+- The stale PA1-PA9 and old PA23 `scripts/export_pa.sh` files were removed.
+- The `cppgm++` scaffold now assigns compile/link driver mode to PA29.
 - The PA34 hosted test no longer pins a local Homebrew GCC path, and the PA35
   ostringstream smoke no longer contains an absolute local source path.
 - PA38 README has been rewritten as a student-facing staged self-host handout.
@@ -141,50 +138,50 @@ or approved shared infrastructure update.
 - Remaining decisions: loose LowIR validator packaging and cumulative
   scaffold/checkpoint policy for the shared `cppgm++` binary.
 
-### PA18-PA24
+### PA18-PA23
 
-- PA18-PA22 and PA24 export cumulative `cppgm++ --emit-lowir -O0`; students edit
+- PA18-PA23 export cumulative `cppgm++ --emit-lowir -O0`; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`.
 - PA18 and PA19 ship `pa18.gram`/`pa19.gram`, `grammar/`, tests, refs, and local
   support headers. PA20-PA22 inherit the PA19 syntax boundary and ship tests,
-  refs, and support headers without new grammar files. PA24 uses the shared
+  refs, and support headers without new grammar files. PA23 uses the shared
   source grammar and ships template-integration tests and refs.
 - README wording describes loose LowIR validation for students and leaves witness
   sidecars out of the required oracle unless export policy changes.
 - Remaining decisions: witness/test-strict packaging, course symlink behavior,
   and loose LowIR validator configuration.
 
-### PA23, PA25-PA29
+### PA24-PA31
 
-- PA23 exports `lowir2native`; students edit `dev/lowir2native.cpp` from
-  `dev/lowir2native-scaffold.cpp`; support files include `pa23.gram`,
-  `grammar/`, `../pa13/lowir.md`, `tests/strict`, `tests/structural`, refs, and
-  harness scripts.
-- PA25 exports `cppgm++ -c`; students edit `dev/cppgm++.cpp` from
-  `dev/cppgm++-scaffold.cpp`; support files include `tests/general`, refs,
-  host object/symbol inspection helpers, and normalized host-EH fact dumping.
-- PA26-PA29 export cumulative `cppgm++ --emit-lowir -O0`; students edit
+- PA24-PA27 export cumulative `cppgm++ --emit-lowir -O0`; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include each
   PA's grammar/explorer where present, tests, refs, and harness scripts.
+- PA28 exports `lowir2native`; students edit `dev/lowir2native.cpp` from
+  `dev/lowir2native-scaffold.cpp`; support files include `pa28.gram`,
+  `grammar/`, `../pa13/lowir.md`, `tests/strict`, `tests/structural`, refs, and
+  harness scripts.
+- PA29 exports cumulative `cppgm++` compile/link driver mode; students edit
+  `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include
+  `pa29.gram`, `grammar/`, `tests/general`, refs, wrapper/runtime helpers, and
+  harness scripts.
+- PA30 exports standalone ABI name construction for `abimangle`; students edit
+  `dev/abimangle.cpp` from `dev/abimangle-scaffold.cpp`; support files include
+  the optional `dev/src/abi_mangle.h` typed fact scaffold, `pa30/Makefile`,
+  `pa30/scripts`, and `pa30/tests/abi`.
+- PA31 exports `cppgm++ -c` host-EH facts; students edit `dev/cppgm++.cpp` from
+  `dev/cppgm++-scaffold.cpp`; support files include `tests/general`, refs,
+  host object/symbol inspection helpers, and normalized host-EH fact dumping.
 - README wording assumes x86_64 Linux for the student-facing native target.
 - Remaining decisions: loose LowIR validator packaging.
 
-### PA30-PA35
+### PA32-PA35
 
-- PA30 exports cumulative `cppgm++` compile/link driver mode; students edit
-  `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include
-  `pa30.gram`, `grammar/`, `tests/general`, refs, wrapper/runtime helpers, and
-  harness scripts.
-- PA31 exports standalone ABI name construction for `abimangle`; students edit
-  `dev/abimangle.cpp` from `dev/abimangle-scaffold.cpp`; support files include
-  the optional `dev/src/abi_mangle.h` typed fact scaffold, `pa31/Makefile`,
-  `pa31/scripts`, and `pa31/tests/abi`.
 - PA32 exports host-linkable object interoperability for `cppgm++ -c`; support
   files include `tests/general`, refs, harness scripts, host compiler helpers,
   and Linux tools such as `ar`, `nm`, and `readelf`.
 - PA33 exports host C++ ABI/runtime behavior after host link; support files
   include `tests/general`, refs, host object/symbol inspection helpers, and
-  richer EH/runtime interaction tests beyond the basic PA25 host-EH facts.
+  richer EH/runtime interaction tests beyond the basic PA31 host-EH facts.
 - PA34 exports hosted preprocess/compile compatibility; support files include
   `tests/preproc`, `tests/compile`, hosted compile scripts, and portability
   reference checks.

@@ -219,7 +219,7 @@ PA17 supports the following in addition to the PA16 subset:
 
 Within this milestone, PA17 should produce valid LowIR for ordinary single-inheritance
 polymorphic code over the supported PA16 subset. That LowIR is intended to be
-accepted by the later PA23 `lowir2native` backend for the supported cases.
+accepted by the later PA28 `lowir2native` backend for the supported cases.
 PA13 `lowir2cy86` remains an optional execution scaffold.
 
 ### Out Of Scope

@@ -86,8 +86,8 @@ Owns:
 Focus:
 
 - Cover PA10-PA12 `--emit-ast`, `--emit-types`, and `--emit-semantics`.
-- Cover PA14-PA22 and PA26-PA29 `--emit-lowir`.
-- Cover PA30-PA35 driver/query/preprocess/compile/link-facing modes at the
+- Cover PA14-PA27 `--emit-lowir`.
+- Cover PA29-PA35 driver/query/preprocess/compile/link-facing modes at the
   command-line skeleton level.
 - Check the real `cppgm++` CLI and the PA READMEs for options that should be
   parsed or dispatched before throwing not implemented.
@@ -103,7 +103,7 @@ Owns:
 
 Focus:
 
-- Check PA13, PA23, PA36, and PA37 command-line surfaces.
+- Check PA13, PA28, PA36, and PA37 command-line surfaces.
 - Scaffold required option parsing for output paths, optimization levels, dump
   modes, target flags, and batch-not-implemented behavior where useful.
 - Do not implement LowIR parsing, lowering, optimization, or machine code
@@ -119,7 +119,7 @@ Owns:
 Focus:
 
 - These old linker/EH sidecars are no longer exported after the standalone
-  cpplink assignment was folded into PA30 and PA25 was refocused on
+  cpplink assignment was folded into PA29 and PA31 was refocused on
   `cppgm++ -c` host-EH facts.
 - Keep them only if an internal maintainer tool still needs a scaffold smoke.
 

@@ -6,4 +6,6 @@ tests/**/*.my
 tests/**/*.my.*
 tests/*.my
 tests/*.my.*
+tests/**/*.obj
+tests/*.obj
 *.dSYM

@@ -10133,7 +10133,7 @@ void populate_class_info(SemanticContext & ctx,
             *info.member_scope, member.value, alias, inner_access);
         continue;
       }
-      throw std::logic_error("unsupported anonymous class member in PA29 hosted slice");
+      throw std::logic_error("unsupported anonymous class member in hosted slice");
     }
   };
 

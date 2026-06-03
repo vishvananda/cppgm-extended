@@ -145,37 +145,37 @@ Focus:
 - public grammar artifacts
 - student-visible output and error behavior
 
-### Slice C: PA18-PA24
+### Slice C: PA18-PA23
 
 Owns:
 
 - `pa18/README.md` through `pa22/README.md`
-- `pa24/README.md`
+- `pa23/README.md`
 - corresponding inventory sections
 
 Focus:
 
 - template and constexpr assignment boundaries
-- template integration boundary in PA24
+- template integration boundary in PA23
 - strict/witness tests as maintainer validation versus student-facing tests
 - source-to-LowIR contract without exposing internal witness implementation as
   a required student oracle unless it ships
 
-### Slice D: PA23-PA29
+### Slice D: PA24-PA31
 
 Owns:
 
-- `pa23/README.md` through `pa29/README.md`
+- `pa24/README.md` through `pa31/README.md`
 - corresponding inventory sections
 
 Focus:
 
-- `lowir2native`, host-EH facts, and later source-level runtime features
+- source-level runtime features, `lowir2native`, driver, ABI, and host-EH facts
 - native/object/runtime prerequisites
 - scaffold sidecars for `lowir2native` and `cppgm++`
 - grammar helper consistency
 
-### Slice E: PA30-PA35
+### Slice E: PA32-PA35
 
 Owns:
 

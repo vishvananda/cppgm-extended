@@ -28,8 +28,8 @@ You will want to reuse:
 
 - the full C++ language pipeline through PA32
 - the PA32 host-compatible `cppgm++ -c` path
-- the PA23 native backend and PA30 object-emission path
-- the PA25 exception/runtime lowering concepts
+- the PA28 native backend and PA29 object-emission path
+- the PA31 exception/runtime lowering concepts
 
 The tests assume a POSIX-like shell environment with `make`, `bash`,
 `perl`, and a working host C/C++ toolchain. The harness selects host tools from:
@@ -42,7 +42,7 @@ If those are not set, the harness searches for common compilers such as
 also require `ar`, `nm`, and `readelf`. The checked-in tests assume the normal
 x86_64 Linux host C++ ABI.
 
-The basic host-EH object-facts surface is owned by PA25. PA33 keeps the same
+The basic host-EH object-facts surface is owned by PA31. PA33 keeps the same
 host-link path but raises the contract to richer host ABI/runtime interactions.
 
 ### Starter Kit
@@ -144,7 +144,7 @@ Optional sidecars control or check the host flow:
 The checked-in PA33 tests cover:
 
 - cleanup, rethrow, noexcept termination, and foreign catch-all behavior beyond
-  the basic PA25 host-EH facts surface
+  the basic PA31 host-EH facts surface
 - class, base, transitive-base, and virtual-base host exception catches
 - host EH interaction with RTTI, `typeid`, lambdas, templates, and control flow
 - virtual dispatch, imported/exported vtable ownership, and polymorphic header
@@ -159,7 +159,7 @@ The checked-in PA33 tests cover:
 ### Host ABI Symbol Names
 
 PA33 extends the PA32 object contract into host C++ ABI/runtime behavior. The
-same ABI naming behavior from PA31 and PA32 is still observable for every C++
+same ABI naming behavior from PA30 and PA32 is still observable for every C++
 symbol that the host linker, unwinder, RTTI system, or virtual-dispatch
 machinery can observe.
 
@@ -185,7 +185,7 @@ To complete PA33, preserve this behavior within the supported subset:
 - RTTI-driven `dynamic_cast` / `typeid`
 - covariant return adjustment
 - ordinary host-linked rethrow and advanced catch behavior
-- cleanup and unwind interactions beyond the basic PA25 fact owners
+- cleanup and unwind interactions beyond the basic PA31 fact owners
 - foreign catch-all interaction in the tested subset
 
 If host link succeeds but the host C++ ABI/runtime behavior is wrong, the issue
@@ -195,7 +195,7 @@ belongs in PA33.
 
 The following are out of scope for PA33:
 
-- basic host-EH metadata/object facts, which belong in PA25
+- basic host-EH metadata/object facts, which belong in PA31
 - private course-only exception/runtime ABI details that are not visible through
   the host-linked program or object checks
 - hosted standard-library header/source compatibility, which belongs in PA34
@@ -210,7 +210,7 @@ often decided before the program starts: symbol names, weak ownership, unwind
 sections, RTTI/vtable objects, and relocation classes must match the host
 toolchain's expectations closely enough for ordinary linking and unwinding.
 
-A recommended implementation style is to continue using the PA31 ABI naming
+A recommended implementation style is to continue using the PA30 ABI naming
 layer before object emission. Feed semantic facts for the entity into the
 mangler, then let the object writer preserve the final raw symbol name. That
 keeps ABI spelling decisions close to semantic information and avoids a second

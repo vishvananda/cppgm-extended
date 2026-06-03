@@ -18,7 +18,7 @@ The questions for this assignment are:
 
 You should complete:
 
-- PA23 for the baseline `lowir2native` backend
+- PA28 for the baseline `lowir2native` backend
 - PA36 for the explicit LowIR optimization stage
 
 You will reuse the PA13 LowIR input language. Handwritten PA37 tests should use

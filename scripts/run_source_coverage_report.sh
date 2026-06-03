@@ -18,7 +18,7 @@ Options:
   --jobs N              Build make jobs (default: 4)
   --subtest-jobs N      TEST_REPORT_SUBTEST_JOBS (default: 2)
   --assignment-jobs N   TEST_REPORT_ASSIGNMENT_JOBS override
-  --strict-pas "pa18"   Strict supplemental PA list (default: pa18 pa19 pa21 pa22 pa24)
+  --strict-pas "pa18"   Strict supplemental PA list (default: pa18 pa19 pa21 pa22 pa23)
   --skip-strict         Skip strict semantic/witness supplemental coverage
   --skip-template-kernel
                          Skip template-kernel supplemental coverage
@@ -230,7 +230,7 @@ active_pas="${ACTIVE_TEST_REPORT_PAS:-}"
 jobs="${COVERAGE_JOBS:-4}"
 subtest_jobs="${TEST_REPORT_SUBTEST_JOBS:-2}"
 assignment_jobs="${TEST_REPORT_ASSIGNMENT_JOBS:-}"
-strict_pas="${COVERAGE_STRICT_PAS:-pa18 pa19 pa21 pa22 pa24}"
+strict_pas="${COVERAGE_STRICT_PAS:-pa18 pa19 pa21 pa22 pa23}"
 by_pa=0
 strict_enabled=1
 template_kernel_enabled=1

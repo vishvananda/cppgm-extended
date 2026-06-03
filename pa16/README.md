@@ -261,7 +261,7 @@ PA16 supports the following in addition to the PA15 subset:
 
 Within this milestone, PA16 should produce valid LowIR for ordinary non-polymorphic value
 types over the supported PA15 procedural/class subset. That LowIR is intended
-to be accepted by the later PA23 `lowir2native` backend for the supported
+to be accepted by the later PA28 `lowir2native` backend for the supported
 cases. PA13 `lowir2cy86` remains an optional execution scaffold, not the
 primary validation path.
 

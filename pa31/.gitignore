@@ -1,14 +1,13 @@
-abimangle
-abimangle-debug
+cppgm++
+cppgm++-debug
 testout
+.test_failed
 tests/**/*.my
 tests/**/*.my.*
 tests/*.my
 tests/*.my.*
 tests/**/*.check*.exit_status
 tests/*.check*.exit_status
-tests/**/*.direct.*
-tests/*.direct.*
 tests/**/*.libdir/
 tests/*.libdir/
 tests/**/*.impl.link_command
@@ -19,8 +18,6 @@ tests/**/*.impl.unresolved_symbols
 tests/*.impl.unresolved_symbols
 tests/**/*.o
 tests/*.o
-tests/**/*.obj
-tests/*.obj
 tests/**/*.a
 tests/*.a
 tests/**/*.so
@@ -28,4 +25,3 @@ tests/*.so
 tests/**/*.dylib
 tests/*.dylib
 *.dSYM
-.test_failed

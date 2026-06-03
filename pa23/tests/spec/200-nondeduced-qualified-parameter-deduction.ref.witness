@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa23/tests/spec/200-nondeduced-qualified-parameter-deduction.t:18:3
+    template a
+    selected primary
+    bind #1 = int source=explicit
+  function-call at pa23/tests/spec/200-nondeduced-qualified-parameter-deduction.t:19:10
+    callee f
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

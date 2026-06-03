@@ -1,0 +1,10 @@
+translation-unit
+  class-use at pa23/tests/general/100-reference-member-constant-pair-alias.t:14:9
+    template duration
+    selected primary
+    bind #1 = ratio<60> source=explicit
+  class-use at pa23/tests/general/100-reference-member-constant-pair-alias.t:14:18
+    template ratio
+    selected primary
+    bind #1 = 60 source=explicit
+    bind #2 = 1 source=defaulted

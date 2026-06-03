@@ -1,232 +1,325 @@
-## CPPGM Programming Assignment 29 (`cppgm++ --emit-lowir`)
+## CPPGM Programming Assignment 29 (`cppgm++ -c` and link mode)
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source
-Files, executes translation phases 1 through 7, parses them as PA10/PA29 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA14-PA28 LowIR lowering path,
-adds the PA29 multi-vtable / virtual-base ABI slice, and writes LowIR text.
+Write one C++ application called `cppgm++`.
 
-PA29 extends PA28 with the first supported object layouts that require more than the
-earlier single-vptr, non-virtual-base ABI:
+PA29 does not introduce a new executable. It extends the same `cppgm++` binary
+used since PA10 with practical compiler-driver behavior.
 
-- virtual inheritance for shared base-subobject layout and access
-- polymorphic multiple inheritance with more than one active vtable view
-- pointer-form `dynamic_cast` across sibling polymorphic bases
-- RTTI / `typeid` through non-primary polymorphic base views
+`cppgm++` has two required PA29 modes:
 
-PA29 still produces LowIR. It does not introduce a new output format.
+- compile mode, `-c`, which takes one C++ source file and writes one
+  implementation-defined machine-object file
+- default link mode, which takes one or more inputs and writes one native
+  executable program
+
+In link mode, each input may be either:
+
+- a C++ source file, which `cppgm++` compiles as its own translation unit before
+  linking
+- a machine-object file previously produced by `cppgm++ -c`
+
+The contract is source-driven. The PA29 tests start from C++ source
+files, validate explicit separate compilation with `cppgm++ -c`, and then link
+the resulting objects with `cppgm++`. The harness also checks two practical
+driver consistency properties:
+
+- linking the same source files directly through `cppgm++` must match explicit
+  compile-then-link behavior
+- linking a mixture of precompiled objects and remaining source files must also
+  match explicit compile-then-link behavior
+
+PA29 does not introduce a new language subset. It turns the C++ feature set
+implemented through PA27 into a practical compile-and-link toolchain entrypoint.
 
 ### Prerequisites
 
-You should complete Programming Assignment 28 before starting this assignment.
+Complete PA28 before starting this assignment.
 
 You will want to reuse:
 
 - the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST as the syntax boundary
-- the PA11-PA12 semantic foundation
-- the PA14-PA28 LowIR lowering path
-- the PA13 LowIR contract
-- the PA23 native validation path
-- the PA13 LowIR -> CY86 path as an optional secondary scaffold
+- the PA10 AST and PA11/PA12 semantic foundation
+- the PA14-PA27 LowIR lowering path
+- the PA28 native backend
+- the object emission, linking, and runtime support path used by `cppgm++`
+
+The tests assume a POSIX-like shell environment with `make`, `bash`,
+`perl`, and a working host C/C++ compiler for test helper objects. The harness
+selects helper compilers from:
+
+- `CPPGM_HOST_CC` or `CC` for C helper sources
+- `CPPGM_HOST_CXX` or `CXX` for C++ helper sources
+
+If those are not set, the harness searches for common compilers such as
+`clang`, `gcc`, `cc`, `clang++`, `g++`, and `c++`. Some tests substitute the
+Linux target name or the corresponding x86_64 Linux triple,
+`x86_64-unknown-linux-gnu`, into driver flags.
 
 ### Starter Kit
 
-The starter kit contains:
+The starter kit provides:
 
-- `pa29/README.md`, `pa29/Makefile`, and the test scripts in `pa29/scripts/`
-- a student-editable `dev/cppgm++.cpp` starter scaffold
-- the `pa29/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
-- shared support sources and headers under `dev/src/`
-- a local test suite under `pa29/tests/`
-- the grammar for this assignment called `pa29.gram`
+- `dev/cppgm++.cpp`, populated from the `cppgm++` scaffold for the cumulative
+  PA10+ compiler driver
+- the shared `dev/` sources needed by the scaffold
+- `pa29/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
+- `pa29/Makefile`
+- `pa29/scripts/`, the compiler-driver test harness
+- `pa29/tests/general/`, the PA29 tests and checked-in reference files
+- the shared `cppgm++` source grammar, exposed for this assignment as
+  `pa29.gram`
 - an HTML grammar explorer of `pa29.gram` in the sub-directory `grammar/`
-- a checked-in local test suite under `tests/`
 
-Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
-student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
-test fixtures, comparison scripts, and checked-in reference outputs are support
-files, not implementation files to edit for normal solutions. The shared support files
-provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA29 source-to-LowIR ABI slice for you.
+Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+shared implementation files it calls. Do not edit generated `.my` files. Test
+inputs and references are part of the handout unless your instructor asks you
+to add or update tests.
 
-Unlike PA1-PA9, there is no external reference binary for PA29. The checked-in `.ref`
-files are the default oracle.
+There is no separate PA29 reference binary in the starter kit. The checked-in
+`.ref.*` files are the oracle.
 
-### Input / Command-Line Arguments
+### Driver Surface
 
-Behaviour is undefined unless the command-line arguments match:
+Previously required:
 
-    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+- `--emit-ast`
+- `--emit-types`
+- `--emit-semantics`
+- `--emit-lowir`
+- `-o <outfile>`
 
-`-O0` is the PA29 test mode. Other optimization levels are later optimizer work and
-are not required for this milestone.
+New in PA29:
+
+- compile mode: `-c`
+- default link mode with source and object inputs
+- include search: `-I <dir>` and `-I<dir>`
+- library search: `-L <dir>`, `-L<dir>`, `-l <name>`, and `-l<name>`
+- target selection: `--target <target>` or `--target=<target>`
+
+Not yet required here:
+
+- hosted preprocess mode `-E`
+- hosted preprocessor-control flags such as `-D`, `-U`, `-include`, and
+  `-isystem`
+- driver query flags such as `--version`, `-v`, `-dumpmachine`,
+  `-dumpversion`, and `-print-search-dirs`
+- static archives and shared libraries as link inputs
+
+### Command-Line Contract
+
+Required compile forms:
+
+```sh
+cppgm++ -c -o <objfile> <srcfile>
+cppgm++ -c --target <target> -o <objfile> <srcfile>
+cppgm++ -c -I <dir> -o <objfile> <srcfile>
+cppgm++ -c -I<dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
+```
+
+Required link forms:
+
+```sh
+cppgm++ -o <outfile> <input1> <input2> ... <inputN>
+cppgm++ --target <target> -o <outfile> <input1> <input2> ... <inputN>
+cppgm++ -I <dir> -o <outfile> <input1> <input2> ... <inputN>
+cppgm++ -I<dir> -o <outfile> <input1> <input2> ... <inputN>
+cppgm++ -L <dir> -l<name> -o <outfile> <input1> <input2> ... <inputN>
+cppgm++ -L<dir> -l <name> -o <outfile> <input1> <input2> ... <inputN>
+```
+
+Options may be combined when their meanings are compatible, for example
+`--target <target>` with `-I` or `-L`/`-l`.
+
+In link mode, each `<inputK>` may be:
+
+- a C++ source file
+- an object-like file produced by `cppgm++ -c`
+
+For PA29, object files are identified by implementation-supported object-like
+filenames such as `.o` or `.obj`. The checked-in tests use `.obj`.
+
+`-I` adds user include search paths for any C++ source files compiled in that
+invocation. The tests use `-I` with quoted includes.
+
+`-L` and `-l` search implementation-supported object-like libraries. The tests use simple helper objects named like `lib<name>.o` in a harness-created
+library directory.
+
+All linked inputs in one invocation must target the same native backend target.
 
 ### Output Format
 
-`cppgm++` shall write LowIR text to `<outfile>`.
+In compile mode, `cppgm++` shall write one machine-object file to `<objfile>`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA29 extends the PA28 lowering
-surface only by making more of the C++ source language lower into the already-defined LowIR
-family.
+In link mode, `cppgm++` shall write one native executable program to
+`<outfile>`.
 
-LowIR top-level declaration/definition order is a presentation convention, not
-a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
-`function`, but the relaxed LowIR comparison canonicalizes top-level entries
-before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
-notes where internal LowIR symbol names are only a presentation tie-breaker.
-Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
-blocks, item order inside structured globals, vtable slot order, and action
-order inside generated initialization, finalization, constructor, destructor,
-and cleanup bodies.
+The exact object-file encoding is not directly compared by the PA29 tests. The
+exact final binary encoding is also not directly compared. Instead, the tests
+compare:
 
-The generated LowIR must be well-formed and must match the checked-in `.ref` files under
-the relaxed LowIR comparison used by the harness. That comparison still checks the
-semantic LowIR shape and required IR facts, but it does not make helper metadata
-presentation or other non-semantic text details part of the student contract.
+- compile/link exit status
+- generated program exit status
+- generated program standard output
 
 ### Error Handling
 
-If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
-generation, `cppgm++` shall `EXIT_FAILURE`.
+If an error occurs during preprocessing, parsing, semantic analysis, lowering,
+object-file emission, linking, or native output writing, `cppgm++` shall exit
+with failure.
 
-The output file is not required to be meaningful on failure.
+Important PA29 error cases include:
 
-### Standard Output / Error
+- duplicate global symbol definitions
+- unresolved external symbols
+- missing `main`
 
-Standard output and standard error are ignored for automated testing of `cppgm++`.
+For negative tests, exact diagnostics are not the grading contract. The harness
+compares exit status first. If the reference compile/link path fails, stdout and
+stderr are diagnostic side effects rather than required output.
 
-You are free to use them for debugging, tracing, or diagnostic messages.
+### Standard Output And Error
+
+Standard output and standard error are ignored for successful automated testing
+of `cppgm++` in PA29. You may use them for diagnostics.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
-`cppgm++` with `--emit-lowir -O0`.
+Run the PA29 suite with:
 
-The local checked-in tests live in `tests/general/`. They exercise PA29
-source-to-LowIR behavior over virtual inheritance, non-primary polymorphic
-views, sibling `dynamic_cast`, and RTTI through adjusted base views.
+```sh
+make test
+```
 
-For each test case `x`:
+To run one test through the shared check target:
 
-- `cppgm++` is executed to produce `x.my`
-- the exit status is recorded in `x.my.exit_status`
-- `x.my` is compared against `x.ref`
-- `x.my.exit_status` is compared against `x.ref.exit_status`
+```sh
+make check TEST=tests/general/100-two-source-call.t
+```
 
-PA29 is tested against generated LowIR text using the relaxed LowIR comparator described
-above. The generated LowIR is also intended to remain acceptable to the already-completed
-backend paths:
+The local tests live in `tests/general/`. They exercise practical
+compiler-driver, separate-compilation, link, runtime, and consistency behavior.
+They are not direct N3485 clause tests.
 
-- feed that LowIR into PA23 `lowir2native`
-- optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+For each test anchor `x.t`, companion C++ sources are named:
 
-The shipped PA29 tests are the contract for this milestone.
+```text
+x.t.1
+x.t.2
+...
+```
 
-### PA29 Syntax Spec
+Optional sidecars include:
 
-The authoritative source syntax is the shared `cppgm++` source grammar, exposed
-for this assignment as `pa29.gram`. The grammar defines accepted syntax only;
-the PA29 semantic and lowering requirements are defined by the Assignment
-Boundary and Out Of Scope sections below.
+- `x.flags`: extra flags passed to `cppgm++`
+- `x.lib.*`: host-built helper C or C++ sources that become object-like
+  libraries for `-L`/`-l` tests
+- `x.stdin`: standard input for the generated program
 
-As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
-`.ref` files.
+For each test case, the harness checks:
 
-PA29 does not add a new source-language grammar format. It instead enables more
-of the already-accepted C++11 syntax to participate in semantic analysis and
-lowering.
+1. Explicit separate compilation:
+   `cppgm++ -c` is executed once for each companion source file, and then
+   `cppgm++` links the generated objects.
+2. Direct source linking:
+   `cppgm++` is executed directly on the same source files.
+3. Mixed source/object linking for multi-source tests:
+   one generated object and the remaining source files are linked together.
 
-A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
-`pa29.gram` as the source of truth.
+The checked-in `.ref.*` files are compared against the explicit compile/link
+path. The direct and mixed paths are consistency checks: they must match the
+explicit path.
 
-`pa29.gram` uses the same token vocabulary and the same extended BNF operators as
-`../pa6/pa6.gram`.
+This validates:
 
-If this README and `pa29.gram` appear to disagree about source syntax, treat `pa29.gram`
-as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
-treat `lowir.md` as authoritative. If they disagree about the PA29 lowering slice, treat the
-`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+- compile mode
+- link mode
+- source-to-object lowering through the full language pipeline
+- consistency between direct source linking and explicit separate compilation
+- consistency between mixed source/object linking and explicit separate
+  compilation
+- cross-translation-unit data relocations that feed indirect calls
+- namespace-scope startup hooks across translation units
 
 ### Assignment Boundary
 
-PA29 supports the following in addition to the PA28 subset:
+PA29 must support the C++ feature set already implemented through PA27, but
+through a practical driver interface rather than one stage-specific binary per
+milestone.
 
-- virtual inheritance for shared base-subobject layout in complete objects
-- field access through shared virtual bases
-- supported constructor and hidden-argument forwarding cases that carry virtual-base
-  subobject addresses through existing value-semantics machinery
-- polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
-  bases
-- virtual dispatch through non-primary polymorphic base pointers and references
-- pointer-form `dynamic_cast<T*>` across sibling polymorphic bases in the supported object
-  model
-- `typeid(expr)` through supported non-primary polymorphic base lvalue views
+Within that supported subset, PA29 should:
 
-Within this milestone, PA29 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA23 `lowir2native` for the supported cases.
-PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
+- compile one C++ source file to one machine-object file with `-c`
+- link machine-object files into a native executable
+- accept C++ source files directly in link mode by compiling each source as its
+  own translation unit before linking
+- support user include search paths through `-I`
+- support source-level external declarations needed for ordinary separate
+  compilation, such as `extern int g;`
+- support ordinary external C function declarations and definitions through
+  `extern "C"` in the practical subset needed for object-style library
+  interoperability
+- support object-like library search through `-L` and `-l`
+- support simple complete-program runtime tests written in C++ and linked
+  against harness-provided object-style support libraries, without requiring
+  host libc or hosted headers
+- allow either an implementation-defined object format with your own linker or
+  host-compatible objects with delegation to the host toolchain, as long as the
+  `cppgm++` behavior matches the contract
 
 To complete PA29, implement these goals:
 
-1. Shared virtual-base layout.
-   Complete objects with a virtual diamond should expose one shared base-subobject at a
-   deterministic offset.
-
-2. Non-primary polymorphic dispatch.
-   Calling a virtual through a later polymorphic base must lower through the correct vtable
-   view and apply the required `this` adjustment.
-
-3. Sibling cross-cast support.
-   Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the
-   supported RTTI / vtable-view scan.
-
-4. RTTI through non-primary views.
-   `typeid(expr)` should observe the dynamic type through a supported non-primary
-   polymorphic base reference.
+1. Separate compilation from C++ source.
+2. Direct source-link parity.
+3. Mixed source/object parity.
+4. Cross-translation-unit source semantics.
+5. Toolchain-style include handling.
+6. External object-library interoperability through the tested `extern "C"`
+   and `-L`/`-l` subset.
+7. Full-language-through-toolchain validation for previously implemented
+   language features.
+8. Source-driven runtime-program validation without host-library dependence.
 
 ### Out Of Scope
 
-The following are explicitly out of scope for PA29:
+The following are out of scope for PA29:
 
-- virtual-base constructor, copy, assignment, and destructor sequencing beyond the already
-  supported simple generated cases
-- polymorphic multiple inheritance with virtual destructors
-- reference-form `dynamic_cast`
-- `dynamic_cast` and RTTI cases that require `bad_cast` / `bad_typeid`
-- virtual inheritance combined with the unsupported special-member or exception cases
-- toolchain-driver and host-linker integration
-
-Inputs that rely on those features have undefined behaviour for this milestone.
-
-### Stage Handoff
-
-The intended next stage is PA30, which turns the completed language/lowering pipeline into
-a practical `cppgm++` toolchain driver and standard object-output flow.
-
-So PA29 should leave behind:
-
-- a stable multi-vtable / virtual-base LowIR lowering path
-- deterministic lowering for the supported sibling-cast and RTTI-view cases
-- explicit remaining deferrals only where the practical toolchain and remaining ABI/runtime
-  work need to take over
-- enough stable source behavior that PA30 can start carrying simple PA9-style complete
-  programs as C++ end-to-end tests through the practical driver/link path
+- full system-compiler flag compatibility beyond the documented PA29 options
+- static archives such as `.a`
+- shared libraries such as `.so` or `.dylib`
+- arbitrary foreign non-object library formats
+- full `extern "C"` linkage-specification coverage beyond the practical
+  function-oriented subset needed for PA29 interop
+- dependence on host libc or hosted headers for the basic PA29 runtime-program
+  coverage
+- dependency generation flags
+- precompiled headers
+- build-system conveniences such as depfiles or compilation databases
+- hosted preprocessor and hosted-header compatibility, which belong in PA34
+  and PA35
+- standalone ABI name construction, which belongs in PA30
+- host-linker-compatible object output, which belongs in PA32
 
 ### Design Notes (Non-Normative)
 
-PA29 should extend the existing object-model and RTTI lowering path, not replace it.
+PA29 should wrap the existing implemented pipeline, not replace it.
 
-The same monotonic-extension rule applies here:
+In particular:
 
-- PA29 should add its new behavior only when the source actually uses the supported PA29
-  feature set
-- it should not perturb PA28 outputs for programs that remain entirely within the PA28
-  subset
-- in practice, the richer vtable / RTTI layout should stay source-driven rather than
-  changing earlier single-vptr cases unnecessarily
+- C++ source inputs should still flow through the existing semantic and LowIR
+  lowering path.
+- The object and link stages should still reuse the object/runtime machinery
+  from earlier assignments.
+- The direct source-link path should behave like repeated separate compilation
+  followed by linking, not like a special one-off shortcut.
+- If you choose a host-compatible object format, keep the `cppgm++`
+  contract the same; the tests care about observable tool behavior, not which
+  linker implementation you use.
+
+### Stage Handoff
+
+The next stage is PA30, which isolates Itanium C++ ABI name construction before
+the later host-object assignments require host-compatible C++ symbol names.

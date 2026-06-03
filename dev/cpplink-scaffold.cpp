@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA24 `cpplink` binary.
+// Legacy scaffold for the folded-out `cpplink` binary.
 
 #include "exceptions.h"
 #include "tool_help_text.h"

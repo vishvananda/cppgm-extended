@@ -5,8 +5,8 @@
 Write one C++ application called `cppgm++`.
 
 PA32 is the host object/toolchain interoperability assignment. It does not add
-new language features. Instead, it combines the PA30 compile-mode driver with
-the PA31 ABI naming layer:
+new language features. Instead, it combines the PA29 compile-mode driver with
+the PA30 ABI naming layer:
 
 - `cppgm++ -c` must emit ordinary relocatable object files for the current host
   object format.
@@ -34,11 +34,11 @@ Complete PA31 before starting this assignment.
 
 You will want to reuse:
 
-- the full C++ language pipeline through PA30
-- the PA30 `cppgm++ -c` driver path
-- the PA31 ABI naming layer
-- the PA23 native backend and PA30 object-emission path
-- the PA30 cross-translation-unit compile/link model
+- the full C++ language pipeline through PA29
+- the PA29 `cppgm++ -c` driver path
+- the PA30 ABI naming layer
+- the PA28 native backend and PA29 object-emission path
+- the PA29 cross-translation-unit compile/link model
 
 The tests assume a POSIX-like shell environment with `make`, `bash`,
 `perl`, and a working host C/C++ toolchain. The harness selects host tools from
@@ -74,8 +74,8 @@ There is no separate PA32 reference binary in the starter kit. The checked-in
 
 ### Command-Line Contract
 
-PA32 does not introduce new command-line flags. It strengthens the PA30
-compile-mode surface on the host-compatible path and uses the PA31 ABI naming
+PA32 does not introduce new command-line flags. It strengthens the PA29
+compile-mode surface on the host-compatible path and uses the PA30 ABI naming
 layer for C++ object symbols.
 
 Required forms:
@@ -161,14 +161,14 @@ The checked-in PA32 tests cover:
 - duplicate-definition/coalescing behavior for inline and template output
 - host symbol spelling for user-defined entities and selected template cases
 
-### Using PA31 ABI Names
+### Using PA30 ABI Names
 
 PA32 is still before the broader host C++ ABI/runtime stage in PA33, but ordinary
 host object interoperability already requires correct raw symbol spelling for
 user-defined entities.
 
 The object-file contract is that visible symbol names match the configured host
-ABI. The PA31 ABI naming layer is the recommended path for producing those
+ABI. The PA30 ABI naming layer is the recommended path for producing those
 names:
 
 - the host linker sees raw symbol names, not demangled intent
@@ -212,8 +212,8 @@ The following are out of scope for PA32:
 
 ### Design Notes (Non-Normative)
 
-A simple implementation strategy is to keep PA30's source-to-LowIR path, use
-PA31 to derive concrete C++ object symbols, and retarget only the object
+A simple implementation strategy is to keep PA29's source-to-LowIR path, use
+PA30 to derive concrete C++ object symbols, and retarget only the object
 emission details needed by the host object format. The observable contract is
 whether the host toolchain can consume and link the result, not whether your
 internal object pipeline has the same structure as the course implementation.
@@ -221,7 +221,7 @@ internal object pipeline has the same structure as the course implementation.
 One practical integration point is the compiler semantic/linkage layer: after
 semantic analysis determines the entity, owner scopes, function type, template
 arguments, local context, ABI tags, and special-name kind, that layer can feed
-those facts to the PA31 mangler and store the resulting raw symbol on the
+those facts to the PA30 mangler and store the resulting raw symbol on the
 LowIR/object symbol. This keeps lower object-format and toolchain-driver code
 focused on preserving the spelling it was given instead of reconstructing C++
 ABI names from text fragments.

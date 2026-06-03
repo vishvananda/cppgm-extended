@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa23/tests/general/300-decltype-no-body-instantiation.t:27:9
+    template X
+    selected primary
+    bind #1 = int source=explicit

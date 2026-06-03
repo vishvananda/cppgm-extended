@@ -90,7 +90,7 @@ copy_tracked_paths() {
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         next if m{^pa9/extras/};
-        next if m{^pa25/tests/general/200-host-compact-unwind-large-frame-fallback(?:\.|$)};
+        next if m{^pa31/tests/general/200-host-compact-unwind-large-frame-fallback(?:\.|$)};
         print "$_\0";
       '
   ) | rsync -a --from0 --files-from=- "$repo_root/" "$dest/"
@@ -434,15 +434,15 @@ pa_ref_pairs=(
   pa20:cppgm++
   pa21:cppgm++
   pa22:cppgm++
-  pa23:lowir2native
+  pa23:cppgm++
   pa24:cppgm++
   pa25:cppgm++
   pa26:cppgm++
   pa27:cppgm++
-  pa28:cppgm++
+  pa28:lowir2native
   pa29:cppgm++
-  pa30:cppgm++
-  pa31:abimangle
+  pa30:abimangle
+  pa31:cppgm++
   pa32:cppgm++
   pa33:cppgm++
   pa34:cppgm++

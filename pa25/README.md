@@ -1,228 +1,236 @@
-## CPPGM Programming Assignment 25 (`cppgm++ -c` Host EH Facts)
+## CPPGM Programming Assignment 25 (`cppgm++ --emit-lowir`)
 
 ### Overview
 
-Write one C++ application called `cppgm++`.
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source
+Files, executes translation phases 1 through 7, parses them as PA10/PA25 translation units,
+reuses the PA11-PA12 semantic foundation, builds on the PA14-PA24 LowIR lowering path,
+adds the PA25 advanced-language slice, and writes LowIR text.
 
-PA25 is the host exception-handling metadata assignment. Earlier assignments
-lower C++ source to LowIR and native code; PA25 makes EH-bearing `cppgm++ -c`
-objects participate in the host C++ unwinder.
+PA25 finishes the deferred first-tier language features that sit on top of the existing
+single-inheritance object model:
 
-The main PA25 question is: does a generated relocatable object contain the host
-EH facts needed by the platform unwinder?
+- capturing lambdas
+- `std::initializer_list` semantic interoperation
+- RTTI and `typeid`
+- pointer-form `dynamic_cast`
 
-The required surface is the basic Itanium C++ ABI exception subset used by the
-course:
-
-- calls to host EH runtime helpers such as `__cxa_allocate_exception`,
-  `__cxa_throw`, `__cxa_begin_catch`, `__cxa_end_catch`, and
-  `_Unwind_Resume`
-- a personality reference to `__gxx_personality_v0` when a function has landing
-  pads
-- host unwind metadata and LSDA/call-site information, such as
-  `.gcc_except_table`, `.eh_frame`, and the Mach-O compact-unwind equivalent
-- type-info references needed for typed catches
-- no private course-only `cppgm_eh_*` runtime symbols in host-EH objects
-
-PA25 is intentionally a host-object facts assignment, not a hosted standard
-library assignment and not the old private `cppeh` linker/runtime pipeline.
+PA25 still produces LowIR. It does not introduce a new output format.
 
 ### Prerequisites
 
-Complete PA23 and PA24 before starting this assignment.
+You should complete Programming Assignment 24 before starting this assignment.
 
 You will want to reuse:
 
-- the PA13 LowIR parser and EH instruction model
-- the PA23 native backend and object-emission infrastructure
-- the PA24 template-integration LowIR surface
-- the host-linkable object path used by `cppgm++ -c`
-- the ABI naming and runtime-role classification used by host object emission
-
-The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`, and
-a working host C/C++ toolchain. The harness selects host tools from:
-
-- `CPPGM_HOST_CXX` or `CXX` for the host C++ compiler/link driver
-- `CPPGM_HOST_CC` or `CC` for host C helper objects
-
-If those are not set, the harness searches for common compilers such as
-`clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Object-inspection tests also
-require host symbol/object tools such as `nm`, `readelf`, and `otool` where
-available.
+- the preprocessing and tokenization pipeline from PA1-PA6
+- the PA10 AST as the syntax boundary
+- the PA11-PA12 semantic foundation
+- the PA14-PA24 LowIR lowering path
+- the PA13 LowIR contract
+- the PA28 native validation path
+- the PA13 LowIR -> CY86 path as an optional secondary scaffold
 
 ### Starter Kit
 
-The starter kit provides:
+The starter kit contains:
 
-- `dev/cppgm++.cpp`, populated from the cumulative `cppgm++` scaffold
-- the shared `dev/` sources needed by the scaffold
-- `pa25/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
-- `pa25/Makefile`
-- `pa25/scripts/`, the host-interoperability test harness
-- `pa25/tests/general/`, the PA25 tests and checked-in reference files
+- `pa25/README.md`, `pa25/Makefile`, and the test scripts in `pa25/scripts/`
+- a student-editable `dev/cppgm++.cpp` starter scaffold
+- the `pa25/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
+- shared support sources and headers under `dev/src/`
+- a local test suite under `pa25/tests/`
+- the grammar for this assignment called `pa25.gram`
+- an HTML grammar explorer of `pa25.gram` in the sub-directory `grammar/`
+- a checked-in local test suite under `tests/`
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
-shared implementation files it calls. Do not edit generated `.my` files. Test
-inputs and references are part of the handout unless your instructor asks you to
-add or update tests.
+Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
+student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
+test fixtures, comparison scripts, and checked-in reference outputs are support
+files, not implementation files to edit for normal solutions. The shared support files
+provide reusable infrastructure and earlier assignment machinery; they do not implement the
+new PA25 source-to-LowIR language slice for you.
 
-There is no separate PA25 reference binary in the starter kit. The checked-in
-`.ref.*` files are the oracle.
+Unlike PA1-PA9, there is no external reference binary for PA25. The checked-in `.ref`
+files are the default oracle.
 
-### Command-Line Contract
+### Input / Command-Line Arguments
 
-PA25 uses compile mode:
+Behaviour is undefined unless the command-line arguments match:
 
-```sh
-cppgm++ -c -o <objfile> <srcfile>
-cppgm++ -c --target <target> -o <objfile> <srcfile>
-cppgm++ -c -I <dir> -o <objfile> <srcfile>
-cppgm++ -c -I<dir> -o <objfile> <srcfile>
-cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
-cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
-```
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-`<srcfile>` is a C++ source file in the supported course language subset.
-`<target>` may be `linux` or the corresponding x86_64 Linux host triple form
-accepted by your implementation. PA25 only requires compile mode. The final link
-in the tests is performed outside `cppgm++` by the host C++ compiler driver.
+`-O0` is the PA25 test mode. Other optimization levels are later optimizer work and
+are not required for this milestone.
 
 ### Output Format
 
-`cppgm++ -c` shall write one host-linker-compatible relocatable object file to
-`<objfile>`.
+`cppgm++` shall write LowIR text to `<outfile>`.
 
-The PA25 tests do not compare object bytes directly. They observe:
+The authoritative LowIR definition is `../pa13/lowir.md`. PA25 extends the PA24 lowering
+surface only by making more of the C++ source language lower into the already-defined LowIR
+family.
 
-- `cppgm++ -c` exit status
-- host final-link exit status
-- final program exit status
-- final program standard output
-- normalized object-facts output for tests that include `.inspect.facts`
-  sidecars
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa13/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
 
-The object-facts sidecars are part of the PA25 contract. The shared Perl
-harness dumps platform-normalized facts such as required EH runtime imports,
-unwind/LSDA section presence, relocation classes, decoded basic LSDA facts, and
-absence of private `cppgm_eh_*` symbols.
+The generated LowIR must be well-formed and must match the checked-in `.ref` files under
+the relaxed LowIR comparison used by the harness. That comparison still checks the
+semantic LowIR shape and required IR facts, but it does not make helper metadata
+presentation or other non-semantic text details part of the student contract.
 
 ### Error Handling
 
-If preprocessing, parsing, semantic analysis, lowering, object emission, or
-output writing fails, `cppgm++` shall exit with failure.
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
 
-For negative tests, exact diagnostics are not the grading contract. The harness
-compares exit status first. If the reference compile/link path fails, stdout and
-stderr are diagnostic side effects rather than required output.
+The output file is not required to be meaningful on failure.
 
 ### Standard Output / Error
 
-Standard output and standard error from `cppgm++ -c` are ignored for successful
-tests. They may be used for diagnostics.
+Standard output and standard error are ignored for automated testing of `cppgm++`.
+
+You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Run the PA25 suite with:
+Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
+`cppgm++` with `--emit-lowir -O0`.
 
-```sh
-make test
-```
+The local checked-in tests live in `tests/general/`. That directory contains
+PA25 source-to-LowIR tests for capturing lambdas, initializer-list
+interoperation, RTTI, `typeid`, `dynamic_cast`, and exception-source lowering
+interactions. PA25 has no `tests/spec/` directory because these tests focus on
+the combined language-to-LowIR contract.
 
-To run one test through the shared check target:
+For each test case `x`:
 
-```sh
-make check TEST=tests/general/100-host-eh-same-tu-throw-catch.t
-```
+- `cppgm++` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is compared against `x.ref`
+- `x.my.exit_status` is compared against `x.ref.exit_status`
 
-The local tests live in `tests/general/`. They cover the basic host-EH fact
-surface:
+PA25 is tested against generated LowIR text using the relaxed LowIR comparator described
+above. A useful manual validation path is:
 
-- same-translation-unit throw/catch
-- cross-translation-unit throw/catch
-- unhandled throw helper usage
-- cleanup during unwind and `_Unwind_Resume`
-- cleanup-only landing pads that resume without owning a throw helper
-- LSDA/unwind sections, runtime-helper relocation classes, and class typeinfo
-  facts used by typed catches
-- compact-unwind and large-frame fallback facts
-- reuse of host EH runtime declarations emitted by the frontend
-- direct LowIR host-EH object smoke tests used to guard the backend path
+- feed that LowIR into PA28 `lowir2native`
+- optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
+- then feed the generated CY86 into PA9 `cy86 --target linux`
 
-For each test anchor `x.t`, companion C++ sources are named:
+The shipped PA25 tests are the contract for this milestone.
 
-```text
-x.t.1
-x.t.2
-...
-```
+### PA25 Syntax Spec
 
-Optional sidecars control or check the host flow:
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa25.gram`. The grammar defines accepted syntax only;
+the PA25 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
-- `x.compile.flags`: extra flags passed to `cppgm++ -c`
-- `x.link.flags`: extra flags passed to the host link driver
-- `x.lib.*`: host-built C or C++ helper sources
-- `x.inspect.facts`: normalized host-EH object facts to dump and compare
-- `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: specialized
-  object-inspection checks that use host symbol/object tools
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the
+checked-in `.ref` files.
 
-For each test case:
+PA25 does not add a new source-language grammar format. It instead enables more
+of the already-accepted C++11 syntax to participate in semantic analysis and
+lowering.
 
-1. `cppgm++ -c` is executed once for each companion C++ source file.
-2. The host C++ compiler driver links the generated objects.
-3. Any inspect sidecar is run against the generated objects. For
-   `.inspect.facts`, the harness records normalized text facts in
-   `x.my.inspect`.
-4. If linking and inspection succeed, the generated program is executed.
-5. The recorded `.my.*` outputs are compared with the checked-in `.ref.*`
-   oracle files.
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa25.gram` as the source of truth.
+
+`pa25.gram` uses the same token vocabulary and the same extended BNF operators as
+`../pa6/pa6.gram`.
+
+If this README and `pa25.gram` appear to disagree about source syntax, treat `pa25.gram`
+as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA25 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
 
 ### Assignment Boundary
 
-PA25 owns the basic host-compatible EH metadata and runtime-helper object
-surface for `cppgm++ -c`.
+PA25 supports the following in addition to the PA24 subset:
 
-To complete PA25, implement this behavior within the supported subset:
+- capturing lambdas with supported explicit by-copy and by-reference captures of local
+  values, including class objects whose existing copy-construction path is supported
+- default `[=]` and `[&]` captures over the same supported local-value and `this` subset
+- explicit `this` capture for supported member-function cases
+- `std::initializer_list<T>` interoperation for the supported non-class element subset
+- `typeid(type-id)`
+- `typeid(expr)` for supported polymorphic lvalue expressions
+- `dynamic_cast<T*>(expr)` for supported polymorphic single-inheritance pointer conversions
 
-1. Lower `throw` expressions to host ABI throw helper calls.
-2. Lower typed catches to host landing-pad selector dispatch and
-   `__cxa_begin_catch` / `__cxa_end_catch` calls.
-3. Emit host personality and unwind metadata for EH-bearing functions.
-4. Emit LSDA/call-site/action/type-info facts sufficient for basic catch and
-   cleanup paths.
-5. Preserve cleanup/resume paths using `_Unwind_Resume`.
-6. Keep private course-only exception runtime symbols out of host-EH objects.
+Within this milestone, PA25 should produce valid LowIR for ordinary source programs over
+that subset. That LowIR should be accepted by PA28 `lowir2native` for the supported cases.
+PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
-If object inspection shows missing or malformed host EH metadata for a basic
-throw/catch/cleanup case, the issue belongs in PA25.
+To complete PA25, implement these goals:
+
+1. Capturing lambda lowering.
+   Explicit by-copy captures should materialize deterministic closure-object LowIR and the
+   resulting closure object should be callable through the existing class/method lowering
+   path.
+
+2. `std::initializer_list` interoperation.
+   Supported braced-list calls should materialize deterministic lowered storage and expose
+   the expected `__begin` / `__size` semantics to range-for lowering.
+
+3. RTTI and `typeid`.
+   The compiler should emit deterministic RTTI globals and lower both static and dynamic
+   `typeid` queries into ordinary LowIR address/load/branch operations.
+
+4. Pointer-form `dynamic_cast`.
+   The compiler should lower supported polymorphic single-inheritance pointer casts into
+   ordinary LowIR control flow without introducing new IR operations.
 
 ### Out Of Scope
 
-The following are out of scope for PA25:
+The following are explicitly out of scope for PA25:
 
-- the old private `cppeh` object/link/runtime pipeline
-- general host object interoperability unrelated to EH metadata
-- richer host ABI/runtime behavior after the basic EH facts exist
-- complex RTTI/vtable/virtual-base catch interactions
-- multi-frame or nested rethrow/cleanup behavior
-- rethrow behavior and `__cxa_rethrow`
-- hosted standard-library header/source compatibility
-- bootstrap or self-host builds
+- init-captures
+- class captures that require unsupported copy construction, destruction, or object-model
+  features
+- `std::initializer_list` with class element types
+- `typeid` cases that require `bad_typeid`
+- `dynamic_cast` reference forms
+- `dynamic_cast<void*>`
+- multiple inheritance and virtual inheritance
+- any PA25 feature path that depends on unsupported later object-model or ABI work
 
-Later host-EH assignments keep the same host-link path but raise the contract
-from basic object facts to richer host ABI/runtime interactions such as foreign
-catch-all, virtual-base catches, nested cleanup chains, and hosted library EH
-behavior.
+Inputs that rely on those features have undefined behaviour for this milestone.
+
+### Stage Handoff
+
+The intended next stage is PA26, which completes the remaining non-virtual object-model work
+that PA25 still deliberately avoids, especially non-virtual multiple inheritance and the
+remaining single-vptr RTTI case `dynamic_cast<void*>`.
+
+So PA25 should leave behind:
+
+- a stable advanced-language semantic layer over the existing single-inheritance model
+- LowIR lowering for the supported RTTI, lambda-capture, and initializer-list subset
+- explicit remaining deferrals only where PA26 really needs to take over
+
+Virtual inheritance and polymorphic multiple inheritance remain intentionally deferred beyond
+PA26.
 
 ### Design Notes (Non-Normative)
 
-A useful implementation shape is to keep frontend LowIR EH operations stable and
-classify runtime roles below LowIR. Object emission can then map those roles to
-host ABI symbols and platform EH metadata:
+PA25 should extend the existing semantic and lowering path, not replace it.
 
-- Mach-O uses compact-unwind rows plus `__gcc_except_tab` and EH-frame data as
-  required by the host linker/unwinder.
-- ELF uses `.eh_frame`, `.gcc_except_table`, and the corresponding relocation
-  records.
+The same monotonic-extension rule applies here:
 
-Do not construct host EH facts from source text. The object backend should work
-from typed semantic/runtime-role information and final machine layout.
+- PA25 should add its new behavior only when the source actually uses the supported PA25
+  feature set
+- it should not perturb PA24 outputs for programs that remain entirely within the PA24
+  subset
+- in practice, RTTI globals, closure helpers, and dynamic-cast support should stay
+  on-demand rather than eagerly changing the behavior of ordinary earlier programs that do
+  not use those features

@@ -1,9 +1,11 @@
-cppgm++
-cppgm++-debug
+lowir2native
+lowir2native-debug
+tests/**/*.my*
+tests/**/*.my.cmir
+tests/**/*.ref.program
+tests/**/*.ref.impl.stdout
+tests/**/*.ref.impl.stderr
+tests/**/*.ref.program.stderr
 testout
 .test_failed
-tests/**/*.my
-tests/**/*.my.*
-tests/*.my
-tests/*.my.*
 *.dSYM

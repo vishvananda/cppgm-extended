@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA25 `cppeh` binary.
+// Legacy scaffold for the folded-out `cppeh` binary.
 
 #include "exceptions.h"
 #include "tool_help_text.h"

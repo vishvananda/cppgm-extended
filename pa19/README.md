@@ -136,7 +136,7 @@ against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
 
 PA19 is tested against generated LowIR text. That LowIR is intended to become
-input for the later PA23 `lowir2native` backend, but that future native path is
+input for the later PA28 `lowir2native` backend, but that future native path is
 not the PA19 grading contract.
 
 ### Optional Student Test Ideas
@@ -217,7 +217,7 @@ PA19 supports the following in addition to the PA18 subset:
 
 Within this milestone, PA19 should produce valid LowIR for ordinary metaprogramming code
 over the supported PA18 language subset. That LowIR is intended to be accepted
-by the later PA23 `lowir2native` backend for the supported cases. PA13
+by the later PA28 `lowir2native` backend for the supported cases. PA13
 `lowir2cy86` remains an optional execution scaffold.
 
 ### Out Of Scope
@@ -245,9 +245,9 @@ The intended next stages are:
 - PA20: complete the language-level constant-evaluation model over the existing LowIR path
 - PA21 and PA22: finish the remaining template specialization, deduction, substitution, and
   SFINAE work on top of that constant-evaluation engine
-- PA24: check that the individual template features from PA18, PA19, PA21, and
+- PA23: check that the individual template features from PA18, PA19, PA21, and
   PA22 compose without breaking their basic behavior
-- PA23: retarget the settled LowIR language surface to the real native backend
+- PA28: retarget the settled LowIR language surface to the real native backend
 
 So PA19 should leave behind:
 

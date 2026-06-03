@@ -14156,7 +14156,7 @@ private:
   static string gnu_asm_unsupported_message(const CallSemNode & node)
   {
     ostringstream out;
-    out << "GNU asm statement lowering unsupported in PA31 host compatibility";
+    out << "GNU asm statement lowering unsupported in hosted compatibility";
     if(!node.text.empty()) {
       out << " [qualifiers " << node.text << "]";
     }

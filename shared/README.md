@@ -3,8 +3,8 @@
 `source.gram` is the canonical source-language grammar for `cppgm++` frontend
 assignments starting at PA10.
 
-The local `paN/paN.gram` files for PA10-PA12, PA14-PA22, and PA26-PA30 expose
-this shared grammar under each assignment's historical filename. README files
+The local `paN/paN.gram` files for PA10-PA12, PA14-PA27, and PA29 expose
+this shared grammar under each assignment's filename. README files
 should use this standard wording:
 
 > The authoritative source syntax is the shared `cppgm++` source grammar,

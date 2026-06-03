@@ -232,7 +232,7 @@ should export alongside the starter sources when those assignments are packaged:
 
 - [IPPTokenStream.h](../dev/src/IPPTokenStream.h)
 - [DebugPPTokenStream.h](../dev/src/DebugPPTokenStream.h)
-- [abi_mangle.h](../dev/src/abi_mangle.h) for the PA31 optional ABI fact
+- [abi_mangle.h](../dev/src/abi_mangle.h) for the PA30 optional ABI fact
   scaffold
 - [exceptions.h](../dev/src/exceptions.h)
 - [tool_help_text.h](../dev/src/tool_help_text.h)
