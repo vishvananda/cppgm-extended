@@ -1,0 +1,26 @@
+translation-unit
+  function-call at pa21/tests/general/300-member-template-assignment-not-special-member.t:41:3
+    callee assign_rvalue
+    selected instantiation
+    bind #1 = box source=deduced
+  function-call at pa21/tests/general/300-member-template-assignment-not-special-member.t:42:3
+    callee assign_const_lvalue
+    selected instantiation
+    bind #1 = box source=deduced
+template-closure-events
+  ensure-definition
+    entity assign_const_lvalue
+  ensure-definition
+    entity assign_rvalue
+  function-instantiation
+    entity assign_const_lvalue
+  function-instantiation
+    entity assign_rvalue
+  function-instantiation
+    entity make_copy
+  require-definition
+    entity assign_const_lvalue
+  require-definition
+    entity assign_rvalue
+  require-definition
+    entity make_copy

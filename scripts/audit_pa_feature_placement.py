@@ -74,6 +74,11 @@ TEMPLATE_LATER_OR_COMPAT_FEATURES = {
 }
 
 TEMPLATE_INTEGRATION_BASIC_SUPPORT = {"basic-template"}
+TEMPLATE_PRE_INTEGRATION_SUPPORT = {
+    "basic-template",
+    "dependent-name",
+    "current-instantiation",
+}
 
 
 @dataclass(frozen=True)
@@ -215,13 +220,18 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("template.class", (rx(r"\btemplate\s*<[^>]*>\s*(?:class|struct)\b"),)),
     FeatureRule("template.function",
                 (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*(?:\{|;)"),)),
-    FeatureRule("template.default_argument", (rx(r"\btemplate\s*<[^>]*=[^>]*>"),)),
-    FeatureRule("template.dependent_name", (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::|[A-Za-z_][A-Za-z0-9_]*<[^>]*>::"),)),
+    FeatureRule("template.default_argument",
+                (rx(r"\btemplate\s*<[^>]*=[^>]*>"),),
+                path_patterns=(rx(r"(?:default-template-arg|default-argument|template-default|progressive-template-defaults|parameter-default)"),)),
+    FeatureRule("template.dependent_name",
+                (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::|[A-Za-z_][A-Za-z0-9_]*<[^>]*>::"),),
+                path_patterns=(rx(r"(?:^|[-_/])(?:dependent|typename|qualified-(?:member|type|value)|template-body)(?:[-_/]|$)"),)),
     FeatureRule("template.friend", (rx(r"\bfriend\b[^;{]*\btemplate\b|\btemplate\s*<[^>]*>[^;{]*\bfriend\b"),)),
     FeatureRule("template.current_instantiation", (),
-                path_patterns=(rx(r"current-instantiation|source-owner|owner-type|owner-param|owner-key"),)),
+                path_patterns=(rx(r"current-instantiation|current-owner|source-owner|owner-type|owner-param|owner-key"),)),
     FeatureRule("template.disambiguator",
-                (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::|(?:\.|->|::)\s*template\s+[A-Za-z_]"),)),
+                (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::|(?:\.|->|::)\s*template\s+[A-Za-z_]"),),
+                path_patterns=(rx(r"(?:^|[-_/])(?:typename|template-keyword|missing-(?:typename|keyword))(?:[-_/]|$)"),)),
     FeatureRule("template.function_partial_ordering", (),
                 path_patterns=(rx(r"(?:function-partial-order|partial-order|partial_order|pack-fallback|more-specialized)"),)),
     FeatureRule("template.alignas_alignof", (rx(r"\balignas\s*\(|\balignof\s*\(|__alignof__\s*\("),)),
@@ -672,10 +682,19 @@ def template_concepts_for(detected_features: Iterable[str]) -> list[str]:
     })
 
 
-def review_template_concepts(concepts: Iterable[str]) -> list[str]:
+def review_template_concepts(concepts: Iterable[str], current_pa: str) -> list[str]:
     review = set(concepts)
     if len(review) > 1:
-        review.difference_update(TEMPLATE_INTEGRATION_BASIC_SUPPORT)
+        support = (
+            TEMPLATE_INTEGRATION_BASIC_SUPPORT
+            if current_pa == "pa24"
+            else TEMPLATE_PRE_INTEGRATION_SUPPORT
+        )
+        non_support = review.difference(support)
+        if non_support:
+            review = non_support
+        else:
+            review.difference_update(TEMPLATE_INTEGRATION_BASIC_SUPPORT)
     return sorted(review)
 
 
@@ -733,10 +752,11 @@ def template_review_for(
     detected_features: list[str],
     placements: list[dict[str, object]],
     current_cluster: int | None,
+    current_pa: str,
     features: dict[str, FeatureMeta],
 ) -> dict[str, object]:
     concepts = template_concepts_for(detected_features)
-    review_concepts = review_template_concepts(concepts)
+    review_concepts = review_template_concepts(concepts, current_pa)
     template_features = sorted(
         feature_id for feature_id in detected_features
         if feature_id in TEMPLATE_CONCEPT_BY_FEATURE
@@ -823,7 +843,7 @@ def row_for(path: Path,
         "semantic_owner_notes": len(semantic_notes),
         "source_sidecars_scanned": bool(sidecar_source),
     }
-    row.update(template_review_for(detected, placements, current_cluster, features))
+    row.update(template_review_for(detected, placements, current_cluster, current_pa, features))
     return row
 
 

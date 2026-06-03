@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa19/tests/general/200-function-template-pack-forward-call.t:14:10
+    callee g
+    selected instantiation
+    bind #1 = <int, char> source=deduced
+template-closure-events
+  ensure-definition
+    entity g
+  function-instantiation
+    entity g
+  require-definition
+    entity g

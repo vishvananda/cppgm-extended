@@ -53,8 +53,8 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 
 | Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA24 Cluster | Action | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | `pa22/tests/general/200-pack-expanded-base-instantiation.t` | `pa22:200` | `later-owner-or-split` | pack-expansion | template.alignas_alignof | `pa18:300` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
-| [ ] | `pa22/tests/general/500-dependent-template-id-no-eager-layout.t` | `pa22:500` | `later-owner-or-split` | alias-template, dependent-name, no-eager-instantiation | template.alignas_alignof | `pa22:300` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
+| [ ] | `pa22/tests/general/200-pack-expanded-base-instantiation.t` | `pa22:200` | `later-owner-or-split` | pack-expansion | template.alignas_alignof | `pa19:200` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
+| [ ] | `pa22/tests/general/500-dependent-template-id-no-eager-layout.t` | `pa22:500` | `later-owner-or-split` | alias-template, no-eager-instantiation | template.alignas_alignof | `pa22:300` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
 | [ ] | `pa22/tests/general/400-exact-overload-beats-user-defined-conversion.t` | `pa22:400` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
 | [ ] | `pa22/tests/general/400-static-cast-explicit-constructor.t` | `pa22:400` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
 | [ ] | `pa22/tests/general/100-bad-deduction.t` | `pa22:100` | `pa22-advanced-single-candidate` | function-deduction |  | `pa22:100` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |

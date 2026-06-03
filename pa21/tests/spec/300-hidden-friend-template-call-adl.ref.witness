@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa21/tests/spec/300-hidden-friend-template-call-adl.t:27:10
+    callee apply
+    selected instantiation
+    bind #1 = value source=deduced
+template-closure-events
+  ensure-definition
+    entity apply
+  function-instantiation
+    entity apply
+  require-definition
+    entity apply

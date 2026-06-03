@@ -387,21 +387,21 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `template.type` | `pa18` | 100 | 14.1 `[temp.param]`, 14.3.1 `[temp.arg.type]` | pending | `template<class/typename>`, template-id type args. |
 | `template.class` | `pa18` | 100 | 14.5.1 `[temp.class]` | pending | class template declarations, instantiation, member definitions, static members. |
 | `template.function` | `pa18` | 100 | 14.5.6 `[temp.fct]`, 14.8 `[temp.fct.spec]` | pending | function template declarations, calls, and basic overload participation; local static tests inherit the local-static owner. |
-| `template.default_argument` | `pa18` | 100 | 14.1 `[temp.param]` | pending | type/template template defaults and preservation of default-argument scope; non-type defaults inherit the NTTP owner. |
-| `template.dependent_name` | `pa18` | 100 | 14.6.2 `[temp.dep]`, 14.6.4 `[temp.dep.res]` | pending | dependent qualified names, dependent member lookup, delayed body checks. |
-| `template.friend` | `pa18` | 300 | 14.5.4 `[temp.friend]`, 14.6.5 `[temp.inject]` | pending | friend templates, hidden friend templates, namespace-scope friend definitions. |
-| `template.current_instantiation` | `pa18` | 200 | 14.6.2.1 `[temp.dep.type]` | pending | current instantiation lookup and owner identity in template bodies. |
-| `template.disambiguator` | `pa18` | 200 | 14.2 `[temp.names]`, 14.6.2.1 `[temp.dep.type]` | pending | dependent `typename` and `template` disambiguators. |
+| `template.default_argument` | `pa18` | 200 | 14.1 `[temp.param]` | pending | supported type-parameter defaults and preservation of default-argument scope; template-template defaults inherit the template-template owner, and non-type defaults inherit the NTTP owner. |
+| `template.dependent_name` | `pa18` | 300 | 14.6.2 `[temp.dep]`, 14.6.4 `[temp.dep.res]` | pending | dependent qualified names, dependent member lookup, delayed body checks. |
+| `template.friend` | `pa21` | 300 | 14.5.4 `[temp.friend]`, 14.6.5 `[temp.inject]` | pending | friend templates, hidden friend templates, namespace-scope friend definitions. Rebalanced from PA18 because this is template declaration-graph and ownership behavior, not first-template instantiation. |
+| `template.current_instantiation` | `pa18` | 300 | 14.6.2.1 `[temp.dep.type]` | pending | current instantiation lookup and owner identity in template bodies. |
+| `template.disambiguator` | `pa18` | 300 | 14.2 `[temp.names]`, 14.6.2.1 `[temp.dep.type]` | pending | dependent `typename` and `template` disambiguators. |
 | `template.function_partial_ordering` | `pa22` | 200 | 14.5.6.2 `[temp.func.order]`, 14.8.2.4 `[temp.deduct.partial]` | pending | function-template partial ordering, pack fallback ordering, overload selection beyond the PA18 basic deduction subset. |
 | `template.alignas_alignof` | `pa15` | 300 | 7.6.2 `[dcl.align]`, 5.3.6 `[expr.alignof]` | pending | standard `alignas` layout and `alignof`; GNU `__alignof__` remains hosted/vendor compatibility. |
-| `template.pack` | `pa18` | 300 | 14.5.3 `[temp.variadic]` | pending | `...` packs and pack expansions. |
-| `template.template_parameter` | `pa18` | 300 | 14.1 `[temp.param]`, 14.3.3 `[temp.arg.template]` | pending | template-template parameter syntax. |
-| `template.member_template` | `pa18` | 300 | 14.5.2 `[temp.mem]` | pending | member templates, templated operators/call operators. |
+| `template.pack` | `pa19` | 200 | 14.5.3 `[temp.variadic]` | pending | `...` packs and pack expansions. Rebalanced from PA18 so PA19 owns the first metaprogramming/variadic extension over basic templates. |
+| `template.template_parameter` | `pa21` | 200 | 14.1 `[temp.param]`, 14.3.3 `[temp.arg.template]` | pending | template-template parameter syntax. Rebalanced from PA18 because this is second-order template entity modeling. |
+| `template.member_template` | `pa21` | 300 | 14.5.2 `[temp.mem]` | pending | member templates, templated operators/call operators. Rebalanced from PA18 because member-template collection/ownership fits the PA21 entity graph. |
 | `template.builtin_traits` | `pa34` | 600 | N/A: compiler intrinsics/hosted trait probes | pending | builtin trait/intrinsic expressions such as `__is_*`, `__builtin_*`, and trait wrappers. |
 | `template.nttp` | `pa19` | 100 | 14.1 `[temp.param]`, 14.3.2 `[temp.arg.nontype]` | pending | integral non-type template params/args. |
 | `template.nttp.pointer_member` | `pa22` | 400 | 14.3.2 `[temp.arg.nontype]` | pending | pointer, reference, enum, and class/static-member NTTP values; member-pointer NTTP cases also require the member-pointer owner. |
-| `template.explicit_specialization` | `pa19` | 200 | 14.7.3 `[temp.expl.spec]` | pending | `template<>` explicit specialization. |
-| `template.specialization_timing` | `pa19` | 300 | 14.6.4.1 `[temp.point]`, 14.7.1 `[temp.inst]`, 14.7.3 `[temp.expl.spec]` | pending | late explicit-specialization visibility and stale primary refresh; no-eager dependent failures belong to `template.no_eager_instantiation`. |
+| `template.explicit_specialization` | `pa19` | 300 | 14.7.3 `[temp.expl.spec]` | pending | `template<>` explicit specialization. |
+| `template.specialization_timing` | `pa19` | 400 | 14.6.4.1 `[temp.point]`, 14.7.1 `[temp.inst]`, 14.7.3 `[temp.expl.spec]` | pending | late explicit-specialization visibility and stale primary refresh; no-eager dependent failures belong to `template.no_eager_instantiation`. |
 | `constexpr.integral_subset` | `pa19` | 100 | 5.19 `[expr.const]`, 7.1.5 `[dcl.constexpr]` | pending | integral constants used for template args/static_assert. |
 | `static_assert` | `pa19` | 100 | 7 `[dcl.dcl]` static_assert-declaration | pending | `static_assert` over integral/template-dependent constant conditions; static assertions that require constexpr function evaluation inherit the PA20 constexpr owner. |
 | `constexpr.full` | `pa20` | 100 | 7.1.5 `[dcl.constexpr]`, 5.19 `[expr.const]` | pending | `constexpr` functions/constructors/variables and constant object evaluation. |

@@ -1,0 +1,16 @@
+translation-unit
+  function-call at pa21/tests/spec/300-hidden-friend-template-operator-adl.t:29:18
+    callee operator<<
+    selected instantiation
+    bind #1 = sink source=deduced
+  function-call at pa21/tests/spec/300-hidden-friend-template-operator-adl.t:29:23
+    callee operator<<
+    selected instantiation
+    bind #1 = sink source=deduced
+template-closure-events
+  ensure-definition
+    entity operator<<
+  function-instantiation
+    entity operator<<
+  require-definition
+    entity operator<<

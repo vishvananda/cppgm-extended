@@ -429,7 +429,15 @@ Pass D deferred test buildout.
 - `current harness mode`:
   - file-based tool, `.ref` text compare plus exit status
 - `current numbering bands`:
-  - `100-214`: one coherent first-template band
+  - `100`: first usable class/function template declarations, template-id type
+    arguments, direct instantiation, and basic direct-call deduction
+  - `200`: default template arguments, redeclaration/default merging, explicit
+    template-id spelling, and basic overload participation that still has a
+    single PA18 assertion
+  - `300`: dependent qualified names, `typename`, dependent member lookup,
+    and `template` disambiguator use inside otherwise basic template bodies
+    plus current-instantiation identity, delayed template-body checks, and
+    reusable instantiated-declaration/lowering behavior
 - `pass_a findings`:
   - boundary and primary oracle look correct
   - README still claims `tests/derived/`, but the current tree has `0` derived tests
@@ -439,7 +447,11 @@ Pass D deferred test buildout.
   - none identified yet
 - `planned new tests`:
   - deferred to Pass D
-  - reserve `200-299` for any additional clearly first-tier template owners that remain outside the later specialization/SFINAE splits
+  - use the `100`, `200`, and `300` clusters for PA18 first-tier template
+    owners using the rubric above
+  - pack-expansion coverage has moved to PA19 cluster `200`
+  - template-template parameters have moved to PA21 cluster `200`
+  - member-template and friend-template coverage has moved to PA21 cluster `300`
 - `defer reason`:
   - later template-split cleanup should settle exact ownership before more tests are frozen here
 - `next actions`:
@@ -457,7 +469,12 @@ Pass D deferred test buildout.
 - `current harness mode`:
   - file-based tool, `.ref` text compare plus exit status
 - `current numbering bands`:
-  - `100-196`: one coherent metaprogramming band
+  - `100`: integral NTTPs, integral constant-expression template arguments,
+    and `static_assert` over the PA19 constant subset
+  - `200`: type/non-type parameter packs, `sizeof...`, and pack expansions
+    over the PA18 template core
+  - `300`: explicit specialization declarations/definitions
+  - `400`: late explicit-specialization visibility and stale-primary refresh
 - `pass_a findings`:
   - boundary and primary oracle look correct
   - README still claims `tests/derived/`, but the current tree has `0` derived tests
@@ -467,7 +484,9 @@ Pass D deferred test buildout.
   - none identified yet
 - `planned new tests`:
   - deferred to Pass D
-  - reserve `200-249` for any remaining clearly PA19 metaprogramming-only owners after the constexpr/template split is finalized
+  - cluster `200` now owns pack-expansion coverage moved forward from PA18
+  - use cluster `300` for any remaining clearly PA19 explicit-specialization
+    owners after the constexpr/template split is finalized
 - `defer reason`:
   - some plausible gaps may actually belong in PA20/PA21 after the split cleanup
 - `next actions`:
@@ -513,7 +532,13 @@ Pass D deferred test buildout.
 - `current harness mode`:
   - file-based tool, `.ref` text compare plus exit status
 - `current numbering bands`:
-  - `100-437`: specialization/entity surface
+  - `100`: class partial specialization and primary specialization selection
+  - `200`: alias templates, variable templates, and template-template
+    parameter entity modeling
+  - `300`: member-template and friend-template declaration graph, collection,
+    and ownership plus current-specialization identity and explicit
+    instantiation
+  - `400`: partial-specialization ordering
 - `pass_a findings`:
   - split boundary looks correct and readable in the README
   - README already treats `tests/spec` as the active subset rather than claiming `tests/derived`
@@ -525,7 +550,11 @@ Pass D deferred test buildout.
   - none identified yet
 - `planned new tests`:
   - deferred to Pass D
-  - reserve `400-499` for any further specialization/entity owners that survive the split audit
+  - cluster `200` now owns template-template-parameter coverage moved forward
+    from PA18
+  - cluster `300` now owns member-template and friend-template coverage moved
+    forward from PA18
+  - use cluster `400` for any further specialization/entity owners that survive the split audit
 - `defer reason`:
   - the PA21/PA22 split is fresh enough that new template tests should wait until the ownership pass fully settles
 - `next actions`:
