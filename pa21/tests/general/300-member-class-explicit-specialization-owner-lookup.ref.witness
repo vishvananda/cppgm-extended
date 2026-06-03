@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa21/tests/general/300-member-class-explicit-specialization-owner-lookup.t:24:24
+    template outer::allocator
+    selected explicit
+    bind #1 = void source=explicit

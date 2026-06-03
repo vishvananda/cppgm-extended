@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa21/tests/general/300-using-base-same-signature-derived-template-preferred.t:29:12
+    callee Derived::erase
+    selected instantiation
+    bind #1 = Key source=deduced
+template-closure-events
+  ensure-definition
+    entity Derived::erase
+  function-instantiation
+    entity Derived::erase
+  require-definition
+    entity Derived::erase

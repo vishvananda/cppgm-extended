@@ -1,0 +1,20 @@
+translation-unit
+  function-call at pa21/tests/general/300-nested-member-partial-specialization-survives-reference-reset.t:26:10
+    callee service::make
+    selected instantiation
+    bind #1 = const object source=deduced
+template-closure-events
+  ensure-definition
+    entity service::make
+  function-instantiation
+    entity service::make
+  function-instantiation
+    entity service::wrapper<const object>::get
+  function-instantiation
+    entity service::wrapper<const object>::wrapper
+  require-definition
+    entity service::make
+  require-definition
+    entity service::wrapper<const object>::get
+  require-definition
+    entity service::wrapper<const object>::wrapper

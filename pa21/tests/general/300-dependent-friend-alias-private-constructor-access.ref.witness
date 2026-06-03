@@ -1,0 +1,12 @@
+translation-unit
+  class-use at pa21/tests/general/300-dependent-friend-alias-private-constructor-access.t:16:11
+    template Ref
+    selected primary
+    bind #1 = V source=explicit
+template-closure-events
+  ensure-definition
+    entity Ref<V>::Ref
+  function-instantiation
+    entity Ref<V>::Ref
+  require-definition
+    entity Ref<V>::Ref

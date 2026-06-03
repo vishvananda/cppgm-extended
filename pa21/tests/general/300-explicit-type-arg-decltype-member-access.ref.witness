@@ -1,0 +1,22 @@
+translation-unit
+  class-use at pa21/tests/general/300-explicit-type-arg-decltype-member-access.t:45:10
+    template impl
+    selected primary
+    bind #1 = handler source=explicit
+  function-call at pa21/tests/general/300-explicit-type-arg-decltype-member-access.t:45:10
+    callee impl<handler>::create
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  class-instantiation
+    entity impl<handler>::deleter
+  ensure-definition
+    entity impl<handler>::create
+  function-instantiation
+    entity impl<handler>::create
+  function-instantiation
+    entity traits<allocator>::check
+  require-definition
+    entity impl<handler>::create
+  require-definition
+    entity traits<allocator>::check

@@ -1,7 +1,7 @@
 // VALIDATION: compile-pass
 // N3485 focus: 14.6.2 [temp.dep]
 
-#include "support.h"
+#include "../support.h"
 
 struct source_type
 {

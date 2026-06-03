@@ -3,6 +3,9 @@
 
 This is a source/ref audit helper. It is intentionally conservative: a match
 means "review this test", not "move this test without reading it".
+
+Source and reference-output matches drive placement failures. Filename matches
+are retained as path hints for review, but they do not make CI fail.
 """
 
 from __future__ import annotations
@@ -24,6 +27,20 @@ SEMANTIC_ONLY_PA_MAX = 12
 LOWIR_SOURCE_PAS = set(range(14, 28))
 BACKEND_ONLY_PAS = {28}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
+LATE_PLACEMENT_IGNORED_FEATURES = {
+    "lowir.procedural",
+}
+LATE_PLACEMENT_BROAD_FEATURES = {
+    "stmt.condition_declaration",
+    "expr.reference",
+    "expr.array_pointer",
+    "expr.cast.builtin",
+    "lang.enum",
+    "class.basic",
+    "template.type",
+    "template.class",
+    "template.function",
+}
 
 TEMPLATE_CONCEPT_BY_FEATURE = {
     "template.type": "basic-template",
@@ -104,6 +121,21 @@ class FeatureRule:
 class FeatureHit:
     feature_id: str
     evidence: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class TemplateHeader:
+    start: int
+    end: int
+    params: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ClassSpan:
+    start: int
+    body_start: int
+    body_end: int
+    is_template: bool
 
 
 def rx(pattern: str) -> re.Pattern[str]:
@@ -222,10 +254,10 @@ RULES: tuple[FeatureRule, ...] = (
                 (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*(?:\{|;)"),)),
     FeatureRule("template.default_argument",
                 (rx(r"\btemplate\s*<[^>]*=[^>]*>"),),
-                path_patterns=(rx(r"(?:default-template-arg|default-argument|template-default|progressive-template-defaults|parameter-default)"),)),
+                path_patterns=(rx(r"(?:default-template-arg|template-default|progressive-template-defaults|parameter-default)"),)),
     FeatureRule("template.dependent_name",
                 (rx(r"\btypename\s+[A-Za-z_][A-Za-z0-9_:<>]*::|[A-Za-z_][A-Za-z0-9_]*<[^>]*>::"),),
-                path_patterns=(rx(r"(?:^|[-_/])(?:dependent|typename|qualified-(?:member|type|value)|template-body)(?:[-_/]|$)"),)),
+                path_patterns=(rx(r"(?:^|[-_/])(?:dependent|typename|template-body)(?:[-_/]|$)"),)),
     FeatureRule("template.friend", (rx(r"\bfriend\b[^;{]*\btemplate\b|\btemplate\s*<[^>]*>[^;{]*\bfriend\b"),)),
     FeatureRule("template.current_instantiation", (),
                 path_patterns=(rx(r"current-instantiation|current-owner|source-owner|owner-type|owner-param|owner-key"),)),
@@ -540,6 +572,182 @@ def overloaded_arrow_star_without_member_pointer(code: str) -> bool:
     return not re.search(r"::\s*\*|\.\*", code)
 
 
+def matching_delimiter(code: str, start: int, open_char: str, close_char: str) -> int | None:
+    depth = 0
+    i = start
+    while i < len(code):
+        c = code[i]
+        if c == open_char:
+            depth += 1
+        elif c == close_char:
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return None
+
+
+def split_top_level_commas(text: str) -> tuple[str, ...]:
+    parts: list[str] = []
+    start = 0
+    angle = paren = bracket = brace = 0
+    for i, c in enumerate(text):
+        if c == "<":
+            angle += 1
+        elif c == ">" and angle:
+            angle -= 1
+        elif c == "(":
+            paren += 1
+        elif c == ")" and paren:
+            paren -= 1
+        elif c == "[":
+            bracket += 1
+        elif c == "]" and bracket:
+            bracket -= 1
+        elif c == "{":
+            brace += 1
+        elif c == "}" and brace:
+            brace -= 1
+        elif c == "," and not (angle or paren or bracket or brace):
+            parts.append(text[start:i].strip())
+            start = i + 1
+    tail = text[start:].strip()
+    if tail:
+        parts.append(tail)
+    return tuple(parts)
+
+
+def has_top_level_equal(text: str) -> bool:
+    angle = paren = bracket = brace = 0
+    for c in text:
+        if c == "<":
+            angle += 1
+        elif c == ">" and angle:
+            angle -= 1
+        elif c == "(":
+            paren += 1
+        elif c == ")" and paren:
+            paren -= 1
+        elif c == "[":
+            bracket += 1
+        elif c == "]" and bracket:
+            bracket -= 1
+        elif c == "{":
+            brace += 1
+        elif c == "}" and brace:
+            brace -= 1
+        elif c == "=" and not (angle or paren or bracket or brace):
+            return True
+    return False
+
+
+def find_template_headers(code: str) -> list[TemplateHeader]:
+    headers: list[TemplateHeader] = []
+    for match in re.finditer(r"\btemplate\b", code):
+        i = match.end()
+        while i < len(code) and code[i].isspace():
+            i += 1
+        if i >= len(code) or code[i] != "<":
+            continue
+        end = matching_delimiter(code, i, "<", ">")
+        if end is None:
+            continue
+        params = split_top_level_commas(code[i + 1:end])
+        headers.append(TemplateHeader(match.start(), end + 1, params))
+    return headers
+
+
+def template_header_before(headers: Iterable[TemplateHeader], pos: int, code: str) -> TemplateHeader | None:
+    candidate: TemplateHeader | None = None
+    for header in headers:
+        if header.end <= pos and code[header.end:pos].strip() == "":
+            if candidate is None or header.start > candidate.start:
+                candidate = header
+    return candidate
+
+
+def find_class_spans(code: str, headers: Iterable[TemplateHeader]) -> list[ClassSpan]:
+    spans: list[ClassSpan] = []
+    for match in re.finditer(r"(?<!enum\s)\b(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*", code):
+        open_idx = code.find("{", match.end())
+        semi_idx = code.find(";", match.end())
+        if open_idx == -1 or (semi_idx != -1 and semi_idx < open_idx):
+            continue
+        close_idx = matching_delimiter(code, open_idx, "{", "}")
+        if close_idx is None:
+            continue
+        spans.append(ClassSpan(
+            start=match.start(),
+            body_start=open_idx + 1,
+            body_end=close_idx,
+            is_template=template_header_before(headers, match.start(), code) is not None,
+        ))
+    return spans
+
+
+def inside_class_body(pos: int, spans: Iterable[ClassSpan]) -> bool:
+    return any(span.body_start <= pos < span.body_end for span in spans)
+
+
+def is_type_template_parameter(param: str) -> bool:
+    return bool(re.match(r"(?:class|typename)\s*(?:\.\.\.)?\s*(?:[A-Za-z_][A-Za-z0-9_]*)?(?:\s*=.*)?$", param))
+
+
+def is_template_template_parameter(param: str) -> bool:
+    return bool(re.match(r"template\s*<", param))
+
+
+def is_pointer_or_reference_nttp(param: str) -> bool:
+    return bool(re.search(r"::\s*\*|\(\s*\*|\*|&", param))
+
+
+def add_source_hit(hits: dict[str, FeatureHit], feature_id: str, evidence: str) -> None:
+    hit = hits.setdefault(feature_id, FeatureHit(feature_id))
+    if evidence not in hit.evidence:
+        hit.evidence.append(evidence)
+
+
+def detect_structured_template_features(code: str) -> dict[str, FeatureHit]:
+    hits: dict[str, FeatureHit] = {}
+    headers = find_template_headers(code)
+    spans = find_class_spans(code, headers)
+    for header in headers:
+        for param in header.params:
+            if "..." in param:
+                add_source_hit(hits, "template.pack", f"source:template parameter pack `{param}`")
+            if has_top_level_equal(param):
+                add_source_hit(hits, "template.default_argument", f"source:template parameter default `{param}`")
+            if is_template_template_parameter(param):
+                add_source_hit(hits, "template.template_parameter", f"source:template-template parameter `{param}`")
+                continue
+            if is_type_template_parameter(param):
+                continue
+            add_source_hit(hits, "template.nttp", f"source:non-type template parameter `{param}`")
+            if is_pointer_or_reference_nttp(param):
+                add_source_hit(hits, "template.nttp.pointer_member", f"source:pointer/reference NTTP `{param}`")
+        if inside_class_body(header.start, spans):
+            add_source_hit(hits, "template.member_template", "source:template declaration inside class body")
+    for span in spans:
+        if span.is_template:
+            body = code[span.body_start:span.body_end]
+            if re.search(r"\bfriend\b", body):
+                add_source_hit(hits, "template.friend", "source:friend declaration inside class template")
+    if re.search(r"\bsizeof\s*\.\.\.", code):
+        add_source_hit(hits, "template.pack", "source:sizeof... pack expression")
+    return hits
+
+
+def evidence_partition(evidence: Iterable[str]) -> tuple[list[str], list[str]]:
+    source_ref: list[str] = []
+    path: list[str] = []
+    for item in evidence:
+        if item.startswith("path:"):
+            path.append(item)
+        else:
+            source_ref.append(item)
+    return source_ref, path
+
+
 def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dict[str, FeatureHit]:
     no_comments = strip_comments(source)
     code = strip_string_literals(no_comments)
@@ -564,6 +772,11 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
             matched = filtered
         if matched:
             hits[rule.feature_id] = FeatureHit(rule.feature_id, matched)
+    for feature_id, structured_hit in detect_structured_template_features(code).items():
+        hit = hits.setdefault(feature_id, FeatureHit(feature_id))
+        for evidence in structured_hit.evidence:
+            if evidence not in hit.evidence:
+                hit.evidence.append(evidence)
     return hits
 
 
@@ -723,6 +936,72 @@ def latest_owner_label(feature_ids: Iterable[str], features: dict[str, FeatureMe
     return f"{owner_pa}:{owner_cluster}"
 
 
+def placement_key(pa: str, cluster: int | None) -> tuple[int, int] | None:
+    number = pa_number(pa)
+    if number is None:
+        return None
+    return (number, cluster or 0)
+
+
+def late_audit_feature(meta: FeatureMeta) -> bool:
+    if meta.feature_id in LATE_PLACEMENT_IGNORED_FEATURES:
+        return False
+    owner_num = pa_number(meta.owner_pa)
+    if owner_num is None:
+        return False
+    return owner_num > SEMANTIC_ONLY_PA_MAX
+
+
+def late_placement_candidate(
+    placements: list[dict[str, object]],
+    current_pa: str,
+    current_cluster: int | None,
+    features: dict[str, FeatureMeta],
+) -> dict[str, object] | None:
+    current_key = placement_key(current_pa, current_cluster)
+    if current_key is None:
+        return None
+    owner_entries: list[tuple[tuple[int, int], str, FeatureMeta, dict[str, object]]] = []
+    for placement in placements:
+        feature_id = str(placement["feature"])
+        meta = features.get(feature_id)
+        if not meta or not late_audit_feature(meta):
+            continue
+        owner_key = placement_key(meta.owner_pa, meta.owner_cluster)
+        if owner_key is None:
+            continue
+        owner_entries.append((owner_key, feature_id, meta, placement))
+    if not owner_entries:
+        return None
+    latest_key = max(entry[0] for entry in owner_entries)
+    if latest_key >= current_key:
+        return None
+    latest_entries = [entry for entry in owner_entries if entry[0] == latest_key]
+    latest_meta = latest_entries[0][2]
+    latest_features = sorted({feature_id for _, feature_id, _, _ in latest_entries})
+    confidence = (
+        "broad-owner-only"
+        if all(feature_id in LATE_PLACEMENT_BROAD_FEATURES for feature_id in latest_features)
+        else "specific"
+    )
+    evidence: list[str] = []
+    for _, _, _, placement in latest_entries:
+        evidence.extend(str(item) for item in placement.get("evidence", [])[:2])
+    return {
+        "status": "late-placement-candidate",
+        "suggested_pa": latest_meta.owner_pa,
+        "suggested_cluster": latest_meta.owner_cluster,
+        "features": latest_features,
+        "confidence": confidence,
+        "reason": (
+            f"latest source/ref-backed owner is {latest_meta.owner_pa}:"
+            f"{latest_meta.owner_cluster}, earlier than {current_pa}:"
+            f"{current_cluster}"
+        ),
+        "evidence": evidence[:4],
+    }
+
+
 def suggest_integration_cluster(concepts: Iterable[str], current_cluster: int | None) -> int:
     concept_set = set(concepts)
     if current_cluster is not None and current_cluster >= 500:
@@ -806,7 +1085,15 @@ def row_for(path: Path,
     relative_path = path.relative_to(root)
     current_pa = current_pa_for(relative_path)
     current_cluster = cluster_for(path)
-    hits = detect_features(detection_source, ref_text, relative_path.as_posix())
+    raw_hits = detect_features(detection_source, ref_text, relative_path.as_posix())
+    hits: dict[str, FeatureHit] = {}
+    path_hints: dict[str, list[str]] = {}
+    for feature_id, hit in raw_hits.items():
+        source_ref_evidence, path_evidence = evidence_partition(hit.evidence)
+        if source_ref_evidence:
+            hits[feature_id] = FeatureHit(feature_id, source_ref_evidence)
+        if path_evidence:
+            path_hints[feature_id] = path_evidence
     detected = sorted(hits)
     placements = []
     for feature_id in detected:
@@ -831,6 +1118,7 @@ def row_for(path: Path,
         })
     review_statuses = {"violation", "cluster-early", "backend-owner", "unknown-feature"}
     semantic_notes = [p for p in placements if p["status"] == "semantic-owner"]
+    late_candidate = late_placement_candidate(placements, current_pa, current_cluster, features)
     row = {
         "path": path.relative_to(root).as_posix(),
         "current_pa": current_pa,
@@ -838,9 +1126,12 @@ def row_for(path: Path,
         "test_role": test_role_for(path.relative_to(root)),
         "expected_exit": expected_exit_for(path),
         "detected_features": detected,
+        "path_hint_features": sorted(path_hints),
+        "path_hints": path_hints,
         "placements": placements,
         "needs_review": any(p["status"] in review_statuses for p in placements),
         "semantic_owner_notes": len(semantic_notes),
+        "late_placement_candidate": late_candidate,
         "source_sidecars_scanned": bool(sidecar_source),
     }
     row.update(template_review_for(detected, placements, current_cluster, current_pa, features))
@@ -851,6 +1142,7 @@ def markdown_report(rows: list[dict[str, object]],
                     missing_rules: list[str],
                     include_ok: bool) -> str:
     review_rows = [row for row in rows if row["needs_review"] or include_ok]
+    late_rows = [row for row in rows if row.get("late_placement_candidate")]
     violations = sum(
         1
         for row in rows
@@ -858,6 +1150,7 @@ def markdown_report(rows: list[dict[str, object]],
         if placement["status"] in {"violation", "cluster-early", "backend-owner", "unknown-feature"}
     )
     semantic_notes = sum(int(row["semantic_owner_notes"]) for row in rows)
+    path_hint_count = sum(len(row["path_hint_features"]) for row in rows)  # type: ignore[arg-type]
     lines = [
         "# PA Feature Placement Audit",
         "",
@@ -865,6 +1158,8 @@ def markdown_report(rows: list[dict[str, object]],
         f"- tests needing review: {sum(1 for row in rows if row['needs_review'])}",
         f"- placement findings: {violations}",
         f"- semantic-owner notes: {semantic_notes}",
+        f"- path-only hints: {path_hint_count}",
+        f"- late placement candidates: {len(late_rows)}",
         f"- feature table entries without detector rules: {len(missing_rules)}",
         "",
     ]
@@ -900,6 +1195,33 @@ def markdown_report(rows: list[dict[str, object]],
                     placement["status"],
                     str(placement["reason"]).replace("|", "\\|"),
                     evidence.replace("|", "\\|"),
+                )
+            )
+    if late_rows:
+        lines.extend([
+            "",
+            "## Late Placement Candidates",
+            "",
+            "These rows are non-failing review leads. They use only source/ref-backed evidence; filename-only matches remain path hints.",
+            "",
+            "| Test | Current | Suggested Earliest Owner | Confidence | Features | Reason | Evidence | Path Hints |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        ])
+        for row in late_rows:
+            candidate = row["late_placement_candidate"]  # type: ignore[index]
+            current = f"{row['current_pa']}:{row['current_cluster']}"
+            suggested = f"{candidate['suggested_pa']}:{candidate['suggested_cluster']}"  # type: ignore[index]
+            evidence = ", ".join(candidate.get("evidence", [])[:4])  # type: ignore[union-attr]
+            lines.append(
+                "| `{}` | `{}` | `{}` | `{}` | {} | {} | `{}` | {} |".format(
+                    row["path"],
+                    current,
+                    suggested,
+                    candidate.get("confidence", ""),  # type: ignore[union-attr]
+                    markdown_cell(candidate.get("features", [])),  # type: ignore[union-attr]
+                    markdown_cell(candidate.get("reason", "")),  # type: ignore[union-attr]
+                    evidence.replace("|", "\\|"),
+                    markdown_cell(row["path_hint_features"]),
                 )
             )
     return "\n".join(lines) + "\n"
@@ -965,6 +1287,7 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "The table below was seeded by the template-placement audit mode.",
         "Treat the bucket and cluster as review leads, not final move decisions.",
+        "Filename-only matches are retained as path hints and do not drive placement failures.",
         "After review starts, do not overwrite this tracker without preserving status and notes.",
         "",
         "Seed command:",
@@ -1007,13 +1330,21 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "## Review Queue",
         "",
-        "| Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA23 Cluster | Action | Notes |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA23 Cluster | Late Candidate | Late Confidence | Path Hints | Action | Notes |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ])
     for row in sorted(rows, key=lambda item: (str(item["template_bucket"]), str(item["path"]))):
         current = f"{row['current_pa']}:{row['current_cluster']}"
+        late_candidate = row.get("late_placement_candidate") or {}
+        late_label = (
+            placement_label(
+                late_candidate.get("suggested_pa", ""),  # type: ignore[union-attr]
+                late_candidate.get("suggested_cluster"),  # type: ignore[union-attr]
+            )
+            if late_candidate else ""
+        )
         lines.append(
-            "| [ ] | `{}` | `{}` | `{}` | {} | {} | `{}` | {} | {} |  |".format(
+            "| [ ] | `{}` | `{}` | `{}` | {} | {} | `{}` | {} | `{}` | `{}` | {} | {} |  |".format(
                 row["path"],
                 current,
                 row["template_bucket"],
@@ -1021,6 +1352,9 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
                 markdown_cell(row["later_or_compat_features"]),
                 row["latest_template_owner"],
                 markdown_cell(row["suggested_pa23_cluster"]),
+                late_label,
+                late_candidate.get("confidence", "") if late_candidate else "",  # type: ignore[union-attr]
+                markdown_cell(row["path_hint_features"]),
                 markdown_cell(row["template_action"]),
             )
         )
@@ -1055,9 +1389,14 @@ def write_csv(path: Path, rows: list[dict[str, object]], template_placement: boo
                 "latest_template_owner",
                 "suggested_pa23_cluster",
                 "template_action",
+                "late_candidate_owner",
+                "late_candidate_confidence",
+                "late_candidate_features",
+                "path_hint_features",
                 "source_sidecars_scanned",
             ])
             for row in rows:
+                late_candidate = row.get("late_placement_candidate") or {}
                 writer.writerow([
                     row["path"],
                     row["current_pa"],
@@ -1072,6 +1411,13 @@ def write_csv(path: Path, rows: list[dict[str, object]], template_placement: boo
                     row["latest_template_owner"],
                     row["suggested_pa23_cluster"] or "",
                     row["template_action"],
+                    placement_label(
+                        late_candidate.get("suggested_pa", ""),  # type: ignore[union-attr]
+                        late_candidate.get("suggested_cluster"),  # type: ignore[union-attr]
+                    ) if late_candidate else "",
+                    late_candidate.get("confidence", "") if late_candidate else "",  # type: ignore[union-attr]
+                    "; ".join(late_candidate.get("features", [])) if late_candidate else "",  # type: ignore[union-attr]
+                    "; ".join(row["path_hint_features"]),  # type: ignore[arg-type]
                     row["source_sidecars_scanned"],
                 ])
             return
@@ -1087,8 +1433,13 @@ def write_csv(path: Path, rows: list[dict[str, object]], template_placement: boo
             "status",
             "reason",
             "evidence",
+            "late_candidate_owner",
+            "late_candidate_confidence",
+            "late_candidate_features",
+            "path_hint_features",
         ])
         for row in rows:
+            late_candidate = row.get("late_placement_candidate") or {}
             for placement in row["placements"]:  # type: ignore[index]
                 writer.writerow([
                     row["path"],
@@ -1102,6 +1453,13 @@ def write_csv(path: Path, rows: list[dict[str, object]], template_placement: boo
                     placement["status"],
                     placement["reason"],
                     "; ".join(placement.get("evidence", [])),
+                    placement_label(
+                        late_candidate.get("suggested_pa", ""),  # type: ignore[union-attr]
+                        late_candidate.get("suggested_cluster"),  # type: ignore[union-attr]
+                    ) if late_candidate else "",
+                    late_candidate.get("confidence", "") if late_candidate else "",  # type: ignore[union-attr]
+                    "; ".join(late_candidate.get("features", [])) if late_candidate else "",  # type: ignore[union-attr]
+                    "; ".join(row["path_hint_features"]),  # type: ignore[arg-type]
                 ])
 
 

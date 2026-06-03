@@ -1,0 +1,21 @@
+translation-unit
+  class-use at pa21/tests/spec/300-member-operator-template-in-class-template.t:30:3
+    template sink
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa21/tests/spec/300-member-operator-template-in-class-template.t:34:3
+    template sink
+    selected primary
+    bind #1 = int source=explicit
+  function-call at pa21/tests/spec/300-member-operator-template-in-class-template.t:34:32
+    callee sink<int>::operator<<
+    selected instantiation
+    bind #1 = payload source=deduced
+    drop sink<int>::operator<< reason=bad_conversion
+template-closure-events
+  ensure-definition
+    entity sink<int>::operator<<
+  function-instantiation
+    entity sink<int>::operator<<
+  require-definition
+    entity sink<int>::operator<<

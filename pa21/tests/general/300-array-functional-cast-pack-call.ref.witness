@@ -1,0 +1,17 @@
+translation-unit
+  function-call at pa21/tests/general/300-array-functional-cast-pack-call.t:15:3
+    callee run_pack
+    selected instantiation
+    bind #1 = <char, short, int> source=explicit
+    bind #2 = sink source=explicit
+template-closure-events
+  ensure-definition
+    entity run_pack
+  function-instantiation
+    entity run_pack
+  function-instantiation
+    entity sink::operator()
+  require-definition
+    entity run_pack
+  require-definition
+    entity sink::operator()
