@@ -252,7 +252,7 @@ No tests or refs were moved, edited, or regenerated.
 ### G14
 
 - `pa19/tests/general/100-cast-nontype-template-argument.t`
-- `pa19/tests/general/100-constexpr-template-argument.t`
+- `pa19/tests/general/100-integral-constant-template-argument.t`
 - `pa19/tests/general/100-dependent-nontype-functional-cast-body-check.t`
 - `pa19/tests/general/100-dependent-nontype-template-type.t`
 - `pa19/tests/general/100-dependent-sizeof-template-default.t`

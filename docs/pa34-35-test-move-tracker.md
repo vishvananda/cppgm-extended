@@ -197,7 +197,7 @@ mangling-consistency oracle.
 - [x] 600-hosted-member-operator-bang-link-smoke → `pa15/tests/general/300-member-operator-bang-out-of-class` (operator! + out-of-class def; `operator.overload` pa15:300; PASS) _(item 6)_
 - [x] 700-hosted-alignas-class-layout-link-smoke → `pa19/tests/general/100-alignas-class-layout` (static_assert recast; **placement audit: static_assert gates to pa19** though alignas is pa15:300; PASS) _(item 8)_
 - [x] 700-pointer-predecrement-reference-argument-link-smoke → `pa16/tests/general/200-pointer-predecrement-reference-argument` (pre-decrement + ref args; **audit: gated to pa16 by `value.copy_move`** (cell `operator=`), not pa14; PASS) _(item 12)_
-- [x] 700-wide-string-literal-runtime-smoke → `pa19/tests/general/100-wide-string-literal-constexpr` (static_assert recast of `L"ab"` subscript; PASS) _(item 13)_
+- [x] 700-wide-string-literal-runtime-smoke → `pa19/tests/general/100-wide-string-literal-static-assert` (static_assert recast of `L"ab"` subscript; PASS) _(item 13)_
 
 ### → hosted L2 (header-bearing; mis-detected as no-header) (3) — defer with L2 batch
 
