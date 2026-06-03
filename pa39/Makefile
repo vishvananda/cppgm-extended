@@ -60,39 +60,39 @@ export CPPGM_TEST_JOBS
 export CPPGM_HOST_CXX
 export CPPGM_STDLIB_FLAGS
 export CPPGM_TEXT_TEST_TIMEOUT_SEC
-PA38_SELFHOST_OPT_LEVEL ?= 3
-PA38_OBJ_ROOT_BASE ?= ../obj/pa39
-PA38_BIN_ROOT_BASE ?= $(PA38_OBJ_ROOT_BASE)/bin
-PA38_GENERATED ?= $(PA38_OBJ_ROOT_BASE)/generated
-PA38_BUILTIN_HOST_CONFIG = $(PA38_GENERATED)/cppgm_builtin_host_config.h
-PA38_INCLUDE_PATHS := ../dev/src $(PA38_GENERATED)
-PA38_DEFINES ?=
+INCEPTION_SELFHOST_OPT_LEVEL ?= 3
+INCEPTION_OBJ_ROOT_BASE ?= ../obj/pa39
+INCEPTION_BIN_ROOT_BASE ?= $(INCEPTION_OBJ_ROOT_BASE)/bin
+INCEPTION_GENERATED ?= $(INCEPTION_OBJ_ROOT_BASE)/generated
+INCEPTION_BUILTIN_HOST_CONFIG = $(INCEPTION_GENERATED)/cppgm_builtin_host_config.h
+INCEPTION_INCLUDE_PATHS := ../dev/src $(INCEPTION_GENERATED)
+INCEPTION_DEFINES ?=
 HOST_CXX_DEFAULT_DEF = -DCPPGM_DEFAULT_HOST_CXX='"$(CPPGM_HOST_CXX)"'
-OBJECT_ROOT_DEFAULT_DEF = -DCPPGM_DEFAULT_OBJECT_ROOT='"$(abspath $(PA38_OBJ_ROOT_BASE))"'
-PA38_CC_FLAGS = -std=gnu++11 -Wall -O$(PA38_SELFHOST_OPT_LEVEL) $(CPPGM_STDLIB_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
-PA38_ENTRY_CC_FLAGS = $(PA38_CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
-PA38_LINKER_DETERMINISM_FLAGS =
+OBJECT_ROOT_DEFAULT_DEF = -DCPPGM_DEFAULT_OBJECT_ROOT='"$(abspath $(INCEPTION_OBJ_ROOT_BASE))"'
+INCEPTION_CC_FLAGS = -std=gnu++11 -Wall -O$(INCEPTION_SELFHOST_OPT_LEVEL) $(CPPGM_STDLIB_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
+INCEPTION_ENTRY_CC_FLAGS = $(INCEPTION_CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
+INCEPTION_LINKER_DETERMINISM_FLAGS =
 ifeq ($(HOST_UNAME_S),Darwin)
-PA38_LINKER_DETERMINISM_FLAGS += -Wl,-reproducible
+INCEPTION_LINKER_DETERMINISM_FLAGS += -Wl,-reproducible
 endif
-PA38_LINK_FLAGS = -std=gnu++11 $(CPPGM_STDLIB_FLAGS) $(PA38_LINKER_DETERMINISM_FLAGS)
+INCEPTION_LINK_FLAGS = -std=gnu++11 $(CPPGM_STDLIB_FLAGS) $(INCEPTION_LINKER_DETERMINISM_FLAGS)
 include ../dev/frontend_source_sets.mk
 
 ifeq ($(abspath $(CXX)),$(abspath ../dev/cppgm++))
-PA38_COMPILER_FLAVOR ?= selfhost
+INCEPTION_COMPILER_FLAVOR ?= selfhost
 else
-PA38_COMPILER_FLAVOR ?= host
+INCEPTION_COMPILER_FLAVOR ?= host
 endif
 
 ifneq ($(filter ./% ../% /%,$(CXX)),)
-PA38_CXX_DEP := $(CXX)
+INCEPTION_CXX_DEP := $(CXX)
 else
-PA38_CXX_DEP :=
+INCEPTION_CXX_DEP :=
 endif
 
-PA38_OBJ_ROOT ?= $(PA38_OBJ_ROOT_BASE)/$(PA38_COMPILER_FLAVOR)
-PA38_BIN_ROOT ?= $(PA38_BIN_ROOT_BASE)/$(PA38_COMPILER_FLAVOR)
-PA38_OUTPUT_SUFFIX ?= -self
+INCEPTION_OBJ_ROOT ?= $(INCEPTION_OBJ_ROOT_BASE)/$(INCEPTION_COMPILER_FLAVOR)
+INCEPTION_BIN_ROOT ?= $(INCEPTION_BIN_ROOT_BASE)/$(INCEPTION_COMPILER_FLAVOR)
+INCEPTION_OUTPUT_SUFFIX ?= -self
 
 CHECKPOINTS = pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ abimangle lowiropt lowir2cy86 lowir2native
 TEST_TARGETS = $(addprefix test-,$(CHECKPOINTS))
@@ -100,226 +100,230 @@ THROUGH_TARGETS = $(addprefix through-,$(CHECKPOINTS))
 TEST_THROUGH_TARGETS = $(addprefix test-through-,$(CHECKPOINTS))
 INCEPTION_TARGETS = $(addsuffix -inception,$(CHECKPOINTS))
 INCEPTION_COMPARE_TARGETS = $(addprefix compare-,$(INCEPTION_TARGETS))
-PA_STAGE_NAMES = pa1 pa2 pa3 pa4 pa5 pa6 pa7 pa8 pa9 pa10 pa11 pa12 pa13 pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa23 pa24 pa25 pa26 pa27 pa28 pa29 pa30 pa31 pa32 pa33 pa34 pa36 pa37 pa38
-PA38_BATCH_TEST_STAGE_NAMES = pa10 pa11 pa12 pa13 pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa23 pa24 pa25 pa26 pa27 pa28 pa29 pa30 pa31 pa32 pa33 pa34 pa36 pa37 pa38
-PA38_BATCH_TEST_ENV = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),CPPGM_BATCH_TESTS=1 WRAPPED_BATCH_STDIN=1,)
-pa38_stage_test_env = $(if $(filter $(1),$(PA38_BATCH_TEST_STAGE_NAMES)),$(PA38_BATCH_TEST_ENV),)
+PA_STAGE_NAMES = pa1 pa2 pa3 pa4 pa5 pa6 pa7 pa8 pa9 pa10 pa11 pa12 pa13 pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa23 pa24 pa25 pa26 pa27 pa28 pa29 pa30 pa31 pa32 pa33 pa34 pa35 pa36 pa37 pa38
+INCEPTION_BATCH_TEST_STAGE_NAMES = pa10 pa11 pa12 pa13 pa14 pa15 pa16 pa17 pa18 pa19 pa20 pa21 pa22 pa23 pa24 pa25 pa26 pa27 pa28 pa29 pa30 pa31 pa32 pa33 pa34 pa35 pa36 pa37 pa38
+INCEPTION_BATCH_TEST_ENV = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),CPPGM_BATCH_TESTS=1 WRAPPED_BATCH_STDIN=1,)
+inception_stage_test_env = $(if $(filter $(1),$(INCEPTION_BATCH_TEST_STAGE_NAMES)),$(INCEPTION_BATCH_TEST_ENV),)
 PA_THROUGH_TARGETS = $(addprefix through-,$(PA_STAGE_NAMES))
 PA_TEST_THROUGH_TARGETS = $(addprefix test-through-,$(PA_STAGE_NAMES))
 PA_TEST_TARGETS = $(addprefix test-,$(PA_STAGE_NAMES))
 PA_TEST_NOBUILD_TARGETS = $(addsuffix -nobuild,$(PA_TEST_TARGETS))
 
-PA38_PREV_pptoken =
-PA38_PREV_posttoken = pptoken
-PA38_PREV_ctrlexpr = posttoken
-PA38_PREV_macro = ctrlexpr
-PA38_PREV_preproc = macro
-PA38_PREV_recog = preproc
-PA38_PREV_nsdecl = recog
-PA38_PREV_nsinit = nsdecl
-PA38_PREV_cy86 = nsinit
-PA38_PREV_cppgm++ = cy86
-PA38_PREV_abimangle = cppgm++
-PA38_PREV_lowiropt = cppgm++
-PA38_PREV_lowir2cy86 = cppgm++
-PA38_PREV_lowir2native = lowir2cy86
+INCEPTION_PREV_pptoken =
+INCEPTION_PREV_posttoken = pptoken
+INCEPTION_PREV_ctrlexpr = posttoken
+INCEPTION_PREV_macro = ctrlexpr
+INCEPTION_PREV_preproc = macro
+INCEPTION_PREV_recog = preproc
+INCEPTION_PREV_nsdecl = recog
+INCEPTION_PREV_nsinit = nsdecl
+INCEPTION_PREV_cy86 = nsinit
+INCEPTION_PREV_cppgm++ = cy86
+INCEPTION_PREV_abimangle = cppgm++
+INCEPTION_PREV_lowiropt = cppgm++
+INCEPTION_PREV_lowir2cy86 = cppgm++
+INCEPTION_PREV_lowir2native = lowir2cy86
 
-PA38_CHECKPOINT_FOR_pa1 = pptoken
-PA38_CHECKPOINT_FOR_pa2 = posttoken
-PA38_CHECKPOINT_FOR_pa3 = ctrlexpr
-PA38_CHECKPOINT_FOR_pa4 = macro
-PA38_CHECKPOINT_FOR_pa5 = preproc
-PA38_CHECKPOINT_FOR_pa6 = recog
-PA38_CHECKPOINT_FOR_pa7 = nsdecl
-PA38_CHECKPOINT_FOR_pa8 = nsinit
-PA38_CHECKPOINT_FOR_pa9 = cy86
-PA38_CHECKPOINT_FOR_pa10 = cppgm++
-PA38_CHECKPOINT_FOR_pa11 = cppgm++
-PA38_CHECKPOINT_FOR_pa12 = cppgm++
-PA38_CHECKPOINT_FOR_pa13 = lowir2cy86
-PA38_CHECKPOINT_FOR_pa14 = cppgm++
-PA38_CHECKPOINT_FOR_pa15 = cppgm++
-PA38_CHECKPOINT_FOR_pa16 = cppgm++
-PA38_CHECKPOINT_FOR_pa17 = cppgm++
-PA38_CHECKPOINT_FOR_pa18 = cppgm++
-PA38_CHECKPOINT_FOR_pa19 = cppgm++
-PA38_CHECKPOINT_FOR_pa20 = cppgm++
-PA38_CHECKPOINT_FOR_pa21 = cppgm++
-PA38_CHECKPOINT_FOR_pa22 = cppgm++
-PA38_CHECKPOINT_FOR_pa23 = cppgm++
-PA38_CHECKPOINT_FOR_pa24 = cppgm++
-PA38_CHECKPOINT_FOR_pa25 = cppgm++
-PA38_CHECKPOINT_FOR_pa26 = cppgm++
-PA38_CHECKPOINT_FOR_pa27 = cppgm++
-PA38_CHECKPOINT_FOR_pa28 = lowir2native
-PA38_CHECKPOINT_FOR_pa29 = cppgm++
-PA38_CHECKPOINT_FOR_pa30 = abimangle
-PA38_CHECKPOINT_FOR_pa31 = cppgm++
-PA38_CHECKPOINT_FOR_pa32 = cppgm++
-PA38_CHECKPOINT_FOR_pa33 = cppgm++
-PA38_CHECKPOINT_FOR_pa34 = cppgm++
-PA38_CHECKPOINT_FOR_pa36 = cppgm++
-PA38_CHECKPOINT_FOR_pa37 = lowiropt
-PA38_CHECKPOINT_FOR_pa38 = lowir2native
-PA38_PRIMARY_STAGE_pptoken = pa1
-PA38_PRIMARY_STAGE_posttoken = pa2
-PA38_PRIMARY_STAGE_ctrlexpr = pa3
-PA38_PRIMARY_STAGE_macro = pa4
-PA38_PRIMARY_STAGE_preproc = pa5
-PA38_PRIMARY_STAGE_recog = pa6
-PA38_PRIMARY_STAGE_nsdecl = pa7
-PA38_PRIMARY_STAGE_nsinit = pa8
-PA38_PRIMARY_STAGE_cy86 = pa9
-PA38_PRIMARY_STAGE_cppgm++ = pa10
-PA38_PRIMARY_STAGE_abimangle = pa30
-PA38_PRIMARY_STAGE_lowiropt = pa37
-PA38_PRIMARY_STAGE_lowir2cy86 = pa13
-PA38_PRIMARY_STAGE_lowir2native = pa28
+INCEPTION_CHECKPOINT_FOR_pa1 = pptoken
+INCEPTION_CHECKPOINT_FOR_pa2 = posttoken
+INCEPTION_CHECKPOINT_FOR_pa3 = ctrlexpr
+INCEPTION_CHECKPOINT_FOR_pa4 = macro
+INCEPTION_CHECKPOINT_FOR_pa5 = preproc
+INCEPTION_CHECKPOINT_FOR_pa6 = recog
+INCEPTION_CHECKPOINT_FOR_pa7 = nsdecl
+INCEPTION_CHECKPOINT_FOR_pa8 = nsinit
+INCEPTION_CHECKPOINT_FOR_pa9 = cy86
+INCEPTION_CHECKPOINT_FOR_pa10 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa11 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa12 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa13 = lowir2cy86
+INCEPTION_CHECKPOINT_FOR_pa14 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa15 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa16 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa17 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa18 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa19 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa20 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa21 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa22 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa23 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa24 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa25 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa26 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa27 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa28 = lowir2native
+INCEPTION_CHECKPOINT_FOR_pa29 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa30 = abimangle
+INCEPTION_CHECKPOINT_FOR_pa31 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa32 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa33 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa34 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa35 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa36 = cppgm++
+INCEPTION_CHECKPOINT_FOR_pa37 = lowiropt
+INCEPTION_CHECKPOINT_FOR_pa38 = lowir2native
+INCEPTION_PRIMARY_STAGE_pptoken = pa1
+INCEPTION_PRIMARY_STAGE_posttoken = pa2
+INCEPTION_PRIMARY_STAGE_ctrlexpr = pa3
+INCEPTION_PRIMARY_STAGE_macro = pa4
+INCEPTION_PRIMARY_STAGE_preproc = pa5
+INCEPTION_PRIMARY_STAGE_recog = pa6
+INCEPTION_PRIMARY_STAGE_nsdecl = pa7
+INCEPTION_PRIMARY_STAGE_nsinit = pa8
+INCEPTION_PRIMARY_STAGE_cy86 = pa9
+INCEPTION_PRIMARY_STAGE_cppgm++ = pa10
+INCEPTION_PRIMARY_STAGE_abimangle = pa30
+INCEPTION_PRIMARY_STAGE_lowiropt = pa37
+INCEPTION_PRIMARY_STAGE_lowir2cy86 = pa13
+INCEPTION_PRIMARY_STAGE_lowir2native = pa28
 
-PA38_PREV_STAGE_pa1 =
-PA38_PREV_STAGE_pa2 = pa1
-PA38_PREV_STAGE_pa3 = pa2
-PA38_PREV_STAGE_pa4 = pa3
-PA38_PREV_STAGE_pa5 = pa4
-PA38_PREV_STAGE_pa6 = pa5
-PA38_PREV_STAGE_pa7 = pa6
-PA38_PREV_STAGE_pa8 = pa7
-PA38_PREV_STAGE_pa9 = pa8
-PA38_PREV_STAGE_pa10 = pa9
-PA38_PREV_STAGE_pa11 = pa10
-PA38_PREV_STAGE_pa12 = pa11
-PA38_PREV_STAGE_pa13 = pa12
-PA38_PREV_STAGE_pa14 = pa13
-PA38_PREV_STAGE_pa15 = pa14
-PA38_PREV_STAGE_pa16 = pa15
-PA38_PREV_STAGE_pa17 = pa16
-PA38_PREV_STAGE_pa18 = pa17
-PA38_PREV_STAGE_pa19 = pa18
-PA38_PREV_STAGE_pa20 = pa19
-PA38_PREV_STAGE_pa21 = pa20
-PA38_PREV_STAGE_pa22 = pa21
-PA38_PREV_STAGE_pa23 = pa22
-PA38_PREV_STAGE_pa24 = pa23
-PA38_PREV_STAGE_pa25 = pa24
-PA38_PREV_STAGE_pa26 = pa25
-PA38_PREV_STAGE_pa27 = pa26
-PA38_PREV_STAGE_pa28 = pa27
-PA38_PREV_STAGE_pa29 = pa28
-PA38_PREV_STAGE_pa30 = pa29
-PA38_PREV_STAGE_pa31 = pa30
-PA38_PREV_STAGE_pa32 = pa31
-PA38_PREV_STAGE_pa33 = pa32
-PA38_PREV_STAGE_pa34 = pa33
-PA38_PREV_STAGE_pa36 = pa34
-PA38_PREV_STAGE_pa37 = pa36
-PA38_PREV_STAGE_pa38 = pa37
+INCEPTION_PREV_STAGE_pa1 =
+INCEPTION_PREV_STAGE_pa2 = pa1
+INCEPTION_PREV_STAGE_pa3 = pa2
+INCEPTION_PREV_STAGE_pa4 = pa3
+INCEPTION_PREV_STAGE_pa5 = pa4
+INCEPTION_PREV_STAGE_pa6 = pa5
+INCEPTION_PREV_STAGE_pa7 = pa6
+INCEPTION_PREV_STAGE_pa8 = pa7
+INCEPTION_PREV_STAGE_pa9 = pa8
+INCEPTION_PREV_STAGE_pa10 = pa9
+INCEPTION_PREV_STAGE_pa11 = pa10
+INCEPTION_PREV_STAGE_pa12 = pa11
+INCEPTION_PREV_STAGE_pa13 = pa12
+INCEPTION_PREV_STAGE_pa14 = pa13
+INCEPTION_PREV_STAGE_pa15 = pa14
+INCEPTION_PREV_STAGE_pa16 = pa15
+INCEPTION_PREV_STAGE_pa17 = pa16
+INCEPTION_PREV_STAGE_pa18 = pa17
+INCEPTION_PREV_STAGE_pa19 = pa18
+INCEPTION_PREV_STAGE_pa20 = pa19
+INCEPTION_PREV_STAGE_pa21 = pa20
+INCEPTION_PREV_STAGE_pa22 = pa21
+INCEPTION_PREV_STAGE_pa23 = pa22
+INCEPTION_PREV_STAGE_pa24 = pa23
+INCEPTION_PREV_STAGE_pa25 = pa24
+INCEPTION_PREV_STAGE_pa26 = pa25
+INCEPTION_PREV_STAGE_pa27 = pa26
+INCEPTION_PREV_STAGE_pa28 = pa27
+INCEPTION_PREV_STAGE_pa29 = pa28
+INCEPTION_PREV_STAGE_pa30 = pa29
+INCEPTION_PREV_STAGE_pa31 = pa30
+INCEPTION_PREV_STAGE_pa32 = pa31
+INCEPTION_PREV_STAGE_pa33 = pa32
+INCEPTION_PREV_STAGE_pa34 = pa33
+INCEPTION_PREV_STAGE_pa35 = pa34
+INCEPTION_PREV_STAGE_pa36 = pa35
+INCEPTION_PREV_STAGE_pa37 = pa36
+INCEPTION_PREV_STAGE_pa38 = pa37
 
-PA38_STAGE_ARGS_pa1 =
-PA38_STAGE_ARGS_pa2 =
-PA38_STAGE_ARGS_pa3 =
-PA38_STAGE_ARGS_pa4 =
-PA38_STAGE_ARGS_pa5 =
-PA38_STAGE_ARGS_pa6 =
-PA38_STAGE_ARGS_pa7 =
-PA38_STAGE_ARGS_pa8 =
-PA38_STAGE_ARGS_pa9 =
-PA38_STAGE_ARGS_pa10 = --emit-ast
-PA38_STAGE_ARGS_pa11 = --emit-types
-PA38_STAGE_ARGS_pa12 = --emit-semantics
-PA38_STAGE_ARGS_pa13 =
-PA38_STAGE_ARGS_pa14 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa15 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa16 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa17 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa18 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa19 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa20 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa21 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa22 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa23 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa24 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa25 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa26 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa27 = --emit-lowir -O0
-PA38_STAGE_ARGS_pa28 =
-PA38_STAGE_ARGS_pa29 =
-PA38_STAGE_ARGS_pa30 =
-PA38_STAGE_ARGS_pa31 =
-PA38_STAGE_ARGS_pa32 =
-PA38_STAGE_ARGS_pa33 =
-PA38_STAGE_ARGS_pa34 =
-PA38_STAGE_ARGS_pa36 =
-PA38_STAGE_ARGS_pa37 =
-PA38_STAGE_ARGS_pa38 =
+INCEPTION_STAGE_ARGS_pa1 =
+INCEPTION_STAGE_ARGS_pa2 =
+INCEPTION_STAGE_ARGS_pa3 =
+INCEPTION_STAGE_ARGS_pa4 =
+INCEPTION_STAGE_ARGS_pa5 =
+INCEPTION_STAGE_ARGS_pa6 =
+INCEPTION_STAGE_ARGS_pa7 =
+INCEPTION_STAGE_ARGS_pa8 =
+INCEPTION_STAGE_ARGS_pa9 =
+INCEPTION_STAGE_ARGS_pa10 = --emit-ast
+INCEPTION_STAGE_ARGS_pa11 = --emit-types
+INCEPTION_STAGE_ARGS_pa12 = --emit-semantics
+INCEPTION_STAGE_ARGS_pa13 =
+INCEPTION_STAGE_ARGS_pa14 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa15 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa16 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa17 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa18 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa19 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa20 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa21 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa22 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa23 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa24 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa25 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa26 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa27 = --emit-lowir -O0
+INCEPTION_STAGE_ARGS_pa28 =
+INCEPTION_STAGE_ARGS_pa29 =
+INCEPTION_STAGE_ARGS_pa30 =
+INCEPTION_STAGE_ARGS_pa31 =
+INCEPTION_STAGE_ARGS_pa32 =
+INCEPTION_STAGE_ARGS_pa33 =
+INCEPTION_STAGE_ARGS_pa34 =
+INCEPTION_STAGE_ARGS_pa35 =
+INCEPTION_STAGE_ARGS_pa36 =
+INCEPTION_STAGE_ARGS_pa37 =
+INCEPTION_STAGE_ARGS_pa38 =
 
-PA38_COURSE_STAGE_pa1 = course/pa1
-PA38_COURSE_STAGE_pa2 = course/pa2
-PA38_COURSE_STAGE_pa3 = course/pa3
-PA38_COURSE_STAGE_pa4 = course/pa4
-PA38_COURSE_STAGE_pa5 = course/pa5
-PA38_COURSE_STAGE_pa6 = course/pa6
-PA38_COURSE_STAGE_pa7 = course/pa7
-PA38_COURSE_STAGE_pa8 = course/pa8
-PA38_COURSE_STAGE_pa9 = course/pa9
-PA38_COURSE_STAGE_pa10 = course/pa10
-PA38_COURSE_STAGE_pa11 = course/pa11
-PA38_COURSE_STAGE_pa12 = course/pa12
-PA38_COURSE_STAGE_pa13 = course/pa13
-PA38_COURSE_STAGE_pa14 = course/pa14
-PA38_COURSE_STAGE_pa15 = course/pa15
-PA38_COURSE_STAGE_pa16 = course/pa16
-PA38_COURSE_STAGE_pa17 = course/pa17
-PA38_COURSE_STAGE_pa18 = course/pa18
-PA38_COURSE_STAGE_pa19 = course/pa19
-PA38_COURSE_STAGE_pa20 = course/pa20
-PA38_COURSE_STAGE_pa21 = course/pa21
-PA38_COURSE_STAGE_pa22 = course/pa22
-PA38_COURSE_STAGE_pa23 = course/pa23
-PA38_COURSE_STAGE_pa24 = course/pa24
-PA38_COURSE_STAGE_pa25 = course/pa25
-PA38_COURSE_STAGE_pa26 = course/pa26
-PA38_COURSE_STAGE_pa27 = course/pa27
-PA38_COURSE_STAGE_pa28 = course/pa28
-PA38_COURSE_STAGE_pa29 = course/pa29
-PA38_COURSE_STAGE_pa30 = course/pa30
-PA38_COURSE_STAGE_pa31 = course/pa31
-PA38_COURSE_STAGE_pa32 = course/pa32
-PA38_COURSE_STAGE_pa33 = course/pa33
-PA38_COURSE_STAGE_pa34 = course/pa34
-PA38_COURSE_STAGE_pa36 = course/pa36
-PA38_COURSE_STAGE_pa37 = course/pa37
-PA38_COURSE_STAGE_pa38 = course/pa38
+INCEPTION_COURSE_STAGE_pa1 = course/pa1
+INCEPTION_COURSE_STAGE_pa2 = course/pa2
+INCEPTION_COURSE_STAGE_pa3 = course/pa3
+INCEPTION_COURSE_STAGE_pa4 = course/pa4
+INCEPTION_COURSE_STAGE_pa5 = course/pa5
+INCEPTION_COURSE_STAGE_pa6 = course/pa6
+INCEPTION_COURSE_STAGE_pa7 = course/pa7
+INCEPTION_COURSE_STAGE_pa8 = course/pa8
+INCEPTION_COURSE_STAGE_pa9 = course/pa9
+INCEPTION_COURSE_STAGE_pa10 = course/pa10
+INCEPTION_COURSE_STAGE_pa11 = course/pa11
+INCEPTION_COURSE_STAGE_pa12 = course/pa12
+INCEPTION_COURSE_STAGE_pa13 = course/pa13
+INCEPTION_COURSE_STAGE_pa14 = course/pa14
+INCEPTION_COURSE_STAGE_pa15 = course/pa15
+INCEPTION_COURSE_STAGE_pa16 = course/pa16
+INCEPTION_COURSE_STAGE_pa17 = course/pa17
+INCEPTION_COURSE_STAGE_pa18 = course/pa18
+INCEPTION_COURSE_STAGE_pa19 = course/pa19
+INCEPTION_COURSE_STAGE_pa20 = course/pa20
+INCEPTION_COURSE_STAGE_pa21 = course/pa21
+INCEPTION_COURSE_STAGE_pa22 = course/pa22
+INCEPTION_COURSE_STAGE_pa23 = course/pa23
+INCEPTION_COURSE_STAGE_pa24 = course/pa24
+INCEPTION_COURSE_STAGE_pa25 = course/pa25
+INCEPTION_COURSE_STAGE_pa26 = course/pa26
+INCEPTION_COURSE_STAGE_pa27 = course/pa27
+INCEPTION_COURSE_STAGE_pa28 = course/pa28
+INCEPTION_COURSE_STAGE_pa29 = course/pa29
+INCEPTION_COURSE_STAGE_pa30 = course/pa30
+INCEPTION_COURSE_STAGE_pa31 = course/pa31
+INCEPTION_COURSE_STAGE_pa32 = course/pa32
+INCEPTION_COURSE_STAGE_pa33 = course/pa33
+INCEPTION_COURSE_STAGE_pa34 = course/pa34
+INCEPTION_COURSE_STAGE_pa35 = course/pa35
+INCEPTION_COURSE_STAGE_pa36 = course/pa36
+INCEPTION_COURSE_STAGE_pa37 = course/pa37
+INCEPTION_COURSE_STAGE_pa38 = course/pa38
 
-pa38_checkpoint_entry = ../dev/$(1).cpp
+inception_checkpoint_entry = ../dev/$(1).cpp
 $(foreach checkpoint,$(CHECKPOINTS),$(if $(strip $(FRONTEND_OBJ_BASENAMES_$(checkpoint))),,$(error missing FRONTEND_OBJ_BASENAMES_$(checkpoint) in ../dev/frontend_source_sets.mk)))
-pa38_checkpoint_sources = $(addprefix ../dev/src/,$(addsuffix .cpp,$(FRONTEND_OBJ_BASENAMES_$(1))))
-$(foreach checkpoint,$(CHECKPOINTS),$(eval PA38_ENTRY_$(checkpoint) := $(call pa38_checkpoint_entry,$(checkpoint))))
-$(foreach checkpoint,$(CHECKPOINTS),$(eval PA38_SOURCES_$(checkpoint) := $(call pa38_checkpoint_sources,$(checkpoint))))
+inception_checkpoint_sources = $(addprefix ../dev/src/,$(addsuffix .cpp,$(FRONTEND_OBJ_BASENAMES_$(1))))
+$(foreach checkpoint,$(CHECKPOINTS),$(eval INCEPTION_ENTRY_$(checkpoint) := $(call inception_checkpoint_entry,$(checkpoint))))
+$(foreach checkpoint,$(CHECKPOINTS),$(eval INCEPTION_SOURCES_$(checkpoint) := $(call inception_checkpoint_sources,$(checkpoint))))
 
-PA38_ALL_SHARED_SOURCES := $(sort $(foreach checkpoint,$(CHECKPOINTS),$(PA38_SOURCES_$(checkpoint))))
+INCEPTION_ALL_SHARED_SOURCES := $(sort $(foreach checkpoint,$(CHECKPOINTS),$(INCEPTION_SOURCES_$(checkpoint))))
 
-pa38_objdir = $(PA38_OBJ_ROOT)/$(1)/release
-pa38_depdir = $(call pa38_objdir,$(1))/.d
-PA38_SHARED_OBJDIR ?= $(PA38_OBJ_ROOT)/shared/release
-PA38_SHARED_DEPDIR ?= $(PA38_SHARED_OBJDIR)/.d
-pa38_stem = $(basename $(notdir $(1)))
-pa38_entry_suffix = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-runner,-plain)
-pa38_runner_suffix = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-enabled,-disabled)
-pa38_binary_path = $(PA38_BIN_ROOT)/$(1)$(PA38_OUTPUT_SUFFIX)
-pa38_link_output_path = $(PA38_BIN_ROOT)/$(1)
-pa38_self_binary_path = $(PA38_BIN_ROOT_BASE)/selfhost/$(1)-self
-pa38_inception_binary_path = $(PA38_BIN_ROOT_BASE)/inception/$(1)-inception
-PA38_RESTORED_CPPGM_SELF ?= $(call pa38_self_binary_path,cppgm++)
-pa38_entry_object_path = $(call pa38_objdir,$(1))/$(call pa38_stem,$(PA38_ENTRY_$(1)))$(pa38_entry_suffix).o
-pa38_entry_depfile_path = $(call pa38_depdir,$(1))/$(call pa38_stem,$(PA38_ENTRY_$(1)))$(pa38_entry_suffix).d
-pa38_runner_object_path = $(PA38_SHARED_OBJDIR)/test_runner$(pa38_runner_suffix).o
-pa38_runner_depfile_path = $(PA38_SHARED_DEPDIR)/test_runner$(pa38_runner_suffix).d
-pa38_shared_object_path = $(PA38_SHARED_OBJDIR)/$(call pa38_stem,$(1)).o
-pa38_shared_depfile_path = $(PA38_SHARED_DEPDIR)/$(call pa38_stem,$(1)).d
-pa38_object_list = $(foreach src,$(PA38_SOURCES_$(1)),$(call pa38_shared_object_path,$(src)))
-pa38_link_inputs = $(call pa38_entry_object_path,$(1)) $(call pa38_object_list,$(1)) $(if $(filter 1,$(CPPGM_TEST_RUNNER)),$(pa38_runner_object_path))
-pa38_stage_binary = $(call pa38_self_binary_path,$(PA38_CHECKPOINT_FOR_$(1)))
-PA38_INCEPTION_CXX ?= $(call pa38_self_binary_path,cppgm++)
+inception_objdir = $(INCEPTION_OBJ_ROOT)/$(1)/release
+inception_depdir = $(call inception_objdir,$(1))/.d
+INCEPTION_SHARED_OBJDIR ?= $(INCEPTION_OBJ_ROOT)/shared/release
+INCEPTION_SHARED_DEPDIR ?= $(INCEPTION_SHARED_OBJDIR)/.d
+inception_stem = $(basename $(notdir $(1)))
+inception_entry_suffix = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-runner,-plain)
+inception_runner_suffix = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-enabled,-disabled)
+inception_binary_path = $(INCEPTION_BIN_ROOT)/$(1)$(INCEPTION_OUTPUT_SUFFIX)
+inception_link_output_path = $(INCEPTION_BIN_ROOT)/$(1)
+inception_self_binary_path = $(INCEPTION_BIN_ROOT_BASE)/selfhost/$(1)-self
+inception_inception_binary_path = $(INCEPTION_BIN_ROOT_BASE)/inception/$(1)-inception
+INCEPTION_RESTORED_CPPGM_SELF ?= $(call inception_self_binary_path,cppgm++)
+inception_entry_object_path = $(call inception_objdir,$(1))/$(call inception_stem,$(INCEPTION_ENTRY_$(1)))$(inception_entry_suffix).o
+inception_entry_depfile_path = $(call inception_depdir,$(1))/$(call inception_stem,$(INCEPTION_ENTRY_$(1)))$(inception_entry_suffix).d
+inception_runner_object_path = $(INCEPTION_SHARED_OBJDIR)/test_runner$(inception_runner_suffix).o
+inception_runner_depfile_path = $(INCEPTION_SHARED_DEPDIR)/test_runner$(inception_runner_suffix).d
+inception_shared_object_path = $(INCEPTION_SHARED_OBJDIR)/$(call inception_stem,$(1)).o
+inception_shared_depfile_path = $(INCEPTION_SHARED_DEPDIR)/$(call inception_stem,$(1)).d
+inception_object_list = $(foreach src,$(INCEPTION_SOURCES_$(1)),$(call inception_shared_object_path,$(src)))
+inception_link_inputs = $(call inception_entry_object_path,$(1)) $(call inception_object_list,$(1)) $(if $(filter 1,$(CPPGM_TEST_RUNNER)),$(inception_runner_object_path))
+inception_stage_binary = $(call inception_self_binary_path,$(INCEPTION_CHECKPOINT_FOR_$(1)))
+INCEPTION_INCEPTION_CXX ?= $(call inception_self_binary_path,cppgm++)
 
 all: $(TARGETS)
 
@@ -336,27 +340,27 @@ compare-inception: $(INCEPTION_COMPARE_TARGETS)
 bitcmp: compare-inception
 
 cppgm++-inception-from-restored-self:
-	@if [ ! -x "$(PA38_RESTORED_CPPGM_SELF)" ]; then \
-		echo "missing restored self compiler: $(PA38_RESTORED_CPPGM_SELF)" >&2; \
+	@if [ ! -x "$(INCEPTION_RESTORED_CPPGM_SELF)" ]; then \
+		echo "missing restored self compiler: $(INCEPTION_RESTORED_CPPGM_SELF)" >&2; \
 		exit 2; \
 	fi
-	$(MAKE) "$(call pa38_inception_binary_path,cppgm++)" \
-		PA38_COMPILER_FLAVOR=inception \
-		PA38_OUTPUT_SUFFIX=-inception \
-		PA38_OBJ_ROOT_BASE="$(PA38_OBJ_ROOT_BASE)" \
-		PA38_BIN_ROOT_BASE="$(PA38_BIN_ROOT_BASE)" \
-		PA38_SELFHOST_OPT_LEVEL="$(PA38_SELFHOST_OPT_LEVEL)" \
-		CXX="$(PA38_RESTORED_CPPGM_SELF)" \
+	$(MAKE) "$(call inception_inception_binary_path,cppgm++)" \
+		INCEPTION_COMPILER_FLAVOR=inception \
+		INCEPTION_OUTPUT_SUFFIX=-inception \
+		INCEPTION_OBJ_ROOT_BASE="$(INCEPTION_OBJ_ROOT_BASE)" \
+		INCEPTION_BIN_ROOT_BASE="$(INCEPTION_BIN_ROOT_BASE)" \
+		INCEPTION_SELFHOST_OPT_LEVEL="$(INCEPTION_SELFHOST_OPT_LEVEL)" \
+		CXX="$(INCEPTION_RESTORED_CPPGM_SELF)" \
 		CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
 		CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)" \
 		CPPGM_TEST_RUNNER="$(CPPGM_TEST_RUNNER)" \
-		PA38_DEFINES='$(PA38_DEFINES)'
-	@ln -sf $(call pa38_inception_binary_path,cppgm++) cppgm++-inception
+		INCEPTION_DEFINES='$(INCEPTION_DEFINES)'
+	@ln -sf $(call inception_inception_binary_path,cppgm++) cppgm++-inception
 
 compare-cppgm++-inception-from-restored-self: cppgm++-inception-from-restored-self
-	@cmp -s "$(PA38_RESTORED_CPPGM_SELF)" "$(call pa38_inception_binary_path,cppgm++)" || \
-		(echo "mismatch: $(PA38_RESTORED_CPPGM_SELF) != $(call pa38_inception_binary_path,cppgm++)" >&2; exit 1)
-	@echo "MATCH cppgm++: $(call pa38_inception_binary_path,cppgm++)"
+	@cmp -s "$(INCEPTION_RESTORED_CPPGM_SELF)" "$(call inception_inception_binary_path,cppgm++)" || \
+		(echo "mismatch: $(INCEPTION_RESTORED_CPPGM_SELF) != $(call inception_inception_binary_path,cppgm++)" >&2; exit 1)
+	@echo "MATCH cppgm++: $(call inception_inception_binary_path,cppgm++)"
 
 compiler-ready:
 	@if [ -x "$(CXX)" ]; then \
@@ -377,7 +381,7 @@ compiler-ready:
 		fi; \
 	fi
 
-$(PA38_BUILTIN_HOST_CONFIG): FORCE
+$(INCEPTION_BUILTIN_HOST_CONFIG): FORCE
 	@mkdir -p $(dir $@)
 	@CPPGM_BUILD_HOST_CXX='$(CPPGM_HOST_CXX)' \
 		CPPGM_STDLIB_FLAGS='$(CPPGM_STDLIB_FLAGS)' \
@@ -390,132 +394,132 @@ $(PA38_BUILTIN_HOST_CONFIG): FORCE
 		CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
 		CPPGM_TEST_RUNNER="$(CPPGM_TEST_RUNNER)"
 
-define PA38_SOURCE_RULE
-$(call pa38_shared_object_path,$(1)): $(1) $(PA38_CXX_DEP) | compiler-ready $(PA38_SHARED_OBJDIR) $(PA38_SHARED_DEPDIR)
-	@mkdir -p $$(@D) $(PA38_SHARED_DEPDIR)
-	$(CXX) $(PA38_CC_FLAGS) $(foreach inc,$(PA38_INCLUDE_PATHS),-I$(inc)) $(foreach def,$(PA38_DEFINES),-D$(def)) -MMD -MP -MF $(call pa38_shared_depfile_path,$(1)) -c -o $$@ $$<
+define INCEPTION_SOURCE_RULE
+$(call inception_shared_object_path,$(1)): $(1) $(INCEPTION_CXX_DEP) | compiler-ready $(INCEPTION_SHARED_OBJDIR) $(INCEPTION_SHARED_DEPDIR)
+	@mkdir -p $$(@D) $(INCEPTION_SHARED_DEPDIR)
+	$(CXX) $(INCEPTION_CC_FLAGS) $(foreach inc,$(INCEPTION_INCLUDE_PATHS),-I$(inc)) $(foreach def,$(INCEPTION_DEFINES),-D$(def)) -MMD -MP -MF $(call inception_shared_depfile_path,$(1)) -c -o $$@ $$<
 endef
 
-$(PA38_BIN_ROOT):
+$(INCEPTION_BIN_ROOT):
 	@mkdir -p $@
 
-$(PA38_SHARED_OBJDIR) $(PA38_SHARED_DEPDIR):
+$(INCEPTION_SHARED_OBJDIR) $(INCEPTION_SHARED_DEPDIR):
 	@mkdir -p $@
 
-$(call pa38_shared_object_path,../dev/src/preprocessor.cpp): $(PA38_BUILTIN_HOST_CONFIG)
+$(call inception_shared_object_path,../dev/src/preprocessor.cpp): $(INCEPTION_BUILTIN_HOST_CONFIG)
 
-$(pa38_runner_object_path): ../dev/src/test_runner.cpp $(PA38_CXX_DEP) | compiler-ready $(PA38_SHARED_OBJDIR) $(PA38_SHARED_DEPDIR)
-	@mkdir -p $(@D) $(PA38_SHARED_DEPDIR)
-	$(CXX) $(PA38_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(foreach inc,$(PA38_INCLUDE_PATHS),-I$(inc)) $(foreach def,$(PA38_DEFINES),-D$(def)) -MMD -MP -MF $(pa38_runner_depfile_path) -c -o $@ $<
+$(inception_runner_object_path): ../dev/src/test_runner.cpp $(INCEPTION_CXX_DEP) | compiler-ready $(INCEPTION_SHARED_OBJDIR) $(INCEPTION_SHARED_DEPDIR)
+	@mkdir -p $(@D) $(INCEPTION_SHARED_DEPDIR)
+	$(CXX) $(INCEPTION_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(foreach inc,$(INCEPTION_INCLUDE_PATHS),-I$(inc)) $(foreach def,$(INCEPTION_DEFINES),-D$(def)) -MMD -MP -MF $(inception_runner_depfile_path) -c -o $@ $<
 
-define PA38_CHECKPOINT_RULES
-$(call pa38_objdir,$(1)) $(call pa38_depdir,$(1)):
+define INCEPTION_CHECKPOINT_RULES
+$(call inception_objdir,$(1)) $(call inception_depdir,$(1)):
 	@mkdir -p $$@
 
-$(call pa38_entry_object_path,$(1)): $(PA38_ENTRY_$(1)) $(PA38_CXX_DEP) | compiler-ready $(call pa38_objdir,$(1)) $(call pa38_depdir,$(1))
-	@mkdir -p $$(@D) $(call pa38_depdir,$(1))
-	$(CXX) $(PA38_ENTRY_CC_FLAGS) $(foreach inc,$(PA38_INCLUDE_PATHS),-I$(inc)) $(foreach def,$(PA38_DEFINES),-D$(def)) -MMD -MP -MF $(call pa38_entry_depfile_path,$(1)) -c -o $$@ $$<
+$(call inception_entry_object_path,$(1)): $(INCEPTION_ENTRY_$(1)) $(INCEPTION_CXX_DEP) | compiler-ready $(call inception_objdir,$(1)) $(call inception_depdir,$(1))
+	@mkdir -p $$(@D) $(call inception_depdir,$(1))
+	$(CXX) $(INCEPTION_ENTRY_CC_FLAGS) $(foreach inc,$(INCEPTION_INCLUDE_PATHS),-I$(inc)) $(foreach def,$(INCEPTION_DEFINES),-D$(def)) -MMD -MP -MF $(call inception_entry_depfile_path,$(1)) -c -o $$@ $$<
 
-$(call pa38_binary_path,$(1)): $(call pa38_link_inputs,$(1)) | $(PA38_BIN_ROOT)
-	@rm -f "$(call pa38_link_output_path,$(1))"
-	$(CPPGM_HOST_CXX) $(PA38_LINK_FLAGS) -I../dev/src -o "$(call pa38_link_output_path,$(1))" $$^
-	@mv -f "$(call pa38_link_output_path,$(1))" $$@
+$(call inception_binary_path,$(1)): $(call inception_link_inputs,$(1)) | $(INCEPTION_BIN_ROOT)
+	@rm -f "$(call inception_link_output_path,$(1))"
+	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I../dev/src -o "$(call inception_link_output_path,$(1))" $$^
+	@mv -f "$(call inception_link_output_path,$(1))" $$@
 
-$(1)-self: $(call pa38_binary_path,$(1))
-	@ln -sf $(call pa38_binary_path,$(1)) $$@
+$(1)-self: $(call inception_binary_path,$(1))
+	@ln -sf $(call inception_binary_path,$(1)) $$@
 
 test-$(1): $(1)-self
-	$$(MAKE) test-$(PA38_PRIMARY_STAGE_$(1))-nobuild
+	$$(MAKE) test-$(INCEPTION_PRIMARY_STAGE_$(1))-nobuild
 
-through-$(1): $(if $(PA38_PREV_$(1)),through-$(PA38_PREV_$(1)))
+through-$(1): $(if $(INCEPTION_PREV_$(1)),through-$(INCEPTION_PREV_$(1)))
 	$$(MAKE) $(1)-self
 
-test-through-$(1): $(if $(PA38_PREV_$(1)),test-through-$(PA38_PREV_$(1)))
+test-through-$(1): $(if $(INCEPTION_PREV_$(1)),test-through-$(INCEPTION_PREV_$(1)))
 	$$(MAKE) test-$(1)
 endef
 
-define PA38_STAGE_RULES
-test-$(1): $(PA38_CHECKPOINT_FOR_$(1))-self
+define INCEPTION_STAGE_RULES
+test-$(1): $(INCEPTION_CHECKPOINT_FOR_$(1))-self
 	$$(MAKE) test-$(1)-nobuild
 
 test-$(1)-nobuild:
-	@if [ ! -x "$(call pa38_stage_binary,$(1))" ]; then \
-		echo "missing staged binary: $(call pa38_stage_binary,$(1))" >&2; \
-		echo "build it first with 'make through-$(1)' or 'make $(PA38_CHECKPOINT_FOR_$(1))-self'" >&2; \
+	@if [ ! -x "$(call inception_stage_binary,$(1))" ]; then \
+		echo "missing staged binary: $(call inception_stage_binary,$(1))" >&2; \
+		echo "build it first with 'make through-$(1)' or 'make $(INCEPTION_CHECKPOINT_FOR_$(1))-self'" >&2; \
 		exit 2; \
 	fi
 	@if [ "$(1)" = "pa37" ]; then \
-		$(call pa38_stage_test_env,$(1)) $(MAKE) -C ../pa37 \
+		$(call inception_stage_test_env,$(1)) $(MAKE) -C ../pa37 \
 			CPPGM_SKIP_DEV_REBUILD=1 \
 			TEST_DEPS= \
 			CXX="$(CPPGM_HOST_CXX)" \
 			CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
 			CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)" \
 			CPPGM_TEST_RUNNER="$(CPPGM_TEST_RUNNER)" \
-			LOWIROPT_APP="$(call pa38_stage_binary,$(1))" \
-			CPPGM_DRIVER_APP="$(call pa38_binary_path,cppgm++)" \
+			LOWIROPT_APP="$(call inception_stage_binary,$(1))" \
+			CPPGM_DRIVER_APP="$(call inception_binary_path,cppgm++)" \
 			test; \
 	elif [ "$(1)" = "pa38" ]; then \
-		$(call pa38_stage_test_env,$(1)) $(MAKE) -C ../pa38 \
+		$(call inception_stage_test_env,$(1)) $(MAKE) -C ../pa38 \
 			CPPGM_SKIP_DEV_REBUILD=1 \
 			TEST_DEPS= \
 			CXX="$(CPPGM_HOST_CXX)" \
 			CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
 			CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)" \
 			CPPGM_TEST_RUNNER="$(CPPGM_TEST_RUNNER)" \
-			LOWIR2NATIVE_APP="$(call pa38_stage_binary,$(1))" \
+			LOWIR2NATIVE_APP="$(call inception_stage_binary,$(1))" \
 			test; \
 	else \
-		$(call pa38_stage_test_env,$(1)) $(MAKE) -C ../$(1) \
+		$(call inception_stage_test_env,$(1)) $(MAKE) -C ../$(1) \
 			CPPGM_SKIP_DEV_REBUILD=1 \
 			TEST_DEPS= \
 			CXX="$(CPPGM_HOST_CXX)" \
 			CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
 			CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)" \
 			CPPGM_TEST_RUNNER="$(CPPGM_TEST_RUNNER)" \
-			CPPGM_TEST_APP="$(call pa38_stage_binary,$(1))" \
-			CPPGM_APP_ARGS='$(PA38_STAGE_ARGS_$(1))' \
+			CPPGM_TEST_APP="$(call inception_stage_binary,$(1))" \
+			CPPGM_APP_ARGS='$(INCEPTION_STAGE_ARGS_$(1))' \
 			test; \
 	fi
 
-through-$(1): $(if $(PA38_PREV_STAGE_$(1)),through-$(PA38_PREV_STAGE_$(1)))
-	$$(MAKE) $(PA38_CHECKPOINT_FOR_$(1))-self
+through-$(1): $(if $(INCEPTION_PREV_STAGE_$(1)),through-$(INCEPTION_PREV_STAGE_$(1)))
+	$$(MAKE) $(INCEPTION_CHECKPOINT_FOR_$(1))-self
 
-test-through-$(1): $(if $(PA38_PREV_STAGE_$(1)),test-through-$(PA38_PREV_STAGE_$(1)))
+test-through-$(1): $(if $(INCEPTION_PREV_STAGE_$(1)),test-through-$(INCEPTION_PREV_STAGE_$(1)))
 	$$(MAKE) test-$(1)
 endef
 
-define PA38_INCEPTION_RULES
+define INCEPTION_INCEPTION_RULES
 $(1)-inception: cppgm++-self
-	$$(MAKE) "$(call pa38_inception_binary_path,$(1))" \
-		PA38_COMPILER_FLAVOR=inception \
-		PA38_OUTPUT_SUFFIX=-inception \
-		PA38_OBJ_ROOT_BASE="$(PA38_OBJ_ROOT_BASE)" \
-		PA38_BIN_ROOT_BASE="$(PA38_BIN_ROOT_BASE)" \
-		PA38_SELFHOST_OPT_LEVEL="$(PA38_SELFHOST_OPT_LEVEL)" \
-		CXX="$(PA38_INCEPTION_CXX)" \
+	$$(MAKE) "$(call inception_inception_binary_path,$(1))" \
+		INCEPTION_COMPILER_FLAVOR=inception \
+		INCEPTION_OUTPUT_SUFFIX=-inception \
+		INCEPTION_OBJ_ROOT_BASE="$(INCEPTION_OBJ_ROOT_BASE)" \
+		INCEPTION_BIN_ROOT_BASE="$(INCEPTION_BIN_ROOT_BASE)" \
+		INCEPTION_SELFHOST_OPT_LEVEL="$(INCEPTION_SELFHOST_OPT_LEVEL)" \
+		CXX="$(INCEPTION_INCEPTION_CXX)" \
 		CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
 		CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)" \
 		CPPGM_TEST_RUNNER="$(CPPGM_TEST_RUNNER)" \
-		PA38_DEFINES='$(PA38_DEFINES)'
-	@ln -sf $(call pa38_inception_binary_path,$(1)) $$@
+		INCEPTION_DEFINES='$(INCEPTION_DEFINES)'
+	@ln -sf $(call inception_inception_binary_path,$(1)) $$@
 
 compare-$(1)-inception: $(1)-self $(1)-inception
-	@cmp -s "$(call pa38_self_binary_path,$(1))" "$(call pa38_inception_binary_path,$(1))" || \
-		(echo "mismatch: $(call pa38_self_binary_path,$(1)) != $(call pa38_inception_binary_path,$(1))" >&2; exit 1)
-	@echo "MATCH $(1): $(call pa38_inception_binary_path,$(1))"
+	@cmp -s "$(call inception_self_binary_path,$(1))" "$(call inception_inception_binary_path,$(1))" || \
+		(echo "mismatch: $(call inception_self_binary_path,$(1)) != $(call inception_inception_binary_path,$(1))" >&2; exit 1)
+	@echo "MATCH $(1): $(call inception_inception_binary_path,$(1))"
 endef
 
-$(foreach checkpoint,$(CHECKPOINTS),$(eval $(call PA38_CHECKPOINT_RULES,$(checkpoint))))
-$(foreach src,$(PA38_ALL_SHARED_SOURCES),$(eval $(call PA38_SOURCE_RULE,$(src))))
-$(foreach pa,$(PA_STAGE_NAMES),$(eval $(call PA38_STAGE_RULES,$(pa))))
-$(foreach checkpoint,$(CHECKPOINTS),$(eval $(call PA38_INCEPTION_RULES,$(checkpoint))))
+$(foreach checkpoint,$(CHECKPOINTS),$(eval $(call INCEPTION_CHECKPOINT_RULES,$(checkpoint))))
+$(foreach src,$(INCEPTION_ALL_SHARED_SOURCES),$(eval $(call INCEPTION_SOURCE_RULE,$(src))))
+$(foreach pa,$(PA_STAGE_NAMES),$(eval $(call INCEPTION_STAGE_RULES,$(pa))))
+$(foreach checkpoint,$(CHECKPOINTS),$(eval $(call INCEPTION_INCEPTION_RULES,$(checkpoint))))
 
 test-pa37: cppgm++-self
 
 clean:
 	-rm -f $(TARGETS) $(INCEPTION_TARGETS)
-	-rm -rf $(PA38_OBJ_ROOT_BASE)
+	-rm -rf $(INCEPTION_OBJ_ROOT_BASE)
 
 .PHONY: all test ladder preservation clean compiler-ready \
 	inception compare-inception bitcmp \
@@ -526,8 +530,8 @@ clean:
 	$(PA_THROUGH_TARGETS) $(PA_TEST_THROUGH_TARGETS) $(PA_TEST_TARGETS) \
 	$(PA_TEST_NOBUILD_TARGETS)
 
--include $(foreach checkpoint,$(CHECKPOINTS),$(call pa38_entry_depfile_path,$(checkpoint)))
--include $(foreach src,$(PA38_ALL_SHARED_SOURCES),$(call pa38_shared_depfile_path,$(src)))
--include $(pa38_runner_depfile_path)
+-include $(foreach checkpoint,$(CHECKPOINTS),$(call inception_entry_depfile_path,$(checkpoint)))
+-include $(foreach src,$(INCEPTION_ALL_SHARED_SOURCES),$(call inception_shared_depfile_path,$(src)))
+-include $(inception_runner_depfile_path)
 
 FORCE:

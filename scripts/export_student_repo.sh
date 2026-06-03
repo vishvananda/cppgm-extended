@@ -103,7 +103,7 @@ sanitize_student_makefile_defaults() {
     s/LLVM_CXX_LOCAL = \/usr\/local\/opt\/llvm\/bin\/clang\+\+\nLLVM_CXX_HOMEBREW = \/opt\/homebrew\/opt\/llvm\/bin\/clang\+\+\n(?:ifeq \(\$\(HOST_UNAME_S\),Darwin\)\n)?ifeq \(\$\(wildcard \$\(LLVM_CXX_LOCAL\)\),\)\nifneq \(\$\(wildcard \$\(LLVM_CXX_HOMEBREW\)\),\)\nLLVM_CXX_DEFAULT = \$\(LLVM_CXX_HOMEBREW\)\nendif\nelse\nLLVM_CXX_DEFAULT = \$\(LLVM_CXX_LOCAL\)\nendif\n(?:ifdef LLVM_CXX_DEFAULT\nHOST_CXX_DEFAULT = \$\(LLVM_CXX_DEFAULT\)\nelse\nHOST_CXX_DEFAULT = clang\+\+\nendif\nelse\nHOST_CXX_DEFAULT = g\+\+\nendif\n|)//g;
     s/ifeq \(\$\(origin CXX\), default\)\n(?:ifdef LLVM_CXX_DEFAULT\nCXX := \$\(LLVM_CXX_DEFAULT\)\nelse\nCXX := (?:clang|g)\+\+\nendif|CXX := \$\(HOST_CXX_DEFAULT\))\nendif/ifeq (\$(origin CXX), default)\nCXX := g++\nendif/g;
     s/ifeq \(\$\(origin CPPGM_HOST_CXX\), undefined\)\nifeq \(\$\(abspath \$\(CXX\)\),\$\(abspath \.\.\/dev\/cppgm\+\+\)\)\n(?:ifdef LLVM_CXX_DEFAULT\n\tCPPGM_HOST_CXX := \$\(LLVM_CXX_DEFAULT\)\nelse\n\tCPPGM_HOST_CXX := clang\+\+\nendif|CPPGM_HOST_CXX := \$\(HOST_CXX_DEFAULT\))\nelse\n\t?CPPGM_HOST_CXX := \$\(CXX\)\nendif\nendif/ifeq (\$(origin CPPGM_HOST_CXX), undefined)\nifeq (\$(abspath \$(CXX)),\$(abspath ..\/dev\/cppgm++))\n\tCPPGM_HOST_CXX := g++\nelse\n\tCPPGM_HOST_CXX := \$(CXX)\nendif\nendif/g;
-    s/PA38_LINKER_DETERMINISM_FLAGS =\nifeq \(\$\(HOST_UNAME_S\),Darwin\)\nPA38_LINKER_DETERMINISM_FLAGS \+= -Wl,-reproducible\nendif/PA38_LINKER_DETERMINISM_FLAGS =/g;
+    s/INCEPTION_LINKER_DETERMINISM_FLAGS =\nifeq \(\$\(HOST_UNAME_S\),Darwin\)\nINCEPTION_LINKER_DETERMINISM_FLAGS \+= -Wl,-reproducible\nendif/INCEPTION_LINKER_DETERMINISM_FLAGS =/g;
   ' "$@"
 }
 
