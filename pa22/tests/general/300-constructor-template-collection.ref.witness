@@ -1,5 +1,0 @@
-translation-unit
-  class-use at pa22/tests/general/300-constructor-template-collection.t:7:9
-    template X
-    selected primary
-    bind #1 = int source=explicit

@@ -1,5 +1,5 @@
 translation-unit
-  function-call at pa18/tests/spec/100-overloaded-member-pointer-function-template-deduction.t:39:10
+  function-call at pa26/tests/spec/300-overloaded-member-pointer-function-template-deduction.t:39:10
     callee boost::bind
     selected instantiation
     bind #1 = void source=deduced
@@ -7,7 +7,7 @@ translation-unit
     bind #3 = Stream & source=deduced
     bind #4 = Logger * source=deduced
     bind #5 = boost::reference_wrapper<Stream> source=deduced
-  function-call at pa18/tests/spec/100-overloaded-member-pointer-function-template-deduction.t:41:22
+  function-call at pa26/tests/spec/300-overloaded-member-pointer-function-template-deduction.t:41:22
     callee boost::ref
     selected instantiation
     bind #1 = Stream source=deduced

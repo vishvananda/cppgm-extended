@@ -90,7 +90,6 @@ copy_tracked_paths() {
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         next if m{^pa9/extras/};
-        next if m{^pa31/tests/general/200-host-compact-unwind-large-frame-fallback(?:\.|$)};
         print "$_\0";
       '
   ) | rsync -a --from0 --files-from=- "$repo_root/" "$dest/"
@@ -142,7 +141,7 @@ sanitize_linux_student_scripts() {
 }
 
 pa_dirs=()
-for n in $(seq 1 38); do
+for n in $(seq 1 39); do
   pa_dirs+=("pa$n")
 done
 
@@ -371,9 +370,11 @@ done
 sanitize_student_makefile_defaults "${existing_student_makefiles[@]}"
 sanitize_linux_student_scripts
 
-perl -0pi -e '
-  s/\$\(foreach checkpoint,\$\(CHECKPOINTS\),\$\(if \$\(strip \$\(FRONTEND_OBJ_BASENAMES_\$\(checkpoint\)\)\),,\$\(error missing FRONTEND_OBJ_BASENAMES_\$\(checkpoint\) in \.\.\/dev\/frontend_source_sets\.mk\)\)\)/\$(foreach checkpoint,\$(CHECKPOINTS),\$(if \$(filter undefined,\$(origin FRONTEND_OBJ_BASENAMES_\$(checkpoint))),\$(error missing FRONTEND_OBJ_BASENAMES_\$(checkpoint) in ..\/dev\/frontend_source_sets.mk),))/g;
-' "$dest/pa39/Makefile"
+if [ -f "$dest/pa39/Makefile" ]; then
+  perl -0pi -e '
+    s/\$\(foreach checkpoint,\$\(CHECKPOINTS\),\$\(if \$\(strip \$\(FRONTEND_OBJ_BASENAMES_\$\(checkpoint\)\)\),,\$\(error missing FRONTEND_OBJ_BASENAMES_\$\(checkpoint\) in \.\.\/dev\/frontend_source_sets\.mk\)\)\)/\$(foreach checkpoint,\$(CHECKPOINTS),\$(if \$(filter undefined,\$(origin FRONTEND_OBJ_BASENAMES_\$(checkpoint))),\$(error missing FRONTEND_OBJ_BASENAMES_\$(checkpoint) in ..\/dev\/frontend_source_sets.mk),))/g;
+  ' "$dest/pa39/Makefile"
+fi
 
 cat >> "$dest/Makefile" <<'EOF'
 

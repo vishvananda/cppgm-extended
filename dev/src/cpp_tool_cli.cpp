@@ -253,6 +253,10 @@ bool consume_toolchain_flag(CppToolInvocation & invocation,
                             const vector<string> & args,
                             size_t & i)
 {
+  if(args[i] == "--roundtrip-object-lowir") {
+    invocation.roundtrip_object_lowir = true;
+    return true;
+  }
   if(args[i] == "-g0") {
     invocation.debug_info_level = 0;
     return true;

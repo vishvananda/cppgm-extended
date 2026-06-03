@@ -26,22 +26,29 @@ fi
 
 obj="${tmpdir}/main-linux.o"
 roundtrip_obj="${tmpdir}/main-linux-roundtrip.o"
+src="${tmpdir}/main.cpp"
+
+cat > "${src}" <<'CPP'
+int main()
+{
+  return 0;
+}
+CPP
 
 if ! CPPGM_WRITE_LOCAL_SYMBOL_MAP=1 \
-    "${tool_dir}/cpplink" -c --target linux -o "${obj}" \
-      "${repo_root}/pa28/tests/strict/100-ret0.t"; then
-  echo "cpplink linux object smoke failed" >&2
+    "${tool_dir}/cppgm++" -c --target linux -o "${obj}" "${src}"; then
+  echo "cppgm++ linux object smoke failed" >&2
   exit 1
 fi
 
 obj_magic="$(od -An -tx1 -N4 "${obj}" | tr -d ' \n')"
 if [ "${obj_magic}" != "7f454c46" ]; then
-  echo "cpplink linux object smoke did not produce an ELF object" >&2
+  echo "cppgm++ linux object smoke did not produce an ELF object" >&2
   exit 1
 fi
 
 if [ ! -s "${obj}.localsymmap" ]; then
-  echo "cpplink linux object smoke did not produce a local symbol map" >&2
+  echo "cppgm++ linux object smoke did not produce a local symbol map" >&2
   exit 1
 fi
 

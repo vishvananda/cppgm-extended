@@ -7,7 +7,7 @@ global @__strlit__2 [binding=internal] = {
   i8 98
   i8 0
 }
-global @__local_static__f__values__tokens8_18 [binding=internal, object=@__local_static__f__values__tokens8_18] = {
+global @__local_static__f__values__tokens8_18 [binding=internal] = {
   ptr addr @__strlit__1
   ptr addr @__strlit__2
 }

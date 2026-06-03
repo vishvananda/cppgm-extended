@@ -18,7 +18,7 @@ global @__strlit__2 [binding=internal] = {
   i8 0
 }
 global @constructed : i32 [binding=strong, object=_Z11constructed] = 0
-global @__local_static__make_result__prefixes__tokens68_87 [binding=internal, object=@__local_static__make_result__prefixes__tokens68_87] = {
+global @__local_static__make_result__prefixes__tokens68_87 [binding=internal] = {
   zero 32
 }
 global @__local_static__make_result__prefixes__tokens68_87__guard : i64 [binding=internal] = zero

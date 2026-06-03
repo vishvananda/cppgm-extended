@@ -1,17 +1,17 @@
 translation-unit
-  class-use at pa21/tests/general/400-member-function-pointer-pack-partial-specialization.t:24:43
+  class-use at pa26/tests/general/300-member-function-pointer-pack-partial-specialization.t:24:43
     template meta::bool_constant
     selected primary
     bind #1 = false source=explicit
-  class-use at pa21/tests/general/400-member-function-pointer-pack-partial-specialization.t:28:5
+  class-use at pa26/tests/general/300-member-function-pointer-pack-partial-specialization.t:28:5
     template meta::bool_constant
     selected primary
     bind #1 = true source=explicit
-  function-call at pa21/tests/general/400-member-function-pointer-pack-partial-specialization.t:63:10
+  function-call at pa26/tests/general/300-member-function-pointer-pack-partial-specialization.t:63:10
     callee wrapper
     selected instantiation
     bind #1 = example::maker<int (target::*)() const> source=deduced
-  function-call at pa21/tests/general/400-member-function-pointer-pack-partial-specialization.t:63:25
+  function-call at pa26/tests/general/300-member-function-pointer-pack-partial-specialization.t:63:25
     callee example::make
     selected instantiation
     bind #1 = int (target::*)() const source=deduced

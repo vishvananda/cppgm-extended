@@ -2468,6 +2468,35 @@ FunctionBinding * find_direct_call_target_binding(SemanticContext & ctx,
   return ctx.find_function_by_symbol(callsem_symbol(node), node.text, function_type);
 }
 
+FunctionBinding * find_function_address_target_binding(SemanticContext & ctx,
+                                                       const CallSemNode & node)
+{
+  if(node.kind != CallSemKind::unary_expression ||
+     !callsem_has_token(node, OP_AMP) ||
+     node.children.size() != 1) {
+    return nullptr;
+  }
+
+  const CallSemNode & operand = node.children[0];
+  TypePtr function_type = strip_top_level_cv(remove_reference_type(operand.semantic_type));
+  if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+    return nullptr;
+  }
+
+  if(!callsem_symbol(node).internal_symbol.empty()) {
+    if(FunctionBinding * binding =
+           ctx.find_function_by_symbol(callsem_symbol(node), operand.text, operand.semantic_type)) {
+      return binding;
+    }
+    if(FunctionBinding * binding =
+           ctx.find_function_by_symbol(callsem_symbol(node), operand.text, function_type)) {
+      return binding;
+    }
+  }
+
+  return find_direct_call_target_binding(ctx, operand);
+}
+
 void collect_required_callees_from_node(SemanticContext & ctx,
                                         const CallSemNode & node,
                                         const FunctionBinding * active_function = nullptr,
@@ -2501,6 +2530,11 @@ void collect_required_callees_from_node(SemanticContext & ctx,
   collect_required_variable_initializer_support(ctx, node, output_resolution_scope);
   collect_required_exception_runtime_support(ctx, node);
   collect_required_delete_expression_support(ctx, node);
+  if(node.kind == CallSemKind::unary_expression &&
+     callsem_has_token(node, OP_AMP)) {
+    FunctionBinding * binding = find_function_address_target_binding(ctx, node);
+    ctx.require_function_definition(binding, OutputReason::FunctionIdUse);
+  }
   if(node.kind == CallSemKind::expression_statement && !node.children.empty()) {
     collect_required_discarded_temporary_support(ctx,
                                                  node.children[0],
@@ -6294,6 +6328,7 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
         if(!ctx.function_binding_is_live(binding)) {
           return OAT_DONE;
         }
+        FunctionBinding * requested_binding = binding;
         if(!binding || !binding->owner_class || binding->is_method ||
            binding->is_constructor || binding->is_destructor) {
           return OAT_DONE;
@@ -6312,9 +6347,16 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
         if(emit_scope &&
            semantic_template_output_policy::
                function_needs_template_definition_acquisition(*binding)) {
-          binding =
+          FunctionBinding * upgraded =
               semantic_template_function::acquire_required_function_definition_binding(
                   ctx, binding, *emit_scope);
+          if(upgraded) {
+            upgraded->output_requirements |= binding->output_requirements;
+            upgraded->is_explicit_instantiation_definition =
+                upgraded->is_explicit_instantiation_definition ||
+                binding->is_explicit_instantiation_definition;
+            binding = upgraded;
+          }
         }
         if(!binding ||
            binding->owner_class != binding_owner ||
@@ -6341,6 +6383,13 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
         analyze_function_binding_output_impl(ctx, state, *emit_scope, *binding, out);
         if(counters && out.children.size() != previous_output_count) {
           ++counters->late_synthesized_static_function_emits;
+        }
+        if(requested_binding && requested_binding != binding) {
+          requested_binding->output_emitted =
+              requested_binding->output_emitted || binding->output_emitted;
+          requested_binding->definition_output_emitted =
+              requested_binding->definition_output_emitted ||
+              binding->definition_output_emitted;
         }
         if(!binding->output_emitted && !binding->definition_output_emitted) {
           return OAT_PENDING;

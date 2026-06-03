@@ -32,13 +32,14 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 - PA1-PA5: preprocessing
 - PA6-PA9: grammar recognition, namespace semantics, and CY86 output
 - PA10-PA12: AST, types, lookup, conversions, calls, and overload resolution
-- PA13-PA27: LowIR, C++ lowering, object model, templates, constexpr,
-  template integration, and C++11 language closure
+- PA13-PA17: LowIR, procedural lowering, classes, value semantics, and virtual dispatch
+- PA18-PA23: templates, constant evaluation, and template integration
+- PA24-PA27: remaining source-to-LowIR language and object-model closure
 - PA28: native backend from LowIR
 - PA29-PA31: compile/link driver integration, ABI naming, and host exception metadata
-- PA32-PA35: host ABI and hosted compatibility
-- PA36-PA37: LowIR and machine-backend optimization
-- PA38: inception, rebuilding `cppgm++` with `cppgm++`
+- PA32-PA36: host ABI and hosted compatibility
+- PA37-PA38: LowIR and machine-backend optimization
+- PA39: inception, rebuilding `cppgm++` with `cppgm++`
 
 ## Assignment Map
 
@@ -78,14 +79,15 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 | PA32 | `cppgm++ -c` | host-linkable object interoperability |
 | PA33 | `cppgm++ -c` | host C++ ABI and runtime behavior |
 | PA34 | `cppgm++ -E`, `cppgm++ -c` | hosted header/source compatibility |
-| PA35 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
-| PA36 | `lowiropt` | LowIR optimization |
-| PA37 | `lowir2native -O1/-O2` | machine/backend optimization |
-| PA38 | inception targets | rebuild `cppgm++` with `cppgm++` |
+| PA35 | `cppgm++ -c` | heavy hosted-header compile compatibility |
+| PA36 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
+| PA37 | `lowiropt` | LowIR optimization |
+| PA38 | `lowir2native -O1/-O2` | machine/backend optimization |
+| PA39 | inception targets | rebuild `cppgm++` with `cppgm++` |
 
-## PA38
+## PA39
 
-PA38 is different from the earlier one-binary assignments. Its goal is
+PA39 is different from the earlier one-binary assignments. Its goal is
 inception: build `cppgm++` with `cppgm++` and match the host build. The
 `test-through` ladder gives intermediate checkpoints, but the final target is a
 matching self-built compiler.

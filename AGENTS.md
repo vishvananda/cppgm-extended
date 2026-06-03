@@ -26,17 +26,20 @@ Important user-facing binaries built from `dev/`:
 - `nsdecl`, `nsinit`, `cy86`
 - `cppgm++`
 - `lowir2cy86`, `lowiropt`, `lowir2native`
-- `cpplink`, `cppeh`
 
 The assignment arc is roughly:
 
 - PA1-PA9: preprocessing, recognition, namespace semantics, CY86 scaffold
 - PA10-PA12: AST, types/lookup, calls/conversions/overload resolution
-- PA13-PA14: LowIR contract and source-to-LowIR lowering
-- PA15-PA22: classes, value semantics, virtuals, templates, witness output
-- PA23-PA25: native execution, linking, exception/runtime surfaces
-- PA26-PA30: language completion and compile/link driver integration
-- PA31-PA36: ABI naming, object generation, host ABI, hosted headers
+- PA13-PA14: LowIR contract and first source-to-LowIR lowering
+- PA15-PA17: classes, value semantics, and virtual dispatch
+- PA18-PA23: templates, constant evaluation, and template integration
+- PA24-PA27: remaining source-to-LowIR language and object-model closure
+- PA28: LowIR to native executable backend
+- PA29: separate compilation and compile/link driver mode
+- PA30-PA31: ABI name construction and host exception metadata facts
+- PA32-PA36: host-linkable objects, host ABI/runtime, hosted headers, and
+  hosted link/runtime behavior
 - PA37-PA38: LowIR and machine-backend optimization
 - PA39: staged self-host ladder
 

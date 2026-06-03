@@ -442,6 +442,9 @@ void discard_function_binding(FunctionRegistryState & state,
   if(binding->output_emitted || binding->definition_output_emitted) {
     return;
   }
+  if(binding->output_requirements != semantic_model::ORK_NONE) {
+    return;
+  }
   erase_indexed_function_binding(state, binding);
   erase_function_pointer(state.instantiated_functions, binding);
   state.instantiated_function_set.erase(binding);

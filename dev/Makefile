@@ -15,8 +15,6 @@ TARGETS = \
 	lowir2cy86 \
 	lowiropt \
 	lowir2native \
-	cppeh \
-	cpplink \
 	cppgm++ \
 	nsdecl \
 	nsinit \
