@@ -119,7 +119,7 @@ The checked-in tests currently cover:
 - ref-vs-const-ref overload selection
 - ambiguous cv-pointer partial ordering
 - pointer qualification deduction
-- function-reference-shaped parameter binding from `pa35`
+- function-reference-shaped parameter binding from `pa36`
 - forwarding-reference array-shape binding from `pa34`
 - function-shape decomposition into return and parameter types
 - bounded integer nontype deduction through array extents

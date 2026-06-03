@@ -13,7 +13,7 @@ def split_flag_string(text: str):
 def source_list(repo_root: Path, frontend: str, layout: str, test_runner: bool):
     files = sorted((repo_root / "dev" / "src").glob("*.cpp"))
     files.append(repo_root / frontend)
-    if layout == "pa38-selfhost" and test_runner:
+    if layout == "pa39-selfhost" and test_runner:
         runner = repo_root / "dev" / "src" / "test_runner.cpp"
         if runner not in files:
             files.append(runner)
@@ -32,7 +32,7 @@ def pa38_object_path(build_root: Path, relative: Path, stem: str, test_runner: b
         suffix = "runner" if test_runner else "plain"
         return build_root / stem / "release" / f"{stem}-{suffix}.o"
 
-    raise SystemExit(f"pa38-selfhost layout does not know how to place {relative}")
+    raise SystemExit(f"pa39-selfhost layout does not know how to place {relative}")
 
 
 def depfile_path_for_object(obj: Path):
@@ -45,7 +45,7 @@ def object_path(repo_root: Path,
                 src: Path,
                 layout: str,
                 test_runner: bool):
-    if layout == "pa38-selfhost":
+    if layout == "pa39-selfhost":
         relative = src.relative_to(repo_root)
         return pa38_object_path(build_dir, relative, src.stem, test_runner)
     return build_dir / (f"{index:03d}-{src.stem}.o")
@@ -61,7 +61,7 @@ def compile_command(repo_root: Path,
     relative = src.relative_to(repo_root)
     cmd = [str((repo_root / compiler).resolve())]
 
-    if layout == "pa38-selfhost":
+    if layout == "pa39-selfhost":
         cmd.extend(["-std=gnu++11", "-Wall", "-O3"])
         cmd.extend(split_flag_string(stdlib_flags))
         depfile = depfile_path_for_object(obj)

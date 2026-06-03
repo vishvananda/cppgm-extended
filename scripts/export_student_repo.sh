@@ -356,15 +356,15 @@ EOF
 sanitize_student_makefile_defaults \
   "$dest/Makefile" \
   "$dest"/pa34/Makefile \
-  "$dest"/pa35/Makefile \
   "$dest"/pa36/Makefile \
   "$dest"/pa37/Makefile \
-  "$dest"/pa38/Makefile
+  "$dest"/pa38/Makefile \
+  "$dest"/pa39/Makefile
 sanitize_linux_student_scripts
 
 perl -0pi -e '
   s/\$\(foreach checkpoint,\$\(CHECKPOINTS\),\$\(if \$\(strip \$\(FRONTEND_OBJ_BASENAMES_\$\(checkpoint\)\)\),,\$\(error missing FRONTEND_OBJ_BASENAMES_\$\(checkpoint\) in \.\.\/dev\/frontend_source_sets\.mk\)\)\)/\$(foreach checkpoint,\$(CHECKPOINTS),\$(if \$(filter undefined,\$(origin FRONTEND_OBJ_BASENAMES_\$(checkpoint))),\$(error missing FRONTEND_OBJ_BASENAMES_\$(checkpoint) in ..\/dev\/frontend_source_sets.mk),))/g;
-' "$dest/pa38/Makefile"
+' "$dest/pa39/Makefile"
 
 cat >> "$dest/Makefile" <<'EOF'
 
@@ -446,9 +446,9 @@ pa_ref_pairs=(
   pa32:cppgm++
   pa33:cppgm++
   pa34:cppgm++
-  pa35:cppgm++
-  pa36:lowiropt
-  pa37:lowir2native
+  pa36:cppgm++
+  pa37:lowiropt
+  pa38:lowir2native
 )
 
 source_sha=$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || echo unknown)

@@ -1,6 +1,6 @@
 template_kernel_v1
 
-# Reduced from pa35/tests/link/701-hosted-function-reference-parameter-link-smoke.t.1
+# Reduced from pa36/tests/link/701-hosted-function-reference-parameter-link-smoke.t.1
 
 function_template apply hosted_fn_ref <type Fn> params (type int, type const Fn&) return int
 

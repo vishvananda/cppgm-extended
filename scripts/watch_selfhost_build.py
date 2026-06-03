@@ -21,7 +21,7 @@ from typing import Set
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PA38_DIR = REPO_ROOT / "pa38"
+PA38_DIR = REPO_ROOT / "pa39"
 FRONTEND_SOURCE_SETS = REPO_ROOT / "dev" / "frontend_source_sets.mk"
 PA38_MAKEFILE = PA38_DIR / "Makefile"
 MAKE_OPTIONS_WITH_ARGS = {
@@ -207,7 +207,7 @@ def parse_pa38_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
         if match:
             stage_to_checkpoint[match.group(1)] = match.group(2)
     if not checkpoints:
-        raise SystemExit("failed to parse CHECKPOINTS from pa38/Makefile")
+        raise SystemExit("failed to parse CHECKPOINTS from pa39/Makefile")
     return checkpoints, stage_to_checkpoint
 
 
@@ -329,7 +329,7 @@ def infer_output_suffix(flavor: str, target: str, assignments: Dict[str, str]) -
 
 
 def resolve_obj_root_base(assignments: Dict[str, str]) -> Path:
-    raw = assignments.get("PA38_OBJ_ROOT_BASE", "../obj/pa38")
+    raw = assignments.get("PA38_OBJ_ROOT_BASE", "../obj/pa39")
     return (PA38_DIR / raw).resolve()
 
 
@@ -400,7 +400,7 @@ def manual_build_spec(args: argparse.Namespace,
                       stage_to_checkpoint: Dict[str, str]) -> Optional[BuildSpec]:
     if not args.target:
         return None
-    obj_root_base = (REPO_ROOT / args.obj_root_base).resolve() if args.obj_root_base else (REPO_ROOT / "obj" / "pa38")
+    obj_root_base = (REPO_ROOT / args.obj_root_base).resolve() if args.obj_root_base else (REPO_ROOT / "obj" / "pa39")
     bin_root_base = obj_root_base / "bin"
     generated_root = (REPO_ROOT / args.generated_root).resolve() if args.generated_root else (obj_root_base / "generated").resolve()
     flavor = args.flavor or "selfhost"
@@ -454,7 +454,7 @@ def binary_path(bin_root: Path, checkpoint: str, output_suffix: str) -> Path:
 
 
 def shared_object_stem(stem: str) -> str:
-    # pa38/Makefile uses $(basename $(notdir <source>)) for shared objects.
+    # pa39/Makefile uses $(basename $(notdir <source>)) for shared objects.
     return Path(stem).name
 
 
@@ -849,7 +849,7 @@ def discover_builds(processes: Sequence[ProcessInfo],
             continue
         if c_index + 1 >= len(argv):
             continue
-        if argv[c_index + 1] != "pa38":
+        if argv[c_index + 1] != "pa39":
             continue
         builds.append(build_spec_from_process(process, checkpoints, stage_to_checkpoint))
     return builds
@@ -868,7 +868,7 @@ def discover_build_processes(processes: Sequence[ProcessInfo]) -> List[ProcessIn
             c_index = argv.index("-C")
         except ValueError:
             continue
-        if c_index + 1 >= len(argv) or argv[c_index + 1] != "pa38":
+        if c_index + 1 >= len(argv) or argv[c_index + 1] != "pa39":
             continue
         if process.ppid in make_pids:
             continue
@@ -997,17 +997,17 @@ def render_screen(views: Sequence[BuildView],
                   use_color: bool,
                   stale: bool = False) -> str:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    lines = [style(f"PA38 Build Watch  {now}  refresh={interval:.1f}s",
+    lines = [style(f"PA39 Build Watch  {now}  refresh={interval:.1f}s",
                    Color.BOLD,
                    Color.CYAN,
                    enabled=use_color), ""]
     if stale:
-        lines.append(style("No active pa38 build detected; showing last captured snapshot.",
+        lines.append(style("No active pa39 build detected; showing last captured snapshot.",
                            Color.YELLOW,
                            enabled=use_color))
         lines.append("")
     if not views:
-        lines.append("No active pa38 build detected.")
+        lines.append("No active pa39 build detected.")
         lines.append("Pass --target/--obj-root-base to watch a completed or detached tree manually.")
         return "\n".join(lines)
 
@@ -1055,14 +1055,14 @@ def collect_views(args: argparse.Namespace,
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Watch pa38 build progress, object counts, and active compile files."
+        description="Watch pa39 build progress, object counts, and active compile files."
     )
     parser.add_argument("--interval", type=float, default=1.0,
                         help="refresh interval in seconds (default: 1.0)")
     parser.add_argument("--once", action="store_true",
                         help="print one snapshot and exit")
     parser.add_argument("--pid", type=int,
-                        help="watch one active top-level 'make -C pa38' pid")
+                        help="watch one active top-level 'make -C pa39' pid")
     parser.add_argument("--target",
                         help="manual target to watch even if no active make process exists")
     parser.add_argument("--obj-root-base",

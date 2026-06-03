@@ -1,4 +1,4 @@
-name: PA38 Selfhost
+name: Selfhost
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   test-through-pa10:
-    name: pa38 test-through-pa10 (gcc + libstdc++, ubuntu 24.04)
+    name: test-through-pa10 (gcc + libstdc++, ubuntu 24.04)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     if: >-
@@ -54,9 +54,9 @@ jobs:
       - name: Build host compiler
         run: make -C dev cppgm++
 
-      - name: Run PA38 through PA10
+      - name: Run selfhost through PA10
         run: |
-          make -C pa38 test-through-pa10 \
+          make -C pa39 test-through-pa10 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -68,7 +68,7 @@ jobs:
           bundle="$RUNNER_TEMP/pa38-cppgm-self"
           upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa38/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -86,7 +86,7 @@ jobs:
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
-            echo "### PA38 self compiler artifact"
+            echo "### Self compiler artifact"
             echo
             echo "- Flavor: \`$SELFHOST_FLAVOR\`"
             echo "- Artifact: \`$SELFHOST_ARTIFACT_NAME\`"
@@ -95,10 +95,10 @@ jobs:
             echo
             echo "Manual inception run:"
             echo
-            echo "[Open PA38 Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/pa38-inception.yml)"
+            echo "[Open Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/inception.yml)"
             echo
             echo "\`\`\`sh"
-            echo "gh workflow run pa38-inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
+            echo "gh workflow run inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -111,7 +111,7 @@ jobs:
           retention-days: 14
 
   test-through-pa10-ubuntu-24-clang:
-    name: pa38 test-through-pa10 (clang + libc++, ubuntu 24.04)
+    name: test-through-pa10 (clang + libc++, ubuntu 24.04)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     if: >-
@@ -150,9 +150,9 @@ jobs:
       - name: Build host compiler
         run: make -C dev cppgm++
 
-      - name: Run PA38 through PA10
+      - name: Run selfhost through PA10
         run: |
-          make -C pa38 test-through-pa10 \
+          make -C pa39 test-through-pa10 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -164,7 +164,7 @@ jobs:
           bundle="$RUNNER_TEMP/pa38-cppgm-self"
           upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa38/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -182,7 +182,7 @@ jobs:
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
-            echo "### PA38 self compiler artifact"
+            echo "### Self compiler artifact"
             echo
             echo "- Flavor: \`$SELFHOST_FLAVOR\`"
             echo "- Artifact: \`$SELFHOST_ARTIFACT_NAME\`"
@@ -191,10 +191,10 @@ jobs:
             echo
             echo "Manual inception rerun:"
             echo
-            echo "[Open PA38 Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/pa38-inception.yml)"
+            echo "[Open Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/inception.yml)"
             echo
             echo "\`\`\`sh"
-            echo "gh workflow run pa38-inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
+            echo "gh workflow run inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -207,7 +207,7 @@ jobs:
           retention-days: 14
 
   test-through-pa10-ubuntu-26-gcc:
-    name: pa38 test-through-pa10 (gcc + libstdc++, ubuntu 26.04)
+    name: test-through-pa10 (gcc + libstdc++, ubuntu 26.04)
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:26.04
@@ -254,9 +254,9 @@ jobs:
       - name: Build host compiler
         run: make -C dev cppgm++
 
-      - name: Run PA38 through PA10
+      - name: Run selfhost through PA10
         run: |
-          make -C pa38 test-through-pa10 \
+          make -C pa39 test-through-pa10 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -268,7 +268,7 @@ jobs:
           bundle="$RUNNER_TEMP/pa38-cppgm-self"
           upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa38/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -286,7 +286,7 @@ jobs:
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
-            echo "### PA38 self compiler artifact"
+            echo "### Self compiler artifact"
             echo
             echo "- Flavor: \`$SELFHOST_FLAVOR\`"
             echo "- Artifact: \`$SELFHOST_ARTIFACT_NAME\`"
@@ -295,10 +295,10 @@ jobs:
             echo
             echo "Manual inception rerun:"
             echo
-            echo "[Open PA38 Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/pa38-inception.yml)"
+            echo "[Open Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/inception.yml)"
             echo
             echo "\`\`\`sh"
-            echo "gh workflow run pa38-inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
+            echo "gh workflow run inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -311,7 +311,7 @@ jobs:
           retention-days: 14
 
   test-through-pa10-ubuntu-26-clang:
-    name: pa38 test-through-pa10 (clang + libc++, ubuntu 26.04)
+    name: test-through-pa10 (clang + libc++, ubuntu 26.04)
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:26.04
@@ -361,9 +361,9 @@ jobs:
       - name: Build host compiler
         run: make -C dev cppgm++
 
-      - name: Run PA38 through PA10
+      - name: Run selfhost through PA10
         run: |
-          make -C pa38 test-through-pa10 \
+          make -C pa39 test-through-pa10 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -375,7 +375,7 @@ jobs:
           bundle="$RUNNER_TEMP/pa38-cppgm-self"
           upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa38/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -393,7 +393,7 @@ jobs:
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
-            echo "### PA38 self compiler artifact"
+            echo "### Self compiler artifact"
             echo
             echo "- Flavor: \`$SELFHOST_FLAVOR\`"
             echo "- Artifact: \`$SELFHOST_ARTIFACT_NAME\`"
@@ -402,10 +402,10 @@ jobs:
             echo
             echo "Manual inception rerun:"
             echo
-            echo "[Open PA38 Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/pa38-inception.yml)"
+            echo "[Open Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/inception.yml)"
             echo
             echo "\`\`\`sh"
-            echo "gh workflow run pa38-inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
+            echo "gh workflow run inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 

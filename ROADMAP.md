@@ -1,4 +1,4 @@
-# CPPGM Part 2 Roadmap: PA10–PA38
+# CPPGM Part 2 Roadmap: PA10–PA39
 
 This document outlines the proposed programming assignments for Part 2 of the `cppgm`
 course.
@@ -24,7 +24,7 @@ assignments before bootstrap:
   emission
 - `PA33 hostabi`, separating ordinary host object interop from host C++ ABI/runtime
   behavior
-- `PA35 hostedlink`, separating hosted source/header compatibility from hosted emitted-code
+- `PA36 hostedlink`, separating hosted source/header compatibility from hosted emitted-code
   link/runtime behavior
 
 ---
@@ -701,7 +701,7 @@ linker accepts these objects" to "the ordinary host C++ ABI/runtime surface actu
 **Notes**:
 - This is distinct from PA25 private `exceptrt`, which still owns the private
   `cppgm_eh_*` internal runtime path.
-- This is also distinct from PA34/PA35 hosted compatibility; PA33 is about the ordinary
+- This is also distinct from PA34/PA36 hosted compatibility; PA33 is about the ordinary
   host C++ ABI/runtime path once host link succeeds at all.
 
 **Input**: host-linkable compiler from PA32
@@ -752,7 +752,7 @@ bootstrap
 
 ---
 
-## PA35: `hostedlink` — Hosted Header Emission and Link Compatibility
+## PA36: `hostedlink` — Hosted Header Emission and Link Compatibility
 
 **Goal**: Once hosted headers preprocess and compile, make their emitted inline/template
 code link and run correctly through the existing host toolchain path.
@@ -778,7 +778,7 @@ code link and run correctly through the existing host toolchain path.
 
 ---
 
-## PA36: `optimize` — Optimization Passes
+## PA37: `optimize` — Optimization Passes
 
 **Goal**: Add the first optimization layer over the compiler-owned backend representation.
 
@@ -796,14 +796,14 @@ code link and run correctly through the existing host toolchain path.
 - The important point is establishing a clean and testable optimization stage with public
   `-O0`, `-O1`, and `-O2` levels.
 
-**Input**: hosted source/header compatible compiler from PA35
+**Input**: hosted source/header compatible compiler from PA36
 **Output**: optimized LowIR feeding the native backend
 
-**Dependencies**: PA35
+**Dependencies**: PA36
 
 ---
 
-## PA37: `machineopt` — Machine Backend Optimization
+## PA38: `machineopt` — Machine Backend Optimization
 
 **Goal**: Add local and whole-function optimization over the lowered machine-IR/native
 backend representation.
@@ -815,18 +815,18 @@ backend representation.
 - Machine-IR shape oracles that prove optimization is happening below the LowIR boundary
 
 **Notes**:
-- PA36 optimizes LowIR before backend lowering. PA37 starts after that boundary and improves
+- PA37 optimizes LowIR before backend lowering. PA38 starts after that boundary and improves
   the target-facing machine path.
 - `-O0` remains the PA23 baseline.
 
-**Input**: optimized LowIR and native backend from PA36
+**Input**: optimized LowIR and native backend from PA37
 **Output**: optimized machine IR and native executables
 
-**Dependencies**: PA36
+**Dependencies**: PA37
 
 ---
 
-## PA38: `inception` — Self-Hosting Inception
+## PA39: `inception` — Self-Hosting Inception
 
 **Goal**: Build `cppgm++` with `cppgm++`, then build it again and compare the two compiler
 outputs byte for byte.
@@ -838,14 +838,14 @@ outputs byte for byte.
 - Reproducible output and deterministic build behavior
 
 **Notes**:
-- PA38 does not add a new language feature, command-line mode, object format, or runtime ABI.
+- PA39 does not add a new language feature, command-line mode, object format, or runtime ABI.
 - Failures discovered here should usually move backward to the earlier assignment surface that
   owns the missing language, lowering, runtime, linking, optimization, or determinism behavior.
 
-**Input**: optimized compiler implementation from PA37
+**Input**: optimized compiler implementation from PA38
 **Output**: reproducible self-built compiler
 
-**Dependencies**: PA37
+**Dependencies**: PA38
 
 ---
 
@@ -878,8 +878,8 @@ PA6 (recog)
                                                                                                                 └─ PA32 (hostinterop)
                                                                                                                      └─ PA33 (hostabi)
                                                                                                                           └─ PA34 (hostedcompat)
-                                                                                                                               └─ PA35 (hostedlink)
-                                                                                                                                    └─ PA36 (lowiropt)
-                                                                                                                                         └─ PA37 (machineopt)
-                                                                                                                                              └─ PA38 (inception)
+                                                                                                                               └─ PA36 (hostedlink)
+                                                                                                                                    └─ PA37 (lowiropt)
+                                                                                                                                         └─ PA38 (machineopt)
+                                                                                                                                              └─ PA39 (inception)
 ```

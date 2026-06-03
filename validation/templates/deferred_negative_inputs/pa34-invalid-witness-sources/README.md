@@ -1,11 +1,11 @@
 # PA34 Invalid Witness Source Snapshots
 
 These files preserve the invalid pre-repair versions of PA34 hosted/frontier
-sources that blocked Clang witness generation during PA34/PA35 convergence.
+sources that blocked Clang witness generation during PA34/PA36 convergence.
 They are intentionally outside the `pa*` test directories and use `.bad.cpp`
 suffixes so no assignment harness collects them as active tests.
 
-After PA34/PA35 convergence, use these as seeds for minimal negative
+After PA34/PA36 convergence, use these as seeds for minimal negative
 regressions if `cppgm++` still accepts the invalid forms.
 
 | Snapshot | Original path | Invalid surface |

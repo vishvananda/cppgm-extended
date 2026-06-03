@@ -208,9 +208,9 @@ jobs:
             name: test-strict
             command: make test-strict-nobuild
             timeout: 120
-          - id: pa38-through-pa10
-            name: pa38 test-through-pa10
-            command: make -C pa38 test-through-pa10 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
+          - id: selfhost-through-pa10
+            name: test-through-pa10
+            command: make -C pa39 test-through-pa10 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
             timeout: 90
 
     env:
@@ -272,14 +272,14 @@ jobs:
         run: ${{ matrix.suite.command }}
 
       - name: Package cppgm++ self compiler
-        if: matrix.suite.id == 'pa38-through-pa10'
+        if: matrix.suite.id == 'selfhost-through-pa10'
         run: |
           set -euo pipefail
           source_sha="$GITHUB_SHA"
           bundle="$RUNNER_TEMP/pa38-cppgm-self"
           upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa38/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -297,7 +297,7 @@ jobs:
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
-            echo "### PA38 self compiler artifact"
+            echo "### Self compiler artifact"
             echo
             echo "- Flavor: \`$SELFHOST_FLAVOR\`"
             echo "- Artifact: \`$SELFHOST_ARTIFACT_NAME\`"
@@ -306,15 +306,15 @@ jobs:
             echo
             echo "Manual inception run:"
             echo
-            echo "[Open PA38 Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/pa38-inception.yml)"
+            echo "[Open Inception workflow](https://github.com/$GITHUB_REPOSITORY/actions/workflows/inception.yml)"
             echo
             echo "\`\`\`sh"
-            echo "gh workflow run pa38-inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
+            echo "gh workflow run inception.yml -f selfhost_run_id=$GITHUB_RUN_ID -f flavor=$SELFHOST_FLAVOR"
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload cppgm++ self compiler
-        if: matrix.suite.id == 'pa38-through-pa10'
+        if: matrix.suite.id == 'selfhost-through-pa10'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.SELFHOST_ARTIFACT_NAME }}

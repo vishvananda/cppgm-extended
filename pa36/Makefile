@@ -1,11 +1,6 @@
-TARGET = lowiropt
+TARGET = cppgm++
 TARGET_ARGS =
 export CPPGM_APP_ARGS := $(TARGET_ARGS)
-LOWIROPT_APP ?= ../dev/$(TARGET)
-CPPGM_DRIVER_APP ?= ../dev/cppgm++
-LOWIROPT_REF_APP ?= $(LOWIROPT_APP)-ref
-CPPGM_DRIVER_REF_APP ?= $(CPPGM_DRIVER_APP)-ref
-TEST_DEPS ?= dev-shared-target
 HOST_UNAME_S = $(shell uname -s)
 LLVM_CXX_LOCAL = /usr/local/opt/llvm/bin/clang++
 LLVM_CXX_HOMEBREW = /opt/homebrew/opt/llvm/bin/clang++
@@ -36,38 +31,48 @@ export CPPGM_HOST_CXX
 CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
 REPORT_EMPTY_OPTIONAL_TEST_ROOTS ?= 0
-O0_TEST_ROOT ?= tests/o0
-O1_TEST_ROOT ?= tests/o1
-O2_TEST_ROOT ?= tests/o2
-DRIVER_O1_TEST_ROOT ?= tests/driver/o1
-DRIVER_O2_TEST_ROOT ?= tests/driver/o2
-DEBUGINFO_O2_TEST_ROOT ?= tests/debuginfo/o2
-DEBUGINFO_DRIVER_O2_TEST_ROOT ?= tests/debuginfo/driver/o2
-DEBUGINFO_O1_TEST_ROOT ?= tests/debuginfo/o1
-DEBUGINFO_DRIVER_O1_TEST_ROOT ?= tests/debuginfo/driver/o1
-COURSE_O0_TEST_ROOT ?= course/pa36/o0
-COURSE_O1_TEST_ROOT ?= course/pa36/o1
-COURSE_O2_TEST_ROOT ?= course/pa36/o2
-COURSE_DRIVER_O1_TEST_ROOT ?= course/pa36/driver/o1
-COURSE_DRIVER_O2_TEST_ROOT ?= course/pa36/driver/o2
-COURSE_DEBUGINFO_O1_TEST_ROOT ?= course/pa36/debuginfo/o1
-COURSE_DEBUGINFO_O2_TEST_ROOT ?= course/pa36/debuginfo/o2
-COURSE_DEBUGINFO_DRIVER_O1_TEST_ROOT ?= course/pa36/debuginfo/driver/o1
-COURSE_DEBUGINFO_DRIVER_O2_TEST_ROOT ?= course/pa36/debuginfo/driver/o2
+CPPGM_TEST_APP ?= ../dev/$(TARGET)
+REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
+TEST_DEPS ?= dev-shared-target
+RUN_CHECK_DEPS ?= dev-shared-target
+LINK_TEST_ROOT ?= tests/link
+COURSE_LINK_TEST_ROOT ?= course/pa36/link
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
-TEST_RUNNER_ENTRY_FLAGS = $(TEST_RUNNER_SHARED_FLAGS) $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
-CC_FLAGS = -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS)
+TEST_RUNNER_ENTRY_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
+HOST_CXX_DEFAULT_DEF = -DCPPGM_DEFAULT_HOST_CXX='"$(CPPGM_HOST_CXX)"'
+OBJECT_ROOT_DEFAULT_DEF = -DCPPGM_DEFAULT_OBJECT_ROOT='"$(abspath $(OBJ))"'
+CC_FLAGS = -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
+DEBUG_CC_FLAGS = -std=gnu++11 -Wall -O0 -g -fno-omit-frame-pointer $(CPPGM_STDLIB_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
 ENTRY_CC_FLAGS = $(CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
+ENTRY_DEBUG_CC_FLAGS = $(DEBUG_CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
 SRC = ../dev/src
-GENERATED = ../obj/generated
+OBJ ?= ../obj
+export CPPGM_OBJECT_ROOT := $(abspath $(OBJ))
+GENERATED ?= $(OBJ)/generated
+BUILTIN_HOST_CONFIG = $(GENERATED)/cppgm_builtin_host_config.h
 INC = -I$(SRC) -I$(GENERATED)
-OBJ = ../obj
+SHARED_OBJ_ROOT = $(abspath ../obj)
+CURRENT_OBJ_ROOT = $(abspath $(OBJ))
+ifeq ($(CURRENT_OBJ_ROOT),$(SHARED_OBJ_ROOT))
+ifneq ($(abspath $(firstword $(CXX))),$(abspath $(firstword $(CPPGM_HOST_CXX))))
+$(error shared OBJ root $(OBJ) is only supported with host compiler $(CPPGM_HOST_CXX); use OBJ=<isolated-root> for selfhost or other non-host builds)
+endif
+endif
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 
 include ../dev/frontend_source_sets.mk
+
+$(BUILTIN_HOST_CONFIG): FORCE
+	@mkdir -p $(dir $@)
+	@CPPGM_BUILD_HOST_CXX='$(CPPGM_HOST_CXX)' \
+		CPPGM_STDLIB_FLAGS='$(CPPGM_STDLIB_FLAGS)' \
+		perl ../dev/gen_builtin_host_config.pl > $@.tmp
+	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv $@.tmp $@; else rm -f $@.tmp; fi
+
+$(OBJ)/release/preprocessor.o $(OBJ)/debug/preprocessor.o: $(BUILTIN_HOST_CONFIG)
 
 common_obj_basenames = $(FRONTEND_OBJ_BASENAMES_$(TARGET))
 common_objs = $(addprefix $(OBJ)/$(1)/,$(addsuffix .o,$(common_obj_basenames)))
@@ -96,7 +101,7 @@ $(OBJ)/release/%.o: %.cpp
 
 $(OBJ)/debug/%.o: %.cpp
 	@mkdir -p $(@D) $(dir $(DDEPDIR)/$*)
-	$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
+	$(CXX) $(DEBUG_CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
 	mv -f $(DDEPDIR)/$*.Td $(DDEPDIR)/$*.d
 
 $(OBJ)/release/test_runner_enabled.o: $(SRC)/test_runner.cpp
@@ -104,81 +109,48 @@ $(OBJ)/release/test_runner_enabled.o: $(SRC)/test_runner.cpp
 	mv -f $(RDEPDIR)/test_runner_enabled.Td $(RDEPDIR)/test_runner_enabled.d
 
 $(OBJ)/debug/test_runner_enabled.o: $(SRC)/test_runner.cpp
-	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
+	$(CXX) $(DEBUG_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
-define run_text_course_bucket
-	@if [ -d "$(3)" ] && find "$(3)" -type f -name '*.t' | grep -q .; then \
-		CPPGM_APP_ARGS='$(1)' scripts/run_all_tests.pl $(2) my "$(3)"; \
-		scripts/compare_results.pl ref my "$(3)"; \
+define run_link_course_bucket
+	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
+		perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my "$(1)"; \
+		scripts/compare_results.pl ref my "$(1)"; \
 	else \
-		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(3): no tests"; fi; \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
 	fi
 endef
 
 test: $(TEST_DEPS)
-	@CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(O0_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(O0_TEST_ROOT)
-	$(call run_text_course_bucket,-O0,$(LOWIROPT_APP),$(COURSE_O0_TEST_ROOT))
-	@CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(O1_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(O1_TEST_ROOT)
-	$(call run_text_course_bucket,-O1,$(LOWIROPT_APP),$(COURSE_O1_TEST_ROOT))
-	@CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(O2_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(O2_TEST_ROOT)
-	$(call run_text_course_bucket,-O2,$(LOWIROPT_APP),$(COURSE_O2_TEST_ROOT))
-	@CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) my $(DRIVER_O1_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(DRIVER_O1_TEST_ROOT)
-	$(call run_text_course_bucket,--emit-lowir -g0 -O1,$(CPPGM_DRIVER_APP),$(COURSE_DRIVER_O1_TEST_ROOT))
-	@CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) my $(DRIVER_O2_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(DRIVER_O2_TEST_ROOT)
-	$(call run_text_course_bucket,--emit-lowir -g0 -O2,$(CPPGM_DRIVER_APP),$(COURSE_DRIVER_O2_TEST_ROOT))
+	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(LINK_TEST_ROOT)
+	@scripts/compare_results.pl ref my $(LINK_TEST_ROOT)
+	$(call run_link_course_bucket,$(COURSE_LINK_TEST_ROOT))
 
-test-debuginfo: $(TEST_DEPS)
-	@CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(DEBUGINFO_O1_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(DEBUGINFO_O1_TEST_ROOT)
-	$(call run_text_course_bucket,-O1,$(LOWIROPT_APP),$(COURSE_DEBUGINFO_O1_TEST_ROOT))
-	@CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(DEBUGINFO_O2_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(DEBUGINFO_O2_TEST_ROOT)
-	$(call run_text_course_bucket,-O2,$(LOWIROPT_APP),$(COURSE_DEBUGINFO_O2_TEST_ROOT))
-	@CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) my $(DEBUGINFO_DRIVER_O1_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(DEBUGINFO_DRIVER_O1_TEST_ROOT)
-	$(call run_text_course_bucket,--emit-lowir -gline-tables-only -O1,$(CPPGM_DRIVER_APP),$(COURSE_DEBUGINFO_DRIVER_O1_TEST_ROOT))
-	@CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) my $(DEBUGINFO_DRIVER_O2_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(DEBUGINFO_DRIVER_O2_TEST_ROOT)
-	$(call run_text_course_bucket,--emit-lowir -gline-tables-only -O2,$(CPPGM_DRIVER_APP),$(COURSE_DEBUGINFO_DRIVER_O2_TEST_ROOT))
+test-batch: $(TEST_DEPS)
+	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(LINK_TEST_ROOT)
+	@scripts/compare_results.pl ref my $(LINK_TEST_ROOT)
+	$(call run_link_course_bucket,$(COURSE_LINK_TEST_ROOT))
 
 ref-test:
-	@CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(O0_TEST_ROOT)
-	@CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(O1_TEST_ROOT)
-	@CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(O2_TEST_ROOT)
-	@CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O1_TEST_ROOT)
-	@CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O2_TEST_ROOT)
+	@CPPGM_CMAKE_COMPILER=$(REF_TEST_APP) \
+		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(LINK_TEST_ROOT)
 
-ref-test-debuginfo:
-	@CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(DEBUGINFO_O1_TEST_ROOT)
-	@CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(DEBUGINFO_O2_TEST_ROOT)
-	@CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DEBUGINFO_DRIVER_O1_TEST_ROOT)
-	@CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DEBUGINFO_DRIVER_O2_TEST_ROOT)
+ref-test-batch:
+	@CPPGM_CMAKE_COMPILER=$(REF_TEST_APP) \
+		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(LINK_TEST_ROOT)
 
-CHECK_RUN = case "$(TEST)" in \
-	$(O0_TEST_ROOT)/*) CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_APP) check "$(TEST)" ;; \
-	$(O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_APP) check "$(TEST)" ;; \
-	$(O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_APP) check "$(TEST)" ;; \
-	$(DRIVER_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check "$(TEST)" ;; \
-	$(DRIVER_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check "$(TEST)" ;; \
-	*) echo "Usage: make check TEST=$(O0_TEST_ROOT)/<file>.t | $(O1_TEST_ROOT)/<file>.t | $(O2_TEST_ROOT)/<file>.t | $(DRIVER_O1_TEST_ROOT)/<file>.t | $(DRIVER_O2_TEST_ROOT)/<file>.t"; exit 1 ;; \
-esac
+CHECK_RUN = perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) check "$(TEST)"
 include ../scripts/pa_run_check_targets.mk
 
-.PHONY: dev-shared-target ref-test ref-test-debuginfo test-debuginfo
+.PHONY: dev-shared-target ref-test ref-test-batch test-batch
 ../dev/$(TARGET):
-	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX)
+	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX)
 
 dev-shared-target:
-	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ]; then true; else $(MAKE) -C ../dev $(TARGET) cppgm++ CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX); fi
+	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ]; then true; else $(MAKE) -C ../dev $(TARGET) CXX=$(CXX); fi
 
 clean:
-	-rm -f $(TARGET) $(TARGET)-debug $(OBJ)/release/*.o $(OBJ)/debug/*.o
+	-rm -f "$(TARGET)" "$(TARGET)-debug" $(OBJ)/release/*.o $(OBJ)/debug/*.o
 
 $(RDEPDIR)/%.d: ;
 .PRECIOUS: $(RDEPDIR)/%.d

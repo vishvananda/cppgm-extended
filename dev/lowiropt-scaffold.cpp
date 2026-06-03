@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA36 `lowiropt` binary.
+// Student-facing scaffold for the PA37 `lowiropt` binary.
 
 #include "exceptions.h"
 #include "tool_help_text.h"

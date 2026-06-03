@@ -43,10 +43,10 @@ export CPPGM_TEST_RUNNER ?= 1
 export CPPGM_TEXT_TEST_TIMEOUT_SEC ?= 10
 export CPPGM_BUILD_TEST_TIMEOUT_SEC ?= 30
 export CPPGM_PROGRAM_TEST_TIMEOUT_SEC ?= 10
-DEBUGINFO_TEST_PAS ?= pa13 pa36 pa37
+DEBUGINFO_TEST_PAS ?= pa13 pa37 pa38
 
 ALL_PAS = $(patsubst %/Makefile,%,$(wildcard pa*/Makefile))
-EXPERIMENTAL_PAS ?= pa38
+EXPERIMENTAL_PAS ?= pa39
 PAS = $(filter-out $(EXPERIMENTAL_PAS),$(ALL_PAS))
 SORTED_PAS = $(shell printf '%s\n' $(PAS) | sort -t a -k 2,2n)
 TEST_REPORT_PAS ?= $(SORTED_PAS)
@@ -213,7 +213,7 @@ test-debuginfo-nobuild:
 	@echo "===== DEBUG-INFO TESTS PASSED SUCCESSFULLY! ====="
 
 inception: build
-	@$(MAKE) -C pa38 \
+	@$(MAKE) -C pa39 \
 		CXX=../dev/cppgm++ \
 		CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
 		CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)" \

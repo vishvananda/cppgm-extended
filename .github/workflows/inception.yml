@@ -1,4 +1,4 @@
-name: PA38 Inception
+name: Inception
 
 on:
   workflow_run:
@@ -120,8 +120,8 @@ jobs:
       - name: Compare cppgm++ inception
         id: compare
         run: |
-          CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa38/restored-self-driver" \
-            make -C pa38 compare-cppgm++-inception-from-restored-self \
+          CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa39/restored-self-driver" \
+            make -C pa39 compare-cppgm++-inception-from-restored-self \
             PA38_RESTORED_CPPGM_SELF="$RUNNER_TEMP/pa38-restored-self/bin/cppgm++-self" \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -130,7 +130,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "### PA38 cppgm++ inception"
+            echo "### cppgm++ inception"
             echo
             echo "- Trigger: \`${{ github.event_name }}\`"
             echo "- Selfhost run id: \`$SELFHOST_RUN_ID\`"
@@ -142,5 +142,5 @@ jobs:
           if [ "${{ steps.compare.outcome }}" != "success" ] &&
              [ "${{ github.event_name }}" = "workflow_run" ] &&
              [ "${{ github.event.workflow_run.event }}" = "pull_request" ]; then
-            echo "::warning::PA38 cppgm++ inception advisory failed for this PR."
+            echo "::warning::cppgm++ inception advisory failed for this PR."
           fi

@@ -207,7 +207,7 @@ The following are out of scope for PA32:
 
 - host C++ ABI/runtime behavior after link, which belongs in PA33
 - hosted standard-library header/source compatibility, which belongs in PA34
-- hosted header-emitted link/runtime behavior, which belongs in PA35
+- hosted header-emitted link/runtime behavior, which belongs in PA36
 - bootstrap or self-host builds
 
 ### Design Notes (Non-Normative)
