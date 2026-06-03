@@ -2,6 +2,7 @@
 
 #include "cli_batch_frontend.h"
 #include "abi_mangle.h"
+#include "abi_private_model.h"
 #include "cpp_batch_frontend.h"
 #include "cpp_driver_frontend.h"
 #include "cpp_text_generators.h"
@@ -254,7 +255,13 @@ bool append_abi_symbol_fact_cases(
     abi_mangle::AbiFactCase fact_case;
     fact_case.label = abi_fact_label_component(
         symbol.internal_symbol.empty() ? object_symbol : symbol.internal_symbol);
-    fact_case.target = target;
+    const vector<vector<string> > records =
+        abi_mangle::serialize_mangle_target_records(target);
+    fact_case.records.reserve(records.size());
+    for(size_t j = 0; j < records.size(); ++j) {
+      fact_case.records.push_back(
+          abi_mangle::parse_fact_record_words(records[j]));
+    }
     file.cases.push_back(std::move(fact_case));
     appended = true;
   }

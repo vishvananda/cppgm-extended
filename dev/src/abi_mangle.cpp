@@ -1372,7 +1372,7 @@ void parse_function_target(FunctionEncoding & function,
   parse_function_path(function, ctx, words, begin);
 }
 
-void require_no_target(const AbiFactCase & fact_case)
+void require_no_target(const model::AbiFactCase & fact_case)
 {
   if(fact_case.target.kind != ABI_MANGLE_NONE) {
     throw logic_error("ABI fact case must test exactly one mangle");
@@ -1386,7 +1386,7 @@ bool target_has_function(AbiMangleTargetKind kind)
          kind == ABI_MANGLE_VIRTUAL_BASE_THUNK;
 }
 
-FunctionEncoding & target_function(AbiFactCase & fact_case)
+FunctionEncoding & target_function(model::AbiFactCase & fact_case)
 {
   if(!target_has_function(fact_case.target.kind)) {
     throw logic_error("function modifier appears before function fact");
@@ -1394,7 +1394,7 @@ FunctionEncoding & target_function(AbiFactCase & fact_case)
   return fact_case.target.function;
 }
 
-void apply_fact_words(AbiFactCase & fact_case,
+void apply_fact_words(model::AbiFactCase & fact_case,
                       ParseContext & ctx,
                       const vector<string> & words)
 {
@@ -1406,7 +1406,7 @@ void apply_fact_words(AbiFactCase & fact_case,
     if(words.size() < 3) {
       throw logic_error("let-type requires id and type");
     }
-    AbiFact fact;
+    model::AbiFact fact;
     fact.kind = ABI_FACT_TYPE;
     fact.id = words[1];
     fact.type = parse_type_spec(ctx, words, 2);
@@ -1415,7 +1415,7 @@ void apply_fact_words(AbiFactCase & fact_case,
     return;
   }
   if(command == "let-arg") {
-    AbiFact fact;
+    model::AbiFact fact;
     fact.kind = ABI_FACT_TEMPLATE_ARGUMENT;
     fact.id = words[1];
     fact.template_argument = parse_template_argument_fact(ctx, words);
@@ -1424,7 +1424,7 @@ void apply_fact_words(AbiFactCase & fact_case,
     return;
   }
   if(command == "let-expr") {
-    AbiFact fact;
+    model::AbiFact fact;
     fact.kind = ABI_FACT_EXPRESSION;
     fact.id = words[1];
     fact.expression = parse_expression_fact(ctx, words);
@@ -1436,7 +1436,7 @@ void apply_fact_words(AbiFactCase & fact_case,
     if(words.size() < 4) {
       throw logic_error("let-context requires id and context data");
     }
-    AbiFact fact;
+    model::AbiFact fact;
     fact.kind = ABI_FACT_LOCAL_CONTEXT;
     fact.id = words[1];
     if(words[2] == "raw") {
@@ -1463,7 +1463,7 @@ void apply_fact_words(AbiFactCase & fact_case,
     if(words.size() < 4) {
       throw logic_error("let-entity requires id, kind, and entity data");
     }
-    AbiFact fact;
+    model::AbiFact fact;
     fact.kind = ABI_FACT_ENTITY;
     fact.id = words[1];
     if(words[2] == "function") {
@@ -1590,7 +1590,8 @@ void apply_fact_words(AbiFactCase & fact_case,
       throw logic_error("name-source requires source name and optional substitution");
     }
     target_function(fact_case).name_components.push_back(
-        FunctionNameComponent::source(words[1], words.size() == 3 ? dash_empty(words[2]) : string()));
+        FunctionNameComponent::source(dash_empty(words[1]),
+                                      words.size() == 3 ? dash_empty(words[2]) : string()));
     return;
   }
   if(command == "name-std") {
@@ -1603,7 +1604,7 @@ void apply_fact_words(AbiFactCase & fact_case,
     }
     vector<string> refs(words.begin() + 6, words.end());
     target_function(fact_case).name_components.push_back(
-        FunctionNameComponent::template_component(words[1],
+        FunctionNameComponent::template_component(dash_empty(words[1]),
                                                   dash_empty(words[2]),
                                                   dash_empty(words[3]),
                                                   template_args_from_refs(ctx, refs),
@@ -1754,7 +1755,7 @@ string variable_symbol(const string & qualified_name)
   return out;
 }
 
-string mangle_case(const AbiFactCase & fact_case)
+string mangle_case(const model::AbiFactCase & fact_case)
 {
   switch(fact_case.target.kind) {
   case ABI_MANGLE_TYPE:
@@ -1844,7 +1845,7 @@ string mangle_case(const AbiFactCase & fact_case)
   throw logic_error("ABI fact case must test exactly one mangle");
 }
 
-void flush_case(AbiFactFile & file, AbiFactCase & pending, ParseContext & ctx)
+void flush_case(model::AbiFactFile & file, model::AbiFactCase & pending, ParseContext & ctx)
 {
   if(pending.label.empty() && pending.facts.empty() &&
      pending.target.kind == ABI_MANGLE_NONE) {
@@ -1854,14 +1855,14 @@ void flush_case(AbiFactFile & file, AbiFactCase & pending, ParseContext & ctx)
     throw logic_error("case '" + pending.label + "' has no ABI fact");
   }
   file.cases.push_back(pending);
-  pending = AbiFactCase();
+  pending = model::AbiFactCase();
   ctx = ParseContext();
 }
 
-AbiFactFile parse_fact_stream(istream & in, const string & input_name)
+model::AbiFactFile parse_fact_stream(istream & in, const string & input_name)
 {
-  AbiFactFile file;
-  AbiFactCase pending;
+  model::AbiFactFile file;
+  model::AbiFactCase pending;
   ParseContext ctx;
   string line;
   size_t line_number = 0;
@@ -1989,6 +1990,22 @@ bool qualified_function_name(const FunctionEncoding & function, string & out)
   return true;
 }
 
+string fact_word_or_dash(const string & word)
+{
+  if(word.empty()) {
+    return "-";
+  }
+  string out;
+  out.reserve(word.size());
+  for(size_t i = 0; i < word.size(); ++i) {
+    const unsigned char ch = static_cast<unsigned char>(word[i]);
+    if(!isspace(ch)) {
+      out.push_back(word[i]);
+    }
+  }
+  return out.empty() ? "-" : out;
+}
+
 struct FactSerializer
 {
   vector<vector<string> > lines;
@@ -2014,7 +2031,7 @@ struct FactSerializer
     }
   }
 
-  void reserve_case_ids(const AbiFactCase & fact_case)
+  void reserve_case_ids(const model::AbiFactCase & fact_case)
   {
     for(size_t i = 0; i < fact_case.facts.size(); ++i) {
       if(!fact_case.facts[i].id.empty()) {
@@ -2686,7 +2703,7 @@ struct FactSerializer
     add_line(words);
   }
 
-  void emit_existing_fact(const AbiFact & fact)
+  void emit_existing_fact(const model::AbiFact & fact)
   {
     const string id = fact.id.empty() ?
         next_id("__abi_fact", next_type_id) :
@@ -2745,22 +2762,14 @@ struct FactSerializer
           words.push_back("name-std");
         } else if(component.template_arguments.empty()) {
           words.push_back("name-source");
-          words.push_back(component.source_name);
-          words.push_back(component.substitution_name.empty() ?
-                          "-" :
-                          component.substitution_name);
+          words.push_back(fact_word_or_dash(component.source_name));
+          words.push_back(fact_word_or_dash(component.substitution_name));
         } else {
           words.push_back("name-template");
-          words.push_back(component.source_name);
-          words.push_back(component.substitution_name.empty() ?
-                          "-" :
-                          component.substitution_name);
-          words.push_back(component.complete_substitution_name.empty() ?
-                          "-" :
-                          component.complete_substitution_name);
-          words.push_back(component.standard_substitution.empty() ?
-                          "-" :
-                          component.standard_substitution);
+          words.push_back(fact_word_or_dash(component.source_name));
+          words.push_back(fact_word_or_dash(component.substitution_name));
+          words.push_back(fact_word_or_dash(component.complete_substitution_name));
+          words.push_back(fact_word_or_dash(component.standard_substitution));
           words.push_back(bool_fact_word(
               component.standard_substitution_includes_arguments));
           for(size_t j = 0; j < component.template_arguments.size(); ++j) {
@@ -2956,17 +2965,11 @@ struct FactSerializer
 
 }  // namespace
 
-AbiFactFile parse_fact_text(const string & text)
-{
-  istringstream in(text);
-  return parse_fact_stream(in, "<string>");
-}
-
-string serialize_fact_file(const AbiFactFile & file)
+string serialize_model_fact_file(const model::AbiFactFile & file)
 {
   ostringstream out;
   for(size_t i = 0; i < file.cases.size(); ++i) {
-    const AbiFactCase & fact_case = file.cases[i];
+    const model::AbiFactCase & fact_case = file.cases[i];
     if(!fact_case.label.empty()) {
       out << "case " << fact_case.label << "\n";
     }
@@ -2986,13 +2989,1610 @@ string serialize_fact_file(const AbiFactFile & file)
   return out.str();
 }
 
-string mangle_fact_file(const AbiFactFile & file)
+string mangle_model_fact_file(const model::AbiFactFile & file)
 {
   ostringstream out;
   for(size_t i = 0; i < file.cases.size(); ++i) {
     out << mangle_case(file.cases[i]) << "\n";
   }
   return out.str();
+}
+
+vector<vector<string> > serialize_mangle_target_records(
+    const AbiMangleTarget & target)
+{
+  FactSerializer serializer;
+  serializer.append_target(target);
+  return serializer.lines;
+}
+
+bool context_has_id(const vector<string> & ids, const string & id)
+{
+  return find(ids.begin(), ids.end(), id) != ids.end();
+}
+
+struct PublicFactParseContext
+{
+  vector<string> type_ids;
+  vector<string> template_argument_ids;
+  vector<string> expression_ids;
+  vector<string> context_ids;
+  vector<string> entity_ids;
+};
+
+void remember_id(vector<string> & ids, const string & id)
+{
+  if(!id.empty() && !context_has_id(ids, id)) {
+    ids.push_back(id);
+  }
+}
+
+AbiArrayBound parse_public_array_bound(const string & word)
+{
+  AbiArrayBound bound;
+  if(starts_with(word, "raw:")) {
+    bound.kind = ABI_ARRAY_BOUND_RAW;
+    bound.value = word.substr(4);
+  } else if(starts_with(word, "expr:")) {
+    bound.kind = ABI_ARRAY_BOUND_EXPRESSION;
+    bound.value = word.substr(5);
+  } else {
+    bound.kind = ABI_ARRAY_BOUND_VALUE;
+    bound.value = word;
+  }
+  return bound;
+}
+
+string word_from_public_array_bound(const AbiArrayBound & bound)
+{
+  switch(bound.kind) {
+  case ABI_ARRAY_BOUND_VALUE: return bound.value;
+  case ABI_ARRAY_BOUND_RAW: return string("raw:") + bound.value;
+  case ABI_ARRAY_BOUND_EXPRESSION: return string("expr:") + bound.value;
+  }
+  return bound.value;
+}
+
+AbiType parse_public_single_type_token(const string & text)
+{
+  if(starts_with(text, "ptr:")) {
+    AbiType type;
+    type.kind = ABI_TYPE_POINTER;
+    type.types.push_back(parse_public_single_type_token(text.substr(4)));
+    return type;
+  }
+  if(starts_with(text, "ref:")) {
+    AbiType type;
+    type.kind = ABI_TYPE_LVALUE_REFERENCE;
+    type.types.push_back(parse_public_single_type_token(text.substr(4)));
+    return type;
+  }
+  if(starts_with(text, "rref:")) {
+    AbiType type;
+    type.kind = ABI_TYPE_RVALUE_REFERENCE;
+    type.types.push_back(parse_public_single_type_token(text.substr(5)));
+    return type;
+  }
+  if(starts_with(text, "const:")) {
+    AbiType type;
+    type.kind = ABI_TYPE_CV;
+    type.is_const = true;
+    type.types.push_back(parse_public_single_type_token(text.substr(6)));
+    return type;
+  }
+  if(starts_with(text, "volatile:")) {
+    AbiType type;
+    type.kind = ABI_TYPE_CV;
+    type.is_volatile = true;
+    type.types.push_back(parse_public_single_type_token(text.substr(9)));
+    return type;
+  }
+  if(starts_with(text, "vendor:")) {
+    const string rest = text.substr(7);
+    const size_t pos = rest.find(':');
+    if(pos == string::npos || pos == 0 || pos + 1 >= rest.size()) {
+      throw logic_error("vendor type requires vendor:<qualifier>:<operand>");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_VENDOR_QUALIFIED;
+    type.name = rest.substr(0, pos);
+    type.types.push_back(parse_public_single_type_token(rest.substr(pos + 1)));
+    return type;
+  }
+  if(starts_with(text, "transform:")) {
+    const string rest = text.substr(10);
+    const size_t pos = rest.find(':');
+    if(pos == string::npos || pos == 0 || pos + 1 >= rest.size()) {
+      throw logic_error("builtin transform type requires transform:<name>:<operand>");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_BUILTIN_TRANSFORM;
+    type.name = rest.substr(0, pos);
+    type.types.push_back(parse_public_single_type_token(rest.substr(pos + 1)));
+    return type;
+  }
+  if(starts_with(text, "array:")) {
+    const string rest = text.substr(6);
+    const size_t pos = rest.find(':');
+    if(pos == string::npos || pos == 0) {
+      throw logic_error("array type requires array:<bound>:<element>");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_ARRAY;
+    type.array_bound = parse_public_array_bound(rest.substr(0, pos));
+    type.types.push_back(parse_public_single_type_token(rest.substr(pos + 1)));
+    return type;
+  }
+  if(starts_with(text, "memberptr:")) {
+    const string rest = text.substr(10);
+    const size_t pos = rest.rfind(':');
+    if(pos == string::npos || pos == 0 || pos + 1 >= rest.size()) {
+      throw logic_error("member pointer type requires memberptr:<owner>:<member-type>");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_MEMBER_POINTER;
+    type.types.push_back(parse_public_single_type_token(rest.substr(0, pos)));
+    type.types.push_back(parse_public_single_type_token(rest.substr(pos + 1)));
+    return type;
+  }
+  if(starts_with(text, "named:")) {
+    AbiType type;
+    type.kind = ABI_TYPE_NAMED;
+    type.name = text.substr(6);
+    return type;
+  }
+  AbiType type;
+  type.kind = builtin_code_from_name(text).empty() ?
+      ABI_TYPE_NAME_OR_REFERENCE :
+      ABI_TYPE_BUILTIN;
+  type.name = text;
+  return type;
+}
+
+AbiType parse_public_type_spec(const vector<string> & words, size_t begin)
+{
+  if(begin >= words.size()) {
+    throw logic_error("missing ABI fact type");
+  }
+  if(begin + 1 == words.size()) {
+    return parse_public_single_type_token(words[begin]);
+  }
+
+  const string & kind = words[begin];
+  if(kind == "template-param" || kind == "template-param-subst") {
+    if(begin + 2 != words.size()) {
+      throw logic_error("template-param type requires one index");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_TEMPLATE_PARAMETER;
+    type.index = parse_index(words[begin + 1]);
+    type.substitutable = kind == "template-param-subst";
+    return type;
+  }
+  if(kind == "ptr" || kind == "ref" || kind == "rref" ||
+     kind == "const" || kind == "volatile" || kind == "const-volatile" ||
+     kind == "cv" || kind == "pack") {
+    if(begin + 2 != words.size()) {
+      throw logic_error(kind + " type requires one operand");
+    }
+    AbiType type;
+    if(kind == "ptr") { type.kind = ABI_TYPE_POINTER; }
+    else if(kind == "ref") { type.kind = ABI_TYPE_LVALUE_REFERENCE; }
+    else if(kind == "rref") { type.kind = ABI_TYPE_RVALUE_REFERENCE; }
+    else if(kind == "pack") { type.kind = ABI_TYPE_PACK_EXPANSION; }
+    else {
+      type.kind = ABI_TYPE_CV;
+      type.is_const = kind == "const" || kind == "const-volatile" || kind == "cv";
+      type.is_volatile = kind == "volatile" || kind == "const-volatile" || kind == "cv";
+    }
+    type.types.push_back(parse_public_single_type_token(words[begin + 1]));
+    return type;
+  }
+  if(kind == "vendor" || kind == "transform" || kind == "builtin-transform") {
+    if(begin + 3 != words.size()) {
+      throw logic_error(kind + " type requires name and operand");
+    }
+    AbiType type;
+    type.kind = kind == "vendor" ?
+        ABI_TYPE_VENDOR_QUALIFIED :
+        ABI_TYPE_BUILTIN_TRANSFORM;
+    type.name = words[begin + 1];
+    type.types.push_back(parse_public_single_type_token(words[begin + 2]));
+    return type;
+  }
+  if(kind == "array") {
+    if(begin + 3 != words.size()) {
+      throw logic_error("array type requires bound and element type");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_ARRAY;
+    type.array_bound = parse_public_array_bound(words[begin + 1]);
+    type.types.push_back(parse_public_single_type_token(words[begin + 2]));
+    return type;
+  }
+  if(kind == "function-type" || kind == "function-type-variadic") {
+    if(begin + 2 >= words.size()) {
+      throw logic_error("function-type requires a result type");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_FUNCTION;
+    type.variadic = kind == "function-type-variadic";
+    type.types.push_back(parse_public_single_type_token(words[begin + 1]));
+    for(size_t i = begin + 2; i < words.size(); ++i) {
+      if(words[i] == "variadic" || words[i] == "varargs") {
+        type.variadic = true;
+      } else if(words[i] == "lvalue-ref" || words[i] == "ref") {
+        type.lvalue_ref = true;
+      } else if(words[i] == "rvalue-ref" || words[i] == "rref") {
+        type.rvalue_ref = true;
+      } else {
+        type.types.push_back(parse_public_single_type_token(words[i]));
+      }
+    }
+    return type;
+  }
+  if(kind == "member-pointer") {
+    if(begin + 3 != words.size()) {
+      throw logic_error("member-pointer type requires owner and member type");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_MEMBER_POINTER;
+    type.types.push_back(parse_public_single_type_token(words[begin + 1]));
+    type.types.push_back(parse_public_single_type_token(words[begin + 2]));
+    return type;
+  }
+  if(kind == "name") {
+    if(begin + 2 != words.size()) {
+      throw logic_error("name type requires one qualified name");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_NAMED;
+    type.name = words[begin + 1];
+    return type;
+  }
+  if(kind == "template" || kind == "std-template") {
+    const size_t name_index = kind == "template" ? begin + 1 : begin + 3;
+    if(name_index >= words.size()) {
+      throw logic_error(kind + " type requires a qualified template name");
+    }
+    AbiType type;
+    type.kind = kind == "template" ?
+        ABI_TYPE_TEMPLATE_SPECIALIZATION :
+        ABI_TYPE_STD_TEMPLATE_SPECIALIZATION;
+    if(kind == "std-template") {
+      if(begin + 4 > words.size()) {
+        throw logic_error("std-template type requires substitution, includes flag, and name");
+      }
+      type.standard_substitution = dash_empty(words[begin + 1]);
+      type.standard_substitution_includes_arguments = boolean_word(words[begin + 2]);
+    }
+    type.name = words[name_index];
+    type.argument_refs.assign(words.begin() + name_index + 1, words.end());
+    return type;
+  }
+  if(kind == "template-param-template") {
+    if(begin + 3 > words.size()) {
+      throw logic_error("template-param-template type requires index and template arguments");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_TEMPLATE_PARAMETER_SPECIALIZATION;
+    type.index = parse_index(words[begin + 1]);
+    type.argument_refs.assign(words.begin() + begin + 2, words.end());
+    return type;
+  }
+  if(kind == "member" || kind == "member-template") {
+    if(begin + 3 > words.size()) {
+      throw logic_error(kind + " type requires owner type and name");
+    }
+    AbiType type;
+    type.kind = kind == "member" ?
+        ABI_TYPE_MEMBER :
+        ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION;
+    type.types.push_back(parse_public_single_type_token(words[begin + 1]));
+    type.name = words[begin + 2];
+    type.argument_refs.assign(words.begin() + begin + 3, words.end());
+    return type;
+  }
+  if(kind == "decltype") {
+    if(begin + 2 != words.size()) {
+      throw logic_error("decltype type requires one expression reference");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_DECLTYPE_EXPRESSION;
+    type.expression_ref = words[begin + 1];
+    return type;
+  }
+  if(kind == "lambda-closure") {
+    if(begin + 3 > words.size()) {
+      throw logic_error("lambda-closure type requires context and discriminator");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_LAMBDA_CLOSURE;
+    type.context_ref = words[begin + 1];
+    type.discriminator = words[begin + 2];
+    for(size_t i = begin + 3; i < words.size(); ++i) {
+      type.types.push_back(parse_public_single_type_token(words[i]));
+    }
+    return type;
+  }
+  if(kind == "local-type") {
+    if(begin + 4 != words.size()) {
+      throw logic_error("local-type requires context, source name, discriminator");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_LOCAL_TYPE;
+    type.context_ref = words[begin + 1];
+    type.name = words[begin + 2];
+    type.discriminator = words[begin + 3];
+    return type;
+  }
+  throw logic_error("unknown ABI fact type kind '" + kind + "'");
+}
+
+string type_token_from_public_type(const AbiType & type)
+{
+  switch(type.kind) {
+  case ABI_TYPE_NAME_OR_REFERENCE:
+  case ABI_TYPE_BUILTIN:
+    return type.name;
+  case ABI_TYPE_NAMED:
+    return string("named:") + type.name;
+  case ABI_TYPE_POINTER:
+    return string("ptr:") + type_token_from_public_type(type.types.at(0));
+  case ABI_TYPE_LVALUE_REFERENCE:
+    return string("ref:") + type_token_from_public_type(type.types.at(0));
+  case ABI_TYPE_RVALUE_REFERENCE:
+    return string("rref:") + type_token_from_public_type(type.types.at(0));
+  case ABI_TYPE_CV:
+    if(type.is_const && !type.is_volatile) {
+      return string("const:") + type_token_from_public_type(type.types.at(0));
+    }
+    if(!type.is_const && type.is_volatile) {
+      return string("volatile:") + type_token_from_public_type(type.types.at(0));
+    }
+    break;
+  case ABI_TYPE_VENDOR_QUALIFIED:
+    return string("vendor:") + type.name + ":" +
+        type_token_from_public_type(type.types.at(0));
+  case ABI_TYPE_ARRAY:
+    return string("array:") + word_from_public_array_bound(type.array_bound) +
+        ":" + type_token_from_public_type(type.types.at(0));
+  case ABI_TYPE_BUILTIN_TRANSFORM:
+    return string("transform:") + type.name + ":" +
+        type_token_from_public_type(type.types.at(0));
+  case ABI_TYPE_MEMBER_POINTER:
+    return string("memberptr:") + type_token_from_public_type(type.types.at(0)) +
+        ":" + type_token_from_public_type(type.types.at(1));
+  case ABI_TYPE_TEMPLATE_PARAMETER:
+  case ABI_TYPE_PACK_EXPANSION:
+  case ABI_TYPE_FUNCTION:
+  case ABI_TYPE_TEMPLATE_SPECIALIZATION:
+  case ABI_TYPE_TEMPLATE_PARAMETER_SPECIALIZATION:
+  case ABI_TYPE_STD_TEMPLATE_SPECIALIZATION:
+  case ABI_TYPE_MEMBER:
+  case ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION:
+  case ABI_TYPE_DECLTYPE_EXPRESSION:
+  case ABI_TYPE_LAMBDA_CLOSURE:
+  case ABI_TYPE_LOCAL_TYPE:
+    break;
+  }
+  throw logic_error("ABI type cannot be written as one type token");
+}
+
+void append_public_type_spec_words(const AbiType & type, vector<string> & words)
+{
+  switch(type.kind) {
+  case ABI_TYPE_NAME_OR_REFERENCE:
+  case ABI_TYPE_NAMED:
+  case ABI_TYPE_BUILTIN:
+  case ABI_TYPE_POINTER:
+  case ABI_TYPE_LVALUE_REFERENCE:
+  case ABI_TYPE_RVALUE_REFERENCE:
+  case ABI_TYPE_VENDOR_QUALIFIED:
+  case ABI_TYPE_ARRAY:
+  case ABI_TYPE_BUILTIN_TRANSFORM:
+  case ABI_TYPE_MEMBER_POINTER:
+    words.push_back(type_token_from_public_type(type));
+    return;
+  case ABI_TYPE_TEMPLATE_PARAMETER:
+    words.push_back(type.substitutable ? "template-param-subst" : "template-param");
+    words.push_back(to_string(type.index));
+    return;
+  case ABI_TYPE_CV:
+    if(type.is_const && type.is_volatile) {
+      words.push_back("const-volatile");
+    } else if(type.is_const) {
+      words.push_back("const");
+    } else {
+      words.push_back("volatile");
+    }
+    words.push_back(type_token_from_public_type(type.types.at(0)));
+    return;
+  case ABI_TYPE_PACK_EXPANSION:
+    words.push_back("pack");
+    words.push_back(type_token_from_public_type(type.types.at(0)));
+    return;
+  case ABI_TYPE_FUNCTION:
+    words.push_back(type.variadic ? "function-type-variadic" : "function-type");
+    for(size_t i = 0; i < type.types.size(); ++i) {
+      words.push_back(type_token_from_public_type(type.types[i]));
+    }
+    if(type.lvalue_ref) { words.push_back("lvalue-ref"); }
+    if(type.rvalue_ref) { words.push_back("rvalue-ref"); }
+    return;
+  case ABI_TYPE_TEMPLATE_SPECIALIZATION:
+    words.push_back("template");
+    words.push_back(type.name);
+    words.insert(words.end(), type.argument_refs.begin(), type.argument_refs.end());
+    return;
+  case ABI_TYPE_TEMPLATE_PARAMETER_SPECIALIZATION:
+    words.push_back("template-param-template");
+    words.push_back(to_string(type.index));
+    words.insert(words.end(), type.argument_refs.begin(), type.argument_refs.end());
+    return;
+  case ABI_TYPE_STD_TEMPLATE_SPECIALIZATION:
+    words.push_back("std-template");
+    words.push_back(type.standard_substitution.empty() ?
+                    "-" :
+                    type.standard_substitution);
+    words.push_back(type.standard_substitution_includes_arguments ? "1" : "0");
+    words.push_back(type.name);
+    words.insert(words.end(), type.argument_refs.begin(), type.argument_refs.end());
+    return;
+  case ABI_TYPE_MEMBER:
+    words.push_back("member");
+    words.push_back(type_token_from_public_type(type.types.at(0)));
+    words.push_back(type.name);
+    return;
+  case ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION:
+    words.push_back("member-template");
+    words.push_back(type_token_from_public_type(type.types.at(0)));
+    words.push_back(type.name);
+    words.insert(words.end(), type.argument_refs.begin(), type.argument_refs.end());
+    return;
+  case ABI_TYPE_DECLTYPE_EXPRESSION:
+    words.push_back("decltype");
+    words.push_back(type.expression_ref);
+    return;
+  case ABI_TYPE_LAMBDA_CLOSURE:
+    words.push_back("lambda-closure");
+    words.push_back(type.context_ref);
+    words.push_back(type.discriminator);
+    for(size_t i = 0; i < type.types.size(); ++i) {
+      words.push_back(type_token_from_public_type(type.types[i]));
+    }
+    return;
+  case ABI_TYPE_LOCAL_TYPE:
+    words.push_back("local-type");
+    words.push_back(type.context_ref);
+    words.push_back(type.name);
+    words.push_back(type.discriminator);
+    return;
+  }
+}
+
+AbiTemplateArgument parse_public_template_argument(const vector<string> & words)
+{
+  if(words.size() < 4) {
+    throw logic_error("let-arg requires id and argument");
+  }
+  AbiTemplateArgument argument;
+  const string & kind = words[2];
+  if(kind == "type") {
+    argument.kind = ABI_TEMPLATE_ARGUMENT_TYPE;
+    argument.type = parse_public_type_spec(words, 3);
+    return argument;
+  }
+  if(kind == "value") {
+    if(words.size() != 5) {
+      throw logic_error("value template argument requires type and integer");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_VALUE;
+    argument.type = parse_public_single_type_token(words[3]);
+    argument.value = parse_signed_integer(words[4]);
+    return argument;
+  }
+  if(kind == "dependent-value") {
+    if(words.size() != 6) {
+      throw logic_error("dependent-value template argument requires parameter type, value type or -, and integer");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_DEPENDENT_VALUE;
+    argument.type = parse_public_single_type_token(words[3]);
+    argument.has_value_type = words[4] != "-";
+    if(argument.has_value_type) {
+      argument.value_type = parse_public_single_type_token(words[4]);
+    }
+    argument.value = parse_signed_integer(words[5]);
+    return argument;
+  }
+  if(kind == "untyped-value") {
+    if(words.size() != 4) {
+      throw logic_error("untyped-value template argument requires an integer");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_UNTYPED_VALUE;
+    argument.value = parse_signed_integer(words[3]);
+    return argument;
+  }
+  if(kind == "expression") {
+    if(words.size() != 4) {
+      throw logic_error("expression template argument requires one expression");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_EXPRESSION;
+    argument.entity_ref = words[3];
+    return argument;
+  }
+  if(kind == "template-entity") {
+    if(words.size() != 4) {
+      throw logic_error("template-entity template argument requires a qualified name");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_TEMPLATE_ENTITY;
+    argument.name = words[3];
+    return argument;
+  }
+  if(kind == "member-template-entity") {
+    if(words.size() < 5 || words.size() > 6) {
+      throw logic_error("member-template-entity template argument requires owner type, member name, and optional substitution");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_MEMBER_TEMPLATE_ENTITY;
+    argument.owner_type = parse_public_single_type_token(words[3]);
+    argument.name = words[4];
+    argument.substitution = words.size() == 6 ? dash_empty(words[5]) : string();
+    return argument;
+  }
+  if(kind == "template-param-template") {
+    if(words.size() != 4) {
+      throw logic_error("template-param-template template argument requires one index");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_TEMPLATE_PARAMETER_TEMPLATE;
+    argument.index = parse_index(words[3]);
+    return argument;
+  }
+  if(kind == "external-address" || kind == "external-reference") {
+    if(words.size() != 4) {
+      throw logic_error(kind + " template argument requires a raw symbol");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_EXTERNAL_ENTITY;
+    argument.address_of = kind == "external-address";
+    argument.symbol = words[3];
+    return argument;
+  }
+  if(kind == "member-external-address" || kind == "member-external-reference") {
+    if(words.size() < 12) {
+      throw logic_error(kind + " template argument requires symbol, owner, member, function flag, cv/ref flags, variadic flag, and optional parameters");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_MEMBER_EXTERNAL_ENTITY;
+    argument.address_of = kind == "member-external-address";
+    argument.symbol = words[3];
+    argument.owner_type = parse_public_single_type_token(words[4]);
+    argument.name = words[5];
+    argument.member_is_function = boolean_word(words[6]);
+    argument.member_function_const = boolean_word(words[7]);
+    argument.member_function_volatile = boolean_word(words[8]);
+    argument.member_function_lvalue_ref = boolean_word(words[9]);
+    argument.member_function_rvalue_ref = boolean_word(words[10]);
+    argument.member_function_variadic = boolean_word(words[11]);
+    for(size_t i = 12; i < words.size(); ++i) {
+      argument.parameter_types.push_back(parse_public_single_type_token(words[i]));
+    }
+    return argument;
+  }
+  if(kind == "entity-address" || kind == "entity-reference") {
+    if(words.size() != 4) {
+      throw logic_error(kind + " template argument requires one entity");
+    }
+    argument.kind = ABI_TEMPLATE_ARGUMENT_ENTITY;
+    argument.address_of = kind == "entity-address";
+    argument.entity_ref = words[3];
+    return argument;
+  }
+  if(kind == "pack") {
+    argument.kind = ABI_TEMPLATE_ARGUMENT_PACK;
+    argument.argument_refs.assign(words.begin() + 3, words.end());
+    return argument;
+  }
+  throw logic_error("unknown ABI fact template argument kind '" + kind + "'");
+}
+
+void append_template_argument_words(const AbiTemplateArgument & argument,
+                                    vector<string> & words)
+{
+  switch(argument.kind) {
+  case ABI_TEMPLATE_ARGUMENT_TYPE:
+    words.push_back("type");
+    append_public_type_spec_words(argument.type, words);
+    return;
+  case ABI_TEMPLATE_ARGUMENT_VALUE:
+    words.push_back("value");
+    words.push_back(type_token_from_public_type(argument.type));
+    words.push_back(to_string(argument.value));
+    return;
+  case ABI_TEMPLATE_ARGUMENT_DEPENDENT_VALUE:
+    words.push_back("dependent-value");
+    words.push_back(type_token_from_public_type(argument.type));
+    words.push_back(argument.has_value_type ?
+                    type_token_from_public_type(argument.value_type) :
+                    "-");
+    words.push_back(to_string(argument.value));
+    return;
+  case ABI_TEMPLATE_ARGUMENT_UNTYPED_VALUE:
+    words.push_back("untyped-value");
+    words.push_back(to_string(argument.value));
+    return;
+  case ABI_TEMPLATE_ARGUMENT_EXPRESSION:
+    words.push_back("expression");
+    words.push_back(argument.entity_ref);
+    return;
+  case ABI_TEMPLATE_ARGUMENT_TEMPLATE_ENTITY:
+    words.push_back("template-entity");
+    words.push_back(argument.name);
+    return;
+  case ABI_TEMPLATE_ARGUMENT_MEMBER_TEMPLATE_ENTITY:
+    words.push_back("member-template-entity");
+    words.push_back(type_token_from_public_type(argument.owner_type));
+    words.push_back(argument.name);
+    if(!argument.substitution.empty()) {
+      words.push_back(argument.substitution);
+    }
+    return;
+  case ABI_TEMPLATE_ARGUMENT_TEMPLATE_PARAMETER_TEMPLATE:
+    words.push_back("template-param-template");
+    words.push_back(to_string(argument.index));
+    return;
+  case ABI_TEMPLATE_ARGUMENT_EXTERNAL_ENTITY:
+    words.push_back(argument.address_of ?
+                    "external-address" :
+                    "external-reference");
+    words.push_back(argument.symbol);
+    return;
+  case ABI_TEMPLATE_ARGUMENT_MEMBER_EXTERNAL_ENTITY:
+    words.push_back(argument.address_of ?
+                    "member-external-address" :
+                    "member-external-reference");
+    words.push_back(argument.symbol);
+    words.push_back(type_token_from_public_type(argument.owner_type));
+    words.push_back(argument.name);
+    words.push_back(argument.member_is_function ? "1" : "0");
+    words.push_back(argument.member_function_const ? "1" : "0");
+    words.push_back(argument.member_function_volatile ? "1" : "0");
+    words.push_back(argument.member_function_lvalue_ref ? "1" : "0");
+    words.push_back(argument.member_function_rvalue_ref ? "1" : "0");
+    words.push_back(argument.member_function_variadic ? "1" : "0");
+    for(size_t i = 0; i < argument.parameter_types.size(); ++i) {
+      words.push_back(type_token_from_public_type(argument.parameter_types[i]));
+    }
+    return;
+  case ABI_TEMPLATE_ARGUMENT_ENTITY:
+    words.push_back(argument.address_of ? "entity-address" : "entity-reference");
+    words.push_back(argument.entity_ref);
+    return;
+  case ABI_TEMPLATE_ARGUMENT_PACK:
+    words.push_back("pack");
+    words.insert(words.end(),
+                 argument.argument_refs.begin(),
+                 argument.argument_refs.end());
+    return;
+  }
+}
+
+AbiDependentExpression parse_public_expression(const vector<string> & words)
+{
+  if(words.size() < 3) {
+    throw logic_error("let-expr requires id and expression");
+  }
+  AbiDependentExpression expression;
+  const string & kind = words[2];
+  if(kind == "template-param" || kind == "function-param") {
+    if(words.size() != 4) {
+      throw logic_error(kind + " expression requires one index");
+    }
+    expression.kind = kind == "template-param" ?
+        ABI_EXPRESSION_TEMPLATE_PARAMETER :
+        ABI_EXPRESSION_FUNCTION_PARAMETER;
+    expression.index = parse_index(words[3]);
+    return expression;
+  }
+  if(kind == "literal") {
+    if(words.size() != 4) { throw logic_error("literal expression requires one value"); }
+    expression.kind = ABI_EXPRESSION_LITERAL;
+    expression.text = words[3];
+    return expression;
+  }
+  if(kind == "integral-value") {
+    if(words.size() != 5) { throw logic_error("integral-value expression requires type and value"); }
+    expression.kind = ABI_EXPRESSION_INTEGRAL_VALUE;
+    expression.type = parse_public_single_type_token(words[3]);
+    expression.value = parse_signed_integer(words[4]);
+    return expression;
+  }
+  if(kind == "unary" || kind == "binary" || kind == "conditional") {
+    expression.kind = kind == "unary" ? ABI_EXPRESSION_UNARY :
+                      kind == "binary" ? ABI_EXPRESSION_BINARY :
+                                         ABI_EXPRESSION_CONDITIONAL;
+    expression.op = kind == "conditional" ? string() : words.at(3);
+    const size_t begin = kind == "conditional" ? 3 : 4;
+    expression.expression_refs.assign(words.begin() + begin, words.end());
+    return expression;
+  }
+  if(kind == "pack") {
+    if(words.size() != 4) { throw logic_error("pack expression requires one operand"); }
+    expression.kind = ABI_EXPRESSION_PACK_EXPANSION;
+    expression.expression_refs.push_back(words[3]);
+    return expression;
+  }
+  if(kind == "call") {
+    if(words.size() < 4) { throw logic_error("call expression requires a callee"); }
+    expression.kind = ABI_EXPRESSION_CALL;
+    expression.expression_refs.assign(words.begin() + 3, words.end());
+    return expression;
+  }
+  if(kind == "conversion") {
+    if(words.size() < 4) { throw logic_error("conversion expression requires type"); }
+    expression.kind = ABI_EXPRESSION_CONVERSION;
+    expression.type = parse_public_single_type_token(words[3]);
+    expression.expression_refs.assign(words.begin() + 4, words.end());
+    return expression;
+  }
+  if(kind == "cast") {
+    if(words.size() != 6) { throw logic_error("cast expression requires operator, type, and operand"); }
+    expression.kind = ABI_EXPRESSION_CAST;
+    expression.op = words[3];
+    expression.type = parse_public_single_type_token(words[4]);
+    expression.expression_refs.push_back(words[5]);
+    return expression;
+  }
+  if(kind == "template-id") {
+    if(words.size() < 4) { throw logic_error("template-id expression requires name and arguments"); }
+    expression.kind = ABI_EXPRESSION_TEMPLATE_ID;
+    expression.text = words[3];
+    expression.argument_refs.assign(words.begin() + 4, words.end());
+    return expression;
+  }
+  if(kind == "type-trait") {
+    if(words.size() < 4) { throw logic_error("type-trait expression requires name and types"); }
+    expression.kind = ABI_EXPRESSION_TYPE_TRAIT;
+    expression.text = words[3];
+    for(size_t i = 4; i < words.size(); ++i) {
+      expression.type_arguments.push_back(parse_public_single_type_token(words[i]));
+    }
+    return expression;
+  }
+  if(kind == "sizeof-type") {
+    if(words.size() < 4) { throw logic_error("sizeof-type expression requires a type"); }
+    expression.kind = ABI_EXPRESSION_SIZEOF_TYPE;
+    expression.type = parse_public_type_spec(words, 3);
+    return expression;
+  }
+  if(kind == "member") {
+    if(words.size() < 6) { throw logic_error("member expression requires owner type, close flag, name, and optional template arguments"); }
+    expression.kind = ABI_EXPRESSION_MEMBER;
+    expression.type = parse_public_single_type_token(words[3]);
+    expression.close_member_owner = boolean_word(words[4]);
+    expression.text = words[5];
+    expression.argument_refs.assign(words.begin() + 6, words.end());
+    return expression;
+  }
+  if(kind == "object-member") {
+    if(words.size() < 6) { throw logic_error("object-member expression requires operator, object, member name, and optional template arguments"); }
+    expression.kind = ABI_EXPRESSION_OBJECT_MEMBER;
+    expression.op = words[3];
+    expression.expression_refs.push_back(words[4]);
+    expression.text = words[5];
+    expression.argument_refs.assign(words.begin() + 6, words.end());
+    return expression;
+  }
+  if(kind == "external-address" || kind == "external-reference") {
+    if(words.size() != 4) { throw logic_error(kind + " expression requires a symbol"); }
+    expression.kind = ABI_EXPRESSION_EXTERNAL_ENTITY;
+    expression.address_of = kind == "external-address";
+    expression.text = words[3];
+    return expression;
+  }
+  if(kind == "entity-address" || kind == "entity-reference") {
+    if(words.size() != 4) { throw logic_error(kind + " expression requires an entity"); }
+    expression.kind = ABI_EXPRESSION_ENTITY;
+    expression.address_of = kind == "entity-address";
+    expression.entity_ref = words[3];
+    return expression;
+  }
+  throw logic_error("unknown ABI fact expression kind '" + kind + "'");
+}
+
+void append_expression_words(const AbiDependentExpression & expression,
+                             vector<string> & words)
+{
+  switch(expression.kind) {
+  case ABI_EXPRESSION_TEMPLATE_PARAMETER:
+    words.push_back("template-param");
+    words.push_back(to_string(expression.index));
+    return;
+  case ABI_EXPRESSION_FUNCTION_PARAMETER:
+    words.push_back("function-param");
+    words.push_back(to_string(expression.index));
+    return;
+  case ABI_EXPRESSION_LITERAL:
+    words.push_back("literal");
+    words.push_back(expression.text);
+    return;
+  case ABI_EXPRESSION_INTEGRAL_VALUE:
+    words.push_back("integral-value");
+    words.push_back(type_token_from_public_type(expression.type));
+    words.push_back(to_string(expression.value));
+    return;
+  case ABI_EXPRESSION_UNARY:
+    words.push_back("unary");
+    words.push_back(expression.op);
+    words.insert(words.end(),
+                 expression.expression_refs.begin(),
+                 expression.expression_refs.end());
+    return;
+  case ABI_EXPRESSION_BINARY:
+    words.push_back("binary");
+    words.push_back(expression.op);
+    words.insert(words.end(),
+                 expression.expression_refs.begin(),
+                 expression.expression_refs.end());
+    return;
+  case ABI_EXPRESSION_CONDITIONAL:
+    words.push_back("conditional");
+    words.insert(words.end(),
+                 expression.expression_refs.begin(),
+                 expression.expression_refs.end());
+    return;
+  case ABI_EXPRESSION_PACK_EXPANSION:
+    words.push_back("pack");
+    words.insert(words.end(),
+                 expression.expression_refs.begin(),
+                 expression.expression_refs.end());
+    return;
+  case ABI_EXPRESSION_CALL:
+    words.push_back("call");
+    words.insert(words.end(),
+                 expression.expression_refs.begin(),
+                 expression.expression_refs.end());
+    return;
+  case ABI_EXPRESSION_CONVERSION:
+    words.push_back("conversion");
+    words.push_back(type_token_from_public_type(expression.type));
+    words.insert(words.end(),
+                 expression.expression_refs.begin(),
+                 expression.expression_refs.end());
+    return;
+  case ABI_EXPRESSION_CAST:
+    words.push_back("cast");
+    words.push_back(expression.op);
+    words.push_back(type_token_from_public_type(expression.type));
+    words.insert(words.end(),
+                 expression.expression_refs.begin(),
+                 expression.expression_refs.end());
+    return;
+  case ABI_EXPRESSION_TEMPLATE_ID:
+    words.push_back("template-id");
+    words.push_back(expression.text);
+    words.insert(words.end(),
+                 expression.argument_refs.begin(),
+                 expression.argument_refs.end());
+    return;
+  case ABI_EXPRESSION_TYPE_TRAIT:
+    words.push_back("type-trait");
+    words.push_back(expression.text);
+    for(size_t i = 0; i < expression.type_arguments.size(); ++i) {
+      words.push_back(type_token_from_public_type(expression.type_arguments[i]));
+    }
+    return;
+  case ABI_EXPRESSION_SIZEOF_TYPE:
+    words.push_back("sizeof-type");
+    append_public_type_spec_words(expression.type, words);
+    return;
+  case ABI_EXPRESSION_MEMBER:
+    words.push_back("member");
+    words.push_back(type_token_from_public_type(expression.type));
+    words.push_back(expression.close_member_owner ? "1" : "0");
+    words.push_back(expression.text);
+    words.insert(words.end(),
+                 expression.argument_refs.begin(),
+                 expression.argument_refs.end());
+    return;
+  case ABI_EXPRESSION_OBJECT_MEMBER:
+    words.push_back("object-member");
+    words.push_back(expression.op);
+    words.insert(words.end(),
+                 expression.expression_refs.begin(),
+                 expression.expression_refs.end());
+    words.push_back(expression.text);
+    words.insert(words.end(),
+                 expression.argument_refs.begin(),
+                 expression.argument_refs.end());
+    return;
+  case ABI_EXPRESSION_EXTERNAL_ENTITY:
+    words.push_back(expression.address_of ?
+                    "external-address" :
+                    "external-reference");
+    words.push_back(expression.text);
+    return;
+  case ABI_EXPRESSION_ENTITY:
+    words.push_back(expression.address_of ?
+                    "entity-address" :
+                    "entity-reference");
+    words.push_back(expression.entity_ref);
+    return;
+  }
+}
+
+AbiFunctionTarget parse_public_function_target(const vector<string> & words,
+                                               size_t begin,
+                                               const PublicFactParseContext & context,
+                                               const string & command)
+{
+  if(begin < words.size() && words[begin] == "function") {
+    ++begin;
+  }
+  if(begin >= words.size()) {
+    throw logic_error(command + " fact requires a function name form");
+  }
+  AbiFunctionTarget function;
+  if(words[begin] == "encoding" || words[begin] == "model") {
+    function.kind = ABI_FUNCTION_TARGET_ENCODING;
+    return function;
+  }
+  if(words[begin] == "path") {
+    if(begin + 1 >= words.size()) {
+      throw logic_error(command + " function path requires a qualified name");
+    }
+    function.kind = ABI_FUNCTION_TARGET_PATH;
+    function.qualified_name = words[begin + 1];
+    begin += 2;
+  } else if(words[begin] == "lambda") {
+    if(begin + 3 >= words.size()) {
+      throw logic_error(command + " function lambda requires context, discriminator, and terminal");
+    }
+    function.kind = ABI_FUNCTION_TARGET_LAMBDA;
+    function.context_ref = words[begin + 1];
+    function.discriminator = words[begin + 2];
+    function.terminal = words[begin + 3];
+    for(size_t i = begin + 4; i < words.size(); ++i) {
+      function.signature_parameter_types.push_back(
+          parse_public_single_type_token(words[i]));
+    }
+    return function;
+  } else if(words[begin] == "local") {
+    if(begin + 3 >= words.size() || begin + 5 < words.size()) {
+      throw logic_error(command + " function local requires context, source name, terminal, and optional discriminator");
+    }
+    function.kind = ABI_FUNCTION_TARGET_LOCAL;
+    function.context_ref = words[begin + 1];
+    function.source_name = words[begin + 2];
+    function.terminal = words[begin + 3];
+    function.discriminator = begin + 4 < words.size() ? words[begin + 4] : "0";
+    return function;
+  } else {
+    function.kind = ABI_FUNCTION_TARGET_PATH;
+    function.qualified_name = words[begin++];
+  }
+  while(begin < words.size()) {
+    AbiFunctionPathOperand operand;
+    if(words[begin] == "result") {
+      if(begin + 1 >= words.size()) {
+        throw logic_error("function path result requires a type");
+      }
+      operand.kind = ABI_FUNCTION_PATH_RESULT_TYPE;
+      operand.type = parse_public_single_type_token(words[++begin]);
+    } else if(words[begin] == "variadic" || words[begin] == "varargs") {
+      operand.kind = ABI_FUNCTION_PATH_VARIADIC;
+    } else if(context_has_id(context.template_argument_ids, words[begin])) {
+      operand.kind = ABI_FUNCTION_PATH_TEMPLATE_ARGUMENT;
+      operand.argument_ref = words[begin];
+    } else {
+      operand.kind = ABI_FUNCTION_PATH_TYPE;
+      operand.type = parse_public_single_type_token(words[begin]);
+    }
+    function.path_operands.push_back(operand);
+    ++begin;
+  }
+  return function;
+}
+
+void append_function_target_words(const AbiFunctionTarget & function,
+                                  vector<string> & words,
+                                  bool include_function_word)
+{
+  if(include_function_word) {
+    words.push_back("function");
+  }
+  switch(function.kind) {
+  case ABI_FUNCTION_TARGET_ENCODING:
+    words.push_back("encoding");
+    return;
+  case ABI_FUNCTION_TARGET_PATH:
+    words.push_back("path");
+    words.push_back(function.qualified_name);
+    for(size_t i = 0; i < function.path_operands.size(); ++i) {
+      const AbiFunctionPathOperand & operand = function.path_operands[i];
+      switch(operand.kind) {
+      case ABI_FUNCTION_PATH_TYPE:
+        words.push_back(type_token_from_public_type(operand.type));
+        break;
+      case ABI_FUNCTION_PATH_TEMPLATE_ARGUMENT:
+        words.push_back(operand.argument_ref);
+        break;
+      case ABI_FUNCTION_PATH_RESULT_TYPE:
+        words.push_back("result");
+        words.push_back(type_token_from_public_type(operand.type));
+        break;
+      case ABI_FUNCTION_PATH_VARIADIC:
+        words.push_back("variadic");
+        break;
+      }
+    }
+    return;
+  case ABI_FUNCTION_TARGET_LAMBDA:
+    words.push_back("lambda");
+    words.push_back(function.context_ref);
+    words.push_back(function.discriminator);
+    words.push_back(function.terminal);
+    for(size_t i = 0; i < function.signature_parameter_types.size(); ++i) {
+      words.push_back(type_token_from_public_type(function.signature_parameter_types[i]));
+    }
+    return;
+  case ABI_FUNCTION_TARGET_LOCAL:
+    words.push_back("local");
+    words.push_back(function.context_ref);
+    words.push_back(function.source_name);
+    words.push_back(function.terminal);
+    words.push_back(function.discriminator);
+    return;
+  }
+}
+
+AbiFactRecord parse_fact_record_words_with_context(
+    const vector<string> & words,
+    PublicFactParseContext & context)
+{
+  if(words.empty()) {
+    throw logic_error("empty ABI fact record");
+  }
+  AbiFactRecord record;
+  const string & command = words[0];
+  if(command == "let-type") {
+    if(words.size() < 3) { throw logic_error("let-type requires id and type"); }
+    record.kind = ABI_FACT_RECORD_DEFINITION;
+    record.definition.kind = ABI_DEFINITION_TYPE;
+    record.definition.id = words[1];
+    record.definition.type = parse_public_type_spec(words, 2);
+    remember_id(context.type_ids, record.definition.id);
+    return record;
+  }
+  if(command == "let-arg") {
+    record.kind = ABI_FACT_RECORD_DEFINITION;
+    record.definition.kind = ABI_DEFINITION_TEMPLATE_ARGUMENT;
+    record.definition.id = words.size() > 1 ? words[1] : string();
+    record.definition.template_argument = parse_public_template_argument(words);
+    remember_id(context.template_argument_ids, record.definition.id);
+    return record;
+  }
+  if(command == "let-expr") {
+    record.kind = ABI_FACT_RECORD_DEFINITION;
+    record.definition.kind = ABI_DEFINITION_EXPRESSION;
+    record.definition.id = words.size() > 1 ? words[1] : string();
+    record.definition.expression = parse_public_expression(words);
+    remember_id(context.expression_ids, record.definition.id);
+    return record;
+  }
+  if(command == "let-context") {
+    if(words.size() < 4) { throw logic_error("let-context requires id and context data"); }
+    record.kind = ABI_FACT_RECORD_DEFINITION;
+    record.definition.kind = ABI_DEFINITION_CONTEXT;
+    record.definition.id = words[1];
+    if(words[2] == "raw") {
+      if(words.size() != 4) { throw logic_error("let-context raw requires one context fragment"); }
+      record.definition.context.kind = ABI_CONTEXT_RAW;
+      record.definition.context.fragment = words[3];
+    } else if(words[2] == "function") {
+      record.definition.context.kind = ABI_CONTEXT_FUNCTION;
+      record.definition.context.function =
+          parse_public_function_target(words, 2, context, command);
+    } else {
+      throw logic_error("let-context requires raw or function context data");
+    }
+    remember_id(context.context_ids, record.definition.id);
+    return record;
+  }
+  if(command == "let-entity") {
+    if(words.size() < 4) { throw logic_error("let-entity requires id, kind, and entity data"); }
+    record.kind = ABI_FACT_RECORD_DEFINITION;
+    record.definition.kind = ABI_DEFINITION_ENTITY;
+    record.definition.id = words[1];
+    if(words[2] == "function") {
+      record.definition.entity.kind = ABI_ENTITY_FACT_FUNCTION;
+      record.definition.entity.function =
+          parse_public_function_target(words, 2, context, command);
+    } else if(words[2] == "variable" || words[2] == "symbol") {
+      if(words.size() != 4) { throw logic_error("let-entity variable/symbol requires one name"); }
+      record.definition.entity.kind = words[2] == "variable" ?
+          ABI_ENTITY_FACT_VARIABLE :
+          ABI_ENTITY_FACT_SYMBOL;
+      record.definition.entity.qualified_name = words[3];
+    } else {
+      throw logic_error("unknown ABI fact entity kind '" + words[2] + "'");
+    }
+    remember_id(context.entity_ids, record.definition.id);
+    return record;
+  }
+
+  if(command == "type" || command == "typeinfo" ||
+     command == "vtable" || command == "vtt") {
+    record.kind = ABI_FACT_RECORD_TARGET;
+    record.target.kind = command == "type" ? ABI_TARGET_FACT_TYPE :
+                         command == "typeinfo" ? ABI_TARGET_FACT_TYPEINFO :
+                         command == "vtable" ? ABI_TARGET_FACT_VTABLE :
+                                                ABI_TARGET_FACT_VTT;
+    record.target.type = parse_public_type_spec(words, 1);
+    return record;
+  }
+  if(command == "construction-vtable") {
+    if(words.size() != 4) {
+      throw logic_error("construction-vtable requires dynamic type, base offset, and base type");
+    }
+    record.kind = ABI_FACT_RECORD_TARGET;
+    record.target.kind = ABI_TARGET_FACT_CONSTRUCTION_VTABLE;
+    record.target.type = parse_public_single_type_token(words[1]);
+    if(!parse_unsigned_integer_word(words[2], record.target.base_offset)) {
+      throw logic_error("construction-vtable base offset must be decimal");
+    }
+    record.target.base_type = parse_public_single_type_token(words[3]);
+    return record;
+  }
+  if(command == "tls-wrapper" || command == "thread-local-wrapper") {
+    if(words.size() != 3 || (words[1] != "variable" && words[1] != "c-variable")) {
+      throw logic_error(command + " requires variable or c-variable and a qualified name");
+    }
+    record.kind = ABI_FACT_RECORD_TARGET;
+    record.target.kind = ABI_TARGET_FACT_THREAD_LOCAL_WRAPPER;
+    record.target.c_linkage = words[1] == "c-variable";
+    record.target.qualified_name = words[2];
+    return record;
+  }
+  if(command == "thunk") {
+    if(words.size() < 4) {
+      throw logic_error("thunk requires this adjustment, optional result adjustment, and a function target");
+    }
+    record.kind = ABI_FACT_RECORD_TARGET;
+    record.target.kind = ABI_TARGET_FACT_THUNK;
+    record.target.this_adjust = parse_signed_integer(words[1]);
+    size_t function_begin = 2;
+    if(words[function_begin] != "function") {
+      record.target.has_result_adjust = true;
+      record.target.result_adjust = parse_signed_integer(words[function_begin]);
+      ++function_begin;
+    }
+    record.target.function =
+        parse_public_function_target(words, function_begin, context, command);
+    return record;
+  }
+  if(command == "virtual-base-thunk") {
+    if(words.size() < 3) {
+      throw logic_error("virtual-base-thunk requires offset and function target");
+    }
+    record.kind = ABI_FACT_RECORD_TARGET;
+    record.target.kind = ABI_TARGET_FACT_VIRTUAL_BASE_THUNK;
+    record.target.vcall_offset = parse_signed_integer(words[1]);
+    record.target.function = parse_public_function_target(words, 2, context, command);
+    return record;
+  }
+  if(command == "variable" || command == "c-variable") {
+    if(words.size() != 2 && !(words.size() == 3 && words[1] == "path")) {
+      throw logic_error(command + " requires a qualified name");
+    }
+    record.kind = ABI_FACT_RECORD_TARGET;
+    record.target.kind = ABI_TARGET_FACT_VARIABLE;
+    record.target.c_linkage = command == "c-variable";
+    record.target.qualified_name = words.size() == 3 ? words[2] : words[1];
+    return record;
+  }
+  if(command == "function" || command == "c-function") {
+    record.kind = ABI_FACT_RECORD_TARGET;
+    record.target.kind = ABI_TARGET_FACT_FUNCTION;
+    record.target.c_linkage = command == "c-function";
+    record.target.function = parse_public_function_target(words, 1, context, command);
+    return record;
+  }
+
+  record.kind = ABI_FACT_RECORD_FUNCTION;
+  if(command == "name-source") {
+    if(words.size() < 2 || words.size() > 3) {
+      throw logic_error("name-source requires source name and optional substitution");
+    }
+    record.function.kind = ABI_FUNCTION_RECORD_NAME_SOURCE;
+    record.function.name = dash_empty(words[1]);
+    record.function.substitution = words.size() == 3 ? dash_empty(words[2]) : string();
+    return record;
+  }
+  if(command == "name-std") {
+    record.function.kind = ABI_FUNCTION_RECORD_NAME_STD;
+    return record;
+  }
+  if(command == "name-template") {
+    if(words.size() < 6) {
+      throw logic_error("name-template requires source, substitution, complete substitution, std substitution, includes flag, and optional args");
+    }
+    record.function.kind = ABI_FUNCTION_RECORD_NAME_TEMPLATE;
+    record.function.name = dash_empty(words[1]);
+    record.function.substitution = dash_empty(words[2]);
+    record.function.complete_substitution = dash_empty(words[3]);
+    record.function.standard_substitution = dash_empty(words[4]);
+    record.function.standard_substitution_includes_arguments = boolean_word(words[5]);
+    record.function.argument_refs.assign(words.begin() + 6, words.end());
+    return record;
+  }
+  if(command == "template-arg" || command == "function-template-arg") {
+    if(words.size() != 2) { throw logic_error(command + " requires one template argument reference"); }
+    record.function.kind = ABI_FUNCTION_RECORD_FUNCTION_TEMPLATE_ARGUMENT;
+    record.function.argument_refs.push_back(words[1]);
+    return record;
+  }
+  if(command == "function-template-prefix") {
+    if(words.size() != 2) { throw logic_error("function-template-prefix requires one substitution key"); }
+    record.function.kind = ABI_FUNCTION_RECORD_FUNCTION_TEMPLATE_PREFIX;
+    record.function.substitution = dash_empty(words[1]);
+    return record;
+  }
+  if(command == "local-context") {
+    if(words.size() != 4) { throw logic_error("local-context requires context, source name, and discriminator"); }
+    record.function.kind = ABI_FUNCTION_RECORD_LOCAL_CONTEXT;
+    record.function.context_ref = words[1];
+    record.function.source_name = words[2];
+    record.function.discriminator = words[3];
+    return record;
+  }
+  if(command == "lambda-context") {
+    if(words.size() < 3) { throw logic_error("lambda-context requires context and discriminator"); }
+    record.function.kind = ABI_FUNCTION_RECORD_LAMBDA_CONTEXT;
+    record.function.context_ref = words[1];
+    record.function.discriminator = words[2];
+    for(size_t i = 3; i < words.size(); ++i) {
+      record.function.types.push_back(parse_public_single_type_token(words[i]));
+    }
+    return record;
+  }
+  if(command == "terminal-source") {
+    if(words.size() != 2) { throw logic_error("terminal-source requires one source name"); }
+    record.function.kind = ABI_FUNCTION_RECORD_TERMINAL_SOURCE;
+    record.function.source_name = words[1];
+    return record;
+  }
+  if(command == "terminal") {
+    if(words.size() != 2) { throw logic_error("terminal requires one terminal word"); }
+    record.function.kind = ABI_FUNCTION_RECORD_TERMINAL;
+    record.function.terminal = words[1];
+    return record;
+  }
+  if(command == "variadic" || command == "varargs") {
+    record.function.kind = ABI_FUNCTION_RECORD_VARIADIC;
+    return record;
+  }
+  if(command == "abi-tag") {
+    if(words.size() != 2) { throw logic_error("abi-tag requires one tag"); }
+    record.function.kind = ABI_FUNCTION_RECORD_ABI_TAG;
+    record.function.name = words[1];
+    return record;
+  }
+  if(command == "function-qualifier" || command == "qualifier") {
+    record.function.kind = ABI_FUNCTION_RECORD_QUALIFIER;
+    for(size_t i = 1; i < words.size(); ++i) {
+      if(words[i] == "const") {
+        record.function.qualifiers.push_back(ABI_FUNCTION_QUALIFIER_CONST);
+      } else if(words[i] == "volatile") {
+        record.function.qualifiers.push_back(ABI_FUNCTION_QUALIFIER_VOLATILE);
+      } else if(words[i] == "lvalue-ref" || words[i] == "ref") {
+        record.function.qualifiers.push_back(ABI_FUNCTION_QUALIFIER_LVALUE_REFERENCE);
+      } else if(words[i] == "rvalue-ref" || words[i] == "rref") {
+        record.function.qualifiers.push_back(ABI_FUNCTION_QUALIFIER_RVALUE_REFERENCE);
+      } else {
+        throw logic_error("unknown function qualifier '" + words[i] + "'");
+      }
+    }
+    return record;
+  }
+  if(command == "operator-terminal") {
+    if(words.size() < 2 || words.size() > 3) {
+      throw logic_error("operator-terminal requires an operator name");
+    }
+    record.function.kind = ABI_FUNCTION_RECORD_OPERATOR_TERMINAL;
+    record.function.name = words[1];
+    if(words.size() == 3) {
+      record.function.literal_suffix = words[2];
+    }
+    return record;
+  }
+  if(command == "conversion-terminal") {
+    record.function.kind = ABI_FUNCTION_RECORD_CONVERSION_TERMINAL;
+    record.function.type = parse_public_type_spec(words, 1);
+    return record;
+  }
+  if(command == "param" || command == "result") {
+    record.function.kind = command == "param" ?
+        ABI_FUNCTION_RECORD_PARAMETER :
+        ABI_FUNCTION_RECORD_RESULT;
+    record.function.type = parse_public_type_spec(words, 1);
+    return record;
+  }
+  throw logic_error("unknown ABI fact command '" + command + "'");
+}
+
+AbiFactRecord parse_fact_record_words(const vector<string> & words)
+{
+  PublicFactParseContext context;
+  return parse_fact_record_words_with_context(words, context);
+}
+
+vector<string> words_from_function_record(const AbiFunctionRecord & function)
+{
+  vector<string> words;
+  switch(function.kind) {
+  case ABI_FUNCTION_RECORD_NAME_SOURCE:
+    words.push_back("name-source");
+    words.push_back(fact_word_or_dash(function.name));
+    if(!function.substitution.empty()) {
+      words.push_back(fact_word_or_dash(function.substitution));
+    }
+    return words;
+  case ABI_FUNCTION_RECORD_NAME_STD:
+    words.push_back("name-std");
+    return words;
+  case ABI_FUNCTION_RECORD_NAME_TEMPLATE:
+    words.push_back("name-template");
+    words.push_back(fact_word_or_dash(function.name));
+    words.push_back(fact_word_or_dash(function.substitution));
+    words.push_back(function.complete_substitution.empty() ?
+                    "-" :
+                    fact_word_or_dash(function.complete_substitution));
+    words.push_back(function.standard_substitution.empty() ?
+                    "-" :
+                    fact_word_or_dash(function.standard_substitution));
+    words.push_back(function.standard_substitution_includes_arguments ? "1" : "0");
+    words.insert(words.end(),
+                 function.argument_refs.begin(),
+                 function.argument_refs.end());
+    return words;
+  case ABI_FUNCTION_RECORD_FUNCTION_TEMPLATE_ARGUMENT:
+    words.push_back("function-template-arg");
+    words.push_back(function.argument_refs.at(0));
+    return words;
+  case ABI_FUNCTION_RECORD_FUNCTION_TEMPLATE_PREFIX:
+    words.push_back("function-template-prefix");
+    words.push_back(function.substitution.empty() ? "-" : function.substitution);
+    return words;
+  case ABI_FUNCTION_RECORD_LOCAL_CONTEXT:
+    words.push_back("local-context");
+    words.push_back(function.context_ref);
+    words.push_back(function.source_name);
+    words.push_back(function.discriminator);
+    return words;
+  case ABI_FUNCTION_RECORD_LAMBDA_CONTEXT:
+    words.push_back("lambda-context");
+    words.push_back(function.context_ref);
+    words.push_back(function.discriminator);
+    for(size_t i = 0; i < function.types.size(); ++i) {
+      words.push_back(type_token_from_public_type(function.types[i]));
+    }
+    return words;
+  case ABI_FUNCTION_RECORD_TERMINAL_SOURCE:
+    words.push_back("terminal-source");
+    words.push_back(function.source_name);
+    return words;
+  case ABI_FUNCTION_RECORD_TERMINAL:
+    words.push_back("terminal");
+    words.push_back(function.terminal);
+    return words;
+  case ABI_FUNCTION_RECORD_VARIADIC:
+    words.push_back("variadic");
+    return words;
+  case ABI_FUNCTION_RECORD_ABI_TAG:
+    words.push_back("abi-tag");
+    words.push_back(function.name);
+    return words;
+  case ABI_FUNCTION_RECORD_QUALIFIER:
+    words.push_back("function-qualifier");
+    for(size_t i = 0; i < function.qualifiers.size(); ++i) {
+      switch(function.qualifiers[i]) {
+      case ABI_FUNCTION_QUALIFIER_CONST: words.push_back("const"); break;
+      case ABI_FUNCTION_QUALIFIER_VOLATILE: words.push_back("volatile"); break;
+      case ABI_FUNCTION_QUALIFIER_LVALUE_REFERENCE: words.push_back("lvalue-ref"); break;
+      case ABI_FUNCTION_QUALIFIER_RVALUE_REFERENCE: words.push_back("rvalue-ref"); break;
+      }
+    }
+    return words;
+  case ABI_FUNCTION_RECORD_OPERATOR_TERMINAL:
+    words.push_back("operator-terminal");
+    words.push_back(function.name);
+    if(!function.literal_suffix.empty()) {
+      words.push_back(function.literal_suffix);
+    }
+    return words;
+  case ABI_FUNCTION_RECORD_CONVERSION_TERMINAL:
+    words.push_back("conversion-terminal");
+    append_public_type_spec_words(function.type, words);
+    return words;
+  case ABI_FUNCTION_RECORD_PARAMETER:
+    words.push_back("param");
+    append_public_type_spec_words(function.type, words);
+    return words;
+  case ABI_FUNCTION_RECORD_RESULT:
+    words.push_back("result");
+    append_public_type_spec_words(function.type, words);
+    return words;
+  }
+  return words;
+}
+
+vector<string> words_from_fact_record(const AbiFactRecord & record)
+{
+  vector<string> words;
+  switch(record.kind) {
+  case ABI_FACT_RECORD_DEFINITION:
+    switch(record.definition.kind) {
+    case ABI_DEFINITION_TYPE:
+      words.push_back("let-type");
+      words.push_back(record.definition.id);
+      append_public_type_spec_words(record.definition.type, words);
+      return words;
+    case ABI_DEFINITION_TEMPLATE_ARGUMENT:
+      words.push_back("let-arg");
+      words.push_back(record.definition.id);
+      append_template_argument_words(record.definition.template_argument, words);
+      return words;
+    case ABI_DEFINITION_EXPRESSION:
+      words.push_back("let-expr");
+      words.push_back(record.definition.id);
+      append_expression_words(record.definition.expression, words);
+      return words;
+    case ABI_DEFINITION_CONTEXT:
+      words.push_back("let-context");
+      words.push_back(record.definition.id);
+      if(record.definition.context.kind == ABI_CONTEXT_RAW) {
+        words.push_back("raw");
+        words.push_back(record.definition.context.fragment);
+      } else {
+        append_function_target_words(record.definition.context.function,
+                                     words,
+                                     true);
+      }
+      return words;
+    case ABI_DEFINITION_ENTITY:
+      words.push_back("let-entity");
+      words.push_back(record.definition.id);
+      if(record.definition.entity.kind == ABI_ENTITY_FACT_FUNCTION) {
+        append_function_target_words(record.definition.entity.function,
+                                     words,
+                                     true);
+      } else {
+        words.push_back(record.definition.entity.kind == ABI_ENTITY_FACT_SYMBOL ?
+                        "symbol" :
+                        "variable");
+        words.push_back(record.definition.entity.qualified_name);
+      }
+      return words;
+    }
+    break;
+  case ABI_FACT_RECORD_TARGET:
+    switch(record.target.kind) {
+    case ABI_TARGET_FACT_TYPE:
+      words.push_back("type");
+      append_public_type_spec_words(record.target.type, words);
+      return words;
+    case ABI_TARGET_FACT_FUNCTION:
+      words.push_back(record.target.c_linkage ? "c-function" : "function");
+      append_function_target_words(record.target.function, words, false);
+      return words;
+    case ABI_TARGET_FACT_VARIABLE:
+      words.push_back(record.target.c_linkage ? "c-variable" : "variable");
+      words.push_back(record.target.qualified_name);
+      return words;
+    case ABI_TARGET_FACT_TYPEINFO:
+      words.push_back("typeinfo");
+      append_public_type_spec_words(record.target.type, words);
+      return words;
+    case ABI_TARGET_FACT_VTABLE:
+      words.push_back("vtable");
+      append_public_type_spec_words(record.target.type, words);
+      return words;
+    case ABI_TARGET_FACT_VTT:
+      words.push_back("vtt");
+      append_public_type_spec_words(record.target.type, words);
+      return words;
+    case ABI_TARGET_FACT_CONSTRUCTION_VTABLE:
+      words.push_back("construction-vtable");
+      words.push_back(type_token_from_public_type(record.target.type));
+      words.push_back(to_string(record.target.base_offset));
+      words.push_back(type_token_from_public_type(record.target.base_type));
+      return words;
+    case ABI_TARGET_FACT_THREAD_LOCAL_WRAPPER:
+      words.push_back("thread-local-wrapper");
+      words.push_back(record.target.c_linkage ? "c-variable" : "variable");
+      words.push_back(record.target.qualified_name);
+      return words;
+    case ABI_TARGET_FACT_THUNK:
+      words.push_back("thunk");
+      words.push_back(to_string(record.target.this_adjust));
+      if(record.target.has_result_adjust) {
+        words.push_back(to_string(record.target.result_adjust));
+      }
+      append_function_target_words(record.target.function, words, true);
+      return words;
+    case ABI_TARGET_FACT_VIRTUAL_BASE_THUNK:
+      words.push_back("virtual-base-thunk");
+      words.push_back(to_string(record.target.vcall_offset));
+      append_function_target_words(record.target.function, words, true);
+      return words;
+    }
+    break;
+  case ABI_FACT_RECORD_FUNCTION:
+    return words_from_function_record(record.function);
+  }
+  return words;
+}
+
+AbiFactFile parse_fact_text(const string & text)
+{
+  istringstream in(text);
+  AbiFactFile file;
+  AbiFactCase pending;
+  PublicFactParseContext context;
+  bool have_pending = false;
+  string line;
+  while(getline(in, line)) {
+    const size_t comment = line.find('#');
+    if(comment != string::npos) {
+      line = line.substr(0, comment);
+    }
+    line = trim(line);
+    if(line.empty()) {
+      continue;
+    }
+    vector<string> words = split_words(line);
+    if(words.empty()) {
+      continue;
+    }
+    if(words[0] == "case") {
+      if(have_pending || !pending.records.empty() || !pending.label.empty()) {
+        file.cases.push_back(pending);
+        pending = AbiFactCase();
+      }
+      pending.label = words.size() > 1 ? words[1] : string();
+      context = PublicFactParseContext();
+      have_pending = true;
+      continue;
+    }
+    pending.records.push_back(parse_fact_record_words_with_context(words, context));
+    have_pending = true;
+  }
+  if(have_pending || !pending.records.empty() || !pending.label.empty()) {
+    file.cases.push_back(pending);
+  }
+  return file;
+}
+
+string serialize_fact_file(const AbiFactFile & file)
+{
+  ostringstream out;
+  for(size_t i = 0; i < file.cases.size(); ++i) {
+    const AbiFactCase & fact_case = file.cases[i];
+    if(!fact_case.label.empty()) {
+      out << "case " << fact_case.label << "\n";
+    }
+    for(size_t j = 0; j < fact_case.records.size(); ++j) {
+      out << join_words(words_from_fact_record(fact_case.records[j])) << "\n";
+    }
+    if(i + 1 != file.cases.size()) {
+      out << "\n";
+    }
+  }
+  return out.str();
+}
+
+string mangle_fact_file(const AbiFactFile & file)
+{
+  istringstream in(serialize_fact_file(file));
+  return mangle_model_fact_file(parse_fact_stream(in, "<AbiFactFile>"));
 }
 
 string mangle_fact_files(const vector<string> & input_paths)
@@ -3006,7 +4606,7 @@ string mangle_fact_files(const vector<string> & input_paths)
     if(!in) {
       throw logic_error("unable to open input file '" + input_paths[i] + "'");
     }
-    out << mangle_fact_file(parse_fact_stream(in, input_paths[i]));
+    out << mangle_model_fact_file(parse_fact_stream(in, input_paths[i]));
   }
   return out.str();
 }
