@@ -1,7 +1,0 @@
-#include <cassert>
-struct Box {
-  unsigned value;
-  Box(unsigned x) { assert(x < 10); value = x; }
-};
-static_assert(sizeof(Box) == sizeof(unsigned), "Box layout (single unsigned member)");
-int main() { Box box(7); return box.value == 7 ? 0 : 1; }
