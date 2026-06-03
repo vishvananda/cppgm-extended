@@ -18,8 +18,8 @@ fn__main__entry:
 	feq32 z8 y32 x32;
 	move64 x64 0;
 	move8 x8 z8;
-	move32 [bp-24] x32;
-	move32 x32 [bp-24];
+	move64 [bp-24] x64;
+	move64 x64 [bp-24];
 	jump fn__main__epilogue;
 fn__main__epilogue:
 	move64 sp bp;
