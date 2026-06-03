@@ -10651,8 +10651,7 @@ bool can_synthesize_aggregate_constructor(const ClassInfo & info)
 
   for(size_t i = 0; i < info.fields.size(); ++i) {
     const FieldInfo & field = info.fields[i];
-    if(field.default_initializer ||
-       field.access == MA_PRIVATE ||
+    if(field.access == MA_PRIVATE ||
        field.access == MA_PROTECTED) {
       return false;
     }
