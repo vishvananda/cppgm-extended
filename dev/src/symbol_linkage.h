@@ -9,10 +9,7 @@
 
 #include "cpp_decl_model.h"
 #include "template_model.h"
-
-namespace abi_mangle {
-struct AbiMangleTarget;
-}
+#include "abi_private_model.h"
 
 namespace semantic_model {
 struct ClassInfo;

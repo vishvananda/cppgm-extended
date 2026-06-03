@@ -1,10 +1,9 @@
 #pragma once
 
-// Itanium ABI encoder helpers layered on the assignment-facing data model in
-// abi_mangle.h. This header adds construction helpers, substitution support,
-// and emitters without introducing a second ABI representation.
+// Itanium ABI encoder helpers layered on the private ABI model. The
+// student-facing ABI fact API remains text-shaped in abi_mangle.h.
 
-#include "abi_mangle.h"
+#include "abi_private_model.h"
 
 namespace abi_mangle {
 
