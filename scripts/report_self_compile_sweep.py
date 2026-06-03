@@ -33,11 +33,11 @@ def parse_args():
     parser.add_argument("--build-dir", default="",
                         help="Optional object-root directory. Defaults to <output-prefix>.build")
     parser.add_argument("--object-layout", default="scratch",
-                        choices=["scratch", "pa38-selfhost"],
+                        choices=["scratch", "pa39-selfhost"],
                         help="How to place compiled objects on disk")
     parser.add_argument("--test-runner", type=int,
                         default=int(os.environ.get("CPPGM_TEST_RUNNER", "1") or "1"),
-                        help="Whether PA38 layout uses runner-flavored entry/shared object names")
+                        help="Whether PA39 layout uses runner-flavored entry/shared object names")
     parser.add_argument("--stdlib-flags",
                         default=os.environ.get("CPPGM_STDLIB_FLAGS", ""),
                         help="Optional stdlib flags mirrored into the compile commands")

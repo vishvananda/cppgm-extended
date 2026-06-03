@@ -25,7 +25,7 @@ class ReportSelfCompileSweepTests(unittest.TestCase):
         files = report_sweep.source_list(
             REPO_ROOT,
             "dev/cppgm++.cpp",
-            "pa38-selfhost",
+            "pa39-selfhost",
             True,
         )
         self.assertIn(REPO_ROOT / "dev" / "src" / "test_runner.cpp", files)
@@ -34,53 +34,53 @@ class ReportSelfCompileSweepTests(unittest.TestCase):
     def test_pa38_shared_object_path_matches_ladder_layout(self):
         obj = report_sweep.object_path(
             REPO_ROOT,
-            REPO_ROOT / "obj" / "pa38" / "selfhost",
+            REPO_ROOT / "obj" / "pa39" / "selfhost",
             0,
             REPO_ROOT / "dev" / "src" / "semantic_output.cpp",
-            "pa38-selfhost",
+            "pa39-selfhost",
             True,
         )
         self.assertEqual(
             obj,
-            REPO_ROOT / "obj" / "pa38" / "selfhost" / "shared" / "release" / "semantic_output.o",
+            REPO_ROOT / "obj" / "pa39" / "selfhost" / "shared" / "release" / "semantic_output.o",
         )
 
     def test_pa38_entry_object_path_matches_ladder_layout(self):
         obj = report_sweep.object_path(
             REPO_ROOT,
-            REPO_ROOT / "obj" / "pa38" / "selfhost",
+            REPO_ROOT / "obj" / "pa39" / "selfhost",
             0,
             REPO_ROOT / "dev" / "cppgm++.cpp",
-            "pa38-selfhost",
+            "pa39-selfhost",
             True,
         )
         self.assertEqual(
             obj,
-            REPO_ROOT / "obj" / "pa38" / "selfhost" / "cppgm++" / "release" / "cppgm++-runner.o",
+            REPO_ROOT / "obj" / "pa39" / "selfhost" / "cppgm++" / "release" / "cppgm++-runner.o",
         )
 
     def test_pa38_runner_object_path_matches_ladder_layout(self):
         obj = report_sweep.object_path(
             REPO_ROOT,
-            REPO_ROOT / "obj" / "pa38" / "selfhost",
+            REPO_ROOT / "obj" / "pa39" / "selfhost",
             0,
             REPO_ROOT / "dev" / "src" / "test_runner.cpp",
-            "pa38-selfhost",
+            "pa39-selfhost",
             True,
         )
         self.assertEqual(
             obj,
-            REPO_ROOT / "obj" / "pa38" / "selfhost" / "shared" / "release" / "test_runner-enabled.o",
+            REPO_ROOT / "obj" / "pa39" / "selfhost" / "shared" / "release" / "test_runner-enabled.o",
         )
 
     def test_pa38_entry_compile_command_uses_runner_define_and_depfile(self):
-        obj = REPO_ROOT / "obj" / "pa38" / "selfhost" / "cppgm++" / "release" / "cppgm++-runner.o"
+        obj = REPO_ROOT / "obj" / "pa39" / "selfhost" / "cppgm++" / "release" / "cppgm++-runner.o"
         cmd = report_sweep.compile_command(
             REPO_ROOT,
             "./dev/cppgm++",
             REPO_ROOT / "dev" / "cppgm++.cpp",
             obj,
-            "pa38-selfhost",
+            "pa39-selfhost",
             True,
             "",
         )
@@ -90,13 +90,13 @@ class ReportSelfCompileSweepTests(unittest.TestCase):
         self.assertEqual(cmd[-2:], ["-c", "dev/cppgm++.cpp"])
 
     def test_pa38_runner_compile_command_uses_shared_runner_define(self):
-        obj = REPO_ROOT / "obj" / "pa38" / "selfhost" / "shared" / "release" / "test_runner-enabled.o"
+        obj = REPO_ROOT / "obj" / "pa39" / "selfhost" / "shared" / "release" / "test_runner-enabled.o"
         cmd = report_sweep.compile_command(
             REPO_ROOT,
             "./dev/cppgm++",
             REPO_ROOT / "dev" / "src" / "test_runner.cpp",
             obj,
-            "pa38-selfhost",
+            "pa39-selfhost",
             True,
             "",
         )

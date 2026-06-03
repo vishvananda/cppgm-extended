@@ -28,7 +28,7 @@ class ReportBootstrapFrontierTests(unittest.TestCase):
         files = report_frontier.layout_source_list(
             REPO_ROOT,
             "dev/cppgm++.cpp",
-            "pa38-selfhost",
+            "pa39-selfhost",
             True,
         )
         self.assertIn(REPO_ROOT / "dev" / "src" / "test_runner.cpp", files)
@@ -37,15 +37,15 @@ class ReportBootstrapFrontierTests(unittest.TestCase):
     def test_pa38_link_object_path_matches_ladder_layout(self):
         obj = report_frontier.layout_object_path(
             REPO_ROOT,
-            REPO_ROOT / "obj" / "pa38" / "selfhost",
+            REPO_ROOT / "obj" / "pa39" / "selfhost",
             0,
             REPO_ROOT / "dev" / "src" / "machine_object.cpp",
-            "pa38-selfhost",
+            "pa39-selfhost",
             True,
         )
         self.assertEqual(
             obj,
-            REPO_ROOT / "obj" / "pa38" / "selfhost" / "shared" / "release" / "machine_object.o",
+            REPO_ROOT / "obj" / "pa39" / "selfhost" / "shared" / "release" / "machine_object.o",
         )
 
     def test_signal_name_for_negative_returncode(self):

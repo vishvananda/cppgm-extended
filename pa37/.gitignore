@@ -1,7 +1,8 @@
-lowir2native
-lowir2native-debug
-*.my
-*.my.*
-*.ref.program
-testout
 *.dSYM
+*.my
+*.my.exit_status
+*.stdout
+*.stderr
+lowiropt
+lowiropt-debug
+testout/

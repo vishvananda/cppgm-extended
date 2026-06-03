@@ -37,7 +37,7 @@ def parse_args():
     parser.add_argument("--skip-compile", action="store_true")
     parser.add_argument("--build-dir", default="")
     parser.add_argument("--object-layout", default="scratch",
-                        choices=["scratch", "pa38-selfhost"])
+                        choices=["scratch", "pa39-selfhost"])
     parser.add_argument("--test-runner", type=int,
                         default=int(os.environ.get("CPPGM_TEST_RUNNER", "1") or "1"))
     parser.add_argument("--stdlib-flags",

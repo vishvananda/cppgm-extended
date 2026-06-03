@@ -199,7 +199,7 @@ The following are out of scope for PA33:
 - private course-only exception/runtime ABI details that are not visible through
   the host-linked program or object checks
 - hosted standard-library header/source compatibility, which belongs in PA34
-- hosted header-emitted link/runtime behavior, which belongs in PA35
+- hosted header-emitted link/runtime behavior, which belongs in PA36
 - bootstrap or self-host builds
 
 ### Design Notes (Non-Normative)

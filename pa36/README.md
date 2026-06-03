@@ -1,174 +1,166 @@
-## CPPGM Programming Assignment 36 (`lowiropt`)
+## CPPGM Programming Assignment 35 (`cppgm++ -c`)
 
 ### Overview
 
-PA36 adds the first explicit optimization stage to the compiler. The new tool,
-`lowiropt`, reads PA13 LowIR text, applies a deterministic optimization
-pipeline selected by `-O0`, `-O1`, or `-O2`, and writes LowIR text.
+PA36 is the hosted header-emission and link/runtime compatibility assignment.
 
-The same LowIR optimizer is also reached from `cppgm++` when source programs
-are compiled with `--emit-lowir -O1`, `--emit-lowir -O2`, or through the
-ordinary compile/link driver at an optimization level.
+By PA34, hosted headers and source should preprocess and compile. PA36 owns the
+next question: once hosted headers compile, do the emitted inline, template, and
+header-generated definitions also link and run correctly through the host
+toolchain?
+
+This milestone is narrower than a second general host ABI assignment. It is
+specifically about hosted header-emitted code on top of the ordinary host object
+and ABI/runtime path established by PA32 and PA33.
 
 ### Prerequisites
 
-You should complete PA35 before starting this assignment.
+Complete PA34 before starting this assignment.
 
-You will reuse:
+You will want to reuse:
 
-- the PA13 LowIR syntax and semantic contract
-- the PA14 through PA35 source-to-LowIR lowering pipeline
-- the PA28 native backend, PA29 driver, PA30 ABI naming, and PA31 host-runtime path
-- the PA35 hosted compiler driver surface
+- the full earlier language, template, and lowering stack
+- the PA34 hosted preprocess/compile compatibility surface
+- the PA32/PA33 host object and ABI/runtime path
+- the PA36 demand-driven emitted-symbol model described below
+
+The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
+working host C/C++ toolchain with hosted C++ headers and libraries installed.
+You may override the compiler with `CXX=...`.
+`CPPGM_HOST_CXX` selects the host compiler/link driver used by the harness and
+by host-symbol comparison helpers. If it is not set, it defaults to `CXX`.
+
+PA36 tests also use host object tools:
+
+- `nm` for symbol inspection
+- `c++filt` for demangling in host-symbol comparison tests
+- `readelf` for selected object/relocation checks
+- `ar` and the host C/C++ compilers for helper libraries when a test provides
+  `x.lib.*` sidecars
+
+The checked-in tests assume the normal x86_64 Linux host C++ ABI. When you use
+a non-default standard library, pass the same choice through
+`CPPGM_STDLIB_FLAGS` so the course compiler and host compiler agree.
 
 ### Starter Kit
 
-The starter kit supplies:
+The starter kit provides:
 
+- `dev/cppgm++.cpp`, populated from the `cppgm++` scaffold for the cumulative
+  PA10+ compiler driver
+- the shared `dev/` sources needed by the scaffold
+- `pa36/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
 - `pa36/Makefile`
-- `pa36/lowiropt.cpp`, linked to the editable `dev/lowiropt.cpp`
-- a `dev/lowiropt.cpp` scaffold based on `dev/lowiropt-scaffold.cpp`
-- shared compiler support under `dev/src/`
-- test directories under `pa36/tests/`
-- harness scripts under `pa36/scripts/`
-- checked-in `.ref` and `.ref.exit_status` files for the tests
+- `pa36/scripts/`, the hosted link/runtime test harness
+- `pa36/tests/link/`, the PA36 tests and checked-in reference files
 
-The expected implementation work is in `dev/lowiropt.cpp` and shared optimizer
-or driver support under `dev/src/`, especially the LowIR optimizer and
-optimization-level plumbing. The supplied LowIR parser, dumper, driver helpers,
-and test harness are support code; they do not implement the optimization
-passes for you.
+Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+shared implementation files it calls. Do not edit generated `.my` files. Test
+inputs and references are part of the handout unless your instructor asks you
+to add or update tests.
 
-The harness uses checked-in references as the oracle. There is no
-separate `lowiropt-ref` binary in the starter kit.
+There is no separate PA36 reference binary in the starter kit. The checked-in
+`.ref.*` files are the oracle.
 
-### Command Line
+### Command-Line Contract
 
-`lowiropt` accepts exactly one optimization level, one output path, and one or
-more LowIR input files:
+PA36 does not introduce new `cppgm++` flags. It reuses the compile-mode surface
+already required by PA34:
 
 ```sh
-lowiropt -O0 -o <outfile> <lowirfile>...
-lowiropt -O1 -o <outfile> <lowirfile>...
-lowiropt -O2 -o <outfile> <lowirfile>...
+cppgm++ -c -o <objfile> <srcfile>
+cppgm++ -c --target <target> -o <objfile> <srcfile>
+cppgm++ -c -I <dir> -o <objfile> <srcfile>
+cppgm++ -c -I<dir> -o <objfile> <srcfile>
+cppgm++ -c -isystem <dir> -o <objfile> <srcfile>
+cppgm++ -c -D <macro> -U <macro> -include <file> -o <objfile> <srcfile>
 ```
 
-`--help` and `-h` print usage information and exit successfully.
-
-PA36 also requires the source driver to route these options through the same
-optimizer:
-
-```sh
-cppgm++ --emit-lowir -g0 -O1 -o <outfile> <srcfile>...
-cppgm++ --emit-lowir -g0 -O2 -o <outfile> <srcfile>...
-cppgm++ --emit-lowir -gline-tables-only -O1 -o <outfile> <srcfile>...
-cppgm++ --emit-lowir -gline-tables-only -O2 -o <outfile> <srcfile>...
-```
-
-The ordinary `cppgm++ -c` and link-driver paths must also accept `-O0`, `-O1`,
-and `-O2` and use the same LowIR optimization level before object generation.
+The normal PA36 final link is performed outside `cppgm++` by the host C++
+compiler driver.
 
 ### Output Format
 
-`lowiropt` writes LowIR text to `<outfile>`. The output must remain valid LowIR
-and must preserve the behavior of every defined input program.
+`cppgm++ -c` shall continue to write host-linker-compatible relocatable object
+files.
 
-LowIR top-level declaration/definition order is a presentation convention, not
-a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
-`function`, but the relaxed LowIR comparison canonicalizes top-level entries
-before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
-notes where internal LowIR symbol names are only a presentation tie-breaker.
-Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
-blocks, item order inside structured globals, vtable slot order, and action
-order inside generated initialization, finalization, constructor, destructor,
-and cleanup bodies.
+The PA36 contract is not a new file format. It is correct symbol ownership,
+ABI spelling, and runtime behavior for hosted header-generated code once those
+objects are host-linked.
 
-For successful runs:
+The PA36 tests observe:
 
-- `-O0` performs a deterministic parse/dump round trip.
-- `-O1` applies local and control-flow-aware LowIR simplifications.
-- `-O2` applies all `-O1` work and additional conservative slot-promotion
-  optimizations.
-
-The assignment grades the optimized LowIR shape as well as behavior
-preservation. The goal is a deterministic optimization stage, not elapsed-time
-benchmark wins.
+- `cppgm++ -c` exit status
+- host final-link exit status
+- final program exit status
+- final program standard output
+- optional object-inspection output for symbol ownership, unresolved-symbol
+  spelling, relocation, and ABI checks
 
 ### Error Handling
 
-The tool must fail with a nonzero exit status when:
+If preprocessing, parsing, semantic analysis, lowering, object emission, host
+linking, or output writing fails, the relevant tool invocation shall report
+failure. For `cppgm++`, that means exiting with failure.
 
-- no optimization level is provided
-- `-o` is missing or has no following path
-- there are no input files
-- an input file cannot be read
-- the input is not valid LowIR
-- the output file cannot be written
+For negative tests, exact diagnostics are not the grading contract. The harness
+compares exit status first. If the reference compile/link path fails, stdout and
+stderr are diagnostic side effects rather than required output.
 
-For failure cases, diagnostics only need to be useful to a developer; exact
-diagnostic text is not part of the grading contract. The contents of the
-output file after a failed run are undefined.
+### Hosted Symbol Emission Surface
 
-### Optimization Levels
+Hosted headers expose many inline functions, function templates, constants,
+helpers, and implementation-detail declarations. PA36 does not require
+`cppgm++ -c` to emit every hosted entity that was parsed, referenced during
+semantic analysis, or made visible by an include.
 
-To complete PA36, implement these optimization levels:
+The emitted object should be demand-driven:
 
-`-O0` is the baseline canonicalization mode. It should parse the input program,
-preserve all semantic content, and write the canonical LowIR dump without
-running optimizing transforms.
+- emit the definitions needed by the current translation unit's generated code
+  and by the required-definition closure of those definitions
+- keep ordinary declarations, overload candidates, template patterns, and
+  unused inline/header helpers available for semantic analysis without turning
+  them into defined object symbols
+- allow unresolved references for externally owned hosted library symbols, using
+  the host ABI spelling expected by the configured toolchain
 
-`-O1` must include these semantic-preserving pass families where safe:
+This keeps hosted object files small and avoids exporting implementation-detail
+symbols just because a broad standard-library header was included. For example,
+including `<functional>`, using `std::forward`, using placement `new`, or
+instantiating an `unordered_set` should not by itself cause unrelated libc++ or
+libstdc++ helper definitions to appear as defined symbols in the output object.
 
-- constant folding for scalar `copy`, `unary`, `binary`, `cmp`, and `convert`
-  instructions with known constant operands
-- algebraic identities such as `x + 0`, `x - 0`, `x * 1`, `x & -1`, redundant
-  `unary decay`, identity `convert`, and compares whose operands are known to
-  be identical
-- local and executable-edge-aware copy and constant propagation
-- local and executable-edge-aware pure-expression reuse for eligible `addr`,
-  `index`, `unary`, `binary`, `cmp`, and `convert` instructions
-- safe normalization of commutative integer operations and reversible compare
-  directions so equivalent expressions reuse the same producer
-- boolean compare cleanup for `cmp eq` and `cmp ne` against `0` or `1` when the
-  compared value is already known to be an `i64` boolean
-- local reassociation of repeated integer `add`, `mul`, `and`, `or`, and `xor`
-  chains with constants
-- control-flow cleanup, including folding known `branch` and `switch`
-  selectors, removing unreachable blocks, bypassing trivial jump-only blocks,
-  merging safe straight-line block pairs, and collapsing empty branch diamonds
-  when both arms resolve through non-EH jump-only blocks to the same
-  continuation
-- preservation of exceptional handler targets and exception-structure blocks
-  while doing CFG cleanup
-- conservative inlining of small direct calls, including `unwind=no` callees
-  inside EH regions only when the caller EH shape can be preserved
-- removal of no-op EH markers in functions known not to unwind when the
-  protected region contains no operation that can transfer to the handler
-- dead-code elimination for unused pure temp-producing instructions
-- removal of unused calls only when the callee is explicitly `readnone`, cannot
-  unwind, and is not `noreturn`
-- removal of dead local-slot traffic for unused direct slot loads and for
-  stores to direct local slots that have no remaining loads, escaping uses, or
-  other non-store uses
-- removal of slot declarations that become unused after simplification
+### Hosted Mangling Rules
 
-`-O2` must include all `-O1` work and then conservatively promote eligible
-non-escaping scalar slots, including eligible `ptr` slots. Promotion must be
-limited to slots accessed through direct `store` and `load` operations whose
-current value can be tracked without introducing phi nodes. Beyond the direct
-slot cleanup already allowed at `-O1`, `-O2` also removes dead stores to
-promoted slots when no observable load can see the stored value.
+PA36 uses the ordinary host C++ ABI spelling. Generic substitution mechanics
+should be tested with source-level spellings, and hosted standard-library
+ABI checks should be derived from the configured host compiler rather than from
+hard-coded library-private names.
 
-### Validation Modes
+The hosted emission policy decides which entities are defined or left
+unresolved. Those decisions still need to preserve ordinary host ABI spelling
+for every emitted or referenced hosted symbol.
 
-LowIR output has presentation details, such as internal helper names and
-metadata ordering, that are not semantic requirements. The PA36 harness checks
-exit status, LowIR well-formedness, required IR facts, and behavior
-preservation without requiring every non-semantic presentation choice to match
-the course solution exactly. Exact textual LowIR matching is not a PA36 grading
-requirement unless a test explicitly says so.
+For Itanium-style mangling on GNU/libstdc++ and Clang/libc++ style hosts:
+
+- direct standard-library substitutions such as `St`, `So`, `Si`, `Sd`, `Ss`,
+  and `Sa` must use the host ABI spellings
+- numbered substitutions must continue across the whole mangled entity, not
+  restart between the function-name template-argument list and the bare function
+  type
+- direct standard substitutions do not themselves become numbered substitution
+  entries
+- hosted weak/header-emitted definitions must still use the same symbol names
+  that the host library expects for the corresponding inline/template bodies
+
+In practice, PA36 symbol tests should prefer source spellings, such as
+`std::string` versus `std::basic_string<char, std::char_traits<char>,
+std::allocator<char>>`, and compare the unresolved symbol surface against the
+configured host compiler where the exact raw spelling is library-specific.
+
+PA36 symbol tests should avoid hard-coding implementation namespaces such as
+`std::__1` or `std::__cxx11` unless the test is explicitly guarded for that host
+library.
 
 ### Testing
 
@@ -178,61 +170,83 @@ Run the PA36 suite with:
 make test
 ```
 
-`make test` runs:
-
-- `tests/o0`
-- `tests/o1`
-- `tests/o2`
-- `tests/driver/o1`
-- `tests/driver/o2`
-
-These directories are organized by tool mode and validation mode, not by N3485
-source-language clauses.
-
-- `tests/o0` runs `lowiropt -O0` on handwritten LowIR.
-- `tests/o1` runs `lowiropt -O1` on handwritten LowIR.
-- `tests/o2` runs `lowiropt -O2` on handwritten LowIR.
-- `tests/driver/o1` runs `cppgm++ --emit-lowir -g0 -O1` on source programs.
-- `tests/driver/o2` runs `cppgm++ --emit-lowir -g0 -O2` on source programs.
-
-Run the debug metadata preservation lanes with:
+To run one test through the shared check target:
 
 ```sh
-make test-debuginfo
+make check TEST=tests/link/600-hosted-std-function-call-link-smoke.t
 ```
 
-`make test-debuginfo` runs:
+The local tests live in `tests/link/`. The directory name reflects the oracle:
+hosted compile plus host final link/run, with optional object inspection for
+symbol ownership and unresolved-symbol checks.
 
-- `tests/debuginfo/o1`
-- `tests/debuginfo/o2`
-- `tests/debuginfo/driver/o1`
-- `tests/debuginfo/driver/o2`
+For each test anchor `x.t`, companion C++ sources are named:
 
-The direct debug-info tests run `lowiropt -O*` over LowIR containing
-`!dbg(...)` metadata. The driver debug-info tests run
-`cppgm++ --emit-lowir -gline-tables-only -O*` and check that source locations
-survive the source-to-LowIR optimizer path.
+```text
+x.t.1
+x.t.2
+...
+```
 
-For each `.t` test, the harness records the tool exit status and compares the
-generated output against the oracle for that test directory. Failed reference
-cases are judged by exit status; successful reference cases are judged by the
-directory's LowIR validation mode.
+Optional sidecars include:
+
+- `x.compile.flags`: extra flags passed to `cppgm++ -c`
+- `x.link.flags`: extra flags passed to the host link driver
+- `x.env`: environment variables for one test
+- `x.lib.*`: host-built C or C++ helper sources
+- `x.inspect.cmd` or `x.inspect.expect`: object/symbol checks
+
+Some PA36 tests inspect intermediate object files with `nm`-style expectations.
+These checks verify positive ownership — a needed inline/template definition is
+present and correctly ABI-spelled. (Earlier negative-ownership / elision checks,
+which asserted that unused hosted helpers stay absent from the defined-symbol
+table, have been dropped: which internal symbols an object omits is an
+implementation detail, not a conformance requirement.)
+
+The checked-in tests are hosted link/runtime smokes, ABI spelling checks, and
+object-inspection checks rather than direct N3485 clause tests.
+
+### Assignment Boundary
+
+To complete PA36, implement hosted link/runtime behavior for:
+
+- emitted inline/template/header definitions from hosted headers needed by the
+  current object
+- hosted standard-library code that compiles in PA34 but still has to link and
+  run through the plain host toolchain
+- hosted link smokes where the main question is emitted symbol ownership, ABI
+  spelling, or runtime behavior of hosted header-generated code
+
+If hosted header code compiles but the emitted objects do not link or run
+correctly, the issue belongs in PA36.
 
 ### Out Of Scope
 
-PA36 does not require:
+The following are out of scope for PA36:
 
-- SSA construction as a IR contract
-- global value numbering or partial redundancy elimination
-- alias-driven aggressive dead-store elimination
-- loop optimizations, vectorization, or general-purpose inlining beyond the
-  small direct-call inlining described for `-O1`
-- machine-IR scheduling or register-allocation optimization
-- interprocedural optimization
-- size-specific `-Os` or `-Oz` behavior
+- earlier hosted preprocess/compile compatibility already owned by PA34
+- general host object or host ABI ownership outside the hosted-header-triggered
+  surface already owned by PA32/PA33
+- build-system wrapper emulation
+- recursive hosted-header coverage reporting
+- bootstrap or self-host builds
 
-### Handoff
+### Design Notes (Non-Normative)
 
-PA37 builds on this assignment by optimizing after LowIR has already been
-lowered to machine IR. PA36 owns the LowIR optimization pipeline and the
-`lowiropt` structural oracle; PA37 owns machine-backend optimization.
+Treat header-emitted code as ordinary code with an ABI-sensitive ownership
+policy. The implementation should preserve enough semantic information to know
+which inline/template definitions are required, which declarations remain
+external, and which unused hosted helpers should stay un-emitted.
+
+A recommended integration style is to use the PA30 ABI naming layer for hosted
+symbols in the same way PA32 and PA33 use it for ordinary host objects. Semantic
+analysis can produce the facts for the entity being emitted or referenced, then
+the mangler can produce the final raw symbol name before object emission. When a
+hosted symbol case is missing information, prefer threading that semantic fact
+forward instead of building already-mangled or partly-mangled strings in later
+object/link stages.
+
+### Stage Handoff
+
+The hosted compatibility work from PA34 and PA36 prepares the later optimizer
+and self-host stages to compile larger source bases with the course compiler.

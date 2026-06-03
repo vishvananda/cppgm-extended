@@ -63,7 +63,7 @@ def is_preproc_test(test: pathlib.Path) -> bool:
 
 def is_pa35_link_manifest(test: pathlib.Path) -> bool:
     parts = test.relative_to(ROOT).parts
-    return (len(parts) >= 3 and parts[0] == "pa35" and
+    return (len(parts) >= 3 and parts[0] == "pa36" and
             parts[1] == "tests" and parts[2] == "link" and
             test.name.endswith(".t"))
 

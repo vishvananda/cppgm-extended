@@ -299,7 +299,7 @@ The following are out of scope for PA29:
 - precompiled headers
 - build-system conveniences such as depfiles or compilation databases
 - hosted preprocessor and hosted-header compatibility, which belong in PA34
-  and PA35
+  and PA36
 - standalone ABI name construction, which belongs in PA30
 - host-linker-compatible object output, which belongs in PA32
 
