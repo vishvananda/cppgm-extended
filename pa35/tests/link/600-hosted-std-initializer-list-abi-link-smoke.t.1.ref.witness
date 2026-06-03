@@ -1,5 +1,0 @@
-translation-unit
-  class-use at pa35/tests/link/600-hosted-std-initializer-list-abi-link-smoke.t.1:3:31
-    template std::initializer_list
-    selected primary
-    bind #1 = int source=explicit
