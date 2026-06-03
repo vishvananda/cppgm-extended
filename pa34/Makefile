@@ -43,6 +43,7 @@ endif
 export CPPGM_HOSTCOMPAT_COMPILE_WORKERS
 PREPROC_TEST_ROOT ?= tests/preproc
 COMPILE_TEST_ROOT ?= tests/compile
+HEADER_TEST_ROOT ?= tests/header
 COURSE_PREPROC_TEST_ROOT ?= course/pa34/preproc
 COURSE_COMPILE_TEST_ROOT ?= course/pa34/compile
 ifneq ($(CPPGM_BATCH_TESTS),)
@@ -182,6 +183,12 @@ else
 	perl scripts/run_compile_tests.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 endif
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
+ifneq ($(CPPGM_BATCH_TESTS),)
+	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(HEADER_TEST_ROOT)
+else
+	perl scripts/run_compile_tests.pl $(CPPGM_TEST_APP) my $(HEADER_TEST_ROOT)
+endif
+	@scripts/compare_results.pl ref my $(HEADER_TEST_ROOT)
 	$(call run_preproc_course_bucket,$(COURSE_PREPROC_TEST_ROOT))
 	$(call run_compile_course_bucket,$(COURSE_COMPILE_TEST_ROOT))
 
@@ -190,21 +197,26 @@ test-batch: $(TEST_DEPS)
 	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) pp $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
+	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(HEADER_TEST_ROOT)
+	@scripts/compare_results.pl ref my $(HEADER_TEST_ROOT)
 	$(call run_preproc_course_bucket_batch,$(COURSE_PREPROC_TEST_ROOT))
 	$(call run_compile_course_bucket_batch,$(COURSE_COMPILE_TEST_ROOT))
 
 ref-test:
 	@scripts/run_all_tests.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
 	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
+	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(HEADER_TEST_ROOT)
 
 ref-test-batch:
 	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
+	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(REF_TEST_APP) ref $(HEADER_TEST_ROOT)
 
 CHECK_RUN = case "$(TEST)" in \
 	tests/preproc/*) perl ../scripts/run_cpphostcompat_preproc_worker.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
 	tests/compile/*) perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
-	*) echo "Usage: make check TEST=tests/preproc/<file>.t or tests/compile/<file>.t"; exit 1 ;; \
+	tests/header/*) perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
+	*) echo "Usage: make check TEST=tests/preproc/<file>.t, tests/compile/<file>.t, or tests/header/<file>.t"; exit 1 ;; \
 esac
 include ../scripts/pa_run_check_targets.mk
 
