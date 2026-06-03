@@ -20,7 +20,7 @@ def source_list(repo_root: Path, frontend: str, layout: str, test_runner: bool):
     return files
 
 
-def pa38_object_path(build_root: Path, relative: Path, stem: str, test_runner: bool):
+def inception_object_path(build_root: Path, relative: Path, stem: str, test_runner: bool):
     if relative == Path("dev/src/test_runner.cpp"):
         suffix = "-enabled" if test_runner else "-disabled"
         return build_root / "shared" / "release" / f"test_runner{suffix}.o"
@@ -47,7 +47,7 @@ def object_path(repo_root: Path,
                 test_runner: bool):
     if layout == "pa39-selfhost":
         relative = src.relative_to(repo_root)
-        return pa38_object_path(build_dir, relative, src.stem, test_runner)
+        return inception_object_path(build_dir, relative, src.stem, test_runner)
     return build_dir / (f"{index:03d}-{src.stem}.o")
 
 

@@ -156,7 +156,7 @@ make -C pa39 test-through-pa38 CXX=../dev/cppgm++ \
 make inception CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
 ```
 
-Use `PA38_OBJ_ROOT_BASE=...` when comparing host-compiler lanes or preserving
+Use `INCEPTION_OBJ_ROOT_BASE=...` when comparing host-compiler lanes or preserving
 multiple self-host object trees.
 
 ## Performance Checks

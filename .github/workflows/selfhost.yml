@@ -33,7 +33,7 @@ jobs:
       ORDERED: "false"
       SELFHOST_FLAVOR: ubuntu-24.04-gcc
       SELFHOST_RUNNER_IMAGE: ubuntu-24.04
-      SELFHOST_ARTIFACT_NAME: pa38-cppgm-self-ubuntu-24.04-gcc
+      SELFHOST_ARTIFACT_NAME: cppgm-self-ubuntu-24.04-gcc
 
     steps:
       - name: Check out repository
@@ -65,8 +65,8 @@ jobs:
         run: |
           set -euo pipefail
           source_sha="$GITHUB_SHA"
-          bundle="$RUNNER_TEMP/pa38-cppgm-self"
-          upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
+          bundle="$RUNNER_TEMP/cppgm-self"
+          upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
           cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
@@ -82,7 +82,7 @@ jobs:
             printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
           } > "$bundle/metadata.env"
           (cd "$bundle" && sha256sum bin/cppgm++-self > SHA256SUMS)
-          tar -C "$bundle" -czf "$upload/pa38-cppgm-self.tar.gz" .
+          tar -C "$bundle" -czf "$upload/cppgm-self.tar.gz" .
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
@@ -106,7 +106,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.SELFHOST_ARTIFACT_NAME }}
-          path: ${{ runner.temp }}/pa38-cppgm-self-upload/
+          path: ${{ runner.temp }}/cppgm-self-upload/
           if-no-files-found: error
           retention-days: 14
 
@@ -125,7 +125,7 @@ jobs:
       ORDERED: "false"
       SELFHOST_FLAVOR: ubuntu-24.04-clang-libcxx
       SELFHOST_RUNNER_IMAGE: ubuntu-24.04
-      SELFHOST_ARTIFACT_NAME: pa38-cppgm-self-ubuntu-24.04-clang-libcxx
+      SELFHOST_ARTIFACT_NAME: cppgm-self-ubuntu-24.04-clang-libcxx
 
     steps:
       - name: Check out repository
@@ -161,8 +161,8 @@ jobs:
         run: |
           set -euo pipefail
           source_sha="$GITHUB_SHA"
-          bundle="$RUNNER_TEMP/pa38-cppgm-self"
-          upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
+          bundle="$RUNNER_TEMP/cppgm-self"
+          upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
           cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
@@ -178,7 +178,7 @@ jobs:
             printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
           } > "$bundle/metadata.env"
           (cd "$bundle" && sha256sum bin/cppgm++-self > SHA256SUMS)
-          tar -C "$bundle" -czf "$upload/pa38-cppgm-self.tar.gz" .
+          tar -C "$bundle" -czf "$upload/cppgm-self.tar.gz" .
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
@@ -202,7 +202,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.SELFHOST_ARTIFACT_NAME }}
-          path: ${{ runner.temp }}/pa38-cppgm-self-upload/
+          path: ${{ runner.temp }}/cppgm-self-upload/
           if-no-files-found: error
           retention-days: 14
 
@@ -227,7 +227,7 @@ jobs:
       ORDERED: "false"
       SELFHOST_FLAVOR: ubuntu-26.04-gcc
       SELFHOST_RUNNER_IMAGE: ubuntu-26.04
-      SELFHOST_ARTIFACT_NAME: pa38-cppgm-self-ubuntu-26.04-gcc
+      SELFHOST_ARTIFACT_NAME: cppgm-self-ubuntu-26.04-gcc
 
     steps:
       - name: Install checkout and host compiler dependencies
@@ -265,8 +265,8 @@ jobs:
         run: |
           set -euo pipefail
           source_sha="$GITHUB_SHA"
-          bundle="$RUNNER_TEMP/pa38-cppgm-self"
-          upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
+          bundle="$RUNNER_TEMP/cppgm-self"
+          upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
           cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
@@ -282,7 +282,7 @@ jobs:
             printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
           } > "$bundle/metadata.env"
           (cd "$bundle" && sha256sum bin/cppgm++-self > SHA256SUMS)
-          tar -C "$bundle" -czf "$upload/pa38-cppgm-self.tar.gz" .
+          tar -C "$bundle" -czf "$upload/cppgm-self.tar.gz" .
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
@@ -306,7 +306,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.SELFHOST_ARTIFACT_NAME }}
-          path: ${{ runner.temp }}/pa38-cppgm-self-upload/
+          path: ${{ runner.temp }}/cppgm-self-upload/
           if-no-files-found: error
           retention-days: 14
 
@@ -331,7 +331,7 @@ jobs:
       ORDERED: "false"
       SELFHOST_FLAVOR: ubuntu-26.04-clang-libcxx
       SELFHOST_RUNNER_IMAGE: ubuntu-26.04
-      SELFHOST_ARTIFACT_NAME: pa38-cppgm-self-ubuntu-26.04-clang-libcxx
+      SELFHOST_ARTIFACT_NAME: cppgm-self-ubuntu-26.04-clang-libcxx
 
     steps:
       - name: Install checkout and host compiler dependencies
@@ -372,8 +372,8 @@ jobs:
         run: |
           set -euo pipefail
           source_sha="$GITHUB_SHA"
-          bundle="$RUNNER_TEMP/pa38-cppgm-self"
-          upload="$RUNNER_TEMP/pa38-cppgm-self-upload"
+          bundle="$RUNNER_TEMP/cppgm-self"
+          upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
           cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
@@ -389,7 +389,7 @@ jobs:
             printf 'cppgm_stdlib_flags=%s\n' "$CPPGM_STDLIB_FLAGS"
           } > "$bundle/metadata.env"
           (cd "$bundle" && sha256sum bin/cppgm++-self > SHA256SUMS)
-          tar -C "$bundle" -czf "$upload/pa38-cppgm-self.tar.gz" .
+          tar -C "$bundle" -czf "$upload/cppgm-self.tar.gz" .
           cp "$bundle/metadata.env" "$upload/metadata.env"
           cp "$bundle/SHA256SUMS" "$upload/SHA256SUMS"
           {
@@ -413,6 +413,6 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.SELFHOST_ARTIFACT_NAME }}
-          path: ${{ runner.temp }}/pa38-cppgm-self-upload/
+          path: ${{ runner.temp }}/cppgm-self-upload/
           if-no-files-found: error
           retention-days: 14

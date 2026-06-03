@@ -21,9 +21,9 @@ from typing import Set
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PA38_DIR = REPO_ROOT / "pa39"
+INCEPTION_DIR = REPO_ROOT / "pa39"
 FRONTEND_SOURCE_SETS = REPO_ROOT / "dev" / "frontend_source_sets.mk"
-PA38_MAKEFILE = PA38_DIR / "Makefile"
+INCEPTION_MAKEFILE = INCEPTION_DIR / "Makefile"
 MAKE_OPTIONS_WITH_ARGS = {
     "-C",
     "-f",
@@ -193,7 +193,7 @@ def parse_frontend_source_sets(path: Path) -> Dict[str, List[str]]:
     return mapping
 
 
-def parse_pa38_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
+def parse_inception_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
     checkpoints: List[str] = []
     stage_to_checkpoint: Dict[str, str] = {}
     for raw_line in path.read_text().splitlines():
@@ -203,7 +203,7 @@ def parse_pa38_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
         if line.startswith("CHECKPOINTS = "):
             checkpoints = line.split("=", 1)[1].strip().split()
             continue
-        match = re.match(r"^PA38_CHECKPOINT_FOR_(pa\d+) = (\S+)$", line)
+        match = re.match(r"^INCEPTION_CHECKPOINT_FOR_(pa\d+) = (\S+)$", line)
         if match:
             stage_to_checkpoint[match.group(1)] = match.group(2)
     if not checkpoints:
@@ -310,8 +310,8 @@ def target_scope(target: str,
 
 
 def infer_flavor(target: str, assignments: Dict[str, str]) -> str:
-    if "PA38_COMPILER_FLAVOR" in assignments and assignments["PA38_COMPILER_FLAVOR"]:
-        return assignments["PA38_COMPILER_FLAVOR"]
+    if "INCEPTION_COMPILER_FLAVOR" in assignments and assignments["INCEPTION_COMPILER_FLAVOR"]:
+        return assignments["INCEPTION_COMPILER_FLAVOR"]
     if target.endswith("-inception") or target in ("inception", "compare-inception", "bitcmp") or target.startswith("compare-"):
         return "inception"
     cxx = assignments.get("CXX", "")
@@ -321,29 +321,29 @@ def infer_flavor(target: str, assignments: Dict[str, str]) -> str:
 
 
 def infer_output_suffix(flavor: str, target: str, assignments: Dict[str, str]) -> str:
-    if "PA38_OUTPUT_SUFFIX" in assignments and assignments["PA38_OUTPUT_SUFFIX"]:
-        return assignments["PA38_OUTPUT_SUFFIX"]
+    if "INCEPTION_OUTPUT_SUFFIX" in assignments and assignments["INCEPTION_OUTPUT_SUFFIX"]:
+        return assignments["INCEPTION_OUTPUT_SUFFIX"]
     if flavor == "inception" or target.endswith("-inception"):
         return "-inception"
     return "-self"
 
 
 def resolve_obj_root_base(assignments: Dict[str, str]) -> Path:
-    raw = assignments.get("PA38_OBJ_ROOT_BASE", "../obj/pa39")
-    return (PA38_DIR / raw).resolve()
+    raw = assignments.get("INCEPTION_OBJ_ROOT_BASE", "../obj/pa39")
+    return (INCEPTION_DIR / raw).resolve()
 
 
 def resolve_bin_root_base(assignments: Dict[str, str], obj_root_base: Path) -> Path:
-    raw = assignments.get("PA38_BIN_ROOT_BASE")
+    raw = assignments.get("INCEPTION_BIN_ROOT_BASE")
     if raw:
-        return (PA38_DIR / raw).resolve()
+        return (INCEPTION_DIR / raw).resolve()
     return (obj_root_base / "bin").resolve()
 
 
 def resolve_generated_root(assignments: Dict[str, str], obj_root_base: Path) -> Path:
-    raw = assignments.get("PA38_GENERATED")
+    raw = assignments.get("INCEPTION_GENERATED")
     if raw:
-        return (PA38_DIR / raw).resolve()
+        return (INCEPTION_DIR / raw).resolve()
     return (obj_root_base / "generated").resolve()
 
 
@@ -351,20 +351,20 @@ def resolve_cxx_dep(raw: Optional[str]) -> Optional[Path]:
     if not raw:
         return None
     if raw.startswith(("./", "../", "/")):
-        return resolve_pa38_path(raw)
+        return resolve_inception_path(raw)
     return None
 
 
 def infer_cxx_dep(assignments: Dict[str, str],
                   flavor: str,
                   bin_root_base: Path) -> Optional[Path]:
-    if flavor == "inception" and assignments.get("PA38_COMPILER_FLAVOR") != "inception":
+    if flavor == "inception" and assignments.get("INCEPTION_COMPILER_FLAVOR") != "inception":
         return bin_root_base / "selfhost" / "cppgm++-self"
     explicit = resolve_cxx_dep(assignments.get("CXX"))
     if explicit is not None:
         return explicit
     if flavor == "selfhost":
-        return resolve_pa38_path("../dev/cppgm++")
+        return resolve_inception_path("../dev/cppgm++")
     if flavor == "inception":
         return bin_root_base / "selfhost" / "cppgm++-self"
     return None
@@ -506,11 +506,11 @@ def arg_after(argv: Sequence[str], flag: str) -> str:
     return ""
 
 
-def resolve_pa38_path(raw: str) -> Path:
+def resolve_inception_path(raw: str) -> Path:
     path = Path(raw)
     if path.is_absolute():
         return path
-    return (PA38_DIR / path).resolve()
+    return (INCEPTION_DIR / path).resolve()
 
 
 def split_make_words(text: str) -> List[str]:
@@ -565,7 +565,7 @@ def parse_depfile(path: Path) -> List[Path]:
             continue
         result: List[Path] = []
         for dep in deps:
-            path = resolve_pa38_path(dep)
+            path = resolve_inception_path(dep)
             if path.exists() or dep not in phony_targets:
                 result.append(path)
         return result
@@ -701,7 +701,7 @@ def active_tasks_for_build(root_pid: Optional[int],
         if not argv:
             continue
         output = arg_after(argv, "-o")
-        output_path = resolve_pa38_path(output) if output else None
+        output_path = resolve_inception_path(output) if output else None
         source = extract_source_arg(argv)
 
         if output and output_path is not None:
@@ -1066,15 +1066,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target",
                         help="manual target to watch even if no active make process exists")
     parser.add_argument("--obj-root-base",
-                        help="manual PA38_OBJ_ROOT_BASE relative to repo root")
+                        help="manual INCEPTION_OBJ_ROOT_BASE relative to repo root")
     parser.add_argument("--generated-root",
-                        help="manual PA38_GENERATED relative to repo root")
+                        help="manual INCEPTION_GENERATED relative to repo root")
     parser.add_argument("--flavor", choices=["selfhost", "inception", "host"],
                         help="manual compiler flavor")
     parser.add_argument("--cxx",
                         help="manual CXX used for timestamp dependency checks")
     parser.add_argument("--output-suffix",
-                        help="manual PA38_OUTPUT_SUFFIX, default inferred from flavor")
+                        help="manual INCEPTION_OUTPUT_SUFFIX, default inferred from flavor")
     parser.add_argument("--no-test-runner", action="store_true",
                         help="manual mode only: treat test runner object as disabled")
     parser.add_argument("--color", choices=["auto", "always", "never"], default="auto",
@@ -1085,7 +1085,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     source_sets = parse_frontend_source_sets(FRONTEND_SOURCE_SETS)
-    checkpoints, stage_to_checkpoint = parse_pa38_layout(PA38_MAKEFILE)
+    checkpoints, stage_to_checkpoint = parse_inception_layout(INCEPTION_MAKEFILE)
     use_color = color_enabled(args.color)
     last_views: List[BuildView] = []
 
