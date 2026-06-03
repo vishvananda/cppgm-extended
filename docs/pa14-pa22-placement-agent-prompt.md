@@ -39,7 +39,7 @@ For each assigned test, decide the earliest correct PA and cluster.
   and give one destination for each proposed split.
 - PA10-PA12 semantic owners cannot be final locations for LowIR output tests;
   choose the LowIR-owning feature that is actually being asserted.
-- PA23 backend-only features should not receive source-to-LowIR tests unless
+- PA28 backend-only features should not receive source-to-LowIR tests unless
   the test is reduced to a backend/LowIR input. For source tests, identify the
   correct source-to-LowIR owner or recommend reducing/removing the backend-only
   assertion.

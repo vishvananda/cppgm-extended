@@ -129,7 +129,7 @@ Validation notes for this pass:
 ## Pass C Transition Findings
 
 - `pa13` / `pa14+`
-  - fixed the pre-split handoff so native backend ownership now points at `PA23`, not
+  - fixed the pre-split handoff so native backend ownership now points at `PA28`, not
     the old `PA22`
   - fixed the later source-level complete-program handoff so it now points at `PA30`,
     not the old pre-split numbering

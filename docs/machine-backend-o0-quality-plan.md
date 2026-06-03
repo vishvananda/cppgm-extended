@@ -7,7 +7,7 @@ This plan defines the missing backend-quality tranche that should have landed
 
 The current backend already has:
 
-- a real `LowIR -> machine IR -> native` path in `PA23`
+- a real `LowIR -> machine IR -> native` path in `PA28`
 - a later `PA37` assignment for explicit machine/backend `-O1` / `-O2` work
 
 What is still missing is a disciplined baseline-quality pass for unoptimized
@@ -24,7 +24,7 @@ That missing tranche matters because the current `-O0` backend is still too
 The result is that later `-O1` / `-O2` work is building on top of a baseline
  backend that is still heavier than an ordinary non-optimizing compiler.
 
-This plan therefore treats backend `-O0` quality as a **PA23-owned** buildout,
+This plan therefore treats backend `-O0` quality as a **PA28-owned** buildout,
  not as a `PA37` optimization slice.
 
 ## Goal
@@ -44,7 +44,7 @@ It means:
 
 The concrete acceptance bar is:
 
-- the `PA23` structural MIR owners express the intended shape
+- the `PA28` structural MIR owners express the intended shape
 - the minimal hot helper repros are in-family with Clang `-O0`
 - `ctrlexpr` materially improves at `-O0`, and the hot helper disassembly no
   longer shows the current backend-specific excess traffic
@@ -53,7 +53,7 @@ The concrete acceptance bar is:
 
 As of `2026-04-19`, this plan is partway complete.
 
-The currently landed `PA23`-owned backend slices on `codex/debug-info` are:
+The currently landed `PA28`-owned backend slices on `codex/debug-info` are:
 
 - `178a6c3f` `Fix elided direct-branch temp reloads`
 - `dc3f2906` `Drop dead scalar call-result materialization`
@@ -82,13 +82,13 @@ masking the next stage of work:
   - root cause: forwarded parameter bases used only through the direct-call
     index fast path were not participating in named-value liveness, so `%this`
     could be left in a caller-clobbered temp across an earlier call
-  - owner test: `pa23/tests/structural/858-indirect-call-reference-preserve.t`
+  - owner test: `pa28/tests/structural/858-indirect-call-reference-preserve.t`
 - global pointer call targets by value:
   - minimal failure: `global @fp : ptr = addr @ret3`, then `%p = addr @fp`,
     then `call %p()`
   - root cause: indirect calls through temps defined as `addr @G` jumped to
     `&G` instead of loading the pointer stored in scalar `ptr` global `G`
-  - owner test: `pa23/tests/structural/859-global-pointer-address-call.t`
+  - owner test: `pa28/tests/structural/859-global-pointer-address-call.t`
 
 The latest benchmark split from the current committed state is:
 
@@ -121,7 +121,7 @@ So the current state of this plan is:
 
 - baseline backend correctness is substantially better than when this plan
   started
-- several `PA23` slices are complete and should be preserved
+- several `PA28` slices are complete and should be preserved
 - there is still some remaining backend `O0` quality work available
 - but the largest remaining performance gap is now at the boundary to the
   follow-up `O1` inlining / IPA plan
@@ -132,7 +132,7 @@ This plan covers:
 
 - `lowir2native` baseline lowering quality
 - `cppgm++` object generation only insofar as it reuses the same backend
-- `PA23` tests and README contract
+- `PA28` tests and README contract
 - measurement against Clang `-O0`
 
 This plan does **not** cover:
@@ -146,9 +146,9 @@ Those belong to a later follow-up once the baseline backend is no longer doing
 
 ## Ownership
 
-### `PA23`
+### `PA28`
 
-`PA23` owns this work because the feature is baseline backend quality at the
+`PA28` owns this work because the feature is baseline backend quality at the
  direct `LowIR -> machine IR -> native` boundary.
 
 The tests for these slices should therefore live in:
@@ -195,7 +195,7 @@ Work this plan in narrow slices.
 Each slice should include:
 
 1. one concrete backend change
-2. a focused `PA23` regression
+2. a focused `PA28` regression
 3. any README contract updates needed for students
 4. targeted validation
 5. a standalone commit
@@ -225,11 +225,11 @@ Expected result:
 
 - fewer `preserve rbx/r12/...` cases in helper-sized functions
 - less entry/exit register traffic
-- simpler call-adjacent MIR in `PA23`
+- simpler call-adjacent MIR in `PA28`
 
 Tests:
 
-- `PA23` structural owner for direct-call pressure without true across-call
+- `PA28` structural owner for direct-call pressure without true across-call
   liveness
 - update the existing call-pressure owner if the new shape is the right one
 
@@ -254,7 +254,7 @@ Targeted change:
 Expected result:
 
 - smaller helper/basic-block instruction counts
-- better `PA23` pointer-index structural shape
+- better `PA28` pointer-index structural shape
 - fewer artificial move chains before loads and stores
 
 Tests:
@@ -289,7 +289,7 @@ Expected result:
 
 Tests:
 
-- new `PA23` structural owner for wrapper-style forwarding
+- new `PA28` structural owner for wrapper-style forwarding
 - verify no loss of address-taking correctness
 
 Status:
@@ -315,7 +315,7 @@ Expected result:
 
 Tests:
 
-- `PA23` structural owners for each newly folded shape
+- `PA28` structural owners for each newly folded shape
 
 Status:
 
@@ -334,7 +334,7 @@ Once the above slices land:
 - re-review the remaining hot disassembly against Clang `-O0`
 
 If the remaining gap is still primarily backend shape, continue with another
- narrow `PA23` slice.
+ narrow `PA28` slice.
 
 If the remaining gap is now mostly cross-function copy/move/dtor traffic, stop
  this plan and open the follow-up `O1` inlining / IPA plan instead.
@@ -351,8 +351,8 @@ Status:
 
 Every slice should run the smallest useful set first:
 
-- targeted `pa23` owner tests
-- `make test-pa23`
+- targeted `pa28` owner tests
+- `make test-pa28`
 
 At meaningful checkpoints, rerun:
 
@@ -378,8 +378,8 @@ Current handoff point into that follow-up:
 
 - start with a tiny-function / hot-helper inliner, not whole-program work
 - target `Calculator::get_result` and the tiny `CalcToken` special members first
-- keep the current `PA23` baseline fixes intact while doing that cleanup and
+- keep the current `PA28` baseline fixes intact while doing that cleanup and
   follow-up planning
 
 That follow-up is required for Clang-like `-O1` / `-O2` behavior, but it should
- not be mixed into this baseline `PA23` quality tranche.
+ not be mixed into this baseline `PA28` quality tranche.
