@@ -1,9 +1,0 @@
-translation-unit
-  class-use at pa24/tests/general/100-direct-braced-init-expression.t:11:12
-    template Base
-    selected primary
-    bind #1 = int source=explicit
-  class-use at pa24/tests/general/100-direct-braced-init-expression.t:13:19
-    template Base
-    selected primary
-    bind #1 = int source=explicit

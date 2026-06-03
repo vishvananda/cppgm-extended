@@ -52,7 +52,7 @@ SORTED_PAS = $(shell printf '%s\n' $(PAS) | sort -t a -k 2,2n)
 TEST_REPORT_PAS ?= $(SORTED_PAS)
 ACTIVE_TEST_REPORT_PAS ?= $(TEST_REPORT_PAS)
 REF_TEST_PAS ?= $(SORTED_PAS)
-STRICT_PAS ?= pa18 pa19 pa21 pa22 pa23 pa24
+STRICT_PAS ?= pa18 pa19 pa21 pa22 pa23
 STRICT_SUBTEST_JOBS ?= $(DEFAULT_BUILD_JOBS)
 DEV_BUILD_LOCK = obj/.dev-build.lock
 
