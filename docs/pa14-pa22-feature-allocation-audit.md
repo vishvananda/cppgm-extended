@@ -107,7 +107,7 @@ explicitly the integration milestone for those layers.
 | Feature Area | Main Implementation Surface In This Compiler | Student-Ordering Risk | Placement Guidance |
 | --- | --- | --- | --- |
 | PA14 procedural integer/pointer/reference LowIR | `semantic_expression.*`, `semantic_statement.*`, `lowirgensemantic.*`, `lowir_internal.*` | Coherent: semantic analysis already owns the language shape and PA14 adds lowering. | Keep as PA14 core. |
-| PA14 runtime floating lowering | `posttokenizer.*`, `cpp_decl_model.*`, `semantic_expression.*`, `semantic_conversion.*`, `semantic_builtins.*`, `constant_value.*`, `lowir_*`, `host_builtin_runtime.*` | Too broad for a procedural LowIR milestone if tests require runtime ABI/backend behavior rather than simple scalar typing. | Canonical owner: `pa23` cluster `500` for runtime/backend parity. |
+| PA14 runtime floating lowering | `posttokenizer.*`, `cpp_decl_model.*`, `semantic_expression.*`, `semantic_conversion.*`, `semantic_builtins.*`, `constant_value.*`, `lowir_*`, `host_builtin_runtime.*` | Too broad for a procedural LowIR milestone if tests require runtime ABI/backend behavior rather than simple scalar typing. | Canonical owner: PA28 native/backend coverage when runtime/backend parity is required. |
 | PA14 local statics/string-backed initialization | `semantic_statement.*`, `semantic_lifetime.*`, `callsemantic.*`, `lowirgensemantic.*`, object/backend support | Pulls initialization guards, storage duration, cleanup, and lowering into one early feature. | Canonical owner: `pa20` cluster `300` for constant-initialized local statics and `pa20` cluster `400` for dynamic guarded class local statics. |
 | PA14 `__int128` | `cpp_decl_model.*`, `constant_value.*`, `semantic_builtins.*`, `semantic_expression.*`, `semantic_conversion.*`, `lowirgensemantic.*`, machine/object backends | Compiler extension plus constant folding and backend width support. | Canonical owner: `pa34` cluster `600` as hosted/vendor compatibility. |
 | PA15 basic class object model | `cppast_parser.*`, `cpp_decl_model.*`, `semantic_class_model.*`, `semantic_lookup.*`, `semantic_lifetime.*`, `lowirgensemantic.*` | Broad but conceptually adjacent: declarations, layout, member lookup, simple lifetime, lowering. | Keep PA15 constrained to this base object model. |
@@ -166,7 +166,7 @@ The initial scan found these high-signal early-feature patterns:
 | partial-specialization-shaped tests before PA21 | 39 | PA18/PA19 may be taking on PA21 specialization work. |
 | `enable_if` / `void_t` / detector names before PA22 | 23 | PA18/PA19/PA21 may be taking on SFINAE/substitution work. |
 | PA17 multi-base/non-primary-base virtual tests | 6 named tests | Canonical PA17 is single-inheritance virtual dispatch; multi-base/polymorphic adjustment belongs to PA28/PA29. |
-| PA14 runtime floating tests | 3 named tests plus incidental float uses | Canonical PA14 is procedural integer/pointer/reference LowIR; runtime floating/backend parity belongs to PA23. |
+| PA14 runtime floating tests | 3 named tests plus incidental float uses | Canonical PA14 is procedural integer/pointer/reference LowIR; runtime floating/backend parity belongs to PA28. |
 
 Counts are triage signals, not final classifications; each flagged test still
 needs a source-level decision after the ownership table is accepted.

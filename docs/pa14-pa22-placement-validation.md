@@ -29,8 +29,8 @@ Accepted as reported:
 | --- | --- |
 | PA14 enum `static_cast` case | Renumber to PA14:200. |
 | PA14 local static scalar/array guard cases | Move constant/static storage cases to PA20:300; move dynamic class local-static cases to PA20:400. |
-| PA14 floating conversion and variadic float cases | Remove from PA14 source-to-LowIR coverage or reduce to PA23 backend/LowIR inputs. |
-| PA14 qualified namespace overload symbol case | Split/reduce: keep integral namespace-symbol coverage in PA14 and move optional floating coverage to backend/PA23 form. |
+| PA14 floating conversion and variadic float cases | Remove from PA14 source-to-LowIR coverage or reduce to PA28 backend/LowIR inputs. |
+| PA14 qualified namespace overload symbol case | Split/reduce: keep integral namespace-symbol coverage in PA14 and move optional floating coverage to backend/PA28 form. |
 | PA14 one-past-end pointer case | Keep in PA14; `double` is a pointer-size fixture here, not floating codegen. |
 | PA14 incomplete class referent and qualified nested typedef cases | Move to PA15:100. |
 | PA14 `__uint128_t` cases | Move to PA34:600. |
@@ -67,7 +67,7 @@ Adjusted from the first-pass report:
 | `pa15/tests/general/100-anonymous-compressed-pair-member.t` | Move the existing template test to PA18:100 or reduce a non-template anonymous-member version for PA15:300. A split is optional, not required. |
 | PA15 ADL tests with `copyobj` refs | Prefer moving the current tests to PA16:200 unless we create reduced lookup-only PA15 replacements. The current checked refs materially assert by-value class transfer. |
 | `pa15/tests/general/200-class-member-object-sizeof.t` | Move current static-assert form to PA19:100; create a reduced PA15 runtime `sizeof` test only if we want duplicate object-size coverage. |
-| `pa16/tests/general/300-using-base-overload-set.t` | Reduce to integral overloads and move to PA15:300. Keep a floating overload only as backend/PA23-style coverage if still valuable. |
+| `pa16/tests/general/300-using-base-overload-set.t` | Reduce to integral overloads and move to PA15:300. Keep a floating overload only as backend/PA28-style coverage if still valuable. |
 | `pa15/tests/general/200-local-static-local-class-array-init.t` | Move current dynamic guarded class-array static test to PA20:400. |
 
 ## PA17-PA19

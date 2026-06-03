@@ -455,7 +455,7 @@ work:
   subset special-casing
 
 PA22 does not own hosted/vendor-only extensions, post-C++11 template-language
-features, or backend/toolchain behavior that belongs to PA23 and later.
+features, or backend/toolchain behavior that belongs to PA28 and later.
 
 Known PA22 contract questions to resolve:
 

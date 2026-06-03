@@ -124,7 +124,7 @@ In practice, PA15 only needs ctor/dtor helpers for the supported declaration-tim
 initializer, recursive subobject, and namespace-scope lifetime paths. Copy/value helpers do
 not belong in PA15 output.
 
-The generated LowIR is intended to become input for the later PA23
+The generated LowIR is intended to become input for the later PA28
 `lowir2native` backend, which will execute these helpers around `@main`. That
 future native path is not the PA15 grading contract. PA13 `lowir2cy86` remains
 useful as an optional execution scaffold.

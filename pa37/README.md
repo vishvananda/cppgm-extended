@@ -65,7 +65,7 @@ The `--target <target>` option is inherited from the native backend. Tests may
 set the target through the harness environment, but the optimization
 contract is independent of host-specific elapsed time.
 
-`-O0` remains the PA23 baseline. PA37 must preserve that earlier behavior while
+`-O0` remains the PA28 baseline. PA37 must preserve that earlier behavior while
 adding the explicit `-O1` and `-O2` backend optimization levels.
 
 ### Output Format

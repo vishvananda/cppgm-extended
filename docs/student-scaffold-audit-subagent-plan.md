@@ -87,7 +87,7 @@ Focus:
 
 - Cover PA10-PA12 `--emit-ast`, `--emit-types`, and `--emit-semantics`.
 - Cover PA14-PA27 `--emit-lowir`.
-- Cover PA29-PA35 driver/query/preprocess/compile/link-facing modes at the
+- Cover PA29 and PA31-PA35 driver/query/preprocess/compile/link-facing modes at the
   command-line skeleton level.
 - Check the real `cppgm++` CLI and the PA READMEs for options that should be
   parsed or dispatched before throwing not implemented.

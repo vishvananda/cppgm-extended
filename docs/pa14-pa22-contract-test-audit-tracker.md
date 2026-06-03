@@ -21,7 +21,7 @@ This tracker implements
 | Test manifest | drafted | Post-move inventory refreshed below. Needs final per-test decisions after the remaining split/reduce pass. |
 | Feature auditors | drafted | `scripts/audit_pa_feature_placement.py` scans source plus adjacent `.ref` output. It is a triage tool; human placement decisions still need per-test review. |
 | README contract updates | pending | Must happen after test audit decisions. |
-| Test moves/reductions | in_progress | Mechanical move batches completed. Split/reduce and PA23/PA34 harness-rewrite items are deferred below. |
+| Test moves/reductions | in_progress | Mechanical move batches completed. Split/reduce and PA28/PA34 harness-rewrite items are deferred below. |
 | Final validation | pending | Run PA14-PA22 report and strict as described in plan. |
 
 ## Test Inventory
@@ -94,12 +94,12 @@ Move validation:
 Remaining PA10+ course placement:
 
 - `cppgm.tests/course/pa14/232-const-ref-converted-float-argument.t` remains
-  deferred because the validated destination is PA23 backend coverage, not a
+  deferred because the validated destination is PA28 backend coverage, not a
   direct source-to-LowIR test move.
 
 Deferred split/rewrite items:
 
-- PA23 backend/source-to-LowIR split: PA14 floating return/reference,
+- PA28 backend/source-to-LowIR split: PA14 floating return/reference,
   variadic float promotion, and optional floating namespace-symbol coverage.
 - PA16 reduction: `pa16/tests/general/300-using-base-overload-set.t`.
 - PA18 owner recheck/reduction:
@@ -143,7 +143,7 @@ Potential ownership mismatches:
 Audit action:
 
 - Keep true PA14 procedural LowIR cases; classify runtime floating/variadic
-  backend parity as PA23 and local-static guard/init as PA20 unless a test can
+  backend parity as PA28 and local-static guard/init as PA20 unless a test can
   be reduced to an earlier-owned assertion.
 
 ### PA15
@@ -315,8 +315,8 @@ Ownership is not always the same as LowIR-test placement:
   later feature owner if the PA10-PA12 feature is only fixture syntax.
 - PA14-PA22 and PA26-PA29 `cppgm++ --emit-lowir` owners can own source-to-LowIR
   tests directly.
-- PA23 owners are LowIR-to-native/backend owners. Source-level tests should not
-  move to PA23 unless they are reduced to LowIR/backend inputs or the source
+- PA28 owners are LowIR-to-native/backend owners. Source-level tests should not
+  move to PA28 unless they are reduced to LowIR/backend inputs or the source
   lowering owner is separately defined.
 - PA34 owners are hosted/source-compatibility owners, not core-language owners.
 
@@ -335,9 +335,9 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `lang.enum` | `pa14` | 100 | 7.2 `[dcl.enum]` | pending | scoped/unscoped enums, enum promotion, enum comparison/lowering. |
 | `lowir.procedural.local_static` | `pa20` | 300 | 3.7.1 `[basic.stc.static]`, 6.7 `[stmt.dcl]` | pending | constant-initialized function-local `static` objects, guard variables, static array initialization. |
 | `lowir.procedural.local_static.dynamic_class` | `pa20` | 400 | 3.7.1 `[basic.stc.static]`, 3.8 `[basic.life]`, 6.7 `[stmt.dcl]` | pending | dynamically-initialized function-local static class objects or arrays, first-use guard emission around constructor calls, local-class static objects. |
-| `lowir.procedural.float_conversion` | `pa23` | 500 | 4.6 `[conv.fpprom]`, 4.8 `[conv.double]`, 4.9 `[conv.fpint]` | pending | LowIR/backend floating conversion parity. PA23 tests should be LowIR/backend inputs; source-to-LowIR floating tests need a separate LowIR-producing owner if kept. |
+| `lowir.procedural.float_conversion` | `pa28` | 500 | 4.6 `[conv.fpprom]`, 4.8 `[conv.double]`, 4.9 `[conv.fpint]` | pending | LowIR/backend floating conversion parity. PA28 tests should be LowIR/backend inputs; source-to-LowIR floating tests need a separate LowIR-producing owner if kept. |
 | `expr.cast.builtin` | `pa14` | 200 | 5.2.9 `[expr.static.cast]`, 5.2.11 `[expr.const.cast]`, 5.4 `[expr.cast]` | pending | C-style casts, `static_cast`, `const_cast`, scalar/function/reference/pointer casts. |
-| `call.variadic_promotions` | `pa23` | 500 | 5.2.2 `[expr.call]`, 4.6 `[conv.fpprom]` | pending | backend/runtime variadic call parity and default promotions such as float-to-double. PA23 tests should be LowIR/backend inputs; source-to-LowIR variadic tests need a separate LowIR-producing owner if kept. |
+| `call.variadic_promotions` | `pa28` | 500 | 5.2.2 `[expr.call]`, 4.6 `[conv.fpprom]` | pending | backend/runtime variadic call parity and default promotions such as float-to-double. PA28 tests should be LowIR/backend inputs; source-to-LowIR variadic tests need a separate LowIR-producing owner if kept. |
 | `lang.extended_integer` | `pa34` | 600 | N/A: GNU/Clang `__int128` extension | pending | `__int128`, unsigned 128-bit constants, truncation/canonicalization; ordinary `long long` remains part of earlier scalar support. |
 | `class.basic` | `pa15` | 100 | 9 `[class]`, 9.2 `[class.mem]` | pending | `class`/`struct`, members, methods, access labels, nested class use. |
 | `class.access_control` | `pa15` | 100 | 11 `[class.access]` | pending | public/private/protected member and constructor access checks. |

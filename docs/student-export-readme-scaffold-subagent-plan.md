@@ -73,7 +73,7 @@ Resolved items from the initial audit:
 - PA14-PA22 READMEs name the required `--emit-lowir -O0` invocation.
 - PA13 is scoped to the `lowir2cy86` surface, with later debuginfo/native tests
   recorded as a separate packaging decision.
-- PA14-PA18 and PA23-PA30 grammar helper scripts point at the matching
+- PA14-PA19 and PA23-PA29 grammar helper scripts point at the matching
   `paN.gram`.
 - Stale nested PA17 `grammar/grammar/` and `scripts/scripts/` trees were removed.
 - PA18-PA22 handouts no longer present "Missing Tests To Add Later" as student
@@ -83,7 +83,7 @@ Resolved items from the initial audit:
 - PA36/PA37 handouts now describe optimizer/backend behavior and testing
   contracts.
 - PA38 is now a staged self-host handout rather than a wrapper status note.
-- The stale PA1-PA9 and PA23 `scripts/export_pa.sh` files were removed.
+- The stale PA1-PA9 and old backend `scripts/export_pa.sh` files were removed.
 - Scaffold TODO ownership has been aligned with the current assignment split.
 
 Remaining decisions are about export shape and validator packaging, not README
@@ -179,7 +179,7 @@ Focus:
 
 Owns:
 
-- `pa30/README.md` through `pa35/README.md`
+- `pa32/README.md` through `pa35/README.md`
 - corresponding inventory sections
 
 Focus:

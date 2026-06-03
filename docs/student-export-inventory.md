@@ -70,7 +70,8 @@ Each PA section should eventually include:
 
 - Decide whether the student repo is exported as one cumulative working tree,
   one starter tree per assignment, or a cumulative tree with per-PA checkpoints.
-  This affects how the shared `cppgm++` scaffold is described for PA10-PA29 and PA31-PA35.
+  This affects how the shared `cppgm++` scaffold is described for PA10-PA27,
+  PA29, and PA31-PA35.
 - Decide whether PA10-PA35 should ship checked-in refs only or also reference
   binaries. Current README wording treats checked-in refs as the oracle for
   PA10+.
@@ -91,11 +92,11 @@ Each PA section should eventually include:
 
 ## Resolved Cleanup Notes
 
-- PA14-PA29 Makefile/script grammar references now
+- PA14-PA19 and PA23-PA29 Makefile/script grammar references now
   point at the matching local `paN.gram` file.
 - Stale nested PA17 copies under `pa17/grammar/grammar/` and
   `pa17/scripts/scripts/` were removed.
-- The stale PA1-PA9 and old PA23 `scripts/export_pa.sh` files were removed.
+- The stale PA1-PA9 and old backend `scripts/export_pa.sh` files were removed.
 - The `cppgm++` scaffold now assigns compile/link driver mode to PA29.
 - The PA34 hosted test no longer pins a local Homebrew GCC path, and the PA35
   ostringstream smoke no longer contains an absolute local source path.

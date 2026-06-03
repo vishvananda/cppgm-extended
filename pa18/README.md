@@ -223,7 +223,7 @@ PA18 supports the following in addition to the PA17 subset:
   exists, including function-template operator overloads
 
 Within this milestone, PA18 should produce valid LowIR for ordinary generic code over the
-supported PA17 subset. That LowIR is intended to be accepted by the later PA23
+supported PA17 subset. That LowIR is intended to be accepted by the later PA28
 `lowir2native` backend for the supported cases. PA13 `lowir2cy86` remains an
 optional execution scaffold.
 

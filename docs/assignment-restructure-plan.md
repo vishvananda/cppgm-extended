@@ -53,7 +53,7 @@ course never exercises through cppgm++.
 - **pa24 (cpplink, native linker):** functionally **bypassed** by the end-to-end
   compiler. The student builds `machine_linker`; cppgm++ links host-target output
   with g++/clang++. Strong case for removal/merge. (Caveat: the standalone
-  `lowir2native` tool at pa23/pa37 still uses `machine_linker`, and the code is
+  `lowir2native` tool at pa28/pa37 still uses `machine_linker`, and the code is
   shared, so this is "off the critical path," not "dead-deleted.")
 - **pa25 (cppeh):** **partially reused.** The EH *metadata* generation
   (`host_eh_object_sections`, the Itanium call-site/LSDA table) **is** used by
@@ -63,9 +63,9 @@ course never exercises through cppgm++.
 **Recommended change (Issue 1).**
 
 - **pa24 → fold/cut.** Drop the standalone native-linker assignment; keep the
-  `lowir2native` native-codegen lesson (pa23) which still legitimately produces
+  `lowir2native` native-codegen lesson (pa28) which still legitimately produces
   native objects, and move the small amount of genuinely-reused object/section
-  emission into pa23 or the first host-`-c` lesson. Do **not** teach a native
+  emission into pa28 or the first host-`-c` lesson. Do **not** teach a native
   multi-object linker the compiler never calls for host output.
 - **pa25 → refocus, don't delete.** Rebuild it around the part that *is* reused:
   the **host EH call-site/LSDA table** the compiler emits so the host personality

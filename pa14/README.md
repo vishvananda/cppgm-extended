@@ -137,7 +137,7 @@ the expected LowIR shape is direct short-circuit control flow. In that condition
 the compiler should branch through the operand blocks rather than first materializing a
 separate `land__*` / `lor__*` boolean slot.
 
-The generated LowIR is intended to become input for the later PA23
+The generated LowIR is intended to become input for the later PA28
 `lowir2native` backend. That future native path is not the PA14 grading
 contract, but PA14 should avoid emitting LowIR that only works for this one
 text comparison.
