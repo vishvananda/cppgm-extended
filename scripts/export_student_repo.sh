@@ -356,6 +356,7 @@ EOF
 sanitize_student_makefile_defaults \
   "$dest/Makefile" \
   "$dest"/pa34/Makefile \
+  "$dest"/pa35/Makefile \
   "$dest"/pa36/Makefile \
   "$dest"/pa37/Makefile \
   "$dest"/pa38/Makefile \
@@ -446,6 +447,7 @@ pa_ref_pairs=(
   pa32:cppgm++
   pa33:cppgm++
   pa34:cppgm++
+  pa35:cppgm++
   pa36:cppgm++
   pa37:lowiropt
   pa38:lowir2native

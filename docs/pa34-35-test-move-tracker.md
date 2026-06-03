@@ -1,5 +1,10 @@
 # pa34/35 test-move tracker
 
+> Renumbering note: this tracker was written before the PA34 split inserted the
+> new header-compile PA35. References to the old `pa35/tests/link` hosted-link
+> surface now correspond to `pa36/tests/link`; the new PA35 owns heavy
+> hosted-header compile-only tests.
+
 Working checklist for relocating the 185 ad-hoc pa34/35 hosted tests per
 `docs/pa34-35-test-disposition.md` and the **13-item manual review** decisions of
 record in `docs/assignment-restructure-plan.md`. Process: **one test at a time** —

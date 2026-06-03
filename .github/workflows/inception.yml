@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
     inputs:
       selfhost_run_id:
-        description: GitHub Actions run id from a successful Tests or PA38 Selfhost run
+        description: GitHub Actions run id from a successful Tests or Selfhost run
         required: true
       flavor:
-        description: PA38 selfhost artifact flavor
+        description: Selfhost artifact flavor
         required: true
         default: ubuntu-24.04-gcc
         type: choice

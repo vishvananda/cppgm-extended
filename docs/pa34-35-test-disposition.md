@@ -3,6 +3,11 @@
 _Generated 2026-05-30 from the verification-axis analysis in
 `assignment-restructure-plan.md`._
 
+> Renumbering note: this tracker was written before the PA34 split inserted the
+> new header-compile PA35. References to the old `pa35/tests/link` hosted-link
+> surface now correspond to `pa36/tests/link`; the new PA35 owns heavy
+> hosted-header compile-only tests.
+
 Covers the **185** ad-hoc tests added during self-hosting: pa34's **57**
 header-including tests + pa35's **128** `tests/link`. The **248** no-`#include`
 prerequisite tests are **not** listed (already directed; stay as the
