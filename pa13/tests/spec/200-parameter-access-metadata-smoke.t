@@ -3,12 +3,9 @@ function @sink(%p : ptr [capture=nocapture, access=read]) -> void [effects=reado
     return void
 }
 
-function @copy(%fn : ptr,
-               %dst : ptr [capture=nocapture, access=write],
-               %src : ptr [capture=nocapture, access=read]) -> void {
+function @copy(%fn : ptr, %dst : ptr [capture=nocapture, access=write], %src : ptr [capture=nocapture, access=read]) -> void {
   block ^entry:
-    call void %fn(%dst, %src) as (%arg0 : ptr [capture=nocapture, access=write],
-                                  %arg1 : ptr [capture=nocapture, access=read]) -> void [effects=readwrite, unwind=no]
+    call void %fn(%dst, %src) as (%arg0 : ptr [capture=nocapture, access=write], %arg1 : ptr [capture=nocapture, access=read]) -> void [effects=readwrite, unwind=no]
     return void
 }
 
