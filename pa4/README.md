@@ -211,3 +211,42 @@ The rules for nesting and recursion are difficult to understand, and even more d
 We suggest keeping with each identifier token, a blacklist of nested macro names and a noninvokable flag.  When an identifier token is produced as part of a macro invocation its blacklist is assigned to be that of the head token of the macro that was just invoked, and also the name of the macro that was used is added.
 
 Once you have identified a new potential macro invocation, check to see if the heads name is contained in its own blacklist, if it is flag it as noninvokable.  If the head token is flagged as noninvokable, abort the invocation.
+
+#### Blue Painting Guidance
+
+The usual way to implement the recursion rule is called _blue painting_.  The
+important idea is that recursion state belongs to individual tokens, not to the
+preprocessor as a whole.
+
+Give each preprocessing token a small set of macro names that are unavailable
+for that token.  If an identifier token named `F` has `F` in its unavailable
+set, it is emitted as an ordinary identifier and is not expanded as macro `F`.
+The unavailable mark stays with that token if the token is later rescanned.
+
+When a macro invocation is replaced, identifier tokens that come from that
+macro's own replacement list become unavailable for the macro currently being
+expanded.  They should also preserve any unavailable names already carried by
+the macro-name token that caused this expansion.  This is what makes direct and
+indirect recursive macros stop without using a global recursion cutoff.
+
+Expansion should still be a rescan process.  Replacement tokens are put back
+into the input stream and examined again before later source tokens are emitted.
+This matters because a replacement list can create a new macro invocation using
+tokens that follow it in the original source.
+
+Function-like macro arguments need one extra distinction:
+
+- collect arguments as raw preprocessing tokens before expanding them
+- stringized parameters use the raw argument
+- parameters next to `##` use the raw argument
+- ordinary substituted parameters use the macro-expanded argument
+
+The paint acquired while expanding an argument stays on those argument tokens
+when they are substituted.  However, those substituted tokens should not be
+treated as if they were written directly in the current macro's replacement
+list; parameter substitution breaks the nesting relationship described above.
+
+For `##`, paste the raw token spellings, retokenize the result, and rescan the
+new token.  Do not simply append the pasted spelling to the final output.  A
+pasted identifier may name a macro, and the next rescan is what decides whether
+it expands.

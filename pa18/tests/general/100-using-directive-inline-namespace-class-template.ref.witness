@@ -1,0 +1,20 @@
+translation-unit
+  class-use at pa18/tests/general/100-using-directive-inline-namespace-class-template.t:12:35
+    template helper_inline_ns::vec
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa18/tests/general/100-using-directive-inline-namespace-class-template.t:18:17
+    template helper_inline_ns::vec
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa18/tests/general/100-using-directive-inline-namespace-class-template.t:26:21
+    template helper_inline_ns::vec
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity helper_inline_ns::vec<int>::vec
+  function-instantiation
+    entity helper_inline_ns::vec<int>::vec
+  require-definition
+    entity helper_inline_ns::vec<int>::vec

@@ -1,0 +1,16 @@
+translation-unit
+  class-use at pa18/tests/general/100-defaulted-copy-constructor-reference-member.t:14:3
+    template RefPair
+    selected primary
+    bind #1 = int source=explicit
+  class-use at pa18/tests/general/100-defaulted-copy-constructor-reference-member.t:15:3
+    template RefPair
+    selected primary
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity RefPair<int>::RefPair
+  function-instantiation
+    entity RefPair<int>::RefPair
+  require-definition
+    entity RefPair<int>::RefPair

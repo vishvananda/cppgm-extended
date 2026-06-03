@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa18/tests/general/100-enum-builtin-bitand-beats-class-wrapper-operator.t:44:10
+    callee boost::xpressive::detail::check
+    selected instantiation
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity boost::xpressive::detail::check
+  function-instantiation
+    entity boost::xpressive::detail::check
+  require-definition
+    entity boost::xpressive::detail::check

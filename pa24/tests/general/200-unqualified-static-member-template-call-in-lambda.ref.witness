@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa24/tests/general/200-unqualified-static-member-template-call-in-lambda.t:12:21
+    callee Box::twice
+    selected instantiation
+    bind #1 = int source=explicit
+template-closure-events
+  ensure-definition
+    entity Box::twice
+  function-instantiation
+    entity Box::twice
+  require-definition
+    entity Box::twice

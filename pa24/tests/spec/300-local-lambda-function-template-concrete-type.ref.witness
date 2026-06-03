@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa18/tests/spec/100-local-lambda-function-template-concrete-type.t:24:5
+  class-use at pa24/tests/spec/300-local-lambda-function-template-concrete-type.t:24:5
     template box
     selected primary
     bind #1 = local source=explicit
-  function-call at pa18/tests/spec/100-local-lambda-function-template-concrete-type.t:25:12
+  function-call at pa24/tests/spec/300-local-lambda-function-template-concrete-type.t:25:12
     callee use
     selected instantiation
     bind #1 = local source=deduced

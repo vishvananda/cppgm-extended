@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa18/tests/general/100-rvalue-reference-member-forward-init.t:13:29
+    callee fwd
+    selected instantiation
+    bind #1 = Item source=explicit
+template-closure-events
+  ensure-definition
+    entity fwd
+  function-instantiation
+    entity fwd
+  require-definition
+    entity fwd
