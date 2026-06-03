@@ -148,15 +148,15 @@ mangling-consistency oracle.
 - [D] 700-hosted-pure-virtual-base-vtable-link-smoke — covered by pa17 pure-virtual/virtual-dispatch suite (pa17/400 abstract base + 300-virtual-call-*); source removed.
 - [x] 700-secondary-base-virtual-dispatch-view → `pa17/tests/general/300-secondary-base-virtual-class-return` (MI secondary-base dispatch + class return; distinct; pa17 PASS)
 
-### → backend / lowir2native (1 recast → pa23; 2 inspect-oracle stay in pa35/link)
+### → backend / lowir2native (1 recast → pa28; 2 inspect-oracle stay in pa35/link)
 
-> **Note:** the backend codegen home is **pa23** (lowir2native, baseline — `tests/strict` feature
+> **Note:** the backend codegen home is **pa28** (lowir2native, baseline — `tests/strict` feature
 > correctness, `tests/structural` register-allocation/liveness). pa37 is the *optimization* (`-O1`/`-O2`)
 > assignment and is **not** the home for baseline backend features.
 
 - [-] 700-hosted-imported-global-got-load-link-smoke — **stays in pa35/link** (L2): inspect-oracle test asserting the relocation *class* (`imported_data_got _Z1g`, not `data_pcrel`). lowir2native's single-module program path errors on the unresolved import (`ERROR: unresolved symbol _Z1g`), so GOT — a link-time, cross-object relocation — cannot be exercised there; pa37 also has no inspect oracle for relocation class. Object-backend/link concern.
-- [-] 700-hosted-pcrel-data-reloc-link-smoke — **stays in pa35/link** (L2): inspect-oracle test asserting the relocation *class* (`data_pcrel _Z1g`, not `branch_call`). `pa23/tests/strict/200-pcrel-global-data-load` covers the codegen/runtime of a pcrel global load, but not the relocation-class assertion (no inspect oracle in pa23/pa37). Distinct object-backend layer.
-- [x] 700-thread-local-store-register-pressure-runtime-smoke → `pa23/tests/structural/700-thread-local-store-register-pressure` (single complete TU, runtime-smoke exit=37; recast to minimal SSA LowIR — `tls_addr @g__tls_wrapper` + `store [r11]` with 5 live temps + `z` spilled across the TLS-helper call, `preserve rbx r12 r13 r14 r15`; lowir2native baseline PASS). Source removed. (Originally mis-filed under pa37 optimization; moved to pa23 backend.)
+- [-] 700-hosted-pcrel-data-reloc-link-smoke — **stays in pa35/link** (L2): inspect-oracle test asserting the relocation *class* (`data_pcrel _Z1g`, not `branch_call`). `pa28/tests/strict/200-pcrel-global-data-load` covers the codegen/runtime of a pcrel global load, but not the relocation-class assertion (no inspect oracle in pa28/pa37). Distinct object-backend layer.
+- [x] 700-thread-local-store-register-pressure-runtime-smoke → `pa28/tests/structural/700-thread-local-store-register-pressure` (single complete TU, runtime-smoke exit=37; recast to minimal SSA LowIR — `tls_addr @g__tls_wrapper` + `store [r11]` with 5 live temps + `z` spilled across the TLS-helper call, `preserve rbx r12 r13 r14 r15`; lowir2native baseline PASS). Source removed. (Originally mis-filed under pa37 optimization; moved to pa28 backend.)
 
 ### → hosted-compat features PA (14) — home dir TBD (the 248-directed prereq set)
 

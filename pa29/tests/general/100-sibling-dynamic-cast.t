@@ -1,4 +1,2 @@
-class YA { public: virtual int f() { return 1; } };
-class YB { public: virtual int g() { return 2; } };
-class YD : public YA, public YB {};
-int main() { YD d; YA *a = &d; return dynamic_cast<YB*>(a) ? 1 : 0; }
+# Anchor for 100-sibling-dynamic-cast source-driven PA27 test.
+sibling dynamic cast through toolchain

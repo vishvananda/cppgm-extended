@@ -1,19 +1,23 @@
-## CPPGM Programming Assignment 23 (lowir2native)
+## CPPGM Programming Assignment 23 (`cppgm++ --emit-lowir`)
 
 ### Overview
 
-Write a C++ application called `lowir2native` that takes as input a set of LowIR source
-files and writes a native executable program.
+Write a C++ application called `cppgm++` that takes as input a set of C++
+source files, executes translation phases 1 through 7, parses them as PA10/PA23
+translation units, reuses the PA11-PA22 semantic foundation, builds on the
+PA14-PA22 LowIR lowering path, and writes LowIR text.
 
-PA23 replaces PA13 `lowir2cy86` as the primary backend path. The input language is still
-LowIR, but the required output is no longer CY86 text. Instead, PA23 lowers LowIR directly
-to native code and native program data.
+PA23 is the template integration assignment. Now that you have implemented the
+individual template features in PA18, PA19, PA21, and PA22, this PA checks that
+they work together in realistic combinations. These tests are intentionally
+complicated: they are meant to uncover edge cases where a feature works alone
+but loses typed information, chooses the wrong specialization, instantiates too
+early, or fails during lowering when combined with another template mechanism.
 
-The intent of this milestone is:
+PA23 does not introduce a new isolated template feature. It is a composition
+surface over the earlier template assignments.
 
-- keep LowIR as the long-term compiler backend boundary
-- reuse the PA9 native backend knowledge without making CY86 the compiler IR
-- leave room for later optimization and additional native backends
+PA23 still produces LowIR. It does not introduce a new output format.
 
 ### Prerequisites
 
@@ -21,511 +25,185 @@ You should complete Programming Assignment 22 before starting this assignment.
 
 You will want to reuse:
 
-- the PA13 LowIR parser and LowIR specification
-- the PA9 native backend pieces: instruction encoding, executable container writing, and
-  startup/runtime glue
-- any shared lowering or assembler abstractions that help you separate:
-  - LowIR -> native instruction selection
-  - native code/data emission
-  - final executable image construction
-
-PA23 tests execute generated native programs. Your development host therefore
-needs an x86-64 Linux execution environment. With no `--target`, the tool should
-emit a Linux executable. The target name used by the course is `linux`.
+- the preprocessing and tokenization pipeline from PA1-PA6
+- the PA10 AST as the syntax boundary
+- the PA11-PA12 semantic foundation
+- the PA14-PA22 LowIR lowering path
+- the PA13 LowIR contract
+- the PA18-PA22 template machinery
+- the PA20 constant-evaluation layer
 
 ### Starter Kit
 
 The starter kit contains:
 
-- `pa23/README.md`, `pa23/Makefile`, and the test scripts in `pa23/scripts/`
-- a student-editable `dev/lowir2native.cpp` starter scaffold
-- the `pa23/lowir2native.cpp` symlink back to `../dev/lowir2native.cpp`
-- shared support sources and headers under `dev/src/`
-- a local test suite under `pa23/tests/`
-- the grammar for this assignment called `pa23.gram`
-- the authoritative LowIR specification in `../pa13/lowir.md`
-- an HTML grammar explorer of `pa23.gram` in the sub-directory `grammar/`
-- checked-in golden result files under `tests/`
-- `tests/strict/` for raw-MIR oracle tests
-- `tests/structural/` for canonical-MIR oracle tests
+- a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
+  in `../dev/cppgm++.cpp`
+- the standard assignment `Makefile` and harness scripts
+- the PA23 template-integration test suite under `tests/`
 
-Students should implement the assignment in `dev/lowir2native.cpp` and any reusable
-student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
-test fixtures, comparison scripts, and checked-in reference outputs are support
-files, not implementation files to edit for normal solutions. The shared support files
-provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA23 native lowering contract for you.
+In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from the
+`cppgm++` scaffold and is the file you extend for this assignment.
 
-Unlike PA1-PA9, there is no external reference binary for PA23. The checked-in `.ref`
-result files are the default oracle.
-
-### Driver Surface For This Assignment
-
-Required in PA23:
-
-- `--help` / `-h`
-- `-o <outfile>`
-- `--dump-machine-ir <mirfile>`
-- `--target <target>`
-
-Not yet required here:
-
-- separate compilation through `-c`
-- link-map dumping
-- the private exception/runtime ABI path
-
-Those later pipeline surfaces are owned by the later `cppgm++` object,
-compile/link, and host-EH assignments.
+Unlike PA1-PA9, there is no external reference binary for PA23. The checked-in
+`.ref` files are the default oracle.
 
 ### Input / Command-Line Arguments
 
-Behaviour is undefined unless the command-line arguments match one of:
+The PA23 invocation is the unoptimized LowIR mode:
 
-    $ lowir2native --dump-machine-ir <mirfile> <srcfile1> <srcfile2> ... <srcfileN>
-    $ lowir2native -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
-    $ lowir2native --dump-machine-ir <mirfile> -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
-    $ lowir2native --target <target> --dump-machine-ir <mirfile> <srcfile1> <srcfile2> ... <srcfileN>
-    $ lowir2native --target <target> -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
-    $ lowir2native --target <target> --dump-machine-ir <mirfile> -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-where each `<srcfileK>` is a LowIR source file and `<target>` is `linux`.
-
-With no `--target`, `lowir2native` should emit a native Linux executable.
+Behaviour is undefined unless the command-line arguments match that shape, with
+the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
+milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
+not part of PA23.
 
 ### Output Format
 
-If `-o <outfile>` is provided, `lowir2native` shall write a native executable
-program to `<outfile>`.
+On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
+`EXIT_SUCCESS`.
 
-If `--dump-machine-ir <mirfile>` is provided, `lowir2native` shall also write a
-deterministic machine-IR dump to `<mirfile>`.
+The authoritative LowIR definition is `../pa13/lowir.md`. PA23 extends the
+PA22 lowering surface only by requiring previously introduced template features
+to compose through the already-defined LowIR family.
 
-That MIR dump path must work even for helper-only LowIR inputs that have no
-entry function. In that case the dumped MIR should simply omit the optional
-`startup` section.
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
+in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same inputs;
+`../pa13/lowir.md` defines the canonical reference presentation and notes where
+internal LowIR symbol names are only a presentation tie-breaker.
 
-For the native path, that means an ELF executable.
+Your output must also preserve order-sensitive LowIR regions when they are
+present: instruction order inside blocks, item order inside structured globals,
+vtable slot order, and action order inside generated initialization,
+finalization, constructor, destructor, and cleanup bodies.
 
-The exact binary encoding is not directly compared by the PA23 tests. Instead, the tests
-compare:
-
-- the compiler exit status
-- the canonical machine-IR oracle for successful compilations
-- the generated program exit status
-- the generated program standard output
+The test harness checks that the generated LowIR is well formed and matches the
+checked-in `.ref` files after canonicalizing presentation details that are not
+part of the assignment contract. Exact textual LowIR matching is not a PA23
+grading requirement.
 
 ### Error Handling
 
-If an error occurs while parsing LowIR, validating LowIR, lowering LowIR, or writing the
-native output, `lowir2native` shall `EXIT_FAILURE`.
+If an error occurs during preprocessing, tokenization, parsing, semantic
+analysis, or LowIR generation, `cppgm++` shall `EXIT_FAILURE`.
 
-The output file is not required to be meaningful on failure.
+The output file is not required to be meaningful on failure. Diagnostics are not
+part of the grading contract.
 
 ### Standard Output / Error
 
-Standard output and standard error are ignored for automated testing of `lowir2native`.
+Standard output and standard error are ignored for automated testing of
+`cppgm++`.
 
 You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing is based on execution of the generated native program.
+PA23 tests live under `tests/`. The suite is split by test role:
 
-For each test case `x`:
+- `tests/spec/` contains N3485/spec-anchored integration cases whose important
+  behavior is still tied to a specific standard template rule.
+- `tests/general/` contains broader generic-program examples that combine
+  multiple template mechanisms.
 
-- `lowir2native` is executed to produce `x.my.program`
-- `lowir2native` is also executed with `--dump-machine-ir` to produce `x.my.mir`
-- the compiler exit status is recorded in `x.my.impl.exit_status`
-- if compilation succeeded, `x.my.program` is executed
-- its standard output is recorded in `x.my.program.stdout`
-- its numeric exit status is recorded in `x.my.program.exit_status`
+The `make test` target runs both directories through the LowIR validator. For
+successful tests, the validator checks the reference LowIR and your generated
+LowIR for basic structural correctness, then compares the canonicalized LowIR
+against the checked-in reference. For rejected tests, the exit status is the
+checked result; exact diagnostic text is not checked.
 
-The checked-in `.ref` files are compared the same way:
+The clusters are organized by feature combination:
 
-- `x.ref.impl.exit_status`
-- `x.ref.mir`
-- `x.ref.program.stdout`
-- `x.ref.program.exit_status`
+- `100`: dependent-name and entity interactions that do not fit a narrower
+  later cluster
+- `200`: deduction, partial ordering, non-deduced context, and braced-init
+  deduction combinations
+- `300`: SFINAE, substitution, detector idiom, and no-eager instantiation
+  combinations
+- `400`: pack, member-template, template-template-parameter, alias-template, and
+  variable-template compositions
+- `500`: library-shaped end-to-end reducers without hosted or builtin-trait
+  dependencies
 
-The `--dump-machine-ir` output remains the raw debugging dump.
+When working through PA23 failures, keep the earlier template assignments
+passing. A PA23 fix should not relax, special-case, or regress the basic
+functionality already covered by PA18, PA19, PA21, and PA22. Before treating an
+integration fix as complete, run the earlier template PAs and PA23 through the
+report harness:
 
-For a successful compilation, the tested raw MIR dump is a plain-text file with this overall
-shape:
+    $ make test-report ACTIVE_TEST_REPORT_PAS='pa18 pa19 pa21 pa22 pa23'
 
-```text
-machine_ir x86_64 <target>
+### PA23 Syntax Boundary
 
-startup
-    ...
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa23.gram`. The grammar defines accepted syntax only;
+the PA23 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
-global @name
-  ...
+### Optional Student Test Ideas
 
-function @name
-  abi
-    ...
-  frame
-    ...
-
-  block ^label
-    ...
-```
-
-The exact instruction inventory is target- and lowering-dependent, but the output format used
-for testing is still this textual machine-IR form:
-
-- one `machine_ir x86_64 <target>` header
-- an optional `startup` section
-- zero or more `global @...` definitions
-- one or more `function @...` definitions
-- per-function `abi`, `frame`, and ordered `block ^...` sections
-- one instruction or metadata line per indented row beneath those sections
-
-The raw `.mir` file is still checked in because it is the debugging-oriented dump students
-see directly from `--dump-machine-ir`.
-
-For testing, PA23 uses two explicit MIR comparison modes, split by directory:
-
-1. `tests/strict/` compares the raw checked-in `.ref.mir` against the generated `.my.mir`,
-   after only normalizing the host-target tag in the `machine_ir x86_64 <target>` header.
-2. `tests/structural/` compares the checked-in `.ref.cmir` against a canonicalized form of
-   the generated `.my.mir`.
-
-The structural canonicalization pass is intentionally conservative. It hides:
-
-- the host-target tag in the MIR header
-- exact stack/frame displacement numbers in memory operands
-- interchangeable free GPR choices where the structural MIR shape is otherwise the same
-- interchangeable free XMM choices where the structural MIR shape is otherwise the same
-
-It still preserves:
-
-- opcode family and width
-- direct vs indirect call shape
-- direct compare-to-branch vs materialized-bool shape
-- register vs stack vs immediate location class
-- floating operation family and explicit conversion family
-
-So the assignment keeps a structural backend oracle without freezing exact
-frame-layout details into every checked-in reference.
-
-That means a successful `PA23` test anchor now validates exactly these output files:
-
-- `x.ref.impl.exit_status`: exact compiler success/failure result
-- `x.ref.program.exit_status`: exact generated-program exit status
-- `x.ref.program.stdout`: exact generated-program standard output
-- `x.ref.mir`: the checked-in raw MIR oracle
-- plus either:
-  - strict raw-MIR comparison with header normalization only, or
-  - structural canonical-MIR comparison using checked-in `x.ref.cmir`
-
-In other words, `PA23` is not just "program behavior matches." The tests also validate the
-shape of the lowered backend output through one of those two explicit MIR oracles.
-
-For structural failures, the harness leaves behind:
-
-- `x.my.cmir`
-
-Those are debugging artifacts only. Students are not expected to emit `.cmir` files. They
-only need to implement `--dump-machine-ir` and produce raw `.mir`.
-
-`make test` recursively runs both checked-in local suites:
-
-- `tests/strict/`
-- `tests/structural/`
-
-These directories contain PA23-specific backend oracle tests, not source-standard tests.
-PA23 has no `tests/spec/` directory because the tested contract is the
-compiler-owned LowIR-to-native backend surface rather than an N3485 C++ source-language
-clause.
-
-The PA23 suite is intentionally mixed:
-
-- hand-written PA13-style LowIR tests
-- selected LowIR programs copied from the outputs of PA15-PA22
-
-That ensures PA23 is tested both on the core LowIR forms and on the richer LowIR that later
-lowering assignments now produce.
-
-The PA23 test suite exercises:
-
-- startup/lowering correctness for simple programs, globals, direct calls, and indirect calls
-- register and stack calling-convention handling for:
-  - integer-only calls
-  - mixed GPR/XMM direct calls
-  - mixed GPR/XMM indirect calls
-- short-circuit-style branch diamonds expressed directly in LowIR control flow
-- unary logical-not lowering when the result feeds control flow
-- direct compare-fed branches over integer, pointer, and floating inputs
-- compare-as-value materialization for integer, pointer, and floating cases
-- trivial integer and floating leaf chains that should stay register-resident
-- mixed integer/float conversion chains
-- signed and unsigned narrow integer reload/widen paths from both frame and global storage
-- conservative `f80` arithmetic, comparison, and call/data lowering
-- atomic load/store, exchange, compare-exchange, fetch-add, and fence operations across
-  multiple scalar widths
-
-The shipped PA23 tests are the contract for this milestone.
-
-### PA23 Syntax Spec
-
-The authoritative input-language syntax for PA23 is `pa23.gram`.
-
-As in the earlier assignments, that grammar defines accepted input syntax only. The native
-program behaviour contract is specified by this README, PA13 `lowir.md`, and the checked-in
-`.ref` files.
-
-PA23 does not add new LowIR syntax beyond PA13. It reuses the same LowIR language and adds
-a new backend target for it.
-
-That means the expected PA23 input surface is the current PA13 LowIR surface, not the older
-pre-metadata subset. In particular, handwritten PA23 inputs may now use:
-
-- explicit function role metadata such as `[role=entry]`, `[role=init]`, and `[role=fini]`
-- top-level declaration forms such as `declare function` and `declare global`
-- structured global data plus explicit global storage metadata where relevant
-- optional call-boundary, parameter, and instruction-debug metadata accepted by PA13
-
-A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
-`pa23.gram` as the source of truth.
-
-If this README and `pa23.gram` appear to disagree about LowIR syntax, treat `pa23.gram` as
-authoritative. If this README and `../pa13/lowir.md` appear to disagree about the full LowIR
-definition, treat `lowir.md` as authoritative. If they disagree about the required PA23
-implementation subset, treat the `Assignment Boundary` and `Out Of Scope` sections below as
-authoritative.
+When adding your own tests, useful PA23 themes include dependent alias expansion
+inside deduction, member-template calls through dependent owners, pack expansion
+through SFINAE helpers, detector idioms that rely on earlier alias or partial
+specialization machinery, and function-template partial ordering where more than
+one template feature is needed for the selected result.
 
 ### Assignment Boundary
 
-PA23 must support native lowering for the LowIR family already defined for PA13 and used by
-PA14-PA22, including:
+PA23 owns integration among already-introduced template features, including:
 
-- scalar globals and structured global data
-- functions, blocks, slots, temporaries, and runtime hooks
-- direct and indirect calls
-- control flow, integer operations, and pointer/index operations
-- floating scalar operations and comparisons over `f32`, `f64`, and `f80`
-- explicit scalar conversions:
-  - `sitofp`
-  - `uitofp`
-  - `fptosi`
-  - `fptoui`
-  - `fpext`
-  - `fptrunc`
-- atomic scalar operations and fences over `i1`, `i8`, `i16`, `i32`, `i64`, and `ptr`
-- bulk memory operations:
-  - `copyobj`
-  - `zeroinit`
-- object-lowered ABI forms emitted by source-to-LowIR assignments:
-  - hidden destination-pointer returns
-  - lowered object parameters carried as `ptr`
-- structured vtable/global table data emitted by source-to-LowIR lowering
-
-Within this milestone, PA23 should successfully compile the LowIR emitted by PA14-PA22 into
-host-native executables, without requiring CY86 as the primary output format.
-
-PA23 must also expose a deterministic machine IR for successful compilations. That dump is
-the structural proof that lowering is happening directly from LowIR into a target-specific
-backend representation rather than only through a CY86 scaffold.
-
-Within the supported subset, PA23 should lower:
-
-- direct function calls to direct machine-IR call sites
-- block control flow to direct machine-IR conditional and unconditional branches
-- startup and shutdown hooks to direct machine-IR call sites in the startup path
-- bulk object-memory operations to first-class machine-IR `copy_bytes` / `zero_bytes`
-  instructions
-- truly indirect LowIR calls to machine-IR indirect calls, rather than forcing all calls
-  through the same lowered shape
-- structured global data to machine-IR global data blocks rather than flattening everything
-  through a CY86-style scalarized path
-- atomic scalar LowIR to first-class machine behavior rather than silently dropping the
-  atomic contract in the direct backend
-- the LowIR arithmetic and conversion forms needed for native execution parity on the
-  backend-owned subset of the old PA9 execution envelope, especially:
-  - signed/unsigned integer division, modulus, ordered comparisons, and right shift
-  - integer/float conversion operations
-  - float-width extension and truncation operations
-  - `f32`/`f64`/`f80` arithmetic and comparison behavior
-
-To complete PA23, implement these goals:
-
-1. Direct control-flow lowering.
-   LowIR branches, first-class `switch` dispatch, and direct calls should become
-   first-class machine-IR branches and direct calls, not a normalized CY86-style
-   fallback.
-
-2. Direct startup/runtime wiring.
-   The startup path should call `@__cppgm_init`, `@main`, and `@__cppgm_fini` as direct
-   machine-IR call sites where those hooks exist.
-
-3. First-class bulk object-memory lowering.
-   `copyobj <bytes>x<align>` and `zeroinit <bytes>x<align>` should survive as meaningful
-   machine-IR operations such as `copy_bytes <bytes>x<align>` and
-   `zero_bytes <bytes>x<align>`, rather than being expanded only through the old CY86
-   lowering path.
-
-4. Preserve the distinction between direct and indirect calls.
-   The direct backend should still emit indirect machine-IR calls for truly indirect LowIR
-   calls, such as virtual dispatch, instead of collapsing all calls into one lowered form.
-   That includes pointer-valued global cells: if a call target comes from a scalar `ptr`
-   global, PA23 should call through the pointer stored in that global, not through the
-   address of the global storage itself.
-
-5. Preserve richer LowIR data layout.
-   Structured global data and later vtable-like globals should remain structured in the
-   direct backend rather than being forced through a scalarized compatibility path.
-
-6. Exercise backend-owned execution behavior directly.
-   PA23 is the right home for LowIR-native execution tests that validate the basic machine
-   semantics inherited from PA9 without waiting for the later source-driver/toolchain
-   milestones. The important cases are arithmetic, signedness-sensitive integer behavior,
-   scalar conversions, and floating execution. Those tests should be expressed in LowIR,
-   not by reintroducing CY86 or a host-lib-dependent source harness.
-
-   In particular, PA23 should already treat unsigned LowIR arithmetic/predicate forms such as
-   `udiv`, `umod`, `ushr`, `ult`, `ule`, `ugt`, and `uge` as first-class backend behavior,
-   not as optional later cleanups.
-
-7. Preserve direct compare-fed branch lowering for ordinary scalar cases.
-   When a compare result feeds exactly one branch, PA23 should lower that as a direct
-   machine compare plus conditional branch rather than materializing a boolean temporary
-   and branching on that temporary afterward. If the compared scalar already
-   lives in one obvious home slot, PA23 may also compare that slot directly against the
-   branch literal instead of first reloading the value into a scratch register solely to
-   perform the compare.
-
-8. Keep trivial leaf scalar temps register-resident by default.
-   In small leaf functions, ordinary scalar temps should not be frame-backed unless
-   pressure or ABI boundaries require it.
-
-9. Keep ordinary `f32` and `f64` work on the floating register path.
-   Simple leaf floating arithmetic and floating copies should stay in XMM-backed MIR
-   rather than degrading into integer-side or stack-first lowering by default.
-
-10. Keep ABI-pressure behavior intentional rather than blanket stackified.
-   Values that stay live across a call may move or spill when the calling convention
-   requires it, but PA23 should still preserve a register-backed view of ordinary temps
-   where possible instead of collapsing whole functions back into an all-stack model.
-   Call-setup-only temps should not be treated as if they were live across the call just
-   because they feed the call target or argument registers. Ordinary pointer parameters in
-   wrapper-style code should likewise be allowed to stay in registers instead of forcing
-   an all-stack model. If a scalar slot only mirrors one incoming parameter and its address
-   is never taken, PA23 may also elide that trivial home slot entirely instead of
-   materializing `store %param, $slot` / `load $slot` traffic. Likewise, if a by-value
-   object slot only exists to clone one incoming object parameter so later code can take a
-   stable address, PA23 may reuse the already-materialized parameter home slot instead of
-   allocating a second object slot and emitting a redundant `copyobj` first. The same
-   backend-quality rule applies to direct object call results that only feed one final slot:
-   PA23 may store the returned ABI chunks straight into that slot rather than spilling a
-   hidden temporary object and immediately copying it again. Once a pointer temp already
-   lives in a register, ordinary `load`/`store` and atomic memory operations
-   may dereference that register directly instead of bouncing through an extra fixed
-   scratch base first. Likewise, if a temp is only `addr $slot`, PA23 may rematerialize
-   that frame address with a later `lea` at each use site instead of reserving a preserved
-   register or hidden frame temp just to keep the address live across nearby calls. Single-use
-   constant `index ptr` temps that only feed outgoing ABI arguments may likewise materialize
-   directly into the final argument registers instead of first reserving their own temp homes,
-   and the base pointer value still needs to stay live through that call setup.
-   Likewise, read-only shadow slots for incoming integer or pointer register parameters may
-   disappear entirely when PA23 can keep those values in ordinary temp registers instead of
-   forcing a backend home slot.
-   When a
-   scalar value is already in the register that a nearby
-   `load` result, store sink, or outgoing ABI argument actually wants, PA23 may also use
-   that final register directly instead of forcing an extra `mov` shell first.
-
-11. Keep mixed-width conversion and floating-bool materialization explicit.
-   Mixed integer/float conversion chains should keep their conversion family and width
-   visible in MIR, and floating compare results used as values may materialize booleans
-   in registers without an unnecessary stack round-trip.
-
-12. Preserve narrow integer width behavior in MIR.
-   Ordinary `i8`/`u16` compare-fed branches should stay visibly narrow, and small signed
-   or unsigned integer arithmetic should show the expected post-operation normalization
-   instead of silently widening into an untyped 64-bit path.
-
-13. Keep the conservative `f80` path explicit rather than implicit.
-   PA23 does not need to treat `f80` like ordinary XMM-resident `f32`/`f64`, but its
-   conversions and truncation/extension path should still stay visible and testable in
-   MIR.
-
-14. Cover direct compare-fed branch lowering at ordinary 64-bit integer width too.
-   The direct compare/branch quality rule is not limited to `i32` and `u32`. PA23 should
-   also show the same direct branch shape for straightforward `i64` comparisons. The core
-   oracle for this is the `500-i64-direct-compare-branch` family.
-
-15. Keep pointer/null comparisons on the direct machine compare/branch path.
-   Ordinary pointer/null tests should remain visibly pointer-typed in MIR and branch
-   directly rather than degrading into a less explicit scalarized path, including
-   null values first introduced through `const ptr 0`.
-
-16. Keep pointer/index address calculation visible as pointer arithmetic.
-   Pointer indexing and pointer-difference behavior should stay structurally visible in MIR
-   rather than being hidden behind an unrelated compatibility path, and dead base-pointer
-   temps should be allowed to flow directly into the indexed destination rather than
-   forcing an extra scratch copy first.
-
-17. Preserve mixed integer/floating call ABI classification.
-   Calls that mix GPR and XMM arguments should keep that classification visible in MIR so
-   students can tell whether the backend is respecting the native calling convention.
-
-18. Keep ordinary `f80` arithmetic and comparison behavior executable and visible.
-   Even though `f80` remains the conservative floating special case, simple `f80`
-   arithmetic and `cmp` behavior should still run correctly and remain explicit in MIR.
-
-19. Exercise non-64-bit atomic widths explicitly.
-   The PA23 atomic contract is not only about `i64`; smaller-width atomic load/store
-   behavior should survive through the direct native backend, including direct dereference
-   of a register-backed pointer temp rather than an unnecessary scratch-register bounce
-   first.
-
-The PA23 tests intentionally include all of those cases so students can tell whether they
-have actually implemented a direct `LowIR -> machine IR -> native` path, rather than only
-matching program behaviour through a hidden CY86-based route.
+- dependent names combined with alias, variable, partial-specialization, or
+  deduction behavior
+- function-template deduction combined with packs, non-deduced contexts,
+  explicit arguments, conversion templates, or constructor templates
+- SFINAE and substitution behavior combined with alias templates, partial
+  specializations, member templates, packs, and detector idioms
+- no-eager-instantiation timing in realistic dependent template bodies
+- library-shaped reductions that do not require hosted headers, vendor
+  builtins, or later language features
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA23:
 
-- separate compilation and linking
-- relocatable object-file output
-- exception-aware native runtime metadata
-- optimization passes
-- non-x86 native instruction selection
-- source-level end-to-end runtime programs that depend on the later `cppgm++ -c`
-  driver and object/library flow
+- new isolated template features not already introduced by PA18, PA19, PA21, or
+  PA22
+- `std::initializer_list` library semantics and initializer-list overload
+  machinery
+- member-pointer template behavior that depends on later member-pointer support
+- hosted/vendor-only extensions that happen to use templates
+- post-C++11 template-language features
+- backend/toolchain ownership that belongs to the later native and toolchain
+  milestones
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stages are:
-
-- PA25 host EH facts, which validates the host-EH metadata emitted in
-  `cppgm++ -c` objects
-- PA30 `cppgm++` compile/link mode, which adds source-driven separate
-  compilation and linking on top of the native backend path
+The intended next stage is PA24, which extends the source-to-LowIR path with
+the first broad ordinary-language closure slice.
 
 So PA23 should leave behind:
 
-- a stable `LowIR -> native` lowering boundary
-- a stable `LowIR -> machine IR` boundary that later optimization passes can target
-- reusable target-specific code/data emission layers
-- no renewed dependence on CY86 for the main compiler path
-- a backend test corpus that already catches the basic execution-level
-  arithmetic and conversion bugs before the source-driven toolchain stages
+- a complete standard template semantic layer whose individual features compose
+  cleanly
+- instantiated declarations that lower through the ordinary LowIR path without
+  template subset special-casing
+- no remaining "template features work alone but not together" gap before later
+  backend, ABI, and hosted toolchain work
 
 ### Design Notes (Non-Normative)
 
-The cleanest PA23 structure is:
+The useful shape for PA23 is not another special-case layer. The same typed
+template declarations, template arguments, substitution results, deduction
+bindings, and deferred-instantiation records from PA18-PA22 should be threaded
+through the combined cases.
 
-- parse LowIR into a structured internal representation
-- lower that representation into a structured machine-IR program
-- dump that machine-IR program deterministically for testing
-- lower that machine-IR program into target-specific code/data
-- write the final executable image from that lowered form
-
-The important architectural constraint is that PA23 should reuse PA9 knowledge without
-re-coupling the compiler to CY86. CY86 may remain useful as a secondary validation path, but
-the primary backend boundary should now be LowIR to machine IR and native code/data.
+When a PA23 test fails, first look for data that was lost between those
+subsystems: an alias expansion that discarded a dependent owner, a pack binding
+that became text-only, a substitution failure promoted into a hard diagnostic,
+or an instantiation record forced before the template arguments were known.

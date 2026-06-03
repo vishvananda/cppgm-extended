@@ -406,9 +406,9 @@ int run_driver_mode(const vector<string> & args)
   case DriverMode::Preprocess:
     return run_unimplemented_mode("hosted preprocess driver mode (-E)", "PA34");
   case DriverMode::Compile:
-    return run_unimplemented_mode("compile driver mode (-c)", "PA30");
+    return run_unimplemented_mode("compile driver mode (-c)", "PA29");
   case DriverMode::Link:
-    return run_unimplemented_mode("link driver mode", "PA30");
+    return run_unimplemented_mode("link driver mode", "PA29");
   }
   throw logic_error("unreachable driver mode");
 }

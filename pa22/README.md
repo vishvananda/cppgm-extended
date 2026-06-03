@@ -180,7 +180,7 @@ So PA22 should leave behind:
 - a complete standard template semantic layer
 - instantiated declarations that lower through the ordinary LowIR path without
   template subset special-casing
-- a clean handoff to PA24 for multi-feature template integration before
+- a clean handoff to PA23 for multi-feature template integration before
   backend/toolchain work
 
 ### Design Notes (Non-Normative)

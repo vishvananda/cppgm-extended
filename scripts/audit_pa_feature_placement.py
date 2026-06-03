@@ -19,10 +19,10 @@ from typing import Iterable
 
 DEFAULT_TRACKER = Path("docs/pa14-pa22-contract-test-audit-tracker.md")
 DEFAULT_PAS = tuple(f"pa{i}" for i in range(14, 23))
-STRICT_TEMPLATE_PAS = ("pa18", "pa19", "pa21", "pa22", "pa24")
+STRICT_TEMPLATE_PAS = ("pa18", "pa19", "pa21", "pa22", "pa23")
 SEMANTIC_ONLY_PA_MAX = 12
-LOWIR_SOURCE_PAS = set(range(14, 23)) | set(range(26, 30))
-BACKEND_ONLY_PAS = {23}
+LOWIR_SOURCE_PAS = set(range(14, 28))
+BACKEND_ONLY_PAS = {28}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
 
 TEMPLATE_CONCEPT_BY_FEATURE = {
@@ -687,7 +687,7 @@ def review_template_concepts(concepts: Iterable[str], current_pa: str) -> list[s
     if len(review) > 1:
         support = (
             TEMPLATE_INTEGRATION_BASIC_SUPPORT
-            if current_pa == "pa24"
+            if current_pa == "pa23"
             else TEMPLATE_PRE_INTEGRATION_SUPPORT
         )
         non_support = review.difference(support)
@@ -771,9 +771,9 @@ def template_review_for(
         bucket = "later-owner-or-split"
         action = "Move later-owned behavior, or split/reduce to keep only the PA22 template assertion."
     elif len(review_concepts) >= 2:
-        bucket = "pa24-integration-candidate"
+        bucket = "pa23-integration-candidate"
         suggested_cluster = suggest_integration_cluster(review_concepts, current_cluster)
-        action = "Review as multi-feature template integration; move to PA24 if concepts are essential together."
+        action = "Review as multi-feature template integration; move to PA23 if concepts are essential together."
     elif owner.startswith(("pa18", "pa19", "pa21")):
         bucket = "basic-owner-candidate"
         action = "Place in the owning basic template PA; keep if already there, otherwise move or renumber after review."
@@ -791,7 +791,7 @@ def template_review_for(
         "later_or_compat_features": later_features,
         "latest_template_owner": owner,
         "template_bucket": bucket,
-        "suggested_pa24_cluster": suggested_cluster,
+        "suggested_pa23_cluster": suggested_cluster,
         "template_action": action,
     }
 
@@ -940,7 +940,7 @@ def template_tracker_scope_label(pas: list[str]) -> str:
     if pas == ["pa22"]:
         return "PA22"
     if tuple(pas) == STRICT_TEMPLATE_PAS:
-        return "the strict template PAs (`pa18 pa19 pa21 pa22 pa24`)"
+        return "the strict template PAs (`pa18 pa19 pa21 pa22 pa23`)"
     return "the selected template PAs (`{}`)".format(" ".join(pas))
 
 
@@ -960,7 +960,7 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "- PA18/PA19/PA21 basic template owners",
         "- PA22 advanced single-feature template completion",
-        "- PA24 template integration, using the removed PA24 slot until final renumbering",
+        "- PA23 template integration",
         "- later owners, split/reduce, or drop decisions",
         "",
         "The table below was seeded by the template-placement audit mode.",
@@ -982,11 +982,11 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "- A test goes to the earliest PA/cluster that owns the behavior it asserts.",
         "- Support syntax does not control placement when it is already implemented and not essential to the expected output.",
-        "- If two or more template concepts are essential together, place the test in PA24 integration and cluster it by the feature combination.",
+        "- If two or more template concepts are essential together, place the test in PA23 integration and cluster it by the feature combination.",
         "- If a later non-template feature is essential, move later or split/reduce the test before keeping template coverage.",
         "- Witness refs are golden; do not regenerate witness refs while moving tests.",
         "",
-        "## PA24 Candidate Clusters",
+        "## PA23 Candidate Clusters",
         "",
         "| Cluster | Intended integration shape |",
         "| --- | --- |",
@@ -1007,7 +1007,7 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "",
         "## Review Queue",
         "",
-        "| Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA24 Cluster | Action | Notes |",
+        "| Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA23 Cluster | Action | Notes |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ])
     for row in sorted(rows, key=lambda item: (str(item["template_bucket"]), str(item["path"]))):
@@ -1020,7 +1020,7 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
                 markdown_cell(row["review_template_concepts"]),
                 markdown_cell(row["later_or_compat_features"]),
                 row["latest_template_owner"],
-                markdown_cell(row["suggested_pa24_cluster"]),
+                markdown_cell(row["suggested_pa23_cluster"]),
                 markdown_cell(row["template_action"]),
             )
         )
@@ -1053,7 +1053,7 @@ def write_csv(path: Path, rows: list[dict[str, object]], template_placement: boo
                 "template_features",
                 "later_or_compat_features",
                 "latest_template_owner",
-                "suggested_pa24_cluster",
+                "suggested_pa23_cluster",
                 "template_action",
                 "source_sidecars_scanned",
             ])
@@ -1070,7 +1070,7 @@ def write_csv(path: Path, rows: list[dict[str, object]], template_placement: boo
                     "; ".join(row["template_features"]),  # type: ignore[arg-type]
                     "; ".join(row["later_or_compat_features"]),  # type: ignore[arg-type]
                     row["latest_template_owner"],
-                    row["suggested_pa24_cluster"] or "",
+                    row["suggested_pa23_cluster"] or "",
                     row["template_action"],
                     row["source_sidecars_scanned"],
                 ])

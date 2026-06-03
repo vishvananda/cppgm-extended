@@ -18,7 +18,7 @@ You will reuse:
 
 - the PA13 LowIR syntax and semantic contract
 - the PA14 through PA35 source-to-LowIR lowering pipeline
-- the PA23 through PA25 native backend and runtime path
+- the PA28 native backend, PA29 driver, PA30 ABI naming, and PA31 host-runtime path
 - the PA35 hosted compiler driver surface
 
 ### Starter Kit

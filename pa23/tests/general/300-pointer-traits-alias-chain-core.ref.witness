@@ -1,0 +1,9 @@
+translation-unit
+  class-use at pa23/tests/general/300-pointer-traits-alias-chain-core.t:21:3
+    template wrapper
+    selected primary
+    bind #1 = int * source=explicit
+  class-use at pa23/tests/general/300-pointer-traits-alias-chain-core.t:22:25
+    template wrapper
+    selected primary
+    bind #1 = int * source=explicit

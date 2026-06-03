@@ -262,7 +262,7 @@ This PA14 milestone supports the following:
     subscript forms from the PA12 procedural subset
 
 The generated LowIR for this supported subset is intended to be accepted by the
-later PA23 `lowir2native` backend. PA13 `lowir2cy86` remains a useful optional
+later PA28 `lowir2native` backend. PA13 `lowir2cy86` remains a useful optional
 execution scaffold, not the primary validation path.
 
 ### Out Of Scope

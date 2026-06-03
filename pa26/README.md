@@ -2,23 +2,18 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA10/PA26 translation units,
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source
+Files, executes translation phases 1 through 7, parses them as PA10/PA26 translation units,
 reuses the PA11-PA12 semantic foundation, builds on the PA14-PA25 LowIR lowering path,
-adds the PA26 core-language slice, and writes LowIR text.
+adds the PA26 multi-base object-model slice, and writes LowIR text.
 
-PA26 closes the first large batch of ordinary C++11 language features that were deferred
-while the compiler was still building its type, object, template, and backend layers.
+PA26 completes the remaining non-virtual object-model work that still fits the current
+single-vptr ABI:
 
-This milestone focuses on:
-
-- `auto` variable type deduction
-- ordinary `auto` function return type deduction for non-template function definitions and
-  non-template member function definitions with visible bodies
-- direct braced initialization of supported scalar and array objects
-- captureless lambdas plus the supported by-reference local / `this`-capture subset
-- range-for over bounded arrays, braced-init lists, and supported user-defined `begin` / `end`
-  ranges
+- non-virtual multiple inheritance
+- member lookup and access across multiple base subobjects
+- constructor, copy, and destructor generation across multiple non-virtual bases
+- `dynamic_cast<void*>` for the current polymorphic single-inheritance ABI
 
 PA26 still produces LowIR. It does not introduce a new output format.
 
@@ -33,15 +28,8 @@ You will want to reuse:
 - the PA11-PA12 semantic foundation
 - the PA14-PA25 LowIR lowering path
 - the PA13 LowIR contract
-- the PA23 native validation path
+- the PA28 native validation path
 - the PA13 LowIR -> CY86 path as an optional secondary scaffold
-
-The intended direction is:
-
-- PA10 provides syntax
-- PA11-PA12 provide typed semantic analysis
-- PA14-PA25 lower the supported language subsets to LowIR
-- PA26 extends that same lowering path with the remaining first-tier core-language features
 
 ### Starter Kit
 
@@ -61,7 +49,7 @@ student-owned helpers they add under `dev/src/`. The assignment directory, gramm
 test fixtures, comparison scripts, and checked-in reference outputs are support
 files, not implementation files to edit for normal solutions. The shared support files
 provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA26 source-to-LowIR language slice for you.
+new PA26 source-to-LowIR object-model slice for you.
 
 Unlike PA1-PA9, there is no external reference binary for PA26. The checked-in `.ref`
 files are the default oracle.
@@ -109,7 +97,8 @@ The output file is not required to be meaningful on failure.
 
 ### Standard Output / Error
 
-Standard output and standard error are ignored for automated testing of `cppgm++`.
+Standard output and standard error are ignored for automated testing of
+`cppgm++`.
 
 You are free to use them for debugging, tracing, or diagnostic messages.
 
@@ -119,9 +108,10 @@ Testing uses checked-in golden outputs, not a reference binary. The `Makefile` i
 `cppgm++` with `--emit-lowir -O0`.
 
 The local checked-in tests live in `tests/general/`. That directory contains
-PA26 source-to-LowIR tests, cross-feature combinations, and boundary cases over
-the broad core-language closure slice. PA26 has no `tests/spec/` directory
-because these tests focus on the combined language-to-LowIR contract.
+PA26 source-to-LowIR tests over non-virtual multiple inheritance, multi-base
+generated members, `dynamic_cast<void*>`, and ambiguity rejection. PA26 has no
+`tests/spec/` directory because these tests focus on the combined
+language-to-LowIR contract.
 
 For each test case `x`:
 
@@ -133,7 +123,7 @@ For each test case `x`:
 PA26 is tested against generated LowIR text using the relaxed LowIR comparator described
 above. A useful manual validation path is:
 
-- feed that LowIR into PA23 `lowir2native`
+- feed that LowIR into PA28 `lowir2native`
 - optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
 - then feed the generated CY86 into PA9 `cy86 --target linux`
 
@@ -147,8 +137,8 @@ the PA26 semantic and lowering requirements are defined by the Assignment
 Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
-`.ref` files.
+format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the
+checked-in `.ref` files.
 
 PA26 does not add a new source-language grammar format. It instead enables more
 of the already-accepted C++11 syntax to participate in semantic analysis and
@@ -169,82 +159,64 @@ treat `lowir.md` as authoritative. If they disagree about the PA26 lowering slic
 
 PA26 supports the following in addition to the PA25 subset:
 
-- `auto` in variable declarations when exactly one declarator is present and an initializer
-  is provided
-- `const auto` and similar cv-qualified `auto` variable declarations over the same subset
-- direct braced initialization for supported scalar objects
-- direct braced-init expressions over the supported scalar / array / class subset when the
-  earlier PA15-PA25 object/value semantics already define the target
-- braced initialization of bounded arrays with compile-time known size
-- direct aggregate construction when the target aggregate type is already supported by the
-  earlier object-model assignments
-- ordinary function-call argument conversion through non-explicit converting constructors
-  and conversion operators over the supported class subset
-- explicit non-class functional casts between the supported integral and enum forms
-- `reinterpret_cast` between the supported pointer and integer forms
-- captureless lambda expressions plus the supported by-reference local and explicit/implicit `this`
-  capture subset
-- range-for statements over:
-  - bounded arrays
-  - braced-init lists that can be materialized as hidden arrays
-  - supported class/member and ADL `begin` / `end` ranges whose iterator operations stay
-    within the already-supported call/operator subset
+- non-virtual multiple inheritance
+- inherited field lookup and access across multiple non-virtual base subobjects
+- inherited non-virtual method lookup and `this` adjustment across multiple non-virtual bases
+- constructor, copy-constructor, copy-assignment, and destructor generation across multiple
+  non-virtual bases
+- `dynamic_cast<void*>` for the existing polymorphic single-inheritance ABI
 
 Within this milestone, PA26 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA23 `lowir2native` for the supported cases.
+that subset. That LowIR should be accepted by PA28 `lowir2native` for the supported cases.
 PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
 
 To complete PA26, implement these goals:
 
-1. `auto` variable deduction.
-   The compiler should deduce the declared type from the initializer and lower the resulting
-   variable just like an equivalent explicit declaration, including ordinary pointer and
-   reference declarators such as `auto*`, `auto&`, and `auto&&`.
+1. Multiple-base layout and field access.
+   Distinct base subobjects should have deterministic offsets, and member access should lower
+   through those offsets correctly.
 
-2. Direct braced initialization.
-   Supported scalar and array declarations should lower cleanly from `{...}` source forms,
-   not only from `=` initializer syntax.
+2. Base-method lookup and `this` adjustment.
+   Calling a method inherited from a later base must lower the implicit object argument to the
+   correct base-subobject address.
 
-3. Captureless lambda lowering.
-   Captureless lambdas should become callable lowered entities with deterministic LowIR.
+3. Generated special members across multiple bases.
+   Synthesized construction, copy, assignment, and destruction should sequence the supported
+   non-virtual bases correctly.
 
-4. Range-for lowering.
-   Range-for over arrays, braced-init lists, and supported user-defined `begin` / `end`
-   ranges should lower into ordinary loop/control-flow structure in LowIR, including
-   ordinary reference loop declarations such as `const int&` and `const auto&`.
+4. Remaining single-vptr RTTI case.
+   `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI
+   without introducing new LowIR operations.
 
-The test suite also exercises a small remaining ordinary-language closure cluster here:
-direct braced-init expressions, direct aggregate construction, supported integral / enum
-functional casts, and pointer / integer `reinterpret_cast`.
+5. Ambiguity handling.
+   Ambiguous inherited member names must not silently resolve.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA26:
 
-- capturing lambdas other than the supported by-reference local / `this`-capture subset
-- `std::initializer_list` semantic interoperation
-- RTTI and `typeid`
-- `dynamic_cast`
-- placeholder return-type declarations without a visible definition body
-- template bodies that require deferred placeholder return deduction
-- range-declarations that require unsupported user-defined iterator or reference semantics
-- any PA26 feature path that depends on unsupported PA15-PA25 semantics
+- virtual inheritance
+- polymorphic multiple inheritance
+- `dynamic_cast` reference forms
+- `dynamic_cast` cases that depend on multiple or virtual polymorphic base layouts
+- the remaining RTTI cases that require a broader multi-vptr or virtual-base ABI
 
 Inputs that rely on those features have undefined behaviour for this milestone.
-The PA26 test suite therefore does not require those inputs to fail deterministically; it
-only checks the defined PA26 feature subset above.
 
 ### Stage Handoff
 
-The intended next stage is PA27, which finishes the remaining deferred advanced-language
-corners over the current single-inheritance object model before PA28 tackles the remaining
-ABI and inheritance closure work.
+The intended next stage is PA27, which completes the broader virtual / RTTI ABI that PA26
+still deliberately avoids.
 
 So PA26 should leave behind:
 
-- a stable first-tier language-closure semantic layer
-- LowIR lowering for the ordinary non-advanced C++11 forms added here
-- explicit remaining deferrals only where PA27 really needs to take over
+- a stable non-virtual multi-base object model over the existing LowIR family
+- deterministic lowering for multiple-base field access, method calls, and generated special
+  members
+- explicit remaining deferrals only where PA27 needs to take over:
+  - virtual inheritance
+  - polymorphic multiple inheritance
+  - the remaining `dynamic_cast` / RTTI cases that depend on that ABI
 
 ### Design Notes (Non-Normative)
 
@@ -256,6 +228,5 @@ The same monotonic-extension rule applies here:
   feature set
 - it should not perturb PA25 outputs for programs that remain entirely within the PA25
   subset
-- in practice, lambda helper synthesis and `auto` deduction should stay on-demand rather
-  than eagerly changing the behavior of ordinary earlier programs that do not use those
-  features
+- in practice, multiple-base offsets and lowered base-adjustment paths should stay on-demand
+  rather than changing earlier single-base outputs unnecessarily

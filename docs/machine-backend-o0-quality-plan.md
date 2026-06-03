@@ -153,8 +153,8 @@ Those belong to a later follow-up once the baseline backend is no longer doing
 
 The tests for these slices should therefore live in:
 
-- `pa23/tests/structural/` for canonical MIR shape
-- `pa23/tests/strict/` only when exact raw MIR is the real contract
+- `pa28/tests/structural/` for canonical MIR shape
+- `pa28/tests/strict/` only when exact raw MIR is the real contract
 
 `PA37` should continue to own only explicit machine/backend optimization levels
  on top of that baseline.

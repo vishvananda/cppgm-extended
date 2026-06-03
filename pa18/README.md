@@ -149,7 +149,7 @@ against the checked-in reference. For rejected tests, the exit status is the
 checked result; exact diagnostic text is not checked.
 
 PA18 is tested against the generated LowIR text. That LowIR is intended to
-become input for the later PA23 `lowir2native` backend, but that future native
+become input for the later PA28 `lowir2native` backend, but that future native
 path is not the PA18 grading contract.
 
 ### Optional Student Test Ideas

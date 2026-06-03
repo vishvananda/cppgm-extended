@@ -136,10 +136,10 @@ Validation notes for this pass:
 - `pa19` / `pa20` / `pa21` / `pa22` / `pa23`
   - fixed the pre-split handoff that incorrectly made `PA20` the native-backend retarget
   - `PA19` now hands off to `PA20 constexpr`, then `PA21`/`PA22` template completion,
-    then `PA23 nativebackend`
+    then `PA23` template integration before the later PA28 native backend
 - `pa25` / `pa26`
-  - PA25 has since been rewritten in place as the basic host-EH facts owner;
-    PA26 remains the next source-to-LowIR language-closure milestone
+  - this surface has moved later in the lower renumber; PA31 is now the basic
+    host-EH facts owner
 - `pa30` / `pa32` / `pa33`
   - host object interop, then host ABI/runtime ownership, remains a clean monotonic sequence
   - clarified that broader hosted-header compatibility is later `PA34` / `PA35` work, not
@@ -640,9 +640,8 @@ Pass D deferred test buildout.
   - `500`: library-shaped template reducers without hosted dependencies
 - `pass_a findings`:
   - old standalone `cpplink` PA24 was folded out; its relevant
-    separate-compilation tests were salvaged into PA30
-  - the freed PA24 slot is now reused for template integration until final
-    renumbering
+    separate-compilation tests were salvaged into PA29
+  - the freed slot is now PA23 template integration after the lower renumber
 - `misplaced tests`:
   - first moved batch: PA22 cluster-500 template-integration reducers
 - `planned new tests`:

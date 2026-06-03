@@ -29,7 +29,7 @@ roundtrip_obj="${tmpdir}/main-linux-roundtrip.o"
 
 if ! CPPGM_WRITE_LOCAL_SYMBOL_MAP=1 \
     "${tool_dir}/cpplink" -c --target linux -o "${obj}" \
-      "${repo_root}/pa23/tests/strict/100-ret0.t"; then
+      "${repo_root}/pa28/tests/strict/100-ret0.t"; then
   echo "cpplink linux object smoke failed" >&2
   exit 1
 fi

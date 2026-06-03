@@ -1,18 +1,31 @@
-## CPPGM Programming Assignment 31 (`abimangle`)
+## CPPGM Programming Assignment 31 (`cppgm++ -c` Host EH Facts)
 
 ### Overview
 
-Write one C++ application called `abimangle`.
+Write one C++ application called `cppgm++`.
 
-`abimangle` takes normalized ABI fact files as input and writes Itanium C++
-ABI mangled names. Each input case describes the semantic facts for one ABI
-name: the entity being named, owner scopes, type structure, template
-parameters, template arguments, dependent expressions, local contexts, ABI
-tags, and special ABI-name forms.
+PA31 is the host exception-handling metadata assignment. Earlier assignments
+lower C++ source to LowIR and native code; PA31 makes EH-bearing `cppgm++ -c`
+objects participate in the host C++ unwinder.
 
-The input is not C++ source. This assignment is about ABI name construction
-only. It does not require C++ parsing, semantic analysis, LowIR generation,
-object emission, linking, or runtime behavior.
+The main PA31 question is: does a generated relocatable object contain the host
+EH facts needed by the platform unwinder?
+
+The required surface is the basic Itanium C++ ABI exception subset used by the
+course:
+
+- calls to host EH runtime helpers such as `__cxa_allocate_exception`,
+  `__cxa_throw`, `__cxa_begin_catch`, `__cxa_end_catch`, and
+  `_Unwind_Resume`
+- a personality reference to `__gxx_personality_v0` when a function has landing
+  pads
+- host unwind metadata and LSDA/call-site information, such as
+  `.gcc_except_table`, `.eh_frame`, and the Mach-O compact-unwind equivalent
+- type-info references needed for typed catches
+- no private course-only `cppgm_eh_*` runtime symbols in host-EH objects
+
+PA31 is intentionally a host-object facts assignment, not a hosted standard
+library assignment and not the old private `cppeh` linker/runtime pipeline.
 
 ### Prerequisites
 
@@ -20,221 +33,97 @@ Complete PA30 before starting this assignment.
 
 You will want to reuse:
 
-- the PA30 build and tool-driver structure
-- the PA18+ template and dependent-type concepts as design background
-- the PA27-PA29 namespace, class, member, lambda, and special-member concepts
-  as design background
-- the Itanium C++ ABI mangling rules in `../doc/itanium-mangling.txt`
+- the PA13 LowIR parser and EH instruction model
+- the PA28 native backend and object-emission infrastructure
+- the PA23-PA27 source-to-LowIR surface
+- the PA29 compile-mode driver path used by `cppgm++ -c`
+- the PA30 ABI naming layer and runtime-role classification used by host object
+  emission
 
-The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`,
-and a working host C++ compiler for building the test executable.
+The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`, and
+a working host C/C++ toolchain. The harness selects host tools from:
+
+- `CPPGM_HOST_CXX` or `CXX` for the host C++ compiler/link driver
+- `CPPGM_HOST_CC` or `CC` for host C helper objects
+
+If those are not set, the harness searches for common compilers such as
+`clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Object-inspection tests also
+require host symbol/object tools such as `nm`, `readelf`, and `otool` where
+available.
 
 ### Starter Kit
 
 The starter kit provides:
 
-- `dev/abimangle.cpp`, populated with command-line handling for `abimangle`
-- `pa31/abimangle.cpp`, a wrapper that builds the editable tool source from
-  `../dev/abimangle.cpp`
+- `dev/cppgm++.cpp`, populated from the cumulative `cppgm++` scaffold
+- the shared `dev/` sources needed by the scaffold
+- `pa31/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
 - `pa31/Makefile`
-- `pa31/scripts/`, the ABI fact test harness
-- `pa31/tests/abi/`, the checked-in ABI fact tests and reference files
-- shared support sources and headers under `dev/src/`
-- an optional ABI fact scaffold in `dev/src/abi_mangle.h`
+- `pa31/scripts/`, the host-interoperability test harness
+- `pa31/tests/general/`, the PA31 tests and checked-in reference files
 
-Put code changes in `dev/`, especially `dev/abimangle.cpp` and reusable
-helpers under `dev/src/`. Do not edit generated `.my` files. Test inputs and
-references are part of the handout unless your instructor asks you to add or
-update tests.
+Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+shared implementation files it calls. Do not edit generated `.my` files. Test
+inputs and references are part of the handout unless your instructor asks you to
+add or update tests.
 
-The assignment-facing scaffold is the fact data model and the declared
-parse/serialize/mangle API in `dev/src/abi_mangle.h`. Encoding tables,
-Itanium terminal spelling, compiler semantic lowering, and other implementation
-logic are intentionally outside the PA31 wrapper and test harness.
-
-There is no separate reference binary in the starter kit. The checked-in
+There is no separate PA31 reference binary in the starter kit. The checked-in
 `.ref.*` files are the oracle.
 
 ### Command-Line Contract
 
-Required form:
+PA31 uses compile mode:
 
 ```sh
-abimangle -o <outfile> <abi-facts-file>...
+cppgm++ -c -o <objfile> <srcfile>
+cppgm++ -c --target <target> -o <objfile> <srcfile>
+cppgm++ -c -I <dir> -o <objfile> <srcfile>
+cppgm++ -c -I<dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
 ```
 
-`abimangle` shall read all input fact files in command-line order and write one
-mangled name for each input case to `<outfile>`.
-
-Each output name is written on its own line:
-
-```text
-_ZN2ns1fEiPc
-```
-
-If an input file contains multiple cases, the output preserves the case order
-from that file before moving to the next input file.
-
-### ABI Fact Files
-
-ABI fact files are line-oriented. The checked-in tests use normalized facts of
-the forms described here.
-
-Simple cases can be one line:
-
-```text
-function f
-function path ns::f
-variable ns::g
-type ptr:const:int
-typeinfo ns::C
-vtable ns::C
-```
-
-Structured cases introduce reusable facts before the final target:
-
-```text
-let-type Char template-param 0
-let-arg Char_arg type Char
-let-type Traits template std::char_traits Char_arg
-let-arg Traits_arg type Traits
-let-type Alloc template std::allocator Char_arg
-let-arg Alloc_arg type Alloc
-let-type String template std::__cxx11::basic_string Char_arg Traits_arg Alloc_arg
-function path std::getline Char_arg
-param ref String
-```
-
-Definition forms:
-
-- `let-type <id> ...`: a type fact
-- `let-arg <id> ...`: a template-argument fact
-- `let-expr <id> ...`: a dependent-expression fact
-- `let-context <id> function ...`: a local or lambda context named by a
-  function target
-- `let-context <id> raw <context-fragment>`: a local or lambda context already
-  normalized as an Itanium local-name context fragment
-- `let-entity <id> ...`: an entity fact used by entity-valued template
-  arguments and dependent expressions
-
-Target forms:
-
-- `type ...`
-- `function ...` with optional following terminal and `param ...` lines
-- `variable ...`
-- `typeinfo ...`
-- `vtable ...`
-- `vtt ...`
-- `construction-vtable ...`
-- `tls-wrapper variable ...`
-- `thunk ... function ...`
-- `virtual-base-thunk ... function ...`
-
-Function operator terminals use semantic names, not raw Itanium terminal
-fragments:
-
-```text
-function path C::operator
-operator-terminal plus
-param int
-
-function path operator
-operator-terminal literal _digits
-param ulonglong
-
-function path C::operator
-conversion-terminal int
-```
-
-Complex function encodings may also be written as a `function encoding` target
-followed by normalized component lines. Template-id components use
-`name-template ... <arg-ref>...`; function-template arguments use
-`function-template-arg <arg-ref>`, with `function-template-prefix <key>` when
-the function-template prefix is substitutable; local entities use
-`local-context ...` or `lambda-context ...` followed by the same terminal,
-qualifier, result, and parameter lines as ordinary functions.
-
-`operator-terminal <name>` names the C++ operator semantically. Supported names
-include `plus`, `minus`, `address-of`, `deref`, `new`, `new-array`,
-`delete`, `delete-array`, `multiply`, `divide`, `remainder`, `bit-or`,
-`bit-xor`, assignment operators, shifts, comparisons, logical operators,
-`increment`, `decrement`, `comma`, `member-pointer`, `arrow`, `call`, and
-`index`. For operators whose Itanium terminal depends on unary versus binary
-use, the encoder chooses from the parameter count and member/non-member shape;
-explicit names such as `unary-plus`, `binary-plus`, `unary-minus`,
-`binary-minus`, `bit-and`, and `multiply` may be used when the shape should be
-unambiguous.
-
-Literal operators are written as `operator-terminal literal <suffix>`, where
-`<suffix>` is the unencoded suffix source name such as `_digits`. Conversion
-operators remain separate `conversion-terminal <type>` facts. Local and lambda
-call-operator contexts continue to use `operator-call` as a semantic terminal
-marker, not as an Itanium code.
-
-Thunks, wrappers, typeinfo, and vtable names are described as ABI facts instead
-of already-mangled names.
-
-Raw external symbols may be carried with `let-entity <id> symbol <mangled-name>`
-when a template argument or dependent expression names an entity that is already
-known by ABI symbol rather than by a source-level qualified name.
-
-Template-template arguments may name either a namespace-scope template with
-`let-arg <id> template-entity <qualified-name>` or a member template of an
-already-structured owner type with
-`let-arg <id> member-template-entity <owner-type> <member-name> <substitution>`.
-Member type facts use the same structured owner rule, so `type member <owner>
-<name>` may be rooted in a dependent template specialization or builtin
-transform type such as `__remove_const<T>`.
-
-The fact format is deliberately small, but it is still an ABI entity graph. It
-should not become a second C++ parser.
-
-### Required ABI Coverage
-
-The checked-in tests are numbered from simpler names toward more complete ABI
-situations:
-
-- `100-*`: basic functions, variables, named types, builtin types, pointers,
-  arrays, member pointers, typeinfo, vtables, VTTs, and variadic forms
-- `200-*`: ABI tags, local entities, lambdas, operators, conversion terminals,
-  TLS wrappers, and thunks
-- `300-*`: entity-valued template arguments, template-template arguments,
-  standard substitutions, construction vtables, and dependent integral values
-- `400-*`: dependent aliases and dependent member/owner types
-- `500-*`: dependent expressions, casts, calls, type traits, `sizeof(type)`,
-  packs, and substitution of equivalent dependent expressions
-- `600-*`: nested owner contexts and standard-library-adjacent inline namespace
-  cases
-
-An implementation should handle Itanium substitution ordering, nested names,
-local-name contexts, template parameter references, template arguments,
-dependent expressions, ABI tags, special names, and every target form covered
-by the tests.
-
-Reference:
-
-- Local copy of Itanium C++ ABI, Chapter 5.1 "External Names (a.k.a.
-  Mangling)": [`../doc/itanium-mangling.txt`](../doc/itanium-mangling.txt)
+`<srcfile>` is a C++ source file in the supported course language subset.
+`<target>` may be `linux` or the corresponding x86_64 Linux host triple form
+accepted by your implementation. PA31 only requires compile mode. The final link
+in the tests is performed outside `cppgm++` by the host C++ compiler driver.
 
 ### Output Format
 
-The output file contains one mangled name per target, followed by a newline.
+`cppgm++ -c` shall write one host-linker-compatible relocatable object file to
+`<objfile>`.
 
-For successful test cases, standard output and standard error are ignored. You
-may use them for diagnostics.
+The PA31 tests do not compare object bytes directly. They observe:
+
+- `cppgm++ -c` exit status
+- host final-link exit status
+- final program exit status
+- final program standard output
+- normalized object-facts output for tests that include `.inspect.facts`
+  sidecars
+
+The object-facts sidecars are part of the PA31 contract. The shared Perl
+harness dumps platform-normalized facts such as required EH runtime imports,
+unwind/LSDA section presence, relocation classes, decoded basic LSDA facts, and
+absence of private `cppgm_eh_*` symbols.
 
 ### Error Handling
 
-If command-line parsing, input reading, fact parsing, or name construction
-fails, `abimangle` shall exit with failure.
+If preprocessing, parsing, semantic analysis, lowering, object emission, or
+output writing fails, `cppgm++` shall exit with failure.
 
 For negative tests, exact diagnostics are not the grading contract. The harness
-compares exit status first. If the reference path fails, stdout and stderr are
-diagnostic side effects rather than required output.
+compares exit status first. If the reference compile/link path fails, stdout and
+stderr are diagnostic side effects rather than required output.
+
+### Standard Output / Error
+
+Standard output and standard error from `cppgm++ -c` are ignored for successful
+tests. They may be used for diagnostics.
 
 ### Testing
 
-Run the ABI naming suite with:
+Run the PA31 suite with:
 
 ```sh
 make test
@@ -243,76 +132,98 @@ make test
 To run one test through the shared check target:
 
 ```sh
-make check TEST=tests/abi/100-global-function.t
+make check TEST=tests/general/100-host-eh-same-tu-throw-catch.t
 ```
 
-For each test case `x.t`:
+The local tests live in `tests/general/`. They cover the basic host-EH fact
+surface:
 
-- `abimangle` is executed to produce `x.my`
-- the exit status is recorded in `x.my.exit_status`
-- `x.my` is compared against `x.ref`
-- `x.my.exit_status` is compared against `x.ref.exit_status`
+- same-translation-unit throw/catch
+- cross-translation-unit throw/catch
+- unhandled throw helper usage
+- cleanup during unwind and `_Unwind_Resume`
+- cleanup-only landing pads that resume without owning a throw helper
+- LSDA/unwind sections, runtime-helper relocation classes, and class typeinfo
+  facts used by typed catches
+- compact-unwind and large-frame fallback facts
+- reuse of host EH runtime declarations emitted by the frontend
+- direct LowIR host-EH object smoke tests used to guard the backend path
 
-The checked-in references are the oracle. Your tests should not invoke the host
-compiler, `nm`, `readelf`, `objdump`, or a demangler as a live ABI-name oracle,
-because host compiler and standard-library version differences can create
-noise around ABI tags, inline namespaces, and local entity numbering.
+For each test anchor `x.t`, companion C++ sources are named:
+
+```text
+x.t.1
+x.t.2
+...
+```
+
+Optional sidecars control or check the host flow:
+
+- `x.compile.flags`: extra flags passed to `cppgm++ -c`
+- `x.link.flags`: extra flags passed to the host link driver
+- `x.lib.*`: host-built C or C++ helper sources
+- `x.inspect.facts`: normalized host-EH object facts to dump and compare
+- `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: specialized
+  object-inspection checks that use host symbol/object tools
+
+For each test case:
+
+1. `cppgm++ -c` is executed once for each companion C++ source file.
+2. The host C++ compiler driver links the generated objects.
+3. Any inspect sidecar is run against the generated objects. For
+   `.inspect.facts`, the harness records normalized text facts in
+   `x.my.inspect`.
+4. If linking and inspection succeed, the generated program is executed.
+5. The recorded `.my.*` outputs are compared with the checked-in `.ref.*`
+   oracle files.
 
 ### Assignment Boundary
 
-This assignment owns standalone ABI name construction from normalized ABI fact
-files.
+PA31 owns the basic host-compatible EH metadata and runtime-helper object
+surface for `cppgm++ -c`.
 
-To complete this assignment, implement this behavior:
+To complete PA31, implement this behavior within the supported subset:
 
-1. Parse normalized ABI fact files.
-2. Represent the ABI facts with enough typed structure to apply the Itanium C++
-   ABI mangling grammar.
-3. Encode the supported fact records into deterministic mangled names.
-4. Implement substitution-table behavior in host-compatible order for the
-   tested cases.
+1. Lower `throw` expressions to host ABI throw helper calls.
+2. Lower typed catches to host landing-pad selector dispatch and
+   `__cxa_begin_catch` / `__cxa_end_catch` calls.
+3. Emit host personality and unwind metadata for EH-bearing functions.
+4. Emit LSDA/call-site/action/type-info facts sufficient for basic catch and
+   cleanup paths.
+5. Preserve cleanup/resume paths using `_Unwind_Resume`.
+6. Keep private course-only exception runtime symbols out of host-EH objects.
 
-If `abimangle` accepts a fact file and writes a different ABI name from the
-checked-in reference, the issue belongs in this assignment.
+If object inspection shows missing or malformed host EH metadata for a basic
+throw/catch/cleanup case, the issue belongs in PA31.
 
 ### Out Of Scope
 
-The following are out of scope for this assignment:
+The following are out of scope for PA31:
 
-- C++ source input
-- C++ source parsing or semantic analysis
-- LowIR generation
-- relocatable object generation or host linking
-- ELF, Mach-O, COFF, archives, shared libraries, or relocation records
-- vtable layout, RTTI object layout, exception handling, unwind metadata, or
-  host runtime behavior beyond naming the corresponding ABI entities
-- demangling
-- using host object tools or host compiler output as compiler input
+- the old private `cppeh` object/link/runtime pipeline
+- general host object interoperability unrelated to EH metadata
+- richer host ABI/runtime behavior after the basic EH facts exist
+- complex RTTI/vtable/virtual-base catch interactions
+- multi-frame or nested rethrow/cleanup behavior
+- rethrow behavior and `__cxa_rethrow`
+- hosted standard-library header/source compatibility
+- bootstrap or self-host builds
+
+Later host-EH assignments keep the same host-link path but raise the contract
+from basic object facts to richer host ABI/runtime interactions such as foreign
+catch-all, virtual-base catches, nested cleanup chains, and hosted library EH
+behavior.
 
 ### Design Notes (Non-Normative)
 
-A simple implementation strategy is to keep three concerns separate:
+A useful implementation shape is to keep frontend LowIR EH operations stable and
+classify runtime roles below LowIR. Object emission can then map those roles to
+host ABI symbols and platform EH metadata:
 
-- fact-file parsing into typed records
-- ABI name encoding from those typed records
-- substitution-table state for one mangled name
+- Mach-O uses compact-unwind rows plus `__gcc_except_tab` and EH-frame data as
+  required by the host linker/unwinder.
+- ELF uses `.eh_frame`, `.gcc_except_table`, and the corresponding relocation
+  records.
 
-The optional `abi_mangle.h` scaffold follows that shape. You may use it,
-adjust it, or replace it. The tests require the behavior of `abimangle`, not a
-specific internal representation.
-
-Substitution is part of the ABI grammar, not just text de-duplication. The
-encoder should record substitutions in the order required by the Itanium ABI
-and should compare structured facts when deciding whether a component can reuse
-an existing slot.
-
-Avoid building names by assembling large ad hoc strings that are later
-reparsed. Some ABI facts contain source spellings, but type structure,
-template arguments, dependent expressions, and local contexts should remain
-structured until the encoder emits the final mangled name.
-
-### Stage Handoff
-
-The next stage is PA32, where `cppgm++ -c` starts feeding real compiler
-semantic entities into the ABI naming layer, then preserves those names through
-symbol tables, bindings, weak/ODR coalescing, and host linker behavior.
+Do not construct host EH facts from source text. The object backend should work
+from typed semantic/runtime-role information and final machine layout.

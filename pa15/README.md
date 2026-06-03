@@ -270,7 +270,7 @@ PA15 supports the following in addition to the PA14 procedural subset:
 
 Within this milestone, PA15 should produce valid LowIR for ordinary
 non-polymorphic class code over the supported procedural subset. That LowIR is
-intended to be accepted by the later PA23 `lowir2native` backend for the
+intended to be accepted by the later PA28 `lowir2native` backend for the
 supported cases. PA13 `lowir2cy86` remains an optional execution scaffold, not
 the primary backend target.
 

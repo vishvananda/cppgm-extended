@@ -571,7 +571,7 @@ Per fix:
 make -C dev cppgm++ \
   CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
-make test-strict-nobuild STRICT_PAS='pa18 pa19 pa21 pa22' STRICT_SUBTEST_JOBS=8 \
+make test-strict-nobuild STRICT_PAS='pa18 pa19 pa21 pa22 pa23' STRICT_SUBTEST_JOBS=8 \
   CXX=/usr/local/opt/llvm/bin/clang++ \
   CPPGM_HOST_CXX=/usr/local/opt/llvm/bin/clang++
 make test-report-nobuild ACTIVE_TEST_REPORT_PAS='pa34 pa35' \

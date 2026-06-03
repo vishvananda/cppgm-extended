@@ -1,0 +1,5 @@
+translation-unit
+  class-use at pa23/tests/spec/100-explicit-specialization-out-of-class-member-emits.t:16:6
+    template explicit_specialization_member_emits
+    selected explicit
+    bind #1 = char source=explicit

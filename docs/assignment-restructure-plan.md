@@ -447,11 +447,11 @@ which cluster) and the integration lesson's size. **This is the next data step.*
 Tracker seeds:
 
 - `docs/template-strict-placement-tracker.md` is the all-strict context scan over
-  `pa18 pa19 pa21 pa22 pa24`, used to see whether earlier strict PAs already
-  contain PA22/PA24-shaped tests before moving PA22 coverage backward or
+  `pa18 pa19 pa21 pa22 pa23`, used to see whether earlier strict PAs already
+  contain PA22/PA23-shaped tests before moving PA22 coverage backward or
   forward.
 - `docs/pa22-template-placement-tracker.md` is the concrete PA22 move/review
-  queue for the new PA24 integration split.
+  queue for the new PA23 integration split.
 
 Both are generated from the audit script's `--template-placement` mode and
 should be curated in place as each test is reviewed.
