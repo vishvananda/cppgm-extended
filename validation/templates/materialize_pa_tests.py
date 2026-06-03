@@ -18,7 +18,7 @@ DEFAULT_CLANG = pathlib.Path.home() / "llvm-project-template-metrics-20260416" /
     "build-clang-template-trace" / "bin" / "clang"
 DEFAULT_LIBCXX = pathlib.Path("/usr/local/opt/llvm/include/c++/v1")
 DEFAULT_SDK = pathlib.Path("/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk")
-DEFAULT_PAS = ("pa18", "pa19", "pa21", "pa22")
+DEFAULT_PAS = ("pa18", "pa19", "pa21", "pa22", "pa23")
 LINK_SOURCE_RE = re.compile(r"\.t\.\d+$")
 
 
