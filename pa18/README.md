@@ -13,11 +13,12 @@ polymorphic compiler. It extends PA17 with:
 - function templates
 - class templates
 - type template parameters
-- template-template type parameters
+- default type template arguments
+- dependent names and current-instantiation lookup in supported template bodies
 - basic function-template argument deduction for direct calls
 - on-demand template instantiation for the supported class/function cases
-- template-backed operator overloads and templated member operators where the non-template
-  PA15-PA17 machinery already exists
+- template-backed operator overloads where the non-template PA12-PA17 machinery
+  already exists
 
 ### Prerequisites
 
@@ -153,12 +154,13 @@ path is not the PA18 grading contract.
 
 ### Optional Student Test Ideas
 
-When adding your own tests, useful PA18 themes include template-template
-parameter matching, member-template redeclarations, friend templates, dependent
-versus non-dependent lookup, and pack expansion in the PA18 subset. Keep any
-such tests within the PA18 boundary below; non-type template arguments,
-partial specialization, full deduction, and SFINAE behavior belong to later
-assignments.
+When adding your own tests, useful PA18 themes include class/function template
+instantiation, default type template arguments, dependent versus non-dependent
+lookup, current-instantiation names, and direct function-template calls. Keep
+any such tests within the PA18 boundary below; parameter packs,
+template-template parameters, member/friend templates, non-type template
+arguments, partial specialization, full deduction, and SFINAE behavior belong
+to later assignments.
 
 ### PA18 Syntax Spec
 
@@ -174,8 +176,7 @@ format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the check
 Template declarations, template-parameter clauses, common template-id syntax,
 and later-template syntax such as non-type template parameters were already
 preserved by PA10; PA18 is the first milestone that gives a supported
-type/template-template subset of template syntax semantic/code-generation
-meaning.
+type-parameter subset of template syntax semantic/code-generation meaning.
 
 Passing PA17 is necessary but not sufficient for passing PA18: an input may be syntactically
 valid for PA10-PA17 and code-generation-valid for PA17 and still be outside the PA18
@@ -198,14 +199,10 @@ PA18 supports the following in addition to the PA17 subset:
 
 - class templates whose parameters are:
   - type parameters
-  - type parameter packs
-  - template-template type parameters
 - function templates whose parameters are:
   - type parameters
-  - type parameter packs
-  - template-template type parameters when they are supplied explicitly
-- default template arguments for the supported type / template-template parameter forms,
-  including defaults that refer to earlier parameters in the same template head
+- default template arguments for the supported type-parameter forms, including
+  defaults that refer to earlier parameters in the same template head
 - dependent type/value names in the supported declaration and expression forms
 - current-instantiation lookup in the supported class-template cases
 - `typename` and `template` disambiguators where they are needed by the PA18
@@ -215,12 +212,6 @@ PA18 supports the following in addition to the PA17 subset:
   from ordinary argument types, without function-template partial ordering or
   SFINAE
 - on-demand instantiation of the supported class-template and function-template cases
-- friend templates in the supported class-template/function-template subset
-- template parameter packs and pack expansions in the supported declaration,
-  call, and instantiated body shapes
-- member templates and templated member operators, including templated call operators, when
-  their bodies stay within the already supported PA15-PA17 class/value/polymorphic
-  machinery
 - out-of-class definitions of nested classes declared inside the supported class templates,
   when those nested classes stay within the already supported PA15-PA17 class/value/
   polymorphic machinery
@@ -240,6 +231,9 @@ optional execution scaffold.
 
 The following are explicitly out of scope for PA18:
 
+- template-template parameters
+- template parameter packs and pack expansions
+- member templates and friend templates
 - semantic support for non-type template parameters and non-type template
   arguments
 - partial specialization

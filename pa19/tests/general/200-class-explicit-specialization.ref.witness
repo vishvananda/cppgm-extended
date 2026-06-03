@@ -1,5 +1,0 @@
-translation-unit
-  class-use at pa19/tests/general/200-class-explicit-specialization.t:12:3
-    template Box
-    selected explicit
-    bind #1 = int source=explicit

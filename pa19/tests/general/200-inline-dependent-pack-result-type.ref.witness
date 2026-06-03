@@ -1,0 +1,13 @@
+translation-unit
+  function-call at pa19/tests/general/200-inline-dependent-pack-result-type.t:21:3
+    callee f
+    selected instantiation
+    bind #1 = int source=deduced
+    bind #2 = <> source=deduced
+template-closure-events
+  ensure-definition
+    entity f
+  function-instantiation
+    entity f
+  require-definition
+    entity f

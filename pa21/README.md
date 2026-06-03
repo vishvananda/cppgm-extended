@@ -11,6 +11,8 @@ PA21 is the first half of template completion. Its job is to finish the
 template declaration and specialization model so the compiler knows:
 
 - what template entities exist
+- how template-template parameters, member templates, and friend templates are
+  represented
 - what specializations exist
 - which specialization is selected
 - which declarations/definitions own the selected specialization
@@ -134,9 +136,10 @@ Boundary and Out Of Scope sections below.
 ### Optional Student Test Ideas
 
 When adding your own tests, useful PA21 themes include alias/variable template
-entities, class partial specialization selection,
-explicit-instantiation ownership, constructor/member-template specialization
-ownership, and partial ordering boundaries.
+entities, template-template parameters, member templates, friend templates,
+class partial specialization selection, explicit-instantiation ownership,
+constructor/member-template specialization ownership, and partial ordering
+boundaries.
 
 ### Assignment Boundary
 
@@ -145,6 +148,10 @@ implemented language surface, including:
 
 - alias templates
 - variable templates
+- template-template parameters and template-template argument matching
+- member templates, including templated member operators and templated call
+  operators
+- friend templates in the supported class-template/function-template subset
 - class partial specialization
 - partial-specialization ordering and specialization selection
 - current-specialization identity in the supported class-template and
@@ -153,6 +160,7 @@ implemented language surface, including:
 - integration with PA19 explicit specialization declarations/definitions when
   they interact with the PA21 specialization graph
 - collection/ownership behavior for constructor/member-template specializations
+  and namespace-scope friend-template declarations
 - the dependent-name and instantiation behavior strictly required to make the
   specialization model work
 
@@ -196,6 +204,8 @@ semantic entities instead of being tracked as unrelated source-text forms.
 Useful intermediate representations include:
 
 - canonical specialization keys built from typed template arguments
+- explicit template-template parameter bindings that point at template entities,
+  not source text
 - an ordered partial-specialization candidate set with deterministic selection
 - explicit ownership links from constructor/member-template specializations back
   to the class or namespace entity that owns the generated declaration

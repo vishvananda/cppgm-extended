@@ -131,11 +131,11 @@ The clusters are organized by feature combination:
 
 When working through PA24 failures, keep the earlier template assignments
 passing. A PA24 fix should not relax, special-case, or regress the basic
-functionality already covered by PA18, PA19, PA21, and PA22. The default strict
-suite includes PA24 alongside those earlier template PAs; use it as the
-regression check before treating an integration fix as complete:
+functionality already covered by PA18, PA19, PA21, and PA22. Before treating an
+integration fix as complete, run the earlier template PAs and PA24 through the
+report harness:
 
-    $ make test-strict
+    $ make test-report ACTIVE_TEST_REPORT_PAS='pa18 pa19 pa21 pa22 pa24'
 
 ### PA24 Syntax Boundary
 
