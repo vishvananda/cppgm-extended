@@ -21,7 +21,7 @@ To complete PA34, implement these goals:
 - GNU builtin type and literal forms used by the selected hosted environment
 - builtin traits, transforms, and intrinsics used by that hosted environment
 - enough hosted-header/source compile compatibility to make later bootstrap
-  work realistic
+  work realistic (the heaviest standard-library headers are deferred to PA35)
 
 ### Prerequisites
 
