@@ -1,17 +1,15 @@
-function @main() -> i64 {
-  slot $s__0 : i64
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : obj<1x1>
 
   block ^entry:
-    %t1 = addr $s__0
-    call void @Sink__Sink(%t1)
-    %t2 = addr $s__0
+    %t1 = addr $s
+    %t2 = addr $s
     %t3 = addr @manip
-    %t4 = call ptr @Sink__operator__(%t2, %t3)
-    %t5 = addr $s__0
-    call void @Sink___Sink(%t5)
-    return i64 0
+    %t4 = unary decay ptr %t3
+    %t5 = call ptr @Sink__operator__(%t2, %t4)
+    return i32 0
 }
-function @manip(%x : ptr) -> ptr {
+function @manip(%x : ptr [pass=reference]) -> ptr [binding=weak, object=_Z5manipI4SinkERT_S2_] {
   slot $x : ptr
 
   block ^entry:
@@ -19,14 +17,7 @@ function @manip(%x : ptr) -> ptr {
     %t1 = load ptr $x
     return ptr %t1
 }
-function @Sink__Sink(%this : ptr) -> void {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @Sink__operator__(%this : ptr, %pf : ptr) -> ptr {
+function @Sink__operator__(%this : ptr, %pf : ptr) -> ptr [binding=weak, object=_ZN4SinklsEPFRS_S0_E] {
   slot $this : ptr
   slot $pf : ptr
 
@@ -35,13 +26,6 @@ function @Sink__operator__(%this : ptr, %pf : ptr) -> ptr {
     store ptr %pf, $pf
     %t1 = load ptr $this
     %t2 = load ptr $pf
-    %t3 = call ptr %t2(%t1)
+    %t3 = call ptr %t2(%t1) as (%arg0 : ptr [pass=reference]) -> ptr
     return ptr %t3
-}
-function @Sink___Sink(%this : ptr) -> void {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
 }

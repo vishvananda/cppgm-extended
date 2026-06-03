@@ -1,0 +1,14 @@
+translation-unit
+  function-call at pa19/tests/spec/100-qualified-function-template-call.t:19:10
+    callee std::__find
+    selected instantiation
+    bind #1 = char16_t source=deduced
+    bind #2 = std::identity source=deduced
+    bind #3 = 0 source=defaulted
+template-closure-events
+  ensure-definition
+    entity std::__find
+  function-instantiation
+    entity std::__find
+  require-definition
+    entity std::__find

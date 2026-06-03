@@ -353,14 +353,22 @@ $(DEPDIR)/%.d: ;
 .PHONY: all clean FORCE
 EOF
 
-sanitize_student_makefile_defaults \
-  "$dest/Makefile" \
-  "$dest"/pa34/Makefile \
-  "$dest"/pa35/Makefile \
-  "$dest"/pa36/Makefile \
-  "$dest"/pa37/Makefile \
-  "$dest"/pa38/Makefile \
+student_makefiles=(
+  "$dest/Makefile"
+  "$dest"/pa34/Makefile
+  "$dest"/pa35/Makefile
+  "$dest"/pa36/Makefile
+  "$dest"/pa37/Makefile
+  "$dest"/pa38/Makefile
   "$dest"/pa39/Makefile
+)
+existing_student_makefiles=()
+for makefile in "${student_makefiles[@]}"; do
+  if [ -f "$makefile" ]; then
+    existing_student_makefiles+=("$makefile")
+  fi
+done
+sanitize_student_makefile_defaults "${existing_student_makefiles[@]}"
 sanitize_linux_student_scripts
 
 perl -0pi -e '
