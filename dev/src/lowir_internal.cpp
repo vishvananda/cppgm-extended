@@ -1536,7 +1536,7 @@ symbol_linkage::SymbolIdentity synthesized_export_identity(const string & name,
 {
   const symbol_linkage::SymbolLinkage linkage = symbol_linkage_from_binding(binding);
   string object_name = name;
-  if(!object_name.empty() && object_name[0] == '@') {
+  if(binding != SBM_INTERNAL && !object_name.empty() && object_name[0] == '@') {
     object_name.erase(0, 1);
   }
   return symbol_linkage::make_object_symbol_identity(name, object_name, linkage);

@@ -1,9 +1,9 @@
 translation-unit
-  class-use at pa21/tests/general/400-structured-bool-conditional-member-pointer-dead-branch.t:18:5
+  class-use at pa26/tests/general/300-structured-bool-conditional-member-pointer-dead-branch.t:18:5
     template bool_
     selected primary
     bind #1 = false source=explicit
-  class-use at pa21/tests/general/400-structured-bool-conditional-member-pointer-dead-branch.t:48:3
+  class-use at pa26/tests/general/300-structured-bool-conditional-member-pointer-dead-branch.t:48:3
     template holder
     selected primary
     bind #1 = int source=explicit

@@ -450,8 +450,6 @@ tool_names=(
   lowir2cy86
   lowiropt
   lowir2native
-  cppeh
-  cpplink
   tmplsolve
   cppgm++
   mobjroundtrip

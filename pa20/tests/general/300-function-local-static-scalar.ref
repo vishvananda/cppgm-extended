@@ -1,4 +1,4 @@
-global @__local_static__next_id__id__tokens7_10 : i32 [binding=internal, object=@__local_static__next_id__id__tokens7_10] = 0
+global @__local_static__next_id__id__tokens7_10 : i32 [binding=internal] = 0
 
 function @next_id() -> i32 [binding=strong, object=_Z7next_idv] {
   block ^entry:

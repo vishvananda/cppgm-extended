@@ -174,7 +174,7 @@ Then report against the coverage-instrumented executables. The helper script
 builds this object list automatically; the manual form is:
 
 ```sh
-TOOLS='pptoken posttoken ctrlexpr macro preproc recog lowir2cy86 lowiropt lowir2native cppeh cpplink tmplsolve cppgm++ mobjroundtrip nsdecl nsinit cy86'
+TOOLS='pptoken posttoken ctrlexpr macro preproc recog lowir2cy86 lowiropt lowir2native tmplsolve cppgm++ mobjroundtrip nsdecl nsinit cy86'
 
 first=
 objects=

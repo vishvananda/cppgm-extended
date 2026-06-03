@@ -6026,7 +6026,9 @@ private:
     for(size_t i = 0; i < functions.size(); ++i) {
       FunctionBinding * binding = functions[i].get();
       if(!binding ||
-         (!binding->output_emitted && !binding->definition_output_emitted)) {
+         (!binding->output_emitted &&
+          !binding->definition_output_emitted &&
+          binding->output_requirements == ORK_NONE)) {
         continue;
       }
       if(binding->owner_class == &info ||

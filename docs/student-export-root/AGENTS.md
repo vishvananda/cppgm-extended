@@ -1,7 +1,7 @@
 # Agent Instructions
 
 This repository is a staged C++11 compiler project for Linux x86_64. Work
-assignment by assignment, PA1 through PA38.
+assignment by assignment, PA1 through PA39.
 
 Before changing code, read:
 
@@ -41,12 +41,12 @@ make test-paN
 make test-report-through-paN
 ```
 
-For PA1 through PA37, the exit criterion for each assignment is a clean root
+For PA1 through PA38, the exit criterion for each assignment is a clean root
 `make test-report-through-paN`. Do not move on after only running
 `make test-paN`.
 
-PA38 uses inception instead: run root `make inception`, which is wired to the
-PA38 `compare-cppgm++-inception` path.
+PA39 uses inception instead: run root `make inception`, which is wired to the
+PA39 `compare-cppgm++-inception` path.
 
 ## References
 

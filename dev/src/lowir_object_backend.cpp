@@ -4906,7 +4906,18 @@ void retarget_macos_init_alias_to_static_init(
     machine_object::ObjectFile & object)
 {
   const string alias_name = "@__cppgm_init";
-  const size_t alias_index = find_defined_symbol_index(object, alias_name);
+  string alias_object_name = alias_name;
+  size_t alias_index = find_defined_symbol_index(object, alias_name);
+  if(alias_index == static_cast<size_t>(-1)) {
+    const string translated_alias =
+        translated_symbol_name(exports, alias_name);
+    if(translated_alias != alias_name) {
+      alias_index = find_defined_symbol_index(object, translated_alias);
+      if(alias_index != static_cast<size_t>(-1)) {
+        alias_object_name = translated_alias;
+      }
+    }
+  }
   if(alias_index == static_cast<size_t>(-1)) {
     return;
   }
@@ -4914,9 +4925,9 @@ void retarget_macos_init_alias_to_static_init(
   string target_name =
       startup_target_symbol_name(program, exports, lowir_internal::SR_INIT);
   if(target_name.empty()) {
-    target_name = alias_name;
+    target_name = alias_object_name;
   }
-  if(target_name == alias_name) {
+  if(target_name == alias_object_name) {
     machine_object::Symbol body_symbol = object.symbols[alias_index];
     body_symbol.name = unique_startup_body_symbol_name(object, alias_name);
     body_symbol.binding = machine_object::Symbol::SB_LOCAL;
@@ -4945,6 +4956,7 @@ void retarget_macos_init_alias_to_static_init(
   section.relocations.push_back(reloc);
 
   machine_object::Symbol & alias = object.symbols[alias_index];
+  alias.name = alias_name;
   alias.binding = machine_object::Symbol::SB_LOCAL;
   alias.section = machine_object::Symbol::SS_EXTRA;
   alias.offset = wrapper_offset;

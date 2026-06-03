@@ -25,7 +25,7 @@ course:
 - no private course-only `cppgm_eh_*` runtime symbols in host-EH objects
 
 PA31 is intentionally a host-object facts assignment, not a hosted standard
-library assignment and not the old private `cppeh` linker/runtime pipeline.
+library assignment and not a private linker/runtime pipeline.
 
 ### Prerequisites
 
@@ -145,9 +145,8 @@ surface:
 - cleanup-only landing pads that resume without owning a throw helper
 - LSDA/unwind sections, runtime-helper relocation classes, and class typeinfo
   facts used by typed catches
-- compact-unwind and large-frame fallback facts
 - reuse of host EH runtime declarations emitted by the frontend
-- direct LowIR host-EH object smoke tests used to guard the backend path
+- source-driven host-EH object smoke tests used to guard the backend path
 
 For each test anchor `x.t`, companion C++ sources are named:
 
@@ -200,7 +199,7 @@ throw/catch/cleanup case, the issue belongs in PA31.
 
 The following are out of scope for PA31:
 
-- the old private `cppeh` object/link/runtime pipeline
+- a private object/link/runtime pipeline
 - general host object interoperability unrelated to EH metadata
 - richer host ABI/runtime behavior after the basic EH facts exist
 - complex RTTI/vtable/virtual-base catch interactions

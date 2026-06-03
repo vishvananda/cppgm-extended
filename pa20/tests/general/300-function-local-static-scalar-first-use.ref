@@ -1,5 +1,5 @@
 global @counter : i32 [binding=strong, object=_Z7counter] = 0
-global @__local_static__get_value__value__tokens28_33 : i32 [binding=internal, object=@__local_static__get_value__value__tokens28_33] = zero
+global @__local_static__get_value__value__tokens28_33 : i32 [binding=internal] = zero
 global @__local_static__get_value__value__tokens28_33__guard : i64 [binding=internal] = zero
 
 function @init_value() -> i32 [binding=strong, object=_Z10init_valuev] {

@@ -1,5 +1,5 @@
 translation-unit
-  class-use at pa22/tests/general/300-builtin-initializer-list-special-members.t:20:8
+  class-use at pa25/tests/general/200-builtin-initializer-list-special-members.t:20:8
     template std::initializer_list
     selected primary
     bind #1 = char source=explicit

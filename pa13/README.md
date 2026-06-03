@@ -85,8 +85,6 @@ The following are not part of the PA13 `lowir2cy86` driver contract:
 - native object or executable emission
 - `lowir2native`
 - `lowiropt`
-- `cpplink`
-- `cppeh`
 - `--dump-machine-ir`
 - `--target <target>`
 - link-map dumping

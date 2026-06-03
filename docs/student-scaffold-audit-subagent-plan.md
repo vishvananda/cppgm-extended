@@ -113,15 +113,15 @@ Focus:
 
 Owns:
 
-- `dev/cpplink-scaffold.cpp`
-- `dev/cppeh-scaffold.cpp`
+- no active source files
 
 Focus:
 
-- These old linker/EH sidecars are no longer exported after the standalone
-  cpplink assignment was folded into PA29 and PA31 was refocused on
-  `cppgm++ -c` host-EH facts.
-- Keep them only if an internal maintainer tool still needs a scaffold smoke.
+- The old linker/EH sidecars are no longer exported after the standalone
+  linker assignment was folded into PA29 and PA31 was refocused on `cppgm++ -c`
+  host-EH facts.
+- Keep this slice closed unless an internal maintainer tool needs a new
+  scaffold smoke.
 
 ### Slice E: Export Packaging Audit
 

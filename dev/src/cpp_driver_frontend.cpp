@@ -225,7 +225,8 @@ void compile_cpp_inputs(const CppToolInvocation & invocation)
                           invocation.output_target,
                           invocation.optimization_level,
                           invocation.debug_info_level,
-                          &dependencies);
+                          &dependencies,
+                          invocation.roundtrip_object_lowir);
     write_depfile_if_requested(invocation, outfile, dependencies);
   }
 }
@@ -263,7 +264,8 @@ int run_cpptoolchain_frontend_impl(const vector<string> & args)
                             invocation.output_target,
                             invocation.optimization_level,
                             invocation.debug_info_level,
-                            nullptr);
+                            nullptr,
+                            invocation.roundtrip_object_lowir);
       temp_objects.files.push_back(objfile);
       object_inputs.push_back(objfile);
     }

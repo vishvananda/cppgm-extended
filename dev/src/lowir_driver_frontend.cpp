@@ -21,25 +21,6 @@ using namespace std;
 
 namespace {
 
-int run_lowir_link_frontend(const vector<string> & args, bool exception_link)
-{
-  const LowIRToolInvocation invocation = parse_lowir_tool_invocation(args);
-  if(invocation.compile_only) {
-    write_lowir_object_file(invocation.inputs,
-                            invocation.outfile,
-                            invocation.output_target);
-  } else if(exception_link) {
-    link_exception_objects_to_native(invocation.inputs,
-                                     invocation.outfile,
-                                     invocation.mapfile);
-  } else {
-    link_machine_objects_to_native(invocation.inputs,
-                                   invocation.outfile,
-                                   invocation.mapfile);
-  }
-  return EXIT_SUCCESS;
-}
-
 int run_lowir2native_impl(const vector<string> & args)
 {
   string output_target;
@@ -111,26 +92,6 @@ int run_lowir2native_impl(const vector<string> & args)
 }
 
 }  // namespace
-
-int run_cpplink_frontend(int argc, char ** argv)
-{
-  return run_cli_frontend(
-      argc,
-      argv,
-      [](const vector<string> & args) {
-        return run_lowir_link_frontend(args, false);
-      });
-}
-
-int run_cppeh_frontend(int argc, char ** argv)
-{
-  return run_cli_frontend(
-      argc,
-      argv,
-      [](const vector<string> & args) {
-        return run_lowir_link_frontend(args, true);
-      });
-}
 
 int run_lowir2native_frontend(int argc, char ** argv)
 {

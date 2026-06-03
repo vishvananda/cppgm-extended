@@ -84,35 +84,3 @@ inline const char * lowiropt_help_text()
       "  -O0 / -O1 / -O2\n"
       "  -o <outfile>\n";
 }
-
-inline const char * cpplink_help_text()
-{
-  return
-      "usage: cpplink -c -o <outfile> <input>...\n"
-      "   or: cpplink -o <outfile> <input>...\n"
-      "\n"
-      "query flags:\n"
-      "  --help, -h\n"
-      "\n"
-      "driver flags:\n"
-      "  -c\n"
-      "  -o <outfile>\n"
-      "  --target <target>\n"
-      "  --dump-link-map <mapfile>\n";
-}
-
-inline const char * cppeh_help_text()
-{
-  return
-      "usage: cppeh -c -o <outfile> <input>...\n"
-      "   or: cppeh -o <outfile> <input>...\n"
-      "\n"
-      "query flags:\n"
-      "  --help, -h\n"
-      "\n"
-      "driver flags:\n"
-      "  -c\n"
-      "  -o <outfile>\n"
-      "  --target <target>\n"
-      "  --dump-link-map <mapfile>\n";
-}

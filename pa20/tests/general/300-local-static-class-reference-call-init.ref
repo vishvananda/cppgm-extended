@@ -1,8 +1,8 @@
-global @__local_static__get_table__table__tokens21_30 [binding=internal, object=@__local_static__get_table__table__tokens21_30] = {
+global @__local_static__get_table__table__tokens21_30 [binding=internal] = {
   zero 8
 }
 global @__local_static__get_table__table__tokens21_30__guard : i64 [binding=internal] = zero
-global @__local_static__read_table__table__tokens43_49 : ptr [binding=internal, object=@__local_static__read_table__table__tokens43_49] = zero
+global @__local_static__read_table__table__tokens43_49 : ptr [binding=internal] = zero
 global @__local_static__read_table__table__tokens43_49__guard : i64 [binding=internal] = zero
 
 function @get_table() -> ptr [binding=strong, object=_Z9get_tablev] {
