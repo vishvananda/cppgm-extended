@@ -4781,27 +4781,8 @@ bool constructor_template_has_trailing_parameter_pack_fast(FunctionTemplateDecl 
 
 bool function_template_has_trailing_parameter_pack_fast(FunctionTemplateDecl & decl)
 {
-  if(decl.has_trailing_function_parameter_pack || !decl.declarator) {
-    return decl.has_trailing_function_parameter_pack;
-  }
-
-  const CppAstNode * parameter_clause =
-      find_child(*decl.declarator, CppAstKind::parameter_clause);
-  if(!parameter_clause || parameter_clause->children.empty()) {
-    return false;
-  }
-  const CppAstNode & last = parameter_clause->children.back();
-  if(last.kind != CppAstKind::parameter_declaration) {
-    return false;
-  }
-
-  const CppAstNode * declarator = find_child(last, CppAstKind::declarator);
-  if(declarator && declarator_has_parameter_pack_fast(*declarator)) {
-    return true;
-  }
-
-  const CppAstNode * abstract = find_child(last, CppAstKind::abstract_declarator);
-  return abstract && declarator_has_parameter_pack_fast(*abstract);
+  // Identical to the constructor-template check.
+  return constructor_template_has_trailing_parameter_pack_fast(decl);
 }
 
 bool constructor_template_accepts_argument_count_fast(FunctionTemplateDecl & decl,
@@ -4842,37 +4823,8 @@ bool constructor_template_accepts_argument_count_fast(FunctionTemplateDecl & dec
 bool function_template_accepts_argument_count_fast(FunctionTemplateDecl & decl,
                                                    size_t argument_count)
 {
-  size_t required_count = decl.params_pattern.size();
-  const bool has_trailing_pack =
-      decl.has_trailing_function_parameter_pack ||
-      function_template_has_trailing_parameter_pack_fast(decl);
-  if(has_trailing_pack && required_count > 0) {
-    --required_count;
-  }
-  while(required_count > 0 &&
-        required_count - 1 < decl.default_arguments_pattern.size() &&
-        decl.default_arguments_pattern[required_count - 1]) {
-    --required_count;
-  }
-
-  if(argument_count < required_count) {
-    return false;
-  }
-
-  TypePtr function_type = strip_top_level_cv(decl.type_pattern);
-  if(function_type &&
-     function_type->kind == Type::TK_FUNCTION &&
-     (function_type->variadic || function_type->prototype_relaxed) &&
-     argument_count >= decl.params_pattern.size()) {
-    return true;
-  }
-
-  if(has_trailing_pack &&
-     argument_count + 1 >= decl.params_pattern.size()) {
-    return true;
-  }
-
-  return argument_count <= decl.params_pattern.size();
+  // Identical to the constructor-template check.
+  return constructor_template_accepts_argument_count_fast(decl, argument_count);
 }
 
 bool constructor_template_matches_source_args_fast(SemanticContext & ctx,

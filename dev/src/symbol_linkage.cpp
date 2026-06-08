@@ -2409,9 +2409,12 @@ find_unqualified_alias_template_in_mangle_scope(
   return nullptr;
 }
 
-static const semantic_model::ClassTemplateDecl * lookup_class_template_for_template_id_syntax(
+template<typename TemplateDecl>
+static const TemplateDecl * lookup_template_for_template_id_syntax(
     const TemplateIdSyntax & syntax,
-    const TypeMangleContext * mangle_ctx)
+    const TypeMangleContext * mangle_ctx,
+    const TemplateDecl * (*find_unqualified)(const semantic_model::Scope &,
+                                             const string &))
 {
   if(!mangle_ctx || !mangle_ctx->lookup_scope) {
     return nullptr;
@@ -2427,8 +2430,7 @@ static const semantic_model::ClassTemplateDecl * lookup_class_template_for_templ
     for(const semantic_model::Scope * scope = mangle_ctx->lookup_scope;
         scope;
         scope = scope->parent) {
-      if(const semantic_model::ClassTemplateDecl * found =
-             find_unqualified_class_template_in_mangle_scope(*scope, base_name)) {
+      if(const TemplateDecl * found = find_unqualified(*scope, base_name)) {
         return found;
       }
     }
@@ -2454,8 +2456,7 @@ static const semantic_model::ClassTemplateDecl * lookup_class_template_for_templ
           scope = ns_found == scope->namespace_bindings.end() ? nullptr : ns_found->second;
         }
         if(scope) {
-          if(const semantic_model::ClassTemplateDecl * found =
-                 find_unqualified_class_template_in_mangle_scope(*scope, base_name)) {
+          if(const TemplateDecl * found = find_unqualified(*scope, base_name)) {
             return found;
           }
         }
@@ -2476,7 +2477,15 @@ static const semantic_model::ClassTemplateDecl * lookup_class_template_for_templ
   if(!scope) {
     return nullptr;
   }
-  return find_unqualified_class_template_in_mangle_scope(*scope, base_name);
+  return find_unqualified(*scope, base_name);
+}
+
+static const semantic_model::ClassTemplateDecl * lookup_class_template_for_template_id_syntax(
+    const TemplateIdSyntax & syntax,
+    const TypeMangleContext * mangle_ctx)
+{
+  return lookup_template_for_template_id_syntax<semantic_model::ClassTemplateDecl>(
+      syntax, mangle_ctx, find_unqualified_class_template_in_mangle_scope);
 }
 
 static bool qualify_template_id_syntax_from_lookup(
@@ -4257,70 +4266,8 @@ static const semantic_model::AliasTemplateDecl * lookup_alias_template_for_templ
     const TemplateIdSyntax & syntax,
     const TypeMangleContext * mangle_ctx)
 {
-  if(!mangle_ctx || !mangle_ctx->lookup_scope) {
-    return nullptr;
-  }
-
-  const string base_name =
-      strip_leading_template_disambiguator(syntax.name.name);
-  if(base_name.empty()) {
-    return nullptr;
-  }
-
-  if(syntax.name.qualifiers.empty()) {
-    for(const semantic_model::Scope * scope = mangle_ctx->lookup_scope;
-        scope;
-        scope = scope->parent) {
-      if(const semantic_model::AliasTemplateDecl * found =
-             find_unqualified_alias_template_in_mangle_scope(*scope, base_name)) {
-        return found;
-      }
-    }
-    if(!mangle_ctx->lexical_scope.empty()) {
-      QualifiedName lexical;
-      if(semantic_utils::split_qualified_name_text(mangle_ctx->lexical_scope, lexical) &&
-         !lexical.rooted &&
-         !lexical.name.empty()) {
-        const semantic_model::Scope * scope = root_scope(mangle_ctx->lookup_scope);
-        vector<string> parts = lexical.qualifiers;
-        parts.push_back(lexical.name);
-        size_t part_index = 0;
-        if(scope &&
-           scope->namespace_scope &&
-           !scope->name.empty() &&
-           !parts.empty() &&
-           scope->name == parts[0]) {
-          part_index = 1;
-        }
-        for(size_t i = part_index; scope && i < parts.size(); ++i) {
-          map<string, semantic_model::Scope *>::const_iterator ns_found =
-              scope->namespace_bindings.find(parts[i]);
-          scope = ns_found == scope->namespace_bindings.end() ? nullptr : ns_found->second;
-        }
-        if(scope) {
-          if(const semantic_model::AliasTemplateDecl * found =
-                 find_unqualified_alias_template_in_mangle_scope(*scope, base_name)) {
-            return found;
-          }
-        }
-      }
-    }
-    return nullptr;
-  }
-
-  const semantic_model::Scope * scope = root_scope(mangle_ctx->lookup_scope);
-  for(size_t i = 0; scope && i < syntax.name.qualifiers.size(); ++i) {
-    const string qualifier =
-        semantic_utils::strip_trailing_top_level_template_arguments(
-            trim_space(syntax.name.qualifiers[i]));
-    map<string, semantic_model::Scope *>::const_iterator found =
-        scope->namespace_bindings.find(qualifier);
-    scope = found == scope->namespace_bindings.end() ? nullptr : found->second;
-  }
-  if(!scope) {
-    return nullptr;
-  }
-  return find_unqualified_alias_template_in_mangle_scope(*scope, base_name);
+  return lookup_template_for_template_id_syntax<semantic_model::AliasTemplateDecl>(
+      syntax, mangle_ctx, find_unqualified_alias_template_in_mangle_scope);
 }
 
 static const semantic_model::Scope * template_id_default_argument_scope_for_mangling(
