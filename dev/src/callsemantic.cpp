@@ -5774,6 +5774,146 @@ private:
     return class_info_for_type(direct_named_type(*target_scope, class_name));
   }
 
+  // Resolves an unqualified type name directly within direct_scope: a direct
+  // named type, a dependent-alias / enclosing-type placeholder while reference
+  // members are still being collected, a class member type, or a lexical-access
+  // class member type. Shared by the unqualified type-name lookups in
+  // lookup_non_template_type_name and lookup_type_impl.
+  TypePtr lookup_direct_member_type(Scope & direct_scope,
+                                    const string & lookup_name,
+                                    Scope & scope)
+  {
+    if(parser_trace::enabled("template.resolve") &&
+       (lookup_name == "allocator_type" ||
+        lookup_name == "value_type")) {
+      std::ostringstream trace;
+      trace << "unqualified-type-direct-enter name=" << lookup_name
+            << " scope="
+            << semantic_trace::scope_name_for_diagnostic(direct_scope)
+            << " class="
+            << (direct_scope.class_info ?
+                    direct_scope.class_info->qualified_name :
+                    std::string("<none>"))
+            << " function="
+            << (direct_scope.function ?
+                    function_output_name(*direct_scope.function) :
+                    std::string("<none>"));
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    TypePtr direct_named = direct_named_type(direct_scope, lookup_name);
+    if(parser_trace::enabled("template.resolve") &&
+       (lookup_name == "allocator_type" ||
+        lookup_name == "value_type")) {
+      std::ostringstream trace;
+      trace << "unqualified-type-direct-named name=" << lookup_name
+            << " scope="
+            << semantic_trace::scope_name_for_diagnostic(direct_scope)
+            << " type="
+            << (direct_named ? describe_type(direct_named) :
+                               std::string("<none>"));
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    if(direct_named) {
+      return direct_named;
+    }
+    if(direct_scope.class_info &&
+       direct_scope.class_info->reference_member_collection_in_progress) {
+      TypePtr enclosing =
+          lookup_enclosing_type_before_reference_placeholder(
+              direct_scope,
+              lookup_name);
+      if(enclosing) {
+        return enclosing;
+      }
+      return make_named(lookup_name,
+                        "dependent alias " +
+                            direct_scope.class_info->qualified_name +
+                            "::" + lookup_name,
+                        true);
+    }
+    if(direct_scope.class_info) {
+      const bool ensure_current_member_references =
+          !(((direct_scope.class_info->full_member_collection_in_progress ||
+              direct_scope.class_info->reference_member_collection_in_progress) &&
+             direct_scope.class_info->member_scope &&
+             scope_is_within(direct_scope,
+                             direct_scope.class_info->member_scope.get())));
+      MemberTypeLookupResult member =
+          lookup_member_type(*this,
+                             *direct_scope.class_info,
+                             lookup_name,
+                             ensure_current_member_references,
+                             &scope);
+      if(parser_trace::enabled("template.resolve") &&
+         (lookup_name == "allocator_type" ||
+          lookup_name == "value_type")) {
+        std::ostringstream trace;
+        trace << "unqualified-type-direct-member name=" << lookup_name
+              << " scope="
+              << semantic_trace::scope_name_for_diagnostic(direct_scope)
+              << " owner=" << direct_scope.class_info->qualified_name
+              << " ensure-current="
+              << (ensure_current_member_references ? "yes" : "no")
+              << " type="
+              << (member.type ? describe_type(member.type) :
+                                std::string("<none>"));
+        parser_trace::note("template.resolve", std::string(), trace.str());
+      }
+      if(member.type) {
+        TypePtr resolved =
+            semantic_class_model::resolve_instantiated_member_alias_type(
+                *this, scope, member.type, direct_scope.class_info);
+        return resolved ? resolved : member.type;
+      }
+    }
+    const bool has_lexical_class =
+        !direct_scope.class_info &&
+        direct_scope.function &&
+        direct_scope.function->lexical_access_class;
+    if(has_lexical_class) {
+      MemberTypeLookupResult member =
+          lookup_member_type(*this,
+                             *direct_scope.function->lexical_access_class,
+                             lookup_name,
+                             true,
+                             &scope);
+      if(member.type) {
+        TypePtr resolved =
+            semantic_class_model::resolve_instantiated_member_alias_type(
+                *this,
+                scope,
+                member.type,
+                direct_scope.function->lexical_access_class);
+        return resolved ? resolved : member.type;
+      }
+    }
+    return TypePtr();
+  }
+
+  // Recursively searches the inline (and unnamed) namespace children of
+  // current_scope, applying direct_lookup at each. Shared by the unqualified
+  // type-name lookups in lookup_non_template_type_name and lookup_type_impl.
+  TypePtr lookup_inline_namespace_type(
+      Scope & current_scope,
+      const function<TypePtr(Scope &)> & direct_lookup)
+  {
+    for(size_t i = 0; i < current_scope.namespace_children.size(); ++i) {
+      Scope & child = *current_scope.namespace_children[i];
+      if(!child.inline_namespace && child.name != "<unnamed>") {
+        continue;
+      }
+      TypePtr direct = direct_lookup(child);
+      if(direct) {
+        return direct;
+      }
+      TypePtr nested = lookup_inline_namespace_type(child, direct_lookup);
+      if(nested) {
+        return nested;
+      }
+    }
+    return TypePtr();
+  }
+
   TypePtr lookup_non_template_type_name(Scope & scope, const string & text) override
   {
     const string normalized_name = normalize_type_lookup_name(text);
@@ -5792,87 +5932,14 @@ private:
           {
             const auto direct_lookup = [this, &lookup_name, &scope](Scope & direct_scope) -> TypePtr
             {
-              TypePtr direct_named = direct_named_type(direct_scope, lookup_name);
-              if(direct_named) {
-                return direct_named;
-              }
-              if(direct_scope.class_info &&
-                 direct_scope.class_info->reference_member_collection_in_progress) {
-                return make_named(lookup_name,
-                                  "dependent alias " +
-                                      direct_scope.class_info->qualified_name +
-                                      "::" + lookup_name,
-                                  true);
-              }
-              if(direct_scope.class_info) {
-                const bool ensure_current_member_references =
-                    !(((direct_scope.class_info->full_member_collection_in_progress ||
-                        direct_scope.class_info->reference_member_collection_in_progress) &&
-                       direct_scope.class_info->member_scope &&
-                       scope_is_within(direct_scope,
-                                       direct_scope.class_info->member_scope.get())));
-                MemberTypeLookupResult member =
-                    lookup_member_type(*this,
-                                       *direct_scope.class_info,
-                                       lookup_name,
-                                       ensure_current_member_references,
-                                       &scope);
-                if(member.type) {
-                  TypePtr resolved =
-                      semantic_class_model::resolve_instantiated_member_alias_type(
-                          *this, scope, member.type, direct_scope.class_info);
-                  return resolved ? resolved : member.type;
-                }
-              }
-              const bool has_lexical_class =
-                  !direct_scope.class_info &&
-                  direct_scope.function &&
-                  direct_scope.function->lexical_access_class;
-              if(has_lexical_class) {
-                MemberTypeLookupResult member =
-                    lookup_member_type(*this,
-                                       *direct_scope.function->lexical_access_class,
-                                       lookup_name,
-                                       true,
-                                       &scope);
-                if(member.type) {
-                  TypePtr resolved =
-                      semantic_class_model::resolve_instantiated_member_alias_type(
-                          *this,
-                          scope,
-                          member.type,
-                          direct_scope.function->lexical_access_class);
-                  return resolved ? resolved : member.type;
-                }
-              }
-              return TypePtr();
+              return lookup_direct_member_type(direct_scope, lookup_name, scope);
             };
-
-            function<TypePtr(Scope &)> lookup_inline_children =
-                [&](Scope & current_scope) -> TypePtr
-                {
-                  for(size_t i = 0; i < current_scope.namespace_children.size(); ++i) {
-                    Scope & child = *current_scope.namespace_children[i];
-                    if(!child.inline_namespace && child.name != "<unnamed>") {
-                      continue;
-                    }
-                    TypePtr direct = direct_lookup(child);
-                    if(direct) {
-                      return direct;
-                    }
-                    TypePtr nested = lookup_inline_children(child);
-                    if(nested) {
-                      return nested;
-                    }
-                  }
-                  return TypePtr();
-                };
 
             TypePtr direct = direct_lookup(target);
             if(direct) {
               return direct;
             }
-            return lookup_inline_children(target);
+            return lookup_inline_namespace_type(target, direct_lookup);
           });
     };
 
@@ -7127,138 +7194,14 @@ private:
                 const auto direct_lookup =
                     [this, &lookup_name, &scope](Scope & direct_scope) -> TypePtr
                     {
-                      if(parser_trace::enabled("template.resolve") &&
-                         (lookup_name == "allocator_type" ||
-                          lookup_name == "value_type")) {
-                        std::ostringstream trace;
-                        trace << "unqualified-type-direct-enter name=" << lookup_name
-                              << " scope="
-                              << semantic_trace::scope_name_for_diagnostic(direct_scope)
-                              << " class="
-                              << (direct_scope.class_info ?
-                                      direct_scope.class_info->qualified_name :
-                                      std::string("<none>"))
-                              << " function="
-                              << (direct_scope.function ?
-                                      function_output_name(*direct_scope.function) :
-                                      std::string("<none>"));
-                        parser_trace::note("template.resolve", std::string(), trace.str());
-                      }
-                      TypePtr direct_named = direct_named_type(direct_scope, lookup_name);
-                      if(parser_trace::enabled("template.resolve") &&
-                         (lookup_name == "allocator_type" ||
-                          lookup_name == "value_type")) {
-                        std::ostringstream trace;
-                        trace << "unqualified-type-direct-named name=" << lookup_name
-                              << " scope="
-                              << semantic_trace::scope_name_for_diagnostic(direct_scope)
-                              << " type="
-                              << (direct_named ? describe_type(direct_named) :
-                                                 std::string("<none>"));
-                        parser_trace::note("template.resolve", std::string(), trace.str());
-                      }
-                      if(direct_named) {
-                        return direct_named;
-                      }
-                      if(direct_scope.class_info &&
-                         direct_scope.class_info->reference_member_collection_in_progress) {
-                        TypePtr enclosing =
-                            lookup_enclosing_type_before_reference_placeholder(
-                                direct_scope,
-                                lookup_name);
-                        if(enclosing) {
-                          return enclosing;
-                        }
-                        return make_named(lookup_name,
-                                          "dependent alias " +
-                                              direct_scope.class_info->qualified_name +
-                                              "::" + lookup_name,
-                                          true);
-                      }
-                      if(direct_scope.class_info) {
-                        const bool ensure_current_member_references =
-                            !(((direct_scope.class_info->full_member_collection_in_progress ||
-                                direct_scope.class_info->reference_member_collection_in_progress) &&
-                               direct_scope.class_info->member_scope &&
-                               scope_is_within(direct_scope,
-                                               direct_scope.class_info->member_scope.get())));
-                        MemberTypeLookupResult member =
-                            lookup_member_type(*this,
-                                               *direct_scope.class_info,
-                                               lookup_name,
-                                               ensure_current_member_references,
-                                               &scope);
-                        if(parser_trace::enabled("template.resolve") &&
-                           (lookup_name == "allocator_type" ||
-                            lookup_name == "value_type")) {
-                          std::ostringstream trace;
-                          trace << "unqualified-type-direct-member name=" << lookup_name
-                                << " scope="
-                                << semantic_trace::scope_name_for_diagnostic(direct_scope)
-                                << " owner=" << direct_scope.class_info->qualified_name
-                                << " ensure-current="
-                                << (ensure_current_member_references ? "yes" : "no")
-                                << " type="
-                                << (member.type ? describe_type(member.type) :
-                                                  std::string("<none>"));
-                          parser_trace::note("template.resolve", std::string(), trace.str());
-                        }
-                        if(member.type) {
-                          TypePtr resolved =
-                              semantic_class_model::resolve_instantiated_member_alias_type(
-                                  *this, scope, member.type, direct_scope.class_info);
-                          return resolved ? resolved : member.type;
-                        }
-                      }
-                      const bool has_lexical_class =
-                          !direct_scope.class_info &&
-                          direct_scope.function &&
-                          direct_scope.function->lexical_access_class;
-                      if(has_lexical_class) {
-                        MemberTypeLookupResult member =
-                            lookup_member_type(*this,
-                                               *direct_scope.function->lexical_access_class,
-                                               lookup_name,
-                                               true,
-                                               &scope);
-                        if(member.type) {
-                          TypePtr resolved =
-                              semantic_class_model::resolve_instantiated_member_alias_type(
-                                  *this,
-                                  scope,
-                                  member.type,
-                                  direct_scope.function->lexical_access_class);
-                          return resolved ? resolved : member.type;
-                        }
-                      }
-                      return TypePtr();
-                    };
-
-                function<TypePtr(Scope &)> lookup_inline_children =
-                    [&](Scope & current_scope) -> TypePtr
-                    {
-                      for(size_t i = 0; i < current_scope.namespace_children.size(); ++i) {
-                        Scope & child = *current_scope.namespace_children[i];
-                        if(!child.inline_namespace && child.name != "<unnamed>") {
-                          continue;
-                        }
-                        TypePtr direct = direct_lookup(child);
-                        if(direct) {
-                          return direct;
-                        }
-                        TypePtr nested = lookup_inline_children(child);
-                        if(nested) {
-                          return nested;
-                        }
-                      }
-                      return TypePtr();
+                      return lookup_direct_member_type(direct_scope, lookup_name, scope);
                     };
 
                 TypePtr direct = direct_lookup(target);
                 if(direct) {
                   return direct;
                 }
-                return lookup_inline_children(target);
+                return lookup_inline_namespace_type(target, direct_lookup);
               });
         };
 
