@@ -29903,105 +29903,21 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(SemanticContext & ctx,
                                                       string * eval_error,
                                                       const TypePtr & target_type)
 {
-  string trimmed = trim_space(text);
-  // libstdc++'s __or_fn/__and_fn SFINAE wrap the condition as !bool(B::value)
-  // or bool(B::value). Fold those wrappers so the inner member value drives
-  // evaluation and dependency tracking (a dependent operand stays dependent
-  // instead of reaching the throw below).
-  bool negate = false;
-  bool bool_cast = false;
-  for(;;) {
-    if(!trimmed.empty() && trimmed[0] == '!') {
-      negate = !negate;
-      trimmed = trim_space(trimmed.substr(1));
-      continue;
-    }
-    if(trimmed.size() > 6 &&
-       trimmed.compare(0, 5, "bool(") == 0 &&
-       trimmed[trimmed.size() - 1] == ')') {
-      bool_cast = true;
-      trimmed = trim_space(trimmed.substr(5, trimmed.size() - 6));
-      continue;
-    }
-    break;
-  }
-  const auto finish = [&](NonTypeArgumentStatus status) -> NonTypeArgumentStatus
-  {
-    if(status == NT_ARG_EVALUATED) {
-      if(bool_cast) {
-        value = value != 0 ? 1 : 0;
-      }
-      if(negate) {
-        value = value != 0 ? 0 : 1;
-      }
-    }
-    return status;
-  };
-  if(try_evaluate_integral_text(trimmed, value)) {
-    return finish(NT_ARG_EVALUATED);
-  }
-  if(try_evaluate_integral_text_with_pack_scope(scope, trimmed, value)) {
-    return finish(NT_ARG_EVALUATED);
-  }
-  const auto evaluate_builtin_trait_text =
-      [&]() -> NonTypeArgumentStatus
+  // The SemanticContext entry point mirrors the TemplateServices overload; the
+  // services layer wraps the same ctx operations, so bridge to it rather than
+  // maintaining a parallel implementation.
+  return template_api::with_template_services(
+      ctx,
+      [&](template_api::TemplateServices & services)
       {
-        string builtin_name;
-        vector<TypePtr> builtin_types;
-        if(!ctx.try_parse_builtin_type_trait_text(scope, trimmed, builtin_name, builtin_types)) {
-          return NT_ARG_PARSE_FAILED;
-        }
-
-        for(size_t i = 0; i < builtin_types.size(); ++i) {
-          if(template_argument_semantics::type_depends_on_template_parameter(ctx, builtin_types[i])) {
-            return NT_ARG_DEPENDENT;
-          }
-        }
-
-        return evaluate_builtin_type_trait(ctx, scope, builtin_name, builtin_types, value) ?
-                   NT_ARG_EVALUATED :
-                   NT_ARG_PARSE_FAILED;
-      };
-
-  const NonTypeArgumentStatus builtin_status = evaluate_builtin_trait_text();
-  if(builtin_status != NT_ARG_PARSE_FAILED) {
-    note_template_trace_if_enabled(
-        [&](ostringstream & trace)
-        {
-          trace << "non-type-arg text=" << trimmed
-                << " result="
-                << (builtin_status == NT_ARG_DEPENDENT ? "dependent-builtin-trait" :
-                    builtin_status == NT_ARG_EVALUATED ? "evaluated" :
-                    "parse-failed");
-          if(builtin_status == NT_ARG_EVALUATED) {
-            trace << " value=" << value;
-          }
-        });
-    return finish(builtin_status);
-  }
-
-  const NonTypeArgumentStatus member_value_status =
-      template_api::with_template_services(
-          ctx,
-          [&](template_api::TemplateServices & services)
-          {
-            return evaluate_template_member_value_text(
-                services,
-                template_api::make_template_environment(scope),
-                trimmed,
-                value,
-                target_type);
-          });
-  if(member_value_status != NT_ARG_PARSE_FAILED) {
-    return finish(member_value_status);
-  }
-
-  (void)ctx;
-  (void)scope;
-  (void)value;
-  (void)eval_error;
-  (void)target_type;
-  throw logic_error("legacy non-type template argument text evaluation: " + trimmed);
+        return evaluate_non_type_argument_text(
+            services,
+            template_api::make_template_environment(scope),
+            text,
+            value,
+            eval_error,
+            target_type);
+      });
 }
 
 static bool expression_ast_mentions_template_dependency(
