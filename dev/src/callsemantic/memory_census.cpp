@@ -1105,12 +1105,6 @@ uint64_t hash_string_value(const string & value)
   return hash;
 }
 
-template<class T>
-uint64_t hash_integral_value(T value)
-{
-  return static_cast<uint64_t>(value);
-}
-
 uint64_t hash_type_ptr_value(const TypePtr & type)
 {
   return static_cast<uint64_t>(
