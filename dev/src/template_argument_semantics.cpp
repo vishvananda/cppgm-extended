@@ -11609,6 +11609,46 @@ bool substitute_dependent_argument_expression(
   return true;
 }
 
+ValueBinding make_non_type_argument_value_binding(const TemplateArgument & argument)
+{
+  ValueBinding binding(ValueBinding::VK_VARIABLE,
+                       !argument.text.empty() ?
+                           argument.text :
+                           to_string(argument.value),
+                       argument.type);
+  binding.dependent_template_value = argument.dependent;
+  if(argument.dependent) {
+    binding.non_type_template_argument_text = binding.name;
+  } else {
+    // Member-pointer, pointer, reference and other non-integral non-type
+    // arguments cannot be represented by a single integral constant, so
+    // preserve their symbolic argument text (e.g. "&target::id") rather
+    // than collapsing to constant_value 0. Mirrors bind_non_type_value.
+    const TypePtr nttp_base =
+        strip_top_level_cv(remove_reference_type(argument.type));
+    const bool reference_nttp =
+        argument.type &&
+        (argument.type->kind == Type::TK_LVALUE_REFERENCE ||
+         argument.type->kind == Type::TK_RVALUE_REFERENCE);
+    const bool prefer_textual_binding =
+        !argument.text.empty() &&
+        (reference_nttp ||
+         (nttp_base &&
+          !is_integral_type(nttp_base) &&
+          !is_bool_type(nttp_base) &&
+          !(nttp_base->kind == Type::TK_NAMED &&
+            (nttp_base->named_key.compare(0, 5, "enum ") == 0 ||
+             nttp_base->named_display.compare(0, 5, "enum ") == 0))));
+    if(prefer_textual_binding) {
+      binding.non_type_template_argument_text = argument.text;
+    } else {
+      binding.has_constant_value = true;
+      binding.constant_value = argument.value;
+    }
+  }
+  return binding;
+}
+
 bool substitute_dependent_argument_text_and_syntax(
     Scope * scope,
     const vector<TemplateParameterInfo> & parameters,
@@ -11669,42 +11709,8 @@ bool substitute_dependent_argument_text_and_syntax(
       type_replacements[parameters[i].name] = argument.type;
     } else if(parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE &&
               argument.kind == TemplateArgument::TA_VALUE) {
-      ValueBinding binding(ValueBinding::VK_VARIABLE,
-                           !argument.text.empty() ?
-                               argument.text :
-                               to_string(argument.value),
-                           argument.type);
-      binding.dependent_template_value = argument.dependent;
-      if(argument.dependent) {
-        binding.non_type_template_argument_text = binding.name;
-      } else {
-        // Member-pointer, pointer, reference and other non-integral non-type
-        // arguments cannot be represented by a single integral constant, so
-        // preserve their symbolic argument text (e.g. "&target::id") rather
-        // than collapsing to constant_value 0. Mirrors bind_non_type_value.
-        const TypePtr nttp_base =
-            strip_top_level_cv(remove_reference_type(argument.type));
-        const bool reference_nttp =
-            argument.type &&
-            (argument.type->kind == Type::TK_LVALUE_REFERENCE ||
-             argument.type->kind == Type::TK_RVALUE_REFERENCE);
-        const bool prefer_textual_binding =
-            !argument.text.empty() &&
-            (reference_nttp ||
-             (nttp_base &&
-              !is_integral_type(nttp_base) &&
-              !is_bool_type(nttp_base) &&
-              !(nttp_base->kind == Type::TK_NAMED &&
-                (nttp_base->named_key.compare(0, 5, "enum ") == 0 ||
-                 nttp_base->named_display.compare(0, 5, "enum ") == 0))));
-        if(prefer_textual_binding) {
-          binding.non_type_template_argument_text = argument.text;
-        } else {
-          binding.has_constant_value = true;
-          binding.constant_value = argument.value;
-        }
-      }
-      value_replacements[parameters[i].name] = binding;
+      value_replacements[parameters[i].name] =
+          make_non_type_argument_value_binding(argument);
     }
   }
 
@@ -17693,38 +17699,12 @@ bool substitute_named_type_parameters_only(
   }
 
   case Type::TK_CV:
-  {
-    TypePtr inner;
-    bool inner_changed = false;
-    if(!substitute_named_type_parameters_only(type->inner,
-                                              parameters,
-                                              type_replacements,
-                                              inner,
-                                              inner_changed)) {
-      return false;
-    }
-    out = inner_changed ? apply_cv(inner, type->cv_const, type->cv_volatile) : type;
-    changed = inner_changed;
-    return true;
-  }
-
   case Type::TK_ATOMIC:
-  {
-    TypePtr inner;
-    bool inner_changed = false;
-    if(!substitute_named_type_parameters_only(type->inner,
-                                              parameters,
-                                              type_replacements,
-                                              inner,
-                                              inner_changed)) {
-      return false;
-    }
-    out = inner_changed ? make_atomic(inner) : type;
-    changed = inner_changed;
-    return true;
-  }
-
   case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+  case Type::TK_ARRAY:
   {
     TypePtr inner;
     bool inner_changed = false;
@@ -17735,7 +17715,36 @@ bool substitute_named_type_parameters_only(
                                               inner_changed)) {
       return false;
     }
-    out = inner_changed ? make_pointer(inner) : type;
+    if(inner_changed) {
+      switch(type->kind) {
+      case Type::TK_CV:
+        out = apply_cv(inner, type->cv_const, type->cv_volatile);
+        break;
+      case Type::TK_ATOMIC:
+        out = make_atomic(inner);
+        break;
+      case Type::TK_POINTER:
+        out = make_pointer(inner);
+        break;
+      case Type::TK_BLOCK_POINTER:
+        out = make_block_pointer(inner);
+        break;
+      case Type::TK_LVALUE_REFERENCE:
+        out = collapse_lvalue_reference_type(inner);
+        break;
+      case Type::TK_RVALUE_REFERENCE:
+        out = collapse_rvalue_reference_type(inner);
+        break;
+      case Type::TK_ARRAY:
+        out = make_array(inner, type->has_bound, type->bound, type->bound_text);
+        break;
+      default:
+        out = type;
+        break;
+      }
+    } else {
+      out = type;
+    }
     changed = inner_changed;
     return true;
   }
@@ -17760,72 +17769,6 @@ bool substitute_named_type_parameters_only(
     }
     out = (owner_changed || inner_changed) ? make_member_pointer(owner, inner) : type;
     changed = owner_changed || inner_changed;
-    return true;
-  }
-
-  case Type::TK_BLOCK_POINTER:
-  {
-    TypePtr inner;
-    bool inner_changed = false;
-    if(!substitute_named_type_parameters_only(type->inner,
-                                              parameters,
-                                              type_replacements,
-                                              inner,
-                                              inner_changed)) {
-      return false;
-    }
-    out = inner_changed ? make_block_pointer(inner) : type;
-    changed = inner_changed;
-    return true;
-  }
-
-  case Type::TK_LVALUE_REFERENCE:
-  {
-    TypePtr inner;
-    bool inner_changed = false;
-    if(!substitute_named_type_parameters_only(type->inner,
-                                              parameters,
-                                              type_replacements,
-                                              inner,
-                                              inner_changed)) {
-      return false;
-    }
-    out = inner_changed ? collapse_lvalue_reference_type(inner) : type;
-    changed = inner_changed;
-    return true;
-  }
-
-  case Type::TK_RVALUE_REFERENCE:
-  {
-    TypePtr inner;
-    bool inner_changed = false;
-    if(!substitute_named_type_parameters_only(type->inner,
-                                              parameters,
-                                              type_replacements,
-                                              inner,
-                                              inner_changed)) {
-      return false;
-    }
-    out = inner_changed ? collapse_rvalue_reference_type(inner) : type;
-    changed = inner_changed;
-    return true;
-  }
-
-  case Type::TK_ARRAY:
-  {
-    TypePtr inner;
-    bool inner_changed = false;
-    if(!substitute_named_type_parameters_only(type->inner,
-                                              parameters,
-                                              type_replacements,
-                                              inner,
-                                              inner_changed)) {
-      return false;
-    }
-    out = inner_changed ?
-        make_array(inner, type->has_bound, type->bound, type->bound_text) :
-        type;
-    changed = inner_changed;
     return true;
   }
 
@@ -18774,10 +18717,12 @@ void substitute_type_pack_template_id_arguments(
   }
 }
 
-bool collect_type_pack_references_in_node(
+template<typename PackElement>
+bool collect_pack_references_in_node_impl(
     Scope & scope,
     const CppAstNode & node,
-    vector<pair<string, const vector<TypePtr> *> > & packs)
+    map<string, vector<PackElement> > Scope::* packs_member,
+    vector<pair<string, const vector<PackElement> *> > & packs)
 {
   if(node.kind == CppAstKind::sizeof_pack_expression) {
     return true;
@@ -18787,9 +18732,10 @@ bool collect_type_pack_references_in_node(
     if(current->namespace_scope || current->parent == nullptr) {
       break;
     }
-    for(map<string, vector<TypePtr> >::const_iterator it =
-            current->named_type_packs.begin();
-        it != current->named_type_packs.end();
+    const map<string, vector<PackElement> > & named_packs = current->*packs_member;
+    for(typename map<string, vector<PackElement> >::const_iterator it =
+            named_packs.begin();
+        it != named_packs.end();
         ++it) {
       if(it->first.empty() ||
          seen.count(it->first) != 0 ||
@@ -18805,6 +18751,48 @@ bool collect_type_pack_references_in_node(
     }
   }
   return true;
+}
+
+template<typename PackElement>
+bool collect_pack_references_in_argument_syntax_impl(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax,
+    map<string, vector<PackElement> > Scope::* packs_member,
+    vector<pair<string, const vector<PackElement> *> > & packs)
+{
+  set<string> seen;
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    const map<string, vector<PackElement> > & named_packs = current->*packs_member;
+    for(typename map<string, vector<PackElement> >::const_iterator it =
+            named_packs.begin();
+        it != named_packs.end();
+        ++it) {
+      if(it->first.empty() ||
+         seen.count(it->first) != 0 ||
+         !argument_syntax_mentions_pack_expansion_identifier(
+             syntax,
+             it->first,
+             true,
+             false)) {
+        continue;
+      }
+      seen.insert(it->first);
+      packs.push_back(make_pair(it->first, &it->second));
+    }
+  }
+  return true;
+}
+
+bool collect_type_pack_references_in_node(
+    Scope & scope,
+    const CppAstNode & node,
+    vector<pair<string, const vector<TypePtr> *> > & packs)
+{
+  return collect_pack_references_in_node_impl(
+      scope, node, &Scope::named_type_packs, packs);
 }
 
 bool collect_type_pack_references_in_argument_syntax(
@@ -18812,29 +18800,8 @@ bool collect_type_pack_references_in_argument_syntax(
     const TemplateArgumentSyntax & syntax,
     vector<pair<string, const vector<TypePtr> *> > & packs)
 {
-  set<string> seen;
-  for(Scope * current = &scope; current; current = current->parent) {
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-    for(map<string, vector<TypePtr> >::const_iterator it =
-            current->named_type_packs.begin();
-        it != current->named_type_packs.end();
-        ++it) {
-      if(it->first.empty() ||
-         seen.count(it->first) != 0 ||
-         !argument_syntax_mentions_pack_expansion_identifier(
-             syntax,
-             it->first,
-             true,
-             false)) {
-        continue;
-      }
-      seen.insert(it->first);
-      packs.push_back(make_pair(it->first, &it->second));
-    }
-  }
-  return true;
+  return collect_pack_references_in_argument_syntax_impl(
+      scope, syntax, &Scope::named_type_packs, packs);
 }
 
 bool collect_value_pack_references_in_node(
@@ -18842,32 +18809,8 @@ bool collect_value_pack_references_in_node(
     const CppAstNode & node,
     vector<pair<string, const vector<ValueBinding> *> > & packs)
 {
-  if(node.kind == CppAstKind::sizeof_pack_expression) {
-    return true;
-  }
-  set<string> seen;
-  for(Scope * current = &scope; current; current = current->parent) {
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-    for(map<string, vector<ValueBinding> >::const_iterator it =
-            current->named_value_packs.begin();
-        it != current->named_value_packs.end();
-        ++it) {
-      if(it->first.empty() ||
-         seen.count(it->first) != 0 ||
-         !expression_node_mentions_pack_expansion_identifier(
-             node,
-             it->first,
-             true,
-             true)) {
-        continue;
-      }
-      seen.insert(it->first);
-      packs.push_back(make_pair(it->first, &it->second));
-    }
-  }
-  return true;
+  return collect_pack_references_in_node_impl(
+      scope, node, &Scope::named_value_packs, packs);
 }
 
 bool collect_value_pack_references_in_argument_syntax(
@@ -18875,29 +18818,8 @@ bool collect_value_pack_references_in_argument_syntax(
     const TemplateArgumentSyntax & syntax,
     vector<pair<string, const vector<ValueBinding> *> > & packs)
 {
-  set<string> seen;
-  for(Scope * current = &scope; current; current = current->parent) {
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-    for(map<string, vector<ValueBinding> >::const_iterator it =
-            current->named_value_packs.begin();
-        it != current->named_value_packs.end();
-        ++it) {
-      if(it->first.empty() ||
-         seen.count(it->first) != 0 ||
-         !argument_syntax_mentions_pack_expansion_identifier(
-             syntax,
-             it->first,
-             true,
-             false)) {
-        continue;
-      }
-      seen.insert(it->first);
-      packs.push_back(make_pair(it->first, &it->second));
-    }
-  }
-  return true;
+  return collect_pack_references_in_argument_syntax_impl(
+      scope, syntax, &Scope::named_value_packs, packs);
 }
 
 bool scope_chain_has_bound_pack_arguments(Scope & scope)
@@ -20870,42 +20792,8 @@ bool substitute_expression_node_for_template_arguments(
     }
     if(parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE &&
        argument.kind == TemplateArgument::TA_VALUE) {
-      ValueBinding binding(ValueBinding::VK_VARIABLE,
-                           !argument.text.empty() ?
-                               argument.text :
-                               to_string(argument.value),
-                           argument.type);
-      binding.dependent_template_value = argument.dependent;
-      if(argument.dependent) {
-        binding.non_type_template_argument_text = binding.name;
-      } else {
-        // Member-pointer, pointer, reference and other non-integral non-type
-        // arguments cannot be represented by a single integral constant, so
-        // preserve their symbolic argument text (e.g. "&target::id") rather
-        // than collapsing to constant_value 0. Mirrors bind_non_type_value.
-        const TypePtr nttp_base =
-            strip_top_level_cv(remove_reference_type(argument.type));
-        const bool reference_nttp =
-            argument.type &&
-            (argument.type->kind == Type::TK_LVALUE_REFERENCE ||
-             argument.type->kind == Type::TK_RVALUE_REFERENCE);
-        const bool prefer_textual_binding =
-            !argument.text.empty() &&
-            (reference_nttp ||
-             (nttp_base &&
-              !is_integral_type(nttp_base) &&
-              !is_bool_type(nttp_base) &&
-              !(nttp_base->kind == Type::TK_NAMED &&
-                (nttp_base->named_key.compare(0, 5, "enum ") == 0 ||
-                 nttp_base->named_display.compare(0, 5, "enum ") == 0))));
-        if(prefer_textual_binding) {
-          binding.non_type_template_argument_text = argument.text;
-        } else {
-          binding.has_constant_value = true;
-          binding.constant_value = argument.value;
-        }
-      }
-      value_replacements[parameters[i].name] = binding;
+      value_replacements[parameters[i].name] =
+          make_non_type_argument_value_binding(argument);
     }
   }
   CppAstNode current;
