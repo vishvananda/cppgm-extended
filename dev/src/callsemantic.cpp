@@ -11591,6 +11591,83 @@ private:
     return qualifier_type;
   }
 
+  enum class QualifierScopeWalk { Resolved, Empty, Fallback };
+
+  // Walks the namespace/class qualifiers of a qualified-name node, advancing
+  // current_scope to the scope named by the final qualifier. Returns Empty when
+  // a qualifier template-id fails to resolve, Fallback when a qualifier is
+  // dependent or its class cannot be completed (callers should fall back to an
+  // unqualified lookup), and Resolved otherwise.
+  QualifierScopeWalk walk_node_qualifier_scope(Scope & scope,
+                                               const CppAstNode & node,
+                                               const QualifiedName & qualified,
+                                               Scope * & current_scope)
+  {
+    current_scope = &scope;
+    if(qualified.rooted) {
+      current_scope = root.get();
+    }
+    for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
+      Scope * namespace_scope = nullptr;
+      if(i == 0 && !qualified.rooted) {
+        for(Scope * lexical = current_scope; lexical; lexical = lexical->parent) {
+          namespace_scope =
+              resolve_direct_namespace(*lexical, qualified.qualifiers[i]);
+          if(namespace_scope) {
+            break;
+          }
+        }
+      } else {
+        namespace_scope =
+            resolve_direct_namespace(*current_scope, qualified.qualifiers[i]);
+      }
+      if(namespace_scope) {
+        current_scope = namespace_scope;
+        continue;
+      }
+
+      const TemplateIdSyntax * qualifier_template_id =
+          qualifier_template_id_for_component(node, i, qualified.qualifiers[i]);
+      const string qualifier_lookup_text =
+          qualifier_template_id ?
+              template_id_syntax_text_preserving_spacing(*qualifier_template_id) :
+              qualified.qualifiers[i];
+      TypePtr qualifier_type;
+      if(qualifier_template_id) {
+        qualifier_type = resolve_qualifier_template_id_type(
+            *qualifier_template_id, node, *current_scope, scope);
+        if(!qualifier_type) {
+          return QualifierScopeWalk::Empty;
+        }
+      } else {
+        qualifier_type = lookup_type_impl(*current_scope,
+                                          qualifier_lookup_text,
+                                          true,
+                                          true);
+      }
+
+      if(!qualifier_type || type_depends_on_template_parameter(qualifier_type)) {
+        return QualifierScopeWalk::Fallback;
+      }
+      ClassInfo * qualifier_info = class_info_for_type(qualifier_type);
+      if(!qualifier_info || !qualifier_info->member_scope) {
+        qualifier_info = complete_class_type(qualifier_type);
+      }
+      if(qualifier_info &&
+         qualifier_info->member_scope &&
+         !qualifier_info->reference_members_collected &&
+         !qualifier_info->reference_member_collection_in_progress &&
+         !qualifier_info->full_member_collection_in_progress) {
+        ensure_class_reference_members(*qualifier_info);
+      }
+      if(!qualifier_info || !qualifier_info->member_scope) {
+        return QualifierScopeWalk::Fallback;
+      }
+      current_scope = qualifier_info->member_scope.get();
+    }
+    return QualifierScopeWalk::Resolved;
+  }
+
   vector<FunctionTemplateDecl *> lookup_function_templates_node(Scope & scope,
                                                                 const CppAstNode & node,
                                                                 const string & name) override
@@ -11614,68 +11691,14 @@ private:
             leaf_template_id->name.name :
             strip_trailing_top_level_template_arguments(qualified->name);
 
-    Scope * current_scope = &scope;
-    if(qualified->rooted) {
-      current_scope = root.get();
-    }
-
-    for(size_t i = 0; i < qualified->qualifiers.size(); ++i) {
-      Scope * namespace_scope = nullptr;
-      if(i == 0 && !qualified->rooted) {
-        for(Scope * lexical = current_scope; lexical; lexical = lexical->parent) {
-          namespace_scope =
-              resolve_direct_namespace(*lexical, qualified->qualifiers[i]);
-          if(namespace_scope) {
-            break;
-          }
-        }
-      } else {
-        namespace_scope =
-            resolve_direct_namespace(*current_scope, qualified->qualifiers[i]);
-      }
-      if(namespace_scope) {
-        current_scope = namespace_scope;
-        continue;
-      }
-
-      const TemplateIdSyntax * qualifier_template_id =
-          qualifier_template_id_for_component(node, i, qualified->qualifiers[i]);
-      const string qualifier_lookup_text =
-          qualifier_template_id ?
-              template_id_syntax_text_preserving_spacing(*qualifier_template_id) :
-              qualified->qualifiers[i];
-      TypePtr qualifier_type;
-      if(qualifier_template_id) {
-        qualifier_type = resolve_qualifier_template_id_type(
-            *qualifier_template_id, node, *current_scope, scope);
-        if(!qualifier_type) {
-          return vector<FunctionTemplateDecl *>();
-        }
-      } else {
-        qualifier_type = lookup_type_impl(*current_scope,
-                                          qualifier_lookup_text,
-                                          true,
-                                          true);
-      }
-
-      if(!qualifier_type || type_depends_on_template_parameter(qualifier_type)) {
-        return lookup_function_templates(scope, name);
-      }
-      ClassInfo * qualifier_info = class_info_for_type(qualifier_type);
-      if(!qualifier_info || !qualifier_info->member_scope) {
-        qualifier_info = complete_class_type(qualifier_type);
-      }
-      if(qualifier_info &&
-         qualifier_info->member_scope &&
-         !qualifier_info->reference_members_collected &&
-         !qualifier_info->reference_member_collection_in_progress &&
-         !qualifier_info->full_member_collection_in_progress) {
-        ensure_class_reference_members(*qualifier_info);
-      }
-      if(!qualifier_info || !qualifier_info->member_scope) {
-        return lookup_function_templates(scope, name);
-      }
-      current_scope = qualifier_info->member_scope.get();
+    Scope * current_scope = nullptr;
+    switch(walk_node_qualifier_scope(scope, node, *qualified, current_scope)) {
+    case QualifierScopeWalk::Empty:
+      return vector<FunctionTemplateDecl *>();
+    case QualifierScopeWalk::Fallback:
+      return lookup_function_templates(scope, name);
+    case QualifierScopeWalk::Resolved:
+      break;
     }
 
     vector<FunctionTemplateDecl *> out;
@@ -14780,68 +14803,14 @@ private:
               bindings.end());
         };
 
-    Scope * current_scope = &scope;
-    if(qualified->rooted) {
-      current_scope = root.get();
-    }
-
-    for(size_t i = 0; i < qualified->qualifiers.size(); ++i) {
-      Scope * namespace_scope = nullptr;
-      if(i == 0 && !qualified->rooted) {
-        for(Scope * lexical = current_scope; lexical; lexical = lexical->parent) {
-          namespace_scope =
-              resolve_direct_namespace(*lexical, qualified->qualifiers[i]);
-          if(namespace_scope) {
-            break;
-          }
-        }
-      } else {
-        namespace_scope =
-            resolve_direct_namespace(*current_scope, qualified->qualifiers[i]);
-      }
-      if(namespace_scope) {
-        current_scope = namespace_scope;
-        continue;
-      }
-
-      const TemplateIdSyntax * qualifier_template_id =
-          qualifier_template_id_for_component(node, i, qualified->qualifiers[i]);
-      TypePtr qualifier_type;
-      const string qualifier_lookup_text =
-          qualifier_template_id ?
-              template_id_syntax_text_preserving_spacing(*qualifier_template_id) :
-              qualified->qualifiers[i];
-      if(qualifier_template_id) {
-        qualifier_type = resolve_qualifier_template_id_type(
-            *qualifier_template_id, node, *current_scope, scope);
-        if(!qualifier_type) {
-          return vector<FunctionBinding *>();
-        }
-      } else {
-        qualifier_type = lookup_type_impl(*current_scope,
-                                          qualifier_lookup_text,
-                                          true,
-                                          true);
-      }
-
-      if(!qualifier_type || type_depends_on_template_parameter(qualifier_type)) {
-        return lookup_functions(scope, name, options);
-      }
-      ClassInfo * qualifier_info = class_info_for_type(qualifier_type);
-      if(!qualifier_info || !qualifier_info->member_scope) {
-        qualifier_info = complete_class_type(qualifier_type);
-      }
-      if(qualifier_info &&
-         qualifier_info->member_scope &&
-         !qualifier_info->reference_members_collected &&
-         !qualifier_info->reference_member_collection_in_progress &&
-         !qualifier_info->full_member_collection_in_progress) {
-        ensure_class_reference_members(*qualifier_info);
-      }
-      if(!qualifier_info || !qualifier_info->member_scope) {
-        return lookup_functions(scope, name, options);
-      }
-      current_scope = qualifier_info->member_scope.get();
+    Scope * current_scope = nullptr;
+    switch(walk_node_qualifier_scope(scope, node, *qualified, current_scope)) {
+    case QualifierScopeWalk::Empty:
+      return vector<FunctionBinding *>();
+    case QualifierScopeWalk::Fallback:
+      return lookup_functions(scope, name, options);
+    case QualifierScopeWalk::Resolved:
+      break;
     }
 
     vector<FunctionBinding *> out;
@@ -27264,6 +27233,32 @@ private:
            template_identity.key.empty();
   }
 
+  symbol_linkage::FunctionSymbolOptions lambda_context_function_symbol_options(
+      FunctionBinding & current,
+      const FunctionTemplateRegistrationIdentity & template_identity)
+  {
+    symbol_linkage::FunctionSymbolOptions context_options;
+    populate_function_symbol_options(
+        context_options,
+        current.is_method,
+        current.is_const_method,
+        current.is_volatile_method,
+        current.ref_qualifier,
+        current.is_constructor,
+        current.is_destructor,
+        template_identity,
+        current.owner_class,
+        current.declaration_scope,
+        current.declaration_node,
+        current.definition_node);
+    if(!current.instantiation_pack_sizes.empty()) {
+      context_options.template_argument_pack_sizes =
+          &current.instantiation_pack_sizes;
+    }
+    context_options.abi_tags = function_binding_abi_tags(current);
+    return context_options;
+  }
+
   void assign_lambda_itanium_metadata(ClassInfo & info,
                                       Scope & scope,
                                       const vector<pair<string, TypePtr> > & params)
@@ -27281,25 +27276,8 @@ private:
 
     const FunctionTemplateRegistrationIdentity template_identity =
         function_template_registration_identity(*current);
-    symbol_linkage::FunctionSymbolOptions context_options;
-    populate_function_symbol_options(
-        context_options,
-        current->is_method,
-        current->is_const_method,
-        current->is_volatile_method,
-        current->ref_qualifier,
-        current->is_constructor,
-        current->is_destructor,
-        template_identity,
-        current->owner_class,
-        current->declaration_scope,
-        current->declaration_node,
-        current->definition_node);
-    if(!current->instantiation_pack_sizes.empty()) {
-      context_options.template_argument_pack_sizes =
-          &current->instantiation_pack_sizes;
-    }
-    context_options.abi_tags = function_binding_abi_tags(*current);
+    const symbol_linkage::FunctionSymbolOptions context_options =
+        lambda_context_function_symbol_options(*current, template_identity);
 
     const bool local_source_name =
         lambda_uses_clang_local_source_name(*current, template_identity);
@@ -27361,25 +27339,8 @@ private:
 
     const FunctionTemplateRegistrationIdentity template_identity =
         function_template_registration_identity(*current);
-    symbol_linkage::FunctionSymbolOptions context_options;
-    populate_function_symbol_options(
-        context_options,
-        current->is_method,
-        current->is_const_method,
-        current->is_volatile_method,
-        current->ref_qualifier,
-        current->is_constructor,
-        current->is_destructor,
-        template_identity,
-        current->owner_class,
-        current->declaration_scope,
-        current->declaration_node,
-        current->definition_node);
-    if(!current->instantiation_pack_sizes.empty()) {
-      context_options.template_argument_pack_sizes =
-          &current->instantiation_pack_sizes;
-    }
-    context_options.abi_tags = function_binding_abi_tags(*current);
+    const symbol_linkage::FunctionSymbolOptions context_options =
+        lambda_context_function_symbol_options(*current, template_identity);
 
     shared_ptr<Type::LambdaMangleMetadata> metadata(
         new Type::LambdaMangleMetadata);
