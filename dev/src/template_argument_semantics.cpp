@@ -25941,13 +25941,6 @@ VariableTemplateDecl * lookup_standard_library_variable_template(
   return decl;
 }
 
-bool is_standard_library_variable_template(template_api::TemplateServices & services,
-                                           Scope & scope,
-                                           const TemplateIdSyntax & syntax)
-{
-  return lookup_standard_library_variable_template(services, scope, syntax) != nullptr;
-}
-
 bool resolve_standard_meta_bool_argument(
     template_api::TemplateServices & services,
     Scope & argument_scope,
@@ -26632,27 +26625,6 @@ bool resolve_type_trait_expression_type_argument(
                                                     lookup_name,
                                                     reference_class_templates_only);
   return out != nullptr;
-}
-
-bool scope_has_template_bound_names_for_syntax_resolution(
-    template_api::TemplateEnvironmentHandle scope)
-{
-  if(!scope.valid()) {
-    return false;
-  }
-  for(Scope * current = &scope.require(); current; current = current->parent) {
-    if(!current->template_bound_type_names.empty() ||
-       !current->template_bound_type_pack_names.empty() ||
-       !current->template_bound_value_names.empty() ||
-       !current->template_bound_value_pack_names.empty() ||
-       !current->template_bound_template_names.empty()) {
-      return true;
-    }
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-  }
-  return false;
 }
 
 bool resolve_structured_type_trait_argument(
