@@ -1293,22 +1293,6 @@ bool matches_destructor_entry_type_for_lowir(const TypePtr & entry_type,
          same_class_pointer_parameter_for_lowir(class_type, base->params[0]);
 }
 
-template<typename Matcher>
-string try_lookup_special_member_symbol_by_entry(const vector<FunctionSymbolEntry> & entries,
-                                                 const string & name,
-                                                 const Matcher & matches)
-{
-  for(size_t i = 0; i < entries.size(); ++i) {
-    if(!special_member_lookup_name_matches(entries[i].name, name)) {
-      continue;
-    }
-    if(matches(entries[i].type)) {
-      return entries[i].symbol;
-    }
-  }
-  return string();
-}
-
 symbol_linkage::SymbolIdentity derive_vtable_entry_symbol_identity_for_name(
     const CallSemNode & node,
     const string & qualified_name);
