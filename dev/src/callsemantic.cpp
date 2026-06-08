@@ -10970,20 +10970,14 @@ private:
     return location;
   }
 
-  void emit_nested_class_use_source_events_from_location_impl(
+  void emit_class_use_source_events_for_occurrences(
       Scope & scope,
-      const std::string & location,
+      const std::vector<NestedSourceTemplateIdOccurrence> & occurrences,
       witness::SourceUseOwnership ownership,
       const std::string & skip_exact_template_name,
-      witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
-      bool clear_template_id_occurrence = false)
+      witness::SourceUseRole role,
+      bool clear_template_id_occurrence)
   {
-    if(!witness::source_location_capture_enabled(template_witness_context(),
-                                                 location)) {
-      return;
-    }
-    const std::vector<NestedSourceTemplateIdOccurrence> occurrences =
-        nested_template_id_source_occurrences_at_location(location);
     for(size_t i = 0; i < occurrences.size(); ++i) {
       if(!skip_exact_template_name.empty()) {
         const std::string occurrence_unqualified =
@@ -10993,11 +10987,11 @@ private:
         if(occurrences[i].template_name == skip_exact_template_name ||
            (!occurrence_unqualified.empty() &&
             occurrence_unqualified == skip_unqualified)) {
-	          continue;
-	        }
-	      }
-	      witness::ClassUseSourceDecision decision;
-	      bool built_class_use = false;
+          continue;
+        }
+      }
+      witness::ClassUseSourceDecision decision;
+      bool built_class_use = false;
       try {
         built_class_use =
             build_class_use_source_decision_from_template_text(
@@ -11021,6 +11015,28 @@ private:
           role,
           witness::nested_class_use_origin_for_ownership(ownership));
     }
+  }
+
+  void emit_nested_class_use_source_events_from_location_impl(
+      Scope & scope,
+      const std::string & location,
+      witness::SourceUseOwnership ownership,
+      const std::string & skip_exact_template_name,
+      witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
+      bool clear_template_id_occurrence = false)
+  {
+    if(!witness::source_location_capture_enabled(template_witness_context(),
+                                                 location)) {
+      return;
+    }
+    const std::vector<NestedSourceTemplateIdOccurrence> occurrences =
+        nested_template_id_source_occurrences_at_location(location);
+    emit_class_use_source_events_for_occurrences(scope,
+                                                 occurrences,
+                                                 ownership,
+                                                 skip_exact_template_name,
+                                                 role,
+                                                 clear_template_id_occurrence);
   }
 
   void emit_nested_class_use_source_events_from_location(
@@ -11049,39 +11065,12 @@ private:
     const std::vector<NestedSourceTemplateIdOccurrence> occurrences =
         source_location_tokens().template_id_source_occurrences_after_location(
             location);
-    for(size_t i = 0; i < occurrences.size(); ++i) {
-      if(!skip_exact_template_name.empty()) {
-        const std::string occurrence_unqualified =
-            unqualified_member_name(occurrences[i].template_name);
-        const std::string skip_unqualified =
-            unqualified_member_name(skip_exact_template_name);
-        if(occurrences[i].template_name == skip_exact_template_name ||
-           (!occurrence_unqualified.empty() &&
-            occurrence_unqualified == skip_unqualified)) {
-	          continue;
-	        }
-	      }
-	      witness::ClassUseSourceDecision decision;
-	      bool built_class_use = false;
-      try {
-        built_class_use =
-            build_class_use_source_decision_from_template_text(
-                scope,
-                occurrences[i].text,
-                occurrences[i].location,
-                decision);
-      } catch(...) {
-        built_class_use = false;
-      }
-      if(!built_class_use) {
-        continue;
-      }
-      witness::emit_class_use_decision(
-          decision,
-          ownership,
-          witness::SourceUseRole::TypeUse,
-          witness::nested_class_use_origin_for_ownership(ownership));
-    }
+    emit_class_use_source_events_for_occurrences(scope,
+                                                 occurrences,
+                                                 ownership,
+                                                 skip_exact_template_name,
+                                                 witness::SourceUseRole::TypeUse,
+                                                 false);
   }
 
   void emit_class_use_source_events_after_location(
