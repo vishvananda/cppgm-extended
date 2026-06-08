@@ -1033,30 +1033,6 @@ DeclT * lookup_unqualified_decl_with_entity_equivalence(
   return nullptr;
 }
 
-template<typename Result, typename FinalLookup, typename Present>
-Result lookup_qualified_with_present(Scope & scope,
-                                     const QualifiedName & qualified,
-                                     const FinalLookup & final_lookup,
-                                     const Present & present)
-{
-  return cpp_scope_lookup::lookup_qualified<Result>(
-      *root_scope(scope), qualified,
-      [&scope, &present](const string & name) -> Scope *
-      {
-        return lookup_unqualified_with_present<Scope *>(
-            scope, name,
-            [](Scope & target, const string & lookup_name) -> Scope *
-            {
-              return resolve_direct_namespace(target, lookup_name);
-            },
-            present);
-      },
-      [](Scope & target, const string & lookup_name) -> Scope *
-      {
-        return resolve_direct_namespace(target, lookup_name);
-      },
-      final_lookup);
-}
 
 template<typename Callback>
 size_t collect_base_paths_impl(const ClassInfo & current,
