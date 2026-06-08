@@ -4260,24 +4260,6 @@ private:
       if(matched) {
         return matched;
       }
-      if(use.origin->declaring_scope) {
-        const string injected_qualified =
-            scope_qualified_name(*use.origin->declaring_scope, use.origin->name);
-        const string qualified =
-            injected_qualified + "<" + arg_list + ">";
-        matched = match_wrapped_type_text(normalized_name,
-                                          injected_qualified,
-                                          use.instance->type);
-        if(matched) {
-          return matched;
-        }
-        matched = match_wrapped_type_text(normalized_name,
-                                          qualified,
-                                          use.instance->type);
-        if(matched) {
-          return matched;
-        }
-      }
     }
     return TypePtr();
   }
