@@ -2584,32 +2584,28 @@ std::string class_anonymous_union_storage_name(std::size_t index)
   return std::string("__anonymous_union_storage") + std::to_string(index);
 }
 
-bool special_member_is_defaulted(const CppAstNode & node)
+bool special_member_has_definition_keyword(const CppAstNode & node, const char * keyword)
 {
   const CppAstNode * special_definition = find_child(node, CppAstKind::special_definition);
   if(special_definition) {
-    return special_definition->value == "default";
+    return special_definition->value == keyword;
   }
 
   const CppAstNode * initializer = find_child(node, CppAstKind::initializer);
   return initializer &&
          initializer->children.size() == 1 &&
          initializer->children[0].kind == CppAstKind::special_initializer &&
-         initializer->children[0].value == "default";
+         initializer->children[0].value == keyword;
+}
+
+bool special_member_is_defaulted(const CppAstNode & node)
+{
+  return special_member_has_definition_keyword(node, "default");
 }
 
 bool special_member_is_deleted(const CppAstNode & node)
 {
-  const CppAstNode * special_definition = find_child(node, CppAstKind::special_definition);
-  if(special_definition) {
-    return special_definition->value == "delete";
-  }
-
-  const CppAstNode * initializer = find_child(node, CppAstKind::initializer);
-  return initializer &&
-         initializer->children.size() == 1 &&
-         initializer->children[0].kind == CppAstKind::special_initializer &&
-         initializer->children[0].value == "delete";
+  return special_member_has_definition_keyword(node, "delete");
 }
 
 bool special_member_excluded_from_explicit_instantiation(const CppAstNode & node)
@@ -4141,7 +4137,7 @@ FunctionBinding * find_constructor_binding(ClassInfo & info,
   return nullptr;
 }
 
-bool has_user_declared_copy_constructor(const ClassInfo & info)
+bool has_user_declared_ref_constructor(const ClassInfo & info, Type::Kind ref_kind)
 {
   std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
       info.methods.find(info.name);
@@ -4152,29 +4148,37 @@ bool has_user_declared_copy_constructor(const ClassInfo & info)
     const FunctionBinding * binding = found->second[i];
     if(binding &&
        !binding->synthesized &&
-       is_same_class_ref_constructor_binding(info,
-                                             *binding,
-                                             Type::TK_LVALUE_REFERENCE)) {
+       is_same_class_ref_constructor_binding(info, *binding, ref_kind)) {
       return true;
     }
   }
   return false;
 }
 
+bool has_user_declared_copy_constructor(const ClassInfo & info)
+{
+  return has_user_declared_ref_constructor(info, Type::TK_LVALUE_REFERENCE);
+}
+
 bool has_user_declared_move_constructor(const ClassInfo & info)
 {
+  return has_user_declared_ref_constructor(info, Type::TK_RVALUE_REFERENCE);
+}
+
+bool has_user_declared_assignment(const ClassInfo & info,
+                                  bool FunctionBinding::* predicate)
+{
   std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
-      info.methods.find(info.name);
+      info.methods.find("operator=");
   if(found == info.methods.end()) {
     return false;
   }
   for(size_t i = 0; i < found->second.size(); ++i) {
     const FunctionBinding * binding = found->second[i];
     if(binding &&
+       !binding->source_template &&
        !binding->synthesized &&
-       is_same_class_ref_constructor_binding(info,
-                                             *binding,
-                                             Type::TK_RVALUE_REFERENCE)) {
+       binding->*predicate) {
       return true;
     }
   }
@@ -4183,40 +4187,12 @@ bool has_user_declared_move_constructor(const ClassInfo & info)
 
 bool has_user_declared_copy_assignment(const ClassInfo & info)
 {
-  std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
-      info.methods.find("operator=");
-  if(found == info.methods.end()) {
-    return false;
-  }
-  for(size_t i = 0; i < found->second.size(); ++i) {
-    const FunctionBinding * binding = found->second[i];
-    if(binding &&
-       !binding->source_template &&
-       !binding->synthesized &&
-       binding->is_copy_assignment) {
-      return true;
-    }
-  }
-  return false;
+  return has_user_declared_assignment(info, &FunctionBinding::is_copy_assignment);
 }
 
 bool has_user_declared_move_assignment(const ClassInfo & info)
 {
-  std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
-      info.methods.find("operator=");
-  if(found == info.methods.end()) {
-    return false;
-  }
-  for(size_t i = 0; i < found->second.size(); ++i) {
-    const FunctionBinding * binding = found->second[i];
-    if(binding &&
-       !binding->source_template &&
-       !binding->synthesized &&
-       binding->is_move_assignment) {
-      return true;
-    }
-  }
-  return false;
+  return has_user_declared_assignment(info, &FunctionBinding::is_move_assignment);
 }
 
 bool type_allows_implicit_copy_construction(SemanticContext & ctx,
