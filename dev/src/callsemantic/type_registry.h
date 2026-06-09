@@ -16,7 +16,7 @@ namespace callsemantic {
 struct TypeRegistryState
 {
   std::vector<std::unique_ptr<semantic_model::ClassInfo> > & classes;
-  std::map<std::string, semantic_model::ClassInfo *> & classes_by_key;
+  semantic_model::ClassIndexMap & classes_by_key;
   std::size_t & classes_by_key_version;
   std::unordered_map<std::string, std::size_t> & classes_by_key_epochs;
   std::map<std::string, semantic_model::Scope *> & type_scopes_by_key;
@@ -39,7 +39,7 @@ semantic_model::ClassInfo * class_info_for_type(
     const TypeRegistryState & state,
     const cpp_decl::TypePtr & type);
 
-const std::map<std::string, semantic_model::ClassInfo *> &
+const semantic_model::ClassIndexMap &
 template_named_class_index(const TypeRegistryState & state);
 
 semantic_model::Scope * scope_for_type(const TypeRegistryState & state,

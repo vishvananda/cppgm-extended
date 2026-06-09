@@ -561,7 +561,7 @@ bool service_lookup_leaf_member_function_bindings(
       out);
 }
 
-const std::map<std::string, ClassInfo *> * service_classes_by_key(
+const ClassIndexMap * service_classes_by_key(
     template_api::TemplateServices & services)
 {
   return service_type_system(services).model.classes_by_key;
@@ -7247,14 +7247,14 @@ ClassInfo * class_info_for_named_type(template_api::TemplateServices & services,
                                       const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
-  const std::map<std::string, ClassInfo *> * const classes_by_key =
+  const ClassIndexMap * const classes_by_key =
       service_classes_by_key(services);
   if(!base ||
      base->kind != Type::TK_NAMED ||
      !classes_by_key) {
     return nullptr;
   }
-  map<string, ClassInfo *>::const_iterator found =
+  auto found =
       classes_by_key->find(base->named_key);
   return found == classes_by_key->end() ?
              nullptr :

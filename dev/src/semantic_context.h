@@ -299,7 +299,7 @@ public:
   virtual bool callsem_node_can_throw(semantic_model::Scope & scope,
                                       const CallSemNode & node,
                                       std::set<semantic_model::FunctionBinding *> & visiting) = 0;
-  virtual const std::map<std::string, semantic_model::ClassInfo *> &
+  virtual const semantic_model::ClassIndexMap &
   template_named_class_index() const = 0;
   virtual semantic_model::ClassInfo * class_info_for_type(const cpp_decl::TypePtr & type) const = 0;
   virtual semantic_model::Scope * scope_for_type(const cpp_decl::TypePtr & type) const = 0;

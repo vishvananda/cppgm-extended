@@ -89,7 +89,7 @@ struct TemplateNamedTypeMetadata
 
 struct TemplateSemanticModelView
 {
-  const std::map<std::string, semantic_model::ClassInfo *> * classes_by_key = nullptr;
+  const semantic_model::ClassIndexMap * classes_by_key = nullptr;
 };
 
 inline semantic_model::ClassInfo * find_named_type_class_info(
@@ -104,7 +104,7 @@ inline semantic_model::ClassInfo * find_named_type_class_info(
     return nullptr;
   }
 
-  std::map<std::string, semantic_model::ClassInfo *>::const_iterator found =
+  auto found =
       model.classes_by_key->find(base->named_key);
   return found != model.classes_by_key->end() ? found->second : nullptr;
 }
