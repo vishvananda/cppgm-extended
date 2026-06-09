@@ -863,6 +863,8 @@ public:
         }
 
         FunctionBinding * binding = nullptr;
+        const callsemantic::ScopedExactTemplateTypeLookupAnchor conv_owner_anchor(
+            owner_lookup_anchor_for_node(inner));
         if(!resolve_out_of_class_named_method_binding(pattern_scope,
                                                       inner.value,
                                                       name,
@@ -1736,6 +1738,11 @@ public:
               return;
             }
             FunctionBinding * binding = nullptr;
+            const callsemantic::ScopedExactTemplateTypeLookupAnchor
+                method_owner_anchor(
+                    function_identifier
+                        ? owner_lookup_anchor_for_node(*function_identifier)
+                        : callsemantic::ExactTemplateTypeLookupAnchor());
             if(resolve_out_of_class_method_binding_with_resolution(
                    scope,
                    qualified_member,
@@ -3804,6 +3811,37 @@ private:
   {
     return callbacks.out_of_class_services->resolve_qualified_owner_class(
         scope, owner_name, resolution);
+  }
+
+  // Build an owner-lookup anchor from a node's trailing qualifier template-id, so
+  // a by-name owner resolution downstream resolves the owner's arguments from
+  // structure instead of reparsed text.
+  callsemantic::ExactTemplateTypeLookupAnchor owner_lookup_anchor_for_node(
+      const CppAstNode & id_node)
+  {
+    callsemantic::ExactTemplateTypeLookupAnchor anchor;
+    const QualifiedName * qn = cppast_qualified_name_syntax(id_node);
+    if(!qn || qn->qualifiers.empty()) {
+      return anchor;
+    }
+    const TemplateIdSyntax * ts =
+        cppast_qualifier_template_id_syntax(id_node, qn->qualifiers.size() - 1);
+    if(!ts || ts->name.name.empty() || ts->arguments.empty() ||
+       ts->argument_syntaxes.size() != ts->arguments.size()) {
+      return anchor;
+    }
+    anchor.template_text =
+        callsemantic::template_id_syntax_text_preserving_spacing(*ts);
+    anchor.identifier =
+        callsemantic::template_lookup_fragment_identifier(anchor.template_text);
+    if(anchor.identifier.empty()) {
+      anchor.identifier = ts->name.name;
+    }
+    anchor.compact_key = callsemantic::compact_lookup_text(anchor.template_text);
+    anchor.arg_texts = ts->arguments;
+    anchor.arg_syntaxes = ts->argument_syntaxes;
+    anchor.has_argument_list = true;
+    return anchor;
   }
 
   ClassInfo * resolve_qualified_owner_class_from_template_id_syntax(
