@@ -6695,6 +6695,187 @@ private:
     return TypePtr();
   }
 
+  bool try_fast_alias_template_id_lookup(const QualifiedName & parsed_template_id,
+                                         const vector<string> & parsed_arg_texts,
+                                         const vector<TemplateArgumentSyntax> * parsed_arg_syntaxes,
+                                         TypePtr & fast_alias,
+                                         Scope & scope,
+                                         const string & normalized_name,
+                                         bool reference_class_templates_only)
+  {
+	        fast_alias.reset();
+	        const auto resolve_exact_type_arg =
+	            [&](size_t index, TypePtr & resolved) -> bool
+	        {
+	          if(index >= parsed_arg_texts.size()) {
+	            return false;
+	          }
+	          const TemplateArgumentSyntax * syntax =
+	              parsed_arg_syntaxes && index < parsed_arg_syntaxes->size() ?
+	                  &(*parsed_arg_syntaxes)[index] :
+	                  nullptr;
+	          if(!template_api::type::resolve_type_argument_input(
+	                  *this, scope, syntax, true, resolved) ||
+	             !resolved ||
+	             type_depends_on_template_parameter(resolved)) {
+	            return false;
+	          }
+	          return true;
+	        };
+
+          if(parsed_template_id.name == "__type_pack_element") {
+            return template_api::with_template_services(
+                *this,
+                [&](template_api::TemplateServices & services)
+                {
+                  return template_argument_semantics::
+                      try_resolve_type_pack_element_template_id(
+                          services,
+                          template_api::make_template_environment(scope),
+                          parsed_template_id,
+                          parsed_arg_texts,
+                          parsed_arg_syntaxes,
+                          fast_alias);
+                });
+          }
+
+          const builtin_type_transforms::Kind unary_transform_kind =
+              builtin_type_transforms::kind_for_alias_template_name(
+                  parsed_template_id.name);
+          if(unary_transform_kind != builtin_type_transforms::BTK_UNKNOWN &&
+             parsed_arg_texts.size() == 1) {
+            TypePtr arg_type;
+            if(!resolve_exact_type_arg(0, arg_type)) {
+              return false;
+            }
+            return semantic_builtins::apply_builtin_type_transform_kind(
+                unary_transform_kind,
+                arg_type,
+                fast_alias);
+          }
+
+          if((parsed_template_id.name == "__conditional_t" ||
+              parsed_template_id.name == "conditional_t") &&
+             parsed_arg_texts.size() == 3) {
+            const std::string condition = trim_space(parsed_arg_texts[0]);
+	            if(condition == "true" || condition == "false") {
+	              TypePtr selected_type;
+	              const size_t selected_index = condition == "true" ? 1 : 2;
+	              const std::string & selected_text = parsed_arg_texts[selected_index];
+	              if(resolve_exact_type_arg(selected_index, selected_type)) {
+	                fast_alias = selected_type;
+	                return true;
+	              }
+              if(text_mentions_template_placeholders(scope, selected_text) ||
+                 text_mentions_dependent_non_namespace_binding_names(scope, selected_text) ||
+                 should_defer_unresolved_type_lookup(scope, selected_text)) {
+                fast_alias =
+                    make_named(selected_text,
+                               "dependent type " + selected_text,
+                               true);
+                return true;
+              }
+              return false;
+            }
+            if(text_mentions_template_placeholders(scope, condition) ||
+               text_mentions_dependent_non_namespace_binding_names(scope, condition) ||
+               should_defer_unresolved_type_lookup(scope, condition)) {
+              fast_alias =
+                  make_named(normalized_name,
+                             "dependent type " + normalized_name,
+                             true);
+              return true;
+            }
+          }
+
+          if(parsed_template_id.name == "__make_integer_seq" &&
+             parsed_arg_texts.size() == 3) {
+            const string sequence_template_text = trim_space(parsed_arg_texts[0]);
+            QualifiedName sequence_template_name;
+            ClassTemplateDecl * sequence_template = nullptr;
+            if(!sequence_template_text.empty() &&
+               semantic_utils::split_qualified_name_text(sequence_template_text,
+                                                         sequence_template_name)) {
+              sequence_template = lookup_class_template(scope, sequence_template_name);
+            }
+            if(!sequence_template) {
+              return false;
+            }
+
+            TypePtr value_type;
+            if(!resolve_exact_type_arg(1, value_type)) {
+              return false;
+            }
+
+            long long count = 0;
+            std::string eval_error;
+            const template_argument_semantics::NonTypeArgumentStatus status =
+                template_api::with_template_services(
+                    *this,
+                    [&](template_api::TemplateServices & services)
+                    {
+                      return template_argument_semantics::evaluate_non_type_argument_text(
+                          services,
+                          template_api::make_template_environment(scope),
+                          parsed_arg_texts[2],
+                          count,
+                          &eval_error,
+                          value_type);
+                    });
+            if(status != template_argument_semantics::NT_ARG_EVALUATED || count < 0) {
+              return false;
+            }
+
+            const string value_type_text = lookup_text_for_type_argument(value_type);
+            if(value_type_text.empty()) {
+              return false;
+            }
+            vector<string> integer_args;
+            integer_args.reserve(static_cast<size_t>(count) + 1);
+            integer_args.push_back(value_type_text);
+            for(long long i = 0; i < count; ++i) {
+              integer_args.push_back(std::to_string(i));
+            }
+            ClassInfo * direct =
+                reference_class_templates_only ?
+                    reference_class_template_instantiation(*sequence_template,
+                                                           scope,
+                                                           integer_args) :
+                    instantiate_class_template(*sequence_template, scope, integer_args);
+            if(!direct) {
+              return false;
+            }
+            fast_alias = direct->type;
+            return true;
+          }
+
+          if(parsed_template_id.name == "__index_sequence" ||
+             parsed_template_id.name == "index_sequence") {
+            ClassTemplateDecl * integer_sequence =
+                lookup_class_template(scope, "__integer_sequence");
+            if(!integer_sequence) {
+              return false;
+            }
+            vector<string> integer_args;
+            integer_args.reserve(parsed_arg_texts.size() + 1);
+            integer_args.push_back("size_t");
+            integer_args.insert(integer_args.end(),
+                                parsed_arg_texts.begin(),
+                                parsed_arg_texts.end());
+            ClassInfo * direct =
+                reference_class_templates_only ?
+                    reference_class_template_instantiation(*integer_sequence, scope, integer_args) :
+                    instantiate_class_template(*integer_sequence, scope, integer_args);
+            if(!direct) {
+              return false;
+            }
+            fast_alias = direct->type;
+            return true;
+          }
+
+          return false;
+  }
+
   TypePtr lookup_type_impl(Scope & scope,
                            const string & name,
                            bool reference_class_templates_only,
@@ -7263,189 +7444,14 @@ private:
       throw logic_error(string("failed template-id parse in type lookup: ") + normalized_name);
     }
 	    if(parsed_template_id) {
-	      const auto try_fast_alias_template_id_lookup =
-	          [&](const QualifiedName & parsed_template_id,
-	              const vector<string> & parsed_arg_texts,
-	              const vector<TemplateArgumentSyntax> * parsed_arg_syntaxes,
-	              TypePtr & fast_alias) -> bool
-	      {
-	        fast_alias.reset();
-	        const auto resolve_exact_type_arg =
-	            [&](size_t index, TypePtr & resolved) -> bool
-	        {
-	          if(index >= parsed_arg_texts.size()) {
-	            return false;
-	          }
-	          const TemplateArgumentSyntax * syntax =
-	              parsed_arg_syntaxes && index < parsed_arg_syntaxes->size() ?
-	                  &(*parsed_arg_syntaxes)[index] :
-	                  nullptr;
-	          if(!template_api::type::resolve_type_argument_input(
-	                  *this, scope, syntax, true, resolved) ||
-	             !resolved ||
-	             type_depends_on_template_parameter(resolved)) {
-	            return false;
-	          }
-	          return true;
-	        };
-
-          if(parsed_template_id.name == "__type_pack_element") {
-            return template_api::with_template_services(
-                *this,
-                [&](template_api::TemplateServices & services)
-                {
-                  return template_argument_semantics::
-                      try_resolve_type_pack_element_template_id(
-                          services,
-                          template_api::make_template_environment(scope),
-                          parsed_template_id,
-                          parsed_arg_texts,
-                          parsed_arg_syntaxes,
-                          fast_alias);
-                });
-          }
-
-          const builtin_type_transforms::Kind unary_transform_kind =
-              builtin_type_transforms::kind_for_alias_template_name(
-                  parsed_template_id.name);
-          if(unary_transform_kind != builtin_type_transforms::BTK_UNKNOWN &&
-             parsed_arg_texts.size() == 1) {
-            TypePtr arg_type;
-            if(!resolve_exact_type_arg(0, arg_type)) {
-              return false;
-            }
-            return semantic_builtins::apply_builtin_type_transform_kind(
-                unary_transform_kind,
-                arg_type,
-                fast_alias);
-          }
-
-          if((parsed_template_id.name == "__conditional_t" ||
-              parsed_template_id.name == "conditional_t") &&
-             parsed_arg_texts.size() == 3) {
-            const std::string condition = trim_space(parsed_arg_texts[0]);
-	            if(condition == "true" || condition == "false") {
-	              TypePtr selected_type;
-	              const size_t selected_index = condition == "true" ? 1 : 2;
-	              const std::string & selected_text = parsed_arg_texts[selected_index];
-	              if(resolve_exact_type_arg(selected_index, selected_type)) {
-	                fast_alias = selected_type;
-	                return true;
-	              }
-              if(text_mentions_template_placeholders(scope, selected_text) ||
-                 text_mentions_dependent_non_namespace_binding_names(scope, selected_text) ||
-                 should_defer_unresolved_type_lookup(scope, selected_text)) {
-                fast_alias =
-                    make_named(selected_text,
-                               "dependent type " + selected_text,
-                               true);
-                return true;
-              }
-              return false;
-            }
-            if(text_mentions_template_placeholders(scope, condition) ||
-               text_mentions_dependent_non_namespace_binding_names(scope, condition) ||
-               should_defer_unresolved_type_lookup(scope, condition)) {
-              fast_alias =
-                  make_named(normalized_name,
-                             "dependent type " + normalized_name,
-                             true);
-              return true;
-            }
-          }
-
-          if(parsed_template_id.name == "__make_integer_seq" &&
-             parsed_arg_texts.size() == 3) {
-            const string sequence_template_text = trim_space(parsed_arg_texts[0]);
-            QualifiedName sequence_template_name;
-            ClassTemplateDecl * sequence_template = nullptr;
-            if(!sequence_template_text.empty() &&
-               semantic_utils::split_qualified_name_text(sequence_template_text,
-                                                         sequence_template_name)) {
-              sequence_template = lookup_class_template(scope, sequence_template_name);
-            }
-            if(!sequence_template) {
-              return false;
-            }
-
-            TypePtr value_type;
-            if(!resolve_exact_type_arg(1, value_type)) {
-              return false;
-            }
-
-            long long count = 0;
-            std::string eval_error;
-            const template_argument_semantics::NonTypeArgumentStatus status =
-                template_api::with_template_services(
-                    *this,
-                    [&](template_api::TemplateServices & services)
-                    {
-                      return template_argument_semantics::evaluate_non_type_argument_text(
-                          services,
-                          template_api::make_template_environment(scope),
-                          parsed_arg_texts[2],
-                          count,
-                          &eval_error,
-                          value_type);
-                    });
-            if(status != template_argument_semantics::NT_ARG_EVALUATED || count < 0) {
-              return false;
-            }
-
-            const string value_type_text = lookup_text_for_type_argument(value_type);
-            if(value_type_text.empty()) {
-              return false;
-            }
-            vector<string> integer_args;
-            integer_args.reserve(static_cast<size_t>(count) + 1);
-            integer_args.push_back(value_type_text);
-            for(long long i = 0; i < count; ++i) {
-              integer_args.push_back(std::to_string(i));
-            }
-            ClassInfo * direct =
-                reference_class_templates_only ?
-                    reference_class_template_instantiation(*sequence_template,
-                                                           scope,
-                                                           integer_args) :
-                    instantiate_class_template(*sequence_template, scope, integer_args);
-            if(!direct) {
-              return false;
-            }
-            fast_alias = direct->type;
-            return true;
-          }
-
-          if(parsed_template_id.name == "__index_sequence" ||
-             parsed_template_id.name == "index_sequence") {
-            ClassTemplateDecl * integer_sequence =
-                lookup_class_template(scope, "__integer_sequence");
-            if(!integer_sequence) {
-              return false;
-            }
-            vector<string> integer_args;
-            integer_args.reserve(parsed_arg_texts.size() + 1);
-            integer_args.push_back("size_t");
-            integer_args.insert(integer_args.end(),
-                                parsed_arg_texts.begin(),
-                                parsed_arg_texts.end());
-            ClassInfo * direct =
-                reference_class_templates_only ?
-                    reference_class_template_instantiation(*integer_sequence, scope, integer_args) :
-                    instantiate_class_template(*integer_sequence, scope, integer_args);
-            if(!direct) {
-              return false;
-            }
-            fast_alias = direct->type;
-            return true;
-          }
-
-          return false;
-        };
       TypePtr fast_alias;
 	      if(try_fast_alias_template_id_lookup(template_id,
                                                  arg_texts,
                                                  arg_syntaxes,
-                                                 fast_alias)) {
+                                                 fast_alias,
+                                                 scope,
+                                                 normalized_name,
+                                                 reference_class_templates_only)) {
 	        return cache_qualified_type_result(fast_alias);
 	      }
       TypePtr current_specialization =
