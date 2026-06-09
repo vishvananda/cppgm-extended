@@ -977,6 +977,11 @@ public:
          !declarator_qualified_special_member.qualifiers.empty()) {
         qualified_special_member = &declarator_qualified_special_member;
       }
+      const callsemantic::ScopedExactTemplateTypeLookupAnchor
+          special_member_owner_anchor(
+              declarator_identifier
+                  ? owner_lookup_anchor_for_node(*declarator_identifier)
+                  : callsemantic::ExactTemplateTypeLookupAnchor());
 
         auto record_out_of_class_special_member_for_owner_template =
             [&](ClassInfo * owner,
@@ -1554,6 +1559,9 @@ public:
     if(template_parameters.empty() && !special_member_template) {
       const CppAstNode * function_identifier =
           find_descendant_kind(*declarator, CppAstKind::identifier);
+      const callsemantic::ScopedExactTemplateTypeLookupAnchor block_owner_anchor(
+          function_identifier ? owner_lookup_anchor_for_node(*function_identifier)
+                              : callsemantic::ExactTemplateTypeLookupAnchor());
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "candidate-out-of-class-member declarator=" << node_text(*declarator)
@@ -1624,12 +1632,23 @@ public:
 	                    lookup_class_template(*owner_lookup_scope,
 	                                          owner_template_id_name.name) :
 	                    nullptr;
+	            const TemplateIdSyntax * owner_static_ts =
+	                function_identifier
+	                    ? cppast_qualifier_template_id_syntax(
+	                          *function_identifier,
+	                          qualified_member.qualifiers.size() - 1)
+	                    : nullptr;
 	            vector<TemplateArgument> owner_arguments;
 	            if(owner_template &&
 	               resolve_template_arguments(
 	                   scope,
 	                   owner_template->parameters,
 	                   owner_arg_texts,
+	                   (owner_static_ts &&
+	                    owner_static_ts->argument_syntaxes.size() ==
+	                        owner_arg_texts.size())
+	                       ? &owner_static_ts->argument_syntaxes
+	                       : nullptr,
 	                   owner_arguments,
 	                   owner_template->declaring_scope)) {
 	              owner_template->explicit_static_member_specialization_keys.insert(
@@ -2308,6 +2327,9 @@ public:
          !qualified_member_syntax->qualifiers.empty()) {
         const QualifiedName & qualified_member = *qualified_member_syntax;
         const string qualified_member_text = qualified_name_syntax_text(qualified_member);
+        const callsemantic::ScopedExactTemplateTypeLookupAnchor
+            out_of_class_owner_anchor(
+                owner_lookup_anchor_for_node(*function_identifier));
         QualifiedName owner_name_syntax;
         owner_name_syntax.rooted = qualified_member.rooted;
         owner_name_syntax.qualifiers.assign(qualified_member.qualifiers.begin(),
@@ -3668,6 +3690,9 @@ public:
   {
     const CppAstNode * function_identifier =
         find_descendant_kind(declarator, CppAstKind::identifier);
+    const callsemantic::ScopedExactTemplateTypeLookupAnchor block_owner_anchor(
+        function_identifier ? owner_lookup_anchor_for_node(*function_identifier)
+                            : callsemantic::ExactTemplateTypeLookupAnchor());
     const QualifiedName * qualified_member =
         function_identifier ? cppast_qualified_name_syntax(*function_identifier) : nullptr;
     if(!qualified_member || qualified_member->qualifiers.empty()) {

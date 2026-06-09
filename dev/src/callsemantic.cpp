@@ -8277,6 +8277,35 @@ private:
     return nullptr;
   }
 
+  // Build an owner-lookup anchor from an out-of-class id node's trailing
+  // qualifier template-id, so by-name owner resolution downstream uses the
+  // owner's structured argument syntaxes instead of reparsing owner text.
+  ExactTemplateTypeLookupAnchor owner_lookup_anchor_for_id_node(
+      const CppAstNode & id_node)
+  {
+    ExactTemplateTypeLookupAnchor anchor;
+    const QualifiedName * qn = cppast_qualified_name_syntax(id_node);
+    if(!qn || qn->qualifiers.empty()) {
+      return anchor;
+    }
+    const TemplateIdSyntax * ts =
+        cppast_qualifier_template_id_syntax(id_node, qn->qualifiers.size() - 1);
+    if(!ts || ts->name.name.empty() || ts->arguments.empty() ||
+       ts->argument_syntaxes.size() != ts->arguments.size()) {
+      return anchor;
+    }
+    anchor.template_text = template_id_syntax_text_preserving_spacing(*ts);
+    anchor.identifier = template_lookup_fragment_identifier(anchor.template_text);
+    if(anchor.identifier.empty()) {
+      anchor.identifier = ts->name.name;
+    }
+    anchor.compact_key = compact_lookup_text(anchor.template_text);
+    anchor.arg_texts = ts->arguments;
+    anchor.arg_syntaxes = ts->argument_syntaxes;
+    anchor.has_argument_list = true;
+    return anchor;
+  }
+
   Scope * resolve_qualified_function_parse_scope(Scope & scope,
                                                  const CppAstNode & declarator) override
   {
@@ -8289,6 +8318,8 @@ private:
     if(!qualified || qualified->qualifiers.empty()) {
       return &scope;
     }
+    const ScopedExactTemplateTypeLookupAnchor parse_scope_owner_anchor(
+        owner_lookup_anchor_for_id_node(*identifier));
 
     const auto resolve_template_owner_scope_from_syntax = [&]() -> Scope *
     {
