@@ -6310,6 +6310,11 @@ private:
         if(!base_name) {
           continue;
         }
+        // Keep the base's owner template-id arguments on the anchor stack so a
+        // qualified base (Owner<arg>::template Member<...>) resolves its owner
+        // from structure instead of re-parsing the owner text.
+        const ScopedExactTemplateTypeLookupAnchor base_owner_anchor(
+            owner_lookup_anchor_for_id_node(*base_name));
         const TemplateIdSyntax * base_template_syntax =
             cppast_template_id_syntax(*base_name);
         if(!base_template_syntax ||
