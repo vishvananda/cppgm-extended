@@ -16,6 +16,7 @@
 #include "cppast_dump.h"
 #include "callsemantic_internal.h"
 #include "callsemantic/function_registry.h"
+#include "callsemantic/template_source_utils.h"
 #include "pack_parameter_analysis.h"
 #include "rtti_names.h"
 #include "semantic_class_model.h"
@@ -5301,6 +5302,13 @@ void analyze_special_member_definition(SemanticContext & ctx,
   const CppAstNode * declarator = find_child_kind(node, CppAstKind::declarator);
   if(!declarator) {
     throw logic_error("special-member-definition missing declarator");
+  }
+
+  // The collection phase already resolved this definition's owner class and
+  // target binding; reuse it instead of re-resolving the owner from text.
+  if(FunctionBinding * collected = ctx.out_of_class_definition_binding(node)) {
+    analyze_function_binding_output_impl(ctx, state, scope, *collected, out);
+    return;
   }
 
   if(ctx.is_conversion_function_name(node.value)) {

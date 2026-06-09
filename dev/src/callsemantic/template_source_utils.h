@@ -132,6 +132,14 @@ std::string template_lookup_fragment_text(const std::string & lookup_name);
 std::string template_lookup_fragment_identifier(
     const std::string & template_fragment);
 bool node_has_template_id_qualifier_syntax(const CppAstNode & node);
+// Build a type-lookup anchor carrying the structured argument syntaxes of the
+// owner template-id (the final qualifier) of a qualified-id node. Returns an
+// empty (has_argument_list == false) anchor when the node has no template-id
+// owner qualifier with a full structured argument list. Shared by the
+// declaration collector and the expression analyzers so out-of-class owner
+// resolution recovers structured arguments instead of re-parsing text.
+ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_owner_node(
+    const CppAstNode & id_node);
 const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor();
 extern thread_local std::set<std::pair<std::string, std::string> >
     source_dependent_class_template_use_drops_;
