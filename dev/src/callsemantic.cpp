@@ -6616,6 +6616,85 @@ private:
     return TypePtr();
   }
 
+  string qualified_component_text(const QualifiedName & qualified_name, size_t index)
+  {
+    return index < qualified_name.qualifiers.size() ?
+               qualified_name.qualifiers[index] :
+               qualified_name.name;
+  }
+
+  string qualified_component_prefix_text(const QualifiedName & qualified_name,
+                                         size_t component_count)
+  {
+    if(component_count == 0 ||
+       component_count > qualified_name.qualifiers.size() + 1) {
+      return string();
+    }
+    ostringstream out;
+    if(qualified_name.rooted) {
+      out << "::";
+    }
+    for(size_t i = 0; i < component_count; ++i) {
+      if(i != 0) {
+        out << "::";
+      }
+      out << qualified_component_text(qualified_name, i);
+    }
+    return out.str();
+  }
+
+  // Resolve a dependent qualified-member type (Owner::member...) where some
+  // prefix names a template-parameter-dependent owner. Returns empty when no
+  // such split resolves.
+  TypePtr structured_dependent_qualified_member_type(const QualifiedName & qualified_name,
+                                                     Scope & scope,
+                                                     const string & normalized_name)
+  {
+    const size_t component_count = qualified_name.qualifiers.size() + 1;
+    if(component_count < 2) {
+      return TypePtr();
+    }
+    for(size_t owner_count = component_count - 1;
+        owner_count > 0;
+        --owner_count) {
+      const string owner_text =
+          qualified_component_prefix_text(qualified_name, owner_count);
+      if(owner_text.empty()) {
+        continue;
+      }
+
+      TypePtr owner_type = lookup_type_impl(scope,
+                                            owner_text,
+                                            true,
+                                            false,
+                                            template_api::ClassTemplateSourceUseMode::
+                                                NestedArgumentsOnly);
+      if(!owner_type ||
+         !type_depends_on_template_parameter(owner_type)) {
+        continue;
+      }
+
+      vector<string> member_path;
+      member_path.reserve(component_count - owner_count);
+      for(size_t i = owner_count; i < component_count; ++i) {
+        const string component = qualified_component_text(qualified_name, i);
+        if(component.empty()) {
+          member_path.clear();
+          break;
+        }
+        member_path.push_back(component);
+      }
+      if(member_path.empty()) {
+        continue;
+      }
+      return make_dependent_qualified_member_type(normalized_name,
+                                                  owner_type,
+                                                  member_path,
+                                                  false);
+    }
+    return TypePtr();
+  }
+
   TypePtr lookup_type_impl(Scope & scope,
                            const string & name,
                            bool reference_class_templates_only,
@@ -6682,79 +6761,6 @@ private:
         cache_state_.qualified_type_lookup_cache[qualified_lookup_key] = result;
       }
       return result;
-    };
-    const auto qualified_component_text =
-        [](const QualifiedName & qualified_name, size_t index) -> string
-    {
-      return index < qualified_name.qualifiers.size() ?
-                 qualified_name.qualifiers[index] :
-                 qualified_name.name;
-    };
-    const auto qualified_component_prefix_text =
-        [&](const QualifiedName & qualified_name, size_t component_count) -> string
-    {
-      if(component_count == 0 ||
-         component_count > qualified_name.qualifiers.size() + 1) {
-        return string();
-      }
-      ostringstream out;
-      if(qualified_name.rooted) {
-        out << "::";
-      }
-      for(size_t i = 0; i < component_count; ++i) {
-        if(i != 0) {
-          out << "::";
-        }
-        out << qualified_component_text(qualified_name, i);
-      }
-      return out.str();
-    };
-    const auto structured_dependent_qualified_member_type =
-        [&](const QualifiedName & qualified_name) -> TypePtr
-    {
-      const size_t component_count = qualified_name.qualifiers.size() + 1;
-      if(component_count < 2) {
-        return TypePtr();
-      }
-      for(size_t owner_count = component_count - 1;
-          owner_count > 0;
-          --owner_count) {
-        const string owner_text =
-            qualified_component_prefix_text(qualified_name, owner_count);
-        if(owner_text.empty()) {
-          continue;
-        }
-
-        TypePtr owner_type = lookup_type_impl(scope,
-                                              owner_text,
-                                              true,
-                                              false,
-                                              template_api::ClassTemplateSourceUseMode::
-                                                  NestedArgumentsOnly);
-        if(!owner_type ||
-           !type_depends_on_template_parameter(owner_type)) {
-          continue;
-        }
-
-        vector<string> member_path;
-        member_path.reserve(component_count - owner_count);
-        for(size_t i = owner_count; i < component_count; ++i) {
-          const string component = qualified_component_text(qualified_name, i);
-          if(component.empty()) {
-            member_path.clear();
-            break;
-          }
-          member_path.push_back(component);
-        }
-        if(member_path.empty()) {
-          continue;
-        }
-        return make_dependent_qualified_member_type(normalized_name,
-                                                    owner_type,
-                                                    member_path,
-                                                    false);
-      }
-      return TypePtr();
     };
     const bool mentions_template_placeholders =
         text_mentions_template_placeholders(scope, normalized_name);
@@ -8043,7 +8049,8 @@ private:
       if(!current) {
         if(should_defer_unresolved_type_lookup(scope, normalized_name)) {
           TypePtr structured_dependent =
-              structured_dependent_qualified_member_type(qualified);
+              structured_dependent_qualified_member_type(qualified, scope,
+                                                         normalized_name);
           if(structured_dependent) {
             return cache_qualified_type_result(structured_dependent);
           }
