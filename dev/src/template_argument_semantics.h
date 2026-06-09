@@ -248,6 +248,16 @@ bool text_mentions_dependent_non_namespace_binding_names(
     template_api::TemplateEnvironmentHandle scope,
     const std::string & text);
 
+// Runs both text_mentions_template_placeholders and
+// text_mentions_dependent_non_namespace_binding_names against a single shared
+// identifier tokenization of `text`.
+void compute_text_template_dependency_flags(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const std::string & text,
+    bool & mentions_template_placeholders,
+    bool & mentions_dependent_non_namespace_bindings);
+
 bool text_mentions_non_namespace_binding_names(
     template_api::TemplateEnvironmentHandle scope,
     const std::string & text);

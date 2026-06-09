@@ -10486,12 +10486,9 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     if(type_dependency_flags_computed) {
       return;
     }
-    type_mentions_placeholders =
-        template_argument_semantics::text_mentions_template_placeholders(
-            services, argument_scope, trimmed);
-    type_mentions_dependent_bindings =
-        template_argument_semantics::text_mentions_dependent_non_namespace_binding_names(
-            services, argument_scope, trimmed);
+    template_argument_semantics::compute_text_template_dependency_flags(
+        services, argument_scope, trimmed,
+        type_mentions_placeholders, type_mentions_dependent_bindings);
     type_dependency_flags_computed = true;
   };
   const auto should_defer_dependent_type_resolution =
