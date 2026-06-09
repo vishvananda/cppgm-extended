@@ -20856,9 +20856,10 @@ TypePtr lookup_exact_local_type_name(template_api::TemplateServices & services,
   return lookup_exact_local_type_name_impl(services, scope, name);
 }
 
-bool text_mentions_template_placeholders(template_api::TemplateServices & services,
-                                         template_api::TemplateEnvironmentHandle scope,
-                                         const string & text)
+bool text_mentions_template_placeholders_in_tokens(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const callsemantic_internal::IdentifierTokenSet & identifiers)
 {
   Scope & raw_scope = scope.require();
   const auto type_is_dependent =
@@ -20866,8 +20867,6 @@ bool text_mentions_template_placeholders(template_api::TemplateServices & servic
       {
         return service_type_depends_on_template_parameter(services, type);
       };
-  const callsemantic_internal::IdentifierTokenSet identifiers =
-      callsemantic_internal::collect_identifier_tokens(text);
 
   const auto identifier_mentions_template_type_placeholder =
       [&](const string & name) -> bool
@@ -20970,10 +20969,10 @@ bool text_mentions_template_placeholders(template_api::TemplateServices & servic
   return false;
 }
 
-bool text_mentions_dependent_non_namespace_binding_names(
+bool text_mentions_dependent_non_namespace_binding_names_in_tokens(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
-    const string & text)
+    const callsemantic_internal::IdentifierTokenSet & identifiers)
 {
   Scope & raw_scope = scope.require();
   const auto type_is_dependent =
@@ -20981,8 +20980,6 @@ bool text_mentions_dependent_non_namespace_binding_names(
       {
         return service_type_depends_on_template_parameter(services, type);
       };
-  const callsemantic_internal::IdentifierTokenSet identifiers =
-      callsemantic_internal::collect_identifier_tokens(text);
   for(callsemantic_internal::IdentifierTokenSet::InternedName interned_name :
       identifiers.names) {
     const string & name = *interned_name;
@@ -21072,6 +21069,42 @@ bool text_mentions_dependent_non_namespace_binding_names(
     }
   }
   return false;
+}
+
+bool text_mentions_template_placeholders(template_api::TemplateServices & services,
+                                         template_api::TemplateEnvironmentHandle scope,
+                                         const string & text)
+{
+  return text_mentions_template_placeholders_in_tokens(
+      services, scope, callsemantic_internal::collect_identifier_tokens(text));
+}
+
+bool text_mentions_dependent_non_namespace_binding_names(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const string & text)
+{
+  return text_mentions_dependent_non_namespace_binding_names_in_tokens(
+      services, scope, callsemantic_internal::collect_identifier_tokens(text));
+}
+
+void compute_text_template_dependency_flags(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const string & text,
+    bool & mentions_template_placeholders,
+    bool & mentions_dependent_non_namespace_bindings)
+{
+  // Tokenize the text once and run both dependency probes against the shared
+  // identifier set, instead of re-tokenizing in each probe (these two run
+  // back to back on the same argument text in the hot resolution path).
+  const callsemantic_internal::IdentifierTokenSet identifiers =
+      callsemantic_internal::collect_identifier_tokens(text);
+  mentions_template_placeholders =
+      text_mentions_template_placeholders_in_tokens(services, scope, identifiers);
+  mentions_dependent_non_namespace_bindings =
+      text_mentions_dependent_non_namespace_binding_names_in_tokens(
+          services, scope, identifiers);
 }
 
 bool text_mentions_non_namespace_binding_names(
