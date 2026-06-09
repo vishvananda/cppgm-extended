@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "callsemantic/template_source_utils.h"
 #include "constructor_lifecycle_service.h"
 #include "parser_trace.h"
 #include "semantic_builtins.h"
@@ -2123,6 +2124,23 @@ bool evaluate_constexpr_value_member_conversion(SemanticContext & ctx,
   const TemplateIdSyntax * callee_template_id = cppast_template_id_syntax(*callee);
   bool found_member_value = false;
   if(callee_template_id) {
+    // Keep the callee owner template-id's structured arguments on the anchor
+    // stack so the member-value owner resolves from carried syntax instead of
+    // re-parsing the owner text.
+    std::vector<std::unique_ptr<
+        callsemantic::ScopedExactTemplateTypeLookupAnchor> >
+        qualifier_owner_anchors;
+    for(size_t qi = 0; qi < callee->qualifier_template_id_syntaxes.size(); ++qi) {
+      callsemantic::ExactTemplateTypeLookupAnchor anchor =
+          callsemantic::exact_template_type_lookup_anchor_for_template_id(
+              callee->qualifier_template_id_syntaxes[qi]);
+      if(!anchor.has_argument_list) {
+        continue;
+      }
+      qualifier_owner_anchors.push_back(
+          std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor>(
+              new callsemantic::ScopedExactTemplateTypeLookupAnchor(anchor)));
+    }
     found_member_value =
         ctx.lookup_constant_template_member_value(scope,
                                                   *callee_template_id,
