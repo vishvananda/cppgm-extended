@@ -541,6 +541,9 @@ bool token_forces_template_argument_expression_syntax(const RecogToken & token)
   }
 }
 
+bool is_gnu_float_type_specifier_identifier(const RecogToken & token);
+bool is_gnu_int128_type_specifier_identifier(const RecogToken & token);
+
 bool template_argument_range_fragment_mode(
     IRecogTokenSequence & tokens,
     const qualified_name_parser::NameLookup & lookup,
@@ -631,6 +634,8 @@ bool template_argument_range_fragment_mode(
   const RecogToken & first = tokens.peek(range.first);
   if(is_cv_qualifier(first) ||
          is_simple_type_specifier(first) ||
+         is_gnu_int128_type_specifier_identifier(first) ||
+         is_gnu_float_type_specifier_identifier(first) ||
          is_class_key(first) ||
          first.is_simple(KW_ENUM) ||
          token_is_decltype_or_typeof_specifier_start(first) ||

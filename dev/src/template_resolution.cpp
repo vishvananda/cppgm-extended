@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <execinfo.h>  // STAGEC trace (temp)
 #include <cctype>
 #include <cstdint>
 #include <limits>
@@ -10585,11 +10584,11 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   }
   // The bound-argument lookup stays: it reuses an already-bound class-template
   // argument type (e.g. an array type "unsigned int [4]") instead of reparsing
-  // its generated text. The other text-keyed lookups
+  // its generated text. The text-keyed reparse fallbacks that used to follow it
   // (resolve_non_dependent_direct_type_argument / lookup_rewritten_bound_type_
-  // argument / lookup_exact_visible_type_argument_text) were redundant with this
-  // lookup plus the structured paths and parse_type_argument_text, and were
-  // removed.
+  // argument / lookup_exact_visible_type_argument_text and the
+  // parse_type_argument_text text re-parse) became redundant once producers
+  // thread structured argument data through, and were removed.
   if(!type && !has_structured_type_syntax) {
     TypePtr direct_bound_type;
     if(lookup_direct_bound_type_argument(raw_argument_scope,
@@ -10598,20 +10597,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
        direct_bound_type) {
       resolve_type_argument_if_needed(direct_bound_type);
       type = direct_bound_type;
-    }
-  }
-  if(!type && !has_structured_type_syntax &&
-     !std::getenv("CPPGM_NO_TYPE_ARG_REPARSE")) {
-    TypePtr parsed_type_text;
-    if(template_argument_semantics::parse_type_argument_text(
-           services,
-           argument_scope,
-           trimmed,
-           parsed_type_text) &&
-       parsed_type_text) {
-      template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-          services, argument_scope, parsed_type_text);
-      type = parsed_type_text;
     }
   }
   if(!type && attempted_structured_type_syntax) {
@@ -10872,12 +10857,6 @@ bool resolve_template_arguments(
   }
   Scope & raw_scope = scope.require();
   out.clear();
-  if(std::getenv("CPPGM_STAGEC_TRACE") && std::getenv("CPPGM_NO_TYPE_ARG_REPARSE") &&
-     (!syntaxes || syntaxes->empty())) {
-    std::cerr << "STAGEC-NULLSYN texts=[" << join_template_texts(texts) << "]\n";
-    void * fr[40]; int n = backtrace(fr, 40); char ** sy = backtrace_symbols(fr, n);
-    if(sy) { for(int i=0;i<n;++i) std::cerr << "  " << sy[i] << "\n"; std::free(sy); }
-  }
   if(try_resolve_pre_expansion_known_failure(services,
                                              type_system,
                                              scope,
