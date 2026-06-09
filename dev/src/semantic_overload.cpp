@@ -15,6 +15,7 @@
 
 #include "callsem_output.h"
 #include "callsemantic_internal.h"
+#include "callsemantic/template_source_utils.h"
 #include "class_template_mangle_info.h"
 #include "constructor_lifecycle_service.h"
 #include "cpp_decl_bridge.h"
@@ -11748,6 +11749,12 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   if(use_function_lookup) {
     const TemplateIdSyntax * callee_template_id =
         cppast_template_id_syntax(lookup_callee_node);
+    // Recover the callee's owner template-id argument syntaxes so a qualified
+    // member function template-id (Owner<arg>::f<...>) resolves its owner from
+    // structured data instead of re-parsing the owner text.
+    const callsemantic::ScopedExactTemplateTypeLookupAnchor callee_owner_anchor(
+        callsemantic::exact_template_type_lookup_anchor_for_owner_node(
+            lookup_callee_node));
     candidates =
         callee_template_id ?
             ctx.lookup_function_template_id(
