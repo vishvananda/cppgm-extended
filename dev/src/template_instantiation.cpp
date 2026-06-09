@@ -871,6 +871,72 @@ void clear_cached_semantic_types(CppAstNode & node,
   }
 }
 
+// Like clear_cached_semantic_types, but only clears a cached semantic_type when
+// it still depends on a template parameter (so it must be re-resolved after
+// substitution). A concrete type produced by substitution (e.g. a fully bound
+// class-template specialization) is kept, so the subsequent parse reuses the
+// resolved type instead of re-deriving it from the rewritten text.
+void clear_dependent_cached_semantic_types(SemanticContext & ctx,
+                                           TemplateIdSyntax & syntax);
+void clear_dependent_cached_semantic_types(SemanticContext & ctx,
+                                           CppAstNode & node);
+
+void clear_dependent_cached_semantic_types(SemanticContext & ctx,
+                                           TemplateArgumentSyntax & syntax)
+{
+  if(syntax.template_id) {
+    clear_dependent_cached_semantic_types(ctx, *syntax.template_id);
+  }
+  if(syntax.type_id) {
+    clear_dependent_cached_semantic_types(ctx, *syntax.type_id);
+  }
+  if(syntax.expression) {
+    clear_dependent_cached_semantic_types(ctx, *syntax.expression);
+  }
+}
+
+void clear_dependent_cached_semantic_types(SemanticContext & ctx,
+                                           TemplateIdSyntax & syntax)
+{
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    clear_dependent_cached_semantic_types(ctx, syntax.argument_syntaxes[i]);
+  }
+}
+
+void clear_dependent_cached_semantic_types(SemanticContext & ctx,
+                                           CppAstNode & node)
+{
+  if(node.semantic_type &&
+     template_argument_semantics::type_depends_on_template_parameter(
+         ctx, node.semantic_type)) {
+    node.semantic_type.reset();
+  }
+  if(node.template_id_syntax) {
+    clear_dependent_cached_semantic_types(ctx, *node.template_id_syntax);
+  }
+  if(node.conversion_type_id_syntax) {
+    clear_dependent_cached_semantic_types(ctx, *node.conversion_type_id_syntax);
+  }
+  if(node.base_type_syntax) {
+    clear_dependent_cached_semantic_types(ctx, *node.base_type_syntax);
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    clear_dependent_cached_semantic_types(ctx, node.qualifier_template_id_syntaxes[i]);
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    clear_dependent_cached_semantic_types(ctx, node.qualifier_type_syntaxes[i]);
+  }
+  for(std::size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    clear_dependent_cached_semantic_types(ctx, node.exception_type_id_syntaxes[i]);
+  }
+  for(std::size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+    clear_dependent_cached_semantic_types(ctx, node.alignment_specifier_nodes[i]);
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    clear_dependent_cached_semantic_types(ctx, node.children[i]);
+  }
+}
+
 bool template_argument_syntax_mentions_template_parameter_name(
     const TemplateArgumentSyntax & syntax,
     const std::vector<TemplateParameterInfo> & parameters)
@@ -7607,7 +7673,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                      substituted_pattern)) {
                 parse_pattern = substituted_pattern;
               }
-              clear_cached_semantic_types(parse_pattern, false);
+              clear_dependent_cached_semantic_types(ctx, parse_pattern);
               return template_decl_ast::parse_type_id(services,
                                                       result_scope,
                                                       result_scope,
@@ -8486,7 +8552,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                     parse_pattern = substituted_pattern;
                   }
                   if(template_parameters_have_pack(source_decl->parameters)) {
-                    clear_cached_semantic_types(parse_pattern, false);
+                    clear_dependent_cached_semantic_types(ctx, parse_pattern);
                   }
                   const bool parsed =
                       template_decl_ast::parse_type_id(services,

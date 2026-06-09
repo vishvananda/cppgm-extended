@@ -1548,7 +1548,10 @@ const CppAstNode * find_ctor_base_initializer(SemanticContext & ctx,
         return &init;
       }
     }
-    TypePtr named = ctx.lookup_type(scope, id->value);
+    // Resolve from the structured initializer-id node rather than its text, so a
+    // template-id argument keeps its parsed type-id (e.g. "<char>") instead of
+    // being re-split into argument text that has to be re-parsed.
+    TypePtr named = ctx.lookup_type_node(scope, *id, id->value);
     if(named && type_equals(strip_top_level_cv(named), base.type)) {
       return &init;
     }
