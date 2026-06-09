@@ -2943,6 +2943,26 @@ bool try_resolve_member_template_id_from_class_scope(
   return false;
 }
 
+callsemantic::ExactTemplateTypeLookupAnchor build_owner_lookup_anchor(
+    const TemplateIdSyntax & ts)
+{
+  callsemantic::ExactTemplateTypeLookupAnchor anchor;
+  anchor.template_text =
+      callsemantic::template_id_syntax_text_preserving_spacing(ts);
+  anchor.identifier =
+      callsemantic::template_lookup_fragment_identifier(anchor.template_text);
+  if(anchor.identifier.empty()) {
+    anchor.identifier = ts.name.name;
+  }
+  anchor.compact_key = callsemantic::compact_lookup_text(anchor.template_text);
+  anchor.arg_texts = ts.arguments;
+  anchor.arg_syntaxes = ts.argument_syntaxes;
+  anchor.has_argument_list =
+      !ts.arguments.empty() &&
+      ts.argument_syntaxes.size() == ts.arguments.size();
+  return anchor;
+}
+
 bool resolve_member_template_owner_type_text(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -2951,49 +2971,76 @@ bool resolve_member_template_owner_type_text(
     TypePtr & out)
 {
   out.reset();
-  if(parse_type_argument_text(services, scope, owner_text, out) && out) {
-    return true;
-  }
 
   QualifiedName owner_template_name;
   vector<string> owner_args;
-  if(!semantic_utils::split_top_level_template_id_text(owner_text,
+  const bool owner_split =
+      semantic_utils::split_top_level_template_id_text(owner_text,
                                                        owner_template_name,
-                                                       owner_args)) {
-    return false;
+                                                       owner_args);
+
+  const auto resolve_owner_syntax_structurally =
+      [&](const std::vector<TemplateArgumentSyntax> & arg_syntaxes) -> bool
+  {
+    TemplateIdSyntax owner_syntax;
+    owner_syntax.name = owner_template_name;
+    owner_syntax.arguments = owner_args;
+    owner_syntax.argument_syntaxes = arg_syntaxes;
+    if(ClassTemplateDecl * owner_template =
+           lookup_class_template_impl(
+               services,
+               scope.require(),
+               qualified_name_text_for_structured_lookup(owner_template_name))) {
+      Scope & binding_scope =
+          template_argument_binding_scope_for_class_template(scope.require(),
+                                                             *owner_template);
+      annotate_template_id_type_arguments_from_scope_bindings(binding_scope,
+                                                              *owner_template,
+                                                              owner_syntax);
+    }
+    return resolve_template_id_syntax_type(
+               services,
+               scope.require(),
+               owner_syntax,
+               reference_class_templates_only,
+               string(),
+               out,
+               scope,
+               template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly) &&
+           out;
+  };
+
+  // Prefer the structured argument syntaxes carried by a registered anchor so
+  // the owner's arguments resolve from structure instead of reparsed text.
+  if(owner_split) {
+    if(const std::vector<TemplateArgumentSyntax> * anchor_syntaxes =
+           callsemantic::exact_template_type_lookup_anchor_arg_syntaxes(
+               normalize_type_lookup_name(owner_text),
+               owner_template_name.name)) {
+      if(anchor_syntaxes->size() == owner_args.size() &&
+         resolve_owner_syntax_structurally(*anchor_syntaxes)) {
+        return true;
+      }
+      out.reset();
+    }
   }
 
-  TemplateIdSyntax owner_syntax;
-  owner_syntax.name = owner_template_name;
-  owner_syntax.arguments = owner_args;
-  owner_syntax.argument_syntaxes.reserve(owner_args.size());
+  if(parse_type_argument_text(services, scope, owner_text, out) && out) {
+    return true;
+  }
+  out.reset();
+
+  if(!owner_split) {
+    return false;
+  }
+  std::vector<TemplateArgumentSyntax> text_syntaxes;
+  text_syntaxes.reserve(owner_args.size());
   for(size_t i = 0; i < owner_args.size(); ++i) {
     TemplateArgumentSyntax syntax;
     syntax.text = owner_args[i];
-    owner_syntax.argument_syntaxes.push_back(syntax);
+    text_syntaxes.push_back(syntax);
   }
-  if(ClassTemplateDecl * owner_template =
-         lookup_class_template_impl(
-             services,
-             scope.require(),
-             qualified_name_text_for_structured_lookup(owner_template_name))) {
-    Scope & binding_scope =
-        template_argument_binding_scope_for_class_template(scope.require(),
-                                                           *owner_template);
-    annotate_template_id_type_arguments_from_scope_bindings(binding_scope,
-                                                            *owner_template,
-                                                            owner_syntax);
-  }
-  return resolve_template_id_syntax_type(
-             services,
-             scope.require(),
-             owner_syntax,
-             reference_class_templates_only,
-             string(),
-             out,
-             scope,
-             template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly) &&
-         out;
+  return resolve_owner_syntax_structurally(text_syntaxes);
 }
 
 bool resolve_template_template_argument_owner_type(
@@ -28862,6 +28909,21 @@ NonTypeArgumentStatus evaluate_structured_template_member_bool_value(
             services, *direct_member_template_value);
         return NT_ARG_EVALUATED;
       }
+    }
+  }
+
+  // Register anchors for ALL qualifier template-ids so a nested owner whose
+  // structured argument syntaxes are needed (and which is not the qualifier on
+  // top of the stack) can still be resolved from structure.
+  std::vector<std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor> >
+      qualifier_owner_anchors;
+  for(size_t qi = 0; qi < qualified->qualifiers.size(); ++qi) {
+    if(const TemplateIdSyntax * qts =
+           cppast_qualifier_template_id_syntax(expr, qi)) {
+      qualifier_owner_anchors.push_back(
+          std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor>(
+              new callsemantic::ScopedExactTemplateTypeLookupAnchor(
+                  build_owner_lookup_anchor(*qts))));
     }
   }
 

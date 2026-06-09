@@ -1002,19 +1002,36 @@ exact_template_type_lookup_anchor_arg_syntaxes(
     const std::string & normalized_name,
     const std::string & identifier)
 {
-  const ExactTemplateTypeLookupAnchor * anchor =
-      current_exact_template_type_lookup_anchor();
-  if(!(anchor && !normalized_name.empty())) {
+  if(normalized_name.empty()) {
     return nullptr;
   }
-  if(!(exact_template_type_lookup_anchor_matches_syntax(*anchor, normalized_name) ||
-       exact_template_type_lookup_anchor_matches_identifier_syntax(*anchor,
-                                                                   identifier)) ||
-     !anchor->has_argument_list ||
-     anchor->arg_syntaxes.size() != anchor->arg_texts.size()) {
-    return nullptr;
+  // Search the whole anchor stack (innermost first): a nested member template-id
+  // can require the structured args of an OWNER anchor that is not on top.
+  // Prefer an exact compact-key (full-text) match over a looser identifier match,
+  // so a same-named anchor with different arguments is not picked by mistake.
+  for(int pass = 0; pass < 2; ++pass) {
+    for(std::size_t i = exact_template_type_lookup_anchors_.size(); i > 0; --i) {
+      const ExactTemplateTypeLookupAnchor * anchor =
+          exact_template_type_lookup_anchors_[i - 1].get();
+      if(!anchor ||
+         anchor->template_text.empty() ||
+         anchor->identifier.empty() ||
+         !anchor->has_argument_list ||
+         anchor->arg_syntaxes.size() != anchor->arg_texts.size()) {
+        continue;
+      }
+      const bool match =
+          pass == 0
+              ? exact_template_type_lookup_anchor_matches_syntax(*anchor,
+                                                                 normalized_name)
+              : exact_template_type_lookup_anchor_matches_identifier_syntax(
+                    *anchor, identifier);
+      if(match) {
+        return &anchor->arg_syntaxes;
+      }
+    }
   }
-  return &anchor->arg_syntaxes;
+  return nullptr;
 }
 
 bool source_template_id_args_are_arity_compatible(

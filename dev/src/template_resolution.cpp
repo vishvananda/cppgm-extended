@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <execinfo.h>  // STAGEC trace (temp)
 #include <cctype>
 #include <cstdint>
 #include <limits>
@@ -10549,7 +10550,8 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       type = direct_bound_type;
     }
   }
-  if(!type && !has_structured_type_syntax) {
+  if(!type && !has_structured_type_syntax &&
+     !std::getenv("CPPGM_NO_TYPE_ARG_REPARSE")) {
     TypePtr parsed_type_text;
     if(template_argument_semantics::parse_type_argument_text(
            services,
@@ -10820,6 +10822,12 @@ bool resolve_template_arguments(
   }
   Scope & raw_scope = scope.require();
   out.clear();
+  if(std::getenv("CPPGM_STAGEC_TRACE") && std::getenv("CPPGM_NO_TYPE_ARG_REPARSE") &&
+     (!syntaxes || syntaxes->empty())) {
+    std::cerr << "STAGEC-NULLSYN texts=[" << join_template_texts(texts) << "]\n";
+    void * fr[40]; int n = backtrace(fr, 40); char ** sy = backtrace_symbols(fr, n);
+    if(sy) { for(int i=0;i<n;++i) std::cerr << "  " << sy[i] << "\n"; std::free(sy); }
+  }
   if(try_resolve_pre_expansion_known_failure(services,
                                              type_system,
                                              scope,
