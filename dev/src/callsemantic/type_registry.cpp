@@ -177,7 +177,7 @@ Scope * scope_for_type(const TypeRegistryState & state, const TypePtr & type)
     return nullptr;
   }
 
-  std::map<std::string, Scope *>::const_iterator found =
+  auto found =
       state.type_scopes_by_key.find(base->named_key);
   return found == state.type_scopes_by_key.end() ? nullptr : found->second;
 }
