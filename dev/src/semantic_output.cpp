@@ -138,7 +138,7 @@ std::string describe_scope_placeholder_origin(SemanticContext & ctx, Scope & sco
     const std::string scope_name =
         semantic_trace::scope_name_for_diagnostic(*current);
 
-    for(std::map<std::string, TypePtr>::const_iterator it = current->named_types.begin();
+    for(auto it = current->named_types.begin();
         it != current->named_types.end();
         ++it) {
       if(seen_type_names.count(it->first) != 0) {
@@ -191,7 +191,7 @@ std::string describe_scope_placeholder_origin(SemanticContext & ctx, Scope & sco
       return out.str();
     }
 
-    for(std::map<std::string, TypePtr>::const_iterator it = current->named_types.begin();
+    for(auto it = current->named_types.begin();
         it != current->named_types.end();
         ++it) {
       seen_type_names.insert(it->first);
@@ -6641,7 +6641,7 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
       continue;
     }
     DumpNode node = make_dump_node(CallSemKind::rtti_definition, *it);
-    map<string, TypePtr>::const_iterator type_it =
+    auto type_it =
         state.emitted_rtti_types.find(*it);
     if(type_it != state.emitted_rtti_types.end()) {
       node.semantic_type = type_it->second;

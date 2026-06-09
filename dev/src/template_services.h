@@ -76,7 +76,7 @@ inline cpp_decl::TypePtr lookup_direct_named_type_in_inline_namespaces_impl(
     return cpp_decl::TypePtr();
   }
 
-  std::map<std::string, cpp_decl::TypePtr>::const_iterator found =
+  auto found =
       scope.named_types.find(name);
   if(found != scope.named_types.end()) {
     return found->second;

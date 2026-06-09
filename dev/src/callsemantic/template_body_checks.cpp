@@ -577,7 +577,7 @@ static void collect_member_scope_names_for_template_body(
       it != scope.function_templates.end(); ++it) {
     member_names.insert(it->first);
   }
-  for(std::map<std::string, TypePtr>::const_iterator it =
+  for(auto it =
           scope.named_types.begin();
       it != scope.named_types.end(); ++it) {
     type_names.insert(it->first);

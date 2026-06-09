@@ -2139,7 +2139,7 @@ bool try_stable_template_bound_scope_cache_fingerprint(const Scope & scope,
   hash_combine(seed, reinterpret_cast<std::uintptr_t>(scope.function));
 
   hash_string_set_for_scope_cache(seed, scope.template_bound_type_names);
-  for(std::map<std::string, TypePtr>::const_iterator it =
+  for(auto it =
           scope.named_types.begin();
       it != scope.named_types.end();
       ++it) {
@@ -3025,7 +3025,7 @@ bool try_resolve_member_type_on_known_owner(
   }
 
   if(member_scope->class_info) {
-    std::map<std::string, TypePtr>::const_iterator direct =
+    auto direct =
         member_scope->named_types.find(member_name);
     if(direct != member_scope->named_types.end()) {
       out = direct->second;
@@ -3103,7 +3103,7 @@ bool try_resolve_bound_member_type_argument(
   if(!simple_bound_member_type_argument_syntax(syntax, owner_name, member_name)) {
     return false;
   }
-  std::map<std::string, TypePtr>::const_iterator owner_found =
+  auto owner_found =
       raw_parameter_scope.named_types.find(owner_name);
   if(owner_found == raw_parameter_scope.named_types.end() ||
      !owner_found->second) {
@@ -4901,7 +4901,7 @@ bool scope_has_dependent_template_context_for_carried_expression(
       [](Scope & start, const std::string & name) -> const TypePtr *
       {
         for(Scope * current = &start; current; current = current->parent) {
-          std::map<std::string, TypePtr>::const_iterator found =
+          auto found =
               current->named_types.find(name);
           if(found != current->named_types.end()) {
             return &found->second;
@@ -5036,7 +5036,7 @@ bool scope_has_dependent_template_context_for_carried_expression(
         }
       }
     }
-    for(std::map<std::string, TypePtr>::const_iterator it =
+    for(auto it =
             current->named_types.begin();
         it != current->named_types.end();
         ++it) {
@@ -5370,7 +5370,7 @@ bool lookup_direct_bound_type_argument(Scope & scope,
     if(current->namespace_scope || current->parent == nullptr) {
       break;
     }
-    std::map<std::string, TypePtr>::const_iterator found =
+    auto found =
         current->named_types.find(name);
     if(found != current->named_types.end() && found->second) {
       out = found->second;
@@ -5469,7 +5469,7 @@ bool lookup_exact_visible_type_argument_text(Scope & scope,
       found_type =
           template_api::lookup_direct_named_type_in_inline_namespaces(*current, name);
     } else {
-      std::map<std::string, TypePtr>::const_iterator found =
+      auto found =
           current->named_types.find(name);
       if(found != current->named_types.end()) {
         found_type = found->second;
@@ -6703,7 +6703,7 @@ bool lookup_exact_bound_type_name_for_deduction(Scope & scope,
     if(current->namespace_scope || !current->parent) {
       break;
     }
-    std::map<std::string, TypePtr>::const_iterator found =
+    auto found =
         current->named_types.find(trimmed);
     if(found != current->named_types.end()) {
       if(current->template_bound_type_names.count(trimmed) != 0 &&
@@ -7048,7 +7048,7 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
 
         TemplateArgument arg;
         if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
-          std::map<std::string, TypePtr>::const_iterator found_type =
+          auto found_type =
               info.member_scope->named_types.find(parameter.name);
           if(found_type == info.member_scope->named_types.end()) {
             return false;
@@ -7366,7 +7366,7 @@ std::string template_parameter_binding_summary(const Scope & scope,
 
   std::ostringstream out;
   bool found = false;
-  std::map<std::string, TypePtr>::const_iterator type_found = scope.named_types.find(parameter.name);
+  auto type_found = scope.named_types.find(parameter.name);
   if(type_found != scope.named_types.end()) {
     out << "type=" << (type_found->second ? describe_type(type_found->second) :
                                            std::string("<null>"))
@@ -8406,7 +8406,7 @@ bool function_template_parameter_has_non_dependent_binding(
        scope.template_bound_type_names.end()) {
       return false;
     }
-    std::map<std::string, TypePtr>::const_iterator found =
+    auto found =
         scope.named_types.find(parameter.name);
     return found != scope.named_types.end() &&
            found->second &&
@@ -9149,7 +9149,7 @@ void bind_known_deductions_into_scope(SemanticContext & ctx,
     }
 
     if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
-      std::map<std::string, TypePtr>::iterator existing =
+      auto existing =
           scope.named_types.find(parameter.name);
       const bool existing_type_is_template_bound =
           scope.template_bound_type_names.find(parameter.name) !=

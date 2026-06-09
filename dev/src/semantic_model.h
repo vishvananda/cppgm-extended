@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -243,7 +244,11 @@ struct Scope
   bool inline_namespace = false;
   ClassInfo * class_info = nullptr;
   FunctionBinding * function = nullptr;
-  std::map<std::string, cpp_decl::TypePtr> named_types;
+  // Point-lookup keyed by type name; iteration order is not relied upon (the one
+  // order-sensitive lookup, dependent_member_type_owner_text_from_scope, picks the
+  // lexicographically-smallest match explicitly).
+  typedef std::unordered_map<std::string, cpp_decl::TypePtr> NamedTypeMap;
+  NamedTypeMap named_types;
   std::map<std::string, MemberAccess> named_type_access;
   std::map<std::string, std::vector<cpp_decl::TypePtr> > named_type_packs;
   std::map<std::string, std::vector<ValueBinding> > named_value_packs;

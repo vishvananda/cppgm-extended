@@ -1502,7 +1502,7 @@ bool template_argument_texts_mention_instantiated_class_local_type_aliases(
          !current->class_info->dependent_instantiation)) {
       continue;
     }
-    for(std::map<std::string, TypePtr>::const_iterator it =
+    for(auto it =
             current->named_types.begin();
         it != current->named_types.end();
         ++it) {

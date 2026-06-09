@@ -346,7 +346,7 @@ void rewrite_template_id_syntax_type_pack_arguments(
   for(std::size_t i = 0; i < syntax.arguments.size(); ++i) {
     bool changed = false;
     std::string text = syntax.arguments[i];
-    for(std::map<std::string, TypePtr>::const_iterator it = type_replacements.begin();
+    for(auto it = type_replacements.begin();
         it != type_replacements.end();
         ++it) {
       text = callsemantic_internal::replace_identifier_token_text(
@@ -363,7 +363,7 @@ void rewrite_template_id_syntax_type_pack_arguments(
   for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
     TemplateArgumentSyntax & argument = syntax.argument_syntaxes[i];
     bool changed = false;
-    for(std::map<std::string, TypePtr>::const_iterator it = type_replacements.begin();
+    for(auto it = type_replacements.begin();
         it != type_replacements.end();
         ++it) {
       argument.text = callsemantic_internal::replace_identifier_token_text(
@@ -409,7 +409,7 @@ bool substitute_type_pack_node_ast(
         type_replacements);
   }
 
-  for(std::map<std::string, TypePtr>::const_iterator it = type_replacements.begin();
+  for(auto it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
     if(ast_node_value_names_pack_identifier(out, it->first)) {

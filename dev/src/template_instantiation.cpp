@@ -4968,7 +4968,7 @@ ValueBinding * static_member_definition_binding_for_key(SemanticContext & ctx,
     const std::string member_class_name =
         semantic_utils::strip_trailing_top_level_template_arguments(
             qualified.qualifiers[i]);
-    std::map<std::string, TypePtr>::iterator found =
+    auto found =
         current->member_scope->named_types.find(member_class_name);
     if(found == current->member_scope->named_types.end()) {
       return nullptr;
@@ -5584,7 +5584,7 @@ void finalize_direct_nested_member_classes(
   }
 
   std::vector<ClassInfo *> nested_classes;
-  for(std::map<std::string, TypePtr>::const_iterator it =
+  for(auto it =
           info.member_scope->named_types.begin();
       it != info.member_scope->named_types.end();
       ++it) {
@@ -6819,7 +6819,7 @@ void overlay_instantiation_local_named_types(
   template_api::TemplateTypeSystem & type_system = service_type_system(services);
   const Scope * scope = &use_scope;
   while(scope && scope != declaring_scope) {
-    for(std::map<std::string, TypePtr>::const_iterator it = scope->named_types.begin();
+    for(auto it = scope->named_types.begin();
         it != scope->named_types.end();
         ++it) {
       if(excluded_names && excluded_names->count(it->first) != 0) {
@@ -6955,7 +6955,7 @@ void bind_active_owner_instantiation_context(SemanticContext & ctx,
   if(!active_owner.member_scope) {
     return;
   }
-  for(std::map<std::string, TypePtr>::const_iterator it =
+  for(auto it =
           active_owner.member_scope->named_types.begin();
       it != active_owner.member_scope->named_types.end();
       ++it) {
