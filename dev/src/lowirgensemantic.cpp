@@ -4167,7 +4167,7 @@ private:
     if(symbol.empty() || !type) {
       return;
     }
-    map<string, TypePtr>::const_iterator found =
+    auto found =
         referenced_function_signature_types_.find(symbol);
     if(found == referenced_function_signature_types_.end()) {
       referenced_function_signature_types_[symbol] = type;
@@ -6125,7 +6125,7 @@ private:
     string next_label = new_block("eh_clear_check");
     terminate("jump " + lowir_block_name(next_label));
 
-    for(map<string, TypePtr>::const_iterator it = exception_storage_types_.begin();
+    for(auto it = exception_storage_types_.begin();
         it != exception_storage_types_.end();
         ++it) {
       const TypePtr & type = it->second;
@@ -15761,7 +15761,7 @@ private:
       return true;
     }
 
-    map<string, TypePtr>::const_iterator signature_hint =
+    auto signature_hint =
         referenced_function_signature_types_.find(symbol);
     if(signature_hint != referenced_function_signature_types_.end()) {
       map<string, const CallSemNode *>::const_iterator owner =
@@ -16058,7 +16058,7 @@ private:
     if(symbol.empty() || !type) {
       return;
     }
-    map<string, TypePtr>::const_iterator found =
+    auto found =
         referenced_function_signature_types_.find(symbol);
     if(found == referenced_function_signature_types_.end()) {
       referenced_function_signature_types_[symbol] = type;
@@ -17096,7 +17096,7 @@ private:
         return true;
       }
     }
-    for(map<string, TypePtr>::const_iterator it = exception_storage_types_.begin();
+    for(auto it = exception_storage_types_.begin();
         it != exception_storage_types_.end();
         ++it) {
       if(exception_storage_symbol(it->second) == symbol) {
@@ -19713,7 +19713,7 @@ private:
 
   void collect_exception_support_globals()
   {
-    for(map<string, TypePtr>::const_iterator it = exception_rtti_symbols_.begin();
+    for(auto it = exception_rtti_symbols_.begin();
         it != exception_rtti_symbols_.end();
         ++it) {
       if(emit_runtime_support_ && it->second) {
@@ -19729,7 +19729,7 @@ private:
       export_rtti_symbol(it->first, it->second, "exception-rtti");
     }
 
-    for(map<string, TypePtr>::const_iterator it = exception_storage_types_.begin();
+    for(auto it = exception_storage_types_.begin();
         it != exception_storage_types_.end();
         ++it) {
       const string storage = exception_storage_symbol(it->second);

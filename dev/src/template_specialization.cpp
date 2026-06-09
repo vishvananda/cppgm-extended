@@ -49,7 +49,7 @@ bool store_deduced_type(DeducedState & deduced,
                         const std::string & parameter_name,
                         const TypePtr & type)
 {
-  std::map<std::string, TypePtr>::iterator found =
+  auto found =
       deduced.types.find(parameter_name);
   if(found == deduced.types.end()) {
     deduced.types[parameter_name] = type;
@@ -432,7 +432,7 @@ bool type_pattern_has_deducible_template_parameter(
 void promote_single_deduced_type_to_pack(DeducedState & deduced,
                                          const std::string & parameter_name)
 {
-  std::map<std::string, TypePtr>::iterator single_found =
+  auto single_found =
       deduced.types.find(parameter_name);
   if(single_found == deduced.types.end() ||
      deduced.type_packs.find(parameter_name) != deduced.type_packs.end()) {
@@ -1328,7 +1328,7 @@ bool deduce_from_function_type_pattern(template_api::TemplateServices & services
       if(parameter.name != pack_parameter->name) {
         continue;
       }
-      std::map<std::string, TypePtr>::iterator found = element_deduced.find(parameter.name);
+      auto found = element_deduced.find(parameter.name);
       if(found == element_deduced.end()) {
         continue;
       }
@@ -1340,7 +1340,7 @@ bool deduce_from_function_type_pattern(template_api::TemplateServices & services
       return false;
     }
 
-    for(std::map<std::string, TypePtr>::const_iterator it = element_deduced.begin();
+    for(auto it = element_deduced.begin();
         it != element_deduced.end();
         ++it) {
       if(!store_deduced_type(deduced, it->first, it->second)) {
@@ -3767,7 +3767,7 @@ bool lookup_template_bound_type(Scope & scope,
       if(current->template_bound_type_names.count(name) == 0) {
         continue;
       }
-      std::map<std::string, TypePtr>::const_iterator found =
+      auto found =
           current->named_types.find(name);
       if(found != current->named_types.end() && found->second) {
         out = found->second;
@@ -4343,7 +4343,7 @@ bool try_expand_alias_template_pattern_structurally(
         }
       }
     }
-    std::map<std::string, TypePtr>::const_iterator found =
+    auto found =
         target_scope.named_types.find(declared_owner->name);
     if(found != target_scope.named_types.end()) {
       ClassInfo * bound_info =
@@ -4870,7 +4870,7 @@ bool try_expand_alias_template_pattern_structurally(
         }
         TypePtr member_type;
         if(current->class_info) {
-          std::map<std::string, TypePtr>::const_iterator found_member =
+          auto found_member =
               current->named_types.find(member_name);
           if(found_member != current->named_types.end()) {
             member_type = found_member->second;
@@ -5963,7 +5963,7 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
         }
         resolved_type = found->second[0];
       } else {
-        std::map<std::string, TypePtr>::const_iterator found =
+        auto found =
             placeholders.types.find(direct_parameter->name);
         if(found == placeholders.types.end()) {
           return false;
@@ -6043,7 +6043,7 @@ bool transformed_partial_specialization_arguments(template_api::TemplateServices
         }
         argument.type = found->second[0];
       } else {
-        std::map<std::string, TypePtr>::const_iterator found =
+        auto found =
             placeholders.types.find(direct_parameter->name);
         if(found == placeholders.types.end()) {
           return false;
@@ -7147,7 +7147,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
 
       TemplateArgument arg;
       if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
-        std::map<std::string, TypePtr>::iterator found =
+        auto found =
             deduced.types.find(parameter.name);
         if(found == deduced.types.end()) {
           return false;

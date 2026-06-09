@@ -591,7 +591,7 @@ bool friend_member_alias_resolves_to_current_class(const ClassInfo * current_cla
     return false;
   }
 
-  map<string, TypePtr>::const_iterator found =
+  auto found =
       current_class->member_scope->named_types.find(member_name);
   if(found == current_class->member_scope->named_types.end()) {
     return false;
@@ -674,7 +674,7 @@ string normalize_destructor_member_lookup_name(SemanticContext & ctx,
 
   TypePtr target_type;
   for(Scope * current = &scope; current; current = current->parent) {
-    map<string, TypePtr>::const_iterator direct = current->named_types.find(target_name);
+    auto direct = current->named_types.find(target_name);
     if(direct != current->named_types.end()) {
       target_type = direct->second;
       break;
@@ -1468,7 +1468,7 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
     }
   }
 
-  map<string, TypePtr>::const_iterator found = scope.named_types.find(normalized_name);
+  auto found = scope.named_types.find(normalized_name);
   if(found != scope.named_types.end()) {
     if(scope.class_info) {
       const MemberAccess direct_access =
@@ -3536,7 +3536,7 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
   if(info.reference_member_collection_in_progress) {
     MemberTypeLookupResult result;
     if(info.member_scope) {
-      map<string, cpp_decl::TypePtr>::const_iterator direct =
+      auto direct =
           info.member_scope->named_types.find(name);
       if(direct != info.member_scope->named_types.end()) {
         const MemberAccess direct_access =
@@ -3575,7 +3575,7 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
     ctx.ensure_class_reference_members(info);
   }
 
-  map<string, cpp_decl::TypePtr>::const_iterator direct =
+  auto direct =
       info.member_scope->named_types.find(name);
   if(direct != info.member_scope->named_types.end()) {
     TypePtr direct_type = direct->second;
@@ -3631,7 +3631,7 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
       ctx.ensure_class_reference_members(*current);
     }
 
-    map<string, cpp_decl::TypePtr>::const_iterator found =
+    auto found =
         current->member_scope->named_types.find(name);
     if(found != current->member_scope->named_types.end() &&
        !inherited_name_is_class_template_type_parameter(*current, name)) {

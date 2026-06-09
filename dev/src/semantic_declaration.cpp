@@ -372,7 +372,7 @@ void collect_inherited_using_target_classes(SemanticContext & ctx,
       ctx.ensure_class_reference_members(*base);
     }
     if(base->member_scope) {
-      map<string, TypePtr>::const_iterator found =
+      auto found =
           base->member_scope->named_types.find(name);
       if(found != base->member_scope->named_types.end()) {
         if(ClassInfo * target = class_info_for_using_target_type(ctx, found->second)) {

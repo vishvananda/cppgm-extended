@@ -104,7 +104,7 @@ void import_inline_namespace_members(semantic_model::Scope & scope,
     changed = true;
   }
 
-  for(std::map<std::string, cpp_decl::TypePtr>::iterator it = target.named_types.begin();
+  for(auto it = target.named_types.begin();
       it != target.named_types.end(); ++it) {
     if(scope.named_types.count(it->first) == 0) {
       scope.named_types[it->first] = it->second;

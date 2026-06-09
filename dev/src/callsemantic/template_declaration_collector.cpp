@@ -3642,7 +3642,7 @@ public:
        scope.class_info->qualified_name.find("allocator_traits") != string::npos) {
       auto direct_named_binding = [](Scope & trace_scope, const std::string & key) -> std::string
       {
-        std::map<std::string, TypePtr>::const_iterator found = trace_scope.named_types.find(key);
+        auto found = trace_scope.named_types.find(key);
         return found == trace_scope.named_types.end() ? std::string("<none>") :
                                                         describe_type(found->second);
       };
@@ -3651,7 +3651,7 @@ public:
       {
         Scope * current = &trace_scope;
         while(current) {
-          std::map<std::string, TypePtr>::const_iterator found = current->named_types.find(key);
+          auto found = current->named_types.find(key);
           if(found != current->named_types.end()) {
             return semantic_trace::scope_name_for_diagnostic(*current) + "=" +
                    describe_type(found->second);

@@ -3194,7 +3194,7 @@ static TypePtr lookup_scope_named_type_for_mangling(
   for(const semantic_model::Scope * scope = mangle_ctx->lookup_scope;
       scope;
       scope = scope->parent) {
-    map<string, TypePtr>::const_iterator found = scope->named_types.find(stripped);
+    auto found = scope->named_types.find(stripped);
     if(found == scope->named_types.end() || !found->second) {
       continue;
     }
@@ -3266,7 +3266,7 @@ static TypePtr lookup_qualified_named_type_for_mangling(
     return TypePtr();
   }
 
-  map<string, TypePtr>::const_iterator found =
+  auto found =
       scope->named_types.find(qualified.name);
   if(found == scope->named_types.end() || !found->second) {
     return TypePtr();

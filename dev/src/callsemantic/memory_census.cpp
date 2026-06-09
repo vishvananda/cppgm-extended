@@ -468,7 +468,7 @@ void census_scope(const Scope * scope,
 
   size_t bytes = sizeof(Scope) +
                  string_storage_bytes(scope->name) +
-                 map_storage_bytes(scope->named_types) +
+                 unordered_map_storage_bytes(scope->named_types) +
                  map_storage_bytes(scope->named_type_packs) +
                  map_storage_bytes(scope->named_value_packs) +
                  map_storage_bytes(scope->named_pack_sizes) +
@@ -488,7 +488,7 @@ void census_scope(const Scope * scope,
                  vector_storage_bytes(scope->using_directives) +
                  vector_storage_bytes(scope->namespace_children);
 
-  for(map<string, TypePtr>::const_iterator it = scope->named_types.begin();
+  for(auto it = scope->named_types.begin();
       it != scope->named_types.end();
       ++it) {
     bytes += string_storage_bytes(it->first);
@@ -800,13 +800,13 @@ void census_alias_template(const AliasTemplateDecl & decl,
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
     bytes += template_parameter_payload_bytes(decl.parameters[i], census, seen_types);
   }
-  for(map<string, TypePtr>::const_iterator it = decl.instantiations.begin();
+  for(auto it = decl.instantiations.begin();
       it != decl.instantiations.end();
       ++it) {
     bytes += string_storage_bytes(it->first);
     census_type(it->second, census, seen_types);
   }
-  for(map<string, TypePtr>::const_iterator it = decl.reference_instantiations.begin();
+  for(auto it = decl.reference_instantiations.begin();
       it != decl.reference_instantiations.end();
       ++it) {
     bytes += string_storage_bytes(it->first);

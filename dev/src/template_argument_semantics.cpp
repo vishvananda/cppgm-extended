@@ -937,7 +937,7 @@ TypePtr lookup_shadowing_template_parameter_type(Scope & scope,
   }
 
   for(Scope * current = &scope; current; current = current->parent) {
-    map<string, TypePtr>::const_iterator found =
+    auto found =
         current->named_types.find(candidate);
     if(found != current->named_types.end() &&
        current->template_bound_type_names.count(candidate) != 0 &&
@@ -1100,7 +1100,7 @@ bool parse_type_id_node_for_templates(template_api::TemplateServices & services,
           if(current->namespace_scope || current->parent == nullptr) {
             break;
           }
-          map<string, TypePtr>::const_iterator found =
+          auto found =
               current->named_types.find(normalized);
           if(found != current->named_types.end()) {
             if(current->template_bound_type_names.count(normalized) != 0 &&
@@ -1968,10 +1968,16 @@ std::string dependent_member_type_owner_text_from_scope(
     return std::string();
   }
   for(Scope * current = &scope.require(); current; current = current->parent) {
-    for(std::map<std::string, TypePtr>::const_iterator it =
+    // Return the lexicographically-smallest owner name whose member scope
+    // declares member_name, independent of the named_types container order.
+    const std::string * best_owner = nullptr;
+    for(auto it =
             current->named_types.begin();
         it != current->named_types.end();
         ++it) {
+      if(best_owner && it->first >= *best_owner) {
+        continue;
+      }
       Scope * member_scope = nullptr;
       if(!service_prepare_named_type_member_scope(services,
                                                   scope,
@@ -1982,8 +1988,11 @@ std::string dependent_member_type_owner_text_from_scope(
       }
       if(member_scope->named_types.find(member_name) !=
          member_scope->named_types.end()) {
-        return it->first;
+        best_owner = &it->first;
       }
+    }
+    if(best_owner) {
+      return *best_owner;
     }
   }
   return std::string();
@@ -7211,7 +7220,7 @@ TypePtr lookup_concrete_type_in_resolved_scope(
                                                 nullptr);
     direct = member.type;
   } else {
-    std::map<std::string, TypePtr>::const_iterator local =
+    auto local =
         resolved_scope.named_types.find(normalized_name);
     if(local != resolved_scope.named_types.end()) {
       direct = local->second;
@@ -11122,7 +11131,7 @@ void thread_type_replacements_into_template_argument_syntax(
 {
   string pack_name;
   if(direct_type_pack_expansion_argument(source_arg, pack_name)) {
-    map<string, TypePtr>::const_iterator replacement =
+    auto replacement =
         type_replacements.find(pack_name);
     if(replacement != type_replacements.end() && replacement->second) {
       const string replacement_text =
@@ -11750,7 +11759,7 @@ bool substitute_dependent_argument_text_and_syntax(
               if(direct_name.empty()) {
                 return TypePtr();
               }
-              map<string, TypePtr>::const_iterator found =
+              auto found =
                   type_replacements.find(direct_name);
               if(found != type_replacements.end()) {
                 return found->second;
@@ -11813,7 +11822,7 @@ bool substitute_dependent_argument_text_and_syntax(
                                                     pack_size_replacements,
                                                     text_changed);
   }
-  for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+  for(auto it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
     rewritten_text = replace_identifier_token_text(
@@ -12040,7 +12049,7 @@ void rewrite_argument_text_with_replacements(
     const map<string, ValueBinding> & value_replacements,
     bool & changed)
 {
-  for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+  for(auto it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
     text = replace_identifier_token_text_preserving_sizeof_pack_operands(
@@ -15469,7 +15478,7 @@ TypePtr lookup_exact_bound_type_name(Scope & scope, const string & name)
     if(current->namespace_scope || current->parent == nullptr) {
       break;
     }
-    map<string, TypePtr>::const_iterator found = current->named_types.find(trimmed);
+    auto found = current->named_types.find(trimmed);
     if(found != current->named_types.end()) {
       if(current->template_bound_type_names.count(trimmed) != 0 && found->second) {
         return found->second;
@@ -15492,7 +15501,7 @@ bool lookup_exact_bound_type_name_with_scope(Scope & scope,
     if(current->namespace_scope || current->parent == nullptr) {
       break;
     }
-    map<string, TypePtr>::const_iterator found = current->named_types.find(trimmed);
+    auto found = current->named_types.find(trimmed);
     if(found != current->named_types.end()) {
       if(current->template_bound_type_names.count(trimmed) != 0 && found->second) {
         bound_scope = current;
@@ -15732,20 +15741,20 @@ TypePtr lookup_exact_local_type_name_impl(template_api::TemplateServices & servi
       break;
     }
     for(size_t i = 0; i < candidate_names.size(); ++i) {
-      map<string, TypePtr>::const_iterator found =
+      auto found =
           current->named_types.find(candidate_names[i]);
       if(found == current->named_types.end() ||
          !is_function_local_type(found->second)) {
         continue;
       }
-      map<string, TypePtr>::const_iterator parent_found =
+      auto parent_found =
           current->parent->named_types.find(candidate_names[i]);
       if(parent_found == current->parent->named_types.end() ||
          !type_equals(found->second, parent_found->second)) {
         return found->second;
       }
     }
-    for(map<string, TypePtr>::const_iterator it = current->named_types.begin();
+    for(auto it = current->named_types.begin();
         it != current->named_types.end();
         ++it) {
       if(!is_function_local_type(it->second)) {
@@ -15756,7 +15765,7 @@ TypePtr lookup_exact_local_type_name_impl(template_api::TemplateServices & servi
         if(reparseable != candidate_names[i]) {
           continue;
         }
-        map<string, TypePtr>::const_iterator parent_found =
+        auto parent_found =
             current->parent->named_types.find(it->first);
         if(parent_found == current->parent->named_types.end() ||
            !type_equals(it->second, parent_found->second)) {
@@ -17633,7 +17642,7 @@ bool build_type_replacement_parameters(
 {
   parameters.clear();
   parameters.reserve(type_replacements.size());
-  for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+  for(auto it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
     if(it->first.empty() || !it->second) {
@@ -17670,7 +17679,7 @@ bool substitute_named_type_parameters_only(
     const TemplateParameterInfo * parameter =
         find_substitution_parameter(parameters, type);
     if(parameter) {
-      map<string, TypePtr>::const_iterator found =
+      auto found =
           type_replacements.find(parameter->name);
       if(found != type_replacements.end() && found->second) {
         out = found->second;
@@ -17922,7 +17931,7 @@ bool substitute_type_pack_expression_node(
   }
   if(out.kind == CppAstKind::type_id && out.semantic_type) {
     bool mentions_replacement = false;
-    for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+    for(auto it = type_replacements.begin();
         it != type_replacements.end();
         ++it) {
       if(expression_node_mentions_identifier(out, it->first)) {
@@ -17960,7 +17969,7 @@ bool substitute_type_pack_expression_node(
         type_name ? strip_template_parameter_type_prefix(type_name->value) :
                     string();
     if(direct_type_id && type_name && is_identifier_text(direct_type_name)) {
-      map<string, TypePtr>::const_iterator replacement =
+      auto replacement =
           type_replacements.find(direct_type_name);
       if(replacement != type_replacements.end()) {
         out = make_substituted_type_id_node(
@@ -17999,7 +18008,7 @@ bool substitute_type_pack_expression_node(
     }
   }
   refresh_qualified_name_qualifier_template_id_texts(out);
-  for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+  for(auto it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
     bool replaced_qualified_component = false;
@@ -18495,7 +18504,7 @@ void substitute_type_pack_template_id_arguments(
     bool needs_carried_syntax = false;
     for(size_t i = 0; i < syntax.arguments.size() && !needs_carried_syntax; ++i) {
       const string original = trim_space(syntax.arguments[i]);
-      for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+      for(auto it = type_replacements.begin();
           it != type_replacements.end();
           ++it) {
         if(callsemantic_internal::contains_identifier_token(original, it->first)) {
@@ -18522,7 +18531,7 @@ void substitute_type_pack_template_id_arguments(
     string rewritten = syntax.arguments[i];
     const string original = trim_space(rewritten);
     bool changed = false;
-    for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+    for(auto it = type_replacements.begin();
         it != type_replacements.end();
         ++it) {
       rewritten = replace_identifier_token_text_preserving_sizeof_pack_operands(
@@ -18546,7 +18555,7 @@ void substitute_type_pack_template_id_arguments(
         i < source_arguments.size() ? trim_space(source_arguments[i]) :
                                       string();
     bool keep_source_type_syntax_for_resolved_type = false;
-    for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+    for(auto it = type_replacements.begin();
         it != type_replacements.end();
         ++it) {
       if(!argument_syntax_mentions_identifier(argument, it->first)) {
@@ -18868,7 +18877,7 @@ bool scope_chain_has_template_bound_type_name(Scope * scope,
        current->template_bound_type_pack_names.count(name) != 0) {
       return true;
     }
-    map<string, TypePtr>::const_iterator found = current->named_types.find(name);
+    auto found = current->named_types.find(name);
     if(found != current->named_types.end() &&
        found->second &&
        named_type_is_template_parameter(found->second)) {
@@ -18924,12 +18933,12 @@ void collect_bound_type_replacements_in_node(Scope & scope,
          !expression_node_mentions_identifier(node, *name)) {
         continue;
       }
-      map<string, TypePtr>::const_iterator found = current->named_types.find(*name);
+      auto found = current->named_types.find(*name);
       if(found != current->named_types.end() && found->second) {
         replacements[*name] = found->second;
       }
     }
-    for(map<string, TypePtr>::const_iterator found = current->named_types.begin();
+    for(auto found = current->named_types.begin();
         found != current->named_types.end();
         ++found) {
       if(found->first.empty() ||
@@ -20161,7 +20170,7 @@ TypePtr lookup_local_dependent_type_placeholder(Scope & scope, const string & te
     if(current->template_bound_type_names.count(normalized) == 0) {
       continue;
     }
-    map<string, TypePtr>::const_iterator found = current->named_types.find(normalized);
+    auto found = current->named_types.find(normalized);
     if(found != current->named_types.end() &&
        found->second &&
        named_type_is_template_parameter(found->second)) {
@@ -20879,7 +20888,7 @@ bool text_mentions_template_placeholders_in_tokens(
           }
           const bool template_bound =
               current->template_bound_type_names.count(name) != 0;
-          map<string, TypePtr>::const_iterator found = current->named_types.find(name);
+          auto found = current->named_types.find(name);
           if(found == current->named_types.end()) {
             if(template_bound) {
               return true;
@@ -20997,7 +21006,7 @@ bool text_mentions_dependent_non_namespace_binding_names_in_tokens(
            current->named_pack_sizes.count(name) != 0) {
           seen_type_name = true;
         } else {
-          map<string, TypePtr>::const_iterator found = current->named_types.find(name);
+          auto found = current->named_types.find(name);
           if(found != current->named_types.end()) {
             seen_type_name = true;
             if(found->second &&
@@ -22673,7 +22682,7 @@ bool mentions_local_dependent_type_placeholder(template_api::TemplateServices & 
       break;
     }
     for(const auto & name : current->template_bound_type_names) {
-      map<string, TypePtr>::const_iterator found = current->named_types.find(name);
+      auto found = current->named_types.find(name);
       if(found == current->named_types.end() ||
          !found->second ||
          !type_is_dependent(found->second) ||
@@ -27582,7 +27591,7 @@ bool lookup_concrete_member_type_for_trait(
   const auto find_member_type =
       [&](Scope & target_scope) -> bool
       {
-        std::map<std::string, TypePtr>::const_iterator direct =
+        auto direct =
             target_scope.named_types.find(member_name);
         if(direct != target_scope.named_types.end() && direct->second) {
           out = direct->second;
@@ -30111,7 +30120,7 @@ static bool scope_has_dependent_named_type_component(
   }
 
   for(Scope * current = &scope.require(); current; current = current->parent) {
-    std::map<std::string, TypePtr>::const_iterator type =
+    auto type =
         current->named_types.find(name);
     if(type != current->named_types.end()) {
       return type_still_depends_after_current_instantiation(
@@ -33571,7 +33580,7 @@ vector<TemplateArgumentSyntax> expand_type_pack_argument_syntaxes(
     }
     string direct_pack_name;
 	    if(simple_type_argument_name_from_syntax(source_syntax, direct_pack_name)) {
-	      map<string, TypePtr>::const_iterator direct =
+	      auto direct =
 	          type_replacements.find(direct_pack_name);
 	      if(direct != type_replacements.end()) {
 	        syntax.resolved_type = direct->second;

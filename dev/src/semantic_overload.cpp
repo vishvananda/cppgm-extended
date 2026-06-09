@@ -894,7 +894,7 @@ bool record_reason_deduction(std::map<std::string, TypePtr> & deduced,
   if(parameter.name.empty() || !actual) {
     return false;
   }
-  std::map<std::string, TypePtr>::const_iterator found = deduced.find(parameter.name);
+  auto found = deduced.find(parameter.name);
   if(found == deduced.end()) {
     deduced[parameter.name] = actual;
     return true;

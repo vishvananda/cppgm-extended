@@ -1620,7 +1620,7 @@ TypePtr lookup_visible_member_alias_owner_type(SemanticContext & ctx,
       if(member.type) {
         return member.type;
       }
-      std::map<std::string, TypePtr>::const_iterator found =
+      auto found =
           info.member_scope->named_types.find(name);
       if(found != info.member_scope->named_types.end()) {
         return found->second;
@@ -1664,7 +1664,7 @@ TypePtr lookup_visible_member_alias_owner_type(SemanticContext & ctx,
     }
   }
   for(Scope * current = &scope; current; current = current->parent) {
-    std::map<std::string, TypePtr>::const_iterator found =
+    auto found =
         current->named_types.find(name);
     if(found != current->named_types.end()) {
       return found->second;
@@ -1910,7 +1910,7 @@ TypePtr try_resolve_instantiated_member_alias_type(SemanticContext & ctx,
   }
   if(!owner_info) {
     if(current_info && current_info->member_scope) {
-      std::map<std::string, TypePtr>::const_iterator direct =
+      auto direct =
           current_info->member_scope->named_types.find(member_name);
       if(direct != current_info->member_scope->named_types.end() &&
          direct->second &&
@@ -2972,7 +2972,7 @@ bool direct_named_type_depends_on_template_parameter(SemanticContext & ctx,
   if(name.empty()) {
     return false;
   }
-  std::map<std::string, TypePtr>::const_iterator found = scope.named_types.find(name);
+  auto found = scope.named_types.find(name);
   if(found != scope.named_types.end() &&
      ctx.type_depends_on_template_parameter(found->second)) {
     return true;
@@ -5929,7 +5929,7 @@ void reset_instantiated_class_info(ClassInfo & info,
 void reset_reference_member_state_for_full_collection(ClassInfo & info)
 {
   const TypePtr info_type = strip_top_level_cv(info.type);
-  std::map<std::string, TypePtr> preserved_named_types;
+  Scope::NamedTypeMap preserved_named_types;
   std::map<std::string, MemberAccess> preserved_named_type_access;
   std::map<std::string, std::vector<TypePtr> > preserved_named_type_packs;
   std::map<std::string, std::vector<ValueBinding> > preserved_named_value_packs;
@@ -5939,7 +5939,7 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
   std::map<std::string, ClassTemplateDecl *> preserved_class_templates;
   std::map<std::string, AliasTemplateDecl *> preserved_alias_templates;
   if(info.member_scope) {
-    for(std::map<std::string, TypePtr>::const_iterator it =
+    for(auto it =
             info.member_scope->named_types.begin();
         it != info.member_scope->named_types.end();
         ++it) {
@@ -9869,7 +9869,7 @@ void populate_class_info(SemanticContext & ctx,
     if(!class_key) {
       return;
     }
-    std::map<std::string, TypePtr>::const_iterator found =
+    auto found =
         info.member_scope->named_types.find(member.value);
     ClassInfo * existing_info =
         found == info.member_scope->named_types.end() ?

@@ -1619,7 +1619,7 @@ private:
     for(size_t i = 0; i < state.deferred_constexpr_functions.size(); ++i) {
       probe.mark_function(state.deferred_constexpr_functions[i]);
     }
-    for(map<string, TypePtr>::const_iterator it = state.emitted_rtti_types.begin();
+    for(auto it = state.emitted_rtti_types.begin();
         it != state.emitted_rtti_types.end();
         ++it) {
       probe.mark_type(it->second);
@@ -5504,7 +5504,7 @@ private:
 
   TypePtr direct_named_type(Scope & scope, const string & name)
   {
-    map<string, TypePtr>::iterator found = scope.named_types.find(name);
+    auto found = scope.named_types.find(name);
     if(found == scope.named_types.end()) {
       return TypePtr();
     }
@@ -5543,7 +5543,7 @@ private:
           if(!visited.insert(&current_scope).second) {
             return TypePtr();
           }
-          map<string, TypePtr>::const_iterator direct =
+          auto direct =
               current_scope.named_types.find(lookup_name);
           if(direct != current_scope.named_types.end()) {
             return direct->second;
@@ -12202,7 +12202,7 @@ private:
       }
       return scope_sensitive_alias_cache_key;
     };
-    map<string, TypePtr>::iterator found = instantiations.find(key);
+    auto found = instantiations.find(key);
 
     Scope * inst_scope =
         &bind_template_arguments_for_instantiation(*decl.declaring_scope,
@@ -13270,7 +13270,7 @@ private:
       if(current->namespace_scope || current->parent == nullptr) {
         break;
       }
-      map<string, TypePtr>::const_iterator found = current->named_types.find(trimmed);
+      auto found = current->named_types.find(trimmed);
       if(found != current->named_types.end()) {
         if(current->template_bound_type_names.count(trimmed) != 0 && found->second) {
           return found->second;
@@ -13293,7 +13293,7 @@ private:
       if(current->namespace_scope || current->parent == nullptr) {
         break;
       }
-      map<string, TypePtr>::const_iterator found = current->named_types.find(trimmed);
+      auto found = current->named_types.find(trimmed);
       if(found != current->named_types.end()) {
         if(current->template_bound_type_names.count(trimmed) != 0 && found->second) {
           bound_scope = current;
@@ -13354,20 +13354,20 @@ private:
         break;
       }
       for(size_t i = 0; i < candidate_names.size(); ++i) {
-        map<string, TypePtr>::const_iterator found =
+        auto found =
             current->named_types.find(candidate_names[i]);
         if(found == current->named_types.end() ||
            !is_function_local_type(found->second)) {
           continue;
         }
-        map<string, TypePtr>::const_iterator parent_found =
+        auto parent_found =
             current->parent->named_types.find(candidate_names[i]);
         if(parent_found == current->parent->named_types.end() ||
            !type_equals(found->second, parent_found->second)) {
           return found->second;
         }
       }
-      for(map<string, TypePtr>::const_iterator it = current->named_types.begin();
+      for(auto it = current->named_types.begin();
           it != current->named_types.end();
           ++it) {
         if(!is_function_local_type(it->second)) {
@@ -13378,7 +13378,7 @@ private:
           if(reparseable != candidate_names[i]) {
             continue;
           }
-          map<string, TypePtr>::const_iterator parent_found =
+          auto parent_found =
               current->parent->named_types.find(it->first);
           if(parent_found == current->parent->named_types.end() ||
              !type_equals(it->second, parent_found->second)) {
@@ -13705,7 +13705,7 @@ private:
         [&](string text) -> string
         {
           bool changed = false;
-          for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+          for(auto it = type_replacements.begin();
               it != type_replacements.end();
               ++it) {
             text = replace_identifier_token_text(
@@ -13730,7 +13730,7 @@ private:
       bool needs_carried_syntax = false;
       for(size_t i = 0; i < syntax.arguments.size() && !needs_carried_syntax; ++i) {
         const string original = trim_space(syntax.arguments[i]);
-        for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+        for(auto it = type_replacements.begin();
             it != type_replacements.end();
             ++it) {
           if(original == it->first || original == it->first + "...") {
@@ -13765,7 +13765,7 @@ private:
       argument.text = rewrite_text(argument.text);
       bool type_id_rewritten = false;
       if(argument.type_id) {
-        for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+        for(auto it = type_replacements.begin();
             it != type_replacements.end();
             ++it) {
           if(ast_node_mentions_pack_identifier(*argument.type_id, it->first)) {
@@ -13807,7 +13807,7 @@ private:
       if(type_id_rewritten) {
         continue;
       }
-      for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+      for(auto it = type_replacements.begin();
           it != type_replacements.end();
           ++it) {
         const bool direct_pack_argument =
@@ -13934,7 +13934,7 @@ private:
     bool value_changed = false;
     if(!out.value.empty() &&
        should_rewrite_pack_substitution_node_value(out.kind)) {
-      for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+      for(auto it = type_replacements.begin();
           it != type_replacements.end();
           ++it) {
         if(!contains_identifier_token(out.value, it->first)) {
@@ -13983,7 +13983,7 @@ private:
       out.qualifier_type_syntaxes[i] = qualifier;
     }
 
-    for(map<string, TypePtr>::const_iterator it = type_replacements.begin();
+    for(auto it = type_replacements.begin();
         it != type_replacements.end();
         ++it) {
       if(ast_node_value_names_pack_identifier(node, it->first)) {
@@ -18397,7 +18397,7 @@ private:
     const auto visible_named_type = [this, &scope](const string & lookup_name) -> TypePtr
     {
       for(Scope * current = &scope; current; current = current->parent) {
-        map<string, TypePtr>::const_iterator found = current->named_types.find(lookup_name);
+        auto found = current->named_types.find(lookup_name);
         if(found != current->named_types.end()) {
           return found->second;
         }
@@ -20237,7 +20237,7 @@ private:
       return false;
     }
     for(const Scope * current = scope; current; current = current->parent) {
-      map<string, TypePtr>::const_iterator found =
+      auto found =
           current->named_types.find(lookup_name);
       if(found != current->named_types.end() &&
          type_references_class_template_source(found->second, source_template)) {
@@ -23840,7 +23840,7 @@ private:
       if(!owner_info || !owner_info->member_scope) {
         return TypePtr();
       }
-      map<string, TypePtr>::const_iterator found =
+      auto found =
           owner_info->member_scope->named_types.find(members[0]);
       if(found != owner_info->member_scope->named_types.end()) {
         return found->second;
@@ -24089,7 +24089,7 @@ private:
           for(size_t depth = chain.size(); depth > 0; --depth) {
             Scope * current = chain[depth - 1];
             vector<DirectParameterBinding> local_bindings;
-            for(map<string, TypePtr>::const_iterator it = current->named_types.begin();
+            for(auto it = current->named_types.begin();
                 it != current->named_types.end();
                 ++it) {
               size_t parameter_index = 0;
@@ -24249,7 +24249,7 @@ private:
           set<string> seen_names;
           for(size_t depth = 0; depth < chain.size(); ++depth) {
             Scope * current = chain[depth];
-            for(map<string, TypePtr>::const_iterator it = current->named_types.begin();
+            for(auto it = current->named_types.begin();
                 it != current->named_types.end();
                 ++it) {
               const string & name = it->first;
@@ -26910,7 +26910,7 @@ private:
       scope.namespace_bindings[it->first] = it->second;
     }
 
-    for(map<string, TypePtr>::iterator it = target.named_types.begin();
+    for(auto it = target.named_types.begin();
         it != target.named_types.end(); ++it) {
       if(scope.named_types.count(it->first) == 0) {
         scope.named_types[it->first] = it->second;
@@ -29036,7 +29036,7 @@ private:
         if(completed_owner && completed_owner->member_scope) {
           ClassInfo * refreshed = class_info_for_type(type);
           if((!refreshed || refreshed == info) && !nested_name.empty()) {
-            map<string, TypePtr>::const_iterator found =
+            auto found =
                 completed_owner->member_scope->named_types.find(nested_name);
             if(found != completed_owner->member_scope->named_types.end()) {
               refreshed = class_info_for_type(found->second);

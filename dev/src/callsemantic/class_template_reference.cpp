@@ -461,7 +461,7 @@ public:
       if(!info || !info->source_template) {
         continue;
       }
-      map<string, TypePtr>::const_iterator found =
+      auto found =
           current->named_types.find(name);
       if(found == current->named_types.end() || !found->second) {
         continue;
