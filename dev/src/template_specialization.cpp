@@ -7329,16 +7329,17 @@ bool match_partial_variable_specialization(
                                            deduced_pack_sizes);
 }
 
-int compare_partial_class_specialization_preference(
+template<typename SpecializationDecl>
+int compare_partial_specialization_preference(
     template_api::TemplateServices & services,
-    const PartialClassTemplateSpecializationDecl & current,
-    const PartialClassTemplateSpecializationDecl & best)
+    const SpecializationDecl & current,
+    const SpecializationDecl & best)
 {
   return compare_partial_specialization_preference_impl(
       services,
       current,
       best,
-      [&](const PartialClassTemplateSpecializationDecl & partial,
+      [&](const SpecializationDecl & partial,
           const std::vector<TemplateArgument> & actual_arguments,
           std::vector<TemplateArgument> & deduced_arguments,
           std::size_t & specificity_score) -> bool
@@ -7356,31 +7357,20 @@ int compare_partial_class_specialization_preference(
       });
 }
 
+int compare_partial_class_specialization_preference(
+    template_api::TemplateServices & services,
+    const PartialClassTemplateSpecializationDecl & current,
+    const PartialClassTemplateSpecializationDecl & best)
+{
+  return compare_partial_specialization_preference(services, current, best);
+}
+
 int compare_partial_variable_specialization_preference(
     template_api::TemplateServices & services,
     const VariableTemplateSpecializationDecl & current,
     const VariableTemplateSpecializationDecl & best)
 {
-  return compare_partial_specialization_preference_impl(
-      services,
-      current,
-      best,
-      [&](const VariableTemplateSpecializationDecl & partial,
-          const std::vector<TemplateArgument> & actual_arguments,
-          std::vector<TemplateArgument> & deduced_arguments,
-          std::size_t & specificity_score) -> bool
-      {
-        Scope & match_scope = partial.pattern_scope ? *partial.pattern_scope :
-                                                    *current.pattern_scope;
-        return match_partial_specialization_impl(
-            services,
-            match_scope,
-            partial,
-            actual_arguments,
-            deduced_arguments,
-            specificity_score,
-            nullptr);
-      });
+  return compare_partial_specialization_preference(services, current, best);
 }
 
 }  // namespace template_specialization
