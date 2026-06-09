@@ -103,7 +103,7 @@ struct ExactTemplateTypeLookupAnchor
 struct ScopedExactTemplateTypeLookupAnchor
 {
   explicit ScopedExactTemplateTypeLookupAnchor(
-      const ExactTemplateTypeLookupAnchor & anchor);
+      ExactTemplateTypeLookupAnchor anchor);
   ~ScopedExactTemplateTypeLookupAnchor();
   ScopedExactTemplateTypeLookupAnchor(
       const ScopedExactTemplateTypeLookupAnchor &) = delete;
