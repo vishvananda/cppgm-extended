@@ -19,6 +19,9 @@
 namespace semantic_model {
 
 struct ClassInfo;
+// Index of instantiated classes keyed by their mangled name. Used only for
+// keyed lookup (never iterated for output), so it is hashed rather than ordered.
+typedef std::unordered_map<std::string, ClassInfo *> ClassIndexMap;
 struct FunctionBinding;
 struct FunctionTemplateDecl;
 struct VariableTemplateDecl;

@@ -159,12 +159,12 @@ ClassInfo * class_info_for_type(const TypeRegistryState & state,
     return nullptr;
   }
 
-  std::map<std::string, ClassInfo *>::const_iterator found =
+  auto found =
       state.classes_by_key.find(base->named_key);
   return found == state.classes_by_key.end() ? nullptr : found->second;
 }
 
-const std::map<std::string, ClassInfo *> &
+const semantic_model::ClassIndexMap &
 template_named_class_index(const TypeRegistryState & state)
 {
   return state.classes_by_key;
@@ -242,7 +242,7 @@ ClassInfo * create_class_info(TypeRegistryState & state,
     existing = callbacks.direct_named_type(scope, canonical_name);
   }
   if(!existing && semantic_lookup::current_function_scope(scope) == nullptr) {
-    std::map<std::string, ClassInfo *>::const_iterator registered =
+    auto registered =
         state.classes_by_key.find(type_key);
     if(registered != state.classes_by_key.end() &&
        registered->second &&
@@ -380,7 +380,7 @@ ClassInfo * create_instantiated_class_info_with_internal_name(
       append_symbol_member_name_syntax(durable_scope,
                                        canonical_internal_specialization_name);
   const std::string type_key = std::string("class ") + qualified_name;
-  std::map<std::string, ClassInfo *>::iterator found =
+  auto found =
       state.classes_by_key.find(type_key);
   if(found != state.classes_by_key.end()) {
     if(found->second->symbol_qualified_name_syntax.name.empty()) {

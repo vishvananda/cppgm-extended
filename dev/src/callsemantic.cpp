@@ -1231,7 +1231,7 @@ private:
   unordered_map<const CppAstNode *, FunctionBinding *>
       out_of_class_definition_bindings_;
   vector<unique_ptr<ClassInfo> > classes;
-  map<string, ClassInfo *> classes_by_key;
+  ClassIndexMap classes_by_key;
   size_t classes_by_key_version = 0;
   unordered_map<string, size_t> classes_by_key_epochs;
   map<string, Scope *> type_scopes_by_key;
@@ -1392,7 +1392,7 @@ private:
     if(!base || base->definitely_not_class || base->kind != Type::TK_NAMED) {
       return nullptr;
     }
-    map<string, ClassInfo *>::const_iterator found =
+    auto found =
         classes_by_key.find(base->named_key);
     return found == classes_by_key.end() ? nullptr : found->second;
   }
@@ -5612,7 +5612,7 @@ private:
       if(collect_metrics_) {
         ++metrics_.class_info_for_type_map_lookups;
       }
-      std::map<std::string, ClassInfo *>::const_iterator found =
+      auto found =
           state.classes_by_key.find(base->named_key);
       ClassInfo * result =
           found == state.classes_by_key.end() ? nullptr : found->second;
@@ -5660,7 +5660,7 @@ private:
     if(collect_metrics_) {
       ++metrics_.class_info_for_type_map_lookups;
     }
-    std::map<std::string, ClassInfo *>::const_iterator found =
+    auto found =
         state.classes_by_key.find(base->named_key);
     ClassInfo * result =
         found == state.classes_by_key.end() ? nullptr : found->second;
@@ -5682,7 +5682,7 @@ private:
     return result;
   }
 
-  const map<string, ClassInfo *> & template_named_class_index() const override
+  const ClassIndexMap & template_named_class_index() const override
   {
     callsemantic::TypeRegistryState state =
         const_cast<Analyzer *>(this)->type_registry_state();
