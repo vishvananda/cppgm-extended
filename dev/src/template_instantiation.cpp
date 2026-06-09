@@ -2913,25 +2913,15 @@ void bind_instantiated_function_parameter_values(
   }
 }
 
-std::string template_argument_text_for_diagnostic(SemanticContext & ctx,
+template<typename Context>
+std::string template_argument_text_for_diagnostic(Context & context,
                                                   const TemplateArgument & argument)
 {
   return template_model::template_argument_text(
       argument,
-      [&ctx](const TypePtr & type)
+      [&context](const TypePtr & type)
       {
-        return instantiation_argument_type_text(ctx, type);
-      });
-}
-
-std::string template_argument_text_for_diagnostic(template_api::TemplateTypeSystem & type_system,
-                                                  const TemplateArgument & argument)
-{
-  return template_model::template_argument_text(
-      argument,
-      [&type_system](const TypePtr & type)
-      {
-        return instantiation_argument_type_text(type_system, type);
+        return instantiation_argument_type_text(context, type);
       });
 }
 
@@ -3784,26 +3774,15 @@ bool template_arguments_are_dependent_for_instantiation(
       });
 }
 
-void append_template_argument_diagnostic(SemanticContext & ctx,
+template<typename Context>
+void append_template_argument_diagnostic(Context & context,
                                          std::ostringstream & out,
                                          const std::vector<TemplateArgument> & arguments)
 {
   out << " [template-args";
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     out << (i == 0 ? " " : ", ")
-        << template_argument_text_for_diagnostic(ctx, arguments[i]);
-  }
-  out << "]";
-}
-
-void append_template_argument_diagnostic(template_api::TemplateTypeSystem & type_system,
-                                         std::ostringstream & out,
-                                         const std::vector<TemplateArgument> & arguments)
-{
-  out << " [template-args";
-  for(std::size_t i = 0; i < arguments.size(); ++i) {
-    out << (i == 0 ? " " : ", ")
-        << template_argument_text_for_diagnostic(type_system, arguments[i]);
+        << template_argument_text_for_diagnostic(context, arguments[i]);
   }
   out << "]";
 }
@@ -3829,8 +3808,9 @@ void append_template_parameter_diagnostic(std::ostringstream & out,
   out << "]";
 }
 
+template<typename Context>
 void ensure_template_arguments_fully_bind_parameters(
-    SemanticContext & ctx,
+    Context & context,
     const char * stage,
     const std::string & template_name,
     const std::vector<TemplateParameterInfo> & parameters,
@@ -3848,30 +3828,7 @@ void ensure_template_arguments_fully_bind_parameters(
   out << " [param-count " << parameters.size() << "]";
   out << " [arg-count " << arguments.size() << "]";
   append_template_parameter_diagnostic(out, parameters);
-  append_template_argument_diagnostic(ctx, out, arguments);
-  throw std::logic_error(out.str());
-}
-
-void ensure_template_arguments_fully_bind_parameters(
-    template_api::TemplateTypeSystem & type_system,
-    const char * stage,
-    const std::string & template_name,
-    const std::vector<TemplateParameterInfo> & parameters,
-    const std::vector<TemplateArgument> & arguments)
-{
-  if(template_arguments_fully_bind_parameters(parameters, arguments)) {
-    return;
-  }
-
-  std::ostringstream out;
-  out << stage << ": template arguments do not fully bind parameters";
-  if(!template_name.empty()) {
-    out << " for " << template_name;
-  }
-  out << " [param-count " << parameters.size() << "]";
-  out << " [arg-count " << arguments.size() << "]";
-  append_template_parameter_diagnostic(out, parameters);
-  append_template_argument_diagnostic(type_system, out, arguments);
+  append_template_argument_diagnostic(context, out, arguments);
   throw std::logic_error(out.str());
 }
 
