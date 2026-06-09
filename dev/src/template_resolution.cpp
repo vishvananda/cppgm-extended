@@ -75,8 +75,6 @@ using namespace semantic_conversion;
 using namespace semantic_model;
 using namespace template_model;
 using callsemantic_internal::reparseable_type_argument_text;
-using callsemantic_internal::replace_elaborated_identifier_token_text;
-using callsemantic_internal::replace_identifier_token_text;
 using semantic_trace::scope_bindings_for_diagnostic;
 using semantic_trace::scope_name_for_diagnostic;
 
