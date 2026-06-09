@@ -19962,6 +19962,31 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
   return lookup_leaf_qualified_value_binding(services, scope, qualified, out);
 }
 
+bool collect_function_bindings_from_resolved_scope(
+    Scope * target,
+    const string & name,
+    vector<FunctionBinding *> & out)
+{
+  if(!target) {
+    return false;
+  }
+  if(target->namespace_scope) {
+    unordered_set<const Scope *> visited_scopes;
+    unordered_set<const FunctionBinding *> seen_bindings;
+    collect_leaf_function_bindings_in_namespace_scope(
+        *target, name, visited_scopes, seen_bindings, out);
+    return !out.empty();
+  }
+
+  map<string, vector<FunctionBinding *> >::const_iterator found =
+      target->function_sets.find(name);
+  if(found == target->function_sets.end()) {
+    return false;
+  }
+  out = found->second;
+  return !out.empty();
+}
+
 bool lookup_leaf_qualified_function_bindings(template_api::TemplateServices & services,
                                              Scope & scope,
                                              const QualifiedName & qualified,
@@ -19974,25 +19999,7 @@ bool lookup_leaf_qualified_function_bindings(template_api::TemplateServices & se
 
   Scope * target =
       resolve_qualified_scope_for_class_or_namespace_impl(services, scope, qualified, false);
-  if(!target) {
-    return false;
-  }
-
-  if(target->namespace_scope) {
-    unordered_set<const Scope *> visited_scopes;
-    unordered_set<const FunctionBinding *> seen_bindings;
-    collect_leaf_function_bindings_in_namespace_scope(
-        *target, qualified.name, visited_scopes, seen_bindings, out);
-    return !out.empty();
-  }
-
-  map<string, vector<FunctionBinding *> >::const_iterator found =
-      target->function_sets.find(qualified.name);
-  if(found == target->function_sets.end()) {
-    return false;
-  }
-  out = found->second;
-  return !out.empty();
+  return collect_function_bindings_from_resolved_scope(target, qualified.name, out);
 }
 
 bool lookup_leaf_qualified_function_bindings(template_api::TemplateServices & services,
@@ -20012,24 +20019,28 @@ bool lookup_leaf_qualified_function_bindings(template_api::TemplateServices & se
   Scope * target =
       resolve_qualified_scope_for_class_or_namespace_node(
           services, scope, qualified, *node, false);
+  return collect_function_bindings_from_resolved_scope(target, qualified.name, out);
+}
+
+bool collect_function_templates_from_resolved_scope(
+    Scope * target,
+    const string & name,
+    vector<FunctionTemplateDecl *> & out)
+{
   if(!target) {
     return false;
   }
-
-  if(target->namespace_scope) {
-    unordered_set<const Scope *> visited_scopes;
-    unordered_set<const FunctionBinding *> seen_bindings;
-    collect_leaf_function_bindings_in_namespace_scope(
-        *target, qualified.name, visited_scopes, seen_bindings, out);
-    return !out.empty();
+  if(target->class_info) {
+    semantic_lookup::MemberFunctionTemplateLookupResult result =
+        semantic_lookup::lookup_visible_member_function_templates(*target->class_info,
+                                                                  name);
+    semantic_lookup::append_unique_function_templates(out, result.templates);
+    if(!out.empty()) {
+      return true;
+    }
   }
 
-  map<string, vector<FunctionBinding *> >::const_iterator found =
-      target->function_sets.find(qualified.name);
-  if(found == target->function_sets.end()) {
-    return false;
-  }
-  out = found->second;
+  semantic_lookup::collect_direct_function_templates(*target, name, out);
   return !out.empty();
 }
 
@@ -20045,22 +20056,7 @@ bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & s
 
   Scope * target =
       resolve_qualified_scope_for_class_or_namespace_impl(services, scope, qualified, false);
-  if(!target) {
-    return false;
-  }
-
-  if(target->class_info) {
-    semantic_lookup::MemberFunctionTemplateLookupResult result =
-        semantic_lookup::lookup_visible_member_function_templates(*target->class_info,
-                                                                  qualified.name);
-    semantic_lookup::append_unique_function_templates(out, result.templates);
-    if(!out.empty()) {
-      return true;
-    }
-  }
-
-  semantic_lookup::collect_direct_function_templates(*target, qualified.name, out);
-  return !out.empty();
+  return collect_function_templates_from_resolved_scope(target, qualified.name, out);
 }
 
 bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & services,
@@ -20080,22 +20076,7 @@ bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & s
   Scope * target =
       resolve_qualified_scope_for_class_or_namespace_node(
           services, scope, qualified, *node, false);
-  if(!target) {
-    return false;
-  }
-
-  if(target->class_info) {
-    semantic_lookup::MemberFunctionTemplateLookupResult result =
-        semantic_lookup::lookup_visible_member_function_templates(*target->class_info,
-                                                                  qualified.name);
-    semantic_lookup::append_unique_function_templates(out, result.templates);
-    if(!out.empty()) {
-      return true;
-    }
-  }
-
-  semantic_lookup::collect_direct_function_templates(*target, qualified.name, out);
-  return !out.empty();
+  return collect_function_templates_from_resolved_scope(target, qualified.name, out);
 }
 
 AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices & services,
