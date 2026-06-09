@@ -676,6 +676,14 @@ public:
       const std::string & name,
       const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
       semantic_model::FunctionBinding *& out) = 0;
+  // Record / retrieve the binding an out-of-class member definition node
+  // resolved to during collection, so the output phase can reuse it instead of
+  // re-resolving the owner class from the qualified-name text.
+  virtual void note_out_of_class_definition_binding(
+      const CppAstNode & node,
+      semantic_model::FunctionBinding * binding) = 0;
+  virtual semantic_model::FunctionBinding * out_of_class_definition_binding(
+      const CppAstNode & node) const = 0;
   virtual void track_instantiated_class(semantic_model::ClassInfo * info) = 0;
 
   virtual std::string normalize_type_lookup_name(const std::string & text) const = 0;

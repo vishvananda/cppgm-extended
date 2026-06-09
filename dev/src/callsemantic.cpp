@@ -280,6 +280,7 @@ using callsemantic::normalized_template_argument_syntaxes;
 using callsemantic::should_prefer_named_key_for_instantiation_identity;
 using callsemantic::ScopedTemplateUseLocation;
 using callsemantic::ExactTemplateTypeLookupAnchor;
+using callsemantic::exact_template_type_lookup_anchor_for_owner_node;
 using callsemantic::QualifiedOwnerClassResolution;
 using callsemantic::ScopedExactTemplateTypeLookupAnchor;
 using callsemantic::ScopedSuppressedTemplateUseLocation;
@@ -1224,6 +1225,11 @@ private:
   vector<unique_ptr<FunctionBinding> > functions;
   unordered_set<const FunctionBinding *> live_functions;
   unordered_map<string, vector<FunctionBinding *> > functions_by_internal_symbol;
+  // Out-of-class member definition/declaration nodes resolve their owner class
+  // and target binding during collection; this map lets the output phase reuse
+  // that result instead of re-resolving the owner from the qualified-name text.
+  unordered_map<const CppAstNode *, FunctionBinding *>
+      out_of_class_definition_bindings_;
   vector<unique_ptr<ClassInfo> > classes;
   map<string, ClassInfo *> classes_by_key;
   size_t classes_by_key_version = 0;
@@ -8283,27 +8289,7 @@ private:
   ExactTemplateTypeLookupAnchor owner_lookup_anchor_for_id_node(
       const CppAstNode & id_node)
   {
-    ExactTemplateTypeLookupAnchor anchor;
-    const QualifiedName * qn = cppast_qualified_name_syntax(id_node);
-    if(!qn || qn->qualifiers.empty()) {
-      return anchor;
-    }
-    const TemplateIdSyntax * ts =
-        cppast_qualifier_template_id_syntax(id_node, qn->qualifiers.size() - 1);
-    if(!ts || ts->name.name.empty() || ts->arguments.empty() ||
-       ts->argument_syntaxes.size() != ts->arguments.size()) {
-      return anchor;
-    }
-    anchor.template_text = template_id_syntax_text_preserving_spacing(*ts);
-    anchor.identifier = template_lookup_fragment_identifier(anchor.template_text);
-    if(anchor.identifier.empty()) {
-      anchor.identifier = ts->name.name;
-    }
-    anchor.compact_key = compact_lookup_text(anchor.template_text);
-    anchor.arg_texts = ts->arguments;
-    anchor.arg_syntaxes = ts->argument_syntaxes;
-    anchor.has_argument_list = true;
-    return anchor;
+    return exact_template_type_lookup_anchor_for_owner_node(id_node);
   }
 
   Scope * resolve_qualified_function_parse_scope(Scope & scope,
@@ -23083,6 +23069,22 @@ private:
         QualifiedOwnerClassResolution::Complete);
   }
 
+  void note_out_of_class_definition_binding(const CppAstNode & node,
+                                            FunctionBinding * binding) override
+  {
+    if(binding) {
+      out_of_class_definition_bindings_[&node] = binding;
+    }
+  }
+
+  FunctionBinding * out_of_class_definition_binding(
+      const CppAstNode & node) const override
+  {
+    const auto found = out_of_class_definition_bindings_.find(&node);
+    return found != out_of_class_definition_bindings_.end() ? found->second
+                                                            : nullptr;
+  }
+
   bool resolve_out_of_class_special_member_binding(Scope & scope,
                                                    const QualifiedName & qualified,
                                                    const vector<pair<string, TypePtr> > & params,
@@ -26162,6 +26164,13 @@ private:
       throw logic_error("special-member-definition missing children");
     }
 
+    const CppAstNode * special_member_identifier =
+        find_child(*declarator, CppAstKind::identifier);
+    const ScopedExactTemplateTypeLookupAnchor special_member_owner_anchor(
+        special_member_identifier
+            ? owner_lookup_anchor_for_id_node(*special_member_identifier)
+            : ExactTemplateTypeLookupAnchor());
+
     if(is_conversion_function_name(node.value)) {
       Scope * parse_scope = resolve_qualified_function_parse_scope(scope, *declarator);
       string name;
@@ -26203,6 +26212,7 @@ private:
       if(!resolved) {
         throw logic_error("missing conversion operator binding");
       }
+      note_out_of_class_definition_binding(node, binding);
       if(!explicit_function_nothrow_specifications_match(
              *binding,
              declarator_function_qualifier(*declarator))) {
@@ -26262,6 +26272,7 @@ private:
     if(!resolve_out_of_class_special_member_binding(scope, node.value, params, binding)) {
       throw logic_error("missing special member binding");
     }
+    note_out_of_class_definition_binding(node, binding);
     const std::vector<TemplateArgument> * origin_arguments =
         binding ? class_template_origin_arguments(binding->owner_class) : nullptr;
     if(binding &&
