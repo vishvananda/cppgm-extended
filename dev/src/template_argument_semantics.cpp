@@ -19091,31 +19091,8 @@ bool merge_resolved_type_arguments_into_template_id(
   return changed;
 }
 
-void collect_template_id_syntaxes_in_node(const CppAstNode & node,
-                                          vector<const TemplateIdSyntax *> & out)
-{
-  if(node.template_id_syntax) {
-    out.push_back(node.template_id_syntax.get());
-  }
-  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
-    out.push_back(&node.qualifier_template_id_syntaxes[i]);
-  }
-  if(node.conversion_type_id_syntax) {
-    collect_template_id_syntaxes_in_node(*node.conversion_type_id_syntax, out);
-  }
-  if(node.base_type_syntax) {
-    collect_template_id_syntaxes_in_node(*node.base_type_syntax, out);
-  }
-  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
-    collect_template_id_syntaxes_in_node(node.qualifier_type_syntaxes[i], out);
-  }
-  for(size_t i = 0; i < node.children.size(); ++i) {
-    collect_template_id_syntaxes_in_node(node.children[i], out);
-  }
-}
-
-void collect_template_id_syntaxes_in_node(CppAstNode & node,
-                                          vector<TemplateIdSyntax *> & out)
+template<typename Node, typename SyntaxPtr>
+void collect_template_id_syntaxes_in_node(Node & node, vector<SyntaxPtr> & out)
 {
   if(node.template_id_syntax) {
     out.push_back(node.template_id_syntax.get());
