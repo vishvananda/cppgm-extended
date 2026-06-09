@@ -10446,6 +10446,12 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   }
   const bool callee_name_was_parenthesized = effective_callee_node != &callee_node;
   const CppAstNode & lookup_callee_node = *effective_callee_node;
+  // Recover the callee's owner template-id argument syntaxes so every qualified
+  // owner-class resolution in this call (implicit-object scope, function lookup)
+  // uses structured arguments instead of re-parsing the owner text.
+  const callsemantic::ScopedExactTemplateTypeLookupAnchor callee_owner_anchor(
+      callsemantic::exact_template_type_lookup_anchor_for_owner_node(
+          lookup_callee_node));
   std::vector<template_api::TemplateWitnessSourceDrop> direct_function_source_drops;
   QualifiedName direct_explicit_template_name;
   std::vector<std::string> explicit_template_arg_texts;
@@ -11749,12 +11755,6 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   if(use_function_lookup) {
     const TemplateIdSyntax * callee_template_id =
         cppast_template_id_syntax(lookup_callee_node);
-    // Recover the callee's owner template-id argument syntaxes so a qualified
-    // member function template-id (Owner<arg>::f<...>) resolves its owner from
-    // structured data instead of re-parsing the owner text.
-    const callsemantic::ScopedExactTemplateTypeLookupAnchor callee_owner_anchor(
-        callsemantic::exact_template_type_lookup_anchor_for_owner_node(
-            lookup_callee_node));
     candidates =
         callee_template_id ?
             ctx.lookup_function_template_id(
