@@ -762,20 +762,24 @@ ScopedTemplateUseLocation::~ScopedTemplateUseLocation()
   }
 }
 
-thread_local std::vector<std::shared_ptr<ExactTemplateTypeLookupAnchor> >
+thread_local std::vector<std::unique_ptr<ExactTemplateTypeLookupAnchor> >
     exact_template_type_lookup_anchors_;
 thread_local std::set<std::pair<std::string, std::string> >
     source_dependent_class_template_use_drops_;
 
 ScopedExactTemplateTypeLookupAnchor::ScopedExactTemplateTypeLookupAnchor(
-    const ExactTemplateTypeLookupAnchor & anchor)
+    ExactTemplateTypeLookupAnchor anchor)
   : active_(!anchor.template_text.empty() &&
             !anchor.identifier.empty())
 {
   if(active_) {
+    // The caller passes a freshly built anchor (an rvalue), so move it into the
+    // stack instead of deep-copying its strings and argument syntaxes. unique_ptr
+    // keeps the anchor address stable across nested pushes without a shared_ptr
+    // control block or atomic refcounting.
     exact_template_type_lookup_anchors_.push_back(
-        std::shared_ptr<ExactTemplateTypeLookupAnchor>(
-            new ExactTemplateTypeLookupAnchor(anchor)));
+        std::unique_ptr<ExactTemplateTypeLookupAnchor>(
+            new ExactTemplateTypeLookupAnchor(std::move(anchor))));
   }
 }
 
@@ -891,7 +895,7 @@ bool node_has_template_id_qualifier_syntax(const CppAstNode & node)
 const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor()
 {
   for(std::size_t i = exact_template_type_lookup_anchors_.size(); i > 0; --i) {
-    const std::shared_ptr<ExactTemplateTypeLookupAnchor> & anchor =
+    const std::unique_ptr<ExactTemplateTypeLookupAnchor> & anchor =
         exact_template_type_lookup_anchors_[i - 1];
     if(anchor &&
        !anchor->template_text.empty() &&
