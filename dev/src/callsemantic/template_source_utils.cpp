@@ -914,13 +914,32 @@ bool exact_template_type_lookup_anchor_matches(
   return anchor.compact_key == compact_lookup_text(normalized_name);
 }
 
+ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_template_id(
+    const cpp_decl::TemplateIdSyntax & syntax)
+{
+  ExactTemplateTypeLookupAnchor anchor;
+  if(syntax.name.name.empty() || syntax.arguments.empty() ||
+     syntax.argument_syntaxes.size() != syntax.arguments.size()) {
+    return anchor;
+  }
+  anchor.template_text = template_id_syntax_text_preserving_spacing(syntax);
+  anchor.identifier = template_lookup_fragment_identifier(anchor.template_text);
+  if(anchor.identifier.empty()) {
+    anchor.identifier = syntax.name.name;
+  }
+  anchor.compact_key = compact_lookup_text(anchor.template_text);
+  anchor.arg_texts = syntax.arguments;
+  anchor.arg_syntaxes = syntax.argument_syntaxes;
+  anchor.has_argument_list = true;
+  return anchor;
+}
+
 ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_owner_node(
     const CppAstNode & id_node)
 {
-  ExactTemplateTypeLookupAnchor anchor;
   const cpp_decl::QualifiedName * qn = cppast_qualified_name_syntax(id_node);
   if(!qn || qn->qualifiers.empty()) {
-    return anchor;
+    return ExactTemplateTypeLookupAnchor();
   }
   const cpp_decl::TemplateIdSyntax * ts =
       cppast_qualifier_template_id_syntax(id_node, qn->qualifiers.size() - 1);
@@ -932,20 +951,8 @@ ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_owner_node(
         id_node,
         strip_trailing_top_level_template_arguments(qn->qualifiers.back()));
   }
-  if(!ts || ts->name.name.empty() || ts->arguments.empty() ||
-     ts->argument_syntaxes.size() != ts->arguments.size()) {
-    return anchor;
-  }
-  anchor.template_text = template_id_syntax_text_preserving_spacing(*ts);
-  anchor.identifier = template_lookup_fragment_identifier(anchor.template_text);
-  if(anchor.identifier.empty()) {
-    anchor.identifier = ts->name.name;
-  }
-  anchor.compact_key = compact_lookup_text(anchor.template_text);
-  anchor.arg_texts = ts->arguments;
-  anchor.arg_syntaxes = ts->argument_syntaxes;
-  anchor.has_argument_list = true;
-  return anchor;
+  return ts ? exact_template_type_lookup_anchor_for_template_id(*ts)
+            : ExactTemplateTypeLookupAnchor();
 }
 
 bool exact_template_type_lookup_anchor_matches_syntax(
