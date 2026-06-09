@@ -5186,18 +5186,10 @@ std::string named_type_head_text(const std::string & text)
 }
 
 // template-boundary-audit: begin text_recovery_bridge
-std::string deduction_lookup_type_text(
-    template_api::TemplateTypeSystem & type_system,
-    const TypePtr & type)
+template<typename Context>
+std::string deduction_lookup_type_text(Context & context, const TypePtr & type)
 {
-  return template_argument_semantics::lookup_text_for_type_argument(
-      type_system, type);
-}
-
-std::string deduction_lookup_type_text(SemanticContext & ctx,
-                                       const TypePtr & type)
-{
-  return template_argument_semantics::lookup_text_for_type_argument(ctx, type);
+  return template_argument_semantics::lookup_text_for_type_argument(context, type);
 }
 
 TypePtr lookup_type_for_deduction(template_api::TemplateServices & services,
@@ -6661,8 +6653,9 @@ std::vector<FunctionBinding *> lookup_unqualified_functions(Scope & scope,
   return std::vector<FunctionBinding *>();
 }
 
+template<typename Context>
 bool dependent_alias_argument_needs_deferred_surface(
-    SemanticContext & ctx,
+    Context & context,
     const DependentAliasTemplateArgumentSyntax & argument)
 {
   if(argument.syntax.expression) {
@@ -6686,37 +6679,7 @@ bool dependent_alias_argument_needs_deferred_surface(
     return true;
   }
   return template_argument_semantics::type_depends_on_template_parameter(
-             ctx,
-             argument.type) &&
-         !named_type_is_template_parameter(argument.type);
-}
-
-bool dependent_alias_argument_needs_deferred_surface(
-    template_api::TemplateTypeSystem & type_system,
-    const DependentAliasTemplateArgumentSyntax & argument)
-{
-  if(argument.syntax.expression) {
-    return true;
-  }
-  if(!argument.type) {
-    return argument.syntax.dependent;
-  }
-  void * dependent_template = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> dependent_args;
-  TypePtr owner;
-  std::vector<std::string> members;
-  bool leading_typename = false;
-  if(named_type_dependent_alias_template(argument.type,
-                                         dependent_template,
-                                         dependent_args) ||
-     named_type_dependent_qualified_member(argument.type,
-                                           owner,
-                                           members,
-                                           leading_typename)) {
-    return true;
-  }
-  return template_argument_semantics::type_depends_on_template_parameter(
-             type_system,
+             context,
              argument.type) &&
          !named_type_is_template_parameter(argument.type);
 }
