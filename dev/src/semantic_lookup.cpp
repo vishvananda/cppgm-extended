@@ -1435,11 +1435,16 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
       } else if(scope.class_info && scope.class_info->enclosing_scope) {
         qualification_scope = scope.class_info->enclosing_scope;
       }
-      const string qualified_name =
-          scope_qualified_name(*qualification_scope, normalized_name);
-      TypePtr type = ctx.lookup_type(lookup_scope, qualified_name, true);
-      if(type) {
-        return type;
+      // Re-qualifying the template-id into a scope that is already `scope`
+      // produces a name that resolves straight back to this point; only the
+      // genuine requalification (into a different declaring scope) is useful.
+      if(qualification_scope != &scope) {
+        const string qualified_name =
+            scope_qualified_name(*qualification_scope, normalized_name);
+        TypePtr type = ctx.lookup_type(lookup_scope, qualified_name, true);
+        if(type) {
+          return type;
+        }
       }
     }
 
@@ -1452,11 +1457,13 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
       } else if(scope.class_info && scope.class_info->enclosing_scope) {
         qualification_scope = scope.class_info->enclosing_scope;
       }
-      const string qualified_name =
-          scope_qualified_name(*qualification_scope, normalized_name);
-      TypePtr type = ctx.lookup_type(lookup_scope, qualified_name, true);
-      if(type) {
-        return type;
+      if(qualification_scope != &scope) {
+        const string qualified_name =
+            scope_qualified_name(*qualification_scope, normalized_name);
+        TypePtr type = ctx.lookup_type(lookup_scope, qualified_name, true);
+        if(type) {
+          return type;
+        }
       }
     }
   }
