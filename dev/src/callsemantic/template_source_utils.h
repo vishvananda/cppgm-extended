@@ -140,6 +140,12 @@ bool node_has_template_id_qualifier_syntax(const CppAstNode & node);
 // resolution recovers structured arguments instead of re-parsing text.
 ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_owner_node(
     const CppAstNode & id_node);
+// Build a type-lookup anchor directly from a template-id syntax (e.g. an owner
+// qualifier carried on a node's qualifier_template_id_syntaxes). The returned
+// anchor is empty (has_argument_list == false) when the syntax has no full
+// structured argument list.
+ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_template_id(
+    const cpp_decl::TemplateIdSyntax & syntax);
 const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor();
 extern thread_local std::set<std::pair<std::string, std::string> >
     source_dependent_class_template_use_drops_;

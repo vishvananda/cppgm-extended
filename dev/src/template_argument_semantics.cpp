@@ -2946,21 +2946,7 @@ bool try_resolve_member_template_id_from_class_scope(
 callsemantic::ExactTemplateTypeLookupAnchor build_owner_lookup_anchor(
     const TemplateIdSyntax & ts)
 {
-  callsemantic::ExactTemplateTypeLookupAnchor anchor;
-  anchor.template_text =
-      callsemantic::template_id_syntax_text_preserving_spacing(ts);
-  anchor.identifier =
-      callsemantic::template_lookup_fragment_identifier(anchor.template_text);
-  if(anchor.identifier.empty()) {
-    anchor.identifier = ts.name.name;
-  }
-  anchor.compact_key = callsemantic::compact_lookup_text(anchor.template_text);
-  anchor.arg_texts = ts.arguments;
-  anchor.arg_syntaxes = ts.argument_syntaxes;
-  anchor.has_argument_list =
-      !ts.arguments.empty() &&
-      ts.argument_syntaxes.size() == ts.arguments.size();
-  return anchor;
+  return callsemantic::exact_template_type_lookup_anchor_for_template_id(ts);
 }
 
 bool resolve_member_template_owner_type_text(
@@ -19653,6 +19639,22 @@ Scope * resolve_qualified_scope_for_class_or_namespace_node(
       {
         return service_type_depends_on_template_parameter(services, type);
       };
+
+  // Keep the structured argument syntaxes of every qualifier template-id on the
+  // anchor stack so a nested owner template-id (including inherited members) can
+  // resolve its arguments from structure rather than re-parsing the owner text.
+  std::vector<std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor> >
+      qualifier_owner_anchors;
+  for(size_t qi = 0; qi < node.qualifier_template_id_syntaxes.size(); ++qi) {
+    callsemantic::ExactTemplateTypeLookupAnchor anchor =
+        build_owner_lookup_anchor(node.qualifier_template_id_syntaxes[qi]);
+    if(!anchor.has_argument_list) {
+      continue;
+    }
+    qualifier_owner_anchors.push_back(
+        std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor>(
+            new callsemantic::ScopedExactTemplateTypeLookupAnchor(anchor)));
+  }
 
   Scope * current = &scope;
   if(qualified.rooted) {
