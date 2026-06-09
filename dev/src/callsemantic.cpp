@@ -25518,6 +25518,10 @@ private:
         instantiation_identifier ?
             cppast_template_id_syntax(*instantiation_identifier) :
             nullptr;
+    const ScopedExactTemplateTypeLookupAnchor explicit_instantiation_owner_anchor(
+        instantiation_identifier
+            ? owner_lookup_anchor_for_id_node(*instantiation_identifier)
+            : ExactTemplateTypeLookupAnchor());
     Scope * parse_scope =
         semantic_lookup::resolve_qualified_variable_parse_scope(*this,
                                                                 scope,
