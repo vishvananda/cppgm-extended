@@ -953,8 +953,13 @@ bool recog_token_text_needs_separator(const RecogToken & lhs,
 
 string remove_space_chars(string text)
 {
+  // Match std::isspace under the C locale (the only locale cppgm++ runs in)
+  // with a direct ASCII test, avoiding the locale-table lookup per character.
   text.erase(remove_if(text.begin(), text.end(),
-                       [](unsigned char ch) { return std::isspace(ch) != 0; }),
+                       [](unsigned char ch) {
+                         return ch == ' ' || ch == '\t' || ch == '\n' ||
+                                ch == '\r' || ch == '\f' || ch == '\v';
+                       }),
              text.end());
   return text;
 }
@@ -997,6 +1002,11 @@ size_t conversion_operator_name_start(const string & name)
 {
   if(name.compare(0, 8, "operator") == 0) {
     return 0;
+  }
+  // No "operator" substring anywhere means no top-level "::operator" either, so
+  // skip the per-character depth scan for the common (non-operator) name.
+  if(name.find("operator") == string::npos) {
+    return string::npos;
   }
 
   int angle_depth = 0;
