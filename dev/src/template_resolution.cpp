@@ -9989,6 +9989,55 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   out.text = rewritten;
   attach_template_argument_source_syntax(syntax, out);
 
+  // An argument that is (or whose owner is) a qualified member template-id
+  // carries the owner's structured arguments on a type-id / id-expression node's
+  // qualifier syntaxes (attached to the inner type-name node, not the root).
+  // Keep them on the anchor stack for the whole resolution — including the
+  // template-template and non-type branches below — so owner resolution uses
+  // structured arguments instead of re-parsing the owner text.
+  std::vector<std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor> >
+      argument_owner_anchors;
+  if(syntax) {
+    const auto find_qualifier_syntax_node =
+        [](const CppAstNode & root) -> const CppAstNode *
+    {
+      std::vector<const CppAstNode *> stack(1, &root);
+      while(!stack.empty()) {
+        const CppAstNode * current = stack.back();
+        stack.pop_back();
+        if(!current->qualifier_template_id_syntaxes.empty()) {
+          return current;
+        }
+        for(std::size_t ci = 0; ci < current->children.size(); ++ci) {
+          stack.push_back(&current->children[ci]);
+        }
+      }
+      return nullptr;
+    };
+    const CppAstNode * owner_syntax_node = nullptr;
+    if(syntax->type_id) {
+      owner_syntax_node = find_qualifier_syntax_node(*syntax->type_id);
+    }
+    if(!owner_syntax_node && syntax->expression) {
+      owner_syntax_node = find_qualifier_syntax_node(*syntax->expression);
+    }
+    if(owner_syntax_node) {
+      for(std::size_t qi = 0;
+          qi < owner_syntax_node->qualifier_template_id_syntaxes.size();
+          ++qi) {
+        callsemantic::ExactTemplateTypeLookupAnchor anchor =
+            callsemantic::exact_template_type_lookup_anchor_for_template_id(
+                owner_syntax_node->qualifier_template_id_syntaxes[qi]);
+        if(!anchor.has_argument_list) {
+          continue;
+        }
+        argument_owner_anchors.push_back(
+            std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor>(
+                new callsemantic::ScopedExactTemplateTypeLookupAnchor(anchor)));
+      }
+    }
+  }
+
   if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
     const bool ok = template_api::resolve_template_template_argument_text(
         services,
@@ -10471,55 +10520,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
         services, argument_scope, candidate);
   };
-  // A type argument that is a qualified member template-id carries the owner's
-  // structured arguments on its type-id node's qualifier syntaxes. Keep them on
-  // the anchor stack so owner resolution uses them instead of re-parsing text.
-  std::vector<std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor> >
-      type_argument_owner_anchors;
-  if(syntax) {
-    // The owner qualifier template-id syntaxes are attached to the type-name
-    // node inside the type-id (or carried on the id-expression node), not the
-    // type-id root; find whichever node carries them.
-    const auto find_qualifier_syntax_node =
-        [](const CppAstNode & root) -> const CppAstNode *
-    {
-      std::vector<const CppAstNode *> stack(1, &root);
-      while(!stack.empty()) {
-        const CppAstNode * current = stack.back();
-        stack.pop_back();
-        if(!current->qualifier_template_id_syntaxes.empty()) {
-          return current;
-        }
-        for(std::size_t ci = 0; ci < current->children.size(); ++ci) {
-          stack.push_back(&current->children[ci]);
-        }
-      }
-      return nullptr;
-    };
-    const CppAstNode * owner_syntax_node = nullptr;
-    if(syntax->type_id) {
-      owner_syntax_node = find_qualifier_syntax_node(*syntax->type_id);
-    }
-    if(!owner_syntax_node && syntax->expression) {
-      owner_syntax_node = find_qualifier_syntax_node(*syntax->expression);
-    }
-    if(owner_syntax_node) {
-      for(std::size_t qi = 0;
-          qi < owner_syntax_node->qualifier_template_id_syntaxes.size();
-          ++qi) {
-        callsemantic::ExactTemplateTypeLookupAnchor anchor =
-            callsemantic::exact_template_type_lookup_anchor_for_template_id(
-                owner_syntax_node->qualifier_template_id_syntaxes[qi]);
-        if(!anchor.has_argument_list) {
-          continue;
-        }
-        type_argument_owner_anchors.push_back(
-            std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor>(
-                new callsemantic::ScopedExactTemplateTypeLookupAnchor(anchor)));
-      }
-    }
-  }
-
   bool attempted_structured_type_syntax = false;
   bool bound_member_type_failure = false;
   if(syntax && syntax->resolved_type) {

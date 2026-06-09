@@ -24114,47 +24114,71 @@ bool resolve_member_template_template_argument_text(
   }
 
   TypePtr owner_type;
-  if(!parse_type_argument_text(services, scope, owner_text, owner_type) ||
-     !owner_type) {
-    QualifiedName owner_template_name;
-    vector<string> owner_args;
-    if(semantic_utils::split_top_level_template_id_text(owner_text,
-                                                        owner_template_name,
-                                                        owner_args)) {
-      TemplateIdSyntax owner_syntax;
-      owner_syntax.name = owner_template_name;
-      owner_syntax.arguments = owner_args;
-      owner_syntax.argument_syntaxes.reserve(owner_args.size());
-      for(size_t i = 0; i < owner_args.size(); ++i) {
-        TemplateArgumentSyntax syntax;
-        syntax.text = owner_args[i];
-        owner_syntax.argument_syntaxes.push_back(syntax);
-      }
-      if(ClassTemplateDecl * owner_template =
-             lookup_class_template_impl(
-                 services,
-                 scope.require(),
-                 qualified_name_text_for_structured_lookup(owner_template_name))) {
-        Scope & binding_scope =
-            template_argument_binding_scope_for_class_template(scope.require(),
-                                                               *owner_template);
-        annotate_template_id_type_arguments_from_scope_bindings(binding_scope,
-                                                                *owner_template,
-                                                                owner_syntax);
-      }
-      resolve_template_id_syntax_type(
-          services,
-          scope.require(),
-          owner_syntax,
-          true,
-          string(),
-          owner_type,
-          scope,
-          template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly);
+  QualifiedName owner_template_name;
+  vector<string> owner_args;
+  const bool owner_split =
+      semantic_utils::split_top_level_template_id_text(owner_text,
+                                                       owner_template_name,
+                                                       owner_args);
+  const auto resolve_owner_with_syntaxes =
+      [&](const std::vector<TemplateArgumentSyntax> & arg_syntaxes) -> bool
+  {
+    TemplateIdSyntax owner_syntax;
+    owner_syntax.name = owner_template_name;
+    owner_syntax.arguments = owner_args;
+    owner_syntax.argument_syntaxes = arg_syntaxes;
+    if(ClassTemplateDecl * owner_template =
+           lookup_class_template_impl(
+               services,
+               scope.require(),
+               qualified_name_text_for_structured_lookup(owner_template_name))) {
+      Scope & binding_scope =
+          template_argument_binding_scope_for_class_template(scope.require(),
+                                                             *owner_template);
+      annotate_template_id_type_arguments_from_scope_bindings(binding_scope,
+                                                              *owner_template,
+                                                              owner_syntax);
     }
-    if(!owner_type) {
-      return false;
+    owner_type.reset();
+    resolve_template_id_syntax_type(
+        services,
+        scope.require(),
+        owner_syntax,
+        true,
+        string(),
+        owner_type,
+        scope,
+        template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly);
+    return owner_type != nullptr;
+  };
+
+  // Prefer the structured argument syntaxes carried by a registered anchor so
+  // the owner's arguments resolve from structure instead of reparsed text.
+  if(owner_split) {
+    if(const std::vector<TemplateArgumentSyntax> * anchor_syntaxes =
+           callsemantic::exact_template_type_lookup_anchor_arg_syntaxes(
+               normalize_type_lookup_name(owner_text),
+               owner_template_name.name)) {
+      if(anchor_syntaxes->size() == owner_args.size()) {
+        resolve_owner_with_syntaxes(*anchor_syntaxes);
+      }
     }
+  }
+  if(!owner_type) {
+    parse_type_argument_text(services, scope, owner_text, owner_type);
+  }
+  if(!owner_type && owner_split) {
+    std::vector<TemplateArgumentSyntax> text_syntaxes;
+    text_syntaxes.reserve(owner_args.size());
+    for(size_t i = 0; i < owner_args.size(); ++i) {
+      TemplateArgumentSyntax syntax;
+      syntax.text = owner_args[i];
+      text_syntaxes.push_back(syntax);
+    }
+    resolve_owner_with_syntaxes(text_syntaxes);
+  }
+  if(!owner_type) {
+    return false;
   }
   if(service_type_depends_on_template_parameter(services, owner_type)) {
     TypePtr resolved_owner;
