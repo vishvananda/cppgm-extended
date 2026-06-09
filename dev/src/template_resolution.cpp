@@ -8080,13 +8080,14 @@ bool template_argument_text_mentions_function_template_parameter(
   return false;
 }
 
+template<typename Context>
 bool template_argument_mentions_function_template_parameter(
-    SemanticContext & ctx,
+    Context & context,
     const std::vector<TemplateParameterInfo> & parameters,
     const TemplateArgument & argument)
 {
   if(argument.kind == TemplateArgument::TA_TYPE && argument.type &&
-     type_mentions_function_template_parameter(ctx, parameters, argument.type)) {
+     type_mentions_function_template_parameter(context, parameters, argument.type)) {
     return true;
   }
   return !argument.text.empty() &&
@@ -8094,8 +8095,9 @@ bool template_argument_mentions_function_template_parameter(
              parameters, argument.text);
 }
 
+template<typename Context>
 bool dependent_alias_arguments_mention_function_template_parameter(
-    SemanticContext & ctx,
+    Context & context,
     const std::vector<TemplateParameterInfo> & parameters,
     const TypePtr & type)
 {
@@ -8106,7 +8108,7 @@ bool dependent_alias_arguments_mention_function_template_parameter(
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(arguments[i].type &&
-       type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
+       type_mentions_function_template_parameter(context, parameters, arguments[i].type)) {
       return true;
     }
     if(!arguments[i].text.empty() &&
@@ -8118,8 +8120,9 @@ bool dependent_alias_arguments_mention_function_template_parameter(
   return false;
 }
 
+template<typename Context>
 bool dependent_class_arguments_mention_function_template_parameter(
-    SemanticContext & ctx,
+    Context & context,
     const std::vector<TemplateParameterInfo> & parameters,
     const TypePtr & type)
 {
@@ -8130,7 +8133,7 @@ bool dependent_class_arguments_mention_function_template_parameter(
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(arguments[i].type &&
-       type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
+       type_mentions_function_template_parameter(context, parameters, arguments[i].type)) {
       return true;
     }
     if(!arguments[i].text.empty() &&
@@ -8205,70 +8208,6 @@ bool dependent_named_type_head_is_template_template_parameter(
     if(head_matches(base->named_display, parameters[i].name) ||
        head_matches(base->named_key, parameters[i].name) ||
        head_matches(base->named_semantic_payload, parameters[i].name)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool template_argument_mentions_function_template_parameter(
-    template_api::TemplateTypeSystem & type_system,
-    const std::vector<TemplateParameterInfo> & parameters,
-    const TemplateArgument & argument)
-{
-  if(argument.kind == TemplateArgument::TA_TYPE && argument.type &&
-     type_mentions_function_template_parameter(type_system, parameters, argument.type)) {
-    return true;
-  }
-  return !argument.text.empty() &&
-         template_argument_text_mentions_function_template_parameter(
-             parameters, argument.text);
-}
-
-bool dependent_alias_arguments_mention_function_template_parameter(
-    template_api::TemplateTypeSystem & type_system,
-    const std::vector<TemplateParameterInfo> & parameters,
-    const TypePtr & type)
-{
-  void * alias_template_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
-  if(!named_type_dependent_alias_template(type, alias_template_decl, arguments)) {
-    return false;
-  }
-  for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].type &&
-       type_mentions_function_template_parameter(
-           type_system, parameters, arguments[i].type)) {
-      return true;
-    }
-    if(!arguments[i].text.empty() &&
-       template_argument_text_mentions_function_template_parameter(
-           parameters, arguments[i].text)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool dependent_class_arguments_mention_function_template_parameter(
-    template_api::TemplateTypeSystem & type_system,
-    const std::vector<TemplateParameterInfo> & parameters,
-    const TypePtr & type)
-{
-  void * class_template_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
-  if(!named_type_dependent_class_template(type, class_template_decl, arguments)) {
-    return false;
-  }
-  for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].type &&
-       type_mentions_function_template_parameter(
-           type_system, parameters, arguments[i].type)) {
-      return true;
-    }
-    if(!arguments[i].text.empty() &&
-       template_argument_text_mentions_function_template_parameter(
-           parameters, arguments[i].text)) {
       return true;
     }
   }
