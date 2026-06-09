@@ -6561,6 +6561,61 @@ private:
     return semantic_class_model::declarator_function_qualifier(declarator);
   }
 
+  // Resolve common STL member-alias names (value_type, iterator, ...) directly
+  // against any enclosing class still collecting its reference members. Returns
+  // an empty TypePtr when the name is not such an alias or no such scope applies.
+  TypePtr resolve_common_member_alias_during_reference_collection(
+      Scope & scope, const string & normalized_name)
+  {
+    const bool common_member_alias_lookup =
+        normalized_name == "value_type" ||
+        normalized_name == "allocator_type" ||
+        normalized_name == "size_type" ||
+        normalized_name == "difference_type" ||
+        normalized_name == "pointer" ||
+        normalized_name == "const_pointer" ||
+        normalized_name == "iterator" ||
+        normalized_name == "const_iterator" ||
+        normalized_name == "reference" ||
+        normalized_name == "const_reference";
+    if(!common_member_alias_lookup ||
+       normalized_name.find("::") != string::npos ||
+       normalized_name.find('<') != string::npos) {
+      return TypePtr();
+    }
+    for(Scope * current = &scope; current; current = current->parent) {
+      if(current->class_info &&
+         current->class_info->reference_member_collection_in_progress) {
+        TypePtr direct_alias = direct_named_type(*current, normalized_name);
+        if(direct_alias) {
+          return direct_alias;
+        }
+        if(current->class_info->member_scope &&
+           current->class_info->member_scope.get() != current) {
+          direct_alias =
+              direct_named_type(*current->class_info->member_scope,
+                                normalized_name);
+          if(direct_alias) {
+            return direct_alias;
+          }
+        }
+        TypePtr enclosing =
+            lookup_enclosing_type_before_reference_placeholder(
+                *current,
+                normalized_name);
+        if(enclosing) {
+          return enclosing;
+        }
+        return make_named(normalized_name,
+                          "dependent alias " +
+                              current->class_info->qualified_name +
+                              "::" + normalized_name,
+                          true);
+      }
+    }
+    return TypePtr();
+  }
+
   TypePtr lookup_type_impl(Scope & scope,
                            const string & name,
                            bool reference_class_templates_only,
@@ -6591,50 +6646,10 @@ private:
     if(has_invalid_top_level_qualified_owner_syntax(normalized_name)) {
       return TypePtr();
     }
-    const bool common_member_alias_lookup =
-        normalized_name == "value_type" ||
-        normalized_name == "allocator_type" ||
-        normalized_name == "size_type" ||
-        normalized_name == "difference_type" ||
-        normalized_name == "pointer" ||
-        normalized_name == "const_pointer" ||
-        normalized_name == "iterator" ||
-        normalized_name == "const_iterator" ||
-        normalized_name == "reference" ||
-        normalized_name == "const_reference";
-    if(common_member_alias_lookup &&
-       normalized_name.find("::") == string::npos &&
-       normalized_name.find('<') == string::npos) {
-      for(Scope * current = &scope; current; current = current->parent) {
-        if(current->class_info &&
-           current->class_info->reference_member_collection_in_progress) {
-          TypePtr direct_alias = direct_named_type(*current, normalized_name);
-          if(direct_alias) {
-            return direct_alias;
-          }
-          if(current->class_info->member_scope &&
-             current->class_info->member_scope.get() != current) {
-            direct_alias =
-                direct_named_type(*current->class_info->member_scope,
-                                  normalized_name);
-            if(direct_alias) {
-              return direct_alias;
-            }
-          }
-          TypePtr enclosing =
-              lookup_enclosing_type_before_reference_placeholder(
-                  *current,
-                  normalized_name);
-          if(enclosing) {
-            return enclosing;
-          }
-          return make_named(normalized_name,
-                            "dependent alias " +
-                                current->class_info->qualified_name +
-                                "::" + normalized_name,
-                            true);
-        }
-      }
+    if(TypePtr resolved =
+           resolve_common_member_alias_during_reference_collection(scope,
+                                                                    normalized_name)) {
+      return resolved;
     }
     const bool cacheable_qualified_lookup =
         qualified_type_lookup_cache_enabled() &&
