@@ -19,7 +19,7 @@ struct TypeRegistryState
   semantic_model::ClassIndexMap & classes_by_key;
   std::size_t & classes_by_key_version;
   std::unordered_map<std::string, std::size_t> & classes_by_key_epochs;
-  std::map<std::string, semantic_model::Scope *> & type_scopes_by_key;
+  semantic_model::TypeScopeIndexMap & type_scopes_by_key;
   std::vector<semantic_model::ClassInfo *> & instantiated_classes;
 };
 

@@ -1234,7 +1234,7 @@ private:
   ClassIndexMap classes_by_key;
   size_t classes_by_key_version = 0;
   unordered_map<string, size_t> classes_by_key_epochs;
-  map<string, Scope *> type_scopes_by_key;
+  TypeScopeIndexMap type_scopes_by_key;
   vector<unique_ptr<FunctionTemplateDecl> > function_templates;
   map<string, vector<FunctionTemplateDecl *> > pending_friend_function_templates;
   vector<unique_ptr<ClassTemplateDecl> > class_templates;
@@ -9721,7 +9721,7 @@ private:
 
     Scope * enumerator_scope = &scope;
     if(scoped && !node.value.empty()) {
-      map<string, Scope *>::iterator found = type_scopes_by_key.find(enum_type->named_key);
+      auto found = type_scopes_by_key.find(enum_type->named_key);
       if(found != type_scopes_by_key.end()) {
         enumerator_scope = found->second;
       } else {

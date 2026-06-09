@@ -32,6 +32,9 @@ struct ClassTemplateSpecializationDecl;
 struct PartialClassTemplateSpecializationDecl;
 struct VariableTemplateSpecializationDecl;
 struct Scope;
+// Index of durable type scopes keyed by their mangled name. Used only for keyed
+// lookup (never iterated for output), so it is hashed rather than ordered.
+typedef std::unordered_map<std::string, Scope *> TypeScopeIndexMap;
 
 enum ExplicitFunctionNothrowKind
 {
