@@ -689,8 +689,10 @@ void collect_using_declaration(SemanticContext & ctx,
   const string target_text = qualified_name_text(qualified);
 
   TypePtr type = ctx.lookup_type(scope, target_text);
+  ClassInfo * target_class = nullptr;
   if(!type) {
-    if(ClassInfo * target_class = lookup_using_target_class(ctx, scope, qualified)) {
+    target_class = lookup_using_target_class(ctx, scope, qualified);
+    if(target_class) {
       const semantic_lookup::MemberTypeLookupResult member_type =
           semantic_lookup::lookup_member_type(ctx,
                                              *target_class,
@@ -703,6 +705,23 @@ void collect_using_declaration(SemanticContext & ctx,
   if(type) {
     semantic_scope_mutation::bind_named_type(scope, qualified.name, type);
     return;
+  }
+  // A using-declaration that imports a member VALUE whose qualifier resolves to a
+  // concrete class (e.g. in an instantiated class, `using std::__is_integer<_Tp>
+  // ::__value;` where _Tp is bound). lookup_qualified_value_binding below defers
+  // when the qualifier is spelled with template placeholders, so resolve the
+  // value directly from the concrete class the qualifier already resolved to.
+  if(target_class) {
+    const semantic_lookup::MemberValueLookupResult member_value =
+        semantic_lookup::lookup_member_value(*target_class, qualified.name);
+    if(member_value.binding) {
+      ValueBinding imported = *member_value.binding;
+      if(scope.class_info) {
+        imported.access = access;
+      }
+      semantic_scope_mutation::bind_value(scope, qualified.name, imported);
+      return;
+    }
   }
   if(bind_dependent_using_typename(ctx, scope, *target, qualified, target_text)) {
     return;
