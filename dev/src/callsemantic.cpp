@@ -21310,6 +21310,11 @@ private:
     options.is_constructor = is_constructor;
     options.is_destructor = is_destructor;
     options.lookup_scope = declaration_scope;
+    options.owner_class_is_dependent =
+        owner_class != nullptr &&
+        (owner_class->dependent_instantiation ||
+         (owner_class->member_scope &&
+          scope_has_template_placeholders(*owner_class->member_scope)));
     template_api::apply_function_template_symbol_options(template_identity.decl,
                                                         template_identity.arguments,
                                                         template_identity.has_arguments(),
