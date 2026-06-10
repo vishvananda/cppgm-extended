@@ -18131,7 +18131,8 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
                                             linkage != SL_WEAK,
                                             capture_abi_fact ? &emitted_abi_target :
                                                                nullptr);
-    if(!emitted_object_symbol && linkage == SL_WEAK) {
+    if(!emitted_object_symbol && linkage == SL_WEAK &&
+       !options.owner_class_is_dependent) {
       throw logic_error("failed to build ABI IR function symbol for weak function " +
                         qualified_name);
     }
