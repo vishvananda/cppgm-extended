@@ -3506,6 +3506,50 @@ bool try_resolve_dependent_qualified_member_type_argument(
   return out != nullptr;
 }
 
+// Structured fall-through for a concrete type *name* that arrived as bare text
+// with no carried argument syntax. This happens when a class template-id's
+// argument list is recovered from a qualifier's text during text-based scope
+// lookup -- e.g. libc++'s __integer_sequence<size_t, __integer_pack(...)...>
+// qualifier, whose first argument "size_t" is a plain typedef name with no
+// TemplateArgumentSyntax attached. Resolution goes through ordinary qualified-
+// name lookup (resolve_direct_type_lookup), not a type-id text reparse: the
+// input is restricted to a plain (possibly qualified) identifier with no
+// template-argument list, declarator punctuation, pack ellipsis, or multi-token
+// type-specifier, so this can only ever perform a name lookup.
+bool try_resolve_concrete_named_type_argument(
+    template_api::TemplateServices & services,
+    Scope & raw_argument_scope,
+    const std::string & text,
+    TypePtr & out)
+{
+  out.reset();
+  const std::string trimmed = trim_space(text);
+  if(trimmed.empty()) {
+    return false;
+  }
+  if(trimmed.find_first_of("<>*&[](),") != std::string::npos ||
+     trimmed.find("...") != std::string::npos ||
+     trimmed.find(' ') != std::string::npos) {
+    return false;
+  }
+  QualifiedName qualified;
+  if(!semantic_utils::split_qualified_name_text(trimmed, qualified) ||
+     !is_identifier_text(qualified.name)) {
+    return false;
+  }
+  for(std::size_t i = 0; i < qualified.qualifiers.size(); ++i) {
+    if(!is_identifier_text(qualified.qualifiers[i])) {
+      return false;
+    }
+  }
+  template_api::TemplateTypeLookupRequest request;
+  request.scope = &raw_argument_scope;
+  request.allow_class_templates = false;
+  request.name = qualified;
+  return service_type_system(services).resolve_direct_type_lookup(request, out) &&
+         out != nullptr;
+}
+
 bool template_id_argument_texts_have_recoverable_bound_type_argument(
     template_api::TemplateServices & services,
     Scope & raw_argument_scope,
@@ -10735,6 +10779,19 @@ bool resolve_template_argument(template_api::TemplateServices & services,
        recovered_template_id) {
       resolve_type_argument_if_needed(recovered_template_id);
       type = recovered_template_id;
+    }
+  }
+  if(!type && !has_structured_type_syntax) {
+    TypePtr concrete_named_type;
+    if(try_resolve_concrete_named_type_argument(services,
+                                                raw_argument_scope,
+                                                trimmed,
+                                                concrete_named_type) &&
+       concrete_named_type &&
+       !template_argument_semantics::type_depends_on_template_parameter(
+           type_system, concrete_named_type)) {
+      resolve_type_argument_if_needed(concrete_named_type);
+      type = concrete_named_type;
     }
   }
   if(!type) {
