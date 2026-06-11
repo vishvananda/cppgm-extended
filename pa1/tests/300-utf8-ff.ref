@@ -1,1 +1,1 @@
-ERROR: utf8 invalid unit (111111xx)
+ERROR:1:1:Invalid utf-8 character
