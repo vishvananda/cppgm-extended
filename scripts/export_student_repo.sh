@@ -95,6 +95,136 @@ copy_tracked_paths() {
   ) | rsync -a --from0 --files-from=- "$repo_root/" "$dest/"
 }
 
+list_tracked_reference_outputs() {
+  (
+    cd "$repo_root"
+    git ls-files -- 'pa[0-9]*' cppgm.tests |
+      perl -ne 'print if m{(^|/)[^/]+\.ref(?:\.|$)}'
+  )
+}
+
+list_exported_reference_outputs() {
+  (
+    cd "$dest"
+    find pa[0-9]* cppgm.tests -type f -print 2>/dev/null |
+      perl -ne 's{^\./}{}; print if m{(^|/)[^/]+\.ref(?:\.|$)}'
+  )
+}
+
+reference_outputs_match() {
+  local source_path="$1"
+  local export_path="$2"
+  local ref_path="$3"
+
+  cmp -s "$source_path" "$export_path" && return 0
+
+  case "$ref_path" in
+    *.ref.mir)
+      diff -q \
+        <(perl "$repo_root/scripts/compare_results_common.pl" normalize-machine-ir "$source_path") \
+        <(perl "$repo_root/scripts/compare_results_common.pl" normalize-machine-ir "$export_path") \
+        >/dev/null
+      return
+      ;;
+    *.ref.cmir)
+      diff -q \
+        <(perl "$repo_root/scripts/compare_results_common.pl" canonicalize-machine-ir "$source_path") \
+        <(perl "$repo_root/scripts/compare_results_common.pl" canonicalize-machine-ir "$export_path") \
+        >/dev/null
+      return
+      ;;
+    *.ref.witness)
+      return 1
+      ;;
+  esac
+
+  perl -0777 -e '
+    sub read_ref {
+      my ($path) = @_;
+      open(my $fh, "<", $path) or exit 2;
+      local $/;
+      my $data = <$fh>;
+      close($fh) or exit 2;
+      $data = "" if !defined($data);
+      $data =~ s/\s+\z//;
+      return $data;
+    }
+    exit(read_ref($ARGV[0]) eq read_ref($ARGV[1]) ? 0 : 1);
+  ' "$source_path" "$export_path"
+}
+
+verify_regenerated_reference_outputs() {
+  echo "==> Verifying regenerated reference outputs match source"
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local source_list="$tmp_dir/source-refs"
+  local dest_list="$tmp_dir/export-refs"
+  local missing_list="$tmp_dir/missing-refs"
+  local extra_list="$tmp_dir/extra-refs"
+  list_tracked_reference_outputs | LC_ALL=C sort > "$source_list"
+  list_exported_reference_outputs | LC_ALL=C sort > "$dest_list"
+
+  comm -23 "$source_list" "$dest_list" > "$missing_list"
+  if [ -s "$missing_list" ]; then
+    local missing_count
+    missing_count=$(wc -l < "$missing_list")
+    echo "export_student_repo: $missing_count tracked reference output file(s) were not regenerated:" >&2
+    sed -n '1,20p' "$missing_list" >&2
+    if [ "$missing_count" -gt 20 ]; then
+      echo "export_student_repo: ... and $((missing_count - 20)) more" >&2
+    fi
+    echo "export_student_repo: remove stale source refs or fix the ref-test target that skipped them" >&2
+    rm -rf "$tmp_dir"
+    exit 1
+  fi
+
+  comm -13 "$source_list" "$dest_list" > "$extra_list"
+  if [ -s "$extra_list" ]; then
+    local extra_count
+    extra_count=$(wc -l < "$extra_list")
+    echo "==> Removing $extra_count regenerated reference sidecar files not tracked in source"
+    while IFS= read -r path; do
+      rm -f "$dest/$path"
+    done < "$extra_list"
+    list_exported_reference_outputs | LC_ALL=C sort > "$dest_list"
+  fi
+
+  if ! diff -u "$source_list" "$dest_list"; then
+    echo "export_student_repo: regenerated reference output set differs from source" >&2
+    rm -rf "$tmp_dir"
+    exit 1
+  fi
+
+  local mismatch_count=0
+  local shown_count=0
+  local path
+  while IFS= read -r path; do
+    if ! reference_outputs_match "$repo_root/$path" "$dest/$path" "$path"; then
+      echo "export_student_repo: reference output mismatch: $path" >&2
+      if [ "$shown_count" -lt 20 ]; then
+        diff -u --label "source/$path" --label "export/$path" "$repo_root/$path" "$dest/$path" >&2 || true
+        shown_count=$((shown_count + 1))
+      fi
+      mismatch_count=$((mismatch_count + 1))
+    fi
+  done < "$source_list"
+
+  local ref_count
+  local exit_status_count
+  local witness_count
+  ref_count=$(wc -l < "$source_list")
+  exit_status_count=$(grep -c '\.exit_status$' "$source_list" || true)
+  witness_count=$(grep -c '\.ref\.witness$' "$source_list" || true)
+
+  if [ "$mismatch_count" -ne 0 ]; then
+    rm -rf "$tmp_dir"
+    echo "export_student_repo: $mismatch_count regenerated reference output file(s) differ from source" >&2
+    exit 1
+  fi
+  rm -rf "$tmp_dir"
+  echo "==> Verified $ref_count reference output files ($exit_status_count exit status files, $witness_count witness files)"
+}
+
 sanitize_student_makefile_defaults() {
   perl -0pi -e '
     s/GNUMAKE = \$\(firstword \$\(wildcard \/opt\/homebrew\/opt\/make\/libexec\/gnubin\/make \/usr\/local\/opt\/make\/libexec\/gnubin\/make\)\)\nifneq \(\$\(GNUMAKE\),\)\nMAKE := \$\(GNUMAKE\)\nendif\n//g;
@@ -405,6 +535,7 @@ reference_targets=(
 )
 
 echo "==> Building reference binaries"
+rm -rf "$repo_root/obj/export-reference-build"
 make -s -C "$repo_root/dev" all \
   CXX="${CXX:-g++}" \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
@@ -541,6 +672,8 @@ make -s -C "$dest" ref-test-debuginfo \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
   CPPGM_TEST_RUNNER=1
+
+verify_regenerated_reference_outputs
 
 finalize_reference_binaries
 
