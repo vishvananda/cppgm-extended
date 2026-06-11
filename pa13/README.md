@@ -241,7 +241,7 @@ For PA13:
   `lowir.md`, and the `tests/spec/` suite make them part of the PA13
   adapter contract.
 - Treat `!dbg(...)` as LowIR text metadata. Generating native object-file debug
-  information, validating `dwarfdump` output, and running debugger checks are
+  information, validating DWARF dump output, and running debugger checks are
   outside PA13.
 - Do not implement native code generation, linking, hosted runtime behavior,
   LowIR optimization, or C++ source-to-LowIR lowering as part of PA13.

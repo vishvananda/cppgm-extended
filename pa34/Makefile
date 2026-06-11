@@ -200,7 +200,7 @@ test-batch: $(TEST_DEPS)
 	$(call run_compile_course_bucket_batch,$(COURSE_COMPILE_TEST_ROOT))
 
 ref-test:
-	@scripts/run_all_tests.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
+	@perl ../scripts/run_cpphostcompat_preproc_worker.pl $(REF_TEST_APP) ref $(PREPROC_TEST_ROOT)
 	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
 	@CPPGM_CMAKE_COMPILER=$(REF_TEST_APP) \
 		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(RUN_TEST_ROOT)
