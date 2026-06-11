@@ -1,1 +1,1 @@
-ERROR: macro redefined
+ERROR: Illegal redefinition of macro FUNC_LIKE at tests/700-redeferr4.t:2

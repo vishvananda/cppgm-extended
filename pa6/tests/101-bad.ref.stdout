@@ -1,1 +1,1 @@
-ERROR: invalid token: @
+tests/101-bad.t: invalid token: @ near TT_LITERAL:@ at tests/101-bad.t:1:1
