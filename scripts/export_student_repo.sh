@@ -186,6 +186,7 @@ copy_tracked_paths \
   Makefile \
   doc \
   cppgm.tests \
+  shared \
   "${pa_dirs[@]}" \
   "${shared_scripts[@]}" \
   "${dev_public[@]}" \
