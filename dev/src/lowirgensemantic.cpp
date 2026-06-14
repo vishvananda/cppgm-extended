@@ -8314,27 +8314,6 @@ private:
     return true;
   }
 
-  string normalize_integral_immediate_bits(long long value_bits,
-                                           const TypePtr & type) const
-  {
-    const size_t source_bits = type_size(type) * 8;
-    if(source_bits == 0 || source_bits >= 64) {
-      return to_string(value_bits);
-    }
-
-    const unsigned long long mask = lowir_bit_field_mask(source_bits);
-    unsigned long long normalized =
-        static_cast<unsigned long long>(value_bits) & mask;
-    if(!is_lowir_unsigned_integral_scalar_type(type)) {
-      const unsigned long long sign_bit = 1ULL << (source_bits - 1);
-      if((normalized & sign_bit) != 0) {
-        normalized |= ~mask;
-      }
-      return to_string(static_cast<long long>(normalized));
-    }
-    return to_string(normalized);
-  }
-
   string integral_immediate_for_target(long long value_bits,
                                        const TypePtr & source_type,
                                        const TypePtr & target_type) const
@@ -8373,31 +8352,24 @@ private:
     return to_string(static_cast<long long>(bits));
   }
 
-  string normalize_integral_scalar_value(const string & value,
-                                         const TypePtr & type)
+  string widen_integral_scalar_value_to_i64(const string & value,
+                                            const TypePtr & type)
   {
     long long immediate_value = 0;
     if(try_parse_integral_immediate_text(value, immediate_value)) {
-      return normalize_integral_immediate_bits(immediate_value, type);
+      return integral_immediate_for_target(immediate_value,
+                                           type,
+                                           make_fundamental(FT_LONG_LONG_INT));
     }
 
     string result = value;
     const size_t source_bits = type_size(type) * 8;
     if(source_bits != 0 && source_bits < 64) {
-      if(is_lowir_unsigned_integral_scalar_type(type)) {
-        result = emit_temp_assignment("i64",
-                                      string("binary and i64 ") + result + ", " +
-                                      to_string(lowir_bit_field_mask(source_bits)));
-      } else {
-        const size_t shift = 64 - source_bits;
-        const string shifted =
-            emit_temp_assignment("i64",
-                                 string("binary shl i64 ") + result + ", " +
-                                 to_string(shift));
-        result = emit_temp_assignment("i64",
-                                      string("binary shr i64 ") + shifted + ", " +
-                                      to_string(shift));
-      }
+      return emit_lowir_convert(
+          is_lowir_unsigned_integral_scalar_type(type) ? "zext" : "sext",
+          "i64",
+          lowir_type_for(type),
+          result);
     }
     return result;
   }
@@ -8443,10 +8415,9 @@ private:
     if(is_lowir_integral_scalar_type(source_value_type) &&
        target_value_type->kind == Type::TK_FUNDAMENTAL &&
        target_value_type->fundamental == FT_BOOL) {
-      const string normalized = normalize_integral_scalar_value(result, source_value_type);
       const string truthy =
           emit_temp_assignment("i64",
-                               string("cmp ne ") + source_lowir + " " + normalized + ", " +
+                               string("cmp ne ") + source_lowir + " " + result + ", " +
                                zero_literal_for_lowir_type(source_lowir));
       return target_lowir == "i64" ?
           truthy :
@@ -8499,12 +8470,11 @@ private:
 
     if(is_lowir_integral_scalar_type(source_value_type) &&
        is_floating_type(target_value_type)) {
-      const string normalized = normalize_integral_scalar_value(result, source_value_type);
       return emit_lowir_convert(
           is_lowir_unsigned_integral_scalar_type(source_value_type) ? "uitofp" : "sitofp",
           target_lowir,
           source_lowir,
-          normalized);
+          result);
     }
 
     if(is_lowir_integral_scalar_type(source_value_type) &&
@@ -8584,7 +8554,7 @@ private:
 
     if(is_lowir_integral_scalar_type(source_value_type) &&
        is_pointer_type(target_value_type)) {
-      const string normalized = normalize_integral_scalar_value(result, source_value_type);
+      const string normalized = widen_integral_scalar_value_to_i64(result, source_value_type);
       if(type_size(source_value_type) > 8) {
         const string truncated = emit_lowir_convert("trunc", "i64", source_lowir, normalized);
         return emit_temp_assignment("ptr", string("copy ptr ") + truncated);
