@@ -20,7 +20,7 @@ from typing import Sequence
 from typing import Set
 
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(os.environ.get("CPPGM_WATCH_REPO_ROOT", Path(__file__).resolve().parent.parent)).resolve()
 INCEPTION_DIR = REPO_ROOT / "pa39"
 FRONTEND_SOURCE_SETS = REPO_ROOT / "dev" / "frontend_source_sets.mk"
 INCEPTION_MAKEFILE = INCEPTION_DIR / "Makefile"
@@ -417,6 +417,26 @@ def manual_build_spec(args: argparse.Namespace,
                      cxx_dep=cxx_dep,
                      checkpoints=scope,
                      scope_label=scope_label)
+
+
+def prerequisite_specs_for_build(spec: BuildSpec,
+                                 checkpoints: Sequence[str],
+                                 stage_to_checkpoint: Dict[str, str]) -> List[BuildSpec]:
+    if spec.flavor != "inception":
+        return []
+    scope, scope_label = target_scope("cppgm++-self", checkpoints, stage_to_checkpoint)
+    return [
+        BuildSpec(target="cppgm++-self prerequisite",
+                  obj_root_base=spec.obj_root_base,
+                  bin_root_base=spec.bin_root_base,
+                  generated_root=spec.generated_root,
+                  flavor="selfhost",
+                  output_suffix="-self",
+                  test_runner=spec.test_runner,
+                  cxx_dep=resolve_inception_path("../dev/cppgm++"),
+                  checkpoints=scope,
+                  scope_label=scope_label)
+    ]
 
 
 def process_tree(processes: Sequence[ProcessInfo]) -> Dict[int, List[int]]:
@@ -1028,27 +1048,29 @@ def collect_views(args: argparse.Namespace,
 
     manual = manual_build_spec(args, checkpoints, stage_to_checkpoint)
     views: List[BuildView] = []
-    if manual is not None:
-        views.append(build_view(manual,
-                                root_pid=None,
-                                root_command="manual",
+
+    def append_view(spec: BuildSpec, root_pid: Optional[int], root_command: str) -> None:
+        views.append(build_view(spec,
+                                root_pid=root_pid,
+                                root_command=root_command,
                                 source_sets=source_sets,
                                 processes=processes,
                                 proc_by_pid=proc_by_pid,
                                 tree=tree))
+
+    if manual is not None:
+        append_view(manual, root_pid=None, root_command="manual")
+        for prerequisite in prerequisite_specs_for_build(manual, checkpoints, stage_to_checkpoint):
+            append_view(prerequisite, root_pid=None, root_command="manual prerequisite")
         return views
 
     for process in discover_build_processes(processes):
         if args.pid and process.pid != args.pid:
             continue
         spec = build_spec_from_process(process, checkpoints, stage_to_checkpoint)
-        views.append(build_view(spec,
-                                root_pid=process.pid,
-                                root_command=process.command,
-                                source_sets=source_sets,
-                                processes=processes,
-                                proc_by_pid=proc_by_pid,
-                                tree=tree))
+        append_view(spec, root_pid=process.pid, root_command=process.command)
+        for prerequisite in prerequisite_specs_for_build(spec, checkpoints, stage_to_checkpoint):
+            append_view(prerequisite, root_pid=process.pid, root_command=f"{process.command} prerequisite")
     views.sort(key=lambda item: (item.root_pid is None, item.build_id))
     return views
 
