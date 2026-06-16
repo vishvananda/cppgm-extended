@@ -66,6 +66,18 @@ make compare-cppgm++-inception CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
 If `../dev/cppgm++` does not exist yet, the PA39 Makefile first builds it with
 `CPPGM_HOST_CXX`.
 
+PA39 applies a per-file wall timeout to self-hosted compile steps so a single
+source file cannot stall the ladder indefinitely. The defaults are intentionally
+generous:
+
+- `INCEPTION_SELFHOST_COMPILE_TIMEOUT_SEC=900` for `*-self` object compiles
+- `INCEPTION_INCEPTION_COMPILE_TIMEOUT_SEC=3600` for `*-inception` object
+  compiles
+
+A timeout usually points to a performance or nontermination bug in an earlier
+compiler surface. Prefer reducing and fixing that bug over increasing the
+timeout.
+
 ### Inception Targets
 
 The focused PA39 goal is:

@@ -45,6 +45,8 @@ MAKE_OPTIONS_WITH_ARGS = {
     "--assume-old",
     "--what-if",
 }
+DEFAULT_SELFHOST_COMPILE_TIMEOUT_SEC = 15 * 60
+DEFAULT_INCEPTION_COMPILE_TIMEOUT_SEC = 60 * 60
 
 
 @dataclass
@@ -84,6 +86,7 @@ class BuildSpec:
     output_suffix: str
     test_runner: bool
     cxx_dep: Optional[Path]
+    compile_timeout_seconds: Optional[int]
     checkpoints: List[str]
     scope_label: str
 
@@ -328,6 +331,32 @@ def infer_output_suffix(flavor: str, target: str, assignments: Dict[str, str]) -
     return "-self"
 
 
+def parse_optional_positive_int(value: Optional[str]) -> Optional[int]:
+    if value is None or value == "":
+        return None
+    if not value.isdigit():
+        return None
+    parsed = int(value)
+    return parsed if parsed > 0 else None
+
+
+def infer_compile_timeout_seconds(flavor: str, assignments: Dict[str, str]) -> Optional[int]:
+    explicit = parse_optional_positive_int(assignments.get("INCEPTION_COMPILE_TIMEOUT_SEC"))
+    if explicit is not None:
+        return explicit
+    if flavor == "selfhost":
+        return (
+            parse_optional_positive_int(assignments.get("INCEPTION_SELFHOST_COMPILE_TIMEOUT_SEC")) or
+            DEFAULT_SELFHOST_COMPILE_TIMEOUT_SEC
+        )
+    if flavor == "inception":
+        return (
+            parse_optional_positive_int(assignments.get("INCEPTION_INCEPTION_COMPILE_TIMEOUT_SEC")) or
+            DEFAULT_INCEPTION_COMPILE_TIMEOUT_SEC
+        )
+    return None
+
+
 def resolve_obj_root_base(assignments: Dict[str, str]) -> Path:
     raw = assignments.get("INCEPTION_OBJ_ROOT_BASE", "../obj/pa39")
     return (INCEPTION_DIR / raw).resolve()
@@ -382,6 +411,7 @@ def build_spec_from_process(process: ProcessInfo,
     output_suffix = infer_output_suffix(flavor, target, assignments)
     test_runner = assignments.get("CPPGM_TEST_RUNNER", "1") != "0"
     cxx_dep = infer_cxx_dep(assignments, flavor, bin_root_base)
+    compile_timeout_seconds = infer_compile_timeout_seconds(flavor, assignments)
     scope, scope_label = target_scope(target, checkpoints, stage_to_checkpoint)
     return BuildSpec(target=target,
                      obj_root_base=obj_root_base,
@@ -391,6 +421,7 @@ def build_spec_from_process(process: ProcessInfo,
                      output_suffix=output_suffix,
                      test_runner=test_runner,
                      cxx_dep=cxx_dep,
+                     compile_timeout_seconds=compile_timeout_seconds,
                      checkpoints=scope,
                      scope_label=scope_label)
 
@@ -406,6 +437,10 @@ def manual_build_spec(args: argparse.Namespace,
     flavor = args.flavor or "selfhost"
     output_suffix = args.output_suffix or ("-inception" if flavor == "inception" else "-self")
     cxx_dep = resolve_cxx_dep(args.cxx) if args.cxx else infer_cxx_dep({}, flavor, bin_root_base)
+    manual_assignments: Dict[str, str] = {}
+    if args.compile_timeout_sec is not None:
+        manual_assignments["INCEPTION_COMPILE_TIMEOUT_SEC"] = str(args.compile_timeout_sec)
+    compile_timeout_seconds = infer_compile_timeout_seconds(flavor, manual_assignments)
     scope, scope_label = target_scope(args.target, checkpoints, stage_to_checkpoint)
     return BuildSpec(target=args.target,
                      obj_root_base=obj_root_base,
@@ -415,6 +450,7 @@ def manual_build_spec(args: argparse.Namespace,
                      output_suffix=output_suffix,
                      test_runner=(not args.no_test_runner),
                      cxx_dep=cxx_dep,
+                     compile_timeout_seconds=compile_timeout_seconds,
                      checkpoints=scope,
                      scope_label=scope_label)
 
@@ -434,6 +470,7 @@ def prerequisite_specs_for_build(spec: BuildSpec,
                   output_suffix="-self",
                   test_runner=spec.test_runner,
                   cxx_dep=resolve_inception_path("../dev/cppgm++"),
+                  compile_timeout_seconds=DEFAULT_SELFHOST_COMPILE_TIMEOUT_SEC,
                   checkpoints=scope,
                   scope_label=scope_label)
     ]
@@ -925,6 +962,19 @@ def format_elapsed(seconds: Optional[int]) -> str:
     return f"{minutes:02d}:{secs:02d}"
 
 
+def format_compile_elapsed(task: ActiveTask, limit_seconds: Optional[int], use_color: bool) -> str:
+    elapsed = task.elapsed_seconds
+    elapsed_text = format_elapsed(elapsed)
+    if limit_seconds is None:
+        return style(elapsed_text, Color.DIM, enabled=use_color)
+    text = f"{elapsed_text} / {format_elapsed(limit_seconds)}"
+    if elapsed is not None and elapsed >= limit_seconds:
+        return style(text, Color.RED, Color.BOLD, enabled=use_color)
+    if elapsed is not None and elapsed >= int(limit_seconds * 0.8):
+        return style(text, Color.YELLOW, Color.BOLD, enabled=use_color)
+    return style(text, Color.DIM, enabled=use_color)
+
+
 def format_path(path: Path) -> str:
     try:
         return str(path.relative_to(REPO_ROOT))
@@ -962,6 +1012,8 @@ def render_build(view: BuildView, use_color: bool) -> List[str]:
                     color_for_ratio(view.binary_done, view.binary_total),
                     enabled=use_color)
     lines.append(f"  bins:   {bin_bar} {view.binary_done}/{view.binary_total}")
+    if view.spec.compile_timeout_seconds is not None:
+        lines.append(f"  compile timeout: {format_elapsed(view.spec.compile_timeout_seconds)} per file")
 
     frontier = next((status for status in view.checkpoint_statuses
                      if not (status.binary_done and status.entry_done and status.shared_done == status.shared_total)), None)
@@ -997,7 +1049,7 @@ def render_build(view: BuildView, use_color: bool) -> List[str]:
         if compile_tasks:
             lines.append(style(f"  active compiles ({len(compile_tasks)}):", Color.BLUE, Color.BOLD, enabled=use_color))
             for task in compile_tasks:
-                elapsed_text = style(format_elapsed(task.elapsed_seconds), Color.DIM, enabled=use_color)
+                elapsed_text = format_compile_elapsed(task, view.spec.compile_timeout_seconds, use_color)
                 lines.append(f"    - {style(task.label, Color.BLUE, enabled=use_color)}  {elapsed_text}")
         if other_tasks:
             lines.append(style("  active other:", Color.MAGENTA, Color.BOLD, enabled=use_color))
@@ -1097,6 +1149,8 @@ def parse_args() -> argparse.Namespace:
                         help="manual CXX used for timestamp dependency checks")
     parser.add_argument("--output-suffix",
                         help="manual INCEPTION_OUTPUT_SUFFIX, default inferred from flavor")
+    parser.add_argument("--compile-timeout-sec", type=int,
+                        help="manual per-file compile timeout for elapsed-time display")
     parser.add_argument("--no-test-runner", action="store_true",
                         help="manual mode only: treat test runner object as disabled")
     parser.add_argument("--color", choices=["auto", "always", "never"], default="auto",
