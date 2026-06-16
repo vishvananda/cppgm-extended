@@ -293,6 +293,7 @@ shared_scripts=(
   scripts/run_lowir_link_tests_worker.pl
   scripts/run_lowir_native_tests_worker.pl
   scripts/run_reference_binary.sh
+  scripts/run_with_timeout.pl
   scripts/run_witness_tests.pl
   scripts/write_unresolved_symbol_report.pl
 )
