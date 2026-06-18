@@ -11655,6 +11655,34 @@ private:
             leaf_template_id->name.name :
             strip_trailing_top_level_template_arguments(qualified->name);
 
+    if(Scope * qualified_scope =
+           resolve_qualified_scope_for_node(scope, *qualified, node, false)) {
+      vector<FunctionTemplateDecl *> out;
+      if(qualified_scope->class_info) {
+        if(qualified_scope->class_info->member_scope &&
+           !qualified_scope->class_info->reference_members_collected &&
+           !qualified_scope->class_info->reference_member_collection_in_progress &&
+           !qualified_scope->class_info->full_member_collection_in_progress) {
+          ensure_class_reference_members(*qualified_scope->class_info);
+        }
+        MemberFunctionTemplateLookupResult result =
+            semantic_lookup::lookup_visible_member_function_templates(
+                *qualified_scope->class_info,
+                leaf_name);
+        semantic_lookup::append_unique_function_templates(out, result.templates);
+        if(!out.empty()) {
+          return out;
+        }
+        semantic_lookup::collect_direct_function_templates(*qualified_scope,
+                                                           leaf_name,
+                                                           out);
+        return out;
+      }
+      semantic_lookup::lookup_function_templates_in_scopes(
+          vector<Scope *>(1, qualified_scope), leaf_name, out);
+      return out;
+    }
+
     Scope * current_scope = nullptr;
     switch(walk_node_qualifier_scope(scope, node, *qualified, current_scope)) {
     case QualifierScopeWalk::Empty:
