@@ -7893,9 +7893,11 @@ bool collect_overloaded_function_id_argument_options(SemanticContext & ctx,
   const TemplateIdSyntax * template_id = cppast_template_id_syntax(id_node);
   vector<FunctionBinding *> overloads =
       template_id ?
-          ctx.lookup_function_template_id(scope,
-                                          *template_id,
-                                          semantic_policy::without_body_instantiation()) :
+          ctx.lookup_function_template_id_node(
+              scope,
+              id_node,
+              *template_id,
+              semantic_policy::without_body_instantiation()) :
           ctx.lookup_functions(scope,
                                id_node.value,
                                semantic_policy::without_body_instantiation());
@@ -11761,14 +11763,22 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                                         functional_cast_type_name;
       deferred_functional_cast_type = lookup_callee_node.semantic_type;
       if(!deferred_functional_cast_type) {
-        deferred_functional_cast_type =
-            functional_cast_type_name || functional_cast_template_id ?
-                ctx.lookup_type_node(scope,
-                                     lookup_callee_node,
-                                     functional_cast_type_name ?
-                                         qualified_name_lookup_text(*functional_cast_type_name) :
-                                         lookup_callee_node.value) :
-                ctx.lookup_type(scope, lookup_callee_node.value);
+        try {
+          deferred_functional_cast_type =
+              functional_cast_type_name || functional_cast_template_id ?
+                  ctx.lookup_type_node(scope,
+                                       lookup_callee_node,
+                                       functional_cast_type_name ?
+                                           qualified_name_lookup_text(*functional_cast_type_name) :
+                                           lookup_callee_node.value) :
+                  ctx.lookup_type(scope, lookup_callee_node.value);
+        } catch(const TemplateSubstitutionFailure &) {
+          deferred_functional_cast_type.reset();
+        } catch(const SemanticSoftFailure &) {
+          deferred_functional_cast_type.reset();
+        } catch(const SemanticDiagnosticError &) {
+          deferred_functional_cast_type.reset();
+        }
       }
       if(deferred_functional_cast_type &&
          functional_cast_lookup_name &&
@@ -11798,8 +11808,9 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         cppast_template_id_syntax(lookup_callee_node);
     candidates =
         callee_template_id ?
-            ctx.lookup_function_template_id(
+            ctx.lookup_function_template_id_node(
                 scope,
+                lookup_callee_node,
                 *callee_template_id,
                 semantic_policy::without_body_instantiation()) :
             ctx.lookup_functions_node(

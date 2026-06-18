@@ -5333,6 +5333,60 @@ bool node_has_structured_qualifier_syntax(const CppAstNode & node)
          !node.qualifier_type_syntaxes.empty();
 }
 
+CppAstNode make_value_qualifier_type_lookup_node(const CppAstNode & node,
+                                                 const QualifiedName & qualified,
+                                                 const string & qualifier_name)
+{
+  CppAstNode out;
+  out.kind = CppAstKind::type_name;
+  out.value = qualifier_name;
+  out.token_start = node.token_start;
+  out.token_end = node.token_end;
+  out.source_location_id = node.source_location_id;
+  out.name_lookup_snapshot = node.name_lookup_snapshot;
+  if(qualified.qualifiers.empty()) {
+    return out;
+  }
+
+  const size_t final_index = qualified.qualifiers.size() - 1;
+  QualifiedName qualifier_lookup;
+  qualifier_lookup.rooted = qualified.rooted;
+  qualifier_lookup.qualifiers.assign(qualified.qualifiers.begin(),
+                                     qualified.qualifiers.begin() + final_index);
+  qualifier_lookup.name = qualified.qualifiers[final_index];
+  set_cppast_qualified_name_syntax(out, qualifier_lookup);
+
+  if(final_index != 0) {
+    vector<TemplateIdSyntax> qualifier_template_ids;
+    qualifier_template_ids.reserve(final_index);
+    for(size_t i = 0; i < final_index; ++i) {
+      qualifier_template_ids.push_back(
+          i < node.qualifier_template_id_syntaxes.size() ?
+              node.qualifier_template_id_syntaxes[i] :
+              TemplateIdSyntax());
+    }
+    set_cppast_qualifier_template_id_syntaxes(out,
+                                              std::move(qualifier_template_ids));
+
+    vector<CppAstNode> qualifier_type_syntaxes;
+    qualifier_type_syntaxes.reserve(final_index);
+    for(size_t i = 0; i < final_index; ++i) {
+      qualifier_type_syntaxes.push_back(
+          i < node.qualifier_type_syntaxes.size() ?
+              node.qualifier_type_syntaxes[i] :
+              CppAstNode());
+    }
+    set_cppast_qualifier_type_syntaxes(out, std::move(qualifier_type_syntaxes));
+  }
+
+  if(final_index < node.qualifier_template_id_syntaxes.size() &&
+     !node.qualifier_template_id_syntaxes[final_index].name.name.empty()) {
+    set_cppast_template_id_syntax(out,
+                                  node.qualifier_template_id_syntaxes[final_index]);
+  }
+  return out;
+}
+
 const ValueBinding * lookup_value_binding_in_type_scope(SemanticContext & ctx,
                                                         Scope & scope,
                                                         const QualifiedName & qualified,
@@ -5588,7 +5642,10 @@ const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
     }
   }
 
-  TypePtr qualifier_type = ctx.lookup_type_node(scope, node, qualifier_name, false);
+  const CppAstNode qualifier_node =
+      make_value_qualifier_type_lookup_node(node, qualified, qualifier_name);
+  TypePtr qualifier_type =
+      ctx.lookup_type_node(scope, qualifier_node, qualifier_name, false);
   return lookup_value_binding_in_type_scope(ctx, scope, qualified, qualifier_type);
 }
 

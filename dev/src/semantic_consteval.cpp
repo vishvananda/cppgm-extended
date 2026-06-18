@@ -899,7 +899,7 @@ bool find_ctor_base_initializer(SemanticContext & ctx,
       out = &init;
       return true;
     }
-    TypePtr named = ctx.lookup_type(scope, id->value);
+    TypePtr named = ctx.lookup_type_node(scope, *id, id->value);
     if(named && type_equals(strip_top_level_cv(named), base.type)) {
       out = &init;
       return true;
