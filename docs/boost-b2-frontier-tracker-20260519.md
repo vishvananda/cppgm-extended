@@ -105,6 +105,12 @@ rebased Boost frontier branch.
   (`+3.34%`, then `+3.18%` versus the `3.00%` gate). The refreshed baseline
   records instructions `275,941,020,342`, RSS `1.15 GiB`, footprint
   `903.44 MiB`.
+- 2026-06-18 reset/revalidation baseline: branch reset to newest `origin/main`
+  at `3e469910bf2ca23342fbdbfc38cdb487e15c9ebb` before rebasing the Boost
+  frontier fixes. Active perf baseline:
+  `/tmp/cppgm-origin-main-3e469910-20260618-perf-baseline.json`; baseline
+  instructions `266,516,197,305`, RSS `1.14 GiB`, footprint `898.60 MiB`,
+  wall `62.600s`.
 
 ## Local Gate Repairs
 
@@ -570,6 +576,27 @@ rebased Boost frontier branch.
   accessors to external linkage. Validation: focused PA35 reducer passes;
   PA32 thread-local static member and duplicate-local-wrapper guards pass; PA30
   function-local static scalar/class guards pass.
+- this commit: repaired the 2026-06-18 Boost.Array `array0` revalidation
+  regression. The reduced failure warmed libc++'s `std::__identity::operator()`
+  through `decltype(__builtin_invoke(std::declval<_Args>()...))` with
+  `bool const&`, then reused that stale function-template instantiation for a
+  later `void*&` pack element because leaf callable-object overload lookup only
+  considered already materialized `operator()` bindings. Leaf member-call type
+  lookup now instantiates visible member function templates from the typed
+  argument list before overload selection, including `__builtin_invoke`
+  callable-object calls, without source-text reparsing. Regression:
+  `pa23/tests/general/300-decltype-member-template-callable-pack-result-cache.t`.
+  Validation: `make -C dev cppgm++ -j4`; reduced
+  `scratch/boost_array0_for_each_bool_begin_cbegin_then_void_one.cpp` direct
+  compile; focused PA23 regression; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1
+  ACTIVE_TEST_REPORT_PAS='pa23' ... make test-report` passed `521/521`;
+  `python3 scripts/audit_text_reparse.py` passed with all categories at zero;
+  `JOBS=12 ./run-cppgm-b2.sh -a libs/array/test//array0` passed;
+  full `JOBS=12 ./run-cppgm-b2.sh -a libs/array/test` passed and updated 156
+  targets, log
+  `/tmp/boost-frontier-array-full-after-member-template-callable-pack-20260618.log`;
+  perf check against `/tmp/cppgm-origin-main-3e469910-20260618-perf-baseline.json`
+  passed (`+0.78%` instructions, `+0.94%` RSS, `+0.04%` footprint).
 
 Local Boost wrapper state:
 
@@ -628,7 +655,7 @@ Local Boost wrapper state:
 | 2 | `libs/algorithm/test` | pass | `JOBS=12`, direct rerun on 2026-05-25 updated 218 targets after the local RTTI gate repair; the mixed 2026-05-23 survey result was stale. Log `/tmp/boost-frontier-regression-algorithm-rerun.log`. |
 | 3 | `libs/align/test` | pass | `JOBS=12`, direct rerun on 2026-05-25 updated 60 targets after the stale semantic-type constructor-template shadowing fix. Log `/tmp/boost-frontier-regression-align-rerun-after-fix.log`. |
 | 4 | `libs/any/test` | pass | 2026-06-18 reset revalidation initially regressed in `basic_any_test` / `basic_any_test_rv` with exit `139` from reference static-member replay recursion while resolving `basic_tests<basic_any<8, 8>>::copy_counter::count`. After the PA19 replay guard fix, focused `JOBS=12 ./run-cppgm-b2.sh -a libs/any/test` passes and updates 164 targets. |
-| 5 | `libs/array/test` | pass | `JOBS=12`, direct rerun on 2026-05-25 updated 156 targets after the local RTTI gate repair; the mixed 2026-05-23 survey result was stale. Log `/tmp/boost-frontier-regression-array-rerun.log`. |
+| 5 | `libs/array/test` | pass | 2026-06-18 reset revalidation initially regressed in `array0`: libc++ `std::__identity::operator()` result deduction reused a stale `bool const&` member-template instantiation for a later `void*&` pack element in `__builtin_invoke`. After typed leaf member-template callable instantiation, focused `libs/array/test//array0` passes and full `JOBS=12 ./run-cppgm-b2.sh -a libs/array/test` passes, updating 156 targets; log `/tmp/boost-frontier-array-full-after-member-template-callable-pack-20260618.log`. |
 | 6 | `libs/asio/test` | pass | Full `JOBS=12 ./run-cppgm-b2.sh -a libs/asio/test` rerun passed on 2026-05-26 and updated 1015 targets; log `/tmp/boost-frontier-asio-current-20260526.log`. The earlier `basic_datagram_socket` cursor note was stale after the later Asio ledger fixes. |
 | 7 | `libs/assert/test` | pass | Baseline suite survey passed this suite; no current regression item is parked here. |
 | 8 | `libs/assign/test` | pass | Focused `ptr_list_of`, `list_inserter`, `list_of`, and `multi_index_container` now pass. The remaining `multi_index_container` frontier closed after constexpr static-array pointer iteration, private CRTP static pointer downcast access, null-preserving nonprimary base pointer adjustments, `std::endl` external owner routing, qualified same-name member-template hiding, and inherited member-template active-owner selection fixes. Full `JOBS=12 ./run-cppgm-b2.sh -a libs/assign/test` passed on 2026-05-26 and updated 84 targets. |

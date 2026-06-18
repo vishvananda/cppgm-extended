@@ -8171,6 +8171,110 @@ bool append_leaf_function_template_instantiations_from_candidates(
   return added_function;
 }
 
+bool append_leaf_member_function_template_instantiations_from_candidates(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const vector<FunctionTemplateDecl *> & function_templates,
+    ClassInfo * active_owner,
+    const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos,
+    vector<FunctionBinding *> & functions)
+{
+  bool has_dependent_arg_type = false;
+  for(size_t i = 0; i < arg_infos.size(); ++i) {
+    if(service_type_depends_on_template_parameter(services, arg_infos[i].first)) {
+      has_dependent_arg_type = true;
+      break;
+    }
+  }
+  if(!services.semantic_context ||
+     has_dependent_arg_type ||
+     function_templates.empty()) {
+    return false;
+  }
+
+  vector<semantic_conversion::ExprInfo> expr_args;
+  expr_args.reserve(arg_infos.size());
+  for(size_t i = 0; i < arg_infos.size(); ++i) {
+    semantic_conversion::ExprInfo info;
+    info.type = arg_infos[i].first;
+    info.category = arg_infos[i].second;
+    expr_args.push_back(info);
+  }
+
+  bool added_function = false;
+  for(size_t i = 0; i < function_templates.size(); ++i) {
+    if(!function_templates[i]) {
+      continue;
+    }
+    template_api::TemplateFunctionDeductionRequest deduction_request;
+    deduction_request.decl = function_templates[i];
+    deduction_request.args = &expr_args;
+    deduction_request.use_scope = &scope;
+    deduction_request.resolution_scope = &scope;
+    template_api::TemplateFunctionDeductionResult deduction_result;
+    if(!template_api::deduce_function_template(*services.semantic_context,
+                                               deduction_request,
+                                               deduction_result)) {
+      continue;
+    }
+    template_api::TemplateFunctionInstantiationRequest instantiation_request;
+    instantiation_request.decl = function_templates[i];
+    instantiation_request.arguments = deduction_result.arguments;
+    instantiation_request.use_scope =
+        template_api::make_template_environment(scope);
+    instantiation_request.include_body = false;
+    instantiation_request.pack_sizes = deduction_result.pack_sizes;
+    instantiation_request.has_pack_sizes = !deduction_result.pack_sizes.empty();
+    instantiation_request.active_owner = active_owner;
+    try {
+      FunctionBinding * binding =
+          template_api::acquire_function_instantiation(
+              *services.semantic_context,
+              instantiation_request).function_binding;
+      const size_t before = functions.size();
+      append_unique_leaf_function_binding(functions, binding);
+      if(functions.size() != before) {
+        added_function = true;
+      }
+    } catch(const TemplateSubstitutionFailure &) {
+    }
+  }
+  return added_function;
+}
+
+bool append_leaf_member_function_template_instantiations(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TypePtr & object_type,
+    const string & name,
+    const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos,
+    vector<FunctionBinding *> & functions)
+{
+  if(!services.semantic_context) {
+    return false;
+  }
+  ClassInfo * object_info = class_info_for_named_type(services, object_type);
+  if(!object_info) {
+    return false;
+  }
+  if(!object_info->reference_members_collected &&
+     !object_info->reference_member_collection_in_progress) {
+    services.semantic_context->ensure_class_reference_members(*object_info);
+  }
+  semantic_lookup::MemberFunctionTemplateLookupResult templates =
+      semantic_lookup::lookup_visible_member_function_templates(*object_info, name);
+  if(templates.templates.empty()) {
+    return false;
+  }
+  return append_leaf_member_function_template_instantiations_from_candidates(
+      services,
+      scope,
+      templates.templates,
+      const_cast<ClassInfo *>(templates.declared_in),
+      arg_infos,
+      functions);
+}
+
 void append_leaf_function_template_instantiations(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -8361,8 +8465,16 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
       TypePtr object_type = strip_top_level_cv(remove_reference_type(arg_infos[0].first));
       if(object_type && object_type->kind == Type::TK_NAMED) {
         vector<FunctionBinding *> call_operators;
-        if(service_lookup_leaf_member_function_bindings(
-               services, object_type, "operator()", call_operators)) {
+        service_lookup_leaf_member_function_bindings(
+            services, object_type, "operator()", call_operators);
+        append_leaf_member_function_template_instantiations(
+            services,
+            scope,
+            object_type,
+            "operator()",
+            invoke_args,
+            call_operators);
+        if(!call_operators.empty()) {
           FunctionBinding * selected = nullptr;
           if(select_unique_leaf_function_binding(
                  services,
@@ -8537,8 +8649,16 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
         TypePtr();
     if(object_type && object_type->kind == Type::TK_NAMED) {
       vector<FunctionBinding *> call_operators;
-      if(service_lookup_leaf_member_function_bindings(
-             services, object_type, "operator()", call_operators)) {
+      service_lookup_leaf_member_function_bindings(
+          services, object_type, "operator()", call_operators);
+      append_leaf_member_function_template_instantiations(
+          services,
+          scope,
+          object_type,
+          "operator()",
+          arg_infos,
+          call_operators);
+      if(!call_operators.empty()) {
         FunctionBinding * selected = nullptr;
         if(select_unique_leaf_function_binding(
                services,
@@ -8592,8 +8712,16 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
     }
 
     vector<FunctionBinding *> functions;
-    if(!service_lookup_leaf_member_function_bindings(
-           services, object_type, "operator()", functions)) {
+    service_lookup_leaf_member_function_bindings(
+        services, object_type, "operator()", functions);
+    append_leaf_member_function_template_instantiations(
+        services,
+        scope,
+        object_type,
+        "operator()",
+        arg_infos,
+        functions);
+    if(functions.empty()) {
       return false;
     }
 
@@ -8639,8 +8767,16 @@ bool lookup_leaf_call_expression_type(template_api::TemplateServices & services,
   }
 
   vector<FunctionBinding *> functions;
-  if(!service_lookup_leaf_member_function_bindings(
-         services, object_type, callee->children[1].value, functions)) {
+  service_lookup_leaf_member_function_bindings(
+      services, object_type, callee->children[1].value, functions);
+  append_leaf_member_function_template_instantiations(
+      services,
+      scope,
+      object_type,
+      callee->children[1].value,
+      arg_infos,
+      functions);
+  if(functions.empty()) {
     return false;
   }
 
