@@ -76,8 +76,7 @@ inline cpp_decl::TypePtr lookup_direct_named_type_in_inline_namespaces_impl(
     return cpp_decl::TypePtr();
   }
 
-  auto found =
-      scope.named_types.find(name);
+  auto found = scope.named_types.find(name);
   if(found != scope.named_types.end()) {
     return found->second;
   }
@@ -127,7 +126,7 @@ inline semantic_model::Scope * resolve_direct_namespace_in_inline_namespaces_imp
     return nullptr;
   }
 
-  std::map<std::string, semantic_model::Scope *>::const_iterator found =
+  auto found =
       scope.namespace_bindings.find(name);
   if(found != scope.namespace_bindings.end()) {
     return found->second;

@@ -1293,6 +1293,22 @@ bool matches_destructor_entry_type_for_lowir(const TypePtr & entry_type,
          same_class_pointer_parameter_for_lowir(class_type, base->params[0]);
 }
 
+template<typename Matcher>
+string try_lookup_special_member_symbol_by_entry(const vector<FunctionSymbolEntry> & entries,
+                                                 const string & name,
+                                                 const Matcher & matches)
+{
+  for(size_t i = 0; i < entries.size(); ++i) {
+    if(!special_member_lookup_name_matches(entries[i].name, name)) {
+      continue;
+    }
+    if(matches(entries[i].type)) {
+      return entries[i].symbol;
+    }
+  }
+  return string();
+}
+
 symbol_linkage::SymbolIdentity derive_vtable_entry_symbol_identity_for_name(
     const CallSemNode & node,
     const string & qualified_name);
@@ -15144,6 +15160,8 @@ public:
           special_global_role_for_symbol(global.name),
           global_symbol_is_c_linkage(global.name),
           binding_for_defined_symbol(global.name));
+      out.metadata.object_output_root =
+          global.metadata.object_output_root;
       if(global.kind == LowIRGlobal::LG_DATA) {
         out.structured = true;
         for(size_t j = 0; j < global.data_items.size(); ++j) {
@@ -20185,6 +20203,7 @@ private:
             callsem_symbol(node).internal_symbol :
             lowir_name(node.text + "::__vtt");
     LowIRGlobal global = make_data_global(global_name, true);
+    global.metadata.object_output_root = true;
     for(size_t i = 0; i < node.children.size(); ++i) {
       if(node.children[i].kind != CallSemKind::vtt_entry) {
         throw logic_error("invalid VTT entry");

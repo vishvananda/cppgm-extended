@@ -379,14 +379,14 @@ public:
           throw logic_error("invalid class explicit specialization arguments");
         }
         const string specialization_key = template_argument_key(arguments);
-        std::map<std::string, ClassInfo *>::const_iterator existing_instantiation =
+        auto existing_instantiation =
             primary->instantiations.find(specialization_key);
         ClassInfo * existing_info =
             existing_instantiation != primary->instantiations.end() ?
                 existing_instantiation->second :
                 nullptr;
         if(!existing_info) {
-          std::map<std::string, ClassInfo *>::const_iterator existing_reference =
+          auto existing_reference =
               primary->reference_instantiations.find(specialization_key);
           if(existing_reference != primary->reference_instantiations.end()) {
             existing_info = existing_reference->second;
@@ -863,8 +863,6 @@ public:
         }
 
         FunctionBinding * binding = nullptr;
-        const callsemantic::ScopedExactTemplateTypeLookupAnchor conv_owner_anchor(
-            owner_lookup_anchor_for_node(inner));
         if(!resolve_out_of_class_named_method_binding(pattern_scope,
                                                       inner.value,
                                                       name,
@@ -977,11 +975,6 @@ public:
          !declarator_qualified_special_member.qualifiers.empty()) {
         qualified_special_member = &declarator_qualified_special_member;
       }
-      const callsemantic::ScopedExactTemplateTypeLookupAnchor
-          special_member_owner_anchor(
-              declarator_identifier
-                  ? owner_lookup_anchor_for_node(*declarator_identifier)
-                  : callsemantic::ExactTemplateTypeLookupAnchor());
 
         auto record_out_of_class_special_member_for_owner_template =
             [&](ClassInfo * owner,
@@ -1559,9 +1552,6 @@ public:
     if(template_parameters.empty() && !special_member_template) {
       const CppAstNode * function_identifier =
           find_descendant_kind(*declarator, CppAstKind::identifier);
-      const callsemantic::ScopedExactTemplateTypeLookupAnchor block_owner_anchor(
-          function_identifier ? owner_lookup_anchor_for_node(*function_identifier)
-                              : callsemantic::ExactTemplateTypeLookupAnchor());
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "candidate-out-of-class-member declarator=" << node_text(*declarator)
@@ -1632,23 +1622,12 @@ public:
 	                    lookup_class_template(*owner_lookup_scope,
 	                                          owner_template_id_name.name) :
 	                    nullptr;
-	            const TemplateIdSyntax * owner_static_ts =
-	                function_identifier
-	                    ? cppast_qualifier_template_id_syntax(
-	                          *function_identifier,
-	                          qualified_member.qualifiers.size() - 1)
-	                    : nullptr;
 	            vector<TemplateArgument> owner_arguments;
 	            if(owner_template &&
 	               resolve_template_arguments(
 	                   scope,
 	                   owner_template->parameters,
 	                   owner_arg_texts,
-	                   (owner_static_ts &&
-	                    owner_static_ts->argument_syntaxes.size() ==
-	                        owner_arg_texts.size())
-	                       ? &owner_static_ts->argument_syntaxes
-	                       : nullptr,
 	                   owner_arguments,
 	                   owner_template->declaring_scope)) {
 	              owner_template->explicit_static_member_specialization_keys.insert(
@@ -1757,11 +1736,6 @@ public:
               return;
             }
             FunctionBinding * binding = nullptr;
-            const callsemantic::ScopedExactTemplateTypeLookupAnchor
-                method_owner_anchor(
-                    function_identifier
-                        ? owner_lookup_anchor_for_node(*function_identifier)
-                        : callsemantic::ExactTemplateTypeLookupAnchor());
             if(resolve_out_of_class_method_binding_with_resolution(
                    scope,
                    qualified_member,
@@ -2327,9 +2301,6 @@ public:
          !qualified_member_syntax->qualifiers.empty()) {
         const QualifiedName & qualified_member = *qualified_member_syntax;
         const string qualified_member_text = qualified_name_syntax_text(qualified_member);
-        const callsemantic::ScopedExactTemplateTypeLookupAnchor
-            out_of_class_owner_anchor(
-                owner_lookup_anchor_for_node(*function_identifier));
         QualifiedName owner_name_syntax;
         owner_name_syntax.rooted = qualified_member.rooted;
         owner_name_syntax.qualifiers.assign(qualified_member.qualifiers.begin(),
@@ -2889,9 +2860,6 @@ public:
         }
 
         if(owner_template) {
-          const callsemantic::ScopedExactTemplateTypeLookupAnchor
-              static_data_owner_anchor(
-                  owner_lookup_anchor_for_node(*static_member_identifier));
           if(parser_trace::enabled("template.resolve")) {
             std::ostringstream trace;
             trace << "collect-out-of-class-static-member name=" << name
@@ -3693,9 +3661,6 @@ public:
   {
     const CppAstNode * function_identifier =
         find_descendant_kind(declarator, CppAstKind::identifier);
-    const callsemantic::ScopedExactTemplateTypeLookupAnchor block_owner_anchor(
-        function_identifier ? owner_lookup_anchor_for_node(*function_identifier)
-                            : callsemantic::ExactTemplateTypeLookupAnchor());
     const QualifiedName * qualified_member =
         function_identifier ? cppast_qualified_name_syntax(*function_identifier) : nullptr;
     if(!qualified_member || qualified_member->qualifiers.empty()) {
@@ -3839,15 +3804,6 @@ private:
   {
     return callbacks.out_of_class_services->resolve_qualified_owner_class(
         scope, owner_name, resolution);
-  }
-
-  // Build an owner-lookup anchor from a node's trailing qualifier template-id, so
-  // a by-name owner resolution downstream resolves the owner's arguments from
-  // structure instead of reparsed text.
-  callsemantic::ExactTemplateTypeLookupAnchor owner_lookup_anchor_for_node(
-      const CppAstNode & id_node)
-  {
-    return callsemantic::exact_template_type_lookup_anchor_for_owner_node(id_node);
   }
 
   ClassInfo * resolve_qualified_owner_class_from_template_id_syntax(
@@ -4347,13 +4303,13 @@ private:
       pending.push_back(partial);
     }
 
-    for(map<string, ClassInfo *>::iterator it = owner_template.instantiations.begin();
+    for(auto it = owner_template.instantiations.begin();
         it != owner_template.instantiations.end();
         ++it) {
       merge_member_class_template_partial_into_owner_info(
           it->second, member_template_name, partial);
     }
-    for(map<string, ClassInfo *>::iterator it = owner_template.reference_instantiations.begin();
+    for(auto it = owner_template.reference_instantiations.begin();
         it != owner_template.reference_instantiations.end();
         ++it) {
       merge_member_class_template_partial_into_owner_info(

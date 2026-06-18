@@ -1,6 +1,7 @@
 #include "callsemantic/template_source_utils.h"
 
 #include <algorithm>
+#include <deque>
 #include <cctype>
 #include <cstdlib>
 #include <functional>
@@ -374,7 +375,7 @@ void record_definition_parameter_aliases(
 
 void invalidate_out_of_class_definition_caches(ClassTemplateDecl & decl)
 {
-  for(map<string, ClassInfo *>::iterator it = decl.instantiations.begin();
+  for(auto it = decl.instantiations.begin();
       it != decl.instantiations.end();
       ++it) {
     if(!it->second) {
@@ -385,7 +386,7 @@ void invalidate_out_of_class_definition_caches(ClassTemplateDecl & decl)
     it->second->out_of_class_special_member_definitions_applied = false;
     it->second->out_of_class_static_member_definitions_applied = false;
   }
-  for(map<string, ClassInfo *>::iterator it = decl.reference_instantiations.begin();
+  for(auto it = decl.reference_instantiations.begin();
       it != decl.reference_instantiations.end();
       ++it) {
     if(!it->second) {
@@ -762,24 +763,18 @@ ScopedTemplateUseLocation::~ScopedTemplateUseLocation()
   }
 }
 
-thread_local std::vector<std::unique_ptr<ExactTemplateTypeLookupAnchor> >
+thread_local std::deque<ExactTemplateTypeLookupAnchor>
     exact_template_type_lookup_anchors_;
 thread_local std::set<std::pair<std::string, std::string> >
     source_dependent_class_template_use_drops_;
 
 ScopedExactTemplateTypeLookupAnchor::ScopedExactTemplateTypeLookupAnchor(
-    ExactTemplateTypeLookupAnchor anchor)
+    const ExactTemplateTypeLookupAnchor & anchor)
   : active_(!anchor.template_text.empty() &&
             !anchor.identifier.empty())
 {
   if(active_) {
-    // The caller passes a freshly built anchor (an rvalue), so move it into the
-    // stack instead of deep-copying its strings and argument syntaxes. unique_ptr
-    // keeps the anchor address stable across nested pushes without a shared_ptr
-    // control block or atomic refcounting.
-    exact_template_type_lookup_anchors_.push_back(
-        std::unique_ptr<ExactTemplateTypeLookupAnchor>(
-            new ExactTemplateTypeLookupAnchor(std::move(anchor))));
+    exact_template_type_lookup_anchors_.push_back(anchor);
   }
 }
 
@@ -895,12 +890,11 @@ bool node_has_template_id_qualifier_syntax(const CppAstNode & node)
 const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor()
 {
   for(std::size_t i = exact_template_type_lookup_anchors_.size(); i > 0; --i) {
-    const std::unique_ptr<ExactTemplateTypeLookupAnchor> & anchor =
+    const ExactTemplateTypeLookupAnchor & anchor =
         exact_template_type_lookup_anchors_[i - 1];
-    if(anchor &&
-       !anchor->template_text.empty() &&
-       !anchor->identifier.empty()) {
-      return anchor.get();
+    if(!anchor.template_text.empty() &&
+       !anchor.identifier.empty()) {
+      return &anchor;
     }
   }
   return nullptr;
@@ -916,47 +910,6 @@ bool exact_template_type_lookup_anchor_matches(
     return false;
   }
   return anchor.compact_key == compact_lookup_text(normalized_name);
-}
-
-ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_template_id(
-    const cpp_decl::TemplateIdSyntax & syntax)
-{
-  ExactTemplateTypeLookupAnchor anchor;
-  if(syntax.name.name.empty() || syntax.arguments.empty() ||
-     syntax.argument_syntaxes.size() != syntax.arguments.size()) {
-    return anchor;
-  }
-  anchor.template_text = template_id_syntax_text_preserving_spacing(syntax);
-  anchor.identifier = template_lookup_fragment_identifier(anchor.template_text);
-  if(anchor.identifier.empty()) {
-    anchor.identifier = syntax.name.name;
-  }
-  anchor.compact_key = compact_lookup_text(anchor.template_text);
-  anchor.arg_texts = syntax.arguments;
-  anchor.arg_syntaxes = syntax.argument_syntaxes;
-  anchor.has_argument_list = true;
-  return anchor;
-}
-
-ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_owner_node(
-    const CppAstNode & id_node)
-{
-  const cpp_decl::QualifiedName * qn = cppast_qualified_name_syntax(id_node);
-  if(!qn || qn->qualifiers.empty()) {
-    return ExactTemplateTypeLookupAnchor();
-  }
-  const cpp_decl::TemplateIdSyntax * ts =
-      cppast_qualifier_template_id_syntax(id_node, qn->qualifiers.size() - 1);
-  if(!ts) {
-    // The per-qualifier template-id syntax is not always attached to the node
-    // that carries the qualified name; recover it by searching the subtree for
-    // the owner identifier (the final qualifier, stripped of its arguments).
-    ts = template_id_syntax_for_anchor(
-        id_node,
-        strip_trailing_top_level_template_arguments(qn->qualifiers.back()));
-  }
-  return ts ? exact_template_type_lookup_anchor_for_template_id(*ts)
-            : ExactTemplateTypeLookupAnchor();
 }
 
 bool exact_template_type_lookup_anchor_matches_syntax(
@@ -1028,8 +981,21 @@ bool exact_template_type_lookup_anchor_arg_texts(
      !anchor->has_argument_list) {
     return false;
   }
-  arg_texts = anchor->arg_texts;
+  arg_texts = exact_template_type_lookup_anchor_texts(*anchor);
   return true;
+}
+
+const std::vector<std::string> & exact_template_type_lookup_anchor_texts(
+    const ExactTemplateTypeLookupAnchor & anchor)
+{
+  return anchor.arg_texts_ref ? *anchor.arg_texts_ref : anchor.arg_texts;
+}
+
+const std::vector<TemplateArgumentSyntax> *
+exact_template_type_lookup_anchor_syntaxes(
+    const ExactTemplateTypeLookupAnchor & anchor)
+{
+  return anchor.arg_syntaxes_ref ? anchor.arg_syntaxes_ref : &anchor.arg_syntaxes;
 }
 
 bool exact_template_type_lookup_anchor_arg_texts_are_full_match(
@@ -1047,36 +1013,25 @@ exact_template_type_lookup_anchor_arg_syntaxes(
     const std::string & normalized_name,
     const std::string & identifier)
 {
-  if(normalized_name.empty()) {
+  const ExactTemplateTypeLookupAnchor * anchor =
+      current_exact_template_type_lookup_anchor();
+  if(!(anchor && !normalized_name.empty())) {
     return nullptr;
   }
-  // Search the whole anchor stack (innermost first): a nested member template-id
-  // can require the structured args of an OWNER anchor that is not on top.
-  // Prefer an exact compact-key (full-text) match over a looser identifier match,
-  // so a same-named anchor with different arguments is not picked by mistake.
-  for(int pass = 0; pass < 2; ++pass) {
-    for(std::size_t i = exact_template_type_lookup_anchors_.size(); i > 0; --i) {
-      const ExactTemplateTypeLookupAnchor * anchor =
-          exact_template_type_lookup_anchors_[i - 1].get();
-      if(!anchor ||
-         anchor->template_text.empty() ||
-         anchor->identifier.empty() ||
-         !anchor->has_argument_list ||
-         anchor->arg_syntaxes.size() != anchor->arg_texts.size()) {
-        continue;
-      }
-      const bool match =
-          pass == 0
-              ? exact_template_type_lookup_anchor_matches_syntax(*anchor,
-                                                                 normalized_name)
-              : exact_template_type_lookup_anchor_matches_identifier_syntax(
-                    *anchor, identifier);
-      if(match) {
-        return &anchor->arg_syntaxes;
-      }
-    }
+  if(!(exact_template_type_lookup_anchor_matches_syntax(*anchor, normalized_name) ||
+     exact_template_type_lookup_anchor_matches_identifier_syntax(*anchor,
+                                                                 identifier)) ||
+     !anchor->has_argument_list) {
+    return nullptr;
   }
-  return nullptr;
+  const std::vector<std::string> & arg_texts =
+      exact_template_type_lookup_anchor_texts(*anchor);
+  const std::vector<TemplateArgumentSyntax> * arg_syntaxes =
+      exact_template_type_lookup_anchor_syntaxes(*anchor);
+  if(!arg_syntaxes || arg_syntaxes->size() != arg_texts.size()) {
+    return nullptr;
+  }
+  return arg_syntaxes;
 }
 
 bool source_template_id_args_are_arity_compatible(

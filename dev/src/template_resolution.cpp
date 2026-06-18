@@ -17,7 +17,6 @@
 
 #include "callsem_output.h"
 #include "callsemantic_internal.h"
-#include "callsemantic/template_source_utils.h"
 #include "class_template_mangle_info.h"
 #include "cpp_decl_bridge.h"
 #include "pack_parameter_analysis.h"
@@ -76,6 +75,8 @@ using namespace semantic_conversion;
 using namespace semantic_model;
 using namespace template_model;
 using callsemantic_internal::reparseable_type_argument_text;
+using callsemantic_internal::replace_elaborated_identifier_token_text;
+using callsemantic_internal::replace_identifier_token_text;
 using semantic_trace::scope_bindings_for_diagnostic;
 using semantic_trace::scope_name_for_diagnostic;
 
@@ -2572,6 +2573,13 @@ std::uint64_t template_id_syntax_fingerprint(
   if(include_source_identity) {
     hash_combine(seed, syntax.source_location_id);
   }
+  hash_combine(seed, syntax.qualifier_template_id_syntaxes.size());
+  for(std::size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+    hash_combine(seed,
+                 template_id_syntax_fingerprint(
+                     syntax.qualifier_template_id_syntaxes[i],
+                     include_source_identity));
+  }
   hash_combine(seed, syntax.arguments.size());
   for(std::size_t i = 0; i < syntax.arguments.size(); ++i) {
     hash_combine(seed, syntax.arguments[i]);
@@ -3506,50 +3514,6 @@ bool try_resolve_dependent_qualified_member_type_argument(
   return out != nullptr;
 }
 
-// Structured fall-through for a concrete type *name* that arrived as bare text
-// with no carried argument syntax. This happens when a class template-id's
-// argument list is recovered from a qualifier's text during text-based scope
-// lookup -- e.g. libc++'s __integer_sequence<size_t, __integer_pack(...)...>
-// qualifier, whose first argument "size_t" is a plain typedef name with no
-// TemplateArgumentSyntax attached. Resolution goes through ordinary qualified-
-// name lookup (resolve_direct_type_lookup), not a type-id text reparse: the
-// input is restricted to a plain (possibly qualified) identifier with no
-// template-argument list, declarator punctuation, pack ellipsis, or multi-token
-// type-specifier, so this can only ever perform a name lookup.
-bool try_resolve_concrete_named_type_argument(
-    template_api::TemplateServices & services,
-    Scope & raw_argument_scope,
-    const std::string & text,
-    TypePtr & out)
-{
-  out.reset();
-  const std::string trimmed = trim_space(text);
-  if(trimmed.empty()) {
-    return false;
-  }
-  if(trimmed.find_first_of("<>*&[](),") != std::string::npos ||
-     trimmed.find("...") != std::string::npos ||
-     trimmed.find(' ') != std::string::npos) {
-    return false;
-  }
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(trimmed, qualified) ||
-     !is_identifier_text(qualified.name)) {
-    return false;
-  }
-  for(std::size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    if(!is_identifier_text(qualified.qualifiers[i])) {
-      return false;
-    }
-  }
-  template_api::TemplateTypeLookupRequest request;
-  request.scope = &raw_argument_scope;
-  request.allow_class_templates = false;
-  request.name = qualified;
-  return service_type_system(services).resolve_direct_type_lookup(request, out) &&
-         out != nullptr;
-}
-
 bool template_id_argument_texts_have_recoverable_bound_type_argument(
     template_api::TemplateServices & services,
     Scope & raw_argument_scope,
@@ -4119,8 +4083,16 @@ size_t template_id_syntax_cache_dynamic_bytes(
     std::unordered_set<const CppAstNode *> & seen_ast_nodes)
 {
   size_t bytes = qualified_name_cache_dynamic_bytes(syntax.name) +
+                 cache_vector_storage_bytes(syntax.qualifier_template_id_syntaxes) +
                  cache_vector_storage_bytes(syntax.arguments) +
                  cache_vector_storage_bytes(syntax.argument_syntaxes);
+  for(size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+    bytes += template_id_syntax_cache_dynamic_bytes(
+        syntax.qualifier_template_id_syntaxes[i],
+        seen_syntaxes,
+        seen_template_ids,
+        seen_ast_nodes);
+  }
   for(size_t i = 0; i < syntax.arguments.size(); ++i) {
     bytes += cache_string_storage_bytes(syntax.arguments[i]);
   }
@@ -5229,10 +5201,18 @@ std::string named_type_head_text(const std::string & text)
 }
 
 // template-boundary-audit: begin text_recovery_bridge
-template<typename Context>
-std::string deduction_lookup_type_text(Context & context, const TypePtr & type)
+std::string deduction_lookup_type_text(
+    template_api::TemplateTypeSystem & type_system,
+    const TypePtr & type)
 {
-  return template_argument_semantics::lookup_text_for_type_argument(context, type);
+  return template_argument_semantics::lookup_text_for_type_argument(
+      type_system, type);
+}
+
+std::string deduction_lookup_type_text(SemanticContext & ctx,
+                                       const TypePtr & type)
+{
+  return template_argument_semantics::lookup_text_for_type_argument(ctx, type);
 }
 
 TypePtr lookup_type_for_deduction(template_api::TemplateServices & services,
@@ -6696,9 +6676,8 @@ std::vector<FunctionBinding *> lookup_unqualified_functions(Scope & scope,
   return std::vector<FunctionBinding *>();
 }
 
-template<typename Context>
 bool dependent_alias_argument_needs_deferred_surface(
-    Context & context,
+    SemanticContext & ctx,
     const DependentAliasTemplateArgumentSyntax & argument)
 {
   if(argument.syntax.expression) {
@@ -6722,7 +6701,37 @@ bool dependent_alias_argument_needs_deferred_surface(
     return true;
   }
   return template_argument_semantics::type_depends_on_template_parameter(
-             context,
+             ctx,
+             argument.type) &&
+         !named_type_is_template_parameter(argument.type);
+}
+
+bool dependent_alias_argument_needs_deferred_surface(
+    template_api::TemplateTypeSystem & type_system,
+    const DependentAliasTemplateArgumentSyntax & argument)
+{
+  if(argument.syntax.expression) {
+    return true;
+  }
+  if(!argument.type) {
+    return argument.syntax.dependent;
+  }
+  void * dependent_template = nullptr;
+  std::vector<DependentAliasTemplateArgumentSyntax> dependent_args;
+  TypePtr owner;
+  std::vector<std::string> members;
+  bool leading_typename = false;
+  if(named_type_dependent_alias_template(argument.type,
+                                         dependent_template,
+                                         dependent_args) ||
+     named_type_dependent_qualified_member(argument.type,
+                                           owner,
+                                           members,
+                                           leading_typename)) {
+    return true;
+  }
+  return template_argument_semantics::type_depends_on_template_parameter(
+             type_system,
              argument.type) &&
          !named_type_is_template_parameter(argument.type);
 }
@@ -8123,14 +8132,13 @@ bool template_argument_text_mentions_function_template_parameter(
   return false;
 }
 
-template<typename Context>
 bool template_argument_mentions_function_template_parameter(
-    Context & context,
+    SemanticContext & ctx,
     const std::vector<TemplateParameterInfo> & parameters,
     const TemplateArgument & argument)
 {
   if(argument.kind == TemplateArgument::TA_TYPE && argument.type &&
-     type_mentions_function_template_parameter(context, parameters, argument.type)) {
+     type_mentions_function_template_parameter(ctx, parameters, argument.type)) {
     return true;
   }
   return !argument.text.empty() &&
@@ -8138,9 +8146,8 @@ bool template_argument_mentions_function_template_parameter(
              parameters, argument.text);
 }
 
-template<typename Context>
 bool dependent_alias_arguments_mention_function_template_parameter(
-    Context & context,
+    SemanticContext & ctx,
     const std::vector<TemplateParameterInfo> & parameters,
     const TypePtr & type)
 {
@@ -8151,7 +8158,7 @@ bool dependent_alias_arguments_mention_function_template_parameter(
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(arguments[i].type &&
-       type_mentions_function_template_parameter(context, parameters, arguments[i].type)) {
+       type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
       return true;
     }
     if(!arguments[i].text.empty() &&
@@ -8163,9 +8170,8 @@ bool dependent_alias_arguments_mention_function_template_parameter(
   return false;
 }
 
-template<typename Context>
 bool dependent_class_arguments_mention_function_template_parameter(
-    Context & context,
+    SemanticContext & ctx,
     const std::vector<TemplateParameterInfo> & parameters,
     const TypePtr & type)
 {
@@ -8176,7 +8182,7 @@ bool dependent_class_arguments_mention_function_template_parameter(
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(arguments[i].type &&
-       type_mentions_function_template_parameter(context, parameters, arguments[i].type)) {
+       type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
       return true;
     }
     if(!arguments[i].text.empty() &&
@@ -8251,6 +8257,70 @@ bool dependent_named_type_head_is_template_template_parameter(
     if(head_matches(base->named_display, parameters[i].name) ||
        head_matches(base->named_key, parameters[i].name) ||
        head_matches(base->named_semantic_payload, parameters[i].name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool template_argument_mentions_function_template_parameter(
+    template_api::TemplateTypeSystem & type_system,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TemplateArgument & argument)
+{
+  if(argument.kind == TemplateArgument::TA_TYPE && argument.type &&
+     type_mentions_function_template_parameter(type_system, parameters, argument.type)) {
+    return true;
+  }
+  return !argument.text.empty() &&
+         template_argument_text_mentions_function_template_parameter(
+             parameters, argument.text);
+}
+
+bool dependent_alias_arguments_mention_function_template_parameter(
+    template_api::TemplateTypeSystem & type_system,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TypePtr & type)
+{
+  void * alias_template_decl = nullptr;
+  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
+  if(!named_type_dependent_alias_template(type, alias_template_decl, arguments)) {
+    return false;
+  }
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(arguments[i].type &&
+       type_mentions_function_template_parameter(
+           type_system, parameters, arguments[i].type)) {
+      return true;
+    }
+    if(!arguments[i].text.empty() &&
+       template_argument_text_mentions_function_template_parameter(
+           parameters, arguments[i].text)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool dependent_class_arguments_mention_function_template_parameter(
+    template_api::TemplateTypeSystem & type_system,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TypePtr & type)
+{
+  void * class_template_decl = nullptr;
+  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
+  if(!named_type_dependent_class_template(type, class_template_decl, arguments)) {
+    return false;
+  }
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(arguments[i].type &&
+       type_mentions_function_template_parameter(
+           type_system, parameters, arguments[i].type)) {
+      return true;
+    }
+    if(!arguments[i].text.empty() &&
+       template_argument_text_mentions_function_template_parameter(
+           parameters, arguments[i].text)) {
       return true;
     }
   }
@@ -10135,63 +10205,23 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   out.text = rewritten;
   attach_template_argument_source_syntax(syntax, out);
 
-  // An argument that is (or whose owner is) a qualified member template-id
-  // carries the owner's structured arguments on a type-id / id-expression node's
-  // qualifier syntaxes (attached to the inner type-name node, not the root).
-  // Keep them on the anchor stack for the whole resolution — including the
-  // template-template and non-type branches below — so owner resolution uses
-  // structured arguments instead of re-parsing the owner text.
-  std::vector<std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor> >
-      argument_owner_anchors;
-  if(syntax) {
-    const auto find_qualifier_syntax_node =
-        [](const CppAstNode & root) -> const CppAstNode *
-    {
-      std::vector<const CppAstNode *> stack(1, &root);
-      while(!stack.empty()) {
-        const CppAstNode * current = stack.back();
-        stack.pop_back();
-        if(!current->qualifier_template_id_syntaxes.empty()) {
-          return current;
-        }
-        for(std::size_t ci = 0; ci < current->children.size(); ++ci) {
-          stack.push_back(&current->children[ci]);
-        }
-      }
-      return nullptr;
-    };
-    const CppAstNode * owner_syntax_node = nullptr;
-    if(syntax->type_id) {
-      owner_syntax_node = find_qualifier_syntax_node(*syntax->type_id);
-    }
-    if(!owner_syntax_node && syntax->expression) {
-      owner_syntax_node = find_qualifier_syntax_node(*syntax->expression);
-    }
-    if(owner_syntax_node) {
-      for(std::size_t qi = 0;
-          qi < owner_syntax_node->qualifier_template_id_syntaxes.size();
-          ++qi) {
-        callsemantic::ExactTemplateTypeLookupAnchor anchor =
-            callsemantic::exact_template_type_lookup_anchor_for_template_id(
-                owner_syntax_node->qualifier_template_id_syntaxes[qi]);
-        if(!anchor.has_argument_list) {
-          continue;
-        }
-        argument_owner_anchors.push_back(
-            std::unique_ptr<callsemantic::ScopedExactTemplateTypeLookupAnchor>(
-                new callsemantic::ScopedExactTemplateTypeLookupAnchor(anchor)));
-      }
-    }
-  }
-
   if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
-    const bool ok = template_api::resolve_template_template_argument_text(
-        services,
-        argument_scope,
-        trimmed,
-        parameter.template_parameter_count,
-        true,
-        out);
+    const bool ok = syntax ?
+        template_argument_semantics::resolve_template_template_argument_syntax(
+            services,
+            argument_scope,
+            trimmed,
+            *syntax,
+            parameter.template_parameter_count,
+            true,
+            out) :
+        template_api::resolve_template_template_argument_text(
+            services,
+            argument_scope,
+            trimmed,
+            parameter.template_parameter_count,
+            true,
+            out);
     attach_template_argument_source_syntax(syntax, out);
     return ok;
   }
@@ -10627,15 +10657,23 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   bool type_mentions_dependent_bindings = false;
   const bool has_structured_type_syntax =
       syntax && (syntax->resolved_type || syntax->type_id || syntax->template_id);
+  const bool prefer_type_id_for_qualified_template_id =
+      syntax &&
+      syntax->type_id &&
+      syntax->template_id &&
+      !syntax->template_id->qualifier_template_id_syntaxes.empty();
   const auto compute_type_dependency_flags =
       [&]() -> void
   {
     if(type_dependency_flags_computed) {
       return;
     }
-    template_argument_semantics::compute_text_template_dependency_flags(
-        services, argument_scope, trimmed,
-        type_mentions_placeholders, type_mentions_dependent_bindings);
+    type_mentions_placeholders =
+        template_argument_semantics::text_mentions_template_placeholders(
+            services, argument_scope, trimmed);
+    type_mentions_dependent_bindings =
+        template_argument_semantics::text_mentions_dependent_non_namespace_binding_names(
+            services, argument_scope, trimmed);
     type_dependency_flags_computed = true;
   };
   const auto should_defer_dependent_type_resolution =
@@ -10665,6 +10703,24 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   };
   bool attempted_structured_type_syntax = false;
   bool bound_member_type_failure = false;
+  const auto try_parse_type_id_syntax =
+      [&]() -> void
+  {
+    if(!type && syntax && syntax->type_id) {
+      attempted_structured_type_syntax = true;
+      try {
+        template_argument_semantics::parse_type_id_node_for_templates(
+            services, raw_argument_scope, *syntax->type_id, type, true);
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+        if(!type_argument_can_remain_dependent_after_structured_failure(
+               syntax, trimmed)) {
+          throw;
+        }
+        type = make_deferred_dependent_type_argument(trimmed);
+      }
+      resolve_type_argument_if_needed(type);
+    }
+  };
   if(syntax && syntax->resolved_type) {
     type = syntax->resolved_type;
     resolve_type_argument_if_needed(type);
@@ -10680,6 +10736,9 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     if(bound_member_type_failure) {
       return false;
     }
+  }
+  if(prefer_type_id_for_qualified_template_id) {
+    try_parse_type_id_syntax();
   }
   const TemplateIdSyntax * structured_template_id =
       syntax && syntax->template_id ? syntax->template_id.get() : nullptr;
@@ -10701,20 +10760,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
         type);
     resolve_type_argument_if_needed(type);
   }
-  if(!type && syntax && syntax->type_id) {
-    attempted_structured_type_syntax = true;
-    try {
-      template_argument_semantics::parse_type_id_node_for_templates(
-          services, raw_argument_scope, *syntax->type_id, type, true);
-    } catch(const semantic_fallback_audit::SemanticFallbackError &) {
-      if(!type_argument_can_remain_dependent_after_structured_failure(
-             syntax, trimmed)) {
-        throw;
-      }
-      type = make_deferred_dependent_type_argument(trimmed);
-    }
-    resolve_type_argument_if_needed(type);
-  }
+  try_parse_type_id_syntax();
   if(!type && syntax && syntax->expression) {
     attempted_structured_type_syntax = true;
     template_argument_semantics::resolve_type_argument_expression_syntax(
@@ -10726,13 +10772,10 @@ bool resolve_template_argument(template_api::TemplateServices & services,
         type);
     resolve_type_argument_if_needed(type);
   }
-  // The bound-argument lookup stays: it reuses an already-bound class-template
-  // argument type (e.g. an array type "unsigned int [4]") instead of reparsing
-  // its generated text. The text-keyed reparse fallbacks that used to follow it
-  // (resolve_non_dependent_direct_type_argument / lookup_rewritten_bound_type_
-  // argument / lookup_exact_visible_type_argument_text and the
-  // parse_type_argument_text text re-parse) became redundant once producers
-  // thread structured argument data through, and were removed.
+  if(!type && !has_structured_type_syntax) {
+    resolve_non_dependent_direct_type_argument(
+        services, argument_scope, trimmed, type);
+  }
   if(!type && !has_structured_type_syntax) {
     TypePtr direct_bound_type;
     if(lookup_direct_bound_type_argument(raw_argument_scope,
@@ -10751,6 +10794,16 @@ bool resolve_template_argument(template_api::TemplateServices & services,
        rewritten_bound_type) {
       resolve_type_argument_if_needed(rewritten_bound_type);
       type = rewritten_bound_type;
+    }
+  }
+  if(!type && !has_structured_type_syntax) {
+    TypePtr exact_visible_type;
+    if(lookup_exact_visible_type_argument_text(raw_argument_scope,
+                                               trimmed,
+                                               exact_visible_type) &&
+       exact_visible_type) {
+      resolve_type_argument_if_needed(exact_visible_type);
+      type = exact_visible_type;
     }
   }
   if(!type && attempted_structured_type_syntax) {
@@ -10779,19 +10832,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
        recovered_template_id) {
       resolve_type_argument_if_needed(recovered_template_id);
       type = recovered_template_id;
-    }
-  }
-  if(!type && !has_structured_type_syntax) {
-    TypePtr concrete_named_type;
-    if(try_resolve_concrete_named_type_argument(services,
-                                                raw_argument_scope,
-                                                trimmed,
-                                                concrete_named_type) &&
-       concrete_named_type &&
-       !template_argument_semantics::type_depends_on_template_parameter(
-           type_system, concrete_named_type)) {
-      resolve_type_argument_if_needed(concrete_named_type);
-      type = concrete_named_type;
     }
   }
   if(!type) {

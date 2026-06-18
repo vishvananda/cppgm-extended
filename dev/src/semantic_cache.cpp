@@ -24,16 +24,6 @@ std::size_t ScopeTextKeyHash::operator()(const ScopeTextKey & key) const
   return seed;
 }
 
-std::size_t ParsedTypeTextCacheKeyHash::operator()(const ParsedTypeTextCacheKey & key) const
-{
-  std::size_t seed = 0;
-  hash_combine(seed, key.parse_scope_fingerprint);
-  hash_combine(seed, key.semantic_scope_key);
-  hash_combine(seed, key.text);
-  hash_combine(seed, key.reference_class_templates_only);
-  return seed;
-}
-
 std::size_t QualifiedTypeLookupKeyHash::operator()(const QualifiedTypeLookupKey & key) const
 {
   std::size_t seed = 0;
@@ -69,7 +59,6 @@ void SemanticCache::dump(std::ostream & out) const
       << " mention.dependent_non_namespace="
       << dependent_non_namespace_binding_mentions_cache.size()
       << " lookup.qualified_type=" << qualified_type_lookup_cache.size()
-      << " text.parsed_type=" << parsed_type_text_cache.size()
       << " dependent.type_resolution=" << dependent_type_resolution_cache.size()
       << '\n';
 }

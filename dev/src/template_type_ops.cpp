@@ -211,20 +211,6 @@ bool resolve_instantiated_dependent_type(SemanticContext & ctx,
       });
 }
 
-bool parse_type_argument_text(SemanticContext & ctx,
-                              semantic_model::Scope & scope,
-                              const std::string & text,
-                              cpp_decl::TypePtr & out)
-{
-  return template_api::with_template_services(
-      ctx,
-      [&](template_api::TemplateServices & services)
-      {
-        return template_argument_semantics::parse_type_argument_text(
-            services, template_api::make_template_environment(scope), text, out);
-	      });
-}
-
 bool resolve_type_argument_input(SemanticContext & ctx,
                                  semantic_model::Scope & scope,
                                  const cpp_decl::TemplateArgumentSyntax * syntax,

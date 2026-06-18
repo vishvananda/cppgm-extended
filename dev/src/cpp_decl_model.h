@@ -46,6 +46,7 @@ struct TemplateIdSyntax
 {
   QualifiedName name;
   uint32_t source_location_id = 0;
+  std::vector<TemplateIdSyntax> qualifier_template_id_syntaxes;
   std::vector<std::string> arguments;
   std::vector<TemplateArgumentSyntax> argument_syntaxes;
 };

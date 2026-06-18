@@ -215,6 +215,19 @@ Baseline checkpoint:
   - Strategy: classify each site as parser-boundary lookup, ordinary identifier
     lookup, or semantic fallback. Only the fallback class belongs in this plan.
 
+- [x] Remove local member-template owner source-string-to-syntax fallback.
+  - Progress: `template_argument_semantics.cpp`
+    `resolve_member_template_owner_type_text` /
+    `resolve_member_template_template_argument_text` no longer synthesize
+    `TemplateArgumentSyntax` entries from split owner text. Syntax-bearing
+    callers must use carried `TemplateIdSyntax` / qualifier syntax; instantiated
+    alias-template substitution can only recover member template-template
+    arguments from already-bound typed `TemplateArgument` metadata.
+  - Follow-up site: `template_id_syntax_from_text_component` and callers such as
+    dependent qualified-component handling. These should use parser-captured
+    `TemplateIdSyntax` / qualifier syntax when available, and only preserve text
+    as spelling for diagnostics.
+
 - [x] Remove misleading `resolve_*type*text` helper names.
   - Progress: renamed the remaining scoped lookup helpers in
     `template_resolution.cpp`, `semantic_class_model.cpp`, and

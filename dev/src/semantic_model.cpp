@@ -307,11 +307,29 @@ std::string describe_scope_bindings(const Scope & scope)
   return out.str();
 }
 
+std::string function_binding_member_name_for_symbol(const FunctionBinding & binding)
+{
+  const std::string canonical_name =
+      semantic_lookup::canonical_function_lookup_name(binding.name);
+  if(binding.owner_class && !binding.owner_class->qualified_name.empty()) {
+    const std::string owner_name =
+        semantic_lookup::canonical_function_lookup_name(
+            binding.owner_class->qualified_name);
+    if(canonical_name.size() > owner_name.size() + 2 &&
+       canonical_name.compare(0, owner_name.size(), owner_name) == 0 &&
+       canonical_name.compare(owner_name.size(), 2, "::") == 0) {
+      return canonical_name.substr(owner_name.size() + 2);
+    }
+  }
+  return semantic_utils::unqualified_member_name(canonical_name);
+}
+
 std::string function_binding_display_name_for_symbol(const FunctionBinding & binding)
 {
+  const std::string member_binding_name =
+      function_binding_member_name_for_symbol(binding);
   std::string display_name = binding.display_name.empty() ?
-      semantic_utils::unqualified_member_name(
-          semantic_lookup::canonical_function_lookup_name(binding.name)) :
+      member_binding_name :
       binding.display_name;
   if(display_name.empty() &&
      binding.name.compare(0, 8, "operator") == 0) {
@@ -319,10 +337,11 @@ std::string function_binding_display_name_for_symbol(const FunctionBinding & bin
   }
   const bool is_conversion_function =
       callsemantic_internal::is_conversion_function_name(display_name) ||
-      callsemantic_internal::is_conversion_function_name(binding.name);
+      callsemantic_internal::is_conversion_function_name(member_binding_name);
   bool rebuilt_conversion_display = false;
   if(is_conversion_function &&
-     display_name.find(' ') == std::string::npos) {
+     (display_name.find(' ') == std::string::npos ||
+      display_name.compare(0, 8, "operator") != 0)) {
     cpp_decl::TypePtr function_type = binding.declared_type ? binding.declared_type : binding.type;
     if(function_type &&
        function_type->kind == cpp_decl::Type::TK_FUNCTION &&

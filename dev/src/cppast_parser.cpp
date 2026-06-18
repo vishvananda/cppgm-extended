@@ -262,6 +262,8 @@ bool build_template_id_syntax_from_range(
     const std::pair<std::size_t, std::size_t> & range,
     cpp_decl::TemplateIdSyntax & out,
     CppAstParser * parser_context);
+bool qualified_name_has_qualifier_template_id(
+    const qualified_name_parser::QualifiedNameParseResult & parsed);
 void build_qualifier_template_id_syntaxes(
     IRecogTokenSequence & tokens,
     const qualified_name_parser::NameLookup & lookup,
@@ -541,9 +543,6 @@ bool token_forces_template_argument_expression_syntax(const RecogToken & token)
   }
 }
 
-bool is_gnu_float_type_specifier_identifier(const RecogToken & token);
-bool is_gnu_int128_type_specifier_identifier(const RecogToken & token);
-
 bool template_argument_range_fragment_mode(
     IRecogTokenSequence & tokens,
     const qualified_name_parser::NameLookup & lookup,
@@ -634,8 +633,6 @@ bool template_argument_range_fragment_mode(
   const RecogToken & first = tokens.peek(range.first);
   if(is_cv_qualifier(first) ||
          is_simple_type_specifier(first) ||
-         is_gnu_int128_type_specifier_identifier(first) ||
-         is_gnu_float_type_specifier_identifier(first) ||
          is_class_key(first) ||
          first.is_simple(KW_ENUM) ||
          token_is_decltype_or_typeof_specifier_start(first) ||
@@ -882,12 +879,17 @@ void build_template_argument_syntax_from_range(
             parsed) &&
         parsed.end == range.second;
     std::vector<cpp_decl::TemplateIdSyntax> qualifier_template_ids;
-    if(parsed_qualified_name && !parsed.qualifiers.empty()) {
+    if(parsed_qualified_name &&
+       qualified_name_has_qualifier_template_id(parsed)) {
       build_qualifier_template_id_syntaxes(tokens,
                                            lookup,
                                            parsed,
                                            qualifier_template_ids,
                                            parser_context);
+      if(argument.template_id && !qualifier_template_ids.empty()) {
+        argument.template_id->qualifier_template_id_syntaxes =
+            qualifier_template_ids;
+      }
     }
     argument.expression.reset(
         new CppAstNode(
@@ -1121,7 +1123,30 @@ bool build_template_id_syntax(
     out.arguments.push_back(argument.text);
     out.argument_syntaxes.push_back(argument);
   }
+  if(qualified_name_has_qualifier_template_id(parsed)) {
+    std::vector<cpp_decl::TemplateIdSyntax> qualifier_template_ids;
+    build_qualifier_template_id_syntaxes(tokens,
+                                         lookup,
+                                         parsed,
+                                         qualifier_template_ids,
+                                         parser_context);
+    out.qualifier_template_id_syntaxes = std::move(qualifier_template_ids);
+  }
   return !out.name.name.empty();
+}
+
+bool qualified_name_has_qualifier_template_id(
+    const qualified_name_parser::QualifiedNameParseResult & parsed)
+{
+  for(size_t i = 0; i < parsed.qualifier_components.size(); ++i) {
+    const qualified_name_parser::NameComponentParseResult & component =
+        parsed.qualifier_components[i];
+    if(component.has_template_suffix &&
+       component.name_component.second > component.name_component.first) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void build_qualifier_template_id_syntaxes(
@@ -1167,6 +1192,9 @@ void build_qualifier_template_id_syntaxes(
           argument);
       syntax.arguments.push_back(argument.text);
       syntax.argument_syntaxes.push_back(argument);
+    }
+    if(any_template_id) {
+      syntax.qualifier_template_id_syntaxes.assign(out.begin(), out.begin() + i);
     }
     if(!syntax.name.name.empty()) {
       out[i] = syntax;
@@ -4749,16 +4777,6 @@ bool CppAstParser::parse_qualified_special_member_declaration(CppAstNode & out)
   CppAstNode declarator = make_node(CppAstKind::declarator);
   CppAstNode identifier = make_node(CppAstKind::identifier, name);
   set_cppast_qualified_name_syntax(identifier, name_syntax);
-  std::vector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
-  build_qualifier_template_id_syntaxes(tokens,
-                                       lookup,
-                                       parsed_name,
-                                       qualifier_template_id_syntaxes,
-                                       this);
-  if(!qualifier_template_id_syntaxes.empty()) {
-    set_cppast_qualifier_template_id_syntaxes(
-        identifier, std::move(qualifier_template_id_syntaxes));
-  }
   CppAstNode conversion_type_id;
   if(parsed_name.operator_is_conversion &&
      parse_conversion_operator_type_id(name_start, pos, conversion_type_id)) {
@@ -4902,16 +4920,6 @@ bool CppAstParser::parse_qualified_special_member_definition(CppAstNode & out)
   CppAstNode declarator = make_node(CppAstKind::declarator);
   CppAstNode identifier = make_node(CppAstKind::identifier, name);
   set_cppast_qualified_name_syntax(identifier, name_syntax);
-  std::vector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
-  build_qualifier_template_id_syntaxes(tokens,
-                                       lookup,
-                                       parsed_name,
-                                       qualifier_template_id_syntaxes,
-                                       this);
-  if(!qualifier_template_id_syntaxes.empty()) {
-    set_cppast_qualifier_template_id_syntaxes(
-        identifier, std::move(qualifier_template_id_syntaxes));
-  }
   CppAstNode conversion_type_id;
   if(parsed_name.operator_is_conversion &&
      parse_conversion_operator_type_id(name_start, pos, conversion_type_id)) {
@@ -10507,6 +10515,12 @@ bool CppAstParser::parse_qualified_name_text(string & out,
                                          parsed,
                                          *qualifier_template_id_syntaxes,
                                          template_argument_parser_context);
+    if(template_id_syntax != nullptr &&
+       !qualifier_template_id_syntaxes->empty() &&
+       !template_id_syntax->name.name.empty()) {
+      template_id_syntax->qualifier_template_id_syntaxes =
+          *qualifier_template_id_syntaxes;
+    }
   }
   if(qualifier_type_syntaxes != nullptr) {
     qualifier_type_syntaxes->clear();

@@ -302,13 +302,13 @@ private:
 
   Scope * resolve_direct_namespace(Scope & scope, const string & name)
   {
-    map<string, Scope *>::iterator it = scope.namespace_bindings.find(name);
+    auto it = scope.namespace_bindings.find(name);
     return it == scope.namespace_bindings.end() ? nullptr : it->second;
   }
 
   Scope * resolve_direct_type_scope(Scope & scope, const string & name)
   {
-    map<string, Scope *>::iterator it = scope.type_scopes.find(name);
+    auto it = scope.type_scopes.find(name);
     return it == scope.type_scopes.end() ? nullptr : it->second;
   }
 
@@ -709,7 +709,7 @@ private:
       return nullptr;
     }
 
-    map<string, Scope *>::iterator it = named_type_scopes.find(base->named_key);
+    auto it = named_type_scopes.find(base->named_key);
     return it == named_type_scopes.end() ? nullptr : it->second;
   }
 

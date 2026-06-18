@@ -1033,6 +1033,30 @@ DeclT * lookup_unqualified_decl_with_entity_equivalence(
   return nullptr;
 }
 
+template<typename Result, typename FinalLookup, typename Present>
+Result lookup_qualified_with_present(Scope & scope,
+                                     const QualifiedName & qualified,
+                                     const FinalLookup & final_lookup,
+                                     const Present & present)
+{
+  return cpp_scope_lookup::lookup_qualified<Result>(
+      *root_scope(scope), qualified,
+      [&scope, &present](const string & name) -> Scope *
+      {
+        return lookup_unqualified_with_present<Scope *>(
+            scope, name,
+            [](Scope & target, const string & lookup_name) -> Scope *
+            {
+              return resolve_direct_namespace(target, lookup_name);
+            },
+            present);
+      },
+      [](Scope & target, const string & lookup_name) -> Scope *
+      {
+        return resolve_direct_namespace(target, lookup_name);
+      },
+      final_lookup);
+}
 
 template<typename Callback>
 size_t collect_base_paths_impl(const ClassInfo & current,
@@ -1419,51 +1443,53 @@ bool namespace_child_injected_for_direct_lookup(const Scope & child)
 TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
                                             Scope & scope,
                                             Scope & lookup_scope,
-                                            const string & name)
+                                            const string & name,
+                                            const vector<TemplateArgumentSyntax> *
+                                                arg_syntaxes)
 {
   const string normalized_name = ctx.normalize_type_lookup_name(name);
 
   const string template_head =
       semantic_utils::strip_trailing_top_level_template_arguments(normalized_name);
   if(template_head != normalized_name && is_simple_identifier_text(template_head)) {
+    QualifiedName template_id_name;
+    vector<string> template_id_args;
+    const bool parsed_template_id =
+        semantic_utils::split_top_level_template_id_text(normalized_name,
+                                                         template_id_name,
+                                                         template_id_args) &&
+        !template_id_name.rooted &&
+        template_id_name.qualifiers.empty() &&
+        template_id_name.name == template_head;
     map<string, AliasTemplateDecl *>::iterator alias_template =
         scope.alias_templates.find(template_head);
-    if(alias_template != scope.alias_templates.end()) {
-      const Scope * qualification_scope = &scope;
-      if(alias_template->second && alias_template->second->declaring_scope) {
-        qualification_scope = alias_template->second->declaring_scope;
-      } else if(scope.class_info && scope.class_info->enclosing_scope) {
-        qualification_scope = scope.class_info->enclosing_scope;
-      }
-      // Re-qualifying the template-id into a scope that is already `scope`
-      // produces a name that resolves straight back to this point; only the
-      // genuine requalification (into a different declaring scope) is useful.
-      if(qualification_scope != &scope) {
-        const string qualified_name =
-            scope_qualified_name(*qualification_scope, normalized_name);
-        TypePtr type = ctx.lookup_type(lookup_scope, qualified_name, true);
-        if(type) {
-          return type;
-        }
+    if(parsed_template_id &&
+       alias_template != scope.alias_templates.end() &&
+       alias_template->second) {
+      TypePtr type =
+          ctx.instantiate_alias_template_with_syntax(*alias_template->second,
+                                                     lookup_scope,
+                                                     template_id_args,
+                                                     arg_syntaxes,
+                                                     true);
+      if(type) {
+        return type;
       }
     }
 
     map<string, ClassTemplateDecl *>::iterator class_template =
         scope.class_templates.find(template_head);
-    if(class_template != scope.class_templates.end()) {
-      const Scope * qualification_scope = &scope;
-      if(class_template->second && class_template->second->declaring_scope) {
-        qualification_scope = class_template->second->declaring_scope;
-      } else if(scope.class_info && scope.class_info->enclosing_scope) {
-        qualification_scope = scope.class_info->enclosing_scope;
-      }
-      if(qualification_scope != &scope) {
-        const string qualified_name =
-            scope_qualified_name(*qualification_scope, normalized_name);
-        TypePtr type = ctx.lookup_type(lookup_scope, qualified_name, true);
-        if(type) {
-          return type;
-        }
+    if(parsed_template_id &&
+       class_template != scope.class_templates.end() &&
+       class_template->second) {
+      ClassInfo * info =
+          ctx.reference_class_template_instantiation_with_syntax(
+              *class_template->second,
+              lookup_scope,
+              template_id_args,
+              arg_syntaxes);
+      if(info) {
+        return info->type;
       }
     }
   }
@@ -1536,17 +1562,28 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
 TypePtr resolve_direct_type_qualifier_impl(SemanticContext & ctx,
                                            Scope & scope,
                                            Scope & lookup_scope,
-                                           const string & name)
+                                           const string & name,
+                                           const vector<TemplateArgumentSyntax> *
+                                               arg_syntaxes)
 {
-  TypePtr direct = resolve_direct_type_qualifier_local(ctx, scope, lookup_scope, name);
+  TypePtr direct =
+      resolve_direct_type_qualifier_local(ctx,
+                                          scope,
+                                          lookup_scope,
+                                          name,
+                                          arg_syntaxes);
   if(direct) {
     return direct;
   }
   return lookup_inline_namespace_children<TypePtr>(
       scope,
-      [&ctx, &lookup_scope, &name](Scope & child) -> TypePtr
+      [&ctx, &lookup_scope, &name, arg_syntaxes](Scope & child) -> TypePtr
       {
-        return resolve_direct_type_qualifier_local(ctx, child, lookup_scope, name);
+        return resolve_direct_type_qualifier_local(ctx,
+                                                   child,
+                                                   lookup_scope,
+                                                   name,
+                                                   arg_syntaxes);
       },
       [](const TypePtr & type) -> bool
       {
@@ -1575,7 +1612,8 @@ TypePtr lookup_type_from_using_directives_in_scope(SemanticContext & ctx,
         return resolve_direct_type_qualifier_impl(ctx,
                                                   target,
                                                   lookup_scope,
-                                                  lookup_name);
+                                                  lookup_name,
+                                                  nullptr);
       },
       [](const TypePtr & type) -> bool
       {
@@ -1592,7 +1630,8 @@ TypePtr resolve_type_qualifier_in_qualified_scope(SemanticContext & ctx,
                                                   Scope & lookup_scope,
                                                   const string & name)
 {
-  TypePtr direct = resolve_direct_type_qualifier_impl(ctx, scope, lookup_scope, name);
+  TypePtr direct =
+      resolve_direct_type_qualifier_impl(ctx, scope, lookup_scope, name, nullptr);
   TypePtr imported =
       lookup_type_from_using_directives_in_scope(ctx, scope, lookup_scope, name);
   if(direct && imported && !type_equals(direct, imported)) {
@@ -1965,9 +2004,15 @@ Result lookup_qualified_class_or_namespace_generic(SemanticContext & ctx,
 TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                       Scope & scope,
                                       Scope & lookup_scope,
-                                      const string & name)
+                                      const string & name,
+                                      const vector<TemplateArgumentSyntax> *
+                                          arg_syntaxes)
 {
-  return resolve_direct_type_qualifier_impl(ctx, scope, lookup_scope, name);
+  return resolve_direct_type_qualifier_impl(ctx,
+                                            scope,
+                                            lookup_scope,
+                                            name,
+                                            arg_syntaxes);
 }
 
 bool resolve_qualified_namespace_entity_target(SemanticContext & ctx,
@@ -2024,7 +2069,7 @@ Scope * resolve_qualified_variable_parse_scope(SemanticContext & ctx,
 
 Scope * resolve_direct_namespace_local(Scope & scope, const string & name)
 {
-  map<string, Scope *>::iterator it = scope.namespace_bindings.find(name);
+  auto it = scope.namespace_bindings.find(name);
   return it == scope.namespace_bindings.end() ? nullptr : it->second;
 }
 
@@ -3974,7 +4019,42 @@ bool member_access_allowed_through_object(const Scope * lexical_scope,
      function_has_friend_access(current_function->lexical_access_function, object_class)) {
     return true;
   }
-  return scope_has_friend_class_access(lexical_scope, object_class);
+  if(scope_has_friend_class_access(lexical_scope, object_class)) {
+    return true;
+  }
+  if(member_access != MA_PROTECTED) {
+    return false;
+  }
+
+  const ClassInfo * access_base = nullptr;
+  for(size_t i = 0; i < object_class->bases.size(); ++i) {
+    const BaseInfo & base = object_class->bases[i];
+    if(!base.type || base.access == MA_PRIVATE || base.type == declared_in) {
+      continue;
+    }
+    for(size_t j = 0; j < base.type->bases.size(); ++j) {
+      if(base.type->bases[j].type == declared_in) {
+        access_base = base.type;
+        break;
+      }
+    }
+    if(access_base) {
+      break;
+    }
+  }
+  return access_base &&
+         (class_has_friend_class_access(current_class, access_base) ||
+          (current_function &&
+           class_has_friend_class_access(current_function->owner_class, access_base)) ||
+          (current_function &&
+           class_has_friend_class_access(current_function->lexical_access_class,
+                                         access_base)) ||
+          (current_function && function_has_friend_access(current_function, access_base)) ||
+          (current_function &&
+           current_function->lexical_access_function &&
+           function_has_friend_access(current_function->lexical_access_function,
+                                      access_base)) ||
+          scope_has_friend_class_access(lexical_scope, access_base));
 }
 
 const vector<FunctionBinding *> * find_direct_function_set_by_canonical_name(

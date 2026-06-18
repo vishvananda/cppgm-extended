@@ -1,7 +1,6 @@
 #include "callsemantic/constant_call_evaluation.h"
 
 #include "callsemantic_internal.h"
-#include "callsemantic/template_source_utils.h"
 #include "constexpr_eval.h"
 #include "semantic_context.h"
 #include "semantic_context_facets.h"
@@ -597,22 +596,6 @@ bool evaluate_constant_call_expression_value(
   if(callee.kind == CppAstKind::id_expression) {
     const TemplateIdSyntax * template_id =
         cppast_template_id_syntax(callee);
-    // Keep the callee owner template-id's structured arguments on the anchor
-    // stack so a qualified member function template-id resolves its owner from
-    // carried syntax instead of re-parsing the owner text.
-    std::vector<std::unique_ptr<ScopedExactTemplateTypeLookupAnchor> >
-        qualifier_owner_anchors;
-    for(std::size_t qi = 0; qi < callee.qualifier_template_id_syntaxes.size(); ++qi) {
-      ExactTemplateTypeLookupAnchor anchor =
-          exact_template_type_lookup_anchor_for_template_id(
-              callee.qualifier_template_id_syntaxes[qi]);
-      if(!anchor.has_argument_list) {
-        continue;
-      }
-      qualifier_owner_anchors.push_back(
-          std::unique_ptr<ScopedExactTemplateTypeLookupAnchor>(
-              new ScopedExactTemplateTypeLookupAnchor(anchor)));
-    }
     std::vector<FunctionBinding *> candidates =
         template_id ?
             ctx.lookup_function_template_id(scope,

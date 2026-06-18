@@ -3943,12 +3943,14 @@ bool try_expand_alias_template_pattern_structurally(
     if(text.empty()) {
       return false;
     }
-    const bool mentions_placeholders =
-        template_argument_semantics::text_mentions_template_placeholders(
-            services, effective_argument_scope, text);
-    const bool mentions_dependent_bindings =
-        template_argument_semantics::text_mentions_dependent_non_namespace_binding_names(
-            services, effective_argument_scope, text);
+    bool mentions_placeholders = false;
+    bool mentions_dependent_bindings = false;
+    template_argument_semantics::compute_text_template_dependency_flags(
+        services,
+        effective_argument_scope,
+        text,
+        mentions_placeholders,
+        mentions_dependent_bindings);
     if(!mentions_placeholders &&
        !mentions_dependent_bindings &&
        !template_argument_semantics::scope_has_template_placeholders(
@@ -4226,6 +4228,93 @@ bool try_expand_alias_template_pattern_structurally(
     }
     return argument_has_dependent_source_syntax(argument);
   };
+  std::function<bool(const TemplateArgumentSyntax &, const std::string &)>
+      syntax_template_id_head_is_parameter;
+  syntax_template_id_head_is_parameter =
+      [&](const TemplateArgumentSyntax & syntax,
+          const std::string & parameter_name) -> bool
+  {
+    if(parameter_name.empty()) {
+      return false;
+    }
+    const std::string text = trim_space(syntax.text);
+    if(text == parameter_name) {
+      return true;
+    }
+    const std::string source_text = trim_space(syntax.source_text);
+    if(source_text == parameter_name) {
+      return true;
+    }
+    if(syntax.template_id &&
+       syntax.template_id->name.qualifiers.empty() &&
+       syntax.template_id->name.name == parameter_name) {
+      return true;
+    }
+    if(syntax.template_id) {
+      for(std::size_t i = 0; i < syntax.template_id->argument_syntaxes.size(); ++i) {
+        if(syntax_template_id_head_is_parameter(
+               syntax.template_id->argument_syntaxes[i],
+               parameter_name)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  const auto argument_text_template_id_head_is_parameter =
+      [](const std::string & text,
+         const std::string & parameter_name) -> bool
+  {
+    const std::string trimmed = trim_space(text);
+    if(trimmed == parameter_name) {
+      return true;
+    }
+    QualifiedName name;
+    std::vector<std::string> unused_args;
+    return semantic_utils::split_top_level_template_id_text(trimmed,
+                                                            name,
+                                                            unused_args) &&
+           name.qualifiers.empty() &&
+           name.name == parameter_name;
+  };
+  const auto dependent_alias_argument_mentions_template_template_parameter =
+      [&](const DependentAliasTemplateArgumentSyntax & argument) -> bool
+  {
+    for(std::size_t i = 0; i < alias_template.parameters.size(); ++i) {
+      const TemplateParameterInfo & parameter = alias_template.parameters[i];
+      if(parameter.kind != TemplateParameterInfo::TP_TEMPLATE_TEMPLATE ||
+         parameter.name.empty()) {
+        continue;
+      }
+      if(syntax_template_id_head_is_parameter(argument.syntax, parameter.name) ||
+         argument_text_template_id_head_is_parameter(argument.text,
+                                                     parameter.name) ||
+         argument_text_template_id_head_is_parameter(argument.syntax.text,
+                                                     parameter.name) ||
+         argument_text_template_id_head_is_parameter(argument.syntax.source_text,
+                                                     parameter.name)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const auto dependent_alias_argument_mentions_alias_parameter =
+      [&](const DependentAliasTemplateArgumentSyntax & argument) -> bool
+  {
+    for(std::size_t i = 0; i < alias_template.parameters.size(); ++i) {
+      const TemplateParameterInfo & parameter = alias_template.parameters[i];
+      if(parameter.name.empty()) {
+        continue;
+      }
+      if(text_mentions_identifier_token(argument.text, parameter.name) ||
+         text_mentions_identifier_token(argument.syntax.text, parameter.name) ||
+         text_mentions_identifier_token(argument.syntax.source_text,
+                                       parameter.name)) {
+        return true;
+      }
+    }
+    return false;
+  };
   const auto dependent_alias_arguments_need_alias_target_scope =
       [&](const std::vector<DependentAliasTemplateArgumentSyntax> & alias_args) -> bool
   {
@@ -4234,6 +4323,12 @@ bool try_expand_alias_template_pattern_structurally(
         return true;
       }
       if(alias_args[i].syntax.dependent || alias_args[i].syntax.expression) {
+        return true;
+      }
+      if(dependent_alias_argument_mentions_alias_parameter(alias_args[i])) {
+        return true;
+      }
+      if(dependent_alias_argument_mentions_template_template_parameter(alias_args[i])) {
         return true;
       }
     }
@@ -4728,8 +4823,11 @@ bool try_expand_alias_template_pattern_structurally(
                                            dependent_alias_args) &&
        dependent_alias_template_decl) {
       TypePtr substituted_alias;
+      const bool alias_args_need_target_scope =
+          dependent_alias_arguments_need_alias_target_scope(dependent_alias_args);
       if(template_argument_semantics::substitute_type(
-             effective_body_scope.require(),
+             alias_args_need_target_scope ? ensure_alias_target_scope() :
+                                            effective_body_scope.require(),
              pattern,
              alias_template.parameters,
              arguments,
@@ -4769,7 +4867,7 @@ bool try_expand_alias_template_pattern_structurally(
             return true;
           }
           template_api::TemplateEnvironmentHandle nested_argument_scope =
-              dependent_alias_arguments_need_alias_target_scope(dependent_alias_args) ?
+              alias_args_need_target_scope ?
                   template_api::make_template_environment(ensure_alias_target_scope()) :
                   effective_argument_scope;
           std::string nested_expanded_text;
@@ -5649,10 +5747,15 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
         break;
       }
     }
-    if(template_argument_semantics::text_mentions_template_placeholders(
-           services, effective_argument_scope, trimmed) ||
-       template_argument_semantics::text_mentions_dependent_non_namespace_binding_names(
-           services, effective_argument_scope, trimmed)) {
+    bool mentions_placeholders = false;
+    bool mentions_dependent_bindings = false;
+    template_argument_semantics::compute_text_template_dependency_flags(
+        services,
+        effective_argument_scope,
+        trimmed,
+        mentions_placeholders,
+        mentions_dependent_bindings);
+    if(mentions_placeholders || mentions_dependent_bindings) {
       has_dependent_arguments = true;
     }
   }
@@ -6925,7 +7028,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         TypePtr placeholder_pattern_type;
         if(pattern_mentions_placeholders) {
           const TemplateArgumentSyntax * placeholder_syntax =
-              i < partial.arg_syntaxes.size() ? &partial.arg_syntaxes[i] : nullptr;
+              pattern_syntax;
           if(placeholder_syntax) {
             parse_template_argument_type_syntax(
                 services,
@@ -7329,17 +7432,16 @@ bool match_partial_variable_specialization(
                                            deduced_pack_sizes);
 }
 
-template<typename SpecializationDecl>
-int compare_partial_specialization_preference(
+int compare_partial_class_specialization_preference(
     template_api::TemplateServices & services,
-    const SpecializationDecl & current,
-    const SpecializationDecl & best)
+    const PartialClassTemplateSpecializationDecl & current,
+    const PartialClassTemplateSpecializationDecl & best)
 {
   return compare_partial_specialization_preference_impl(
       services,
       current,
       best,
-      [&](const SpecializationDecl & partial,
+      [&](const PartialClassTemplateSpecializationDecl & partial,
           const std::vector<TemplateArgument> & actual_arguments,
           std::vector<TemplateArgument> & deduced_arguments,
           std::size_t & specificity_score) -> bool
@@ -7357,20 +7459,31 @@ int compare_partial_specialization_preference(
       });
 }
 
-int compare_partial_class_specialization_preference(
-    template_api::TemplateServices & services,
-    const PartialClassTemplateSpecializationDecl & current,
-    const PartialClassTemplateSpecializationDecl & best)
-{
-  return compare_partial_specialization_preference(services, current, best);
-}
-
 int compare_partial_variable_specialization_preference(
     template_api::TemplateServices & services,
     const VariableTemplateSpecializationDecl & current,
     const VariableTemplateSpecializationDecl & best)
 {
-  return compare_partial_specialization_preference(services, current, best);
+  return compare_partial_specialization_preference_impl(
+      services,
+      current,
+      best,
+      [&](const VariableTemplateSpecializationDecl & partial,
+          const std::vector<TemplateArgument> & actual_arguments,
+          std::vector<TemplateArgument> & deduced_arguments,
+          std::size_t & specificity_score) -> bool
+      {
+        Scope & match_scope = partial.pattern_scope ? *partial.pattern_scope :
+                                                    *current.pattern_scope;
+        return match_partial_specialization_impl(
+            services,
+            match_scope,
+            partial,
+            actual_arguments,
+            deduced_arguments,
+            specificity_score,
+            nullptr);
+      });
 }
 
 }  // namespace template_specialization

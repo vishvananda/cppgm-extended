@@ -97,7 +97,7 @@ void import_inline_namespace_members(semantic_model::Scope & scope,
                                      semantic_model::Scope & target)
 {
   bool changed = false;
-  for(std::map<std::string, semantic_model::Scope *>::iterator it =
+  for(auto it =
           target.namespace_bindings.begin();
       it != target.namespace_bindings.end(); ++it) {
     scope.namespace_bindings[it->first] = it->second;

@@ -16,7 +16,6 @@
 #include "cppast_dump.h"
 #include "callsemantic_internal.h"
 #include "callsemantic/function_registry.h"
-#include "callsemantic/template_source_utils.h"
 #include "pack_parameter_analysis.h"
 #include "rtti_names.h"
 #include "semantic_class_model.h"

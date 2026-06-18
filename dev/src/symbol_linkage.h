@@ -75,11 +75,6 @@ struct FunctionSymbolOptions
   const std::vector<const CppAstNode *> * parameter_declarations_pattern = nullptr;
   bool has_trailing_function_parameter_pack = false;
   bool suppress_template_argument_pack_grouping = false;
-  // The owning class is an uninstantiated class template (its member scope still
-  // carries template placeholders), so this member function has no concrete ABI
-  // object symbol yet. When set, symbol emission defers (internal symbol only)
-  // instead of failing to mangle the placeholder-bearing owner.
-  bool owner_class_is_dependent = false;
   const semantic_model::Scope * lookup_scope = nullptr;
   cpp_decl::TypePtr lambda_closure_type;
   cpp_decl::TypePtr local_class_type;

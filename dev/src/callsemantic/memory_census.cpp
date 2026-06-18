@@ -458,9 +458,9 @@ void census_callsem_node(const CallSemNode & node,
 }
 
 void census_scope(const Scope * scope,
-                  MemoryCensus & census,
-                  unordered_set<const Scope *> & seen_scopes,
-                  unordered_set<const Type *> & seen_types)
+                 MemoryCensus & census,
+                 unordered_set<const Scope *> & seen_scopes,
+                 unordered_set<const Type *> & seen_types)
 {
   if(scope == nullptr || !seen_scopes.insert(scope).second) {
     return;
@@ -552,7 +552,7 @@ void census_scope(const Scope * scope,
                 sizeof(ValueBinding) +
                     value_binding_payload_bytes(it->second, census, seen_types));
   }
-  for(map<string, Scope *>::const_iterator it = scope->namespace_bindings.begin();
+  for(auto it = scope->namespace_bindings.begin();
       it != scope->namespace_bindings.end();
       ++it) {
     bytes += string_storage_bytes(it->first);
@@ -888,17 +888,17 @@ void census_class_template(const ClassTemplateDecl & decl,
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
     bytes += template_parameter_payload_bytes(decl.parameters[i], census, seen_types);
   }
-  for(map<string, ClassInfo *>::const_iterator it = decl.instantiations.begin();
+  for(auto it = decl.instantiations.begin();
       it != decl.instantiations.end();
       ++it) {
     bytes += string_storage_bytes(it->first);
   }
-  for(map<string, ClassInfo *>::const_iterator it = decl.reference_instantiations.begin();
+  for(auto it = decl.reference_instantiations.begin();
       it != decl.reference_instantiations.end();
       ++it) {
     bytes += string_storage_bytes(it->first);
   }
-  for(map<string, ClassInfo *>::const_iterator it = decl.fast_reference_cache.begin();
+  for(auto it = decl.fast_reference_cache.begin();
       it != decl.fast_reference_cache.end();
       ++it) {
     bytes += string_storage_bytes(it->first);
@@ -1072,17 +1072,6 @@ void census_semantic_cache(const semantic_cache::SemanticCache & cache,
   }
   census.note("cache.qualified_type_lookup", bytes, cache.qualified_type_lookup_cache.size());
 
-  bytes = unordered_map_storage_bytes(cache.parsed_type_text_cache);
-  for(unordered_map<semantic_cache::ParsedTypeTextCacheKey,
-                    semantic_cache::ParsedTypeTextCacheEntry,
-                    semantic_cache::ParsedTypeTextCacheKeyHash>::const_iterator
-          it = cache.parsed_type_text_cache.begin();
-      it != cache.parsed_type_text_cache.end();
-      ++it) {
-    census_type(it->second.type, census, seen_types);
-  }
-  census.note("cache.parsed_type_text", bytes, cache.parsed_type_text_cache.size());
-
   bytes = map_storage_bytes(cache.dependent_type_resolution_cache);
   census.note("cache.dependent_type_resolution",
               bytes,
@@ -1103,6 +1092,12 @@ uint64_t hash_string_value(const string & value)
     hash *= 1099511628211ULL;
   }
   return hash;
+}
+
+template<class T>
+uint64_t hash_integral_value(T value)
+{
+  return static_cast<uint64_t>(value);
 }
 
 uint64_t hash_type_ptr_value(const TypePtr & type)
