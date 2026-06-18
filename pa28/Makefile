@@ -62,7 +62,7 @@ endif
 endif
 
 ref-test:
-	@scripts/run_all_tests.pl $(REF_TEST_APP) ref tests
+	@$(REF_TEST_RUN)
 
 include ../scripts/pa_run_check_targets.mk
 

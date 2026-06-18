@@ -477,6 +477,7 @@ ref-test-%:
 		$(SUBMAKE_OBJ_ARG) \
 		$(SUBMAKE_GENERATED_ARG) \
 		$(SUBMAKE_CC_FLAGS_ARG) \
+		$(if $(strip $(TEST)),TEST=$(patsubst $*/%,%,$(TEST)),) \
 		ref-test
 
 test-%:

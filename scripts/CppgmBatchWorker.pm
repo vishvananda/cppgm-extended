@@ -16,6 +16,7 @@ our @EXPORT_OK = qw(
   clear_progress_state
   close_worker
   collect_tests
+  ensure_test_app_available
   get_timeout_from_env
   note_progress_state
   open_worker
@@ -77,6 +78,12 @@ sub clear_progress_state
 sub collect_tests
 {
 	my ($root, $pattern) = @_;
+	die "Test path '$root' does not exist\n" if !-e $root;
+	if (-f $root)
+	{
+		return $root =~ $pattern ? ($root) : ();
+	}
+
 	my @tests;
 	find(sub {
 		return if !-f $_;
@@ -165,6 +172,27 @@ sub command_exists
 		return 1 if -x $path;
 	}
 	return 0;
+}
+
+sub ensure_test_app_available
+{
+	my ($app, $suffix, $tests_root) = @_;
+	return if command_exists($app);
+
+	my $kind = $suffix eq 'ref' ? 'reference test app' : 'test app';
+	my $message = "ERROR: $kind '$app' does not exist or is not executable.\n";
+
+	if ($suffix eq 'ref')
+	{
+		my $regular_app = $app;
+		$regular_app =~ s/-ref$//;
+		my $test_arg = defined($tests_root) && $tests_root ne '' ? " TEST=$tests_root" : "";
+		$message .= "No .ref files were written.\n";
+		$message .= "Build/export the reference binary, or intentionally regenerate with the current compiler using:\n";
+		$message .= "  make ref-test$test_arg REF_TEST_APP=$regular_app\n";
+	}
+
+	die $message;
 }
 
 sub resolve_host_command

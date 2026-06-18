@@ -158,10 +158,19 @@ test-batch: $(TEST_DEPS)
 	$(call run_compile_course_bucket_batch,$(COURSE_COMPILE_TEST_ROOT))
 
 ref-test:
+ifneq ($(strip $(TEST)),)
+	@$(REF_TEST_RUN)
+else
 	@perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
+endif
 
 ref-test-batch:
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
+
+REF_TEST_RUN = case "$(TEST)" in \
+	$(COMPILE_TEST_ROOT)/*|$(COURSE_COMPILE_TEST_ROOT)/*) perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
+	*) echo "Usage: make ref-test TEST=$(COMPILE_TEST_ROOT)/<file>.t"; exit 1 ;; \
+esac
 
 CHECK_RUN = case "$(TEST)" in \
 	tests/compile/*) perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
