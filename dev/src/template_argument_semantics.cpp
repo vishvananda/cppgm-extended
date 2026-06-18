@@ -17546,6 +17546,35 @@ bool argument_syntax_mentions_pack_expansion_identifier(const TemplateArgumentSy
 CppAstNode make_substituted_type_id_node(const TypePtr & type,
                                          const string & text)
 {
+  TypePtr base = strip_top_level_cv(type);
+  if(base &&
+     (base->kind == Type::TK_LVALUE_REFERENCE ||
+      base->kind == Type::TK_RVALUE_REFERENCE) &&
+     base->inner) {
+    const string inner_text = reparseable_type_argument_text(base->inner);
+    CppAstNode type_id = make_substituted_type_id_node(
+        base->inner,
+        inner_text.empty() ? text : inner_text);
+    type_id.value = text;
+    type_id.semantic_type = type;
+
+    CppAstNode abstract;
+    abstract.kind = CppAstKind::abstract_declarator;
+    abstract.value = base->kind == Type::TK_LVALUE_REFERENCE ? "&" : "&&";
+
+    CppAstNode ref;
+    ref.kind = CppAstKind::ptr_operator;
+    ref.value = abstract.value;
+    ref.has_token = true;
+    ref.token_kind = RT_SIMPLE;
+    ref.simple_type =
+        base->kind == Type::TK_LVALUE_REFERENCE ? OP_AMP : OP_LAND;
+
+    abstract.children.push_back(ref);
+    type_id.children.push_back(abstract);
+    return type_id;
+  }
+
   CppAstNode type_id;
   type_id.kind = CppAstKind::type_id;
   type_id.value = text;
@@ -18055,6 +18084,47 @@ void refresh_qualified_name_qualifier_template_id_texts(CppAstNode & node)
   node.value = qualified_name_text(qualified);
 }
 
+bool apply_simple_substituted_type_id_declarator(const CppAstNode & type_id,
+                                                 const TypePtr & base,
+                                                 TypePtr & out)
+{
+  out = base;
+  const CppAstNode * abstract =
+      find_child_kind(type_id, CppAstKind::abstract_declarator);
+  if(!abstract) {
+    abstract = find_child_kind(type_id, CppAstKind::declarator);
+  }
+  if(!abstract) {
+    return true;
+  }
+
+  for(size_t i = 0; i < abstract->children.size(); ++i) {
+    const CppAstNode & child = abstract->children[i];
+    if(child.kind == CppAstKind::parameter_pack) {
+      continue;
+    }
+    if(child.kind != CppAstKind::ptr_operator || !child.has_token) {
+      return false;
+    }
+    if(child.simple_type == OP_STAR) {
+      TypePtr base_no_cv = strip_top_level_cv(out);
+      if(base_no_cv &&
+         (base_no_cv->kind == Type::TK_LVALUE_REFERENCE ||
+          base_no_cv->kind == Type::TK_RVALUE_REFERENCE)) {
+        return false;
+      }
+      out = make_pointer(out);
+    } else if(child.simple_type == OP_AMP) {
+      out = make_lvalue_reference_raw(out);
+    } else if(child.simple_type == OP_LAND) {
+      out = make_rvalue_reference_raw(out);
+    } else {
+      return false;
+    }
+  }
+  return static_cast<bool>(out);
+}
+
 bool substitute_type_pack_expression_node(
     Scope & scope,
     const CppAstNode & node,
@@ -18100,7 +18170,8 @@ bool substitute_type_pack_expression_node(
          (out.children[1].kind == CppAstKind::declarator ||
           out.children[1].kind == CppAstKind::abstract_declarator) &&
          out.children[1].children.size() == 1 &&
-         out.children[1].children[0].kind == CppAstKind::parameter_pack);
+         (out.children[1].children[0].kind == CppAstKind::parameter_pack ||
+          out.children[1].children[0].kind == CppAstKind::ptr_operator));
     const string direct_type_name =
         type_name ? strip_template_parameter_type_prefix(type_name->value) :
                     string();
@@ -18108,9 +18179,15 @@ bool substitute_type_pack_expression_node(
       auto replacement =
           type_replacements.find(direct_type_name);
       if(replacement != type_replacements.end()) {
+        TypePtr substituted_type = replacement->second;
+        if(!apply_simple_substituted_type_id_declarator(out,
+                                                        replacement->second,
+                                                        substituted_type)) {
+          return false;
+        }
         out = make_substituted_type_id_node(
-            replacement->second,
-            reparseable_type_argument_text(replacement->second));
+            substituted_type,
+            reparseable_type_argument_text(substituted_type));
         return true;
       }
     }
