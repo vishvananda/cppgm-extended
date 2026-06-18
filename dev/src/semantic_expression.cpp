@@ -7133,6 +7133,9 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
     if(type_id.kind != CppAstKind::type_id || type_id.children.empty()) {
       return TypePtr();
     }
+    if(type_id.children.size() != 1) {
+      return TypePtr();
+    }
     const CppAstNode & specifiers = type_id.children[0];
     if(specifiers.semantic_type) {
       return specifiers.semantic_type;
