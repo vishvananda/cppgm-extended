@@ -183,10 +183,6 @@ public:
       const std::string & text) = 0;
   virtual cpp_decl::TypePtr maybe_introduce_elaborated_type(semantic_model::Scope & scope,
                                                             const std::string & text) = 0;
-  virtual bool parse_type_text(semantic_model::Scope & scope,
-                               const std::string & text,
-                               cpp_decl::TypePtr & type,
-                               bool reference_class_templates_only = false) = 0;
   virtual bool parse_type_id(semantic_model::Scope & scope,
                              const CppAstNode & node,
                              cpp_decl::TypePtr & type,
@@ -708,6 +704,13 @@ public:
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,
       const std::vector<std::string> & arg_texts) = 0;
+  virtual semantic_model::ClassInfo * reference_class_template_instantiation_with_syntax(
+      semantic_model::ClassTemplateDecl & decl,
+      semantic_model::Scope & use_scope,
+      const std::vector<std::string> & arg_texts,
+      const std::vector<cpp_decl::TemplateArgumentSyntax> * arg_syntaxes,
+      template_api::ClassTemplateSourceUseMode source_use_mode =
+          template_api::ClassTemplateSourceUseMode::EmitClassUse) = 0;
   virtual semantic_model::ClassInfo * reference_selected_class_template_instantiation(
       semantic_model::ClassTemplateDecl & decl,
       semantic_model::Scope & use_scope,

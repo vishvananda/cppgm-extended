@@ -1189,13 +1189,13 @@ public:
     canonicalize_simple_dependent_argument_texts(arguments);
     note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_key_builds);
     key = template_argument_key(arguments);
-    map<string, ClassInfo *>::iterator found = decl.instantiations.find(key);
+    auto found = decl.instantiations.find(key);
     if(found != decl.instantiations.end()) {
       info = found->second;
       return info != nullptr;
     }
     if(lazy_references) {
-      map<string, ClassInfo *>::iterator reference_found =
+      auto reference_found =
           decl.reference_instantiations.find(key);
       if(reference_found != decl.reference_instantiations.end()) {
         info = reference_found->second;
@@ -1480,11 +1480,13 @@ public:
     if(!anchor.has_argument_list) {
       return true;
     }
-    if(anchor.arg_texts.size() > arguments.size()) {
+    const std::vector<std::string> & anchor_arg_texts =
+        exact_template_type_lookup_anchor_texts(anchor);
+    if(anchor_arg_texts.size() > arguments.size()) {
       return false;
     }
-    for(std::size_t i = 0; i < anchor.arg_texts.size(); ++i) {
-      if(compact_lookup_text(anchor.arg_texts[i]) !=
+    for(std::size_t i = 0; i < anchor_arg_texts.size(); ++i) {
+      if(compact_lookup_text(anchor_arg_texts[i]) !=
          compact_lookup_text(template_argument_text(arguments[i]))) {
         return false;
       }
@@ -1629,7 +1631,7 @@ public:
         use_raw_reference_cache ? raw_reference_cache_key(decl, use_scope, arg_texts) :
                                   std::string();
     if(use_raw_reference_cache) {
-      map<string, ClassInfo *>::iterator cached =
+      auto cached =
           decl.fast_reference_cache.find(raw_cache_key);
       if(cached != decl.fast_reference_cache.end() &&
          raw_reference_cache_info_usable(decl, cached->second)) {
@@ -2852,8 +2854,8 @@ public:
 
     ClassInfo * info = nullptr;
     const bool lazy_references = lazy_class_template_references_enabled();
-    map<string, ClassInfo *>::iterator found = decl.instantiations.find(key);
-    map<string, ClassInfo *>::iterator reference_found =
+    auto found = decl.instantiations.find(key);
+    auto reference_found =
         lazy_references ?
             decl.reference_instantiations.find(key) :
             decl.reference_instantiations.end();

@@ -78,6 +78,15 @@ bool resolve_template_template_argument_text(
     bool allow_dependent_placeholders,
     template_model::TemplateArgument & out);
 
+bool resolve_template_template_argument_syntax(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const std::string & text,
+    const cpp_decl::TemplateArgumentSyntax & syntax,
+    std::size_t expected_parameter_count,
+    bool allow_dependent_placeholders,
+    template_model::TemplateArgument & out);
+
 bool substitute_type(const cpp_decl::TypePtr & type,
                      const std::vector<template_model::TemplateParameterInfo> & parameters,
                      const std::vector<template_model::TemplateArgument> & arguments,
@@ -248,9 +257,6 @@ bool text_mentions_dependent_non_namespace_binding_names(
     template_api::TemplateEnvironmentHandle scope,
     const std::string & text);
 
-// Runs both text_mentions_template_placeholders and
-// text_mentions_dependent_non_namespace_binding_names against a single shared
-// identifier tokenization of `text`.
 void compute_text_template_dependency_flags(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -333,10 +339,6 @@ bool evaluate_dependent_type_expression_leaf(
     const template_api::TemplateDependentTypeExprRequest & request,
     cpp_decl::TypePtr & out);
 
-bool parse_type_argument_text(template_api::TemplateServices & services,
-                              template_api::TemplateEnvironmentHandle scope,
-                              const std::string & text,
-                              cpp_decl::TypePtr & out);
 bool resolve_type_argument_input(template_api::TemplateServices & services,
                                  template_api::TemplateEnvironmentHandle scope,
                                  const cpp_decl::TemplateArgumentSyntax * syntax,

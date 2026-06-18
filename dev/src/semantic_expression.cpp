@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "callsem_output.h"
-#include "callsemantic/template_source_utils.h"
 #include "constant_value.h"
 #include "cpp_decl_ast.h"
 #include "constructor_lifecycle_service.h"
@@ -1196,11 +1195,6 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
   if(!qualified || (!qualified->rooted && qualified->qualifiers.empty())) {
     return false;
   }
-
-  // Recover the owner template-id's structured argument syntaxes so qualified
-  // owner-class lookup uses them instead of re-parsing the owner text.
-  const callsemantic::ScopedExactTemplateTypeLookupAnchor owner_anchor(
-      callsemantic::exact_template_type_lookup_anchor_for_owner_node(operand_node));
 
   const TemplateIdSyntax * template_id = cppast_template_id_syntax(operand_node);
   vector<FunctionBinding *> functions =

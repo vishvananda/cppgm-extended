@@ -2117,7 +2117,7 @@ ClassInfo * class_template_dependent_reference_source_owner(
     ClassTemplateDecl & decl)
 {
   ClassInfo * fallback = nullptr;
-  for(std::map<std::string, ClassInfo *>::const_iterator it =
+  for(auto it =
           instantiations.begin();
       it != instantiations.end();
       ++it) {
@@ -3004,15 +3004,25 @@ void bind_instantiated_function_parameter_values(
   }
 }
 
-template<typename Context>
-std::string template_argument_text_for_diagnostic(Context & context,
+std::string template_argument_text_for_diagnostic(SemanticContext & ctx,
                                                   const TemplateArgument & argument)
 {
   return template_model::template_argument_text(
       argument,
-      [&context](const TypePtr & type)
+      [&ctx](const TypePtr & type)
       {
-        return instantiation_argument_type_text(context, type);
+        return instantiation_argument_type_text(ctx, type);
+      });
+}
+
+std::string template_argument_text_for_diagnostic(template_api::TemplateTypeSystem & type_system,
+                                                  const TemplateArgument & argument)
+{
+  return template_model::template_argument_text(
+      argument,
+      [&type_system](const TypePtr & type)
+      {
+        return instantiation_argument_type_text(type_system, type);
       });
 }
 
@@ -3865,15 +3875,26 @@ bool template_arguments_are_dependent_for_instantiation(
       });
 }
 
-template<typename Context>
-void append_template_argument_diagnostic(Context & context,
+void append_template_argument_diagnostic(SemanticContext & ctx,
                                          std::ostringstream & out,
                                          const std::vector<TemplateArgument> & arguments)
 {
   out << " [template-args";
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     out << (i == 0 ? " " : ", ")
-        << template_argument_text_for_diagnostic(context, arguments[i]);
+        << template_argument_text_for_diagnostic(ctx, arguments[i]);
+  }
+  out << "]";
+}
+
+void append_template_argument_diagnostic(template_api::TemplateTypeSystem & type_system,
+                                         std::ostringstream & out,
+                                         const std::vector<TemplateArgument> & arguments)
+{
+  out << " [template-args";
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    out << (i == 0 ? " " : ", ")
+        << template_argument_text_for_diagnostic(type_system, arguments[i]);
   }
   out << "]";
 }
@@ -3899,9 +3920,8 @@ void append_template_parameter_diagnostic(std::ostringstream & out,
   out << "]";
 }
 
-template<typename Context>
 void ensure_template_arguments_fully_bind_parameters(
-    Context & context,
+    SemanticContext & ctx,
     const char * stage,
     const std::string & template_name,
     const std::vector<TemplateParameterInfo> & parameters,
@@ -3919,7 +3939,30 @@ void ensure_template_arguments_fully_bind_parameters(
   out << " [param-count " << parameters.size() << "]";
   out << " [arg-count " << arguments.size() << "]";
   append_template_parameter_diagnostic(out, parameters);
-  append_template_argument_diagnostic(context, out, arguments);
+  append_template_argument_diagnostic(ctx, out, arguments);
+  throw std::logic_error(out.str());
+}
+
+void ensure_template_arguments_fully_bind_parameters(
+    template_api::TemplateTypeSystem & type_system,
+    const char * stage,
+    const std::string & template_name,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<TemplateArgument> & arguments)
+{
+  if(template_arguments_fully_bind_parameters(parameters, arguments)) {
+    return;
+  }
+
+  std::ostringstream out;
+  out << stage << ": template arguments do not fully bind parameters";
+  if(!template_name.empty()) {
+    out << " for " << template_name;
+  }
+  out << " [param-count " << parameters.size() << "]";
+  out << " [arg-count " << arguments.size() << "]";
+  append_template_parameter_diagnostic(out, parameters);
+  append_template_argument_diagnostic(type_system, out, arguments);
   throw std::logic_error(out.str());
 }
 
@@ -7111,7 +7154,7 @@ ClassInfo * instantiate_builtin_initializer_list_template(
     throw std::logic_error("initializer_list requires one type argument");
   }
 
-  std::map<std::string, ClassInfo *>::iterator found = decl.instantiations.find(key);
+  auto found = decl.instantiations.find(key);
   const bool has_existing_instantiation = found != decl.instantiations.end();
   ClassInfo * info = nullptr;
   if(has_existing_instantiation) {
@@ -7295,6 +7338,8 @@ ClassInfo * instantiate_selected_class_template(
         ensure_requested_specialization_name(),
         ensure_internal_specialization_name());
   }
+  const bool current_arguments_dependent =
+      template_arguments_are_dependent_for_instantiation(ctx, arguments);
   const auto trace_class_instantiation = [&](const char * stage,
                                              ClassInfo * info,
                                              const char * reason = nullptr)
@@ -7311,7 +7356,7 @@ ClassInfo * instantiate_selected_class_template(
           << (decl.class_node ? ctx.source_location_for_node(*decl.class_node) :
                                 std::string("<none>"))
           << " dependent-args="
-          << (template_arguments_are_dependent_for_instantiation(ctx, arguments) ? "yes" : "no");
+          << (current_arguments_dependent ? "yes" : "no");
     if(info) {
       trace << " class=" << info->qualified_name
             << " complete=" << (info->complete ? "yes" : "no")
@@ -7336,9 +7381,9 @@ ClassInfo * instantiate_selected_class_template(
   const bool forward_only_selection =
       class_node->kind == CppAstKind::class_forward_declaration;
 
-  std::map<std::string, ClassInfo *>::iterator found = decl.instantiations.find(key);
+  auto found = decl.instantiations.find(key);
   if(found == decl.instantiations.end()) {
-    std::map<std::string, ClassInfo *>::iterator reference_found =
+    auto reference_found =
         decl.reference_instantiations.find(key);
     if(reference_found != decl.reference_instantiations.end()) {
       if(reference_found->second) {
@@ -7378,16 +7423,25 @@ ClassInfo * instantiate_selected_class_template(
       trace_class_instantiation("reset", info, "template-output-node-mismatch");
       ctx.reset_instantiated_class_info(*info, decl.name, class_node);
     } else if(info->reference_members_collected && !info->complete) {
-      if(info->dependent_instantiation) {
+      if(info->dependent_instantiation && current_arguments_dependent) {
         ctx.finalize_dependent_class_shape(*info);
         trace_class_instantiation("reuse-dependent", info, "reference-members-only");
         return info;
       }
-      trace_class_instantiation("reset", info, "reference-members-collected-incomplete");
+      trace_class_instantiation(
+          "reset",
+          info,
+          info->dependent_instantiation ?
+              "reference-members-collected-now-concrete" :
+              "reference-members-collected-incomplete");
       ctx.reset_instantiated_class_info(*info, decl.name, class_node);
     } else if(info->template_instantiation_in_progress) {
       trace_class_instantiation("reuse-in-progress", info);
       return info;
+    } else if(info->complete && info->dependent_instantiation &&
+              !current_arguments_dependent) {
+      trace_class_instantiation("reset", info, "dependent-complete-now-concrete");
+      ctx.reset_instantiated_class_info(*info, decl.name, class_node);
     } else if(info->complete) {
       trace_class_instantiation("reuse-complete", info);
       return info;
@@ -7438,8 +7492,7 @@ ClassInfo * instantiate_selected_class_template(
       selected_partial_mangle_context ? bound_arguments : nullptr,
       selected_partial_mangle_context ? bound_pack_sizes : nullptr);
   record_class_template_binding_state(*info, *bound_arguments, bound_pack_sizes);
-  info->dependent_instantiation =
-      template_arguments_are_dependent_for_instantiation(ctx, arguments);
+  info->dependent_instantiation = current_arguments_dependent;
   info->is_explicit_specialization =
       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION;
   bind_declaring_owner_instantiation_context(ctx, *info->member_scope, *binding_scope);

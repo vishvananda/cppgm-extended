@@ -2409,12 +2409,9 @@ find_unqualified_alias_template_in_mangle_scope(
   return nullptr;
 }
 
-template<typename TemplateDecl>
-static const TemplateDecl * lookup_template_for_template_id_syntax(
+static const semantic_model::ClassTemplateDecl * lookup_class_template_for_template_id_syntax(
     const TemplateIdSyntax & syntax,
-    const TypeMangleContext * mangle_ctx,
-    const TemplateDecl * (*find_unqualified)(const semantic_model::Scope &,
-                                             const string &))
+    const TypeMangleContext * mangle_ctx)
 {
   if(!mangle_ctx || !mangle_ctx->lookup_scope) {
     return nullptr;
@@ -2430,7 +2427,8 @@ static const TemplateDecl * lookup_template_for_template_id_syntax(
     for(const semantic_model::Scope * scope = mangle_ctx->lookup_scope;
         scope;
         scope = scope->parent) {
-      if(const TemplateDecl * found = find_unqualified(*scope, base_name)) {
+      if(const semantic_model::ClassTemplateDecl * found =
+             find_unqualified_class_template_in_mangle_scope(*scope, base_name)) {
         return found;
       }
     }
@@ -2456,7 +2454,8 @@ static const TemplateDecl * lookup_template_for_template_id_syntax(
           scope = ns_found == scope->namespace_bindings.end() ? nullptr : ns_found->second;
         }
         if(scope) {
-          if(const TemplateDecl * found = find_unqualified(*scope, base_name)) {
+          if(const semantic_model::ClassTemplateDecl * found =
+                 find_unqualified_class_template_in_mangle_scope(*scope, base_name)) {
             return found;
           }
         }
@@ -2477,15 +2476,7 @@ static const TemplateDecl * lookup_template_for_template_id_syntax(
   if(!scope) {
     return nullptr;
   }
-  return find_unqualified(*scope, base_name);
-}
-
-static const semantic_model::ClassTemplateDecl * lookup_class_template_for_template_id_syntax(
-    const TemplateIdSyntax & syntax,
-    const TypeMangleContext * mangle_ctx)
-{
-  return lookup_template_for_template_id_syntax<semantic_model::ClassTemplateDecl>(
-      syntax, mangle_ctx, find_unqualified_class_template_in_mangle_scope);
+  return find_unqualified_class_template_in_mangle_scope(*scope, base_name);
 }
 
 static bool qualify_template_id_syntax_from_lookup(
@@ -4014,6 +4005,13 @@ static TemplateIdSyntax clone_template_id_syntax_for_mangling(
   TemplateIdSyntax out;
   out.name = source.name;
   out.source_location_id = source.source_location_id;
+  out.qualifier_template_id_syntaxes.reserve(
+      source.qualifier_template_id_syntaxes.size());
+  for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {
+    out.qualifier_template_id_syntaxes.push_back(
+        clone_template_id_syntax_for_mangling(
+            source.qualifier_template_id_syntaxes[i]));
+  }
   out.arguments = source.arguments;
   out.argument_syntaxes.reserve(source.argument_syntaxes.size());
   for(size_t i = 0; i < source.argument_syntaxes.size(); ++i) {
@@ -4266,8 +4264,70 @@ static const semantic_model::AliasTemplateDecl * lookup_alias_template_for_templ
     const TemplateIdSyntax & syntax,
     const TypeMangleContext * mangle_ctx)
 {
-  return lookup_template_for_template_id_syntax<semantic_model::AliasTemplateDecl>(
-      syntax, mangle_ctx, find_unqualified_alias_template_in_mangle_scope);
+  if(!mangle_ctx || !mangle_ctx->lookup_scope) {
+    return nullptr;
+  }
+
+  const string base_name =
+      strip_leading_template_disambiguator(syntax.name.name);
+  if(base_name.empty()) {
+    return nullptr;
+  }
+
+  if(syntax.name.qualifiers.empty()) {
+    for(const semantic_model::Scope * scope = mangle_ctx->lookup_scope;
+        scope;
+        scope = scope->parent) {
+      if(const semantic_model::AliasTemplateDecl * found =
+             find_unqualified_alias_template_in_mangle_scope(*scope, base_name)) {
+        return found;
+      }
+    }
+    if(!mangle_ctx->lexical_scope.empty()) {
+      QualifiedName lexical;
+      if(semantic_utils::split_qualified_name_text(mangle_ctx->lexical_scope, lexical) &&
+         !lexical.rooted &&
+         !lexical.name.empty()) {
+        const semantic_model::Scope * scope = root_scope(mangle_ctx->lookup_scope);
+        vector<string> parts = lexical.qualifiers;
+        parts.push_back(lexical.name);
+        size_t part_index = 0;
+        if(scope &&
+           scope->namespace_scope &&
+           !scope->name.empty() &&
+           !parts.empty() &&
+           scope->name == parts[0]) {
+          part_index = 1;
+        }
+        for(size_t i = part_index; scope && i < parts.size(); ++i) {
+          map<string, semantic_model::Scope *>::const_iterator ns_found =
+              scope->namespace_bindings.find(parts[i]);
+          scope = ns_found == scope->namespace_bindings.end() ? nullptr : ns_found->second;
+        }
+        if(scope) {
+          if(const semantic_model::AliasTemplateDecl * found =
+                 find_unqualified_alias_template_in_mangle_scope(*scope, base_name)) {
+            return found;
+          }
+        }
+      }
+    }
+    return nullptr;
+  }
+
+  const semantic_model::Scope * scope = root_scope(mangle_ctx->lookup_scope);
+  for(size_t i = 0; scope && i < syntax.name.qualifiers.size(); ++i) {
+    const string qualifier =
+        semantic_utils::strip_trailing_top_level_template_arguments(
+            trim_space(syntax.name.qualifiers[i]));
+    map<string, semantic_model::Scope *>::const_iterator found =
+        scope->namespace_bindings.find(qualifier);
+    scope = found == scope->namespace_bindings.end() ? nullptr : found->second;
+  }
+  if(!scope) {
+    return nullptr;
+  }
+  return find_unqualified_alias_template_in_mangle_scope(*scope, base_name);
 }
 
 static const semantic_model::Scope * template_id_default_argument_scope_for_mangling(
@@ -18131,8 +18191,7 @@ SymbolIdentity make_function_symbol_identity(const QualifiedName & qualified,
                                             linkage != SL_WEAK,
                                             capture_abi_fact ? &emitted_abi_target :
                                                                nullptr);
-    if(!emitted_object_symbol && linkage == SL_WEAK &&
-       !options.owner_class_is_dependent) {
+    if(!emitted_object_symbol && linkage == SL_WEAK) {
       throw logic_error("failed to build ABI IR function symbol for weak function " +
                         qualified_name);
     }

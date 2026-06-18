@@ -104,8 +104,7 @@ inline semantic_model::ClassInfo * find_named_type_class_info(
     return nullptr;
   }
 
-  auto found =
-      model.classes_by_key->find(base->named_key);
+  auto found = model.classes_by_key->find(base->named_key);
   return found != model.classes_by_key->end() ? found->second : nullptr;
 }
 

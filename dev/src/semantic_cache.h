@@ -29,27 +29,6 @@ struct ScopeTextKeyHash
   std::size_t operator()(const ScopeTextKey & key) const;
 };
 
-struct ParsedTypeTextCacheKey
-{
-  std::size_t parse_scope_fingerprint = 0;
-  std::size_t semantic_scope_key = 0;
-  InternedTextPtr text = nullptr;
-  bool reference_class_templates_only = false;
-
-  bool operator==(const ParsedTypeTextCacheKey & rhs) const
-  {
-    return parse_scope_fingerprint == rhs.parse_scope_fingerprint &&
-           semantic_scope_key == rhs.semantic_scope_key &&
-           text == rhs.text &&
-           reference_class_templates_only == rhs.reference_class_templates_only;
-  }
-};
-
-struct ParsedTypeTextCacheKeyHash
-{
-  std::size_t operator()(const ParsedTypeTextCacheKey & key) const;
-};
-
 struct QualifiedTypeLookupKey
 {
   std::size_t scope_key = 0;
@@ -76,12 +55,6 @@ enum TextMentionCacheState
   TMCS_IN_PROGRESS,
   TMCS_FALSE,
   TMCS_TRUE
-};
-
-struct ParsedTypeTextCacheEntry
-{
-  bool parsed = false;
-  cpp_decl::TypePtr type;
 };
 
 struct DependentTypeResolutionCacheEntry
@@ -136,10 +109,6 @@ struct SemanticCache
                              cpp_decl::TypePtr,
                              QualifiedTypeLookupKeyHash>
       qualified_type_lookup_cache;
-  mutable std::unordered_map<ParsedTypeTextCacheKey,
-                             ParsedTypeTextCacheEntry,
-                             ParsedTypeTextCacheKeyHash>
-      parsed_type_text_cache;
   // Keep dependent type resolution keyed by stable semantic identity rather
   // than TypePtr graph structure. Reuse interned semantic text so this cache
   // follows the same pointer-keyed lifetime model as the other semantic caches.

@@ -2965,6 +2965,29 @@ struct FactSerializer
 
 }  // namespace
 
+string serialize_model_fact_file(const model::AbiFactFile & file)
+{
+  ostringstream out;
+  for(size_t i = 0; i < file.cases.size(); ++i) {
+    const model::AbiFactCase & fact_case = file.cases[i];
+    if(!fact_case.label.empty()) {
+      out << "case " << fact_case.label << "\n";
+    }
+    FactSerializer serializer;
+    serializer.reserve_case_ids(fact_case);
+    for(size_t j = 0; j < fact_case.facts.size(); ++j) {
+      serializer.emit_existing_fact(fact_case.facts[j]);
+    }
+    serializer.append_target(fact_case.target);
+    for(size_t j = 0; j < serializer.lines.size(); ++j) {
+      out << join_words(serializer.lines[j]) << "\n";
+    }
+    if(i + 1 != file.cases.size()) {
+      out << "\n";
+    }
+  }
+  return out.str();
+}
 
 string mangle_model_fact_file(const model::AbiFactFile & file)
 {

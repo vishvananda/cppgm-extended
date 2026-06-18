@@ -92,7 +92,9 @@ Scope * resolve_direct_namespace(Scope & scope, const std::string & name);
 cpp_decl::TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                                 Scope & scope,
                                                 Scope & lookup_scope,
-                                                const std::string & name);
+                                                const std::string & name,
+                                                const std::vector<cpp_decl::TemplateArgumentSyntax> *
+                                                    arg_syntaxes = nullptr);
 const ValueBinding * lookup_direct_value(Scope & scope, const std::string & name);
 bool same_value_binding_entity(const ValueBinding * lhs, const ValueBinding * rhs);
 bool resolve_qualified_namespace_entity_target(SemanticContext & ctx,

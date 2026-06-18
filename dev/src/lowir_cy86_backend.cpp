@@ -643,13 +643,9 @@ struct CY86Translator
           continue;
         }
         if(layout.storage_offset.count(inst.dest) == 0) {
-          LowType dest_type = inst.type;
-          if(inst.kind == Instruction::IK_CMP) {
-            dest_type.text = "i64";
-          }
-          layout.frame_slots += type_storage_slots(dest_type);
+          layout.frame_slots += type_storage_slots(inst.type);
           layout.storage_offset[inst.dest] = -static_cast<long long>(layout.frame_slots * 8);
-          layout.storage_type[inst.dest] = dest_type;
+          layout.storage_type[inst.dest] = inst.type;
           layout.temps.push_back(inst.dest);
         }
       }

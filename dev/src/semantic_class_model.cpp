@@ -2584,28 +2584,32 @@ std::string class_anonymous_union_storage_name(std::size_t index)
   return std::string("__anonymous_union_storage") + std::to_string(index);
 }
 
-bool special_member_has_definition_keyword(const CppAstNode & node, const char * keyword)
+bool special_member_is_defaulted(const CppAstNode & node)
 {
   const CppAstNode * special_definition = find_child(node, CppAstKind::special_definition);
   if(special_definition) {
-    return special_definition->value == keyword;
+    return special_definition->value == "default";
   }
 
   const CppAstNode * initializer = find_child(node, CppAstKind::initializer);
   return initializer &&
          initializer->children.size() == 1 &&
          initializer->children[0].kind == CppAstKind::special_initializer &&
-         initializer->children[0].value == keyword;
-}
-
-bool special_member_is_defaulted(const CppAstNode & node)
-{
-  return special_member_has_definition_keyword(node, "default");
+         initializer->children[0].value == "default";
 }
 
 bool special_member_is_deleted(const CppAstNode & node)
 {
-  return special_member_has_definition_keyword(node, "delete");
+  const CppAstNode * special_definition = find_child(node, CppAstKind::special_definition);
+  if(special_definition) {
+    return special_definition->value == "delete";
+  }
+
+  const CppAstNode * initializer = find_child(node, CppAstKind::initializer);
+  return initializer &&
+         initializer->children.size() == 1 &&
+         initializer->children[0].kind == CppAstKind::special_initializer &&
+         initializer->children[0].value == "delete";
 }
 
 bool special_member_excluded_from_explicit_instantiation(const CppAstNode & node)
@@ -4137,7 +4141,7 @@ FunctionBinding * find_constructor_binding(ClassInfo & info,
   return nullptr;
 }
 
-bool has_user_declared_ref_constructor(const ClassInfo & info, Type::Kind ref_kind)
+bool has_user_declared_copy_constructor(const ClassInfo & info)
 {
   std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
       info.methods.find(info.name);
@@ -4148,25 +4152,36 @@ bool has_user_declared_ref_constructor(const ClassInfo & info, Type::Kind ref_ki
     const FunctionBinding * binding = found->second[i];
     if(binding &&
        !binding->synthesized &&
-       is_same_class_ref_constructor_binding(info, *binding, ref_kind)) {
+       is_same_class_ref_constructor_binding(info,
+                                             *binding,
+                                             Type::TK_LVALUE_REFERENCE)) {
       return true;
     }
   }
   return false;
 }
 
-bool has_user_declared_copy_constructor(const ClassInfo & info)
-{
-  return has_user_declared_ref_constructor(info, Type::TK_LVALUE_REFERENCE);
-}
-
 bool has_user_declared_move_constructor(const ClassInfo & info)
 {
-  return has_user_declared_ref_constructor(info, Type::TK_RVALUE_REFERENCE);
+  std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
+      info.methods.find(info.name);
+  if(found == info.methods.end()) {
+    return false;
+  }
+  for(size_t i = 0; i < found->second.size(); ++i) {
+    const FunctionBinding * binding = found->second[i];
+    if(binding &&
+       !binding->synthesized &&
+       is_same_class_ref_constructor_binding(info,
+                                             *binding,
+                                             Type::TK_RVALUE_REFERENCE)) {
+      return true;
+    }
+  }
+  return false;
 }
 
-bool has_user_declared_assignment(const ClassInfo & info,
-                                  bool FunctionBinding::* predicate)
+bool has_user_declared_copy_assignment(const ClassInfo & info)
 {
   std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
       info.methods.find("operator=");
@@ -4178,21 +4193,30 @@ bool has_user_declared_assignment(const ClassInfo & info,
     if(binding &&
        !binding->source_template &&
        !binding->synthesized &&
-       binding->*predicate) {
+       binding->is_copy_assignment) {
       return true;
     }
   }
   return false;
 }
 
-bool has_user_declared_copy_assignment(const ClassInfo & info)
-{
-  return has_user_declared_assignment(info, &FunctionBinding::is_copy_assignment);
-}
-
 bool has_user_declared_move_assignment(const ClassInfo & info)
 {
-  return has_user_declared_assignment(info, &FunctionBinding::is_move_assignment);
+  std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
+      info.methods.find("operator=");
+  if(found == info.methods.end()) {
+    return false;
+  }
+  for(size_t i = 0; i < found->second.size(); ++i) {
+    const FunctionBinding * binding = found->second[i];
+    if(binding &&
+       !binding->source_template &&
+       !binding->synthesized &&
+       binding->is_move_assignment) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool type_allows_implicit_copy_construction(SemanticContext & ctx,
@@ -5670,10 +5694,7 @@ void record_direct_base(ClassInfo & info,
   }
 }
 
-void parse_base_clause_impl(SemanticContext & ctx,
-                            ClassInfo & info,
-                            const CppAstNode & node,
-                            bool reference)
+void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode & node)
 {
   const CppAstNode * clause = find_child(node, CppAstKind::base_clause);
   if(!clause) {
@@ -5694,9 +5715,6 @@ void parse_base_clause_impl(SemanticContext & ctx,
     const CppAstNode * access_node = find_child(specifier, CppAstKind::access_specifier);
     const CppAstNode * base_name = find_child(specifier, CppAstKind::base_name);
     if(!base_name) {
-      if(reference) {
-        continue;
-      }
       throw std::logic_error("invalid base-specifier");
     }
 
@@ -5774,11 +5792,11 @@ void parse_base_clause_impl(SemanticContext & ctx,
               resolve_base_type_node(ctx,
                                      *info.member_scope,
                                      *base_node_for_lookup,
-                                     reference) :
+                                     false) :
               lookup_base_type_name(ctx,
                                     *info.member_scope,
                                     base_names[i],
-                                    reference);
+                                    false);
       semantic_template_class::append_base_clause_template_value_dependencies(
           ctx,
           *info.member_scope,
@@ -5786,42 +5804,33 @@ void parse_base_clause_impl(SemanticContext & ctx,
           base_template_syntax,
           base_arg_syntaxes_for_lookup,
           info.template_value_dependencies);
-      ClassInfo * base_class;
-      if(reference) {
-        base_class = ctx.class_info_for_type(base_type);
-        if(!base_class) {
+      if(have_base_arg_locations) {
+        ctx.record_class_use_for_resolved_type_node(*info.member_scope,
+                                                    *base_name,
+                                                    base_type,
+                                                    base_template_location);
+      }
+      ClassInfo * base_class = ctx.complete_class_type(base_type);
+      if(!base_class || !base_class->complete) {
+        const bool defer_base_lookup =
+            ctx.should_defer_unresolved_type_lookup(*info.member_scope, base_names[i]);
+        if(defer_base_lookup ||
+           (base_type &&
+            base_type->kind == Type::TK_NAMED &&
+            base_type->named_key.find("dependent ") == 0)) {
           continue;
         }
-        ctx.ensure_class_reference_members(*base_class);
-      } else {
-        if(have_base_arg_locations) {
-          ctx.record_class_use_for_resolved_type_node(*info.member_scope,
-                                                      *base_name,
-                                                      base_type,
-                                                      base_template_location);
+        std::ostringstream out;
+        out << "base class must be complete: " << base_names[i]
+            << " [class=" << info.qualified_name << "]"
+            << " [scope_has_template_placeholders="
+            << (ctx.scope_has_template_placeholders(*info.member_scope) ? "yes" : "no") << "]"
+            << " [defer_base_lookup="
+            << (defer_base_lookup ? "yes" : "no") << "]";
+        if(base_type && base_type->kind == Type::TK_NAMED) {
+          out << " [base_type_key=" << base_type->named_key << "]";
         }
-        base_class = ctx.complete_class_type(base_type);
-        if(!base_class || !base_class->complete) {
-          const bool defer_base_lookup =
-              ctx.should_defer_unresolved_type_lookup(*info.member_scope, base_names[i]);
-          if(defer_base_lookup ||
-             (base_type &&
-              base_type->kind == Type::TK_NAMED &&
-              base_type->named_key.find("dependent ") == 0)) {
-            continue;
-          }
-          std::ostringstream out;
-          out << "base class must be complete: " << base_names[i]
-              << " [class=" << info.qualified_name << "]"
-              << " [scope_has_template_placeholders="
-              << (ctx.scope_has_template_placeholders(*info.member_scope) ? "yes" : "no") << "]"
-              << " [defer_base_lookup="
-              << (defer_base_lookup ? "yes" : "no") << "]";
-          if(base_type && base_type->kind == Type::TK_NAMED) {
-            out << " [base_type_key=" << base_type->named_key << "]";
-          }
-          throw TemplateSubstitutionFailure(out.str());
-        }
+        throw TemplateSubstitutionFailure(out.str());
       }
 
       const bool source_dependent =
@@ -5837,14 +5846,132 @@ void parse_base_clause_impl(SemanticContext & ctx,
   }
 }
 
-void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode & node)
-{
-  parse_base_clause_impl(ctx, info, node, false);
-}
-
 void parse_reference_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode & node)
 {
-  parse_base_clause_impl(ctx, info, node, true);
+  const CppAstNode * clause = find_child(node, CppAstKind::base_clause);
+  if(!clause) {
+    return;
+  }
+  for(size_t j = 0; j < clause->children.size(); ++j) {
+    const CppAstNode & specifier = clause->children[j];
+    bool is_virtual = false;
+    bool is_pack_expansion = false;
+    for(size_t i = 0; i < specifier.children.size(); ++i) {
+      if(specifier.children[i].kind == CppAstKind::virtual_node) {
+        is_virtual = true;
+      } else if(specifier.children[i].kind == CppAstKind::ellipsis) {
+        is_pack_expansion = true;
+      }
+    }
+
+    const CppAstNode * access_node = find_child(specifier, CppAstKind::access_specifier);
+    const CppAstNode * base_name = find_child(specifier, CppAstKind::base_name);
+    if(!base_name) {
+      continue;
+    }
+
+    std::vector<std::string> base_names;
+    std::vector<std::vector<TemplateArgumentSyntax> > expanded_base_arg_syntaxes;
+    bool expanded_base_pack = false;
+    if(is_pack_expansion) {
+      base_names = expand_base_name_pack_texts(ctx,
+                                               *info.member_scope,
+                                               *base_name,
+                                               &expanded_base_arg_syntaxes,
+                                               &expanded_base_pack);
+    }
+    if(base_names.empty()) {
+      if(is_pack_expansion && expanded_base_pack) {
+        continue;
+      }
+      base_names.push_back(base_name->value);
+    }
+
+    for(size_t i = 0; i < base_names.size(); ++i) {
+      QualifiedName base_template_id;
+      std::vector<std::string> base_arg_texts;
+      const std::vector<TemplateArgumentSyntax> * expanded_arg_syntaxes =
+          i < expanded_base_arg_syntaxes.size() &&
+                  !expanded_base_arg_syntaxes[i].empty() ?
+              &expanded_base_arg_syntaxes[i] :
+              nullptr;
+      const TemplateIdSyntax * base_template_syntax =
+          base_names[i] == base_name->value ? cppast_template_id_syntax(*base_name) :
+                                              nullptr;
+      const std::vector<TemplateArgumentSyntax> * base_arg_syntaxes_for_lookup =
+          expanded_arg_syntaxes ? expanded_arg_syntaxes :
+                                  (base_template_syntax ?
+                                       &base_template_syntax->argument_syntaxes :
+                                       nullptr);
+      const bool have_base_arg_locations =
+          base_template_syntax && !base_template_syntax->name.name.empty();
+      if(have_base_arg_locations) {
+        base_template_id = base_template_syntax->name;
+        base_arg_texts = base_template_syntax->arguments;
+      }
+      std::string base_template_location;
+      if(have_base_arg_locations) {
+        base_template_location =
+            template_api::normalize_template_witness_source_location(
+                ctx.source_location_for_name_in_node(node, base_template_id.name));
+        if(!semantic_trace::source_location_points_at_identifier(
+               base_template_location,
+               base_template_id.name)) {
+          base_template_location.clear();
+        }
+      }
+      const std::vector<std::string> base_arg_locations =
+          have_base_arg_locations ?
+              template_argument_source_locations_for_node(ctx,
+                                                          *base_name,
+                                                          base_arg_texts,
+                                                          base_template_location) :
+              std::vector<std::string>();
+      const template_api::ScopedTemplateArgumentSourceLocations
+          base_argument_source_locations(base_arg_texts, base_arg_locations);
+      CppAstNode expanded_base_node;
+      const CppAstNode * base_node_for_lookup = base_name;
+      if(base_names[i] != base_name->value && expanded_arg_syntaxes) {
+        expanded_base_node =
+            expanded_base_name_node_with_argument_syntaxes(
+                *base_name,
+                base_names[i],
+                *expanded_arg_syntaxes);
+        base_node_for_lookup = &expanded_base_node;
+      }
+      TypePtr base_type =
+          base_node_for_lookup != base_name || base_names[i] == base_name->value ?
+              resolve_base_type_node(ctx,
+                                     *info.member_scope,
+                                     *base_node_for_lookup,
+                                     true) :
+              lookup_base_type_name(ctx,
+                                    *info.member_scope,
+                                    base_names[i],
+                                    true);
+      semantic_template_class::append_base_clause_template_value_dependencies(
+          ctx,
+          *info.member_scope,
+          *base_name,
+          base_template_syntax,
+          base_arg_syntaxes_for_lookup,
+          info.template_value_dependencies);
+      ClassInfo * base_class = ctx.class_info_for_type(base_type);
+      if(!base_class) {
+        continue;
+      }
+      ctx.ensure_class_reference_members(*base_class);
+      const bool source_dependent =
+          callsemantic::template_argument_texts_mention_enclosing_source_template_parameters(
+              *info.member_scope,
+              std::vector<std::string>(1, base_names[i]));
+      record_direct_base(info,
+                         base_class,
+                         access_node ? access_from_node(*access_node) : info.default_access,
+                         is_virtual,
+                         source_dependent);
+    }
+  }
 }
 
 }  // namespace
@@ -6231,6 +6358,28 @@ std::string construction_vtable_key(const ClassInfo & dynamic_class,
 
 namespace {
 
+bool resolve_complete_subobject_offset(const ClassInfo & dynamic_class,
+                                       const ClassInfo & target_class,
+                                       size_t & out_offset)
+{
+  bool found = false;
+  for(size_t i = 0; i < dynamic_class.complete_subobjects.size(); ++i) {
+    const SubobjectInfo & subobject = dynamic_class.complete_subobjects[i];
+    if(!subobject.type) {
+      continue;
+    }
+    if(subobject.type != &target_class &&
+       subobject.type->qualified_name != target_class.qualified_name) {
+      continue;
+    }
+    if(found && out_offset != subobject.offset) {
+      return false;
+    }
+    out_offset = subobject.offset;
+    found = true;
+  }
+  return found;
+}
 
 bool direct_base_uses_construction_vtt(const BaseInfo & base)
 {

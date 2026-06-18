@@ -97,13 +97,15 @@ struct ExactTemplateTypeLookupAnchor
   std::string compact_key;
   std::vector<std::string> arg_texts;
   std::vector<cpp_decl::TemplateArgumentSyntax> arg_syntaxes;
+  const std::vector<std::string> * arg_texts_ref = nullptr;
+  const std::vector<cpp_decl::TemplateArgumentSyntax> * arg_syntaxes_ref = nullptr;
   bool has_argument_list = false;
 };
 
 struct ScopedExactTemplateTypeLookupAnchor
 {
   explicit ScopedExactTemplateTypeLookupAnchor(
-      ExactTemplateTypeLookupAnchor anchor);
+      const ExactTemplateTypeLookupAnchor & anchor);
   ~ScopedExactTemplateTypeLookupAnchor();
   ScopedExactTemplateTypeLookupAnchor(
       const ScopedExactTemplateTypeLookupAnchor &) = delete;
@@ -132,20 +134,6 @@ std::string template_lookup_fragment_text(const std::string & lookup_name);
 std::string template_lookup_fragment_identifier(
     const std::string & template_fragment);
 bool node_has_template_id_qualifier_syntax(const CppAstNode & node);
-// Build a type-lookup anchor carrying the structured argument syntaxes of the
-// owner template-id (the final qualifier) of a qualified-id node. Returns an
-// empty (has_argument_list == false) anchor when the node has no template-id
-// owner qualifier with a full structured argument list. Shared by the
-// declaration collector and the expression analyzers so out-of-class owner
-// resolution recovers structured arguments instead of re-parsing text.
-ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_owner_node(
-    const CppAstNode & id_node);
-// Build a type-lookup anchor directly from a template-id syntax (e.g. an owner
-// qualifier carried on a node's qualifier_template_id_syntaxes). The returned
-// anchor is empty (has_argument_list == false) when the syntax has no full
-// structured argument list.
-ExactTemplateTypeLookupAnchor exact_template_type_lookup_anchor_for_template_id(
-    const cpp_decl::TemplateIdSyntax & syntax);
 const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor();
 extern thread_local std::set<std::pair<std::string, std::string> >
     source_dependent_class_template_use_drops_;
@@ -162,6 +150,11 @@ bool exact_template_type_lookup_anchor_arg_texts(
     const std::string & normalized_name,
     const std::string & identifier,
     std::vector<std::string> & arg_texts);
+const std::vector<std::string> & exact_template_type_lookup_anchor_texts(
+    const ExactTemplateTypeLookupAnchor & anchor);
+const std::vector<cpp_decl::TemplateArgumentSyntax> *
+exact_template_type_lookup_anchor_syntaxes(
+    const ExactTemplateTypeLookupAnchor & anchor);
 bool exact_template_type_lookup_anchor_arg_texts_are_full_match(
     const std::string & normalized_name);
 const std::vector<cpp_decl::TemplateArgumentSyntax> *

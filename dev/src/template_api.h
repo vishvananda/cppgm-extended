@@ -734,11 +734,6 @@ bool resolve_instantiated_dependent_type(SemanticContext & ctx,
                                          const cpp_decl::TypePtr & type,
                                          cpp_decl::TypePtr & out);
 
-bool parse_type_argument_text(SemanticContext & ctx,
-                              semantic_model::Scope & scope,
-                              const std::string & text,
-                              cpp_decl::TypePtr & out);
-
 bool resolve_type_argument_input(SemanticContext & ctx,
                                  semantic_model::Scope & scope,
                                  const cpp_decl::TemplateArgumentSyntax * syntax,
