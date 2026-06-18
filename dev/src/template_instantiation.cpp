@@ -4962,7 +4962,8 @@ ValueBinding * static_member_definition_binding_for_key(SemanticContext & ctx,
     if(!current->member_scope) {
       return nullptr;
     }
-    if(!current->reference_member_collection_in_progress) {
+    if(!current->reference_members_collected &&
+       !current->reference_member_collection_in_progress) {
       ctx.ensure_class_reference_members(*current);
     }
     const std::string member_class_name =
@@ -4983,7 +4984,8 @@ ValueBinding * static_member_definition_binding_for_key(SemanticContext & ctx,
   if(!current->member_scope) {
     return nullptr;
   }
-  if(!current->reference_member_collection_in_progress) {
+  if(!current->reference_members_collected &&
+     !current->reference_member_collection_in_progress) {
     ctx.ensure_class_reference_members(*current);
   }
   return direct_static_member_definition_binding(*current, qualified.name);
@@ -6179,6 +6181,7 @@ bool apply_out_of_class_static_member_definitions_to_reference(
     }
     member->constant_initializer_scope = &init_scope;
   }
+  info.out_of_class_static_member_definitions_applied = true;
   if(has_concrete_storage_definition) {
     ctx.track_instantiated_class(&info);
   }
