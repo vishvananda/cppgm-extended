@@ -17546,32 +17546,105 @@ bool argument_syntax_mentions_pack_expansion_identifier(const TemplateArgumentSy
 CppAstNode make_substituted_type_id_node(const TypePtr & type,
                                          const string & text)
 {
-  TypePtr base = strip_top_level_cv(type);
+  const auto append_simple_ptr_operator =
+      [](CppAstNode & type_id, ETokenType simple_type, const string & spelling)
+  {
+    CppAstNode * abstract = nullptr;
+    for(size_t i = 0; i < type_id.children.size(); ++i) {
+      if(type_id.children[i].kind == CppAstKind::abstract_declarator) {
+        abstract = &type_id.children[i];
+        break;
+      }
+    }
+    if(!abstract) {
+      CppAstNode created;
+      created.kind = CppAstKind::abstract_declarator;
+      type_id.children.push_back(created);
+      abstract = &type_id.children.back();
+    }
+    if(!abstract->value.empty()) {
+      abstract->value += " ";
+    }
+    abstract->value += spelling;
+
+    CppAstNode op;
+    op.kind = CppAstKind::ptr_operator;
+    op.value = spelling;
+    op.has_token = true;
+    op.token_kind = RT_SIMPLE;
+    op.simple_type = simple_type;
+    abstract->children.push_back(op);
+  };
+
+  const auto append_cv_qualifier =
+      [](CppAstNode & type_id, ETokenType simple_type, const string & spelling)
+  {
+    CppAstNode * abstract = nullptr;
+    for(size_t i = 0; i < type_id.children.size(); ++i) {
+      if(type_id.children[i].kind == CppAstKind::abstract_declarator) {
+        abstract = &type_id.children[i];
+        break;
+      }
+    }
+    if(!abstract) {
+      CppAstNode created;
+      created.kind = CppAstKind::abstract_declarator;
+      type_id.children.push_back(created);
+      abstract = &type_id.children.back();
+    }
+    if(!abstract->value.empty()) {
+      abstract->value += " ";
+    }
+    abstract->value += spelling;
+
+    CppAstNode qualifier;
+    qualifier.kind = CppAstKind::cv_qualifier;
+    qualifier.value = spelling;
+    qualifier.has_token = true;
+    qualifier.token_kind = RT_SIMPLE;
+    qualifier.simple_type = simple_type;
+    abstract->children.push_back(qualifier);
+  };
+
+  bool top_const = false;
+  bool top_volatile = false;
+  TypePtr base = type;
+  while(base && base->kind == Type::TK_CV) {
+    top_const = top_const || base->cv_const;
+    top_volatile = top_volatile || base->cv_volatile;
+    base = base->inner;
+  }
+  if(base && base->kind == Type::TK_POINTER && base->inner) {
+    const string inner_text = template_argument_type_text(base->inner);
+    CppAstNode type_id = make_substituted_type_id_node(
+        base->inner,
+        inner_text.empty() ? text : inner_text);
+    type_id.value = text;
+    type_id.semantic_type = type;
+    append_simple_ptr_operator(type_id, OP_STAR, "*");
+    if(top_const) {
+      append_cv_qualifier(type_id, KW_CONST, "const");
+    }
+    if(top_volatile) {
+      append_cv_qualifier(type_id, KW_VOLATILE, "volatile");
+    }
+    return type_id;
+  }
   if(base &&
      (base->kind == Type::TK_LVALUE_REFERENCE ||
       base->kind == Type::TK_RVALUE_REFERENCE) &&
      base->inner) {
-    const string inner_text = reparseable_type_argument_text(base->inner);
+    const string inner_text = template_argument_type_text(base->inner);
     CppAstNode type_id = make_substituted_type_id_node(
         base->inner,
         inner_text.empty() ? text : inner_text);
     type_id.value = text;
     type_id.semantic_type = type;
 
-    CppAstNode abstract;
-    abstract.kind = CppAstKind::abstract_declarator;
-    abstract.value = base->kind == Type::TK_LVALUE_REFERENCE ? "&" : "&&";
-
-    CppAstNode ref;
-    ref.kind = CppAstKind::ptr_operator;
-    ref.value = abstract.value;
-    ref.has_token = true;
-    ref.token_kind = RT_SIMPLE;
-    ref.simple_type =
-        base->kind == Type::TK_LVALUE_REFERENCE ? OP_AMP : OP_LAND;
-
-    abstract.children.push_back(ref);
-    type_id.children.push_back(abstract);
+    append_simple_ptr_operator(
+        type_id,
+        base->kind == Type::TK_LVALUE_REFERENCE ? OP_AMP : OP_LAND,
+        base->kind == Type::TK_LVALUE_REFERENCE ? "&" : "&&");
     return type_id;
   }
 
