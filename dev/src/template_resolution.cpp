@@ -14561,16 +14561,22 @@ bool explicit_function_template_arguments_determine_signature(
     std::size_t explicit_argument_count)
 {
   const std::size_t pack_index = first_template_parameter_pack_index(decl.parameters);
-  if(pack_index == decl.parameters.size() || explicit_argument_count > pack_index) {
+  if(pack_index == decl.parameters.size()) {
     return true;
   }
 
-  const TemplateParameterInfo & omitted_pack = decl.parameters[pack_index];
-  if(!omitted_pack.parameter_pack) {
+  std::vector<TemplateParameterInfo> omitted_parameters;
+  if(explicit_argument_count <= pack_index) {
+    omitted_parameters.assign(decl.parameters.begin() + explicit_argument_count,
+                              decl.parameters.end());
+  } else if(pack_index + 1 < decl.parameters.size()) {
+    omitted_parameters.assign(decl.parameters.begin() + pack_index + 1,
+                              decl.parameters.end());
+  }
+  if(omitted_parameters.empty()) {
     return true;
   }
 
-  const std::vector<TemplateParameterInfo> omitted_parameters(1, omitted_pack);
   if(decl.type_pattern &&
      type_mentions_function_template_parameter(ctx, omitted_parameters, decl.type_pattern)) {
     return false;
