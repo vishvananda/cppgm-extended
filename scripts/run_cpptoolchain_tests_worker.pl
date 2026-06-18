@@ -15,6 +15,7 @@ use CppgmBatchWorker qw(
 	clear_progress_state
 	close_worker
 	collect_tests
+	ensure_test_app_available
 	get_timeout_from_env
 	note_progress_state
 	open_worker
@@ -350,6 +351,7 @@ sub run_toolchain_tests
 }
 
 my ($app, $suffix, $tests_root) = @ARGV;
+ensure_test_app_available($app, $suffix, $tests_root);
 my @tests = collect_tests($tests_root, qr/\.t$/);
 my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};
 my $keep_going = $ENV{KEEP_GOING};

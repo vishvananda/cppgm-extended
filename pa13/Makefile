@@ -18,6 +18,7 @@ RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
 COURSE_TEST_ROOT = $(wildcard course/pa13)
 LOCAL_TEST_ROOT = tests/spec
+REF_TEST_ROOT = $(LOCAL_TEST_ROOT)
 DEBUGINFO_TEST_ROOT = tests/debuginfo
 DEBUGINFO_SOURCE_G0_TEST_ROOT = $(DEBUGINFO_TEST_ROOT)/source-g0
 DEBUGINFO_MACHINE_TEST_ROOT = $(DEBUGINFO_TEST_ROOT)/machine
@@ -66,7 +67,7 @@ test: $(TEST_DEPS)
 endif
 
 ref-test:
-	@scripts/run_all_tests.pl $(REF_TEST_APP) ref $(LOCAL_TEST_ROOT)
+	@$(REF_TEST_RUN)
 
 ref-test-debuginfo:
 	@CPPGM_LOWIROPT_APP='$(DEBUGINFO_LOWIROPT_REF_APP)' scripts/run_all_tests.pl scripts/lowiropt-o0.sh ref $(DEBUGINFO_TEST_ROOT)/o0
