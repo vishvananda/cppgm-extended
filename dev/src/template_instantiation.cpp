@@ -8363,7 +8363,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               << " bindings=" << scope_bindings_for_diagnostic(inst_scope);
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
-      if(template_argument_semantics::type_depends_on_template_parameter(ctx, result_type)) {
+      const bool source_result_type_was_dependent =
+          template_argument_semantics::type_depends_on_template_parameter(ctx, result_type);
+      if(source_result_type_was_dependent) {
         TypePtr substituted;
         if(template_argument_semantics::substitute_type(
                inst_scope, result_type, source_decl->parameters, arguments, substituted)) {
@@ -8593,9 +8595,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           }
         } else if(source_result_mentions_template_parameter &&
                   !dependent_template_arguments &&
-                  template_argument_semantics::type_depends_on_template_parameter(
-                      ctx,
-                      result_type)) {
+                  !source_result_type_was_dependent) {
           throw_substitution_failure(
               "failed function template result type substitution",
               std::string(),
