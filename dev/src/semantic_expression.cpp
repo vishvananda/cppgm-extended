@@ -7124,8 +7124,34 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
     throw logic_error("unsupported cast expression");
   }
 
+  const auto semantic_type_id_type =
+      [](const CppAstNode & type_id) -> TypePtr
+  {
+    if(type_id.semantic_type) {
+      return type_id.semantic_type;
+    }
+    if(type_id.kind != CppAstKind::type_id || type_id.children.empty()) {
+      return TypePtr();
+    }
+    const CppAstNode & specifiers = type_id.children[0];
+    if(specifiers.semantic_type) {
+      return specifiers.semantic_type;
+    }
+    if(specifiers.kind == CppAstKind::type_specifier_seq &&
+       specifiers.children.size() == 1 &&
+       specifiers.children[0].kind == CppAstKind::type_name) {
+      return specifiers.children[0].semantic_type;
+    }
+    return TypePtr();
+  };
+
   TypePtr target_type;
-  if(!ctx.parse_type_id(scope, node.children[0], target_type)) {
+  TypePtr semantic_target_type = semantic_type_id_type(node.children[0]);
+  if(semantic_target_type &&
+     !ctx.type_depends_on_template_parameter(semantic_target_type)) {
+    target_type = semantic_target_type;
+  }
+  if(!target_type && !ctx.parse_type_id(scope, node.children[0], target_type)) {
     ExprInfo disguised_call;
     if(try_analyze_disguised_parenthesized_call(ctx, scope, node, disguised_call)) {
       return disguised_call;
