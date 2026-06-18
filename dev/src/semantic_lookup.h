@@ -320,6 +320,9 @@ Scope * resolve_qualified_scope_for_class_or_namespace(SemanticContext & ctx,
                                                        Scope & scope,
                                                        const cpp_decl::QualifiedName & qualified,
                                                        bool allow_dependent_class_qualifiers = false);
+CppAstNode make_value_qualifier_type_lookup_node(const CppAstNode & node,
+                                                 const cpp_decl::QualifiedName & qualified,
+                                                 const std::string & qualifier_name);
 const ValueBinding * lookup_qualified_value_binding(SemanticContext & ctx,
                                                     Scope & scope,
                                                     const cpp_decl::QualifiedName & qualified);

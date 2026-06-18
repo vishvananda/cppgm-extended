@@ -122,6 +122,19 @@ bool erase_parameter_pack_nodes(CppAstNode & current)
   return removed;
 }
 
+bool node_has_parameter_pack_node(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::parameter_pack) {
+    return true;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(node_has_parameter_pack_node(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::string qualified_name_syntax_text(const QualifiedName & name)
 {
   std::string out = name.rooted ? "::" : std::string();
@@ -454,7 +467,8 @@ bool expand_parameter_declaration_pack_nodes(
   if(!declarator) {
     declarator = cpp_decl::find_child(parameter, CppAstKind::abstract_declarator);
   }
-  if(!(declarator && declarator_has_parameter_pack(*declarator))) {
+  if(!(node_has_parameter_pack_node(parameter) ||
+       (declarator && declarator_has_parameter_pack(*declarator)))) {
     return false;
   }
 

@@ -2877,8 +2877,15 @@ public:
               owner_name_syntax.name = static_member_name.qualifiers.back();
             }
             const string owner_name = qualified_name_syntax_text(owner_name_syntax);
-            ClassInfo * owner = resolve_qualified_owner_class(pattern_scope,
-                                                              owner_name);
+            ClassInfo * owner =
+                resolve_qualified_owner_class_from_template_id_syntax(
+                    pattern_scope,
+                    static_member_name,
+                    static_member_identifier);
+            if(!owner) {
+              owner = resolve_qualified_owner_class(pattern_scope,
+                                                    owner_name);
+            }
             ClassInfo * template_owner = owner;
             while(template_owner &&
                   template_owner->source_template != owner_template) {

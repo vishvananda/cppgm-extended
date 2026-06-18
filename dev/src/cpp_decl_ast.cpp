@@ -463,7 +463,7 @@ bool parse_parameter_clause_ast(
     }
     const bool declarator_has_pack = declarator_has_parameter_pack(declarator);
     const bool declarator_has_direct_pack = node_has_direct_parameter_pack(declarator);
-    if(declarator_has_pack) {
+    if(declarator_has_pack || node_contains_parameter_pack(child)) {
       if(hooks.expand_parameter_clause_packs && try_expanded_pack_clause()) {
         return true;
       }

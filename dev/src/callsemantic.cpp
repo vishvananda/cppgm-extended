@@ -4146,8 +4146,9 @@ private:
                 cppast_template_id_syntax(expr);
             vector<FunctionBinding *> functions =
                 template_id ?
-                    lookup_function_template_id(
+                    lookup_function_template_id_node(
                         scope,
+                        expr,
                         *template_id,
                         semantic_policy::default_call_analysis()) :
                     lookup_functions(scope,
@@ -6287,19 +6288,11 @@ private:
         }
         const TemplateIdSyntax * base_template_syntax =
             cppast_template_id_syntax(*base_name);
-        if(!base_template_syntax ||
-           base_template_syntax->name.name.empty() ||
-           (!lookup_alias_template(*pattern_scope,
-                                   base_template_syntax->name) &&
-            !lookup_class_template(*pattern_scope,
-                                   base_template_syntax->name))) {
+        if(!base_template_syntax || base_template_syntax->name.name.empty()) {
           continue;
         }
         const string base_lookup_text =
             template_id_syntax_text_preserving_spacing(*base_template_syntax);
-        const bool base_is_alias =
-            lookup_alias_template(*pattern_scope,
-                                  base_template_syntax->name) != nullptr;
 
         const string base_identifier =
             unqualified_member_name(base_template_syntax->name.name);
@@ -6314,10 +6307,48 @@ private:
                                         base_identifier);
 
         try {
+          const auto make_qualifier_anchor =
+              [](const TemplateIdSyntax & syntax) -> ExactTemplateTypeLookupAnchor
+              {
+                ExactTemplateTypeLookupAnchor anchor;
+                anchor.template_text =
+                    template_id_syntax_text_preserving_spacing(syntax);
+                anchor.identifier = unqualified_member_name(syntax.name.name);
+                if(anchor.identifier.empty()) {
+                  anchor.identifier = syntax.name.name;
+                }
+                anchor.compact_key = compact_lookup_text(anchor.template_text);
+                anchor.arg_texts_ref = &syntax.arguments;
+                anchor.arg_syntaxes_ref = &syntax.argument_syntaxes;
+                anchor.has_argument_list = true;
+                return anchor;
+              };
+          vector<unique_ptr<ScopedExactTemplateTypeLookupAnchor> >
+              qualifier_anchor_guards;
+          for(size_t qi = 0;
+              qi < base_template_syntax->qualifier_template_id_syntaxes.size();
+              ++qi) {
+            const TemplateIdSyntax & qualifier =
+                base_template_syntax->qualifier_template_id_syntaxes[qi];
+            if(qualifier.name.name.empty() && qualifier.arguments.empty()) {
+              continue;
+            }
+            qualifier_anchor_guards.emplace_back(
+                new ScopedExactTemplateTypeLookupAnchor(
+                    make_qualifier_anchor(qualifier)));
+          }
+          AliasTemplateDecl * alias_template =
+              lookup_alias_template(*pattern_scope,
+                                    base_template_syntax->name);
+          ClassTemplateDecl * class_template =
+              alias_template ? nullptr :
+                  lookup_class_template(*pattern_scope,
+                                        base_template_syntax->name);
+          if(!alias_template && !class_template) {
+            continue;
+          }
+          const bool base_is_alias = alias_template != nullptr;
           if(base_is_alias) {
-            AliasTemplateDecl * alias_template =
-                lookup_alias_template(*pattern_scope,
-                                      base_template_syntax->name);
             vector<string> source_arg_texts =
                 template_id_argument_witness_source_texts(
                     *base_template_syntax);

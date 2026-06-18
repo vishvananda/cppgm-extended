@@ -847,6 +847,64 @@ CppAstNode make_template_id_expression_syntax_from_range(
   return expression;
 }
 
+bool simple_type_specifier_token_for_name(const std::string & name,
+                                          ETokenType & out)
+{
+  if(name == "auto") { out = KW_AUTO; return true; }
+  if(name == "bool") { out = KW_BOOL; return true; }
+  if(name == "char") { out = KW_CHAR; return true; }
+  if(name == "char16_t") { out = KW_CHAR16_T; return true; }
+  if(name == "char32_t") { out = KW_CHAR32_T; return true; }
+  if(name == "double") { out = KW_DOUBLE; return true; }
+  if(name == "float") { out = KW_FLOAT; return true; }
+  if(name == "int") { out = KW_INT; return true; }
+  if(name == "long") { out = KW_LONG; return true; }
+  if(name == "short") { out = KW_SHORT; return true; }
+  if(name == "signed") { out = KW_SIGNED; return true; }
+  if(name == "unsigned") { out = KW_UNSIGNED; return true; }
+  if(name == "void") { out = KW_VOID; return true; }
+  if(name == "wchar_t") { out = KW_WCHAR_T; return true; }
+  return false;
+}
+
+bool build_empty_function_type_id_from_call_expression(const CppAstNode & expr,
+                                                       CppAstNode & out)
+{
+  if(expr.kind != CppAstKind::call_expression ||
+     expr.children.size() != 2 ||
+     expr.children[0].kind != CppAstKind::id_expression ||
+     expr.children[1].kind != CppAstKind::paren_argument_list ||
+     !expr.children[1].children.empty()) {
+    return false;
+  }
+
+  CppAstNode type_name;
+  ETokenType simple_type = KW_VOID;
+  if(simple_type_specifier_token_for_name(expr.children[0].value, simple_type)) {
+    RecogToken token(RT_SIMPLE,
+                     expr.children[0].value,
+                     simple_type,
+                     expr.children[0].source_location_id);
+    type_name = make_token_node(CppAstKind::type_specifier, token);
+  } else {
+    type_name = expr.children[0];
+    type_name.kind = CppAstKind::type_name;
+  }
+
+  CppAstNode specifiers = make_node(CppAstKind::type_specifier_seq,
+                                    type_name.value);
+  specifiers.children.push_back(std::move(type_name));
+
+  CppAstNode parameter_clause = make_node(CppAstKind::parameter_clause);
+  CppAstNode declarator = make_node(CppAstKind::abstract_declarator);
+  declarator.children.push_back(std::move(parameter_clause));
+
+  out = make_node(CppAstKind::type_id, expr.value);
+  out.children.push_back(std::move(specifiers));
+  out.children.push_back(std::move(declarator));
+  return true;
+}
+
 void build_template_argument_syntax_from_range(
     IRecogTokenSequence & tokens,
     const qualified_name_parser::NameLookup & lookup,
@@ -10180,6 +10238,13 @@ bool CppAstParser::parse_template_argument_fragment_syntax(
   if(parsed_to_end(expr_parser,
                    expr_parser.parse_assignment_expression(expr_argument),
                    expr_pack_expansion)) {
+    if(!out.type_id) {
+      CppAstNode function_type_id;
+      if(build_empty_function_type_id_from_call_expression(expr_argument,
+                                                           function_type_id)) {
+        out.type_id.reset(new CppAstNode(std::move(function_type_id)));
+      }
+    }
     out.expression.reset(new CppAstNode(std::move(expr_argument)));
     out.pack_expansion =
         out.pack_expansion || expr_pack_expansion || has_trailing_pack_expansion;

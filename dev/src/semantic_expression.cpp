@@ -1204,7 +1204,11 @@ bool try_analyze_qualified_member_pointer_expression(SemanticContext & ctx,
               operand_node,
               *template_id,
               semantic_policy::without_body_instantiation()) :
-          ctx.lookup_qualified_functions(scope, *qualified);
+          ctx.lookup_functions_node(
+              scope,
+              operand_node,
+              operand_node.value,
+              semantic_policy::without_body_instantiation());
   if(functions.size() == 1) {
     FunctionBinding * binding = functions[0];
     if(binding && binding->is_method && binding->owner_class &&
@@ -3987,7 +3991,10 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
 
   const string qualifier_name = qualifier_name_text(*qualified);
   if(!qualifier_name.empty()) {
-    TypePtr qualifier_type = ctx.lookup_type_node(scope, node, qualifier_name, false);
+    const CppAstNode qualifier_node =
+        make_value_qualifier_type_lookup_node(node, *qualified, qualifier_name);
+    TypePtr qualifier_type =
+        ctx.lookup_type_node(scope, qualifier_node, qualifier_name, false);
     ClassInfo * completed = qualifier_type ? ctx.complete_class_type(qualifier_type) : nullptr;
     if(completed && !ctx.scope_has_template_placeholders(*completed->member_scope)) {
       target = completed->member_scope.get();
@@ -4047,7 +4054,10 @@ bool try_analyze_dependent_qualified_id_expression(SemanticContext & ctx,
     return false;
   }
 
-  TypePtr qualifier_type = ctx.lookup_type_node(scope, node, qualifier_name, false);
+  const CppAstNode qualifier_node =
+      make_value_qualifier_type_lookup_node(node, qualified, qualifier_name);
+  TypePtr qualifier_type =
+      ctx.lookup_type_node(scope, qualifier_node, qualifier_name, false);
   if(!qualifier_type || !ctx.type_depends_on_template_parameter(qualifier_type)) {
     return false;
   }
@@ -5362,7 +5372,10 @@ ExprInfo analyze_id_expression(SemanticContext & ctx,
         *parsed_template_id,
         semantic_policy::default_call_analysis());
   } else if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
-    functions = ctx.lookup_qualified_functions(scope, *qualified);
+    functions = ctx.lookup_functions_node(scope,
+                                          node,
+                                          node.value,
+                                          semantic_policy::default_call_analysis());
   } else {
     functions = ctx.lookup_functions(scope,
                                      node.value,

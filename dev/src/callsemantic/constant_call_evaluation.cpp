@@ -598,9 +598,11 @@ bool evaluate_constant_call_expression_value(
         cppast_template_id_syntax(callee);
     std::vector<FunctionBinding *> candidates =
         template_id ?
-            ctx.lookup_function_template_id(scope,
-                                            *template_id,
-                                            semantic_policy::default_call_analysis()) :
+            ctx.lookup_function_template_id_node(
+                scope,
+                callee,
+                *template_id,
+                semantic_policy::default_call_analysis()) :
             ctx.lookup_functions_node(scope,
                                       callee,
                                       callee.value,
