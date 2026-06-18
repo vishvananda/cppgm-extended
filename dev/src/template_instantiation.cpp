@@ -7751,6 +7751,36 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
   };
+  const auto reject_cached_retained_dependent_function_type =
+      [&](FunctionTemplateDecl & pattern_decl,
+          FunctionBinding & binding) -> void
+  {
+    if(pattern_decl.is_constructor ||
+       pattern_decl.is_destructor ||
+       !template_parameters_have_pack(pattern_decl.parameters) ||
+       !binding.type) {
+      return;
+    }
+    TypePtr function_base = strip_top_level_cv(binding.type);
+    if(!function_base || function_base->kind != Type::TK_FUNCTION) {
+      return;
+    }
+    const bool result_dependent =
+        template_argument_semantics::type_depends_on_template_parameter(
+            ctx,
+            function_base->inner);
+    if(!result_dependent ||
+       pattern_decl.result_type_pattern.kind == CppAstKind::invalid ||
+       !ast_mentions_template_parameter_name(pattern_decl.result_type_pattern,
+                                             pattern_decl.parameters) ||
+       template_arguments_are_dependent_for_instantiation(ctx, arguments)) {
+      return;
+    }
+    throw_substitution_failure(
+        "cached function template retained dependent result type",
+        std::string(),
+        "template-instantiation");
+  };
   std::map<std::string, FunctionBinding *>::iterator found =
       source_decl->instantiations.find(key);
   const std::map<std::string, std::size_t> * effective_pack_sizes = pack_sizes;
@@ -7958,10 +7988,14 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         *found->second,
         instantiate_function_parameter_aliases(*cache_source_decl,
                                                binding_explicit_params(*found->second)));
-    if(include_body && refreshed_instantiation_scope) {
+    if(refreshed_instantiation_scope) {
       refresh_pack_dependent_result_type(*cache_source_decl,
                                          *refreshed_instantiation_scope,
                                          *found->second);
+    }
+    if(!include_body && !explicit_specialization) {
+      reject_cached_retained_dependent_function_type(*cache_source_decl,
+                                                    *found->second);
     }
     if((include_body || explicit_specialization) &&
        (found->second->has_definition || explicit_specialization)) {
