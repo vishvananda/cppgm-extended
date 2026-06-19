@@ -28,6 +28,7 @@ struct ClassSpecializationSelection
   std::map<std::string, std::size_t> pack_sizes;
   std::string selection_key;
   MatchKind kind = MS_PRIMARY;
+  bool reentrant_primary = false;
 };
 
 struct VariableSpecializationSelection

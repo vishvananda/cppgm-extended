@@ -989,6 +989,7 @@ public:
   {
     return info &&
            info->source_template == &decl &&
+           !info->reentrant_primary_selection &&
            !info->template_instantiation_in_progress &&
            !info->full_member_collection_in_progress &&
            !info->reference_member_collection_in_progress &&
@@ -1000,6 +1001,9 @@ public:
       const string & key,
       const ClassInfo & info) const
   {
+    if(info.reentrant_primary_selection) {
+      return false;
+    }
     map<string, ClassTemplateSpecializationDecl>::const_iterator explicit_found =
         decl.explicit_specializations.find(key);
     if(explicit_found != decl.explicit_specializations.end()) {
@@ -2942,6 +2946,7 @@ public:
                                                                    bound_pack_sizes);
         }
       }
+      info->reentrant_primary_selection = specialization.reentrant_primary;
       const bool needs_instantiation_argument_refresh =
           template_api::record_class_template_instantiation_state(
               ctx,
@@ -2991,6 +2996,7 @@ public:
                                                              &decl,
                                                              class_node,
                                                              false);
+    info->reentrant_primary_selection = specialization.reentrant_primary;
     note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_creates);
     if(semantic_hotspot::enabled()) {
       semantic_hotspot::note_semantic_query("reference_class_template_instantiation_create",

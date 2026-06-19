@@ -4881,6 +4881,12 @@ bool class_member_direct_bool_value(const Scope * member_scope,
     return false;
   }
   const ValueBinding & binding = found->second;
+  const ClassInfo * owner =
+      binding.owner_class ? binding.owner_class :
+      (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
+  if(owner && owner->reentrant_primary_selection) {
+    return false;
+  }
   const auto is_bool_value_type = [](const TypePtr & type) -> bool
   {
     if(!type) {
@@ -4898,6 +4904,14 @@ bool class_member_direct_bool_value(const Scope * member_scope,
   }
   return binding.has_constexpr_value &&
          constant_value_truthy(binding.constexpr_value, out);
+}
+
+bool value_binding_owner_has_reentrant_primary_selection(const ValueBinding & binding)
+{
+  const ClassInfo * owner =
+      binding.owner_class ? binding.owner_class :
+      (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
+  return owner && owner->reentrant_primary_selection;
 }
 
 bool structured_bool_constant_value_for_type(
@@ -6804,6 +6818,12 @@ bool structured_bool_constant_value_for_class_info(
 {
   const string template_name =
       info.source_template ? info.source_template->name : string();
+  if(info.reentrant_primary_selection) {
+    if(evaluation_incomplete) {
+      *evaluation_incomplete = true;
+    }
+    return false;
+  }
   const bool source_is_std_trait =
       class_info_source_template_is_std_namespace_or_inline_child(info);
   const bool source_is_reserved_builtin_trait =
@@ -7502,6 +7522,9 @@ bool materialize_leaf_member_constant_binding(
     constant_eval::ConstexprValue & out)
 {
   if(binding.kind == ValueBinding::VK_FIELD) {
+    return false;
+  }
+  if(value_binding_owner_has_reentrant_primary_selection(binding)) {
     return false;
   }
   if(binding.has_constant_value) {
@@ -31332,7 +31355,8 @@ NonTypeArgumentStatus evaluate_template_member_value_expression(
   constant_eval::ConstexprValue constexpr_value;
   if(!materialize_leaf_member_constant_binding(
          services, *const_cast<ValueBinding *>(binding), constexpr_value)) {
-    return binding->dependent_template_value ||
+    return value_binding_owner_has_reentrant_primary_selection(*binding) ||
+           binding->dependent_template_value ||
            service_type_depends_on_template_parameter(services, binding->type) ?
                NT_ARG_DEPENDENT :
                NT_ARG_EVAL_FAILED;
