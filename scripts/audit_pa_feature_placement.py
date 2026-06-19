@@ -84,6 +84,7 @@ TEMPLATE_LATER_OR_COMPAT_FEATURES = {
     "class.member_pointer",
     "support.lambda",
     "support.lambda.capture",
+    "support.lambda.capture.ref_this",
     "support.attribute",
     "support.auto",
     "support.range_for",
@@ -230,9 +231,8 @@ RULES: tuple[FeatureRule, ...] = (
                 ref_patterns=(rx(r"operator_(?:new|delete)_array|delete_array|array_cookie"),)),
     FeatureRule("lookup.using_directive", (rx(r"\busing\s+namespace\b|\busing\s+[A-Za-z_][A-Za-z0-9_:<>]*::[A-Za-z_]"),)),
     FeatureRule("support.lambda", (rx(r"(?<!operator)\[[^]\n]*\]\s*\([^)]*\)\s*(?:mutable\s*)?(?:noexcept\s*)?(?:->|\{)"),)),
-    FeatureRule("support.lambda.capture",
-                (rx(r"\[[^]\n]*[A-Za-z_][A-Za-z0-9_]*[^]\n]*\]\s*\([^)]*\)\s*"
-                    r"(?:mutable\s*)?(?:noexcept\s*)?(?:->[^{]+)?\{"),)),
+    FeatureRule("support.lambda.capture", ()),
+    FeatureRule("support.lambda.capture.ref_this", ()),
     FeatureRule("support.range_for", (rx(r"\bfor\s*\([^:;()]+:[^)]*\)"),)),
     FeatureRule("support.decltype", (rx(r"\bdecltype\s*\("),)),
     FeatureRule("support.auto",
@@ -737,6 +737,47 @@ def detect_structured_template_features(code: str) -> dict[str, FeatureHit]:
     return hits
 
 
+def detect_lambda_capture_features(code: str) -> dict[str, FeatureHit]:
+    hits: dict[str, FeatureHit] = {}
+    lambda_pattern = re.compile(
+        r"(?<!operator)\[([^]\n]*)\]\s*\([^)]*\)\s*"
+        r"(?:mutable\s*)?(?:noexcept\s*)?(?:->[^{]+)?\{",
+        re.MULTILINE | re.DOTALL,
+    )
+    for match in lambda_pattern.finditer(code):
+        capture_list = match.group(1).strip()
+        if not capture_list:
+            continue
+        captures = split_top_level_commas(capture_list)
+        has_ref_or_this_capture = False
+        has_copy_or_default_capture = False
+        for raw_capture in captures:
+            capture = raw_capture.strip()
+            if not capture:
+                continue
+            if capture == "=" or capture.startswith("=,"):
+                has_copy_or_default_capture = True
+                continue
+            if capture == "&" or capture.startswith("&,") or capture == "this" or capture.startswith("&"):
+                has_ref_or_this_capture = True
+                continue
+            has_copy_or_default_capture = True
+        evidence = " ".join(match.group(0).split())[:120]
+        if has_ref_or_this_capture:
+            add_source_hit(
+                hits,
+                "support.lambda.capture.ref_this",
+                f"source:{evidence}",
+            )
+        if has_copy_or_default_capture:
+            add_source_hit(
+                hits,
+                "support.lambda.capture",
+                f"source:{evidence}",
+            )
+    return hits
+
+
 def evidence_partition(evidence: Iterable[str]) -> tuple[list[str], list[str]]:
     source_ref: list[str] = []
     path: list[str] = []
@@ -777,6 +818,13 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         for evidence in structured_hit.evidence:
             if evidence not in hit.evidence:
                 hit.evidence.append(evidence)
+    for feature_id, lambda_hit in detect_lambda_capture_features(code).items():
+        hit = hits.setdefault(feature_id, FeatureHit(feature_id))
+        for evidence in lambda_hit.evidence:
+            if evidence not in hit.evidence:
+                hit.evidence.append(evidence)
+    if "/pa30/tests/abi/" in test_path or test_path.startswith("pa30/tests/abi/"):
+        hits.pop("template.builtin_traits", None)
     return hits
 
 

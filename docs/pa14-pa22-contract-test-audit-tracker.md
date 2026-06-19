@@ -335,10 +335,10 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `lang.enum` | `pa14` | 100 | 7.2 `[dcl.enum]` | pending | scoped/unscoped enums, enum promotion, enum comparison/lowering. |
 | `lowir.procedural.local_static` | `pa20` | 300 | 3.7.1 `[basic.stc.static]`, 6.7 `[stmt.dcl]` | pending | constant-initialized function-local `static` objects, guard variables, static array initialization. |
 | `lowir.procedural.local_static.dynamic_class` | `pa20` | 400 | 3.7.1 `[basic.stc.static]`, 3.8 `[basic.life]`, 6.7 `[stmt.dcl]` | pending | dynamically-initialized function-local static class objects or arrays, first-use guard emission around constructor calls, local-class static objects. |
-| `lowir.procedural.float_conversion` | `pa28` | 500 | 4.6 `[conv.fpprom]`, 4.8 `[conv.double]`, 4.9 `[conv.fpint]` | pending | LowIR/backend floating conversion parity. PA28 tests should be LowIR/backend inputs; source-to-LowIR floating tests need a separate LowIR-producing owner if kept. |
+| `lowir.procedural.float_conversion` | `pa28` | 200 | 4.6 `[conv.fpprom]`, 4.8 `[conv.double]`, 4.9 `[conv.fpint]` | pending | LowIR/backend floating conversion parity. PA28 tests should be LowIR/backend inputs; source-to-LowIR floating tests need a separate LowIR-producing owner if kept. |
 | `expr.cast.builtin` | `pa14` | 200 | 5.2.9 `[expr.static.cast]`, 5.2.11 `[expr.const.cast]`, 5.4 `[expr.cast]` | pending | C-style casts, `static_cast`, `const_cast`, scalar/function/reference/pointer casts. |
 | `call.variadic_promotions` | `pa28` | 500 | 5.2.2 `[expr.call]`, 4.6 `[conv.fpprom]` | pending | backend/runtime variadic call parity and default promotions such as float-to-double. PA28 tests should be LowIR/backend inputs; source-to-LowIR variadic tests need a separate LowIR-producing owner if kept. |
-| `lang.extended_integer` | `pa34` | 600 | N/A: GNU/Clang `__int128` extension | pending | `__int128`, unsigned 128-bit constants, truncation/canonicalization; ordinary `long long` remains part of earlier scalar support. |
+| `lang.extended_integer` | `pa29` | 300 | N/A: GNU/Clang `__int128` extension | pending | Runtime lowering for `__int128` / `__uint128_t` values through source-driver programs. PA34 keeps hosted compile-only stress for vendor typedefs, literals, and header compatibility. |
 | `class.basic` | `pa15` | 100 | 9 `[class]`, 9.2 `[class.mem]` | pending | `class`/`struct`, members, methods, access labels, nested class use. |
 | `class.access_control` | `pa15` | 100 | 11 `[class.access]` | pending | public/private/protected member and constructor access checks. |
 | `class.nested_type` | `pa15` | 100 | 9.7 `[class.nest]`, 9.9 `[class.nested.type]`, 3.4.3.1 `[class.qual]` | pending | nested classes, nested typedefs, qualified member type names, inherited member typedefs. |
@@ -360,7 +360,7 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `operator.overload` | `pa15` | 300 | 13.5 `[over.oper]` | pending | member/nonmember/friend operators, operator function ids, overloaded subscript/shift/call operators over the PA15 object subset. |
 | `class.using_declaration` | `pa15` | 300 | 7.3.3 `[namespace.udecl]`, 10.2 `[class.member.lookup]` | pending | using declarations that re-expose inherited members or affect access. |
 | `class.inheriting_constructor` | `pa15` | 500 | 12.9 `[class.inhctor]`, 7.3.3 `[namespace.udecl]`, 10 `[class.derived]` | pending | `using Base::Base` inheriting constructors, inherited constructor candidate lookup, and construction of the derived object through an inherited base constructor. Template-dependent inherited constructor fixtures inherit the enclosing template owner if template behavior is essential. |
-| `class.inheritance.multiple` | `pa28` | 100 | 10.1 `[class.mi]` | pending | multiple direct bases, repeated base names, non-primary base paths. |
+| `class.inheritance.multiple` | `pa26` | 100 | 10.1 `[class.mi]` | pending | Multiple direct non-virtual bases, repeated base names, and non-primary non-virtual base paths. |
 | `class.member_pointer` | `pa28` | 300 | 4.11 `[conv.mem]`, 5.5 `[expr.mptr.oper]`, 8.3.3 `[dcl.mptr]` | pending | `T C::*`, `.*`, `->*`, member pointer conversions/null tests over the completed non-virtual object model. |
 | `class.conversion_operator` | `pa16` | 400 | 12.3.2 `[class.conv.fct]` | pending | non-template `operator T()` declarations and calls over the completed PA16 value subset. |
 | `function.trailing_return` | `pa11` | 300 | 8.3.5 `[dcl.fct]`, 7.1.6.4 `[dcl.spec.auto]` | pending | trailing return type syntax as type/declarator analysis. LowIR tests inherit the enclosing function kind's LowIR owner; auto return deduction belongs to `support.auto`. |
@@ -374,16 +374,17 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `class.union` | `pa16` | 300 | 9.5 `[class.union]` | pending | union special-member behavior, trivial storage copy, anonymous union support. |
 | `expr.array_new_delete` | `pa16` | 400 | 5.3.4 `[expr.new]`, 5.3.5 `[expr.delete]` | pending | array new/delete, global operator new/delete overloads, delete-array behavior. |
 | `lookup.using_directive` | `pa12` | 200 | 7.3.4 `[namespace.udir]`, 3.4.6 `[basic.lookup.udir]` | pending | using directives, imported value lookup, ambiguity, hiding, and function-body lookup effects. LowIR tests using procedural imported lookup need a PA14-or-later LowIR owner; class/template contexts inherit their enclosing feature owner. |
-| `support.lambda` | `pa26` | 200 | 5.1.2 `[expr.prim.lambda]` | pending | captureless lambda semantic/lowering support. |
-| `support.lambda.capture` | `pa26` | 300 | 5.1.2 `[expr.prim.lambda]` | pending | capturing lambdas, mutable captures, closure object state, and type identity/RTTI over lambda closure objects. |
-| `support.range_for` | `pa26` | 100 | 6.5.4 `[stmt.ranged]` | pending | range-for semantic/lowering support over already-owned begin/end and array forms. |
+| `support.lambda` | `pa24` | 200 | 5.1.2 `[expr.prim.lambda]` | pending | Captureless lambda semantic/lowering support. |
+| `support.lambda.capture.ref_this` | `pa24` | 200 | 5.1.2 `[expr.prim.lambda]` | pending | Explicit by-reference local capture and explicit/implicit `this` capture in the PA24-supported subset. |
+| `support.lambda.capture` | `pa25` | 100 | 5.1.2 `[expr.prim.lambda]` | pending | By-copy, default, mutable, and broader capturing-lambda closure object support. |
+| `support.range_for` | `pa24` | 100 | 6.5.4 `[stmt.ranged]` | pending | Range-for semantic/lowering support over already-owned begin/end and array forms. |
 | `support.decltype` | `pa11` | 200 | 7.1.6.2 `[dcl.type.simple]` | pending | `decltype` type analysis. LowIR tests inherit the enclosing feature owner unless `decltype` itself is the primary semantic assertion. |
-| `support.auto` | `pa26` | 100 | 7.1.6.4 `[dcl.spec.auto]` | pending | `auto` in declarations and non-template return type deduction. |
+| `support.auto` | `pa24` | 100 | 7.1.6.4 `[dcl.spec.auto]` | pending | `auto` in declarations and non-template return type deduction. |
 | `polymorphic.basic` | `pa17` | 100 | 10.3 `[class.virtual]` | pending | `virtual`, virtual calls, vtables, vptr stores. |
 | `polymorphic.override_final` | `pa17` | 200 | 10.3 `[class.virtual]`, 9.2 `[class.mem]` | pending | `override`, method-level `final`. |
 | `polymorphic.vdtor` | `pa17` | 300 | 10.3 `[class.virtual]`, 12.4 `[class.dtor]` | pending | virtual destructors, destructor override. |
 | `polymorphic.vtable_order` | `pa17` | 400 | N/A: ABI/LowIR representation detail for 10.3 `[class.virtual]` | pending | virtual declaration order and destructor slot order for the single-inheritance virtual model. |
-| `polymorphic.pointer_adjust` | `pa29` | 100 | 10.1 `[class.mi]`, 4.10 `[conv.ptr]` | pending | polymorphic non-primary base casts, adjustor thunk-like references, and multi-vptr dispatch adjustment. |
+| `polymorphic.pointer_adjust` | `pa27` | 100 | 10.1 `[class.mi]`, 4.10 `[conv.ptr]` | pending | Polymorphic non-primary base casts, adjustor thunk-like references, virtual-base address forwarding, and multi-vptr dispatch adjustment. |
 | `template.type` | `pa18` | 100 | 14.1 `[temp.param]`, 14.3.1 `[temp.arg.type]` | pending | `template<class/typename>`, template-id type args. |
 | `template.class` | `pa18` | 100 | 14.5.1 `[temp.class]` | pending | class template declarations, instantiation, member definitions, static members. |
 | `template.function` | `pa18` | 100 | 14.5.6 `[temp.fct]`, 14.8 `[temp.fct.spec]` | pending | function template declarations, calls, and basic overload participation; local static tests inherit the local-static owner. |
@@ -421,7 +422,7 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `template.substitution` | `pa22` | 200 | 14.8.2 `[temp.deduct]`, 14.8.3 `[temp.over]` | pending | substitution contexts, dependent alias/type substitution, candidate dropping. |
 | `template.conversion_deduction` | `pa22` | 300 | 14.8.2.3 `[temp.deduct.conv]`, 12.3.2 `[class.conv.fct]` | pending | conversion-function template and converting-constructor template deduction/overload behavior. |
 | `template.constructor_deduction` | `pa22` | 300 | 14.8.2 `[temp.deduct]`, 13.3.1.3 `[over.match.ctor]` | pending | constructor-template participation in overload sets and braced/pack initialization. |
-| `template.initializer_list` | `pa27` | 200 | 8.5.4 `[dcl.init.list]`, 18.9 `[support.initlist]` | pending | builtin `initializer_list`, private constructor arguments, special-member interactions. |
+| `template.initializer_list` | `pa25` | 200 | 8.5.4 `[dcl.init.list]`, 18.9 `[support.initlist]` | pending | Builtin `initializer_list`, private constructor arguments, backing-array materialization, and special-member interactions. |
 | `template.no_eager_instantiation` | `pa22` | 300 | 14.6.4.1 `[temp.point]`, 14.7.1 `[temp.inst]` | pending | tests relying on delayed instantiation or unevaluated dependent failures. |
 | `sfinae` | `pa22` | 300 | 14.8.2 `[temp.deduct]`, 14.8.3 `[temp.over]` | pending | substitution failure, enable_if candidate dropping, SFINAE naming/hints. |
 | `template.braced_init_deduction` | `pa22` | 400 | 8.5.4 `[dcl.init.list]`, 14.8.2.5 `[temp.deduct.type]` | pending | braced-init-list deduction and non-deduced braced initializer failures. |
