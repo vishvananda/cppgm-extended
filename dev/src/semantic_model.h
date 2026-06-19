@@ -28,6 +28,18 @@ struct VariableTemplateDecl;
 struct AliasTemplateDecl;
 struct ClassTemplateDecl;
 struct DeductionGuideDecl;
+
+struct FunctionTemplateInstantiationCacheEntry
+{
+  FunctionTemplateDecl * decl = nullptr;
+  std::string key;
+};
+
+struct FunctionTemplateInstantiationCacheEntries
+{
+  FunctionTemplateInstantiationCacheEntry first;
+  std::vector<FunctionTemplateInstantiationCacheEntry> extra;
+};
 struct ClassTemplateSpecializationDecl;
 struct PartialClassTemplateSpecializationDecl;
 struct VariableTemplateSpecializationDecl;
@@ -385,6 +397,8 @@ struct FunctionBinding
   bool is_explicit_specialization = false;
   std::map<std::string, std::size_t> instantiation_pack_sizes;
   std::string template_instantiation_key;
+  std::unique_ptr<FunctionTemplateInstantiationCacheEntries>
+      instantiation_cache_entries;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 

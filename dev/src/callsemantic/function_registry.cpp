@@ -95,6 +95,61 @@ void erase_function_binding_from_owner_lookups(FunctionBinding * binding)
   }
 }
 
+void erase_function_from_template_instantiation_cache(
+    FunctionTemplateDecl * decl,
+    const std::string & key,
+    FunctionBinding * binding)
+{
+  if(!decl || !binding) {
+    return;
+  }
+  if(!key.empty()) {
+    std::map<std::string, FunctionBinding *>::iterator found =
+        decl->instantiations.find(key);
+    if(found != decl->instantiations.end() && found->second == binding) {
+      decl->instantiations.erase(found);
+      return;
+    }
+  }
+  for(std::map<std::string, FunctionBinding *>::iterator it =
+          decl->instantiations.begin();
+      it != decl->instantiations.end();) {
+    if(it->second == binding) {
+      decl->instantiations.erase(it++);
+    } else {
+      ++it;
+    }
+  }
+}
+
+void erase_function_binding_from_template_instantiation_caches(
+    FunctionBinding * binding)
+{
+  if(!binding) {
+    return;
+  }
+  if(binding->instantiation_cache_entries) {
+    erase_function_from_template_instantiation_cache(
+        binding->instantiation_cache_entries->first.decl,
+        binding->instantiation_cache_entries->first.key,
+        binding);
+    for(std::size_t i = 0;
+        i < binding->instantiation_cache_entries->extra.size();
+        ++i) {
+      const semantic_model::FunctionTemplateInstantiationCacheEntry & entry =
+          binding->instantiation_cache_entries->extra[i];
+      erase_function_from_template_instantiation_cache(entry.decl,
+                                                       entry.key,
+                                                       binding);
+    }
+    binding->instantiation_cache_entries->extra.clear();
+  }
+  erase_function_from_template_instantiation_cache(
+      binding->source_template,
+      binding->template_instantiation_key,
+      binding);
+}
+
 bool internal_symbol_has_other_function_owner(
     const FunctionRegistryState & state,
     const std::string & internal_symbol,
@@ -456,6 +511,7 @@ void discard_function_binding(FunctionRegistryState & state,
   state.late_required_class_static_function_set.erase(binding);
   erase_function_pointer(state.synthetic_functions, binding);
   erase_function_pointer(state.deferred_constexpr_functions, binding);
+  erase_function_binding_from_template_instantiation_caches(binding);
   erase_function_binding_from_owner_lookups(binding);
   release_function_symbol_reservation(state, binding);
   for(std::vector<std::unique_ptr<FunctionBinding> >::iterator it =

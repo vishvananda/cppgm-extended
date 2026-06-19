@@ -3414,6 +3414,35 @@ const std::string & function_binding_template_registration_key(
 {
   return binding.template_instantiation_key;
 }
+
+void record_function_template_instantiation_cache_entry(
+    FunctionBinding & binding,
+    FunctionTemplateDecl & source_decl,
+    const std::string & key)
+{
+  if(!binding.instantiation_cache_entries) {
+    binding.instantiation_cache_entries.reset(
+        new FunctionTemplateInstantiationCacheEntries());
+    binding.instantiation_cache_entries->first.decl = &source_decl;
+    binding.instantiation_cache_entries->first.key = key;
+    return;
+  }
+  if(binding.instantiation_cache_entries->first.decl == &source_decl &&
+     binding.instantiation_cache_entries->first.key == key) {
+    return;
+  }
+  for(std::size_t i = 0; i < binding.instantiation_cache_entries->extra.size(); ++i) {
+    FunctionTemplateInstantiationCacheEntry & entry =
+        binding.instantiation_cache_entries->extra[i];
+    if(entry.decl == &source_decl && entry.key == key) {
+      return;
+    }
+  }
+  FunctionTemplateInstantiationCacheEntry entry;
+  entry.decl = &source_decl;
+  entry.key = key;
+  binding.instantiation_cache_entries->extra.push_back(entry);
+}
 // template-boundary-audit: end canonical_key_metadata
 
 void record_function_template_argument_state_impl(
@@ -8947,6 +8976,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     binding->has_definition = false;
   }
   source_decl->instantiations[key] = binding;
+  record_function_template_instantiation_cache_entry(*binding, *source_decl, key);
   if((include_body || explicit_specialization) &&
      (binding->has_definition || explicit_specialization)) {
     apply_function_instantiation_intent(
