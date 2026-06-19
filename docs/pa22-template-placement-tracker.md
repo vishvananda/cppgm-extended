@@ -45,18 +45,18 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 
 - tests scanned: 55
 - feature table entries without detector rules: 0
-- later-owner-or-split: 2
-- manual-review: 2
+- later-owner-or-split: 0 open, 2 resolved
+- manual-review: 0 open, 2 resolved
 - pa22-advanced-single-candidate: 51
 
 ## Review Queue
 
 | Status | Test | Current | Bucket | Concepts For Review | Later/Compat Features | Latest Template Owner | PA23 Cluster | Action | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| [ ] | `pa22/tests/general/200-pack-expanded-base-instantiation.t` | `pa22:200` | `later-owner-or-split` | pack-expansion | template.alignas_alignof | `pa19:200` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
-| [ ] | `pa22/tests/general/500-dependent-template-id-no-eager-layout.t` | `pa22:500` | `later-owner-or-split` | alias-template, no-eager-instantiation | template.alignas_alignof | `pa22:300` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
-| [ ] | `pa22/tests/general/400-exact-overload-beats-user-defined-conversion.t` | `pa22:400` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
-| [ ] | `pa22/tests/general/400-static-cast-explicit-constructor.t` | `pa22:400` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
+| [D] | `pa22/tests/general/200-pack-expanded-base-instantiation.t` | `pa22:200` | `later-owner-or-split` | pack-expansion | template.alignas_alignof | `pa19:200` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. | Source test was removed by the PA placement cleanup; no live PA22 source test remains for this row. |
+| [x] | `pa22/tests/general/500-dependent-template-id-no-eager-layout.t` | `pa22:500` | `later-owner-or-split` | alias-template, no-eager-instantiation |  | `pa22:300` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. | Reduced in place by removing incidental `alignas`/`alignof`; the test now asserts the PA22 alias-template/no-eager behavior only. |
+| [D] | `pa22/tests/general/400-exact-overload-beats-user-defined-conversion.t` | `pa22:400` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. | Source test was removed by the PA placement cleanup; no live PA22 source test remains for this row. |
+| [D] | `pa22/tests/general/400-static-cast-explicit-constructor.t` | `pa22:400` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. | Source test was removed by the PA placement cleanup; no live PA22 source test remains for this row. |
 | [ ] | `pa22/tests/general/100-bad-deduction.t` | `pa22:100` | `pa22-advanced-single-candidate` | function-deduction |  | `pa22:100` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
 | [ ] | `pa22/tests/general/100-bad-function-template-deduction-cv-mismatch-call.t` | `pa22:100` | `pa22-advanced-single-candidate` | function-deduction |  | `pa22:100` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
 | [ ] | `pa22/tests/general/100-decltype-function-template-deduced-call.t` | `pa22:100` | `pa22-advanced-single-candidate` | function-deduction |  | `pa22:100` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
