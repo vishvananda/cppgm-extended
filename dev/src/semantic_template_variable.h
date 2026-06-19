@@ -35,4 +35,13 @@ acquire_variable_template_binding_for_template_id_source_use(
     const CppAstNode & source_node,
     const cpp_decl::TemplateIdSyntax & template_id);
 
+const semantic_model::ValueBinding *
+acquire_member_variable_template_binding_for_template_id_source_use(
+    SemanticContext & ctx,
+    semantic_model::VariableTemplateDecl & decl,
+    semantic_model::ClassInfo & owner,
+    semantic_model::Scope & source_use_scope,
+    const CppAstNode & source_node,
+    const cpp_decl::TemplateIdSyntax & template_id);
+
 }  // namespace semantic_template_variable

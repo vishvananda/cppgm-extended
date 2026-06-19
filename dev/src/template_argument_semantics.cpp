@@ -26,6 +26,7 @@
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_consteval.h"
+#include "semantic_template_variable.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
 #include "template_angle_lookup.h"
@@ -20718,6 +20719,77 @@ bool lookup_concrete_member_template_value_binding(
   return false;
 }
 
+bool lookup_leaf_variable_template_binding_in_resolved_scope(
+    template_api::TemplateServices & services,
+    Scope & source_scope,
+    Scope & target,
+    const QualifiedName & qualified,
+    const CppAstNode & node,
+    const ValueBinding *& out)
+{
+  out = nullptr;
+  if(!services.semantic_context ||
+     node.kind != CppAstKind::id_expression) {
+    return false;
+  }
+
+  const TemplateIdSyntax * template_id = cppast_template_id_syntax(node);
+  if(!template_id ||
+     template_id->name.name.empty() ||
+     template_id->name.name != qualified.name) {
+    return false;
+  }
+
+  VariableTemplateDecl * variable_template = nullptr;
+  ClassInfo * variable_template_owner = nullptr;
+  if(target.class_info) {
+    semantic_lookup::MemberVariableTemplateLookupResult member =
+        semantic_lookup::lookup_member_variable_template(
+            *services.semantic_context,
+            *target.class_info,
+            template_id->name.name);
+    variable_template = member.variable_template;
+    if(variable_template) {
+      variable_template_owner = const_cast<ClassInfo *>(
+          member.declared_in ? member.declared_in : target.class_info);
+    }
+  }
+  if(!variable_template) {
+    variable_template =
+        semantic_lookup::lookup_direct_variable_template(target,
+                                                        template_id->name.name);
+    if(variable_template && target.class_info) {
+      variable_template_owner = target.class_info;
+    }
+  }
+  if(!variable_template) {
+    return false;
+  }
+
+  const ValueBinding * binding =
+      variable_template_owner ?
+          semantic_template_variable::
+              acquire_member_variable_template_binding_for_template_id_source_use(
+                  *services.semantic_context,
+                  *variable_template,
+                  *variable_template_owner,
+                  source_scope,
+                  node,
+                  *template_id) :
+          semantic_template_variable::
+              acquire_variable_template_binding_for_template_id_source_use(
+                  *services.semantic_context,
+                  *variable_template,
+                  source_scope,
+                  node,
+                  *template_id);
+  if(!binding) {
+    return false;
+  }
+  out = binding;
+  return true;
+}
+
 bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & services,
                                          Scope & scope,
                                          const QualifiedName & qualified,
@@ -20789,6 +20861,10 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
   map<string, ValueBinding>::const_iterator found = target->values.find(qualified.name);
   if(found != target->values.end()) {
     out = &found->second;
+    return true;
+  }
+  if(lookup_leaf_variable_template_binding_in_resolved_scope(
+         services, scope, *target, qualified, *node, out)) {
     return true;
   }
   if(target->class_info) {

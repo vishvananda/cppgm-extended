@@ -1196,7 +1196,8 @@ bool scope_has_linkage_template_owner_identity_impl(const semantic_model::Scope 
 bool value_binding_has_template_identity_impl(const semantic_model::ValueBinding * binding)
 {
   return binding &&
-         (binding->dependent_template_value ||
+         (binding->variable_template_instantiation ||
+          binding->dependent_template_value ||
           class_has_template_identity_impl(binding->owner_class) ||
           scope_has_template_owner_identity_impl(binding->declaration_scope));
 }

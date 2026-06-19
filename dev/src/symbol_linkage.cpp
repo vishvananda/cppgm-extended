@@ -7398,7 +7398,9 @@ static bool try_build_template_entity_argument_text_ir(
 static bool try_emit_static_member_object_symbol_ir(
     const semantic_model::ClassInfo & owner_class,
     const string & member_name,
-    string & out);
+    string & out,
+    const vector<TemplateArgument> * template_arguments = nullptr,
+    const vector<TemplateParameterInfo> * template_parameters = nullptr);
 
 struct ExternalEntityArgumentIrPayload
 {
@@ -7823,7 +7825,9 @@ static bool try_build_class_template_argument_ir(
 static bool try_emit_static_member_object_symbol_ir(
     const semantic_model::ClassInfo & owner_class,
     const string & member_name,
-    string & out);
+    string & out,
+    const vector<TemplateArgument> * template_arguments,
+    const vector<TemplateParameterInfo> * template_parameters);
 
 static abi_mangle::SubstitutionKey template_parameter_substitution_key(
     size_t index,
@@ -17657,7 +17661,9 @@ static bool try_emit_itanium_function_symbol_ir(
 static bool try_emit_static_member_object_symbol_ir(
     const semantic_model::ClassInfo & owner_class,
     const string & member_name,
-    string & out)
+    string & out,
+    const vector<TemplateArgument> * template_arguments,
+    const vector<TemplateParameterInfo> * template_parameters)
 {
   if(!owner_class.type || trim_space(member_name).empty()) {
     return false;
@@ -17669,6 +17675,19 @@ static bool try_emit_static_member_object_symbol_ir(
   owner_ctx.prefer_concrete_non_type_values_for_dependent_parameter_types = true;
   if(!try_build_type_ir(owner_class.type, &owner_ctx, owner)) {
     return false;
+  }
+
+  vector<abi_mangle::TemplateArgument> ir_template_arguments;
+  const vector<abi_mangle::TemplateArgument> * ir_template_arguments_ptr = nullptr;
+  if(template_arguments && !template_arguments->empty()) {
+    if(!try_build_function_template_arguments_ir(*template_arguments,
+                                                 template_parameters,
+                                                 nullptr,
+                                                 &owner_ctx,
+                                                 ir_template_arguments)) {
+      return false;
+    }
+    ir_template_arguments_ptr = &ir_template_arguments;
   }
 
   MangleIrSubstitutionSink sink(&state);
@@ -17683,7 +17702,8 @@ static bool try_emit_static_member_object_symbol_ir(
                                                      false,
                                                      false,
                                                      candidate,
-                                                     &sink)) {
+                                                     &sink,
+                                                     ir_template_arguments_ptr)) {
     return false;
   }
   out.swap(candidate);
@@ -18285,6 +18305,50 @@ SymbolIdentity make_static_member_variable_symbol_identity(
   }
   append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, false);
   note_symbol_linkage_event("variable", qualified_name, member_name, false, out);
+  return out;
+}
+
+SymbolIdentity make_static_member_variable_template_symbol_identity(
+    const semantic_model::ClassInfo & owner_class,
+    const string & internal_member_name,
+    const string & template_name,
+    const vector<TemplateArgument> & template_arguments,
+    const vector<TemplateParameterInfo> & template_parameters,
+    bool is_c_linkage,
+    SymbolLinkage linkage)
+{
+  const string qualified_name =
+      owner_class.qualified_name.empty() ?
+          internal_member_name :
+          owner_class.qualified_name + "::" + internal_member_name;
+  if(is_c_linkage) {
+    SymbolIdentity out = c_linkage_identity(internal_member_name, linkage);
+    append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, true);
+    note_symbol_linkage_event("variable",
+                              qualified_name,
+                              internal_member_name,
+                              true,
+                              out);
+    return out;
+  }
+
+  SymbolIdentity out;
+  out.internal_symbol = internal_symbol_from_name(qualified_name);
+  out.linkage = linkage;
+  if(!try_emit_static_member_object_symbol_ir(owner_class,
+                                              template_name,
+                                              out.object_symbol,
+                                              &template_arguments,
+                                              &template_parameters)) {
+    throw logic_error("failed to mangle static member variable template symbol from semantic owner " +
+                      qualified_name);
+  }
+  append_variable_abi_mangle_fact(out, out.object_symbol, qualified_name, false);
+  note_symbol_linkage_event("variable",
+                            qualified_name,
+                            internal_member_name,
+                            false,
+                            out);
   return out;
 }
 

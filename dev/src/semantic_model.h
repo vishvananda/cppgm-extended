@@ -126,6 +126,12 @@ inline bool source_decl_anchor_has_name_location(
   return !cache.name_location.empty();
 }
 
+struct VariableTemplateInstantiationIdentity
+{
+  VariableTemplateDecl * source_template = nullptr;
+  std::vector<template_model::TemplateArgument> arguments;
+};
+
 struct ValueBinding
 {
   enum Kind
@@ -166,6 +172,7 @@ struct ValueBinding
   std::string non_type_template_argument_text;
   FunctionBinding * non_type_template_function_value = nullptr;
   const ValueBinding * non_type_template_value_binding = nullptr;
+  std::shared_ptr<VariableTemplateInstantiationIdentity> variable_template_instantiation;
   Scope * declaration_scope = nullptr;
   const CppAstNode * declaration_node = nullptr;
   const CppAstNode * definition_node = nullptr;

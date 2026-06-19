@@ -2006,7 +2006,8 @@ inline bool emit_external_member_entity_symbol(
     bool function_rvalue_ref,
     bool function_variadic,
     std::string & out,
-    SubstitutionSink * sink)
+    SubstitutionSink * sink,
+    const std::vector<TemplateArgument> * template_arguments = nullptr)
 {
   if(!owner_type || member_name.empty()) {
     return false;
@@ -2027,6 +2028,11 @@ inline bool emit_external_member_entity_symbol(
   }
   if(!emit_type_as_name_prefix_body(*owner_type, out, sink) ||
      !emit_source_name(member_name, out)) {
+    return false;
+  }
+  if(template_arguments &&
+     !template_arguments->empty() &&
+     !emit_template_arguments(*template_arguments, out, sink)) {
     return false;
   }
   out += 'E';
