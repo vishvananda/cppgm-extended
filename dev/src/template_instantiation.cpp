@@ -7430,6 +7430,7 @@ ClassInfo * instantiate_selected_class_template(
   ClassInfo * info = nullptr;
   if(found != decl.instantiations.end()) {
     info = found->second;
+    info->reentrant_primary_selection = specialization.reentrant_primary;
     if(!instantiation_use_location.empty()) {
       info->first_qualifier_use_location =
           prefer_earlier_source_location(info->first_qualifier_use_location,
@@ -7498,6 +7499,7 @@ ClassInfo * instantiate_selected_class_template(
     create_request.output_node = class_node;
     create_request.track_output = !forward_only_selection;
     info = ctx.create_instantiated_class_info(create_request);
+    info->reentrant_primary_selection = specialization.reentrant_primary;
     if(!instantiation_use_location.empty()) {
       info->first_qualifier_use_location =
           prefer_earlier_source_location(info->first_qualifier_use_location,
@@ -7520,6 +7522,7 @@ ClassInfo * instantiate_selected_class_template(
       selected_partial_mangle_context ? bound_parameters : nullptr,
       selected_partial_mangle_context ? bound_arguments : nullptr,
       selected_partial_mangle_context ? bound_pack_sizes : nullptr);
+  info->reentrant_primary_selection = specialization.reentrant_primary;
   record_class_template_binding_state(*info, *bound_arguments, bound_pack_sizes);
   info->dependent_instantiation = current_arguments_dependent;
   info->is_explicit_specialization =

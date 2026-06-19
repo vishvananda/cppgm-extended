@@ -566,6 +566,7 @@ ClassSpecializationSelection select_class_specialization(
       class_selection_in_progress,
       SpecializationSelectionKey(&decl, key));
   if(!guard.inserted) {
+    selection.reentrant_primary = true;
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "class-specialization name=" << decl.name
@@ -579,6 +580,7 @@ ClassSpecializationSelection select_class_specialization(
   std::vector<TemplateArgument> partial_arguments;
   std::map<std::string, std::size_t> partial_pack_sizes;
   std::size_t partial_score = 0;
+  bool partial_match_deferred = false;
   const PartialClassTemplateSpecializationDecl * chosen_partial =
       select_best_partial_specialization(
           decl.partial_specializations,
@@ -591,6 +593,7 @@ ClassSpecializationSelection select_class_specialization(
                 source_capture_pause;
             const template_api::ScopedTemplateWitnessLifecyclePause
                 lifecycle_pause;
+            bool candidate_deferred = false;
             const bool matched =
                 template_specialization::match_partial_class_specialization(services,
                                                                             use_scope,
@@ -598,11 +601,16 @@ ClassSpecializationSelection select_class_specialization(
                                                                             arguments,
                                                                             deduced_arguments,
                                                                             specificity_score,
-                                                                            &deduced_pack_sizes);
+                                                                            &deduced_pack_sizes,
+                                                                            &candidate_deferred);
+            if(candidate_deferred) {
+              partial_match_deferred = true;
+            }
             if(parser_trace::enabled("template.resolve")) {
               std::ostringstream trace;
               trace << "class-specialization-candidate name=" << decl.name
                     << " matched=" << (matched ? "yes" : "no")
+                    << " deferred=" << (candidate_deferred ? "yes" : "no")
                     << " score=" << specificity_score
                     << " pattern=" << join_partial_arg_texts(partial.arg_texts)
                     << " key=" << key;
@@ -620,16 +628,31 @@ ClassSpecializationSelection select_class_specialization(
           partial_pack_sizes,
           partial_score,
           "ambiguous partial class specialization");
+  const bool dependent_selection_arguments =
+      services.semantic_context &&
+      template_api::template_arguments_are_dependent(*services.semantic_context,
+                                                     arguments);
+  const bool selection_deferred =
+      partial_match_deferred &&
+      (!chosen_partial || dependent_selection_arguments);
+  if(selection_deferred) {
+    chosen_partial = nullptr;
+  }
   if(!chosen_partial) {
+    if(selection_deferred) {
+      selection.reentrant_primary = true;
+    }
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "class-specialization name=" << decl.name
-            << " kind=primary"
+            << " kind=" << (selection_deferred ? "deferred-primary" : "primary")
             << " key=" << key;
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    replay_concrete_class_value_dependencies(services, use_scope, arguments);
-    if(use_selection_cache) {
+    if(!selection_deferred) {
+      replay_concrete_class_value_dependencies(services, use_scope, arguments);
+    }
+    if(use_selection_cache && !selection_deferred) {
       cache_class_specialization_selection(decl, key, selection);
     }
     return selection;

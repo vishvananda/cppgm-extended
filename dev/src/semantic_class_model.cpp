@@ -6010,6 +6010,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.nonvirtual_alignment = 1;
   info.complete = false;
   info.reference_reset_witness_class_templates.clear();
+  info.reentrant_primary_selection = false;
   info.type->named_complete = false;
   info.type->named_has_layout = false;
   info.type->named_alignment = 1;

@@ -550,6 +550,7 @@ struct ClassInfo
   bool has_instantiation_binding_arguments = false;
   std::vector<template_model::TemplateValueDependency> template_value_dependencies;
   std::string first_qualifier_use_location;
+  bool reentrant_primary_selection = false;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
 

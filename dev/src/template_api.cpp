@@ -347,6 +347,7 @@ ClassSpecializationSelection to_api_class_specialization_selection_impl(
   out.pack_sizes = selection.pack_sizes;
   out.selection_key = selection.selection_key;
   out.kind = to_api_match_kind(selection.kind);
+  out.reentrant_primary = selection.reentrant_primary;
   return out;
 }
 

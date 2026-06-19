@@ -6823,9 +6823,13 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                                        const std::vector<TemplateArgument> & actual_arguments,
                                        std::vector<TemplateArgument> & deduced_arguments,
                                        std::size_t & specificity_score,
-                                       std::map<std::string, std::size_t> * deduced_pack_sizes)
+                                       std::map<std::string, std::size_t> * deduced_pack_sizes,
+                                       bool * match_deferred)
 {
   try {
+    if(match_deferred) {
+      *match_deferred = false;
+    }
     template_api::TemplateTypeSystem & type_system = service_type_system(services);
     const auto type_is_dependent =
         [&type_system](const TypePtr & type) -> bool
@@ -7170,6 +7174,10 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                   actual.type,
                   expected);
           if(expected_status != template_api::NT_ARG_EVALUATED) {
+            if(expected_status == template_api::NT_ARG_DEPENDENT &&
+               match_deferred) {
+              *match_deferred = true;
+            }
             if(parser_trace::enabled("template.resolve")) {
               parser_trace::note(
                   "template.resolve",
@@ -7403,7 +7411,8 @@ bool match_partial_class_specialization(
     const std::vector<TemplateArgument> & actual_arguments,
     std::vector<TemplateArgument> & deduced_arguments,
     std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes)
+    std::map<std::string, std::size_t> * deduced_pack_sizes,
+    bool * match_deferred)
 {
   return match_partial_specialization_impl(services,
                                            scope.require(),
@@ -7411,7 +7420,8 @@ bool match_partial_class_specialization(
                                            actual_arguments,
                                            deduced_arguments,
                                            specificity_score,
-                                           deduced_pack_sizes);
+                                           deduced_pack_sizes,
+                                           match_deferred);
 }
 
 bool match_partial_variable_specialization(
@@ -7421,7 +7431,8 @@ bool match_partial_variable_specialization(
     const std::vector<TemplateArgument> & actual_arguments,
     std::vector<TemplateArgument> & deduced_arguments,
     std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes)
+    std::map<std::string, std::size_t> * deduced_pack_sizes,
+    bool * match_deferred)
 {
   return match_partial_specialization_impl(services,
                                            scope.require(),
@@ -7429,7 +7440,8 @@ bool match_partial_variable_specialization(
                                            actual_arguments,
                                            deduced_arguments,
                                            specificity_score,
-                                           deduced_pack_sizes);
+                                           deduced_pack_sizes,
+                                           match_deferred);
 }
 
 int compare_partial_class_specialization_preference(
@@ -7455,6 +7467,7 @@ int compare_partial_class_specialization_preference(
             actual_arguments,
             deduced_arguments,
             specificity_score,
+            nullptr,
             nullptr);
       });
 }
@@ -7482,6 +7495,7 @@ int compare_partial_variable_specialization_preference(
             actual_arguments,
             deduced_arguments,
             specificity_score,
+            nullptr,
             nullptr);
       });
 }

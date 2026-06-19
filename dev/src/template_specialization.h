@@ -81,7 +81,8 @@ bool match_partial_class_specialization(
     const std::vector<template_model::TemplateArgument> & actual_arguments,
     std::vector<template_model::TemplateArgument> & deduced_arguments,
     std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes = nullptr);
+    std::map<std::string, std::size_t> * deduced_pack_sizes = nullptr,
+    bool * match_deferred = nullptr);
 
 bool match_partial_variable_specialization(
     template_api::TemplateServices & services,
@@ -90,7 +91,8 @@ bool match_partial_variable_specialization(
     const std::vector<template_model::TemplateArgument> & actual_arguments,
     std::vector<template_model::TemplateArgument> & deduced_arguments,
     std::size_t & specificity_score,
-    std::map<std::string, std::size_t> * deduced_pack_sizes = nullptr);
+    std::map<std::string, std::size_t> * deduced_pack_sizes = nullptr,
+    bool * match_deferred = nullptr);
 
 int compare_partial_class_specialization_preference(
     template_api::TemplateServices & services,
