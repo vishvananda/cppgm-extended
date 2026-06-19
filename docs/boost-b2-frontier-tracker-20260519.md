@@ -83,6 +83,10 @@ rebased Boost frontier branch.
 
 - `5ae8f2cc2` adds reducer tests that were recorded in fixed tracker rows but
   missed by the corresponding code commits.
+- This commit fixes `scripts/run_boost_b2_suite_survey.py` timeout cleanup so a
+  timed-out suite kills the whole B2/compiler process group instead of leaving
+  orphaned `cppgm++` children. Verified with a forced one-second
+  `libs/accumulators/test` timeout and a post-run process check.
 - Supplemental cleanup coverage also adds
   `pa22/tests/general/500-reentrant-static-query-enable-if-partial.t` for the
   Asio static-query reentrant partial-selection shape and
