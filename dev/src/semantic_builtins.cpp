@@ -2052,6 +2052,8 @@ void register_builtin_types(Scope & scope)
   scope.named_types["long long int"] = make_fundamental(FT_LONG_LONG_INT);
   scope.named_types["__int128_t"] = make_fundamental(FT_INT128);
   scope.named_types["__int128"] = make_fundamental(FT_INT128);
+  scope.named_types["signed __int128"] = make_fundamental(FT_INT128);
+  scope.named_types["__int128 signed"] = make_fundamental(FT_INT128);
   scope.named_types["unsigned char"] = make_fundamental(FT_UNSIGNED_CHAR);
   scope.named_types["unsigned short"] = make_fundamental(FT_UNSIGNED_SHORT_INT);
   scope.named_types["unsigned short int"] = make_fundamental(FT_UNSIGNED_SHORT_INT);
@@ -2061,6 +2063,8 @@ void register_builtin_types(Scope & scope)
   scope.named_types["unsigned long long"] = make_fundamental(FT_UNSIGNED_LONG_LONG_INT);
   scope.named_types["unsigned long long int"] = make_fundamental(FT_UNSIGNED_LONG_LONG_INT);
   scope.named_types["__uint128_t"] = make_fundamental(FT_UINT128);
+  scope.named_types["unsigned __int128"] = make_fundamental(FT_UINT128);
+  scope.named_types["__int128 unsigned"] = make_fundamental(FT_UINT128);
   scope.named_types["wchar_t"] = make_fundamental(FT_WCHAR_T);
   scope.named_types["char16_t"] = make_fundamental(FT_CHAR16_T);
   scope.named_types["char32_t"] = make_fundamental(FT_CHAR32_T);
