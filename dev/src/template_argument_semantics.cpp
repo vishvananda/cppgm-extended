@@ -18635,6 +18635,60 @@ bool substitute_type_pack_expression_node(
   }
   out.children.swap(children);
   if(replacement_mentions_node) {
+    if(out.kind == CppAstKind::type_id && out.semantic_type) {
+      bool substituted_children_still_mention_replacement = false;
+      for(auto it = type_replacements.begin();
+          it != type_replacements.end();
+          ++it) {
+        for(size_t i = 0; i < out.children.size(); ++i) {
+          if(expression_node_mentions_identifier(out.children[i], it->first)) {
+            substituted_children_still_mention_replacement = true;
+            break;
+          }
+        }
+        if(substituted_children_still_mention_replacement) {
+          break;
+        }
+      }
+      if(!substituted_children_still_mention_replacement) {
+        out.semantic_type.reset();
+        return true;
+      }
+      TypePtr substituted_type;
+      TypePtr carried_type = out.semantic_type;
+      if(substitute_type_from_replacement_map(out.semantic_type,
+                                              type_replacements,
+                                              substituted_type) &&
+         substituted_type) {
+        carried_type = substituted_type;
+      }
+      const string carried_text = reparseable_type_argument_text(carried_type);
+      if(!carried_text.empty()) {
+        CppAstNode typed = make_substituted_type_id_node(carried_type,
+                                                         carried_text);
+        bool typed_still_mentions_replacement = false;
+        for(auto it = type_replacements.begin();
+            it != type_replacements.end();
+            ++it) {
+          if(expression_node_mentions_identifier(typed, it->first)) {
+            const string replacement_text =
+                strip_template_parameter_type_prefix(
+                    trim_space(reparseable_type_argument_text(it->second)));
+            if(replacement_text == it->first ||
+               callsemantic_internal::contains_identifier_token(replacement_text,
+                                                               it->first)) {
+              continue;
+            }
+            typed_still_mentions_replacement = true;
+            break;
+          }
+        }
+        if(!typed_still_mentions_replacement) {
+          out = typed;
+          return true;
+        }
+      }
+    }
     out.semantic_type.reset();
   }
   return true;
