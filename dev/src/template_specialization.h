@@ -19,7 +19,8 @@ struct AliasSubstitutionFailure
   enum Kind
   {
     SF_NONE,
-    SF_MISSING_NONDEPENDENT_QUALIFIED_MEMBER_TYPE
+    SF_MISSING_NONDEPENDENT_QUALIFIED_MEMBER_TYPE,
+    SF_DEPENDENT_CONDITION
   };
 
   AliasSubstitutionFailure()

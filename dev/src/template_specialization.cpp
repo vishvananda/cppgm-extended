@@ -3958,6 +3958,83 @@ bool try_expand_alias_template_pattern_structurally(
       return false;
     }
   }
+  bool dependent_value_evaluation = false;
+  const auto value_argument_has_structured_source =
+      [](const TemplateArgument & argument) -> bool
+  {
+    if(argument.expression) {
+      return true;
+    }
+    return argument.source_syntax &&
+           (argument.source_syntax->expression ||
+            argument.source_syntax->type_id ||
+            argument.source_syntax->template_id);
+  };
+  const auto try_evaluate_value_argument_in_scope =
+      [&](const TemplateArgument & argument,
+          Scope & eval_scope,
+          TemplateArgument & out) -> bool
+  {
+    out = argument;
+    if(argument.kind != TemplateArgument::TA_VALUE ||
+       !value_argument_has_structured_source(argument)) {
+      return false;
+    }
+
+    if(out.type) {
+      TypePtr resolved_type = out.type;
+      if(template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+             services,
+             template_api::make_template_environment(eval_scope),
+             resolved_type)) {
+        out.type = resolved_type;
+      }
+    }
+    if(!out.type || type_is_dependent(out.type)) {
+      return false;
+    }
+
+    long long value = 0;
+    std::string eval_error;
+    template_argument_semantics::NonTypeArgumentStatus status =
+        template_argument_semantics::NT_ARG_PARSE_FAILED;
+    if(argument.expression) {
+      status =
+          template_argument_semantics::evaluate_non_type_argument_expression(
+              services,
+              template_api::make_template_environment(eval_scope),
+              *argument.expression,
+              value,
+              &eval_error,
+              out.type);
+    }
+    if(status != template_argument_semantics::NT_ARG_EVALUATED &&
+       argument.source_syntax &&
+       (argument.source_syntax->expression ||
+        argument.source_syntax->type_id ||
+        argument.source_syntax->template_id)) {
+      status =
+          template_argument_semantics::evaluate_non_type_argument_syntax(
+              services,
+              template_api::make_template_environment(eval_scope),
+              *argument.source_syntax,
+              value,
+              &eval_error,
+              out.type);
+    }
+    if(status != template_argument_semantics::NT_ARG_EVALUATED) {
+      if(status == template_argument_semantics::NT_ARG_DEPENDENT) {
+        dependent_value_evaluation = true;
+      }
+      return false;
+    }
+
+    out.value = value;
+    out.dependent = false;
+    out.text.clear();
+    out.expression.reset();
+    return true;
+  };
 
   AliasTemplateDecl::StableAliasExpansionKey alias_expansion_cache_key;
   const bool has_alias_expansion_cache_key =
@@ -4066,7 +4143,8 @@ bool try_expand_alias_template_pattern_structurally(
   const auto cache_alias_dependent_defer =
       [&](const TypePtr & type) -> void
   {
-    if(!has_alias_expansion_cache_key) {
+    (void)type;
+    if(!has_alias_expansion_cache_key || dependent_value_evaluation) {
       return;
     }
     AliasTemplateDecl::StableAliasExpansionValue value;
@@ -4515,81 +4593,24 @@ bool try_expand_alias_template_pattern_structurally(
     }
     return has_true_bool_value;
   };
-  const auto value_argument_has_structured_source =
-      [](const TemplateArgument & argument) -> bool
-  {
-    if(argument.expression) {
-      return true;
-    }
-    return argument.source_syntax &&
-           (argument.source_syntax->expression ||
-            argument.source_syntax->type_id ||
-            argument.source_syntax->template_id);
-  };
   const auto try_evaluate_alias_target_value_argument =
       [&](const TemplateArgument & argument, TemplateArgument & out) -> bool
   {
-	    out = argument;
-	    if(argument.kind != TemplateArgument::TA_VALUE ||
-	       !source_argument_needs_alias_target_scope(argument) ||
-	       !value_argument_has_structured_source(argument)) {
-	      return false;
-	    }
-
-    Scope & eval_scope =
-        source_argument_needs_alias_target_scope(argument) ?
-            ensure_alias_target_scope() :
-            effective_argument_scope.require();
-    if(out.type) {
-      TypePtr resolved_type = out.type;
-      if(template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-             services,
-             template_api::make_template_environment(eval_scope),
-             resolved_type)) {
-        out.type = resolved_type;
-      }
-    }
-    if(!out.type || type_is_dependent(out.type)) {
+    if(argument.kind != TemplateArgument::TA_VALUE ||
+       !value_argument_has_structured_source(argument)) {
       return false;
     }
-
-    long long value = 0;
-    std::string eval_error;
-    template_argument_semantics::NonTypeArgumentStatus status =
-        template_argument_semantics::NT_ARG_PARSE_FAILED;
-    if(argument.expression) {
-      status =
-          template_argument_semantics::evaluate_non_type_argument_expression(
-              services,
-              template_api::make_template_environment(eval_scope),
-              *argument.expression,
-              value,
-              &eval_error,
-              out.type);
-    }
-    if(status != template_argument_semantics::NT_ARG_EVALUATED &&
-       argument.source_syntax &&
-       (argument.source_syntax->expression ||
-        argument.source_syntax->type_id ||
-        argument.source_syntax->template_id)) {
-      status =
-          template_argument_semantics::evaluate_non_type_argument_syntax(
-              services,
-              template_api::make_template_environment(eval_scope),
-              *argument.source_syntax,
-              value,
-              &eval_error,
-              out.type);
-    }
-    if(status != template_argument_semantics::NT_ARG_EVALUATED) {
+    if(!argument.dependent &&
+       (!argument.source_syntax || !argument.source_syntax->dependent)) {
       return false;
     }
-
-    out.value = value;
-    out.dependent = false;
-    out.text.clear();
-    out.expression.reset();
-    return true;
+    if(!source_argument_needs_alias_target_scope(argument)) {
+      return false;
+    }
+    return try_evaluate_value_argument_in_scope(
+        argument,
+        ensure_alias_target_scope(),
+        out);
   };
   const auto dependent_class_instantiation_needs_structured_expansion =
       [&](const TypePtr & type) -> bool
@@ -4607,6 +4628,18 @@ bool try_expand_alias_template_pattern_structurally(
   const auto mark_structural_substitution_failure =
       [&](Scope * lookup_scope, const std::string & member_name) -> void
   {
+    if(dependent_value_evaluation) {
+      structural_substitution_failure = true;
+      if(substitution_failure) {
+        substitution_failure->reset();
+        substitution_failure->kind =
+            AliasSubstitutionFailure::SF_DEPENDENT_CONDITION;
+        substitution_failure->alias_name = alias_template.name;
+        substitution_failure->stable_for_reuse = false;
+      }
+      return;
+    }
+
     const ClassInfo * lookup_class =
         lookup_scope ? lookup_scope->class_info : nullptr;
     const bool stable_member_lookup =
@@ -4649,6 +4682,19 @@ bool try_expand_alias_template_pattern_structurally(
       alias_template.stable_substitution_failures[substitution_failure_cache_key] =
           cached_failure;
     }
+  };
+  const auto mark_dependent_condition_substitution_failure =
+      [&]() -> void
+  {
+    if(!dependent_value_evaluation || !substitution_failure ||
+       substitution_failure->active()) {
+      return;
+    }
+    substitution_failure->reset();
+    substitution_failure->kind =
+        AliasSubstitutionFailure::SF_DEPENDENT_CONDITION;
+    substitution_failure->alias_name = alias_template.name;
+    substitution_failure->stable_for_reuse = false;
   };
 
   struct ScopedSubstitutionDepth
@@ -5220,12 +5266,12 @@ bool try_expand_alias_template_pattern_structurally(
             }
             substituted_arguments.push_back(value_argument);
             continue;
-	          }
-	          TemplateArgument evaluated_argument;
-	          if(try_evaluate_alias_target_value_argument(argument,
-	                                                      evaluated_argument)) {
-	            substituted_arguments.push_back(evaluated_argument);
-	            continue;
+          }
+          TemplateArgument evaluated_argument;
+          if(try_evaluate_alias_target_value_argument(argument,
+                                                      evaluated_argument)) {
+            substituted_arguments.push_back(evaluated_argument);
+            continue;
           }
           substituted_arguments.push_back(argument);
           continue;
@@ -5489,6 +5535,7 @@ bool try_expand_alias_template_pattern_structurally(
   TypePtr substituted;
   if(!substitute_type(alias_template.resolved_type_pattern, substituted) ||
      !substituted) {
+    mark_dependent_condition_substitution_failure();
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "expand-alias-structural-substitute-fail alias="
@@ -5496,7 +5543,8 @@ bool try_expand_alias_template_pattern_structurally(
             << " substitution="
             << (structural_substitution_failure ? "yes" : "no");
       if(substitution_failure && substitution_failure->active()) {
-        trace << " owner=" << substitution_failure->owner_type_display
+        trace << " kind=" << static_cast<int>(substitution_failure->kind)
+              << " owner=" << substitution_failure->owner_type_display
               << " member=" << substitution_failure->member_name
               << " stable="
               << (substitution_failure->stable_for_reuse ? "yes" : "no");
@@ -5508,6 +5556,7 @@ bool try_expand_alias_template_pattern_structurally(
 
   if(type_is_dependent(substituted)) {
     if(!allow_dependent_expansion) {
+      mark_dependent_condition_substitution_failure();
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "expand-alias-structural-dependent alias="
@@ -5523,6 +5572,7 @@ bool try_expand_alias_template_pattern_structurally(
            type_system,
            substituted,
            alias_template.parameters)) {
+      mark_dependent_condition_substitution_failure();
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "expand-alias-structural-dependent-non-type alias="
