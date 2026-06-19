@@ -335,9 +335,7 @@ std::string function_binding_display_name_for_symbol(const FunctionBinding & bin
      binding.name.compare(0, 8, "operator") == 0) {
     display_name = binding.name;
   }
-  const bool is_conversion_function =
-      callsemantic_internal::is_conversion_function_name(display_name) ||
-      callsemantic_internal::is_conversion_function_name(member_binding_name);
+  const bool is_conversion_function = binding.is_conversion_operator;
   bool rebuilt_conversion_display = false;
   if(is_conversion_function &&
      (display_name.find(' ') == std::string::npos ||

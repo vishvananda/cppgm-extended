@@ -89,6 +89,14 @@ bool declarator_has_direct_child_kind(const CppAstNode & node, CppAstKind kind)
   return false;
 }
 
+bool declaration_has_conversion_operator_type_id(const CppAstNode & node)
+{
+  const CppAstNode * declarator = find_child_kind(node, CppAstKind::declarator);
+  const CppAstNode * identifier =
+      declarator ? find_child_kind(*declarator, CppAstKind::identifier) : nullptr;
+  return identifier && cppast_conversion_type_id_syntax(*identifier);
+}
+
 bool declarator_is_transparent_parenthesized_name(const CppAstNode & node)
 {
   if(node.kind != CppAstKind::declarator) {
@@ -1471,7 +1479,8 @@ public:
             strip_trailing_top_level_template_arguments(member_name.substr(1)) ==
             class_name;
       }
-      special_member_is_conversion = is_conversion_function_name(inner.value);
+      special_member_is_conversion =
+          declaration_has_conversion_operator_type_id(inner);
       if(!special_member_is_constructor &&
          !special_member_is_destructor &&
          !special_member_is_conversion) {
@@ -3406,6 +3415,7 @@ public:
       MemberAccess access = MA_PUBLIC;
       bool is_constructor = false;
       bool is_destructor = false;
+      bool is_conversion_operator = false;
       bool is_static_member = false;
       bool is_constexpr = false;
       bool is_explicit = false;
@@ -3432,6 +3442,7 @@ public:
           traits.access = access;
           traits.is_constructor = special_member_is_constructor;
           traits.is_destructor = special_member_is_destructor;
+          traits.is_conversion_operator = special_member_is_conversion;
           traits.is_static_member = candidate_is_static_member;
           traits.is_constexpr = specifiers && decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
           traits.exclude_from_explicit_instantiation =
@@ -3518,6 +3529,8 @@ public:
       existing->access = candidate_traits.access;
       existing->is_constructor = existing->is_constructor || candidate_traits.is_constructor;
       existing->is_destructor = existing->is_destructor || candidate_traits.is_destructor;
+      existing->is_conversion_operator =
+          existing->is_conversion_operator || candidate_traits.is_conversion_operator;
       existing->is_explicit = existing->is_explicit || candidate_traits.is_explicit;
       existing->is_static_member = existing->is_static_member || candidate_traits.is_static_member;
       existing->is_const_method =
@@ -3587,6 +3600,7 @@ public:
     decl->access = candidate_traits.access;
     decl->is_constructor = candidate_traits.is_constructor;
     decl->is_destructor = candidate_traits.is_destructor;
+    decl->is_conversion_operator = candidate_traits.is_conversion_operator;
     decl->is_explicit = candidate_traits.is_explicit;
     decl->is_static_member = candidate_traits.is_static_member;
     decl->is_const_method = candidate_traits.is_const_method;

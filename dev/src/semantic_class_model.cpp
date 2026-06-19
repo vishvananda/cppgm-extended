@@ -5485,6 +5485,18 @@ std::string conversion_operator_identifier_member_name(const CppAstNode & identi
   return unqualified_conversion_operator_member_name(identifier.value);
 }
 
+bool declarator_has_conversion_operator_type_id(const CppAstNode & declarator)
+{
+  const CppAstNode * identifier = find_child(declarator, CppAstKind::identifier);
+  return identifier && cppast_conversion_type_id_syntax(*identifier);
+}
+
+bool class_member_declares_conversion_operator(const CppAstNode & node)
+{
+  const CppAstNode * declarator = find_child(node, CppAstKind::declarator);
+  return declarator && declarator_has_conversion_operator_type_id(*declarator);
+}
+
 bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
                                                Scope & scope,
                                                const CppAstNode & declarator,
@@ -9705,7 +9717,7 @@ void collect_class_reference_special_member(SemanticContext & ctx,
     return;
   }
 
-  if(node.value.compare(0, 8, "operator") == 0 && node.value != "operator=") {
+  if(class_member_declares_conversion_operator(node)) {
     std::string member_name;
     TypePtr declared_type;
     std::vector<std::pair<std::string, TypePtr> > params;
@@ -9748,6 +9760,18 @@ void collect_class_reference_special_member(SemanticContext & ctx,
       return;
     }
 
+    ClassFunctionOptions conversion_options =
+        class_function_options(
+            access,
+            &syntax,
+            false,
+            false,
+            member_specifiers &&
+                decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR),
+            false,
+            member_specifiers &&
+                decl_spec_contains_token(*member_specifiers, KW_INLINE));
+    conversion_options.is_conversion_operator = true;
     register_class_function(ctx,
                             info,
                             member_name,
@@ -9756,16 +9780,7 @@ void collect_class_reference_special_member(SemanticContext & ctx,
                             default_args,
                             nullptr,
                             nullptr,
-                            class_function_options(
-                                access,
-                                &syntax,
-                                false,
-                                false,
-                                member_specifiers &&
-                                    decl_spec_contains_token(*member_specifiers, KW_CONSTEXPR),
-                                false,
-                                member_specifiers &&
-                                    decl_spec_contains_token(*member_specifiers, KW_INLINE)),
+                            conversion_options,
                             &node);
     trace_class_collection_event(ctx,
                                  "reference-conversion-operator-done",
@@ -9899,6 +9914,20 @@ void collect_conversion_operator_member(SemanticContext & ctx,
     return;
   }
 
+  ClassFunctionOptions conversion_options =
+      class_function_options(
+          access,
+          &syntax,
+          false,
+          false,
+          member_specifiers &&
+              decl_spec_contains_token(*member_specifiers,
+                                       KW_CONSTEXPR),
+          false,
+          member_specifiers &&
+              decl_spec_contains_token(*member_specifiers,
+                                       KW_INLINE));
+  conversion_options.is_conversion_operator = true;
   FunctionBinding * binding =
       register_class_function(ctx,
                               info,
@@ -9908,18 +9937,7 @@ void collect_conversion_operator_member(SemanticContext & ctx,
                               default_args,
                               body,
                               nullptr,
-                              class_function_options(
-                                  access,
-                                  &syntax,
-                                  false,
-                                  false,
-                                  member_specifiers &&
-                                      decl_spec_contains_token(*member_specifiers,
-                                                               KW_CONSTEXPR),
-                                  false,
-                                  member_specifiers &&
-                                      decl_spec_contains_token(*member_specifiers,
-                                                               KW_INLINE)),
+                              conversion_options,
                               &node);
   if(binding) {
     binding->display_name = semantic_utils::unqualified_member_name(node.value);
@@ -10211,7 +10229,7 @@ void populate_class_info(SemanticContext & ctx,
        child.kind == CppAstKind::special_member_declaration) {
       DIAG_CONTEXT("class_special_member [" + node_text(child) + "]" +
                    ctx.source_location_for_node(child));
-      if(child.value.compare(0, 8, "operator") == 0 && child.value != "operator=") {
+      if(class_member_declares_conversion_operator(child)) {
         collect_conversion_operator_member(ctx, info, child, current_access);
       } else {
         collect_special_member(ctx, info, child, current_access);

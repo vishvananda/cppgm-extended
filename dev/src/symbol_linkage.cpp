@@ -15210,6 +15210,11 @@ static string compact_operator_name(const string & text)
   return remove_space_chars(text);
 }
 
+static bool name_starts_with_operator_text(const string & text)
+{
+  return text.size() >= 8 && text.compare(0, 8, "operator") == 0;
+}
+
 static size_t operator_explicit_parameter_count(const QualifiedName & qualified,
                                                 const TypePtr & type,
                                                 const FunctionSymbolOptions & options)
@@ -15399,6 +15404,7 @@ static bool function_options_are_plain_ir_candidate(
          options.ref_qualifier == FRQ_NONE &&
          !options.is_constructor &&
          !options.is_destructor &&
+         !options.is_conversion_operator &&
          !options.function_type_pattern &&
          !options.template_parameters &&
          (!options.template_arguments || options.template_arguments->empty()) &&
@@ -15426,6 +15432,7 @@ static bool function_options_are_simple_name_ir_candidate(
          options.ref_qualifier == FRQ_NONE &&
          !options.is_constructor &&
          !options.is_destructor &&
+         !options.is_conversion_operator &&
          !options.lambda_closure_type &&
          !options.local_class_type;
 }
@@ -15436,6 +15443,7 @@ static bool function_options_are_simple_member_name_ir_candidate(
   return options.is_member_function &&
          !options.is_constructor &&
          !options.is_destructor &&
+         !options.is_conversion_operator &&
          !options.lambda_closure_type &&
          !options.local_class_type;
 }
@@ -15455,6 +15463,48 @@ static bool function_options_are_fixed_operator_name_ir_candidate(
   return !options.is_const_method &&
          !options.is_volatile_method &&
          options.ref_qualifier == FRQ_NONE;
+}
+
+static bool ordinary_identifier_operator_prefix_name(
+    const QualifiedName & qualified,
+    const string & display_name)
+{
+  return (display_name.empty() || display_name == qualified.name) &&
+         is_identifier_text_for_mangling(qualified.name);
+}
+
+static bool function_name_requires_operator_ir_path(
+    const QualifiedName & qualified,
+    const string & display_name,
+    const TypePtr & type,
+    const FunctionSymbolOptions & options)
+{
+  const string & display_or_name =
+      display_name.empty() ? qualified.name : display_name;
+  if(!name_starts_with_operator_text(display_or_name)) {
+    return false;
+  }
+  const string compact = compact_operator_name(display_or_name);
+  if(compact.compare(0, 8, "operator") != 0) {
+    return false;
+  }
+  abi_mangle::FunctionOperatorTerminal fixed_terminal =
+      abi_mangle::FUNCTION_OPERATOR_NONE;
+  string fixed_literal_suffix;
+  if(fixed_operator_mangle_terminal(
+         compact,
+         operator_explicit_parameter_count(qualified, type, options),
+         options.is_member_function,
+         fixed_terminal,
+         fixed_literal_suffix)) {
+    return true;
+  }
+  if(options.is_member_function &&
+     !qualified.qualifiers.empty() &&
+     options.is_conversion_operator) {
+    return true;
+  }
+  return false;
 }
 
 static void apply_member_function_nested_qualifiers_ir(
@@ -15913,10 +15963,12 @@ static bool try_mangle_function_name_prefix_ir(
     abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   if((!display_name.empty() && display_name != qualified.name) ||
-     compact_operator_name(display_name.empty() ? qualified.name : display_name)
-         .compare(0, 8, "operator") == 0 ||
      (!display_name.empty() && display_name[0] == '~') ||
-     !function_options_are_simple_name_ir_candidate(options)) {
+     !function_options_are_simple_name_ir_candidate(options) ||
+     function_name_requires_operator_ir_path(qualified,
+                                            display_name,
+                                            TypePtr(),
+                                            options)) {
     return false;
   }
 
@@ -15951,11 +16003,13 @@ static bool try_mangle_member_function_name_prefix_ir(
     abi_mangle::FunctionEncoding * captured_function = nullptr)
 {
   if((!display_name.empty() && display_name != qualified.name) ||
-     compact_operator_name(display_name.empty() ? qualified.name : display_name)
-         .compare(0, 8, "operator") == 0 ||
      (!display_name.empty() && display_name[0] == '~') ||
      !function_options_are_simple_member_name_ir_candidate(options) ||
-     qualified.qualifiers.empty()) {
+     qualified.qualifiers.empty() ||
+     function_name_requires_operator_ir_path(qualified,
+                                            display_name,
+                                            TypePtr(),
+                                            options)) {
     return false;
   }
 
@@ -16149,7 +16203,7 @@ static bool try_mangle_local_class_member_name_prefix_ir(
     return false;
   }
 
-  const string display_or_name =
+  const string & display_or_name =
       display_name.empty() ? qualified.name : display_name;
   if(display_or_name.empty() || display_or_name[0] == '~') {
     return false;
@@ -16164,8 +16218,11 @@ static bool try_mangle_local_class_member_name_prefix_ir(
   }
   apply_member_function_nested_qualifiers_ir(options, function);
 
-  const string compact = compact_operator_name(display_or_name);
-  if(compact.compare(0, 8, "operator") == 0) {
+  if(function_name_requires_operator_ir_path(qualified,
+                                            display_name,
+                                            type,
+                                            options)) {
+    const string compact = compact_operator_name(display_or_name);
     abi_mangle::FunctionOperatorTerminal operator_terminal =
         abi_mangle::FUNCTION_OPERATOR_NONE;
     string operator_literal_suffix;
@@ -16355,6 +16412,7 @@ static bool try_mangle_conversion_operator_name_prefix_ir(
                                     options.is_member_function,
                                     fixed_terminal,
                                     fixed_literal_suffix) ||
+     !options.is_conversion_operator ||
      !function_options_are_fixed_operator_name_ir_candidate(options) ||
      !options.is_member_function ||
      qualified.qualifiers.empty()) {
@@ -16454,11 +16512,13 @@ static bool try_mangle_plain_function_ir(const QualifiedName & qualified,
   if(qualified.rooted ||
      qualified.name.empty() ||
      contains_template_suffix(qualified.name) ||
-     compact_operator_name(display_name.empty() ? qualified.name : display_name)
-         .compare(0, 8, "operator") == 0 ||
      !is_identifier_text_for_mangling(qualified.name) ||
      (!display_name.empty() && display_name != qualified.name) ||
-     !function_options_are_plain_ir_candidate(options)) {
+     !function_options_are_plain_ir_candidate(options) ||
+     function_name_requires_operator_ir_path(qualified,
+                                            display_name,
+                                            type,
+                                            options)) {
     return false;
   }
   for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
@@ -16532,10 +16592,8 @@ static FunctionNameIrPath select_function_name_ir_path(
     return FNIP_NONE;
   }
 
-  const string display_or_name =
+  const string & display_or_name =
       display_name.empty() ? qualified.name : display_name;
-  const string compact = compact_operator_name(display_or_name);
-  const bool is_operator = compact.compare(0, 8, "operator") == 0;
 
   if(options.lambda_closure_type) {
     if(display_name == "operator()" && options.is_member_function) {
@@ -16571,28 +16629,39 @@ static FunctionNameIrPath select_function_name_ir_path(
     return FNIP_NONE;
   }
 
+  string compact;
+  bool is_operator = false;
+  if(name_starts_with_operator_text(display_or_name)) {
+    compact = compact_operator_name(display_or_name);
+    is_operator = compact.compare(0, 8, "operator") == 0;
+  }
+
   if(is_operator) {
-    if(!function_options_are_fixed_operator_name_ir_candidate(options)) {
+    if(function_options_are_fixed_operator_name_ir_candidate(options)) {
+      abi_mangle::FunctionOperatorTerminal fixed_terminal =
+          abi_mangle::FUNCTION_OPERATOR_NONE;
+      string fixed_literal_suffix;
+      const bool fixed_operator =
+          fixed_operator_mangle_terminal(
+              compact,
+              operator_explicit_parameter_count(qualified, type, options),
+              options.is_member_function,
+              fixed_terminal,
+              fixed_literal_suffix);
+      if(fixed_operator) {
+        return options.is_member_function && qualified.qualifiers.empty() ?
+            FNIP_NONE :
+            FNIP_FIXED_OPERATOR;
+      }
+      if(options.is_member_function &&
+         !qualified.qualifiers.empty() &&
+         options.is_conversion_operator) {
+        return FNIP_CONVERSION_OPERATOR;
+      }
+    }
+    if(!ordinary_identifier_operator_prefix_name(qualified, display_name)) {
       return FNIP_NONE;
     }
-    abi_mangle::FunctionOperatorTerminal fixed_terminal =
-        abi_mangle::FUNCTION_OPERATOR_NONE;
-    string fixed_literal_suffix;
-    const bool fixed_operator =
-        fixed_operator_mangle_terminal(
-            compact,
-            operator_explicit_parameter_count(qualified, type, options),
-            options.is_member_function,
-            fixed_terminal,
-            fixed_literal_suffix);
-    if(fixed_operator) {
-      return options.is_member_function && qualified.qualifiers.empty() ?
-          FNIP_NONE :
-          FNIP_FIXED_OPERATOR;
-    }
-    return options.is_member_function && !qualified.qualifiers.empty() ?
-        FNIP_CONVERSION_OPERATOR :
-        FNIP_NONE;
   }
 
   if((!display_name.empty() && display_name != qualified.name) ||
@@ -16687,10 +16756,10 @@ static bool build_itanium_function_context_name_ir(
     if(!options.local_class_type) {
       return false;
     }
-    const string display_or_name =
-        display_name.empty() ? qualified.name : display_name;
-    const string compact = compact_operator_name(display_or_name);
-    if(compact.compare(0, 8, "operator") == 0 ||
+    if(function_name_requires_operator_ir_path(qualified,
+                                              display_name,
+                                              type,
+                                              options) ||
        (!display_name.empty() && display_name != qualified.name) ||
        !is_identifier_text_for_mangling(qualified.name)) {
       return false;

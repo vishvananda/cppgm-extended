@@ -60,6 +60,7 @@ struct FunctionSymbolOptions
   std::vector<std::string> abi_tags;
   bool is_constructor = false;
   bool is_destructor = false;
+  bool is_conversion_operator = false;
   SpecialMemberEntryPointKind special_member_entry_point_kind = SMEK_COMPLETE;
   cpp_decl::TypePtr function_type_pattern;
   const std::vector<template_model::TemplateParameterInfo> * template_parameters = nullptr;

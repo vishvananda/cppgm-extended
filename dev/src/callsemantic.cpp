@@ -8690,6 +8690,7 @@ private:
     binding->is_constructor = flags.is_constructor;
     binding->is_inherited_constructor = flags.is_inherited_constructor;
     binding->is_destructor = flags.is_destructor;
+    binding->is_conversion_operator = flags.is_conversion_operator;
     binding->is_explicit = flags.is_explicit;
     binding->is_const_method = flags.is_const_method;
     binding->is_volatile_method = flags.is_volatile_method;
@@ -8790,6 +8791,7 @@ private:
                                         flags.ref_qualifier,
                                         flags.is_constructor,
                                         flags.is_destructor,
+                                        flags.is_conversion_operator,
                                         template_identity,
                                         &info,
                                         prefer_overload_suffix,
@@ -9063,6 +9065,8 @@ private:
           slot[i]->is_copy_assignment || binding->is_copy_assignment;
       slot[i]->is_move_assignment =
           slot[i]->is_move_assignment || binding->is_move_assignment;
+      slot[i]->is_conversion_operator =
+          slot[i]->is_conversion_operator || binding->is_conversion_operator;
       slot[i]->is_explicit = slot[i]->is_explicit || binding->is_explicit;
       slot[i]->is_defaulted = slot[i]->is_defaulted || flags.is_defaulted;
       slot[i]->is_constexpr = slot[i]->is_constexpr || flags.is_constexpr;
@@ -20728,7 +20732,8 @@ private:
     const bool allow_special_member_match =
         candidate_is_special_member_template ||
         existing.is_constructor ||
-        existing.is_destructor;
+        existing.is_destructor ||
+        existing.is_conversion_operator;
     if(!allow_special_member_match) {
       // Function template redeclarations are identified by the template head and
       // function parameter list. Dependent return-type alias spellings such as
@@ -21585,6 +21590,7 @@ private:
                                      binding.declaration_scope,
                                      binding.declaration_node,
                                      binding.definition_node);
+    options.is_conversion_operator = binding.is_conversion_operator;
     if(!binding.instantiation_pack_sizes.empty()) {
       options.template_argument_pack_sizes = &binding.instantiation_pack_sizes;
     }
@@ -21658,6 +21664,7 @@ private:
                                                                  RefQualifier ref_qualifier = RQ_NONE,
                                                                  bool is_constructor = false,
                                                                  bool is_destructor = false,
+                                                                 bool is_conversion_operator = false,
                                                                  const FunctionTemplateRegistrationIdentity
                                                                      & template_identity =
                                                                      FunctionTemplateRegistrationIdentity(),
@@ -21685,6 +21692,7 @@ private:
                                      declaration_scope,
                                      declaration_node,
                                      definition_node);
+    options.is_conversion_operator = is_conversion_operator;
     const string object_symbol_key =
         function_object_symbol_key(qualified_name,
                                    type,
@@ -21760,6 +21768,7 @@ private:
                                                                  RefQualifier ref_qualifier = RQ_NONE,
                                                                  bool is_constructor = false,
                                                                  bool is_destructor = false,
+                                                                 bool is_conversion_operator = false,
                                                                  const FunctionTemplateRegistrationIdentity
                                                                      & template_identity =
                                                                      FunctionTemplateRegistrationIdentity(),
@@ -21783,6 +21792,7 @@ private:
                                            ref_qualifier,
                                            is_constructor,
                                            is_destructor,
+                                           is_conversion_operator,
                                            template_identity,
                                            owner_class,
                                            prefer_overload_suffix,
@@ -22372,6 +22382,7 @@ private:
                                         false,
                                         false,
                                         RQ_NONE,
+                                        false,
                                         false,
                                         false,
                                         template_identity,
