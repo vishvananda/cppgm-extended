@@ -314,12 +314,13 @@ RULES: tuple[FeatureRule, ...] = (
                 path_patterns=(rx(r"(?:partial-specialization-order|class-partial-order|partial_order_class|function-type-partial-specialization-preference|repeated-argument)"),)),
     FeatureRule("template.deduction_full",
                 (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*(?:&&|decltype|enable_if|typename\s+[A-Za-z_][A-Za-z0-9_:<>]*::)[^)]*\)"),),
-                path_patterns=(rx(r"(?:deduc|forwarding-reference|explicit-template-(?:args|id)|nondeduced|non-deduced|reference-cv|array-bound)"),)),
+                path_patterns=(rx(r"(?:deduc|forwarding-reference|explicit-template-(?:args|argument|id)|nondeduced|non-deduced|reference-cv|array-bound)"),)),
     FeatureRule("template.detector_idiom",
                 (rx(r"\b(?:void_t|detected_or|detector|is_detected)\b"),),
                 path_patterns=(rx(r"(?:detected|detector|void-t|void_t)"),)),
     FeatureRule("template.substitution",
-                (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),)),
+                (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),),
+                path_patterns=(rx(r"(?:candidate-drop|substitution)"),)),
     FeatureRule("template.conversion_deduction",
                 (rx(r"\btemplate\s*<[^>]*>[^;{]*operator\s+[A-Za-z_]"),),
                 use_raw=True),
@@ -329,7 +330,8 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("template.no_eager_instantiation",
                 (rx(r"\b(?:no_eager|unevaluated|static_assert\s*\(\s*false|sizeof\s*\([^)]*typename)"),),
                 path_patterns=(rx(r"(?:no[-_]?eager|no[-_]?body|does-not-eagerly|not-instantiat|body-skip|unused-body)"),)),
-    FeatureRule("sfinae", (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),)),
+    FeatureRule("sfinae", (rx(r"\b(?:enable_if|void_t|sfinae|SFINAE|detected_or|detector|is_detected)\b"),),
+                path_patterns=(rx(r"sfinae|candidate-drop"),)),
     FeatureRule("template.braced_init_deduction",
                 (rx(r"\btemplate\s*<[^>]*>[^;{}()]*\b[A-Za-z_][A-Za-z0-9_:<>*&\s]*\s+"
                     r"[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*(?:\{|;).*?"
@@ -947,6 +949,8 @@ def template_concepts_for(detected_features: Iterable[str]) -> list[str]:
 
 def review_template_concepts(concepts: Iterable[str], current_pa: str) -> list[str]:
     review = set(concepts)
+    if "sfinae" in review:
+        review.discard("substitution")
     if len(review) > 1:
         support = (
             TEMPLATE_INTEGRATION_BASIC_SUPPORT
@@ -1079,19 +1083,34 @@ def suggest_integration_cluster(concepts: Iterable[str], current_cluster: int | 
 
 def template_review_for(
     detected_features: list[str],
+    path_hint_features: Iterable[str],
     placements: list[dict[str, object]],
     current_cluster: int | None,
     current_pa: str,
     features: dict[str, FeatureMeta],
 ) -> dict[str, object]:
-    concepts = template_concepts_for(detected_features)
+    review_features = sorted({
+        feature_id
+        for feature_id in [*detected_features, *path_hint_features]
+        if feature_id in TEMPLATE_CONCEPT_BY_FEATURE
+    })
+    effective_review_features = review_features
+    if current_pa == "pa22":
+        pa22_owned_features = [
+            feature_id for feature_id in review_features
+            if (meta := features.get(feature_id))
+            and (pa_number(meta.owner_pa) or 0) >= 22
+        ]
+        if pa22_owned_features:
+            effective_review_features = sorted(pa22_owned_features)
+    concepts = template_concepts_for(effective_review_features)
     review_concepts = review_template_concepts(concepts, current_pa)
     template_features = sorted(
         feature_id for feature_id in detected_features
         if feature_id in TEMPLATE_CONCEPT_BY_FEATURE
     )
     later_features = later_template_dependency_features(placements)
-    owner = latest_owner_label(template_features, features)
+    owner = latest_owner_label(effective_review_features, features)
     suggested_cluster: int | None = None
     if not review_concepts:
         bucket = "manual-review"
@@ -1184,7 +1203,14 @@ def row_for(path: Path,
         "late_placement_candidate": late_candidate,
         "source_sidecars_scanned": bool(sidecar_source),
     }
-    row.update(template_review_for(detected, placements, current_cluster, current_pa, features))
+    row.update(template_review_for(
+        detected,
+        sorted(path_hints),
+        placements,
+        current_cluster,
+        current_pa,
+        features,
+    ))
     return row
 
 
