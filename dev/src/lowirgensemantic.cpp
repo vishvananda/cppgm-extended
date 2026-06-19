@@ -1326,6 +1326,7 @@ symbol_linkage::FunctionSymbolOptions vtable_entry_function_symbol_options(
       symbol_linkage::FRQ_NONE;
   options.is_constructor = node.is_constructor;
   options.is_destructor = node.is_destructor;
+  options.is_conversion_operator = node.is_conversion_operator;
   options.abi_tags = callsem_abi_tags(node);
   if(node.has_special_member_entry_point_kind) {
     options.special_member_entry_point_kind =

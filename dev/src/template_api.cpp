@@ -2193,6 +2193,8 @@ void apply_function_template_symbol_options(
   if(source_template &&
      instantiation_arguments &&
      has_instantiation_arguments) {
+    options.is_conversion_operator =
+        options.is_conversion_operator || source_template->is_conversion_operator;
     if(source_template->result_type_pattern.kind == CppAstKind::invalid &&
        source_template->specifiers &&
        source_template->declarator &&

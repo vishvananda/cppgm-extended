@@ -5257,7 +5257,7 @@ void apply_selected_specialization_member_function_definitions(
       FunctionBinding * source_binding = it->second[i];
       const bool is_conversion_operator =
           source_binding &&
-          ctx.is_conversion_function_name(source_binding->display_name);
+          source_binding->is_conversion_operator;
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "apply-selected-specialization-member-candidate class="
@@ -5446,7 +5446,7 @@ void apply_out_of_class_special_member_definitions(
       FunctionBinding * source_binding = it->second[i];
       const bool is_conversion_operator =
           source_binding &&
-          ctx.is_conversion_function_name(source_binding->display_name);
+          source_binding->is_conversion_operator;
       if(parser_trace::enabled("template.resolve") &&
          source_binding &&
          (source_binding->is_constructor ||
@@ -8222,7 +8222,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
             "unsupported trailing function parameter pack expansion");
       }
     }
-  } else if(ctx.is_conversion_function_name(source_decl->name)) {
+  } else if(source_decl->is_conversion_operator) {
     name = source_decl->name;
     type = source_decl->type_pattern;
     params = source_decl->params_pattern;
@@ -8829,6 +8829,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     request.semantic_flags.is_inherited_constructor =
         source_decl->is_inherited_constructor;
     request.semantic_flags.is_destructor = source_decl->is_destructor;
+    request.semantic_flags.is_conversion_operator =
+        source_decl->is_conversion_operator;
     request.semantic_flags.is_explicit = source_decl->is_explicit;
     request.semantic_flags.is_const_method = source_decl->is_const_method;
     request.semantic_flags.is_volatile_method = source_decl->is_volatile_method;

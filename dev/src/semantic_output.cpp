@@ -348,6 +348,7 @@ symbol_linkage::SymbolIdentity function_entry_point_symbol(const FunctionBinding
   options.ref_qualifier = symbol_linkage_ref_qualifier(binding.ref_qualifier);
   options.is_constructor = binding.is_constructor;
   options.is_destructor = binding.is_destructor;
+  options.is_conversion_operator = binding.is_conversion_operator;
   options.special_member_entry_point_kind = kind;
   template_api::apply_function_binding_template_symbol_options(binding, options);
   options.abi_tags = function_binding_abi_tags(binding);
@@ -431,6 +432,7 @@ symbol_linkage::SymbolIdentity emitted_vtable_entry_symbol(const FunctionBinding
   options.ref_qualifier = symbol_linkage_ref_qualifier(binding.ref_qualifier);
   options.is_constructor = binding.is_constructor;
   options.is_destructor = binding.is_destructor;
+  options.is_conversion_operator = binding.is_conversion_operator;
   template_api::apply_function_binding_template_symbol_options(binding, options);
   options.abi_tags = function_binding_abi_tags(binding);
   options.lookup_scope = binding.declaration_scope;
@@ -3981,6 +3983,7 @@ void analyze_function_declaration_output(SemanticContext & ctx,
   decl_node.semantic_type = binding.type;
   decl_node.is_c_linkage = binding.is_c_linkage;
   decl_node.is_virtual_member_function = binding.is_virtual;
+  decl_node.is_conversion_operator = binding.is_conversion_operator;
   decl_node.trivial_lifecycle = function_binding_has_trivial_lifecycle_output(ctx, binding);
   set_dump_symbol(decl_node,
                   function_entry_point_symbol(binding, symbol_linkage::SMEK_COMPLETE));
@@ -4041,6 +4044,7 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
     set_dump_qualified_name_syntax_from_function_binding(decl_node, binding);
     decl_node.semantic_type = binding.type;
     decl_node.is_c_linkage = binding.is_c_linkage;
+    decl_node.is_conversion_operator = binding.is_conversion_operator;
     set_dump_symbol(decl_node,
                     function_entry_point_symbol(binding, symbol_linkage::SMEK_COMPLETE));
     out.children.push_back(std::move(decl_node));
@@ -4167,6 +4171,7 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
         function_node.semantic_type = binding.type;
         function_node.is_c_linkage = binding.is_c_linkage;
         function_node.is_virtual_member_function = binding.is_virtual;
+        function_node.is_conversion_operator = binding.is_conversion_operator;
         function_node.is_semantically_nothrow = ctx.function_binding_is_nothrow(binding);
         function_node.is_explicit_instantiation_definition =
             binding.is_explicit_instantiation_definition;
@@ -4840,6 +4845,7 @@ void append_vtable_output_node(SemanticContext & ctx,
       entry_node.is_virtual_member_function = slot_function->is_method;
       entry_node.is_constructor = slot_function->is_constructor;
       entry_node.is_destructor = slot_function->is_destructor;
+      entry_node.is_conversion_operator = slot_function->is_conversion_operator;
       entry_node.is_const_method = slot_function->is_const_method;
       entry_node.is_volatile_method = slot_function->is_volatile_method;
       set_callsem_abi_tags(entry_node, function_binding_abi_tags(*slot_function));

@@ -80,6 +80,7 @@ struct FunctionSemanticFlags
   bool is_constructor = false;
   bool is_inherited_constructor = false;
   bool is_destructor = false;
+  bool is_conversion_operator = false;
   bool is_explicit = false;
   bool is_const_method = false;
   bool is_volatile_method = false;
@@ -344,6 +345,7 @@ struct FunctionBinding
   bool is_constructor = false;
   bool is_inherited_constructor = false;
   bool is_destructor = false;
+  bool is_conversion_operator = false;
   bool is_defaulted = false;
   bool is_explicit = false;
   bool is_copy_constructor = false;
@@ -583,6 +585,7 @@ struct FunctionTemplateDecl
   bool is_constructor = false;
   bool is_inherited_constructor = false;
   bool is_destructor = false;
+  bool is_conversion_operator = false;
   bool is_static_member = false;
   bool is_constexpr = false;
   bool is_explicit = false;
