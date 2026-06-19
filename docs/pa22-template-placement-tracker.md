@@ -43,11 +43,40 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 
 ## Generated Summary
 
-- tests scanned: 55
+- tests scanned: 51
 - feature table entries without detector rules: 0
-- later-owner-or-split: 0 open, 2 resolved
-- manual-review: 0 open, 2 resolved
-- pa22-advanced-single-candidate: 51
+- basic-owner-candidate: 48
+- manual-review: 2
+- pa22-advanced-single-candidate: 1
+- PA23 integration candidates: 0 open after the 2026-06-19 placement cleanup
+
+## 2026-06-19 PA23 Integration Cleanup
+
+The refreshed no-course template-placement scan found 17 live PA22 tests whose
+essential behavior combined multiple template concepts and belonged in PA23.
+They were moved to PA23 clusters 100, 200, 300, 400, or 500 according to the
+PA23 README cluster definitions. A fresh PA22 template-placement scan now has no
+`pa23-integration-candidate` rows.
+
+Moved from PA22 to PA23:
+
+- `pa22/tests/general/100-explicit-function-template-type-arg-drops-nontype-overload.t` -> `pa23/tests/general/400-explicit-function-template-type-arg-drops-nontype-overload.t`
+- `pa22/tests/general/300-static-cast-rvalue-ref-skips-conversion-operator.t` -> `pa23/tests/general/400-static-cast-rvalue-ref-skips-conversion-operator.t`
+- `pa22/tests/general/300-partial-enable-if-inherited-bool-value.t` -> `pa23/tests/general/300-partial-enable-if-inherited-bool-value.t`
+- `pa22/tests/general/400-forwarding-pack-cast-trailing-return.t` -> `pa23/tests/general/200-forwarding-pack-cast-trailing-return.t`
+- `pa22/tests/general/400-forwarding-pack-pointer-cast-trailing-return.t` -> `pa23/tests/general/200-forwarding-pack-pointer-cast-trailing-return.t`
+- `pa22/tests/general/400-reference-nontype-template-parameter-pack.t` -> `pa23/tests/general/400-reference-nontype-template-parameter-pack.t`
+- `pa22/tests/general/500-dependent-alias-template-id-syntax-clone.t` -> `pa23/tests/general/500-dependent-alias-template-id-syntax-clone.t`
+- `pa22/tests/general/500-dependent-std-or-enable-if-defers.t` -> `pa23/tests/general/500-dependent-std-or-enable-if-defers.t`
+- `pa22/tests/general/500-reentrant-static-query-enable-if-partial.t` -> `pa23/tests/general/500-reentrant-static-query-enable-if-partial.t`
+- `pa22/tests/general/500-template-template-alias-pack-scope-sfinae.t` -> `pa23/tests/general/500-template-template-alias-pack-scope-sfinae.t`
+- `pa22/tests/spec/300-conversion-function-template-call-argument.t` -> `pa23/tests/spec/400-conversion-function-template-call-argument.t`
+- `pa22/tests/spec/300-conversion-function-template-copy-init.t` -> `pa23/tests/spec/400-conversion-function-template-copy-init.t`
+- `pa22/tests/spec/300-conversion-function-template-selection.t` -> `pa23/tests/spec/400-conversion-function-template-selection.t`
+- `pa22/tests/spec/300-trailing-return-expression-sfinae-default-param.t` -> `pa23/tests/spec/300-trailing-return-expression-sfinae-default-param.t`
+- `pa22/tests/spec/400-function-template-nontype-function-pointer-call.t` -> `pa23/tests/spec/100-function-template-nontype-function-pointer-call.t`
+- `pa22/tests/spec/400-function-template-nontype-function-pointer-specialization-call.t` -> `pa23/tests/spec/100-function-template-nontype-function-pointer-specialization-call.t`
+- `pa22/tests/spec/400-nontype-function-pointer-argument.t` -> `pa23/tests/spec/100-nontype-function-pointer-argument.t`
 
 ## Review Queue
 
@@ -96,7 +125,7 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 | [ ] | `pa22/tests/general/300-parameter-type-no-eager-member-body.t` | `pa22:300` | `pa22-advanced-single-candidate` | no-eager-instantiation |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
 | [ ] | `pa22/tests/general/300-reentrant-class-template-copy-ctor-template.t` | `pa22:300` | `pa22-advanced-single-candidate` | constructor-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
 | [ ] | `pa22/tests/general/300-reentrant-pair-template-copy-ctor-template.t` | `pa22:300` | `pa22-advanced-single-candidate` | constructor-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
-| [ ] | `pa22/tests/general/300-static-cast-rvalue-ref-skips-conversion-operator.t` | `pa22:300` | `pa22-advanced-single-candidate` | conversion-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
+| [x] | `pa22/tests/general/300-static-cast-rvalue-ref-skips-conversion-operator.t` | `pa22:300` | `pa22-advanced-single-candidate` | conversion-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. | Moved to `pa23/tests/general/400-static-cast-rvalue-ref-skips-conversion-operator.t` during the 2026-06-19 PA23 integration cleanup. |
 | [ ] | `pa22/tests/general/300-worse-conversion-candidate-body-not-instantiated.t` | `pa22:300` | `pa22-advanced-single-candidate` | no-eager-instantiation |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
 | [ ] | `pa22/tests/spec/100-defaulted-nested-class-template-deduction.t` | `pa22:100` | `pa22-advanced-single-candidate` | function-deduction |  | `pa22:100` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
 | [ ] | `pa22/tests/spec/100-explicit-template-args-plus-deduction.t` | `pa22:100` | `pa22-advanced-single-candidate` | function-deduction |  | `pa22:100` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
@@ -104,7 +133,7 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 | [ ] | `pa22/tests/spec/100-function-template-array-to-pointer-deduction.t` | `pa22:100` | `pa22-advanced-single-candidate` | function-deduction |  | `pa22:100` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
 | [ ] | `pa22/tests/spec/200-function-template-partial-order-const-pointer.t` | `pa22:200` | `pa22-advanced-single-candidate` | function-partial-ordering |  | `pa22:200` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
 | [ ] | `pa22/tests/spec/300-constructor-template-cross-specialization.t` | `pa22:300` | `pa22-advanced-single-candidate` | constructor-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
-| [ ] | `pa22/tests/spec/300-conversion-function-template-call-argument.t` | `pa22:300` | `pa22-advanced-single-candidate` | conversion-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
-| [ ] | `pa22/tests/spec/300-conversion-function-template-copy-init.t` | `pa22:300` | `pa22-advanced-single-candidate` | conversion-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
-| [ ] | `pa22/tests/spec/300-conversion-function-template-selection.t` | `pa22:300` | `pa22-advanced-single-candidate` | conversion-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |
+| [x] | `pa22/tests/spec/300-conversion-function-template-call-argument.t` | `pa22:300` | `pa22-advanced-single-candidate` | conversion-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. | Moved to `pa23/tests/spec/400-conversion-function-template-call-argument.t` during the 2026-06-19 PA23 integration cleanup. |
+| [x] | `pa22/tests/spec/300-conversion-function-template-copy-init.t` | `pa22:300` | `pa22-advanced-single-candidate` | conversion-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. | Moved to `pa23/tests/spec/400-conversion-function-template-copy-init.t` during the 2026-06-19 PA23 integration cleanup. |
+| [x] | `pa22/tests/spec/300-conversion-function-template-selection.t` | `pa22:300` | `pa22-advanced-single-candidate` | conversion-deduction |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. | Moved to `pa23/tests/spec/400-conversion-function-template-selection.t` during the 2026-06-19 PA23 integration cleanup. |
 | [ ] | `pa22/tests/spec/300-using-class-template-does-not-instantiate-array-member.t` | `pa22:300` | `pa22-advanced-single-candidate` | no-eager-instantiation |  | `pa22:300` |  | Place in PA22 and renumber if the current cluster is earlier than the owner cluster. |  |

@@ -422,7 +422,8 @@ bool lookup_leaf_member_expression_value_in_scope(
     Scope & member_scope,
     const string & name,
     constant_eval::ConstexprValue & out,
-    bool allow_structured_bool_shortcut = true);
+    bool allow_structured_bool_shortcut = true,
+    bool * evaluation_incomplete = nullptr);
 bool evaluate_constant_expression_leaf_impl(template_api::TemplateServices & services,
                                             Scope & scope,
                                             const CppAstNode & node,
@@ -431,7 +432,8 @@ bool evaluate_constant_expression_leaf_impl(template_api::TemplateServices & ser
 bool materialize_leaf_member_constant_binding(
     template_api::TemplateServices & services,
     ValueBinding & binding,
-    constant_eval::ConstexprValue & out);
+    constant_eval::ConstexprValue & out,
+    bool * evaluation_incomplete = nullptr);
 void note_structured_bool_integral_constant_value_for_witness(
     template_api::TemplateServices & services,
     const ClassInfo & info,
@@ -531,14 +533,16 @@ bool service_lookup_leaf_member_expression_value_in_scope(
     template_api::TemplateServices & services,
     Scope & member_scope,
     const string & name,
-    constant_eval::ConstexprValue & out)
+    constant_eval::ConstexprValue & out,
+    bool * evaluation_incomplete = nullptr)
 {
   const bool found = lookup_leaf_member_expression_value_in_scope(
       services,
       member_scope,
       name,
       out,
-      !witness::source_capture_enabled(services.witness_context));
+      !witness::source_capture_enabled(services.witness_context),
+      evaluation_incomplete);
   if(found &&
      is_structured_bool_result_member_name(name) &&
      member_scope.class_info &&
@@ -4867,9 +4871,26 @@ bool constant_value_truthy(const constant_eval::ConstexprValue & value,
   return constant_eval::constexpr_value_truthy(value, out);
 }
 
+const ClassInfo * value_binding_owner_class(const ValueBinding & binding)
+{
+  return binding.owner_class ? binding.owner_class :
+      (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
+}
+
+bool class_member_value_evaluation_incomplete(const ClassInfo * owner)
+{
+  if(!owner) {
+    return false;
+  }
+  return owner->reentrant_primary_selection ||
+         owner->full_member_collection_in_progress ||
+         owner->reference_member_collection_in_progress;
+}
+
 bool class_member_direct_bool_value(const Scope * member_scope,
                                     const string & name,
-                                    bool & out)
+                                    bool & out,
+                                    bool * evaluation_incomplete = nullptr)
 {
   if(!member_scope) {
     return false;
@@ -4881,10 +4902,11 @@ bool class_member_direct_bool_value(const Scope * member_scope,
     return false;
   }
   const ValueBinding & binding = found->second;
-  const ClassInfo * owner =
-      binding.owner_class ? binding.owner_class :
-      (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
-  if(owner && owner->reentrant_primary_selection) {
+  if(class_member_value_evaluation_incomplete(
+         value_binding_owner_class(binding))) {
+    if(evaluation_incomplete) {
+      *evaluation_incomplete = true;
+    }
     return false;
   }
   const auto is_bool_value_type = [](const TypePtr & type) -> bool
@@ -4908,9 +4930,7 @@ bool class_member_direct_bool_value(const Scope * member_scope,
 
 bool value_binding_owner_has_reentrant_primary_selection(const ValueBinding & binding)
 {
-  const ClassInfo * owner =
-      binding.owner_class ? binding.owner_class :
-      (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
+  const ClassInfo * owner = value_binding_owner_class(binding);
   return owner && owner->reentrant_primary_selection;
 }
 
@@ -7012,7 +7032,10 @@ bool structured_bool_constant_value_for_class_info(
     return true;
   }
 
-  if(class_member_direct_bool_value(info.member_scope.get(), "value", out)) {
+  if(class_member_direct_bool_value(info.member_scope.get(),
+                                    "value",
+                                    out,
+                                    evaluation_incomplete)) {
     return true;
   }
 
@@ -7519,12 +7542,17 @@ bool lookup_leaf_member_expression_type_in_scope(template_api::TemplateTypeSyste
 bool materialize_leaf_member_constant_binding(
     template_api::TemplateServices & services,
     ValueBinding & binding,
-    constant_eval::ConstexprValue & out)
+    constant_eval::ConstexprValue & out,
+    bool * evaluation_incomplete)
 {
   if(binding.kind == ValueBinding::VK_FIELD) {
     return false;
   }
-  if(value_binding_owner_has_reentrant_primary_selection(binding)) {
+  if(class_member_value_evaluation_incomplete(
+         value_binding_owner_class(binding))) {
+    if(evaluation_incomplete) {
+      *evaluation_incomplete = true;
+    }
     return false;
   }
   if(binding.has_constant_value) {
@@ -7654,7 +7682,8 @@ bool lookup_leaf_member_expression_value_in_scope(
     Scope & member_scope,
     const string & name,
     constant_eval::ConstexprValue & out,
-    bool allow_structured_bool_shortcut)
+    bool allow_structured_bool_shortcut,
+    bool * evaluation_incomplete)
 {
   out = constant_eval::ConstexprValue();
 
@@ -7682,13 +7711,19 @@ bool lookup_leaf_member_expression_value_in_scope(
       return true;
     }
     if(structured_evaluation_incomplete) {
+      if(evaluation_incomplete) {
+        *evaluation_incomplete = true;
+      }
       return false;
     }
   }
 
   map<string, ValueBinding>::iterator value_found = member_scope.values.find(name);
   if(value_found != member_scope.values.end() &&
-     materialize_leaf_member_constant_binding(services, value_found->second, out)) {
+     materialize_leaf_member_constant_binding(services,
+                                              value_found->second,
+                                              out,
+                                              evaluation_incomplete)) {
     return true;
   }
 
@@ -7711,7 +7746,8 @@ bool lookup_leaf_member_expression_value_in_scope(
            *base_info->member_scope,
            name,
            out,
-           allow_structured_bool_shortcut)) {
+           allow_structured_bool_shortcut,
+           evaluation_incomplete)) {
       return true;
     }
   }
@@ -30403,18 +30439,23 @@ NonTypeArgumentStatus evaluate_structured_template_member_bool_value(
            scope.require(),
            template_api::qualified_name_text(*qualified),
            direct_member_template_value) &&
-       direct_member_template_value) {
+      direct_member_template_value) {
       constant_eval::ConstexprValue direct_value;
       bool truthy = false;
+      bool evaluation_incomplete = false;
       if(materialize_leaf_member_constant_binding(
              services,
              *const_cast<ValueBinding *>(direct_member_template_value),
-             direct_value) &&
+             direct_value,
+             &evaluation_incomplete) &&
          constant_eval::constexpr_value_truthy(direct_value, truthy)) {
         out = truthy;
         note_non_bool_static_value_dependency_for_witness(
             services, *direct_member_template_value);
         return NT_ARG_EVALUATED;
+      }
+      if(evaluation_incomplete) {
+        return NT_ARG_DEPENDENT;
       }
     }
   }
@@ -31353,9 +31394,14 @@ NonTypeArgumentStatus evaluate_template_member_value_expression(
   }
 
   constant_eval::ConstexprValue constexpr_value;
+  bool evaluation_incomplete = false;
   if(!materialize_leaf_member_constant_binding(
-         services, *const_cast<ValueBinding *>(binding), constexpr_value)) {
-    return value_binding_owner_has_reentrant_primary_selection(*binding) ||
+         services,
+         *const_cast<ValueBinding *>(binding),
+         constexpr_value,
+         &evaluation_incomplete)) {
+    return evaluation_incomplete ||
+           value_binding_owner_has_reentrant_primary_selection(*binding) ||
            binding->dependent_template_value ||
            service_type_depends_on_template_parameter(services, binding->type) ?
                NT_ARG_DEPENDENT :
@@ -32746,6 +32792,59 @@ NonTypeArgumentStatus evaluate_structured_bool_condition_expression(
   return status;
 }
 
+void clear_template_argument_syntax_dependent_flags(TemplateArgumentSyntax & syntax);
+void clear_cppast_template_syntax_dependent_flags(CppAstNode & node);
+
+void clear_template_id_syntax_dependent_flags(TemplateIdSyntax & syntax)
+{
+  for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    clear_template_argument_syntax_dependent_flags(syntax.argument_syntaxes[i]);
+  }
+}
+
+void clear_template_argument_syntax_dependent_flags(TemplateArgumentSyntax & syntax)
+{
+  syntax.dependent = false;
+  syntax.resolved_type.reset();
+  if(syntax.template_id) {
+    clear_template_id_syntax_dependent_flags(*syntax.template_id);
+  }
+  if(syntax.type_id) {
+    clear_cppast_template_syntax_dependent_flags(*syntax.type_id);
+  }
+  if(syntax.expression) {
+    clear_cppast_template_syntax_dependent_flags(*syntax.expression);
+  }
+}
+
+void clear_cppast_template_syntax_dependent_flags(CppAstNode & node)
+{
+  if(node.template_id_syntax) {
+    clear_template_id_syntax_dependent_flags(*node.template_id_syntax);
+  }
+  if(node.conversion_type_id_syntax) {
+    clear_cppast_template_syntax_dependent_flags(*node.conversion_type_id_syntax);
+  }
+  if(node.base_type_syntax) {
+    clear_cppast_template_syntax_dependent_flags(*node.base_type_syntax);
+  }
+  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    clear_template_id_syntax_dependent_flags(node.qualifier_template_id_syntaxes[i]);
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    clear_cppast_template_syntax_dependent_flags(node.qualifier_type_syntaxes[i]);
+  }
+  for(size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    clear_cppast_template_syntax_dependent_flags(node.exception_type_id_syntaxes[i]);
+  }
+  for(size_t i = 0; i < node.alignment_specifier_nodes.size(); ++i) {
+    clear_cppast_template_syntax_dependent_flags(node.alignment_specifier_nodes[i]);
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    clear_cppast_template_syntax_dependent_flags(node.children[i]);
+  }
+}
+
 NonTypeArgumentStatus evaluate_non_type_argument_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -32774,7 +32873,13 @@ NonTypeArgumentStatus evaluate_non_type_argument_syntax(
     if(rebase_argument_syntax_tokens_from_source_anchor(expanded_syntax)) {
       expanded_changed = true;
     }
-    if(expanded_changed) {
+    if(expanded_changed || expanded_syntax.dependent) {
+      if(expanded_syntax.dependent) {
+        clear_template_argument_syntax_dependent_flags(expanded_syntax);
+        expanded_syntax.dependent =
+            template_argument_syntax_mentions_template_dependency(
+                services, scope, expanded_syntax, true);
+      }
       effective_syntax = &expanded_syntax;
     }
   }
