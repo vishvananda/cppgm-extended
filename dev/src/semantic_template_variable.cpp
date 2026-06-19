@@ -1,5 +1,8 @@
 #include "semantic_template_variable.h"
 
+#include <map>
+#include <utility>
+
 #include "parser_trace.h"
 #include "semantic_context.h"
 #include "semantic_trace.h"
@@ -101,6 +104,70 @@ acquire_variable_template_binding_for_template_id_source_use(
                                                           source_use_scope,
                                                           source_node,
                                                           template_id.name.name);
+}
+
+const semantic_model::ValueBinding *
+acquire_member_variable_template_binding_for_template_id_source_use(
+    SemanticContext & ctx,
+    semantic_model::VariableTemplateDecl & decl,
+    semantic_model::ClassInfo & owner,
+    semantic_model::Scope & source_use_scope,
+    const CppAstNode & source_node,
+    const cpp_decl::TemplateIdSyntax & template_id)
+{
+  std::vector<template_model::TemplateArgument> arguments;
+  if(!template_api::resolve_template_arguments(ctx,
+                                               source_use_scope,
+                                               decl.parameters,
+                                               template_id.arguments,
+                                               &template_id.argument_syntaxes,
+                                               arguments,
+                                               decl.declaring_scope)) {
+    return nullptr;
+  }
+  const semantic_model::ValueBinding * binding =
+      acquire_variable_template_binding_for_source_use(
+          ctx,
+          decl,
+          arguments,
+          source_use_scope,
+          source_node,
+          template_id.name.name);
+  if(!binding || !owner.member_scope) {
+    return binding;
+  }
+
+  semantic_model::ValueBinding materialized = *binding;
+  materialized.owner_class = &owner;
+  materialized.declaration_scope = owner.member_scope.get();
+  materialized.variable_template_instantiation.reset(
+      new semantic_model::VariableTemplateInstantiationIdentity);
+  materialized.variable_template_instantiation->source_template = &decl;
+  materialized.variable_template_instantiation->arguments = arguments;
+  materialized.symbol = symbol_linkage::SymbolIdentity();
+  if(!materialized.declaration_node) {
+    materialized.declaration_node = decl.declarator;
+  }
+  if(!materialized.definition_node && decl.initializer) {
+    materialized.definition_node = decl.declarator;
+  }
+
+  std::map<std::string, semantic_model::ValueBinding>::iterator found =
+      owner.member_scope->values.find(materialized.name);
+  if(found == owner.member_scope->values.end() ||
+     found->second.kind != semantic_model::ValueBinding::VK_VARIABLE ||
+     found->second.owner_class != &owner) {
+    return &owner.member_scope->values.insert(
+        std::make_pair(materialized.name, materialized)).first->second;
+  }
+
+  const unsigned int output_requirements = found->second.output_requirements;
+  const bool definition_output_emitted = found->second.definition_output_emitted;
+  found->second = materialized;
+  found->second.output_requirements |= output_requirements;
+  found->second.definition_output_emitted =
+      found->second.definition_output_emitted || definition_output_emitted;
+  return &found->second;
 }
 
 }  // namespace semantic_template_variable

@@ -2846,6 +2846,30 @@ symbol_linkage::SymbolLinkage output_variable_symbol_linkage(const ValueBinding 
   return binding.symbol.linkage;
 }
 
+symbol_linkage::SymbolIdentity static_member_variable_output_symbol_identity(
+    const ClassInfo & info,
+    const ValueBinding & binding)
+{
+  if(binding.variable_template_instantiation &&
+     binding.variable_template_instantiation->source_template) {
+    const VariableTemplateDecl & source_template =
+        *binding.variable_template_instantiation->source_template;
+    return symbol_linkage::make_static_member_variable_template_symbol_identity(
+        info,
+        binding.name,
+        source_template.name,
+        binding.variable_template_instantiation->arguments,
+        source_template.parameters,
+        binding.is_c_linkage,
+        output_variable_symbol_linkage(binding));
+  }
+  return symbol_linkage::make_static_member_variable_symbol_identity(
+      info,
+      binding.name,
+      binding.is_c_linkage,
+      output_variable_symbol_linkage(binding));
+}
+
 bool is_unrequired_constexpr_static_member_definition(const ValueBinding & binding)
 {
   return binding.owner_class &&
@@ -2949,11 +2973,7 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
       }
       set_dump_symbol(var_node, symbol);
     } else {
-      symbol = symbol_linkage::make_static_member_variable_symbol_identity(
-          info,
-          binding.name,
-          binding.is_c_linkage,
-          output_variable_symbol_linkage(binding));
+      symbol = static_member_variable_output_symbol_identity(info, binding);
       if(binding.is_thread_local && symbol.thread_local_wrapper_object_symbol.empty()) {
         symbol.thread_local_wrapper_object_symbol =
             symbol_linkage::thread_local_wrapper_object_symbol_for_static_member_variable(
@@ -5644,11 +5664,9 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
           if(symbol.internal_symbol.empty() &&
              binding->owner_class &&
              binding->owner_class->member_scope) {
-            symbol = symbol_linkage::make_static_member_variable_symbol_identity(
+            symbol = static_member_variable_output_symbol_identity(
                 *binding->owner_class,
-                binding->name,
-                binding->is_c_linkage,
-                output_variable_symbol_linkage(*binding));
+                *binding);
           }
           if(binding->is_thread_local &&
              binding->owner_class &&

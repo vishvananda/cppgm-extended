@@ -315,6 +315,30 @@ symbol_linkage::SymbolLinkage expression_variable_symbol_linkage(const ValueBind
   return binding.symbol.linkage;
 }
 
+symbol_linkage::SymbolIdentity expression_static_member_variable_symbol_identity(
+    const ClassInfo & owner,
+    const ValueBinding & binding)
+{
+  if(binding.variable_template_instantiation &&
+     binding.variable_template_instantiation->source_template) {
+    const VariableTemplateDecl & source_template =
+        *binding.variable_template_instantiation->source_template;
+    return symbol_linkage::make_static_member_variable_template_symbol_identity(
+        owner,
+        binding.name,
+        source_template.name,
+        binding.variable_template_instantiation->arguments,
+        source_template.parameters,
+        binding.is_c_linkage,
+        expression_variable_symbol_linkage(binding));
+  }
+  return symbol_linkage::make_static_member_variable_symbol_identity(
+      owner,
+      binding.name,
+      binding.is_c_linkage,
+      expression_variable_symbol_linkage(binding));
+}
+
 FunctionBinding * find_delete_destructor_binding(ClassInfo & info)
 {
   std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
@@ -4278,11 +4302,8 @@ ExprInfo make_value_binding_expr(SemanticContext & ctx,
     if(symbol.internal_symbol.empty() &&
        binding.owner_class &&
        binding.owner_class->member_scope) {
-      symbol = symbol_linkage::make_static_member_variable_symbol_identity(
-          *binding.owner_class,
-          binding.name,
-          binding.is_c_linkage,
-          expression_variable_symbol_linkage(binding));
+      symbol = expression_static_member_variable_symbol_identity(*binding.owner_class,
+                                                                 binding);
     }
     set_dump_symbol(result.node, symbol);
     result.node.is_thread_local = binding.is_thread_local;
@@ -4420,11 +4441,8 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
   if(symbol.internal_symbol.empty() &&
      binding.owner_class &&
      binding.owner_class->member_scope) {
-    symbol = symbol_linkage::make_static_member_variable_symbol_identity(
-        *binding.owner_class,
-        binding.name,
-        binding.is_c_linkage,
-        expression_variable_symbol_linkage(binding));
+    symbol = expression_static_member_variable_symbol_identity(*binding.owner_class,
+                                                               binding);
   }
   if(binding.is_thread_local &&
      symbol.thread_local_wrapper_object_symbol.empty()) {
@@ -4479,8 +4497,12 @@ VariableTemplateDecl * lookup_variable_template_id_for_node(
     SemanticContext & ctx,
     Scope & scope,
     const CppAstNode & node,
-    const TemplateIdSyntax & template_id)
+    const TemplateIdSyntax & template_id,
+    ClassInfo ** owner_out = nullptr)
 {
+  if(owner_out) {
+    *owner_out = nullptr;
+  }
   const QualifiedName * qualified = cppast_qualified_name_syntax(node);
   if(qualified &&
      (qualified->rooted || !qualified->qualifiers.empty()) &&
@@ -4490,6 +4512,26 @@ VariableTemplateDecl * lookup_variable_template_id_for_node(
         scope, *qualified, node, false);
     if(!target) {
       return nullptr;
+    }
+    if(target->class_info) {
+      semantic_lookup::MemberVariableTemplateLookupResult member =
+          semantic_lookup::lookup_member_variable_template(ctx,
+                                                           *target->class_info,
+                                                           template_id.name.name);
+      if(member.variable_template) {
+        if(owner_out) {
+          *owner_out = const_cast<ClassInfo *>(
+              member.declared_in ? member.declared_in : target->class_info);
+        }
+        return member.variable_template;
+      }
+      VariableTemplateDecl * direct =
+          semantic_lookup::lookup_direct_variable_template(*target,
+                                                           template_id.name.name);
+      if(owner_out && direct) {
+        *owner_out = target->class_info;
+      }
+      return direct;
     }
     return semantic_lookup::lookup_direct_variable_template(
         *target, template_id.name.name);
@@ -5344,16 +5386,31 @@ ExprInfo analyze_id_expression(SemanticContext & ctx,
 
   const TemplateIdSyntax * parsed_template_id = cppast_template_id_syntax(node);
   if(parsed_template_id) {
+    ClassInfo * variable_template_owner = nullptr;
     VariableTemplateDecl * variable_template =
-        lookup_variable_template_id_for_node(ctx, scope, node, *parsed_template_id);
+        lookup_variable_template_id_for_node(ctx,
+                                             scope,
+                                             node,
+                                             *parsed_template_id,
+                                             &variable_template_owner);
     if(variable_template) {
       const ValueBinding * instantiated =
-          semantic_template_variable::acquire_variable_template_binding_for_template_id_source_use(
-              ctx,
-              *variable_template,
-              scope,
-              node,
-              *parsed_template_id);
+          variable_template_owner ?
+              semantic_template_variable::
+                  acquire_member_variable_template_binding_for_template_id_source_use(
+                      ctx,
+                      *variable_template,
+                      *variable_template_owner,
+                      scope,
+                      node,
+                      *parsed_template_id) :
+              semantic_template_variable::
+                  acquire_variable_template_binding_for_template_id_source_use(
+                      ctx,
+                      *variable_template,
+                      scope,
+                      node,
+                      *parsed_template_id);
       if(instantiated) {
         return make_value_binding_expr(ctx,
                                        scope,

@@ -199,6 +199,14 @@ SymbolIdentity make_static_member_variable_symbol_identity(
     const std::string & member_name,
     bool is_c_linkage,
     SymbolLinkage linkage = SL_EXTERNAL);
+SymbolIdentity make_static_member_variable_template_symbol_identity(
+    const semantic_model::ClassInfo & owner_class,
+    const std::string & internal_member_name,
+    const std::string & template_name,
+    const std::vector<template_model::TemplateArgument> & template_arguments,
+    const std::vector<template_model::TemplateParameterInfo> & template_parameters,
+    bool is_c_linkage,
+    SymbolLinkage linkage = SL_EXTERNAL);
 bool has_external_vtable_symbol_candidate(const cpp_decl::TypePtr & type);
 
 }  // namespace symbol_linkage
