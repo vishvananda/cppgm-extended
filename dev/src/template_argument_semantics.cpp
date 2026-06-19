@@ -24705,6 +24705,165 @@ bool resolve_instantiated_dependent_type(template_api::TemplateServices & servic
       result_type = resolved_result;
       changed = true;
     }
+    const bool scope_has_type_pack_bindings =
+        [&]() -> bool
+        {
+          for(Scope * current = &scope.require(); current; current = current->parent) {
+            if(current->namespace_scope || current->parent == nullptr) {
+              break;
+            }
+            if(!current->named_type_packs.empty()) {
+              return true;
+            }
+          }
+          return false;
+        }();
+    struct BoundTypePackRef
+    {
+      std::string name;
+      const std::vector<TypePtr> * pack = nullptr;
+    };
+
+    const auto direct_bound_type_pack =
+        [&](const TypePtr & candidate,
+            BoundTypePackRef & out_ref) -> bool
+        {
+          TypePtr base = strip_top_level_cv(candidate);
+          if(!base || base->kind != Type::TK_NAMED) {
+            return false;
+          }
+          const auto try_lookup_name =
+              [&](const std::string & raw_name) -> bool
+              {
+                std::string name =
+                    strip_template_parameter_type_prefix(trim_space(raw_name));
+                if(name.empty()) {
+                  return false;
+                }
+                const std::vector<TypePtr> * pack =
+                    lookup_type_pack(scope.require(), name);
+                if(!pack) {
+                  return false;
+                }
+                out_ref.name = name;
+                out_ref.pack = pack;
+                return true;
+              };
+
+          if(try_lookup_name(base->named_key) ||
+             try_lookup_name(base->named_display)) {
+            return true;
+          }
+          const std::string payload = named_type_semantic_payload(base);
+          if(!payload.empty()) {
+            return try_lookup_name(payload);
+          }
+          return false;
+        };
+
+    const auto collect_bound_type_packs =
+        [&](const TypePtr & root,
+            std::vector<BoundTypePackRef> & refs,
+            std::set<std::string> & seen) -> bool
+        {
+          std::vector<TypePtr> pending;
+          if(root) {
+            pending.push_back(root);
+          }
+          while(!pending.empty()) {
+            TypePtr current = pending.back();
+            pending.pop_back();
+            if(!current) {
+              continue;
+            }
+            BoundTypePackRef direct;
+            if(direct_bound_type_pack(current, direct)) {
+              if(seen.insert(direct.name).second) {
+                refs.push_back(direct);
+              }
+              continue;
+            }
+            switch(current->kind) {
+            case Type::TK_FUNDAMENTAL:
+              break;
+            case Type::TK_NAMED:
+              pending.push_back(current->owner);
+              pending.push_back(current->inner);
+              pending.push_back(current->named_dependent_qualified_owner);
+              for(size_t i = 0;
+                  i < current->named_dependent_alias_arguments.size();
+                  ++i) {
+                pending.push_back(
+                    current->named_dependent_alias_arguments[i].type);
+              }
+              for(size_t i = 0;
+                  i < current->named_dependent_class_arguments.size();
+                  ++i) {
+                pending.push_back(
+                    current->named_dependent_class_arguments[i].type);
+              }
+              break;
+            case Type::TK_CV:
+            case Type::TK_ATOMIC:
+            case Type::TK_POINTER:
+            case Type::TK_BLOCK_POINTER:
+            case Type::TK_LVALUE_REFERENCE:
+            case Type::TK_RVALUE_REFERENCE:
+            case Type::TK_ARRAY:
+              pending.push_back(current->inner);
+              break;
+            case Type::TK_MEMBER_POINTER:
+              pending.push_back(current->owner);
+              pending.push_back(current->inner);
+              break;
+            case Type::TK_FUNCTION:
+              pending.push_back(current->inner);
+              for(size_t i = 0; i < current->params.size(); ++i) {
+                pending.push_back(current->params[i]);
+              }
+              break;
+            }
+          }
+          return true;
+        };
+
+    const auto expand_bound_type_pack_function_parameter =
+        [&](const TypePtr & param,
+            std::vector<TypePtr> & params_out) -> bool
+        {
+          std::vector<BoundTypePackRef> refs;
+          std::set<std::string> seen;
+          if(!collect_bound_type_packs(param, refs, seen) || refs.empty()) {
+            return false;
+          }
+          const size_t pack_size = refs.front().pack->size();
+          for(size_t i = 1; i < refs.size(); ++i) {
+            if(refs[i].pack->size() != pack_size) {
+              return false;
+            }
+          }
+          for(size_t pack_index = 0; pack_index < pack_size; ++pack_index) {
+            Scope element_scope(&scope.require(), "", false);
+            for(size_t ref_index = 0; ref_index < refs.size(); ++ref_index) {
+              template_scope::bind_named_type(
+                  element_scope,
+                  refs[ref_index].name,
+                  (*(refs[ref_index].pack))[pack_index]);
+            }
+            TypePtr resolved_param;
+            if(resolve_instantiated_dependent_type(
+                   services,
+                   template_api::make_template_environment(element_scope),
+                   param,
+                   resolved_param) &&
+               resolved_param) {
+              params_out.push_back(resolved_param);
+            } else {
+              return false;
+            }
+          }
+          return true;
+        };
     vector<TypePtr> params_out;
     params_out.reserve(type->params.size());
     for(size_t i = 0; i < type->params.size(); ++i) {
@@ -24713,6 +24872,14 @@ bool resolve_instantiated_dependent_type(template_api::TemplateServices & servic
       if(resolve_instantiated_dependent_type(services, scope, type->params[i], resolved_param)) {
         param = resolved_param;
         changed = true;
+        params_out.push_back(param);
+        continue;
+      }
+      if(scope_has_type_pack_bindings &&
+         expand_bound_type_pack_function_parameter(type->params[i],
+                                                   params_out)) {
+        changed = true;
+        continue;
       }
       params_out.push_back(param);
     }
