@@ -29,6 +29,8 @@ BACKEND_ONLY_PAS = {28}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
 LATE_PLACEMENT_IGNORED_FEATURES = {
     "lowir.procedural",
+    "lowir.procedural.float_conversion",
+    "call.variadic_promotions",
 }
 LATE_PLACEMENT_BROAD_FEATURES = {
     "stmt.condition_declaration",
@@ -168,7 +170,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("expr.cast.builtin", (rx(r"\b(?:static_cast|const_cast|reinterpret_cast|dynamic_cast)\s*<|\([A-Za-z_][A-Za-z0-9_:<>\s*&]*\)\s*[A-Za-z_(0-9]"),)),
     FeatureRule("call.variadic_promotions",
                 (rx(r"\b(?:int|void|char|short|long|float|double|signed|unsigned|[A-Za-z_][A-Za-z0-9_:<>*&\s]+)\s+"
-                    r"[A-Za-z_][A-Za-z0-9_:]*\s*\([^)]*(?:,\s*)?\.\.\.\s*\)"),)),
+                    r"[A-Za-z_][A-Za-z0-9_:]*\s*\((?:\s*\.\.\.|[^)]*,\s*\.\.\.)\s*\)"),)),
     FeatureRule("class.basic",
                 (rx(r"(?<!enum )\b(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*(?=\s*(?:final\s*)?(?:[:{;]))"),)),
     FeatureRule("class.access_control", (rx(r"\b(?:public|private|protected)\s*:"),)),

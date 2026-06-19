@@ -45,7 +45,7 @@ Current source-test counts:
 
 | PA | Contract Audit | Test Audit | Auditor Coverage | README Update | Test Moves | Validation | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `pa14` | pending | pending | drafted | pending | in_progress | pending | Mechanical local-static/class-owner moves done. Extended-integer cases moved to PA34. Floating/backend, variadic, and one course test remain deferred. |
+| `pa14` | pending | pending | drafted | pending | in_progress | pending | Mechanical local-static/class-owner moves done. Extended-integer cases moved to PA34. Source-to-LowIR floating and variadic lowering are settled as PA14-owned; backend/runtime parity remains PA28-owned. |
 | `pa15` | pending | pending | drafted | pending | in_progress | pending | Mechanical inheritance/operator/bitfield/conversion/member-pointer moves done. No-unique-address hosted cases moved to PA34. |
 | `pa16` | pending | pending | drafted | pending | in_progress | pending | Mechanical value/allocation/conversion/lambda/range-for/inheriting-constructor moves done. `using` overload split remains. |
 | `pa17` | pending | pending | drafted | pending | in_progress | pending | PA17 course tests moved out of `cppgm.tests/course`; multi-base pointer-adjustment cases moved to PA29. |
@@ -93,23 +93,19 @@ Move validation:
 
 Remaining PA10+ course placement:
 
-- `cppgm.tests/course/pa14/232-const-ref-converted-float-argument.t` remains
-  deferred because the validated destination is PA28 backend coverage, not a
-  direct source-to-LowIR test move.
+- None. Maintainer-written PA10+ course tests have been moved into local PA
+  test directories; PA1-PA9 remain the course-test boundary.
 
 Deferred split/rewrite items:
 
-- PA28 backend/source-to-LowIR split: PA14 floating return/reference,
-  variadic float promotion, and optional floating namespace-symbol coverage.
 - PA16 reduction: `pa16/tests/general/300-using-base-overload-set.t`.
 - PA18 owner recheck/reduction:
   `pa18/tests/general/100-inherited-constructor-using-alias-template.t` and
   `pa18/tests/spec/100-member-template-cache-hit-concrete-scope.t`.
 - PA20 split:
   `pa20/tests/general/400-constexpr-noexcept-decltype-static-assert.t`.
-- PA21 split/reduce: top-level function/member-pointer ordering,
-  pack-expanded base multiple inheritance, and attribute-on-specialization
-  variants.
+- PA21 split/reduce: top-level function ordering, pack-expanded base multiple
+  inheritance, and attribute-on-specialization variants.
 - PA22 split/reduce: auto-local dependent-result tests and builtin-trait-heavy
   SFINAE/deduction variants.
 
@@ -121,30 +117,22 @@ draft canonical feature table.
 ### Post-PA9 Course Tests
 
 Only PA1-PA9 should use `cppgm.tests/course` for maintainer-written tests. The
-current PA10+ course tests must move into their owning local PA clusters during
-the audit:
-
-- `cppgm.tests/course/pa14/232-const-ref-converted-float-argument.t`
-- `cppgm.tests/course/pa17/412-temporary-derived-to-base-reference-virtual-call.t`
-- `cppgm.tests/course/pa17/413-static-pointer-downcast-nonprimary-base.t`
-
-Move the source and required references, choose the earliest owning PA for each
-test, and drop generated `.my*` sidecars instead of carrying them into
-`paN/tests/`.
+PA10+ course-test placement cleanup is complete; current PA10+ regression tests
+live under local `paN/tests/` owners.
 
 ### PA14
 
 Potential ownership mismatches:
 
 - `pa14/tests/general/200-five-arg-call.t`
-- `cppgm.tests/course/pa14/232-const-ref-converted-float-argument.t`
 - `pa14/tests/general/200-function-local-static-array-guard.t`
 
 Audit action:
 
-- Keep true PA14 procedural LowIR cases; classify runtime floating/variadic
-  backend parity as PA28 and local-static guard/init as PA20 unless a test can
-  be reduced to an earlier-owned assertion.
+- Keep true PA14 procedural LowIR cases, including source-to-LowIR floating
+  scalar conversions and C-style variadic argument lowering. Classify native
+  runtime/backend parity for those operations as PA28 and local-static
+  guard/init as PA20 unless a test can be reduced to an earlier-owned assertion.
 
 ### PA15
 
@@ -156,15 +144,12 @@ Potential ownership mismatches:
 - `pa15/tests/general/300-class-pointer-conversion-builtin-eq.t`
 - `pa15/tests/general/300-user-defined-conversion-second-rank.t`
 - `pa15/tests/spec/300-inherited-conversion-operator-parameter-binding.t`
-- `pa15/tests/general/200-member-pointer-base-to-derived-conversion.t`
-- `pa15/tests/general/200-member-pointer-base-to-derived-data-access.t`
-- `pa15/tests/general/200-member-pointer-base-to-derived-function-access.t`
 - `pa15/tests/general/200-nested-out-of-class-constructor-enclosing-type.t`
 
 Audit action:
 
 - Keep PA15 object-model assertions. Classify bit-field access/init as PA15
-  cluster `400`, conversion operators as PA16, and member pointers as PA28
+  cluster `400`, conversion operators as PA16, and member pointers as PA26
   unless a test can be reduced to an earlier-owned assertion.
 
 ### PA16
@@ -335,9 +320,9 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `lang.enum` | `pa14` | 100 | 7.2 `[dcl.enum]` | pending | scoped/unscoped enums, enum promotion, enum comparison/lowering. |
 | `lowir.procedural.local_static` | `pa20` | 300 | 3.7.1 `[basic.stc.static]`, 6.7 `[stmt.dcl]` | pending | constant-initialized function-local `static` objects, guard variables, static array initialization. |
 | `lowir.procedural.local_static.dynamic_class` | `pa20` | 400 | 3.7.1 `[basic.stc.static]`, 3.8 `[basic.life]`, 6.7 `[stmt.dcl]` | pending | dynamically-initialized function-local static class objects or arrays, first-use guard emission around constructor calls, local-class static objects. |
-| `lowir.procedural.float_conversion` | `pa28` | 200 | 4.6 `[conv.fpprom]`, 4.8 `[conv.double]`, 4.9 `[conv.fpint]` | pending | LowIR/backend floating conversion parity. PA28 tests should be LowIR/backend inputs; source-to-LowIR floating tests need a separate LowIR-producing owner if kept. |
+| `lowir.procedural.float_conversion` | `pa14` | 200 | 4.6 `[conv.fpprom]`, 4.8 `[conv.double]`, 4.9 `[conv.fpint]` | pending | Source-to-LowIR floating scalar literals, promotions, conversions, returns, and branch normalization. Native/backend execution parity remains PA28 and should be tested with LowIR/backend inputs. |
 | `expr.cast.builtin` | `pa14` | 200 | 5.2.9 `[expr.static.cast]`, 5.2.11 `[expr.const.cast]`, 5.4 `[expr.cast]` | pending | C-style casts, `static_cast`, `const_cast`, scalar/function/reference/pointer casts. |
-| `call.variadic_promotions` | `pa28` | 500 | 5.2.2 `[expr.call]`, 4.6 `[conv.fpprom]` | pending | backend/runtime variadic call parity and default promotions such as float-to-double. PA28 tests should be LowIR/backend inputs; source-to-LowIR variadic tests need a separate LowIR-producing owner if kept. |
+| `call.variadic_promotions` | `pa14` | 200 | 5.2.2 `[expr.call]`, 4.6 `[conv.fpprom]` | pending | Source-to-LowIR argument lowering for C-style variadic calls and default promotions. Native ABI/runtime parity for variadic calls remains PA28-owned backend coverage. |
 | `lang.extended_integer` | `pa29` | 300 | N/A: GNU/Clang `__int128` extension | pending | Runtime lowering for `__int128` / `__uint128_t` values through source-driver programs. PA34 keeps hosted compile-only stress for vendor typedefs, literals, and header compatibility. |
 | `class.basic` | `pa15` | 100 | 9 `[class]`, 9.2 `[class.mem]` | pending | `class`/`struct`, members, methods, access labels, nested class use. |
 | `class.access_control` | `pa15` | 100 | 11 `[class.access]` | pending | public/private/protected member and constructor access checks. |
@@ -361,7 +346,7 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `class.using_declaration` | `pa15` | 300 | 7.3.3 `[namespace.udecl]`, 10.2 `[class.member.lookup]` | pending | using declarations that re-expose inherited members or affect access. |
 | `class.inheriting_constructor` | `pa15` | 500 | 12.9 `[class.inhctor]`, 7.3.3 `[namespace.udecl]`, 10 `[class.derived]` | pending | `using Base::Base` inheriting constructors, inherited constructor candidate lookup, and construction of the derived object through an inherited base constructor. Template-dependent inherited constructor fixtures inherit the enclosing template owner if template behavior is essential. |
 | `class.inheritance.multiple` | `pa26` | 100 | 10.1 `[class.mi]` | pending | Multiple direct non-virtual bases, repeated base names, and non-primary non-virtual base paths. |
-| `class.member_pointer` | `pa28` | 300 | 4.11 `[conv.mem]`, 5.5 `[expr.mptr.oper]`, 8.3.3 `[dcl.mptr]` | pending | `T C::*`, `.*`, `->*`, member pointer conversions/null tests over the completed non-virtual object model. |
+| `class.member_pointer` | `pa26` | 300 | 4.11 `[conv.mem]`, 5.5 `[expr.mptr.oper]`, 8.3.3 `[dcl.mptr]` | pending | `T C::*`, `.*`, `->*`, member pointer conversions/null tests over the completed non-virtual object model. Virtual-base and polymorphic adjustment cases inherit the PA27 pointer-adjustment owner. |
 | `class.conversion_operator` | `pa16` | 400 | 12.3.2 `[class.conv.fct]` | pending | non-template `operator T()` declarations and calls over the completed PA16 value subset. |
 | `function.trailing_return` | `pa11` | 300 | 8.3.5 `[dcl.fct]`, 7.1.6.4 `[dcl.spec.auto]` | pending | trailing return type syntax as type/declarator analysis. LowIR tests inherit the enclosing function kind's LowIR owner; auto return deduction belongs to `support.auto`. |
 | `support.attribute` | `pa34` | 500 | 7.6 `[dcl.attr]` | pending | standard/GNU attributes outside `no_unique_address`, including hosted/vendor declaration attributes and attributes on specialization declarations. |
@@ -476,7 +461,7 @@ Fill this table as tests are audited. Do not move a test without an entry.
 
 | PA | Change | Status | Notes |
 | --- | --- | --- | --- |
-| `pa14` | Exact procedural LowIR contract | pending | Resolve five-arg calls, local static boundary, float conversion fixture, and course test placement. |
+| `pa14` | Exact procedural LowIR contract | pending | Resolve five-arg calls and local static boundary. Floating conversion and variadic source-to-LowIR placement is settled as PA14-owned; native/backend parity remains PA28-owned. |
 | `pa15` | Exact object-model/support-feature contract | pending | Resolve known conflicts first. |
 | `pa16` | Exact value-semantics/support-syntax contract | pending | Classify lambda/range-for/template fixture tests. |
 | `pa17` | Exact polymorphism/multiple-base decision | pending | Decide whether to own tested limited multiple-base subset. |
