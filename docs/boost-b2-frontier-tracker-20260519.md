@@ -78,6 +78,17 @@ rebased Boost frontier branch.
   recorded at `257413d6f542692159283354ab92a40111e0110d` after the
   Boost.Container using-imported same-signature member fix; median instructions
   `275,448,058,735`, RSS `1.12 GiB`, footprint `894.49 MiB`.
+
+## Cleanup Notes
+
+- `5ae8f2cc2` adds reducer tests that were recorded in fixed tracker rows but
+  missed by the corresponding code commits.
+- Supplemental cleanup coverage also adds
+  `pa22/tests/general/500-reentrant-static-query-enable-if-partial.t` for the
+  Asio static-query reentrant partial-selection shape and
+  `pa23/tests/general/400-member-variable-template-leaf-sfinae.t` for the
+  member-variable-template SFINAE leaf shape. These are test-only additions for
+  already committed fixes.
 - active perf baseline refreshed: `/tmp/cppgm-perf-baseline-boost-frontier-current-9584a3460-20260528.json`
   recorded at `9584a346069eb783ae7b1f534c291ed90a2e81c7` after the
   Boost.Container `static_vector_test` runtime cleanup fix; median instructions
