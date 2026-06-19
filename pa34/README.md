@@ -154,7 +154,7 @@ To run one test through the shared check target:
 
 ```sh
 make check TEST=tests/preproc/300-has-include.t
-make check TEST=tests/compile/500-builtin-transforms-and-traits.t
+make check TEST=tests/compile/600-builtin-transforms-and-traits.t
 ```
 
 PA34 has two test directories:
