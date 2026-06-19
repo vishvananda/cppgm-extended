@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -180,21 +181,34 @@ def run_suite(
         log.write(f"$ cd {boost_root}\n")
         log.write(f"$ JOBS={jobs} {' '.join(command)}\n\n")
         log.flush()
+        proc = subprocess.Popen(
+            command,
+            cwd=str(boost_root),
+            env=env,
+            text=True,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
         try:
-            completed = subprocess.run(
-                command,
-                cwd=str(boost_root),
-                env=env,
-                text=True,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                timeout=timeout,
-            )
-            returncode = completed.returncode
+            returncode = proc.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
             timed_out = True
             returncode = 124
             log.write(f"\nTIMEOUT after {timeout} seconds\n")
+            log.flush()
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                proc.wait()
     elapsed = time.monotonic() - start
     log_text = log_path.read_text(encoding="utf-8", errors="replace")
     status = classify_result(returncode, timed_out, log_text)
