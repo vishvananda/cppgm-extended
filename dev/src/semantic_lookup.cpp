@@ -768,11 +768,11 @@ bool member_lookup_present(const MemberVariableTemplateLookupResult & result)
   return result.variable_template != nullptr;
 }
 
-bool member_function_types_same_non_object_signature(const TypePtr & lhs,
-                                                     const TypePtr & rhs)
+bool member_functions_same_explicit_signature(const FunctionBinding & lhs,
+                                              const FunctionBinding & rhs)
 {
-  TypePtr lhs_base = strip_top_level_cv(lhs);
-  TypePtr rhs_base = strip_top_level_cv(rhs);
+  TypePtr lhs_base = strip_top_level_cv(lhs.type);
+  TypePtr rhs_base = strip_top_level_cv(rhs.type);
   if(!lhs_base || !rhs_base ||
      lhs_base->kind != Type::TK_FUNCTION ||
      rhs_base->kind != Type::TK_FUNCTION ||
@@ -780,8 +780,26 @@ bool member_function_types_same_non_object_signature(const TypePtr & lhs,
      lhs_base->prototype_relaxed != rhs_base->prototype_relaxed ||
      lhs_base->function_const != rhs_base->function_const ||
      lhs_base->function_volatile != rhs_base->function_volatile ||
-     lhs_base->function_ref_qualifier != rhs_base->function_ref_qualifier ||
-     lhs_base->params.size() != rhs_base->params.size() ||
+     lhs_base->function_ref_qualifier != rhs_base->function_ref_qualifier) {
+    return false;
+  }
+
+  const bool static_member_functions =
+      lhs.owner_class && rhs.owner_class && !lhs.is_method && !rhs.is_method;
+  if(static_member_functions) {
+    if(lhs_base->params.size() != rhs_base->params.size() ||
+       lhs_base->params.empty()) {
+      return false;
+    }
+    for(size_t i = 0; i < lhs_base->params.size(); ++i) {
+      if(!type_equals(lhs_base->params[i], rhs_base->params[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if(lhs_base->params.size() != rhs_base->params.size() ||
      lhs_base->params.empty()) {
     return false;
   }
@@ -828,8 +846,7 @@ void remove_hidden_using_base_member_function_candidates_impl(
         FunctionBinding * direct = functions[j];
         if(direct && direct->owner_class == &current &&
            function->ref_qualifier == direct->ref_qualifier &&
-           member_function_types_same_non_object_signature(function->type,
-                                                           direct->type)) {
+           member_functions_same_explicit_signature(*function, *direct)) {
           hidden = true;
           break;
         }

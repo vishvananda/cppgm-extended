@@ -12,6 +12,7 @@
 #include "semantic_context_facets.h"
 #include "semantic_errors.h"
 #include "semantic_lookup.h"
+#include "semantic_template_variable.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
 #include "template_argument_semantics.h"
@@ -1268,6 +1269,14 @@ public:
       return nullptr;
     }
 
+    if(const ValueBinding * variable_template_binding =
+           lookup_qualified_leaf_variable_template_binding(scope,
+                                                           *target,
+                                                           qualified,
+                                                           node)) {
+      return variable_template_binding;
+    }
+
     map<string, ValueBinding>::const_iterator found =
         target->values.find(qualified.name);
     if(found != target->values.end()) {
@@ -1311,6 +1320,75 @@ public:
       }
     }
     return nullptr;
+  }
+
+  const ValueBinding * lookup_qualified_leaf_variable_template_binding(
+      Scope & source_scope,
+      Scope & target,
+      const QualifiedName & qualified,
+      const CppAstNode & node)
+  {
+    if(node.kind != CppAstKind::id_expression) {
+      return nullptr;
+    }
+    const TemplateIdSyntax * template_id = cppast_template_id_syntax(node);
+    if(!template_id ||
+       template_id->name.name.empty()) {
+      return nullptr;
+    }
+    const string qualified_leaf =
+        unqualified_member_name(
+            strip_trailing_top_level_template_arguments(qualified.name));
+    if(template_id->name.name != qualified.name &&
+       template_id->name.name != qualified_leaf) {
+      return nullptr;
+    }
+
+    VariableTemplateDecl * variable_template = nullptr;
+    ClassInfo * variable_template_owner = nullptr;
+    if(target.class_info) {
+      semantic_lookup::MemberVariableTemplateLookupResult member =
+          semantic_lookup::lookup_member_variable_template(
+              ctx,
+              *target.class_info,
+              template_id->name.name);
+      variable_template = member.variable_template;
+      if(variable_template) {
+        variable_template_owner =
+            const_cast<ClassInfo *>(member.declared_in ?
+                                    member.declared_in :
+                                    target.class_info);
+      }
+    }
+    if(!variable_template) {
+      variable_template =
+          semantic_lookup::lookup_direct_variable_template(target,
+                                                          template_id->name.name);
+      if(variable_template && target.class_info) {
+        variable_template_owner = target.class_info;
+      }
+    }
+    if(!variable_template) {
+      return nullptr;
+    }
+
+    if(variable_template_owner) {
+      return semantic_template_variable::
+          acquire_member_variable_template_binding_for_template_id_source_use(
+              ctx,
+              *variable_template,
+              *variable_template_owner,
+              source_scope,
+              node,
+              *template_id);
+    }
+    return semantic_template_variable::
+        acquire_variable_template_binding_for_template_id_source_use(
+            ctx,
+            *variable_template,
+            source_scope,
+            node,
+            *template_id);
   }
 
   bool lookup_constant_value_node(Scope & scope,
