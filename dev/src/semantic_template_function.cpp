@@ -272,7 +272,8 @@ semantic_model::FunctionBinding * acquire_function_template_binding(
     semantic_model::Scope * use_scope,
     const std::map<std::string, std::size_t> * pack_sizes,
     bool include_body,
-    semantic_model::ClassInfo * active_owner)
+    semantic_model::ClassInfo * active_owner,
+    const std::string & instantiation_use_location)
 {
   template_api::TemplateFunctionInstantiationRequest request;
   request.decl = &decl;
@@ -285,6 +286,7 @@ semantic_model::FunctionBinding * acquire_function_template_binding(
     request.pack_sizes = *pack_sizes;
     request.has_pack_sizes = true;
   }
+  request.instantiation_use_location = instantiation_use_location;
   return template_api::acquire_function_instantiation(ctx, request).function_binding;
 }
 

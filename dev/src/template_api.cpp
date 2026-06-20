@@ -160,7 +160,8 @@ semantic_model::FunctionBinding * instantiate_function_template(
     bool include_body = true,
     semantic_model::Scope * use_scope = nullptr,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr,
-    bool prefer_overload_suffix = false);
+    bool prefer_overload_suffix = false,
+    const std::string & instantiation_use_location_override = std::string());
 
 const semantic_model::ValueBinding * instantiate_variable_template(
     SemanticContext & ctx,
@@ -5826,7 +5827,8 @@ TemplateInstantiationResult acquire_function_instantiation(
       request.include_body,
       request.use_scope.valid() ? &request.use_scope.require() : nullptr,
       request.has_pack_sizes ? &request.pack_sizes : nullptr,
-      request.prefer_overload_suffix);
+      request.prefer_overload_suffix,
+      request.instantiation_use_location);
   result.created_new_binding =
       result.function_binding &&
       request.decl &&

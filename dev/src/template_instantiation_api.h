@@ -39,6 +39,7 @@ struct TemplateFunctionInstantiationRequest
   std::map<std::string, std::size_t> pack_sizes;
   bool has_pack_sizes = false;
   bool prefer_overload_suffix = false;
+  std::string instantiation_use_location;
   TemplateInstantiationIntent intent = TemplateInstantiationIntent::LookupOnly;
 };
 
