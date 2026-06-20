@@ -125,8 +125,8 @@ bool evaluate_known_static_member_constant(SemanticContext & ctx,
     return false;
   }
 
-  if(member.binding->has_constexpr_value) {
-    out = member.binding->constexpr_value;
+  if(value_binding_has_constexpr_value(*member.binding)) {
+    out = value_binding_constexpr_value(*member.binding);
     return true;
   }
   if(member.binding->has_constant_value) {

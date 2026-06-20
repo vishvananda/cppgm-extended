@@ -413,6 +413,12 @@ bool make_substituted_default_template_argument_syntax(
   }
   syntax = make_default_template_argument_syntax(parameter, substituted, text);
   syntax.text = text;
+  if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE &&
+     !fallback_text.empty() &&
+     compact_source_argument_key(fallback_text) !=
+         compact_source_argument_key(text)) {
+    syntax.source_text = fallback_text;
+  }
   return true;
 }
 
@@ -9725,6 +9731,46 @@ TypePtr prepare_function_template_deduction_pattern(
   return pattern;
 }
 
+void bind_preceding_function_parameter_for_deduction(
+    SemanticContext & ctx,
+    FunctionTemplateDecl & decl,
+    Scope & scope,
+    std::size_t pattern_index,
+    bool deducing_pack_element,
+    const TypePtr & fallback_pattern)
+{
+  if(deducing_pack_element ||
+     pattern_index >= decl.params_pattern.size() ||
+     pattern_index + 1 >= decl.params_pattern.size() ||
+     decl.params_pattern[pattern_index].first.empty()) {
+    return;
+  }
+
+  TypePtr parameter_type = fallback_pattern;
+  const bool needs_prepared_pattern =
+      !parameter_type ||
+      type_mentions_function_template_parameter(ctx, decl.parameters, parameter_type) ||
+      template_argument_semantics::type_depends_on_template_parameter(ctx, parameter_type);
+  if(needs_prepared_pattern) {
+    try {
+      TypePtr prepared =
+          prepare_function_template_deduction_pattern(
+              ctx,
+              decl.parameters,
+              scope,
+              decl.params_pattern[pattern_index].second);
+      if(prepared) {
+        parameter_type = prepared;
+      }
+    } catch(const TemplateSubstitutionFailure &) {
+      // Keep the best type already available to this deduction pass.
+    }
+  }
+  template_scope::bind_parameter_value(scope,
+                                       decl.params_pattern[pattern_index].first,
+                                       parameter_type);
+}
+
 void apply_function_template_call_deduction_adjustments(
     FunctionTemplateDecl & decl,
     const ExprInfo & arg,
@@ -11501,6 +11547,7 @@ bool resolve_template_arguments(
       TemplateArgumentSyntax prepared_default_syntax;
       const TemplateArgumentSyntax * prepared_default_syntax_ptr =
           &original_default_syntax;
+      bool prepared_default_has_prefix_substitutions = false;
       if(!original_default_text.empty()) {
         std::vector<TemplateParameterInfo> prefix_parameters(
             parameters.begin(),
@@ -11517,9 +11564,11 @@ bool resolve_template_arguments(
                prepared_default_syntax)) {
           prepared_default_text = prepared_default_syntax.text;
           prepared_default_syntax_ptr = &prepared_default_syntax;
+          prepared_default_has_prefix_substitutions = true;
         }
       }
       bool resolved_default = false;
+      bool resolved_default_from_prepared_text = false;
       if(parameters[i].kind == TemplateParameterInfo::TP_TYPE &&
          !original_default_text.empty()) {
         const bool default_mentions_template_placeholders =
@@ -11570,8 +11619,13 @@ bool resolve_template_arguments(
                 prepared_default_text,
                 prepared_default_syntax_ptr,
                 arg);
+            if(resolved_default) {
+              resolved_default_from_prepared_text =
+                  prepared_default_has_prefix_substitutions;
+            }
           } catch(const TemplateSubstitutionFailure &) {
             resolved_default = false;
+            resolved_default_from_prepared_text = false;
           }
         }
         if(should_defer_original_default_text && !resolved_default) {
@@ -11588,14 +11642,19 @@ bool resolve_template_arguments(
                 original_default_text,
                 &original_default_syntax,
                 arg);
+            if(resolved_default) {
+              resolved_default_from_prepared_text = false;
+            }
           } catch(const TemplateSubstitutionFailure &) {
             resolved_default = false;
+            resolved_default_from_prepared_text = false;
           }
           if(resolved_default &&
              (!arg.type ||
               type_is_dependent(arg.type))) {
             arg = TemplateArgument();
             resolved_default = false;
+            resolved_default_from_prepared_text = false;
           }
         }
         if(should_defer_original_default_text && !resolved_default) {
@@ -11607,6 +11666,8 @@ bool resolve_template_arguments(
           arg.dependent = true;
           attach_template_argument_source_syntax(prepared_default_syntax_ptr, arg);
           resolved_default = true;
+          resolved_default_from_prepared_text =
+              prepared_default_has_prefix_substitutions;
         }
         try {
           if(!resolved_default) {
@@ -11618,9 +11679,13 @@ bool resolve_template_arguments(
                 original_default_text,
                 &original_default_syntax,
                 arg);
+            if(resolved_default) {
+              resolved_default_from_prepared_text = false;
+            }
           }
         } catch(const TemplateSubstitutionFailure &) {
           resolved_default = false;
+          resolved_default_from_prepared_text = false;
         }
       }
 
@@ -11636,11 +11701,14 @@ bool resolve_template_arguments(
           note_cache_failure();
           return false;
         }
+        resolved_default_from_prepared_text =
+            prepared_default_has_prefix_substitutions;
       }
       if(parameters[i].kind == TemplateParameterInfo::TP_TYPE &&
          arg.type &&
          type_is_dependent(arg.type) &&
-         i != 0) {
+         i != 0 &&
+         !resolved_default_from_prepared_text) {
         std::vector<TemplateParameterInfo> prefix_parameters(parameters.begin(),
                                                              parameters.begin() + i);
         std::vector<TemplateArgument> prefix_arguments(out.begin(), out.end());
@@ -11698,6 +11766,10 @@ bool resolve_template_arguments(
                                                   substituted_default_expression,
                                                   substituted_default_text);
       }
+      const CppAstNode & evaluation_default_expression =
+          have_substituted_default_expression ?
+              substituted_default_expression :
+              child;
       long long value = 0;
       template_argument_semantics::NonTypeArgumentStatus value_status =
           template_argument_semantics::NT_ARG_EVAL_FAILED;
@@ -11707,7 +11779,7 @@ bool resolve_template_arguments(
             template_argument_semantics::evaluate_non_type_argument_expression(
                 services,
                 default_argument_env,
-                child,
+                evaluation_default_expression,
                 value,
                 &eval_error,
                 bound_value_type);
@@ -11717,7 +11789,7 @@ bool resolve_template_arguments(
       if(value_status != template_argument_semantics::NT_ARG_EVALUATED) {
         if(value_status != template_argument_semantics::NT_ARG_DEPENDENT &&
            !default_argument_expression_is_still_dependent(
-               services, default_argument_env, child)) {
+               services, default_argument_env, evaluation_default_expression)) {
           std::ostringstream detail;
           detail << "failed default non-type template argument evaluation: "
                  << default_text;
@@ -11725,7 +11797,8 @@ bool resolve_template_arguments(
           detail << " [bindings "
                  << scope_bindings_for_diagnostic(*default_argument_scope) << "]";
           const std::string described =
-              callsemantic_internal::describe_expression_for_diagnostic(child);
+              callsemantic_internal::describe_expression_for_diagnostic(
+                  evaluation_default_expression);
           if(!described.empty()) {
             detail << " [expr " << described << "]";
           }
@@ -12422,6 +12495,85 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           }
           return false;
         };
+        const auto strip_cv_qualifier_tokens =
+            [](std::string text) -> std::string
+        {
+          for(;;) {
+            text = trim_space(text);
+            if(text.compare(0, 6, "const ") == 0) {
+              text = text.substr(6);
+              continue;
+            }
+            if(text.compare(0, 9, "volatile ") == 0) {
+              text = text.substr(9);
+              continue;
+            }
+            if(text.size() > 6 &&
+               text.compare(text.size() - 6, 6, " const") == 0) {
+              text.erase(text.size() - 6);
+              continue;
+            }
+            if(text.size() > 9 &&
+               text.compare(text.size() - 9, 9, " volatile") == 0) {
+              text.erase(text.size() - 9);
+              continue;
+            }
+            return text;
+          }
+        };
+        const auto is_builtin_fundamental_type_text =
+            [&](const std::string & text) -> bool
+        {
+          const std::string normalized = strip_cv_qualifier_tokens(text);
+          static const char * names[] = {
+              "void",
+              "bool",
+              "char",
+              "signed char",
+              "unsigned char",
+              "wchar_t",
+              "char16_t",
+              "char32_t",
+              "short",
+              "short int",
+              "signed short",
+              "signed short int",
+              "unsigned short",
+              "unsigned short int",
+              "int",
+              "signed",
+              "signed int",
+              "unsigned",
+              "unsigned int",
+              "long",
+              "long int",
+              "signed long",
+              "signed long int",
+              "unsigned long",
+              "unsigned long int",
+              "long long",
+              "long long int",
+              "signed long long",
+              "signed long long int",
+              "unsigned long long",
+              "unsigned long long int",
+              "float",
+              "double",
+              "long double",
+              "nullptr_t",
+              "__int128",
+              "__int128_t",
+              "__uint128_t",
+              "signed __int128",
+              "unsigned __int128"
+          };
+          for(std::size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+            if(normalized == names[i]) {
+              return true;
+            }
+          }
+          return false;
+        };
 
         std::string pattern_inner;
         std::string actual_inner;
@@ -12558,6 +12710,29 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           TypePtr pattern_arg_type;
           TypePtr actual_arg_type;
           if(lookup_pattern_arg_type(pattern_arg, pattern_arg_type) &&
+             lookup_actual_arg_type(actual_arg, actual_arg_type) &&
+             actual_arg_type &&
+             deduce_template_argument_impl(ctx,
+                                           parameters,
+                                           pattern_arg_type,
+                                           actual_arg_type,
+                                           deduced_types,
+                                           deduced_values,
+                                           deduction_scope,
+                                           partial_top_level_cv_deduction,
+                                           actual_lookup_scope,
+                                           deduced_pack_arguments,
+                                           allow_actual_base_deduction)) {
+            return true;
+          }
+        }
+
+        if(callsemantic_internal::is_identifier_text(pattern_arg) &&
+           is_builtin_fundamental_type_text(actual_arg)) {
+          TypePtr pattern_arg_type =
+              deduction_ops.lookup_type(*deduction_scope, pattern_arg, true);
+          TypePtr actual_arg_type;
+          if(pattern_arg_type &&
              lookup_actual_arg_type(actual_arg, actual_arg_type) &&
              actual_arg_type &&
              deduce_template_argument_impl(ctx,
@@ -13831,6 +14006,7 @@ bool deduce_function_template_arguments_uncached(
       const TypePtr original_pattern = decl.params_pattern[pattern_index].second;
       TypePtr pattern = prepare_function_template_deduction_pattern(
           ctx, decl.parameters, bound_scope, original_pattern);
+      const TypePtr parameter_scope_pattern = pattern;
       TypePtr actual = remove_reference_type(args[i].type);
       if(!actual) {
         actual = args[i].type;
@@ -13858,6 +14034,12 @@ bool deduce_function_template_arguments_uncached(
                 << " pattern=" << describe_type(pattern);
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        parameter_scope_pattern);
         continue;
       }
       if(argument_is_braced_init_list_for_deduction(args[i]) &&
@@ -13881,6 +14063,12 @@ bool deduce_function_template_arguments_uncached(
                 << " pattern=" << describe_type(pattern);
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        parameter_scope_pattern);
         continue;
       }
       DeducedTypeMap temp_deduced_types;
@@ -14033,6 +14221,12 @@ bool deduce_function_template_arguments_uncached(
         deduced_types.swap(temp_deduced_types);
         deduced_values.swap(temp_deduced_values);
       }
+      bind_preceding_function_parameter_for_deduction(ctx,
+                                                      decl,
+                                                      bound_scope,
+                                                      pattern_index,
+                                                      deducing_pack_element,
+                                                      parameter_scope_pattern);
     }
 
     bind_known_deductions_into_scope(
@@ -14432,6 +14626,7 @@ bool deduce_function_template_arguments_with_explicit(
       const TypePtr original_pattern = decl.params_pattern[pattern_index].second;
       TypePtr pattern = prepare_function_template_deduction_pattern(
           ctx, decl.parameters, bound_scope, original_pattern);
+      const TypePtr parameter_scope_pattern = pattern;
       TypePtr actual = remove_reference_type(args[i].type);
       if(!actual) {
         actual = args[i].type;
@@ -14460,6 +14655,12 @@ bool deduce_function_template_arguments_with_explicit(
                 << " pattern=" << describe_type(pattern);
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        parameter_scope_pattern);
         continue;
       }
       if(argument_is_braced_init_list_for_deduction(args[i]) &&
@@ -14483,6 +14684,12 @@ bool deduce_function_template_arguments_with_explicit(
                 << " pattern=" << describe_type(pattern);
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        parameter_scope_pattern);
         continue;
       }
       DeducedTypeMap temp_deduced_types;
@@ -14574,6 +14781,12 @@ bool deduce_function_template_arguments_with_explicit(
         deduced_types.swap(temp_deduced_types);
         deduced_values.swap(temp_deduced_values);
       }
+      bind_preceding_function_parameter_for_deduction(ctx,
+                                                      decl,
+                                                      bound_scope,
+                                                      pattern_index,
+                                                      deducing_pack_element,
+                                                      parameter_scope_pattern);
     }
 
     bind_known_deductions_into_scope(

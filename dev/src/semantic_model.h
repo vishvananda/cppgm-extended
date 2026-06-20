@@ -180,7 +180,7 @@ struct ValueBinding
   bool has_constant_value = false;
   long long constant_value = 0;
   bool has_constexpr_value = false;
-  constant_eval::ConstexprValue constexpr_value;
+  std::shared_ptr<constant_eval::ConstexprValue> constexpr_value;
   bool dependent_template_value = false;
   std::string non_type_template_argument_text;
   FunctionBinding * non_type_template_function_value = nullptr;
@@ -199,6 +199,31 @@ struct ValueBinding
   mutable bool witness_member_value_instantiation_noted = false;
   mutable SourceDeclAnchorCache declaration_anchor;
 };
+
+inline bool value_binding_has_constexpr_value(const ValueBinding & binding)
+{
+  return binding.has_constexpr_value && binding.constexpr_value;
+}
+
+inline const constant_eval::ConstexprValue & value_binding_constexpr_value(
+    const ValueBinding & binding)
+{
+  return *binding.constexpr_value;
+}
+
+inline void set_value_binding_constexpr_value(
+    ValueBinding & binding,
+    const constant_eval::ConstexprValue & value)
+{
+  binding.has_constexpr_value = true;
+  binding.constexpr_value.reset(new constant_eval::ConstexprValue(value));
+}
+
+inline void clear_value_binding_constexpr_value(ValueBinding & binding)
+{
+  binding.has_constexpr_value = false;
+  binding.constexpr_value.reset();
+}
 
 struct Scope
 {

@@ -304,8 +304,10 @@ bool lookup_integral_constant_index_text(Scope & scope,
       out = binding.constant_value;
       return true;
     }
-    if(binding.has_constexpr_value &&
-       constant_eval::constexpr_value_to_integral(binding.constexpr_value, out)) {
+    if(value_binding_has_constexpr_value(binding) &&
+       constant_eval::constexpr_value_to_integral(
+           value_binding_constexpr_value(binding),
+           out)) {
       return true;
     }
     return false;

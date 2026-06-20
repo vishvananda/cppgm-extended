@@ -41,9 +41,7 @@ function @pair_int_const__char___pair(%this : ptr, %pc : obj<1x1>, %first_args :
     %t4 = addr $first_args
     %t5 = addr $second_args
     %t6 = addr $argobj__2
-    call void @integer_sequence_unsigned_long_int__0___integer_sequence(%t6)
     %t7 = addr $argobj__3
-    call void @integer_sequence_unsigned_long_int__0___integer_sequence(%t7)
     call void @pair_int_const__char___pair__ov2(%t1, $argobj__1, %t4, %t5, $argobj__2, $argobj__3)
     return void
 }
@@ -61,17 +59,9 @@ function @pair_int_const__char___pair__ov2(%this : ptr, %__param1 : obj<1x1>, %_
     store ptr %__param3, $__param3
     return void
 }
-function @integer_sequence_unsigned_long_int__0___integer_sequence(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN16integer_sequenceImJLm0EEEC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     return void
 }
 alias object _ZN4pairIKicEC2IJRS0_EJRKcEEE21piecewise_construct_t5tupleIJDpT_EES7_IJDpT0_EE = @pair_int_const__char___pair
 alias object _ZN4pairIKicEC2IJRS0_EJRKcEJLm0EEJLm0EEEE21piecewise_construct_tR5tupleIJDpT_EERS7_IJDpT0_EE16integer_sequenceImJXspT1_EEESG_ImJXspT2_EEE = @pair_int_const__char___pair__ov2
-alias object _ZN16integer_sequenceImJLm0EEEC2Ev = @integer_sequence_unsigned_long_int__0___integer_sequence

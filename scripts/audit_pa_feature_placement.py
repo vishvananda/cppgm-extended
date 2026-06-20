@@ -965,12 +965,22 @@ def review_template_concepts(concepts: Iterable[str], current_pa: str) -> list[s
     return sorted(review)
 
 
-def later_template_dependency_features(placements: Iterable[dict[str, object]]) -> list[str]:
+def later_template_dependency_features(
+    placements: Iterable[dict[str, object]],
+    current_pa: str,
+    current_cluster: int | None,
+) -> list[str]:
     later: list[str] = []
+    current_key = placement_key(current_pa, current_cluster)
     for placement in placements:
         feature_id = str(placement["feature"])
         if feature_id in TEMPLATE_LATER_OR_COMPAT_FEATURES:
-            later.append(feature_id)
+            owner_key = placement_key(
+                str(placement.get("owner_pa", "")),
+                placement.get("owner_cluster"),  # type: ignore[arg-type]
+            )
+            if current_key is None or owner_key is None or owner_key > current_key:
+                later.append(feature_id)
     return sorted(set(later))
 
 
@@ -1109,7 +1119,7 @@ def template_review_for(
         feature_id for feature_id in detected_features
         if feature_id in TEMPLATE_CONCEPT_BY_FEATURE
     )
-    later_features = later_template_dependency_features(placements)
+    later_features = later_template_dependency_features(placements, current_pa, current_cluster)
     owner = latest_owner_label(effective_review_features, features)
     suggested_cluster: int | None = None
     if not review_concepts:

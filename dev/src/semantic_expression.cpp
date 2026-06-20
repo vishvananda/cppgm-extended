@@ -4353,9 +4353,11 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
       folded_literal.has_int_value = true;
       folded_literal.int_value = binding.constant_value;
       can_fold = true;
-    } else if(!force_storage_load && binding.has_constexpr_value) {
+    } else if(!force_storage_load &&
+              value_binding_has_constexpr_value(binding)) {
       can_fold = constexpr_value_to_literal_value(ctx,
-                                                  binding.constexpr_value,
+                                                  value_binding_constexpr_value(
+                                                      binding),
                                                   binding.type,
                                                   folded_literal);
     } else if(!force_storage_load &&

@@ -1,4 +1,5 @@
 #include "template_api_internal.h"
+#include "callsemantic/template_source_utils.h"
 #include "template_argument_semantics.h"
 #include "callsemantic_internal.h"
 #include "class_template_mangle_info.h"
@@ -3205,6 +3206,30 @@ std::string witness_specialization_name_for_visible_args(
   return out.str();
 }
 
+bool template_argument_has_typedef_source_spelling_for_witness(
+    SemanticContext & ctx,
+    const template_model::TemplateArgument & argument)
+{
+  if(argument.kind != template_model::TemplateArgument::TA_TYPE ||
+     !argument.type ||
+     argument.text.empty() ||
+     ctx.type_depends_on_template_parameter(argument.type)) {
+    return false;
+  }
+  const std::string source_text =
+      semantic_utils::trim_space(
+          strip_witness_elaborated_type_prefix(argument.text));
+  const std::string canonical_text =
+      semantic_utils::trim_space(
+          strip_witness_elaborated_type_prefix(
+              default_elided_type_argument_text(ctx, argument.type)));
+  return !source_text.empty() &&
+         !canonical_text.empty() &&
+         source_text != canonical_text &&
+         canonical_text.find("_GLOBAL__N_") == std::string::npos &&
+         canonical_text.find("__local_") == std::string::npos;
+}
+
 std::string class_witness_output_qualified_name_impl(
     SemanticContext & ctx,
     const semantic_model::ClassInfo & info,
@@ -3270,6 +3295,12 @@ std::string class_witness_output_qualified_name_impl(
     }
     if(!rebuild_from_structured_arguments &&
        template_argument_has_underqualified_source_type_for_witness(
+           ctx,
+           info.instantiation_arguments[i])) {
+      rebuild_from_structured_arguments = true;
+    }
+    if(!rebuild_from_structured_arguments &&
+       template_argument_has_typedef_source_spelling_for_witness(
            ctx,
            info.instantiation_arguments[i])) {
       rebuild_from_structured_arguments = true;
@@ -4637,6 +4668,20 @@ std::string template_witness_value_binding_arg_text(
       enum_witness_enumerator_text_for_value(ctx, arg);
   if(!enumerator_text.empty()) {
     return enumerator_text;
+  }
+  if(arg.kind == template_model::TemplateArgument::TA_VALUE &&
+     arg.source_syntax) {
+    const std::string source_text = semantic_utils::trim_space(
+        callsemantic::template_argument_syntax_witness_source_text(
+            *arg.source_syntax));
+    if(!source_text.empty() &&
+       (arg.source_syntax->expression ||
+        !semantic_utils::trim_space(arg.source_syntax->source_text).empty()) &&
+       (trimmed_explicit.empty() ||
+        callsemantic_internal::remove_space_chars(source_text) !=
+            callsemantic_internal::remove_space_chars(trimmed_explicit))) {
+      return source_text;
+    }
   }
   std::string value_text = unsigned_integral_witness_value_text(arg);
   if(value_text.empty()) {
