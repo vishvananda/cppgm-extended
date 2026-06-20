@@ -8996,6 +8996,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     request.semantic_flags.is_final = source_decl->is_final;
     request.semantic_flags.function_qualifier = effective_function_qualifier(*source_decl);
     request.semantic_flags.is_constexpr = effective_is_constexpr;
+    request.semantic_flags.is_deleted = source_decl->is_deleted;
     attach_function_template_registration_identity(
         request, *source_decl, arguments, key, prefer_overload_suffix);
     request.is_static_member =
@@ -9024,6 +9025,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     request.declaration_scope = &inst_scope;
     request.function_qualifier = effective_function_qualifier(*source_decl);
     request.is_constexpr = effective_is_constexpr;
+    request.semantic_flags.is_deleted = source_decl->is_deleted;
     attach_function_template_registration_identity(
         request, *source_decl, arguments, key, prefer_overload_suffix);
     ctx.register_function_entity(request);
@@ -9047,6 +9049,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       throw std::logic_error("missing instantiated function");
     }
   }
+  binding->is_deleted = binding->is_deleted || source_decl->is_deleted;
   apply_instantiated_parameter_aliases(*binding, parameter_aliases);
   note_function_instantiation_use_location(*binding, instantiation_use_location);
   binding->exclude_from_explicit_instantiation =

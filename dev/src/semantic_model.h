@@ -90,6 +90,7 @@ struct FunctionSemanticFlags
   bool is_override_specified = false;
   bool is_final = false;
   bool is_defaulted = false;
+  bool is_deleted = false;
   bool is_constexpr = false;
   bool is_inline = false;
   const CppAstNode * function_qualifier = nullptr;
@@ -617,6 +618,7 @@ struct FunctionTemplateDecl
   bool is_const_method = false;
   bool is_volatile_method = false;
   RefQualifier ref_qualifier = RQ_NONE;
+  bool is_deleted = false;
   bool decl_virtual = false;
   bool is_override = false;
   bool is_final = false;

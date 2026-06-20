@@ -8700,6 +8700,7 @@ private:
     binding->declared_type = normalized_declared_type;
     binding->function_qualifier = flags.function_qualifier;
     binding->is_defaulted = flags.is_defaulted;
+    binding->is_deleted = flags.is_deleted;
     binding->is_virtual_specified = flags.is_virtual_specified;
     binding->is_pure_virtual = flags.is_virtual_specified &&
                                declaration_node_is_pure_virtual(declaration_node);
@@ -9279,6 +9280,7 @@ private:
     }
     binding->owner_class = &info;
     binding->access = flags.access;
+    binding->is_deleted = binding->is_deleted || flags.is_deleted;
     binding->is_inline = binding->is_inline || flags.is_inline;
     upgrade_function_symbol_linkage(
         *binding,
@@ -17390,32 +17392,38 @@ private:
     const FunctionTemplateRegistrationIdentity & template_identity =
         request.template_identity;
     if(request.owner_class) {
+      FunctionBinding * binding = nullptr;
       if(request.is_static_member) {
-        return register_class_static_function(*request.owner_class,
-                                              request.name,
-                                              request.declared_type,
-                                              request.params,
-                                              request.default_arguments,
-                                              request.body,
-                                              request.semantic_flags,
-                                              template_identity,
-                                              request.declaration_node,
-                                              request.parameter_syntax_node,
-                                              request.function_qualifier,
-                                              template_identity.prefer_overload_suffix);
+        binding = register_class_static_function(*request.owner_class,
+                                                 request.name,
+                                                 request.declared_type,
+                                                 request.params,
+                                                 request.default_arguments,
+                                                 request.body,
+                                                 request.semantic_flags,
+                                                 template_identity,
+                                                 request.declaration_node,
+                                                 request.parameter_syntax_node,
+                                                 request.function_qualifier,
+                                                 template_identity.prefer_overload_suffix);
+      } else {
+        binding = register_class_function(*request.owner_class,
+                                          request.name,
+                                          request.declared_type,
+                                          request.params,
+                                          request.default_arguments,
+                                          request.body,
+                                          request.ctor_initializer,
+                                          request.semantic_flags,
+                                          template_identity,
+                                          request.declaration_node,
+                                          request.parameter_syntax_node,
+                                          template_identity.prefer_overload_suffix);
       }
-      return register_class_function(*request.owner_class,
-                                     request.name,
-                                     request.declared_type,
-                                     request.params,
-                                     request.default_arguments,
-                                     request.body,
-                                     request.ctor_initializer,
-                                     request.semantic_flags,
-                                     template_identity,
-                                     request.declaration_node,
-                                     request.parameter_syntax_node,
-                                     template_identity.prefer_overload_suffix);
+      if(binding && request.semantic_flags.is_deleted) {
+        binding->is_deleted = true;
+      }
+      return binding;
     }
 
     if(!request.scope) {
@@ -17437,7 +17445,12 @@ private:
                       template_identity.prefer_overload_suffix,
                       request.lexical_access_class,
                       request.lexical_access_function);
-    return find_exact_function(*request.scope, request.name, request.declared_type);
+    FunctionBinding * binding =
+        find_exact_function(*request.scope, request.name, request.declared_type);
+    if(binding && request.semantic_flags.is_deleted) {
+      binding->is_deleted = true;
+    }
+    return binding;
   }
 
   void build_function_template_parse_view(const FunctionTemplateDecl & decl,
@@ -20874,6 +20887,7 @@ private:
       bool is_const_method,
       bool is_volatile_method,
       RefQualifier ref_qualifier,
+      bool is_deleted,
       bool qualified_friend_name,
       const CppAstNode * specifiers,
       const CppAstNode * declarator,
@@ -20971,6 +20985,7 @@ private:
     decl->is_const_method = is_const_method;
     decl->is_volatile_method = is_volatile_method;
     decl->ref_qualifier = ref_qualifier;
+    decl->is_deleted = is_deleted;
     append_unique_friend_template_access(*decl, info);
     if(adl_visible) {
       append_unique_friend_function_template(info, *decl);
