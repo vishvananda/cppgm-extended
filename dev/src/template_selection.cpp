@@ -34,6 +34,7 @@ typedef std::pair<const void *, std::string> SpecializationSelectionKey;
 
 thread_local std::set<SpecializationSelectionKey> class_selection_in_progress;
 thread_local std::set<SpecializationSelectionKey> variable_selection_in_progress;
+thread_local std::size_t class_reentrant_primary_selection_count = 0;
 
 template<class Set>
 struct ScopedSelectionGuard
@@ -567,6 +568,7 @@ ClassSpecializationSelection select_class_specialization(
       SpecializationSelectionKey(&decl, key));
   if(!guard.inserted) {
     selection.reentrant_primary = true;
+    ++class_reentrant_primary_selection_count;
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "class-specialization name=" << decl.name
@@ -576,6 +578,8 @@ ClassSpecializationSelection select_class_specialization(
     }
     return selection;
   }
+  const std::size_t reentrant_primary_count_before =
+      class_reentrant_primary_selection_count;
 
   std::vector<TemplateArgument> partial_arguments;
   std::map<std::string, std::size_t> partial_pack_sizes;
@@ -638,6 +642,8 @@ ClassSpecializationSelection select_class_specialization(
   if(selection_deferred) {
     chosen_partial = nullptr;
   }
+  const bool saw_reentrant_primary_selection =
+      class_reentrant_primary_selection_count != reentrant_primary_count_before;
   if(!chosen_partial) {
     if(selection_deferred) {
       selection.reentrant_primary = true;
@@ -652,7 +658,9 @@ ClassSpecializationSelection select_class_specialization(
     if(!selection_deferred) {
       replay_concrete_class_value_dependencies(services, use_scope, arguments);
     }
-    if(use_selection_cache && !selection_deferred) {
+    if(use_selection_cache &&
+       !selection_deferred &&
+       !saw_reentrant_primary_selection) {
       cache_class_specialization_selection(decl, key, selection);
     }
     return selection;
@@ -679,7 +687,7 @@ ClassSpecializationSelection select_class_specialization(
           << " pattern=" << join_partial_arg_texts(chosen_partial->arg_texts);
     parser_trace::note("template.resolve", std::string(), trace.str());
   }
-  if(use_selection_cache) {
+  if(use_selection_cache && !saw_reentrant_primary_selection) {
     cache_class_specialization_selection(decl, key, selection);
   }
   return selection;

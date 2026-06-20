@@ -5882,6 +5882,56 @@ enum FastResolveTemplateArgumentsStatus
   FRTA_FAILURE
 };
 
+bool lookup_bound_pack_size_in_scope(Scope & scope,
+                                     const std::string & name,
+                                     std::size_t & out)
+{
+  if(name.empty()) {
+    return false;
+  }
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    std::map<std::string, std::size_t>::const_iterator found =
+        current->named_pack_sizes.find(name);
+    if(found != current->named_pack_sizes.end()) {
+      out = found->second;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool prefix_arguments_cover_parameter(Scope & scope,
+                                      const std::vector<TemplateParameterInfo> & parameters,
+                                      const std::vector<TemplateArgument> & arguments,
+                                      std::size_t parameter_index)
+{
+  std::size_t argument_index = 0;
+  for(std::size_t i = 0; i < parameter_index; ++i) {
+    if(i >= parameters.size()) {
+      return false;
+    }
+    if(parameters[i].parameter_pack) {
+      std::size_t pack_count = 0;
+      if(!lookup_bound_pack_size_in_scope(scope, parameters[i].name, pack_count)) {
+        return false;
+      }
+      if(argument_index + pack_count > arguments.size()) {
+        return false;
+      }
+      argument_index += pack_count;
+      continue;
+    }
+    if(argument_index >= arguments.size()) {
+      return false;
+    }
+    ++argument_index;
+  }
+  return argument_index == arguments.size();
+}
+
 bool try_substitute_non_type_parameter_type_from_prefix_arguments(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -5891,21 +5941,31 @@ bool try_substitute_non_type_parameter_type_from_prefix_arguments(
     TypePtr & out)
 {
   out.reset();
+  if(!scope.valid()) {
+    return false;
+  }
+  Scope & raw_scope = scope.require();
   if(parameter_index >= parameters.size() ||
-     parameter_index > resolved_arguments.size() ||
      parameters[parameter_index].kind != TemplateParameterInfo::TP_NON_TYPE ||
      !parameters[parameter_index].value_type) {
     return false;
   }
+  if(parameter_index > resolved_arguments.size() &&
+     !prefix_arguments_cover_parameter(raw_scope,
+                                      parameters,
+                                      resolved_arguments,
+                                      parameter_index)) {
+    return false;
+  }
 
-  Scope & raw_scope = scope.require();
   const TemplateParameterInfo & parameter = parameters[parameter_index];
   if(parameter.non_type_decl_specifier_seq &&
      template_argument_semantics::type_depends_on_template_parameter(
          service_type_system(services),
          parameter.value_type)) {
     CppAstNode substituted_specifiers;
-    if(template_argument_semantics::substitute_expression_node_for_template_arguments(
+    if(template_argument_semantics::substitute_type_id_node_for_template_arguments(
+           services,
            raw_scope,
            *parameter.non_type_decl_specifier_seq,
            parameters,
@@ -5974,13 +6034,15 @@ bool try_substitute_non_type_parameter_type_from_prefix_arguments(
   }
 
   TypePtr substituted;
-  if(template_argument_semantics::substitute_type(
-         raw_scope,
-         parameters[parameter_index].value_type,
-         parameters,
-         resolved_arguments,
-         substituted) &&
-     substituted) {
+  const bool substituted_ok =
+      template_argument_semantics::substitute_type(
+          raw_scope,
+          parameters[parameter_index].value_type,
+          parameters,
+          resolved_arguments,
+          substituted) &&
+      substituted;
+  if(substituted_ok) {
     substituted =
         adjusted_non_type_template_parameter_type_for_resolution(substituted);
     template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
