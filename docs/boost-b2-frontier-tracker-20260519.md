@@ -155,6 +155,17 @@ rebased Boost frontier branch.
   `/tmp/cppgm-origin-main-3e469910-20260618-perf-baseline.json` passes after
   restoring the hot string helper fast paths: instructions `+0.98%`, RSS
   `+1.14%`, footprint `+0.15%`.
+- 2026-06-20 strict template placement cleanup: moved the remaining
+  current-before-owner strict-template rows to their owning surfaces:
+  PA22 cluster 300 now owns the three expression/default-argument SFINAE
+  reducers, and PA23 clusters 300 and 400 now own the SFINAE/partial-
+  specialization and constructor-deduction/member-template integration
+  reducers. Validation: full hard placement audit over PA14-PA37 reports
+  `2557` scanned tests, `0` placement findings; strict template placement
+  check has `0` current-before-owner rows; direct-LowIR report for
+  `pa18 pa19 pa21 pa22 pa23` passes `994/994`; PA22 strict direct-LowIR
+  passes; focused PA23 checks for the two moved tests pass. No perf gate was
+  run because this is tests/docs-only.
 
 ## Local Gate Repairs
 
