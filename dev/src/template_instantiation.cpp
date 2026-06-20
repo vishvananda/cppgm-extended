@@ -865,6 +865,73 @@ bool template_parameters_have_pack(
   return false;
 }
 
+bool ast_node_is_decltype_specifier(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::decltype_specifier) {
+    return true;
+  }
+  if(node.kind != CppAstKind::decl_specifier) {
+    return false;
+  }
+  return node.value.compare(0, 8, "decltype") == 0 ||
+         node.value.compare(0, 10, "__decltype") == 0;
+}
+
+bool type_id_has_top_level_decltype_specifier(const CppAstNode & node)
+{
+  if(ast_node_is_decltype_specifier(node)) {
+    return true;
+  }
+  if(node.kind != CppAstKind::type_id &&
+     node.kind != CppAstKind::decl_specifier_seq &&
+     node.kind != CppAstKind::type_specifier_seq) {
+    return false;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(ast_node_is_decltype_specifier(child)) {
+      return true;
+    }
+    if((child.kind == CppAstKind::decl_specifier_seq ||
+        child.kind == CppAstKind::type_specifier_seq) &&
+       type_id_has_top_level_decltype_specifier(child)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool template_id_is_enable_if_alias(const TemplateIdSyntax & syntax)
+{
+  return syntax.name.name == "enable_if" || syntax.name.name == "enable_if_t";
+}
+
+bool type_id_has_top_level_enable_if_template_id(const CppAstNode & node)
+{
+  if(node.template_id_syntax &&
+     template_id_is_enable_if_alias(*node.template_id_syntax)) {
+    return true;
+  }
+  if(node.kind != CppAstKind::type_id &&
+     node.kind != CppAstKind::decl_specifier_seq &&
+     node.kind != CppAstKind::type_specifier_seq) {
+    return false;
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(child.template_id_syntax &&
+       template_id_is_enable_if_alias(*child.template_id_syntax)) {
+      return true;
+    }
+    if((child.kind == CppAstKind::decl_specifier_seq ||
+        child.kind == CppAstKind::type_specifier_seq) &&
+       type_id_has_top_level_enable_if_template_id(child)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void clear_cached_semantic_types_impl(CppAstNode & node,
                                       bool clear_resolved_argument_types);
 
@@ -7870,12 +7937,21 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   const auto refresh_pack_dependent_result_type =
       [&](FunctionTemplateDecl & pattern_decl,
           Scope & result_scope,
-          FunctionBinding & binding) -> void
+          FunctionBinding & binding,
+          bool allow_non_pack_cache_refresh) -> void
   {
+    const bool pattern_has_pack =
+        template_parameters_have_pack(pattern_decl.parameters);
     if(pattern_decl.is_constructor ||
        pattern_decl.is_destructor ||
        pattern_decl.result_type_pattern.kind == CppAstKind::invalid ||
-       !template_parameters_have_pack(pattern_decl.parameters) ||
+       (!pattern_has_pack &&
+        (!allow_non_pack_cache_refresh ||
+         !effective_template_body(pattern_decl) ||
+         !type_id_has_top_level_enable_if_template_id(
+             pattern_decl.result_type_pattern) ||
+         type_id_has_top_level_decltype_specifier(
+             pattern_decl.result_type_pattern))) ||
        !ast_mentions_template_parameter_name(pattern_decl.result_type_pattern,
                                              pattern_decl.parameters) ||
        !binding.type) {
@@ -7918,6 +7994,13 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                      parsed_result;
             });
     if(!parsed_result_type || !parsed_result) {
+      if(!pattern_has_pack &&
+         !template_arguments_are_dependent_for_instantiation(ctx, arguments)) {
+        throw_substitution_failure(
+            "cached function template result type substitution failed",
+            std::string(),
+            "template-instantiation");
+      }
       return;
     }
 
@@ -8197,7 +8280,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     if(refreshed_instantiation_scope) {
       refresh_pack_dependent_result_type(*cache_source_decl,
                                          *refreshed_instantiation_scope,
-                                         *found->second);
+                                         *found->second,
+                                         !include_body);
     }
     if(!include_body && !explicit_specialization) {
       reject_cached_retained_dependent_function_type(*cache_source_decl,
@@ -9124,7 +9208,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     ctx.upgrade_function_symbol_linkage(binding, binding->symbol.linkage);
   }
   binding->declaration_scope = &inst_scope;
-  refresh_pack_dependent_result_type(*source_decl, inst_scope, *binding);
+  refresh_pack_dependent_result_type(*source_decl, inst_scope, *binding, false);
   binding->is_explicit_specialization =
       binding->is_explicit_specialization || explicit_specialization;
   if(explicit_specialization) {

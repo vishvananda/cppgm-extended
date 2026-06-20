@@ -9187,7 +9187,10 @@ bool lookup_leaf_expression_type_category(template_api::TemplateServices & servi
         (qualified &&
          lookup_leaf_qualified_function_bindings(
              services, scope, *qualified, &expr, functions))) &&
-       functions.size() == 1 && functions[0] && functions[0]->type) {
+       functions.size() == 1 &&
+       functions[0] &&
+       !functions[0]->is_deleted &&
+       functions[0]->type) {
       out = functions[0]->type;
       category = semantic_conversion::VC_LVALUE;
       return true;
@@ -11626,13 +11629,15 @@ void collect_type_pack_replacements_for_substitution(
       continue;
     }
     vector<TypePtr> pack;
+    bool pack_from_scope = false;
     if(scope) {
       if(const vector<TypePtr> * bound_pack =
              lookup_type_pack(*scope, parameters[i].name)) {
         pack = *bound_pack;
+        pack_from_scope = true;
       }
     }
-    if(pack.empty()) {
+    if(pack.empty() && !pack_from_scope) {
       size_t pack_count = 0;
       if(!template_parameter_argument_count(parameters,
                                             arguments,
@@ -11658,7 +11663,7 @@ void collect_type_pack_replacements_for_substitution(
         pack.push_back(element_arguments[i].type);
       }
     }
-    if(!pack.empty()) {
+    if(pack_from_scope || !pack.empty()) {
       out[parameters[i].name] = pack;
     }
   }
@@ -11674,8 +11679,7 @@ void collect_type_pack_replacements_for_substitution(
         found != current->named_type_packs.end();
         ++found) {
       if(!found->first.empty() &&
-         out.count(found->first) == 0 &&
-         !found->second.empty()) {
+         out.count(found->first) == 0) {
         out[found->first] = found->second;
       }
     }
@@ -28682,7 +28686,12 @@ bool try_resolve_concrete_enable_if_alias_template_id(
           qualified_name_text_for_structured_lookup(template_id));
   if(!alias_decl ||
      alias_decl->name != template_id.name ||
-     !scope_is_std_namespace_or_inline_child(alias_decl->declaring_scope)) {
+     alias_decl->parameters.empty() ||
+     alias_decl->parameters[0].kind != TemplateParameterInfo::TP_NON_TYPE ||
+     !is_bool_type(alias_decl->parameters[0].value_type) ||
+     (arg_texts.size() > 1 &&
+      (alias_decl->parameters.size() < 2 ||
+       alias_decl->parameters[1].kind != TemplateParameterInfo::TP_TYPE))) {
     return false;
   }
 
@@ -34393,6 +34402,7 @@ bool evaluate_declval_expression_type_category_text(
     if(lookup_leaf_function_bindings(scope, trimmed, functions) &&
        functions.size() == 1 &&
        functions[0] &&
+       !functions[0]->is_deleted &&
        functions[0]->type) {
       out = functions[0]->type;
       category = semantic_conversion::VC_LVALUE;
