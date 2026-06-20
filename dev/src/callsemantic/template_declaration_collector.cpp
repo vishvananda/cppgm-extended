@@ -1724,8 +1724,7 @@ public:
               if(initializer && initializer->children.size() == 1) {
                 static_binding->constant_initializer = initializer;
                 static_binding->constant_initializer_scope = owner->member_scope.get();
-                static_binding->has_constexpr_value = false;
-                static_binding->constexpr_value = constant_eval::ConstexprValue();
+                clear_value_binding_constexpr_value(*static_binding);
                 static_binding->has_constant_value = false;
                 static_binding->constant_value = 0;
                 constant_eval::ConstexprValue value;
@@ -1733,8 +1732,7 @@ public:
                                                        *initializer,
                                                        static_binding->type,
                                                        value)) {
-                  static_binding->has_constexpr_value = true;
-                  static_binding->constexpr_value = value;
+                  set_value_binding_constexpr_value(*static_binding, value);
                   long long integral = 0;
                   if(constant_eval::constexpr_value_to_integral(value, integral)) {
                     static_binding->has_constant_value = true;
@@ -3005,8 +3003,9 @@ public:
                                                          *initializer,
                                                          out_of_class_static_member->type,
                                                          value)) {
-                    out_of_class_static_member->has_constexpr_value = true;
-                    out_of_class_static_member->constexpr_value = value;
+                    set_value_binding_constexpr_value(
+                        *out_of_class_static_member,
+                        value);
                     long long integral = 0;
                     if(constant_eval::constexpr_value_to_integral(value, integral)) {
                       out_of_class_static_member->has_constant_value = true;

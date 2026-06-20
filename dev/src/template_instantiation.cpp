@@ -237,6 +237,65 @@ bool substitute_owner_value_template_argument(
   return false;
 }
 
+bool value_source_text_mentions_template_parameter_name(
+    const std::string & text,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  if(text.empty()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(!parameters[i].name.empty() &&
+       callsemantic_internal::contains_identifier_token(text, parameters[i].name)) {
+      return true;
+    }
+    if(!parameters[i].placeholder_key.empty() &&
+       callsemantic_internal::contains_identifier_token(
+           text,
+           parameters[i].placeholder_key)) {
+      return true;
+    }
+    for(std::size_t j = 0; j < parameters[i].alternate_names.size(); ++j) {
+      if(!parameters[i].alternate_names[j].empty() &&
+         callsemantic_internal::contains_identifier_token(
+             text,
+             parameters[i].alternate_names[j])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+std::string concrete_substituted_value_source_text(
+    const TemplateArgument & argument,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  if(argument.kind != TemplateArgument::TA_VALUE || argument.dependent) {
+    return std::string();
+  }
+  std::vector<std::string> candidates;
+  if(argument.source_syntax) {
+    if(argument.source_syntax->expression) {
+      candidates.push_back(semantic_utils::trim_space(
+          callsemantic_internal::describe_expression_for_diagnostic(
+              *argument.source_syntax->expression)));
+    }
+    candidates.push_back(semantic_utils::trim_space(
+        argument.source_syntax->source_text));
+    candidates.push_back(semantic_utils::trim_space(argument.source_syntax->text));
+  }
+  candidates.push_back(semantic_utils::trim_space(argument.text));
+  for(std::size_t i = 0; i < candidates.size(); ++i) {
+    if(!candidates[i].empty() &&
+       !value_source_text_mentions_template_parameter_name(candidates[i],
+                                                           parameters)) {
+      return candidates[i];
+    }
+  }
+  return std::string();
+}
+
 bool substitute_owner_arguments_in_class_template_argument(
     SemanticContext & ctx,
     template_api::TemplateServices & services,
@@ -308,12 +367,18 @@ bool substitute_owner_arguments_in_class_type(
                                                       arguments,
                                                       source_arg,
                                                       value_arg)) {
-            text = template_model::template_argument_text(
-                value_arg,
-                [&ctx](const TypePtr & current_type)
-                {
-                  return instantiation_argument_type_text(ctx, current_type);
-                });
+            const std::string source_text =
+                concrete_substituted_value_source_text(value_arg, parameters);
+            text = !source_text.empty() ?
+                       source_text :
+                       template_model::template_argument_text(
+                           value_arg,
+                           [&ctx](const TypePtr & current_type)
+                           {
+                             return instantiation_argument_type_text(
+                                 ctx,
+                                 current_type);
+                           });
             syntax.text = text;
             changed = true;
           }
@@ -2928,6 +2993,64 @@ bool parameter_declaration_has_pack(const CppAstNode & parameter)
   return declarator && find_child(*declarator, CppAstKind::parameter_pack);
 }
 
+bool ast_node_mentions_identifier_token(const CppAstNode & node,
+                                        const std::string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  if(node.kind == CppAstKind::identifier && node.value == name) {
+    return true;
+  }
+  if(!node.value.empty() &&
+     callsemantic_internal::contains_identifier_token(node.value, name)) {
+    return true;
+  }
+  if(node.template_id_syntax) {
+    const TemplateIdSyntax & syntax = *node.template_id_syntax;
+    if(syntax.name.name == name) {
+      return true;
+    }
+    for(std::size_t i = 0; i < syntax.name.qualifiers.size(); ++i) {
+      if(syntax.name.qualifiers[i] == name) {
+        return true;
+      }
+    }
+    for(std::size_t i = 0; i < syntax.arguments.size(); ++i) {
+      if(callsemantic_internal::contains_identifier_token(syntax.arguments[i], name)) {
+        return true;
+      }
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    const TemplateIdSyntax & syntax = node.qualifier_template_id_syntaxes[i];
+    if(syntax.name.name == name) {
+      return true;
+    }
+    for(std::size_t j = 0; j < syntax.name.qualifiers.size(); ++j) {
+      if(syntax.name.qualifiers[j] == name) {
+        return true;
+      }
+    }
+    for(std::size_t j = 0; j < syntax.arguments.size(); ++j) {
+      if(callsemantic_internal::contains_identifier_token(syntax.arguments[j], name)) {
+        return true;
+      }
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(ast_node_mentions_identifier_token(node.qualifier_type_syntaxes[i], name)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_node_mentions_identifier_token(node.children[i], name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const CppAstNode * function_template_parameter_clause(const FunctionTemplateDecl & decl)
 {
   return decl.declarator ? find_child_kind(*decl.declarator, CppAstKind::parameter_clause) :
@@ -5157,8 +5280,7 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
 
     member->constant_initializer = it->second.initializer;
     member->constant_initializer_scope = nullptr;
-    member->has_constexpr_value = false;
-    member->constexpr_value = constant_eval::ConstexprValue();
+    clear_value_binding_constexpr_value(*member);
     member->has_constant_value = false;
     member->constant_value = 0;
     member->dependent_template_value = false;
@@ -6258,8 +6380,7 @@ bool apply_out_of_class_static_member_definitions_to_reference(
 
     member->constant_initializer = it->second.initializer;
     member->constant_initializer_scope = nullptr;
-    member->has_constexpr_value = false;
-    member->constexpr_value = constant_eval::ConstexprValue();
+    clear_value_binding_constexpr_value(*member);
     member->has_constant_value = false;
     member->constant_value = 0;
     member->dependent_template_value = false;
@@ -8334,6 +8455,34 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
             source_owner->source_template == instantiation_owner->source_template ||
             source_owner->class_node == instantiation_owner->source_template->class_node);
   };
+  std::vector<bool> early_parameter_value_bindings(params.size(), false);
+  std::vector<const CppAstNode *> parameter_declarations =
+      source_decl->parameter_declarations_pattern;
+  if(parameter_declarations.empty()) {
+    if(const CppAstNode * parameter_clause =
+           function_template_parameter_clause(*source_decl)) {
+      for(std::size_t i = 0; i < parameter_clause->children.size(); ++i) {
+        if(parameter_clause->children[i].kind == CppAstKind::parameter_declaration) {
+          parameter_declarations.push_back(&parameter_clause->children[i]);
+        }
+      }
+    }
+  }
+  if(parameter_declarations.size() == params.size()) {
+    for(std::size_t i = 0; i < params.size(); ++i) {
+      if(params[i].first.empty()) {
+        continue;
+      }
+      for(std::size_t j = i + 1; j < parameter_declarations.size(); ++j) {
+        if(parameter_declarations[j] &&
+           ast_node_mentions_identifier_token(*parameter_declarations[j],
+                                              params[i].first)) {
+          early_parameter_value_bindings[i] = true;
+          break;
+        }
+      }
+    }
+  }
   auto resolve_instantiated_params = [&]()
   {
     template_api::with_template_services(
@@ -8405,10 +8554,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                    services, inst_env, params[i].second, resolved)) {
               params[i].second = resolved;
             }
+            const bool dependent_after =
+                template_argument_semantics::type_depends_on_template_parameter(
+                    ctx, params[i].second);
             if(parser_trace::enabled("template.resolve")) {
-              const bool dependent_after =
-                  template_argument_semantics::type_depends_on_template_parameter(
-                      ctx, params[i].second);
               std::ostringstream trace;
               trace << "function-instantiation-param-after name=" << source_decl->name
                     << " index=" << i
@@ -8417,6 +8566,13 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                     << " dependent=" << (dependent_after ? "yes" : "no")
                     << " scope=" << scope_name_for_diagnostic(inst_scope);
               parser_trace::note("template.resolve", std::string(), trace.str());
+            }
+            if(!dependent_after &&
+               i < early_parameter_value_bindings.size() &&
+               early_parameter_value_bindings[i]) {
+              template_scope::bind_parameter_value(inst_scope,
+                                                   params[i].first,
+                                                   params[i].second);
             }
           }
         }

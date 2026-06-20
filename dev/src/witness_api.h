@@ -2,7 +2,6 @@
 
 #include <set>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "template_witness.h"
@@ -425,9 +424,27 @@ void set_selected_decl_anchor(
     TemplateWitnessSourceAnchor & selected_decl_anchor,
     const semantic_model::SourceDeclAnchorCache & decl_anchor);
 
+struct SourceDropKey
+{
+  std::string candidate;
+  std::string location;
+  std::string reason;
+};
+
+inline bool operator<(const SourceDropKey & lhs, const SourceDropKey & rhs)
+{
+  if(lhs.candidate != rhs.candidate) {
+    return lhs.candidate < rhs.candidate;
+  }
+  if(lhs.location != rhs.location) {
+    return lhs.location < rhs.location;
+  }
+  return lhs.reason < rhs.reason;
+}
+
 struct SourceDropSet
 {
-  std::set<std::tuple<std::string, std::string, std::string> > seen;
+  std::set<SourceDropKey> seen;
 };
 
 void note_class_use_source_decision(const ClassUseSourceDecision & decision);

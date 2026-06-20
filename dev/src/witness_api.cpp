@@ -2,7 +2,6 @@
 
 #include <cctype>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "semantic_model.h"
@@ -905,10 +904,10 @@ bool append_unique_source_drop(SourceDropSet & drop_set,
      reason.empty()) {
     return false;
   }
-  const std::tuple<std::string, std::string, std::string> key(
-      candidate,
-      location,
-      reason);
+  SourceDropKey key;
+  key.candidate = candidate;
+  key.location = location;
+  key.reason = reason;
   if(!drop_set.seen.insert(key).second) {
     return false;
   }

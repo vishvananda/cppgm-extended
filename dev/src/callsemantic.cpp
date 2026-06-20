@@ -4848,8 +4848,10 @@ private:
         out = binding.constant_value;
         return true;
       }
-      if(binding.has_constexpr_value &&
-         constant_eval::constexpr_value_to_integral(binding.constexpr_value, out)) {
+      if(value_binding_has_constexpr_value(binding) &&
+         constant_eval::constexpr_value_to_integral(
+             value_binding_constexpr_value(binding),
+             out)) {
         return true;
       }
       return false;
@@ -9475,8 +9477,7 @@ private:
                                                  *initializer,
                                                  member_type,
                                                  value)) {
-            binding.has_constexpr_value = true;
-            binding.constexpr_value = value;
+            set_value_binding_constexpr_value(binding, value);
             long long integral = 0;
             if(constant_eval::constexpr_value_to_integral(value, integral)) {
               binding.has_constant_value = true;
@@ -16676,8 +16677,7 @@ private:
   void note_binding_constexpr_value(ValueBinding & binding,
                                     const constant_eval::ConstexprValue & value)
   {
-    binding.has_constexpr_value = true;
-    binding.constexpr_value = value;
+    set_value_binding_constexpr_value(binding, value);
     binding.has_constant_value = false;
     binding.constant_value = 0;
     long long integral = 0;

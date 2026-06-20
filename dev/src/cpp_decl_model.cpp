@@ -40,6 +40,57 @@ string strip_elaborated_type_prefix(const string & text)
   return text;
 }
 
+enum NamedTypeKeyPrefixKind
+{
+  NTKP_NONE,
+  NTKP_CLASSLIKE,
+  NTKP_UNION,
+  NTKP_ENUM
+};
+
+NamedTypeKeyPrefixKind named_type_key_prefix_kind(const string & text,
+                                                  string & stripped)
+{
+  struct Prefix
+  {
+    const char * text;
+    NamedTypeKeyPrefixKind kind;
+  };
+  static const Prefix prefixes[] = {
+      {"enum class ", NTKP_ENUM},
+      {"enum struct ", NTKP_ENUM},
+      {"class ", NTKP_CLASSLIKE},
+      {"struct ", NTKP_CLASSLIKE},
+      {"union ", NTKP_UNION},
+      {"enum ", NTKP_ENUM}};
+  for(size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
+    const string prefix = prefixes[i].text;
+    if(text.compare(0, prefix.size(), prefix) == 0) {
+      stripped = text.substr(prefix.size());
+      return prefixes[i].kind;
+    }
+  }
+  stripped = text;
+  return NTKP_NONE;
+}
+
+bool named_type_keys_match(const string & lhs, const string & rhs)
+{
+  if(lhs == rhs) {
+    return true;
+  }
+  string lhs_stripped;
+  string rhs_stripped;
+  const NamedTypeKeyPrefixKind lhs_prefix =
+      named_type_key_prefix_kind(lhs, lhs_stripped);
+  const NamedTypeKeyPrefixKind rhs_prefix =
+      named_type_key_prefix_kind(rhs, rhs_stripped);
+  return lhs_stripped == rhs_stripped &&
+         (lhs_prefix == rhs_prefix ||
+          lhs_prefix == NTKP_NONE ||
+          rhs_prefix == NTKP_NONE);
+}
+
 struct LeadingCvNormalization
 {
   string normalized_text;
@@ -883,8 +934,7 @@ bool type_equals(const TypePtr & lhs, const TypePtr & rhs)
     return lhs->fundamental == rhs->fundamental;
 
   case Type::TK_NAMED:
-    return lhs->named_key == rhs->named_key &&
-           lhs->named_complete == rhs->named_complete;
+    return named_type_keys_match(lhs->named_key, rhs->named_key);
 
   case Type::TK_CV:
     return lhs->cv_const == rhs->cv_const &&

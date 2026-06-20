@@ -69,11 +69,11 @@ public:
             << (binding.constant_initializer ? "yes" : "no");
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
-    if(binding.has_constexpr_value) {
+    if(value_binding_has_constexpr_value(binding)) {
       template_api::note_template_member_value_instantiation_if_needed(
           *this,
           binding);
-      value = binding.constexpr_value;
+      value = value_binding_constexpr_value(binding);
       return true;
     }
     if(binding.has_constant_value) {
@@ -133,8 +133,7 @@ public:
       return false;
     }
 
-    binding.has_constexpr_value = true;
-    binding.constexpr_value = value;
+    set_value_binding_constexpr_value(binding, value);
     long long integral = 0;
     if(constant_eval::constexpr_value_to_integral(value, integral)) {
       binding.has_constant_value = true;

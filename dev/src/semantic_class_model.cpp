@@ -8017,8 +8017,7 @@ void collect_class_simple_declaration(SemanticContext & ctx,
                                                      *initializer,
                                                      member_type,
                                                      value)) {
-            binding.has_constexpr_value = true;
-            binding.constexpr_value = value;
+            set_value_binding_constexpr_value(binding, value);
             long long integral = 0;
             if(constant_eval::constexpr_value_to_integral(value, integral)) {
               binding.has_constant_value = true;
@@ -8406,8 +8405,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
                                                      *initializer,
                                                      member_type,
                                                      value)) {
-            binding.has_constexpr_value = true;
-            binding.constexpr_value = value;
+            set_value_binding_constexpr_value(binding, value);
             long long integral = 0;
             if(constant_eval::constexpr_value_to_integral(value, integral)) {
               binding.has_constant_value = true;
@@ -9037,7 +9035,7 @@ void finalize_class_constant_members(SemanticContext & ctx,
     if(class_instantiation_is_dependent(ctx, info)) {
       binding.dependent_template_value = true;
       binding.has_constant_value = false;
-      binding.has_constexpr_value = false;
+      clear_value_binding_constexpr_value(binding);
       continue;
     }
     if(binding.has_constant_value || binding.has_constexpr_value) {
@@ -9089,8 +9087,7 @@ void finalize_class_constant_members(SemanticContext & ctx,
           binding,
           has_nested_member_type_dependency);
       binding.dependent_template_value = false;
-      binding.has_constexpr_value = true;
-      binding.constexpr_value = value;
+      set_value_binding_constexpr_value(binding, value);
       long long integral = 0;
       if(constant_eval::constexpr_value_to_integral(value, integral)) {
         binding.has_constant_value = true;

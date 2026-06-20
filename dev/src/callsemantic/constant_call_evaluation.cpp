@@ -114,8 +114,7 @@ bool bind_constexpr_function_parameter_value_packs(
 
     const std::string alias_name = template_scope::pack_value_alias_name(pack_name, i);
     ValueBinding value(ValueBinding::VK_PARAMETER, alias_name, value_type);
-    value.has_constexpr_value = true;
-    value.constexpr_value = explicit_args[arg_index];
+    set_value_binding_constexpr_value(value, explicit_args[arg_index]);
     long long integral_value = 0;
     if(constant_eval::constexpr_value_to_integral(explicit_args[arg_index],
                                                   integral_value)) {

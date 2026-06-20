@@ -43,13 +43,24 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 
 ## Generated Summary
 
-- tests scanned: 959
+- tests scanned: 994
 - feature table entries without detector rules: 0
-- basic-owner-candidate: 371
-- later-owner-or-split: 5
-- manual-review: 13
-- pa22-advanced-single-candidate: 51
-- pa23-integration-candidate: 519
+- basic-owner-candidate: 348
+- manual-review: 19
+- pa22-advanced-single-candidate: 54
+- pa23-integration-candidate: 573
+
+## 2026-06-19 Placement Refresh
+
+The template-placement classifier now only reports `later-owner-or-split` when
+the supporting feature is actually later than the current test PA/cluster. The
+pure standard `alignas` layout check moved to PA15 cluster 300 with runtime
+checks instead of PA19 `static_assert`. The template-dependent alignment rows
+remain in PA18/PA19 because the alignment expression is the observable surface
+for template instantiation, integral NTTP, dependent-name, or pack-expansion
+behavior. The stale pack-expansion path now points at its existing PA19
+location. A fresh strict-scope generation reports no `later-owner-or-split`
+bucket.
 
 ## Review Queue
 
@@ -426,15 +437,15 @@ Status legend: `[ ]` todo · `[~]` in progress · `[x]` placed · `[D]` dropped 
 | [ ] | `pa21/tests/spec/300-qualified-friend-function-template-member-access.t` | `pa21:300` | `basic-owner-candidate` | friend-template |  | `pa21:300` |  | Place in the owning basic template PA; keep if already there, otherwise move or renumber after review. |  |
 | [ ] | `pa21/tests/spec/300-qualified-member-template-hides-base-function.t` | `pa21:300` | `basic-owner-candidate` | member-template |  | `pa21:300` |  | Place in the owning basic template PA; keep if already there, otherwise move or renumber after review. |  |
 | [ ] | `pa21/tests/spec/300-template-friend-inside-class-template.t` | `pa21:300` | `basic-owner-candidate` | friend-template |  | `pa21:300` |  | Place in the owning basic template PA; keep if already there, otherwise move or renumber after review. |  |
-| [ ] | `pa18/tests/general/200-template-alignas-gnu-alignof-instantiation.t` | `pa18:200` | `later-owner-or-split` | basic-template | template.alignas_alignof | `pa18:100` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
-| [ ] | `pa19/tests/general/100-template-alignas-nontype-argument.t` | `pa19:100` | `later-owner-or-split` | integral-nttp | template.alignas_alignof | `pa19:100` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
-| [ ] | `pa19/tests/general/100-template-alignas-static-member-value.t` | `pa19:100` | `later-owner-or-split` | dependent-name | template.alignas_alignof | `pa18:300` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
-| [ ] | `pa22/tests/general/200-pack-expanded-base-instantiation.t` | `pa22:200` | `later-owner-or-split` | pack-expansion | template.alignas_alignof | `pa19:200` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
-| [ ] | `pa22/tests/general/500-dependent-template-id-no-eager-layout.t` | `pa22:500` | `later-owner-or-split` | alias-template, no-eager-instantiation | template.alignas_alignof | `pa22:300` |  | Move later-owned behavior, or split/reduce to keep only the PA22 template assertion. |  |
+| [x] | `pa18/tests/general/200-template-alignas-gnu-alignof-instantiation.t` | `pa18:200` | `basic-owner-candidate` | basic-template |  | `pa18:100` |  | Kept in PA18 after review. | `alignas(__alignof(T))` is the observable surface for dependent class-template instantiation. |
+| [x] | `pa19/tests/general/100-template-alignas-nontype-argument.t` | `pa19:100` | `basic-owner-candidate` | integral-nttp |  | `pa19:100` |  | Kept in PA19 after review. | The test needs the integral NTTP value as the alignment operand. |
+| [x] | `pa19/tests/general/100-template-alignas-static-member-value.t` | `pa19:100` | `basic-owner-candidate` | dependent-name |  | `pa18:300` |  | Kept in PA19 after review. | The dependent static integral value is evaluated through the alignment operand. |
+| [x] | `pa19/tests/general/200-pack-expanded-base-instantiation.t` | `pa19:200` | `basic-owner-candidate` | pack-expansion |  | `pa19:200` |  | Kept in PA19 after stale path cleanup. | Pack-expanded base instantiation is the primary assertion; `alignof` is only the checked expression. |
+| [x] | `pa22/tests/general/300-dependent-template-id-no-eager-layout.t` | `pa22:300` | `pa22-advanced-single-candidate` | no-eager-instantiation |  | `pa22:300` |  | Placed in PA22 cluster 300 after reducing later-owned layout syntax. | Moved from `500`; current strict and hard placement audits no longer report this as later-owned. |
 | [ ] | `pa18/tests/general/100-lazy-header-qualified-function-template-text-lookup.t` | `pa18:100` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
 | [ ] | `pa18/tests/general/100-lazy-header-qualified-template-id-shadowed-by-local.t` | `pa18:100` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
 | [ ] | `pa18/tests/general/200-hidden-friend-adl.t` | `pa18:200` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
-| [ ] | `pa19/tests/general/100-alignas-class-layout.t` | `pa19:100` | `manual-review` |  | template.alignas_alignof | `` |  | Classify by source/ref review; no template concept was detected. |  |
+| [x] | `pa15/tests/general/300-alignas-class-layout.t` | `pa15:300` | `manual-review` |  | template.alignas_alignof | `` |  | Moved to the standard alignas/alignof owner. | Rewritten from PA19 `static_assert` to PA15 runtime checks. |
 | [ ] | `pa19/tests/general/100-char32-constant-promotion-unsigned.t` | `pa19:100` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
 | [ ] | `pa19/tests/general/100-character-literal-constant-eval.t` | `pa19:100` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |
 | [ ] | `pa19/tests/general/100-class-member-object-sizeof.t` | `pa19:100` | `manual-review` |  |  | `` |  | Classify by source/ref review; no template concept was detected. |  |

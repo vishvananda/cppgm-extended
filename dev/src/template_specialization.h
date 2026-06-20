@@ -61,6 +61,7 @@ bool expand_alias_template_pattern_id(
     const std::vector<cpp_decl::TemplateArgumentSyntax> * arg_syntaxes = nullptr,
     template_api::TemplateEnvironmentHandle argument_scope =
         template_api::TemplateEnvironmentHandle(),
+    bool materialize_class_template_targets = false,
     AliasSubstitutionFailure * substitution_failure = nullptr);
 
 bool expand_alias_template_pattern_type(
@@ -73,6 +74,7 @@ bool expand_alias_template_pattern_type(
     template_api::TemplateEnvironmentHandle argument_scope =
         template_api::TemplateEnvironmentHandle(),
     bool allow_dependent_expansion = false,
+    bool materialize_class_template_targets = false,
     AliasSubstitutionFailure * substitution_failure = nullptr);
 
 bool match_partial_class_specialization(
