@@ -261,6 +261,7 @@ struct FunctionTemplateDeclarationPolicy
       bool is_const_method,
       bool is_volatile_method,
       semantic_model::RefQualifier ref_qualifier,
+      bool is_deleted,
       bool qualified_friend_name,
       const CppAstNode * specifiers,
       const CppAstNode * declarator,

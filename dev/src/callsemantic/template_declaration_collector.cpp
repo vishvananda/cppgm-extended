@@ -157,6 +157,41 @@ bool declarator_declares_function_entity(const CppAstNode & node)
   return false;
 }
 
+bool initializer_is_deleted_special_initializer(const CppAstNode * initializer)
+{
+  return initializer &&
+         initializer->kind == CppAstKind::initializer &&
+         initializer->children.size() == 1 &&
+         initializer->children[0].kind == CppAstKind::special_initializer &&
+         initializer->children[0].value == "delete";
+}
+
+bool declaration_has_deleted_definition(const CppAstNode & node)
+{
+  if(const CppAstNode * special_definition =
+         find_child_kind(node, CppAstKind::special_definition)) {
+    return special_definition->value == "delete";
+  }
+
+  if(const CppAstNode * declarators =
+         find_child_kind(node, CppAstKind::init_declarator_list)) {
+    for(std::size_t i = 0; i < declarators->children.size(); ++i) {
+      const CppAstNode & init_decl = declarators->children[i];
+      if(init_decl.kind == CppAstKind::init_declarator &&
+         init_decl.children.size() > 1 &&
+         initializer_is_deleted_special_initializer(&init_decl.children[1])) {
+        return true;
+      }
+    }
+  }
+
+  if(initializer_is_deleted_special_initializer(
+         find_child_kind(node, CppAstKind::initializer))) {
+    return true;
+  }
+  return false;
+}
+
 class TemplateDeclarationCollector
 {
 public:
@@ -2059,6 +2094,7 @@ public:
                                                     prepared_friend_method.syntax.is_const_method,
                                                     prepared_friend_method.syntax.is_volatile_method,
                                                     prepared_friend_method.syntax.ref_qualifier,
+                                                    declaration_has_deleted_definition(inner),
                                                     qualified_friend_name,
                                                     specifiers,
                                                     declarator,
@@ -3421,6 +3457,7 @@ public:
       bool is_const_method = false;
       bool is_volatile_method = false;
       RefQualifier ref_qualifier = RQ_NONE;
+      bool is_deleted = false;
       bool decl_virtual = false;
       bool is_override = false;
       bool is_final = false;
@@ -3444,6 +3481,7 @@ public:
           traits.is_conversion_operator = special_member_is_conversion;
           traits.is_static_member = candidate_is_static_member;
           traits.is_constexpr = specifiers && decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
+          traits.is_deleted = declaration_has_deleted_definition(inner);
           traits.exclude_from_explicit_instantiation =
               declaration_marks_exclude_from_explicit_instantiation(&inner);
           if(special_member_template) {
@@ -3539,6 +3577,7 @@ public:
       existing->ref_qualifier =
           existing->ref_qualifier != RQ_NONE ? existing->ref_qualifier :
                                                candidate_traits.ref_qualifier;
+      existing->is_deleted = existing->is_deleted || candidate_traits.is_deleted;
       existing->decl_virtual = existing->decl_virtual || candidate_traits.decl_virtual;
       existing->is_override = existing->is_override || candidate_traits.is_override;
       existing->is_final = existing->is_final || candidate_traits.is_final;
@@ -3605,6 +3644,7 @@ public:
     decl->is_const_method = candidate_traits.is_const_method;
     decl->is_volatile_method = candidate_traits.is_volatile_method;
     decl->ref_qualifier = candidate_traits.ref_qualifier;
+    decl->is_deleted = candidate_traits.is_deleted;
     decl->decl_virtual = candidate_traits.decl_virtual;
     decl->is_override = candidate_traits.is_override;
     decl->is_final = candidate_traits.is_final;
@@ -4707,6 +4747,7 @@ private:
       bool is_const_method,
       bool is_volatile_method,
       RefQualifier ref_qualifier,
+      bool is_deleted,
       bool qualified_friend_name,
       const CppAstNode * specifiers,
       const CppAstNode * declarator,
@@ -4728,6 +4769,7 @@ private:
         is_const_method,
         is_volatile_method,
         ref_qualifier,
+        is_deleted,
         qualified_friend_name,
         specifiers,
         declarator,

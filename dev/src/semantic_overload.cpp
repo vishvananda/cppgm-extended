@@ -11278,6 +11278,11 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           throw logic_error("invalid function result");
         }
         if(direct_function_binding) {
+          if(direct_function_binding->is_deleted) {
+            ostringstream out;
+            out << "use of deleted " << direct_function_binding->name;
+            throw logic_error(out.str());
+          }
           direct_result = require_and_make_resolved_call_result(ctx,
                                                                 function_type->inner,
                                                                 result_category,
@@ -12531,6 +12536,17 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     }
 
     FunctionBinding * chosen = selected_match.function;
+    if(chosen->is_deleted) {
+      ostringstream outmsg;
+      outmsg << "use of deleted " << chosen->name;
+      if(lookup_callee_node.kind == CppAstKind::id_expression) {
+        outmsg << " for call " << lookup_callee_node.value;
+      }
+      outmsg << " [selected ";
+      append_function_candidate(outmsg, ctx, chosen, &selected_match.ranks);
+      outmsg << "]";
+      throw logic_error(outmsg.str());
+    }
     if(instantiate_bodies &&
        !rematerialize_candidate_match_args(ctx,
                                            scope,
