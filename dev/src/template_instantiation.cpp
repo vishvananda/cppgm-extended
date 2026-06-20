@@ -1401,7 +1401,8 @@ FunctionBinding * instantiate_function_template(
     bool include_body = true,
     Scope * use_scope = nullptr,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr,
-    bool prefer_overload_suffix = false);
+    bool prefer_overload_suffix = false,
+    const std::string & instantiation_use_location_override = std::string());
 
 const ValueBinding * instantiate_variable_template(
     SemanticContext & ctx,
@@ -7769,7 +7770,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                 bool include_body,
                                                 Scope * use_scope,
                                                 const std::map<std::string, std::size_t> * pack_sizes,
-                                                bool prefer_overload_suffix)
+                                                bool prefer_overload_suffix,
+                                                const std::string & instantiation_use_location_override)
 {
   const std::string diagnostic_context =
       "instantiate_function_template [" + decl.name +
@@ -7779,7 +7781,11 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                     : std::string()));
   DiagnosticContext::Guard diagnostic_guard(diagnostic_context);
   const std::string instantiation_use_location =
-      parser_trace::current_order_use_location();
+      !instantiation_use_location_override.empty() ?
+          instantiation_use_location_override :
+          parser_trace::current_order_use_location();
+  const parser_trace::ScopedOrderUseLocation instantiation_use_location_guard(
+      instantiation_use_location);
   ensure_template_arguments_fully_bind_parameters(
       ctx,
       "instantiate_function_template",

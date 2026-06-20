@@ -8827,13 +8827,17 @@ void append_constructor_template_candidates(
     {
       const template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause
           class_source_capture_pause;
+      const std::string instantiation_use_location =
+          constructor_witness_source_location(options, std::string(), source_args);
       binding = semantic_template_function::acquire_function_template_binding(
           ctx,
           *constructor_templates[i],
           deduced,
           &constructor_use_scope,
           &pack_sizes,
-          false);
+          false,
+          nullptr,
+          instantiation_use_location);
     }
     catch(const TemplateSubstitutionFailure &)
     {
@@ -9424,19 +9428,16 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
   }
   const vector<const CppAstNode *> & effective_arg_nodes =
       expanded_any_arg_nodes ? expanded_arg_nodes : arg_nodes;
-  std::string constructor_use_location;
-  if(template_witness_source_capture_enabled_for_calls(ctx)) {
-    const std::string first_arg_location =
-        !effective_arg_nodes.empty() ?
-            ctx.source_location_for_node(*effective_arg_nodes.front()) :
-            std::string();
-    const std::string configured_constructor_use_location =
-        constructor_selection_use_location(options);
-    constructor_use_location =
-        !configured_constructor_use_location.empty() ?
-            configured_constructor_use_location :
-            first_arg_location;
-  }
+  const std::string first_arg_location =
+      !effective_arg_nodes.empty() ?
+          ctx.source_location_for_node(*effective_arg_nodes.front()) :
+          std::string();
+  const std::string configured_constructor_use_location =
+      constructor_selection_use_location(options);
+  const std::string constructor_use_location =
+      !configured_constructor_use_location.empty() ?
+          configured_constructor_use_location :
+          first_arg_location;
   ScopedTemplateUseLocation use_location_guard(constructor_use_location);
 
   if(effective_arg_nodes.size() == 1 &&
