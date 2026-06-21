@@ -131,7 +131,8 @@ public:
   virtual void emit_nested_class_use_source_events_from_ast_node(
       semantic_model::Scope & scope,
       const CppAstNode & node,
-      semantic_source_use::SourceUseOwnership ownership) = 0;
+      semantic_source_use::SourceUseOwnership ownership,
+      bool allow_source_template_header_replay = false) = 0;
   virtual void emit_nested_class_use_source_events_from_template_arguments(
       semantic_model::Scope & scope,
       const std::vector<cpp_decl::TemplateArgumentSyntax> & syntaxes,

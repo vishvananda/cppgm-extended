@@ -131,6 +131,14 @@ size_t type_storage_slots(const LowType & type)
   return bytes == 0 ? 0 : (bytes + 7) / 8;
 }
 
+LowType instruction_storage_type(const Instruction & inst)
+{
+  if(inst.kind == Instruction::IK_CMP) {
+    return LowType{"i64"};
+  }
+  return inst.type;
+}
+
 size_t type_exec_width_bytes(const LowType & type)
 {
   return is_f80_type(type) ? 10 : type_size(type);
@@ -643,9 +651,10 @@ struct CY86Translator
           continue;
         }
         if(layout.storage_offset.count(inst.dest) == 0) {
-          layout.frame_slots += type_storage_slots(inst.type);
+          const LowType storage_type = instruction_storage_type(inst);
+          layout.frame_slots += type_storage_slots(storage_type);
           layout.storage_offset[inst.dest] = -static_cast<long long>(layout.frame_slots * 8);
-          layout.storage_type[inst.dest] = inst.type;
+          layout.storage_type[inst.dest] = storage_type;
           layout.temps.push_back(inst.dest);
         }
       }

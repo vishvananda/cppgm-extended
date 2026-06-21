@@ -470,6 +470,14 @@ void replay_selected_partial_class_value_dependencies(
 
   try {
     const template_api::ScopedTemplateWitnessSourceCapturePause source_capture_pause;
+    bool has_source_defaulted_value_argument = false;
+    for(std::size_t i = 0; i < arguments.size(); ++i) {
+      if(arguments[i].kind == TemplateArgument::TA_VALUE &&
+         arguments[i].source_defaulted) {
+        has_source_defaulted_value_argument = true;
+        break;
+      }
+    }
     Scope & partial_scope =
         partial.pattern_scope ? *partial.pattern_scope : *partial.declaring_scope;
     Scope & replay_scope =
@@ -485,12 +493,15 @@ void replay_selected_partial_class_value_dependencies(
           template_api::make_template_environment(replay_scope),
           partial.arg_syntaxes[i]);
     }
+    if(has_source_defaulted_value_argument) {
+      return;
+    }
     std::vector<TemplateArgument> replay_arguments;
     std::map<std::string, std::size_t> replay_pack_sizes;
     std::size_t replay_score = 0;
     (void)template_specialization::match_partial_class_specialization(
         services,
-        template_api::make_template_environment(replay_scope),
+        use_scope,
         partial,
         arguments,
         replay_arguments,

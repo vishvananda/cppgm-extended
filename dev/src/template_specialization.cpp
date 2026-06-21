@@ -4037,6 +4037,59 @@ bool try_expand_alias_template_pattern_structurally(
       {
         return specialization_argument_type_text(type_system, type);
       };
+  const auto bind_template_argument_prefix =
+      [](Scope & scope,
+         const std::vector<TemplateParameterInfo> & parameters,
+         const std::vector<TemplateArgument> & arguments) -> void
+  {
+    for(std::size_t argument_index = 0;
+        argument_index < arguments.size();
+        ++argument_index) {
+      const std::size_t parameter_index =
+          template_parameter_index_for_argument(parameters, argument_index);
+      if(parameter_index >= parameters.size()) {
+        break;
+      }
+      const TemplateParameterInfo & parameter = parameters[parameter_index];
+      const TemplateArgument & argument = arguments[argument_index];
+      std::vector<std::string> names;
+      if(!parameter.name.empty()) {
+        names.push_back(parameter.name);
+      }
+      names.insert(names.end(),
+                   parameter.alternate_names.begin(),
+                   parameter.alternate_names.end());
+      for(std::size_t name_index = 0; name_index < names.size(); ++name_index) {
+        const std::string & name = names[name_index];
+        if(name.empty()) {
+          continue;
+        }
+        if(parameter.kind == TemplateParameterInfo::TP_TYPE &&
+           argument.kind == TemplateArgument::TA_TYPE &&
+           argument.type) {
+          template_scope::bind_named_type(scope, name, argument.type);
+        } else if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE &&
+                  argument.kind == TemplateArgument::TA_VALUE) {
+          TypePtr value_type = argument.type ? argument.type : parameter.value_type;
+          template_scope::bind_non_type_value(
+              scope,
+              name,
+              value_type,
+              argument.value,
+              argument.dependent,
+              !argument.dependent ? argument.text : std::string(),
+              !argument.dependent ?
+                  const_cast<FunctionBinding *>(argument.function_value) :
+                  nullptr,
+              !argument.dependent ? argument.value_binding : nullptr);
+        } else if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+                  (argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+                   argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+          template_scope::bind_template_template_argument(scope, name, argument);
+        }
+      }
+    }
+  };
   std::vector<TemplateArgument> arguments;
   arguments.reserve(arg_texts.size());
   for(std::size_t i = 0; i < alias_template.parameters.size(); ++i) {
@@ -4872,10 +4925,54 @@ bool try_expand_alias_template_pattern_structurally(
         } else if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE) {
           argument.kind = TemplateArgument::TA_VALUE;
           argument.type = parameter.value_type;
+          std::unique_ptr<Scope> selected_default_scope_storage;
+          Scope * selected_default_scope = nullptr;
+          if(dependent_source_template) {
+            selected_default_scope_storage.reset(
+                new Scope(dependent_source_template->declaring_scope ?
+                              dependent_source_template->declaring_scope :
+                              &match_scope.require(),
+                          "",
+                          false));
+            if(effective_argument_scope.valid() &&
+               dependent_source_template->declaring_scope) {
+              std::set<std::string> excluded_names;
+              for(std::size_t parameter_index = 0;
+                  parameter_index < dependent_source_template->parameters.size();
+                  ++parameter_index) {
+                const TemplateParameterInfo & source_parameter =
+                    dependent_source_template->parameters[parameter_index];
+                if(!source_parameter.name.empty()) {
+                  excluded_names.insert(source_parameter.name);
+                }
+                for(std::size_t alternate_index = 0;
+                    alternate_index < source_parameter.alternate_names.size();
+                    ++alternate_index) {
+                  if(!source_parameter.alternate_names[alternate_index].empty()) {
+                    excluded_names.insert(
+                        source_parameter.alternate_names[alternate_index]);
+                  }
+                }
+              }
+              template_api::overlay_instantiation_use_scope_bindings(
+                  *selected_default_scope_storage,
+                  effective_argument_scope.require(),
+                  dependent_source_template->declaring_scope,
+                  excluded_names);
+            }
+            bind_template_argument_prefix(*selected_default_scope_storage,
+                                          dependent_source_template->parameters,
+                                          dependent_class_arguments);
+            selected_default_scope = selected_default_scope_storage.get();
+          }
+          template_api::TemplateEnvironmentHandle value_eval_scope =
+              selected_default_scope ?
+                  template_api::make_template_environment(*selected_default_scope) :
+                  match_scope;
           TypePtr substituted_value_type;
           if(argument.type &&
              template_argument_semantics::substitute_type(
-                 match_scope.require(),
+                 value_eval_scope.require(),
                  argument.type,
                  dependent_source_template->parameters,
                  dependent_class_arguments,
@@ -4885,7 +4982,7 @@ bool try_expand_alias_template_pattern_structurally(
           }
           template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
               services,
-              match_scope,
+              value_eval_scope,
               argument.type);
           long long value = 0;
           template_argument_semantics::NonTypeArgumentStatus status =
@@ -4896,13 +4993,34 @@ bool try_expand_alias_template_pattern_structurally(
             status =
                 template_argument_semantics::evaluate_non_type_argument_syntax(
                     services,
-                    match_scope,
+                    value_eval_scope,
                     source_arg.syntax,
                     value,
                     nullptr,
                     argument.type);
           } else {
             status =
+                template_argument_semantics::evaluate_non_type_argument_text(
+                    services,
+                    value_eval_scope,
+                    argument.text,
+                    value,
+                    nullptr,
+                    argument.type);
+          }
+          if(status != template_argument_semantics::NT_ARG_EVALUATED &&
+             selected_default_scope) {
+            status =
+                source_arg.syntax.expression ||
+                    source_arg.syntax.type_id ||
+                    source_arg.syntax.template_id ?
+                template_argument_semantics::evaluate_non_type_argument_syntax(
+                    services,
+                    match_scope,
+                    source_arg.syntax,
+                    value,
+                    nullptr,
+                    argument.type) :
                 template_argument_semantics::evaluate_non_type_argument_text(
                     services,
                     match_scope,
@@ -5578,6 +5696,52 @@ bool try_expand_alias_template_pattern_structurally(
       substituted_arguments.reserve(
           std::max(named_info.instantiation_arguments.size(), arguments.size()));
       bool selected_arguments_need_alias_target_scope = false;
+      const auto try_evaluate_selected_default_value_argument =
+          [&](const TemplateArgument & argument, TemplateArgument & out) -> bool
+      {
+        if(!value_argument_has_structured_source(argument) ||
+           !named_info.source_template) {
+          return false;
+        }
+
+        Scope selected_default_scope(
+            named_info.source_template->declaring_scope ?
+                named_info.source_template->declaring_scope :
+                &match_scope.require(),
+            "",
+            false);
+        if(effective_argument_scope.valid() &&
+           named_info.source_template->declaring_scope) {
+          std::set<std::string> excluded_names;
+          for(std::size_t parameter_index = 0;
+              parameter_index < named_info.source_template->parameters.size();
+              ++parameter_index) {
+            const TemplateParameterInfo & parameter =
+                named_info.source_template->parameters[parameter_index];
+            if(!parameter.name.empty()) {
+              excluded_names.insert(parameter.name);
+            }
+            for(std::size_t alternate_index = 0;
+                alternate_index < parameter.alternate_names.size();
+                ++alternate_index) {
+              if(!parameter.alternate_names[alternate_index].empty()) {
+                excluded_names.insert(parameter.alternate_names[alternate_index]);
+              }
+            }
+          }
+          template_api::overlay_instantiation_use_scope_bindings(
+              selected_default_scope,
+              effective_argument_scope.require(),
+              named_info.source_template->declaring_scope,
+              excluded_names);
+        }
+        bind_template_argument_prefix(selected_default_scope,
+                                      named_info.source_template->parameters,
+                                      substituted_arguments);
+        return try_evaluate_value_argument_in_scope(argument,
+                                                    selected_default_scope,
+                                                    out);
+      };
       for(std::size_t i = 0; i < named_info.instantiation_arguments.size(); ++i) {
         TemplateArgument argument = named_info.instantiation_arguments[i];
         if(source_argument_needs_alias_target_scope(argument)) {
@@ -5682,8 +5846,10 @@ bool try_expand_alias_template_pattern_structurally(
             continue;
           }
           TemplateArgument evaluated_argument;
-          if(try_evaluate_alias_target_value_argument(argument,
-                                                      evaluated_argument)) {
+          if(try_evaluate_selected_default_value_argument(argument,
+                                                         evaluated_argument) ||
+             try_evaluate_alias_target_value_argument(argument,
+                                                     evaluated_argument)) {
             substituted_arguments.push_back(evaluated_argument);
             continue;
           }

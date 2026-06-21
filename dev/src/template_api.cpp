@@ -3720,8 +3720,61 @@ bool source_type_lookup_is_collecting_owner_template_members(
   return !template_witness_detail::source_location_for_identifier_token_on_or_after(
               ctx.template_witness_context(),
               public_location,
-              owner_template_name,
-              true).empty();
+	              owner_template_name,
+	              true).empty();
+}
+
+bool default_argument_member_value_note_is_speculative(
+    SemanticContext & ctx,
+    const semantic_model::ValueBinding & binding,
+    const TemplateWitnessEntryContext & current_entry_context)
+{
+  if(!template_argument_semantics::default_template_argument_evaluation_active() ||
+     current_entry_context.origin == TemplateWitnessOrigin::Closure) {
+    return false;
+  }
+
+  const std::string public_location =
+      normalize_template_witness_source_location(
+          strip_at_prefix(ctx.template_witness_context().public_use_location));
+  const std::string parser_location =
+      normalize_template_witness_source_location(
+          strip_at_prefix(parser_trace::current_use_location()));
+  const std::string effective_location =
+      !public_location.empty() ? public_location : parser_location;
+  if(effective_location.empty()) {
+    return true;
+  }
+
+  if(template_witness_qualified_member_type_lookup_active()) {
+    return false;
+  }
+
+  const bool source_line_mentions_member =
+      template_witness_detail::source_location_line_mentions_qualified_member_token(
+          ctx.template_witness_context(),
+          effective_location,
+          binding.name);
+  if(template_witness_source_type_lookup_active() &&
+     !source_line_mentions_member) {
+    return false;
+  }
+
+  const std::string owner_template_name =
+      binding.owner_class && binding.owner_class->source_template ?
+          semantic_utils::unqualified_member_name(
+              binding.owner_class->source_template->name) :
+          std::string();
+  if(!owner_template_name.empty() &&
+     !template_witness_detail::source_location_for_identifier_token_on_or_after(
+           ctx.template_witness_context(),
+           effective_location,
+           owner_template_name,
+           true).empty()) {
+    return false;
+  }
+
+  return true;
 }
 
 void note_template_member_value_instantiation_if_needed(
@@ -3783,6 +3836,31 @@ void note_template_member_value_instantiation_if_needed(
     trace_skip("dependent-owner");
     return;
   }
+  const TemplateWitnessEntryContext current_entry_context =
+      current_template_witness_entry_context();
+  if(default_argument_member_value_note_is_speculative(ctx,
+                                                       binding,
+                                                       current_entry_context)) {
+    trace_skip("default-arg-speculative");
+    return;
+  }
+  const auto replay_static_member_definition_once =
+      [&]() -> void
+  {
+    if(binding.witness_static_member_definition_replayed) {
+      return;
+    }
+    if(template_instantiation::replay_witness_static_member_definition_if_needed(
+           ctx,
+           binding)) {
+      binding.witness_static_member_definition_replayed = true;
+    }
+  };
+  if(binding.witness_member_value_instantiation_noted) {
+    replay_static_member_definition_once();
+    trace_skip("already-noted");
+    return;
+  }
 
   const std::string entity = value_binding_member_instantiation_entity(ctx, binding);
   const std::string decl_location =
@@ -3791,23 +3869,13 @@ void note_template_member_value_instantiation_if_needed(
     trace_skip("empty-entity-or-decl");
     return;
   }
-  const TemplateWitnessEntryContext current_entry_context =
-      current_template_witness_entry_context();
-  if(template_argument_semantics::default_template_argument_evaluation_active() &&
-     current_entry_context.origin != TemplateWitnessOrigin::Closure &&
-     ctx.template_witness_context().public_use_location.empty() &&
-     parser_trace::current_use_location().empty()) {
-    trace_skip("default-arg-empty-location");
-    return;
-  }
   if(source_type_lookup_is_collecting_owner_template_members(ctx, binding)) {
     trace_skip("source-type-owner-collection");
     return;
   }
 
   binding.witness_member_value_instantiation_noted = true;
-  template_instantiation::replay_witness_static_member_definition_if_needed(ctx,
-                                                                            binding);
+  replay_static_member_definition_once();
   {
     const template_api::ScopedTemplateWitnessEntryContext entry_context =
         template_api::maybe_enter_value_binding_closure_context(
@@ -4853,6 +4921,23 @@ std::string template_witness_source_binding_arg_text(
   return template_witness_argument_text(ctx, arg);
 }
 
+std::string template_witness_defaulted_source_binding_arg_text(
+    SemanticContext & ctx,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    std::size_t parameter_index,
+    const template_model::TemplateArgument & arg)
+{
+  if(arg.kind == template_model::TemplateArgument::TA_VALUE && !arg.dependent) {
+    return template_witness_argument_text(ctx, arg);
+  }
+  return template_witness_source_binding_arg_text(ctx,
+                                                 parameters,
+                                                 parameter_index,
+                                                 arg,
+                                                 std::string(),
+                                                 false);
+}
+
 std::string template_witness_node_text(SemanticContext & ctx,
                                        const CppAstNode & node)
 {
@@ -5214,13 +5299,11 @@ void append_template_witness_source_bindings(
               explicit_argument_texts[explicit_index + j],
               true);
         } else {
-          element_text = template_witness_source_binding_arg_text(
+          element_text = template_witness_defaulted_source_binding_arg_text(
               ctx,
               parameters,
               i,
-              arguments[arg_index + j],
-              std::string(),
-              false);
+              arguments[arg_index + j]);
         }
         binding.pack_arguments.push_back(element_text);
         pack_text << element_text;
@@ -5263,12 +5346,10 @@ void append_template_witness_source_bindings(
       ++explicit_index;
     } else {
       binding.arg =
-          template_witness_source_binding_arg_text(ctx,
-                                                   parameters,
-                                                   i,
-                                                   arguments[arg_index],
-                                                   std::string(),
-                                                   false);
+          template_witness_defaulted_source_binding_arg_text(ctx,
+                                                             parameters,
+                                                             i,
+                                                             arguments[arg_index]);
       binding.source = defaulted_source;
     }
     out.push_back(binding);

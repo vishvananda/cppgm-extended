@@ -814,7 +814,9 @@ void record_variable_use_source_use(
 
 void emit_variable_use(const VariableUseEmitRequest & request)
 {
-  if(!source_capture_enabled() || request.use_location.empty()) {
+  const bool capture_enabled = source_capture_enabled();
+  if((!capture_enabled && !request.record_during_source_capture_pause) ||
+     request.use_location.empty()) {
     return;
   }
   if(!source_location_is_from_primary_file(

@@ -2116,19 +2116,35 @@ private:
     if(!integral_constant) {
       return;
     }
+    const bool one_value_parameter =
+        integral_constant->parameters.size() == 1 &&
+        integral_constant->parameters[0].kind ==
+            TemplateParameterInfo::TP_NON_TYPE;
+    const bool typed_value_parameters =
+        integral_constant->parameters.size() >= 2 &&
+        integral_constant->parameters[0].kind ==
+            TemplateParameterInfo::TP_TYPE &&
+        integral_constant->parameters[1].kind ==
+            TemplateParameterInfo::TP_NON_TYPE;
+    if(!one_value_parameter && !typed_value_parameters) {
+      return;
+    }
+    const std::string template_name =
+        integral_constant->declaring_scope &&
+        scope_is_std_namespace_or_inline_child(integral_constant->declaring_scope) ?
+            std::string("std::integral_constant") :
+            std::string("integral_constant");
+    const std::string value_text = value ? "true" : "false";
+    const std::string entity =
+        template_name +
+        (one_value_parameter ?
+             std::string("<") + value_text + ">" :
+             std::string("<bool, ") + value_text + ">") +
+        "::value";
     {
       const std::string decl_location =
           strip_at_prefix(semantic_model::source_decl_anchor_location(
               semantic_trace::class_template_decl_anchor(ctx, integral_constant)));
-      std::string entity;
-      if(integral_constant->declaring_scope &&
-         scope_is_std_namespace_or_inline_child(integral_constant->declaring_scope)) {
-        entity = std::string("std::integral_constant<bool, ") +
-            (value ? "true" : "false") + ">::value";
-      } else {
-        entity = std::string("integral_constant<bool, ") +
-            (value ? "true" : "false") + ">::value";
-      }
       if(!decl_location.empty()) {
         const witness::ScopedTemplateWitnessEntryContext entry_context(
             witness::make_template_closure_entry_context(
@@ -2147,16 +2163,18 @@ private:
       }
     }
     vector<TemplateArgument> arguments;
-    TemplateArgument type_arg;
-    type_arg.kind = TemplateArgument::TA_TYPE;
-    type_arg.type = make_fundamental(FT_BOOL);
-    type_arg.text = "bool";
-    arguments.push_back(type_arg);
+    if(typed_value_parameters) {
+      TemplateArgument type_arg;
+      type_arg.kind = TemplateArgument::TA_TYPE;
+      type_arg.type = make_fundamental(FT_BOOL);
+      type_arg.text = "bool";
+      arguments.push_back(type_arg);
+    }
     TemplateArgument value_arg;
     value_arg.kind = TemplateArgument::TA_VALUE;
     value_arg.type = make_fundamental(FT_BOOL);
     value_arg.value = value ? 1 : 0;
-    value_arg.text = value ? "true" : "false";
+    value_arg.text = value_text;
     arguments.push_back(value_arg);
     try {
       const template_api::ClassSpecializationSelection selection =
@@ -2183,15 +2201,6 @@ private:
         const std::string decl_location =
             strip_at_prefix(semantic_model::source_decl_anchor_location(
                 semantic_trace::value_decl_anchor(ctx, member.binding)));
-        std::string entity;
-        if(integral_constant->declaring_scope &&
-           scope_is_std_namespace_or_inline_child(integral_constant->declaring_scope)) {
-          entity = std::string("std::integral_constant<bool, ") +
-              (value ? "true" : "false") + ">::value";
-        } else {
-          entity = std::string("integral_constant<bool, ") +
-              (value ? "true" : "false") + ">::value";
-        }
         if(!decl_location.empty()) {
           const witness::ScopedTemplateWitnessEntryContext entry_context(
               witness::make_template_closure_entry_context(

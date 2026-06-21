@@ -5053,6 +5053,11 @@ void append_structured_bool_value_dependencies_for_class_info(
     const ClassInfo & info,
     vector<TemplateValueDependency> & out,
     set<const ClassInfo *> & visiting);
+void append_member_value_binding_dependency(
+    template_api::TemplateServices & services,
+    const ClassInfo & fallback_owner,
+    const ValueBinding & binding,
+    vector<TemplateValueDependency> & out);
 
 int & template_value_dependency_emission_pause_depth()
 {
@@ -5085,6 +5090,69 @@ public:
 
 private:
   bool active_;
+};
+
+std::set<std::string> & active_structured_bool_dependency_syntax_scans()
+{
+  static thread_local std::set<std::string> active;
+  return active;
+}
+
+std::string structured_bool_dependency_syntax_scan_key(
+    template_api::TemplateEnvironmentHandle scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  std::ostringstream key;
+  key << (scope.valid() ? static_cast<const void *>(&scope.require()) : nullptr)
+      << '|'
+      << syntax.source_location_id
+      << '|'
+      << trim_space(syntax.text)
+      << '|'
+      << trim_space(syntax.source_text);
+  if(syntax.template_id) {
+    key << "|template:"
+        << template_api::qualified_name_text(syntax.template_id->name);
+    for(size_t i = 0; i < syntax.template_id->arguments.size(); ++i) {
+      key << '<' << trim_space(syntax.template_id->arguments[i]) << '>';
+    }
+  }
+  if(syntax.type_id) {
+    key << "|type:" << node_text(*syntax.type_id);
+  }
+  if(syntax.expression) {
+    key << "|expr:" << node_text(*syntax.expression);
+  }
+  return key.str();
+}
+
+class ScopedStructuredBoolDependencySyntaxScan
+{
+public:
+  ScopedStructuredBoolDependencySyntaxScan(
+      template_api::TemplateEnvironmentHandle scope,
+      const TemplateArgumentSyntax & syntax)
+    : key_(structured_bool_dependency_syntax_scan_key(scope, syntax))
+  {
+    active_ =
+        active_structured_bool_dependency_syntax_scans().insert(key_).second;
+  }
+
+  ~ScopedStructuredBoolDependencySyntaxScan()
+  {
+    if(active_) {
+      active_structured_bool_dependency_syntax_scans().erase(key_);
+    }
+  }
+
+  bool active() const
+  {
+    return active_;
+  }
+
+private:
+  std::string key_;
+  bool active_ = false;
 };
 
 std::string strip_template_location_at_prefix(const std::string & location)
@@ -5186,6 +5254,16 @@ void note_structured_bool_integral_constant_value_for_witness(
         semantic_model::source_decl_anchor_location(
             semantic_trace::value_decl_anchor(*services.semantic_context,
                                               member.binding)));
+    vector<TemplateValueDependency> dependencies;
+    append_member_value_binding_dependency(services,
+                                           *integral_constant,
+                                           *member.binding,
+                                           dependencies);
+    if(!dependencies.empty()) {
+      note_template_value_dependencies_for_witness(*services.semantic_context,
+                                                   dependencies);
+      return;
+    }
   }
   if(decl_location.empty() && integral_constant->source_template) {
     decl_location = strip_template_location_at_prefix(
@@ -5835,6 +5913,20 @@ bool resolve_qualified_owner_prefix_type(
     size_t qualifier_index,
     TypePtr & out);
 
+bool ast_contains_qualified_member_syntax(const CppAstNode & node)
+{
+  const QualifiedName * qualified = cppast_qualified_name_syntax(node);
+  if(qualified && !qualified->qualifiers.empty() && !qualified->name.empty()) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_contains_qualified_member_syntax(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool template_argument_syntax_has_template_dependency(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -6172,7 +6264,7 @@ void append_structured_bool_value_dependencies_in_argument_syntax(
     append_structured_bool_value_dependencies_in_expression_ast(
         services, scope, *syntax.expression, out);
   }
-  if(syntax.type_id) {
+  if(syntax.type_id && ast_contains_qualified_member_syntax(*syntax.type_id)) {
     append_structured_bool_value_dependencies_in_expression_ast(
         services, scope, *syntax.type_id, out);
   }
@@ -7820,6 +7912,12 @@ void require_structured_bool_value_member_output_if_needed(
     ClassInfo & owner)
 {
   if(!services.semantic_context || !owner.member_scope) {
+    return;
+  }
+  const template_api::TemplateWitnessContext witness_context =
+      services.semantic_context->template_witness_context();
+  if(witness_context.session != nullptr &&
+     !witness::source_capture_enabled(witness_context)) {
     return;
   }
 
@@ -10547,6 +10645,10 @@ void append_structured_bool_value_dependencies_in_template_argument_syntax(
     const TemplateArgumentSyntax & syntax,
     vector<TemplateValueDependency> & out)
 {
+  const ScopedStructuredBoolDependencySyntaxScan active_scan(scope, syntax);
+  if(!active_scan.active()) {
+    return;
+  }
   TemplateArgumentSyntax expanded_syntax;
   const TemplateArgumentSyntax * effective_syntax = &syntax;
   if(syntax.text.find("...") != string::npos ||
@@ -24396,22 +24498,33 @@ bool resolve_carried_class_template_defaults_from_prefix(
   vector<TemplateArgumentSyntax> prefix_syntaxes;
   prefix_texts.reserve(prefix_arguments.size());
   prefix_syntaxes.reserve(prefix_arguments.size());
+  const auto prefix_argument_text =
+      [&services](const TemplateArgument & argument) -> string
+  {
+    return template_model::template_argument_text(
+        argument,
+        [&services](const TypePtr & type)
+        {
+          return service_lookup_text_for_type_argument(services, type);
+        });
+  };
   for(size_t i = 0; i < prefix_arguments.size(); ++i) {
-    string text = i < dependent_arguments.size() ?
+    const bool concrete_prefix = !prefix_arguments[i].dependent;
+    string text = !concrete_prefix && i < dependent_arguments.size() ?
         trim_space(dependent_arguments[i].text) :
-        string();
+        prefix_argument_text(prefix_arguments[i]);
     if(text.empty()) {
-      text = template_model::template_argument_text(
-          prefix_arguments[i],
-          [](const TypePtr & type)
-          {
-            return type ? describe_type(type) : string();
-          });
+      text = i < dependent_arguments.size() ?
+          trim_space(dependent_arguments[i].text) :
+          string();
     }
-    TemplateArgumentSyntax syntax =
-        i < dependent_arguments.size() ?
-            dependent_arguments[i].syntax :
-            TemplateArgumentSyntax();
+    if(text.empty()) {
+      text = prefix_argument_text(prefix_arguments[i]);
+    }
+    TemplateArgumentSyntax syntax;
+    if(!concrete_prefix && i < dependent_arguments.size()) {
+      syntax = dependent_arguments[i].syntax;
+    }
     if(syntax.text.empty()) {
       syntax.text = text;
     }
@@ -30942,47 +31055,54 @@ NonTypeArgumentStatus evaluate_libcpp_unordered_container_diagnose_sizeof(
   return NT_ARG_EVALUATED;
 }
 
-NonTypeArgumentStatus evaluate_standard_invocable_variable_template_value(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const TemplateIdSyntax & syntax,
-    bool & out)
+bool classify_standard_invocable_variable_template_name(
+    const string & raw_name,
+    bool & is_invocable,
+    bool & is_invocable_r,
+    bool & is_nothrow_invocable,
+    bool & is_nothrow_invocable_r)
 {
-  const string & name = syntax.name.name;
-  const bool is_invocable =
-      name == "__is_invocable_v" || name == "is_invocable_v";
-  const bool is_invocable_r =
-      name == "__is_invocable_r_v" || name == "is_invocable_r_v";
-  const bool is_nothrow_invocable =
-      name == "__is_nothrow_invocable_v" ||
-      name == "is_nothrow_invocable_v";
-  const bool is_nothrow_invocable_r =
+  const string name = semantic_utils::unqualified_member_name(raw_name);
+  is_invocable = name == "__is_invocable_v" || name == "is_invocable_v";
+  is_invocable_r = name == "__is_invocable_r_v" || name == "is_invocable_r_v";
+  is_nothrow_invocable =
+      name == "__is_nothrow_invocable_v" || name == "is_nothrow_invocable_v";
+  is_nothrow_invocable_r =
       name == "__is_nothrow_invocable_r_v" ||
       name == "is_nothrow_invocable_r_v";
-  if(!is_invocable &&
-     !is_invocable_r &&
-     !is_nothrow_invocable &&
-     !is_nothrow_invocable_r) {
-    return NT_ARG_PARSE_FAILED;
-  }
-  VariableTemplateDecl * variable_template =
-      lookup_standard_library_variable_template(services, scope.require(), syntax);
-  if(!variable_template) {
+  return is_invocable ||
+         is_invocable_r ||
+         is_nothrow_invocable ||
+         is_nothrow_invocable_r;
+}
+
+NonTypeArgumentStatus evaluate_standard_invocable_variable_template_arguments(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const string & name,
+    const vector<TemplateArgument> & actual_arguments,
+    bool & out)
+{
+  bool is_invocable = false;
+  bool is_invocable_r = false;
+  bool is_nothrow_invocable = false;
+  bool is_nothrow_invocable_r = false;
+  if(!classify_standard_invocable_variable_template_name(name,
+                                                        is_invocable,
+                                                        is_invocable_r,
+                                                        is_nothrow_invocable,
+                                                        is_nothrow_invocable_r)) {
     return NT_ARG_PARSE_FAILED;
   }
 
-  TemplateIdSyntax expanded = clone_template_id_for_template_substitution(syntax);
-  expand_bound_packs_in_template_id_syntax(services, scope.require(), expanded);
   const std::size_t required_fixed_args =
       (is_invocable_r || is_nothrow_invocable_r) ? 2 : 1;
-  if(expanded.arguments.size() < required_fixed_args) {
+  if(actual_arguments.size() < required_fixed_args) {
     return NT_ARG_EVAL_FAILED;
   }
 
-  vector<TemplateArgument> actual_arguments;
-  actual_arguments.reserve(expanded.arguments.size());
   vector<TemplateArgument> arguments;
-  arguments.reserve(expanded.arguments.size() +
+  arguments.reserve(actual_arguments.size() +
                     ((is_invocable || is_nothrow_invocable) ? 1 : 0));
   if(is_invocable || is_nothrow_invocable) {
     TemplateArgument void_argument;
@@ -30991,34 +31111,16 @@ NonTypeArgumentStatus evaluate_standard_invocable_variable_template_value(
     void_argument.text = "void";
     arguments.push_back(void_argument);
   }
-  for(std::size_t i = 0; i < expanded.arguments.size(); ++i) {
-    TypePtr type;
-    if(!resolve_structured_type_trait_argument(
-           services, scope, expanded, i, type)) {
-      return template_id_syntax_mentions_template_dependency(
-                 services, scope, expanded, false) ?
-          NT_ARG_DEPENDENT :
-          NT_ARG_EVAL_FAILED;
+  for(std::size_t i = 0; i < actual_arguments.size(); ++i) {
+    const TemplateArgument & argument = actual_arguments[i];
+    if(argument.kind != TemplateArgument::TA_TYPE || !argument.type) {
+      return argument.dependent ? NT_ARG_DEPENDENT : NT_ARG_EVAL_FAILED;
     }
-    TemplateArgument argument;
-    argument.kind = TemplateArgument::TA_TYPE;
-    argument.type = type;
-    argument.text = reparseable_type_argument_text(type);
-    actual_arguments.push_back(argument);
+    if(type_depends_on_template_parameter(service_type_system(services),
+                                          argument.type)) {
+      return NT_ARG_DEPENDENT;
+    }
     arguments.push_back(argument);
-  }
-
-  if(witness::source_capture_enabled(services.witness_context) &&
-     services.semantic_context) {
-    template_api::TemplateVariableInstantiationRequest request;
-    request.decl = variable_template;
-    request.arguments = actual_arguments;
-    request.source_use_scope = &scope.require();
-    request.intent = template_api::TemplateInstantiationIntent::TrackInstantiation;
-    const witness::ScopedTemplateWitnessSourceCapturePause pause;
-    (void)template_api::acquire_variable_instantiation(
-        *services.semantic_context,
-        request);
   }
 
   const bool require_nothrow =
@@ -31037,6 +31139,76 @@ NonTypeArgumentStatus evaluate_standard_invocable_variable_template_value(
   }
   out = value;
   return NT_ARG_EVALUATED;
+}
+
+NonTypeArgumentStatus evaluate_standard_invocable_variable_template_value(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TemplateIdSyntax & syntax,
+    bool & out)
+{
+  bool is_invocable = false;
+  bool is_invocable_r = false;
+  bool is_nothrow_invocable = false;
+  bool is_nothrow_invocable_r = false;
+  if(!classify_standard_invocable_variable_template_name(syntax.name.name,
+                                                        is_invocable,
+                                                        is_invocable_r,
+                                                        is_nothrow_invocable,
+                                                        is_nothrow_invocable_r)) {
+    return NT_ARG_PARSE_FAILED;
+  }
+  VariableTemplateDecl * variable_template =
+      lookup_standard_library_variable_template(services, scope.require(), syntax);
+  if(!variable_template) {
+    return NT_ARG_PARSE_FAILED;
+  }
+
+  TemplateIdSyntax expanded = clone_template_id_for_template_substitution(syntax);
+  expand_bound_packs_in_template_id_syntax(services, scope.require(), expanded);
+  const std::size_t required_fixed_args =
+      (is_invocable_r || is_nothrow_invocable_r) ? 2 : 1;
+  if(expanded.arguments.size() < required_fixed_args) {
+    return NT_ARG_EVAL_FAILED;
+  }
+
+  vector<TemplateArgument> actual_arguments;
+  actual_arguments.reserve(expanded.arguments.size());
+  for(std::size_t i = 0; i < expanded.arguments.size(); ++i) {
+    TypePtr type;
+    if(!resolve_structured_type_trait_argument(
+           services, scope, expanded, i, type)) {
+      return template_id_syntax_mentions_template_dependency(
+                 services, scope, expanded, false) ?
+          NT_ARG_DEPENDENT :
+          NT_ARG_EVAL_FAILED;
+    }
+    TemplateArgument argument;
+    argument.kind = TemplateArgument::TA_TYPE;
+    argument.type = type;
+    argument.text = reparseable_type_argument_text(type);
+    actual_arguments.push_back(argument);
+  }
+
+  if(witness::source_capture_enabled(services.witness_context) &&
+     services.semantic_context) {
+    template_api::TemplateVariableInstantiationRequest request;
+    request.decl = variable_template;
+    request.arguments = actual_arguments;
+    request.source_use_scope = &scope.require();
+    request.intent = template_api::TemplateInstantiationIntent::TrackInstantiation;
+    const witness::ScopedTemplateWitnessSourceCapturePause pause;
+    (void)template_api::acquire_variable_instantiation(
+        *services.semantic_context,
+        request);
+  }
+
+  return evaluate_standard_invocable_variable_template_arguments(
+      services,
+      scope,
+      syntax.name.name,
+      actual_arguments,
+      out);
 }
 
 bool concrete_type_is_std_class_template_instantiation(
@@ -33609,7 +33781,8 @@ void note_structured_bool_value_members_in_template_argument_syntax(
     note_structured_bool_value_members_in_expression_ast(
         services, scope, *effective_syntax->expression);
   }
-  if(effective_syntax->type_id) {
+  if(effective_syntax->type_id &&
+     ast_contains_qualified_member_syntax(*effective_syntax->type_id)) {
     note_structured_bool_value_members_in_expression_ast(
         services, scope, *effective_syntax->type_id);
   }
@@ -33643,6 +33816,9 @@ void note_structured_bool_value_members_in_template_arguments(
     }
     for(size_t j = 0; j < argument.value_dependencies.size(); ++j) {
       note_template_value_dependency_for_witness(argument.value_dependencies[j]);
+    }
+    if(argument.source_defaulted) {
+      continue;
     }
     if(argument.expression) {
       note_structured_bool_value_members_in_expression_ast(

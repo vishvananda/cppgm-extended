@@ -1298,6 +1298,50 @@ bool typed_class_occurrence_arguments_match_bindings_exactly(
   return true;
 }
 
+bool concrete_scalar_binding_arg(const string & arg)
+{
+  const string value = trim_space(arg);
+  if(value == "true" || value == "false") {
+    return true;
+  }
+  static const std::regex integer_regex("^[+-]?([0-9]+|0[xX][0-9A-Fa-f]+)$");
+  return std::regex_match(value, integer_regex);
+}
+
+bool class_use_has_concrete_scalar_binding_peer(
+    const WitnessEvent & candidate,
+    const WitnessEvent & peer)
+{
+  if(candidate.kind != WitnessEventKind::ClassUse ||
+     peer.kind != WitnessEventKind::ClassUse ||
+     candidate.bindings.size() != peer.bindings.size()) {
+    return false;
+  }
+  bool peer_is_more_concrete = false;
+  for(size_t i = 0; i < candidate.bindings.size(); ++i) {
+    if(candidate.bindings[i].source != peer.bindings[i].source ||
+       candidate.bindings[i].pack_binding ||
+       peer.bindings[i].pack_binding) {
+      return false;
+    }
+    const string candidate_arg =
+        canonical_template_text(
+            normalize_binding_arg_for_event(candidate.bindings[i].arg));
+    const string peer_arg =
+        canonical_template_text(
+            normalize_binding_arg_for_event(peer.bindings[i].arg));
+    if(candidate_arg == peer_arg) {
+      continue;
+    }
+    if(concrete_scalar_binding_arg(candidate.bindings[i].arg) ||
+       !concrete_scalar_binding_arg(peer.bindings[i].arg)) {
+      return false;
+    }
+    peer_is_more_concrete = true;
+  }
+  return peer_is_more_concrete;
+}
+
 string unqualified_template_name_text(const string & text)
 {
   const string stripped = strip_top_level_template_suffix(trim_space(text));
@@ -4121,6 +4165,46 @@ void canonicalize_event_locations_and_dedupe(vector<WitnessEvent> & events,
           normalized_binding_signature_key(events[i].specialization_bindings);
       if(!seen_class_signatures.insert(key).second) {
         drop[i] = 1;
+      }
+    }
+    compact_events(events, drop);
+  }
+
+  {
+    vector<char> drop(events.size(), 0);
+    map<string, vector<size_t> > grouped_class_uses;
+    for(size_t i = 0; i < events.size(); ++i) {
+      if(events[i].kind != WitnessEventKind::ClassUse) {
+        continue;
+      }
+      const string key = events[i].location + "\x1f" +
+          events[i].template_name + "\x1f" +
+          witness_selection_text(events[i]) + "\x1f" +
+          events[i].selected_decl_location;
+      grouped_class_uses[key].push_back(i);
+    }
+    for(map<string, vector<size_t> >::const_iterator it = grouped_class_uses.begin();
+        it != grouped_class_uses.end();
+        ++it) {
+      if(it->second.size() < 2) {
+        continue;
+      }
+      for(size_t j = 0; j < it->second.size(); ++j) {
+        const size_t candidate = it->second[j];
+        if(drop[candidate]) {
+          continue;
+        }
+        for(size_t k = 0; k < it->second.size(); ++k) {
+          const size_t peer = it->second[k];
+          if(candidate == peer || drop[peer]) {
+            continue;
+          }
+          if(class_use_has_concrete_scalar_binding_peer(events[candidate],
+                                                        events[peer])) {
+            drop[candidate] = 1;
+            break;
+          }
+        }
       }
     }
     compact_events(events, drop);

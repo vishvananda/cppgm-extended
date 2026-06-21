@@ -81,6 +81,28 @@ bool class_info_is_abstract(const ClassInfo & info)
   return false;
 }
 
+bool variable_template_declared_in_std_namespace_or_inline_child(
+    const VariableTemplateDecl & decl)
+{
+  const Scope * current = decl.declaring_scope;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "std") {
+    return false;
+  }
+  for(const Scope * parent = current->parent; parent; parent = parent->parent) {
+    if(parent->namespace_scope &&
+       parent->name != "<global>" &&
+       parent->name != "<unnamed>") {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool type_is_abstract_class(SemanticContext & ctx, const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
@@ -5331,6 +5353,9 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
         &decl,
         info,
         it->second.node ? it->second.node : it->second.declarator);
+    if(witness::source_capture_enabled(ctx.template_witness_context())) {
+      member->witness_static_member_definition_source_captured = true;
+    }
     member->has_storage_definition = it->second.has_storage_definition;
     member->declaration_node = member->declaration_node ?
         member->declaration_node :
@@ -6565,7 +6590,7 @@ void replay_witness_function_pointer_initializer(SemanticContext & ctx,
 
 }  // namespace
 
-void replay_witness_static_member_definition_if_needed(
+bool replay_witness_static_member_definition_if_needed(
     SemanticContext & ctx,
     const ValueBinding & binding,
     const ClassInfo * owner_override)
@@ -6577,7 +6602,7 @@ void replay_witness_static_member_definition_if_needed(
      !owner ||
      !owner->source_template ||
      !owner->member_scope) {
-    return;
+    return false;
   }
 
   ClassInfo & info = *owner;
@@ -6595,7 +6620,7 @@ void replay_witness_static_member_definition_if_needed(
   std::map<std::string, OutOfClassStaticMemberDecl>::const_iterator found =
       static_member_definitions.find(binding.name);
   if(found == static_member_definitions.end()) {
-    return;
+    return false;
   }
 
   const OutOfClassStaticMemberDecl & static_member = found->second;
@@ -6609,7 +6634,7 @@ void replay_witness_static_member_definition_if_needed(
         true);
   }
   if(!static_member.initializer) {
-    return;
+    return true;
   }
 
   Scope & init_scope = ctx.append_template_scope(*info.member_scope);
@@ -6623,6 +6648,7 @@ void replay_witness_static_member_definition_if_needed(
                                               init_scope,
                                               binding.type,
                                               static_member.initializer);
+  return true;
 }
 
 bool class_template_use_info_for_type(SemanticContext & ctx,
@@ -9270,10 +9296,20 @@ const ValueBinding * instantiate_variable_template(
         emit_source_use &&
         witness::source_location_capture_enabled(ctx.template_witness_context(),
                                                  effective_use_location);
+    const bool record_direct_source_use_during_pause =
+        emit_source_use &&
+        !source_capture_enabled &&
+        source_use_scope != nullptr &&
+        witness::enabled(ctx.template_witness_context()) &&
+        witness::source_location_is_from_primary_file(
+            ctx.template_witness_context(),
+            effective_use_location);
     if(effective_use_location.empty()) {
       return;
     }
-    if(!trace_enabled && !source_capture_enabled) {
+    if(!trace_enabled &&
+       !source_capture_enabled &&
+       !record_direct_source_use_during_pause) {
       return;
     }
 
@@ -9285,7 +9321,7 @@ const ValueBinding * instantiate_variable_template(
             (selection.kind == template_selection::MS_PARTIAL_SPECIALIZATION ?
                  witness::SourceSelectionKind::PartialSpecialization :
                  witness::SourceSelectionKind::Primary);
-    if(source_capture_enabled) {
+    if(source_capture_enabled || record_direct_source_use_during_pause) {
       witness::VariableUseEmitRequest request;
       request.use_location = effective_use_location;
       request.use_anchor_identifier = decl.name;
@@ -9361,6 +9397,8 @@ const ValueBinding * instantiate_variable_template(
                 DeducedWithDefaultedTrailingDefaults);
       }
       request.merge_policy = merge_policy;
+      request.record_during_source_capture_pause =
+          record_direct_source_use_during_pause;
       witness::emit_variable_use(request);
       if(source_use_scope != nullptr) {
         ctx.emit_nested_class_use_source_events_from_location(
@@ -9418,8 +9456,20 @@ const ValueBinding * instantiate_variable_template(
   };
   std::map<std::string, ValueBinding>::iterator found = decl.instantiations.find(key);
   if(found != decl.instantiations.end()) {
+    const std::string cache_hit_effective_use_location =
+        !source_use_location.empty() ?
+            source_use_location :
+            parser_trace::current_use_location();
+    const bool cache_hit_direct_source_use_during_pause =
+        source_use_scope != nullptr &&
+        !cache_hit_effective_use_location.empty() &&
+        witness::enabled(ctx.template_witness_context()) &&
+        witness::source_location_is_from_primary_file(
+            ctx.template_witness_context(),
+            cache_hit_effective_use_location);
     if(parser_trace::enabled("template.resolve") ||
-       witness::source_capture_enabled()) {
+       witness::source_capture_enabled() ||
+       cache_hit_direct_source_use_during_pause) {
       const template_selection::VariableSpecializationSelection selection =
           template_api::with_template_services(
               ctx,
@@ -9555,34 +9605,66 @@ const ValueBinding * instantiate_variable_template(
     return &inserted->second;
   }
 
-    if(initializer) {
-      long long value = 0;
-    std::string initializer_use_location =
-        template_api::normalize_template_witness_source_location(
-            ctx.source_location_for_name_in_node(*initializer, decl.name));
-    if(initializer_use_location.empty()) {
-      initializer_use_location =
-          template_api::normalize_template_witness_source_location(
-              ctx.source_location_for_node(*initializer));
+  if(initializer) {
+    bool initializer_value_handled = false;
+    if(decl.comes_from_standard_include_path &&
+       variable_template_declared_in_std_namespace_or_inline_child(decl)) {
+      bool structured_value = false;
+      const template_argument_semantics::NonTypeArgumentStatus status =
+          template_api::with_template_services(
+              ctx,
+              [&](template_api::TemplateServices & services)
+              {
+                return template_argument_semantics::
+                    evaluate_standard_invocable_variable_template_arguments(
+                        services,
+                        template_api::make_template_environment(inst_scope),
+                        decl.name,
+                        arguments,
+                        structured_value);
+              });
+      if(status == template_argument_semantics::NT_ARG_EVALUATED) {
+        inserted->second.has_constant_value = true;
+        inserted->second.constant_value = structured_value ? 1 : 0;
+        inserted->second.dependent_template_value = false;
+        initializer_value_handled = true;
+      } else if(status == template_argument_semantics::NT_ARG_DEPENDENT) {
+        inserted->second.dependent_template_value = true;
+        initializer_value_handled = true;
+      }
     }
-	    const ScopedTemplateUseLocation use_location_guard(
-	        !initializer_use_location.empty() ? initializer_use_location :
-	                                            parser_trace::current_use_location());
-	    if(initializer) {
-	      ctx.emit_class_use_source_events_after_location(
-	          inst_scope,
-	          ctx.source_location_for_node(*initializer),
-	          witness::SourceUseOwnership::SourceOwned);
-	    }
-	    const ScopedVariableInitializerReplay replay_guard;
-    if(ctx.evaluate_initializer_constant(inst_scope, *initializer, value)) {
-      inserted->second.has_constant_value = true;
-      inserted->second.constant_value = value;
-      inserted->second.dependent_template_value = false;
-    } else if(ctx.scope_has_template_placeholders(inst_scope)) {
-      inserted->second.dependent_template_value = true;
-    } else {
-      inserted->second.dependent_template_value = false;
+
+    if(!initializer_value_handled) {
+      long long value = 0;
+      std::string initializer_use_location =
+          template_api::normalize_template_witness_source_location(
+              ctx.source_location_for_name_in_node(*initializer, decl.name));
+      if(initializer_use_location.empty()) {
+        initializer_use_location =
+            template_api::normalize_template_witness_source_location(
+                ctx.source_location_for_node(*initializer));
+      }
+      const ScopedTemplateUseLocation use_location_guard(
+          !initializer_use_location.empty() ? initializer_use_location :
+                                              parser_trace::current_use_location());
+      if(initializer) {
+        const ScopedTemplateWitnessSourceCaptureResume source_capture_resume;
+        ctx.emit_nested_class_use_source_events_from_ast_node(
+            inst_scope,
+            *initializer,
+            witness::SourceUseOwnership::SourceOwned,
+            true);
+      }
+      const ScopedVariableInitializerReplay replay_guard;
+      if(ctx.evaluate_initializer_constant(inst_scope, *initializer, value)) {
+        inserted->second.has_constant_value = true;
+        inserted->second.constant_value = value;
+        inserted->second.dependent_template_value = false;
+      } else if(ctx.scope_has_template_placeholders(inst_scope)) {
+        inserted->second.dependent_template_value = true;
+      } else {
+        inserted->second.dependent_template_value = false;
+      }
     }
   } else {
     inserted->second.dependent_template_value = false;

@@ -245,6 +245,13 @@ bool structured_bool_constant_value_for_class_info(
     const semantic_model::ClassInfo & info,
     bool & out);
 
+NonTypeArgumentStatus evaluate_standard_invocable_variable_template_arguments(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const std::string & name,
+    const std::vector<template_model::TemplateArgument> & actual_arguments,
+    bool & out);
+
 bool scope_has_template_placeholders(template_api::TemplateServices & services,
                                      template_api::TemplateEnvironmentHandle scope);
 
