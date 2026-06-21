@@ -20791,6 +20791,19 @@ bool expand_bound_packs_in_expression_node(
   return changed;
 }
 
+bool historical_argument_text_still_applies(const string & current,
+                                            const string & historical)
+{
+  const string trimmed_historical = trim_space(historical);
+  if(trimmed_historical.empty()) {
+    return false;
+  }
+  const string trimmed_current = trim_space(current);
+  return trimmed_current.empty() ||
+         compact_source_argument_key(trimmed_current) ==
+             compact_source_argument_key(trimmed_historical);
+}
+
 void substitute_type_pack_template_id_arguments(
     TemplateIdSyntax & syntax,
     Scope & scope,
@@ -20867,6 +20880,12 @@ void substitute_type_pack_template_id_arguments(
     const string source_argument_text =
         i < source_arguments.size() ? trim_space(source_arguments[i]) :
                                       string();
+    const bool source_syntax_text_is_current =
+        historical_argument_text_still_applies(original_argument_text,
+                                               source_syntax_text);
+    const bool source_argument_text_is_current =
+        historical_argument_text_still_applies(original_argument_text,
+                                               source_argument_text);
     bool keep_source_type_syntax_for_resolved_type = false;
     for(auto it = type_replacements.begin();
         it != type_replacements.end();
@@ -20877,39 +20896,41 @@ void substitute_type_pack_template_id_arguments(
       if(argument.pack_expansion) {
         pack_expansion_consumed = true;
       }
-	      const bool direct_expression_type_argument =
-	          argument.expression &&
-	          argument.expression->kind == CppAstKind::id_expression &&
-	          trim_space(argument.expression->value) == it->first;
-	      const bool argument_has_named_template_id =
-	          argument.template_id &&
-	          !argument.template_id->name.name.empty();
-	      const string normalized_argument_text =
-	          strip_template_parameter_type_prefix(original_argument_text);
-	      const string normalized_source_syntax_text =
-	          strip_template_parameter_type_prefix(source_syntax_text);
-	      const string normalized_source_argument_text =
-	          strip_template_parameter_type_prefix(source_argument_text);
-	      string normalized_type_id_name;
-        if(argument.type_id) {
-	        const CppAstNode * type_name =
-	            direct_type_name_type_id_child(*argument.type_id);
-	        if(type_name) {
-	          normalized_type_id_name =
-	              strip_template_parameter_type_prefix(type_name->value);
-	        }
-	      }
-	      const bool direct_type_pack_argument =
-	          !argument_has_named_template_id &&
-	          (!argument.expression || direct_expression_type_argument) &&
-	          (normalized_argument_text == it->first ||
-	           normalized_argument_text == it->first + "..." ||
-	           normalized_source_syntax_text == it->first ||
-	           normalized_source_syntax_text == it->first + "..." ||
-	           normalized_source_argument_text == it->first ||
-	           normalized_source_argument_text == it->first + "..." ||
-	           normalized_type_id_name == it->first ||
-	           normalized_type_id_name == it->first + "...");
+      const bool direct_expression_type_argument =
+          argument.expression &&
+          argument.expression->kind == CppAstKind::id_expression &&
+          trim_space(argument.expression->value) == it->first;
+      const bool argument_has_named_template_id =
+          argument.template_id &&
+          !argument.template_id->name.name.empty();
+      const string normalized_argument_text =
+          strip_template_parameter_type_prefix(original_argument_text);
+      const string normalized_source_syntax_text =
+          strip_template_parameter_type_prefix(source_syntax_text);
+      const string normalized_source_argument_text =
+          strip_template_parameter_type_prefix(source_argument_text);
+      string normalized_type_id_name;
+      if(argument.type_id) {
+        const CppAstNode * type_name =
+            direct_type_name_type_id_child(*argument.type_id);
+        if(type_name) {
+          normalized_type_id_name =
+              strip_template_parameter_type_prefix(type_name->value);
+        }
+      }
+      const bool direct_type_pack_argument =
+          !argument_has_named_template_id &&
+          (!argument.expression || direct_expression_type_argument) &&
+          (normalized_argument_text == it->first ||
+           normalized_argument_text == it->first + "..." ||
+           (source_syntax_text_is_current &&
+            (normalized_source_syntax_text == it->first ||
+             normalized_source_syntax_text == it->first + "...")) ||
+           (source_argument_text_is_current &&
+            (normalized_source_argument_text == it->first ||
+             normalized_source_argument_text == it->first + "...")) ||
+           normalized_type_id_name == it->first ||
+           normalized_type_id_name == it->first + "...");
       const string replacement = reparseable_type_argument_text(it->second);
       bool argument_text_changed = false;
       argument.text = replace_identifier_token_text_preserving_sizeof_pack_operands(
@@ -20954,9 +20975,11 @@ void substitute_type_pack_template_id_arguments(
         }
       }
       string pattern_text =
+          source_syntax_text_is_current &&
           callsemantic_internal::contains_identifier_token(source_syntax_text,
                                                           it->first) ?
               source_syntax_text :
+          source_argument_text_is_current &&
           callsemantic_internal::contains_identifier_token(source_argument_text,
                                                           it->first) ?
               source_argument_text :
