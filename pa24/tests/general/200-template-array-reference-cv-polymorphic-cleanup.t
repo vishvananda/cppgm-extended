@@ -35,11 +35,11 @@ namespace array_reference_cv_detail
 class array_reference_cv_lazy
 {
 public:
-  // Keep this PA22 reducer non-polymorphic; the full virtual cleanup case is in PA24.
+  virtual ~array_reference_cv_lazy()
+  {
+  }
 
-
-
-  array_reference_cv_stream& operator()(array_reference_cv_stream& out) const
+  virtual array_reference_cv_stream& operator()(array_reference_cv_stream& out) const
   {
     return out;
   }
@@ -62,7 +62,7 @@ public:
   {
   }
 
-  array_reference_cv_stream& operator()(array_reference_cv_stream& out) const
+  array_reference_cv_stream& operator()(array_reference_cv_stream& out) const override
   {
     return prev_(out) << array_reference_cv_detail::print_helper(value_);
   }
