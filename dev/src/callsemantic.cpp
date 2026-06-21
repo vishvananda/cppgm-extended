@@ -12949,6 +12949,8 @@ private:
 	          source_capture_pause;
 	      const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
 	          class_source_capture_pause;
+	      const template_api::ScopedTemplateWitnessDeclvalCallSourceCapturePause
+	          declval_call_source_capture_pause;
 	      const CppAstNode * type_id_node = substituted_alias_type_id_node();
 	      if(!type_id_node) {
 	        return false;

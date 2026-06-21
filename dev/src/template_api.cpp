@@ -3873,6 +3873,24 @@ void note_template_member_value_instantiation_if_needed(
     trace_skip("source-type-owner-collection");
     return;
   }
+  if(template_witness_detail::current_lifecycle_pause_depth_storage() != 0) {
+    template_model::TemplateValueDependency dependency;
+    dependency.entity = entity;
+    dependency.decl_location = decl_location;
+    dependency.value_binding = &binding;
+    dependency.value_owner_class =
+        binding.owner_class ? binding.owner_class :
+        (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
+    dependency.entity_has_template_identity =
+        value_or_owner_has_template_identity(&binding);
+    if(template_argument_semantics::
+           collect_template_member_value_dependency_if_active(dependency)) {
+      trace_skip("lifecycle-collected");
+      return;
+    }
+    trace_skip("lifecycle-paused");
+    return;
+  }
 
   binding.witness_member_value_instantiation_noted = true;
   replay_static_member_definition_once();
