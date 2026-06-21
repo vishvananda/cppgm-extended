@@ -3529,7 +3529,8 @@ public:
                                            candidate_traits.is_static_member,
                                            candidate_traits.is_const_method,
                                            candidate_traits.is_volatile_method,
-                                           candidate_traits.ref_qualifier)) {
+                                           candidate_traits.ref_qualifier,
+                                           candidate_traits.is_deleted)) {
         continue;
       }
       if(parser_trace::enabled("destroy.collect") &&
@@ -4497,7 +4498,8 @@ private:
       bool candidate_is_static_member,
       bool candidate_is_const_method,
       bool candidate_is_volatile_method,
-      RefQualifier candidate_ref_qualifier)
+      RefQualifier candidate_ref_qualifier,
+      bool candidate_is_deleted)
   {
     return callbacks.function_policy->function_template_entities_match(
         existing,
@@ -4510,7 +4512,8 @@ private:
         candidate_is_static_member,
         candidate_is_const_method,
         candidate_is_volatile_method,
-        candidate_ref_qualifier);
+        candidate_ref_qualifier,
+        candidate_is_deleted);
   }
 
   void record_definition_parameter_aliases(

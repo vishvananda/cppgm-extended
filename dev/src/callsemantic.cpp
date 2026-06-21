@@ -20698,7 +20698,8 @@ private:
       bool candidate_is_static_member,
       bool candidate_is_const_method,
       bool candidate_is_volatile_method,
-      RefQualifier candidate_ref_qualifier) const override
+      RefQualifier candidate_ref_qualifier,
+      bool candidate_is_deleted) const override
   {
     auto function_parameter_lists_match =
         [&](const TypePtr & lhs,
@@ -20731,6 +20732,25 @@ private:
         }
       }
       return true;
+    };
+    auto function_result_types_match =
+        [&](const TypePtr & lhs,
+            const vector<TemplateParameterInfo> & lhs_parameters,
+            const TypePtr & rhs,
+            const vector<TemplateParameterInfo> & rhs_parameters) -> bool
+    {
+      TypePtr lhs_function = strip_top_level_cv(lhs);
+      TypePtr rhs_function = strip_top_level_cv(rhs);
+      if(!lhs_function || !rhs_function ||
+         lhs_function->kind != Type::TK_FUNCTION ||
+         rhs_function->kind != Type::TK_FUNCTION) {
+        return false;
+      }
+      return out_of_class_special_member_template_param_types_match(
+          lhs_function->inner,
+          lhs_parameters,
+          rhs_function->inner,
+          rhs_parameters);
     };
 
     if(!existing.declaring_scope || !existing.type_pattern) {
@@ -20770,10 +20790,20 @@ private:
       // function parameter list. Dependent return-type alias spellings such as
       // `_Require<...>` vs `enable_if<...>::type` can differ while still naming
       // the same entity.
-      return function_parameter_lists_match(existing.type_pattern,
-                                            existing.parameters,
-                                            candidate_type,
-                                            candidate_parameters);
+      if(!function_parameter_lists_match(existing.type_pattern,
+                                         existing.parameters,
+                                         candidate_type,
+                                         candidate_parameters)) {
+        return false;
+      }
+      if(existing.is_deleted != candidate_is_deleted &&
+         !function_result_types_match(existing.type_pattern,
+                                      existing.parameters,
+                                      candidate_type,
+                                      candidate_parameters)) {
+        return false;
+      }
+      return true;
     }
     if(out_of_class_special_member_template_param_types_match(existing.type_pattern,
                                                               existing.parameters,
@@ -20817,7 +20847,8 @@ private:
                                            decl.is_static_member,
                                            decl.is_const_method,
                                            decl.is_volatile_method,
-                                           decl.ref_qualifier)) {
+                                           decl.ref_qualifier,
+                                           decl.is_deleted)) {
         continue;
       }
       for(size_t j = 0; j < pending->friend_access_classes.size(); ++j) {
@@ -20858,6 +20889,7 @@ private:
       bool is_const_method,
       bool is_volatile_method,
       RefQualifier ref_qualifier,
+      bool is_deleted,
       bool adl_visible,
       ClassInfo & info)
   {
@@ -20878,7 +20910,8 @@ private:
                                            is_static_member,
                                            is_const_method,
                                            is_volatile_method,
-                                           ref_qualifier);
+                                           ref_qualifier,
+                                           is_deleted);
       if(candidate_matches) {
         append_unique_friend_template_access(*candidate, info);
         if(adl_visible) {
@@ -20938,7 +20971,8 @@ private:
                                           is_static_member,
                                           is_const_method,
                                           is_volatile_method,
-                                          ref_qualifier)) {
+                                          ref_qualifier,
+                                          is_deleted)) {
         append_unique_friend_template_access(*existing, info);
         if(adl_visible) {
           append_unique_friend_function_template(info, *existing);
@@ -20956,6 +20990,7 @@ private:
                                                            is_const_method,
                                                            is_volatile_method,
                                                            ref_qualifier,
+                                                           is_deleted,
                                                            adl_visible,
                                                            info);
         return;
@@ -20973,6 +21008,7 @@ private:
                                                           is_const_method,
                                                           is_volatile_method,
                                                           ref_qualifier,
+                                                          is_deleted,
                                                           adl_visible,
                                                           info)) {
       return;
@@ -21022,6 +21058,7 @@ private:
                                                          is_const_method,
                                                          is_volatile_method,
                                                          ref_qualifier,
+                                                         is_deleted,
                                                          adl_visible,
                                                          info);
     }
