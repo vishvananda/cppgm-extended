@@ -212,7 +212,8 @@ struct FunctionTemplateDeclarationPolicy
       bool candidate_is_static_member,
       bool candidate_is_const_method,
       bool candidate_is_volatile_method,
-      semantic_model::RefQualifier candidate_ref_qualifier) const = 0;
+      semantic_model::RefQualifier candidate_ref_qualifier,
+      bool candidate_is_deleted) const = 0;
   virtual void inherit_pending_friend_function_template_access(
       semantic_model::FunctionTemplateDecl & decl) = 0;
   virtual bool explicit_function_nothrow_specifications_match(
