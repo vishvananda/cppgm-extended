@@ -30605,6 +30605,7 @@ bool libcpp_pair_construction_member_name(const std::string & name)
          leaf_name == "__enable_explicit" ||
          leaf_name == "__enable_implicit" ||
          leaf_name == "__enable_default" ||
+         leaf_name == "__enable_explicit_default" ||
          leaf_name == "__enable_implicit_default";
 }
 
@@ -30820,6 +30821,63 @@ NonTypeArgumentStatus resolve_libcpp_pair_construction_owner(
       services, scope, owner_type, target_types);
 }
 
+NonTypeArgumentStatus evaluate_libcpp_pair_implicit_default_constructible(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TypePtr & target_type,
+    bool & out)
+{
+  out = false;
+  if(service_type_depends_on_template_parameter(services, target_type)) {
+    return NT_ARG_DEPENDENT;
+  }
+
+  long long constructible_value = 0;
+  if(!evaluate_builtin_type_trait(services,
+                                  scope.require(),
+                                  "__is_constructible",
+                                  std::vector<TypePtr>(1, target_type),
+                                  constructible_value)) {
+    return NT_ARG_EVAL_FAILED;
+  }
+  if(constructible_value == 0) {
+    return NT_ARG_EVALUATED;
+  }
+
+  TypePtr base = strip_top_level_cv(target_type);
+  if(!base) {
+    return NT_ARG_EVAL_FAILED;
+  }
+  if(base->kind == Type::TK_FUNDAMENTAL ||
+     leaf_scalar_or_member_pointer_type(base)) {
+    out = true;
+    return NT_ARG_EVALUATED;
+  }
+  if(is_reference_type(base) ||
+     base->kind == Type::TK_FUNCTION ||
+     base->kind == Type::TK_ARRAY ||
+     is_void_type(base)) {
+    return NT_ARG_EVALUATED;
+  }
+
+  if(!services.semantic_context) {
+    return NT_ARG_EVAL_FAILED;
+  }
+
+  ClassInfo * info = services.semantic_context->complete_class_type(base);
+  if(!info || !info->complete) {
+    return NT_ARG_EVAL_FAILED;
+  }
+  FunctionBinding * ctor =
+      services.semantic_context->select_default_constructor_for_builtin_trait(
+          scope.require(), *info);
+  if(!ctor) {
+    return NT_ARG_EVALUATED;
+  }
+  out = !ctor->is_explicit;
+  return NT_ARG_EVALUATED;
+}
+
 NonTypeArgumentStatus evaluate_libcpp_pair_construction_default_member(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -30828,29 +30886,53 @@ NonTypeArgumentStatus evaluate_libcpp_pair_construction_default_member(
     bool & out)
 {
   if(member_name != "__enable_default" &&
+     member_name != "__enable_explicit_default" &&
      member_name != "__enable_implicit_default") {
     return NT_ARG_PARSE_FAILED;
   }
 
+  bool all_default_constructible = true;
+  bool all_implicitly_default_constructible = true;
   for(std::size_t i = 0; i < target_types.size(); ++i) {
     if(service_type_depends_on_template_parameter(services, target_types[i])) {
       return NT_ARG_DEPENDENT;
     }
+
     long long constructible_value = 0;
-    std::vector<TypePtr> types(1, target_types[i]);
     if(!evaluate_builtin_type_trait(services,
                                     scope.require(),
                                     "__is_constructible",
-                                    types,
+                                    std::vector<TypePtr>(1, target_types[i]),
                                     constructible_value)) {
       return NT_ARG_EVAL_FAILED;
     }
     if(constructible_value == 0) {
-      out = false;
-      return NT_ARG_EVALUATED;
+      all_default_constructible = false;
+      all_implicitly_default_constructible = false;
+      break;
+    }
+
+    if(member_name != "__enable_default") {
+      bool implicit_default = false;
+      const NonTypeArgumentStatus implicit_status =
+          evaluate_libcpp_pair_implicit_default_constructible(
+              services, scope, target_types[i], implicit_default);
+      if(implicit_status != NT_ARG_EVALUATED) {
+        return implicit_status;
+      }
+      if(!implicit_default) {
+        all_implicitly_default_constructible = false;
+      }
     }
   }
-  out = true;
+
+  if(member_name == "__enable_default") {
+    out = all_default_constructible;
+  } else if(member_name == "__enable_implicit_default") {
+    out = all_implicitly_default_constructible;
+  } else {
+    out = all_default_constructible && !all_implicitly_default_constructible;
+  }
   return NT_ARG_EVALUATED;
 }
 
@@ -30898,6 +30980,7 @@ NonTypeArgumentStatus evaluate_libcpp_pair_construction_member_call(
   }
 
   if(member_name == "__enable_default" ||
+     member_name == "__enable_explicit_default" ||
      member_name == "__enable_implicit_default") {
     if(member_template_id) {
       const std::vector<std::string> source_texts =
