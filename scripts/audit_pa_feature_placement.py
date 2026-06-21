@@ -22,11 +22,97 @@ from typing import Iterable
 
 DEFAULT_TRACKER = Path("docs/pa14-pa22-contract-test-audit-tracker.md")
 DEFAULT_PAS = tuple(f"pa{i}" for i in range(14, 23))
+LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(10, 40))
 STRICT_TEMPLATE_PAS = ("pa18", "pa19", "pa21", "pa22", "pa23")
 SEMANTIC_ONLY_PA_MAX = 12
 LOWIR_SOURCE_PAS = set(range(14, 28))
 BACKEND_ONLY_PAS = {28}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
+VALID_TEST_CLUSTERS = frozenset(range(100, 1000, 100))
+HOSTED_STL_OWNER_PA = "pa35"
+HOSTED_STL_EARLY_PA_MAX = 34
+HOSTED_STL_INTERNAL_INCLUDE_PREFIXES = ("__", "bits/", "ext/")
+HOSTED_STL_ABI_EH_COMPONENT_HEADERS = {
+    "exception",
+    "stdexcept",
+    "typeinfo",
+}
+HOSTED_STL_HEADERS = {
+    "algorithm",
+    "any",
+    "array",
+    "atomic",
+    "barrier",
+    "bit",
+    "bitset",
+    "charconv",
+    "chrono",
+    "codecvt",
+    "compare",
+    "complex",
+    "concepts",
+    "condition_variable",
+    "coroutine",
+    "deque",
+    "execution",
+    "filesystem",
+    "format",
+    "forward_list",
+    "fstream",
+    "functional",
+    "future",
+    "initializer_list",
+    "iomanip",
+    "ios",
+    "iosfwd",
+    "iostream",
+    "istream",
+    "iterator",
+    "latch",
+    "limits",
+    "list",
+    "locale",
+    "map",
+    "memory",
+    "memory_resource",
+    "mutex",
+    "new",
+    "numbers",
+    "numeric",
+    "optional",
+    "ostream",
+    "queue",
+    "random",
+    "ranges",
+    "ratio",
+    "regex",
+    "scoped_allocator",
+    "semaphore",
+    "set",
+    "shared_mutex",
+    "source_location",
+    "span",
+    "sstream",
+    "stack",
+    "stop_token",
+    "streambuf",
+    "string",
+    "string_view",
+    "strstream",
+    "syncstream",
+    "system_error",
+    "thread",
+    "tuple",
+    "type_traits",
+    "typeindex",
+    "unordered_map",
+    "unordered_set",
+    "utility",
+    "valarray",
+    "variant",
+    "vector",
+    "version",
+}
 LATE_PLACEMENT_IGNORED_FEATURES = {
     "lowir.procedural",
     "lowir.procedural.float_conversion",
@@ -124,6 +210,14 @@ class FeatureRule:
 class FeatureHit:
     feature_id: str
     evidence: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class HygieneFinding:
+    path: str
+    kind: str
+    message: str
+    evidence: str = ""
 
 
 @dataclass(frozen=True)
@@ -845,6 +939,103 @@ def iter_test_files(root: Path, pas: Iterable[str], include_course: bool) -> lis
     return files
 
 
+def iter_local_hygiene_pas(pas: Iterable[str]) -> list[str]:
+    selected: list[str] = []
+    for pa in pas:
+        number = pa_number(pa)
+        if number is not None and number >= 10:
+            selected.append(pa)
+    return selected
+
+
+def iter_local_test_files(root: Path, pas: Iterable[str]) -> list[Path]:
+    files: list[Path] = []
+    for pa in iter_local_hygiene_pas(pas):
+        test_root = root / pa / "tests"
+        if test_root.exists():
+            files.extend(sorted(test_root.rglob("*.t")))
+    return files
+
+
+def is_hygiene_source_file(path: Path) -> bool:
+    if re.search(r"\.t\.\d+$", path.name):
+        return True
+    return path.suffix in {
+        ".t",
+        ".h",
+        ".hh",
+        ".hpp",
+        ".cc",
+        ".cpp",
+        ".cxx",
+    }
+
+
+def iter_local_hygiene_source_files(root: Path, pas: Iterable[str]) -> list[Path]:
+    files: list[Path] = []
+    for pa in iter_local_hygiene_pas(pas):
+        test_root = root / pa / "tests"
+        if not test_root.exists():
+            continue
+        for path in sorted(test_root.rglob("*")):
+            if path.is_file() and is_hygiene_source_file(path):
+                files.append(path)
+    return files
+
+
+def hosted_stl_include(header: str) -> bool:
+    header = header.strip()
+    if header in HOSTED_STL_ABI_EH_COMPONENT_HEADERS:
+        return False
+    if header.startswith(HOSTED_STL_INTERNAL_INCLUDE_PREFIXES):
+        return True
+    return header in HOSTED_STL_HEADERS
+
+
+def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
+    findings: list[HygieneFinding] = []
+    selected_pas = tuple(pas)
+    for path in iter_local_test_files(root, selected_pas):
+        relative = path.relative_to(root).as_posix()
+        cluster = cluster_for(path)
+        if cluster is None:
+            findings.append(HygieneFinding(
+                path=relative,
+                kind="test-number",
+                message="local PA10+ tests must start with a three-digit cluster prefix",
+            ))
+        elif cluster not in VALID_TEST_CLUSTERS:
+            nearest = (cluster // 100) * 100
+            findings.append(HygieneFinding(
+                path=relative,
+                kind="test-number",
+                message=(
+                    f"test prefix {cluster:03d} is an individual number, not a "
+                    f"cluster; use {nearest:03d} for this cluster"
+                ),
+            ))
+    include_re = re.compile(r"^\s*#\s*include\s*<([^>\n]+)>", re.MULTILINE)
+    for path in iter_local_hygiene_source_files(root, selected_pas):
+        current_pa = current_pa_for(path.relative_to(root))
+        number = pa_number(current_pa)
+        if number is None or number > HOSTED_STL_EARLY_PA_MAX:
+            continue
+        relative = path.relative_to(root).as_posix()
+        for match in include_re.finditer(read_text(path)):
+            header = match.group(1).strip()
+            if hosted_stl_include(header):
+                findings.append(HygieneFinding(
+                    path=relative,
+                    kind="early-hosted-stl",
+                    message=(
+                        f"hosted STL include <{header}> belongs in "
+                        f"{HOSTED_STL_OWNER_PA} or later"
+                    ),
+                    evidence=f"#include <{header}>",
+                ))
+    return findings
+
+
 def current_pa_for(path: Path) -> str:
     parts = path.parts
     if "cppgm.tests" in parts and "course" in parts:
@@ -1226,7 +1417,9 @@ def row_for(path: Path,
 
 def markdown_report(rows: list[dict[str, object]],
                     missing_rules: list[str],
-                    include_ok: bool) -> str:
+                    include_ok: bool,
+                    hygiene_findings: list[HygieneFinding] | None = None) -> str:
+    hygiene_findings = hygiene_findings or []
     review_rows = [row for row in rows if row["needs_review"] or include_ok]
     late_rows = [row for row in rows if row.get("late_placement_candidate")]
     violations = sum(
@@ -1246,9 +1439,25 @@ def markdown_report(rows: list[dict[str, object]],
         f"- semantic-owner notes: {semantic_notes}",
         f"- path-only hints: {path_hint_count}",
         f"- late placement candidates: {len(late_rows)}",
+        f"- local test hygiene findings: {len(hygiene_findings)}",
         f"- feature table entries without detector rules: {len(missing_rules)}",
         "",
     ]
+    if hygiene_findings:
+        lines.append("## Local Test Hygiene Findings")
+        lines.append("")
+        lines.append("| Test | Kind | Reason | Evidence |")
+        lines.append("| --- | --- | --- | --- |")
+        for finding in hygiene_findings:
+            lines.append(
+                "| `{}` | `{}` | {} | `{}` |".format(
+                    finding.path,
+                    finding.kind,
+                    markdown_cell(finding.message),
+                    finding.evidence.replace("|", "\\|"),
+                )
+            )
+        lines.append("")
     if missing_rules:
         lines.append("## Missing Detector Rules")
         lines.append("")
@@ -1606,6 +1815,28 @@ def emit_early_placement_errors(findings: list[tuple[dict[str, object], dict[str
         print(f"- {path}: {message}", file=sys.stderr)
 
 
+def emit_hygiene_errors(findings: list[HygieneFinding]) -> None:
+    count = len(findings)
+    plural = "" if count == 1 else "s"
+    print(
+        f"error: test placement audit found {count} local test hygiene "
+        f"finding{plural}.",
+        file=sys.stderr,
+    )
+    for finding in findings:
+        evidence = f" Evidence: {finding.evidence}" if finding.evidence else ""
+        message = f"{finding.message}.{evidence}"
+        print(
+            "::error file={},title={}::{}".format(
+                github_escape_property(finding.path),
+                github_escape_property("Local test hygiene finding"),
+                github_escape_message(message),
+            ),
+            file=sys.stderr,
+        )
+        print(f"- {finding.path}: {message}", file=sys.stderr)
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
@@ -1640,8 +1871,10 @@ def main(argv: list[str]) -> int:
     missing_rules = sorted(set(features) - rule_ids)
 
     pas = tuple(args.pa) if args.pa else DEFAULT_PAS
+    hygiene_pas = tuple(args.pa) if args.pa else LOCAL_TEST_HYGIENE_PAS
     tests = iter_test_files(root, pas, args.include_course)
     rows = [row_for(path, root, features) for path in tests]
+    hygiene_findings = scan_test_hygiene(root, hygiene_pas)
     if args.feature:
         wanted = set(args.feature)
         rows = [
@@ -1659,7 +1892,7 @@ def main(argv: list[str]) -> int:
     if args.template_placement:
         report = template_tracker_report(rows, missing_rules)
     else:
-        report = markdown_report(rows, missing_rules, args.include_ok)
+        report = markdown_report(rows, missing_rules, args.include_ok, hygiene_findings)
     if args.markdown_out:
         out = args.markdown_out if args.markdown_out.is_absolute() else root / args.markdown_out
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -1668,8 +1901,11 @@ def main(argv: list[str]) -> int:
         print(report, end="")
     if args.fail_on_early:
         early_findings = early_placement_findings(rows)
-        if early_findings:
-            emit_early_placement_errors(early_findings)
+        if early_findings or hygiene_findings:
+            if hygiene_findings:
+                emit_hygiene_errors(hygiene_findings)
+            if early_findings:
+                emit_early_placement_errors(early_findings)
             return 1
     return 0
 
