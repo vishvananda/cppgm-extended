@@ -44,7 +44,7 @@ public:
     return out;
   }
 
-protected:
+public:
   explicit array_reference_cv_lazy(bool = true)
   {
   }
@@ -86,5 +86,7 @@ void force(array_reference_cv_lazy const& lazy, array_reference_cv_stream& out)
 
 int main()
 {
+  array_reference_cv_lazy lazy(false);
+  (void)lazy;
   return 0;
 }

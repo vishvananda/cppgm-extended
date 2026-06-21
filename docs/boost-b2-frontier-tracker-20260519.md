@@ -166,6 +166,12 @@ rebased Boost frontier branch.
   `pa18 pa19 pa21 pa22 pa23` passes `994/994`; PA22 strict direct-LowIR
   passes; focused PA23 checks for the two moved tests pass. No perf gate was
   run because this is tests/docs-only.
+- 2026-06-21 PA22 reduced-template reference repair: the reduced
+  `100-template-array-reference-cv-default-arg.t` fixture now explicitly
+  constructs the non-polymorphic lazy base so normal and witness-mode LowIR both
+  emit the complete constructor alias. Validation: focused PA22 direct-LowIR
+  check passes `54/54`; focused PA22 strict witness check passes
+  `54/54`, witness `compared=51 failures=0 skipped=3`.
 
 ## Local Gate Repairs
 
