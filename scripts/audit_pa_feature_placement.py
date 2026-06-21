@@ -992,6 +992,25 @@ def hosted_stl_include(header: str) -> bool:
     return header in HOSTED_STL_HEADERS
 
 
+def pa22_heavy_support_evidence(source: str, ref_text: str) -> str:
+    has_polymorphic_source = re.search(r"\bvirtual\b", strip_string_literals(strip_comments(source)))
+    polymorphic_ref = re.search(r"__vtable|_ZTV|__rtti|_ZTI|typeinfo", ref_text)
+    cleanup_ref = re.search(
+        r"\beh_(?:try|cleanup|end)\b|\b_Unwind_Resume\b|"
+        r"\b__gxx_personality_v0\b|\brole=eh_(?:resume|personality)\b",
+        ref_text,
+    )
+    if (has_polymorphic_source or polymorphic_ref) and cleanup_ref:
+        evidence = []
+        if has_polymorphic_source:
+            evidence.append("source:virtual")
+        if polymorphic_ref:
+            evidence.append(f"ref:{polymorphic_ref.group(0)}")
+        evidence.append(f"ref:{cleanup_ref.group(0)}")
+        return ", ".join(evidence)
+    return ""
+
+
 def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
     findings: list[HygieneFinding] = []
     selected_pas = tuple(pas)
@@ -1014,6 +1033,18 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
                     f"cluster; use {nearest:03d} for this cluster"
                 ),
             ))
+        if current_pa_for(path.relative_to(root)) == "pa22":
+            evidence = pa22_heavy_support_evidence(read_text(path), ref_text_for(path))
+            if evidence:
+                findings.append(HygieneFinding(
+                    path=relative,
+                    kind="pa22-heavy-support",
+                    message=(
+                        "PA22 template tests should split or move polymorphic "
+                        "RTTI/vtable output that also needs cleanup-unwind lowering"
+                    ),
+                    evidence=evidence,
+                ))
     include_re = re.compile(r"^\s*#\s*include\s*<([^>\n]+)>", re.MULTILINE)
     for path in iter_local_hygiene_source_files(root, selected_pas):
         current_pa = current_pa_for(path.relative_to(root))
