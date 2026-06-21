@@ -3465,6 +3465,33 @@ public:
       const CppAstNode * function_qualifier = nullptr;
       bool has_function_qualifier_copy = false;
       CppAstNode function_qualifier_copy;
+
+      void set_prepared_function_qualifier(
+          const PreparedMethodParseContext & prepared)
+      {
+        function_qualifier = prepared.syntax.function_qualifier;
+        if(!function_qualifier && prepared.uses_filtered_parse) {
+          if(const CppAstNode * qualifier =
+                 declarator_function_qualifier(prepared.syntax.filtered_declarator)) {
+            function_qualifier_copy = *qualifier;
+            has_function_qualifier_copy = true;
+          }
+        }
+      }
+
+      void apply_function_template_qualifier(FunctionTemplateDecl & target) const
+      {
+        if(target.function_qualifier) {
+          return;
+        }
+        if(function_qualifier) {
+          target.function_qualifier = function_qualifier;
+        } else if(has_function_qualifier_copy) {
+          target.function_qualifier_storage.reset(
+              new CppAstNode(function_qualifier_copy));
+          target.function_qualifier = target.function_qualifier_storage.get();
+        }
+      }
     };
     const bool has_candidate_method_syntax =
         !special_member_template && method_like_template;
@@ -3474,71 +3501,50 @@ public:
                                                        prepared_candidate_method,
                                                        has_candidate_method_syntax,
                                                        true);
-    const FunctionTemplateDeclTraits candidate_traits =
-        [&]() -> FunctionTemplateDeclTraits
-        {
-          FunctionTemplateDeclTraits traits;
-          const auto set_prepared_function_qualifier =
-              [&traits](const PreparedMethodParseContext & prepared)
-          {
-            traits.function_qualifier = prepared.syntax.function_qualifier;
-            if(!traits.function_qualifier && prepared.uses_filtered_parse) {
-              if(const CppAstNode * qualifier =
-                     declarator_function_qualifier(prepared.syntax.filtered_declarator)) {
-                traits.function_qualifier_copy = *qualifier;
-                traits.has_function_qualifier_copy = true;
-              }
-            }
-          };
-          traits.access = access;
-          traits.is_constructor = special_member_is_constructor;
-          traits.is_destructor = special_member_is_destructor;
-          traits.is_conversion_operator = special_member_is_conversion;
-          traits.is_static_member = candidate_is_static_member;
-          traits.is_constexpr = specifiers && decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
-          traits.is_deleted = declaration_has_deleted_definition(inner);
-          traits.exclude_from_explicit_instantiation =
-              declaration_marks_exclude_from_explicit_instantiation(&inner);
-          traits.function_qualifier =
-              declarator ? declarator_function_qualifier(*declarator) : nullptr;
-          if(special_member_template) {
-            traits.is_explicit = prepared_special_member_method.syntax.decl_explicit;
-            traits.is_const_method = prepared_special_member_method.syntax.is_const_method;
-            traits.is_volatile_method = prepared_special_member_method.syntax.is_volatile_method;
-            traits.ref_qualifier = prepared_special_member_method.syntax.ref_qualifier;
-            traits.decl_virtual = prepared_special_member_method.syntax.decl_virtual;
-            traits.is_override = prepared_special_member_method.syntax.is_override;
-            traits.is_final = prepared_special_member_method.syntax.is_final;
-            set_prepared_function_qualifier(prepared_special_member_method);
-            return traits;
-          }
-          if(has_candidate_method_syntax) {
-            traits.is_explicit = prepared_candidate_method.syntax.decl_explicit;
-            traits.is_const_method = prepared_candidate_method.syntax.is_const_method;
-            traits.is_volatile_method = prepared_candidate_method.syntax.is_volatile_method;
-            traits.ref_qualifier = prepared_candidate_method.syntax.ref_qualifier;
-            traits.decl_virtual = prepared_candidate_method.syntax.decl_virtual;
-            traits.is_override = prepared_candidate_method.syntax.is_override;
-            traits.is_final = prepared_candidate_method.syntax.is_final;
-            set_prepared_function_qualifier(prepared_candidate_method);
-          }
-          return traits;
-        }();
-    const auto apply_function_template_qualifier =
-        [](FunctionTemplateDecl & target,
-           const FunctionTemplateDeclTraits & traits)
-    {
-      if(target.function_qualifier) {
-        return;
-      }
-      if(traits.function_qualifier) {
-        target.function_qualifier = traits.function_qualifier;
-      } else if(traits.has_function_qualifier_copy) {
-        target.function_qualifier_storage.reset(
-            new CppAstNode(traits.function_qualifier_copy));
-        target.function_qualifier = target.function_qualifier_storage.get();
-      }
-    };
+    FunctionTemplateDeclTraits candidate_traits;
+    candidate_traits.access = access;
+    candidate_traits.is_constructor = special_member_is_constructor;
+    candidate_traits.is_destructor = special_member_is_destructor;
+    candidate_traits.is_conversion_operator = special_member_is_conversion;
+    candidate_traits.is_static_member = candidate_is_static_member;
+    candidate_traits.is_constexpr =
+        specifiers && decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
+    candidate_traits.is_deleted = declaration_has_deleted_definition(inner);
+    candidate_traits.exclude_from_explicit_instantiation =
+        declaration_marks_exclude_from_explicit_instantiation(&inner);
+    candidate_traits.function_qualifier =
+        declarator ? declarator_function_qualifier(*declarator) : nullptr;
+    if(special_member_template) {
+      candidate_traits.is_explicit =
+          prepared_special_member_method.syntax.decl_explicit;
+      candidate_traits.is_const_method =
+          prepared_special_member_method.syntax.is_const_method;
+      candidate_traits.is_volatile_method =
+          prepared_special_member_method.syntax.is_volatile_method;
+      candidate_traits.ref_qualifier =
+          prepared_special_member_method.syntax.ref_qualifier;
+      candidate_traits.decl_virtual =
+          prepared_special_member_method.syntax.decl_virtual;
+      candidate_traits.is_override =
+          prepared_special_member_method.syntax.is_override;
+      candidate_traits.is_final = prepared_special_member_method.syntax.is_final;
+      candidate_traits.set_prepared_function_qualifier(
+          prepared_special_member_method);
+    } else if(has_candidate_method_syntax) {
+      candidate_traits.is_explicit =
+          prepared_candidate_method.syntax.decl_explicit;
+      candidate_traits.is_const_method =
+          prepared_candidate_method.syntax.is_const_method;
+      candidate_traits.is_volatile_method =
+          prepared_candidate_method.syntax.is_volatile_method;
+      candidate_traits.ref_qualifier =
+          prepared_candidate_method.syntax.ref_qualifier;
+      candidate_traits.decl_virtual =
+          prepared_candidate_method.syntax.decl_virtual;
+      candidate_traits.is_override = prepared_candidate_method.syntax.is_override;
+      candidate_traits.is_final = prepared_candidate_method.syntax.is_final;
+      candidate_traits.set_prepared_function_qualifier(prepared_candidate_method);
+    }
     const vector<const CppAstNode *> normalized_default_args =
         normalize_default_arguments(params, default_args);
     vector<FunctionTemplateDecl *> existing_templates = direct_function_templates(scope, name);
@@ -3622,7 +3628,7 @@ public:
       if(!existing->declaration_node) {
         existing->declaration_node = &node;
       }
-      apply_function_template_qualifier(*existing, candidate_traits);
+      candidate_traits.apply_function_template_qualifier(*existing);
       if(body && !existing->body) {
         existing->inner = &inner;
         existing->specifiers = specifiers;
@@ -3689,7 +3695,7 @@ public:
     decl->inner = &inner;
     decl->specifiers = specifiers;
     decl->declarator = declarator;
-    apply_function_template_qualifier(*decl, candidate_traits);
+    candidate_traits.apply_function_template_qualifier(*decl);
     decl->body = body;
     decl->ctor_initializer = ctor_initializer;
     decl->parameters = template_parameters;
