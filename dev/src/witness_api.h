@@ -357,6 +357,7 @@ struct VariableUseEmitRequest
   std::vector<TemplateWitnessSourceBinding> bindings;
   std::vector<TemplateWitnessSourceBinding> specialization_bindings;
   VariableUseMergePolicy merge_policy = VariableUseMergePolicy::AppendIfNew;
+  bool record_during_source_capture_pause = false;
 };
 
 struct FunctionCallSourceDecision

@@ -2926,8 +2926,10 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
     const bool witness_only_unrequired_integral_constant =
         witness::source_capture_enabled(ctx.template_witness_context()) &&
         !class_has_required_member_output(info) &&
-        binding.name != "value" &&
-        !binding.witness_member_value_instantiation_noted &&
+        ((binding.name == "value" &&
+          !binding.witness_static_member_definition_source_captured) ||
+         (binding.name != "value" &&
+          !binding.witness_member_value_instantiation_noted)) &&
         !binding.is_explicit_specialization &&
         !template_api::class_is_explicit_specialization(&info) &&
         !has_output_requirement(binding.output_requirements, ORK_DEFINITION) &&

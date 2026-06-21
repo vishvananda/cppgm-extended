@@ -5497,6 +5497,114 @@ bool class_member_declares_conversion_operator(const CppAstNode & node)
   return declarator && declarator_has_conversion_operator_type_id(*declarator);
 }
 
+bool source_text_mentions_template_parameter(Scope & scope,
+                                             const std::string & text)
+{
+  if(text.empty()) {
+    return false;
+  }
+  std::vector<std::string> texts;
+  texts.push_back(text);
+  return callsemantic::template_argument_texts_mention_enclosing_source_template_parameters(
+             scope,
+             texts) ||
+         callsemantic::template_argument_texts_mention_template_bound_scope_names(
+             scope,
+             texts);
+}
+
+bool conversion_type_syntax_mentions_template_parameter(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax);
+
+bool conversion_type_syntax_mentions_template_parameter(
+    Scope & scope,
+    const TemplateIdSyntax & syntax)
+{
+  if(source_text_mentions_template_parameter(scope, syntax.name.name)) {
+    return true;
+  }
+  for(size_t i = 0; i < syntax.arguments.size(); ++i) {
+    if(source_text_mentions_template_parameter(scope, syntax.arguments[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(conversion_type_syntax_mentions_template_parameter(
+           scope,
+           syntax.argument_syntaxes[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool conversion_type_syntax_mentions_template_parameter(Scope & scope,
+                                                        const CppAstNode & node)
+{
+  if(source_text_mentions_template_parameter(scope, node.value)) {
+    return true;
+  }
+  if(const TemplateIdSyntax * syntax = cppast_template_id_syntax(node)) {
+    if(conversion_type_syntax_mentions_template_parameter(scope, *syntax)) {
+      return true;
+    }
+  }
+  if(const CppAstNode * conversion_type_id =
+         cppast_conversion_type_id_syntax(node)) {
+    if(conversion_type_syntax_mentions_template_parameter(scope,
+                                                          *conversion_type_id)) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(conversion_type_syntax_mentions_template_parameter(
+           scope,
+           node.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(conversion_type_syntax_mentions_template_parameter(
+           scope,
+           node.qualifier_type_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(conversion_type_syntax_mentions_template_parameter(scope,
+                                                          node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool conversion_type_syntax_mentions_template_parameter(
+    Scope & scope,
+    const TemplateArgumentSyntax & syntax)
+{
+  if(source_text_mentions_template_parameter(scope, syntax.text)) {
+    return true;
+  }
+  if(syntax.template_id &&
+     conversion_type_syntax_mentions_template_parameter(scope,
+                                                       *syntax.template_id)) {
+    return true;
+  }
+  if(syntax.type_id &&
+     conversion_type_syntax_mentions_template_parameter(scope,
+                                                       *syntax.type_id)) {
+    return true;
+  }
+  if(syntax.expression &&
+     conversion_type_syntax_mentions_template_parameter(scope,
+                                                       *syntax.expression)) {
+    return true;
+  }
+  return false;
+}
+
 bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
                                                Scope & scope,
                                                const CppAstNode & declarator,
@@ -5545,7 +5653,9 @@ bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
       source_type_texts.push_back(node_text(*conversion_type_id));
       if(callsemantic::template_argument_texts_mention_enclosing_source_template_parameters(
              scope,
-             source_type_texts)) {
+             source_type_texts) ||
+         conversion_type_syntax_mentions_template_parameter(scope,
+                                                            *conversion_type_id)) {
         allow_concrete_dependent_argument_spelling = false;
         record_conversion_result_class_use = false;
       }

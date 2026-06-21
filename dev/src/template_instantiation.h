@@ -111,7 +111,7 @@ bool apply_out_of_class_static_member_definitions_to_reference(
     SemanticContext & ctx,
     semantic_model::ClassInfo & info);
 
-void replay_witness_static_member_definition_if_needed(
+bool replay_witness_static_member_definition_if_needed(
     SemanticContext & ctx,
     const semantic_model::ValueBinding & binding,
     const semantic_model::ClassInfo * owner_override = nullptr);

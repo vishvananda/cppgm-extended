@@ -10907,7 +10907,8 @@ private:
       const std::string & template_text,
       const std::string & event_location,
       witness::ClassUseSourceDecision & decision,
-      const TemplateIdSyntax * source_syntax = nullptr)
+      const TemplateIdSyntax * source_syntax = nullptr,
+      bool allow_source_template_header_replay = false)
   {
     const std::string effective_template_text =
         source_syntax ?
@@ -11019,7 +11020,8 @@ private:
        !scope_has_template_placeholders(scope)) {
       return false;
     }
-    if(source_arguments_mention_template_context &&
+    if(!allow_source_template_header_replay &&
+       source_arguments_mention_template_context &&
        source_location_in_template_header_context(event_location) &&
        !scope_has_template_placeholders(scope)) {
       return false;
@@ -11272,7 +11274,8 @@ private:
       witness::SourceUseOwnership ownership,
       const std::string & skip_exact_template_name,
       witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
-      bool clear_template_id_occurrence = false)
+      bool clear_template_id_occurrence = false,
+      bool allow_source_template_header_replay = false)
   {
     if(syntax.name.name.empty()) {
       return;
@@ -11311,7 +11314,8 @@ private:
 	                                                            std::string(),
 	                                                            location,
 	                                                            decision,
-	                                                            &syntax);
+	                                                            &syntax,
+	                                                            allow_source_template_header_replay);
 	    } catch(...) {
 	      built_class_use = false;
 	    }
@@ -11332,7 +11336,8 @@ private:
                                                       ownership,
                                                       skip_exact_template_name,
                                                       role,
-                                                      clear_template_id_occurrence);
+                                                      clear_template_id_occurrence,
+                                                      allow_source_template_header_replay);
   }
 
   void emit_nested_class_use_source_events_from_ast_node(
@@ -11341,7 +11346,8 @@ private:
       witness::SourceUseOwnership ownership,
       const std::string & skip_exact_template_name,
       witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
-      bool clear_template_id_occurrence = false)
+      bool clear_template_id_occurrence = false,
+      bool allow_source_template_header_replay = false)
   {
     if(node.kind == CppAstKind::pack_expansion_expression) {
       return;
@@ -11353,7 +11359,8 @@ private:
           ownership,
           skip_exact_template_name,
           role,
-          clear_template_id_occurrence);
+          clear_template_id_occurrence,
+          allow_source_template_header_replay);
     }
     if(const CppAstNode * conversion_type_id =
            cppast_conversion_type_id_syntax(node)) {
@@ -11362,7 +11369,8 @@ private:
                                                         ownership,
                                                         skip_exact_template_name,
                                                         role,
-                                                        clear_template_id_occurrence);
+                                                        clear_template_id_occurrence,
+                                                        allow_source_template_header_replay);
     }
     for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
       emit_nested_class_use_source_events_from_template_id_syntax(
@@ -11371,7 +11379,8 @@ private:
           ownership,
           skip_exact_template_name,
           role,
-          clear_template_id_occurrence);
+          clear_template_id_occurrence,
+          allow_source_template_header_replay);
     }
     for(size_t i = 0; i < node.children.size(); ++i) {
       emit_nested_class_use_source_events_from_ast_node(scope,
@@ -11379,19 +11388,24 @@ private:
                                                         ownership,
                                                         skip_exact_template_name,
                                                         role,
-                                                        clear_template_id_occurrence);
+                                                        clear_template_id_occurrence,
+                                                        allow_source_template_header_replay);
     }
   }
 
   void emit_nested_class_use_source_events_from_ast_node(
       Scope & scope,
       const CppAstNode & node,
-      witness::SourceUseOwnership ownership) override
+      witness::SourceUseOwnership ownership,
+      bool allow_source_template_header_replay = false) override
   {
     emit_nested_class_use_source_events_from_ast_node(scope,
                                                       node,
                                                       ownership,
-                                                      std::string());
+                                                      std::string(),
+                                                      witness::SourceUseRole::TypeUse,
+                                                      false,
+                                                      allow_source_template_header_replay);
   }
 
   void emit_nested_class_use_source_events_from_template_arguments(
@@ -11425,7 +11439,8 @@ private:
       witness::SourceUseOwnership ownership,
       const std::string & skip_exact_template_name,
       witness::SourceUseRole role = witness::SourceUseRole::TypeUse,
-      bool clear_template_id_occurrence = false)
+      bool clear_template_id_occurrence = false,
+      bool allow_source_template_header_replay = false)
   {
     if(!witness::source_capture_enabled(template_witness_context())) {
       return;
@@ -11438,7 +11453,8 @@ private:
             ownership,
             skip_exact_template_name,
             role,
-            clear_template_id_occurrence);
+            clear_template_id_occurrence,
+            allow_source_template_header_replay);
       }
       if(syntaxes[i].type_id) {
         emit_nested_class_use_source_events_from_ast_node(scope,
@@ -11446,7 +11462,8 @@ private:
                                                           ownership,
                                                           skip_exact_template_name,
                                                           role,
-                                                          clear_template_id_occurrence);
+                                                          clear_template_id_occurrence,
+                                                          allow_source_template_header_replay);
       }
       if(syntaxes[i].expression) {
         emit_nested_class_use_source_events_from_ast_node(scope,
@@ -11454,7 +11471,8 @@ private:
                                                           ownership,
                                                           skip_exact_template_name,
                                                           role,
-                                                          clear_template_id_occurrence);
+                                                          clear_template_id_occurrence,
+                                                          allow_source_template_header_replay);
       }
     }
   }
