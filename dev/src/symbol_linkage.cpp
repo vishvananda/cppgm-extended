@@ -7252,6 +7252,35 @@ static bool try_build_type_ir(const TypePtr & type,
                               const TypeMangleContext * mangle_ctx,
                               abi_mangle::Type & out);
 
+static bool try_build_typed_member_named_type_ir(
+    const TypePtr & type,
+    const TypeMangleContext * mangle_ctx,
+    abi_mangle::Type & out)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base ||
+     base->kind != Type::TK_NAMED ||
+     !base->named_member_owner_type ||
+     base->named_member_name.empty()) {
+    return false;
+  }
+
+  abi_mangle::Type owner;
+  if(!try_build_type_ir(base->named_member_owner_type, mangle_ctx, owner)) {
+    return false;
+  }
+
+  abi_mangle::Type ir_type =
+      abi_mangle::Type::member_named_type(std::move(owner),
+                                          base->named_member_name,
+                                          string());
+  if(!attach_member_type_ir_substitution(ir_type, string())) {
+    return false;
+  }
+  out = std::move(ir_type);
+  return true;
+}
+
 static bool build_name_prefix_components_ir(
     const string & prefix_text,
     vector<abi_mangle::Type::NameComponent> & prefix_components,
@@ -10190,6 +10219,13 @@ static bool try_build_dependent_alias_type_ir(
     abi_mangle::Type & out)
 {
   TypePtr base = strip_top_level_cv(type);
+  if(base &&
+     base->kind == Type::TK_NAMED &&
+     base->named_semantic_kind == Type::NSK_DEPENDENT_ALIAS &&
+     try_build_typed_member_named_type_ir(base, mangle_ctx, out)) {
+    return true;
+  }
+
   void * alias_template_decl = nullptr;
   vector<DependentAliasTemplateArgumentSyntax> arguments;
   if(named_type_dependent_alias_template(type, alias_template_decl, arguments)) {
