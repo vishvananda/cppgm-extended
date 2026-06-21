@@ -34523,6 +34523,17 @@ NonTypeArgumentStatus evaluate_non_type_argument_syntax(
     string * eval_error,
     const TypePtr & target_type)
 {
+  if(syntax.expression &&
+     (syntax.expression->kind == CppAstKind::type_trait_expression ||
+      syntax.expression->kind == CppAstKind::call_expression)) {
+    const NonTypeArgumentStatus builtin_status =
+        evaluate_builtin_type_trait_expression_ast(
+            services, scope.require(), *syntax.expression, value);
+    if(builtin_status == NT_ARG_EVALUATED) {
+      return builtin_status;
+    }
+  }
+
   TemplateArgumentSyntax expanded_syntax;
   const TemplateArgumentSyntax * effective_syntax = &syntax;
   if(syntax.text.find("...") != string::npos ||
