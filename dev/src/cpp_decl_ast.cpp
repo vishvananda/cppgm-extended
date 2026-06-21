@@ -564,7 +564,15 @@ bool parse_type_id_ast(const CppAstNode & node,
                        const AstDeclHooks & hooks,
                        TypePtr & out)
 {
-  if(node.kind != CppAstKind::type_id || node.children.empty()) {
+  if(node.kind != CppAstKind::type_id) {
+    return false;
+  }
+  if(node.semantic_type &&
+     !(hooks.ignore_semantic_type && hooks.ignore_semantic_type(node.semantic_type))) {
+    out = node.semantic_type;
+    return true;
+  }
+  if(node.children.empty()) {
     return false;
   }
 
