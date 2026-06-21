@@ -825,6 +825,15 @@ void analyze_static_assert_declaration(SemanticContext & ctx,
         evaluated = constant_eval::constexpr_value_truthy(known_value, truthy);
       }
     }
+    if(evaluated && !truthy) {
+      bool structured_truthy = false;
+      if(evaluate_structured_static_assert_condition(ctx,
+                                                     scope,
+                                                     node.children[0],
+                                                     structured_truthy)) {
+        truthy = structured_truthy;
+      }
+    }
     if(!evaluated) {
       evaluated = evaluate_structured_static_assert_condition(ctx,
                                                               scope,
