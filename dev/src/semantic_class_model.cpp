@@ -2945,8 +2945,14 @@ TypePtr make_dependent_class_alias_placeholder(const ClassInfo & info,
                  "dependent alias " + info.qualified_name + "::" + alias_name,
                  true);
   TypePtr base = strip_top_level_cv(out);
-  if(base && base->kind == Type::TK_NAMED && type_id) {
-    base->named_dependent_type_expression_node.reset(new CppAstNode(*type_id));
+  if(base && base->kind == Type::TK_NAMED) {
+    if(info.type && !alias_name.empty()) {
+      base->named_member_owner_type = info.type;
+      base->named_member_name = alias_name;
+    }
+    if(type_id) {
+      base->named_dependent_type_expression_node.reset(new CppAstNode(*type_id));
+    }
   }
   return out;
 }
