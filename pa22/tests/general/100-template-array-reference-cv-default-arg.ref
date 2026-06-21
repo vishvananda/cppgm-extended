@@ -23,7 +23,12 @@ function @force(%lazy : ptr [pass=reference], %out : ptr [pass=reference]) -> vo
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lazy : obj<1x1>
+
   block ^entry:
+    %t1 = addr $lazy
+    call void @array_reference_cv_lazy__array_reference_cv_lazy(%t1, 0)
+    %t2 = addr $lazy
     return i32 0
 }
 function @array_reference_cv_lazy_impl_array_reference_cv_lazy__char__4___char_const_____4____operator__(%this : ptr, %out : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcEclER25array_reference_cv_stream] {
@@ -83,6 +88,24 @@ function @array_reference_cv_detail__operator__(%out : ptr [pass=reference], %__
     %t1 = load ptr $out
     return ptr %t1
 }
+function @array_reference_cv_lazy__array_reference_cv_lazy__base_entry(%this : ptr, %__param1 : u8) -> void [binding=weak, object=_ZN23array_reference_cv_lazyC2Eb] {
+  slot $this : ptr
+  slot $__param1 : u8
+
+  block ^entry:
+    store ptr %this, $this
+    store u8 %__param1, $__param1
+    return void
+}
+function @array_reference_cv_lazy__array_reference_cv_lazy(%this : ptr, %__param1 : u8) -> void [binding=weak, object=_ZN23array_reference_cv_lazyC1Eb] {
+  slot $this : ptr
+  slot $__param1 : u8
+
+  block ^entry:
+    store ptr %this, $this
+    store u8 %__param1, $__param1
+    return void
+}
 function @array_reference_cv_lazy__operator__(%this : ptr, %out : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK23array_reference_cv_lazyclER25array_reference_cv_stream] {
   slot $this : ptr
   slot $out : ptr
@@ -128,24 +151,6 @@ function @array_reference_cv_detail__print_helper_t_char__4____print_helper_t(%t
     store ptr %t1, %t3
     return void
 }
-function @array_reference_cv_lazy__array_reference_cv_lazy__base_entry(%this : ptr, %__param1 : u8) -> void [binding=weak, object=_ZN23array_reference_cv_lazyC2Eb] {
-  slot $this : ptr
-  slot $__param1 : u8
-
-  block ^entry:
-    store ptr %this, $this
-    store u8 %__param1, $__param1
-    return void
-}
-function @array_reference_cv_lazy__array_reference_cv_lazy(%this : ptr, %__param1 : u8) -> void [binding=weak, object=_ZN23array_reference_cv_lazyC1Eb] {
-  slot $this : ptr
-  slot $__param1 : u8
-
-  block ^entry:
-    store ptr %this, $this
-    store u8 %__param1, $__param1
-    return void
-}
+alias object _ZN23array_reference_cv_lazyC2Eb = @array_reference_cv_lazy__array_reference_cv_lazy
 alias object _ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcEC2ERKS0_S4_ = @array_reference_cv_lazy_impl_array_reference_cv_lazy__char__4___char_const_____4____array_reference_cv_lazy_impl
 alias object _ZN25array_reference_cv_detail14print_helper_tIA4_cEC2ERA4_Kc = @array_reference_cv_detail__print_helper_t_char__4____print_helper_t
-alias object _ZN23array_reference_cv_lazyC2Eb = @array_reference_cv_lazy__array_reference_cv_lazy
