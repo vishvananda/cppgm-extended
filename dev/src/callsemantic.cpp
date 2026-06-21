@@ -21025,6 +21025,9 @@ private:
     decl->definition_specifiers = body ? specifiers : nullptr;
     decl->declarator = declarator;
     decl->definition_declarator = body ? declarator : nullptr;
+    decl->function_qualifier =
+        declarator ? semantic_class_model::declarator_function_qualifier(*declarator) :
+                     nullptr;
     decl->inner = declaration_node;
     decl->definition_inner = body ? declaration_node : nullptr;
     decl->parameters = template_parameters;
@@ -22189,6 +22192,10 @@ private:
   {
     const vector<const CppAstNode *> normalized_defaults =
         normalize_default_arguments(params, default_arguments);
+    const CppAstNode * effective_function_qualifier =
+        function_qualifier ? function_qualifier :
+        (template_identity.decl ? template_identity.decl->function_qualifier :
+                                  nullptr);
     const string object_symbol_override =
         function_object_symbol_override(parameter_syntax_node,
                                         declaration_node,
@@ -22244,7 +22251,7 @@ private:
                                 declaration_node,
                                 body,
                                 effective_is_c_linkage,
-                                function_qualifier,
+                                effective_function_qualifier,
                                 template_identity,
                                 false,
                                 lexical_access_class);
@@ -22323,7 +22330,9 @@ private:
                           semantic_trace::previous_function_location_note(
                               *this, "previous declaration", existing));
       }
-      if(!explicit_function_nothrow_specifications_match(*existing, function_qualifier)) {
+      if(!explicit_function_nothrow_specifications_match(
+             *existing,
+             effective_function_qualifier)) {
         throw logic_error(string("mismatched function exception specification [cs-register]") +
                           semantic_trace::current_location_note(*this, declaration_node) +
                           semantic_trace::previous_function_location_note(
@@ -22404,8 +22413,8 @@ private:
           record_definition_parameter_aliases(*existing, params);
         }
       }
-      if(!existing->function_qualifier && function_qualifier) {
-        existing->function_qualifier = function_qualifier;
+      if(!existing->function_qualifier && effective_function_qualifier) {
+        existing->function_qualifier = effective_function_qualifier;
       }
       if(!existing->lexical_access_class && lexical_access_class) {
         existing->lexical_access_class = lexical_access_class;
@@ -22438,7 +22447,7 @@ private:
     binding->default_arguments = normalized_defaults;
     binding->body = body;
     binding->has_definition = body != nullptr;
-    binding->function_qualifier = function_qualifier;
+    binding->function_qualifier = effective_function_qualifier;
     binding->lexical_access_class = lexical_access_class;
     binding->lexical_access_function = lexical_access_function;
     binding->is_c_linkage = effective_is_c_linkage;

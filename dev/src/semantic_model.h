@@ -634,6 +634,8 @@ struct FunctionTemplateDecl
   const CppAstNode * definition_specifiers = nullptr;
   const CppAstNode * declarator = nullptr;
   const CppAstNode * definition_declarator = nullptr;
+  std::shared_ptr<CppAstNode> function_qualifier_storage;
+  const CppAstNode * function_qualifier = nullptr;
   const CppAstNode * body = nullptr;
   const CppAstNode * ctor_initializer = nullptr;
   std::vector<template_model::TemplateParameterInfo> parameters;

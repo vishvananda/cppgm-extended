@@ -760,6 +760,10 @@ bool text_mentions_template_parameter_name(
   return false;
 }
 
+bool template_argument_syntax_mentions_template_parameter_name(
+    const TemplateArgumentSyntax & syntax,
+    const std::vector<TemplateParameterInfo> & parameters);
+
 bool type_mentions_template_parameter_name(
     const TypePtr & type,
     const std::vector<TemplateParameterInfo> & parameters)
@@ -7904,8 +7908,18 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   const auto effective_function_qualifier = [&](FunctionTemplateDecl & source_decl)
       -> const CppAstNode *
   {
+    if(source_decl.function_qualifier) {
+      return source_decl.function_qualifier;
+    }
     if(source_decl.declarator) {
-      return semantic_class_model::declarator_function_qualifier(*source_decl.declarator);
+      if(const CppAstNode * qualifier =
+             semantic_class_model::declarator_function_qualifier(*source_decl.declarator)) {
+        return qualifier;
+      }
+    }
+    if(source_decl.definition_declarator) {
+      return semantic_class_model::declarator_function_qualifier(
+          *source_decl.definition_declarator);
     }
     return nullptr;
   };

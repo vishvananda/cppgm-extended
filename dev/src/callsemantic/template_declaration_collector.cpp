@@ -3462,6 +3462,9 @@ public:
       bool is_override = false;
       bool is_final = false;
       bool exclude_from_explicit_instantiation = false;
+      const CppAstNode * function_qualifier = nullptr;
+      bool has_function_qualifier_copy = false;
+      CppAstNode function_qualifier_copy;
     };
     const bool has_candidate_method_syntax =
         !special_member_template && method_like_template;
@@ -3475,6 +3478,18 @@ public:
         [&]() -> FunctionTemplateDeclTraits
         {
           FunctionTemplateDeclTraits traits;
+          const auto set_prepared_function_qualifier =
+              [&traits](const PreparedMethodParseContext & prepared)
+          {
+            traits.function_qualifier = prepared.syntax.function_qualifier;
+            if(!traits.function_qualifier && prepared.uses_filtered_parse) {
+              if(const CppAstNode * qualifier =
+                     declarator_function_qualifier(prepared.syntax.filtered_declarator)) {
+                traits.function_qualifier_copy = *qualifier;
+                traits.has_function_qualifier_copy = true;
+              }
+            }
+          };
           traits.access = access;
           traits.is_constructor = special_member_is_constructor;
           traits.is_destructor = special_member_is_destructor;
@@ -3484,6 +3499,8 @@ public:
           traits.is_deleted = declaration_has_deleted_definition(inner);
           traits.exclude_from_explicit_instantiation =
               declaration_marks_exclude_from_explicit_instantiation(&inner);
+          traits.function_qualifier =
+              declarator ? declarator_function_qualifier(*declarator) : nullptr;
           if(special_member_template) {
             traits.is_explicit = prepared_special_member_method.syntax.decl_explicit;
             traits.is_const_method = prepared_special_member_method.syntax.is_const_method;
@@ -3492,6 +3509,7 @@ public:
             traits.decl_virtual = prepared_special_member_method.syntax.decl_virtual;
             traits.is_override = prepared_special_member_method.syntax.is_override;
             traits.is_final = prepared_special_member_method.syntax.is_final;
+            set_prepared_function_qualifier(prepared_special_member_method);
             return traits;
           }
           if(has_candidate_method_syntax) {
@@ -3502,9 +3520,25 @@ public:
             traits.decl_virtual = prepared_candidate_method.syntax.decl_virtual;
             traits.is_override = prepared_candidate_method.syntax.is_override;
             traits.is_final = prepared_candidate_method.syntax.is_final;
+            set_prepared_function_qualifier(prepared_candidate_method);
           }
           return traits;
         }();
+    const auto apply_function_template_qualifier =
+        [](FunctionTemplateDecl & target,
+           const FunctionTemplateDeclTraits & traits)
+    {
+      if(target.function_qualifier) {
+        return;
+      }
+      if(traits.function_qualifier) {
+        target.function_qualifier = traits.function_qualifier;
+      } else if(traits.has_function_qualifier_copy) {
+        target.function_qualifier_storage.reset(
+            new CppAstNode(traits.function_qualifier_copy));
+        target.function_qualifier = target.function_qualifier_storage.get();
+      }
+    };
     const vector<const CppAstNode *> normalized_default_args =
         normalize_default_arguments(params, default_args);
     vector<FunctionTemplateDecl *> existing_templates = direct_function_templates(scope, name);
@@ -3588,6 +3622,7 @@ public:
       if(!existing->declaration_node) {
         existing->declaration_node = &node;
       }
+      apply_function_template_qualifier(*existing, candidate_traits);
       if(body && !existing->body) {
         existing->inner = &inner;
         existing->specifiers = specifiers;
@@ -3654,6 +3689,7 @@ public:
     decl->inner = &inner;
     decl->specifiers = specifiers;
     decl->declarator = declarator;
+    apply_function_template_qualifier(*decl, candidate_traits);
     decl->body = body;
     decl->ctor_initializer = ctor_initializer;
     decl->parameters = template_parameters;
