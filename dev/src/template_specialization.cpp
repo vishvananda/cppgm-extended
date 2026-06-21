@@ -1055,6 +1055,8 @@ bool parse_template_argument_type_syntax(
   }
   const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
       function_call_source_capture_pause;
+  const template_api::ScopedTemplateWitnessDeclvalCallSourceCapturePause
+      declval_call_source_capture_pause;
   if(syntax->type_id &&
      template_argument_semantics::parse_type_id_node_for_templates(
          services, scope, *syntax->type_id, out, reference_class_templates_only) &&

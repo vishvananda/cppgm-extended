@@ -202,6 +202,8 @@ void note_template_value_dependencies_for_witness(
 void note_template_value_dependencies_for_witness(
     SemanticContext & ctx,
     const std::vector<template_model::TemplateValueDependency> & dependencies);
+bool collect_template_member_value_dependency_if_active(
+    const template_model::TemplateValueDependency & dependency);
 
 NonTypeArgumentStatus evaluate_non_type_argument_syntax(
     template_api::TemplateServices & services,

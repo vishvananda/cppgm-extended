@@ -7214,6 +7214,111 @@ void bind_template_arguments_into_scope(
         }
         return bound_value_type;
       };
+  const auto canonicalize_bound_type =
+      [&services, &scope](const TypePtr & type) -> TypePtr
+      {
+        TypePtr base = strip_top_level_cv(type);
+        if(!base || base->kind != Type::TK_NAMED) {
+          return type;
+        }
+        if(base.get() != type.get()) {
+          return type;
+        }
+        if(template_api::find_named_type_class_info(
+               service_type_system(services).model, base)) {
+          return type;
+        }
+        void * class_template_decl = nullptr;
+        std::vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
+        const bool class_template_shell =
+            named_type_dependent_class_template(base,
+                                                class_template_decl,
+                                                dependent_arguments) &&
+            class_template_decl != nullptr;
+        const bool class_template_mangle_shell =
+            named_type_class_template_specialization_mangle_info_const(base) !=
+            nullptr;
+        if(!class_template_shell && !class_template_mangle_shell) {
+          return type;
+        }
+        std::set<const Type *> seen_cv_probe_types;
+        std::function<bool(const TypePtr &)> type_tree_contains_top_level_cv =
+            [&](const TypePtr & candidate) -> bool
+            {
+              if(!candidate) {
+                return false;
+              }
+              TypePtr candidate_base = strip_top_level_cv(candidate);
+              if(candidate_base.get() != candidate.get()) {
+                return true;
+              }
+              if(!seen_cv_probe_types.insert(candidate.get()).second) {
+                return false;
+              }
+              if(candidate->kind == Type::TK_NAMED) {
+                void * nested_class_template_decl = nullptr;
+                std::vector<DependentAliasTemplateArgumentSyntax> nested_args;
+                if(named_type_dependent_class_template(
+                       candidate,
+                       nested_class_template_decl,
+                       nested_args)) {
+                  for(std::size_t i = 0; i < nested_args.size(); ++i) {
+                    if(type_tree_contains_top_level_cv(nested_args[i].type)) {
+                      return true;
+                    }
+                  }
+                }
+                std::shared_ptr<const ClassTemplateSpecializationMangleInfo>
+                    nested_mangle =
+                        named_type_class_template_specialization_mangle_info_const(
+                            candidate);
+                if(nested_mangle) {
+                  for(std::size_t i = 0; i < nested_mangle->arguments.size(); ++i) {
+                    if(nested_mangle->arguments[i].kind == TemplateArgument::TA_TYPE &&
+                       type_tree_contains_top_level_cv(nested_mangle->arguments[i].type)) {
+                      return true;
+                    }
+                  }
+                }
+              }
+              return type_tree_contains_top_level_cv(candidate->owner) ||
+                     type_tree_contains_top_level_cv(candidate->inner);
+            };
+        if(type_tree_contains_top_level_cv(type)) {
+          return type;
+        }
+        TypePtr resolved;
+        if(template_argument_semantics::resolve_instantiated_dependent_type(
+               services,
+               template_api::make_template_environment(scope),
+               type,
+               resolved) &&
+           resolved) {
+          return resolved;
+        }
+        return type;
+      };
+  hooks.bind_named_type =
+      [&scope, &canonicalize_bound_type](const std::string & name,
+                                         const TypePtr & type)
+      {
+        TypePtr bound = canonicalize_bound_type(type);
+        template_scope::bind_named_type(scope,
+                                        name,
+                                        bound);
+      };
+  hooks.bind_type_pack =
+      [&scope, &canonicalize_bound_type](
+          const std::string & name,
+          const std::vector<TypePtr> & bound_pack)
+      {
+        std::vector<TypePtr> canonical_pack;
+        canonical_pack.reserve(bound_pack.size());
+        for(std::size_t i = 0; i < bound_pack.size(); ++i) {
+          canonical_pack.push_back(canonicalize_bound_type(bound_pack[i]));
+        }
+        template_scope::bind_type_pack(scope, name, canonical_pack);
+      };
   template_binding::bind_arguments(parameters, arguments, hooks, pack_sizes);
   bind_argument_local_named_types(type_system, scope, arguments);
 }

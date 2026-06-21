@@ -8054,7 +8054,11 @@ bool try_bind_resolvable_default_non_type_template_argument(
   }
 
   TypePtr bound_value_type;
-  if(!try_resolve_non_type_template_parameter_type(ctx, scope, parameter, bound_value_type)) {
+  try {
+    if(!try_resolve_non_type_template_parameter_type(ctx, scope, parameter, bound_value_type)) {
+      return false;
+    }
+  } catch(const TemplateSubstitutionFailure &) {
     return false;
   }
 
