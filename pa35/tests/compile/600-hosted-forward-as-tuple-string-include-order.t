@@ -12,8 +12,4 @@ std::tuple<unsigned long&&> make_rvalue_tuple()
 {
   return std::forward_as_tuple(1UL);
 }
-
-int main()
-{
-  return 0;
-}
+static_assert(sizeof(&make_rvalue_tuple) > 0, "forward_as_tuple include-order body anchor");
