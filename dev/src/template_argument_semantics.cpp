@@ -19886,11 +19886,13 @@ bool substitute_named_type_parameters_only(
   return false;
 }
 
-bool substitute_type_from_replacement_map(const TypePtr & type,
-                                          const map<string, TypePtr> & type_replacements,
-                                          TypePtr & out)
+bool substitute_type_from_replacement_map_impl(const TypePtr & type,
+                                               const map<string, TypePtr> & type_replacements,
+                                               TypePtr & out,
+                                               bool & changed)
 {
   out.reset();
+  changed = false;
   if(!type || type_replacements.empty()) {
     return false;
   }
@@ -19900,14 +19902,24 @@ bool substitute_type_from_replacement_map(const TypePtr & type,
     return false;
   }
 
-  bool changed = false;
   return substitute_named_type_parameters_only(type,
                                                parameters,
                                                type_replacements,
                                                out,
                                                changed) &&
-         changed &&
          out;
+}
+
+bool substitute_type_from_replacement_map(const TypePtr & type,
+                                          const map<string, TypePtr> & type_replacements,
+                                          TypePtr & out)
+{
+  bool changed = false;
+  return substitute_type_from_replacement_map_impl(type,
+                                                  type_replacements,
+                                                  out,
+                                                  changed) &&
+         changed;
 }
 
 void refresh_qualified_name_qualifier_template_id_texts(CppAstNode & node)
@@ -20223,16 +20235,39 @@ bool substitute_type_pack_expression_node(
         }
       }
       if(!substituted_children_still_mention_replacement) {
+        TypePtr substituted_type;
+        bool substituted_type_changed = false;
+        if(substitute_type_from_replacement_map_impl(out.semantic_type,
+                                                     type_replacements,
+                                                     substituted_type,
+                                                     substituted_type_changed) &&
+           substituted_type) {
+          (void)substituted_type_changed;
+          const string substituted_text =
+              reparseable_type_argument_text(substituted_type);
+          if(!substituted_text.empty()) {
+            out = make_substituted_type_id_node(substituted_type,
+                                                substituted_text);
+            return true;
+          }
+          out.semantic_type = substituted_type;
+          return true;
+        }
         out.semantic_type.reset();
         return true;
       }
       TypePtr substituted_type;
       TypePtr carried_type = out.semantic_type;
-      if(substitute_type_from_replacement_map(out.semantic_type,
-                                              type_replacements,
-                                              substituted_type) &&
+      bool carried_type_is_valid = false;
+      bool substituted_type_changed = false;
+      if(substitute_type_from_replacement_map_impl(out.semantic_type,
+                                                   type_replacements,
+                                                   substituted_type,
+                                                   substituted_type_changed) &&
          substituted_type) {
+        (void)substituted_type_changed;
         carried_type = substituted_type;
+        carried_type_is_valid = true;
       }
       const string carried_text = reparseable_type_argument_text(carried_type);
       if(!carried_text.empty()) {
@@ -20259,6 +20294,10 @@ bool substitute_type_pack_expression_node(
           out = typed;
           return true;
         }
+      }
+      if(carried_type_is_valid && carried_type) {
+        out.semantic_type = carried_type;
+        return true;
       }
     }
     out.semantic_type.reset();
