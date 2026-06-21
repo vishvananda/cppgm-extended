@@ -2,6 +2,7 @@
 
 #include "callsemantic/source_location_utils.h"
 #include "callsemantic/template_source_utils.h"
+#include "class_template_mangle_info.h"
 #include "callsemantic_internal.h"
 #include "cpp_decl_ast.h"
 #include "parser_trace.h"
@@ -25,6 +26,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <map>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -917,6 +919,378 @@ public:
     return nullptr;
   }
 
+  std::string normalized_inferred_template_parameter_name(
+      const std::string & raw)
+  {
+    std::string name = trim_space(raw);
+    if(name.empty()) {
+      return std::string();
+    }
+
+    static const char * semantic_prefixes[] = {
+        "template-parameter ",
+        "typename "
+    };
+    bool stripped = true;
+    while(stripped) {
+      stripped = false;
+      name = trim_space(name);
+      for(std::size_t i = 0;
+          i < sizeof(semantic_prefixes) / sizeof(semantic_prefixes[0]);
+          ++i) {
+        const std::string prefix = semantic_prefixes[i];
+        if(name.compare(0, prefix.size(), prefix) == 0) {
+          name = trim_space(name.substr(prefix.size()));
+          stripped = true;
+        }
+      }
+    }
+
+    name = trim_space(strip_elaborated_type_prefix(name));
+    return is_identifier_text(name) ? name : std::string();
+  }
+
+  void add_inferred_dependent_mangle_parameter(
+      std::vector<TemplateParameterInfo> & parameters,
+      std::set<std::string> & seen_names,
+      TemplateParameterInfo::Kind kind,
+      const std::string & raw_name,
+      const TypePtr & value_type,
+      bool parameter_pack)
+  {
+    const std::string name =
+        normalized_inferred_template_parameter_name(raw_name);
+    if(name.empty() || seen_names.count(name) != 0) {
+      return;
+    }
+
+    TemplateParameterInfo parameter;
+    parameter.kind = kind;
+    parameter.name = name;
+    parameter.parameter_pack = parameter_pack;
+    if(kind == TemplateParameterInfo::TP_TYPE) {
+      parameter.placeholder_key = std::string("template-parameter ") + name;
+    } else if(kind == TemplateParameterInfo::TP_NON_TYPE) {
+      parameter.value_type = value_type;
+    }
+    parameters.push_back(parameter);
+    seen_names.insert(name);
+  }
+
+  std::string direct_identifier_expression_name(const CppAstNode * expression)
+  {
+    if(!expression || !expression->children.empty()) {
+      return std::string();
+    }
+    if(expression->kind != CppAstKind::id_expression &&
+       expression->kind != CppAstKind::identifier) {
+      return std::string();
+    }
+    return normalized_inferred_template_parameter_name(expression->value);
+  }
+
+  std::string dependent_value_argument_identifier(
+      const TemplateArgument & argument,
+      const TemplateArgumentSyntax * syntax)
+  {
+    if(argument.value_binding) {
+      std::string name = normalized_inferred_template_parameter_name(
+          argument.value_binding->name);
+      if(!name.empty()) {
+        return name;
+      }
+      name = normalized_inferred_template_parameter_name(
+          argument.value_binding->non_type_template_argument_text);
+      if(!name.empty()) {
+        return name;
+      }
+    }
+    std::string name = direct_identifier_expression_name(argument.expression.get());
+    if(!name.empty()) {
+      return name;
+    }
+    if(argument.source_syntax) {
+      name = direct_identifier_expression_name(
+          argument.source_syntax->expression.get());
+      if(!name.empty()) {
+        return name;
+      }
+    }
+    if(syntax) {
+      name = direct_identifier_expression_name(syntax->expression.get());
+      if(!name.empty()) {
+        return name;
+      }
+    }
+    return std::string();
+  }
+
+  void collect_inferred_dependent_mangle_parameters_from_argument(
+      const TemplateArgument & argument,
+      const TemplateArgumentSyntax * syntax,
+      std::vector<TemplateParameterInfo> & parameters,
+      std::set<std::string> & seen_names,
+      std::set<const Type *> & visiting)
+  {
+    switch(argument.kind) {
+    case TemplateArgument::TA_TYPE:
+      collect_inferred_dependent_mangle_parameters_from_type(argument.type,
+                                                             parameters,
+                                                             seen_names,
+                                                             visiting);
+      return;
+
+    case TemplateArgument::TA_VALUE:
+    {
+      collect_inferred_dependent_mangle_parameters_from_type(argument.type,
+                                                             parameters,
+                                                             seen_names,
+                                                             visiting);
+      if(!argument.dependent) {
+        return;
+      }
+      const std::string name =
+          dependent_value_argument_identifier(argument, syntax);
+      const bool parameter_pack =
+          (argument.source_syntax && argument.source_syntax->pack_expansion) ||
+          (syntax && syntax->pack_expansion);
+      add_inferred_dependent_mangle_parameter(
+          parameters,
+          seen_names,
+          TemplateParameterInfo::TP_NON_TYPE,
+          name,
+          argument.type,
+          parameter_pack);
+      return;
+    }
+
+    case TemplateArgument::TA_CLASS_TEMPLATE:
+    case TemplateArgument::TA_ALIAS_TEMPLATE:
+      return;
+    }
+  }
+
+  void collect_inferred_dependent_mangle_parameters_from_dependent_argument(
+      const DependentAliasTemplateArgumentSyntax & argument,
+      std::vector<TemplateParameterInfo> & parameters,
+      std::set<std::string> & seen_names,
+      std::set<const Type *> & visiting)
+  {
+    collect_inferred_dependent_mangle_parameters_from_type(argument.type,
+                                                           parameters,
+                                                           seen_names,
+                                                           visiting);
+  }
+
+  void collect_inferred_dependent_mangle_parameters_from_type(
+      const TypePtr & type,
+      std::vector<TemplateParameterInfo> & parameters,
+      std::set<std::string> & seen_names,
+      std::set<const Type *> & visiting)
+  {
+    if(!type) {
+      return;
+    }
+    const Type * raw = type.get();
+    if(visiting.count(raw) != 0) {
+      return;
+    }
+    visiting.insert(raw);
+
+    switch(type->kind) {
+    case Type::TK_NAMED:
+      if(type->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER) {
+        add_inferred_dependent_mangle_parameter(
+            parameters,
+            seen_names,
+            TemplateParameterInfo::TP_TYPE,
+            type->named_semantic_payload.empty() ? type->named_display :
+                                                   type->named_semantic_payload,
+            TypePtr(),
+            false);
+        visiting.erase(raw);
+        return;
+      }
+      if(type->named_class_template_specialization_mangle_info) {
+        const ClassTemplateSpecializationMangleInfo & info =
+            *type->named_class_template_specialization_mangle_info;
+        for(std::size_t i = 0; i < info.arguments.size(); ++i) {
+          const TemplateArgumentSyntax * syntax =
+              i < info.argument_syntaxes.size() ? &info.argument_syntaxes[i] :
+                                                   nullptr;
+          collect_inferred_dependent_mangle_parameters_from_argument(
+              info.arguments[i],
+              syntax,
+              parameters,
+              seen_names,
+              visiting);
+        }
+      }
+      for(std::size_t i = 0; i < type->named_dependent_alias_arguments.size(); ++i) {
+        collect_inferred_dependent_mangle_parameters_from_dependent_argument(
+            type->named_dependent_alias_arguments[i],
+            parameters,
+            seen_names,
+            visiting);
+      }
+      for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
+        collect_inferred_dependent_mangle_parameters_from_dependent_argument(
+            type->named_dependent_class_arguments[i],
+            parameters,
+            seen_names,
+            visiting);
+      }
+      for(std::size_t i = 0;
+          i < type->named_dependent_template_template_arguments.size();
+          ++i) {
+        collect_inferred_dependent_mangle_parameters_from_dependent_argument(
+            type->named_dependent_template_template_arguments[i],
+            parameters,
+            seen_names,
+            visiting);
+      }
+      collect_inferred_dependent_mangle_parameters_from_type(
+          type->named_dependent_qualified_owner,
+          parameters,
+          seen_names,
+          visiting);
+      collect_inferred_dependent_mangle_parameters_from_type(
+          type->named_member_owner_type,
+          parameters,
+          seen_names,
+          visiting);
+      break;
+
+    case Type::TK_CV:
+    case Type::TK_ATOMIC:
+    case Type::TK_POINTER:
+    case Type::TK_BLOCK_POINTER:
+    case Type::TK_LVALUE_REFERENCE:
+    case Type::TK_RVALUE_REFERENCE:
+    case Type::TK_ARRAY:
+      collect_inferred_dependent_mangle_parameters_from_type(type->inner,
+                                                             parameters,
+                                                             seen_names,
+                                                             visiting);
+      break;
+
+    case Type::TK_MEMBER_POINTER:
+      collect_inferred_dependent_mangle_parameters_from_type(type->owner,
+                                                             parameters,
+                                                             seen_names,
+                                                             visiting);
+      collect_inferred_dependent_mangle_parameters_from_type(type->inner,
+                                                             parameters,
+                                                             seen_names,
+                                                             visiting);
+      break;
+
+    case Type::TK_FUNCTION:
+      collect_inferred_dependent_mangle_parameters_from_type(type->inner,
+                                                             parameters,
+                                                             seen_names,
+                                                             visiting);
+      for(std::size_t i = 0; i < type->params.size(); ++i) {
+        collect_inferred_dependent_mangle_parameters_from_type(type->params[i],
+                                                               parameters,
+                                                               seen_names,
+                                                               visiting);
+      }
+      break;
+
+    case Type::TK_FUNDAMENTAL:
+      break;
+    }
+
+    visiting.erase(raw);
+  }
+
+  bool infer_dependent_argument_mangle_parameters(
+      const std::vector<TemplateArgument> & arguments,
+      const std::vector<TemplateArgumentSyntax> * syntaxes,
+      std::vector<TemplateParameterInfo> & out)
+  {
+    out.clear();
+    std::set<std::string> seen_names;
+    std::set<const Type *> visiting;
+    for(std::size_t i = 0; i < arguments.size(); ++i) {
+      const TemplateArgumentSyntax * syntax =
+          syntaxes && i < syntaxes->size() ? &(*syntaxes)[i] : nullptr;
+      collect_inferred_dependent_mangle_parameters_from_argument(arguments[i],
+                                                                 syntax,
+                                                                 out,
+                                                                 seen_names,
+                                                                 visiting);
+    }
+    return !out.empty();
+  }
+
+  const vector<TemplateParameterInfo> *
+  dependent_argument_mangle_parameters_for_argument_mangling(
+      Scope & scope,
+      const std::vector<TemplateArgument> & arguments,
+      const std::vector<TemplateArgumentSyntax> * syntaxes,
+      std::vector<TemplateParameterInfo> & inferred_parameters)
+  {
+    const vector<TemplateParameterInfo> * parameters =
+        enclosing_source_template_parameters_for_argument_mangling(scope,
+                                                                   syntaxes);
+    if(parameters) {
+      return parameters;
+    }
+    return infer_dependent_argument_mangle_parameters(arguments,
+                                                      syntaxes,
+                                                      inferred_parameters) ?
+        &inferred_parameters :
+        nullptr;
+  }
+
+  bool template_parameter_list_covers(
+      const std::vector<TemplateParameterInfo> & existing,
+      const std::vector<TemplateParameterInfo> & needed)
+  {
+    for(std::size_t i = 0; i < needed.size(); ++i) {
+      const TemplateParameterInfo & required = needed[i];
+      bool found = false;
+      for(std::size_t j = 0; j < existing.size(); ++j) {
+        const TemplateParameterInfo & candidate = existing[j];
+        if(candidate.kind == required.kind &&
+           candidate.name == required.name) {
+          found = true;
+          break;
+        }
+      }
+      if(!found) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool fast_existing_class_template_mangle_context_current(
+      Scope & scope,
+      const std::vector<TemplateArgument> & arguments,
+      const std::vector<TemplateArgumentSyntax> * syntaxes,
+      const ClassInfo & info)
+  {
+    std::vector<TemplateParameterInfo> inferred_parameters;
+    const std::vector<TemplateParameterInfo> * needed =
+        dependent_argument_mangle_parameters_for_argument_mangling(
+            scope,
+            arguments,
+            syntaxes,
+            inferred_parameters);
+    if(!needed || needed->empty()) {
+      return true;
+    }
+    std::shared_ptr<const ClassTemplateSpecializationMangleInfo> existing =
+        info.type ?
+            named_type_class_template_specialization_mangle_info_const(info.type) :
+            std::shared_ptr<const ClassTemplateSpecializationMangleInfo>();
+    return existing &&
+           template_parameter_list_covers(existing->mangle_parameters, *needed);
+  }
+
   bool template_argument_syntaxes_mention_current_specialization_member(
       Scope & scope,
       const std::vector<TemplateArgumentSyntax> * syntaxes)
@@ -1675,16 +2049,24 @@ public:
       note_performance_counter(&semantic_metrics::AnalyzerCounters::class_template_key_builds);
       key = template_argument_key(arguments);
     }
+    const bool dependent_arguments = template_arguments_are_dependent(arguments);
+    const bool fast_existing_requires_mangle_refresh =
+        dependent_arguments &&
+        info &&
+        !fast_existing_class_template_mangle_context_current(use_scope,
+                                                             arguments,
+                                                             arg_syntaxes,
+                                                             *info);
     if(fast_existing &&
        info &&
        fast_existing_class_template_output_usable(decl, *info) &&
        fast_existing_class_template_selection_current(decl, key, *info) &&
+       !fast_existing_requires_mangle_refresh &&
        !parser_trace::enabled("template.resolve") &&
        !witness::source_capture_enabled(template_witness_context())) {
       remember_raw_reference_cache(decl, raw_cache_key, info);
       return info;
     }
-    const bool dependent_arguments = template_arguments_are_dependent(arguments);
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "reference-class-template name=" << decl.name
@@ -1785,12 +2167,15 @@ public:
        specialization.argument_syntaxes->size() == arguments.size()) {
       source_arg_syntaxes = specialization.argument_syntaxes;
     }
+    std::vector<TemplateParameterInfo> inferred_dependent_mangle_parameters;
     const vector<TemplateParameterInfo> *
         dependent_argument_mangle_parameters =
             dependent_arguments ?
-                enclosing_source_template_parameters_for_argument_mangling(
+                dependent_argument_mangle_parameters_for_argument_mangling(
                     use_scope,
-                    source_arg_syntaxes) :
+                    arguments,
+                    source_arg_syntaxes,
+                    inferred_dependent_mangle_parameters) :
                 nullptr;
     const bool selected_partial_mangle_context =
         bound_parameters &&
