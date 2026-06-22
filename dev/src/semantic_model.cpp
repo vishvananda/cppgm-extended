@@ -218,13 +218,35 @@ std::string describe_scope_bindings(const Scope & scope)
   bool wrote_any = false;
 
   for(const Scope * current = &scope; current; current = current->parent) {
+    // Namespace scopes -- notably the global scope -- accumulate the host
+    // compiler's builtin type table, whose contents depend on the host
+    // toolchain. Including it makes this diagnostic vary across environments
+    // (and bloats it with builtins irrelevant to the failure); the bindings
+    // that matter here live in class, function, and template scopes.
+    if(current->namespace_scope) {
+      continue;
+    }
+
     bool scope_has_any = false;
     std::ostringstream scope_out;
 
+    // named_types is an unordered_map, so emit its entries in a deterministic
+    // key-sorted order rather than the implementation-defined bucket order.
+    std::vector<const Scope::NamedTypeMap::value_type *> sorted_named_types;
+    sorted_named_types.reserve(current->named_types.size());
     for(const auto & named : current->named_types) {
       if(named.first.empty()) {
         continue;
       }
+      sorted_named_types.push_back(&named);
+    }
+    std::sort(sorted_named_types.begin(), sorted_named_types.end(),
+              [](const Scope::NamedTypeMap::value_type * a,
+                 const Scope::NamedTypeMap::value_type * b) {
+                return a->first < b->first;
+              });
+    for(const Scope::NamedTypeMap::value_type * named_entry : sorted_named_types) {
+      const auto & named = *named_entry;
       if(!scope_has_any) {
         scope_out << current->name;
         scope_out << "{types:";
