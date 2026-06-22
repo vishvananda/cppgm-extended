@@ -12502,6 +12502,17 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         }
         return true;
       };
+      const auto template_type_argument_mentions_current_parameter =
+          [&](const TemplateArgument & argument) -> bool
+      {
+        return argument.kind == TemplateArgument::TA_TYPE &&
+               argument.type &&
+               deduction_pattern_mentions_function_template_parameter(
+                   deduction_ops,
+                   parameters,
+                   *deduction_scope,
+                   argument.type);
+      };
       const auto deduce_from_effective_type_template_arguments =
           [&](const std::vector<TemplateArgument> & pattern_effective_args,
               const std::vector<TemplateArgument> & actual_effective_args) -> bool
@@ -13313,6 +13324,36 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
               actual_match_structured_args ?
                   &(*actual_match_structured_args)[actual_index] :
                   nullptr;
+          if(structured_pattern &&
+             structured_pattern->kind == TemplateArgument::TA_TYPE &&
+             structured_pattern->type &&
+             !template_type_argument_mentions_current_parameter(
+                 *structured_pattern)) {
+            TypePtr actual_arg_type =
+                structured_actual &&
+                structured_actual->kind == TemplateArgument::TA_TYPE ?
+                    structured_actual->type :
+                    TypePtr();
+            if(!actual_arg_type &&
+               !lookup_actual_arg_type(actual_arg, actual_arg_type)) {
+              return false;
+            }
+            if(!deduce_template_argument_impl(ctx,
+                                              parameters,
+                                              structured_pattern->type,
+                                              actual_arg_type,
+                                              deduced_types,
+                                              deduced_values,
+                                              deduction_scope,
+                                              partial_top_level_cv_deduction,
+                                              actual_lookup_scope,
+                                              deduced_pack_arguments,
+                                              allow_actual_base_deduction)) {
+              return false;
+            }
+            ++actual_index;
+            continue;
+          }
           if(direct_match.parameter) {
             TemplateArgument actual_direct_argument;
             if(!resolve_direct_actual_template_argument(*direct_match.parameter,
