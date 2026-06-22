@@ -4917,9 +4917,31 @@ bool try_expand_alias_template_pattern_structurally(
           argument.kind = TemplateArgument::TA_TYPE;
           argument.type =
               source_arg.type ? source_arg.type : source_arg.syntax.resolved_type;
+          if(source_arg.syntax.resolved_type &&
+             !argument.text.empty() &&
+             alias_template_target_mentions_parameters(argument.text,
+                                                       alias_template.parameters)) {
+            argument.type = source_arg.syntax.resolved_type;
+          }
           if(!argument.type) {
             dependent_source_template = nullptr;
             break;
+          }
+          TypePtr substituted_type;
+          if(template_argument_semantics::substitute_type(
+                 effective_body_scope.require(),
+                 argument.type,
+                 alias_template.parameters,
+                 arguments,
+                 substituted_type) &&
+             substituted_type) {
+            if(!type_equals(substituted_type, argument.type) &&
+               (argument.text.empty() ||
+                alias_template_target_mentions_parameters(argument.text,
+                                                          alias_template.parameters))) {
+              argument.text = type_text(substituted_type);
+            }
+            argument.type = substituted_type;
           }
           if(argument.text.empty()) {
             argument.text = type_text(argument.type);
@@ -5085,24 +5107,24 @@ bool try_expand_alias_template_pattern_structurally(
       }
     }
     ClassTemplateDecl * source_template =
-        have_named_metadata && info.source_template ?
-            info.source_template :
         dependent_source_template ?
             dependent_source_template :
+        have_named_metadata && info.source_template ?
+            info.source_template :
             (class_info ? class_info->source_template : nullptr);
     const std::vector<TemplateArgument> * instantiation_arguments =
-        have_named_metadata && !info.instantiation_arguments.empty() ?
-            &info.instantiation_arguments :
         dependent_source_template && !dependent_class_arguments.empty() ?
             &dependent_class_arguments :
+        have_named_metadata && !info.instantiation_arguments.empty() ?
+            &info.instantiation_arguments :
             (class_info && !class_info->instantiation_arguments.empty() ?
                 &class_info->instantiation_arguments :
                 nullptr);
     const std::vector<std::string> * instantiation_arg_texts =
-        have_named_metadata && !info.instantiation_arg_texts.empty() ?
-            &info.instantiation_arg_texts :
         dependent_source_template && !dependent_class_arg_texts.empty() ?
             &dependent_class_arg_texts :
+        have_named_metadata && !info.instantiation_arg_texts.empty() ?
+            &info.instantiation_arg_texts :
             (class_info && !class_info->instantiation_arg_texts.empty() ?
                 &class_info->instantiation_arg_texts :
                 nullptr);
