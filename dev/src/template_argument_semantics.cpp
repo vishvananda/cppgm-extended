@@ -30007,7 +30007,17 @@ bool standard_constructibility_shorthand_name(const string & name)
 {
   return name == "is_default_constructible" ||
          name == "is_copy_constructible" ||
-         name == "is_move_constructible";
+         name == "is_move_constructible" ||
+         name == "is_nothrow_default_constructible" ||
+         name == "is_nothrow_copy_constructible" ||
+         name == "is_nothrow_move_constructible";
+}
+
+bool standard_constructibility_shorthand_is_nothrow(const string & name)
+{
+  return name == "is_nothrow_default_constructible" ||
+         name == "is_nothrow_copy_constructible" ||
+         name == "is_nothrow_move_constructible";
 }
 
 bool standard_constructibility_shorthand_types(const string & name,
@@ -30018,16 +30028,19 @@ bool standard_constructibility_shorthand_types(const string & name,
   if(!type) {
     return false;
   }
-  if(name == "is_default_constructible") {
+  if(name == "is_default_constructible" ||
+     name == "is_nothrow_default_constructible") {
     out.push_back(type);
     return true;
   }
-  if(name == "is_copy_constructible") {
+  if(name == "is_copy_constructible" ||
+     name == "is_nothrow_copy_constructible") {
     out.push_back(type);
     out.push_back(make_lvalue_reference_raw(make_cv(type, true, false)));
     return true;
   }
-  if(name == "is_move_constructible") {
+  if(name == "is_move_constructible" ||
+     name == "is_nothrow_move_constructible") {
     out.push_back(type);
     out.push_back(make_rvalue_reference_raw(type));
     return true;
@@ -30046,15 +30059,21 @@ bool evaluate_standard_constructibility_shorthand_type(
   if(!standard_constructibility_shorthand_types(name, type, trait_types)) {
     return false;
   }
+  const bool require_nothrow =
+      standard_constructibility_shorthand_is_nothrow(name);
   long long value = 0;
   if(!evaluate_builtin_type_trait(services,
                                   scope.require(),
-                                  "__is_constructible",
+                                  require_nothrow ?
+                                      "__is_nothrow_constructible" :
+                                      "__is_constructible",
                                   trait_types,
                                   value)) {
     return false;
   }
-  if(value == 0 && services.semantic_context) {
+  if(value == 0 &&
+     services.semantic_context &&
+     !require_nothrow) {
     if(name == "is_default_constructible" &&
        semantic_class_model::is_trivially_default_constructible_type_for_host_abi(
            *services.semantic_context, type)) {
