@@ -2078,6 +2078,33 @@ sub assign_lowir_function_symbol_pair
 	return $$next_ref;
 }
 
+sub lowir_function_entry_map
+{
+	my ($data) = @_;
+	my %map;
+	for my $entry (split_lowir_top_level_entries($data))
+	{
+		next if $entry !~ /^function \@([A-Za-z0-9_]+)\(/;
+		$map{$1} = $entry;
+	}
+	return \%map;
+}
+
+sub lowir_function_shape_text
+{
+	my ($entry) = @_;
+	my @lines = split(/\n/, $entry, -1);
+	# Drop the function-level [..] metadata (object=, binding=, role=, ...) from
+	# the header so the shape ignores volatile mangle/linkage details. Parameter
+	# brackets (e.g. [pass=reference]) sit inside the parens and are preserved.
+	$lines[0] =~ s/((?:\s+\[[^\]]+\])+)\s*\{\s*$/ {/ if @lines;
+	my $text = join("\n", @lines);
+	# Mask every symbol reference (the function's own name, callees, globals) so
+	# two structurally identical functions match regardless of their mangled names.
+	$text =~ s/\@[^\s(),]+/\@<sym>/g;
+	return $text;
+}
+
 sub paired_lowir_function_symbol_maps
 {
 	my ($ref_data, $my_data) = @_;
@@ -2120,6 +2147,38 @@ sub paired_lowir_function_symbol_maps
 		                                          \%my_map,
 		                                          $name,
 		                                          $name,
+		                                          \$next);
+	}
+
+	# Structural pass: pair any still-unpaired *defined* functions whose
+	# normalized shape (signature + body with symbol names masked) is unique on
+	# both sides. This lets the relaxed compare line functions up by structure
+	# rather than falling back to emission order, so a function whose mangled
+	# name differs (or is absent) no longer forces an order-sensitive mispairing.
+	# Requiring the shape to be unique on both sides keeps this sound: the
+	# correspondence is forced, and a genuinely different body has a different
+	# shape and stays unpaired, so a real codegen diff is never hidden.
+	my $ref_entries = lowir_function_entry_map($ref_data);
+	my $my_entries = lowir_function_entry_map($my_data);
+	my (%ref_by_shape, %my_by_shape);
+	for my $name (@$ref_order)
+	{
+		next if exists($ref_map{$name}) || !exists($ref_entries->{$name});
+		push @{$ref_by_shape{lowir_function_shape_text($ref_entries->{$name})}}, $name;
+	}
+	for my $name (@$my_order)
+	{
+		next if exists($my_map{$name}) || !exists($my_entries->{$name});
+		push @{$my_by_shape{lowir_function_shape_text($my_entries->{$name})}}, $name;
+	}
+	for my $shape (sort keys(%ref_by_shape))
+	{
+		next if !exists($my_by_shape{$shape});
+		next if scalar(@{$ref_by_shape{$shape}}) != 1 || scalar(@{$my_by_shape{$shape}}) != 1;
+		$next = assign_lowir_function_symbol_pair(\%ref_map,
+		                                          \%my_map,
+		                                          $ref_by_shape{$shape}[0],
+		                                          $my_by_shape{$shape}[0],
 		                                          \$next);
 	}
 

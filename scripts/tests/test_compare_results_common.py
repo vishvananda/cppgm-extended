@@ -771,6 +771,60 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("relaxed metadata canonicalization", result.stdout + result.stderr)
 
+    def test_lowir_compare_pairs_reordered_functions_by_structure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa23"
+            testbase = root / "tests" / "200"
+            write_text(testbase.with_suffix(".t"), "int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            ref_lowir = textwrap.dedent(
+                """\
+                function @f() -> i32 {
+                  block ^entry:
+                    return i32 1
+                }
+
+                function @g() -> i32 {
+                  block ^entry:
+                    return i32 2
+                }
+
+                function @main() -> i32 [role=entry] {
+                  block ^entry:
+                    %0 = call i32 @f()
+                    return i32 %0
+                }
+                """
+            )
+            # Same program: the two helpers are emitted in the opposite order and
+            # carry different, unmatchable symbol names, but main still calls the
+            # return-1 helper. Structural pairing must line them up by shape so the
+            # relaxed compare accepts this instead of mispairing by emission order.
+            my_lowir = textwrap.dedent(
+                """\
+                function @y() -> i32 {
+                  block ^entry:
+                    return i32 2
+                }
+
+                function @x() -> i32 {
+                  block ^entry:
+                    return i32 1
+                }
+
+                function @main() -> i32 [role=entry] {
+                  block ^entry:
+                    %0 = call i32 @x()
+                    return i32 %0
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), ref_lowir)
+            write_text(testbase.with_suffix(".my"), my_lowir)
+            result = run_compare("lowir_t", root, "tests")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_lowir_compare_rejects_invalid_role_owner(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
