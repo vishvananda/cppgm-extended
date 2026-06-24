@@ -1271,6 +1271,15 @@ bool matches_constructor_entry_type_for_lowir(const TypePtr & entry_type,
   if(base->params.size() == 1) {
     return same_class_reference_parameter_for_lowir(class_type, base->params[0], ref_kind);
   }
+  // The implicit-object (`this`) parameter must belong to the class being
+  // looked up. Otherwise a converting constructor of a *different*
+  // specialization can match purely on its reference parameter type -- e.g.
+  // Wrap<const T*>::Wrap(Wrap<const T*>*, const Wrap<T*>&) would be mistaken
+  // for Wrap<T*>'s copy/move constructor, emitting a cross-class constructor
+  // call where a trivial copy is required.
+  if(!same_class_pointer_parameter_for_lowir(class_type, base->params[0])) {
+    return false;
+  }
   for(size_t i = 1; i < base->params.size(); ++i) {
     if(same_class_reference_parameter_for_lowir(class_type, base->params[i], ref_kind)) {
       return true;
