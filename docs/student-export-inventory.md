@@ -22,7 +22,7 @@ copies.
 | Starter build | `dev/Makefile` | Export only targets needed to build student tools and reference/harness helpers. |
 | Shared test helpers | `scripts/run_all_tests_common.pl`, `scripts/CppgmBatchWorker.pm` | Public if used by exported PA harnesses. Must be self-contained. |
 | Hosted wrapper | `scripts/cppgm-cmake-wrapper.sh` | Public only for late hosted/toolchain assignments that document the wrapper workflow. |
-| Scaffold support headers | `dev/src/IPPTokenStream.h`, `dev/src/DebugPPTokenStream.h`, `dev/src/exceptions.h`, `dev/src/tool_help_text.h` | Required by the exported starter scaffold sidecars. |
+| Scaffold support headers | `dev/src/IPPTokenStream.h`, `dev/src/DebugPPTokenStream.h`, `dev/src/abi_mangle.h`, `dev/src/lowir_model.h`, `dev/src/mir_model.h`, `dev/src/exceptions.h`, `dev/src/tool_help_text.h` | Required by the exported starter scaffold sidecars and optional typed IR/fact scaffolds. |
 
 ## Initial Starter Scaffold Map
 
@@ -41,9 +41,9 @@ into per-PA inventory entries and mark unresolved decisions explicitly.
 | PA8 | `nsinit` | `dev/nsinit.cpp` | `dev/nsinit-scaffold.cpp` | Scaffold exists. |
 | PA9 | `cy86` | `dev/cy86.cpp` | `dev/cy86-scaffold.cpp` | Scaffold exists. |
 | PA10-PA12 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Scaffold exists; README must explain staged `--emit-ast`, `--emit-types`, and `--emit-semantics` work. |
-| PA13 | `lowir2cy86` | `dev/lowir2cy86.cpp` | `dev/lowir2cy86-scaffold.cpp` | Scaffold exists. |
+| PA13 | `lowir2cy86` | `dev/lowir2cy86.cpp` | `dev/lowir2cy86-scaffold.cpp` | Scaffold exists; optional typed LowIR model header is exported under `dev/src`. |
 | PA14-PA27, PA29, PA31-PA36 | `cppgm++` | `dev/cppgm++.cpp` | `dev/cppgm++-scaffold.cpp` | Same scaffold candidate; workers must decide how exported cumulative PA docs describe extending it. |
-| PA28 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists. |
+| PA28 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Scaffold exists; optional typed MIR model header is exported under `dev/src`. |
 | PA30 | `abimangle` | `dev/abimangle.cpp` | `dev/abimangle-scaffold.cpp` | Scaffold exists; optional typed ABI fact header is exported under `dev/src`. |
 | PA37 | `lowiropt` | `dev/lowiropt.cpp` | `dev/lowiropt-scaffold.cpp` | Scaffold exists. |
 | PA38 | `lowir2native` | `dev/lowir2native.cpp` | `dev/lowir2native-scaffold.cpp` | Reuses the PA28 backend entrypoint; export docs must explain the machine/backend optimization extension. |
@@ -159,8 +159,9 @@ or approved shared infrastructure update.
   PA's grammar/explorer where present, tests, refs, and harness scripts.
 - PA28 exports `lowir2native`; students edit `dev/lowir2native.cpp` from
   `dev/lowir2native-scaffold.cpp`; support files include `pa28.gram`,
-  `grammar/`, `../pa13/lowir.md`, `tests/strict`, `tests/structural`, refs, and
-  harness scripts.
+  `grammar/`, `../pa13/lowir.md`, the optional `dev/src/lowir_model.h` and
+  `dev/src/mir_model.h` typed IR scaffolds, `tests/strict`, `tests/structural`,
+  refs, and harness scripts.
 - PA29 exports cumulative `cppgm++` compile/link driver mode; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include
   `pa29.gram`, `grammar/`, `tests/general`, refs, wrapper/runtime helpers, and

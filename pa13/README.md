@@ -37,6 +37,7 @@ The PA13 starter kit contains:
 - `lowir2cy86.cpp`, a link to the editable `dev/lowir2cy86.cpp` entry point
 - the grammar for this assignment called `pa13.gram`
 - `lowir.md`, the LowIR format reference for this assignment family
+- optional typed LowIR model scaffolding in `dev/src/lowir_model.h`
 - an HTML grammar explorer of `pa13.gram` in the sub-directory `grammar/`
 - `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
 - `tests/spec/`, the LowIR-to-CY86 tests
@@ -166,6 +167,13 @@ stages must be able to preserve semantic call-boundary and symbol-boundary
 facts in LowIR text. PA13 translates those facts only to the extent needed for
 the CY86 adapter. It does not implement native object symbol binding, host ABI
 register assignment, or debugger behavior.
+
+You may keep a typed LowIR model internally, and the optional
+`dev/src/lowir_model.h` scaffold names the common program, symbol, type,
+operand, block, and instruction pieces. The typed model is support for the
+text format, not a replacement for it: if a later backend or object writer
+needs a fact, that fact must be representable in serialized LowIR text and
+recoverable by parsing that text back in.
 
 Required instructions:
 
