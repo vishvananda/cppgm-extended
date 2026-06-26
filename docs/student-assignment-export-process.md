@@ -234,9 +234,13 @@ should export alongside the starter sources when those assignments are packaged:
 - [DebugPPTokenStream.h](../dev/src/DebugPPTokenStream.h)
 - [abi_mangle.h](../dev/src/abi_mangle.h) for the PA30 optional ABI fact
   scaffold
+- [ir_symbol_model.h](../dev/src/ir_symbol_model.h) for the shared LowIR/MIR
+  exported-symbol payload
 - [lowir_model.h](../dev/src/lowir_model.h) for the optional typed LowIR
   scaffold
 - [mir_model.h](../dev/src/mir_model.h) for the optional typed MIR scaffold
+- [x86_register_model.h](../dev/src/x86_register_model.h) for MIR register and
+  condition-code names
 - [exceptions.h](../dev/src/exceptions.h)
 - [tool_help_text.h](../dev/src/tool_help_text.h)
 

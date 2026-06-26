@@ -1,6 +1,6 @@
 #pragma once
 
-#include "machine_ir.h"
+#include "mir_model.h"
 
-machine_ir::Program optimize_machine_ir_program(const machine_ir::Program & program,
-                                                int optimization_level);
+mir_model::MirProgram optimize_machine_ir_program(const mir_model::MirProgram & program,
+                                                  int optimization_level);

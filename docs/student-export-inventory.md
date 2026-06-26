@@ -22,7 +22,7 @@ copies.
 | Starter build | `dev/Makefile` | Export only targets needed to build student tools and reference/harness helpers. |
 | Shared test helpers | `scripts/run_all_tests_common.pl`, `scripts/CppgmBatchWorker.pm` | Public if used by exported PA harnesses. Must be self-contained. |
 | Hosted wrapper | `scripts/cppgm-cmake-wrapper.sh` | Public only for late hosted/toolchain assignments that document the wrapper workflow. |
-| Scaffold support headers | `dev/src/IPPTokenStream.h`, `dev/src/DebugPPTokenStream.h`, `dev/src/abi_mangle.h`, `dev/src/lowir_model.h`, `dev/src/mir_model.h`, `dev/src/exceptions.h`, `dev/src/tool_help_text.h` | Required by the exported starter scaffold sidecars and optional typed IR/fact scaffolds. |
+| Scaffold support headers | `dev/src/IPPTokenStream.h`, `dev/src/DebugPPTokenStream.h`, `dev/src/abi_mangle.h`, `dev/src/ir_symbol_model.h`, `dev/src/lowir_model.h`, `dev/src/mir_model.h`, `dev/src/x86_register_model.h`, `dev/src/exceptions.h`, `dev/src/tool_help_text.h` | Required by the exported starter scaffold sidecars and optional typed IR/fact scaffolds. |
 
 ## Initial Starter Scaffold Map
 
@@ -159,8 +159,10 @@ or approved shared infrastructure update.
   PA's grammar/explorer where present, tests, refs, and harness scripts.
 - PA28 exports `lowir2native`; students edit `dev/lowir2native.cpp` from
   `dev/lowir2native-scaffold.cpp`; support files include `pa28.gram`,
-  `grammar/`, `../pa13/lowir.md`, the optional `dev/src/lowir_model.h` and
-  `dev/src/mir_model.h` typed IR scaffolds, `tests/strict`, `tests/structural`,
+  `grammar/`, `../pa13/lowir.md`, the optional `dev/src/ir_symbol_model.h`,
+  `dev/src/lowir_model.h`, `dev/src/mir_model.h`, and
+  `dev/src/x86_register_model.h` typed IR scaffolds, `tests/strict`,
+  `tests/structural`,
   refs, and harness scripts.
 - PA29 exports cumulative `cppgm++` compile/link driver mode; students edit
   `dev/cppgm++.cpp` from `dev/cppgm++-scaffold.cpp`; support files include
@@ -210,9 +212,10 @@ or approved shared infrastructure update.
   from `dev/lowir2native-scaffold.cpp` plus shared machine/backend optimizer
   support under `dev/src`; support files include `pa38/Makefile`, `pa38/scripts`,
   `scripts/run_lowir_native_tests_worker.pl`, and
-  `tests/{o1,o2,debuginfo}` sidecars. The exported README should describe this
-  as shared backend optimization work that remains reusable by later `cppgm++`
-  object and link-driver modes.
+  `tests/{o1,o2,debuginfo}` sidecars. The optional MIR scaffolding uses
+  `dev/src/mir_model.h` and `dev/src/x86_register_model.h`. The exported README
+  should describe this as shared backend optimization work that remains reusable
+  by later `cppgm++` object and link-driver modes.
 - Remaining decisions: loose LowIR validator configuration for PA37 and
   structural MIR validator configuration for PA38.
 

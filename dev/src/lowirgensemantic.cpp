@@ -52,6 +52,30 @@ const char * exported_linkage_name(symbol_linkage::SymbolLinkage linkage)
   return "unknown";
 }
 
+ir_model::ExportedSymbol lowir_exported_symbol_from_identity(
+    const symbol_linkage::SymbolIdentity & identity)
+{
+  ir_model::ExportedSymbol out;
+  out.internal_symbol = identity.internal_symbol;
+  out.object_symbol = identity.object_symbol;
+  out.thread_local_wrapper_object_symbol =
+      identity.thread_local_wrapper_object_symbol;
+  out.keep_internal_alias = identity.keep_internal_alias;
+  out.prefer_local_object_binding = identity.prefer_local_object_binding;
+  switch(identity.linkage) {
+  case symbol_linkage::SL_INTERNAL:
+    out.linkage = ir_model::SL_INTERNAL;
+    break;
+  case symbol_linkage::SL_EXTERNAL:
+    out.linkage = ir_model::SL_EXTERNAL;
+    break;
+  case symbol_linkage::SL_WEAK:
+    out.linkage = ir_model::SL_WEAK;
+    break;
+  }
+  return out;
+}
+
 string thread_local_init_internal_symbol(const string & global_symbol)
 {
   return global_symbol + "__tls_init";
@@ -15236,7 +15260,8 @@ public:
     for(map<string, symbol_linkage::SymbolIdentity>::const_iterator it =
             exported_symbols_.begin();
         it != exported_symbols_.end(); ++it) {
-      program.exported_symbols.push_back(it->second);
+      program.exported_symbols.push_back(
+          lowir_exported_symbol_from_identity(it->second));
     }
     program.object_aliases = object_aliases_;
     complete_lowir_declarations(program);
@@ -15837,11 +15862,11 @@ private:
                                   binding,
                                   target_symbol);
     declaration.metadata.object_symbol = wrapper_object;
-    program.exported_symbols.push_back(
+    program.exported_symbols.push_back(lowir_exported_symbol_from_identity(
         symbol_linkage::make_object_symbol_identity(
             wrapper_internal,
             wrapper_object,
-            variable_symbol.linkage));
+            variable_symbol.linkage)));
     record_function_declaration(program,
                                 emitted_function_declarations,
                                 declaration);

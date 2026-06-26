@@ -19,9 +19,11 @@
 
 using namespace std;
 
+#include "lowir_internal.h"
 #include "optimization_level.h"
 
 namespace lir = lowir_internal;
+namespace lowir = lowir_model;
 
 namespace {
 
@@ -6026,10 +6028,10 @@ void run_o2_slot_promotion_pipeline(lir::Function & function,
 
 }  // namespace
 
-lir::Program optimize_lowir_program(const lir::Program & program,
-                                    int optimization_level)
+lowir::LowirProgram optimize_lowir_program(const lowir::LowirProgram & program,
+                                           int optimization_level)
 {
-  lir::Program optimized = program;
+  lowir::LowirProgram optimized = program;
   const int level = normalize_optimization_level(optimization_level);
   if(level <= 0) {
     return optimized;
@@ -6091,6 +6093,7 @@ lir::Program optimize_lowir_program(const lir::Program & program,
 string optimize_lowir_text(const vector<string> & srcfiles,
                            int optimization_level)
 {
-  return lir::dump_program(
-      optimize_lowir_program(lir::parse_program(srcfiles), optimization_level));
+  return lowir::serialize_lowir_program(
+      optimize_lowir_program(lowir::parse_lowir_program_files(srcfiles),
+                             optimization_level));
 }
