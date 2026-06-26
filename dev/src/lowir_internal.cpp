@@ -15,6 +15,8 @@
 
 using namespace std;
 
+#include "symbol_linkage.h"
+
 namespace lowir_internal {
 
 namespace {
@@ -309,28 +311,28 @@ bool parse_yes_no_text(const string & text, bool & value)
   return false;
 }
 
-symbol_linkage::SymbolLinkage symbol_linkage_from_binding(SymbolBindingMode binding)
+ir_model::SymbolLinkage ir_symbol_linkage_from_binding(SymbolBindingMode binding)
 {
   switch(binding) {
     case SBM_INTERNAL:
-      return symbol_linkage::SL_INTERNAL;
+      return ir_model::SL_INTERNAL;
     case SBM_WEAK:
-      return symbol_linkage::SL_WEAK;
+      return ir_model::SL_WEAK;
     case SBM_STRONG:
     case SBM_DEFAULT:
-      return symbol_linkage::SL_EXTERNAL;
+      return ir_model::SL_EXTERNAL;
   }
-  return symbol_linkage::SL_EXTERNAL;
+  return ir_model::SL_EXTERNAL;
 }
 
-SymbolBindingMode binding_from_symbol_linkage(symbol_linkage::SymbolLinkage linkage)
+SymbolBindingMode binding_from_ir_symbol_linkage(ir_model::SymbolLinkage linkage)
 {
   switch(linkage) {
-    case symbol_linkage::SL_INTERNAL:
+    case ir_model::SL_INTERNAL:
       return SBM_INTERNAL;
-    case symbol_linkage::SL_WEAK:
+    case ir_model::SL_WEAK:
       return SBM_WEAK;
-    case symbol_linkage::SL_EXTERNAL:
+    case ir_model::SL_EXTERNAL:
       return SBM_STRONG;
   }
   return SBM_DEFAULT;
@@ -1531,15 +1533,18 @@ void parse_instruction_debug_location(InstructionDebugLocation & debug_location,
   debug_location.column = static_cast<size_t>(debug_column);
 }
 
-symbol_linkage::SymbolIdentity synthesized_export_identity(const string & name,
-                                                           SymbolBindingMode binding)
+ir_model::ExportedSymbol synthesized_export_identity(const string & name,
+                                                     SymbolBindingMode binding)
 {
-  const symbol_linkage::SymbolLinkage linkage = symbol_linkage_from_binding(binding);
   string object_name = name;
   if(binding != SBM_INTERNAL && !object_name.empty() && object_name[0] == '@') {
     object_name.erase(0, 1);
   }
-  return symbol_linkage::make_object_symbol_identity(name, object_name, linkage);
+  ir_model::ExportedSymbol out;
+  out.internal_symbol = name;
+  out.object_symbol = object_name;
+  out.linkage = ir_symbol_linkage_from_binding(binding);
+  return out;
 }
 
 void maybe_add_exported_symbol(Program & program,
@@ -1552,14 +1557,14 @@ void maybe_add_exported_symbol(Program & program,
      !metadata.prefer_local_object_binding) {
     return;
   }
-  symbol_linkage::SymbolIdentity identity =
+  ir_model::ExportedSymbol identity =
       synthesized_export_identity(name, metadata.binding);
   if(!metadata.object_symbol.empty()) {
     identity.object_symbol = metadata.object_symbol;
   }
   identity.keep_internal_alias = metadata.keep_internal_alias;
   identity.prefer_local_object_binding = metadata.prefer_local_object_binding;
-  identity.linkage = symbol_linkage_from_binding(metadata.binding);
+  identity.linkage = ir_symbol_linkage_from_binding(metadata.binding);
   program.exported_symbols.push_back(identity);
 }
 
@@ -2832,10 +2837,10 @@ void dump_function_metadata(const FunctionBoundaryMetadata & boundary,
   out << "]";
 }
 
-map<string, symbol_linkage::SymbolIdentity> export_map(
-    const vector<symbol_linkage::SymbolIdentity> & exported_symbols)
+map<string, ir_model::ExportedSymbol> export_map(
+    const vector<ir_model::ExportedSymbol> & exported_symbols)
 {
-  map<string, symbol_linkage::SymbolIdentity> out;
+  map<string, ir_model::ExportedSymbol> out;
   for(size_t i = 0; i < exported_symbols.size(); ++i) {
     out[exported_symbols[i].internal_symbol] = exported_symbols[i];
   }
@@ -2843,10 +2848,10 @@ map<string, symbol_linkage::SymbolIdentity> export_map(
 }
 
 bool export_uses_default_object_name(const string & internal_name,
-                                     const symbol_linkage::SymbolIdentity & identity,
+                                     const ir_model::ExportedSymbol & identity,
                                      SymbolBindingMode binding)
 {
-  const symbol_linkage::SymbolIdentity synthesized =
+  const ir_model::ExportedSymbol synthesized =
       synthesized_export_identity(internal_name, binding);
   return identity.object_symbol == synthesized.object_symbol;
 }
@@ -2854,15 +2859,15 @@ bool export_uses_default_object_name(const string & internal_name,
 SymbolMetadata merged_symbol_metadata_for_dump(
     const string & internal_name,
     const SymbolMetadata & base,
-    const map<string, symbol_linkage::SymbolIdentity> & exports)
+    const map<string, ir_model::ExportedSymbol> & exports)
 {
   SymbolMetadata out = base;
-  map<string, symbol_linkage::SymbolIdentity>::const_iterator found =
+  map<string, ir_model::ExportedSymbol>::const_iterator found =
       exports.find(internal_name);
   if(found == exports.end()) {
     return out;
   }
-  out.binding = binding_from_symbol_linkage(found->second.linkage);
+  out.binding = binding_from_ir_symbol_linkage(found->second.linkage);
   if(!export_uses_default_object_name(internal_name, found->second, out.binding)) {
     out.object_symbol = found->second.object_symbol;
   }
@@ -2875,7 +2880,7 @@ SymbolMetadata merged_symbol_metadata_for_dump(
 
 void canonicalize_program_export_metadata(Program & program)
 {
-  const map<string, symbol_linkage::SymbolIdentity> exports =
+  const map<string, ir_model::ExportedSymbol> exports =
       export_map(program.exported_symbols);
   for(size_t i = 0; i < program.global_declarations.size(); ++i) {
     program.global_declarations[i].metadata =
@@ -2906,7 +2911,7 @@ void canonicalize_program_export_metadata(Program & program)
 string dump_program(const Program & program)
 {
   ostringstream out;
-  const map<string, symbol_linkage::SymbolIdentity> exports =
+  const map<string, ir_model::ExportedSymbol> exports =
       export_map(program.exported_symbols);
   for(size_t i = 0; i < program.global_declarations.size(); ++i) {
     const GlobalDeclaration & global = program.global_declarations[i];
@@ -3311,3 +3316,33 @@ bool is_host_eh_symbol_role(SymbolRole role)
 }
 
 }  // namespace lowir_internal
+
+namespace lowir_model {
+
+LowirProgram parse_lowir_program_text(const std::string & text,
+                                      const std::string & source_name)
+{
+  return lowir_internal::parse_program_text(text, source_name);
+}
+
+LowirProgram parse_lowir_program_files(const std::vector<std::string> & paths)
+{
+  return lowir_internal::parse_program(paths);
+}
+
+std::string serialize_lowir_program(const LowirProgram & program)
+{
+  return lowir_internal::dump_program(program);
+}
+
+void write_lowir_program_file(const std::string & path,
+                              const LowirProgram & program)
+{
+  std::ofstream out(path.c_str());
+  if(!out) {
+    throw ParseError("unable to open LowIR output file: " + path);
+  }
+  out << serialize_lowir_program(program);
+}
+
+}  // namespace lowir_model

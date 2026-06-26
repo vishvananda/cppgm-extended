@@ -37,7 +37,8 @@ The PA13 starter kit contains:
 - `lowir2cy86.cpp`, a link to the editable `dev/lowir2cy86.cpp` entry point
 - the grammar for this assignment called `pa13.gram`
 - `lowir.md`, the LowIR format reference for this assignment family
-- optional typed LowIR model scaffolding in `dev/src/lowir_model.h`
+- optional typed LowIR model scaffolding in `dev/src/lowir_model.h` with
+  shared exported-symbol support in `dev/src/ir_symbol_model.h`
 - an HTML grammar explorer of `pa13.gram` in the sub-directory `grammar/`
 - `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
 - `tests/spec/`, the LowIR-to-CY86 tests

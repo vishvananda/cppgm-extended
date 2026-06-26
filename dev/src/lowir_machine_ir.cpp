@@ -11,6 +11,8 @@
 using namespace std;
 
 #include "cy86_internal.h"
+#include "lowir_internal.h"
+#include "machine_ir.h"
 #include "runtime_symbol_policy.h"
 #include "symbol_linkage.h"
 
@@ -18,6 +20,7 @@ namespace {
 
 namespace lir = lowir_internal;
 namespace mir = machine_ir;
+namespace lowir = lowir_model;
 
 struct FunctionLayout
 {
@@ -7494,28 +7497,30 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
 
 }  // namespace
 
-machine_ir::Program build_lowir_machine_ir(const vector<string> & srcfiles,
-                                           const string & output_target)
+mir_model::MirProgram build_lowir_machine_ir(const vector<string> & srcfiles,
+                                             const string & output_target)
 {
-  return build_lowir_machine_ir(lir::parse_program(srcfiles), output_target);
+  return build_lowir_machine_ir(lowir::parse_lowir_program_files(srcfiles), output_target);
 }
 
-machine_ir::Program build_lowir_machine_ir(const lir::Program & program,
-                                           const string & output_target)
+mir_model::MirProgram build_lowir_machine_ir(const lowir::LowirProgram & program,
+                                             const string & output_target)
 {
   return MachineIRBuilder(program, output_target, false).build();
 }
 
-machine_ir::Program build_lowir_machine_ir_object(const vector<string> & srcfiles,
-                                                  const string & output_target,
-                                                  bool enable_host_eh)
+mir_model::MirProgram build_lowir_machine_ir_object(const vector<string> & srcfiles,
+                                                    const string & output_target,
+                                                    bool enable_host_eh)
 {
-  return build_lowir_machine_ir_object(lir::parse_program(srcfiles), output_target, enable_host_eh);
+  return build_lowir_machine_ir_object(lowir::parse_lowir_program_files(srcfiles),
+                                      output_target,
+                                      enable_host_eh);
 }
 
-machine_ir::Program build_lowir_machine_ir_object(const lir::Program & program,
-                                                  const string & output_target,
-                                                  bool enable_host_eh)
+mir_model::MirProgram build_lowir_machine_ir_object(const lowir::LowirProgram & program,
+                                                    const string & output_target,
+                                                    bool enable_host_eh)
 {
   return MachineIRBuilder(program, output_target, enable_host_eh).build_object();
 }

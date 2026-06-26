@@ -5,6 +5,7 @@
 #include <set>
 #include <vector>
 
+#include "machine_ir.h"
 #include "optimization_level.h"
 
 using namespace std;
@@ -12,6 +13,7 @@ using namespace std;
 namespace {
 
 namespace mir = machine_ir;
+namespace mir_public = mir_model;
 
 struct LiveState
 {
@@ -1785,10 +1787,10 @@ bool minimize_callee_saved_preservation(mir::Function & function)
 
 }  // namespace
 
-machine_ir::Program optimize_machine_ir_program(const machine_ir::Program & program,
-                                                int optimization_level)
+mir_public::MirProgram optimize_machine_ir_program(const mir_public::MirProgram & program,
+                                                   int optimization_level)
 {
-  machine_ir::Program out = program;
+  mir_public::MirProgram out = program;
   optimization_level = normalize_optimization_level(optimization_level);
   for(size_t i = 0; i < out.functions.size(); ++i) {
     while(combine_block_trivial_mov_artifacts(out.functions[i])) {

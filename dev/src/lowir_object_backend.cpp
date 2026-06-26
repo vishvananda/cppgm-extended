@@ -17,12 +17,15 @@ using namespace std;
 #include "cy86_internal.h"
 #include "eh_runtime.h"
 #include "host_eh_object_sections.h"
+#include "lowir_internal.h"
+#include "lowir_model.h"
 #include "lowir_machine_ir.h"
 #include "machine_ir_optimizer.h"
 #include "native_format.h"
 #include "parser_trace.h"
 #include "runtime_symbol_policy.h"
 #include "symbol_linkage.h"
+#include "x86_assembler.h"
 
 namespace {
 
@@ -641,12 +644,12 @@ ThreadLocalSectionInfo thread_local_section_info_for_target(const string & targe
   throw logic_error("unsupported thread_local object emission target " + target);
 }
 
-string translated_symbol_name(const map<string, symbol_linkage::SymbolIdentity> & exports,
+string translated_symbol_name(const map<string, ir_model::ExportedSymbol> & exports,
                               const string & internal_name);
-map<string, symbol_linkage::SymbolIdentity> export_map(
-    const vector<symbol_linkage::SymbolIdentity> & exported_symbols);
+map<string, ir_model::ExportedSymbol> export_map(
+    const vector<ir_model::ExportedSymbol> & exported_symbols);
 
-string thread_local_template_symbol(const map<string, symbol_linkage::SymbolIdentity> & exports,
+string thread_local_template_symbol(const map<string, ir_model::ExportedSymbol> & exports,
                                     const string & global_name,
                                     const string & target)
 {
@@ -669,7 +672,7 @@ string thread_local_template_symbol(const map<string, symbol_linkage::SymbolIden
 }
 
 string thread_local_runtime_object_symbol(
-    const map<string, symbol_linkage::SymbolIdentity> & exports,
+    const map<string, ir_model::ExportedSymbol> & exports,
     const string & global_name,
     const string & target)
 {
@@ -3200,7 +3203,7 @@ void append_relocation(vector<mobj::Relocation> & relocs,
 
 vector<unsigned char> build_code_bytes(const mir::Program & program,
                                        const ObjectLayout & layout,
-                                       const map<string, symbol_linkage::SymbolIdentity> & exports,
+                                       const map<string, ir_model::ExportedSymbol> & exports,
                                        vector<mobj::Relocation> & relocations,
                                        vector<hosteh::HostEhFunctionInfo> * host_eh_functions)
 {
@@ -3568,7 +3571,7 @@ vector<unsigned char> build_data_bytes(const mir::Program & program,
                                        const ObjectLayout & layout,
                                        vector<mobj::Relocation> & relocations)
 {
-  const map<string, symbol_linkage::SymbolIdentity> exports =
+  const map<string, ir_model::ExportedSymbol> exports =
       export_map(program.exported_symbols);
   const ThreadLocalSectionInfo tls_info =
       thread_local_section_info_for_target(program.target);
@@ -3755,7 +3758,7 @@ vector<mobj::ExtraSection> build_thread_local_template_sections(
 mobj::ExtraSection build_thread_local_vars_section(
     const mir::Program & program,
     const ObjectLayout & layout,
-    const map<string, symbol_linkage::SymbolIdentity> & exports)
+    const map<string, ir_model::ExportedSymbol> & exports)
 {
   const ThreadLocalSectionInfo info = thread_local_section_info_for_target(program.target);
   if(info.abi != ThreadLocalSectionInfo::ABI_MACHO_TLV) {
@@ -4580,19 +4583,19 @@ mobj::ExtraSection build_dwarf_line_section(const mir::Program & program,
   return section;
 }
 
-map<string, symbol_linkage::SymbolIdentity> export_map(
-    const vector<symbol_linkage::SymbolIdentity> & exported_symbols)
+map<string, ir_model::ExportedSymbol> export_map(
+    const vector<ir_model::ExportedSymbol> & exported_symbols)
 {
-  map<string, symbol_linkage::SymbolIdentity> out;
+  map<string, ir_model::ExportedSymbol> out;
   for(size_t i = 0; i < exported_symbols.size(); ++i) {
     if(exported_symbols[i].internal_symbol.empty()) {
       continue;
     }
-    map<string, symbol_linkage::SymbolIdentity>::const_iterator found =
+    map<string, ir_model::ExportedSymbol>::const_iterator found =
         out.find(exported_symbols[i].internal_symbol);
     if(found != out.end() &&
-       (symbol_linkage::exported_object_symbol(found->second) !=
-            symbol_linkage::exported_object_symbol(exported_symbols[i]) ||
+       (ir_model::exported_object_symbol(found->second) !=
+            ir_model::exported_object_symbol(exported_symbols[i]) ||
         found->second.keep_internal_alias != exported_symbols[i].keep_internal_alias ||
         found->second.linkage != exported_symbols[i].linkage)) {
       throw logic_error("conflicting object symbol mapping for " +
@@ -4640,7 +4643,7 @@ void append_object_alias_symbols(
   }
 }
 
-string translated_symbol_name(const map<string, symbol_linkage::SymbolIdentity> & exports,
+string translated_symbol_name(const map<string, ir_model::ExportedSymbol> & exports,
                               const string & internal_name)
 {
   if(internal_name.empty()) {
@@ -4653,12 +4656,12 @@ string translated_symbol_name(const map<string, symbol_linkage::SymbolIdentity> 
     return internal_name.substr(external_runtime_prefix.size());
   }
   string object_name = internal_name;
-  map<string, symbol_linkage::SymbolIdentity>::const_iterator found =
+  map<string, ir_model::ExportedSymbol>::const_iterator found =
       exports.find(internal_name);
   const bool is_exported_definition = found != exports.end();
   const string normalized_internal_name = runtime_symbol_policy::normalize_lookup_name(internal_name);
-  if(found != exports.end() && symbol_linkage::has_object_symbol(found->second)) {
-    object_name = symbol_linkage::exported_object_symbol(found->second);
+  if(found != exports.end() && ir_model::has_object_symbol(found->second)) {
+    object_name = ir_model::exported_object_symbol(found->second);
     if(object_name.empty()) {
       throw logic_error("object symbol translation produced empty symbol for " + internal_name);
     }
@@ -4680,10 +4683,10 @@ string translated_symbol_name(const map<string, symbol_linkage::SymbolIdentity> 
 }
 
 string translated_debug_symbol_name(
-    const map<string, symbol_linkage::SymbolIdentity> & exports,
+    const map<string, ir_model::ExportedSymbol> & exports,
     const string & internal_name)
 {
-  map<string, symbol_linkage::SymbolIdentity>::const_iterator found =
+  map<string, ir_model::ExportedSymbol>::const_iterator found =
       exports.find(internal_name);
   if(found != exports.end() &&
      found->second.keep_internal_alias &&
@@ -4695,12 +4698,12 @@ string translated_debug_symbol_name(
 
 bool should_emit_keep_internal_alias_for_function(
     const machine_ir::Function & function,
-    const symbol_linkage::SymbolIdentity & exported)
+    const ir_model::ExportedSymbol & exported)
 {
   if(!exported.keep_internal_alias) {
     return false;
   }
-  const string object_symbol = symbol_linkage::exported_object_symbol(exported);
+  const string object_symbol = ir_model::exported_object_symbol(exported);
   if(object_symbol == function.name) {
     return false;
   }
@@ -4742,7 +4745,7 @@ machine_object::ObjectFile build_machine_object(const vector<string> & srcfiles,
                                                 int optimization_level,
                                                 bool use_direct_native_tls_abi)
 {
-  return build_machine_object(lowir_internal::parse_program(srcfiles),
+  return build_machine_object(lowir_model::parse_lowir_program_files(srcfiles),
                               output_target,
                               enable_host_eh,
                               use_macos_static_init_sections,
@@ -4792,7 +4795,7 @@ string legacy_startup_alias_for_role(lowir_internal::SymbolRole role)
 }
 
 void add_role_startup_aliases(const lowir_internal::Program & program,
-                              const map<string, symbol_linkage::SymbolIdentity> & exports,
+                              const map<string, ir_model::ExportedSymbol> & exports,
                               machine_object::ObjectFile & object)
 {
   map<string, size_t> defined_symbol_index;
@@ -4866,7 +4869,7 @@ string unique_startup_body_symbol_name(const machine_object::ObjectFile & object
 }
 
 string startup_target_symbol_name(const lowir_internal::Program & program,
-                                  const map<string, symbol_linkage::SymbolIdentity> & exports,
+                                  const map<string, ir_model::ExportedSymbol> & exports,
                                   lowir_internal::SymbolRole role)
 {
   for(size_t i = 0; i < program.functions.size(); ++i) {
@@ -4902,7 +4905,7 @@ machine_object::ExtraSection & ensure_macho_static_init_section(machine_object::
 
 void retarget_macos_init_alias_to_static_init(
     const lowir_internal::Program & program,
-    const map<string, symbol_linkage::SymbolIdentity> & exports,
+    const map<string, ir_model::ExportedSymbol> & exports,
     machine_object::ObjectFile & object)
 {
   const string alias_name = "@__cppgm_init";
@@ -5002,7 +5005,7 @@ map<string, string> lowir_thread_local_wrappers_by_global(
 
 void append_emutls_thread_local_declaration_wrappers(
     const lowir_internal::Program & program,
-    const map<string, symbol_linkage::SymbolIdentity> & exports,
+    const map<string, ir_model::ExportedSymbol> & exports,
     machine_object::ObjectFile & object)
 {
   const ThreadLocalSectionInfo tls_info =
@@ -5094,18 +5097,18 @@ void append_emutls_thread_local_declaration_wrappers(
     symbol.offset = wrapper_offset;
     symbol.size = wrapper_bytes.size();
 
-    map<string, symbol_linkage::SymbolIdentity>::const_iterator exported =
+    map<string, ir_model::ExportedSymbol>::const_iterator exported =
         exports.find(wrapper_internal);
     if(exported == exports.end()) {
       exported = exports.find(decl.name);
     }
     if(exported != exports.end()) {
-      if(exported->second.linkage == symbol_linkage::SL_INTERNAL ||
+      if(exported->second.linkage == ir_model::SL_INTERNAL ||
          (exported->second.prefer_local_object_binding &&
-          !symbol_linkage::has_weak_linkage(exported->second))) {
+          !ir_model::has_weak_linkage(exported->second))) {
         symbol.binding = machine_object::Symbol::SB_LOCAL;
       } else {
-        symbol.binding = symbol_linkage::has_weak_linkage(exported->second) ?
+        symbol.binding = ir_model::has_weak_linkage(exported->second) ?
             machine_object::Symbol::SB_WEAK :
             machine_object::Symbol::SB_GLOBAL;
       }
@@ -5171,22 +5174,22 @@ void force_external_binding_for_function_declaration_imports(
   }
 
   for(size_t i = 0; i < machine_program.exported_symbols.size(); ++i) {
-    symbol_linkage::SymbolIdentity & symbol = machine_program.exported_symbols[i];
+    ir_model::ExportedSymbol & symbol = machine_program.exported_symbols[i];
     if(declaration_only_functions.count(symbol.internal_symbol) == 0 ||
-       !symbol_linkage::has_object_symbol(symbol)) {
+       !ir_model::has_object_symbol(symbol)) {
       continue;
     }
     // Declaration-only functions have no local fallback in this object.  Even
     // when the source entity has ODR/weak linkage, a call import must be strong
     // so the host linker keeps the provider library under --as-needed.
-    symbol.linkage = symbol_linkage::SL_EXTERNAL;
+    symbol.linkage = ir_model::SL_EXTERNAL;
     symbol.prefer_local_object_binding = false;
   }
 }
 
 }  // namespace
 
-machine_object::ObjectFile build_machine_object(const lowir_internal::Program & program,
+machine_object::ObjectFile build_machine_object(const lowir_model::LowirProgram & program,
                                                 const string & output_target,
                                                 bool enable_host_eh,
                                                 bool use_macos_static_init_sections,
@@ -5219,7 +5222,7 @@ machine_object::ObjectFile build_machine_object(const lowir_internal::Program & 
       build_machine_object(machine_program,
                            debug_info_level,
                            use_direct_native_tls_abi);
-  const map<string, symbol_linkage::SymbolIdentity> exports =
+  const map<string, ir_model::ExportedSymbol> exports =
       export_map(program.exported_symbols);
   for(size_t i = 0; i < object.symbols.size(); ++i) {
     if(object.symbols[i].section == machine_object::Symbol::SS_UNDEFINED) {
@@ -5303,7 +5306,7 @@ machine_object::ObjectFile build_machine_object(const lowir_internal::Program & 
   return object;
 }
 
-machine_object::ObjectFile build_machine_object(const machine_ir::Program & program,
+machine_object::ObjectFile build_machine_object(const mir_model::MirProgram & program,
                                                 int debug_info_level,
                                                 bool use_direct_native_tls_abi)
 {
@@ -5313,7 +5316,7 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
   const ObjectLayout layout = layout_object(program);
   const ThreadLocalSectionInfo tls_info =
       thread_local_section_info_for_target(program.target);
-  const map<string, symbol_linkage::SymbolIdentity> exports =
+  const map<string, ir_model::ExportedSymbol> exports =
       export_map(program.exported_symbols);
   const bool default_unexported_symbols_global = exports.empty();
   vector<hosteh::HostEhFunctionInfo> host_eh_functions;
@@ -5378,17 +5381,17 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
   }
 
   map<string, mobj::Symbol::Binding> exported_bindings;
-  for(map<string, symbol_linkage::SymbolIdentity>::const_iterator it = exports.begin();
+  for(map<string, ir_model::ExportedSymbol>::const_iterator it = exports.begin();
       it != exports.end();
       ++it) {
-    if(it->second.linkage == symbol_linkage::SL_INTERNAL ||
+    if(it->second.linkage == ir_model::SL_INTERNAL ||
        (it->second.prefer_local_object_binding &&
-        !symbol_linkage::has_weak_linkage(it->second))) {
+        !ir_model::has_weak_linkage(it->second))) {
       continue;
     }
     const string object_symbol = translated_symbol_name(exports, it->first);
     exported_bindings[object_symbol] =
-        symbol_linkage::has_weak_linkage(it->second) ?
+        ir_model::has_weak_linkage(it->second) ?
             mobj::Symbol::SB_WEAK :
             mobj::Symbol::SB_GLOBAL;
   }
@@ -5433,15 +5436,15 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
     symbol.name = translated_symbol_name(exports, program.functions[i].name);
     symbol.offset = layout.function_offsets.find(program.functions[i].name)->second;
     symbol.size = layout.function_layouts.find(program.functions[i].name)->second.size;
-    map<string, symbol_linkage::SymbolIdentity>::const_iterator exported =
+    map<string, ir_model::ExportedSymbol>::const_iterator exported =
         exports.find(program.functions[i].name);
     if(exported != exports.end()) {
-      if(exported->second.linkage == symbol_linkage::SL_INTERNAL ||
+      if(exported->second.linkage == ir_model::SL_INTERNAL ||
          (exported->second.prefer_local_object_binding &&
-          !symbol_linkage::has_weak_linkage(exported->second))) {
+          !ir_model::has_weak_linkage(exported->second))) {
         symbol.binding = machine_object::Symbol::SB_LOCAL;
       } else {
-        symbol.binding = symbol_linkage::has_weak_linkage(exported->second) ?
+        symbol.binding = ir_model::has_weak_linkage(exported->second) ?
             machine_object::Symbol::SB_WEAK :
             machine_object::Symbol::SB_GLOBAL;
         if(symbol.binding == machine_object::Symbol::SB_WEAK) {
@@ -5457,8 +5460,8 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
             << " binding=" << object_binding_name(symbol.binding);
       if(exported != exports.end()) {
         trace << " exported-linkage="
-              << (exported->second.linkage == symbol_linkage::SL_INTERNAL ? "internal" :
-                  exported->second.linkage == symbol_linkage::SL_WEAK ? "weak" :
+              << (exported->second.linkage == ir_model::SL_INTERNAL ? "internal" :
+                  exported->second.linkage == ir_model::SL_WEAK ? "weak" :
                   "external")
               << " keep-alias=" << (exported->second.keep_internal_alias ? "yes" : "no");
       } else {
@@ -5551,14 +5554,14 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
     } else {
       symbol.offset = layout.global_offsets.find(program.globals[i].name)->second;
     }
-    map<string, symbol_linkage::SymbolIdentity>::const_iterator exported =
+    map<string, ir_model::ExportedSymbol>::const_iterator exported =
         exports.find(program.globals[i].name);
     if(exported != exports.end()) {
-      symbol.binding = (exported->second.linkage == symbol_linkage::SL_INTERNAL ||
+      symbol.binding = (exported->second.linkage == ir_model::SL_INTERNAL ||
                         (exported->second.prefer_local_object_binding &&
-                         !symbol_linkage::has_weak_linkage(exported->second))) ?
+                         !ir_model::has_weak_linkage(exported->second))) ?
           machine_object::Symbol::SB_LOCAL :
-          (symbol_linkage::has_weak_linkage(exported->second) ?
+          (ir_model::has_weak_linkage(exported->second) ?
                machine_object::Symbol::SB_WEAK :
                machine_object::Symbol::SB_GLOBAL);
     }
@@ -5573,8 +5576,8 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
             << " binding=" << object_binding_name(symbol.binding);
       if(exported != exports.end()) {
         trace << " exported-linkage="
-              << (exported->second.linkage == symbol_linkage::SL_INTERNAL ? "internal" :
-                  exported->second.linkage == symbol_linkage::SL_WEAK ? "weak" :
+              << (exported->second.linkage == ir_model::SL_INTERNAL ? "internal" :
+                  exported->second.linkage == ir_model::SL_WEAK ? "weak" :
                   "external")
               << " keep-alias=" << (exported->second.keep_internal_alias ? "yes" : "no");
       } else {
@@ -5585,7 +5588,7 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
     object.symbols.push_back(symbol);
 
     if(exported != exports.end() && exported->second.keep_internal_alias &&
-       symbol_linkage::exported_object_symbol(exported->second) != program.globals[i].name) {
+       ir_model::exported_object_symbol(exported->second) != program.globals[i].name) {
       machine_object::Symbol alias = symbol;
       alias.name = program.globals[i].name;
       object.symbols.push_back(alias);
@@ -5630,18 +5633,18 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
         exports, program.globals[i].thread_local_wrapper_symbol);
     symbol.offset = layout.thread_local_wrapper_offsets.find(program.globals[i].name)->second;
     symbol.size = thread_local_wrapper_size(program.target);
-    map<string, symbol_linkage::SymbolIdentity>::const_iterator exported =
+    map<string, ir_model::ExportedSymbol>::const_iterator exported =
         exports.find(program.globals[i].thread_local_wrapper_symbol);
     if(exported == exports.end()) {
       exported = exports.find(program.globals[i].name);
     }
     if(exported != exports.end()) {
-      if(exported->second.linkage == symbol_linkage::SL_INTERNAL ||
+      if(exported->second.linkage == ir_model::SL_INTERNAL ||
          (exported->second.prefer_local_object_binding &&
-          !symbol_linkage::has_weak_linkage(exported->second))) {
+          !ir_model::has_weak_linkage(exported->second))) {
         symbol.binding = machine_object::Symbol::SB_LOCAL;
       } else {
-        symbol.binding = symbol_linkage::has_weak_linkage(exported->second) ?
+        symbol.binding = ir_model::has_weak_linkage(exported->second) ?
             machine_object::Symbol::SB_WEAK :
             machine_object::Symbol::SB_GLOBAL;
       }
@@ -5664,8 +5667,8 @@ machine_object::ObjectFile build_machine_object(const machine_ir::Program & prog
             << " binding=" << object_binding_name(symbol.binding);
       if(exported != exports.end()) {
         trace << " exported-linkage="
-              << (exported->second.linkage == symbol_linkage::SL_INTERNAL ? "internal" :
-                  exported->second.linkage == symbol_linkage::SL_WEAK ? "weak" :
+              << (exported->second.linkage == ir_model::SL_INTERNAL ? "internal" :
+                  exported->second.linkage == ir_model::SL_WEAK ? "weak" :
                   "external");
       } else {
         trace << " exported-linkage=none";
@@ -5790,7 +5793,7 @@ void write_lowir_object_file(const vector<string> & srcfiles,
                              const string & outfile,
                              const string & output_target)
 {
-  const lowir_internal::Program program = lowir_internal::parse_program(srcfiles);
+  const lowir_model::LowirProgram program = lowir_model::parse_lowir_program_files(srcfiles);
   machine_object::write_object_file(outfile,
                                     build_machine_object(program,
                                                          output_target,

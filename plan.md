@@ -8,7 +8,8 @@
    internal model, but every backend-relevant fact needed after source lowering
    must survive LowIR serialization and parsing.
 3. Mirror the PA30 `abimangle` scaffold style for LowIR and MIR by providing
-   small student-facing typed model headers and parse/serialize API declarations.
+   student-facing typed model headers that the maintainer implementation also
+   uses as the IR boundary surface.
 4. Clarify that hosted compatibility uses the same source-to-LowIR path as
    ordinary compilation and must not carry extra hosted-only facts around the
    textual LowIR contract.
@@ -33,15 +34,19 @@ Update PA29 to say:
 
 Add exported support headers:
 
+- `dev/src/ir_symbol_model.h`
 - `dev/src/lowir_model.h`
 - `dev/src/mir_model.h`
+- `dev/src/x86_register_model.h`
 
-These headers should be small model/API scaffolds, not maintainer
-implementations. They should be usable as a typed representation behind the
-existing tools, with declarations for parsing and serializing the external text
-forms.
+These headers should be model/API scaffolds, not display-only sketches. The
+maintainer implementation should route LowIR parsing, LowIR optimization, MIR
+lowering, and MIR serialization through this surface so the scaffold is
+validated the same way as the PA30 ABI fact model. Semantic-only details must be
+converted into the small IR exported-symbol payload before crossing the LowIR
+boundary.
 
-The export script must include both headers in `dev_support_files`.
+The export script must include these headers in `dev_support_files`.
 
 ## Step 3: LowIR Text Boundary Documentation
 
@@ -89,4 +94,6 @@ assignment.
 
 - Run syntax checks for new scripts.
 - Run focused PA37 roundtrip validation.
+- Run focused PA37/PA38 tests after converting the maintainer implementation to
+  the scaffold model headers.
 - Run `git diff --check`.

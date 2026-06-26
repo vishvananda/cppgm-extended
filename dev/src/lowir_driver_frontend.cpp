@@ -10,13 +10,12 @@
 
 using namespace std;
 
-#include "lowir_internal.h"
 #include "lowir_machine_ir.h"
 #include "lowir_object_backend.h"
 #include "lowir_tool_cli.h"
-#include "machine_ir.h"
 #include "machine_ir_optimizer.h"
 #include "machine_linker.h"
+#include "mir_model.h"
 #include "optimization_level.h"
 
 namespace {
@@ -62,17 +61,17 @@ int run_lowir2native_impl(const vector<string> & args)
   }
   optimization_level = normalize_optimization_level(optimization_level);
 
-  const lowir_internal::Program program = lowir_internal::parse_program(srcfiles);
+  const lowir_model::LowirProgram program = lowir_model::parse_lowir_program_files(srcfiles);
 
   if(!machine_ir_file.empty()) {
     ofstream mir(machine_ir_file.c_str());
     if(!mir) {
       throw logic_error("unable to open machine IR file");
     }
-    const machine_ir::Program machine_program =
+    const mir_model::MirProgram machine_program =
         optimize_machine_ir_program(build_lowir_machine_ir(program, output_target),
                                     optimization_level);
-    mir << machine_ir::dump_program(machine_program);
+    mir << mir_model::serialize_mir_program(machine_program);
   }
 
   if(!outfile.empty()) {

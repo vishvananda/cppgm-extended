@@ -309,10 +309,12 @@ dev_support_files=(
   dev/src/IPPTokenStream.h
   dev/src/abi_mangle.h
   dev/src/exceptions.h
+  dev/src/ir_symbol_model.h
   dev/src/lowir_model.h
   dev/src/mir_model.h
   dev/src/test_runner.cpp
   dev/src/tool_help_text.h
+  dev/src/x86_register_model.h
 )
 
 copy_tracked_paths \
