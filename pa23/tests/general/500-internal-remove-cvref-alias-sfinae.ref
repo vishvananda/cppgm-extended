@@ -22,7 +22,7 @@ function @S__g(%this : ptr) -> void [binding=weak, object=_ZN1S1gEv] {
     %t4 = call ptr @function_void_int____operator___ov3(%t2, $argobj__1)
     return void
 }
-function @S__G__local_10174324311330680726__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
+function @S__G__local_10174324311330680726__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

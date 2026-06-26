@@ -28,7 +28,7 @@ function @prop_0___static_query() -> obj<1x1> [binding=weak, object=_ZN4propILi0
     call void @prop_0___prop(%t1)
     return obj<1x1> $retobj__1
 }
-function @prop_0___prop(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4propILi0EEC1Ev] {
+function @prop_0___prop(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4propILi0EEC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

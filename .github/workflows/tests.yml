@@ -208,10 +208,10 @@ jobs:
             name: test-strict
             command: make test-strict-nobuild
             timeout: 120
-          - id: lowir-object-roundtrip
-            name: lowir object roundtrip
-            command: CPPGM_LOWIR_OBJECT_ROUNDTRIP_INPUTS='pa29/tests/general/300-runtime-startup-hooks-across-sources.t pa31/tests/general/100-host-eh-same-tu-throw-catch.t pa36/tests/link/600-hosted-std-function-call-link-smoke.t pa36/tests/link/700-hosted-vector-string-pushback-link-smoke.t' python3 scripts/tests/test_lowir_object_text_equivalence.py
-            timeout: 45
+          - id: test-debuginfo
+            name: test-debuginfo
+            command: make test-debuginfo-nobuild
+            timeout: 60
           - id: selfhost-through-pa10
             name: test-through-pa10
             command: make -C pa39 test-through-pa10 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"

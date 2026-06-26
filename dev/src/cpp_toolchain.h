@@ -44,8 +44,12 @@ machine_object::ObjectFile build_cpp_object_file(const std::vector<std::string> 
                                                  const CppPreprocessOptions & options,
                                                  const std::string & output_target,
                                                  int optimization_level = 0,
-                                                 int debug_info_level = 0,
-                                                 bool roundtrip_object_lowir = false);
+                                                 int debug_info_level = 0);
+machine_object::ObjectFile build_cpp_lowir_object_file(
+    const std::vector<std::string> & srcfiles,
+    const std::string & output_target,
+    int optimization_level = 0,
+    int debug_info_level = 0);
 void set_cpp_tool_program_path(const std::string & path);
 std::string cpp_tool_program_path();
 HostToolchainFamily host_toolchain_family();
@@ -57,8 +61,13 @@ void write_cpp_object_file(const std::vector<std::string> & srcfiles,
                            const std::string & output_target,
                            int optimization_level = 0,
                            int debug_info_level = 0,
-                           std::vector<std::string> * dependency_files = nullptr,
-                           bool roundtrip_object_lowir = false);
+                           std::vector<std::string> * dependency_files = nullptr);
+void write_cpp_lowir_object_file(const std::vector<std::string> & srcfiles,
+                                 const std::string & outfile,
+                                 const std::string & output_target,
+                                 int optimization_level = 0,
+                                 int debug_info_level = 0,
+                                 std::vector<std::string> * dependency_files = nullptr);
 bool link_host_objects_to_native(const std::vector<std::string> & objfiles,
                                  const std::string & outfile,
                                  const std::string & output_target,

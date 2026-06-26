@@ -12,7 +12,6 @@ struct CppToolInvocation
   bool generate_depfile = false;
   bool depfile_phony_targets = false;
   bool explicit_outfile = false;
-  bool roundtrip_object_lowir = false;
   int optimization_level = 0;
   int debug_info_level = 0;
   std::string output_target;
@@ -37,3 +36,4 @@ struct CppToolInvocation
 CppToolInvocation parse_cpp_tool_invocation(const std::vector<std::string> & args);
 CppToolInvocation parse_cpp_tool_invocation(int argc, char ** argv);
 bool path_looks_like_object_file(const std::string & path);
+bool path_looks_like_lowir_file(const std::string & path);

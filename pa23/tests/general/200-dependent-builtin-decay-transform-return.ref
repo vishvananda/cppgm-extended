@@ -31,7 +31,7 @@ function @decay_copy(%__param0 : ptr [pass=reference]) -> obj<1x1> [binding=weak
     call void @S__G__local_4395382314435783492__G(%t1)
     return obj<1x1> $retobj__1
 }
-function @S__G__local_4395382314435783492__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
+function @S__G__local_4395382314435783492__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

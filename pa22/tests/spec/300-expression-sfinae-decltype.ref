@@ -50,14 +50,14 @@ function @test_run__ov2(%t : obj<1x1>) -> i32 [binding=weak, object=_Z8test_runI
   block ^entry:
     return i32 1
 }
-function @good__good(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4goodC1Ev] {
+function @good__good(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4goodC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @bad__bad(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3badC1Ev] {
+function @bad__bad(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3badC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

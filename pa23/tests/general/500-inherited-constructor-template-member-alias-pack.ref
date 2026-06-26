@@ -70,7 +70,7 @@ function @tuple_like_first__second__third___tuple_like(%this : ptr, %__param1 : 
     store ptr %__param4, $__param4
     return void
 }
-function @tuple_like_first__second__third___tag__tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEE3tagC1Ev] {
+function @tuple_like_first__second__third___tag__tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEE3tagC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

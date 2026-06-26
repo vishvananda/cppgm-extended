@@ -1148,6 +1148,31 @@ class CompareResultsCommonTests(unittest.TestCase):
             result = run_compare("lowir_t", root, "tests")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_lowir_compare_accepts_trivial_lifecycle_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "165b"
+            write_text(testbase.with_suffix(".t"), "int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            lowir = textwrap.dedent(
+                """\
+                function @S__S(%this : ptr) -> void [binding=weak, trivial_lifecycle=yes] {
+                  block ^entry:
+                    return void
+                }
+
+                function @main() -> i64 {
+                  block ^entry:
+                    return i64 0
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), lowir)
+            write_text(testbase.with_suffix(".my"), lowir)
+            result = run_compare("lowir_t", root, "tests")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_lowir_compare_accepts_global_storage_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
@@ -1261,6 +1286,34 @@ class CompareResultsCommonTests(unittest.TestCase):
                     %fp = addr @helper
                     %0 = call i64 %fp(7) as (%arg0 : i64) -> i64 [linkage=c]
                     return i64 %0
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), lowir)
+            write_text(testbase.with_suffix(".my"), lowir)
+            result = run_compare("lowir_t", root, "tests")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("invalid reference LowIR", result.stdout + result.stderr)
+
+    def test_lowir_compare_rejects_trivial_lifecycle_metadata_on_call_signature(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "175b"
+            write_text(testbase.with_suffix(".t"), "int main();\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            lowir = textwrap.dedent(
+                """\
+                function @callee(%this : ptr) -> void {
+                  block ^entry:
+                    return void
+                }
+
+                function @main() -> i64 {
+                  block ^entry:
+                    %this = addr @callee
+                    call void @callee(%this) as (%arg0 : ptr) -> void [trivial_lifecycle=yes]
+                    return i64 0
                 }
                 """
             )
