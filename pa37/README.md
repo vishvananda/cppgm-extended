@@ -204,7 +204,9 @@ source-language clauses.
 - `tests/object-roundtrip` compares direct `cppgm++ -c` output against
   `cppgm++ -c --roundtrip-object-lowir` for small source programs. This checks
   that object emission can be reconstructed from serialized LowIR instead of
-  from hidden frontend side data.
+  from hidden frontend side data. `--roundtrip-object-lowir` is a harness
+  validation hook for compile mode, not a general-purpose user-facing driver
+  mode.
 
 Run the debug metadata preservation lanes with:
 
