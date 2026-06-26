@@ -73,6 +73,12 @@ and `-O2` and use the same LowIR optimization level before object generation.
 `lowiropt` writes LowIR text to `<outfile>`. The output must remain valid LowIR
 and must preserve the behavior of every defined input program.
 
+The optimizer works on the same LowIR program representation that the object
+path consumes. It may use typed internal data structures, but optimized output
+must serialize back to valid LowIR, and object generation at a chosen
+optimization level must not require extra semantic facts unavailable from that
+optimized LowIR text.
+
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
 in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
@@ -185,6 +191,7 @@ make test
 - `tests/o2`
 - `tests/driver/o1`
 - `tests/driver/o2`
+- `tests/object-roundtrip`
 
 These directories are organized by tool mode and validation mode, not by N3485
 source-language clauses.
@@ -194,6 +201,10 @@ source-language clauses.
 - `tests/o2` runs `lowiropt -O2` on handwritten LowIR.
 - `tests/driver/o1` runs `cppgm++ --emit-lowir -g0 -O1` on source programs.
 - `tests/driver/o2` runs `cppgm++ --emit-lowir -g0 -O2` on source programs.
+- `tests/object-roundtrip` compares direct `cppgm++ -c` output against
+  `cppgm++ -c --roundtrip-object-lowir` for small source programs. This checks
+  that object emission can be reconstructed from serialized LowIR instead of
+  from hidden frontend side data.
 
 Run the debug metadata preservation lanes with:
 

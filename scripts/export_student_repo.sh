@@ -309,6 +309,8 @@ dev_support_files=(
   dev/src/IPPTokenStream.h
   dev/src/abi_mangle.h
   dev/src/exceptions.h
+  dev/src/lowir_model.h
+  dev/src/mir_model.h
   dev/src/test_runner.cpp
   dev/src/tool_help_text.h
 )

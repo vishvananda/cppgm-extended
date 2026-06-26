@@ -22,6 +22,12 @@ LowIR is:
 - explicit about globals, functions, stack slots, temporaries, and control flow
 - non-SSA by requirement, but compatible with later SSA conversion if desired
 
+LowIR text is the serialized form of the compiler-owned backend program model.
+Implementations may use a typed in-memory representation, and the starter
+support includes an optional `dev/src/lowir_model.h` scaffold for that shape,
+but the text remains the durable boundary. A backend-visible fact that cannot
+be serialized to LowIR and parsed back is not part of the LowIR contract.
+
 The following naming conventions are used:
 
 - globals: `@name`
@@ -261,7 +267,10 @@ wrapper, represent it as a normal LowIR function declaration or definition with 
 Canonical `cppgm++ --emit-lowir` output is expected to carry all backend-relevant symbol/export
 and runtime-support information needed by later object preparation. Later object-path steps such
 as debug stripping or LowIR optimization may transform that canonical program, but they should
-not depend on hidden semantic side data that is absent from textual LowIR.
+not depend on hidden semantic side data that is absent from textual LowIR. An in-process
+`cppgm++ -c` implementation may skip writing a temporary `.lowir` file for speed, but it should
+operate on facts that could have been obtained by serializing the LowIR program and parsing it
+again.
 
 Functions may also carry explicit call-boundary metadata after the return type:
 

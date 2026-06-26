@@ -234,6 +234,9 @@ should export alongside the starter sources when those assignments are packaged:
 - [DebugPPTokenStream.h](../dev/src/DebugPPTokenStream.h)
 - [abi_mangle.h](../dev/src/abi_mangle.h) for the PA30 optional ABI fact
   scaffold
+- [lowir_model.h](../dev/src/lowir_model.h) for the optional typed LowIR
+  scaffold
+- [mir_model.h](../dev/src/mir_model.h) for the optional typed MIR scaffold
 - [exceptions.h](../dev/src/exceptions.h)
 - [tool_help_text.h](../dev/src/tool_help_text.h)
 

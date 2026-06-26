@@ -33,6 +33,7 @@ The starter kit supplies:
 - `pa38/lowir2native.cpp`, linked to the editable `dev/lowir2native.cpp`
 - a `dev/lowir2native.cpp` scaffold based on `dev/lowir2native-scaffold.cpp`
 - shared machine-IR and native backend support under `dev/src/`
+- optional typed machine-IR model scaffolding in `dev/src/mir_model.h`
 - test directories under `pa38/tests/`
 - harness scripts under `pa38/scripts/`
 - checked-in machine-IR and generated-program oracle sidecars
@@ -76,6 +77,11 @@ IR dump to `<mirfile>`.
 With `-o <program>`, `lowir2native` writes a native executable to `<program>`.
 When both options are present, both outputs must be produced from the same
 optimized machine-IR program.
+
+`--dump-machine-ir` is the serialized view of the machine-IR program that the
+native backend consumes. The object/native path may keep the MIR in memory, but
+it should not use a different hidden representation with extra backend facts
+that the MIR dump cannot express.
 
 The primary backend-shape oracle is the machine-IR dump. The generated native
 program's exit status and standard output are behavior-preservation oracles

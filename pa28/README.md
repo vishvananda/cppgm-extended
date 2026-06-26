@@ -41,6 +41,8 @@ The starter kit contains:
 - a student-editable `dev/lowir2native.cpp` starter scaffold
 - the `pa28/lowir2native.cpp` symlink back to `../dev/lowir2native.cpp`
 - shared support sources and headers under `dev/src/`
+- optional typed LowIR and machine-IR model scaffolding in
+  `dev/src/lowir_model.h` and `dev/src/mir_model.h`
 - a local test suite under `pa28/tests/`
 - the grammar for this assignment called `pa28.gram`
 - the authoritative LowIR specification in `../pa13/lowir.md`
@@ -99,6 +101,11 @@ program to `<outfile>`.
 
 If `--dump-machine-ir <mirfile>` is provided, `lowir2native` shall also write a
 deterministic machine-IR dump to `<mirfile>`.
+
+The machine-IR dump is the serialized form of the backend model used for native
+emission. You may keep a typed MIR internally, and the optional
+`dev/src/mir_model.h` scaffold gives one possible representation, but the dump
+must describe the same program that native emission consumes.
 
 That MIR dump path must work even for helper-only LowIR inputs that have no
 entry function. In that case the dumped MIR should simply omit the optional
@@ -327,6 +334,11 @@ host-native executables, without requiring CY86 as the primary output format.
 PA28 must also expose a deterministic machine IR for successful compilations. That dump is
 the structural proof that lowering is happening directly from LowIR into a target-specific
 backend representation rather than only through a CY86 scaffold.
+
+The LowIR input path should parse the same LowIR text accepted by PA13 rather
+than relying on a private object, semantic, or source-level backchannel. Any
+backend fact needed below PA28 belongs either in LowIR text or in the
+target-specific MIR produced from that LowIR.
 
 Within the supported subset, PA28 should lower:
 

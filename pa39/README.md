@@ -29,6 +29,11 @@ PA39 does not add a new language feature, command-line mode, object format, or
 runtime ABI. It reuses the compiler implementation and checks that the existing
 implementation can compile itself reproducibly.
 
+It also does not relax the LowIR or MIR boundaries established earlier. If a
+self-host or inception failure shows that object output behaves differently
+from output reconstructed through LowIR/MIR text, treat that as an earlier
+compiler contract bug rather than adding a PA39-only side channel.
+
 If the earlier assignment tests cover every language, lowering, runtime,
 linking, and optimization feature used by your implementation, PA39 should be a
 straightforward build plus a few reproducibility cleanups. In practice, the
@@ -200,6 +205,13 @@ Do not rewrite tests around a failure, and do not add a self-hosting special
 case just to make the build move forward. Find the first incorrect behavior and
 fix the underlying parser, semantic, lowering, optimizer, backend, runtime, or
 reproducibility bug.
+
+When an inception compile is far slower than the corresponding host-seeded
+compile, look for divergent algorithmic behavior in the self-built compiler,
+not just less optimized machine instructions. A large slowdown often means the
+self-built compiler is following a different branch, repeatedly redoing
+semantic work, or missing a cache because an earlier stage miscompiled the
+compiler itself.
 
 A useful workflow is:
 
