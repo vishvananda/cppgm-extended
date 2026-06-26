@@ -172,10 +172,8 @@ REF_TEST_RUN = case "$(TEST)" in \
 	*) echo "Usage: make ref-test TEST=$(COMPILE_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
-CHECK_RUN = case "$(TEST)" in \
-	tests/compile/*) perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
-	*) echo "Usage: make check TEST=tests/compile/<file>.t"; exit 1 ;; \
-esac
+CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
+	'$(COMPILE_TEST_ROOT)/*|$(COURSE_COMPILE_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check {tests}'
 include ../scripts/pa_run_check_targets.mk
 
 .PHONY: dev-shared-target ref-test ref-test-batch test-batch

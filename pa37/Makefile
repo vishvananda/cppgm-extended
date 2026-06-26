@@ -173,14 +173,14 @@ REF_TEST_RUN = case "$(TEST)" in \
 	*) echo "Usage: make ref-test TEST=$(O0_TEST_ROOT)/<file>.t | $(O1_TEST_ROOT)/<file>.t | $(O2_TEST_ROOT)/<file>.t | $(DRIVER_O1_TEST_ROOT)/<file>.t | $(DRIVER_O2_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
-CHECK_RUN = case "$(TEST)" in \
-	$(O0_TEST_ROOT)/*) CPPGM_APP_ARGS='-O0' scripts/run_all_tests.pl $(LOWIROPT_APP) check "$(TEST)" ;; \
-	$(O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_APP) check "$(TEST)" ;; \
-	$(O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_APP) check "$(TEST)" ;; \
-	$(DRIVER_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check "$(TEST)" ;; \
-	$(DRIVER_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check "$(TEST)" ;; \
-	*) echo "Usage: make check TEST=$(O0_TEST_ROOT)/<file>.t | $(O1_TEST_ROOT)/<file>.t | $(O2_TEST_ROOT)/<file>.t | $(DRIVER_O1_TEST_ROOT)/<file>.t | $(DRIVER_O2_TEST_ROOT)/<file>.t"; exit 1 ;; \
-esac
+CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
+	'$(O0_TEST_ROOT)/*|$(COURSE_O0_TEST_ROOT)/*::CPPGM_APP_ARGS=-O0 scripts/run_all_tests.pl $(LOWIROPT_APP) check {tests}' \
+	'$(O1_TEST_ROOT)/*|$(COURSE_O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(COURSE_DEBUGINFO_O1_TEST_ROOT)/*::CPPGM_APP_ARGS=-O1 scripts/run_all_tests.pl $(LOWIROPT_APP) check {tests}' \
+	'$(O2_TEST_ROOT)/*|$(COURSE_O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(COURSE_DEBUGINFO_O2_TEST_ROOT)/*::CPPGM_APP_ARGS=-O2 scripts/run_all_tests.pl $(LOWIROPT_APP) check {tests}' \
+	'$(DRIVER_O1_TEST_ROOT)/*|$(COURSE_DRIVER_O1_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -g0 -O1" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}' \
+	'$(DRIVER_O2_TEST_ROOT)/*|$(COURSE_DRIVER_O2_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -g0 -O2" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}' \
+	'$(DEBUGINFO_DRIVER_O1_TEST_ROOT)/*|$(COURSE_DEBUGINFO_DRIVER_O1_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -gline-tables-only -O1" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}' \
+	'$(DEBUGINFO_DRIVER_O2_TEST_ROOT)/*|$(COURSE_DEBUGINFO_DRIVER_O2_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -gline-tables-only -O2" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}'
 include ../scripts/pa_run_check_targets.mk
 
 .PHONY: dev-shared-target ref-test ref-test-debuginfo test-debuginfo

@@ -16,6 +16,7 @@ use CppgmBatchWorker qw(
 	get_timeout_from_env
 	note_progress_state
 	open_worker
+	print_test_run_summary
 	run_command_capture
 	submit_cli_request
 	write_file
@@ -115,13 +116,11 @@ my @tests = collect_tests($tests_root, qr/\.t$/);
 my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};
 my $keep_going = $ENV{KEEP_GOING};
 my $assignment = basename(getcwd());
-my $ntests = scalar(@tests);
 if (!$verbose && !$keep_going)
 {
-	print "$assignment $tests_root: running $ntests test";
-	print "s" if $ntests != 1;
-	print "\n";
+	print_test_run_summary($assignment, $tests_root, \@tests);
 }
+my $ntests = scalar(@tests);
 my $jobs = detect_jobs();
 $jobs = $ntests if $jobs > $ntests;
 if ($jobs <= 1)
