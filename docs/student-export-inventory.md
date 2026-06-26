@@ -203,7 +203,9 @@ or approved shared infrastructure update.
 - PA37 exports `lowiropt`; students edit `dev/lowiropt.cpp` from
   `dev/lowiropt-scaffold.cpp` plus shared optimizer/driver support under
   `dev/src`; support files include `pa37/Makefile`, `pa37/scripts`, and
-  `tests/{o0,o1,o2,driver,debuginfo}` with checked-in refs.
+  `tests/{o0,o1,o2,driver,debuginfo}` with checked-in refs. It also exports
+  `tests/object-roundtrip`, which validates that `cppgm++ -c` object emission
+  can be reconstructed from serialized LowIR.
 - PA38 exports `lowir2native -O1/-O2`; students edit `dev/lowir2native.cpp`
   from `dev/lowir2native-scaffold.cpp` plus shared machine/backend optimizer
   support under `dev/src`; support files include `pa38/Makefile`, `pa38/scripts`,
