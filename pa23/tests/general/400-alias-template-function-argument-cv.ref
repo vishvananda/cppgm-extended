@@ -31,7 +31,7 @@ function @handler_int_token_char__const____token_char__const_____callable___invo
     store ptr %__param1, $__param1
     return i32 11
 }
-function @callable__callable(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8callableC1Ev] {
+function @callable__callable(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8callableC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

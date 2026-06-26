@@ -172,13 +172,17 @@ function @main() -> i64 [role=entry, binding=strong, keep_alias=yes] {
 function @helper() -> i64 [binding=strong, object=_ZL6helperv, prefer_local=yes] {
   ...
 }
+function @Tag__Tag(%this : ptr) -> void [binding=weak, trivial_lifecycle=yes] {
+  ...
+}
 function @boot() -> void [role=init, binding=strong] {
   ...
 }
 ```
 
 The currently defined top-level metadata keys are `role`, `linkage`, `binding`, `object`,
-`tls_for` (functions only), `keep_alias`, `prefer_local`, and `storage` (globals only).
+`tls_for` (functions only), `keep_alias`, `prefer_local`, `trivial_lifecycle`
+(functions only), and `storage` (globals only).
 
 The currently defined global `storage` values are:
 
@@ -246,6 +250,13 @@ spells a different exported/backend name.
 The `prefer_local` metadata key is a `yes`/`no` flag. `prefer_local=yes` records that later
 object emission should prefer a local/private binding when that is legal, even if an explicit
 `object=...` spelling is also present.
+
+The `trivial_lifecycle` metadata key is a `yes`/`no` flag for top-level
+function declarations and definitions. `trivial_lifecycle=yes` records that the
+function is a semantically trivial C++ lifecycle helper, such as a trivial
+constructor or destructor wrapper. Object lowering may use this fact to remove
+otherwise unreferenced weak lifecycle wrappers after the frontend has serialized
+the LowIR boundary.
 
 `alias object <object-symbol> = @target` records an additional object-file symbol spelling
 that must resolve to the same emitted top-level LowIR function or global as `@target`.
@@ -338,8 +349,8 @@ normally.
 
 Call signatures only accept call-boundary metadata such as `arity=...`, `effects=...`,
 `unwind=...`, and `return=...`. Top-level symbol metadata such as `role=...`, `linkage=...`,
-`binding=...`, `object=...`, `keep_alias=...`, and `prefer_local=...` is not valid on
-`as (...) -> ...` call signatures.
+`binding=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, and
+`trivial_lifecycle=...` is not valid on `as (...) -> ...` call signatures.
 
 Later backend lowering may also introduce internal compiler builtin helper symbols for
 operations that are still first-class in LowIR but are not emitted directly on the

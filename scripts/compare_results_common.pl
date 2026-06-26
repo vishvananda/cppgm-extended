@@ -666,6 +666,7 @@ sub parse_lowir_function_metadata_suffix
 		keep_alias => '',
 		prefer_local => '',
 		object_root => '',
+		trivial_lifecycle => '',
 	);
 	my %saw;
 	pos($suffix) = 0;
@@ -747,6 +748,12 @@ sub parse_lowir_function_metadata_suffix
 					if $value !~ /^(?:yes|no)$/;
 				$metadata{object_root} = $value;
 			}
+			elsif ($key eq 'trivial_lifecycle')
+			{
+				return (0, "unknown trivial_lifecycle mode '$value'")
+					if $value !~ /^(?:yes|no)$/;
+				$metadata{trivial_lifecycle} = $value;
+			}
 			else
 			{
 				return (0, "unknown function metadata key '$key'");
@@ -782,7 +789,13 @@ sub parse_lowir_call_signature_suffix
 	return (0, "call signature metadata does not allow symbol metadata")
 		if $metadata_or_error->{role} ne '' ||
 		   $metadata_or_error->{linkage} ne '' ||
-		   $metadata_or_error->{binding} ne '';
+		   $metadata_or_error->{binding} ne '' ||
+		   $metadata_or_error->{object} ne '' ||
+		   $metadata_or_error->{tls_for} ne '' ||
+		   $metadata_or_error->{keep_alias} ne '' ||
+		   $metadata_or_error->{prefer_local} ne '' ||
+		   $metadata_or_error->{object_root} ne '' ||
+		   $metadata_or_error->{trivial_lifecycle} ne '';
 	$signature{has_signature} = 1;
 	$signature{ret} = $ret_type;
 	$signature{params} = $params_or_error;
@@ -2005,7 +2018,7 @@ sub lowir_metadata_item_ignored_for_compare
 	my ($key, $value) = @_;
 	# Validate full metadata, but do not make early source-to-LowIR oracles depend
 	# on later object/export policy or optional optimizer/provenance annotations.
-	return 1 if $key =~ /^(?:linkage|binding|object|tls_for|keep_alias|prefer_local)$/;
+	return 1 if $key =~ /^(?:linkage|binding|object|tls_for|keep_alias|prefer_local|trivial_lifecycle)$/;
 	return 1 if $key =~ /^(?:effects|unwind|return|capture|access|alias|projection)$/;
 	return 1 if $key eq 'storage' && $value =~ /^(?:readonly|writable)$/;
 	return 0;

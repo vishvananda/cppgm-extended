@@ -37,7 +37,7 @@ function @function_void_int____function(%this : ptr) -> void [binding=weak, obje
     store ptr %this, $this
     return void
 }
-function @S__G__local_15453783005237734438__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
+function @S__G__local_15453783005237734438__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

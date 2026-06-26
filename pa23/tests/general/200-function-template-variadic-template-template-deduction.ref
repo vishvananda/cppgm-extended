@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @dispatch($argobj__1, $argobj__2, $argobj__3)
     return i32 %t4
 }
-function @tuple____tuple(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5tupleC1Ev] {
+function @tuple____tuple(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5tupleC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -28,7 +28,7 @@ function @dispatch(%__param0 : obj<1x1>, %__param1 : obj<1x1>, %__param2 : obj<1
   block ^entry:
     return i32 0
 }
-function @piecewise_construct_t__piecewise_construct_t(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN21piecewise_construct_tC1Ev] {
+function @piecewise_construct_t__piecewise_construct_t(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN21piecewise_construct_tC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

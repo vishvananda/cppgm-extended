@@ -1780,28 +1780,34 @@ lowir_internal::Program prepare_object_lowir_program(lowir_internal::Program pro
   return prune_unreferenced_object_symbol_definitions(program);
 }
 
-lowir_internal::Program roundtrip_object_lowir_program(
-    const lowir_internal::Program & program)
-{
-  return lowir_internal::parse_program_text(
-      lowir_internal::dump_program(program),
-      "<object-lowir-roundtrip>");
-}
-
 machine_object::ObjectFile build_cpp_object_file(const vector<string> & srcfiles,
                                                  const CppPreprocessOptions & options,
                                                  const string & output_target,
                                                  int optimization_level,
-                                                 int debug_info_level,
-                                                 bool roundtrip_object_lowir)
+                                                 int debug_info_level)
 {
   lowir_internal::Program program = prepare_object_lowir_program(
       build_lowir_program_from_cpp_sources(srcfiles, options, debug_info_level),
       optimization_level,
       debug_info_level);
-  if(roundtrip_object_lowir) {
-    program = roundtrip_object_lowir_program(program);
-  }
+  PhaseTimer timer("build_machine_object",
+                   string("target=") + output_target + " " + source_count_detail(srcfiles));
+  return build_machine_object(program,
+                              effective_host_output_target(output_target),
+                              true,
+                              true,
+                              debug_info_level);
+}
+
+machine_object::ObjectFile build_cpp_lowir_object_file(const vector<string> & srcfiles,
+                                                       const string & output_target,
+                                                       int optimization_level,
+                                                       int debug_info_level)
+{
+  lowir_internal::Program program = prepare_object_lowir_program(
+      lowir_internal::parse_program(srcfiles),
+      optimization_level,
+      debug_info_level);
   PhaseTimer timer("build_machine_object",
                    string("target=") + output_target + " " + source_count_detail(srcfiles));
   return build_machine_object(program,
@@ -1817,8 +1823,7 @@ void write_cpp_object_file(const vector<string> & srcfiles,
                            const string & output_target,
                            int optimization_level,
                            int debug_info_level,
-                           vector<string> * dependency_files,
-                           bool roundtrip_object_lowir)
+                           vector<string> * dependency_files)
 {
   vector<string> local_dependencies;
   vector<string> * dep_sink =
@@ -1835,9 +1840,33 @@ void write_cpp_object_file(const vector<string> & srcfiles,
       build_lowir_program(translation_units, true, true, debug_info_level >= 1),
       optimization_level,
       debug_info_level);
-  if(roundtrip_object_lowir) {
-    program = roundtrip_object_lowir_program(program);
-  }
+  PhaseTimer timer("write_object_file",
+                   string("outfile=") + outfile + " target=" + output_target + " " +
+                   source_count_detail(srcfiles));
+  machine_object::write_object_file(outfile,
+                                    build_machine_object(program,
+                                                         effective_host_output_target(output_target),
+                                                         true,
+                                                         true,
+                                                         debug_info_level));
+}
+
+void write_cpp_lowir_object_file(const vector<string> & srcfiles,
+                                 const string & outfile,
+                                 const string & output_target,
+                                 int optimization_level,
+                                 int debug_info_level,
+                                 vector<string> * dependency_files)
+{
+  vector<string> local_dependencies;
+  vector<string> * dep_sink =
+      dependency_files != nullptr ? dependency_files : &local_dependencies;
+  dep_sink->clear();
+  dep_sink->insert(dep_sink->end(), srcfiles.begin(), srcfiles.end());
+  lowir_internal::Program program = prepare_object_lowir_program(
+      lowir_internal::parse_program(srcfiles),
+      optimization_level,
+      debug_info_level);
   PhaseTimer timer("write_object_file",
                    string("outfile=") + outfile + " target=" + output_target + " " +
                    source_count_detail(srcfiles));

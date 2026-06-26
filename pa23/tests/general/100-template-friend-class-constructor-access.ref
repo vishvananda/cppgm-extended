@@ -30,7 +30,7 @@ function @S_char__traits_char___int___operatorSelfView(%this : ptr) -> obj<1x1> 
     call void @V_char__traits_char____V(%t1, $argobj__2, %t4, %t6)
     return obj<1x1> $retobj__1
 }
-function @V_char__traits_char____Tag__Tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VIc6traitsIcEE3TagC1Ev] {
+function @V_char__traits_char____Tag__Tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VIc6traitsIcEE3TagC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

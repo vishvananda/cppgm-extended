@@ -30,7 +30,7 @@ function @function_void_int____operator___ov3(%this : ptr, %__param1 : ptr [pass
     %t1 = load ptr $this
     return ptr %t1
 }
-function @S__G__local_479283088363532800__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev] {
+function @S__G__local_479283088363532800__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

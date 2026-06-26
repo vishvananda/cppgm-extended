@@ -53,7 +53,7 @@ function @pool__get_executor(%this : ptr) -> obj<1x1> [binding=weak, object=_ZN4
     call void @pool__executor__executor(%t1)
     return obj<1x1> $retobj__1
 }
-function @pool__executor__executor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4pool8executorC1Ev] {
+function @pool__executor__executor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4pool8executorC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

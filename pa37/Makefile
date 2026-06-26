@@ -119,8 +119,8 @@ define run_text_course_bucket
 endef
 
 define run_object_roundtrip_bucket
-	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.cpp' | grep -q .; then \
-		scripts/run_object_lowir_roundtrip_tests.pl --app "$(CPPGM_DRIVER_APP)" --test-root "$(1)"; \
+	@if [ -d "$(1)" ] && find "$(1)" \( -type f -o -type l \) \( -name '*.cpp' -o -name '*.t' \) | grep -q .; then \
+		scripts/run_object_lowir_roundtrip_tests.pl $(2) --app "$(CPPGM_DRIVER_APP)" --test-root "$(1)"; \
 	else \
 		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
 	fi
@@ -158,6 +158,8 @@ test-debuginfo: $(TEST_DEPS)
 	@CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) my $(DEBUGINFO_DRIVER_O2_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(DEBUGINFO_DRIVER_O2_TEST_ROOT)
 	$(call run_text_course_bucket,--emit-lowir -gline-tables-only -O2,$(CPPGM_DRIVER_APP),$(COURSE_DEBUGINFO_DRIVER_O2_TEST_ROOT))
+	$(call run_object_roundtrip_bucket,$(OBJECT_ROUNDTRIP_TEST_ROOT),--debuginfo)
+	$(call run_object_roundtrip_bucket,$(COURSE_OBJECT_ROUNDTRIP_TEST_ROOT),--debuginfo)
 
 ref-test:
 ifneq ($(strip $(TEST)),)

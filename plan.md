@@ -82,13 +82,12 @@ compiler route.
 Add a PA37 harness check that compiles a source file both ways:
 
 1. normal `cppgm++ -c`
-2. `cppgm++ -c --roundtrip-object-lowir`, which forces object emission through
-   textual LowIR serialization and parsing
+2. `cppgm++ --emit-lowir -O0` followed by `cppgm++ -c -O<level>` on the
+   generated LowIR file
 
-The two object outputs must match byte-for-byte. This keeps
-`--roundtrip-object-lowir` as a harness validation hook rather than a public
-driver mode, while making the no-backchannel invariant visible in the exported
-assignment.
+The two object outputs must match byte-for-byte. This makes LowIR object input
+a public PA37 driver contract and keeps the no-backchannel invariant visible in
+the exported assignment.
 
 ## Validation
 

@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^call_unwind_end_4:
     return i32 0
 }
-function @maker__maker(%this : ptr) -> void [binding=weak, object=_ZN5makerC1Ev] {
+function @maker__maker(%this : ptr) -> void [binding=weak, object=_ZN5makerC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:

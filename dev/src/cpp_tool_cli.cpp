@@ -253,10 +253,6 @@ bool consume_toolchain_flag(CppToolInvocation & invocation,
                             const vector<string> & args,
                             size_t & i)
 {
-  if(args[i] == "--roundtrip-object-lowir") {
-    invocation.roundtrip_object_lowir = true;
-    return true;
-  }
   if(args[i] == "-g0") {
     invocation.debug_info_level = 0;
     return true;
@@ -407,4 +403,9 @@ bool path_looks_like_object_file(const string & path)
   return ends_with(path, ".o") ||
       ends_with(path, ".obj") ||
       ends_with(path, ".a");
+}
+
+bool path_looks_like_lowir_file(const string & path)
+{
+  return ends_with(path, ".lowir");
 }

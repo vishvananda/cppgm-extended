@@ -208,25 +208,43 @@ bool handle_query_only_invocation(const CppToolInvocation & invocation)
   return true;
 }
 
+void write_compile_input_object_file(const CppToolInvocation & invocation,
+                                     const string & input,
+                                     const string & outfile,
+                                     vector<string> * dependencies)
+{
+  if(path_looks_like_lowir_file(input)) {
+    write_cpp_lowir_object_file(vector<string>(1, input),
+                                outfile,
+                                invocation.output_target,
+                                invocation.optimization_level,
+                                invocation.debug_info_level,
+                                dependencies);
+    return;
+  }
+  write_cpp_object_file(vector<string>(1, input),
+                        preprocess_options_from_invocation(invocation),
+                        outfile,
+                        invocation.output_target,
+                        invocation.optimization_level,
+                        invocation.debug_info_level,
+                        dependencies);
+}
+
 void compile_cpp_inputs(const CppToolInvocation & invocation)
 {
   ScopedEnvironmentOverride stdlib_flags("CPPGM_STDLIB_FLAGS",
                                          invocation.stdlib_flag,
                                          true);
-  const CppPreprocessOptions options = preprocess_options_from_invocation(invocation);
   for(size_t i = 0; i < invocation.inputs.size(); ++i) {
     const string outfile =
         invocation.inputs.size() == 1 ? invocation.outfile :
         default_compile_output_path(invocation.inputs[i]);
     vector<string> dependencies;
-    write_cpp_object_file(vector<string>(1, invocation.inputs[i]),
-                          options,
-                          outfile,
-                          invocation.output_target,
-                          invocation.optimization_level,
-                          invocation.debug_info_level,
-                          &dependencies,
-                          invocation.roundtrip_object_lowir);
+    write_compile_input_object_file(invocation,
+                                    invocation.inputs[i],
+                                    outfile,
+                                    &dependencies);
     write_depfile_if_requested(invocation, outfile, dependencies);
   }
 }
@@ -256,16 +274,8 @@ int run_cpptoolchain_frontend_impl(const vector<string> & args)
     if(path_looks_like_object_file(input)) {
       object_inputs.push_back(input);
     } else {
-      vector<string> srcfile(1, input);
       const string objfile = temp_objects.dir + "/input" + to_string(i) + ".o";
-      write_cpp_object_file(srcfile,
-                            preprocess_options_from_invocation(invocation),
-                            objfile,
-                            invocation.output_target,
-                            invocation.optimization_level,
-                            invocation.debug_info_level,
-                            nullptr,
-                            invocation.roundtrip_object_lowir);
+      write_compile_input_object_file(invocation, input, objfile, nullptr);
       temp_objects.files.push_back(objfile);
       object_inputs.push_back(objfile);
     }
