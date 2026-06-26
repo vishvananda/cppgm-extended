@@ -59,6 +59,11 @@ Update PA28, PA37, PA38, and PA39 to carry that contract forward for native
 lowering, MIR dumping, LowIR optimization, machine optimization, and self-host
 debugging.
 
+PA38 should also make clear that machine-backend optimization is shared backend
+work. The first visible tests live on `lowir2native`, but the optimized MIR path
+must remain usable by `cppgm++` object and link-driver modes instead of becoming
+a standalone display transform.
+
 ## Step 4: Hosted Compatibility Clarification
 
 Update PA34-PA36 to say hosted compatibility extends the same frontend,

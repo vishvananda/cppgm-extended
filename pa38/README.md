@@ -2,7 +2,8 @@
 
 ### Overview
 
-PA38 adds machine-backend optimization levels to `lowir2native`.
+PA38 adds machine-backend optimization levels to `lowir2native` and to the
+shared native backend used by later `cppgm++` object and link-driver paths.
 
 PA37 optimizes LowIR before backend lowering. PA38 starts after that boundary:
 LowIR has already been translated into machine IR, and the backend must improve
@@ -13,6 +14,8 @@ The questions for this assignment are:
 - can `lowir2native -O1` perform local machine-IR cleanup?
 - can `lowir2native -O2` perform whole-function machine-IR cleanup?
 - can both levels preserve debug metadata and generated program behavior?
+- can the optimized machine-IR path stay reusable by `cppgm++` rather than
+  becoming a standalone `lowir2native` shortcut?
 
 ### Prerequisites
 
@@ -69,6 +72,11 @@ contract is independent of host-specific elapsed time.
 `-O0` remains the PA28 baseline. PA38 must preserve that earlier behavior while
 adding the explicit `-O1` and `-O2` backend optimization levels.
 
+When `cppgm++` later emits native objects or executables at an optimization
+level, it should use this same backend optimization pipeline after PA37 LowIR
+optimization has produced the LowIR program to lower. Do not implement PA38 as
+a display-only `lowir2native` transform that the compiler driver cannot reuse.
+
 ### Output Format
 
 With `--dump-machine-ir <mirfile>`, `lowir2native` writes the optimized machine
@@ -82,6 +90,10 @@ optimized machine-IR program.
 native backend consumes. The object/native path may keep the MIR in memory, but
 it should not use a different hidden representation with extra backend facts
 that the MIR dump cannot express.
+
+The same rule applies when the machine backend is reached through `cppgm++`:
+optimization, object writing, and executable writing should consume the same
+machine-IR facts that `--dump-machine-ir` can serialize.
 
 The primary backend-shape oracle is the machine-IR dump. The generated native
 program's exit status and standard output are behavior-preservation oracles

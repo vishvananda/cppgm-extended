@@ -210,7 +210,9 @@ or approved shared infrastructure update.
   from `dev/lowir2native-scaffold.cpp` plus shared machine/backend optimizer
   support under `dev/src`; support files include `pa38/Makefile`, `pa38/scripts`,
   `scripts/run_lowir_native_tests_worker.pl`, and
-  `tests/{o1,o2,debuginfo}` sidecars.
+  `tests/{o1,o2,debuginfo}` sidecars. The exported README should describe this
+  as shared backend optimization work that remains reusable by later `cppgm++`
+  object and link-driver modes.
 - Remaining decisions: loose LowIR validator configuration for PA37 and
   structural MIR validator configuration for PA38.
 
