@@ -210,7 +210,8 @@ test-debuginfo-nobuild:
 		echo "===== NO DEBUG-INFO TESTS CONFIGURED ====="; \
 		exit 0; \
 	fi
-	@for dir in $(DEBUGINFO_TEST_PAS); do \
+	@status=0; failed=""; \
+	for dir in $(DEBUGINFO_TEST_PAS); do \
 		echo "===== $$dir (debug info) ====="; \
 		$(MAKE) -C $$dir \
 			CXX=$(CXX) \
@@ -220,9 +221,13 @@ test-debuginfo-nobuild:
 			$(SUBMAKE_OBJ_ARG) \
 			$(SUBMAKE_GENERATED_ARG) \
 			$(SUBMAKE_CC_FLAGS_ARG) \
-			CPPGM_SKIP_DEV_REBUILD=1 test-debuginfo || exit 1; \
-	done
-	@echo "===== DEBUG-INFO TESTS PASSED SUCCESSFULLY! ====="
+			CPPGM_SKIP_DEV_REBUILD=1 test-debuginfo || { status=1; failed="$$failed $$dir"; }; \
+	done; \
+	if [ $$status -ne 0 ]; then \
+		echo "===== DEBUG-INFO TESTS FAILED IN:$${failed} ====="; \
+		exit $$status; \
+	fi; \
+	echo "===== DEBUG-INFO TESTS PASSED SUCCESSFULLY! ====="
 
 inception: build
 	@$(MAKE) -C pa39 \

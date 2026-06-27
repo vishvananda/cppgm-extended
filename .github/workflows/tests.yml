@@ -234,6 +234,9 @@ jobs:
           if [ "${{ matrix.suite.id }}" = "test-strict" ]; then
             packages="${{ matrix.flavor.strict_packages }}"
           fi
+          if [ "${{ matrix.suite.id }}" = "test-debuginfo" ]; then
+            packages="$packages gdb"
+          fi
           apt-get update
           apt-get install -y --no-install-recommends \
             bash \
