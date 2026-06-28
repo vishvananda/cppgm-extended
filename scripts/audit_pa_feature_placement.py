@@ -21,7 +21,7 @@ from typing import Iterable
 
 
 DEFAULT_TRACKER = Path("docs/pa14-pa22-contract-test-audit-tracker.md")
-DEFAULT_PAS = tuple(f"pa{i}" for i in range(14, 23))
+DEFAULT_PAS = tuple(f"pa{i}" for i in range(14, 28))
 LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(10, 40))
 STRICT_TEMPLATE_PAS = ("pa18", "pa19", "pa21", "pa22", "pa23")
 SEMANTIC_ONLY_PA_MAX = 12
@@ -261,7 +261,7 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("expr.reference", (rx(r"(?:^|[^\w])(?:const\s+)?[A-Za-z_][A-Za-z0-9_:<>]*\s*&\s*[A-Za-z_]|\bstatic_cast\s*<[^>]*&"),)),
     FeatureRule("expr.array_pointer", (rx(r"\[[^]]*\]|\bnullptr\b|->|\b[A-Za-z_][A-Za-z0-9_]*\s*\+"),)),
     FeatureRule("lang.enum", (rx(r"\benum\b"),)),
-    FeatureRule("expr.cast.builtin", (rx(r"\b(?:static_cast|const_cast|reinterpret_cast|dynamic_cast)\s*<|\([A-Za-z_][A-Za-z0-9_:<>\s*&]*\)\s*[A-Za-z_(0-9]"),)),
+    FeatureRule("expr.cast.builtin", (rx(r"\b(?:static_cast|const_cast|reinterpret_cast)\s*<|\([A-Za-z_][A-Za-z0-9_:<>\s*&]*\)\s*[A-Za-z_(0-9]"),)),
     FeatureRule("call.variadic_promotions",
                 (rx(r"\b(?:int|void|char|short|long|float|double|signed|unsigned|[A-Za-z_][A-Za-z0-9_:<>*&\s]+)\s+"
                     r"[A-Za-z_][A-Za-z0-9_:]*\s*\((?:\s*\.\.\.|[^)]*,\s*\.\.\.)\s*\)"),)),
@@ -334,6 +334,17 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("support.auto",
                 (rx(r"\bauto\s+(?:[*&]\s*)?[A-Za-z_][A-Za-z0-9_]*\s*(?:=|;|,|\[)|"
                     r"\bauto\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*(?!->)(?:noexcept\s*)?(?:\{|;)"),)),
+    FeatureRule("rtti.typeid", (rx(r"\btypeid\s*\("),)),
+    FeatureRule("rtti.dynamic_cast.pointer",
+                (rx(r"\bdynamic_cast\s*<"),),
+                ref_patterns=(rx(r"__external_runtime____dynamic_cast|object=__dynamic_cast"),)),
+    FeatureRule("rtti.dynamic_cast.void",
+                (rx(r"\bdynamic_cast\s*<\s*(?:const\s+|volatile\s+)*void\s*\*"),),
+                ref_patterns=(rx(r"__external_rtti__void|object=_ZTIv"),)),
+    FeatureRule("rtti.dynamic_cast.multi_vptr",
+                (),
+                ref_patterns=(rx(r"__vmi_class_type_info|_ZTVN10__cxxabiv121__vmi_class_type_infoE"),),
+                path_patterns=(rx(r"(?:sibling-dynamic-cast|typeid-nonprimary|nonprimary|virtual-base|vbase)"),)),
     FeatureRule("polymorphic.basic", (rx(r"\bvirtual\b"),),
                 ref_patterns=(rx(r"__vtable|_ZTV|__rtti|_ZTI|typeinfo"),)),
     FeatureRule("polymorphic.override_final", (rx(r"\b(?:override|final)\b"),)),
@@ -1927,7 +1938,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("."))
     parser.add_argument("--tracker", type=Path, default=DEFAULT_TRACKER)
-    parser.add_argument("--pa", action="append", choices=[f"pa{i}" for i in range(1, 38)])
+    parser.add_argument("--pa", action="append", choices=[f"pa{i}" for i in range(1, 40)])
     parser.add_argument("--feature", action="append", help="only report tests matching this feature id")
     parser.add_argument("--include-course", action="store_true", default=True)
     parser.add_argument("--no-course", action="store_false", dest="include_course")
