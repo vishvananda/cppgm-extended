@@ -53,6 +53,28 @@ def wait_for_pid_exit(pid: int, timeout_sec: float) -> None:
 
 
 class BatchTimeoutHarnessTests(unittest.TestCase):
+    def test_run_with_timeout_reports_oom_status(self):
+        result = run(
+            "perl",
+            str(REPO_ROOT / "scripts" / "run_with_timeout.pl"),
+            "--timeout-sec",
+            "10",
+            "--max-rss-kb",
+            "1",
+            "--label",
+            "oom smoke",
+            "--",
+            "perl",
+            "-e",
+            'my $x = "x" x (1024 * 1024); sleep 2',
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        self.assertEqual(result.returncode, 125)
+        self.assertIn("ERROR: oom smoke OOM", result.stderr)
+
     def test_test_runner_timeout_kills_process_group(self):
         with tempfile.TemporaryDirectory(prefix="test-runner-batch-timeout.") as temp_dir:
             temp = Path(temp_dir)
@@ -362,9 +384,9 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
             self.assertEqual((tests / "basic.my.program.stdout").read_text(), "stdin\n")
 
     def test_driver_assignment_wrapper_uses_worker_script(self):
-        with tempfile.TemporaryDirectory(prefix="pa23-worker-wrapper.") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="pa28-worker-wrapper.") as temp_dir:
             temp = Path(temp_dir)
-            pa = temp / "pa23"
+            pa = temp / "pa28"
             tests = pa / "tests"
             app = temp / "fake_lowir_native.py"
             test = tests / "basic.t"
@@ -399,7 +421,7 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
 
             result = run(
                 "perl",
-                str(REPO_ROOT / "pa23" / "scripts" / "run_all_tests.pl"),
+                str(REPO_ROOT / "pa28" / "scripts" / "run_all_tests.pl"),
                 str(app),
                 "my",
                 "tests",

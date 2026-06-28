@@ -83,6 +83,18 @@ A timeout usually points to a performance or nontermination bug in an earlier
 compiler surface. Prefer reducing and fixing that bug over increasing the
 timeout.
 
+The compile wrapper also applies a default per-command RSS cap. By default,
+commands that exceed 8 GiB RSS fail with `EXIT_OOM`; set
+`CPPGM_RUN_MAX_RSS_KB=0` to disable that guard for diagnosis, or set it to a
+larger value if you have already reduced the memory use and need a temporary
+validation run.
+
+The initial `*-self` build uses the normal make parallelism default. The
+`*-inception` subbuild is capped separately with `INCEPTION_BUILD_JOBS`, which
+defaults to the smaller of the available CPU count and
+`INCEPTION_DEFAULT_BUILD_JOB_CAP=8`. Raise that only if the machine has enough
+memory for several simultaneous self-built compiler processes.
+
 ### Inception Targets
 
 The focused PA39 goal is:
@@ -103,6 +115,15 @@ make bitcmp CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
 `inception` builds all inception checkpoint binaries. `compare-inception` and
 `bitcmp` compare all self-built checkpoint binaries against their inception
 versions.
+
+During a normal in-tree inception build, PA39 also checks each newly built
+inception object before the final target link finishes. The check does not
+wait for the final executable link: it byte-compares the new inception `.o`
+against the corresponding self-host `.o` and stops at the first mismatch. That
+catches object-level reproducibility drift as soon as the responsible source
+file finishes compiling while still leaving the final linked executable compare
+as the PA39 result. The restored-self diagnostic target disables this object
+check because it may not have a matching self-host object tree.
 
 ### Intermediate Ladder
 
