@@ -365,6 +365,10 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `support.range_for` | `pa24` | 100 | 6.5.4 `[stmt.ranged]` | pending | Range-for semantic/lowering support over already-owned begin/end and array forms. |
 | `support.decltype` | `pa11` | 200 | 7.1.6.2 `[dcl.type.simple]` | pending | `decltype` type analysis. LowIR tests inherit the enclosing feature owner unless `decltype` itself is the primary semantic assertion. |
 | `support.auto` | `pa24` | 100 | 7.1.6.4 `[dcl.spec.auto]` | pending | `auto` in declarations and non-template return type deduction. |
+| `rtti.typeid` | `pa25` | 100 | 5.2.8 `[expr.typeid]` | pending | `typeid(type-id)`, supported `typeid(expr)`, and deterministic RTTI/typeinfo LowIR for the PA25 RTTI subset. |
+| `rtti.dynamic_cast.pointer` | `pa25` | 100 | 5.2.7 `[expr.dynamic.cast]` | pending | Pointer-form `dynamic_cast<T*>` over the supported single-inheritance polymorphic subset and the associated `__dynamic_cast`/RTTI helper facts. |
+| `rtti.dynamic_cast.void` | `pa26` | 100 | 5.2.7 `[expr.dynamic.cast]` | pending | `dynamic_cast<void*>` over the existing single-vptr polymorphic ABI and the `_ZTIv` helper fact. |
+| `rtti.dynamic_cast.multi_vptr` | `pa27` | 100 | 5.2.7 `[expr.dynamic.cast]`, 10.1 `[class.mi]` | pending | `dynamic_cast` and `typeid` cases that require the multi-vtable / virtual-base RTTI ABI, including VMI RTTI helper facts. |
 | `polymorphic.basic` | `pa17` | 100 | 10.3 `[class.virtual]` | pending | `virtual`, virtual calls, vtables, vptr stores. |
 | `polymorphic.override_final` | `pa17` | 200 | 10.3 `[class.virtual]`, 9.2 `[class.mem]` | pending | `override`, method-level `final`. |
 | `polymorphic.vdtor` | `pa17` | 300 | 10.3 `[class.virtual]`, 12.4 `[class.dtor]` | pending | virtual destructors, destructor override. |
