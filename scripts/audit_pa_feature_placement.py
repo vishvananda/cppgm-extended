@@ -992,14 +992,21 @@ def hosted_stl_include(header: str) -> bool:
     return header in HOSTED_STL_HEADERS
 
 
-def pa22_heavy_support_evidence(source: str, ref_text: str) -> str:
+# LowIR side-effect checks intentionally avoid broad object-name evidence such
+# as object=_Z...; PA13 treats those names as presentation/backend metadata.
+LOWIR_POLYMORPHIC_RE = re.compile(r"__vtable|_ZTV|__rtti|_ZTI|__typeinfo_name|_ZTS|typeinfo")
+LOWIR_CLEANUP_EH_RE = re.compile(
+    r"\beh_(?:try|cleanup|end)\b|\b_Unwind_Resume\b|"
+    r"\b__gxx_personality_v0\b|\brole=eh_(?:resume|personality)\b|"
+    r"\bresume\b|\bexception_selector\b|\b__cxa_(?:throw|begin_catch|end_catch|rethrow)\b"
+)
+SOURCE_EXCEPTION_RE = re.compile(r"\b(?:try|catch|throw)\b")
+
+
+def polymorphic_cleanup_lowir_evidence(source: str, ref_text: str) -> str:
     has_polymorphic_source = re.search(r"\bvirtual\b", strip_string_literals(strip_comments(source)))
-    polymorphic_ref = re.search(r"__vtable|_ZTV|__rtti|_ZTI|typeinfo", ref_text)
-    cleanup_ref = re.search(
-        r"\beh_(?:try|cleanup|end)\b|\b_Unwind_Resume\b|"
-        r"\b__gxx_personality_v0\b|\brole=eh_(?:resume|personality)\b",
-        ref_text,
-    )
+    polymorphic_ref = LOWIR_POLYMORPHIC_RE.search(ref_text)
+    cleanup_ref = LOWIR_CLEANUP_EH_RE.search(ref_text)
     if (has_polymorphic_source or polymorphic_ref) and cleanup_ref:
         evidence = []
         if has_polymorphic_source:
@@ -1009,6 +1016,45 @@ def pa22_heavy_support_evidence(source: str, ref_text: str) -> str:
         evidence.append(f"ref:{cleanup_ref.group(0)}")
         return ", ".join(evidence)
     return ""
+
+
+def hidden_eh_lowir_evidence(source: str, ref_text: str) -> str:
+    stripped_source = strip_string_literals(strip_comments(source))
+    if SOURCE_EXCEPTION_RE.search(stripped_source):
+        return ""
+    cleanup_ref = LOWIR_CLEANUP_EH_RE.search(ref_text)
+    if cleanup_ref:
+        return f"ref:{cleanup_ref.group(0)}"
+    return ""
+
+
+def pa24_lowir_side_effect_findings(path: Path, source: str, ref_text: str) -> list[HygieneFinding]:
+    relative = path.as_posix()
+    findings: list[HygieneFinding] = []
+    evidence = polymorphic_cleanup_lowir_evidence(source, ref_text)
+    if evidence:
+        findings.append(HygieneFinding(
+            path=relative,
+            kind="pa24-rtti-eh-side-effect",
+            message=(
+                "PA24 tests should split or move polymorphic RTTI/typeinfo "
+                "output that also needs EH/unwind lowering"
+            ),
+            evidence=evidence,
+        ))
+        return findings
+    evidence = hidden_eh_lowir_evidence(source, ref_text)
+    if evidence:
+        findings.append(HygieneFinding(
+            path=relative,
+            kind="pa24-hidden-eh-side-effect",
+            message=(
+                "PA24 tests should split or move source constructs that emit "
+                "EH/unwind lowering without explicit exception syntax"
+            ),
+            evidence=evidence,
+        ))
+    return findings
 
 
 def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
@@ -1033,8 +1079,10 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
                     f"cluster; use {nearest:03d} for this cluster"
                 ),
             ))
-        if current_pa_for(path.relative_to(root)) == "pa22":
-            evidence = pa22_heavy_support_evidence(read_text(path), ref_text_for(path))
+        current_pa = current_pa_for(path.relative_to(root))
+        if current_pa == "pa22":
+            source = read_text(path) + "\n" + companion_source_text_for(path)
+            evidence = polymorphic_cleanup_lowir_evidence(source, ref_text_for(path))
             if evidence:
                 findings.append(HygieneFinding(
                     path=relative,
@@ -1045,6 +1093,13 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
                     ),
                     evidence=evidence,
                 ))
+        if current_pa == "pa24":
+            source = read_text(path) + "\n" + companion_source_text_for(path)
+            findings.extend(pa24_lowir_side_effect_findings(
+                path.relative_to(root),
+                source,
+                ref_text_for(path),
+            ))
     include_re = re.compile(r"^\s*#\s*include\s*<([^>\n]+)>", re.MULTILINE)
     for path in iter_local_hygiene_source_files(root, selected_pas):
         current_pa = current_pa_for(path.relative_to(root))
