@@ -2072,14 +2072,14 @@ sub lowir_function_symbol_records
 
 	for my $line (split(/\n/, $data))
 	{
-		my ($name, $metadata_suffix);
-		if ($line =~ /^declare function @([A-Za-z0-9_]+)\((.*?)\) -> $type_pattern((?:\s+\[[^\]]+\])*)$/)
+		my ($name, $params, $return_type, $metadata_suffix);
+		if ($line =~ /^declare function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*)$/)
 		{
-			($name, $metadata_suffix) = ($1, $3);
+			($name, $params, $return_type, $metadata_suffix) = ($1, $2, $3, $4);
 		}
-		elsif ($line =~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> $type_pattern((?:\s+\[[^\]]+\])*) \{$/)
+		elsif ($line =~ /^function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*) \{$/)
 		{
-			($name, $metadata_suffix) = ($1, $3);
+			($name, $params, $return_type, $metadata_suffix) = ($1, $2, $3, $4);
 		}
 		else
 		{
@@ -2091,6 +2091,7 @@ sub lowir_function_symbol_records
 			$records{$name} = {
 				name => $name,
 				order => scalar(@ordered),
+				signature => lowir_normalize_function_signature($params, $return_type),
 				keys => {},
 			};
 			push @ordered, $name;
@@ -2106,6 +2107,16 @@ sub lowir_function_symbol_records
 	}
 
 	return (\%records, \@ordered);
+}
+
+sub lowir_normalize_function_signature
+{
+	my ($params, $return_type) = @_;
+	$params = lowir_trim($params);
+	$return_type = lowir_trim($return_type);
+	$params =~ s/\s+/ /g;
+	$return_type =~ s/\s+/ /g;
+	return '(' . $params . ') -> ' . $return_type;
 }
 
 sub assign_lowir_function_symbol_pair
@@ -2184,6 +2195,7 @@ sub paired_lowir_function_symbol_maps
 	for my $name (sort keys(%$ref_records))
 	{
 		next if !exists($my_records->{$name});
+		next if $ref_records->{$name}{signature} ne $my_records->{$name}{signature};
 		$next = assign_lowir_function_symbol_pair(\%ref_map,
 		                                          \%my_map,
 		                                          $name,

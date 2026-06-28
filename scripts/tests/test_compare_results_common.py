@@ -371,6 +371,58 @@ class CompareResultsCommonTests(unittest.TestCase):
             result = run_compare("lowir_t", root, "tests")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    def test_lowir_compare_same_name_pairing_requires_signature_match(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa19"
+            testbase = root / "tests" / "102e"
+            write_text(testbase.with_suffix(".t"), "template overload names;\n")
+            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
+            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
+            ref_lowir = textwrap.dedent(
+                """\
+                function @main() -> i32 [role=entry] {
+                  block ^entry:
+                    %0 = call i32 @bind__ov3(7)
+                    return i32 %0
+                }
+
+                function @bind__ov3(%f : i32) -> i32 [binding=weak] {
+                  block ^entry:
+                    %0 = call i32 @bind(%f)
+                    return i32 %0
+                }
+
+                function @bind(%f : ptr) -> i32 [binding=weak] {
+                  block ^entry:
+                    return i32 1
+                }
+                """
+            )
+            my_lowir = textwrap.dedent(
+                """\
+                function @main() -> i32 [role=entry] {
+                  block ^entry:
+                    %0 = call i32 @bind(7)
+                    return i32 %0
+                }
+
+                function @bind(%f : i32) -> i32 [binding=weak] {
+                  block ^entry:
+                    %0 = call i32 @bind__t2(%f)
+                    return i32 %0
+                }
+
+                function @bind__t2(%f : ptr) -> i32 [binding=weak] {
+                  block ^entry:
+                    return i32 1
+                }
+                """
+            )
+            write_text(testbase.with_suffix(".ref"), ref_lowir)
+            write_text(testbase.with_suffix(".my"), my_lowir)
+            result = run_compare("lowir_t", root, "tests")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_lowir_compare_rejects_move_constructor_before_copy_constructor(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
