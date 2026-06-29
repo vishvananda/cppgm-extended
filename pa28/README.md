@@ -109,6 +109,11 @@ emission. You may keep a typed MIR internally, and the optional
 `dev/src/mir_model.h` scaffold gives one possible representation, but the dump
 must describe the same program that native emission consumes.
 
+Frame metadata is part of that final MIR contract. In particular, the
+callee-saved `preserve` list should name the callee-saved registers that the
+final instruction body actually uses after local setup/copy cleanup, and the
+stack size should match that final frame layout.
+
 That MIR dump path must work even for helper-only LowIR inputs that have no
 entry function. In that case the dumped MIR should simply omit the optional
 `startup` section.

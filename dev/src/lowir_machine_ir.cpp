@@ -7375,12 +7375,6 @@ mir::Operand integer_source_operand(const FunctionLayout & layout,
       out.host_eh_clauses = collect_host_eh_clauses(function);
     }
     set<X64Register> used_callee_saved;
-    for(map<string, X64Register>::const_iterator it = layout.temp_register.begin();
-        it != layout.temp_register.end(); ++it) {
-      if(is_callee_saved_temp_register(it->second)) {
-        used_callee_saved.insert(it->second);
-      }
-    }
 
     out.params = collect_param_bindings(function);
     for(size_t i = 0; i < layout.params.size(); ++i) {

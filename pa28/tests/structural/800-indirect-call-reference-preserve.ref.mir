@@ -27,9 +27,9 @@ function @wrap
     param %pf -> rsi : ptr
     return ptr -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
-    preserve rbx r12 r13
+    preserve rbx
 
   block ^entry
     mov r9, rdi

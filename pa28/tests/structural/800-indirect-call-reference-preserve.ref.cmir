@@ -27,17 +27,17 @@ function @wrap
     param %pf -> rsi : ptr
     return ptr -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
-    preserve <gpr0> <gpr1> <gpr2>
+    preserve <gpr0>
 
   block ^entry
     mov r9, rdi
     mov r8, rsi
     mov <gpr0>, rdi
-    mov <gpr3>, rsi
+    mov <gpr1>, rsi
     mov rdi, <gpr0>
-    call *<gpr3>
+    call *<gpr1>
     ret rax
 
 function @main

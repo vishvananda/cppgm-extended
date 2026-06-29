@@ -19,9 +19,9 @@ function @f
     param %x -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 96
+    stack_size 48
     scratch_bytes 0
-    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    preserve <gpr0>
     temp %t2 -> [rbp-<off0>] : i64
     temp %t3 -> [rbp-<off1>] : i64
     temp %t4 -> [rbp-<off2>] : i64
@@ -29,8 +29,8 @@ function @f
     temp %z -> [rbp-<off4>] : i64
 
   block ^entry
-    mov <gpr3>, rdi
-    add <gpr3>, 1
+    mov <gpr0>, rdi
+    add <gpr0>, 1
     mov rax, rsi
     add rax, 2
     store.i64 [rbp-<off0>], rax
@@ -48,20 +48,20 @@ function @f
     store.i64 [rbp-<off4>], rax
     load.i64 rax, [rbp-<off4>]
     store.i64 [rbp-<off5>], rax
-    tls_addr <gpr5>, @g__tls_wrapper
+    tls_addr <gpr1>, @g__tls_wrapper
     load.i64 rax, [rbp-<off5>]
-    store.i64 [<gpr5>], rax
+    store.i64 [<gpr1>], rax
     load.i64 rdx, [rbp-<off0>]
-    add <gpr3>, rdx
+    add <gpr0>, rdx
     load.i64 rdx, [rbp-<off1>]
-    add <gpr3>, rdx
+    add <gpr0>, rdx
     load.i64 rdx, [rbp-<off2>]
-    add <gpr3>, rdx
+    add <gpr0>, rdx
     load.i64 rdx, [rbp-<off3>]
-    add <gpr3>, rdx
+    add <gpr0>, rdx
     load.i64 rdx, [rbp-<off4>]
-    add <gpr3>, rdx
-    mov rax, <gpr3>
+    add <gpr0>, rdx
+    mov rax, <gpr0>
     ret rax
 
 function @main

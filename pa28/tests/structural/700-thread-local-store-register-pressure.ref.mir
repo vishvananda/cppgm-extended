@@ -19,9 +19,9 @@ function @f
     param %x -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 96
+    stack_size 48
     scratch_bytes 0
-    preserve rbx r12 r13 r14 r15
+    preserve r14
     temp %t2 -> [rbp-8] : i64
     temp %t3 -> [rbp-16] : i64
     temp %t4 -> [rbp-24] : i64
