@@ -1733,6 +1733,32 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("missing structural machine IR oracle", result.stdout + result.stderr)
 
+    def test_mir_mode_without_checked_in_mir_compares_program_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp) / "pa23"
+            testbase = root / "tests" / "behavior" / "100"
+            write_text(testbase.with_suffix(".t"), "noop\n")
+            write_text(testbase.with_suffix(".ref.impl.exit_status"), "0\n")
+            write_text(testbase.with_suffix(".my.impl.exit_status"), "0\n")
+            write_text(
+                testbase.with_suffix(".my.mir"),
+                textwrap.dedent(
+                    """\
+                    machine_ir x86_64 linux
+
+                    function @f
+                      block ^entry
+                        cmp.i32 rax, rdx
+                    """
+                ),
+            )
+            write_text(testbase.with_suffix(".ref.program.exit_status"), "0\n")
+            write_text(testbase.with_suffix(".my.program.exit_status"), "0\n")
+            write_text(testbase.with_suffix(".ref.program.stdout"), "")
+            write_text(testbase.with_suffix(".my.program.stdout"), "")
+            result = run_compare("mir_t", root, "tests/behavior")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_mir_structural_failure_writes_debug_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa23"

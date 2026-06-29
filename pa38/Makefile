@@ -83,7 +83,8 @@ endef
 
 define run_native_bucket_ref
 	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
-		CPPGM_APP_ARGS='$(2)' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref $(1); \
+		CPPGM_APP_ARGS='$(2)' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref $(1) && \
+		perl ../scripts/canonicalize_lowir_native_refs.pl $(1); \
 	else \
 		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
 	fi
@@ -114,8 +115,8 @@ ref-test-debuginfo:
 	$(call run_native_bucket_ref,$(DEBUGINFO_O2_TEST_ROOT),-O2)
 
 REF_TEST_RUN = case "$(TEST)" in \
-	$(O1_TEST_ROOT)/*|$(COURSE_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" ;; \
-	$(O2_TEST_ROOT)/*|$(COURSE_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" ;; \
+	$(O1_TEST_ROOT)/*|$(COURSE_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" && perl ../scripts/canonicalize_lowir_native_refs.pl "$(TEST)" ;; \
+	$(O2_TEST_ROOT)/*|$(COURSE_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" && perl ../scripts/canonicalize_lowir_native_refs.pl "$(TEST)" ;; \
 	*) echo "Usage: make ref-test TEST=$(O1_TEST_ROOT)/<file>.t | $(O2_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
