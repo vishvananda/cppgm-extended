@@ -1,4 +1,4 @@
-machine_ir x86_64 <host-target>
+machine_ir x86_64 linux
 
 startup
     call @main

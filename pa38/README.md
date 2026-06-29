@@ -40,7 +40,7 @@ The starter kit supplies:
   shared register support in `dev/src/x86_register_model.h`
 - test directories under `pa38/tests/`
 - harness scripts under `pa38/scripts/`
-- checked-in machine-IR and generated-program oracle sidecars
+- checked-in structural machine-IR and generated-program oracle sidecars
 
 The expected implementation work is in `dev/lowir2native.cpp` and the shared
 machine-IR/native backend modules under `dev/src/`, especially machine-IR
@@ -96,9 +96,12 @@ The same rule applies when the machine backend is reached through `cppgm++`:
 optimization, object writing, and executable writing should consume the same
 machine-IR facts that `--dump-machine-ir` can serialize.
 
-The primary backend-shape oracle is the machine-IR dump. The generated native
-program's exit status and standard output are behavior-preservation oracles
-layered on top of that structural check.
+The raw `x.ref.mir` file is kept as the debugging-oriented dump produced by
+`--dump-machine-ir`. The primary backend-shape oracle is the structural
+machine-IR sidecar `x.ref.cmir`, compared against a canonicalized form of the
+generated `x.my.mir` dump. The generated native program's exit status and
+standard output are behavior-preservation oracles layered on top of that
+structural check.
 
 ### Error Handling
 
@@ -196,13 +199,14 @@ records implementation exit status, runs the generated program when the build
 succeeds, and compares:
 
 - implementation exit status
-- optimized machine-IR dump
+- optimized raw machine-IR dump, with the checked-in `x.ref.mir` retained for
+  debugging and `x.ref.cmir` used as the structural machine-IR oracle
 - generated-program exit status
 - generated-program standard output, when relevant
 
 Failed reference builds are judged by implementation exit status. Successful
-reference builds are judged by the test directory's structural machine-IR
-validation and generated-program behavior.
+reference builds are judged by structural machine-IR validation and
+generated-program behavior.
 
 ### Out Of Scope
 
