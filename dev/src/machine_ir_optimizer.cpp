@@ -1798,6 +1798,7 @@ mir_public::MirProgram optimize_machine_ir_program(const mir_public::MirProgram 
     if(!function_has_real_debug_info(out.functions[i])) {
       remove_dead_copy_moves(out.functions[i]);
     }
+    minimize_callee_saved_preservation(out.functions[i]);
   }
   if(optimization_level <= 0) {
     return out;
@@ -1812,7 +1813,6 @@ mir_public::MirProgram optimize_machine_ir_program(const mir_public::MirProgram 
         simplify_conditional_jump_fallthroughs(out.functions[i]);
         remove_fallthrough_jumps(out.functions[i]);
       }
-      minimize_callee_saved_preservation(out.functions[i]);
     }
   }
   return out;

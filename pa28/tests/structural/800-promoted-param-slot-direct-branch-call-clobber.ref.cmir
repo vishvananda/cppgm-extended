@@ -59,17 +59,17 @@ function @check
     param %index -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
-    preserve <gpr0> <gpr1> <gpr2>
+    preserve <gpr0> <gpr1>
 
   block ^entry
     mov r9, rdi
     mov r8, rsi
     mov <gpr0>, rsi
     call @size
-    mov <gpr2>, rax
-    cmp.i64 <gpr0>, <gpr2>
+    mov <gpr1>, rax
+    cmp.i64 <gpr0>, <gpr1>
     jae ^bad
     jmp ^good
 

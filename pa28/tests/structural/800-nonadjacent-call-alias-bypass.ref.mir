@@ -25,9 +25,8 @@ function @f
     param %src -> rcx : ptr
     return ptr -> rax
   frame
-    stack_size 48
+    stack_size 32
     scratch_bytes 0
-    preserve rbx
     param-slot %a -> [rbp-8] : ptr
     param-slot %b -> [rbp-16] : ptr
     param-slot %c -> [rbp-24] : ptr

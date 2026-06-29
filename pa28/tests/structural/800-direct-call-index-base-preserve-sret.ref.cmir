@@ -1,4 +1,4 @@
-machine_ir x86_64 macos
+machine_ir x86_64 <host-target>
 
 startup
     call @main
@@ -16,14 +16,14 @@ function @function_binding_qualified_name_for_symbol
   frame
     stack_size 16
     scratch_bytes 0
-    preserve rbx
+    preserve <gpr0>
 
   block ^entry
     mov r9, rdi
-    lea r9, [r9+160]
-    load.i32 rbx, [r9]
-    sext.i32 rbx
-    mov rax, rbx
+    lea r9, [r9+<off0>]
+    load.i32 <gpr0>, [r9]
+    sext.i32 <gpr0>
+    mov rax, <gpr0>
     ret rax
 
 function @function_binding_display_name_for_symbol
@@ -33,14 +33,14 @@ function @function_binding_display_name_for_symbol
   frame
     stack_size 16
     scratch_bytes 0
-    preserve rbx
+    preserve <gpr0>
 
   block ^entry
     mov r9, rdi
-    lea r9, [r9+164]
-    load.i32 rbx, [r9]
-    sext.i32 rbx
-    mov rax, rbx
+    lea r9, [r9+<off1>]
+    load.i32 <gpr0>, [r9]
+    sext.i32 <gpr0>
+    mov rax, <gpr0>
     ret rax
 
 function @function_object_symbol_key
@@ -50,14 +50,14 @@ function @function_object_symbol_key
   frame
     stack_size 16
     scratch_bytes 0
-    preserve rbx
+    preserve <gpr0>
 
   block ^entry
     mov r9, rdi
-    lea r9, [r9+376]
-    load.i32 rbx, [r9]
-    sext.i32 rbx
-    mov rax, rbx
+    lea r9, [r9+<off2>]
+    load.i32 <gpr0>, [r9]
+    sext.i32 <gpr0>
+    mov rax, <gpr0>
     ret rax
 
 function @make_function_symbol_identity
@@ -68,113 +68,113 @@ function @make_function_symbol_identity
     param %__param2 -> rcx : u8
     param %__param3 -> r8 : ptr
     param %options -> r9 : ptr
-    param %key -> [rbp+16] : i32
-    param %linkage -> [rbp+24] : i32
+    param %key -> [rbp+<off0>] : i32
+    param %linkage -> [rbp+<off1>] : i32
     return void -> void
   frame
     stack_size 160
     scratch_bytes 0
-    preserve rbx r12 r13 r14 r15
-    param-slot %key -> [rbp-4] : i32
-    param-slot %linkage -> [rbp-8] : i32
-    slot $linkage -> [rbp-12] : i32
-    slot $cond__1 -> [rbp-16] : i32
-    temp %t2 -> [rbp-24] : ptr
-    temp %t3 -> [rbp-32] : ptr
-    temp %t4 -> [rbp-40] : ptr
-    temp %t6 -> [rbp-48] : ptr
-    temp %t7 -> [rbp-56] : ptr
-    temp %t8 -> [rbp-64] : ptr
-    temp %t10 -> [rbp-72] : ptr
-    temp %t11 -> [rbp-80] : ptr
-    temp %t12 -> [rbp-88] : ptr
-    temp %t15 -> [rbp-96] : ptr
-    temp %t19 -> [rbp-104] : ptr
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    param-slot %key -> [rbp-<off0>] : i32
+    param-slot %linkage -> [rbp-<off1>] : i32
+    slot $linkage -> [rbp-<off2>] : i32
+    slot $cond__1 -> [rbp-<off3>] : i32
+    temp %t2 -> [rbp-<off4>] : ptr
+    temp %t3 -> [rbp-<off5>] : ptr
+    temp %t4 -> [rbp-<off6>] : ptr
+    temp %t6 -> [rbp-<off7>] : ptr
+    temp %t7 -> [rbp-<off8>] : ptr
+    temp %t8 -> [rbp-<off9>] : ptr
+    temp %t10 -> [rbp-<off10>] : ptr
+    temp %t11 -> [rbp-<off11>] : ptr
+    temp %t12 -> [rbp-<off12>] : ptr
+    temp %t15 -> [rbp-<off13>] : ptr
+    temp %t19 -> [rbp-<off14>] : ptr
 
   block ^entry
-    load.i32 rax, [rbp+16]
-    store.i32 [rbp-4], rax
-    load.i32 rax, [rbp+24]
-    store.i32 [rbp-8], rax
-    mov r14, rdi
-    mov r13, rsi
-    mov rbx, rdx
-    mov r12, r9
+    load.i32 rax, [rbp+<off0>]
+    store.i32 [rbp-<off0>], rax
+    load.i32 rax, [rbp+<off1>]
+    store.i32 [rbp-<off1>], rax
+    mov <gpr3>, rdi
+    mov <gpr2>, rsi
+    mov <gpr0>, rdx
+    mov <gpr1>, r9
     mov r9, r8
     mov r8, rcx
-    load.i32 rax, [rbp-8]
-    store.i32 [rbp-12], rax
-    mov rdi, r14
+    load.i32 rax, [rbp-<off1>]
+    store.i32 [rbp-<off2>], rax
+    mov rdi, <gpr3>
     call @SymbolIdentity__SymbolIdentity
-    mov r15, r13
-    sext.i32 r15
-    store.ptr [rbp-24], r14
-    load.ptr rax, [rbp-24]
-    store.ptr [rbp-32], rax
-    load.ptr rax, [rbp-32]
-    store.ptr [rbp-40], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-40]
+    mov <gpr4>, <gpr2>
+    sext.i32 <gpr4>
+    store.ptr [rbp-<off4>], <gpr3>
+    load.ptr rax, [rbp-<off4>]
+    store.ptr [rbp-<off5>], rax
+    load.ptr rax, [rbp-<off5>]
+    store.ptr [rbp-<off6>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off6>]
     store.i64 [rcx], rax
-    mov r15, rbx
-    sext.i32 r15
-    store.ptr [rbp-48], r14
-    load.ptr rax, [rbp-48]
-    store.ptr [rbp-56], rax
-    load.ptr rax, [rbp-56]
-    lea rax, [rax+8]
-    store.ptr [rbp-64], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-64]
+    mov <gpr4>, <gpr0>
+    sext.i32 <gpr4>
+    store.ptr [rbp-<off7>], <gpr3>
+    load.ptr rax, [rbp-<off7>]
+    store.ptr [rbp-<off8>], rax
+    load.ptr rax, [rbp-<off8>]
+    lea rax, [rax+<off0>]
+    store.ptr [rbp-<off9>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off9>]
     store.i64 [rcx], rax
-    load.i32 r15, [rbp-4]
-    sext.i32 r15
-    store.ptr [rbp-72], r14
-    load.ptr rax, [rbp-72]
-    store.ptr [rbp-80], rax
-    load.ptr rax, [rbp-80]
-    lea rax, [rax+16]
-    store.ptr [rbp-88], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-88]
+    load.i32 <gpr4>, [rbp-<off0>]
+    sext.i32 <gpr4>
+    store.ptr [rbp-<off10>], <gpr3>
+    load.ptr rax, [rbp-<off10>]
+    store.ptr [rbp-<off11>], rax
+    load.ptr rax, [rbp-<off11>]
+    lea rax, [rax+<off1>]
+    store.ptr [rbp-<off12>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off12>]
     store.i64 [rcx], rax
-    mov r15, r12
-    lea r15, [r15+24]
-    load.ptr rax, [r15]
-    store.ptr [rbp-96], rax
-    mov r15, r14
-    lea r15, [r15+32]
-    load.ptr rax, [rbp-96]
-    store.ptr [r15], rax
-    mov r15, r12
-    lea r15, [r15+24]
-    load.ptr rax, [r15]
-    store.ptr [rbp-104], rax
-    load.ptr rax, [rbp-104]
+    mov <gpr4>, <gpr1>
+    lea <gpr4>, [<gpr4>+<off0>]
+    load.ptr rax, [<gpr4>]
+    store.ptr [rbp-<off13>], rax
+    mov <gpr4>, <gpr3>
+    lea <gpr4>, [<gpr4>+<off1>]
+    load.ptr rax, [rbp-<off13>]
+    store.ptr [<gpr4>], rax
+    mov <gpr4>, <gpr1>
+    lea <gpr4>, [<gpr4>+<off0>]
+    load.ptr rax, [<gpr4>]
+    store.ptr [rbp-<off14>], rax
+    load.ptr rax, [rbp-<off14>]
     cmp.ptr rax, @expected_template_arguments
     je ^cond_then_1
     jmp ^cond_else_2
 
   block ^cond_then_1
     mov rax, 0
-    store.i32 [rbp-16], rax
+    store.i32 [rbp-<off3>], rax
     jmp ^cond_end_3
 
   block ^cond_else_2
     mov rax, 10
-    store.i32 [rbp-16], rax
+    store.i32 [rbp-<off3>], rax
     jmp ^cond_end_3
 
   block ^cond_end_3
-    load.i32 r8, [rbp-16]
+    load.i32 r8, [rbp-<off3>]
     sext.i32 r8
-    mov r9, r14
-    lea r9, [r9+40]
+    mov r9, <gpr3>
+    lea r9, [r9+<off3>]
     store.i32 [r9], r8
-    load.i32 r8, [rbp-12]
+    load.i32 r8, [rbp-<off2>]
     sext.i32 r8
-    mov r9, r14
-    lea r9, [r9+48]
+    mov r9, <gpr3>
+    lea r9, [r9+<off4>]
     store.i32 [r9], r8
     ret
 
@@ -184,101 +184,100 @@ function @main
   frame
     stack_size 464
     scratch_bytes 0
-    preserve rbx
-    slot $type_value -> [rbp-4] : i32
-    slot $binding -> [rbp-392] : obj<384x8>
-    slot $analyzer -> [rbp-393] : obj<1x1>
-    slot $out -> [rbp-456] : obj<56x8>
+    slot $type_value -> [rbp-<off0>] : i32
+    slot $binding -> [rbp-<off15>] : obj<384x8>
+    slot $analyzer -> [rbp-<off16>] : obj<1x1>
+    slot $out -> [rbp-<off17>] : obj<56x8>
 
   block ^entry
     mov rax, 5
-    store.i32 [rbp-4], rax
-    lea rdi, [rbp-392]
+    store.i32 [rbp-<off0>], rax
+    lea rdi, [rbp-<off15>]
     call @FunctionBinding__FunctionBinding
-    lea r8, [rbp-392]
-    lea r8, [r8+160]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off0>]
     mov rax, 101
     store.i32 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+164]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off1>]
     mov rax, 202
     store.i32 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+168]
-    lea rax, [rbp-4]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off2>]
+    lea rax, [rbp-<off0>]
     store.ptr [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+176]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off3>]
     mov rax, 1
     store.u8 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+180]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off4>]
     mov rax, 17
     store.i32 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+184]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off5>]
     mov rax, 3
     store.i32 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+188]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off6>]
     mov rax, 1
     store.u8 [r8], rax
     mov r8, 4660
-    lea r9, [rbp-392]
-    lea r9, [r9+192]
+    lea r9, [rbp-<off15>]
+    lea r9, [r9+<off5>]
     store.ptr [r9], r8
-    lea r8, [rbp-392]
-    lea r8, [r8+264]
-    lea r8, [r8+48]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off7>]
+    lea r8, [r8+<off8>]
     mov rax, 1
     store.i32 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+264]
-    lea r8, [r8+44]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off7>]
+    lea r8, [r8+<off9>]
     mov rax, 1
     store.u8 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+264]
-    lea r8, [r8+45]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off7>]
+    lea r8, [r8+<off10>]
     mov rax, 1
     store.u8 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+320]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off11>]
     mov rax, 7
     store.i32 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+336]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off12>]
     mov rax, 1
     store.u8 [r8], rax
     mov r8, 17767
-    lea r9, [rbp-392]
-    lea r9, [r9+344]
+    lea r9, [rbp-<off15>]
+    lea r9, [r9+<off6>]
     store.ptr [r9], r8
     mov r8, 35243
-    lea r9, [rbp-392]
-    lea r9, [r9+352]
+    lea r9, [rbp-<off15>]
+    lea r9, [r9+<off7>]
     store.ptr [r9], r8
     mov r8, 52719
-    lea r9, [rbp-392]
-    lea r9, [r9+360]
+    lea r9, [rbp-<off15>]
+    lea r9, [r9+<off8>]
     store.ptr [r9], r8
     mov r8, 4369
-    lea r9, [rbp-392]
-    lea r9, [r9+368]
+    lea r9, [rbp-<off15>]
+    lea r9, [r9+<off9>]
     store.ptr [r9], r8
-    lea r8, [rbp-392]
-    lea r8, [r8+376]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off13>]
     mov rax, 303
     store.i32 [r8], rax
-    lea r8, [rbp-392]
-    lea r8, [r8+320]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off11>]
     store.ptr @expected_template_arguments, r8
-    lea rdi, [rbp-456]
-    lea rsi, [rbp-393]
-    lea rdx, [rbp-392]
+    lea rdi, [rbp-<off17>]
+    lea rsi, [rbp-<off16>]
+    lea rdx, [rbp-<off15>]
     call @Analyzer__direct_call_symbol
-    lea r8, [rbp-456]
-    lea r8, [r8+40]
+    lea r8, [rbp-<off17>]
+    lea r8, [r8+<off14>]
     load.i32 r9, [r8]
     sext.i32 r9
     cmp.i32 r9, 0
@@ -286,8 +285,8 @@ function @main
     jmp ^if_else_2
 
   block ^if_then_1
-    lea r8, [rbp-456]
-    lea r8, [r8+40]
+    lea r8, [rbp-<off17>]
+    lea r8, [r8+<off14>]
     load.i32 r9, [r8]
     sext.i32 r9
     mov rax, r9
@@ -297,11 +296,11 @@ function @main
     jmp ^if_end_3
 
   block ^if_end_3
-    lea r8, [rbp-456]
-    lea r8, [r8+32]
+    lea r8, [rbp-<off17>]
+    lea r8, [r8+<off15>]
     load.ptr r9, [r8]
-    lea r8, [rbp-392]
-    lea r8, [r8+320]
+    lea r8, [rbp-<off15>]
+    lea r8, [r8+<off11>]
     cmp.ptr r9, r8
     jne ^if_then_4
     jmp ^if_else_5
@@ -314,8 +313,8 @@ function @main
     jmp ^if_end_6
 
   block ^if_end_6
-    lea r8, [rbp-456]
-    lea r8, [r8+44]
+    lea r8, [rbp-<off17>]
+    lea r8, [r8+<off9>]
     load.u8 r9, [r8]
     zext.i8 r9
     cmp.i64 r9, 0
@@ -323,8 +322,8 @@ function @main
     jmp ^lor_rhs_10
 
   block ^lor_rhs_10
-    lea r8, [rbp-456]
-    lea r8, [r8+45]
+    lea r8, [rbp-<off17>]
+    lea r8, [r8+<off10>]
     load.u8 r9, [r8]
     zext.i8 r9
     cmp.i64 r9, 0
@@ -352,23 +351,23 @@ function @SymbolIdentity__SymbolIdentity
 
   block ^entry
     mov r9, rdi
-    lea r9, [r9+32]
+    lea r9, [r9+<off10>]
     mov rax, 0
     store.ptr [r9], rax
     mov r9, rdi
-    lea r9, [r9+40]
+    lea r9, [r9+<off3>]
     mov rax, 0
     store.i32 [r9], rax
     mov r9, rdi
-    lea r9, [r9+44]
+    lea r9, [r9+<off11>]
     mov rax, 0
     store.u8 [r9], rax
     mov r9, rdi
-    lea r9, [r9+45]
+    lea r9, [r9+<off12>]
     mov rax, 0
     store.u8 [r9], rax
     mov r9, rdi
-    lea r9, [r9+48]
+    lea r9, [r9+<off4>]
     mov rax, 1
     store.i32 [r9], rax
     ret
@@ -379,9 +378,8 @@ function @SymbolIdentity__SymbolIdentity__ov2
     param %other -> rsi : ptr
     return void -> void
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
-    preserve rbx r12
 
   block ^entry
     copy_bytes 52x8, rdi, rsi
@@ -394,80 +392,80 @@ function @FunctionBinding__FunctionBinding
   frame
     stack_size 16
     scratch_bytes 0
-    preserve rbx
+    preserve <gpr0>
 
   block ^entry
-    mov rbx, rdi
+    mov <gpr0>, rdi
     mov r8, rdi
-    lea r8, [r8+160]
+    lea r8, [r8+<off0>]
     mov rax, 0
     store.i32 [r8], rax
     mov r8, rdi
-    lea r8, [r8+164]
+    lea r8, [r8+<off1>]
     mov rax, 0
     store.i32 [r8], rax
     mov r8, rdi
-    lea r8, [r8+168]
+    lea r8, [r8+<off2>]
     mov rax, 0
     store.ptr [r8], rax
     mov r8, rdi
-    lea r8, [r8+176]
+    lea r8, [r8+<off3>]
     mov rax, 0
     store.u8 [r8], rax
     mov r8, rdi
-    lea r8, [r8+177]
+    lea r8, [r8+<off16>]
     mov rax, 0
     store.u8 [r8], rax
     mov r8, rdi
-    lea r8, [r8+180]
+    lea r8, [r8+<off4>]
     mov rax, 0
     store.i32 [r8], rax
     mov r8, rdi
-    lea r8, [r8+184]
+    lea r8, [r8+<off5>]
     mov rax, 0
     store.i32 [r8], rax
     mov r8, rdi
-    lea r8, [r8+188]
+    lea r8, [r8+<off6>]
     mov rax, 0
     store.u8 [r8], rax
     mov r8, rdi
-    lea r8, [r8+189]
+    lea r8, [r8+<off17>]
     mov rax, 0
     store.u8 [r8], rax
     mov r8, rdi
-    lea r8, [r8+190]
+    lea r8, [r8+<off18>]
     mov rax, 0
     store.u8 [r8], rax
     mov r8, rdi
-    lea r8, [r8+192]
+    lea r8, [r8+<off19>]
     mov rax, 0
     store.ptr [r8], rax
     mov r8, rdi
-    mov rdi, rbx
-    lea rdi, [rdi+264]
+    mov rdi, <gpr0>
+    lea rdi, [rdi+<off0>]
     call @SymbolIdentity__SymbolIdentity
-    mov r8, rbx
-    lea r8, [r8+336]
+    mov r8, <gpr0>
+    lea r8, [r8+<off12>]
     mov rax, 0
     store.u8 [r8], rax
-    mov r8, rbx
-    lea r8, [r8+344]
+    mov r8, <gpr0>
+    lea r8, [r8+<off20>]
     mov rax, 0
     store.ptr [r8], rax
-    mov r8, rbx
-    lea r8, [r8+352]
+    mov r8, <gpr0>
+    lea r8, [r8+<off21>]
     mov rax, 0
     store.ptr [r8], rax
-    mov r8, rbx
-    lea r8, [r8+360]
+    mov r8, <gpr0>
+    lea r8, [r8+<off22>]
     mov rax, 0
     store.ptr [r8], rax
-    mov r8, rbx
-    lea r8, [r8+368]
+    mov r8, <gpr0>
+    lea r8, [r8+<off23>]
     mov rax, 0
     store.ptr [r8], rax
-    mov r8, rbx
-    lea r8, [r8+376]
+    mov r8, <gpr0>
+    lea r8, [r8+<off13>]
     mov rax, 0
     store.i32 [r8], rax
     ret
@@ -492,47 +490,47 @@ function @Analyzer__direct_call_symbol
   frame
     stack_size 352
     scratch_bytes 0
-    preserve rbx r12 r13 r14 r15
-    slot $this -> [rbp-8] : ptr
-    slot $target -> [rbp-16] : ptr
-    slot $options -> [rbp-88] : obj<72x8>
-    slot $updated -> [rbp-144] : obj<56x8>
-    temp %t28 -> [rbp-145] : u8
-    temp %t31 -> [rbp-160] : ptr
-    temp %t34 -> [rbp-168] : ptr
-    temp %t35 -> [rbp-176] : ptr
-    temp %t36 -> [rbp-177] : u8
-    temp %t37 -> [rbp-192] : ptr
-    temp %t38 -> [rbp-200] : ptr
-    temp %t39 -> [rbp-208] : ptr
-    temp %t40 -> [rbp-216] : ptr
-    temp %t41 -> [rbp-224] : ptr
-    temp %t42 -> [rbp-232] : ptr
-    temp %t43 -> [rbp-240] : ptr
-    temp %t44 -> [rbp-248] : ptr
-    temp %t45 -> [rbp-256] : ptr
-    temp %t46 -> [rbp-264] : ptr
-    temp %t47 -> [rbp-272] : ptr
-    temp %t48 -> [rbp-280] : ptr
-    temp %t71 -> [rbp-284] : i32
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $this -> [rbp-<off1>] : ptr
+    slot $target -> [rbp-<off3>] : ptr
+    slot $options -> [rbp-<off12>] : obj<72x8>
+    slot $updated -> [rbp-<off18>] : obj<56x8>
+    temp %t28 -> [rbp-<off19>] : u8
+    temp %t31 -> [rbp-<off20>] : ptr
+    temp %t34 -> [rbp-<off21>] : ptr
+    temp %t35 -> [rbp-<off22>] : ptr
+    temp %t36 -> [rbp-<off23>] : u8
+    temp %t37 -> [rbp-<off24>] : ptr
+    temp %t38 -> [rbp-<off25>] : ptr
+    temp %t39 -> [rbp-<off26>] : ptr
+    temp %t40 -> [rbp-<off27>] : ptr
+    temp %t41 -> [rbp-<off28>] : ptr
+    temp %t42 -> [rbp-<off29>] : ptr
+    temp %t43 -> [rbp-<off30>] : ptr
+    temp %t44 -> [rbp-<off31>] : ptr
+    temp %t45 -> [rbp-<off32>] : ptr
+    temp %t46 -> [rbp-<off33>] : ptr
+    temp %t47 -> [rbp-<off34>] : ptr
+    temp %t48 -> [rbp-<off35>] : ptr
+    temp %t71 -> [rbp-<off36>] : i32
 
   block ^entry
-    mov rbx, rdi
+    mov <gpr0>, rdi
     mov r9, rsi
     mov r8, rdx
-    store.ptr [rbp-8], rsi
-    store.ptr [rbp-16], r8
-    mov r12, r8
-    lea r12, [r12+188]
-    load.u8 r13, [r12]
-    zext.i8 r13
-    cmp.i64 r13, 0
+    store.ptr [rbp-<off1>], rsi
+    store.ptr [rbp-<off3>], r8
+    mov <gpr1>, r8
+    lea <gpr1>, [<gpr1>+<off0>]
+    load.u8 <gpr2>, [<gpr1>]
+    zext.i8 <gpr2>
+    cmp.i64 <gpr2>, 0
     je ^land_rhs_4
     jmp ^if_else_2
 
   block ^land_rhs_4
-    load.ptr r8, [rbp-16]
-    lea r8, [r8+189]
+    load.ptr r8, [rbp-<off3>]
+    lea r8, [r8+<off17>]
     load.u8 r9, [r8]
     zext.i8 r9
     cmp.i64 r9, 0
@@ -540,9 +538,9 @@ function @Analyzer__direct_call_symbol
     jmp ^if_else_2
 
   block ^if_then_1
-    load.ptr r8, [rbp-16]
-    lea r8, [r8+264]
-    mov rdi, rbx
+    load.ptr r8, [rbp-<off3>]
+    lea r8, [r8+<off7>]
+    mov rdi, <gpr0>
     mov rsi, r8
     call @SymbolIdentity__SymbolIdentity__ov3
     ret
@@ -551,168 +549,168 @@ function @Analyzer__direct_call_symbol
     jmp ^if_end_3
 
   block ^if_end_3
-    lea rdi, [rbp-88]
+    lea rdi, [rbp-<off12>]
     call @Options__Options
-    load.ptr r8, [rbp-8]
-    load.ptr r9, [rbp-16]
-    lea r9, [r9+176]
-    load.u8 r12, [r9]
-    zext.i8 r12
-    load.ptr r9, [rbp-16]
-    lea r9, [r9+177]
-    load.u8 r13, [r9]
-    zext.i8 r13
-    load.ptr r9, [rbp-16]
-    lea r9, [r9+180]
-    load.i32 r14, [r9]
-    sext.i32 r14
-    load.ptr r9, [rbp-16]
-    lea r9, [r9+188]
-    load.u8 r15, [r9]
-    zext.i8 r15
-    load.ptr r9, [rbp-16]
-    lea r9, [r9+189]
+    load.ptr r8, [rbp-<off1>]
+    load.ptr r9, [rbp-<off3>]
+    lea r9, [r9+<off13>]
+    load.u8 <gpr1>, [r9]
+    zext.i8 <gpr1>
+    load.ptr r9, [rbp-<off3>]
+    lea r9, [r9+<off14>]
+    load.u8 <gpr2>, [r9]
+    zext.i8 <gpr2>
+    load.ptr r9, [rbp-<off3>]
+    lea r9, [r9+<off15>]
+    load.i32 <gpr3>, [r9]
+    sext.i32 <gpr3>
+    load.ptr r9, [rbp-<off3>]
+    lea r9, [r9+<off16>]
+    load.u8 <gpr4>, [r9]
+    zext.i8 <gpr4>
+    load.ptr r9, [rbp-<off3>]
+    lea r9, [r9+<off17>]
     load.u8 rax, [r9]
-    store.u8 [rbp-145], rax
-    load.ptr r9, [rbp-16]
-    lea r9, [r9+192]
+    store.u8 [rbp-<off19>], rax
+    load.ptr r9, [rbp-<off3>]
+    lea r9, [r9+<off5>]
     load.ptr rax, [r9]
-    store.ptr [rbp-160], rax
-    load.ptr r9, [rbp-16]
-    load.ptr rax, [rbp-16]
-    store.ptr [rbp-168], rax
-    load.ptr rax, [rbp-168]
-    lea rax, [rax+336]
-    store.ptr [rbp-176], rax
-    load.ptr rcx, [rbp-176]
+    store.ptr [rbp-<off20>], rax
+    load.ptr r9, [rbp-<off3>]
+    load.ptr rax, [rbp-<off3>]
+    store.ptr [rbp-<off21>], rax
+    load.ptr rax, [rbp-<off21>]
+    lea rax, [rax+<off2>]
+    store.ptr [rbp-<off22>], rax
+    load.ptr rcx, [rbp-<off22>]
     load.u8 rax, [rcx]
-    store.u8 [rbp-177], rax
-    load.ptr rax, [rbp-16]
-    store.ptr [rbp-192], rax
-    load.ptr rax, [rbp-192]
-    lea rax, [rax+344]
-    store.ptr [rbp-200], rax
-    load.ptr rcx, [rbp-200]
+    store.u8 [rbp-<off23>], rax
+    load.ptr rax, [rbp-<off3>]
+    store.ptr [rbp-<off24>], rax
+    load.ptr rax, [rbp-<off24>]
+    lea rax, [rax+<off3>]
+    store.ptr [rbp-<off25>], rax
+    load.ptr rcx, [rbp-<off25>]
     load.ptr rax, [rcx]
-    store.ptr [rbp-208], rax
-    load.ptr rax, [rbp-16]
-    store.ptr [rbp-216], rax
-    load.ptr rax, [rbp-216]
-    lea rax, [rax+352]
-    store.ptr [rbp-224], rax
-    load.ptr rcx, [rbp-224]
+    store.ptr [rbp-<off26>], rax
+    load.ptr rax, [rbp-<off3>]
+    store.ptr [rbp-<off27>], rax
+    load.ptr rax, [rbp-<off27>]
+    lea rax, [rax+<off4>]
+    store.ptr [rbp-<off28>], rax
+    load.ptr rcx, [rbp-<off28>]
     load.ptr rax, [rcx]
-    store.ptr [rbp-232], rax
-    load.ptr rax, [rbp-16]
-    store.ptr [rbp-240], rax
-    load.ptr rax, [rbp-240]
-    lea rax, [rax+360]
-    store.ptr [rbp-248], rax
-    load.ptr rcx, [rbp-248]
+    store.ptr [rbp-<off29>], rax
+    load.ptr rax, [rbp-<off3>]
+    store.ptr [rbp-<off30>], rax
+    load.ptr rax, [rbp-<off30>]
+    lea rax, [rax+<off5>]
+    store.ptr [rbp-<off31>], rax
+    load.ptr rcx, [rbp-<off31>]
     load.ptr rax, [rcx]
-    store.ptr [rbp-256], rax
-    load.ptr rax, [rbp-16]
-    store.ptr [rbp-264], rax
-    load.ptr rax, [rbp-264]
-    lea rax, [rax+368]
-    store.ptr [rbp-272], rax
-    load.ptr rcx, [rbp-272]
+    store.ptr [rbp-<off32>], rax
+    load.ptr rax, [rbp-<off3>]
+    store.ptr [rbp-<off33>], rax
+    load.ptr rax, [rbp-<off33>]
+    lea rax, [rax+<off6>]
+    store.ptr [rbp-<off34>], rax
+    load.ptr rcx, [rbp-<off34>]
     load.ptr rax, [rcx]
-    store.ptr [rbp-280], rax
-    store.i64 [rbp-296], r8
-    store.i64 [rbp-304], r9
+    store.ptr [rbp-<off35>], rax
+    store.i64 [rbp-<off37>], r8
+    store.i64 [rbp-<off38>], r9
     sub rsp, 64
-    load.i64 rdi, [rbp-296]
-    lea rsi, [rbp-88]
-    mov rdx, r12
-    mov rcx, r13
-    mov r8, r14
-    mov r9, r15
-    load.u8 r11, [rbp-145]
-    store.u8 [rsp], r11
-    load.ptr r11, [rbp-160]
-    store.ptr [rsp+8], r11
-    load.i64 r11, [rbp-304]
-    lea r11, [r11+320]
-    store.ptr [rsp+16], r11
-    load.u8 r11, [rbp-177]
-    store.u8 [rsp+24], r11
-    load.ptr r11, [rbp-208]
-    store.ptr [rsp+32], r11
-    load.ptr r11, [rbp-232]
-    store.ptr [rsp+40], r11
-    load.ptr r11, [rbp-256]
-    store.ptr [rsp+48], r11
-    load.ptr r11, [rbp-280]
-    store.ptr [rsp+56], r11
+    load.i64 rdi, [rbp-<off37>]
+    lea rsi, [rbp-<off12>]
+    mov rdx, <gpr1>
+    mov rcx, <gpr2>
+    mov r8, <gpr3>
+    mov r9, <gpr4>
+    load.u8 <gpr5>, [rbp-<off19>]
+    store.u8 [rsp], <gpr5>
+    load.ptr <gpr5>, [rbp-<off20>]
+    store.ptr [rsp+<off0>], <gpr5>
+    load.i64 <gpr5>, [rbp-<off38>]
+    lea <gpr5>, [<gpr5>+<off0>]
+    store.ptr [rsp+<off1>], <gpr5>
+    load.u8 <gpr5>, [rbp-<off23>]
+    store.u8 [rsp+<off2>], <gpr5>
+    load.ptr <gpr5>, [rbp-<off26>]
+    store.ptr [rsp+<off3>], <gpr5>
+    load.ptr <gpr5>, [rbp-<off29>]
+    store.ptr [rsp+<off4>], <gpr5>
+    load.ptr <gpr5>, [rbp-<off32>]
+    store.ptr [rsp+<off5>], <gpr5>
+    load.ptr <gpr5>, [rbp-<off35>]
+    store.ptr [rsp+<off6>], <gpr5>
     call @Analyzer__populate
     add rsp, 64
-    load.ptr r8, [rbp-16]
-    lea r8, [r8+184]
+    load.ptr r8, [rbp-<off3>]
+    lea r8, [r8+<off5>]
     load.i32 r9, [r8]
     sext.i32 r9
-    lea r8, [rbp-88]
-    lea r8, [r8+8]
+    lea r8, [rbp-<off12>]
+    lea r8, [r8+<off24>]
     store.i32 [r8], r9
-    load.ptr r8, [rbp-16]
+    load.ptr r8, [rbp-<off3>]
     mov rdi, r8
     call @function_binding_qualified_name_for_symbol
-    mov r12, rax
-    sext.i32 r12
-    load.ptr r8, [rbp-16]
+    mov <gpr1>, rax
+    sext.i32 <gpr1>
+    load.ptr r8, [rbp-<off3>]
     mov rdi, r8
     call @function_binding_display_name_for_symbol
-    mov r13, rax
-    sext.i32 r13
-    load.ptr r8, [rbp-16]
-    lea r8, [r8+190]
-    load.u8 r14, [r8]
-    zext.i8 r14
-    load.ptr r8, [rbp-16]
-    lea r8, [r8+168]
-    load.ptr r15, [r8]
-    load.ptr r8, [rbp-16]
+    mov <gpr2>, rax
+    sext.i32 <gpr2>
+    load.ptr r8, [rbp-<off3>]
+    lea r8, [r8+<off18>]
+    load.u8 <gpr3>, [r8]
+    zext.i8 <gpr3>
+    load.ptr r8, [rbp-<off3>]
+    lea r8, [r8+<off2>]
+    load.ptr <gpr4>, [r8]
+    load.ptr r8, [rbp-<off3>]
     mov rdi, r8
     call @function_object_symbol_key
     mov r9, rax
     sext.i32 r9
-    load.ptr r8, [rbp-16]
-    lea r8, [r8+264]
-    lea r8, [r8+48]
+    load.ptr r8, [rbp-<off3>]
+    lea r8, [r8+<off7>]
+    lea r8, [r8+<off8>]
     load.i32 rax, [r8]
-    store.i32 [rbp-284], rax
-    store.i64 [rbp-296], r9
+    store.i32 [rbp-<off36>], rax
+    store.i64 [rbp-<off37>], r9
     sub rsp, 16
-    lea rdi, [rbp-144]
-    mov rsi, r12
-    mov rdx, r13
-    mov rcx, r14
-    mov r8, r15
-    lea r9, [rbp-88]
-    load.i64 r11, [rbp-296]
-    store.i32 [rsp], r11
-    load.i32 r11, [rbp-284]
-    store.i32 [rsp+8], r11
+    lea rdi, [rbp-<off18>]
+    mov rsi, <gpr1>
+    mov rdx, <gpr2>
+    mov rcx, <gpr3>
+    mov r8, <gpr4>
+    lea r9, [rbp-<off12>]
+    load.i64 <gpr5>, [rbp-<off37>]
+    store.i32 [rsp], <gpr5>
+    load.i32 <gpr5>, [rbp-<off36>]
+    store.i32 [rsp+<off0>], <gpr5>
     call @make_function_symbol_identity
     add rsp, 16
-    load.ptr r8, [rbp-16]
-    lea r8, [r8+264]
-    lea r8, [r8+44]
+    load.ptr r8, [rbp-<off3>]
+    lea r8, [r8+<off7>]
+    lea r8, [r8+<off9>]
     load.u8 r9, [r8]
     zext.i8 r9
-    lea r8, [rbp-144]
-    lea r8, [r8+44]
+    lea r8, [rbp-<off18>]
+    lea r8, [r8+<off9>]
     store.u8 [r8], r9
-    load.ptr r8, [rbp-16]
-    lea r8, [r8+264]
-    lea r8, [r8+45]
+    load.ptr r8, [rbp-<off3>]
+    lea r8, [r8+<off7>]
+    lea r8, [r8+<off10>]
     load.u8 r9, [r8]
     zext.i8 r9
-    lea r8, [rbp-144]
-    lea r8, [r8+45]
+    lea r8, [rbp-<off18>]
+    lea r8, [r8+<off10>]
     store.u8 [r8], r9
-    mov rdi, rbx
-    lea rsi, [rbp-144]
+    mov rdi, <gpr0>
+    lea rsi, [rbp-<off18>]
     call @SymbolIdentity__SymbolIdentity__ov2
     ret
 
@@ -724,156 +722,156 @@ function @Analyzer__populate
     param %is_volatile_method -> rcx : u8
     param %ref_qualifier -> r8 : i32
     param %is_constructor -> r9 : u8
-    param %is_destructor -> [rbp+16] : u8
-    param %source_template -> [rbp+24] : ptr
-    param %instantiation_arguments -> [rbp+32] : ptr
-    param %has_instantiation_arguments -> [rbp+40] : u8
-    param %owner_class -> [rbp+48] : ptr
-    param %declaration_scope -> [rbp+56] : ptr
-    param %declaration_node -> [rbp+64] : ptr
-    param %definition_node -> [rbp+72] : ptr
+    param %is_destructor -> [rbp+<off0>] : u8
+    param %source_template -> [rbp+<off1>] : ptr
+    param %instantiation_arguments -> [rbp+<off2>] : ptr
+    param %has_instantiation_arguments -> [rbp+<off3>] : u8
+    param %owner_class -> [rbp+<off4>] : ptr
+    param %declaration_scope -> [rbp+<off5>] : ptr
+    param %declaration_node -> [rbp+<off6>] : ptr
+    param %definition_node -> [rbp+<off7>] : ptr
     return void -> void
   frame
-    stack_size 272
+    stack_size 256
     scratch_bytes 0
-    preserve rbx r12 r13 r14 r15
-    param-slot %is_destructor -> [rbp-1] : u8
-    param-slot %source_template -> [rbp-16] : ptr
-    param-slot %instantiation_arguments -> [rbp-24] : ptr
-    param-slot %has_instantiation_arguments -> [rbp-25] : u8
-    param-slot %owner_class -> [rbp-40] : ptr
-    param-slot %declaration_scope -> [rbp-48] : ptr
-    param-slot %declaration_node -> [rbp-56] : ptr
-    param-slot %definition_node -> [rbp-64] : ptr
-    slot $options -> [rbp-72] : ptr
-    slot $source_template -> [rbp-80] : ptr
-    slot $instantiation_arguments -> [rbp-88] : ptr
-    slot $has_instantiation_arguments -> [rbp-89] : u8
-    slot $owner_class -> [rbp-104] : ptr
-    slot $declaration_scope -> [rbp-112] : ptr
-    slot $declaration_node -> [rbp-120] : ptr
-    slot $definition_node -> [rbp-128] : ptr
-    temp %t3 -> [rbp-136] : ptr
-    temp %t4 -> [rbp-144] : ptr
-    temp %t6 -> [rbp-152] : ptr
-    temp %t7 -> [rbp-160] : ptr
-    temp %t9 -> [rbp-168] : ptr
-    temp %t10 -> [rbp-176] : ptr
-    temp %t12 -> [rbp-184] : ptr
-    temp %t13 -> [rbp-192] : ptr
-    temp %t15 -> [rbp-200] : ptr
-    temp %t16 -> [rbp-208] : ptr
-    temp %t18 -> [rbp-216] : ptr
-    temp %t19 -> [rbp-224] : ptr
+    preserve <gpr0> <gpr2> <gpr4>
+    param-slot %is_destructor -> [rbp-<off39>] : u8
+    param-slot %source_template -> [rbp-<off3>] : ptr
+    param-slot %instantiation_arguments -> [rbp-<off4>] : ptr
+    param-slot %has_instantiation_arguments -> [rbp-<off40>] : u8
+    param-slot %owner_class -> [rbp-<off6>] : ptr
+    param-slot %declaration_scope -> [rbp-<off7>] : ptr
+    param-slot %declaration_node -> [rbp-<off8>] : ptr
+    param-slot %definition_node -> [rbp-<off9>] : ptr
+    slot $options -> [rbp-<off10>] : ptr
+    slot $source_template -> [rbp-<off11>] : ptr
+    slot $instantiation_arguments -> [rbp-<off12>] : ptr
+    slot $has_instantiation_arguments -> [rbp-<off41>] : u8
+    slot $owner_class -> [rbp-<off14>] : ptr
+    slot $declaration_scope -> [rbp-<off42>] : ptr
+    slot $declaration_node -> [rbp-<off43>] : ptr
+    slot $definition_node -> [rbp-<off44>] : ptr
+    temp %t3 -> [rbp-<off45>] : ptr
+    temp %t4 -> [rbp-<off18>] : ptr
+    temp %t6 -> [rbp-<off46>] : ptr
+    temp %t7 -> [rbp-<off20>] : ptr
+    temp %t9 -> [rbp-<off21>] : ptr
+    temp %t10 -> [rbp-<off22>] : ptr
+    temp %t12 -> [rbp-<off47>] : ptr
+    temp %t13 -> [rbp-<off24>] : ptr
+    temp %t15 -> [rbp-<off25>] : ptr
+    temp %t16 -> [rbp-<off26>] : ptr
+    temp %t18 -> [rbp-<off27>] : ptr
+    temp %t19 -> [rbp-<off28>] : ptr
 
   block ^entry
-    load.u8 rax, [rbp+16]
-    store.u8 [rbp-1], rax
-    load.ptr rax, [rbp+24]
-    store.ptr [rbp-16], rax
-    load.ptr rax, [rbp+32]
-    store.ptr [rbp-24], rax
-    load.u8 rax, [rbp+40]
-    store.u8 [rbp-25], rax
-    load.ptr rax, [rbp+48]
-    store.ptr [rbp-40], rax
-    load.ptr rax, [rbp+56]
-    store.ptr [rbp-48], rax
-    load.ptr rax, [rbp+64]
-    store.ptr [rbp-56], rax
-    load.ptr rax, [rbp+72]
-    store.ptr [rbp-64], rax
-    mov rbx, rcx
-    mov r13, r8
+    load.u8 rax, [rbp+<off0>]
+    store.u8 [rbp-<off39>], rax
+    load.ptr rax, [rbp+<off1>]
+    store.ptr [rbp-<off3>], rax
+    load.ptr rax, [rbp+<off2>]
+    store.ptr [rbp-<off4>], rax
+    load.u8 rax, [rbp+<off3>]
+    store.u8 [rbp-<off40>], rax
+    load.ptr rax, [rbp+<off4>]
+    store.ptr [rbp-<off6>], rax
+    load.ptr rax, [rbp+<off5>]
+    store.ptr [rbp-<off7>], rax
+    load.ptr rax, [rbp+<off6>]
+    store.ptr [rbp-<off8>], rax
+    load.ptr rax, [rbp+<off7>]
+    store.ptr [rbp-<off9>], rax
+    mov <gpr0>, rcx
+    mov <gpr2>, r8
     mov r8, rdx
-    store.ptr [rbp-72], rsi
-    load.ptr rax, [rbp-16]
-    store.ptr [rbp-80], rax
-    load.ptr rax, [rbp-24]
-    store.ptr [rbp-88], rax
-    load.u8 rax, [rbp-25]
-    store.u8 [rbp-89], rax
-    load.ptr rax, [rbp-40]
-    store.ptr [rbp-104], rax
-    load.ptr rax, [rbp-48]
-    store.ptr [rbp-112], rax
-    load.ptr rax, [rbp-56]
-    store.ptr [rbp-120], rax
-    load.ptr rax, [rbp-64]
-    store.ptr [rbp-128], rax
-    load.ptr r15, [rbp-104]
+    store.ptr [rbp-<off10>], rsi
+    load.ptr rax, [rbp-<off3>]
+    store.ptr [rbp-<off11>], rax
+    load.ptr rax, [rbp-<off4>]
+    store.ptr [rbp-<off12>], rax
+    load.u8 rax, [rbp-<off40>]
+    store.u8 [rbp-<off41>], rax
+    load.ptr rax, [rbp-<off6>]
+    store.ptr [rbp-<off14>], rax
+    load.ptr rax, [rbp-<off7>]
+    store.ptr [rbp-<off42>], rax
+    load.ptr rax, [rbp-<off8>]
+    store.ptr [rbp-<off43>], rax
+    load.ptr rax, [rbp-<off9>]
+    store.ptr [rbp-<off44>], rax
+    load.ptr <gpr4>, [rbp-<off14>]
     mov rdx, 0
-    cmp.ptr r15, rdx
-    setne r15
-    movzx r15, r15
-    load.ptr rax, [rbp-72]
-    store.ptr [rbp-136], rax
-    load.ptr rax, [rbp-136]
-    store.ptr [rbp-144], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-144]
+    cmp.ptr <gpr4>, rdx
+    setne <gpr4>
+    movzx <gpr4>, <gpr4>
+    load.ptr rax, [rbp-<off10>]
+    store.ptr [rbp-<off45>], rax
+    load.ptr rax, [rbp-<off45>]
+    store.ptr [rbp-<off18>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off18>]
     store.u8 [rcx], rax
-    mov r15, r8
-    zext.i8 r15
-    load.ptr rax, [rbp-72]
-    store.ptr [rbp-152], rax
-    load.ptr rax, [rbp-152]
-    lea rax, [rax+1]
-    store.ptr [rbp-160], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-160]
+    mov <gpr4>, r8
+    zext.i8 <gpr4>
+    load.ptr rax, [rbp-<off10>]
+    store.ptr [rbp-<off46>], rax
+    load.ptr rax, [rbp-<off46>]
+    lea rax, [rax+<off7>]
+    store.ptr [rbp-<off20>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off20>]
     store.u8 [rcx], rax
-    mov r15, rbx
-    zext.i8 r15
-    load.ptr rax, [rbp-72]
-    store.ptr [rbp-168], rax
-    load.ptr rax, [rbp-168]
-    lea rax, [rax+2]
-    store.ptr [rbp-176], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-176]
+    mov <gpr4>, <gpr0>
+    zext.i8 <gpr4>
+    load.ptr rax, [rbp-<off10>]
+    store.ptr [rbp-<off21>], rax
+    load.ptr rax, [rbp-<off21>]
+    lea rax, [rax+<off8>]
+    store.ptr [rbp-<off22>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off22>]
     store.u8 [rcx], rax
-    mov r15, r13
-    sext.i32 r15
-    load.ptr rax, [rbp-72]
-    store.ptr [rbp-184], rax
-    load.ptr rax, [rbp-184]
-    lea rax, [rax+4]
-    store.ptr [rbp-192], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-192]
+    mov <gpr4>, <gpr2>
+    sext.i32 <gpr4>
+    load.ptr rax, [rbp-<off10>]
+    store.ptr [rbp-<off47>], rax
+    load.ptr rax, [rbp-<off47>]
+    lea rax, [rax+<off9>]
+    store.ptr [rbp-<off24>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off24>]
     store.i32 [rcx], rax
-    mov r15, r9
-    zext.i8 r15
-    load.ptr rax, [rbp-72]
-    store.ptr [rbp-200], rax
-    load.ptr rax, [rbp-200]
-    lea rax, [rax+12]
-    store.ptr [rbp-208], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-208]
+    mov <gpr4>, r9
+    zext.i8 <gpr4>
+    load.ptr rax, [rbp-<off10>]
+    store.ptr [rbp-<off25>], rax
+    load.ptr rax, [rbp-<off25>]
+    lea rax, [rax+<off10>]
+    store.ptr [rbp-<off26>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off26>]
     store.u8 [rcx], rax
-    load.u8 r15, [rbp-1]
-    zext.i8 r15
-    load.ptr rax, [rbp-72]
-    store.ptr [rbp-216], rax
-    load.ptr rax, [rbp-216]
-    lea rax, [rax+13]
-    store.ptr [rbp-224], rax
-    mov rax, r15
-    load.ptr rcx, [rbp-224]
+    load.u8 <gpr4>, [rbp-<off39>]
+    zext.i8 <gpr4>
+    load.ptr rax, [rbp-<off10>]
+    store.ptr [rbp-<off27>], rax
+    load.ptr rax, [rbp-<off27>]
+    lea rax, [rax+<off11>]
+    store.ptr [rbp-<off28>], rax
+    mov rax, <gpr4>
+    load.ptr rcx, [rbp-<off28>]
     store.u8 [rcx], rax
-    cmp.ptr [rbp-80], 0
+    cmp.ptr [rbp-<off11>], 0
     jne ^land_rhs_5
     jmp ^if_else_2
 
   block ^land_rhs_5
-    cmp.ptr [rbp-88], 0
+    cmp.ptr [rbp-<off12>], 0
     jne ^land_rhs_4
     jmp ^if_else_2
 
   block ^land_rhs_4
-    load.u8 r8, [rbp-89]
+    load.u8 r8, [rbp-<off41>]
     zext.i8 r8
     mov rax, r8
     cmp.i64 rax, 0
@@ -881,33 +879,33 @@ function @Analyzer__populate
     jmp ^if_else_2
 
   block ^if_then_1
-    load.ptr r8, [rbp-80]
-    load.ptr r9, [rbp-72]
-    lea r9, [r9+16]
+    load.ptr r8, [rbp-<off11>]
+    load.ptr r9, [rbp-<off10>]
+    lea r9, [r9+<off18>]
     store.ptr [r9], r8
-    load.ptr r8, [rbp-88]
-    load.ptr r9, [rbp-72]
-    lea r9, [r9+24]
+    load.ptr r8, [rbp-<off12>]
+    load.ptr r9, [rbp-<off10>]
+    lea r9, [r9+<off19>]
     store.ptr [r9], r8
-    load.ptr r8, [rbp-72]
-    lea r8, [r8+32]
+    load.ptr r8, [rbp-<off10>]
+    lea r8, [r8+<off15>]
     mov rax, 1
     store.u8 [r8], rax
-    load.ptr r8, [rbp-104]
-    load.ptr r9, [rbp-72]
-    lea r9, [r9+40]
+    load.ptr r8, [rbp-<off14>]
+    load.ptr r9, [rbp-<off10>]
+    lea r9, [r9+<off3>]
     store.ptr [r9], r8
-    load.ptr r8, [rbp-112]
-    load.ptr r9, [rbp-72]
-    lea r9, [r9+48]
+    load.ptr r8, [rbp-<off42>]
+    load.ptr r9, [rbp-<off10>]
+    lea r9, [r9+<off4>]
     store.ptr [r9], r8
-    load.ptr r8, [rbp-120]
-    load.ptr r9, [rbp-72]
-    lea r9, [r9+56]
+    load.ptr r8, [rbp-<off43>]
+    load.ptr r9, [rbp-<off10>]
+    lea r9, [r9+<off20>]
     store.ptr [r9], r8
-    load.ptr r8, [rbp-128]
-    load.ptr r9, [rbp-72]
-    lea r9, [r9+64]
+    load.ptr r8, [rbp-<off44>]
+    load.ptr r9, [rbp-<off10>]
+    lea r9, [r9+<off21>]
     store.ptr [r9], r8
     jmp ^if_end_3
 
@@ -934,9 +932,8 @@ function @SymbolIdentity__SymbolIdentity__ov3
     param %other -> rsi : ptr
     return void -> void
   frame
-    stack_size 32
+    stack_size 0
     scratch_bytes 0
-    preserve rbx r12
 
   block ^entry
     copy_bytes 52x8, rdi, rsi
@@ -955,55 +952,55 @@ function @Options__Options
     mov rax, 0
     store.u8 [r9], rax
     mov r9, rdi
-    lea r9, [r9+1]
+    lea r9, [r9+<off22>]
     mov rax, 0
     store.u8 [r9], rax
     mov r9, rdi
-    lea r9, [r9+2]
+    lea r9, [r9+<off23>]
     mov rax, 0
     store.u8 [r9], rax
     mov r9, rdi
-    lea r9, [r9+4]
+    lea r9, [r9+<off24>]
     mov rax, 0
     store.i32 [r9], rax
     mov r9, rdi
-    lea r9, [r9+8]
+    lea r9, [r9+<off25>]
     mov rax, 0
     store.i32 [r9], rax
     mov r9, rdi
-    lea r9, [r9+12]
+    lea r9, [r9+<off26>]
     mov rax, 0
     store.u8 [r9], rax
     mov r9, rdi
-    lea r9, [r9+13]
+    lea r9, [r9+<off27>]
     mov rax, 0
     store.u8 [r9], rax
     mov r9, rdi
-    lea r9, [r9+16]
+    lea r9, [r9+<off18>]
     mov rax, 0
     store.ptr [r9], rax
     mov r9, rdi
-    lea r9, [r9+24]
+    lea r9, [r9+<off19>]
     mov rax, 0
     store.ptr [r9], rax
     mov r9, rdi
-    lea r9, [r9+32]
+    lea r9, [r9+<off10>]
     mov rax, 0
     store.u8 [r9], rax
     mov r9, rdi
-    lea r9, [r9+40]
+    lea r9, [r9+<off3>]
     mov rax, 0
     store.ptr [r9], rax
     mov r9, rdi
-    lea r9, [r9+48]
+    lea r9, [r9+<off4>]
     mov rax, 0
     store.ptr [r9], rax
     mov r9, rdi
-    lea r9, [r9+56]
+    lea r9, [r9+<off20>]
     mov rax, 0
     store.ptr [r9], rax
     mov r9, rdi
-    lea r9, [r9+64]
+    lea r9, [r9+<off21>]
     mov rax, 0
     store.ptr [r9], rax
     ret

@@ -111,9 +111,9 @@ function @g
     param %b -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
-    preserve rbx r12
+    preserve rbx
 
   block ^entry
     mov r8, rdi
