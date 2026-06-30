@@ -1,3 +1,7 @@
+// VALIDATION: run-pass
+// Substitution through a qualified member alias may participate in a member
+// template SFINAE guard.
+
 template<bool B, class T>
 struct enable_if_impl {};
 
