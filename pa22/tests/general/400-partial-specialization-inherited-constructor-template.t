@@ -1,8 +1,6 @@
 // VALIDATION: run-pass
-// A class-template partial specialization may inherit a constructor template
-// from a base specialization. The synthesized inherited-constructor wrapper
-// must rebuild the base initializer with the instantiated constructor parameter
-// types, not the source template parameters.
+// Constructor-template participation must survive when inherited through a
+// class-template partial specialization.
 
 struct impl {
   template <class Self>
