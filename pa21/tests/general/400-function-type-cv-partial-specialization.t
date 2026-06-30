@@ -1,23 +1,27 @@
-// Reduced from Boost.Core type_name. Cv-qualified function-type partial
-// specializations must not match an unqualified function type.
+// VALIDATION: run-pass
+// Function type cv-qualifiers participate in partial specialization matching.
 
 template<class T>
-struct holder {
+struct holder
+{
   static const int value = 0;
 };
 
 template<class R, class... A>
-struct holder<R(A...)> {
+struct holder<R(A...)>
+{
   static const int value = 1;
 };
 
 template<class R, class... A>
-struct holder<R(A...) const> {
+struct holder<R(A...) const>
+{
   static const int value = 2;
 };
 
 template<class R, class... A>
-struct holder<R(A...) volatile> {
+struct holder<R(A...) volatile>
+{
   static const int value = 3;
 };
 
