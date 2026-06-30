@@ -693,7 +693,7 @@ canonical build.
 
 ### Defaulted NTTP Qualified Alias Value
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-defaulted-nontype-qualified-alias-value.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-defaulted-nontype-qualified-alias-value.t`
@@ -701,15 +701,22 @@ canonical build.
   commit `72e996289` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for this
-  constructor-template defaulted-NTTP alias value shape, or reduce to a
-  non-codegen oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external/reference workflow behavior: an older external reference
+  binary accepted the reducer, but emitted extra EH runtime declarations that
+  current PA22 LowIR does not emit. This is treated as stale historical
+  evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-defaulted-nontype-qualified-alias-value.t`; tracker
+  row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA22 reducer;
+  it did not add a separate PA23 integration ingredient beyond
+  constructor-template deduction with a defaulted NTTP depending on a qualified
+  alias-template member value.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected with a parse error; Opus fix `72e996289` accepted;
+  local canonical PA22 refs were generated from `dev/cppgm++`.
 
 ### Alias NTTP Expression Declaration Scope
 
