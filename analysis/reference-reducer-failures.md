@@ -58,7 +58,7 @@ canonical build.
 
 ### Member Template Implicit Instantiation Not Overload
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `no-backfill-start-pass`
 - PA23 source row: `pa23/tests/general/200-member-template-implicit-instantiation-not-overload.t`
 - Candidate owner: none for backfill; Opus PA23 start already accepts this
   shape, so it does not prove a missing earlier assignment feature.
@@ -69,14 +69,16 @@ canonical build.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   source.
 - Current compiler behavior: accepts the source.
-- External reference behavior: rejects the source as an ambiguous overload for
-  the second `stream::async_read_some` call, treating both the cached pointer
-  specialization and the function-lvalue deduction as viable overloads.
-- Current disposition: tracker row marked `harness-or-reference-issue` /
+- Historical external reference behavior: rejects the source as an ambiguous
+  overload for the second `stream::async_read_some` call, treating both the
+  cached pointer specialization and the function-lvalue deduction as viable
+  overloads. This does not prove a missing earlier assignment feature because
+  the Opus start compiler already accepts the source.
+- Current disposition: tracker row marked `no-missing-opus-feature` /
   `no-action`; no earlier assignment test added.
-- Next validation: fix the reference compiler so an implicitly instantiated
-  member function template specialization is not retained as a separate overload
-  candidate for the later function-lvalue call.
+- Next validation: none for the Opus-gated backfill workflow. Revisit only if a
+  start-failing reducer is found for the cached implicit-specialization overload
+  behavior.
 
 ### Partial Specialization Inherited Constructor Template
 
