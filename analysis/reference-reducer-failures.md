@@ -834,7 +834,7 @@ canonical build.
 
 ### Static Data NTTP Pack Sizeof Bound
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row:
   `pa23/tests/general/400-static-data-nttp-pack-sizeof-bound.t`
 - Candidate owner: PA22 according to the PA23 backfill cluster, with PA21
@@ -845,15 +845,20 @@ canonical build.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
 - Current compiler behavior: accepts the reducer and emits the `Bytes...`
-  static data.
-- External reference behavior: rejects the out-of-class static data member
-  definition with `sizeof...(Bytes)` in the array bound as an unsupported
-  template declarator.
-- Current disposition: no assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's support for pack-size array
-  bounds in out-of-class static data member definitions, then re-evaluate the
-  earliest PA owner before promotion.
+  static data; local `dev/cppgm++` generated the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference compiler
+  rejected the out-of-class static data member definition with
+  `sizeof...(Bytes)` in the array bound as an unsupported template declarator.
+  This is treated as stale historical evidence now that local `dev/cppgm++` is
+  the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/400-static-data-nttp-pack-sizeof-bound.t`; tracker row
+  marked `missing-earlier-feature` / `test-added`.
+- Validation: focused PA22 `check` passed, focused direct LowIR compare passed,
+  PA22 placement audit passed with `--fail-on-early`, and PA22/PA23 report
+  passed 569/569. The PA23 source is byte-identical to the promoted
+  reducer and was retired because it is an isolated single-feature test,
+  not a PA23 integration composition.
 
 ### Function Template Parameter Alias Sees Previous Param
 

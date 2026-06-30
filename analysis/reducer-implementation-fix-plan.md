@@ -138,8 +138,19 @@ python3 scripts/report_pa23_original_disposition.py
 
 Use the report to decide whether the PA23 original test is still useful:
 
-- If the PA23 source is now an exact duplicate or only the same single-feature
-  check, remove it and any generated sidecars.
+- Do not treat "all features are owned by PA22 or earlier" as sufficient reason
+  to move or remove the PA23 original. PA18-PA22 are for focused feature
+  reducers; PA23 is allowed to keep realistic compositions of earlier template
+  features.
+- Prefer adding a smaller earlier-PA reducer that isolates the missing behavior
+  and leaving the PA23 original in place when the PA23 source combines multiple
+  earlier features, library-like scaffolding, body replay, overload selection,
+  alias rebinding, SFINAE, or LowIR-producing code in a way that exercises their
+  interaction.
+- Remove the PA23 source only when manual inspection shows it is merely the
+  same isolated single-feature check as the promoted reducer, with no meaningful
+  PA23 integration value. A byte-identical source match is a review signal, not
+  an automatic removal decision.
 - If the PA23 source combines earlier features in a way the new reducer does
   not cover, keep it and record the reason in
   `analysis/pa23-original-disposition-overrides.tsv`.
