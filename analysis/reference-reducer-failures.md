@@ -1125,7 +1125,7 @@ canonical build.
 
 ### Member Template As Qualified Template-Template Argument
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-member-alias-template-template-owner-argument.t`
 - Candidate owner: PA21
 - Reducer: `analysis/reducers/pa21-member-template-as-template-template-argument.t`
@@ -1134,15 +1134,23 @@ canonical build.
   accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the type-only reducer with failed
-  `static_assert` because `result_t` remains `use<quote::fn>::type` instead of
-  resolving to `int`.
-- Current disposition: no PA21 assignment test added; tracker row is marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix reference compiler resolution of a qualified member
-  template named with the `template` disambiguator when it is passed as a
-  template-template argument.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA21 refs.
+- Historical external reference behavior: rejects the type-only reducer with
+  failed `static_assert` because `result_t` remains `use<quote::fn>::type`
+  instead of resolving to `int`; this older Opus-generated reference is not the
+  current canonical source.
+- Current disposition: promoted to
+  `pa21/tests/general/300-member-template-as-template-template-argument.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: retained as PA23 integration coverage because it
+  combines a variadic alias member template, pack forwarding, and
+  template-template application through `quote`/`apply0`, while the PA21 reducer
+  isolates qualified member-template-as-template-template argument lookup.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `670045ef2` accepted; focused PA21
+  check and direct LowIR compare passed; PA21 placement audit passed with
+  `--fail-on-early`.
 
 ### Dependent Qualified Sizeof Static Member
 
