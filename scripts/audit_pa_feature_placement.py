@@ -32,9 +32,8 @@ VALID_TEST_CLUSTERS = frozenset(range(100, 1000, 100))
 HOSTED_STL_OWNER_PA = "pa35"
 HOSTED_STL_EARLY_PA_MAX = 34
 HOSTED_STL_INTERNAL_INCLUDE_PREFIXES = ("__", "bits/", "ext/")
-HOSTED_STL_ABI_EH_COMPONENT_HEADERS = {
+HOST_ABI_EH_COMPONENT_HEADERS = {
     "exception",
-    "stdexcept",
     "typeinfo",
 }
 HOST_ABI_EH_HEADER_OWNER_PA = "pa32"
@@ -96,6 +95,7 @@ HOSTED_STL_HEADERS = {
     "span",
     "sstream",
     "stack",
+    "stdexcept",
     "stop_token",
     "streambuf",
     "string",
@@ -998,7 +998,7 @@ def iter_local_hygiene_source_files(root: Path, pas: Iterable[str]) -> list[Path
 
 def hosted_stl_include(header: str) -> bool:
     header = header.strip()
-    if header in HOSTED_STL_ABI_EH_COMPONENT_HEADERS:
+    if header in HOST_ABI_EH_COMPONENT_HEADERS:
         return False
     if header.startswith(HOSTED_STL_INTERNAL_INCLUDE_PREFIXES):
         return True
@@ -1006,7 +1006,7 @@ def hosted_stl_include(header: str) -> bool:
 
 
 def host_abi_eh_component_include(header: str) -> bool:
-    return header.strip() in HOSTED_STL_ABI_EH_COMPONENT_HEADERS
+    return header.strip() in HOST_ABI_EH_COMPONENT_HEADERS
 
 
 # LowIR side-effect checks intentionally avoid broad object-name evidence such
