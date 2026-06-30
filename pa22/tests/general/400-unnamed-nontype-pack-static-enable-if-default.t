@@ -1,3 +1,7 @@
+// VALIDATION: run-pass
+// A defaulted enable-if guard may name a static constexpr member template with
+// an unnamed non-type pack.
+
 template<bool, class T = void>
 struct enable_if {};
 
@@ -12,7 +16,8 @@ using enable_if_t = typename enable_if<B, T>::type;
 template<class T>
 struct check {
   template<int&...>
-  static constexpr bool ok() {
+  static constexpr bool ok()
+  {
     return true;
   }
 };
@@ -23,7 +28,9 @@ struct Box {
   Box() {}
 };
 
-int main() {
+int main()
+{
   Box<int> b;
+  (void)b;
   return 0;
 }
