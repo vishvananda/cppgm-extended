@@ -1,16 +1,24 @@
 # Reference-Blocked Reducers
 
 This ledger records reducers that passed enough investigation to look like useful
-earlier-PA tests, but could not be promoted because the required external
-reference workflow rejected the source or produced an incompatible reference.
+earlier-PA tests, but could not be promoted because the required
+reference-generation workflow rejected the source or produced an incompatible
+reference.
+
+Reference-source note: the canonical generator for current assignment refs is
+the local `dev/cppgm++` built from this checkout. `cppgm++-ref` binaries under
+the Opus tree were generated from older versions of this codebase and should be
+used only as historical evidence. Before acting on any entry below, re-test the
+saved reducer with the local canonical build and update the disposition if the
+older Opus reference result is stale.
 
 Each entry should be treated as either:
 
 - a source-validity question that needs a C++11 standard check; or
 - a hosted/vendor intrinsic owner question that needs a portable rewrite or a
   PA34 hosted-compatibility home; or
-- a reference compiler bug/quirk that should be fixed before the reducer can
-  be checked in as an assignment test.
+- a compiler bug/quirk in the current canonical implementation that should be
+  fixed before the reducer can be checked in as an assignment test.
 
 Use these dispositions so failed reducers do not get lost in ordinary tracker
 cleanup:
@@ -21,20 +29,22 @@ cleanup:
   but it depends on a hosted/vendor intrinsic such as `__type_pack_element` or
   `__make_integer_seq`; rewrite it to portable C++11 before using it as an
   earlier core-template assignment test, or cover the intrinsic form in PA34.
-- `reference-compiler-bug`: the reducer is valid C++11 and current accepts it,
-  but the external reference compiler rejects it, crashes, or emits behaviorally
-  wrong output.
+- `reference-compiler-bug`: the reducer is valid C++11, but the local
+  canonical compiler rejects it, crashes, or emits behaviorally wrong output
+  when used as the reference generator. If this only reproduces with an older
+  Opus `cppgm++-ref`, reclassify the entry after local re-test.
 - `reference-contract-mismatch`: the reducer is valid C++11 and both compilers
   accept it, but the reference output includes extra declarations, metadata, or
   other output-shape differences that block assignment validation.
 
 For new entries, record the reduced source path, Opus start/fix evidence, a
-`g++ -std=c++11 -x c++ -fsyntax-only` validity result, current compiler
-behavior, external reference behavior, tracker disposition, and the next
-validation step. If the source is not valid C++11, say so directly instead of
-classifying it as a reference issue. Do not classify a reducer as
+`g++ -std=c++11 -x c++ -fsyntax-only` validity result, local compiler behavior,
+local canonical reference-generation behavior, tracker disposition, and the
+next validation step. If the source is not valid C++11, say so directly instead
+of classifying it as a reference issue. Do not classify a reducer as
 `reference-compiler-bug` until the saved reducer, or the exact source named by
-the entry, has passed the C++11 syntax check.
+the entry, has passed the C++11 syntax check and reproduced against the local
+canonical build.
 
 ## Active Reference-Blocked Reducers
 
