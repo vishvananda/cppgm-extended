@@ -1353,31 +1353,38 @@ canonical build.
 
 ### Hidden Friend Query Free Decltype Noexcept
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row:
   `pa23/tests/spec/500-hidden-friend-query-free-decltype-noexcept.t`
 - Candidate owner: PA22.
 - Reducer:
   `analysis/reducers/pa22-hidden-friend-query-free-decltype-noexcept.t`
-- Historical evidence: Opus start `1963d796e` rejects the PA23 source row; the
-  feature was later fixed in the Boost frontier work tracked as `c047d6e93`.
-  The local Opus checkout does not currently contain commit `c047d6e93`, so the
-  historical fix gate still needs a concrete reachable fix commit before this
-  reducer can be promoted.
+- Historical evidence: Opus start `1963d796e` rejects the PA23 source row. The
+  nonlocal Boost frontier notes tracked this as `c047d6e93`, but the reachable
+  local Opus transition is `ca52fe6ac`: commit `b50d7227e` still rejects with
+  unknown `enable_if<call_traits<...>>::type`, while `ca52fe6ac` accepts after
+  building member-template generic dump bodies best-effort.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with a failed
-  `static_assert` for `is_same<query_probe::result_type, int>::value`; the
-  reference compiler lets the later ordinary `query` CPO object supply a `char`
-  result instead of finding the hidden friend `query` returning `int` by ADL at
-  the template definition point.
-- Current disposition: no PA22 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's dependent `decltype`/`noexcept`
-  query path so hidden-friend ADL is evaluated at the correct point and later
-  ordinary CPO objects are not visible, then promote this PA22 reducer if
-  reference generation becomes stable.
+- Current compiler behavior: accepts the exact source and generated local
+  canonical PA22 refs.
+- Historical external reference behavior: an older external reference compiler
+  rejected the reducer with a failed `static_assert` for
+  `is_same<query_probe::result_type, int>::value`; it let the later ordinary
+  `query` CPO object supply a `char` result instead of finding the hidden friend
+  `query` returning `int` by ADL at the template definition point. This is
+  treated as stale historical evidence now that local `dev/cppgm++` is the
+  canonical ref source.
+- Current disposition: promoted the exact PA23 source to
+  `pa22/tests/spec/500-hidden-friend-query-free-decltype-noexcept.t`; tracker
+  row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as focused PA22 deduction/SFINAE coverage;
+  the saved reducer only differs by comments and the source does not add a
+  separate PA23 integration ingredient beyond the hidden-friend
+  `decltype`/`noexcept` query.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `ca52fe6ac` accepted; local canonical
+  PA22 refs were generated from `dev/cppgm++`.
 
 ### Constructor/Conversion Deduction Reference-Blocked Batch
 
