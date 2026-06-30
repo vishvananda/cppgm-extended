@@ -638,7 +638,7 @@ canonical build.
 
 ### Out-Of-Class SFINAE Member-Template Alias Body
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/spec/300-out-of-class-sfinae-member-template-alias-body.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-out-of-class-sfinae-member-template-alias-body.t`
@@ -646,21 +646,27 @@ canonical build.
   out-of-class member-template body shape; Opus commit `1a232426b` emits the
   concrete body.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer and emits the concrete
-  out-of-class `assign` body.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations and leaves the
-  out-of-class `assign` body as an external declaration, causing relaxed LowIR
-  comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's out-of-class member-template
-  body emission for this alias-SFINAE redeclaration, or reduce to a witness-only
-  oracle.
+- Current compiler behavior: accepts the reducer, emits the concrete
+  out-of-class `assign` body, and generated local canonical PA22 refs.
+- Historical external/reference workflow behavior: an older external reference
+  binary accepted the reducer, but emitted extra EH runtime declarations and
+  left the out-of-class `assign` body as an external declaration. This is
+  treated as stale historical evidence now that local `dev/cppgm++` is the
+  canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/spec/300-out-of-class-sfinae-member-template-alias-body.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA22 reducer;
+  it did not add a separate PA23 integration ingredient beyond out-of-class
+  member-template body emission through alias-SFINAE redeclaration.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` emitted the wrong out-of-class member-template body shape;
+  Opus fix `1a232426b` emitted the concrete `assign` body; local canonical PA22
+  refs were generated from `dev/cppgm++`.
 
 ### Out-Of-Class SFINAE Member-Template Body
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/spec/300-out-of-class-sfinae-member-template-body.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-out-of-class-sfinae-member-template-body.t`
@@ -668,14 +674,22 @@ canonical build.
   selected out-of-class member-template body; Opus commit `1a232426b` emits the
   selected bidirectional-iterator overload body.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for this
-  out-of-class member-template overload shape, or find a ref-stable oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external/reference workflow behavior: an older external reference
+  binary accepted the reducer, but emitted extra EH runtime declarations that
+  current PA22 LowIR does not emit. This is treated as stale historical
+  evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/spec/300-out-of-class-sfinae-member-template-body.t`; tracker row
+  marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA22 reducer;
+  it did not add a separate PA23 integration ingredient beyond selected
+  out-of-class member-template body emission.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` emitted the wrong selected out-of-class member-template
+  body; Opus fix `1a232426b` emitted the selected bidirectional-iterator
+  overload body; local canonical PA22 refs were generated from `dev/cppgm++`.
 
 ### Defaulted NTTP Qualified Alias Value
 
