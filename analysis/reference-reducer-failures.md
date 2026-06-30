@@ -387,8 +387,12 @@ canonical build.
   tracker row marked `missing-earlier-feature` / `test-added`.
 - Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
   compare passed, PA22 placement audit passed with `--fail-on-early`, and
-  PA22/PA23 report passed 569/569. The PA23 source was retired as a normalized
-  near-duplicate of the promoted PA22 reducer.
+  PA22/PA23 report passed 575/575 after PA23 integration restoration. A
+  smaller non-template `box` assignment reducer passed Opus start
+  `1963d796e`, so the `function<R(Args...)>` partial-specialization wrapper
+  is part of the minimal historical signal. The PA23 source was restored
+  and retained as member-template assignment/copy-fallback integration
+  coverage while the PA22 reducer remains focused regression coverage.
 
 ### Unnamed NTTP Pack Static Enable-If Default
 
