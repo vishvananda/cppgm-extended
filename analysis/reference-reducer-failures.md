@@ -40,6 +40,10 @@ cleanup:
   reference workflow was re-tested with this checkout's local canonical
   `dev/cppgm++`, generated refs cleanly, and was promoted to an assignment
   test.
+- `no-backfill-start-pass`: the candidate source is valid and the local
+  canonical compiler accepts it, but the portable/focused shape already passes
+  at the Opus PA23 start anchor, so it does not prove a missing earlier
+  assignment test.
 
 For new entries, record the reduced source path, Opus start/fix evidence, a
 `g++ -std=c++11 -x c++ -fsyntax-only` validity result, local compiler behavior,
@@ -1301,32 +1305,31 @@ canonical build.
 
 ### Dependent Qualified Sizeof Static Member
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `no-backfill-start-pass`
 - PA23 source row:
   `pa23/tests/general/500-dependent-qualified-sizeof-static-member.t`
 - Candidate owner: PA22, using PA20 constant-evaluation support for `sizeof`.
 - Reducer:
   `analysis/reducers/pa22-dependent-qualified-sizeof-static-member.t`
-- Historical evidence: Opus start `1963d796e` rejects the PA23 source row; the
-  feature was later fixed in the Boost frontier work tracked as
-  `8d7d59de4`.
+- Historical evidence: the original Opus PA23 start source used hosted
+  predefined macro `__SIZE_TYPE__`. After the portable rewrite to
+  `unsigned long`, Opus start `1963d796e` accepts the exact PA23 source and
+  emits `observed : i64 = 3`.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with
-  `ERROR: invalid sizeof type-id` while evaluating
+- Current compiler behavior: accepts the reducer and the exact PA23 source.
+- Historical external reference behavior: an older reference lane rejected the
+  reducer with `ERROR: invalid sizeof type-id` while evaluating
   `sizeof(bucket_array_base<Flag>::sizes) /
-  sizeof(bucket_array_base<Flag>::sizes[0])`, treating the qualified static
-  data member expression as a failed `sizeof(type-id)` form.
-- Placement note: the saved reducer previously used host predefined macro
-  `__SIZE_TYPE__`, which is PA34 hosted predefined-macro compatibility. It has
-  been rewritten to a portable `unsigned long` typedef; the reference issue
-  still blocks promotion.
+  sizeof(bucket_array_base<Flag>::sizes[0])`. This no longer blocks a current
+  local canonical ref, but the reducer also no longer has the required Opus
+  start/fix signal after the hosted macro is removed.
 - Current disposition: no PA22 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's `sizeof` expression recovery
-  for dependent qualified static data members or reduce to a reference-stable
-  oracle before promoting a PA22 test.
+  `no-missing-opus-feature` / `no-action`.
+- Next validation: none for the portable PA22 reducer. Revisit only if a
+  smaller dependent-qualified `sizeof` shape is found that fails at Opus start
+  for the language behavior rather than for PA34 hosted predefined-macro
+  compatibility.
 
 ### Hidden Friend Query Free Decltype Noexcept
 
