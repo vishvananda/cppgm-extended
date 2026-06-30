@@ -347,7 +347,7 @@ canonical build.
 
 ### Inherited Variable-Template Enable-If Return
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/300-inherited-variable-template-enable-if-return.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-inherited-variable-template-enable-if-return.t`
@@ -356,14 +356,21 @@ canonical build.
   accept.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with `unknown function
-  traits<Alloc>::construct`.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: confirm whether an inherited protected variable template may
-  constrain the return type of a member function template in this use. If valid,
-  fix the reference compiler before adding the PA22 test.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external reference behavior: rejects the reducer with
+  `unknown function traits<Alloc>::construct`; this older Opus-generated
+  reference is not the current canonical source.
+- Current disposition: promoted to
+  `pa22/tests/general/300-inherited-variable-template-enable-if-return.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a near-duplicate. The PA23 source kept
+  the same focused allocator-traits-shaped source as the promoted PA22 reducer
+  and did not add a separate PA23 integration ingredient.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `1a232426b` accepted; focused PA22
+  check and direct LowIR compare passed; PA22 placement audit passed with
+  `--fail-on-early`.
 
 ### Member-Template Assignment SFINAE Copy Fallback
 
