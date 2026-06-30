@@ -26,6 +26,7 @@ LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(10, 40))
 STRICT_TEMPLATE_PAS = ("pa18", "pa19", "pa21", "pa22", "pa23")
 SEMANTIC_ONLY_PA_MAX = 12
 LOWIR_SOURCE_PAS = set(range(14, 28))
+SOURCE_EH_LOWIR_OWNER_PA = 25
 BACKEND_ONLY_PAS = {28}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
 VALID_TEST_CLUSTERS = frozenset(range(100, 1000, 100))
@@ -172,9 +173,11 @@ TEMPLATE_LATER_OR_COMPAT_FEATURES = {
     "template.initializer_list",
     "class.inheritance.multiple",
     "class.member_pointer",
+    "support.host_predefined_macro",
     "support.lambda",
     "support.lambda.capture",
     "support.lambda.capture.ref_this",
+    "support.preprocessor_probe",
     "support.attribute",
     "support.auto",
     "support.range_for",
@@ -220,6 +223,13 @@ class HygieneFinding:
     kind: str
     message: str
     evidence: str = ""
+
+
+@dataclass(frozen=True)
+class LowIREHFinding:
+    path: str
+    kind: str
+    evidence: str
 
 
 @dataclass(frozen=True)
@@ -376,6 +386,17 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("template.function_partial_ordering", (),
                 path_patterns=(rx(r"(?:function-partial-order|partial-order|partial_order|pack-fallback|more-specialized)"),)),
     FeatureRule("template.alignas_alignof", (rx(r"\balignas\s*\(|\balignof\s*\(|__alignof__\s*\("),)),
+    FeatureRule("support.host_predefined_macro",
+                (rx(r"\b(?:__GLIBCXX_(?:TYPE|BITSIZE)_INT_N_[A-Za-z0-9_]*|"
+                    r"__[A-Za-z0-9_]+_(?:TYPE|MAX|WIDTH)__|"
+                    r"__(?:FLT|DBL|LDBL|SIZEOF|ATOMIC|CLANG_ATOMIC|GCC_ATOMIC)_[A-Za-z0-9_]+|"
+                    r"__(?:APPLE|APPLE_CC|APPLE_CPP|MACH|linux|unix|ELF|llvm|clang|GNUC|GNUG|VERSION|"
+                    r"GXX_EXPERIMENTAL_CXX0X|GXX_WEAK|USER_LABEL_PREFIX|EXCEPTIONS|GXX_RTTI|"
+                    r"cpp_exceptions|cpp_ref_qualifiers|cpp_rvalue_references|cpp_static_assert|cpp_rtti|"
+                    r"apple_build_version|CHAR_BIT)__|_GNU_SOURCE|_WIN32)\b"),)),
+    FeatureRule("support.preprocessor_probe",
+                (rx(r"\b__(?:has_feature|has_extension|has_attribute|has_cpp_attribute|has_builtin|"
+                    r"is_identifier|building_module|has_include|has_include_next)\b"),)),
     FeatureRule("template.pack", (rx(r"\btemplate\s*<[^>]*\.\.\."),)),
     FeatureRule("template.template_parameter", (rx(r"\btemplate\s*<[^>]*template\s*<"),)),
     FeatureRule("template.member_template",
@@ -383,7 +404,10 @@ RULES: tuple[FeatureRule, ...] = (
                 path_patterns=(rx(r"(?:member-template|templated-member)"),)),
     FeatureRule("template.builtin_traits",
                 (rx(r"\b__(?:is|has|is_trivially|is_nothrow)_[A-Za-z0-9_]*\b|"
-                    r"\b__builtin_(?:is|has|types_compatible_p|classify_type)[A-Za-z0-9_]*"),)),
+                    r"\b__builtin_(?:is|has|types_compatible_p|classify_type)[A-Za-z0-9_]*|"
+                    r"\b__(?:add_(?:lvalue|rvalue)_reference|decay|integer_pack|"
+                    r"make_integer_seq|remove_(?:const|cv|cvref|reference|volatile)(?:_t)?|"
+                    r"type_pack_element)\b"),)),
     FeatureRule("template.nttp", (rx(r"\btemplate\s*<[^>]*(?:int|bool|char|long|short|unsigned|signed|std::size_t|size_t)\s+\w+"),)),
     FeatureRule("template.nttp.pointer_member",
                 (rx(r"\btemplate\s*<[^>]*(?:[A-Za-z_][A-Za-z0-9_:<>]*\s*[*&]\s*\w+|[A-Za-z_][A-Za-z0-9_:<>]*::\s*\*\s*\w+)"),)),
@@ -581,6 +605,10 @@ def strip_string_literals(source: str) -> str:
     return "".join(out)
 
 
+def strip_preprocessor_directives(source: str) -> str:
+    return re.sub(r"^\s*#.*$", "", source, flags=re.MULTILINE)
+
+
 def read_text(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
@@ -602,6 +630,22 @@ def match_rule_patterns(patterns: tuple[re.Pattern[str], ...],
             matched.append(f"{prefix}:{evidence[:120]}")
     if all_patterns and len(matched) != len(patterns):
         return []
+    return matched
+
+
+def match_builtin_trait_patterns(patterns: tuple[re.Pattern[str], ...],
+                                 haystack: str,
+                                 declared_intrinsics: set[str]) -> list[str]:
+    matched: list[str] = []
+    for pattern in patterns:
+        for match in pattern.finditer(haystack):
+            evidence = " ".join(match.group(0).split())
+            name = re.match(r"(__[A-Za-z_][A-Za-z0-9_]*)", evidence)
+            if name and name.group(1) in declared_intrinsics:
+                continue
+            item = f"source:{evidence[:120]}"
+            if item not in matched:
+                matched.append(item)
     return matched
 
 
@@ -907,21 +951,20 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
     hits: dict[str, FeatureHit] = {}
     for rule in RULES:
         haystack = no_comments if rule.use_raw else code
-        matched = match_rule_patterns(rule.patterns, haystack, rule.all_patterns, "source")
-        matched.extend(match_rule_patterns(rule.ref_patterns, ref_text, rule.all_patterns, "ref"))
-        matched.extend(match_rule_patterns(rule.path_patterns, test_path, rule.all_patterns, "path"))
+        if rule.feature_id == "template.builtin_traits":
+            matched = match_builtin_trait_patterns(
+                rule.patterns,
+                strip_preprocessor_directives(haystack),
+                declared_intrinsics,
+            )
+        else:
+            matched = match_rule_patterns(rule.patterns, haystack, rule.all_patterns, "source")
+            matched.extend(match_rule_patterns(rule.ref_patterns, ref_text, rule.all_patterns, "ref"))
+            matched.extend(match_rule_patterns(rule.path_patterns, test_path, rule.all_patterns, "path"))
         if rule.feature_id == "class.member_pointer" and overloaded_arrow_star_without_member_pointer(code):
             matched = [evidence for evidence in matched if "->*" not in evidence]
         if rule.feature_id == "class.inheritance.multiple" and has_top_level_base_comma(code):
             matched.append("source:<multiple base-specifiers>")
-        if rule.feature_id == "template.builtin_traits" and declared_intrinsics:
-            filtered: list[str] = []
-            for evidence in matched:
-                name = re.search(r"source:(__[A-Za-z_][A-Za-z0-9_]*)", evidence)
-                if name and name.group(1) in declared_intrinsics:
-                    continue
-                filtered.append(evidence)
-            matched = filtered
         if matched:
             hits[rule.feature_id] = FeatureHit(rule.feature_id, matched)
     for feature_id, structured_hit in detect_structured_template_features(code).items():
@@ -1017,6 +1060,17 @@ LOWIR_CLEANUP_EH_RE = re.compile(
     r"\b__gxx_personality_v0\b|\brole=eh_(?:resume|personality)\b|"
     r"\bresume\b|\bexception_selector\b|\b__cxa_(?:throw|begin_catch|end_catch|rethrow)\b"
 )
+LOWIR_EH_CONTROL_RE = re.compile(
+    r"^\s*(?:eh_try|eh_cleanup|eh_end|resume|throw)\b|"
+    r"^\s*%[A-Za-z0-9_]+\s*=\s*exception\b|"
+    r"\bexception_selector\b",
+    re.MULTILINE,
+)
+LOWIR_EH_RUNTIME_DECL_RE = re.compile(
+    r"\brole=eh_(?:resume|personality)\b|"
+    r"\b_Unwind_Resume\b|"
+    r"\b__gxx_personality_v0\b"
+)
 SOURCE_EXCEPTION_RE = re.compile(r"\b(?:try|catch|throw)\b")
 
 
@@ -1043,6 +1097,48 @@ def hidden_eh_lowir_evidence(source: str, ref_text: str) -> str:
     if cleanup_ref:
         return f"ref:{cleanup_ref.group(0)}"
     return ""
+
+
+def lowir_eh_evidence(match: re.Match[str] | None) -> str:
+    if not match:
+        return ""
+    return " ".join(match.group(0).split())[:120]
+
+
+def scan_lowir_eh_review(root: Path, pas: Iterable[str]) -> list[LowIREHFinding]:
+    findings: list[LowIREHFinding] = []
+    for path in iter_local_test_files(root, pas):
+        relative_path = path.relative_to(root)
+        current_pa = current_pa_for(relative_path)
+        if not is_lowir_test(current_pa):
+            continue
+        current_number = pa_number(current_pa)
+        if current_number is not None and current_number >= SOURCE_EH_LOWIR_OWNER_PA:
+            continue
+        source = read_text(path) + "\n" + companion_source_text_for(path)
+        stripped_source = strip_string_literals(strip_comments(source))
+        if SOURCE_EXCEPTION_RE.search(stripped_source):
+            continue
+        ref_text = ref_text_for(path)
+        if not ref_text:
+            continue
+        control = LOWIR_EH_CONTROL_RE.search(ref_text)
+        runtime = LOWIR_EH_RUNTIME_DECL_RE.search(ref_text)
+        if not control and not runtime:
+            continue
+        evidence_parts = []
+        control_evidence = lowir_eh_evidence(control)
+        runtime_evidence = lowir_eh_evidence(runtime)
+        if control_evidence:
+            evidence_parts.append(f"ref:{control_evidence}")
+        if runtime_evidence:
+            evidence_parts.append(f"ref:{runtime_evidence}")
+        findings.append(LowIREHFinding(
+            path=relative_path.as_posix(),
+            kind="eh-control" if control else "eh-runtime-declaration-only",
+            evidence=", ".join(evidence_parts),
+        ))
+    return findings
 
 
 def pa24_lowir_side_effect_findings(path: Path, source: str, ref_text: str) -> list[HygieneFinding]:
@@ -1531,8 +1627,10 @@ def row_for(path: Path,
 def markdown_report(rows: list[dict[str, object]],
                     missing_rules: list[str],
                     include_ok: bool,
-                    hygiene_findings: list[HygieneFinding] | None = None) -> str:
+                    hygiene_findings: list[HygieneFinding] | None = None,
+                    lowir_eh_findings: list[LowIREHFinding] | None = None) -> str:
     hygiene_findings = hygiene_findings or []
+    lowir_eh_findings = lowir_eh_findings or []
     review_rows = [row for row in rows if row["needs_review"] or include_ok]
     late_rows = [row for row in rows if row.get("late_placement_candidate")]
     violations = sum(
@@ -1553,9 +1651,31 @@ def markdown_report(rows: list[dict[str, object]],
         f"- path-only hints: {path_hint_count}",
         f"- late placement candidates: {len(late_rows)}",
         f"- local test hygiene findings: {len(hygiene_findings)}",
+        f"- LowIR EH review findings: {len(lowir_eh_findings)}",
         f"- feature table entries without detector rules: {len(missing_rules)}",
         "",
     ]
+    if lowir_eh_findings:
+        lines.append("## LowIR EH Review Findings")
+        lines.append("")
+        lines.append(
+            "These are non-failing review leads for source-to-LowIR tests whose "
+            "source has no explicit `try`, `catch`, or `throw`, but whose "
+            "reference output contains comparison-visible EH LowIR. `unwind=` "
+            "metadata is ignored."
+        )
+        lines.append("")
+        lines.append("| Test | Kind | Evidence |")
+        lines.append("| --- | --- | --- |")
+        for finding in lowir_eh_findings:
+            lines.append(
+                "| `{}` | `{}` | `{}` |".format(
+                    finding.path,
+                    finding.kind,
+                    finding.evidence.replace("|", "\\|"),
+                )
+            )
+        lines.append("")
     if hygiene_findings:
         lines.append("## Local Test Hygiene Findings")
         lines.append("")
@@ -1769,10 +1889,21 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
     return "\n".join(lines) + "\n"
 
 
-def write_json(path: Path, rows: list[dict[str, object]], missing_rules: list[str]) -> None:
+def write_json(path: Path,
+               rows: list[dict[str, object]],
+               missing_rules: list[str],
+               lowir_eh_findings: list[LowIREHFinding] | None = None) -> None:
     payload = {
         "tests": rows,
         "missing_detector_rules": missing_rules,
+        "lowir_eh_review_findings": [
+            {
+                "path": finding.path,
+                "kind": finding.kind,
+                "evidence": finding.evidence,
+            }
+            for finding in (lowir_eh_findings or [])
+        ],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -1988,16 +2119,23 @@ def main(argv: list[str]) -> int:
     tests = iter_test_files(root, pas, args.include_course)
     rows = [row_for(path, root, features) for path in tests]
     hygiene_findings = scan_test_hygiene(root, hygiene_pas)
+    lowir_eh_findings = scan_lowir_eh_review(root, hygiene_pas)
     if args.feature:
         wanted = set(args.feature)
         rows = [
             row for row in rows
             if wanted.intersection(set(row["detected_features"]))  # type: ignore[arg-type]
         ]
+        retained_paths = {str(row["path"]) for row in rows}
+        lowir_eh_findings = [
+            finding for finding in lowir_eh_findings
+            if finding.path in retained_paths
+        ]
     if args.json_out:
         write_json(args.json_out if args.json_out.is_absolute() else root / args.json_out,
                    rows,
-                   missing_rules)
+                   missing_rules,
+                   lowir_eh_findings)
     if args.csv_out:
         write_csv(args.csv_out if args.csv_out.is_absolute() else root / args.csv_out,
                   rows,
@@ -2005,7 +2143,13 @@ def main(argv: list[str]) -> int:
     if args.template_placement:
         report = template_tracker_report(rows, missing_rules)
     else:
-        report = markdown_report(rows, missing_rules, args.include_ok, hygiene_findings)
+        report = markdown_report(
+            rows,
+            missing_rules,
+            args.include_ok,
+            hygiene_findings,
+            lowir_eh_findings,
+        )
     if args.markdown_out:
         out = args.markdown_out if args.markdown_out.is_absolute() else root / args.markdown_out
         out.parent.mkdir(parents=True, exist_ok=True)
