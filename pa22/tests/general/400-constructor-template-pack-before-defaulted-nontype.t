@@ -1,4 +1,5 @@
 // VALIDATION: run-pass
+// A constructor parameter pack can appear before a defaulted non-type guard.
 
 struct first_arg {};
 struct second_arg {};
