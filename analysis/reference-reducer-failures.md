@@ -418,44 +418,55 @@ canonical build.
 
 ### Member Alias Template-Template SFINAE Owner
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-member-alias-template-template-sfinae-owner.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-member-alias-template-template-sfinae-owner.t`
 - Historical evidence: Opus start `1963d796e` rejects with unknown type
   `valid<quoted_identity::template fn, void>`; Opus commit `1a232426b` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with failed alias template
-  argument resolution for `valid`.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: confirm the nested member alias template-template argument
-  validity rule, then fix the reference compiler or find a smaller ref-stable
-  oracle.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference compiler
+  rejected the reducer with failed alias template argument resolution for
+  `valid`. This is treated as stale historical evidence now that local
+  `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/400-member-alias-template-template-sfinae-owner.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a
+  byte-identical duplicate of the promoted PA22 reducer.
 
 ### Template-Template Alias Default Arity SFINAE
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-template-template-alias-default-arity-sfinae.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-template-template-alias-default-arity-sfinae.t`
 - Historical evidence: Opus start `1963d796e` rejects with undeclared
   `valid<two>::value`; Opus commit `1a232426b` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: emits `false` for `valid<two>` and
-  `valid<two, int>`, then accepts `valid<two, int, long>`.
-- External reference behavior: accepts the reducer but emits LowIR treating the
-  under-arity probes as true, so the reference would return early from the
-  wrong branches.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's alias-template arity SFINAE
-  handling, or find a smaller oracle with matching reference output.
+- Current compiler behavior: matches the C++11 oracle: `valid<two>` and
+  `valid<two, int>` are substitution failures, while `valid<two, int, long>`
+  succeeds.
+- Historical reference workflow behavior: the older external reference binary
+  accepted the reducer but emitted LowIR treating the under-arity probes as
+  true, so it would return early from the wrong branches. This is treated as
+  stale historical evidence now that local `dev/cppgm++` is the canonical ref
+  source.
+- Current disposition: promoted to
+  `pa22/tests/general/400-template-template-alias-default-arity-sfinae.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a
+  byte-identical duplicate of the promoted PA22 reducer.
 
 ### Alias Template-Template Defaulted SFINAE Canonical Args
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-alias-template-template-defaulted-sfinae-canonical-args.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-alias-template-template-defaulted-sfinae-canonical-args.t`
@@ -463,35 +474,46 @@ canonical build.
   `if_<valid<F,T...>,defer_impl<F,T...>,no_type>`; Opus commit `1a232426b`
   accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with unsupported alias
-  template instantiation for `any`.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's canonical alias-template
-  argument substitution, or reduce to a ref-stable alias validity probe.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference compiler
+  rejected the reducer with unsupported alias template instantiation for `any`.
+  This is treated as stale historical evidence now that local `dev/cppgm++` is
+  the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-alias-template-template-defaulted-sfinae-canonical-args.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a
+  byte-identical duplicate of the promoted PA22 reducer.
 
 ### Async Initiate Dependent Return SFINAE
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-async-initiate-dependent-return-sfinae.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-async-initiate-dependent-return-sfinae.t`
 - Historical evidence: Opus start `1963d796e` rejects with no member
   `async_wait<int>`; Opus commit `1a232426b` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for this
-  dependent-return SFINAE shape, or reduce to a type-only oracle.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference binary
+  accepted the reducer, but emitted extra EH runtime declarations that current
+  PA22 LowIR does not emit. This is treated as stale historical evidence now
+  that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-async-initiate-dependent-return-sfinae.t`; tracker row
+  marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a
+  byte-identical duplicate of the promoted PA22 reducer.
 
 ### Constructor SFINAE Member-Template Value
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-constructor-sfinae-member-template-value.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-constructor-sfinae-member-template-value.t`
@@ -499,14 +521,19 @@ canonical build.
   constructor shape; Opus commit `1a232426b` emits the selected constructor
   template.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer after a semantic fallback for
-  explicit type template argument resolution in `supportable_properties`.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's explicit type-argument
-  substitution in this nested member-template value path, or find a smaller
-  constructor-selection oracle.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference compiler
+  rejected the reducer after a semantic fallback for explicit type template
+  argument resolution in `supportable_properties`. This is treated as stale
+  historical evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-constructor-sfinae-member-template-value.t`; tracker
+  row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a
+  byte-identical duplicate of the promoted PA22 reducer.
 
 ### Defaulted Pack Bool Short-Circuit SFINAE
 
@@ -582,7 +609,7 @@ canonical build.
 
 ### TCC Member Constructible Pack SFINAE
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-tcc-member-constructible-pack-sfinae.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-tcc-member-constructible-pack-sfinae.t`
@@ -590,14 +617,18 @@ canonical build.
   commit `1a232426b` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
 - Current compiler behavior: emits the constrained `make<int>` overload
-  returning `11`.
-- External reference behavior: accepts the reducer but emits LowIR selecting
-  the variadic fallback returning `4`.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's member-template SFINAE
-  selection for dependent pack-expanded constructibility, or find a smaller
-  ref-stable oracle.
+  returning `11`; local `dev/cppgm++` generated the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference binary
+  accepted the reducer but emitted LowIR selecting the variadic fallback
+  returning `4`. This is treated as stale historical evidence now that local
+  `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-tcc-member-constructible-pack-sfinae.t`; tracker row
+  marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a
+  byte-identical duplicate of the promoted PA22 reducer.
 
 ### Out-Of-Class SFINAE Member-Template Alias Body
 
