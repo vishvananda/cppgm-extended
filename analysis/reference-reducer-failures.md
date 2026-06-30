@@ -901,7 +901,7 @@ canonical build.
 
 ### Index Sequence Alias Constructor Deduction
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-index-sequence-alias-constructor-deduction.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-index-sequence-alias-constructor-deduction.t`
@@ -909,16 +909,22 @@ canonical build.
   `index_sequence<0>`; Opus commit `45820ae4b` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations and an empty helper
-  constructor body not emitted by current PA22, causing relaxed LowIR comparison
-  to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH and empty-constructor emission
-  contract for this index-sequence constructor-deduction shape, or reduce to a
-  non-codegen oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external/reference workflow behavior: the older external
+  reference binary accepted the reducer, but emitted extra EH runtime
+  declarations and an empty helper constructor body not emitted by current
+  PA22. This is treated as stale historical evidence now that local
+  `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-index-sequence-alias-constructor-deduction.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical duplicate of the
+  promoted PA22 focused reducer.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `45820ae4b` accepted; focused PA22
+  check and direct LowIR compare passed; PA22 placement audit passed with
+  `--fail-on-early`.
 
 ### Alias Pack NTTP Expression Fast Path
 
