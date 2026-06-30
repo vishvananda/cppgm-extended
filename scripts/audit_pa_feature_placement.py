@@ -37,6 +37,8 @@ HOSTED_STL_ABI_EH_COMPONENT_HEADERS = {
     "stdexcept",
     "typeinfo",
 }
+HOST_ABI_EH_HEADER_OWNER_PA = "pa32"
+HOST_ABI_EH_HEADER_EARLY_PA_MAX = 31
 HOSTED_STL_HEADERS = {
     "algorithm",
     "any",
@@ -1003,6 +1005,10 @@ def hosted_stl_include(header: str) -> bool:
     return header in HOSTED_STL_HEADERS
 
 
+def host_abi_eh_component_include(header: str) -> bool:
+    return header.strip() in HOSTED_STL_ABI_EH_COMPONENT_HEADERS
+
+
 # LowIR side-effect checks intentionally avoid broad object-name evidence such
 # as object=_Z...; PA13 treats those names as presentation/backend metadata.
 LOWIR_POLYMORPHIC_RE = re.compile(r"__vtable|_ZTV|__rtti|_ZTI|__typeinfo_name|_ZTS|typeinfo")
@@ -1115,12 +1121,22 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
     for path in iter_local_hygiene_source_files(root, selected_pas):
         current_pa = current_pa_for(path.relative_to(root))
         number = pa_number(current_pa)
-        if number is None or number > HOSTED_STL_EARLY_PA_MAX:
+        if number is None:
             continue
         relative = path.relative_to(root).as_posix()
         for match in include_re.finditer(read_text(path)):
             header = match.group(1).strip()
-            if hosted_stl_include(header):
+            if number <= HOST_ABI_EH_HEADER_EARLY_PA_MAX and host_abi_eh_component_include(header):
+                findings.append(HygieneFinding(
+                    path=relative,
+                    kind="early-host-abi-eh-header",
+                    message=(
+                        f"host ABI/EH component header <{header}> belongs in "
+                        f"{HOST_ABI_EH_HEADER_OWNER_PA} or later"
+                    ),
+                    evidence=f"#include <{header}>",
+                ))
+            elif number <= HOSTED_STL_EARLY_PA_MAX and hosted_stl_include(header):
                 findings.append(HygieneFinding(
                     path=relative,
                     kind="early-hosted-stl",

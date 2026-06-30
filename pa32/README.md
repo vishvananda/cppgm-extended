@@ -161,6 +161,13 @@ The checked-in PA32 tests cover:
 - duplicate-definition/coalescing behavior for inline and template output
 - host symbol spelling for user-defined entities and selected template cases
 
+PA32 and later tests may include ABI/EH component headers such as
+`<exception>`, `<stdexcept>`, and `<typeinfo>` when the test is checking host
+object, RTTI, type-info, or exception-runtime interoperability. Treat those as
+host ABI surface, not as general hosted standard-library coverage. Broader
+hosted-header preprocessing, compile acceptance, and header-emitted runtime
+behavior still belong to PA34-PA36.
+
 ### Using PA30 ABI Names
 
 PA32 is still before the broader host C++ ABI/runtime stage in PA33, but ordinary
