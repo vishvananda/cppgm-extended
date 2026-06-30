@@ -953,7 +953,7 @@ canonical build.
 
 ### Qualified Template-Id Current-Scope Alias Shadow
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-qualified-template-id-current-scope-alias-shadow.t`
 - Candidate owner: PA21
 - Reducer: `analysis/reducers/pa21-qualified-template-id-current-scope-alias-shadow.t`
@@ -962,13 +962,20 @@ canonical build.
   commit `743b7a920` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: the reference binary segfaults while compiling
-  the reducer.
-- Current disposition: PA21 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler crash in qualified template-id
-  alias current-scope rebinding, or find a smaller non-crashing oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA21 refs.
+- Historical external reference behavior: the older external reference binary
+  segfaults while compiling the reducer; this older Opus-generated reference is
+  not the current canonical source.
+- Current disposition: promoted to
+  `pa21/tests/general/400-qualified-template-id-current-scope-alias-shadow.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical duplicate of the
+  promoted PA21 focused reducer.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `743b7a920` accepted; focused PA21
+  check and direct LowIR compare passed; PA21 placement audit passed with
+  `--fail-on-early`.
 
 ### Nested Template-Id Partial Specialization Deduction
 
