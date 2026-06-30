@@ -5,12 +5,10 @@ int destroyed = 0;
 
 struct Probe
 {
-  Probe() {}
-  Probe(const Probe &) {}
-  ~Probe() { ++destroyed; }
+  ~Probe() noexcept { ++destroyed; }
 };
 
-int use(const Probe &)
+int use(const Probe &) noexcept
 {
   return 1;
 }

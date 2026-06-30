@@ -3,25 +3,12 @@
 
 struct Iterator
 {
-  static int live;
+  static int destroyed;
 
-  Iterator()
-  {
-    ++live;
-  }
-
-  Iterator(const Iterator &)
-  {
-    ++live;
-  }
-
-  ~Iterator()
-  {
-    --live;
-  }
+  ~Iterator() noexcept { ++destroyed; }
 };
 
-int Iterator::live = 0;
+int Iterator::destroyed = 0;
 
 template<class It, class Alloc>
 struct AssignRange
@@ -30,12 +17,12 @@ struct AssignRange
   It last;
   Alloc & alloc;
 
-  AssignRange(const It & f, const It & l, Alloc & a)
+  AssignRange(const It & f, const It & l, Alloc & a) noexcept
     : first(f), last(l), alloc(a)
   {
   }
 
-  void operator()(int *) const
+  void operator()(int *) const noexcept
   {
   }
 };
@@ -43,7 +30,7 @@ struct AssignRange
 template<class It, class Alloc>
 AssignRange<It, Alloc> make_assign_range(const It & first,
                                          const It & last,
-                                         Alloc & alloc)
+                                         Alloc & alloc) noexcept
 {
   return AssignRange<It, Alloc>(first, last, alloc);
 }
@@ -52,28 +39,28 @@ struct Buffer
 {
   int alloc;
 
-  Buffer() : alloc(0)
+  Buffer() noexcept : alloc(0)
   {
   }
 
-  Iterator begin()
+  Iterator begin() noexcept
   {
     return Iterator();
   }
 
-  Iterator end()
+  Iterator end() noexcept
   {
     return Iterator();
   }
 
   template<class Functor>
-  void assign_n(int, int, const Functor & fnc)
+  void assign_n(int, int, const Functor & fnc) noexcept
   {
     fnc(0);
   }
 
   template<class It>
-  void assign(It first, It last)
+  void assign(It first, It last) noexcept
   {
     assign_n(1, 1, make_assign_range(first, last, alloc));
   }
@@ -85,5 +72,5 @@ int main()
     Buffer buffer;
     buffer.assign(buffer.begin(), buffer.end());
   }
-  return Iterator::live;
+  return Iterator::destroyed > 0 ? 0 : 1;
 }

@@ -1,6 +1,6 @@
 global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
 
-function @use(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z3useRK5Probe] {
+function @use(%__param0 : ptr [pass=reference]) -> i32 [unwind=no, binding=strong, object=_Z3useRK5Probe] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -73,14 +73,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_3:
     return i32 20
 }
-function @Probe__Probe(%this : ptr) -> void [binding=weak, object=_ZN5ProbeC1Ev] {
+function @Probe__Probe(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5ProbeC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @Probe___Probe(%this : ptr) -> void [binding=weak, object=_ZN5ProbeD1Ev] {
+function @Probe___Probe(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5ProbeD1Ev] {
   slot $this : ptr
 
   block ^entry:

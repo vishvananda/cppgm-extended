@@ -3,17 +3,17 @@
 
 struct Base
 {
-  virtual int f()
+  virtual int f() noexcept
   {
     return 1;
   }
 
-  virtual ~Base() {}
+  virtual ~Base() noexcept {}
 };
 
 struct Derived : Base
 {
-  int f() override
+  int f() noexcept override
   {
     return Base::f();
   }
