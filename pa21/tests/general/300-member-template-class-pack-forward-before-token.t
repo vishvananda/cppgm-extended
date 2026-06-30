@@ -1,3 +1,7 @@
+// VALIDATION: run-pass
+// A class-template parameter pack must bind to the matching call arguments
+// before the trailing member-template token parameter.
+
 struct error_code
 {
   int value;

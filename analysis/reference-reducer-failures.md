@@ -1196,9 +1196,9 @@ canonical build.
 
 ### Constructor/Conversion Deduction Reference-Blocked Batch
 
-- Disposition: mixed. The first five PA22 reducers are
-  `resolved-local-canonical-promoted`; the PA18 member-template pack-binding
-  row and trusted-only nested-member row remain unresolved.
+- Disposition: mixed. The first five PA22 reducers and the PA21
+  member-template pack-binding reducer are `resolved-local-canonical-promoted`;
+  the trusted-only nested-member row remains unresolved.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts every
   reducer listed below.
 - Current compiler behavior: local canonical `dev/cppgm++` accepts every
@@ -1208,6 +1208,8 @@ canonical build.
   PA22 rows rather than a current blocker.
 - Current disposition: promoted PA22 tests listed below; the corresponding
   PA23 originals were retired because they were focused single-feature probes.
+  The member-template pack-binding reducer was retargeted from PA18 to PA21
+  because PA18 explicitly excludes parameter packs and member templates.
   Tracker rows for the promoted tests are marked `missing-earlier-feature` /
   `test-added`.
 - Validation for promoted PA22 rows: grouped PA22 `check` passed, grouped
@@ -1223,7 +1225,7 @@ canonical build.
 | `pa23/tests/general/300-constructor-template-defaulted-forwarding-lvalue-order.t` | PA22 | `analysis/reducers/pa22-constructor-template-defaulted-forwarding-lvalue-order.t` | `pa22/tests/general/300-constructor-template-defaulted-forwarding-lvalue-order.t` | Opus start `1963d796e` rejects the source call shape; Opus `f8660aa27` accepts. | Older external lane rejected as ambiguous between `box(const T&)` and the defaulted forwarding constructor template for a const lvalue source. |
 | `pa23/tests/general/300-constructor-template-pack-before-defaulted-nontype.t` | PA22 | `analysis/reducers/pa22-constructor-template-pack-before-defaulted-nontype.t` | `pa22/tests/general/400-constructor-template-pack-before-defaulted-nontype.t` | Opus start `1963d796e` rejects with a parse error; Opus `f8660aa27` accepts. | Older external lane rejected `tuple_like<first_arg, second_arg>{first, second}` after losing the defaulted pointer parameter shape. |
 | `pa23/tests/general/400-conversion-function-template-prefers-nontemplate.t` | PA22 | `analysis/reducers/pa22-conversion-function-template-prefers-nontemplate.t` | `pa22/tests/general/400-conversion-function-template-prefers-nontemplate.t` | Opus start `1963d796e` accepts but emits a direct `box(int)` assignment path; Opus `f8660aa27` emits the non-template conversion-function path. | Older external lane rejected assignment as ambiguous instead of preferring the non-template conversion function. |
-| `pa23/tests/general/400-member-template-class-pack-forward-before-token.t` | PA18 | `analysis/reducers/pa18-member-template-class-pack-forward-before-token.t` | not promoted | Opus start `1963d796e` rejects; later PA23 member-template pack-binding work accepts. | Older external lane rejects `combine(static_cast<Args&&>(args)...)` because pack value binding pairs the first `Args` element with the second value argument. Fix before promoting the PA18 reducer. |
+| `pa23/tests/general/400-member-template-class-pack-forward-before-token.t` | PA21 | `analysis/reducers/pa21-member-template-class-pack-forward-before-token.t` | `pa21/tests/general/300-member-template-class-pack-forward-before-token.t` | Opus start `1963d796e` rejects with no member `send`; Opus `f8660aa27` accepts. | Older external lane rejects `combine(static_cast<Args&&>(args)...)` because pack value binding pairs the first `Args` element with the second value argument. |
 | `pa23/tests/general/400-nested-member-template-base-param-shadow-value.t` | PA21 | `analysis/reducers/pa21-nested-member-template-base-param-shadow-value.t` | not promoted | Opus start `1963d796e` already accepts the PA23 source, so it does not prove a missing earlier test. | Older external lane rejects with failed `static_assert(packed::reservable == true)`, rebinding the nested member-template owner value through the dependent base. No backfill is needed unless a start-failing reducer is found. |
 
 ### Template-Template/Alias Forwarding Reference-Blocked Batch
