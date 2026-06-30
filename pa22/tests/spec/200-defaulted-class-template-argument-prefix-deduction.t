@@ -1,5 +1,8 @@
 // VALIDATION: run-pass
 // N3485 focus: 14.8.2.5 [temp.deduct.type]
+// Deduction against a class template specialization may match a prefix of the
+// template arguments while remaining arguments come from defaults, including
+// through an overloaded compound-assignment operator template.
 
 template<class T>
 struct less

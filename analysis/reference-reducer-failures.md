@@ -226,21 +226,25 @@ canonical build.
 
 ### Defaulted Class-Template Argument Prefix Deduction
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/spec/200-defaulted-class-template-argument-prefix-deduction.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-defaulted-class-template-argument-prefix-deduction.t`
-- Historical evidence: PA23-shaped reducer is fixed by Opus commit `553397844`.
+- Historical evidence: PA23-shaped compound-assignment reducer is fixed by Opus
+  commit `553397844`.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   ordinary-call reducer.
-- Current compiler behavior: accepts the reduced ordinary-call form.
-- External reference behavior: rejects both the compound-assignment form and the
-  smaller ordinary-call reducer.
-- Current disposition: tracker row marked `harness-or-reference-issue` /
-  `no-action`; no PA22 assignment test added.
-- Next validation: confirm whether deduction against `queue<T, Container>` may
-  omit the defaulted trailing `Compare` argument in this call. If valid, fix the
-  reference compiler before adding the PA22 test.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts the reducer
+  and generated refs.
+- Older reference behavior: an older external reference binary rejected both
+  the compound-assignment form and the smaller ordinary-call reducer; this is
+  now treated as stale historical evidence rather than a current blocker.
+- Current disposition: promoted to
+  `pa22/tests/spec/200-defaulted-class-template-argument-prefix-deduction.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: focused PA22 check passed; focused direct LowIR compare passed;
+  PA22 placement audit passed with `--fail-on-early`; focused PA22/PA23 test
+  report passed.
 
 ### Explicit Template Call Transitive-Base Deduction
 
