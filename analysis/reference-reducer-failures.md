@@ -1041,21 +1041,40 @@ canonical build.
 
 ### Class Partial Specialization Matching/Ordering Batch
 
+- Disposition: `resolved-local-canonical-promoted`
 - Candidate owner: PA21
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts every
   reducer listed below.
-- Current compiler behavior: accepts every reducer listed below.
-- Current disposition: PA21 candidate assignment files were removed for these
-  rows; tracker rows are marked `harness-or-reference-issue` / `no-action`.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts every
+  reducer listed below and generated refs.
+- Older reference behavior: an older external reference lane rejected these
+  reducers; this is now treated as stale historical evidence rather than a
+  current blocker.
+- Current disposition: promoted to PA21 focused tests listed below; the PA23
+  originals were retired because they were the same focused single-feature
+  probes rather than useful PA23 integration compositions. Tracker rows marked
+  `missing-earlier-feature` / `test-added`.
+- Validation: grouped PA21 `check` passed, and grouped direct LowIR compare
+  passed with `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make -C pa21 check
+  TEST='tests/general/400-nontype-pack-fixed-tail-partial-specialization-ordering.t
+  tests/general/400-cv-qualified-template-id-wrapper-class-partial-specialization.t
+  tests/general/400-dependent-owner-member-class-template-partial-specialization.t
+  tests/general/400-function-type-cv-partial-specialization.t
+  tests/general/400-function-type-ref-qualified-partial-specialization.t
+  tests/general/400-repeated-pack-partial-specialization-ordering.t'`.
+  Focused PA21/PA23 report passed 579/579. The broader PA19-PA23 direct
+  LowIR window was attempted and failed on 22 existing direct-text mismatches
+  outside these promoted tests, so this test-only batch keeps the narrower
+  direct validation scope.
 
-| PA23 source row | Reducer | Historical evidence | External reference behavior | Next validation |
+| PA23 source row | Reducer | Promoted test | Historical evidence | Older external reference behavior |
 | --- | --- | --- | --- | --- |
-| `pa23/tests/general/200-nontype-pack-fixed-tail-partial-specialization-ordering.t` | `analysis/reducers/pa21-nontype-pack-fixed-tail-partial-specialization-ordering.t` | Opus start `1963d796e` rejects; Opus commit `ee034cde3` accepts. | Rejects while resolving `bin_literal<bytes<>,'0','0','0','0','0','0','0','0'>::size`. | Fix reference compiler non-type pack plus fixed-tail partial-specialization matching. |
-| `pa23/tests/general/400-cv-qualified-template-id-wrapper-class-partial-specialization.t` | `analysis/reducers/pa21-cv-qualified-template-id-wrapper-class-partial-specialization.t` | Opus start `1963d796e` rejects; Opus commit `a3c294645` accepts. | Rejects as an ambiguous partial class specialization for `holder<box<int,long> const>`. | Fix reference compiler ordering between direct cv-qualified and template-id partials. |
-| `pa23/tests/general/400-dependent-owner-member-class-template-partial-specialization.t` | `analysis/reducers/pa21-dependent-owner-member-class-template-partial-specialization.t` | Opus start `1963d796e` rejects; Opus commit `0cf7d2de0` accepts. | Rejects while collecting the out-of-class member class-template partial specialization. | Fix reference compiler support for dependent-owner member class-template partial specializations. |
-| `pa23/tests/general/400-function-type-cv-partial-specialization.t` | `analysis/reducers/pa21-function-type-cv-partial-specialization.t` | Opus start `1963d796e` rejects; Opus commit `b444d928a` accepts. | Rejects as an ambiguous partial class specialization for `holder<void()>`. | Fix reference compiler function-type cv-qualified partial-specialization ordering. |
-| `pa23/tests/general/400-function-type-ref-qualified-partial-specialization.t` | `analysis/reducers/pa21-function-type-ref-qualified-partial-specialization.t` | Opus start `1963d796e` rejects; Opus commit `f31e61547` accepts. | Rejects with failed `static_assert` for `holder<void() &>::value == 2`. | Fix reference compiler ref-qualified function-type partial-specialization matching. |
-| `pa23/tests/general/400-repeated-pack-partial-specialization-conflict.t` and `pa23/tests/general/400-repeated-pack-partial-specialization-preference.t` | `analysis/reducers/pa21-repeated-pack-partial-specialization-ordering.t` | Opus start `1963d796e` rejects; Opus commit `b444d928a` accepts. | Rejects as an ambiguous partial class specialization for `similar_impl<list<>,list<> >`. | Fix reference compiler repeated-pack partial-specialization ordering and conflict rejection. |
+| `pa23/tests/general/200-nontype-pack-fixed-tail-partial-specialization-ordering.t` | `analysis/reducers/pa21-nontype-pack-fixed-tail-partial-specialization-ordering.t` | `pa21/tests/general/400-nontype-pack-fixed-tail-partial-specialization-ordering.t` | Opus start `1963d796e` rejects; Opus commit `ee034cde3` accepts. | Rejects while resolving `bin_literal<bytes<>,'0','0','0','0','0','0','0','0'>::size`. |
+| `pa23/tests/general/400-cv-qualified-template-id-wrapper-class-partial-specialization.t` | `analysis/reducers/pa21-cv-qualified-template-id-wrapper-class-partial-specialization.t` | `pa21/tests/general/400-cv-qualified-template-id-wrapper-class-partial-specialization.t` | Opus start `1963d796e` rejects; Opus commit `a3c294645` accepts. | Rejects as an ambiguous partial class specialization for `holder<box<int,long> const>`. |
+| `pa23/tests/general/400-dependent-owner-member-class-template-partial-specialization.t` | `analysis/reducers/pa21-dependent-owner-member-class-template-partial-specialization.t` | `pa21/tests/general/400-dependent-owner-member-class-template-partial-specialization.t` | Opus start `1963d796e` rejects; Opus commit `0cf7d2de0` accepts. | Rejects while collecting the out-of-class member class-template partial specialization. |
+| `pa23/tests/general/400-function-type-cv-partial-specialization.t` | `analysis/reducers/pa21-function-type-cv-partial-specialization.t` | `pa21/tests/general/400-function-type-cv-partial-specialization.t` | Opus start `1963d796e` rejects; Opus commit `b444d928a` accepts. | Rejects as an ambiguous partial class specialization for `holder<void()>`. |
+| `pa23/tests/general/400-function-type-ref-qualified-partial-specialization.t` | `analysis/reducers/pa21-function-type-ref-qualified-partial-specialization.t` | `pa21/tests/general/400-function-type-ref-qualified-partial-specialization.t` | Opus start `1963d796e` rejects; Opus commit `f31e61547` accepts. | Rejects with failed `static_assert` for `holder<void() &>::value == 2`. |
+| `pa23/tests/general/400-repeated-pack-partial-specialization-conflict.t` and `pa23/tests/general/400-repeated-pack-partial-specialization-preference.t` | `analysis/reducers/pa21-repeated-pack-partial-specialization-ordering.t` | `pa21/tests/general/400-repeated-pack-partial-specialization-ordering.t` | Opus start `1963d796e` rejects; Opus commit `b444d928a` accepts. | Rejects as an ambiguous partial class specialization for `similar_impl<list<>,list<> >`. |
 
 ### Top-CV Pointer Does Not Match Unqualified Pointer Partial
 
