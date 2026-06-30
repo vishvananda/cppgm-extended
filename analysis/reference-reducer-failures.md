@@ -1070,27 +1070,34 @@ canonical build.
 
 ### Template Instantiation Use Location Explicit Specialization
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row:
   `pa23/tests/general/100-template-instantiation-use-location-explicit-specialization.t`
 - Candidate owner: PA21.
 - Reducer:
   `analysis/reducers/pa21-template-instantiation-use-location-explicit-specialization-value-object.t`
 - Historical evidence: Opus start `1963d796e` rejects the reducer with unknown
-  type `ops<policy>::iter_move`; Opus commit `fb9e82eeb` accepts the same
-  reducer.
+  type `ops<policy>::iter_move` and rejects the exact PA23 source with unknown
+  type `Ops<Policy>::iter_move`; Opus commit `fb9e82eeb` accepts both shapes.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
-  reducer.
-- Current compiler behavior: accepts the reducer and emits construction of the
-  local array element plus the move construction of the `sift` local object.
-- External reference behavior: accepts the reducer but omits constructor work
-  that current emits; the PA21 relaxed LowIR comparison fails on the missing
-  default/move-constructor calls and move-constructor body.
-- Current disposition: PA21 candidate assignment files were removed; tracker
-  row marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's value-object construction
-  emission for this use-location member-template call, or find a non-codegen
-  oracle that still fails at Opus start.
+  reducer and exact PA23 source.
+- Current compiler behavior: accepts the exact PA23 source, emits construction
+  of the local array element plus the move construction of the `sift` local
+  object, and generated local canonical PA21 refs.
+- Historical external reference behavior: an older external reference binary
+  accepted the reducer but omitted constructor work that current emits. This is
+  treated as stale historical evidence now that local `dev/cppgm++` is the
+  canonical ref source.
+- Current disposition: promoted the exact PA23 source to
+  `pa21/tests/general/300-template-instantiation-use-location-explicit-specialization.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a focused PA21 reducer; the saved
+  reducer only differs by naming and a typedef removal, and the source does not
+  add a separate PA23 integration ingredient beyond use-location explicit
+  specialization for a member function template call.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `fb9e82eeb` accepted; local canonical
+  PA21 refs were generated from `dev/cppgm++`.
 
 ### Explicit Instantiation Static Member Function
 
