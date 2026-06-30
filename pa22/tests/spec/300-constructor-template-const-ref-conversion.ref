@@ -63,3 +63,5 @@ function @duration_long_int__tag_1____duration__ov4(%this : ptr, %other : ptr [p
     store i64 %t4, %t6
     return void
 }
+alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int__tag_2____duration
+alias object _ZN8durationIl3tagILi1EEEC2IiS0_ILi2EEEERKS_IT_T0_E = @duration_long_int__tag_1____duration__ov4

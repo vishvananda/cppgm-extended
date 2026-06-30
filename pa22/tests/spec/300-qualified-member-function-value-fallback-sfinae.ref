@@ -17,7 +17,7 @@ function @Use__Use(%this : ptr) -> void [binding=weak, object=_ZN3UseC1Ev] {
     call void @pair_like_Owner__Node____int___pair_like__ov4(%t2, 0)
     return void
 }
-function @pair_like_Owner__Node____int___pair_like__ov4(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN9pair_likeIPN5Owner4NodeEiEC1ILb1ETnN9enable_ifIXclsr11constraintsI5DummyS2_iEE2okEEbE4typeELb1EEEi] {
+function @pair_like_Owner__Node____int___pair_like__ov4(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN9pair_likeIPN5Owner4NodeEiEC1ILb1ETnN9enable_ifIXclsr11constraintsIXT_ES2_iEE2okEEbE4typeELb1EEEi] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -26,3 +26,5 @@ function @pair_like_Owner__Node____int___pair_like__ov4(%this : ptr, %__param1 :
     store i32 %__param1, $__param1
     return void
 }
+alias object _ZN3UseC2Ev = @Use__Use
+alias object _ZN9pair_likeIPN5Owner4NodeEiEC2ILb1ETnN9enable_ifIXclsr11constraintsIXT_ES2_iEE2okEEbE4typeELb1EEEi = @pair_like_Owner__Node____int___pair_like__ov4

@@ -1,30 +1,30 @@
 translation-unit
-  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:35:1
+  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:71:1
     template expand_to_true
     bind #1 = enable_if_t<Pred::value>... source=explicit
-  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:35:16
+  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:71:16
     template enable_if_t
     bind #1 = Pred::value source=explicit
-  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:50:7
+  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:86:7
     template enable_if_t
-    bind #1 = and_t<is_not_same<__remove_cvref_t<F>, function<R (Args...)>>, is_not_same<F, R>>::value source=explicit
-  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:50:19
+    bind #1 = and_t<is_not_same<remove_cvref_t<F>, function<R (Args...)>>, is_not_same<F, R>>::value source=explicit
+  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:86:19
     template and_t
-    bind #1 = is_not_same<__remove_cvref_t<F>, function<R (Args...)>> source=explicit
-  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:50:37
-    template __remove_cvref_t
+    bind #1 = is_not_same<remove_cvref_t<F>, function<R (Args...)>> source=explicit
+  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:86:37
+    template remove_cvref_t
     bind #1 = F source=explicit
-  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:53:29
+  alias-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:89:29
     template function<type-parameter-0-0 (type-parameter-0-1...)>::enable_callable
     bind #1 = F source=explicit
-  class-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:58:3
+  class-use at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:94:3
     template function
     selected partial
     bind #1 = void (int) source=explicit
     bind #2 = <> source=deduced
     specialize #1 = void source=deduced
     specialize #2 = <int> source=deduced
-  function-call at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:65:7
+  function-call at pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t:101:7
     callee function<void (int)>::operator=
     selected instantiation
     bind #1 = G source=deduced

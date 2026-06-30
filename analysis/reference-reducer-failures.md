@@ -231,8 +231,8 @@ canonical build.
   `--fail-on-early`; focused direct LowIR compare passed with
   `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make -C pa21 check
   TEST=tests/general/400-template-template-fixed-prefix-pack-order.t`.
-  The broader PA19-PA23 direct LowIR window was run and failed on unrelated
-  pre-existing direct-text mismatches outside this reducer.
+  A follow-up PA19-PA23 direct LowIR report passed after refreshing stale refs
+  from the placement-reducer batch.
 
 ### Defaulted Class-Template Argument Prefix Deduction
 
@@ -1227,10 +1227,8 @@ canonical build.
   tests/general/400-function-type-cv-partial-specialization.t
   tests/general/400-function-type-ref-qualified-partial-specialization.t
   tests/general/400-repeated-pack-partial-specialization-ordering.t'`.
-  Focused PA21/PA23 report passed 579/579. The broader PA19-PA23 direct
-  LowIR window was attempted and failed on 22 existing direct-text mismatches
-  outside these promoted tests, so this test-only batch keeps the narrower
-  direct validation scope.
+  Focused PA21/PA23 report passed 579/579. A follow-up PA19-PA23 direct LowIR
+  report passed after refreshing stale refs from the placement-reducer batch.
 
 | PA23 source row | Reducer | Promoted test | Historical evidence | Older external reference behavior |
 | --- | --- | --- | --- | --- |
@@ -1436,10 +1434,10 @@ canonical build.
 - Validation: grouped PA21 and PA22 `check` commands passed; grouped PA21 and
   PA22 direct LowIR checks passed; PA21 and PA22 placement audits passed with
   `--fail-on-early`; `make test-report ACTIVE_TEST_REPORT_PAS='pa21 pa22 pa23'`
-  passed. The broader
+  passed. A follow-up
   `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report
-  ACTIVE_TEST_REPORT_PAS='pa21 pa22 pa23'` run still fails on unrelated
-  pre-existing direct-text mismatches outside this promoted batch.
+  ACTIVE_TEST_REPORT_PAS='pa19 pa20 pa21 pa22 pa23'` passed after refreshing
+  stale refs from the placement-reducer batch.
 
 | PA23 source row | Candidate owner | Reducer | Promoted test | Historical evidence | Older external reference behavior / next validation |
 | --- | --- | --- | --- | --- | --- |

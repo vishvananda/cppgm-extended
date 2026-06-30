@@ -38,10 +38,12 @@ function @delimiter_type_char__char_traits_char____delimiter_type(%this : ptr, %
     %t2 = index i8 [projection=field] %t1, 0
     return void
 }
-function @string_like_char__char_traits_char____string_like(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11string_likeIc11char_traitsIcEEC1Ev] {
+function @string_like_char__char_traits_char____string_like(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11string_likeIc11char_traitsIcEEC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
+alias object _ZN14delimiter_typeIc11char_traitsIcEEC2ERK11string_likeIcS1_E = @delimiter_type_char__char_traits_char____delimiter_type
+alias object _ZN11string_likeIc11char_traitsIcEEC2Ev = @string_like_char__char_traits_char____string_like

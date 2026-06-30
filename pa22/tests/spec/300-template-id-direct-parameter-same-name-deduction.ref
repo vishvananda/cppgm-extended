@@ -82,3 +82,5 @@ function @lib__wrapper_Y___wrapper(%this : ptr, %__param1 : ptr [pass=reference]
     store i32 3, %t2
     return void
 }
+alias object _ZN3lib7wrapperI1XEC2I1YvEENS0_IT_EE = @lib__wrapper_X___wrapper__ov4
+alias object _ZN3lib7wrapperI1YEC2ERS1_ = @lib__wrapper_Y___wrapper
