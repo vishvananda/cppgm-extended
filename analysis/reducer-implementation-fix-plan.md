@@ -157,6 +157,17 @@ Run focused validation for every reducer:
 make test-report ACTIVE_TEST_REPORT_PAS='paXX pa23'
 ```
 
+When a batch adds multiple focused tests in the same assignment, pass them as a
+single space-separated `TEST` value instead of running parallel or repeated
+single-test checks. The assignment harness writes shared `.check` sidecars, so
+grouped checks avoid races while still keeping validation focused:
+
+```sh
+make -C paXX check TEST='tests/general/a.t tests/general/b.t'
+CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 \
+  make -C paXX check TEST='tests/general/a.t tests/general/b.t'
+```
+
 For template-heavy fixes in the PA19-PA23 window, also run:
 
 ```sh

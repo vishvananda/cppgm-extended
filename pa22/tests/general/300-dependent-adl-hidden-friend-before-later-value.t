@@ -1,3 +1,7 @@
+// VALIDATION: run-pass
+// A later ordinary declaration must not hide a hidden friend found by ADL while
+// probing an expression-SFINAE trait.
+
 template <bool B, class T = void> struct enable_if {};
 template <class T> struct enable_if<true, T> { typedef T type; };
 

@@ -126,7 +126,7 @@ canonical build.
 
 ### Dependent ADL Hidden Friend Before Later Value
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/300-dependent-adl-hidden-friend-before-later-value.t`
 - Candidate owner: PA22.
 - Reducer: `analysis/reducers/pa22-dependent-adl-hidden-friend-before-later-value.t`
@@ -135,20 +135,22 @@ canonical build.
   `8bafc1c42` accepts the same source.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with a failed `static_assert`
-  because `traits::prefer_free<associated::arg, associated::property>` remains
-  on the `false_type` primary; the hidden friend found by ADL is missed after
-  the later ordinary `prefer` object declaration.
-- Current disposition: no PA22 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's ADL handling for hidden friends
-  when a later ordinary declaration with the same name exists, then promote a
-  PA22 reducer if reference generation becomes stable.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts the reducer
+  and generated refs.
+- Older reference behavior: an older external reference binary rejected the
+  reducer with a failed `static_assert` after missing the hidden friend found
+  by ADL; this is now treated as stale historical evidence rather than a
+  current blocker.
+- Current disposition: promoted to
+  `pa22/tests/general/300-dependent-adl-hidden-friend-before-later-value.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 check passed; grouped focused direct LowIR
+  compare passed; PA22 placement audit passed with `--fail-on-early`; focused
+  PA22/PA23 test report passed.
 
 ### Hidden Friend Expression-SFINAE Use-Scope Shadowing
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/300-hidden-friend-sfinae-use-scope-shadowing.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-hidden-friend-sfinae-use-scope-shadowing.t`
@@ -156,18 +158,22 @@ canonical build.
   failed`; Opus commit `a6723df7a` and later sampled commits accept.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with `static_assert false:
-  query_free<executor,context_as_t<int&>>::value`.
-- Current disposition: tracker row marked `harness-or-reference-issue` /
-  `no-action`; no PA22 assignment test added.
-- Next validation: confirm whether the hidden friend is required to be found by
-  unqualified call expression SFINAE in this context. If valid, fix the
-  reference compiler before adding the PA22 test.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts the reducer
+  and generated refs.
+- Older reference behavior: an older external reference binary rejected the
+  reducer with `static_assert false:
+  query_free<executor,context_as_t<int&>>::value`; this is now treated as stale
+  historical evidence rather than a current blocker.
+- Current disposition: promoted to
+  `pa22/tests/general/300-hidden-friend-sfinae-use-scope-shadowing.t`; tracker
+  row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 check passed; grouped focused direct LowIR
+  compare passed; PA22 placement audit passed with `--fail-on-early`; focused
+  PA22/PA23 test report passed.
 
 ### Hidden Friend Dependent Return Specialization Scope
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row:
   `pa23/tests/general/300-hidden-friend-dependent-return-specialization-scope.t`
 - Candidate owner: PA22.
@@ -177,16 +183,18 @@ canonical build.
   reducer was blocked before promotion by the external reference compiler.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer after falling back from
-  overload resolution to builtin `operator==` while evaluating
-  `has_equal<any_completion_executor>`, even though the hidden friend
-  constrained on `is_base_of<any_executor, ...>` is visible through ADL.
-- Current disposition: no PA22 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's hidden-friend ADL lookup during
-  expression-SFINAE/detector evaluation, then promote this PA22 reducer if the
-  reference output becomes stable.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts the reducer
+  and generated refs.
+- Older reference behavior: an older external reference binary rejected the
+  reducer after falling back from overload resolution to builtin `operator==`
+  while evaluating `has_equal<any_completion_executor>`; this is now treated as
+  stale historical evidence rather than a current blocker.
+- Current disposition: promoted to
+  `pa22/tests/general/300-hidden-friend-dependent-return-specialization-scope.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 check passed; grouped focused direct LowIR
+  compare passed; PA22 placement audit passed with `--fail-on-early`; focused
+  PA22/PA23 test report passed.
 
 ### Template-Template Fixed-Prefix Pack Order
 
