@@ -125,6 +125,13 @@ file finishes compiling while still leaving the final linked executable compare
 as the PA39 result. The restored-self diagnostic target disables this object
 check because it may not have a matching self-host object tree.
 
+For both self-host and inception checkpoint binary builds, PA39 schedules
+missing `.o` inputs before stale existing inputs by default. If an earlier run
+stopped partway through the object tree, this usually reaches the next never-seen
+compile failure faster. The final link still uses the canonical object order, so
+the scheduling change does not affect reproducibility. Set
+`INCEPTION_BUILD_MISSING_FIRST=0` to disable this behavior.
+
 ### Intermediate Ladder
 
 To build one checkpoint:
