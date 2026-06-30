@@ -1078,7 +1078,7 @@ canonical build.
 
 ### Top-CV Pointer Does Not Match Unqualified Pointer Partial
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row:
   `pa23/tests/general/100-top-cv-pointer-does-not-match-unqualified-pointer-partial.t`
 - Candidate owner: PA21.
@@ -1088,15 +1088,19 @@ canonical build.
   failed `static_assert`; Opus commit `15a2e9c8d` accepts the reducer.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer as an ambiguous partial
-  class specialization for `holder<B const* volatile>`, allowing the
-  unqualified pointer partial to compete with the top-level volatile wrapper.
-- Current disposition: no PA21 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler so class partial-specialization
-  matching preserves top-level cv on pointer objects before promoting this PA21
-  reducer.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts the reducer
+  and generated refs.
+- Older reference behavior: an older external reference lane rejected the
+  reducer as an ambiguous partial class specialization for
+  `holder<B const* volatile>`, allowing the unqualified pointer partial to
+  compete with the top-level volatile wrapper. This is now treated as stale
+  historical evidence rather than a current blocker.
+- Current disposition: promoted to
+  `pa21/tests/general/100-top-cv-pointer-does-not-match-unqualified-pointer-partial.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`. The PA23
+  original was retired as the same focused single-feature probe.
+- Validation: focused PA21 `check` passed; focused direct LowIR compare passed;
+  PA21 placement audit passed with `--fail-on-early`.
 
 ### Qualified Friend Member Function Template
 
