@@ -778,7 +778,7 @@ canonical build.
 
 ### Alias Pack Function Return Concrete
 
-- Disposition: `portable-rewrite-pending-reference-validation`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-alias-pack-function-return-concrete.t`
 - Candidate owner: PA22 for the portable tuple-element form; PA34 remains the
   owner for direct `__type_pack_element` intrinsic behavior.
@@ -788,15 +788,23 @@ canonical build.
 - C++11 syntax check: `g++ -std=c++11 -x c++ -fsyntax-only` and
   `clang++ -std=c++11 -x c++ -fsyntax-only` accept the portable reducer after
   replacing `__type_pack_element` with a recursive local `pack_element` helper.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker row
-  is marked `portable-rewrite-pending-validation` / `no-action`.
-- Next validation: rerun the PA22 placement/reference gates on the portable
-  reducer; if the EH declaration drift remains, keep this as a
-  reference/contract blocker rather than a hosted-builtin blocker.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external/reference workflow behavior: the older external reference
+  binary accepted the reducer, but emitted extra EH runtime declarations that
+  current PA22 LowIR does not emit. This is treated as stale historical evidence
+  now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-alias-pack-function-return-concrete.t`; tracker row
+  marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a near-duplicate. The PA23 source had
+  already been rewritten to the same portable recursive `pack_element` helper
+  and did not add a separate PA23 integration ingredient. Intrinsic-specific
+  `__type_pack_element` coverage remains later-owned.
+- Validation: `g++` and `clang++` C++11 syntax checks passed; local
+  `dev/cppgm++` accepted; Opus start `1963d796e` rejected; Opus fix
+  `45820ae4b` accepted; focused PA22 check and direct LowIR compare passed;
+  PA22 placement audit passed with `--fail-on-early`.
 
 ### Dependent Alias Decltype Qualified Function Source Tokens
 
