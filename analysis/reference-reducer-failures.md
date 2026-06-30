@@ -248,24 +248,34 @@ canonical build.
 
 ### Explicit Template Call Transitive-Base Deduction
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/300-explicit-template-call-transitive-base-deduction.t`
 - Candidate owner: PA22
-- Reducer evidence: PA23-shaped recursive-base reducer failed at Opus start
-  `1963d796e` and passed at `fc8434823`; simple control reducer is in
-  `analysis/reducers/pa22-explicit-template-call-transitive-base-deduction-simple.t`.
-- C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the saved
-  simple control reducer.
-- Current compiler behavior: the simple control accepts but already passed Opus
-  start, so it does not prove the feature.
-- External/reference workflow behavior: the PA23-shaped reducer's reference
-  output included extra EH runtime declarations that current PA22 LowIR did not
-  emit, so it failed current validation after reference generation.
-- Current disposition: tracker row marked `harness-or-reference-issue` /
-  `no-action`; no PA22 assignment test added.
-- Next validation: isolate a smaller transitive-base deduction reducer whose
-  reference output does not depend on the extra EH declarations, or decide the
-  reference/runtime declaration contract first.
+- Reducer evidence: exact PA23 source row is the PA22-shaped recursive-base
+  reducer; the simpler saved control in
+  `analysis/reducers/pa22-explicit-template-call-transitive-base-deduction-simple.t`
+  already passed Opus start and is kept only as a non-promoted control.
+- C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the exact
+  PA23 source row.
+- Historical gate: Opus start `1963d796e` rejects the exact source with
+  `ERROR: use of undeclared identifier: ns::helper<1>`; Opus commit
+  `fc8434823` accepts and emits the selected helper call.
+- Current compiler behavior: accepts the exact source and generated local
+  canonical PA22 refs without EH runtime declarations.
+- Historical external reference behavior: an older external reference workflow
+  emitted extra EH runtime declarations for this non-throwing shape. This is
+  treated as stale historical evidence now that local `dev/cppgm++` is the
+  canonical ref source.
+- Current disposition: promoted the exact PA23 source to
+  `pa22/tests/general/300-explicit-template-call-transitive-base-deduction.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as focused PA22 deduction coverage. The
+  source isolates explicit template arguments plus deduction through a
+  transitive dependent base and does not add a separate PA23 integration
+  ingredient.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `fc8434823` accepted; local canonical
+  PA22 refs were generated from `dev/cppgm++`.
 
 ### Structured Enable-If `sizeof...` Pack Value
 
