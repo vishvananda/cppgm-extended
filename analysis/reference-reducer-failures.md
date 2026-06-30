@@ -713,7 +713,7 @@ canonical build.
 
 ### Alias NTTP Expression Declaration Scope
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-alias-nontype-expression-declaration-scope.t`
 - Candidate owner: PA21
 - Reducer: `analysis/reducers/pa21-alias-nontype-expression-declaration-scope.t`
@@ -722,17 +722,26 @@ canonical build.
   accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer while evaluating the non-type
-  template argument `(1 <= size<meta::list<int, char>>::value)`.
-- Current disposition: PA21 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's declaration-scope evaluation of
-  alias-template non-type arguments, or find a smaller ref-stable oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA21 refs.
+- Historical external reference behavior: an older external reference binary
+  rejected the reducer while evaluating the non-type template argument
+  `(1 <= size<meta::list<int, char>>::value)`. This is treated as stale
+  historical evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa21/tests/general/400-alias-nontype-expression-declaration-scope.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA21 reducer;
+  it did not add a separate PA23 integration ingredient beyond alias-template
+  non-type expression evaluation in declaration scope.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected with undeclared
+  `meta::check<meta::list<int,char>,1>::value`; Opus fix `3bec27bf4` accepted;
+  local canonical PA21 refs were generated from `dev/cppgm++`.
 
 ### Member Alias Template Owner Rebind Cache
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-member-alias-template-owner-rebind-cache.t`
 - Candidate owner: PA21
 - Reducer: `analysis/reducers/pa21-member-alias-template-owner-rebind-cache.t`
@@ -740,14 +749,22 @@ canonical build.
   `static_assert`; Opus commit `3bec27bf4` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA21 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA21 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for this
-  member-alias owner rebinding shape, or find a non-codegen oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA21 refs.
+- Historical external/reference workflow behavior: an older external reference
+  binary accepted the reducer, but emitted extra EH runtime declarations that
+  current PA21 LowIR does not emit. This is treated as stale historical
+  evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa21/tests/general/400-member-alias-template-owner-rebind-cache.t`; tracker
+  row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA21 reducer;
+  it did not add a separate PA23 integration ingredient beyond member alias
+  owner rebinding.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected with a non-constant `static_assert`; Opus fix
+  `3bec27bf4` accepted; local canonical PA21 refs were generated from
+  `dev/cppgm++`.
 
 ### Out-Of-Class Partial Owner Constructor Using Alias
 
