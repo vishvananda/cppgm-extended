@@ -876,7 +876,7 @@ canonical build.
 
 ### Function Template Parameter Alias Sees Previous Param
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-function-template-parameter-alias-sees-previous-param.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-function-template-parameter-alias-sees-previous-param.t`
@@ -884,13 +884,20 @@ canonical build.
   operand type; Opus commit `45820ae4b` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with unknown function
-  `helper<value>`.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's function-template lookup after
-  alias-parameter substitution, or find a smaller ref-stable oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external reference behavior: rejects the reducer with unknown
+  function `helper<value>`; this older Opus-generated reference is not the
+  current canonical source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-function-template-parameter-alias-sees-previous-param.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical duplicate of the
+  promoted PA22 focused reducer.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `45820ae4b` accepted; focused PA22
+  check and direct LowIR compare passed; PA22 placement audit passed with
+  `--fail-on-early`.
 
 ### Index Sequence Alias Constructor Deduction
 
