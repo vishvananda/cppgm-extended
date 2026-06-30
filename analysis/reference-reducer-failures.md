@@ -1101,7 +1101,7 @@ canonical build.
 
 ### Explicit Instantiation Static Member Function
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row:
   `pa23/tests/spec/100-explicit-instantiation-static-member-function.t`
 - Candidate owner: PA21.
@@ -1112,15 +1112,27 @@ canonical build.
   function instantiation implementation point in the cluster.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer and marks the explicitly
-  instantiated static member function with `object_root=yes`.
-- External reference behavior: accepts the reducer but omits the `object_root`
-  metadata, causing relaxed LowIR comparison to fail.
-- Current disposition: no PA21 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: decide the reference/current LowIR metadata contract for
-  explicit member-function instantiation roots, then promote the PA21 reducer if
-  the reference output becomes stable.
+- Historical gate: Opus start `1963d796e` accepts but emits the static member
+  function without `object_root=yes`; Opus commit `569fcbd79` accepts and emits
+  the explicit-instantiation root marker.
+- Current compiler behavior: accepts the reducer, emits the explicitly
+  instantiated static member function with `object_root=yes`, and generated
+  local canonical PA21 refs.
+- Historical external reference behavior: an older external reference binary
+  accepted the reducer but omitted the `object_root` metadata. This is treated
+  as stale historical evidence now that local `dev/cppgm++` is the canonical ref
+  source.
+- Current disposition: promoted the exact PA23 source to
+  `pa21/tests/spec/300-explicit-instantiation-static-member-function.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a focused PA21 reducer; the saved
+  reducer only differs by comments/formatting, and the source does not add a
+  separate PA23 integration ingredient beyond explicit instantiation of a static
+  member function.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` emitted no explicit-instantiation root marker; Opus fix
+  `569fcbd79` emitted `object_root=yes`; local canonical PA21 refs were
+  generated from `dev/cppgm++`.
 
 ### Explicit Specialization Cross Converting Constructor Body
 
