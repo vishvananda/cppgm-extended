@@ -808,7 +808,7 @@ canonical build.
 
 ### Dependent Alias Decltype Qualified Function Source Tokens
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-dependent-alias-decltype-qualified-function-source-tokens.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-dependent-alias-decltype-qualified-function-source-tokens.t`
@@ -816,13 +816,22 @@ canonical build.
   operand type; Opus commit `45820ae4b` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with unsupported template
-  declarator in the qualified function-template helper declaration.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's template declarator support for
-  this qualified decltype SFINAE helper, or find a smaller ref-stable oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external reference behavior: an older external reference binary
+  rejected the reducer with unsupported template declarator in the qualified
+  function-template helper declaration. This is treated as stale historical
+  evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-dependent-alias-decltype-qualified-function-source-tokens.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA22 reducer;
+  it did not add a separate PA23 integration ingredient beyond dependent alias
+  SFINAE with a qualified `decltype` function-template call.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected with unknown sizeof operand type; Opus fix
+  `45820ae4b` accepted; local canonical PA22 refs were generated from
+  `dev/cppgm++`.
 
 ### Decltype Trailing Pack Template-Id Deduction
 
@@ -1238,6 +1247,9 @@ canonical build.
   `analysis/reducers/pa22-hidden-friend-query-free-decltype-noexcept.t`
 - Historical evidence: Opus start `1963d796e` rejects the PA23 source row; the
   feature was later fixed in the Boost frontier work tracked as `c047d6e93`.
+  The local Opus checkout does not currently contain commit `c047d6e93`, so the
+  historical fix gate still needs a concrete reachable fix commit before this
+  reducer can be promoted.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
 - Current compiler behavior: accepts the reducer.
