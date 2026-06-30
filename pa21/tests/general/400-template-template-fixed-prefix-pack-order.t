@@ -1,6 +1,6 @@
-// Reduced from Boost.Intrusive pointer_rebinder. A fixed-arity
-// template-template pattern is more specialized than the same prefix followed
-// by a trailing template-argument pack.
+// VALIDATION: run-pass
+// A fixed-arity template-template partial specialization is more specialized
+// than the same fixed prefix followed by a trailing template-argument pack.
 
 template <typename Ptr, typename U, unsigned int RebindMode>
 struct pointer_rebinder;

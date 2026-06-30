@@ -36,6 +36,10 @@ cleanup:
 - `reference-contract-mismatch`: the reducer is valid C++11 and both compilers
   accept it, but the reference output includes extra declarations, metadata, or
   other output-shape differences that block assignment validation.
+- `resolved-local-canonical-promoted`: a reducer previously blocked by an older
+  reference workflow was re-tested with this checkout's local canonical
+  `dev/cppgm++`, generated refs cleanly, and was promoted to an assignment
+  test.
 
 For new entries, record the reduced source path, Opus start/fix evidence, a
 `g++ -std=c++11 -x c++ -fsyntax-only` validity result, local compiler behavior,
@@ -178,7 +182,7 @@ canonical build.
 
 ### Template-Template Fixed-Prefix Pack Order
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-template-template-fixed-prefix-pack-order.t`
 - Candidate owner: PA21
 - Reducer: `analysis/reducers/pa21-template-template-fixed-prefix-pack-order.t`
@@ -189,14 +193,20 @@ canonical build.
   `pointer_rebinder<alloc<int>,void,0u>::value`; Opus commit `07373f00d` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the PA21 reducer as an ambiguous partial
-  class specialization.
-- Current disposition: tracker row marked `harness-or-reference-issue` /
-  `no-action`; attempted PA21 assignment artifacts were removed.
-- Next validation: confirm the partial-ordering rule for fixed-prefix template
-  template parameters plus trailing packs. If valid, fix the reference compiler
-  before adding the PA21 test.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts the reducer
+  and generated refs.
+- Older reference behavior: an older external reference binary rejected the PA21
+  reducer as an ambiguous partial class specialization; this is now treated as
+  stale historical evidence rather than a current blocker.
+- Current disposition: promoted to
+  `pa21/tests/general/400-template-template-fixed-prefix-pack-order.t`; tracker
+  row marked `missing-earlier-feature` / `test-added`.
+- Validation: focused PA21 check passed; PA21 placement audit passed with
+  `--fail-on-early`; focused direct LowIR compare passed with
+  `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make -C pa21 check
+  TEST=tests/general/400-template-template-fixed-prefix-pack-order.t`.
+  The broader PA19-PA23 direct LowIR window was run and failed on unrelated
+  pre-existing direct-text mismatches outside this reducer.
 
 ### Defaulted Class-Template Argument Prefix Deduction
 
