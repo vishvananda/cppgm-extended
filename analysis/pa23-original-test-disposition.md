@@ -7,10 +7,13 @@ earlier missing coverage. This pass asks a separate question: after adding those
 earlier reducers, does the original PA23 test still add useful PA23 integration
 coverage, or is it only a duplicate that was accidentally in the PA23 bucket?
 
-PA23 owns composition among earlier template features. If the promoted reducer
-is the same source as the original PA23 test, the PA23 copy is not composition
-coverage. It should either be deleted from PA23, or rewritten into a genuinely
-combined PA23 case.
+PA23 owns composition among earlier template features. A source-identical
+promoted reducer is a review signal, not an automatic deletion rule: PA23 may
+still keep byte-identical or near-identical source when manual inspection shows
+that the source is a realistic combined-feature exercise and the earlier PA is
+using it as focused backfill coverage. Delete the PA23 copy only when the source
+is just an isolated single-feature check with no meaningful PA23 integration
+value.
 
 ## Repeatable Report
 
@@ -46,8 +49,8 @@ checking the test itself and its references.
 Current summary:
 
 ```text
-pa23-original-removed        111
-keep-pa23-integration        44
+pa23-original-removed        127
+keep-pa23-integration        50
 retire-pa23-duplicate        0
 review-retire-or-simplify    0
 review-near-duplicate        0
@@ -56,15 +59,13 @@ keep-pa23-integration-candidate 0
 
 Interpretation:
 
-- The 58 exact or normalized duplicates have been retired from PA23. Their
-  promoted earlier-owner reducers remain in PA19, PA21, or PA22.
-- The 53 near-duplicate rows were manually inspected and retired. The
-  differences were comments/formatting, helper spelling, stronger earlier
-  reducers, pointer-vs-local-object LowIR noise, or split PA23 cases already
-  covered by a combined earlier reducer.
-- The 44 materially different rows were manually reviewed and kept as PA23
-  integration tests. Their explicit keep decisions live in
-  `analysis/pa23-original-disposition-overrides.tsv`.
+- The retired PA23 originals were manually treated as isolated single-feature
+  checks or non-integration duplicates. Their promoted earlier-owner reducers
+  remain in PA19, PA21, or PA22.
+- The 50 kept rows were manually reviewed and kept as PA23 integration tests,
+  including several byte-identical or near-identical sources whose library-like
+  shape combines multiple earlier features. Their explicit keep decisions live
+  in `analysis/pa23-original-disposition-overrides.tsv`.
 
 ## Retired Exact Duplicates
 
@@ -144,9 +145,10 @@ pa23/tests/spec/500-member-alias-pack-owner-sfinae.t -> pa22/tests/spec/500-memb
 
 1. Process `retire-pa23-duplicate` rows first, preferably one cluster at a time.
    The current target is zero active rows in this category.
-2. For each row, either delete the PA23 `.t` and its tracked `.ref*` siblings,
-   or rewrite the PA23 source so it combines at least two earlier-owned features
-   in a way the promoted reducer does not cover.
+2. For each row, manually inspect the PA23 source. Either delete the PA23 `.t`
+   and its tracked `.ref*` siblings because it is an isolated single-feature
+   check, keep it with an override because it is useful PA23 integration
+   coverage, or rewrite it into a genuinely combined PA23 case.
 3. Run:
 
    ```sh
@@ -158,6 +160,6 @@ pa23/tests/spec/500-member-alias-pack-owner-sfinae.t -> pa22/tests/spec/500-memb
    `pa23-original-removed`.
 5. Then inspect `review-retire-or-simplify`,
    `review-near-duplicate`, and `keep-pa23-integration-candidate` rows. The
-   current target is zero rows in all three categories. Keep only rows where a
-   manual read identifies a real PA23 composition point, and record that
-   decision in `analysis/pa23-original-disposition-overrides.tsv`.
+   current target is zero rows in all three categories. Keep rows where a manual
+   read identifies a real PA23 composition point, and record that decision in
+   `analysis/pa23-original-disposition-overrides.tsv`.

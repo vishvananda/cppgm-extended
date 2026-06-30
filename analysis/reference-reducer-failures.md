@@ -485,8 +485,7 @@ canonical build.
   tracker row marked `missing-earlier-feature` / `test-added`.
 - Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
   compare passed, PA22 placement audit passed with `--fail-on-early`, and
-  PA22/PA23 report passed 569/569. The PA23 source was retired as a
-  byte-identical duplicate of the promoted PA22 reducer.
+  PA22/PA23 report passed 574/574 after PA23 integration restoration. The PA23 source was restored and retained as integration coverage for MP11-style alias canonical arguments; the PA22 reducer remains focused earlier coverage.
 
 ### Async Initiate Dependent Return SFINAE
 
@@ -508,8 +507,7 @@ canonical build.
   marked `missing-earlier-feature` / `test-added`.
 - Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
   compare passed, PA22 placement audit passed with `--fail-on-early`, and
-  PA22/PA23 report passed 569/569. The PA23 source was retired as a
-  byte-identical duplicate of the promoted PA22 reducer.
+  PA22/PA23 report passed 574/574 after PA23 integration restoration. The PA23 source was restored and retained as integration coverage for async-initiate dependent return SFINAE; the PA22 reducer remains focused earlier coverage.
 
 ### Constructor SFINAE Member-Template Value
 
@@ -532,8 +530,7 @@ canonical build.
   row marked `missing-earlier-feature` / `test-added`.
 - Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
   compare passed, PA22 placement audit passed with `--fail-on-early`, and
-  PA22/PA23 report passed 569/569. The PA23 source was retired as a
-  byte-identical duplicate of the promoted PA22 reducer.
+  PA22/PA23 report passed 574/574 after PA23 integration restoration. The PA23 source was restored and retained as integration coverage for constructor/member-template value SFINAE; the PA22 reducer remains focused earlier coverage.
 
 ### Defaulted Pack Bool Short-Circuit SFINAE
 
@@ -557,8 +554,7 @@ canonical build.
   tracker row marked `missing-earlier-feature` / `test-added`.
 - Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
   compare passed, PA22 placement audit passed with `--fail-on-early`, and
-  PA22/PA23 report passed 569/569. The PA23 source was retired as a normalized
-  duplicate of the promoted PA22 reducer.
+  PA22/PA23 report passed 574/574 after PA23 integration restoration. The PA23 source was restored and retained as integration coverage for defaulted pack bool short-circuit constructor SFINAE; the PA22 reducer remains focused earlier coverage.
 
 ### Member-Template Enable-If Redeclaration Overload
 
@@ -604,8 +600,7 @@ canonical build.
   tracker row marked `missing-earlier-feature` / `test-added`.
 - Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
   compare passed, PA22 placement audit passed with `--fail-on-early`, and
-  PA22/PA23 report passed 569/569. The PA23 source was retired as a normalized
-  near-duplicate of the promoted PA22 reducer.
+  PA22/PA23 report passed 574/574 after PA23 integration restoration. The PA23 source was restored and retained as integration coverage for source-owner member-template SFINAE defaults; the PA22 reducer remains focused earlier coverage.
 
 ### TCC Member Constructible Pack SFINAE
 
