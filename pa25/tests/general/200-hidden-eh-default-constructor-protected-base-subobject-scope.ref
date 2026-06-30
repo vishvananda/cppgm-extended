@@ -28,14 +28,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^call_unwind_end_4:
     return i32 0
 }
-function @maker__maker(%this : ptr) -> void [binding=weak, object=_ZN5makerC1Ev, trivial_lifecycle=yes] {
+function @maker__maker(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5makerC1Ev] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @service_maker__service_maker__base_entry(%t2)
     return void
 }
-function @io_context__io_context(%this : ptr, %initial : ptr [pass=reference]) -> void [binding=weak, object=_ZN10io_contextC1ERK13service_maker] {
+function @io_context__io_context(%this : ptr, %initial : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN10io_contextC1ERK13service_maker] {
   slot $this : ptr
   slot $initial : ptr
 
@@ -48,7 +51,17 @@ function @io_context__io_context(%this : ptr, %initial : ptr [pass=reference]) -
     call void @context__context__base_entry(%t2, %t3)
     return void
 }
-function @context__context__base_entry(%this : ptr, %initial : ptr [pass=reference]) -> void [binding=weak, object=_ZN7contextC2ERK13service_maker] {
+function @service_maker__service_maker__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN13service_makerC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @noncopyable__noncopyable__base_entry(%t2)
+    return void
+}
+function @context__context__base_entry(%this : ptr, %initial : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN7contextC2ERK13service_maker] {
   slot $this : ptr
   slot $initial : ptr
 
@@ -59,21 +72,21 @@ function @context__context__base_entry(%this : ptr, %initial : ptr [pass=referen
     call void @service_maker__make(%t1)
     return void
 }
-function @noncopyable__noncopyable__base_entry(%this : ptr) -> void [binding=weak, object=_ZN11noncopyableC2Ev] {
+function @noncopyable__noncopyable__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11noncopyableC2Ev] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @service_maker__make(%this : ptr) -> void [binding=weak, object=_ZNK13service_maker4makeEv] {
+function @service_maker__make(%this : ptr) -> void [unwind=no, binding=weak, object=_ZNK13service_maker4makeEv] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @maker___maker(%this : ptr) -> void [binding=weak, object=_ZN5makerD1Ev] {
+function @maker___maker(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5makerD1Ev] {
   slot $this : ptr
 
   block ^entry:
