@@ -1,8 +1,5 @@
 // VALIDATION: run-pass
-// N3485 focus: 12.9 [class.inhctor], 14.8.2 [temp.deduct]
-// A class-template specialization may inherit a constructor template from a
-// dependent base. The synthesized inherited constructor must forward rvalue
-// parameters to the selected base constructor template.
+// A dependent-base inherited constructor template participates in construction.
 
 struct arg
 {

@@ -1,3 +1,6 @@
+// VALIDATION: run-pass
+// Rvalue arguments should select the forwarding constructor template.
+
 template <class T>
 struct remove_reference
 {

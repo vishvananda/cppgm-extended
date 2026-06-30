@@ -1196,22 +1196,35 @@ canonical build.
 
 ### Constructor/Conversion Deduction Reference-Blocked Batch
 
-- Disposition: `reference-compiler-bug` for every reducer listed below.
+- Disposition: mixed. The first five PA22 reducers are
+  `resolved-local-canonical-promoted`; the PA18 member-template pack-binding
+  row and trusted-only nested-member row remain unresolved.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts every
   reducer listed below.
-- Current compiler behavior: accepts every reducer listed below.
-- Current disposition: no assignment tests added for these rows; tracker rows
-  marked `harness-or-reference-issue` / `no-action`.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts every
+  reducer listed below and generated refs for the five promoted PA22 reducers.
+- Older reference behavior: an older external reference lane rejected these
+  reducers; this is now treated as stale historical evidence for the promoted
+  PA22 rows rather than a current blocker.
+- Current disposition: promoted PA22 tests listed below; the corresponding
+  PA23 originals were retired because they were focused single-feature probes.
+  Tracker rows for the promoted tests are marked `missing-earlier-feature` /
+  `test-added`.
+- Validation for promoted PA22 rows: grouped PA22 `check` passed, grouped
+  direct LowIR compare passed, and PA22 placement audit passed with
+  `--fail-on-early`. `constructor-template-pack-before-defaulted-nontype` was
+  placed at `pa22:400` because the pointer/reference NTTP guard is first owned
+  there.
 
-| PA23 source row | Candidate owner | Reducer | Historical evidence | External reference behavior | Next validation |
+| PA23 source row | Candidate owner | Reducer | Promoted test | Historical evidence | Older external reference behavior / next validation |
 | --- | --- | --- | --- | --- | --- |
-| `pa23/tests/general/200-constructor-template-rvalue-beats-const-ref.t` | PA22 | `analysis/reducers/pa22-constructor-template-rvalue-beats-const-ref.t` | Opus start `1963d796e` rejects or mismatches; later PA23 constructor-selection work accepts. | Rejects after selecting the `pair(const A&, const B&)` path and then failing to construct move-only `movable` from `const movable`. | Fix reference compiler constructor-template participation for rvalue arguments before promoting the PA22 reducer. |
-| `pa23/tests/general/200-inherited-constructor-template-forwarding.t` | PA22 | `analysis/reducers/pa22-inherited-constructor-template-forwarding.t` | Opus start `1963d796e` rejects; later PA23 inherited-constructor-template work accepts. | Rejects `derived<int>(arg&&)` because the inherited base constructor template is missing from the derived constructor set. | Fix reference compiler inherited constructor-template collection for dependent bases before promoting the PA22 reducer. |
-| `pa23/tests/general/300-constructor-template-defaulted-forwarding-lvalue-order.t` | PA22 | `analysis/reducers/pa22-constructor-template-defaulted-forwarding-lvalue-order.t` | Opus start `1963d796e` rejects or mismatches; later PA23 forwarding-constructor work accepts. | Rejects as an ambiguous constructor between `box(const T&)` and the defaulted forwarding constructor template for a const lvalue source. | Fix reference compiler constructor-template partial ordering with defaulted SFINAE parameters before promoting the PA22 reducer. |
-| `pa23/tests/general/300-constructor-template-pack-before-defaulted-nontype.t` | PA22 | `analysis/reducers/pa22-constructor-template-pack-before-defaulted-nontype.t` | Opus start `1963d796e` rejects; later PA23 defaulted-NTTP recovery work accepts. | Rejects `tuple_like<first_arg, second_arg>{first, second}` with no viable constructor after losing the defaulted pointer parameter shape. | Fix reference compiler defaulted non-type parameter type recovery after a constructor parameter pack before promoting the PA22 reducer. |
-| `pa23/tests/general/400-conversion-function-template-prefers-nontemplate.t` | PA22 | `analysis/reducers/pa22-conversion-function-template-prefers-nontemplate.t` | Opus start `1963d796e` rejects; Opus `f8660aa27` accepts the conversion-assignment family. | Rejects assignment as ambiguous after failing to prefer the non-template conversion function over the conversion-function-template specialization. | Fix reference compiler conversion-function-template ordering and assignment candidate handling before promoting the PA22 reducer. |
-| `pa23/tests/general/400-member-template-class-pack-forward-before-token.t` | PA18 | `analysis/reducers/pa18-member-template-class-pack-forward-before-token.t` | Opus start `1963d796e` rejects; later PA23 member-template pack-binding work accepts. | Rejects `combine(static_cast<Args&&>(args)...)` because pack value binding pairs the first `Args` element with the second value argument. | Fix reference compiler member-template parameter-pack value binding when a non-pack parameter follows the pack before promoting the PA18 reducer. |
-| `pa23/tests/general/400-nested-member-template-base-param-shadow-value.t` | PA21 | `analysis/reducers/pa21-nested-member-template-base-param-shadow-value.t` | Opus start `1963d796e` already accepts the PA23 source, so it does not prove a missing earlier test. | Rejects the valid source with failed `static_assert(packed::reservable == true)`, rebinding the nested member-template owner value through the dependent base. | Fix reference compiler nested member-template owner-argument binding; no backfill is needed unless a start-failing reducer is found. |
+| `pa23/tests/general/200-constructor-template-rvalue-beats-const-ref.t` | PA22 | `analysis/reducers/pa22-constructor-template-rvalue-beats-const-ref.t` | `pa22/tests/general/200-constructor-template-rvalue-beats-const-ref.t` | Opus start `1963d796e` rejects deleted copy construction; Opus `f8660aa27` accepts. | Older external lane rejected after selecting the `pair(const A&, const B&)` path and failing move-only construction. |
+| `pa23/tests/general/200-inherited-constructor-template-forwarding.t` | PA22 | `analysis/reducers/pa22-inherited-constructor-template-forwarding.t` | `pa22/tests/general/200-inherited-constructor-template-forwarding.t` | Opus start `1963d796e` rejects `using base<T>::base`; Opus `f8660aa27` accepts. | Older external lane rejected `derived<int>(arg&&)` because the inherited base constructor template was missing from the derived constructor set. |
+| `pa23/tests/general/300-constructor-template-defaulted-forwarding-lvalue-order.t` | PA22 | `analysis/reducers/pa22-constructor-template-defaulted-forwarding-lvalue-order.t` | `pa22/tests/general/300-constructor-template-defaulted-forwarding-lvalue-order.t` | Opus start `1963d796e` rejects the source call shape; Opus `f8660aa27` accepts. | Older external lane rejected as ambiguous between `box(const T&)` and the defaulted forwarding constructor template for a const lvalue source. |
+| `pa23/tests/general/300-constructor-template-pack-before-defaulted-nontype.t` | PA22 | `analysis/reducers/pa22-constructor-template-pack-before-defaulted-nontype.t` | `pa22/tests/general/400-constructor-template-pack-before-defaulted-nontype.t` | Opus start `1963d796e` rejects with a parse error; Opus `f8660aa27` accepts. | Older external lane rejected `tuple_like<first_arg, second_arg>{first, second}` after losing the defaulted pointer parameter shape. |
+| `pa23/tests/general/400-conversion-function-template-prefers-nontemplate.t` | PA22 | `analysis/reducers/pa22-conversion-function-template-prefers-nontemplate.t` | `pa22/tests/general/400-conversion-function-template-prefers-nontemplate.t` | Opus start `1963d796e` accepts but emits a direct `box(int)` assignment path; Opus `f8660aa27` emits the non-template conversion-function path. | Older external lane rejected assignment as ambiguous instead of preferring the non-template conversion function. |
+| `pa23/tests/general/400-member-template-class-pack-forward-before-token.t` | PA18 | `analysis/reducers/pa18-member-template-class-pack-forward-before-token.t` | not promoted | Opus start `1963d796e` rejects; later PA23 member-template pack-binding work accepts. | Older external lane rejects `combine(static_cast<Args&&>(args)...)` because pack value binding pairs the first `Args` element with the second value argument. Fix before promoting the PA18 reducer. |
+| `pa23/tests/general/400-nested-member-template-base-param-shadow-value.t` | PA21 | `analysis/reducers/pa21-nested-member-template-base-param-shadow-value.t` | not promoted | Opus start `1963d796e` already accepts the PA23 source, so it does not prove a missing earlier test. | Older external lane rejects with failed `static_assert(packed::reservable == true)`, rebinding the nested member-template owner value through the dependent base. No backfill is needed unless a start-failing reducer is found. |
 
 ### Template-Template/Alias Forwarding Reference-Blocked Batch
 

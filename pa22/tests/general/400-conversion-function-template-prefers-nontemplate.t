@@ -1,3 +1,6 @@
+// VALIDATION: run-pass
+// Assignment should use the exact non-template conversion function first.
+
 template<class T, class A, class B>
 struct box {
   int value;
