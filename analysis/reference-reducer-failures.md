@@ -928,7 +928,7 @@ canonical build.
 
 ### Alias Pack NTTP Expression Fast Path
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-alias-pack-nontype-expression-fast-path.t`
 - Candidate owner: PA21
 - Reducer: `analysis/reducers/pa21-alias-pack-nontype-expression-fast-path.t`
@@ -936,14 +936,20 @@ canonical build.
   parameter `L`; Opus commit `743b7a920` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with unsupported alias
-  template instantiation for `count_if`.
-- Current disposition: PA21 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's alias-template pack and
-  template-template parameter expansion in NTTP expressions, or find a smaller
-  ref-stable oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA21 refs.
+- Historical external reference behavior: rejects the reducer with unsupported
+  alias template instantiation for `count_if`; this older Opus-generated
+  reference is not the current canonical source.
+- Current disposition: promoted to
+  `pa21/tests/general/400-alias-pack-nontype-expression-fast-path.t`; tracker
+  row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical duplicate of the
+  promoted PA21 focused reducer.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `743b7a920` accepted; focused PA21
+  check and direct LowIR compare passed; PA21 placement audit passed with
+  `--fail-on-early`.
 
 ### Qualified Template-Id Current-Scope Alias Shadow
 
