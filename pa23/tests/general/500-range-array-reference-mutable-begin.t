@@ -2,7 +2,7 @@
 // Boost.Algorithm find_not reduction: a function template taking Range& must
 // preserve a mutable array range when forwarding to begin/end-style templates.
 
-typedef __SIZE_TYPE__ size_t;
+typedef unsigned long size_t;
 
 template<class T>
 struct range_iterator;

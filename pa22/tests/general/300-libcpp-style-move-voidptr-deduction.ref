@@ -1,0 +1,48 @@
+function @f(%x : ptr [pass=reference], %y : ptr [pass=reference]) -> void [binding=strong, object=_Z1fRPvS0_] {
+  slot $x : ptr
+  slot $y : ptr
+
+  block ^entry:
+    store ptr %x, $x
+    store ptr %y, $y
+    %t1 = load ptr $x
+    %t2 = load ptr $y
+    call void @swap_values(%t1, %t2)
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @swap_values(%x : ptr [pass=reference], %y : ptr [pass=reference]) -> void [binding=weak, object=_Z11swap_valuesIPvEvRT_S2_] {
+  slot $x : ptr
+  slot $y : ptr
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %x, $x
+    store ptr %y, $y
+    %t1 = load ptr $x
+    %t2 = call ptr @move_value(%t1)
+    %t3 = load ptr %t2
+    store ptr %t3, $t
+    %t4 = load ptr $y
+    %t5 = call ptr @move_value(%t4)
+    %t6 = load ptr %t5
+    %t7 = load ptr $x
+    store ptr %t6, %t7
+    %t8 = addr $t
+    %t9 = call ptr @move_value(%t8)
+    %t10 = load ptr %t9
+    %t11 = load ptr $y
+    store ptr %t10, %t11
+    return void
+}
+function @move_value(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z10move_valueIRPvEON16remove_referenceIT_E4typeEOS3_] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}

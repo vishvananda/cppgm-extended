@@ -1,6 +1,6 @@
 // N3485 focus: 14.8.2 substitution failure in function-template overloads.
-// Internal hosted type-transform aliases must be resolved as concrete unary
-// transforms instead of forcing template-id text fallback while checking SFINAE.
+// Local type-transform aliases must be resolved as concrete unary transforms
+// instead of forcing template-id text fallback while checking SFINAE.
 template<bool B, class T = void>
 struct enable_if {};
 
@@ -18,7 +18,43 @@ struct is_not_same {
 };
 
 template<class T>
-using __remove_cvref_t = __remove_cvref(T);
+struct remove_reference {
+  typedef T type;
+};
+
+template<class T>
+struct remove_reference<T &> {
+  typedef T type;
+};
+
+template<class T>
+struct remove_reference<T &&> {
+  typedef T type;
+};
+
+template<class T>
+struct remove_cv {
+  typedef T type;
+};
+
+template<class T>
+struct remove_cv<const T> {
+  typedef T type;
+};
+
+template<class T>
+struct remove_cv<volatile T> {
+  typedef T type;
+};
+
+template<class T>
+struct remove_cv<const volatile T> {
+  typedef T type;
+};
+
+template<class T>
+using remove_cvref_t =
+    typename remove_cv<typename remove_reference<T>::type>::type;
 
 struct true_type {
   static const bool value = true;
@@ -47,7 +83,7 @@ template<class R, class... Args>
 struct function<R(Args...)> {
   template<class F>
   using enable_callable =
-      enable_if_t<and_t<is_not_same<__remove_cvref_t<F>, function>,
+      enable_if_t<and_t<is_not_same<remove_cvref_t<F>, function>,
                         is_not_same<F, R>>::value>;
 
   template<class F, class = enable_callable<F>>
