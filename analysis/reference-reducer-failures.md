@@ -1136,7 +1136,7 @@ canonical build.
 
 ### Explicit Specialization Cross Converting Constructor Body
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source rows:
   `pa23/tests/general/100-explicit-specialization-cross-converting-ctor-body.t`,
   `pa23/tests/spec/100-explicit-specialization-cross-converting-ctor-body.t`
@@ -1144,22 +1144,31 @@ canonical build.
 - Reducer:
   `analysis/reducers/pa21-explicit-specialization-cross-converting-ctor-body.t`
 - Historical evidence: the PA23 source rows failed the Opus PA23 start report by
-  relaxed LowIR comparison. A reduced no-call constructor-body shape is
-  reference-stable but already passes Opus start, so it does not prove a missing
-  earlier feature. The value-object reducer keeps the start failure but is not
-  reference-stable.
+  relaxed LowIR comparison. The value-object reducer keeps the start failure by
+  forcing the converting constructor body to be emitted.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer and emits constructor aliases
-  without EH runtime declarations for this non-throwing shape.
-- External reference behavior: accepts the reducer but emits EH runtime
-  declarations and omits constructor aliases, causing relaxed LowIR comparison
-  to fail.
-- Current disposition: no PA21 assignment test added; tracker rows marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: decide the reference/current LowIR contract for EH runtime
-  declarations and constructor aliases in explicit-specialization constructor
-  bodies, or find a non-codegen oracle that still fails at Opus start.
+- Historical gate: Opus start `1963d796e` accepts but emits both the selected
+  constructor body and a duplicate `__base_entry` body; Opus commit
+  `0f4ce78a9` accepts and emits only the single selected constructor body.
+- Current compiler behavior: accepts the reducer, emits constructor object
+  metadata and C2 aliases without EH runtime declarations for this non-throwing
+  shape, and generated local canonical PA21 refs.
+- Historical external reference behavior: an older external reference binary
+  accepted the reducer but emitted EH runtime declarations and omitted
+  constructor aliases. This is treated as stale historical evidence now that
+  local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted the focused reducer to
+  `pa21/tests/spec/300-explicit-specialization-cross-converting-ctor-body.t`;
+  tracker rows marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed both PA23 duplicates. They added a second
+  `imag` field/accessor around the same explicit-specialization converting
+  constructor-body issue, but no separate PA23 integration ingredient beyond
+  the focused PA21 reducer.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` emitted the duplicate `__base_entry` constructor body; Opus
+  fix `0f4ce78a9` emitted one selected constructor body; local canonical PA21
+  refs were generated from `dev/cppgm++`.
 
 ### Class Partial Specialization Matching/Ordering Batch
 
