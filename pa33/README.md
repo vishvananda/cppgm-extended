@@ -156,6 +156,13 @@ The checked-in PA33 tests cover:
 - object facts such as unwind sections, relocation classes, weak/undefined
   symbols, and vtable/RTTI ownership when a test includes an inspect sidecar
 
+PA33 may use ABI component headers such as `<exception>` and `<typeinfo>` where
+they expose the host runtime declarations required for the ABI behavior under
+test. For example, portable `typeid` source needs `<typeinfo>`, and terminate or
+`std::exception` interaction uses declarations from `<exception>`. This does not
+make PA33 a hosted standard-library assignment: hosted library exception classes
+from `<stdexcept>` and broader hosted header bodies remain PA34-PA36 work.
+
 ### Host ABI Symbol Names
 
 PA33 extends the PA32 object contract into host C++ ABI/runtime behavior. The
