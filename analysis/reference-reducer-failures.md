@@ -737,7 +737,7 @@ canonical build.
 
 ### Out-Of-Class Partial Owner Constructor Using Alias
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/300-out-of-class-partial-owner-ctor-using-alias.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-out-of-class-partial-owner-ctor-using-alias.t`
@@ -746,19 +746,26 @@ canonical build.
   out-of-class constructor-template body.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for this
-  out-of-class partial-owner constructor-template shape, or find a non-codegen
-  oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external/reference workflow behavior: an older external reference
+  binary accepted the reducer, but emitted extra EH runtime declarations that
+  current PA22 LowIR does not emit. This is treated as stale historical
+  evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/300-out-of-class-partial-owner-ctor-using-alias.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA22 reducer;
+  it did not add a separate PA23 integration ingredient beyond the
+  out-of-class partial-owner constructor-template alias shape.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` emitted the older constructor body shape; Opus fix
+  `45820ae4b` emitted the selected out-of-class constructor-template body; local
+  canonical PA22 refs were generated from `dev/cppgm++`.
 
 ### Alias Template Function Argument CV
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-alias-template-function-argument-cv.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-alias-template-function-argument-cv.t`
@@ -767,14 +774,22 @@ canonical build.
   handler/invoker shape.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for this
-  constructor-template alias-argument shape, or reduce to a non-codegen oracle.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA22 refs.
+- Historical external/reference workflow behavior: an older external reference
+  binary accepted the reducer, but emitted extra EH runtime declarations that
+  current PA22 LowIR does not emit. This is treated as stale historical
+  evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/400-alias-template-function-argument-cv.t`; tracker row
+  marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA22 reducer;
+  it did not add a separate PA23 integration ingredient beyond the
+  constructor-template alias-argument shape.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` emitted the older constructor-template LowIR shape; Opus
+  fix `45820ae4b` emitted the expected handler/invoker shape; local canonical
+  PA22 refs were generated from `dev/cppgm++`.
 
 ### Alias Pack Function Return Concrete
 
