@@ -212,9 +212,12 @@ Goal contract:
   references and validation, or explicitly mark why no test should be added.
 - Do not promote a reducer to an assignment test until it passes the Opus
   historical validation gate below.
-- Do not close a reducer attempt that fails the reference lane until it is
-  classified in `analysis/reference-reducer-failures.md` as invalid C++11, a
-  reference compiler bug, or a reference/current output contract mismatch.
+- Do not close a reducer attempt that fails the current canonical reference
+  lane until it is classified in `analysis/reference-reducer-failures.md` as
+  invalid C++11, a compiler bug, or a reference/current output contract
+  mismatch. The canonical ref generator is the local `dev/cppgm++` built from
+  this checkout; Opus `cppgm++-ref` binaries are older generated binaries and
+  should be used only as historical evidence.
 - Stop at clean cluster boundaries with tracker rows updated for every covered
   PA23 test.
 
@@ -230,16 +233,21 @@ For each pass through the loop:
    feature-fix commit.
 5. Validate the reducer as C++11 with
    `g++ -std=c++11 -x c++ -fsyntax-only`.
-6. Run the current compiler and the external reference compiler. If either
-   rejects a C++11-valid reducer, or if the reference output cannot validate
-   against current, record the reducer in
+6. Run the current compiler and the local canonical reference-generation
+   workflow. If it rejects a C++11-valid reducer, or if the generated reference
+   output cannot validate against current, record the reducer in
    `analysis/reference-reducer-failures.md` before closing the tracker row.
 7. Add the reduced test and references to the earliest owner PA only after the
-   historical, C++11, current, and reference gates pass.
+   historical, C++11, current, and canonical-ref gates pass.
 8. Run the feature-placement audit for every touched owner PA to catch tests
    that still depend on a later feature or belong in a later cluster.
 9. Run focused LowIR/witness validation, then the relevant assignment report.
 10. Update `pa23_feature_backfill_tracker.tsv` for every covered PA23 row.
+11. Run `scripts/report_pa23_original_disposition.py --summary` after each
+    reducer batch. If a promoted reducer is identical to the original PA23 test,
+    the PA23 copy must be deleted or rewritten into real PA23 integration
+    coverage before the audit is considered complete. Record manually reviewed
+    PA23 keeps in `analysis/pa23-original-disposition-overrides.tsv`.
 
 Per-row outcomes:
 
@@ -253,6 +261,14 @@ Per-row outcomes:
 
 At every stopping point, summarize the changed clusters, validation commands,
 current tracker counts, and any skipped or unresolved clusters.
+
+When a reducer is blocked because the compiler or LowIR output contract cannot
+process the reduced shape, switch to the implementation fix workflow in
+`analysis/reducer-implementation-fix-plan.md`. That workflow
+owns the loop for fixing the implementation, introducing an even earlier
+reducer if the root bug belongs earlier, re-running PA23 original-test
+disposition, and periodically running full `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1
+make test-report`.
 
 Build the initial list from the current assignment tree, not from stale Opus
 artifacts:
@@ -583,14 +599,16 @@ sed -n '1,220p' paXX/README.md
 ```
 
 After adding a test, generate or update references using the existing extended
-repo workflow. Use the same style as adjacent tests in that PA. Then run focused
-validation before broad validation.
+repo workflow and this checkout's local `dev/cppgm++` build. Use the same style
+as adjacent tests in that PA. Then run focused validation before broad
+validation.
 
 For PA18-PA24 source-to-LowIR tests, generate focused references with the
-external reference binary rather than the current compiler:
+local canonical compiler:
 
 ```sh
-REF_BIN=/home/vishvananda/work/phases/reference-binaries/cppgm++
+make -C dev cppgm++
+REF_BIN=/home/vishvananda/cppgm-pa23-feature-audit/dev/cppgm++
 make -C paXX ref-test TEST=tests/<suite>/<new-test>.t REF_TEST_APP="$REF_BIN"
 ```
 
@@ -696,4 +714,9 @@ The audit is complete when:
 - all accepted earlier-PA tests have been added with references;
 - any feature whose owner is unclear has proposed README wording;
 - validation for all touched PAs passes;
-- the final tracker explains which PA23 tests remain PA23-only composition tests.
+- the final tracker explains which PA23 tests remain PA23-only composition tests;
+- `scripts/report_pa23_original_disposition.py --summary` reports no remaining
+  `retire-pa23-duplicate`, `review-retire-or-simplify`,
+  `review-near-duplicate`, or `keep-pa23-integration-candidate` rows. Kept
+  PA23 originals must be reported as `keep-pa23-integration` through
+  `analysis/pa23-original-disposition-overrides.tsv`.
