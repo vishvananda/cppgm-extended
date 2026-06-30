@@ -49,10 +49,11 @@ function @N__copy_impl__operator__(%this : ptr, %__param1 : i32, %__param2 : i32
     store i32 %__param3, $__param3
     return i32 7
 }
-function @N__copy_impl__copy_impl(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1N9copy_implC1Ev] {
+function @N__copy_impl__copy_impl(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1N9copy_implC1Ev, trivial_lifecycle=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
+alias object _ZN1N9copy_implC2Ev = @N__copy_impl__copy_impl
