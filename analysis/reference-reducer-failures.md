@@ -1422,22 +1422,34 @@ canonical build.
 
 ### Template-Template/Alias Forwarding Reference-Blocked Batch
 
-- Disposition: `reference-compiler-bug` for every reducer listed below.
+- Disposition: mixed. Six reducers are
+  `resolved-local-canonical-promoted`; the qualified-default deduction row is
+  `no-backfill-start-pass`.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts every
   reducer listed below.
-- Current compiler behavior: accepts every reducer listed below.
-- Current disposition: no assignment tests added for these rows; tracker rows
-  marked `harness-or-reference-issue` / `no-action`.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts every
+  reducer listed below and generated refs for the six promoted reducers.
+- Current disposition: promoted tests listed below; tracker rows for the
+  promoted tests are marked `missing-earlier-feature` / `test-added`. The
+  qualified-default row remains in PA23 because Opus start already accepts the
+  focused shape and no earlier backfill is needed.
+- Validation: grouped PA21 and PA22 `check` commands passed; grouped PA21 and
+  PA22 direct LowIR checks passed; PA21 and PA22 placement audits passed with
+  `--fail-on-early`; `make test-report ACTIVE_TEST_REPORT_PAS='pa21 pa22 pa23'`
+  passed. The broader
+  `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report
+  ACTIVE_TEST_REPORT_PAS='pa21 pa22 pa23'` run still fails on unrelated
+  pre-existing direct-text mismatches outside this promoted batch.
 
-| PA23 source row | Candidate owner | Reducer | Historical evidence | External reference behavior | Next validation |
+| PA23 source row | Candidate owner | Reducer | Promoted test | Historical evidence | Older external reference behavior / next validation |
 | --- | --- | --- | --- | --- | --- |
-| `pa23/tests/general/200-function-template-variadic-template-template-deduction.t` | PA18 | `analysis/reducers/pa18-function-template-variadic-template-template-deduction.t` | Opus start `1963d796e` rejects; Opus `1434a6e11` accepts the surrounding TTP deduction family. | Rejects the valid variadic template-template call as unknown function `dispatch`. | Fix reference compiler variadic template-template parameter deduction before promoting this PA18/PA22 reducer. |
-| `pa23/tests/general/200-template-template-qualified-default-arg-deduction.t` | PA18 | `analysis/reducers/pa18-template-template-qualified-default-arg-deduction.t` | Opus start `1963d796e` rejects; later PA23 qualified default-argument deduction work accepts. | Rejects both `box<int>(ns::tuple<int>())` and the qualified default-tail overload because the constructor template is not viable. | Fix reference compiler TTP deduction through qualified defaulted class-template arguments before promoting this reducer. |
-| `pa23/tests/general/400-defaulted-nested-cv-template-template-partial-specialization.t` | PA21 | `analysis/reducers/pa21-defaulted-nested-cv-template-template-partial-specialization.t` | Opus start `1963d796e` rejects; later PA21/PA23 partial-specialization matching work accepts. | Rejects with failed `holder<map<int,value>>::value == 2`, selecting the generic/default-truncated shape instead of the defaulted nested-cv TTP partial. | Fix reference compiler class partial-specialization matching with defaulted nested cv-qualified TTP arguments before promoting this PA21 reducer. |
-| `pa23/tests/general/400-member-alias-template-template-dependent-replay.t` | PA21 | `analysis/reducers/pa21-member-alias-template-template-dependent-replay.t` | Opus start `1963d796e` rejects; later PA21 member-alias TTP replay work accepts. | Rejects `replace_if_q<list<X, X volatile>, quote<is_volatile>, void>` as an unsupported alias template instantiation. | Fix reference compiler member alias-template replay when used as a TTP argument before promoting this PA21 reducer. |
-| `pa23/tests/general/400-member-alias-template-template-empty-template-id-argument.t` | PA21 | `analysis/reducers/pa21-member-alias-template-template-empty-template-id-argument.t` | Opus start `1963d796e` rejects; later PA21 empty-template-id member-alias work accepts. | Rejects the namespace-scope typedef naming `detail::transform_impl<detail::flatten<n::list<> >::fn, n::list<n::list<> > >::type`. | Fix reference compiler member alias-template TTP application to an empty class template-id argument before promoting this PA21 reducer. |
-| `pa23/tests/spec/500-template-template-conversion-operator-reference-target.t` | PA22 | `analysis/reducers/pa22-template-template-conversion-operator-reference-target.t` | Opus start `1963d796e` rejects; later PA22 conversion-template work accepts. | Rejects `view<char, traits> v(s)` because the conversion-function template is not used for the reference target. | Fix reference compiler conversion-function-template deduction against reference targets before promoting this PA22 reducer. |
-| `pa23/tests/spec/500-template-template-piecewise-partial-ordering.t` | PA22 | `analysis/reducers/pa22-template-template-piecewise-partial-ordering.t` | Opus start `1963d796e` rejects; Opus `1434a6e11` accepts the TTP partial-ordering family. | Rejects fixed tuple dispatch as ambiguous between fixed-arity overloads and fails to prefer the fixed non-pack pattern over broader alternatives. | Fix reference compiler TTP transformed placeholders and function-template partial ordering before promoting this PA22 reducer. |
+| `pa23/tests/general/200-function-template-variadic-template-template-deduction.t` | PA22 | `analysis/reducers/pa18-function-template-variadic-template-template-deduction.t` | `pa22/tests/general/100-function-template-variadic-template-template-deduction.t` | Opus start `1963d796e` rejects with unknown `dispatch`; Opus `2c47e3a86` accepts. | Older external lane rejected the valid variadic template-template call as unknown function `dispatch`; local canonical refs now generated. PA18 was rejected as owner because PA18 explicitly excludes parameter packs and template-template parameters. |
+| `pa23/tests/general/200-template-template-qualified-default-arg-deduction.t` | none for backfill | `analysis/reducers/pa18-template-template-qualified-default-arg-deduction.t` | not promoted | Opus start `1963d796e` accepts the focused source shape. | No earlier assignment test added; tracker row marked `no-missing-opus-feature` / `no-action`. |
+| `pa23/tests/general/400-defaulted-nested-cv-template-template-partial-specialization.t` | PA21 | `analysis/reducers/pa21-defaulted-nested-cv-template-template-partial-specialization.t` | `pa21/tests/general/400-defaulted-nested-cv-template-template-partial-specialization.t` | Opus start `1963d796e` rejects with failed `static_assert`; Opus `33a806b05` accepts. | Older external lane selected the generic/default-truncated shape instead of the defaulted nested-cv TTP partial; local canonical refs now generated. |
+| `pa23/tests/general/400-member-alias-template-template-dependent-replay.t` | PA21 | `analysis/reducers/pa21-member-alias-template-template-dependent-replay.t` | `pa21/tests/general/400-member-alias-template-template-dependent-replay.t` | Opus start `1963d796e` rejects with unknown `replace_if_impl<L,Q::template fn,W>::type`; Opus `670045ef2` accepts. | Older external lane rejected member alias-template replay when used as a TTP argument; local canonical refs now generated. |
+| `pa23/tests/general/400-member-alias-template-template-empty-template-id-argument.t` | PA21 | `analysis/reducers/pa21-member-alias-template-template-empty-template-id-argument.t` | `pa21/tests/general/400-member-alias-template-template-empty-template-id-argument.t` | Opus start `1963d796e` rejects with unknown `detail::transform_impl<detail::flatten<n::list<>>::fn,n::list<n::list<>>>::type`; Opus `54e85f719` accepts. | Older external lane rejected member alias-template TTP application to an empty class template-id argument; local canonical refs now generated. |
+| `pa23/tests/spec/500-template-template-conversion-operator-reference-target.t` | PA22 | `analysis/reducers/pa22-template-template-conversion-operator-reference-target.t` | `pa22/tests/spec/500-template-template-conversion-operator-reference-target.t` | Opus start `1963d796e` crashes/rejects; Opus `9bb9ba6ea` accepts. | Older external lane rejected the conversion-function-template reference target path for `view<char, traits> v(s)`; local canonical refs now generated. |
+| `pa23/tests/spec/500-template-template-piecewise-partial-ordering.t` | PA22 | `analysis/reducers/pa22-template-template-piecewise-partial-ordering.t` | `pa22/tests/spec/500-template-template-piecewise-partial-ordering.t` | Opus start `1963d796e` rejects with unknown `fixed_dispatch`; Opus `7626d2f4f` accepts. | Older external lane rejected fixed tuple dispatch as ambiguous and did not prefer the fixed non-pack TTP pattern; local canonical refs now generated. |
 
 ### Member Template Ownership Reference-Blocked Batch
 
