@@ -102,7 +102,7 @@ canonical build.
 
 ### Inherited Constructor Template Member Alias Pack
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-inherited-constructor-template-member-alias-pack.t`
 - Candidate owner: PA22.
 - Reducer: `analysis/reducers/pa22-inherited-constructor-template-member-alias-pack.t`
@@ -110,16 +110,19 @@ canonical build.
   commit `33af1a9bc` accepts and emits LowIR, and `0ed91f49d` also accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with no viable constructor
-  for `key<first, second, third>`, treating the inherited private tag
-  constructor as the visible candidate and missing the inherited constructor
-  template with the defaulted enable-if non-type parameter.
-- Current disposition: no PA22 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's inherited-constructor-template
-  replay through member alias packs and defaulted SFINAE parameters, then
-  promote this reducer if reference generation becomes stable.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts the reducer
+  and generated refs.
+- Older reference behavior: an older external reference binary rejected the
+  reducer with no viable constructor for `key<first, second, third>`; this is
+  now treated as stale historical evidence rather than a current blocker.
+- Current disposition: promoted to
+  `pa22/tests/general/500-inherited-constructor-template-member-alias-pack.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: focused PA22 check passed; PA22 placement audit passed with
+  `--fail-on-early`; focused direct LowIR compare passed with
+  `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make -C pa22 check
+  TEST=tests/general/500-inherited-constructor-template-member-alias-pack.t`;
+  focused PA22/PA23 test report passed.
 
 ### Dependent ADL Hidden Friend Before Later Value
 
