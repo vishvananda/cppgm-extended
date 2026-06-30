@@ -76,7 +76,7 @@ canonical build.
 
 ### Partial Specialization Inherited Constructor Template
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-partial-specialization-inherited-constructor-template.t`
 - Candidate owner: PA22, with PA21 partial-specialization prerequisites.
 - Reducer: `analysis/reducers/pa22-partial-specialization-inherited-constructor-template.t`
@@ -85,15 +85,20 @@ canonical build.
   `0ed91f49d` accepts and emits LowIR.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with no viable constructor
-  for `op<impl, work, handler, void(int)>`, seeing only the move constructor
-  instead of the inherited constructor template wrapper.
-- Current disposition: no PA22 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's inherited-constructor-template
-  collection for class-template partial specializations, then promote this
-  reducer if the reference output becomes stable.
+- Current compiler behavior: local canonical `dev/cppgm++` accepts the reducer
+  and generated refs.
+- Older reference behavior: an older external reference binary rejected the
+  reducer with no viable constructor for
+  `op<impl, work, handler, void(int)>`; this is now treated as stale historical
+  evidence rather than a current blocker.
+- Current disposition: promoted to
+  `pa22/tests/general/400-partial-specialization-inherited-constructor-template.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: focused PA22 check passed; PA22 placement audit passed with
+  `--fail-on-early`; focused direct LowIR compare passed with
+  `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make -C pa22 check
+  TEST=tests/general/400-partial-specialization-inherited-constructor-template.t`;
+  focused PA22/PA23 test report passed.
 
 ### Inherited Constructor Template Member Alias Pack
 
