@@ -4,6 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $b
     call void @Box_int___Box(%t1)
+    %t2 = addr $b
     return i32 0
 }
 function @Box_int___Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxIiEC1I5checkIiETnN9enable_ifIXclsrT_2okEEiE4typeELi0EEEv] {

@@ -367,7 +367,7 @@ canonical build.
 
 ### Member-Template Assignment SFINAE Copy Fallback
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/300-member-template-assignment-sfinae-copy-fallback.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-member-template-assignment-sfinae-copy-fallback.t`
@@ -376,19 +376,23 @@ canonical build.
   commits emit the copy-assignment fallback shape.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: find a non-codegen oracle for selecting the copy-assignment
-  fallback over the member-template assignment candidate, or fix the
-  reference/current EH declaration contract for this shape.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference binary
+  accepted the reducer, but emitted extra EH runtime declarations that current
+  PA22 LowIR does not emit. This is treated as stale historical evidence now
+  that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/300-member-template-assignment-sfinae-copy-fallback.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a normalized
+  near-duplicate of the promoted PA22 reducer.
 
 ### Unnamed NTTP Pack Static Enable-If Default
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/300-unnamed-nontype-pack-static-enable-if-default.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-unnamed-nontype-pack-static-enable-if-default.t`
@@ -397,15 +401,20 @@ canonical build.
   commits emit the selected constructor template.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: find a type-only or otherwise ref-stable oracle for unnamed
-  NTTP-pack substitution in the static enable_if default, or fix the
-  reference/current EH declaration contract for this constructor-template shape.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference binary
+  accepted the reducer, but emitted extra EH runtime declarations that current
+  PA22 LowIR does not emit. This is treated as stale historical evidence now
+  that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/400-unnamed-nontype-pack-static-enable-if-default.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`. Placement audit
+  requires the PA22 `400` cluster for the pointer/reference NTTP pack shape.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a normalized
+  near-duplicate of the promoted PA22 reducer.
 
 ### Member Alias Template-Template SFINAE Owner
 
@@ -501,7 +510,7 @@ canonical build.
 
 ### Defaulted Pack Bool Short-Circuit SFINAE
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-defaulted-pack-bool-short-circuit-sfinae.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-defaulted-pack-bool-short-circuit-sfinae.t`
@@ -509,18 +518,24 @@ canonical build.
   constructor shape; Opus commit `1a232426b` emits the selected constructor
   template.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations and different alias
-  object surface than current PA22 LowIR, causing relaxed comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: decide the reference/current EH and alias object contract for
-  this constructor-template SFINAE shape, or reduce to a non-codegen oracle.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference binary
+  accepted the reducer, but emitted extra EH runtime declarations and a
+  different alias object surface than current PA22 LowIR. This is treated as
+  stale historical evidence now that local `dev/cppgm++` is the canonical ref
+  source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-defaulted-pack-bool-short-circuit-sfinae.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a normalized
+  duplicate of the promoted PA22 reducer.
 
 ### Member-Template Enable-If Redeclaration Overload
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-member-template-enable-if-redeclaration-overload.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-member-template-enable-if-redeclaration-overload.t`
@@ -528,33 +543,42 @@ canonical build.
   `0` for the pointer overload; Opus commit `1a232426b` emits the selected
   pointer overload returning `2`.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for
-  out-of-class member-template overload bodies, or reduce to a non-codegen
-  redeclaration oracle.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference binary
+  accepted the reducer, but emitted extra EH runtime declarations that current
+  PA22 LowIR does not emit. This is treated as stale historical evidence now
+  that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-member-template-enable-if-redeclaration-overload.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a normalized
+  duplicate of the promoted PA22 reducer.
 
 ### Source-Owner Member-Template SFINAE Default
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/500-source-owner-member-template-sfinae-default.t`
 - Candidate owner: PA22
 - Reducer: `analysis/reducers/pa22-source-owner-member-template-sfinae-default.t`
 - Historical evidence: Opus start `1963d796e` rejects with no matching function
   for `insert`; Opus commit `1a232426b` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA22 LowIR
-  does not emit, causing relaxed LowIR comparison to fail.
-- Current disposition: PA22 candidate assignment files were removed; tracker
-  row is marked `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for this
-  source-owner member-template SFINAE shape, or reduce to a type-only oracle.
+- Current compiler behavior: accepts the reducer; local `dev/cppgm++` generated
+  the canonical PA22 refs.
+- Historical reference workflow behavior: the older external reference binary
+  accepted the reducer, but emitted extra EH runtime declarations that current
+  PA22 LowIR does not emit. This is treated as stale historical evidence now
+  that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa22/tests/general/500-source-owner-member-template-sfinae-default.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- Validation: grouped focused PA22 `check` passed, grouped focused direct LowIR
+  compare passed, PA22 placement audit passed with `--fail-on-early`, and
+  PA22/PA23 report passed 569/569. The PA23 source was retired as a normalized
+  near-duplicate of the promoted PA22 reducer.
 
 ### TCC Member Constructible Pack SFINAE
 

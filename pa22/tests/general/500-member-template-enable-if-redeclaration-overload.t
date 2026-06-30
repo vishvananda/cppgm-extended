@@ -1,6 +1,7 @@
-// N3485 focus: 14.8.2 substitution failure and function-template overload sets.
+// VALIDATION: run-pass
 // Body-less member-template declarations with identical function parameters but
-// different defaulted non-type enable_if parameters are distinct templates.
+// different defaulted non-type enable-if parameters are distinct templates.
+
 template<bool B, class T = void>
 struct enable_if {};
 
