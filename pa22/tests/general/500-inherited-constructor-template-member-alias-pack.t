@@ -1,7 +1,7 @@
-// N3485 focus: 12.9 inherited constructors and 14.8.2 function template
-// deduction. An inherited constructor template keeps deduction in the base
-// pattern scope while its instantiated forwarding pack uses distinct synthetic
-// parameter bindings in the derived constructor initializer.
+// VALIDATION: run-pass
+// An inherited constructor template keeps deduction and defaulted enable-if
+// participation when the derived type is a parameter-pack specialization.
+
 template <bool B, class T = void>
 struct enable_if {};
 
