@@ -44,6 +44,10 @@ cleanup:
   canonical compiler accepts it, but the portable/focused shape already passes
   at the Opus PA23 start anchor, so it does not prove a missing earlier
   assignment test.
+- `historical-validation-missing`: the candidate source is valid and the local
+  canonical compiler accepts it, but no reachable Opus commit has been found
+  that both fixes the Opus start failure and provides the required start/fix
+  gate for promotion.
 
 For new entries, record the reduced source path, Opus start/fix evidence, a
 `g++ -std=c++11 -x c++ -fsyntax-only` validity result, local compiler behavior,
@@ -1067,7 +1071,7 @@ canonical build.
 
 ### Nested Template-Id Partial Specialization Deduction
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `historical-validation-missing`
 - PA23 source row:
   `pa23/tests/general/200-nested-template-id-partial-specialization-deduction.t`
 - Candidate owner: PA21.
@@ -1077,22 +1081,26 @@ canonical build.
   `1963d796e` with unknown type
   `aligned_storage<sizeof(T),alignment_of<T>::value>::type`; the reduced
   oracle rejects at Opus start with a failed `static_assert`. Sampled Opus
-  commits through `743b7a920` still reject the reduced oracle, so no
-  start/fix transition has been identified for a promotable assignment test.
+  commits through `743b7a920` still reject the reduced oracle, and the local
+  Opus PA31-era head `93190a139` still rejects it with the same failed
+  `static_assert`, so no start/fix transition has been identified for a
+  promotable assignment test.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
 - Current compiler behavior: `./dev/cppgm++ --emit-lowir -O0 -o ...` accepts
   the reducer.
-- External reference behavior: rejects the reduced oracle with a failed
-  `static_assert`, leaving `value_type` as the fallback primary type instead of
-  selecting `node_value<base_node<T, hook<...>, true> >`. The external reference
-  also rejects the PA23-shaped source while evaluating `sizeof(T)` for
+- Historical external reference behavior: rejects the reduced oracle with a
+  failed `static_assert`, leaving `value_type` as the fallback primary type
+  instead of selecting `node_value<base_node<T, hook<...>, true> >`. The
+  external reference also rejects the PA23-shaped source while evaluating
+  `sizeof(T)` for
   `lib::base_node<pair_like<recursive_map const, recursive_map>, ...>`.
-- Current disposition: tracker row marked `harness-or-reference-issue` /
+- Current disposition: tracker row marked `historical-validation-missing` /
   `no-action`; no PA21 assignment test added.
-- Next validation: fix the reference compiler's nested class-template-id
-  partial-specialization matching and incomplete-type handling, then find the
-  actual Opus fix transition before promoting this row.
+- Next validation: find or implement a reachable Opus/current transition for
+  nested class-template-id partial-specialization matching before promoting this
+  row; local current acceptance alone is not enough for the Opus-gated backfill
+  workflow.
 
 ### Template Instantiation Use Location Explicit Specialization
 
