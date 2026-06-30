@@ -1145,7 +1145,7 @@ canonical build.
 
 ### Qualified Friend Member Function Template
 
-- Disposition: `reference-contract-mismatch`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row: `pa23/tests/general/400-qualified-friend-member-template-access.t`
 - Candidate owner: PA21
 - Reducer: `analysis/reducers/pa21-qualified-friend-member-template.t`
@@ -1153,16 +1153,22 @@ canonical build.
   reducer with `unknown type name: iter<C,B>`; Opus commit `670045ef2` accepts.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External/reference workflow behavior: the external reference binary accepts
-  the reducer, but emits extra EH runtime declarations that current PA21 LowIR
-  does not emit. A static-member/no-constructor variant avoids the reference
-  drift but also passes Opus start, so it does not prove the missing feature.
-- Current disposition: no PA21 assignment test added; tracker row is marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference/current EH declaration contract for this
-  value-object qualified friend member-template call, or find a smaller
-  ref-stable oracle that still fails at Opus start.
+- Current compiler behavior: accepts the reducer and generated local canonical
+  PA21 refs.
+- Historical external/reference workflow behavior: the older external
+  reference binary accepts the reducer, but emits extra EH runtime declarations
+  that current PA21 LowIR does not emit. This is treated as stale historical
+  evidence now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted to
+  `pa21/tests/general/300-qualified-friend-member-template-access.t`; tracker
+  row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as the same focused value-object qualified
+  friend member-template access shape as the promoted PA21 reducer.
+- Validation: C++11 syntax checks passed for the saved reducer and exact PA23
+  source; local `dev/cppgm++` accepted; Opus start `1963d796e` rejected both
+  source shapes; Opus fix `670045ef2` accepted both; focused PA21 check and
+  direct LowIR compare passed; PA21 placement audit passed with
+  `--fail-on-early`.
 
 ### Member Template As Qualified Template-Template Argument
 
