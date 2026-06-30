@@ -278,6 +278,7 @@ done
 shared_scripts=(
   scripts/CppgmBatchWorker.pm
   scripts/check_object_expectations.pl
+  scripts/canonicalize_lowir_native_refs.pl
   scripts/compare_host_defined_symbols.pl
   scripts/compare_results_common.pl
   scripts/compare_witness_results.pl
