@@ -365,6 +365,8 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `support.range_for` | `pa24` | 100 | 6.5.4 `[stmt.ranged]` | pending | Range-for semantic/lowering support over already-owned begin/end and array forms. |
 | `support.decltype` | `pa11` | 200 | 7.1.6.2 `[dcl.type.simple]` | pending | `decltype` type analysis. LowIR tests inherit the enclosing feature owner unless `decltype` itself is the primary semantic assertion. |
 | `support.auto` | `pa24` | 100 | 7.1.6.4 `[dcl.spec.auto]` | pending | `auto` in declarations and non-template return type deduction. |
+| `support.host_predefined_macro` | `pa34` | 300 | N/A: hosted predefined macro import | pending | Host/compiler predefined macros imported from the configured host toolchain, including compiler/target identity macros, `__SIZE_TYPE__`, `__PTRDIFF_TYPE__`, `__CHAR_BIT__`, and other type/limit/width macros. |
+| `support.preprocessor_probe` | `pa34` | 300 | N/A: hosted preprocessor compatibility | pending | Hosted preprocessor probe operators and function-like probes such as `__has_builtin`, `__has_feature`, `__has_extension`, `__has_include`, `__has_attribute`, and `__is_identifier`. |
 | `rtti.typeid` | `pa25` | 100 | 5.2.8 `[expr.typeid]` | pending | `typeid(type-id)`, supported `typeid(expr)`, and deterministic RTTI/typeinfo LowIR for the PA25 RTTI subset. |
 | `rtti.dynamic_cast.pointer` | `pa25` | 100 | 5.2.7 `[expr.dynamic.cast]` | pending | Pointer-form `dynamic_cast<T*>` over the supported single-inheritance polymorphic subset and the associated `__dynamic_cast`/RTTI helper facts. |
 | `rtti.dynamic_cast.void` | `pa26` | 100 | 5.2.7 `[expr.dynamic.cast]` | pending | `dynamic_cast<void*>` over the existing single-vptr polymorphic ABI and the `_ZTIv` helper fact. |
@@ -387,7 +389,7 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `template.pack` | `pa19` | 200 | 14.5.3 `[temp.variadic]` | pending | `...` packs and pack expansions. Rebalanced from PA18 so PA19 owns the first metaprogramming/variadic extension over basic templates. |
 | `template.template_parameter` | `pa21` | 200 | 14.1 `[temp.param]`, 14.3.3 `[temp.arg.template]` | pending | template-template parameter syntax. Rebalanced from PA18 because this is second-order template entity modeling. |
 | `template.member_template` | `pa21` | 300 | 14.5.2 `[temp.mem]` | pending | member templates, templated operators/call operators. Rebalanced from PA18 because member-template collection/ownership fits the PA21 entity graph. |
-| `template.builtin_traits` | `pa34` | 600 | N/A: compiler intrinsics/hosted trait probes | pending | builtin trait/intrinsic expressions such as `__is_*`, `__builtin_*`, and trait wrappers. |
+| `template.builtin_traits` | `pa34` | 500 | N/A: compiler intrinsics/hosted trait probes | pending | builtin trait/intrinsic expressions such as `__is_*`, `__builtin_*`, builtin type transforms such as `__remove_cv(T)` / `__decay(T)`, and pack/sequence intrinsics such as `__type_pack_element` / `__make_integer_seq`. |
 | `template.nttp` | `pa19` | 100 | 14.1 `[temp.param]`, 14.3.2 `[temp.arg.nontype]` | pending | integral non-type template params/args. |
 | `template.nttp.pointer_member` | `pa22` | 400 | 14.3.2 `[temp.arg.nontype]` | pending | pointer, reference, enum, and class/static-member NTTP values; member-pointer NTTP cases also require the member-pointer owner. |
 | `template.explicit_specialization` | `pa19` | 300 | 14.7.3 `[temp.expl.spec]` | pending | `template<>` explicit specialization. |
