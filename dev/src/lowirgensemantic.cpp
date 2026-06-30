@@ -19669,8 +19669,6 @@ private:
           subtree_contains_kind(node, CallSemKind::try_statement);
       const bool has_throw_statement =
           subtree_contains_kind(node, CallSemKind::throw_statement);
-      const bool has_call_expression =
-          subtree_contains_kind(node, CallSemKind::call_expression);
       const bool has_unwind_cleanup =
           subtree_contains_nontrivial_destructor_action(node);
 
@@ -19687,10 +19685,6 @@ private:
       }
       if(has_throw_statement) {
         note_external_runtime_function("__gxx_personality_v0");
-      }
-      if(has_call_expression && has_unwind_cleanup) {
-        note_external_runtime_function("__gxx_personality_v0");
-        note_external_runtime_function("_Unwind_Resume");
       }
     }
 
