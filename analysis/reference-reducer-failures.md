@@ -904,25 +904,35 @@ canonical build.
 
 ### Decltype Trailing Pack Template-Id Deduction
 
-- Disposition: `reference-compiler-bug`
+- Disposition: `resolved-local-canonical-promoted`
 - PA23 source row:
   `pa23/tests/general/200-decltype-trailing-pack-template-id-deduction.t`
 - Candidate owner: PA22.
 - Reducer:
   `analysis/reducers/pa22-decltype-trailing-pack-template-id-deduction.t`
 - Historical evidence: Opus start `1963d796e` rejects the PA23 row; the saved
-  reducer was blocked before promotion by the external reference compiler.
+  reducer was blocked before promotion by an older external reference compiler.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
-- Current compiler behavior: accepts the reducer.
-- External reference behavior: rejects the reducer with a failed `static_assert`
-  because `decltype(f(static_cast<identity<T>*>(0)...))` does not preserve the
-  deduced trailing pack as `list<A, B>`.
-- Current disposition: no PA22 assignment test added; tracker row marked
-  `harness-or-reference-issue` / `no-action`.
-- Next validation: fix the reference compiler's pack deduction through
-  decltype(function-template-call) template-id arguments, then promote this
-  PA22 reducer if reference output becomes stable.
+- Historical gate: Opus start `1963d796e` rejects with
+  `ERROR: unsupported decltype operand`; Opus commit `b449e7c8c` accepts after
+  expanding a function parameter pack whose pattern nests the pack in a
+  template-id.
+- Current compiler behavior: accepts the exact source and generated local
+  canonical PA22 refs.
+- Historical external reference behavior: an older external reference compiler
+  rejected the reducer with a failed `static_assert` because
+  `decltype(f(static_cast<identity<T>*>(0)...))` did not preserve the deduced
+  trailing pack as `list<A, B>`. This is treated as stale historical evidence
+  now that local `dev/cppgm++` is the canonical ref source.
+- Current disposition: promoted the exact PA23 source to
+  `pa22/tests/general/300-decltype-trailing-pack-template-id-deduction.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as a byte-identical focused PA22 reducer
+  for decltype-of-call deduction through a trailing pack template-id pattern.
+- Validation: C++11 syntax check passed; local `dev/cppgm++` accepted; Opus
+  start `1963d796e` rejected; Opus fix `b449e7c8c` accepted; local canonical
+  PA22 refs were generated from `dev/cppgm++`.
 
 ### Static Data NTTP Pack Sizeof Bound
 
