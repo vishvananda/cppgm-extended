@@ -3055,6 +3055,9 @@ bool should_emit_free_function_definition(SemanticContext & ctx,
          binding)) {
     return false;
   }
+  if(binding.is_explicit_specialization) {
+    return true;
+  }
   if(symbol_linkage::has_weak_linkage(binding.symbol)) {
     if(eager_out_of_class_member_definition) {
       return true;
@@ -5902,7 +5905,15 @@ void analyze_instantiated_template_output(SemanticContext & ctx,
             semantic_template_output_policy::function_has_tracked_template_body(
                 *binding,
                 declaration_node_is_definition_syntax);
-        if(!definition_required && !tracked_template_has_body && !binding->synthesized) {
+        const bool explicit_specialization_definition =
+            binding->is_explicit_specialization &&
+            binding->has_definition &&
+            binding->body &&
+            should_emit_free_function_definition(ctx, *binding);
+        if(!definition_required &&
+           !tracked_template_has_body &&
+           !binding->synthesized &&
+           !explicit_specialization_definition) {
           return OAT_PENDING;
         }
 
