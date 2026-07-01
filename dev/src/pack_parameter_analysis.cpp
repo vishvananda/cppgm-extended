@@ -140,19 +140,21 @@ bool declarator_has_parameter_pack(const CppAstNode & declarator)
          declarator_has_parameter_pack(nested->children[0]);
 }
 
-std::string last_identifier_in_subtree(const CppAstNode & node)
+bool declarator_declared_identifier(const CppAstNode & node, std::string & out)
 {
-  std::string out;
   if(node.kind == CppAstKind::identifier && !node.value.empty()) {
     out = node.value;
+    return true;
+  }
+  if(node.kind == CppAstKind::parameter_clause) {
+    return false;
   }
   for(std::size_t i = 0; i < node.children.size(); ++i) {
-    const std::string nested = last_identifier_in_subtree(node.children[i]);
-    if(!nested.empty()) {
-      out = nested;
+    if(declarator_declared_identifier(node.children[i], out)) {
+      return true;
     }
   }
-  return out;
+  return false;
 }
 
 }  // namespace
@@ -164,7 +166,10 @@ std::string parameter_declaration_name(const CppAstNode & parameter)
   if(!declarator) {
     declarator = cpp_decl::find_child(parameter, CppAstKind::abstract_declarator);
   }
-  return declarator ? last_identifier_in_subtree(*declarator) : std::string();
+  std::string name;
+  return declarator && declarator_declared_identifier(*declarator, name) ?
+      name :
+      std::string();
 }
 
 std::vector<std::pair<std::string, const std::vector<TypePtr> *> >

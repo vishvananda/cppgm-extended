@@ -1,0 +1,76 @@
+function @set_internal_non_blocking(%__param0 : i32, %__param1 : ptr [pass=reference], %__param2 : u8, %ec : ptr [pass=reference]) -> i32 [binding=strong, object=_Z25set_internal_non_blockingiRhbR10error_code] {
+  slot $__param0 : i32
+  slot $__param1 : ptr
+  slot $__param2 : u8
+  slot $ec : ptr
+
+  block ^entry:
+    store i32 %__param0, $__param0
+    store ptr %__param1, $__param1
+    store u8 %__param2, $__param2
+    store ptr %ec, $ec
+    %t1 = load ptr $ec
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    return i32 %t3
+}
+function @callback(%__param0 : ptr, %__param1 : u8) -> void [binding=strong, object=_Z8callbackP10reactor_opb] {
+  slot $__param0 : ptr
+  slot $__param1 : u8
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store u8 %__param1, $__param1
+    return void
+}
+function @do_start_op(%descriptor : i32, %state : ptr [pass=reference], %op : ptr, %on_immediate : ptr) -> i32 [binding=strong, object=_Z11do_start_opiRhP10reactor_opPFvS1_bE] {
+  slot $descriptor : i32
+  slot $state : ptr
+  slot $op : ptr
+  slot $on_immediate : ptr
+
+  block ^entry:
+    store i32 %descriptor, $descriptor
+    store ptr %state, $state
+    store ptr %op, $op
+    store ptr %on_immediate, $on_immediate
+    %t1 = load ptr $on_immediate
+    %t2 = load i32 $descriptor
+    %t3 = load ptr $state
+    %t4 = load ptr $op
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = call i32 @set_internal_non_blocking(%t2, %t3, 1, %t5)
+    return i32 %t6
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $state : u8
+  slot $op : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    store u8 0, $state
+    %t1 = addr $op
+    %t2 = addr $op
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 7, %t4
+    %t5 = addr $state
+    %t6 = addr $op
+    %t7 = addr @callback
+    %t8 = unary decay ptr %t7
+    %t9 = call i32 @do_start_op(1, %t5, %t6, %t8)
+    %t10 = cmp eq i32 %t9, 7
+    branch %t10, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t11 = load i32 $cond__1
+    return i32 %t11
+}
