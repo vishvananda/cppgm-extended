@@ -17446,7 +17446,7 @@ private:
     if(!virtual_base_layout.empty()) {
       return (static_cast<unsigned long long>(virtual_base_layout.size()) + 2ULL) * 8ULL;
     }
-    return node.is_primary_vtable ? 16ULL : 0ULL;
+    return (node.is_primary_vtable || emit_runtime_support_) ? 16ULL : 0ULL;
   }
 
   long long host_virtual_base_rtti_offset(const CallSemNode & node,
@@ -19991,7 +19991,7 @@ private:
     const unsigned long long view_offset =
         node.has_uint_value ? callsem_uint_value(node) : 0ULL;
     const bool has_host_vtable_prefix =
-        node.is_primary_vtable || !virtual_base_layout.empty();
+        node.is_primary_vtable || !virtual_base_layout.empty() || emit_runtime_support_;
     if(has_host_vtable_prefix) {
       binding.address_point_offset = host_vtable_address_point_offset(node);
       for(size_t i = 0; i < virtual_base_layout.size(); ++i) {
