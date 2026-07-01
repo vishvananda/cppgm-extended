@@ -30,6 +30,80 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_hygiene_reports_early_hosted_eh_rtti_headers(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            pa33_typeinfo = root / "pa33" / "tests" / "general" / "200-typeid-header.t"
+            write(pa33_typeinfo, "#include <typeinfo>\nint main() { return 0; }\n")
+
+            pa34_exception = root / "pa34" / "tests" / "compile" / "600-exception-header.t"
+            write(pa34_exception, "#include <exception>\nint main() { return 0; }\n")
+
+            pa35_typeinfo = root / "pa35" / "tests" / "compile" / "700-typeinfo-header.t"
+            write(pa35_typeinfo, "#include <typeinfo>\nint main() { return 0; }\n")
+
+            findings = audit.scan_test_hygiene(root, ["pa33", "pa34", "pa35"])
+            self.assertEqual(
+                [(finding.path, finding.kind, finding.evidence) for finding in findings],
+                [
+                    (
+                        "pa33/tests/general/200-typeid-header.t",
+                        "early-hosted-eh-rtti-header",
+                        "#include <typeinfo>",
+                    ),
+                    (
+                        "pa34/tests/compile/600-exception-header.t",
+                        "early-hosted-eh-rtti-header",
+                        "#include <exception>",
+                    ),
+                ],
+            )
+
+    def test_hygiene_reports_early_exception_ptr_runtime(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            pa32_exception_ptr = (
+                root / "pa32" / "tests" / "general" /
+                "200-exception-ptr-runtime.t"
+            )
+            write(
+                pa32_exception_ptr,
+                textwrap.dedent(
+                    """\
+                    namespace std {
+                    class exception_ptr;
+                    exception_ptr make_exception_ptr(int);
+                    void rethrow_exception(exception_ptr);
+                    }
+                    int main() {
+                      std::exception_ptr p = std::make_exception_ptr(1);
+                      std::rethrow_exception(p);
+                    }
+                    """
+                ),
+            )
+
+            pa36_exception_ptr = (
+                root / "pa36" / "tests" / "link" /
+                "600-exception-ptr-runtime.t"
+            )
+            write(
+                pa36_exception_ptr,
+                "int main() { return 0; }\n",
+            )
+
+            findings = audit.scan_test_hygiene(root, ["pa32", "pa36"])
+            self.assertEqual(
+                [(finding.path, finding.kind, finding.evidence) for finding in findings],
+                [
+                    (
+                        "pa32/tests/general/200-exception-ptr-runtime.t",
+                        "early-hosted-exception-runtime",
+                        "std::exception_ptr",
+                    ),
+                ],
+            )
+
     def test_lowir_eh_review_reports_hidden_source_to_lowir_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)
