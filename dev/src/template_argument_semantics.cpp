@@ -190,6 +190,7 @@ namespace {
 const char kStructuredBoolResultMemberName[] = "value";
 thread_local size_t g_default_template_argument_evaluation_depth = 0;
 thread_local vector<string> g_base_specifier_type_lookup_keys;
+thread_local vector<const ClassInfo *> g_base_specifier_type_lookup_owners;
 
 bool expression_node_mentions_identifier(const CppAstNode & node,
                                          const string & name);
@@ -295,11 +296,6 @@ bool base_specifier_type_lookup_allows_implicit_typename(
     }
   }
   return false;
-}
-
-bool base_specifier_type_lookup_active()
-{
-  return !g_base_specifier_type_lookup_keys.empty();
 }
 
 bool is_structured_bool_result_member_name(const string & name)
@@ -1091,12 +1087,14 @@ TypePtr lookup_structured_type_node(template_api::TemplateServices & services,
 }
 
 ScopedBaseSpecifierTypeLookup::ScopedBaseSpecifierTypeLookup(
-    const string & lookup_text)
+    const string & lookup_text,
+    const ClassInfo * owner_class)
   : active_(false)
 {
   const string key = base_specifier_type_lookup_key(lookup_text);
   if(!key.empty()) {
     g_base_specifier_type_lookup_keys.push_back(key);
+    g_base_specifier_type_lookup_owners.push_back(owner_class);
     active_ = true;
   }
 }
@@ -1105,7 +1103,32 @@ ScopedBaseSpecifierTypeLookup::~ScopedBaseSpecifierTypeLookup()
 {
   if(active_ && !g_base_specifier_type_lookup_keys.empty()) {
     g_base_specifier_type_lookup_keys.pop_back();
+    if(!g_base_specifier_type_lookup_owners.empty()) {
+      g_base_specifier_type_lookup_owners.pop_back();
+    }
   }
+}
+
+bool base_specifier_type_lookup_active()
+{
+  return !g_base_specifier_type_lookup_keys.empty();
+}
+
+bool base_specifier_type_lookup_suppresses_inherited_member_lookup(
+    const ClassInfo * owner_class)
+{
+  if(!owner_class) {
+    return false;
+  }
+  for(vector<const ClassInfo *>::const_reverse_iterator it =
+          g_base_specifier_type_lookup_owners.rbegin();
+      it != g_base_specifier_type_lookup_owners.rend();
+      ++it) {
+    if(*it == owner_class) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool parse_type_id_node_for_templates(template_api::TemplateServices & services,

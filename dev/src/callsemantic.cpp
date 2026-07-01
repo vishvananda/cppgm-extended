@@ -7238,7 +7238,10 @@ private:
                                               "::" + lookup_name,
                                           true);
                       }
-                      if(direct_scope.class_info) {
+                      if(direct_scope.class_info &&
+                         !template_argument_semantics::
+                             base_specifier_type_lookup_suppresses_inherited_member_lookup(
+                                 direct_scope.class_info)) {
                         const bool ensure_current_member_references =
                             !(((direct_scope.class_info->full_member_collection_in_progress ||
                                 direct_scope.class_info->reference_member_collection_in_progress) &&

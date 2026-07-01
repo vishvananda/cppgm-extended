@@ -1354,10 +1354,11 @@ bool resolve_instantiated_base_type_if_needed(SemanticContext & ctx,
 TypePtr lookup_base_type_name(SemanticContext & ctx,
                               Scope & scope,
                               const std::string & text,
-                              bool allow_incomplete_lookup)
+                              bool allow_incomplete_lookup,
+                              const ClassInfo * owner_info = nullptr)
 {
   const template_argument_semantics::ScopedBaseSpecifierTypeLookup
-      base_lookup_guard(text);
+      base_lookup_guard(text, owner_info);
   TypePtr base_type;
   base_type = ctx.lookup_type(scope, text, allow_incomplete_lookup);
   TypePtr resolved;
@@ -1381,10 +1382,11 @@ bool base_type_node_has_structured_lookup_syntax(const CppAstNode & node)
 TypePtr resolve_base_type_node(SemanticContext & ctx,
                                Scope & scope,
                                const CppAstNode & node,
-                               bool allow_incomplete_lookup)
+                               bool allow_incomplete_lookup,
+                               const ClassInfo * owner_info = nullptr)
 {
   const template_argument_semantics::ScopedBaseSpecifierTypeLookup
-      base_lookup_guard(node.value);
+      base_lookup_guard(node.value, owner_info);
   TypePtr base_type;
   if(node.base_type_syntax &&
      template_api::type::parse_decltype_or_typeof_node(ctx,
@@ -1414,7 +1416,8 @@ TypePtr resolve_base_type_node(SemanticContext & ctx,
   return lookup_base_type_name(ctx,
                                scope,
                                node.value,
-                               allow_incomplete_lookup);
+                               allow_incomplete_lookup,
+                               owner_info);
 }
 
 bool template_argument_is_parameter_placeholder(
@@ -5932,11 +5935,13 @@ void parse_base_clause(SemanticContext & ctx, ClassInfo & info, const CppAstNode
               resolve_base_type_node(ctx,
                                      *info.member_scope,
                                      *base_node_for_lookup,
-                                     false) :
+                                     false,
+                                     &info) :
               lookup_base_type_name(ctx,
                                     *info.member_scope,
                                     base_names[i],
-                                    false);
+                                    false,
+                                    &info);
       semantic_template_class::append_base_clause_template_value_dependencies(
           ctx,
           *info.member_scope,
@@ -6084,11 +6089,13 @@ void parse_reference_base_clause(SemanticContext & ctx, ClassInfo & info, const 
               resolve_base_type_node(ctx,
                                      *info.member_scope,
                                      *base_node_for_lookup,
-                                     true) :
+                                     true,
+                                     &info) :
               lookup_base_type_name(ctx,
                                     *info.member_scope,
                                     base_names[i],
-                                    true);
+                                    true,
+                                    &info);
       semantic_template_class::append_base_clause_template_value_dependencies(
           ctx,
           *info.member_scope,

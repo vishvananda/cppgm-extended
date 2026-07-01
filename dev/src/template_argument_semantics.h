@@ -48,7 +48,9 @@ bool default_template_argument_evaluation_active();
 class ScopedBaseSpecifierTypeLookup
 {
 public:
-  explicit ScopedBaseSpecifierTypeLookup(const std::string & lookup_text);
+  explicit ScopedBaseSpecifierTypeLookup(
+      const std::string & lookup_text,
+      const semantic_model::ClassInfo * owner_class = nullptr);
   ~ScopedBaseSpecifierTypeLookup();
 
   ScopedBaseSpecifierTypeLookup(const ScopedBaseSpecifierTypeLookup &) = delete;
@@ -58,6 +60,10 @@ public:
 private:
   bool active_;
 };
+
+bool base_specifier_type_lookup_active();
+bool base_specifier_type_lookup_suppresses_inherited_member_lookup(
+    const semantic_model::ClassInfo * owner_class);
 
 struct ExpandedTemplateArgumentInputs
 {
