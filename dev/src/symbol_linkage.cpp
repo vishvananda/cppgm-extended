@@ -13452,6 +13452,14 @@ static bool try_build_type_ir(const TypePtr & type,
   if(try_build_dependent_alias_type_ir(type, mangle_ctx, out)) {
     return true;
   }
+  shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
+      named_type_class_template_specialization_mangle_info_const(type);
+  if(specialization &&
+     !template_arguments_have_dependent_mangle_state(specialization->arguments) &&
+     !template_arguments_have_entity_value(specialization->arguments) &&
+     try_build_class_template_specialization_type_ir(type, mangle_ctx, out)) {
+    return true;
+  }
   if(try_build_dependent_template_template_parameter_type_ir(type,
                                                             mangle_ctx,
                                                             out)) {
