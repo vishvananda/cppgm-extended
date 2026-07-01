@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A fixed-arity template-template partial specialization is more specialized
 // than the same fixed prefix followed by a trailing template-argument pack.
 

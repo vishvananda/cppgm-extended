@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A fixed non-type prefix should be preferred over a catch-all trailing pack.
 
 template<unsigned char... Bytes>

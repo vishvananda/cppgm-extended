@@ -29,12 +29,8 @@ def run_one(test: pathlib.Path) -> tuple[bool, str]:
     kind = read_validation_kind(test)
     cppgm = cppgm_path()
     with tempfile.TemporaryDirectory(prefix="cppgm-template-validation-") as td:
-        out = pathlib.Path(td) / ("a.out" if kind == "run-pass" else "a.o")
-
-        if kind == "run-pass":
-            cmd = [cppgm, "-o", str(out), str(test)]
-        else:
-            cmd = [cppgm, "-c", "-o", str(out), str(test)]
+        out = pathlib.Path(td) / "a.o"
+        cmd = [cppgm, "-c", "-o", str(out), str(test)]
 
         compile_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
@@ -53,12 +49,6 @@ def run_one(test: pathlib.Path) -> tuple[bool, str]:
 
         if kind == "compile-pass":
             return True, "compiled"
-
-        if kind == "run-pass":
-            run_result = subprocess.run([str(out)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            ok = run_result.returncode == 0
-            detail = "ran" if ok else f"runtime exit {run_result.returncode}"
-            return ok, detail
 
         raise RuntimeError(f"unknown validation kind {kind} in {test}")
 

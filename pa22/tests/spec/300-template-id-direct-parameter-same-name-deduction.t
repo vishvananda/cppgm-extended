@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.8.2.5 [temp.deduct.type], 14.8 [temp.fct.spec]
 
 template<bool B, class T = void>

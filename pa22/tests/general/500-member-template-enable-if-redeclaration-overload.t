@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Body-less member-template declarations with identical function parameters but
 // different defaulted non-type enable-if parameters are distinct templates.
 

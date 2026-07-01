@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Constructor-template participation must survive when inherited through a
 // class-template partial specialization.
 

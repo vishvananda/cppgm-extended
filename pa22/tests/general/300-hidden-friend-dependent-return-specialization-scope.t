@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A hidden friend with a dependent enable-if return type must be found by ADL
 // while evaluating a detector on a class-template specialization.
 

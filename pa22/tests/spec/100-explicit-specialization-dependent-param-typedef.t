@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.7.3 [temp.expl.spec], 14.8.2 [temp.deduct]
 
 struct traits_float

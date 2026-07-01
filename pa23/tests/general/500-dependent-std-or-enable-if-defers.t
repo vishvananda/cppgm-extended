@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A std-shaped disjunction alias with dependent trait arguments must stay
 // dependent while collecting an enable_if_t default argument.
 

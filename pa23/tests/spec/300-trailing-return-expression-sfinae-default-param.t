@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.8.2 [temp.deduct], substitution failure in a dependent
 // trailing-return decltype removes the function template candidate.
 

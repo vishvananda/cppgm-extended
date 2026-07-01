@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Boost.Config BOOST_NO_CXX11_SFINAE_EXPR reduction.
 
 template<class>

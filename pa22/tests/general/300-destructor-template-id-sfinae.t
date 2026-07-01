@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A destructor call in a dependent decltype expression should participate in
 // SFINAE without requiring the probed class-template-id to be written as a
 // simple identifier.

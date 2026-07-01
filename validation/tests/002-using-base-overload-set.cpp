@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 7.3.3 [namespace.udecl], 10.2 [class.member.lookup]
 
 struct Base

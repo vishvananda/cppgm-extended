@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Reduced from Boost.Asio's buffer sequence traits. A function template
 // parameter can name an earlier parameter inside a dependent alias-template
 // SFINAE type while the function signature is instantiated.

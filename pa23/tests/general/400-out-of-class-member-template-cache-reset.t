@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A member-function template instantiated from an out-of-class definition while
 // its owner class template is only reference-collected must be removed from the
 // source template cache if that owner is reset before full collection.

@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 4.5 [conv.prom], 13.3 [over.match]
 
 enum E

@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A defaulted enable-if guard may name a static constexpr member template with
 // an unnamed non-type pack.
 

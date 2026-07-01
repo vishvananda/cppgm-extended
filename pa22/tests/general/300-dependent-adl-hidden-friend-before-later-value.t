@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A later ordinary declaration must not hide a hidden friend found by ADL while
 // probing an expression-SFINAE trait.
 

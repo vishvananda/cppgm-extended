@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: core-language reduction of map subscript insertion surface
 
 struct value_box

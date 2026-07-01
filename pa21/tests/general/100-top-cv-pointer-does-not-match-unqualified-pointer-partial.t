@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Reduced from Boost.Core type_name. A class partial specialization pattern
 // `T*` must not match a top-level cv-qualified pointer; the cv-wrapper partial
 // owns that match, even when reached through a recursive pointer formatter.

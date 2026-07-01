@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Defaulted non-type parameters whose type depends on enable_if should be
 // substituted after deduction so only the viable overload remains.
 

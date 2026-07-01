@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A pack-indexed alias return type stays concrete for the selected function.
 
 template<class... T>

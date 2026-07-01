@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Boost.MP11-style validity probing must keep resolved alias-template
 // arguments canonical when expanding a nested alias target. Reusing the
 // original source spelling can re-evaluate mp_valid<F, T...> after T has

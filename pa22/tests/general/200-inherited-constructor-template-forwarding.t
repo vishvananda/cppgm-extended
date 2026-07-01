@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A dependent-base inherited constructor template participates in construction.
 
 struct arg

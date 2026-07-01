@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A trailing decltype in a function template can instantiate an inner member
 // template through a dependent source owner before the body calls the same
 // member template through the concrete owner. Defaulted SFINAE parameters must

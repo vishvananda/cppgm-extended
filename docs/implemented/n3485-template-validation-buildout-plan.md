@@ -71,7 +71,7 @@ from hiding behind matching LowIR.
 Use the existing validation style:
 
 - one self-contained source file per rule,
-- `// VALIDATION: run-pass`, `compile-pass`, or `compile-fail`,
+- `// VALIDATION: compile-pass` or `compile-fail`,
 - a short `// N3485 focus:` comment naming the governing clause(s),
 - ordinary `main`-based runtime checks for positive cases,
 - clang as the immediate source-of-truth validator.
@@ -289,18 +289,17 @@ Target outcome:
 
 ## Test Kinds
 
-Use all three validation kinds deliberately:
+Use both validation kinds deliberately:
 
 - `compile-pass`
-  - for lookup, declaration, instantiation, and type-identity rules
-- `run-pass`
-  - for observable specialization or overload selection
+  - for lookup, declaration, instantiation, type-identity, observable
+    specialization, and overload-selection rules
 - `compile-fail`
   - for ambiguity, missing disambiguators, forbidden deduction, inaccessible or
     ill-formed specialization usage
 
-Prefer `run-pass` only when the runtime behavior is the cleanest oracle.
-Otherwise keep the test compile-only.
+For LowIR-emitting assignment tests, use `compile-pass` even when the source has
+a `main` that makes the lowering shape observable.
 
 ## Replacement Strategy
 

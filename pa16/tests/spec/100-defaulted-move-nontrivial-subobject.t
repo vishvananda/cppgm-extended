@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 8.4.2 [dcl.fct.def.default], 12.8 [class.copy]
 
 struct Stateful

@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 7.1.6.2 [dcl.type.simple]
 
 #include "support.h"

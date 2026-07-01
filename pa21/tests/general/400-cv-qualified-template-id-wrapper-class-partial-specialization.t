@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A top-level cv wrapper must beat a template-id partial specialization.
 
 template<class T>

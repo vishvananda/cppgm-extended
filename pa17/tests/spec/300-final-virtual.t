@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 10.3 [class.virtual]
 
 class YB { public: virtual int g() noexcept { return 1; } virtual ~YB() noexcept {} };

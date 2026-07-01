@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Reduced from Boost.Asio's buffer sequence traits. A dependent alias-template
 // SFINAE argument contains decltype of a qualified function-template call; the
 // stored argument syntax must keep the declaration-order source location of

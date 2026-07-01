@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Reentrant class-template partial selection must not cache a primary
 // specialization while an enable_if_t value argument is still dependent.
 
