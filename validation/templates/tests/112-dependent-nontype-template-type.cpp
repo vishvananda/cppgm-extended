@@ -1,5 +1,5 @@
 // VALIDATION: run-pass
-// N3485 focus: 14.1 [temp.param], 14.3.2 [temp.arg.nontype], 14.6.2 [temp.dep.type]
+// N3485 focus: 14.1 [temp.param], 14.3.2 [temp.arg.nontype], 14.6.2.1 [temp.dep.type]
 
 template<class Cp>
 struct holder

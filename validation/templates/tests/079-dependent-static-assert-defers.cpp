@@ -1,5 +1,5 @@
 // VALIDATION: compile-pass
-// N3485 focus: 14.6.2 [temp.dep.type], 7 [dcl.pre] static_assert
+// N3485 focus: 14.6.2.1 [temp.dep.type], 7 [dcl.dcl] static_assert
 
 template<class T>
 struct is_lvalue_reference

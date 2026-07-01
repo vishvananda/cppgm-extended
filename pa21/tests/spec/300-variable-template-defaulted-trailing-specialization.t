@@ -1,5 +1,5 @@
 // VALIDATION: run-pass
-// N3485 focus: 14.5.6 [temp.var], 14.5.5 [temp.class.spec]
+// N3485 focus: 14.5.5 [temp.class.spec]; variable templates are post-N3485.
 
 template<class A, class T, class = void>
 const bool pair_v = false;

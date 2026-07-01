@@ -1,5 +1,5 @@
 // VALIDATION: compile-pass
-// N3485 focus: 12.2 [class.temporary], 5.14 [expr.log.or], 6.4 [stmt.select]
+// N3485 focus: 12.2 [class.temporary], 5.15 [expr.log.or], 6.4 [stmt.select]
 
 int destroyed = 0;
 

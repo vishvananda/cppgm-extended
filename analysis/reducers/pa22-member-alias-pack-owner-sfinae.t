@@ -1,6 +1,6 @@
 // VALIDATION: run-pass
 // N3485 focus: 14.5.7 [temp.alias], 14.8.2 [temp.deduct],
-// 14.8.2.8 [temp.deduct.type]
+// 14.8.2.5 [temp.deduct.type]
 // A member alias template may name another member template through the current
 // class-template owner. Substitution must bind that owner and preserve nested
 // pack syntax when the alias is used in an enable-if style non-type argument.
