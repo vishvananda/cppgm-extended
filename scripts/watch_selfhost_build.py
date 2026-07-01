@@ -563,6 +563,38 @@ def arg_after(argv: Sequence[str], flag: str) -> str:
     return ""
 
 
+def executable_basename(process: ProcessInfo) -> str:
+    if not process.argv:
+        return ""
+    return os.path.basename(process.argv[0])
+
+
+def is_command_wrapper(process: ProcessInfo) -> bool:
+    exe = executable_basename(process)
+    if exe in {"sh", "bash", "dash"}:
+        return True
+    if exe == "perl" and "run_with_timeout.pl" in process.command:
+        return True
+    return False
+
+
+def active_task_priority(process: ProcessInfo,
+                         tree: Dict[int, List[int]]) -> tuple[int, int, int, int]:
+    # A single compile launched through run_with_timeout appears as:
+    #   /bin/sh -c perl run_with_timeout ... compiler -c -o ...
+    #   perl run_with_timeout ... compiler -c -o ...
+    #   compiler -c -o ...
+    # The wrapper command lines contain the compiler argv text, so all three
+    # parse as the same active output. Prefer the real child process while
+    # keeping wrapper-only tasks visible if the child has not appeared yet.
+    return (
+        0 if is_command_wrapper(process) else 1,
+        0 if tree.get(process.pid) else 1,
+        process.elapsed_seconds,
+        process.pid,
+    )
+
+
 def resolve_inception_path(raw: str) -> Path:
     path = Path(raw)
     if path.is_absolute():
@@ -745,6 +777,17 @@ def active_tasks_for_build(root_pid: Optional[int],
     object_root = spec.obj_root_base / spec.flavor
     bin_root = spec.bin_root_base / spec.flavor
     tasks: List[ActiveTask] = []
+    output_tasks: Dict[tuple[str, Path], tuple[tuple[int, int, int, int], ActiveTask]] = {}
+
+    def add_task(process: ProcessInfo, task: ActiveTask) -> None:
+        if task.output_path is None:
+            tasks.append(task)
+            return
+        key = (task.phase, task.output_path.resolve())
+        priority = active_task_priority(process, tree)
+        current = output_tasks.get(key)
+        if current is None or priority > current[0]:
+            output_tasks[key] = (priority, task)
 
     candidate_pids: Iterable[int]
     if root_pid is None:
@@ -765,30 +808,31 @@ def active_tasks_for_build(root_pid: Optional[int],
             if object_root in output_path.parents and "-c" in argv:
                 label = Path(source).name if source else output_path.name
                 detail = str(Path(source)) if source else str(output_path)
-                tasks.append(ActiveTask(phase="compile",
-                                        label=label,
-                                        detail=detail,
-                                        elapsed_seconds=process.elapsed_seconds,
-                                        output_path=output_path.resolve()))
+                add_task(process, ActiveTask(phase="compile",
+                                             label=label,
+                                             detail=detail,
+                                             elapsed_seconds=process.elapsed_seconds,
+                                             output_path=output_path.resolve()))
                 continue
             if bin_root in output_path.parents and "-c" not in argv:
                 final_output_path = binary_path(bin_root, output_path.name, spec.output_suffix)
-                tasks.append(ActiveTask(phase="link",
-                                        label=output_path.name,
-                                        detail=str(output_path),
-                                        elapsed_seconds=process.elapsed_seconds,
-                                        output_path=final_output_path.resolve()))
+                add_task(process, ActiveTask(phase="link",
+                                             label=output_path.name,
+                                             detail=str(output_path),
+                                             elapsed_seconds=process.elapsed_seconds,
+                                             output_path=final_output_path.resolve()))
                 continue
 
         if is_make_process(process):
             targets, _ = parse_make_invocation(argv)
             for target in targets:
                 if target.startswith("test-"):
-                    tasks.append(ActiveTask(phase="test",
-                                            label=target,
-                                            detail=process.command,
-                                            elapsed_seconds=process.elapsed_seconds))
+                    add_task(process, ActiveTask(phase="test",
+                                                 label=target,
+                                                 detail=process.command,
+                                                 elapsed_seconds=process.elapsed_seconds))
                     break
+    tasks.extend(task for _, task in output_tasks.values())
     return tasks
 
 
