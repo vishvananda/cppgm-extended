@@ -3817,6 +3817,53 @@ void record_function_template_instantiation_cache_entry(
   entry.key = key;
   binding.instantiation_cache_entries->extra.push_back(entry);
 }
+
+struct FunctionTemplateInstantiationInProgressEntry
+{
+  FunctionTemplateDecl * decl = nullptr;
+  std::string key;
+};
+
+std::vector<FunctionTemplateInstantiationInProgressEntry> &
+function_template_instantiation_in_progress_stack()
+{
+  static thread_local std::vector<FunctionTemplateInstantiationInProgressEntry>
+      stack;
+  return stack;
+}
+
+struct ScopedFunctionTemplateInstantiationInProgress
+{
+  ScopedFunctionTemplateInstantiationInProgress(FunctionTemplateDecl * decl,
+                                                const std::string & key)
+      : stack(function_template_instantiation_in_progress_stack())
+  {
+    for(std::size_t i = 0; i < stack.size(); ++i) {
+      if(stack[i].decl == decl && stack[i].key == key) {
+        recursive = true;
+        return;
+      }
+    }
+    FunctionTemplateInstantiationInProgressEntry entry;
+    entry.decl = decl;
+    entry.key = key;
+    stack.push_back(entry);
+    active = true;
+  }
+
+  ~ScopedFunctionTemplateInstantiationInProgress()
+  {
+    if(active) {
+      stack.pop_back();
+    }
+  }
+
+  bool recursive = false;
+
+private:
+  std::vector<FunctionTemplateInstantiationInProgressEntry> & stack;
+  bool active = false;
+};
 // template-boundary-audit: end canonical_key_metadata
 
 void record_function_template_argument_state_impl(
@@ -8622,6 +8669,21 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           ctx, found->second, InstantiatedFunctionOutputMode::TrackOnly);
     }
     return found->second;
+  }
+
+  ScopedFunctionTemplateInstantiationInProgress instantiation_progress(
+      source_decl,
+      key);
+  if(instantiation_progress.recursive) {
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "function-instantiation-recursive-defer name="
+            << source_decl->name
+            << " key=" << key;
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    throw TemplateSubstitutionFailure(
+        "recursive function template instantiation while resolving result type");
   }
 
   Scope * owner_member_instantiation_scope =

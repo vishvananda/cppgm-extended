@@ -3073,6 +3073,167 @@ bool type_id_syntax_mentions_dependent_direct_type(SemanticContext & ctx,
   return false;
 }
 
+bool current_class_qualifier_matches(const ClassInfo & info,
+                                     const std::string & qualifier)
+{
+  const std::string leaf =
+      semantic_utils::unqualified_member_name(
+          semantic_utils::strip_trailing_top_level_template_arguments(
+              semantic_utils::trim_space(qualifier)));
+  if(leaf.empty()) {
+    return false;
+  }
+  if(leaf == info.name) {
+    return true;
+  }
+  if(info.source_template && leaf == info.source_template->name) {
+    return true;
+  }
+  const auto matches_unqualified_class_name =
+      [&leaf](const std::string & candidate) -> bool
+      {
+        return !candidate.empty() &&
+               leaf == semantic_utils::unqualified_member_name(
+                           semantic_utils::strip_trailing_top_level_template_arguments(
+                               semantic_utils::trim_space(candidate)));
+      };
+  return matches_unqualified_class_name(info.qualified_name) ||
+         matches_unqualified_class_name(info.display_qualified_name);
+}
+
+bool current_class_member_type_is_available_or_deferred(const ClassInfo & info,
+                                                        const std::string & name)
+{
+  const std::string member =
+      semantic_utils::unqualified_member_name(
+          semantic_utils::strip_trailing_top_level_template_arguments(
+              semantic_utils::trim_space(name)));
+  if(member.empty() || !info.member_scope) {
+    return false;
+  }
+  return info.member_scope->named_types.count(member) != 0 ||
+         info.deferred_member_aliases.count(member) != 0;
+}
+
+bool qualified_name_syntax_mentions_current_class_member_type(
+    const ClassInfo & info,
+    const QualifiedName & name)
+{
+  return !name.qualifiers.empty() &&
+         current_class_qualifier_matches(info, name.qualifiers.back()) &&
+         current_class_member_type_is_available_or_deferred(info, name.name);
+}
+
+bool template_argument_syntax_mentions_current_class_member_type(
+    const ClassInfo & info,
+    const TemplateArgumentSyntax & syntax);
+
+bool template_id_syntax_mentions_current_class_member_type(
+    const ClassInfo & info,
+    const TemplateIdSyntax & syntax)
+{
+  if(qualified_name_syntax_mentions_current_class_member_type(info, syntax.name)) {
+    return true;
+  }
+  for(std::size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(template_argument_syntax_mentions_current_class_member_type(
+           info,
+           syntax.argument_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_syntax_mentions_current_class_member_type(
+           info,
+           syntax.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool type_id_syntax_mentions_current_class_member_type(const ClassInfo & info,
+                                                       const CppAstNode & node)
+{
+  if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
+    if(qualified_name_syntax_mentions_current_class_member_type(info,
+                                                               *qualified)) {
+      return true;
+    }
+  }
+  if(const TemplateIdSyntax * template_id = cppast_template_id_syntax(node)) {
+    if(template_id_syntax_mentions_current_class_member_type(info, *template_id)) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_syntax_mentions_current_class_member_type(
+           info,
+           node.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(type_id_syntax_mentions_current_class_member_type(
+           info,
+           node.qualifier_type_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    if(type_id_syntax_mentions_current_class_member_type(info,
+                                                        node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool template_argument_syntax_mentions_current_class_member_type(
+    const ClassInfo & info,
+    const TemplateArgumentSyntax & syntax)
+{
+  if(syntax.template_id &&
+     template_id_syntax_mentions_current_class_member_type(info,
+                                                          *syntax.template_id)) {
+    return true;
+  }
+  if(syntax.type_id &&
+     type_id_syntax_mentions_current_class_member_type(info, *syntax.type_id)) {
+    return true;
+  }
+  return syntax.expression &&
+         type_id_syntax_mentions_current_class_member_type(info,
+                                                          *syntax.expression);
+}
+
+bool class_alias_type_id_mentions_current_class_member_type(
+    const ClassInfo & info,
+    const CppAstNode & type_id)
+{
+  return !info.complete &&
+         (info.reference_member_collection_in_progress ||
+          info.full_member_collection_in_progress) &&
+         type_id_syntax_mentions_current_class_member_type(info, type_id);
+}
+
+TypePtr defer_class_alias_type_id(ClassInfo & info,
+                                  const std::string & alias_name,
+                                  const CppAstNode & type_id,
+                                  const std::string & type_id_text,
+                                  bool dependent_class)
+{
+  ClassInfo::DeferredMemberAlias deferred;
+  deferred.type_id = &type_id;
+  deferred.type_id_text = type_id_text;
+  deferred.dependent_class = dependent_class;
+  info.deferred_member_aliases[alias_name] = deferred;
+  return make_dependent_class_alias_placeholder(info,
+                                                alias_name,
+                                                type_id_text,
+                                                &type_id);
+}
+
 bool class_alias_type_id_is_explicitly_dependent(SemanticContext & ctx,
                                                  const ClassInfo & info,
                                                  const CppAstNode & type_id,
@@ -3104,6 +3265,9 @@ bool should_defer_reference_class_alias_type_id(SemanticContext & ctx,
 {
   if(witness::source_capture_enabled(ctx.template_witness_context())) {
     return false;
+  }
+  if(class_alias_type_id_mentions_current_class_member_type(info, type_id)) {
+    return true;
   }
   return class_alias_type_id_is_explicitly_dependent(ctx,
                                                      info,
@@ -3213,6 +3377,15 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
           }
           return true;
         });
+  }
+  if(!witness::source_capture_enabled(ctx.template_witness_context()) &&
+     class_alias_type_id_mentions_current_class_member_type(info,
+                                                           *type_id_for_parse)) {
+    return defer_class_alias_type_id(info,
+                                     alias_name,
+                                     type_id,
+                                     type_id_text,
+                                     dependent_class);
   }
   TypePtr alias;
   bool parsed_alias = false;
