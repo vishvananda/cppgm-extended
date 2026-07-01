@@ -5123,6 +5123,18 @@ const ExprInfo & source_arg_for_compare(const CandidateMatch & match, size_t ind
   return match.args[index];
 }
 
+bool user_defined_conversions_share_intermediate_type(const CandidateMatch & lhs,
+                                                      const CandidateMatch & rhs,
+                                                      size_t index)
+{
+  if(index >= lhs.args.size() || index >= rhs.args.size()) {
+    return false;
+  }
+  TypePtr lhs_type = strip_top_level_cv(value_conversion_type(lhs.args[index]));
+  TypePtr rhs_type = strip_top_level_cv(value_conversion_type(rhs.args[index]));
+  return lhs_type && rhs_type && type_equals(lhs_type, rhs_type);
+}
+
 int compare_candidate_match_preference(SemanticContext & ctx,
                                        const CandidateMatch & current,
                                        const CandidateMatch & best)
@@ -5133,8 +5145,7 @@ int compare_candidate_match_preference(SemanticContext & ctx,
     const bool compare_second_standard_conversion =
         current.ranks[j] == CR_USER_DEFINED &&
         best.ranks[j] == CR_USER_DEFINED &&
-        j < current.args.size() &&
-        j < best.args.size();
+        user_defined_conversions_share_intermediate_type(current, best, j);
     const ExprInfo & current_compare_arg =
         compare_second_standard_conversion ? current.args[j] :
                                              source_arg_for_compare(current, j);
