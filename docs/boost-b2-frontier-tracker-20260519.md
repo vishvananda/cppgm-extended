@@ -172,9 +172,26 @@ rebased Boost frontier branch.
   emit the complete constructor alias. Validation: focused PA22 direct-LowIR
   check passes `54/54`; focused PA22 strict witness check passes
   `54/54`, witness `compared=51 failures=0 skipped=3`.
+- 2026-06-30 restart baseline from current `pr-36` branch head
+  `f0124b9111c19f88ba0a9c8446f6fe50808af25a` after cleaning generated
+  untracked witness/self binaries. Active perf baseline:
+  `/tmp/cppgm-boost-frontier-pr36-f0124b911-20260630-perf-baseline.json`;
+  median instructions `267,153,505,004`, RSS `1.16 GiB`, footprint
+  `930.39 MiB`, wall `52.930s`.
 
 ## Local Gate Repairs
 
+- 2026-06-30 PA36 macOS hosted deque crash: fixed the level-0 machine-IR
+  callee-saved frame recomputation so callee-save slots stay within the
+  reserved frame when hidden fixed-frame bytes remain after local cleanup. The
+  failure reduced to a PA28 behavior test where the old backend restored a
+  preserved pointer from a nested call return address. Validation: focused PA28
+  reducer, focused PA36 `700-hosted-deque-move-assign-link-smoke.t`, full PA28
+  and PA38 suites, placement audit, text-reparse audit, full direct-LowIR
+  `test-report` passed `3376/3376`, full direct-LowIR `test-strict` passed, and
+  perf against
+  `/tmp/cppgm-boost-frontier-pr36-f0124b911-20260630-perf-baseline.json` passed
+  with instructions `+0.26%`, RSS `-0.39%`, footprint `+0.00%`.
 - `8bb9d6213`: moved the binary-literal extension coverage out of PA6 and into
   the PA33 host-compatibility preprocessor suite. The preprocessor now reports
   `__has_feature(__cxx_binary_literals__)` and

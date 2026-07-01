@@ -1732,6 +1732,19 @@ size_t fixed_frame_bytes(const mir::Function & function)
     out = max(out,
               static_cast<size_t>(offset < 0 ? -offset : offset));
   }
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size(); ++ii) {
+      const mir::Instruction & inst = function.blocks[bi].instructions[ii];
+      for(size_t oi = 0; oi < inst.operands.size(); ++oi) {
+        const mir::Operand & operand = inst.operands[oi];
+        if(operand.kind == mir::Operand::OP_DEREF &&
+           operand.reg == XR_RBP &&
+           operand.offset < 0) {
+          out = max(out, static_cast<size_t>(-operand.offset));
+        }
+      }
+    }
+  }
   if(function.host_eh_enabled) {
     const long long offsets[] = {
       function.host_eh_exception_offset,
@@ -1741,6 +1754,9 @@ size_t fixed_frame_bytes(const mir::Function & function)
       out = max(out,
                 static_cast<size_t>(offsets[i] < 0 ? -offsets[i] : offsets[i]));
     }
+  }
+  if(!function.callee_saved_regs.empty()) {
+    out = max(out, function.frame_bytes);
   }
   return align_up_size(out, 8);
 }
