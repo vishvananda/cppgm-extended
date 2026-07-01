@@ -10660,6 +10660,7 @@ FunctionBinding * ensure_implicit_copy_constructor(SemanticContext & ctx,
                                                   effective_params,
                                                   false));
   if(existing) {
+    existing->is_copy_constructor = true;
     if(existing->synthesized && info.complete) {
       existing->is_deleted = implicit_copy_constructor_is_deleted(ctx, info);
       existing->has_definition = !existing->is_deleted;
@@ -10705,6 +10706,7 @@ FunctionBinding * ensure_implicit_move_constructor(SemanticContext & ctx,
                                                   effective_params,
                                                   false));
   if(existing) {
+    existing->is_move_constructor = true;
     if(existing->synthesized && info.complete) {
       existing->is_deleted = implicit_move_constructor_is_deleted(ctx, info);
       existing->has_definition = !existing->is_deleted;

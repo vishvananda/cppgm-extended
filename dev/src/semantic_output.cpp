@@ -1197,21 +1197,7 @@ bool is_trivially_copy_constructible_type(SemanticContext & ctx, const TypePtr &
   if(info->class_kind == "enum") {
     return true;
   }
-  if(!info->complete || info->is_polymorphic || has_user_declared_destructor(*info)) {
-    return false;
-  }
-  for(size_t i = 0; i < info->bases.size(); ++i) {
-    if(info->bases[i].is_virtual ||
-       !is_trivially_copy_constructible_type(ctx, info->bases[i].type->type)) {
-      return false;
-    }
-  }
-  for(size_t i = 0; i < info->fields.size(); ++i) {
-    if(!is_trivially_copy_constructible_type(ctx, info->fields[i].type)) {
-      return false;
-    }
-  }
-  return true;
+  return semantic_class_model::is_trivially_copy_constructible_type_for_host_abi(ctx, base);
 }
 
 bool is_complete_class_value_type_for_output(const TypePtr & type)

@@ -77,6 +77,29 @@ bool has_user_declared_destructor(const ClassInfo & info)
   return false;
 }
 
+bool has_nontrivial_copy_constructor(const ClassInfo & info)
+{
+  std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
+      info.methods.find(info.name);
+  if(found == info.methods.end()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < found->second.size(); ++i) {
+    const FunctionBinding * binding = found->second[i];
+    if(binding &&
+       binding->is_constructor &&
+       binding->params.size() == 2 &&
+       is_same_class_reference_parameter(info.type,
+                                         binding->params[1].second,
+                                         Type::TK_LVALUE_REFERENCE) &&
+       (binding->is_deleted ||
+        (!binding->synthesized && !binding->is_defaulted))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool has_nontrivial_copy_or_move_assignment(const ClassInfo & info)
 {
   for(std::map<std::string, std::vector<FunctionBinding *> >::const_iterator it =
@@ -209,7 +232,8 @@ bool is_trivially_copy_constructible_type(const TypePtr & type,
     return true;
   }
   if(!info->complete || info->is_polymorphic ||
-     has_user_declared_destructor(*info)) {
+     has_user_declared_destructor(*info) ||
+     has_nontrivial_copy_constructor(*info)) {
     return false;
   }
   for(std::size_t i = 0; i < info->bases.size(); ++i) {

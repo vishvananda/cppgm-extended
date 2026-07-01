@@ -478,6 +478,31 @@ string lowir_name(const string & qualified)
   return symbol_linkage::internal_symbol_from_name(qualified);
 }
 
+string signed_adjustment_key(long long value)
+{
+  if(value < 0) {
+    return string("neg") + to_string(-value);
+  }
+  return string("pos") + to_string(value);
+}
+
+string vtable_entry_thunk_symbol(const string & target_symbol,
+                                 const string & kind,
+                                 long long this_adjust,
+                                 long long return_adjust,
+                                 long long virtual_adjust_offset,
+                                 bool uses_vcall_offset_adjust)
+{
+  ostringstream out;
+  out << target_symbol << "::" << kind
+      << "::this_" << signed_adjustment_key(this_adjust)
+      << "::return_" << signed_adjustment_key(return_adjust);
+  if(uses_vcall_offset_adjust) {
+    out << "::vcall_" << signed_adjustment_key(virtual_adjust_offset);
+  }
+  return lowir_name(out.str());
+}
+
 string lowir_type_encoding_name(const string & prefix, const TypePtr & type)
 {
   if(!symbol_linkage::type_needs_structural_internal_symbol(type)) {
@@ -20069,7 +20094,18 @@ private:
                                                          callsem_resolved_name(node.children[i]));
       }
       if(needs_entry_thunk) {
-        const string thunk_symbol = lowir_name(entry_symbol + "::vtable_return_adjust");
+        const long long thunk_this_adjust =
+            node.uses_extended_vtable_layout ? 0 : this_adjust;
+        const long long thunk_return_adjust = node.children[i].has_result_adjust ?
+            callsem_result_adjust(node.children[i]) :
+            0;
+        const string thunk_symbol =
+            vtable_entry_thunk_symbol(entry_symbol,
+                                      "vtable_return_adjust",
+                                      thunk_this_adjust,
+                                      thunk_return_adjust,
+                                      0,
+                                      false);
         symbol_linkage::SymbolIdentity thunk_exported_symbol;
         if(needs_host_export_thunk) {
           const string thunk_target_name =
@@ -20100,9 +20136,24 @@ private:
           request.symbol = thunk_symbol;
           request.target_symbol = entry_symbol;
           request.function_type = node.children[i].semantic_type;
-          request.this_adjust = node.uses_extended_vtable_layout ? 0 : this_adjust;
-          request.return_adjust = callsem_result_adjust(node.children[i]);
+          request.this_adjust = thunk_this_adjust;
+          request.return_adjust = thunk_return_adjust;
           if(!thunk_exported_symbol.object_symbol.empty()) {
+            request.has_exported_symbol = true;
+            request.exported_symbol = thunk_exported_symbol;
+          }
+        } else if(request.target_symbol != entry_symbol ||
+                  request.this_adjust != thunk_this_adjust ||
+                  request.return_adjust != thunk_return_adjust ||
+                  request.uses_vcall_offset_adjust ||
+                  request.virtual_adjust_offset != 0) {
+          throw logic_error("conflicting vtable entry thunk request " + thunk_symbol);
+        } else if(!thunk_exported_symbol.object_symbol.empty()) {
+          if(request.has_exported_symbol &&
+             request.exported_symbol.object_symbol != thunk_exported_symbol.object_symbol) {
+            throw logic_error("conflicting vtable entry thunk export " + thunk_symbol);
+          }
+          if(!request.has_exported_symbol) {
             request.has_exported_symbol = true;
             request.exported_symbol = thunk_exported_symbol;
           }
@@ -20115,7 +20166,13 @@ private:
         }
         entry_symbol = thunk_symbol;
       } else if(needs_host_export_thunk) {
-        const string thunk_symbol = lowir_name(entry_symbol + "::host_export_thunk");
+        const string thunk_symbol =
+            vtable_entry_thunk_symbol(entry_symbol,
+                                      "host_export_thunk",
+                                      this_adjust,
+                                      0,
+                                      0,
+                                      false);
         const string thunk_target_name =
             callsem_resolved_name(node.children[i]).empty() ?
                 node.children[i].text.str() :
@@ -20142,6 +20199,14 @@ private:
                 symbol_linkage::make_object_symbol_identity(thunk_symbol,
                                                             thunk_object_symbol,
                                                             exported_symbol.linkage);
+          } else if(request.target_symbol != entry_symbol ||
+                    request.this_adjust != this_adjust ||
+                    request.return_adjust != 0 ||
+                    request.uses_vcall_offset_adjust ||
+                    request.virtual_adjust_offset != 0 ||
+                    !request.has_exported_symbol ||
+                    request.exported_symbol.object_symbol != thunk_object_symbol) {
+            throw logic_error("conflicting vtable host export thunk request " + thunk_symbol);
           }
           set_exported_symbol(thunk_symbol,
                               request.exported_symbol,
@@ -20153,7 +20218,13 @@ private:
       if(needs_host_virtual_export_thunk &&
          symbol_linkage::has_exported_object_symbol(virtual_export_symbol) &&
          virtual_export_symbol.object_symbol != "__cxa_pure_virtual") {
-        const string thunk_symbol = lowir_name(entry_symbol + "::host_virtual_export_thunk");
+        const string thunk_symbol =
+            vtable_entry_thunk_symbol(entry_symbol,
+                                      "host_virtual_export_thunk",
+                                      0,
+                                      0,
+                                      -24,
+                                      true);
         const string thunk_target_name = callsem_resolved_name(node.children[i]);
         const string thunk_object_symbol = callsem_qualified_name_syntax(node.children[i]) ?
             symbol_linkage::virtual_base_override_thunk_object_symbol_for_function(
@@ -20179,6 +20250,14 @@ private:
                 symbol_linkage::make_object_symbol_identity(thunk_symbol,
                                                             thunk_object_symbol,
                                                             virtual_export_symbol.linkage);
+          } else if(request.target_symbol != entry_symbol ||
+                    request.this_adjust != 0 ||
+                    request.return_adjust != 0 ||
+                    !request.uses_vcall_offset_adjust ||
+                    request.virtual_adjust_offset != -24 ||
+                    !request.has_exported_symbol ||
+                    request.exported_symbol.object_symbol != thunk_object_symbol) {
+            throw logic_error("conflicting vtable host virtual export thunk request " + thunk_symbol);
           }
           set_exported_symbol(thunk_symbol,
                               request.exported_symbol,
