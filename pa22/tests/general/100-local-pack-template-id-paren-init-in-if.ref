@@ -1,0 +1,81 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $refarg__2 : i32
+  slot $refarg__3 : i32
+
+  block ^entry:
+    store i32 1, $refarg__2
+    %t1 = addr $refarg__2
+    store i32 4, $refarg__3
+    %t2 = addr $refarg__3
+    %t3 = call i32 @probe(%t1, %t2)
+    %t4 = cmp eq i32 %t3, 5
+    branch %t4, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load i32 $cond__1
+    return i32 %t5
+}
+function @probe(%args : ptr [pass=reference], %args__pack2 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5probeIJiiEEiDpOT_] {
+  slot $args : ptr
+  slot $args__pack2 : ptr
+  slot $refs : obj<16x8>
+
+  block ^entry:
+    store ptr %args, $args
+    store ptr %args__pack2, $args__pack2
+    %t1 = const i64 2
+    %t2 = convert sext i64 i32 2
+    %t3 = cmp eq i64 %t1, %t2
+    branch %t3, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t4 = addr $refs
+    %t5 = load ptr $args
+    %t6 = load ptr $args__pack2
+    call void @pair_int_const____int_const_____pair(%t4, %t5, %t6)
+    %t7 = addr $refs
+    %t8 = index i8 [projection=reference_field] %t7, 0
+    %t9 = load ptr %t8
+    %t10 = load i32 %t9
+    %t11 = addr $refs
+    %t12 = index i8 [projection=reference_field] %t11, 8
+    %t13 = load ptr %t12
+    %t14 = load i32 %t13
+    %t15 = binary add i32 %t10, %t14
+    return i32 %t15
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    return i32 0
+}
+function @pair_int_const____int_const_____pair(%this : ptr, %a : ptr [pass=reference], %b : ptr [pass=reference]) -> void [binding=weak, object=_ZN4pairIRKiS1_EC1ES1_S1_] {
+  slot $this : ptr
+  slot $a : ptr
+  slot $b : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %a, $a
+    store ptr %b, $b
+    %t1 = load ptr $a
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $b
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store ptr %t4, %t6
+    return void
+}
+alias object _ZN4pairIRKiS1_EC2ES1_S1_ = @pair_int_const____int_const_____pair

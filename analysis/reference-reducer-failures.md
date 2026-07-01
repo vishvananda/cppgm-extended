@@ -1473,35 +1473,41 @@ canonical build.
 
 ### Non-Type Template Argument Reference-Blocked Batch
 
-- Disposition: `reference-compiler-bug` for the reducer listed below.
+- Disposition: no missing Opus feature for the reducer listed below.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
 - Current compiler behavior: accepts the reducer.
 - Current disposition: no assignment test added for this row; tracker row
-  marked `harness-or-reference-issue` / `no-action`.
+  marked `no-missing-opus-feature` / `no-action`.
 
 | PA23 source row | Candidate owner | Reducer | Historical evidence | External reference behavior | Next validation |
 | --- | --- | --- | --- | --- | --- |
-| `pa23/tests/general/100-nested-template-static-value-nontype-expression.t` | PA21 | `analysis/reducers/pa21-nested-template-static-value-nontype-expression.t` | Opus start `1963d796e` accepts the PA23 source, so this row does not prove a missing earlier assignment feature. | Rejects with failed non-type template argument evaluation for `calculate_alignment_ct<size_t,56,8,32,8>::initial_alignment` while resolving the nested qualified member class template value. | Fix reference compiler evaluation of nested qualified member-template static values used as non-type template arguments; no backfill is needed unless a start-failing reducer is found. |
+| `pa23/tests/general/100-nested-template-static-value-nontype-expression.t` | PA21 | `analysis/reducers/pa21-nested-template-static-value-nontype-expression.t` | Correct Opus gate accepts both the PA23 source and reducer at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts and can generate LowIR; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
 
 ### Pack Expansion Reference-Blocked Batch
 
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts every
   reducer listed below.
 - Current compiler behavior: accepts every reducer listed below.
-- Current disposition: no assignment tests added for these rows; tracker rows
-  marked `harness-or-reference-issue` or `historical-validation-missing` /
-  `no-action`.
+- Current disposition: four exact focused sources were promotable once the
+  historical Opus validation was rerun with the correct `--emit-lowir -o`
+  invocation:
+  `pa21/tests/general/100-nested-pack-expansion-outer-type-pack.t`,
+  `pa21/tests/spec/100-variadic-base-pack-expansion.t`,
+  `pa22/tests/general/100-local-pack-template-id-paren-init.t`, and
+  `pa22/tests/general/100-local-pack-template-id-paren-init-in-if.t`. The
+  remaining six rows are no-action because the exact focused source already
+  passes at Opus start `1963d796e`.
 
 | PA23 source row | Candidate owner | Reducer | Disposition | Historical evidence | External reference behavior | Next validation |
 | --- | --- | --- | --- | --- | --- | --- |
-| `pa23/tests/general/200-local-pack-template-id-paren-init-in-if.t` | PA22 | PA23 source row itself | `reference-contract-mismatch` | Opus start `1963d796e` rejects; Opus `1434a6e11` still fails the same relaxed LowIR contract. | Accepts, but emits extra EH runtime declarations that current output does not emit. | Find a ref-stable shape that still start-fails, or fix the EH declaration contract before promoting. |
-| `pa23/tests/general/200-local-pack-template-id-paren-init.t` | PA22 | PA23 source row itself | `reference-contract-mismatch` | Opus start `1963d796e` rejects; Opus `1434a6e11` still fails the same relaxed LowIR contract. | Accepts, but emits extra EH runtime declarations that current output does not emit. | Find a ref-stable shape that still start-fails, or fix the EH declaration contract before promoting. |
-| `pa23/tests/general/200-member-function-template-address-explicit-pack.t` | PA22 | PA23 source row itself | `reference-compiler-bug` | Opus start `1963d796e` accepts but mismatches the PA23 source row; no promoted reducer because reference generation fails. | Rejects `service_registry::create<Service,context>` while taking the address of an explicit member function-template specialization. | Fix reference compiler qualified member function-template address lookup with explicit pack arguments before promoting. |
-| `pa23/tests/general/300-function-template-empty-pack-trailing-default.t` | PA22 | PA23 source row itself | `reference-contract-mismatch` | Opus start `1963d796e` mismatches; Opus `1434a6e11` still fails the relaxed LowIR contract. | Accepts, but emits extra EH runtime declarations that current output does not emit. | Find a ref-stable empty-pack/default-tail reducer or fix the EH declaration contract before promoting. |
-| `pa23/tests/general/400-nested-pack-expansion-outer-type-pack.t` | PA21 | PA23 source row itself | `reference-compiler-bug` | Opus start `1963d796e` rejects; Opus `1434a6e11` still does not compare to the external reference. | Accepts, but emits the wrong branch constant for the nested outer type-pack expansion result. | Fix reference compiler nested pack expansion through outer type packs before promoting. |
-| `pa23/tests/general/400-pack-base-expansion.t` | PA21 | PA23 source row itself | `reference-contract-mismatch` | Opus start `1963d796e` accepts but mismatches; Opus `1434a6e11` still fails the relaxed LowIR contract. | Accepts, but emits extra EH runtime declarations that current output does not emit. | Find a ref-stable base-pack reducer or fix the EH declaration contract before promoting. |
-| `pa23/tests/spec/200-defaulted-class-template-argument-pack-prefix-deduction.t` | PA22 | PA23 source row itself | `reference-compiler-bug` | Opus start `1963d796e` accepts but mismatches the PA23 source row; no promoted reducer because reference generation fails. | Rejects the valid call with unknown function `take` after failing defaulted class-template argument pack-prefix deduction. | Fix reference compiler deduction through defaulted class-template argument pack prefixes before promoting. |
-| `pa23/tests/spec/300-constructor-default-pack-partial-ordering.t` | PA22 | PA23 source row itself | `reference-compiler-bug` | Opus start `1963d796e` accepts but mismatches; Opus `1434a6e11` still does not compare to the external reference. | Accepts, but selects the wrong constructor overload, storing `1` where current selects the in-place/default-pack path and stores `2`. | Fix reference compiler constructor partial ordering when default parameters and empty trailing packs interact before promoting. |
-| `pa23/tests/spec/400-explicit-pack-type-argument-uses-bound-type.t` | PA19 | PA23 source row itself | `reference-compiler-bug` | Opus start `1963d796e` accepts but mismatches the PA23 source row; no promoted reducer because reference generation fails. | Rejects a valid explicit type-pack instantiation with `non-class braced-init-list requires one element`, losing the bound type argument. | Fix reference compiler explicit type-pack argument binding in braced-init call arguments before promoting. |
-| `pa23/tests/spec/400-variadic-base-pack-expansion.t` | PA21 | PA23 source row itself | `reference-contract-mismatch` | Opus start `1963d796e` rejects; Opus `1434a6e11` still fails the relaxed LowIR contract. | Accepts, but emits extra EH runtime declarations that current output does not emit. | Find a ref-stable variadic-base reducer or fix the EH declaration contract before promoting. |
+| `pa23/tests/general/200-local-pack-template-id-paren-init-in-if.t` | PA22 | PA23 source row itself | `promoted` | Correct Opus gate rejects at start `1963d796e` with `unknown type name: pair<const Args&...>` and accepts at `1434a6e11`/current. | Current local compiler accepts and generated refs. | Promoted to `pa22/tests/general/100-local-pack-template-id-paren-init-in-if.t`; placement audit suggested PA22:100. |
+| `pa23/tests/general/200-local-pack-template-id-paren-init.t` | PA22 | PA23 source row itself | `promoted` | Correct Opus gate rejects at start `1963d796e` with `unknown type name: pair<const Args&...>` and accepts at `1434a6e11`/current. | Current local compiler accepts and generated refs. | Promoted to `pa22/tests/general/100-local-pack-template-id-paren-init.t`; placement audit suggested PA22:100. |
+| `pa23/tests/general/200-member-function-template-address-explicit-pack.t` | PA22 | PA23 source row itself | `no-missing-opus-feature` | Correct Opus gate accepts at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
+| `pa23/tests/general/300-function-template-empty-pack-trailing-default.t` | PA22 | PA23 source row itself | `no-missing-opus-feature` | Correct Opus gate accepts at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
+| `pa23/tests/general/400-nested-pack-expansion-outer-type-pack.t` | PA21 | PA23 source row itself | `promoted` | Correct Opus gate rejects at start `1963d796e` with `unknown type name: impl<list<A,B>>::type` and accepts at `1434a6e11`/current. | Current local compiler accepts and generated refs. | Promoted to `pa21/tests/general/100-nested-pack-expansion-outer-type-pack.t`; placement audit suggested PA21:100. |
+| `pa23/tests/general/400-pack-base-expansion.t` | PA21 | PA23 source row itself | `no-missing-opus-feature` | Correct Opus gate accepts at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
+| `pa23/tests/spec/200-defaulted-class-template-argument-pack-prefix-deduction.t` | PA22 | PA23 source row itself | `no-missing-opus-feature` | Correct Opus gate accepts at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
+| `pa23/tests/spec/300-constructor-default-pack-partial-ordering.t` | PA22 | PA23 source row itself | `no-missing-opus-feature` | Correct Opus gate accepts at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
+| `pa23/tests/spec/400-explicit-pack-type-argument-uses-bound-type.t` | PA19 | PA23 source row itself | `no-missing-opus-feature` | Correct Opus gate accepts at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
+| `pa23/tests/spec/400-variadic-base-pack-expansion.t` | PA21 | PA23 source row itself | `promoted` | Correct Opus gate rejects at start `1963d796e` with `use of undeclared identifier: sum_bases<Tail...>::sum` and accepts at `1434a6e11`/current. | Current local compiler accepts and generated refs. | Promoted to `pa21/tests/spec/100-variadic-base-pack-expansion.t`; placement audit suggested PA21:100. |
