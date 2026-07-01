@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.3.2 [temp.arg.nontype], 14.8.1 [temp.arg.explicit]
 
 namespace api

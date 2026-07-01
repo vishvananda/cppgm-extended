@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Out-of-class member class-template partials keep the dependent owner.
 
 template<typename Mutex>

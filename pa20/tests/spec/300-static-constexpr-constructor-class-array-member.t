@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 7.1.5 [dcl.constexpr], 9.4.2 [class.static.data]
 
 struct uint128

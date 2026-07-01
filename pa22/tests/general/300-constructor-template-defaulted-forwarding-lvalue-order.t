@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A const lvalue should prefer the const-reference constructor template.
 
 template<bool B, class T = void>

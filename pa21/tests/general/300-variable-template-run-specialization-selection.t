@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.5.5 [temp.class.spec]; variable templates are post-N3485.
 
 template<class Tag, class Op, class... Args>

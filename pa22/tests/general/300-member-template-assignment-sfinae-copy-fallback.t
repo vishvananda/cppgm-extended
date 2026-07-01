@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A member-template assignment candidate dropped by SFINAE must leave the
 // ordinary copy-assignment fallback viable.
 

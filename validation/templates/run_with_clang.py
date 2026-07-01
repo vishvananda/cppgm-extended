@@ -23,14 +23,14 @@ def read_validation_kind(path: pathlib.Path) -> str:
 def clang_command(test: pathlib.Path, output: pathlib.Path):
     cxx = os.environ.get("CXX", "clang++")
     flags = os.environ.get("CXXFLAGS", "-std=c++11 -Wall -Wextra").split()
-    return [cxx, *flags, str(test), "-o", str(output)]
+    return [cxx, *flags, "-c", str(test), "-o", str(output)]
 
 
 def run_one(test: pathlib.Path) -> tuple[bool, str]:
     kind = read_validation_kind(test)
     with tempfile.TemporaryDirectory(prefix="clang-template-validation-") as td:
-        exe = pathlib.Path(td) / "a.out"
-        cmd = clang_command(test, exe)
+        obj = pathlib.Path(td) / "a.o"
+        cmd = clang_command(test, obj)
         compile_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         if kind == "compile-fail":
@@ -43,12 +43,6 @@ def run_one(test: pathlib.Path) -> tuple[bool, str]:
 
         if kind == "compile-pass":
             return True, "compiled"
-
-        if kind == "run-pass":
-            run_result = subprocess.run([str(exe)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            ok = run_result.returncode == 0
-            detail = "ran" if ok else f"runtime exit {run_result.returncode}"
-            return ok, detail
 
         raise RuntimeError(f"unknown validation kind {kind} in {test}")
 

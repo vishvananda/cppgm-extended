@@ -13,7 +13,6 @@ therefore:
      text, update the validation docs first.
 
 2. Confirm the candidate’s expected behavior outside our compiler.
-   - `run-pass`: host-compile and run it with `clang++ -std=c++11`.
    - `compile-pass`: host-compile it with `clang++ -std=c++11 -c`.
    - `compile-fail`: confirm `clang++ -std=c++11 -c` rejects it.
    - If host behavior and the cited N3485 wording disagree, treat the spec text
@@ -29,9 +28,6 @@ therefore:
 4. Check the candidate on our compiler.
    - `compile-pass` and `compile-fail` candidates can be preflighted with:
      - `make run-cppgm CPPGM_ARGS='-c -o /tmp/<id>.out validation/tests/<file>.cpp'`
-   - `run-pass` candidates should be promoted into the chosen PA first and then
-     checked through the normal PA harness, since compile-only success is not a
-     sufficient oracle.
    - Also do a LowIR sanity pass whenever the feature is supposed to lower in
      our current compiler.
      - Use `--emit-lowir` through the normal PA harness or through

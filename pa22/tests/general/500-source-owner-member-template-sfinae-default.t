@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A dependent source-owner collection path must still drop member templates
 // whose defaulted SFINAE parameter remains invalid after concrete substitution.
 

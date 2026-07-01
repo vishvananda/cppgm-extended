@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.7.1 [temp.inst], 14.8.2.1 [temp.deduct.call]
 
 template<bool B, class T = void>

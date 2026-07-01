@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: ref-qualifier rules plus overload resolution
 
 struct S

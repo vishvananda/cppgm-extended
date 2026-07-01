@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Reducer for Boost.Asio query CPO static_query_v: a qualified class-scope
 // variable-template id of class type must instantiate through the concrete
 // owner and carry static-member storage metadata.

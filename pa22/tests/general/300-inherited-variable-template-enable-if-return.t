@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.8.2 [temp.deduct], 14.8.3 [temp.over]
 // Reducer for libstdc++ 15 allocator_traits: a member function template
 // constrains its return type with a static variable template inherited from

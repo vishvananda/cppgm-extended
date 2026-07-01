@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A function-template overload whose defaulted non-type parameter type
 // substitutes to enable_if<false>::type should be SFINAE-dropped, leaving the
 // ordinary overload viable.

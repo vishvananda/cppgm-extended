@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A hidden friend function template declared inside a class template must keep
 // the enclosing template parameters when probed through expression SFINAE.
 

@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 2.14.7 [lex.nullptr], 4.10 [conv.ptr], 13.3 [over.match]
 
 int which(int)

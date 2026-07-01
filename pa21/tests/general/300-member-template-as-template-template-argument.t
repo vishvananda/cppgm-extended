@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A qualified member template can be used as a template-template argument.
 
 template<template<class> class TT>

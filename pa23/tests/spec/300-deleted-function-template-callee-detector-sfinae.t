@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 8.4.3 [dcl.fct.def.delete], 14.8.2 [temp.deduct],
 // and expression SFINAE for deleted function templates named as call callees.
 

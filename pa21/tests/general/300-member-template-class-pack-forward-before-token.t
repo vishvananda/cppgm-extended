@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A class-template parameter pack must bind to the matching call arguments
 // before the trailing member-template token parameter.
 

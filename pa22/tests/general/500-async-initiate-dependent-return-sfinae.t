@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.8.2 [temp.deduct], 14.8.3 [temp.over]
 // Disabled async-initiate fallback overloads with dependent result types must
 // remain substitution failures after template argument replacement.

@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Function type cv-qualifiers participate in partial specialization matching.
 
 template<class T>

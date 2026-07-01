@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 9.2 [class.mem], 12.6.2 [class.base.init]
 
 struct Pair

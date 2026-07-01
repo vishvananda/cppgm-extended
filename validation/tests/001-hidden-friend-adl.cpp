@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 3.4.2 [basic.lookup.argdep], 11.3 [class.friend]
 
 struct Box

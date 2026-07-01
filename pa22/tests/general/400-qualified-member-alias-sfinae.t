@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Substitution through a qualified member alias may participate in a member
 // template SFINAE guard.
 

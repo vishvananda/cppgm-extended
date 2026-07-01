@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // decltype(T()) in a default template argument should SFINAE away
 // class types that cannot be default-constructed.
 

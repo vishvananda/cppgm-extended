@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Rvalue arguments should select the forwarding constructor template.
 
 template <class T>

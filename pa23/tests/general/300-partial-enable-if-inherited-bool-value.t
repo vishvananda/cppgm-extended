@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A class partial-specialization enable_if condition must re-evaluate a
 // substituted inherited bool member value instead of keeping the original
 // placeholder-bearing condition dependent.

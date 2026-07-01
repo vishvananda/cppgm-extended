@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // An inherited constructor template keeps deduction and defaulted enable-if
 // participation when the derived type is a parameter-pack specialization.
 

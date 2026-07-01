@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.8.2 [temp.deduct], 3.4.2 [basic.lookup.argdep],
 // and 5.3.7 [expr.unary.noexcept]. Boost.Asio query_free reduction:
 // dependent decltype/noexcept probes must use ADL at the template definition

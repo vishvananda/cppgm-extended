@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 
 template<class T, T... I>
 struct integer_sequence

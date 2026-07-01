@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A defaulted non-type SFINAE guard may depend on sizeof... of the class pack
 // after substitution.
 

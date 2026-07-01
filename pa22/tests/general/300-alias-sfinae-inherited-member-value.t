@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Alias SFINAE must preserve inherited member values used by noexcept and
 // decltype probes when selecting a converting constructor template.
 

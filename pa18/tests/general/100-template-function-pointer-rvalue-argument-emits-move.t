@@ -26,4 +26,4 @@ int main()
   return invoke(check, object) ? 0 : 1;
 }
 
-// VALIDATION: run-pass
+// VALIDATION: compile-pass

@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 14.8.2 [temp.deduct], expression SFINAE for a data-member
 // probe in the non-result operand of a comma expression.
 

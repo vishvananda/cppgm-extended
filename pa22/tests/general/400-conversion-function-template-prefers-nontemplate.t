@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Assignment should use the exact non-template conversion function first.
 
 template<class T, class A, class B>

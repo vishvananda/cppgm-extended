@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // A cached function-template return type that contains enable_if_t must be
 // revalidated after reentrant static-query partial selection becomes concrete.
 

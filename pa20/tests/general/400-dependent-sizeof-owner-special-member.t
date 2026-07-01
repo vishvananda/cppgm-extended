@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // N3485 focus: 5.19 [expr.const], 14.3.2 [temp.arg.nontype]
 // A dependent non-type template argument may reuse a sizeof expression in the
 // current template owner, including when the same dependent base type is named

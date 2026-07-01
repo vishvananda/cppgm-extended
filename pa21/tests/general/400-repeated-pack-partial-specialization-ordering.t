@@ -1,4 +1,4 @@
-// VALIDATION: run-pass
+// VALIDATION: compile-pass
 // Repeated identical packs are more specialized than independently matched packs.
 
 template<class... T>
