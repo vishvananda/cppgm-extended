@@ -21,6 +21,7 @@
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_model.h"
+#include "semantic_overload.h"
 #include "semantic_parameter_recovery.h"
 #include "semantic_scope_mutation.h"
 #include "semantic_trace.h"
@@ -1598,22 +1599,30 @@ void analyze_range_for_statement(SemanticContext & ctx,
         class_has_range_member_name(range_info, "begin") &&
         class_has_range_member_name(range_info, "end");
     const CppAstNode range_id = make_id_expr_ast_node(range_name);
-    ExprInfo begin_expr =
-        analyze_range_helper_expression(ctx,
-                                        body_scope,
-                                        use_member_begin_end ?
-                                            make_call_expr_ast(make_member_expr_ast(range_id,
-                                                                                    "begin")) :
-                                            make_call_expr_ast(make_id_expr_ast_node("begin"),
-                                                               vector<CppAstNode>(1, range_id)));
-    ExprInfo end_expr =
-        analyze_range_helper_expression(ctx,
-                                        body_scope,
-                                        use_member_begin_end ?
-                                            make_call_expr_ast(make_member_expr_ast(range_id,
-                                                                                    "end")) :
-                                            make_call_expr_ast(make_id_expr_ast_node("end"),
-                                                               vector<CppAstNode>(1, range_id)));
+    ExprInfo begin_expr;
+    ExprInfo end_expr;
+    if(use_member_begin_end) {
+      begin_expr =
+          analyze_range_helper_expression(ctx,
+                                          body_scope,
+                                          make_call_expr_ast(make_member_expr_ast(range_id,
+                                                                                  "begin")));
+      end_expr =
+          analyze_range_helper_expression(ctx,
+                                          body_scope,
+                                          make_call_expr_ast(make_member_expr_ast(range_id,
+                                                                                  "end")));
+    } else {
+      vector<const CppAstNode *> range_args(1, &range_id);
+      begin_expr = semantic_overload::analyze_adl_only_call_expression(ctx,
+                                                                       body_scope,
+                                                                       "begin",
+                                                                       range_args);
+      end_expr = semantic_overload::analyze_adl_only_call_expression(ctx,
+                                                                     body_scope,
+                                                                     "end",
+                                                                     range_args);
+    }
     const string begin_name = ctx.next_synthetic_local_name("begin");
     const string end_name = ctx.next_synthetic_local_name("end");
     std::vector<ValueBinding> iterator_bindings;

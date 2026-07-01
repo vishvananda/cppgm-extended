@@ -98,6 +98,13 @@ semantic_conversion::ExprInfo analyze_functional_cast(
     const CppAstNode * direct_braced_init,
     const CallAnalysisOptions & options = CallAnalysisOptions());
 
+semantic_conversion::ExprInfo analyze_adl_only_call_expression(
+    SemanticContext & ctx,
+    semantic_model::Scope & scope,
+    const std::string & name,
+    const std::vector<const CppAstNode *> & arg_nodes,
+    const CallAnalysisOptions & options = CallAnalysisOptions());
+
 semantic_conversion::ExprInfo analyze_call_expression(
     SemanticContext & ctx,
     semantic_model::Scope & scope,

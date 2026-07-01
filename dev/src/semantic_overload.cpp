@@ -7541,6 +7541,119 @@ void initialize_operator_candidate_scope(
   direct_function_template_slot(operator_scope, operator_name) = templates;
 }
 
+namespace {
+
+template<typename Map>
+void overlay_map_entries(Map & out, const Map & in)
+{
+  for(typename Map::const_iterator it = in.begin(); it != in.end(); ++it) {
+    out[it->first] = it->second;
+  }
+}
+
+void overlay_adl_argument_lookup_bindings(Scope & out, const Scope & scope)
+{
+  vector<const Scope *> path;
+  for(const Scope * current = &scope; current; current = current->parent) {
+    path.push_back(current);
+  }
+  for(vector<const Scope *>::const_reverse_iterator it = path.rbegin();
+      it != path.rend();
+      ++it) {
+    const Scope & current = **it;
+    overlay_map_entries(out.named_types, current.named_types);
+    overlay_map_entries(out.named_type_access, current.named_type_access);
+    overlay_map_entries(out.named_type_packs, current.named_type_packs);
+    overlay_map_entries(out.named_value_packs, current.named_value_packs);
+    overlay_map_entries(out.named_pack_sizes, current.named_pack_sizes);
+    out.template_bound_type_names.insert(current.template_bound_type_names.begin(),
+                                         current.template_bound_type_names.end());
+    out.template_bound_type_pack_names.insert(
+        current.template_bound_type_pack_names.begin(),
+        current.template_bound_type_pack_names.end());
+    out.template_bound_value_names.insert(current.template_bound_value_names.begin(),
+                                          current.template_bound_value_names.end());
+    out.template_bound_value_pack_names.insert(
+        current.template_bound_value_pack_names.begin(),
+        current.template_bound_value_pack_names.end());
+    out.template_bound_template_names.insert(
+        current.template_bound_template_names.begin(),
+        current.template_bound_template_names.end());
+    overlay_map_entries(out.template_bound_template_arguments,
+                        current.template_bound_template_arguments);
+    overlay_map_entries(out.values, current.values);
+    overlay_map_entries(out.namespace_bindings, current.namespace_bindings);
+    overlay_map_entries(out.class_templates, current.class_templates);
+    overlay_map_entries(out.alias_templates, current.alias_templates);
+    overlay_map_entries(out.variable_templates, current.variable_templates);
+  }
+}
+
+}  // namespace
+
+ExprInfo analyze_adl_only_call_expression(SemanticContext & ctx,
+                                          Scope & scope,
+                                          const std::string & name,
+                                          const vector<const CppAstNode *> & arg_nodes,
+                                          const CallAnalysisOptions & options)
+{
+  vector<ExprInfo> arg_values;
+  vector<TypePtr> arg_types;
+  arg_values.reserve(arg_nodes.size());
+  arg_types.reserve(arg_nodes.size());
+  for(size_t i = 0; i < arg_nodes.size(); ++i) {
+    arg_values.push_back(ctx.analyze_expression(scope, *arg_nodes[i]));
+    arg_types.push_back(arg_values.back().type);
+  }
+
+  vector<Scope *> associated_scopes;
+  vector<FunctionBinding *> associated_functions;
+  vector<FunctionTemplateDecl *> associated_templates;
+  collect_associated_function_candidates_for_types(ctx,
+                                                   name,
+                                                   arg_types,
+                                                   associated_scopes,
+                                                   associated_functions,
+                                                   associated_templates);
+  lookup_adl_functions_in_scopes(associated_scopes, name, associated_functions);
+  lookup_adl_function_templates_in_scopes(associated_scopes,
+                                          name,
+                                          associated_templates);
+
+  Scope adl_scope(nullptr, "<adl-only>", false);
+  overlay_adl_argument_lookup_bindings(adl_scope, scope);
+  if(!associated_functions.empty()) {
+    direct_function_set_slot(adl_scope, name) = associated_functions;
+  }
+  if(!associated_templates.empty()) {
+    direct_function_template_slot(adl_scope, name) = associated_templates;
+  }
+
+  CppAstNode callee;
+  callee.kind = CppAstKind::id_expression;
+  callee.value = name;
+  CppAstNode call;
+  call.kind = CppAstKind::call_expression;
+  call.children.push_back(callee);
+  CppAstNode args;
+  args.kind = CppAstKind::paren_argument_list;
+  for(size_t i = 0; i < arg_nodes.size(); ++i) {
+    args.children.push_back(*arg_nodes[i]);
+  }
+  call.children.push_back(args);
+
+  CallAnalysisHints adl_hints = options.hints ? *options.hints : CallAnalysisHints();
+  adl_hints.args.assign(arg_values.size(), nullptr);
+  for(size_t i = 0; i < arg_values.size(); ++i) {
+    adl_hints.args[i] = &arg_values[i];
+  }
+  return analyze_call_expression(ctx,
+                                 adl_scope,
+                                 call,
+                                 CallAnalysisOptions(options.instantiate_bodies,
+                                                     &adl_hints));
+}
+
 ExprInfo analyze_functional_cast(SemanticContext & ctx,
                                  Scope & scope,
                                  const TypePtr & callee_type,
