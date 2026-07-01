@@ -14,6 +14,7 @@
 #include "semantic_conversion.h"
 #include "semantic_class_model.h"
 #include "semantic_declaration.h"
+#include "semantic_errors.h"
 #include "semantic_lookup.h"
 #include "semantic_overload.h"
 #include "semantic_template_function.h"
@@ -123,17 +124,59 @@ const CppAstNode * unwrap_initializer_payload(const CppAstNode & node)
   return &node;
 }
 
-std::vector<const CppAstNode *> initializer_argument_nodes(const CppAstNode & node)
+bool token_after_node_is_simple(SemanticContext & ctx,
+                                const CppAstNode & node,
+                                ETokenType type)
+{
+  const template_api::TemplateWitnessContext witness_ctx =
+      ctx.template_witness_context();
+  if(!witness_ctx.token_sequence ||
+     node.token_end >= witness_ctx.token_sequence->size()) {
+    return false;
+  }
+  return witness_ctx.token_sequence->peek(node.token_end).is_simple(type);
+}
+
+bool eval_initializer_or_soft_fail(constant_eval::Evaluator & evaluator,
+                                   const CppAstNode & node,
+                                   constant_eval::ConstexprValue & value,
+                                   const TypePtr & target = TypePtr())
+{
+  try
+  {
+    return evaluator.eval_initializer(node, value, target);
+  }
+  catch(const ExplicitSpecializationAfterInstantiationError &)
+  {
+    throw;
+  }
+  catch(const SemanticDiagnosticError &)
+  {
+    throw;
+  }
+  catch(const SemanticSoftFailure &)
+  {
+    return false;
+  }
+}
+
+std::vector<const CppAstNode *> initializer_argument_nodes(SemanticContext & ctx,
+                                                          const CppAstNode & node)
 {
   std::vector<const CppAstNode *> args;
   if(node.kind == CppAstKind::initializer && node.children.size() == 1) {
-    return initializer_argument_nodes(node.children[0]);
+    return initializer_argument_nodes(ctx, node.children[0]);
   }
   if(node.kind == CppAstKind::call_expression) {
     if(const CppAstNode * argument_list = find_child_kind(node, CppAstKind::argument_list)) {
       if(argument_list->children.size() == 1 &&
          argument_list->children[0].kind == CppAstKind::braced_init_list) {
-        return initializer_argument_nodes(argument_list->children[0]);
+        if(!node.children.empty() &&
+           token_after_node_is_simple(ctx, node.children[0], OP_LPAREN)) {
+          args.push_back(&argument_list->children[0]);
+          return args;
+        }
+        return initializer_argument_nodes(ctx, argument_list->children[0]);
       }
       for(size_t i = 0; i < argument_list->children.size(); ++i) {
         args.push_back(&argument_list->children[i]);
@@ -143,7 +186,8 @@ std::vector<const CppAstNode *> initializer_argument_nodes(const CppAstNode & no
     if(const CppAstNode * paren_args = find_child_kind(node, CppAstKind::paren_argument_list)) {
       if(paren_args->children.size() == 1 &&
          paren_args->children[0].kind == CppAstKind::braced_init_list) {
-        return initializer_argument_nodes(paren_args->children[0]);
+        args.push_back(&paren_args->children[0]);
+        return args;
       }
       for(size_t i = 0; i < paren_args->children.size(); ++i) {
         args.push_back(&paren_args->children[i]);
@@ -154,8 +198,18 @@ std::vector<const CppAstNode *> initializer_argument_nodes(const CppAstNode & no
   }
   if(node.kind == CppAstKind::paren_initializer ||
      node.kind == CppAstKind::argument_list ||
-     node.kind == CppAstKind::paren_argument_list ||
-     node.kind == CppAstKind::braced_init_list) {
+     node.kind == CppAstKind::paren_argument_list) {
+    if(node.children.size() == 1 &&
+       node.children[0].kind == CppAstKind::braced_init_list) {
+      args.push_back(&node.children[0]);
+      return args;
+    }
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      args.push_back(&node.children[i]);
+    }
+    return args;
+  }
+  if(node.kind == CppAstKind::braced_init_list) {
     for(size_t i = 0; i < node.children.size(); ++i) {
       args.push_back(&node.children[i]);
     }
@@ -1075,7 +1129,7 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
     return false;
   }
 
-  std::vector<const CppAstNode *> args = initializer_argument_nodes(node);
+  std::vector<const CppAstNode *> args = initializer_argument_nodes(ctx, node);
   std::vector<CppAstNode> expanded_arg_storage;
   if(!expand_initializer_argument_nodes(ctx, scope, args, expanded_arg_storage)) {
     return false;
@@ -1163,7 +1217,7 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
   std::vector<constant_eval::ConstexprValue> evaluated_args;
   if(args.size() == 1) {
     constant_eval::ConstexprValue direct_value;
-    if(evaluator.eval_initializer(*args[0], direct_value) &&
+    if(eval_initializer_or_soft_fail(evaluator, *args[0], direct_value) &&
        constant_eval::constexpr_value_cast(direct_value, target, out)) {
       out.type = target;
       return true;
@@ -1189,7 +1243,7 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
         evaluated_arg_infos.reserve(args.size());
         for(size_t i = 0; i < args.size(); ++i) {
           constant_eval::ConstexprValue value;
-          if(!evaluator.eval_initializer(*args[i], value)) {
+          if(!eval_initializer_or_soft_fail(evaluator, *args[i], value)) {
             evaluated_args.clear();
             return nullptr;
           }
@@ -1208,13 +1262,30 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
           evaluated_arg_infos.push_back(info_arg);
         }
         converted.clear();
-        FunctionBinding * selected =
-            ctx.select_constructor_from_exprs(scope,
-                                              *info,
-                                              evaluated_arg_infos,
-                                              converted,
-                                              nullptr,
-                                              ctor_options);
+        FunctionBinding * selected = nullptr;
+        try
+        {
+          selected = ctx.select_constructor_from_exprs(scope,
+                                                       *info,
+                                                       evaluated_arg_infos,
+                                                       converted,
+                                                       nullptr,
+                                                       ctor_options);
+        }
+        catch(const ExplicitSpecializationAfterInstantiationError &)
+        {
+          throw;
+        }
+        catch(const SemanticDiagnosticError &)
+        {
+          throw;
+        }
+        catch(const SemanticSoftFailure &)
+        {
+          evaluated_args.clear();
+          converted.clear();
+          return nullptr;
+        }
         selected_from_evaluated_args = selected != nullptr;
         if(!selected_from_evaluated_args) {
           evaluated_args.clear();
@@ -1224,18 +1295,33 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
   FunctionBinding * ctor =
       prefer_evaluated_constructor_args ? try_select_from_evaluated_args() : nullptr;
   if(!ctor) {
-    ctor =
-        (node.kind == CppAstKind::braced_init_list) ?
-            ctx.select_constructor_for_direct_braced_init(scope,
-                                                          *info,
-                                                          node,
-                                                          converted,
-                                                          ctor_options) :
-            ctx.select_constructor(scope,
-                                   *info,
-                                   args,
-                                   converted,
-                                   ctor_options);
+    try
+    {
+      ctor =
+          (node.kind == CppAstKind::braced_init_list) ?
+              ctx.select_constructor_for_direct_braced_init(scope,
+                                                            *info,
+                                                            node,
+                                                            converted,
+                                                            ctor_options) :
+              ctx.select_constructor(scope,
+                                     *info,
+                                     args,
+                                     converted,
+                                     ctor_options);
+    }
+    catch(const ExplicitSpecializationAfterInstantiationError &)
+    {
+      throw;
+    }
+    catch(const SemanticDiagnosticError &)
+    {
+      throw;
+    }
+    catch(const SemanticSoftFailure &)
+    {
+      return false;
+    }
   }
   if(!ctor) {
     ctor = try_select_from_evaluated_args();
@@ -1268,9 +1354,12 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
             evaluated_args[i] :
             constant_eval::ConstexprValue();
     if(!selected_from_evaluated_args || i >= evaluated_args.size()) {
-      if(!evaluator.eval_initializer(*chosen_args[i], value, i + 1 < ctor->params.size()
-                                                              ? ctor->params[i + 1].second
-                                                              : TypePtr())) {
+      if(!eval_initializer_or_soft_fail(evaluator,
+                                        *chosen_args[i],
+                                        value,
+                                        i + 1 < ctor->params.size()
+                                            ? ctor->params[i + 1].second
+                                            : TypePtr())) {
         if(!selected_from_evaluated_args) {
           FunctionBinding * evaluated_ctor = try_select_from_evaluated_args();
           if(evaluated_ctor && evaluated_args.size() == chosen_args.size()) {
@@ -1313,7 +1402,7 @@ bool evaluate_array_typed_initializer(SemanticContext & ctx,
   }
 
   if(payload->kind == CppAstKind::braced_init_list) {
-    std::vector<const CppAstNode *> args = initializer_argument_nodes(*payload);
+    std::vector<const CppAstNode *> args = initializer_argument_nodes(ctx, *payload);
     std::vector<CppAstNode> expanded_arg_storage;
     if(!expand_initializer_argument_nodes(ctx, scope, args, expanded_arg_storage)) {
       return false;

@@ -10202,7 +10202,22 @@ private:
               source_args.reserve(ctor_arg_nodes.size());
               for(size_t i = 0; i < ctor_arg_nodes.size(); ++i) {
                 constant_eval::ConstexprValue value;
-                if(!evaluate_constant_expression_value(scope, *ctor_arg_nodes[i], value)) {
+                try
+                {
+                  if(!evaluate_constant_expression_value(scope, *ctor_arg_nodes[i], value)) {
+                    return nullptr;
+                  }
+                }
+                catch(const ExplicitSpecializationAfterInstantiationError &)
+                {
+                  throw;
+                }
+                catch(const SemanticDiagnosticError &)
+                {
+                  throw;
+                }
+                catch(const SemanticSoftFailure &)
+                {
                   return nullptr;
                 }
                 ExprInfo source_arg;
@@ -16908,12 +16923,27 @@ private:
                                      const CppAstNode & initializer,
                                      long long & value) override
   {
-    const ScopedConstantEvaluationOutputSuppression constant_evaluation_output(
-        *this);
-    return semantic_consteval::evaluate_initializer_integral(*this,
-                                                             scope,
-                                                             initializer,
-                                                             value);
+    try
+    {
+      const ScopedConstantEvaluationOutputSuppression constant_evaluation_output(
+          *this);
+      return semantic_consteval::evaluate_initializer_integral(*this,
+                                                               scope,
+                                                               initializer,
+                                                               value);
+    }
+    catch(const ExplicitSpecializationAfterInstantiationError &)
+    {
+      throw;
+    }
+    catch(const SemanticDiagnosticError &)
+    {
+      throw;
+    }
+    catch(const SemanticSoftFailure &)
+    {
+      return false;
+    }
   }
 
   TypePtr lookup_type_node(Scope & scope,

@@ -1,0 +1,61 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $direct : obj<8x4>
+  slot $arg__1 : obj<8x4>
+  slot $functional : obj<8x4>
+  slot $arg__2 : obj<8x4>
+
+  block ^entry:
+    %t1 = addr $direct
+    %t2 = addr $arg__1
+    call void @Payload__Payload__ov4(%t2, 1, 2)
+    call void @Holder__Holder__ov2(%t1, %t2)
+    %t3 = addr $functional
+    %t4 = addr $arg__2
+    call void @Payload__Payload__ov4(%t4, 3, 4)
+    call void @Holder__Holder__ov2(%t3, %t4)
+    %t5 = addr $direct
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = index i8 [projection=field] %t6, 4
+    %t8 = load i32 %t7
+    %t9 = addr $functional
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load i32 %t11
+    %t13 = binary add i32 %t8, %t12
+    %t14 = binary sub i32 %t13, 5
+    return i32 %t14
+}
+function @Payload__Payload__ov4(%this : ptr, %code : i32, %detail : i32) -> void [unwind=no, binding=weak, object=_ZN7PayloadC1Eii] {
+  slot $this : ptr
+  slot $code : i32
+  slot $detail : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %code, $code
+    store i32 %detail, $detail
+    %t1 = load i32 $code
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load i32 $detail
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store i32 %t4, %t6
+    return void
+}
+function @Holder__Holder__ov2(%this : ptr, %v : ptr [pass=reference]) -> void [binding=weak, object=_ZN6HolderC1EO7Payload] {
+  slot $this : ptr
+  slot $v : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %v, $v
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $v
+    copyobj 8x4 %t3, %t2
+    return void
+}
+alias object _ZN7PayloadC2Eii = @Payload__Payload__ov4
+alias object _ZN6HolderC2EO7Payload = @Holder__Holder__ov2

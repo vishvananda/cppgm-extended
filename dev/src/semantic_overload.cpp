@@ -7257,6 +7257,27 @@ vector<const CppAstNode *> initializer_argument_nodes(const CppAstNode & node)
   return args;
 }
 
+bool token_after_node_is_simple(SemanticContext & ctx,
+                                const CppAstNode & node,
+                                ETokenType type)
+{
+  const template_api::TemplateWitnessContext witness_ctx =
+      ctx.template_witness_context();
+  if(!witness_ctx.token_sequence ||
+     node.token_end >= witness_ctx.token_sequence->size()) {
+    return false;
+  }
+  return witness_ctx.token_sequence->peek(node.token_end).is_simple(type);
+}
+
+bool call_argument_list_is_parenthesized(SemanticContext & ctx,
+                                         const CppAstNode & callee_node,
+                                         const CppAstNode & argument_list)
+{
+  return argument_list.kind == CppAstKind::paren_argument_list ||
+         token_after_node_is_simple(ctx, callee_node, OP_LPAREN);
+}
+
 }  // namespace
 
 namespace {
@@ -9939,7 +9960,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
     if(options.context && *options.context) {
       out << " [context " << options.context << "]";
     }
-    throw logic_error(out.str());
+    throw NoViableConstructorError(out.str());
   }
 
   std::set<std::string> deduped_match_keys;
@@ -10030,7 +10051,7 @@ FunctionBinding * select_constructor_for_direct_braced_init(
       return ctor;
     }
   }
-  catch(const logic_error & e)
+  catch(const SemanticSoftFailure & e)
   {
     single_arg_error = e.what();
   }
@@ -10039,7 +10060,7 @@ FunctionBinding * select_constructor_for_direct_braced_init(
       initializer_argument_nodes(direct_braced_init);
   if(expanded_arg_nodes.size() == 1 && expanded_arg_nodes[0] == &direct_braced_init) {
     if(!single_arg_error.empty()) {
-      throw logic_error(single_arg_error);
+      throw NoViableConstructorError(single_arg_error);
     }
     return nullptr;
   }
@@ -10054,13 +10075,14 @@ FunctionBinding * select_constructor_for_direct_braced_init(
                               args_out,
                               expanded_options);
   }
-  catch(const logic_error & e)
+  catch(const SemanticSoftFailure & e)
   {
     if(single_arg_error.empty()) {
       throw;
     }
-    throw logic_error(string(e.what()) + " [single-arg-direct-braced-init " +
-                      single_arg_error + "]");
+    throw NoViableConstructorError(string(e.what()) +
+                                   " [single-arg-direct-braced-init " +
+                                   single_arg_error + "]");
   }
 }
 
@@ -10609,7 +10631,10 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
   const CppAstNode * direct_braced_init = nullptr;
   if(argument_list &&
      argument_list->children.size() == 1 &&
-     argument_list->children[0].kind == CppAstKind::braced_init_list) {
+     argument_list->children[0].kind == CppAstKind::braced_init_list &&
+     !call_argument_list_is_parenthesized(ctx,
+                                          lookup_callee_node,
+                                          *argument_list)) {
     direct_braced_init = &argument_list->children[0];
   }
   vector<unique_ptr<CppAstNode> > expanded_arg_storage;
