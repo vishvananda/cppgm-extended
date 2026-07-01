@@ -8208,8 +8208,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       parsed_result = resolved_result;
     }
     if(template_argument_semantics::type_depends_on_template_parameter(ctx,
-                                                                       parsed_result) &&
-       type_mentions_template_parameter_name(parsed_result, pattern_decl.parameters)) {
+                                                                       parsed_result)) {
       return;
     }
 

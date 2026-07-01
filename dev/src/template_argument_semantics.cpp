@@ -7403,6 +7403,55 @@ bool callable_object_structured_invocation_result(
   return saw_viable && result_type;
 }
 
+bool structured_invocation_result_type(
+    template_api::TemplateTypeSystem & type_system,
+    template_api::TemplateServices * services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TypePtr & callable_type,
+    const vector<TypePtr> & argument_types,
+    TypePtr & result_type,
+    bool & lookup_complete)
+{
+  result_type.reset();
+  lookup_complete = true;
+
+  const semantic_conversion::ExprInfo callable_expr =
+      make_declval_trait_expr_info(callable_type);
+  if(!callable_expr.type) {
+    return false;
+  }
+
+  vector<semantic_conversion::ExprInfo> arg_exprs;
+  arg_exprs.reserve(argument_types.size());
+  for(size_t i = 0; i < argument_types.size(); ++i) {
+    arg_exprs.push_back(make_declval_trait_expr_info(argument_types[i]));
+    if(!arg_exprs.back().type) {
+      return false;
+    }
+  }
+
+  FunctionBinding * selected_binding = nullptr;
+  if(member_pointer_structured_invocation_result(type_system,
+                                                 callable_expr.type,
+                                                 arg_exprs,
+                                                 result_type)) {
+    return true;
+  }
+  if(function_type_structured_invocation_result(callable_expr.type,
+                                                arg_exprs,
+                                                result_type)) {
+    return true;
+  }
+  return callable_object_structured_invocation_result(type_system,
+                                                     services,
+                                                     scope,
+                                                     callable_expr,
+                                                     arg_exprs,
+                                                     result_type,
+                                                     selected_binding,
+                                                     lookup_complete);
+}
+
 bool evaluate_structured_invocable_r_trait(
     template_api::TemplateTypeSystem & type_system,
     const vector<TemplateArgument> & arguments,
@@ -26179,11 +26228,66 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
       owner_template_id = *base->named_dependent_qualified_owner_template_id;
     }
   }
+  Scope & raw_scope = scope.require();
+
+  if(member_path.size() == 1 && trim_space(member_path[0]) == "type") {
+    void * class_template_decl = nullptr;
+    vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
+    if(named_type_dependent_class_template(owner_type,
+                                           class_template_decl,
+                                           dependent_arguments)) {
+      ClassTemplateDecl * class_template =
+          static_cast<ClassTemplateDecl *>(class_template_decl);
+      if(class_template && class_template->declaring_scope) {
+        TemplateIdSyntax template_id;
+        template_id.name.name = class_template->name;
+        template_id.arguments.reserve(dependent_arguments.size());
+        template_id.argument_syntaxes.reserve(dependent_arguments.size());
+        for(size_t i = 0; i < dependent_arguments.size(); ++i) {
+          const DependentAliasTemplateArgumentSyntax & dependent_argument =
+              dependent_arguments[i];
+          string argument_text = substituted_template_argument_text(dependent_argument);
+          if(argument_text.empty()) {
+            argument_text = trim_space(dependent_argument.syntax.text);
+          }
+          TemplateArgumentSyntax argument_syntax = dependent_argument.syntax;
+          if(argument_syntax.text.empty()) {
+            argument_syntax.text = argument_text;
+          }
+          if(dependent_argument.type) {
+            argument_syntax.resolved_type = dependent_argument.type;
+          }
+          template_id.arguments.push_back(argument_text);
+          template_id.argument_syntaxes.push_back(argument_syntax);
+        }
+
+        TypePtr standard_member_type;
+        switch(try_resolve_standard_meta_member_type(services,
+                                                     *class_template->declaring_scope,
+                                                     raw_scope,
+                                                     "type",
+                                                     template_id,
+                                                     standard_member_type)) {
+        case STANDARD_META_MEMBER_RESOLVED:
+          out = standard_member_type;
+          return DependentNamedTypeResolutionStatus::Resolved;
+        case STANDARD_META_MEMBER_SUBSTITUTION_FAILURE:
+          throw_substitution_failure(
+              std::string("standard meta member type substitution failed [template ") +
+                  class_template->name + "]",
+              std::string(),
+              "template-resolution");
+        case STANDARD_META_MEMBER_NOT_APPLICABLE:
+          break;
+        }
+      }
+    }
+  }
 
   if(type_is_dependent(owner_type)) {
     TypePtr current_owner =
         current_specialization_type_for_dependent_owner(services,
-                                                        scope.require(),
+                                                        raw_scope,
                                                         owner_type);
     if(current_owner) {
       owner_type = current_owner;
@@ -26222,7 +26326,6 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
      !owner_has_structured_template_semantics &&
      template_id_syntax_has_payload(owner_template_id)) {
     TypePtr resolved_owner;
-    Scope & raw_scope = scope.require();
     if((resolve_template_id_syntax_type_in_current_scope(
             services,
             raw_scope,
@@ -30180,7 +30283,10 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
   const bool is_conditional =
       qualifier_template_id.name.name == "conditional" &&
       qualifier_template_id.arguments.size() == 3;
-  if(!is_enable_if && !is_conditional) {
+  const bool is_result_of =
+      qualifier_template_id.name.name == "result_of" &&
+      qualifier_template_id.arguments.size() == 1;
+  if(!is_enable_if && !is_conditional && !is_result_of) {
     return STANDARD_META_MEMBER_NOT_APPLICABLE;
   }
 
@@ -30193,6 +30299,50 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
      decl->name != qualifier_template_id.name.name ||
      !scope_is_std_namespace_or_inline_child(decl->declaring_scope)) {
     return STANDARD_META_MEMBER_NOT_APPLICABLE;
+  }
+
+  if(is_result_of) {
+    TypePtr call_signature;
+    if(!resolve_standard_meta_type_argument(
+           services, argument_scope, qualifier_template_id, 0, call_signature)) {
+      return STANDARD_META_MEMBER_NOT_APPLICABLE;
+    }
+    if(!qualifier_template_id.argument_syntaxes.empty() &&
+       direct_function_type_syntax_has_pack_parameter_without_varargs(
+           qualifier_template_id.argument_syntaxes[0])) {
+      clear_direct_function_variadic(call_signature);
+    }
+    if(!call_signature ||
+       service_type_depends_on_template_parameter(services, call_signature)) {
+      return STANDARD_META_MEMBER_NOT_APPLICABLE;
+    }
+
+    TypePtr function_type = strip_top_level_cv(call_signature);
+    if(!function_type ||
+       function_type->kind != Type::TK_FUNCTION ||
+       !function_type->inner) {
+      return STANDARD_META_MEMBER_SUBSTITUTION_FAILURE;
+    }
+
+    TypePtr result_type;
+    bool lookup_complete = true;
+    if(!structured_invocation_result_type(service_type_system(services),
+                                          &services,
+                                          template_api::make_template_environment(argument_scope),
+                                          function_type->inner,
+                                          function_type->params,
+                                          result_type,
+                                          lookup_complete)) {
+      return lookup_complete ?
+          STANDARD_META_MEMBER_SUBSTITUTION_FAILURE :
+          STANDARD_META_MEMBER_NOT_APPLICABLE;
+    }
+    if(!result_type ||
+       service_type_depends_on_template_parameter(services, result_type)) {
+      return STANDARD_META_MEMBER_NOT_APPLICABLE;
+    }
+    out = result_type;
+    return STANDARD_META_MEMBER_RESOLVED;
   }
 
   bool condition_value = false;
