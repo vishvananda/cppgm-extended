@@ -173,6 +173,18 @@ sub write_file
 	close($fh) or die "Unable to close $path: $!";
 }
 
+sub read_status_file
+{
+	my ($path) = @_;
+	return undef if !-e $path;
+	open(my $fh, '<', $path) or die "Unable to read $path: $!";
+	my $data = <$fh>;
+	close($fh) or die "Unable to close $path: $!";
+	return undef if !defined($data);
+	chomp($data);
+	return $data;
+}
+
 sub encode_env
 {
 	my ($env) = @_;
@@ -724,6 +736,22 @@ sub run_batch
 	die "Unsupported wrapped batch mode $mode";
 }
 
+sub witness_test_has_successful_reference
+{
+	my ($test) = @_;
+	my $test_out = $test;
+	$test_out =~ s/\.t$/.ref/;
+	my $status = read_status_file("$test_out.exit_status");
+	return 1 if !defined($status);
+	return $status eq "EXIT_SUCCESS";
+}
+
+sub filter_witness_tests
+{
+	my ($tests) = @_;
+	return [grep { witness_test_has_successful_reference($_) } @{$tests}];
+}
+
 sub run_single
 {
 	my ($mode, $app, $suffix, $tests, $jobs, $verbose, $assignment) = @_;
@@ -769,6 +797,10 @@ die "Unsupported run_all_tests mode $mode" if !exists($patterns{$mode});
 ensure_test_app_available($app, $suffix, $tests);
 
 my @tests = collect_tests($tests, $patterns{$mode});
+if ($mode eq 'witness_t' && $suffix eq 'ref')
+{
+	@tests = @{filter_witness_tests(\@tests)};
+}
 my $ntests = scalar(@tests);
 if (!$verbose && !$keep_going)
 {
