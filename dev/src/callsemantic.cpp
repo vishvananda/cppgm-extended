@@ -11933,6 +11933,15 @@ private:
       bool reference_class_templates_only = false,
       bool suppress_source_capture = false) override
   {
+    TypePtr selected_conditional_branch;
+    if(try_instantiate_known_conditional_alias_branch(decl,
+                                                      use_scope,
+                                                      arg_texts,
+                                                      arg_syntaxes,
+                                                      selected_conditional_branch)) {
+      return selected_conditional_branch;
+    }
+
     vector<TemplateArgument> arguments;
     if(!resolve_template_arguments(
            use_scope, decl.parameters, arg_texts, arg_syntaxes, arguments, decl.declaring_scope)) {
@@ -11987,6 +11996,161 @@ private:
         arg_syntaxes,
         reference_class_templates_only,
         suppress_source_capture);
+  }
+
+  bool alias_selector_argument_matches_parameter(
+      const DependentAliasTemplateArgumentSyntax & argument,
+      const TemplateParameterInfo & parameter) const
+  {
+    vector<string> names;
+    if(!parameter.name.empty()) {
+      names.push_back(parameter.name);
+    }
+    names.insert(names.end(),
+                 parameter.alternate_names.begin(),
+                 parameter.alternate_names.end());
+    if(!parameter.placeholder_key.empty()) {
+      names.push_back(parameter.placeholder_key);
+    }
+    const string argument_text = trim_space(argument.text);
+    const auto text_matches =
+        [&](const string & text) -> bool
+        {
+          const string trimmed = trim_space(text);
+          return !trimmed.empty() &&
+                 std::find(names.begin(), names.end(), trimmed) != names.end();
+        };
+    if(text_matches(argument_text) ||
+       text_matches(argument.syntax.text)) {
+      return true;
+    }
+    TypePtr argument_type =
+        argument.type ? argument.type : argument.syntax.resolved_type;
+    TypePtr base = strip_top_level_cv(argument_type);
+    if(!base || base->kind != Type::TK_NAMED) {
+      return false;
+    }
+    return text_matches(base->named_key) ||
+           text_matches(base->named_display) ||
+           text_matches(base->named_semantic_payload);
+  }
+
+  bool alias_has_direct_conditional_selector_pattern(
+      const AliasTemplateDecl & decl) const
+  {
+    if(decl.parameters.size() != 3 ||
+       !decl.resolved_type_pattern ||
+       decl.parameters[0].kind != TemplateParameterInfo::TP_NON_TYPE ||
+       decl.parameters[1].kind != TemplateParameterInfo::TP_TYPE ||
+       decl.parameters[2].kind != TemplateParameterInfo::TP_TYPE ||
+       decl.parameters[0].parameter_pack ||
+       decl.parameters[1].parameter_pack ||
+       decl.parameters[2].parameter_pack) {
+      return false;
+    }
+
+    TypePtr owner;
+    vector<string> members;
+    bool leading_typename = false;
+    if(!named_type_dependent_qualified_member(decl.resolved_type_pattern,
+                                              owner,
+                                              members,
+                                              leading_typename) ||
+       members.size() != 1 ||
+       trim_space(members[0]) != "type") {
+      return false;
+    }
+
+    void * selector_template = nullptr;
+    vector<DependentAliasTemplateArgumentSyntax> selector_arguments;
+    if(!named_type_dependent_class_template(owner,
+                                            selector_template,
+                                            selector_arguments) ||
+       !selector_template ||
+       selector_arguments.size() != 3) {
+      return false;
+    }
+    for(size_t i = 0; i < 3; ++i) {
+      if(!alias_selector_argument_matches_parameter(selector_arguments[i],
+                                                    decl.parameters[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool try_instantiate_known_conditional_alias_branch(
+      AliasTemplateDecl & decl,
+      Scope & use_scope,
+      const vector<string> & arg_texts,
+      const vector<TemplateArgumentSyntax> * arg_syntaxes,
+      TypePtr & out)
+  {
+    out.reset();
+    if(arg_texts.size() != 3 ||
+       !decl.declaring_scope ||
+       !alias_has_direct_conditional_selector_pattern(decl)) {
+      return false;
+    }
+
+    TemplateArgument condition;
+    const TemplateArgumentSyntax * condition_syntax =
+        arg_syntaxes && !arg_syntaxes->empty() ? &(*arg_syntaxes)[0] : nullptr;
+    try {
+      if(!resolve_template_argument(use_scope,
+                                    *decl.declaring_scope,
+                                    decl.parameters[0],
+                                    arg_texts[0],
+                                    condition_syntax,
+                                    condition) ||
+         condition.kind != TemplateArgument::TA_VALUE ||
+         condition.dependent) {
+        return false;
+      }
+    } catch(const TemplateSubstitutionFailure &) {
+      return false;
+    } catch(const SemanticSoftFailure &) {
+      return false;
+    } catch(const SemanticDiagnosticError &) {
+      return false;
+    }
+
+    const size_t selected_index = condition.value != 0 ? 1 : 2;
+    TemplateArgument selected;
+    const TemplateArgumentSyntax * selected_syntax =
+        arg_syntaxes && selected_index < arg_syntaxes->size() ?
+            &(*arg_syntaxes)[selected_index] :
+            nullptr;
+    try {
+      if(!resolve_template_argument(use_scope,
+                                    *decl.declaring_scope,
+                                    decl.parameters[selected_index],
+                                    arg_texts[selected_index],
+                                    selected_syntax,
+                                    selected) ||
+         selected.kind != TemplateArgument::TA_TYPE ||
+         !selected.type) {
+        return false;
+      }
+    } catch(const TemplateSubstitutionFailure &) {
+      return false;
+    } catch(const SemanticSoftFailure &) {
+      return false;
+    } catch(const SemanticDiagnosticError &) {
+      return false;
+    }
+
+    out = selected.type;
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "instantiate-alias-template-conditional-branch name="
+            << decl.name
+            << " condition=" << condition.text
+            << " selected=" << selected_index
+            << " alias=" << describe_type(out);
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    return true;
   }
 
   TypePtr instantiate_resolved_alias_template(
