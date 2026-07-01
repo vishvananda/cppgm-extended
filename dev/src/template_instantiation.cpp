@@ -3300,6 +3300,129 @@ std::string template_argument_key_for_instantiation_impl(
   return out;
 }
 
+bool function_template_argument_key_is_concrete(SemanticContext & ctx,
+                                                const TemplateArgument & argument)
+{
+  if(argument.kind == TemplateArgument::TA_TYPE) {
+    return argument.type &&
+           !template_argument_semantics::type_depends_on_template_parameter(
+               ctx, argument.type);
+  }
+  if(argument.kind == TemplateArgument::TA_VALUE) {
+    return !argument.dependent;
+  }
+  if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+     argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
+    return !argument.dependent &&
+           argument.template_decl &&
+           (!argument.template_owner_type ||
+            !template_argument_semantics::type_depends_on_template_parameter(
+                ctx, argument.template_owner_type));
+  }
+  return false;
+}
+
+bool function_template_key_text_mentions_parameter(
+    const std::string & text,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    if(!parameters[i].name.empty() &&
+       callsemantic_internal::contains_identifier_token(text, parameters[i].name)) {
+      return true;
+    }
+    for(std::size_t j = 0; j < parameters[i].alternate_names.size(); ++j) {
+      if(!parameters[i].alternate_names[j].empty() &&
+         callsemantic_internal::contains_identifier_token(
+             text,
+             parameters[i].alternate_names[j])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+std::string function_template_instantiation_type_argument_key(
+    SemanticContext & ctx,
+    const TypePtr & type,
+    unsigned depth = 0)
+{
+  const std::string fallback = ctx.instantiation_identity_text_for_type_argument(type);
+  if(!type || depth >= 8) {
+    return fallback;
+  }
+
+  std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+      named_type_class_template_specialization_mangle_info_const(type);
+  if(!mangle_info ||
+     mangle_info->template_name.empty() ||
+     mangle_info->arguments.empty() ||
+     !function_template_key_text_mentions_parameter(fallback,
+                                                    mangle_info->template_parameters)) {
+    return fallback;
+  }
+
+  for(std::size_t i = 0; i < mangle_info->arguments.size(); ++i) {
+    if(!function_template_argument_key_is_concrete(ctx, mangle_info->arguments[i])) {
+      return fallback;
+    }
+  }
+
+  std::ostringstream out;
+  if(!mangle_info->template_scope_prefix.empty()) {
+    out << mangle_info->template_scope_prefix << "::";
+  }
+  out << mangle_info->template_name << "<";
+  for(std::size_t i = 0; i < mangle_info->arguments.size(); ++i) {
+    if(i != 0) {
+      out << ", ";
+    }
+    const TemplateArgument & argument = mangle_info->arguments[i];
+    if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+      out << function_template_instantiation_type_argument_key(
+          ctx,
+          argument.type,
+          depth + 1);
+    } else {
+      out << template_model::template_argument_text(
+          argument,
+          [&ctx, depth](const TypePtr & current_type)
+          {
+            return function_template_instantiation_type_argument_key(
+                ctx,
+                current_type,
+                depth + 1);
+          });
+    }
+  }
+  out << ">";
+  return out.str();
+}
+
+std::string function_template_argument_key_for_instantiation(
+    SemanticContext & ctx,
+    const std::vector<TemplateArgument> & arguments)
+{
+  std::string out;
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(i != 0) {
+      out += "|";
+    }
+    if(arguments[i].kind == TemplateArgument::TA_TYPE && arguments[i].type) {
+      out += function_template_instantiation_type_argument_key(ctx, arguments[i].type);
+      continue;
+    }
+    out += template_model::template_argument_text(
+        arguments[i],
+        [&ctx](const TypePtr & type)
+        {
+          return function_template_instantiation_type_argument_key(ctx, type);
+        });
+  }
+  return out;
+}
+
 // template-boundary-audit: begin canonical_key_metadata
 std::string class_instantiation_key_for_metadata(
     SemanticContext & ctx,
@@ -8072,7 +8195,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
     return nullptr;
   };
-  std::string key = template_argument_key_for_instantiation(ctx, arguments);
+  std::string key = function_template_argument_key_for_instantiation(ctx, arguments);
   ClassInfo * instantiation_owner = select_instantiation_owner(use_scope);
   if(!instantiation_owner) {
     instantiation_owner = select_hidden_friend_instantiation_owner(ctx, decl, arguments);
