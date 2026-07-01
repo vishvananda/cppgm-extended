@@ -315,6 +315,23 @@ std::string virtual_override_thunk_object_symbol_for_function(
   return out;
 }
 
+std::string virtual_override_thunk_object_symbol_for_object_symbol(
+    const string & target_object_symbol,
+    long long this_adjust,
+    bool has_result_adjust,
+    long long result_adjust)
+{
+  string out;
+  if(!abi_mangle::emit_virtual_override_thunk_symbol(target_object_symbol,
+                                                     this_adjust,
+                                                     has_result_adjust,
+                                                     result_adjust,
+                                                     out)) {
+    return string();
+  }
+  return out;
+}
+
 std::string virtual_base_override_thunk_object_symbol_for_function(
     const QualifiedName & qualified_name,
     const string & display_name,
@@ -338,6 +355,19 @@ std::string virtual_base_override_thunk_object_symbol_for_function(
          function_encoding,
          vcall_offset,
          out)) {
+    return string();
+  }
+  return out;
+}
+
+std::string virtual_base_override_thunk_object_symbol_for_object_symbol(
+    const string & target_object_symbol,
+    long long vcall_offset)
+{
+  string out;
+  if(!abi_mangle::emit_virtual_base_override_thunk_symbol(target_object_symbol,
+                                                          vcall_offset,
+                                                          out)) {
     return string();
   }
   return out;

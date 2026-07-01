@@ -503,6 +503,71 @@ string vtable_entry_thunk_symbol(const string & target_symbol,
   return lowir_name(out.str());
 }
 
+symbol_linkage::FunctionSymbolOptions vtable_entry_function_symbol_options(
+    const CallSemNode & node);
+
+string simple_lookup_name(const string & text);
+
+string virtual_override_thunk_object_symbol_for_vtable_entry(
+    const symbol_linkage::SymbolIdentity & target_symbol,
+    const CallSemNode & entry,
+    long long this_adjust,
+    bool has_result_adjust,
+    long long result_adjust)
+{
+  string out =
+      symbol_linkage::virtual_override_thunk_object_symbol_for_object_symbol(
+          target_symbol.object_symbol,
+          this_adjust,
+          has_result_adjust,
+          result_adjust);
+  if(!out.empty()) {
+    return out;
+  }
+  if(!callsem_qualified_name_syntax(entry)) {
+    return string();
+  }
+  const string target_name = callsem_resolved_name(entry).empty() ?
+      entry.text.str() :
+      callsem_resolved_name(entry);
+  return symbol_linkage::virtual_override_thunk_object_symbol_for_function(
+      *callsem_qualified_name_syntax(entry),
+      simple_lookup_name(target_name),
+      entry.is_c_linkage,
+      entry.semantic_type,
+      vtable_entry_function_symbol_options(entry),
+      this_adjust,
+      has_result_adjust,
+      result_adjust);
+}
+
+string virtual_base_override_thunk_object_symbol_for_vtable_entry(
+    const symbol_linkage::SymbolIdentity & target_symbol,
+    const CallSemNode & entry,
+    long long vcall_offset)
+{
+  string out =
+      symbol_linkage::virtual_base_override_thunk_object_symbol_for_object_symbol(
+          target_symbol.object_symbol,
+          vcall_offset);
+  if(!out.empty()) {
+    return out;
+  }
+  if(!callsem_qualified_name_syntax(entry)) {
+    return string();
+  }
+  const string target_name = callsem_resolved_name(entry).empty() ?
+      entry.text.str() :
+      callsem_resolved_name(entry);
+  return symbol_linkage::virtual_base_override_thunk_object_symbol_for_function(
+      *callsem_qualified_name_syntax(entry),
+      simple_lookup_name(target_name),
+      entry.is_c_linkage,
+      entry.semantic_type,
+      vtable_entry_function_symbol_options(entry),
+      vcall_offset);
+}
+
 string lowir_type_encoding_name(const string & prefix, const TypePtr & type)
 {
   if(!symbol_linkage::type_needs_structural_internal_symbol(type)) {
@@ -20108,22 +20173,14 @@ private:
                                       false);
         symbol_linkage::SymbolIdentity thunk_exported_symbol;
         if(needs_host_export_thunk) {
-          const string thunk_target_name =
-              callsem_resolved_name(node.children[i]).empty() ?
-                  node.children[i].text.str() :
-                  callsem_resolved_name(node.children[i]);
-          const string thunk_object_symbol = callsem_qualified_name_syntax(node.children[i]) ?
-              symbol_linkage::virtual_override_thunk_object_symbol_for_function(
-                  *callsem_qualified_name_syntax(node.children[i]),
-                  simple_lookup_name(thunk_target_name),
-                  node.children[i].is_c_linkage,
-                  node.children[i].semantic_type,
-                  vtable_entry_function_symbol_options(node.children[i]),
+          const string thunk_object_symbol =
+              virtual_override_thunk_object_symbol_for_vtable_entry(
+                  exported_symbol,
+                  node.children[i],
                   this_adjust,
                   node.children[i].has_result_adjust &&
                       callsem_result_adjust(node.children[i]) != 0,
-                  callsem_result_adjust(node.children[i])) :
-              string();
+                  callsem_result_adjust(node.children[i]));
           if(!thunk_object_symbol.empty()) {
             thunk_exported_symbol =
                 symbol_linkage::make_object_symbol_identity(thunk_symbol,
@@ -20173,19 +20230,13 @@ private:
                                       0,
                                       0,
                                       false);
-        const string thunk_target_name =
-            callsem_resolved_name(node.children[i]).empty() ?
-                node.children[i].text.str() :
-                callsem_resolved_name(node.children[i]);
-        const string thunk_object_symbol = callsem_qualified_name_syntax(node.children[i]) ?
-            symbol_linkage::virtual_override_thunk_object_symbol_for_function(
-                *callsem_qualified_name_syntax(node.children[i]),
-                simple_lookup_name(thunk_target_name),
-                node.children[i].is_c_linkage,
-                node.children[i].semantic_type,
-                vtable_entry_function_symbol_options(node.children[i]),
-                this_adjust) :
-            string();
+        const string thunk_object_symbol =
+            virtual_override_thunk_object_symbol_for_vtable_entry(
+                exported_symbol,
+                node.children[i],
+                this_adjust,
+                false,
+                0);
         if(!thunk_object_symbol.empty()) {
           VTableEntryThunkRequest & request = vtable_entry_thunks_[thunk_symbol];
           if(request.symbol.empty()) {
@@ -20225,16 +20276,11 @@ private:
                                       0,
                                       -24,
                                       true);
-        const string thunk_target_name = callsem_resolved_name(node.children[i]);
-        const string thunk_object_symbol = callsem_qualified_name_syntax(node.children[i]) ?
-            symbol_linkage::virtual_base_override_thunk_object_symbol_for_function(
-                *callsem_qualified_name_syntax(node.children[i]),
-                simple_lookup_name(thunk_target_name),
-                node.children[i].is_c_linkage,
-                node.children[i].semantic_type,
-                vtable_entry_function_symbol_options(node.children[i]),
-                -24) :
-            string();
+        const string thunk_object_symbol =
+            virtual_base_override_thunk_object_symbol_for_vtable_entry(
+                virtual_export_symbol,
+                node.children[i],
+                -24);
         if(!thunk_object_symbol.empty()) {
           VTableEntryThunkRequest & request = vtable_entry_thunks_[thunk_symbol];
           if(request.symbol.empty()) {

@@ -150,12 +150,20 @@ std::string virtual_override_thunk_object_symbol_for_function(
     long long this_adjust,
     bool has_result_adjust = false,
     long long result_adjust = 0);
+std::string virtual_override_thunk_object_symbol_for_object_symbol(
+    const std::string & target_object_symbol,
+    long long this_adjust,
+    bool has_result_adjust = false,
+    long long result_adjust = 0);
 std::string virtual_base_override_thunk_object_symbol_for_function(
     const cpp_decl::QualifiedName & qualified_name,
     const std::string & display_name,
     bool is_c_linkage,
     const cpp_decl::TypePtr & type,
     const FunctionSymbolOptions & options,
+    long long vcall_offset);
+std::string virtual_base_override_thunk_object_symbol_for_object_symbol(
+    const std::string & target_object_symbol,
     long long vcall_offset);
 std::string construction_vtable_object_symbol(const semantic_model::ClassInfo & dynamic_class,
                                               unsigned long long base_offset,
