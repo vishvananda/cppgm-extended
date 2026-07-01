@@ -4333,7 +4333,8 @@ bool expand_instantiated_function_parameter_clause(
         return false;
       }
       params.push_back(single_params[0]);
-      default_args.push_back(single_defaults.empty() ? nullptr : single_defaults[0]);
+      default_args.push_back(cpp_decl::find_child(parameter,
+                                                  CppAstKind::default_argument));
       template_scope::bind_parameter_value(parameter_scope,
                                            single_params[0].first,
                                            single_params[0].second);
@@ -4384,7 +4385,8 @@ bool expand_instantiated_function_parameter_clause(
         return false;
       }
       params.push_back(single_params[0]);
-      default_args.push_back(single_defaults.empty() ? nullptr : single_defaults[0]);
+      default_args.push_back(cpp_decl::find_child(parameter,
+                                                  CppAstKind::default_argument));
     }
 
     const std::string pack_name =
@@ -4413,11 +4415,11 @@ void parse_instantiated_function_template_parameter_clause(
     std::vector<const CppAstNode *> & default_args)
 {
   const witness::ScopedTemplateWitnessSourceCapturePause source_capture_pause;
-  if(ctx.parse_parameter_clause(inst_scope,
-                                parameter_clause,
-                                params,
-                                &default_args,
-                                false)) {
+  if(expand_instantiated_function_parameter_clause(ctx,
+                                                   inst_scope,
+                                                   parameter_clause,
+                                                   params,
+                                                   default_args)) {
     return;
   }
 

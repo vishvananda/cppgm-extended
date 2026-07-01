@@ -805,47 +805,24 @@ const CppAstNode * binding_parameter_clause(const FunctionBinding & binding)
   return parameter_clause_from_declarator_like(declarator);
 }
 
-Scope * binding_parameter_parse_scope(const FunctionBinding & binding)
-{
-  if(!binding.is_method &&
-     binding.lexical_access_class &&
-     binding.lexical_access_class->member_scope) {
-    return binding.lexical_access_class->member_scope.get();
-  }
-  if(binding.declaration_scope) {
-    return binding.declaration_scope;
-  }
-  if(binding.owner_class) {
-    return binding.owner_class->member_scope.get();
-  }
-  return nullptr;
-}
-
 void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
                                                  FunctionBinding & binding)
 {
+  (void)ctx;
+
   const CppAstNode * parameter_clause = binding_parameter_clause(binding);
   if(!parameter_clause) {
     return;
   }
 
-  Scope * parse_scope = binding_parameter_parse_scope(binding);
-  if(!parse_scope) {
-    return;
-  }
-
-  std::vector<std::pair<std::string, TypePtr> > params;
-  if(!ctx.parse_parameter_clause(*parse_scope, *parameter_clause, params, nullptr, true)) {
-    return;
-  }
-
-  const std::size_t explicit_offset = binding_explicit_parameter_offset(binding);
-  ensure_function_parameter_aliases(binding);
   std::vector<const CppAstNode *> parameter_nodes;
   for(std::size_t i = 0; i < parameter_clause->children.size(); ++i) {
     if(parameter_clause->children[i].kind == CppAstKind::parameter_declaration) {
       parameter_nodes.push_back(&parameter_clause->children[i]);
     }
+  }
+  if(parameter_nodes.empty()) {
+    return;
   }
 
   bool has_pack_parameter = false;
@@ -855,35 +832,27 @@ void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
       break;
     }
   }
+  const std::size_t explicit_offset = binding_explicit_parameter_offset(binding);
   if(!has_pack_parameter &&
-     binding.params.size() != explicit_offset + params.size()) {
+     binding.params.size() != explicit_offset + parameter_nodes.size()) {
     return;
   }
 
+  ensure_function_parameter_aliases(binding);
   std::size_t binding_index = explicit_offset;
-  std::size_t parsed_param_index = 0;
   for(std::size_t i = 0; i < parameter_nodes.size(); ++i) {
     if(!parameter_declaration_has_pack(*parameter_nodes[i])) {
       if(binding_index >= binding.params.size()) {
         return;
       }
-      std::string parameter_name;
-      if(parsed_param_index < params.size()) {
-        parameter_name = params[parsed_param_index].first;
-      }
-      if(parameter_name.empty()) {
-        parameter_name =
-            pack_parameter_analysis::parameter_declaration_name(*parameter_nodes[i]);
-      }
+      const std::string parameter_name =
+          pack_parameter_analysis::parameter_declaration_name(*parameter_nodes[i]);
       if(!parameter_name.empty() &&
          (binding.parameter_aliases[binding_index].empty() ||
           binding.parameter_aliases[binding_index] == binding.params[binding_index].first)) {
         binding.parameter_aliases[binding_index] = parameter_name;
       }
       ++binding_index;
-      if(parsed_param_index < params.size()) {
-        ++parsed_param_index;
-      }
       continue;
     }
 
@@ -909,10 +878,6 @@ void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
       binding.parameter_aliases[index] = pack_value_alias_name(pack_name, j);
     }
     binding_index += pack_size;
-    if(parsed_param_index < params.size()) {
-      parsed_param_index =
-          std::min<std::size_t>(params.size(), parsed_param_index + pack_size);
-    }
   }
 }
 
@@ -1089,33 +1054,6 @@ bool is_same_class_reference_parameter(const TypePtr & class_type,
 FunctionBinding * find_copy_constructor_binding(ClassInfo & info);
 FunctionBinding * find_or_ensure_copy_constructor_binding(SemanticContext & ctx,
                                                           ClassInfo & info);
-
-void require_function_parameter_abi_output(SemanticContext & ctx,
-                                           OutputState & state,
-                                           const FunctionBinding & binding)
-{
-  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
-  if(!parameter_clause) {
-    return;
-  }
-
-  Scope * parse_scope = binding_parameter_parse_scope(binding);
-  if(!parse_scope) {
-    return;
-  }
-
-  std::vector<std::pair<std::string, TypePtr> > params;
-  if(!ctx.parse_parameter_clause(*parse_scope, *parameter_clause, params, nullptr, true)) {
-    return;
-  }
-
-  for(std::size_t i = 0; i < params.size(); ++i) {
-    const TypePtr & param_type = params[i].second;
-    if(!param_type || is_reference_type(param_type)) {
-      continue;
-    }
-  }
-}
 
 bool variable_declaration_is_definition(const CppAstNode & specifiers,
                                         const CppAstNode * initializer,
@@ -4180,7 +4118,6 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
     trace << "}";
     parser_trace::note("template.resolve", std::string(), trace.str());
   }
-  require_function_parameter_abi_output(ctx, state, binding);
   const auto emit_function_variant =
       [&](const symbol_linkage::SymbolIdentity & function_symbol,
           symbol_linkage::SpecialMemberEntryPointKind entry_point_kind) -> void
