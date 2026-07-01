@@ -1,7 +1,10 @@
 # PA23 No-Action Row Plan
 
 Generated from `pa23_feature_backfill_tracker.tsv` no-action rows and updated
-after the 2026-06-30 portable intrinsic rewrite pass.
+after the 2026-07-01 reducer promotion and stale-row cleanup pass. The counts
+and decision rows below are the current queue. The detailed row tables later in
+this file are retained as investigation notes from the original no-action scan
+and should not be treated as a regenerated current queue.
 
 ## Hosted/Vendor Builtin Meaning
 
@@ -17,26 +20,21 @@ The PA19, PA20, PA21, PA22, and PA23 README boundaries all exclude hosted/vendor
 
 ## Counts
 
-- Total no-action rows: 185
-- `harness-or-reference-issue`: 86
-- `implementation-bug-only`: 68
-- `no-missing-opus-feature`: 10
-- `portable-rewrite-pending-validation`: 8
-- `historical-validation-missing`: 6
+- Total no-action rows: 105
 - `direct-start-pass`: 5
+- `historical-validation-missing`: 2
+- `implementation-bug-only`: 68
+- `no-missing-opus-feature`: 27
 - `owner-unclear-static-emission-contract`: 1
 - `owner-unclear-multifeature`: 1
+- `pa23-original-removed`: 1
 
 ## Plan Buckets
 
-- `close-no-backfill`: 15
-- `fix-reference-no-earlier-owner`: 3
-- `fix-reference-then-promote`: 83
-- `historical-audit-needed`: 6
-- `portable-rewrite-validate`: 8
+- `close-no-backfill`: 33
+- `historical-audit-needed`: 2
 - `needs-owner-decision`: 2
-- `reclassify-no-historical-gap`: 65
-- `separate-abi-lowir-ticket`: 3
+- `reclassify-no-historical-gap`: 68
 
 ## Rows Needing User Decision
 
@@ -44,6 +42,19 @@ The PA19, PA20, PA21, PA22, and PA23 README boundaries all exclude hosted/vendor
 | --- | --- | --- | --- |
 | `pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t` | `integral-nontype-template-arguments-and-constant-values` | `pa19-or-pa23-static-emission-contract` | Decide whether this is PA19 integral NTTP/static value semantics or a later PA23 LowIR static-member emission contract. No reducer should be added until that contract is named. |
 | `pa23/tests/spec/400-defaulted-type-arg-specialization-nontype-value.t` | `integral-nontype-template-arguments-and-constant-values` | `pa21-or-pa22` | Either reduce to one owning feature and place at the latest prerequisite PA, or keep as PA23 integration. Needs an owner decision before any test move. |
+
+## Current Historical-Validation Missing Rows
+
+| Test | Owner Hint | Current Plan |
+| --- | --- | --- |
+| `pa23/tests/general/200-nested-template-id-partial-specialization-deduction.t` | `pa21` | Keep the reducer as investigation material. It is C++11 valid and current accepts it, but Opus start and Opus final both fail the reduced oracle, so no reachable historical pass transition has been found. |
+| `pa23/tests/general/400-dependent-alias-nontype-sequence-filter.t` | `pa22-portable-candidate` | Portable hosted-builtin rewrite is C++11 valid and current accepts it, but Opus start, intermediate fix candidates, and Opus final all reject the portable sequence/filter shape. Do not promote without a smaller reachable historical gate. |
+
+## Resolved Since Original Scan
+
+- The portable intrinsic rewrite queue has no remaining `portable-rewrite-pending-validation` rows. Five rewrite reducers were promoted, two proved no earlier backfill was needed, and the portable sequence/filter row is now tracked as `historical-validation-missing`.
+- The deleted `pa23/tests/general/100-local-member-call-constructor-template-instantiation.t` inventory row is now `pa23-original-removed`; only the spec twin remains in the current tree, and that row is `no-missing-opus-feature`.
+- EH declaration drift that blocked several earlier candidates was handled by refreshing stale LowIR references with the local canonical `dev/cppgm++` build.
 
 ## Portable Intrinsic Rewrite Results
 
@@ -85,7 +96,11 @@ PA34 does not need PA22-style LowIR reducers for hosted intrinsic semantics. Its
 | `pa23/tests/general/500-tcc-member-constructible-pack-sfinae.t` | `__is_implicitly_constructible` | Local helper spelling only; do not classify as hosted/vendor builtin on this evidence. |
 | `pa23/tests/spec/300-explicit-template-call-dependent-alias-sfinae-overload.t` | `__copy_n, __difference_type` | Local helper spelling only; do not classify as hosted/vendor builtin on this evidence. |
 
-## All No-Action Rows
+## Original Scan Notes
+
+The tables below preserve the original row-by-row notes. They are useful for
+audit history, but the current authoritative status is in
+`pa23_feature_backfill_tracker.tsv`.
 
 ### close-no-backfill (15)
 
@@ -112,8 +127,8 @@ PA34 does not need PA22-style LowIR reducers for hosted intrinsic semantics. Its
 | Test | Cluster | Classification | Owner Hint | Intrinsics | Host Macros | Local Reserved Names | Proposed Next Step | Evidence Note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `pa23/tests/general/200-member-template-implicit-instantiation-not-overload.t` | `member-template-entity-and-call-integration` | `harness-or-reference-issue` | `none` | `-` | `-` | `-` | Fix or clarify the reference/contract issue first. Do not add an earlier assignment test unless a separate owner and Opus start/fix transition are established. | seed=both_fail; not a missing earlier-feature reducer because Opus PA23 start 1963d796e already accepts and sampled commits through 33af1a9bc emit the same LowIR hash; source is C++11-valid and current accepts it, but e... |
-| `pa23/tests/general/100-local-member-call-constructor-template-instantiation.t` | `reference-quirk-local-member-call-constructor-template` | `harness-or-reference-issue` | `pa23` | `-` | `-` | `-` | Fix or clarify the reference/contract issue first. Do not add an earlier assignment test unless a separate owner and Opus start/fix transition are established. | seed=both_fail; No earlier feature test until reference contract is clarified.; no assignment tests or refs added in this audit pass |
-| `pa23/tests/spec/100-local-member-call-constructor-template-instantiation.t` | `reference-quirk-local-member-call-constructor-template` | `harness-or-reference-issue` | `pa23` | `-` | `-` | `-` | Fix or clarify the reference/contract issue first. Do not add an earlier assignment test unless a separate owner and Opus start/fix transition are established. | seed=both_fail; No earlier feature test until reference contract is clarified.; no assignment tests or refs added in this audit pass |
+| `pa23/tests/general/100-local-member-call-constructor-template-instantiation.t` | `reference-quirk-local-member-call-constructor-template` | `pa23-original-removed` | `none` | `-` | `-` | `-` | No action. The current tree no longer has this PA23 general source, so it is stale inventory rather than an active reducer candidate. | Deleted by `637a5c8a6`/`48400d96a` while the spec twin was retained; the surviving spec row is already closed as `no-missing-opus-feature`. |
+| `pa23/tests/spec/100-local-member-call-constructor-template-instantiation.t` | `reference-quirk-local-member-call-constructor-template` | `no-missing-opus-feature` | `pa23` | `-` | `-` | `-` | Leave closed for the backfill workflow. The corrected Opus gate accepts this source at start and final, so it does not prove a missing earlier assignment test. | Correct Opus gate uses `--emit-lowir -o`; exact source is accepted at Opus start `1963d796e`, Opus final `1434a6e11`, and current. |
 
 ### fix-reference-then-promote (83)
 
