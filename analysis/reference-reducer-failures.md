@@ -1080,10 +1080,10 @@ canonical build.
 - Historical evidence: the PA23-shaped source rejects at Opus start
   `1963d796e` with unknown type
   `aligned_storage<sizeof(T),alignment_of<T>::value>::type`; the reduced
-  oracle rejects at Opus start with a failed `static_assert`. Sampled Opus
-  commits through `743b7a920` still reject the reduced oracle, and the local
-  Opus PA31-era head `93190a139` still rejects it with the same failed
-  `static_assert`, so no start/fix transition has been identified for a
+  oracle rejects at Opus start with a failed `static_assert`. Under the
+  corrected `--emit-lowir -o` gate, Opus final `1434a6e11` still rejects with
+  the same failed `static_assert`, while current local `dev/cppgm++` accepts.
+  No reachable Opus start/fix transition has been identified for a
   promotable assignment test.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
   reducer.
@@ -1416,7 +1416,7 @@ canonical build.
 | `pa23/tests/general/300-constructor-template-pack-before-defaulted-nontype.t` | PA22 | `analysis/reducers/pa22-constructor-template-pack-before-defaulted-nontype.t` | `pa22/tests/general/400-constructor-template-pack-before-defaulted-nontype.t` | Opus start `1963d796e` rejects with a parse error; Opus `f8660aa27` accepts. | Older external lane rejected `tuple_like<first_arg, second_arg>{first, second}` after losing the defaulted pointer parameter shape. |
 | `pa23/tests/general/400-conversion-function-template-prefers-nontemplate.t` | PA22 | `analysis/reducers/pa22-conversion-function-template-prefers-nontemplate.t` | `pa22/tests/general/400-conversion-function-template-prefers-nontemplate.t` | Opus start `1963d796e` accepts but emits a direct `box(int)` assignment path; Opus `f8660aa27` emits the non-template conversion-function path. | Older external lane rejected assignment as ambiguous instead of preferring the non-template conversion function. |
 | `pa23/tests/general/400-member-template-class-pack-forward-before-token.t` | PA21 | `analysis/reducers/pa21-member-template-class-pack-forward-before-token.t` | `pa21/tests/general/300-member-template-class-pack-forward-before-token.t` | Opus start `1963d796e` rejects with no member `send`; Opus `f8660aa27` accepts. | Older external lane rejects `combine(static_cast<Args&&>(args)...)` because pack value binding pairs the first `Args` element with the second value argument. |
-| `pa23/tests/general/400-nested-member-template-base-param-shadow-value.t` | PA21 | `analysis/reducers/pa21-nested-member-template-base-param-shadow-value.t` | not promoted | Opus start `1963d796e` already accepts the PA23 source, so it does not prove a missing earlier test. | Older external lane rejects with failed `static_assert(packed::reservable == true)`, rebinding the nested member-template owner value through the dependent base. No backfill is needed unless a start-failing reducer is found. |
+| `pa23/tests/general/400-nested-member-template-base-param-shadow-value.t` | PA21 | `analysis/reducers/pa21-nested-member-template-base-param-shadow-value.t` | not promoted | Correct Opus gate accepts the reducer at start `1963d796e`, Opus final `1434a6e11`, and current. | No backfill: the focused shape has no start/fix transition under the current workflow. |
 
 ### Template-Template/Alias Forwarding Reference-Blocked Batch
 
