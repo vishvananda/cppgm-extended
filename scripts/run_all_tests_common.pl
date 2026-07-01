@@ -797,7 +797,7 @@ die "Unsupported run_all_tests mode $mode" if !exists($patterns{$mode});
 ensure_test_app_available($app, $suffix, $tests);
 
 my @tests = collect_tests($tests, $patterns{$mode});
-if ($mode eq 'witness_t')
+if ($mode eq 'witness_t' && $suffix eq 'ref')
 {
 	@tests = @{filter_witness_tests(\@tests)};
 }
