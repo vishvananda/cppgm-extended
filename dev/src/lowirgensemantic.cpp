@@ -14433,12 +14433,17 @@ private:
 
       const bool use_host_throw = use_host_eh_runtime();
       string throw_value;
+      push_cleanup_scope(true);
       if(use_host_throw) {
         const bool include_constructor_cleanups =
             is_constructor_function_ &&
             throw_will_escape_current_function() &&
             !constructor_unwind_cleanups_.empty();
         throw_value = emit_host_throw_value(node.children[0]);
+        if(current_block_) {
+          emit_scope_cleanups(cleanup_scopes_.back());
+        }
+        pop_cleanup_scope();
         if(current_scope_has_host_unwind_cleanups() ||
            include_constructor_cleanups) {
           open_shared_host_call_unwind_region(include_constructor_cleanups);
@@ -14446,6 +14451,10 @@ private:
       } else {
         string lowir_throw_type;
         throw_value = emit_private_throw_value(node.children[0], lowir_throw_type);
+        if(current_block_) {
+          emit_scope_cleanups(cleanup_scopes_.back());
+        }
+        pop_cleanup_scope();
         emit_all_cleanups(true);
         if(is_constructor_function_ && throw_will_escape_current_function()) {
           emit_constructor_unwind_cleanups();
