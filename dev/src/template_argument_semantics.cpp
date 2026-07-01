@@ -31577,7 +31577,14 @@ enum LibcppIteratorCategoryRank
   LICR_RANDOM_ACCESS = 4
 };
 
-LibcppIteratorCategoryRank libcpp_iterator_category_rank_from_tag_type(
+LibcppIteratorCategoryRank max_libcpp_iterator_category_rank(
+    LibcppIteratorCategoryRank lhs,
+    LibcppIteratorCategoryRank rhs)
+{
+  return lhs >= rhs ? lhs : rhs;
+}
+
+LibcppIteratorCategoryRank direct_libcpp_iterator_category_rank_from_tag_type(
     const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
@@ -31604,6 +31611,72 @@ LibcppIteratorCategoryRank libcpp_iterator_category_rank_from_tag_type(
   return LICR_NONE;
 }
 
+bool libcpp_iterator_category_visit_stack_contains(
+    ClassInfo * const * visiting,
+    size_t count,
+    ClassInfo * info)
+{
+  for(size_t i = 0; i < count; ++i) {
+    if(visiting[i] == info) {
+      return true;
+    }
+  }
+  return false;
+}
+
+LibcppIteratorCategoryRank libcpp_iterator_category_rank_from_tag_type(
+    template_api::TemplateServices & services,
+    const TypePtr & type,
+    ClassInfo ** visiting,
+    size_t visiting_count)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED) {
+    return LICR_NONE;
+  }
+
+  const LibcppIteratorCategoryRank direct =
+      direct_libcpp_iterator_category_rank_from_tag_type(base);
+  if(direct != LICR_NONE) {
+    return direct;
+  }
+
+  ClassInfo * info = class_info_for_named_type(services, base);
+  if(!info) {
+    return LICR_NONE;
+  }
+  if(visiting_count >= 32 ||
+     libcpp_iterator_category_visit_stack_contains(
+         visiting, visiting_count, info)) {
+    return LICR_NONE;
+  }
+  visiting[visiting_count++] = info;
+
+  LibcppIteratorCategoryRank best = LICR_NONE;
+  for(size_t i = 0; i < info->bases.size(); ++i) {
+    ClassInfo * base_info = info->bases[i].type;
+    if(!base_info || !base_info->type) {
+      continue;
+    }
+    best = max_libcpp_iterator_category_rank(
+        best,
+        libcpp_iterator_category_rank_from_tag_type(
+            services, base_info->type, visiting, visiting_count));
+  }
+  return best;
+}
+
+LibcppIteratorCategoryRank libcpp_iterator_category_rank_from_tag_type(
+    template_api::TemplateServices & services,
+    const TypePtr & type)
+{
+  ClassInfo * visiting[32] = {};
+  return libcpp_iterator_category_rank_from_tag_type(services,
+                                                    type,
+                                                    visiting,
+                                                    0);
+}
+
 NonTypeArgumentStatus libcpp_iterator_category_rank_for_iterator_type(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -31623,7 +31696,7 @@ NonTypeArgumentStatus libcpp_iterator_category_rank_for_iterator_type(
     return NT_ARG_EVALUATED;
   }
 
-  out = libcpp_iterator_category_rank_from_tag_type(base);
+  out = libcpp_iterator_category_rank_from_tag_type(services, base);
   if(out != LICR_NONE) {
     return NT_ARG_EVALUATED;
   }
@@ -31636,7 +31709,7 @@ NonTypeArgumentStatus libcpp_iterator_category_rank_for_iterator_type(
                                            "iterator_category",
                                            category_type,
                                            member_lookup_complete)) {
-    out = libcpp_iterator_category_rank_from_tag_type(category_type);
+    out = libcpp_iterator_category_rank_from_tag_type(services, category_type);
     return out != LICR_NONE ? NT_ARG_EVALUATED : NT_ARG_EVAL_FAILED;
   }
   return member_lookup_complete ? NT_ARG_EVAL_FAILED : NT_ARG_PARSE_FAILED;
@@ -31732,7 +31805,8 @@ NonTypeArgumentStatus evaluate_libcpp_iterator_category_template_value(
           NT_ARG_DEPENDENT :
           NT_ARG_EVAL_FAILED;
     }
-    target_rank = libcpp_iterator_category_rank_from_tag_type(target_type);
+    target_rank =
+        libcpp_iterator_category_rank_from_tag_type(services, target_type);
     if(target_rank == LICR_NONE) {
       return NT_ARG_EVAL_FAILED;
     }
