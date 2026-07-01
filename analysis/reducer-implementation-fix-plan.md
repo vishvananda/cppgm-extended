@@ -168,6 +168,16 @@ Run focused validation for every reducer:
 make test-report ACTIVE_TEST_REPORT_PAS='paXX pa23'
 ```
 
+The canonical witness validation gate is the top-level strict suite:
+
+```sh
+make test-strict
+```
+
+Per-assignment strict or focused witness checks are useful as inner-loop
+debugging shortcuts, but they do not replace the top-level `make test-strict`
+gate when recording a reducer batch as validated.
+
 When a batch adds multiple focused tests in the same assignment, pass them as a
 single space-separated `TEST` value instead of running parallel or repeated
 single-test checks. The assignment harness writes shared `.check` sidecars, so
@@ -233,5 +243,6 @@ A reducer cluster is done when:
 - `scripts/report_pa23_original_disposition.py --summary` has no unresolved
   rows for the affected originals;
 - focused assignment reports pass;
+- top-level `make test-strict` passes for witness/reference coverage;
 - a recent `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report` has passed, or
   a narrower temporary validation scope and follow-up reason are recorded.
