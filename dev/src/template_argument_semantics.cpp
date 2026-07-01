@@ -22707,10 +22707,50 @@ Scope * resolve_qualified_scope_for_class_or_namespace_node(
   return resolved_scope;
 }
 
+template<typename DeclT, typename DirectLookup>
+DeclT * lookup_direct_or_inline_namespace_template(Scope & scope,
+                                                   const string & name,
+                                                   const DirectLookup & lookup)
+{
+  if(DeclT * direct = lookup(scope, name)) {
+    return direct;
+  }
+  vector<Scope *> pending;
+  pending.push_back(&scope);
+  while(!pending.empty()) {
+    Scope * current = pending.back();
+    pending.pop_back();
+    for(size_t i = 0; i < current->namespace_children.size(); ++i) {
+      Scope * child = current->namespace_children[i].get();
+      if(!child || (!child->inline_namespace && child->name != "<unnamed>")) {
+        continue;
+      }
+      if(DeclT * found = lookup(*child, name)) {
+        return found;
+      }
+      pending.push_back(child);
+    }
+  }
+  return nullptr;
+}
+
 ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & services,
                                                Scope & scope,
                                                const string & name)
 {
+  const auto lookup_in_direct_or_inline_scope =
+      [](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
+  {
+    return lookup_direct_or_inline_namespace_template<ClassTemplateDecl>(
+        target,
+        lookup_name,
+        [](Scope & direct_scope, const string & direct_name) -> ClassTemplateDecl *
+        {
+          return semantic_lookup::lookup_direct_class_template(direct_scope,
+                                                               direct_name);
+        });
+  };
+
   QualifiedName qualified;
   if(semantic_utils::split_qualified_name_text(name, qualified) &&
      (qualified.rooted || !qualified.qualifiers.empty())) {
@@ -22719,9 +22759,7 @@ ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & 
     if(!target) {
       return nullptr;
     }
-    map<string, ClassTemplateDecl *>::iterator found =
-        target->class_templates.find(qualified.name);
-    return found == target->class_templates.end() ? nullptr : found->second;
+    return lookup_in_direct_or_inline_scope(*target, qualified.name);
   }
 
   return semantic_lookup::lookup_unqualified_class_template(scope, name);
@@ -22750,9 +22788,14 @@ ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & 
   if(!target) {
     return nullptr;
   }
-  map<string, ClassTemplateDecl *>::iterator found =
-      target->class_templates.find(name.name);
-  return found == target->class_templates.end() ? nullptr : found->second;
+  return lookup_direct_or_inline_namespace_template<ClassTemplateDecl>(
+      *target,
+      name.name,
+      [](Scope & direct_scope, const string & direct_name) -> ClassTemplateDecl *
+      {
+        return semantic_lookup::lookup_direct_class_template(direct_scope,
+                                                             direct_name);
+      });
 }
 
 bool lookup_concrete_member_template_value_binding(
@@ -23207,6 +23250,19 @@ AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices & 
                                                Scope & scope,
                                                const string & name)
 {
+  const auto lookup_in_direct_or_inline_scope =
+      [](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
+  {
+    return lookup_direct_or_inline_namespace_template<AliasTemplateDecl>(
+        target,
+        lookup_name,
+        [](Scope & direct_scope, const string & direct_name) -> AliasTemplateDecl *
+        {
+          return semantic_lookup::lookup_direct_alias_template(direct_scope,
+                                                              direct_name);
+        });
+  };
+
   QualifiedName qualified;
   if(semantic_utils::split_qualified_name_text(name, qualified) &&
      (qualified.rooted || !qualified.qualifiers.empty())) {
@@ -23215,9 +23271,7 @@ AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices & 
     if(!target) {
       return nullptr;
     }
-    map<string, AliasTemplateDecl *>::iterator found =
-        target->alias_templates.find(qualified.name);
-    return found == target->alias_templates.end() ? nullptr : found->second;
+    return lookup_in_direct_or_inline_scope(*target, qualified.name);
   }
 
   return semantic_lookup::lookup_unqualified_alias_template(scope, name);
@@ -23246,9 +23300,14 @@ AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices & 
   if(!target) {
     return nullptr;
   }
-  map<string, AliasTemplateDecl *>::iterator found =
-      target->alias_templates.find(name.name);
-  return found == target->alias_templates.end() ? nullptr : found->second;
+  return lookup_direct_or_inline_namespace_template<AliasTemplateDecl>(
+      *target,
+      name.name,
+      [](Scope & direct_scope, const string & direct_name) -> AliasTemplateDecl *
+      {
+        return semantic_lookup::lookup_direct_alias_template(direct_scope,
+                                                            direct_name);
+      });
 }
 
 TypePtr lookup_local_dependent_type_placeholder(Scope & scope, const string & text)
