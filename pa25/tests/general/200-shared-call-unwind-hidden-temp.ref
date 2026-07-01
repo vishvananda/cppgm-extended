@@ -1,6 +1,4 @@
 declare global @g_runtime_branch : i32 [binding=strong, object=_Z16g_runtime_branch]
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
 declare function @Cursor__get(%ret : ptr [pass=indirect_result], %arg0 : ptr) -> void [binding=strong, object=_ZN6Cursor3getEv]
 declare function @Macroizer__active(%arg0 : ptr) -> u8 [binding=strong, object=_ZN9Macroizer6activeEv]
 declare function @Macroizer__get(%ret : ptr [pass=indirect_result], %arg0 : ptr) -> void [binding=strong, object=_ZN9Macroizer3getEv]
