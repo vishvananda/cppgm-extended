@@ -1741,6 +1741,25 @@ public:
                                                           qualified_member,
                                                           function_identifier->value,
                                                           declarator);
+              TypePtr merged_static_type =
+                  merge_types(static_binding->type, declared_type);
+              if(!merged_static_type) {
+                throw logic_error(string("mismatched class static member specialization") +
+                                  semantic_trace::current_location_note(*this, declarator) +
+                                  semantic_trace::previous_value_location_note(
+                                      *this,
+                                      "previous declaration",
+                                      static_binding));
+              }
+              if(initializer) {
+                merged_static_type =
+                    callsemantic_internal::apply_initializer_array_bound(
+                        *this,
+                        *owner->member_scope,
+                        merged_static_type,
+                        initializer);
+              }
+              static_binding->type = merged_static_type;
               const bool has_storage_definition = initializer != nullptr;
               if(!static_binding->declaration_node) {
                 static_binding->declaration_node = declarator;
@@ -3035,6 +3054,14 @@ public:
                                                           &template_parameters);
               if(!out_of_class_static_member->declaration_node) {
                 out_of_class_static_member->declaration_node = declarator;
+              }
+              if(initializer) {
+                out_of_class_static_member->type =
+                    callsemantic_internal::apply_initializer_array_bound(
+                        *this,
+                        pattern_scope,
+                        out_of_class_static_member->type,
+                        initializer);
               }
               if(has_storage_definition) {
                 out_of_class_static_member->definition_node = declarator;

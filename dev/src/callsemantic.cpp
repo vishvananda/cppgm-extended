@@ -25559,6 +25559,12 @@ private:
                               semantic_trace::previous_value_location_note(
                                   *this, "previous declaration", out_of_class_static_member));
           }
+          if(initializer) {
+            merged = apply_initializer_array_bound(*this,
+                                                   *parse_scope,
+                                                   merged,
+                                                   initializer);
+          }
           out_of_class_static_member->type = merged;
           if(out_of_class_static_member->is_thread_local != is_thread_local_variable) {
             throw logic_error(string("mismatched variable thread_local storage") +

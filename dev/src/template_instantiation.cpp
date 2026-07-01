@@ -5549,6 +5549,10 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
     if(!partial) {
       bind_template_arguments_into_scope(ctx, init_scope, it->second.parameters, arguments);
     }
+    member->type = callsemantic_internal::apply_initializer_array_bound(ctx,
+                                                                        init_scope,
+                                                                        member->type,
+                                                                        it->second.initializer);
     member->constant_initializer_scope = &init_scope;
     ctx.emit_class_use_source_events_after_location(
         init_scope,
@@ -6653,6 +6657,10 @@ bool apply_out_of_class_static_member_definitions_to_reference(
           it->second.parameters,
           info.instantiation_arguments);
     }
+    member->type = callsemantic_internal::apply_initializer_array_bound(ctx,
+                                                                        init_scope,
+                                                                        member->type,
+                                                                        it->second.initializer);
     member->constant_initializer_scope = &init_scope;
   }
   info.out_of_class_static_member_definitions_applied = true;

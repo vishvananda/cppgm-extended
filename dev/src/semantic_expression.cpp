@@ -6942,15 +6942,21 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
   TypePtr operand_type;
   const CppAstNode & child = node.children[0];
   if(child.kind == CppAstKind::type_id) {
-    if(!ctx.parse_type_id(scope, child, operand_type) || !operand_type) {
-      if(!try_analyze_recovered_sizeof_type_id_operand(ctx,
-                                                       scope,
-                                                       child,
-                                                       operand_type)) {
-        throw logic_error("invalid sizeof type-id");
+    bool parsed_type_id = ctx.parse_type_id(scope, child, operand_type) &&
+                          static_cast<bool>(operand_type);
+    if(parsed_type_id) {
+      maybe_complete_layout_type(ctx, operand_type);
+    }
+    if(!parsed_type_id || !operand_type || !type_is_complete(operand_type)) {
+      TypePtr recovered_operand_type;
+      if(try_analyze_recovered_sizeof_type_id_operand(ctx,
+                                                      scope,
+                                                      child,
+                                                      recovered_operand_type)) {
+        operand_type = recovered_operand_type;
+        maybe_complete_layout_type(ctx, operand_type);
       }
     }
-    maybe_complete_layout_type(ctx, operand_type);
     if(!operand_type || !type_is_complete(operand_type)) {
       throw logic_error("invalid sizeof type-id");
     }
