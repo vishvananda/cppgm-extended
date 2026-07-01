@@ -6629,6 +6629,7 @@ void analyze_late_required_synthesized_output(SemanticContext & ctx,
             class_rtti_has_external_key_function(ctx, *info))) {
           continue;
         }
+        append_dump_virtual_base_layout(node, info);
         append_rtti_base_output_nodes(*info, node);
       }
     }
