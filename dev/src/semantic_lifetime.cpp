@@ -3418,7 +3418,8 @@ void append_copy_constructor_action(SemanticContext & ctx,
                                     ClassInfo & info,
                                     const ExprInfo & object_ptr,
                                     const ExprInfo & source,
-                                    DumpNode & out)
+                                    DumpNode & out,
+                                    ClassInfo * vtt_owner_info = nullptr)
 {
   if(info.class_kind == "union") {
     append_union_copy_action(ctx,
@@ -3451,6 +3452,7 @@ void append_copy_constructor_action(SemanticContext & ctx,
   set_callsem_resolved_name(action, function_output_name(*ctor));
   action.trivial_lifecycle = action_result.trivial_lifecycle;
   action.children.push_back(std::move(action_result.call_expr.node));
+  annotate_special_member_call_with_vtt(ctx, vtt_owner_info, info, action.children.back());
   out.children.push_back(std::move(action));
 }
 
@@ -3459,7 +3461,8 @@ void append_move_constructor_action(SemanticContext & ctx,
                                     ClassInfo & info,
                                     const ExprInfo & object_ptr,
                                     const ExprInfo & source,
-                                    DumpNode & out)
+                                    DumpNode & out,
+                                    ClassInfo * vtt_owner_info = nullptr)
 {
   if(info.class_kind == "union") {
     append_union_copy_action(ctx,
@@ -3494,7 +3497,7 @@ void append_move_constructor_action(SemanticContext & ctx,
 
   FunctionBinding * ctor = selection.ctor;
   if(!ctor) {
-    append_copy_constructor_action(ctx, scope, info, object_ptr, source, out);
+    append_copy_constructor_action(ctx, scope, info, object_ptr, source, out, vtt_owner_info);
     return;
   }
 
@@ -3510,6 +3513,7 @@ void append_move_constructor_action(SemanticContext & ctx,
   set_callsem_resolved_name(action, function_output_name(*ctor));
   action.trivial_lifecycle = action_result.trivial_lifecycle;
   action.children.push_back(std::move(action_result.call_expr.node));
+  annotate_special_member_call_with_vtt(ctx, vtt_owner_info, info, action.children.back());
   out.children.push_back(std::move(action));
 }
 
@@ -4137,7 +4141,8 @@ void append_constructor_generated_statements(SemanticContext & ctx,
                                        ctx.make_base_expr(source_expr,
                                                           *subobject.type,
                                                           subobject.offset),
-                                       function_node);
+                                       function_node,
+                                       &info);
       }
     }
     for(size_t i = 0; i < info.bases.size(); ++i) {
@@ -4151,7 +4156,8 @@ void append_constructor_generated_statements(SemanticContext & ctx,
                                                                 info.bases[i].offset),
                                      ctx.make_base_expr(source_expr, *info.bases[i].type,
                                                         info.bases[i].offset),
-                                     function_node);
+                                     function_node,
+                                     &info);
     }
     if(info.class_kind == "union") {
       append_union_copy_action(ctx,
@@ -4215,7 +4221,8 @@ void append_constructor_generated_statements(SemanticContext & ctx,
                                        ctx.make_base_expr(source_expr,
                                                           *subobject.type,
                                                           subobject.offset),
-                                       function_node);
+                                       function_node,
+                                       &info);
       }
     }
     for(size_t i = 0; i < info.bases.size(); ++i) {
@@ -4229,7 +4236,8 @@ void append_constructor_generated_statements(SemanticContext & ctx,
                                                                 info.bases[i].offset),
                                      ctx.make_base_expr(source_expr, *info.bases[i].type,
                                                         info.bases[i].offset),
-                                     function_node);
+                                     function_node,
+                                     &info);
     }
     if(info.class_kind == "union") {
       append_union_copy_action(ctx,
