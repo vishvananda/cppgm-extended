@@ -2885,6 +2885,13 @@ vector<size_t> host_eh_successors(const mir::Function & function, size_t block_i
     }
   };
 
+  for(size_t ii = 0; ii < block.instructions.size(); ++ii) {
+    const mir::Instruction & inst = block.instructions[ii];
+    if(is_conditional_jump(inst)) {
+      append_target(inst.operands[0].text);
+    }
+  }
+
   if(last.opcode == mir::Instruction::MI_RET ||
      last.opcode == mir::Instruction::MI_FRET ||
      last.opcode == mir::Instruction::MI_EXIT ||
@@ -2895,17 +2902,10 @@ vector<size_t> host_eh_successors(const mir::Function & function, size_t block_i
 
   if(last.opcode == mir::Instruction::MI_JMP) {
     append_target(last.operands[0].text);
-    if(block.instructions.size() >= 2) {
-      const mir::Instruction & prev = block.instructions[block.instructions.size() - 2];
-      if(is_conditional_jump(prev)) {
-        append_target(prev.operands[0].text);
-      }
-    }
     return out;
   }
 
   if(is_conditional_jump(last)) {
-    append_target(last.operands[0].text);
     if(block_index + 1 < function.blocks.size()) {
       out.push_back(block_index + 1);
     }
