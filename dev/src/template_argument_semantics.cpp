@@ -4266,14 +4266,27 @@ bool template_id_syntax_matches_qualified_component(
   if(!template_id_syntax_has_payload(syntax)) {
     return false;
   }
+  const string syntax_name = unqualified_member_name(syntax.name.name);
+  const string component_lookup = template_id_component_lookup_text(component);
   const string component_name =
       unqualified_member_name(
-          strip_trailing_top_level_template_arguments(
-              template_id_component_lookup_text(component)));
-  const string syntax_name = unqualified_member_name(syntax.name.name);
-  return !component_name.empty() &&
-         !syntax_name.empty() &&
-         component_name == syntax_name;
+          strip_trailing_top_level_template_arguments(component_lookup));
+  if(!component_name.empty() &&
+     !syntax_name.empty() &&
+     component_name == syntax_name) {
+    return true;
+  }
+  const size_t first_angle = component_lookup.find('<');
+  if(first_angle != string::npos) {
+    const string component_prefix =
+        unqualified_member_name(trim_space(component_lookup.substr(0, first_angle)));
+    if(!component_prefix.empty() &&
+       !syntax_name.empty() &&
+       component_prefix == syntax_name) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool qualified_component_has_template_id(const string & text)
@@ -4452,12 +4465,18 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
   };
 
   QualifiedName qualified;
-  if(source_qualified_syntax &&
-     (source_qualified_syntax->rooted ||
-      !source_qualified_syntax->qualifiers.empty()) &&
-     normalize_type_lookup_name(template_api::qualified_name_text(
-         *source_qualified_syntax)) ==
-         normalized_lookup_name) {
+  const bool source_qualified_has_lookup =
+      source_qualified_syntax &&
+      (source_qualified_syntax->rooted ||
+       !source_qualified_syntax->qualifiers.empty());
+  const bool node_has_structured_qualifier_payload =
+      has_qualifier_template_id_syntax_payload(node) ||
+      has_qualifier_type_syntax(node);
+  if(source_qualified_has_lookup &&
+     (normalize_type_lookup_name(template_api::qualified_name_text(
+          *source_qualified_syntax)) ==
+          normalized_lookup_name ||
+      node_has_structured_qualifier_payload)) {
     qualified = *source_qualified_syntax;
   } else if(!semantic_utils::split_qualified_name_text(normalized_lookup_name,
                                                        qualified)) {

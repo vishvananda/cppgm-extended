@@ -9125,9 +9125,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                         owner_pack_sizes);
                   }
                   CppAstNode parse_pattern = source_decl->result_type_pattern;
-                  if(template_parameters_have_pack(source_decl->parameters)) {
-                    clear_cached_semantic_types(parse_pattern);
-                  }
+                  clear_cached_semantic_types(parse_pattern);
                   CppAstNode substituted_pattern;
                   if(template_argument_semantics::substitute_type_id_node_for_template_arguments(
                          services,
@@ -9138,10 +9136,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                          substituted_pattern)) {
                     parse_pattern = substituted_pattern;
                   }
-                  if(template_parameters_have_pack(source_decl->parameters)) {
-                    clear_dependent_cached_semantic_types(parse_pattern,
-                                                          source_decl->parameters);
-                  }
+                  clear_dependent_cached_semantic_types(parse_pattern,
+                                                        source_decl->parameters);
                   const bool parsed =
                       template_decl_ast::parse_type_id(services,
                                                        *parse_scope,
