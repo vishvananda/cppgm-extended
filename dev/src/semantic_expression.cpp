@@ -1188,6 +1188,90 @@ bool try_builtin_increment_class_conversion(SemanticContext & ctx,
   return true;
 }
 
+bool builtin_unary_operator_supports_type(const CppAstNode & node,
+                                          const TypePtr & type)
+{
+  if(!type) {
+    return false;
+  }
+  if(node_has_simple_type(node, OP_PLUS)) {
+    return is_integral_or_unscoped_enum_type(type) ||
+           is_floating_type(type) ||
+           is_pointer_type(type);
+  }
+  if(node_has_simple_type(node, OP_MINUS)) {
+    return is_integral_or_unscoped_enum_type(type) ||
+           is_floating_type(type);
+  }
+  if(node_has_simple_type(node, OP_COMPL)) {
+    return is_integral_or_unscoped_enum_type(type);
+  }
+  return false;
+}
+
+bool try_builtin_unary_class_conversion(SemanticContext & ctx,
+                                        Scope & scope,
+                                        const CppAstNode & node,
+                                        const ExprInfo & operand,
+                                        ExprInfo & out,
+                                        const ArgumentConversionOptions & options)
+{
+  if(complete_class_type_for_lookup(ctx, value_conversion_type(operand)) == nullptr) {
+    return false;
+  }
+
+  struct Candidate
+  {
+    ExprInfo expr;
+    ConversionRank rank = CR_BAD;
+  };
+
+  std::vector<Candidate> candidates;
+  const std::vector<TypePtr> targets = builtin_numeric_conversion_targets();
+  for(size_t i = 0; i < targets.size(); ++i) {
+    ExprInfo converted;
+    ConversionRank rank = CR_BAD;
+    if(!ctx.try_argument_conversion(scope,
+                                    targets[i],
+                                    operand,
+                                    converted,
+                                    rank,
+                                    options)) {
+      continue;
+    }
+    if(!builtin_unary_operator_supports_type(node, value_conversion_type(converted))) {
+      continue;
+    }
+    Candidate candidate;
+    candidate.expr = converted;
+    candidate.rank = rank;
+    candidates.push_back(candidate);
+  }
+
+  if(candidates.empty()) {
+    return false;
+  }
+
+  size_t best = 0;
+  bool ambiguous = false;
+  for(size_t i = 1; i < candidates.size(); ++i) {
+    if(candidates[i].rank < candidates[best].rank) {
+      best = i;
+      ambiguous = false;
+    } else if(candidates[i].rank == candidates[best].rank &&
+              !type_equals(value_conversion_type(candidates[i].expr),
+                           value_conversion_type(candidates[best].expr))) {
+      ambiguous = true;
+    }
+  }
+  if(ambiguous) {
+    return false;
+  }
+
+  out = candidates[best].expr;
+  return true;
+}
+
 void maybe_complete_layout_type(SemanticContext & ctx, const TypePtr & type)
 {
   if(!type) {
@@ -2082,6 +2166,23 @@ bool try_overloaded_unary_operator(SemanticContext & ctx,
         if(!has_class_operand(ctx, operand.type)) {
           // Enum-only unary lookup may legitimately continue to builtins.
           return true;
+        }
+        if(node_has_simple_type(node, OP_PLUS) ||
+           node_has_simple_type(node, OP_MINUS) ||
+           node_has_simple_type(node, OP_COMPL)) {
+          ArgumentConversionOptions builtin_probe_options =
+              semantic_policy::without_user_defined_body_instantiation();
+          builtin_probe_options.materialize_user_defined_output = false;
+          builtin_probe_options.materialize_standard_adjustments = false;
+          ExprInfo converted_probe;
+          if(try_builtin_unary_class_conversion(ctx,
+                                                scope,
+                                                node,
+                                                operand,
+                                                converted_probe,
+                                                builtin_probe_options)) {
+            return true;
+          }
         }
         if(node.value == "&") {
           // Built-in address-of remains viable after non-member operator&
@@ -5531,10 +5632,19 @@ ExprInfo analyze_unary_expression(SemanticContext & ctx,
   } else if(node_has_simple_type(node, OP_PLUS) || node_has_simple_type(node, OP_MINUS)) {
     const bool unary_plus = node_has_simple_type(node, OP_PLUS);
     TypePtr operand_type = value_conversion_type(operand);
-    if(!operand_type ||
-       !(is_integral_or_unscoped_enum_type(operand_type) ||
-         is_floating_type(operand_type) ||
-         (unary_plus && is_pointer_type(operand_type)))) {
+    if(!builtin_unary_operator_supports_type(node, operand_type)) {
+      ExprInfo converted_operand;
+      if(try_builtin_unary_class_conversion(ctx,
+                                            scope,
+                                            node,
+                                            operand,
+                                            converted_operand,
+                                            semantic_policy::default_argument_conversion())) {
+        operand = converted_operand;
+        operand_type = value_conversion_type(operand);
+      }
+    }
+    if(!builtin_unary_operator_supports_type(node, operand_type)) {
       throw logic_error("unsupported unary arithmetic operand");
     }
     if(unary_plus && is_pointer_type(operand_type)) {
@@ -5547,7 +5657,19 @@ ExprInfo analyze_unary_expression(SemanticContext & ctx,
     result.category = VC_PRVALUE;
   } else if(node_has_simple_type(node, OP_COMPL)) {
     TypePtr operand_type = value_conversion_type(operand);
-    if(!operand_type || !is_integral_or_unscoped_enum_type(operand_type)) {
+    if(!builtin_unary_operator_supports_type(node, operand_type)) {
+      ExprInfo converted_operand;
+      if(try_builtin_unary_class_conversion(ctx,
+                                            scope,
+                                            node,
+                                            operand,
+                                            converted_operand,
+                                            semantic_policy::default_argument_conversion())) {
+        operand = converted_operand;
+        operand_type = value_conversion_type(operand);
+      }
+    }
+    if(!builtin_unary_operator_supports_type(node, operand_type)) {
       throw logic_error("unsupported unary integral operand");
     }
     result.type = promoted_integral_result_type(operand_type);
