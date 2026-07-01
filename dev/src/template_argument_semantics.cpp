@@ -13243,15 +13243,19 @@ void collect_scope_bound_type_replacements(
   if(!scope) {
     return;
   }
+  set<string> hidden_value_names;
   for(Scope * current = scope; current; current = current->parent) {
     if(current->namespace_scope || current->parent == nullptr) {
       break;
     }
+    hidden_value_names.insert(current->template_bound_value_names.begin(),
+                              current->template_bound_value_names.end());
     for(set<string>::const_iterator it = current->template_bound_type_names.begin();
         it != current->template_bound_type_names.end();
         ++it) {
       const string & name = *it;
       if(substitution_parameter_has_name(parameters, name) ||
+         hidden_value_names.count(name) != 0 ||
          type_replacements.count(name) != 0 ||
          !argument_mentions_identifier(argument, name)) {
         continue;
@@ -13270,6 +13274,7 @@ void collect_scope_bound_type_replacements(
       const string & name = found->first;
       if(name.empty() ||
          substitution_parameter_has_name(parameters, name) ||
+         hidden_value_names.count(name) != 0 ||
          type_replacements.count(name) != 0 ||
          !found->second ||
          scope_chain_has_template_bound_type_pack_name(current, name) ||
@@ -21738,14 +21743,18 @@ void collect_bound_type_replacements_in_node(Scope & scope,
                                              const CppAstNode & node,
                                              map<string, TypePtr> & replacements)
 {
+  set<string> hidden_value_names;
   for(Scope * current = &scope; current; current = current->parent) {
     if(current->namespace_scope || current->parent == nullptr) {
       break;
     }
+    hidden_value_names.insert(current->template_bound_value_names.begin(),
+                              current->template_bound_value_names.end());
     for(set<string>::const_iterator name = current->template_bound_type_names.begin();
         name != current->template_bound_type_names.end();
         ++name) {
       if(name->empty() ||
+         hidden_value_names.count(*name) != 0 ||
          replacements.count(*name) != 0 ||
          scope_chain_has_template_bound_type_pack_name(current, *name) ||
          !expression_node_mentions_identifier(node, *name)) {
@@ -21760,6 +21769,7 @@ void collect_bound_type_replacements_in_node(Scope & scope,
         found != current->named_types.end();
         ++found) {
       if(found->first.empty() ||
+         hidden_value_names.count(found->first) != 0 ||
          replacements.count(found->first) != 0 ||
          !found->second ||
          scope_chain_has_template_bound_type_pack_name(current, found->first) ||
