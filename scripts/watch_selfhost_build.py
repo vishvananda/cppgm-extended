@@ -163,37 +163,65 @@ def parse_elapsed_text(text: str) -> int:
     return (((days * 24) + hours) * 60 + minutes) * 60 + seconds
 
 
+def append_source_set_tokens(mapping: Dict[str, List[str]], target: str, text: str) -> None:
+    if text:
+        mapping[target].extend(text.split())
+
+
+def expand_source_set_references(mapping: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    reference_re = re.compile(r"^\$\(FRONTEND_OBJ_BASENAMES_([^)]+)\)$")
+
+    def expand_target(target: str, stack: Set[str]) -> List[str]:
+        result: List[str] = []
+        for token in mapping.get(target, []):
+            match = reference_re.match(token)
+            if not match:
+                result.append(token)
+                continue
+            dependency = match.group(1)
+            if dependency in stack:
+                continue
+            result.extend(expand_target(dependency, {*stack, dependency}))
+        return result
+
+    return {
+        target: expand_target(target, {target})
+        for target in mapping
+    }
+
+
 def parse_frontend_source_sets(path: Path) -> Dict[str, List[str]]:
     mapping: Dict[str, List[str]] = {}
-    current: Optional[str] = None
+    current_target: Optional[str] = None
     for raw_line in path.read_text().splitlines():
         line = raw_line.rstrip()
-        if current is not None:
+        if current_target is not None:
             stripped = line.strip()
             if not stripped or stripped.startswith("#"):
                 continue
             continued = stripped.endswith("\\")
             token_line = stripped[:-1].strip() if continued else stripped
-            if token_line:
-                mapping[current].extend(token_line.split())
+            append_source_set_tokens(mapping, current_target, token_line)
             if not continued:
-                current = None
+                current_target = None
             continue
 
-        match = re.match(r"^FRONTEND_OBJ_BASENAMES_([^ ]+)\s*:=\s*(.*)$", line)
+        match = re.match(r"^FRONTEND_OBJ_BASENAMES_(\S+)\s*([:+?]?=)\s*(.*)$", line)
         if not match:
             continue
-        current = match.group(1)
-        mapping[current] = []
-        remainder = match.group(2).strip()
-        if remainder:
-            continued = remainder.endswith("\\")
-            token_line = remainder[:-1].strip() if continued else remainder
-            if token_line:
-                mapping[current].extend(token_line.split())
-            if not continued:
-                current = None
-    return mapping
+        target = match.group(1)
+        operator = match.group(2)
+        remainder = match.group(3).strip()
+        if operator == "+=":
+            mapping.setdefault(target, [])
+        else:
+            mapping[target] = []
+
+        continued = remainder.endswith("\\")
+        token_line = remainder[:-1].strip() if continued else remainder
+        append_source_set_tokens(mapping, target, token_line)
+        current_target = target if continued else None
+    return expand_source_set_references(mapping)
 
 
 def parse_inception_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
