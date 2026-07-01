@@ -22,4 +22,4 @@ ERROR: template argument for non-type template parameter must be an expression: 
           parameter-clause
 }]
 Diagnostic context:
-collect_template_declaration [template<unsigned long I,class...T>tuple<T...>*g();] at pa19/tests/general/200-bad-nontype-template-argument-type-pack.t:4:1
+collect_template_declaration [template<unsigned long I,class...T>tuple<T...>*g();] at tests/general/200-bad-nontype-template-argument-type-pack.t:4:1
