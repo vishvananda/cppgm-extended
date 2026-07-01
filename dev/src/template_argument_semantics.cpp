@@ -6998,6 +6998,260 @@ bool function_type_structured_invocation_result(
   return true;
 }
 
+TypePtr callable_function_type_for_member_pointer_trait(
+    const TypePtr & member_pointer_type)
+{
+  TypePtr base = strip_top_level_cv(member_pointer_type);
+  if(!base || base->kind != Type::TK_MEMBER_POINTER || !is_function_type(base->inner)) {
+    return TypePtr();
+  }
+
+  TypePtr owner_type = strip_top_level_cv(base->owner);
+  if(!owner_type) {
+    owner_type = base->owner;
+  }
+  if(base->inner->function_const || base->inner->function_volatile) {
+    owner_type = make_cv(owner_type,
+                         base->inner->function_const,
+                         base->inner->function_volatile);
+  }
+
+  vector<TypePtr> params;
+  params.push_back(make_pointer(owner_type));
+  params.insert(params.end(), base->inner->params.begin(), base->inner->params.end());
+  return make_function(base->inner->inner,
+                       params,
+                       base->inner->variadic,
+                       base->inner->function_const,
+                       base->inner->function_volatile,
+                       base->inner->prototype_relaxed,
+                       base->inner->function_ref_qualifier);
+}
+
+RefQualifier trait_ref_qualifier_for_function_type(FunctionTypeRefQualifier qualifier)
+{
+  switch(qualifier) {
+  case FTRQ_NONE: return RQ_NONE;
+  case FTRQ_LVALUE: return RQ_LVALUE;
+  case FTRQ_RVALUE: return RQ_RVALUE;
+  }
+  return RQ_NONE;
+}
+
+bool pointer_to_member_owner_conversion_compatible(
+    template_api::TemplateTypeSystem & type_system,
+    const TypePtr & target_pointer,
+    const TypePtr & source_pointer,
+    bool allow_source_object_cv)
+{
+  TypePtr target_base = strip_top_level_cv(target_pointer);
+  TypePtr source_base = strip_top_level_cv(source_pointer);
+  if(!target_base ||
+     !source_base ||
+     target_base->kind != Type::TK_POINTER ||
+     source_base->kind != Type::TK_POINTER) {
+    return false;
+  }
+
+  TypePtr target_object_base;
+  TypePtr source_object_base;
+  bool target_const = false;
+  bool target_volatile = false;
+  bool source_const = false;
+  bool source_volatile = false;
+  if(!semantic_conversion::top_level_cv_flags(target_base->inner,
+                                              target_object_base,
+                                              target_const,
+                                              target_volatile) ||
+     !semantic_conversion::top_level_cv_flags(source_base->inner,
+                                              source_object_base,
+                                              source_const,
+                                              source_volatile) ||
+     (!allow_source_object_cv &&
+      ((source_const && !target_const) ||
+       (source_volatile && !target_volatile)))) {
+    return false;
+  }
+
+  ClassInfo * target_info =
+      template_api::find_named_type_class_info(type_system.model, target_object_base);
+  ClassInfo * source_info =
+      template_api::find_named_type_class_info(type_system.model, source_object_base);
+  if(!target_info || !source_info) {
+    return false;
+  }
+
+  size_t offset = 0;
+  MemberAccess access = MA_PUBLIC;
+  return semantic_lookup::find_unique_base_path(*source_info,
+                                                target_info,
+                                                offset,
+                                                access) &&
+         access == MA_PUBLIC;
+}
+
+bool member_pointer_owner_argument(
+    template_api::TemplateTypeSystem & type_system,
+    const TypePtr & target_pointer,
+    const semantic_conversion::ExprInfo & source_arg,
+    semantic_conversion::ExprInfo & object_pointer_arg,
+    semantic_conversion::ValueCategory & object_category,
+    TypePtr & object_source_type,
+    bool allow_source_object_cv)
+{
+  object_pointer_arg = semantic_conversion::ExprInfo();
+  object_category = semantic_conversion::VC_PRVALUE;
+  object_source_type.reset();
+
+  TypePtr converted = semantic_conversion::value_conversion_type(source_arg);
+  TypePtr converted_base = strip_top_level_cv(converted);
+  if(converted_base && converted_base->kind == Type::TK_POINTER) {
+    object_source_type = converted_base->inner;
+    object_category = semantic_conversion::VC_LVALUE;
+    if(semantic_conversion::standard_conversion_rank(target_pointer, source_arg) !=
+           semantic_conversion::CR_BAD ||
+       pointer_to_member_owner_conversion_compatible(type_system,
+                                                     target_pointer,
+                                                     converted_base,
+                                                     allow_source_object_cv)) {
+      object_pointer_arg = source_arg;
+      return true;
+    }
+    return false;
+  }
+
+  TypePtr object_type = remove_reference_type(source_arg.type);
+  if(!object_type) {
+    return false;
+  }
+
+  semantic_conversion::ExprInfo address_arg;
+  address_arg.type = make_pointer(object_type);
+  address_arg.category = semantic_conversion::VC_PRVALUE;
+  object_source_type = object_type;
+  object_category = source_arg.category;
+  if(semantic_conversion::standard_conversion_rank(target_pointer, address_arg) !=
+         semantic_conversion::CR_BAD ||
+     pointer_to_member_owner_conversion_compatible(type_system,
+                                                   target_pointer,
+                                                   address_arg.type,
+                                                   allow_source_object_cv)) {
+    object_pointer_arg = address_arg;
+    return true;
+  }
+  return false;
+}
+
+TypePtr member_object_invocation_result_type(const TypePtr & member_type,
+                                             const TypePtr & object_source_type,
+                                             semantic_conversion::ValueCategory object_category)
+{
+  if(!member_type) {
+    return TypePtr();
+  }
+  TypePtr adjusted = member_type;
+  if(adjusted && !is_reference_type(adjusted)) {
+    TypePtr cv_object = object_source_type;
+    if(cv_object && cv_object->kind == Type::TK_CV) {
+      adjusted = apply_cv(adjusted, cv_object->cv_const, cv_object->cv_volatile);
+    }
+  }
+
+  if(object_category == semantic_conversion::VC_LVALUE) {
+    return make_lvalue_reference_raw(adjusted);
+  }
+  return make_rvalue_reference_raw(adjusted);
+}
+
+bool member_pointer_structured_invocation_result(
+    template_api::TemplateTypeSystem & type_system,
+    const TypePtr & callable_type,
+    const vector<semantic_conversion::ExprInfo> & arg_exprs,
+    TypePtr & result_type)
+{
+  result_type.reset();
+  TypePtr member_pointer_type =
+      strip_top_level_cv(remove_reference_type(callable_type));
+  if(!member_pointer_type ||
+     member_pointer_type->kind != Type::TK_MEMBER_POINTER ||
+     arg_exprs.empty()) {
+    return false;
+  }
+
+  if(is_function_type(member_pointer_type->inner)) {
+    TypePtr callable_function_type =
+        callable_function_type_for_member_pointer_trait(member_pointer_type);
+    TypePtr function_type = strip_top_level_cv(callable_function_type);
+    if(!function_type ||
+       function_type->kind != Type::TK_FUNCTION ||
+       function_type->params.empty() ||
+       function_type->prototype_relaxed) {
+      return false;
+    }
+
+    semantic_conversion::ExprInfo object_arg;
+    semantic_conversion::ValueCategory object_category = semantic_conversion::VC_PRVALUE;
+    TypePtr object_source_type;
+    if(!member_pointer_owner_argument(type_system,
+                                      function_type->params[0],
+                                      arg_exprs[0],
+                                      object_arg,
+                                      object_category,
+                                      object_source_type,
+                                      false)) {
+      return false;
+    }
+
+    const RefQualifier ref_qualifier =
+        trait_ref_qualifier_for_function_type(function_type->function_ref_qualifier);
+    if(ref_qualifier_rejects_implicit_object(ref_qualifier,
+                                             function_type->params[0],
+                                             object_category)) {
+      return false;
+    }
+
+    if(function_type->variadic) {
+      if(arg_exprs.size() < function_type->params.size()) {
+        return false;
+      }
+    } else if(arg_exprs.size() != function_type->params.size()) {
+      return false;
+    }
+
+    for(size_t i = 1; i < function_type->params.size(); ++i) {
+      if(semantic_conversion::standard_conversion_rank(function_type->params[i],
+                                                       arg_exprs[i]) ==
+         semantic_conversion::CR_BAD) {
+        return false;
+      }
+    }
+
+    result_type = function_type->inner;
+    return true;
+  }
+
+  semantic_conversion::ExprInfo object_arg;
+  semantic_conversion::ValueCategory object_category = semantic_conversion::VC_PRVALUE;
+  TypePtr object_source_type;
+  if(!member_pointer_owner_argument(type_system,
+                                    make_pointer(strip_top_level_cv(member_pointer_type->owner)),
+                                    arg_exprs[0],
+                                    object_arg,
+                                    object_category,
+                                    object_source_type,
+                                    true)) {
+    return false;
+  }
+  if(arg_exprs.size() != 1) {
+    return false;
+  }
+
+  result_type = member_object_invocation_result_type(member_pointer_type->inner,
+                                                     object_source_type,
+                                                     object_category);
+  return result_type != nullptr;
+}
+
 bool function_result_convertible_to_invocable_r(const TypePtr & result_type,
                                                 const TypePtr & required_return)
 {
@@ -7188,12 +7442,19 @@ bool evaluate_structured_invocable_r_trait(
 
   TypePtr result_type;
   FunctionBinding * selected_binding = nullptr;
+  const bool member_pointer_invocable =
+      member_pointer_structured_invocation_result(type_system,
+                                                  callable_expr.type,
+                                                  arg_exprs,
+                                                  result_type);
   const bool function_type_invocable =
+      !member_pointer_invocable &&
       function_type_structured_invocation_result(callable_expr.type,
                                                  arg_exprs,
                                                  result_type);
   bool callable_lookup_complete = true;
   const bool callable_object_invocable =
+      !member_pointer_invocable &&
       !function_type_invocable &&
       callable_object_structured_invocation_result(type_system,
                                                    services,
@@ -7203,7 +7464,7 @@ bool evaluate_structured_invocable_r_trait(
                                                    result_type,
                                                    selected_binding,
                                                    callable_lookup_complete);
-  if(!function_type_invocable && !callable_object_invocable) {
+  if(!member_pointer_invocable && !function_type_invocable && !callable_object_invocable) {
     if(!callable_lookup_complete) {
       if(evaluation_incomplete) {
         *evaluation_incomplete = true;
