@@ -1463,13 +1463,17 @@ canonical build.
   `pa22/tests/spec/300-conversion-function-template-owner-result-copy-init.t`.
   The recursive and out-of-class dependent-owner reducers are still no-action
   rows because the reduced shapes already pass at Opus start `1963d796e`.
+- PA23 original disposition: the sibling-owner and conversion-function-template
+  copy-init PA23 originals were removed as comment/format-only duplicates of
+  the promoted earlier reducers; they did not add a separate PA23 integration
+  ingredient.
 
 | PA23 source row | Candidate owner | Reducer | Historical evidence | External reference behavior | Next validation |
 | --- | --- | --- | --- | --- | --- |
 | `pa23/tests/general/400-recursive-member-template-concrete-owner.t` | PA21 | `analysis/reducers/pa21-recursive-member-template-concrete-owner.t` | Correct Opus gate accepts the reducer at start `1963d796e` and all sampled fixes. | Current local compiler accepts and can generate LowIR; no reference block remains for the current workflow. | No backfill: the reduced shape has no start/fix transition. |
-| `pa23/tests/general/400-sibling-namespace-dependent-member-template-id-owner.t` | PA21 | `analysis/reducers/pa21-sibling-namespace-dependent-member-template-id-owner.t` | Correct Opus gate rejects at start `1963d796e` with `unknown type name: detail::result_detail<Sig>::type` and accepts at `f8660aa27`/current. | Current local compiler accepts and generated refs. | Promoted to `pa21/tests/general/300-sibling-namespace-dependent-member-template-id-owner.t`; run focused checks, placement audit, and top-level `make test-strict`. |
+| `pa23/tests/general/400-sibling-namespace-dependent-member-template-id-owner.t` | PA21 | `analysis/reducers/pa21-sibling-namespace-dependent-member-template-id-owner.t` | Correct Opus gate rejects at start `1963d796e` with `unknown type name: detail::result_detail<Sig>::type` and accepts at `f8660aa27`/current. | Current local compiler accepts and generated refs. | Promoted to `pa21/tests/general/300-sibling-namespace-dependent-member-template-id-owner.t`; PA23 original retired as a comment/format-only duplicate. |
 | `pa23/tests/general/500-out-of-class-member-template-dependent-owner-type.t` | PA22 | `analysis/reducers/pa22-out-of-class-member-template-dependent-owner-type.t` | Correct Opus gate accepts the reducer at start `1963d796e`, regresses at `42beb854b`/`e8325194b`, and accepts again at `fd6f3e485`/current. | Current local compiler accepts and can generate LowIR; no reference block remains for the current workflow. | No backfill from this reducer: the reduced shape is start-pass rather than start-fail. |
-| `pa23/tests/spec/400-conversion-function-template-owner-result-copy-init.t` | PA22 | `analysis/reducers/pa22-conversion-function-template-owner-result-copy-init.t` | Correct Opus gate rejects at start `1963d796e` with `explicit constructor in copy-initialization` and accepts at `f8660aa27`/current. | Current local compiler accepts and generated refs. | Promoted to `pa22/tests/spec/300-conversion-function-template-owner-result-copy-init.t`; run focused checks, placement audit, and top-level `make test-strict`. |
+| `pa23/tests/spec/400-conversion-function-template-owner-result-copy-init.t` | PA22 | `analysis/reducers/pa22-conversion-function-template-owner-result-copy-init.t` | Correct Opus gate rejects at start `1963d796e` with `explicit constructor in copy-initialization` and accepts at `f8660aa27`/current. | Current local compiler accepts and generated refs. | Promoted to `pa22/tests/spec/300-conversion-function-template-owner-result-copy-init.t`; PA23 original retired as a comment/format-only duplicate. |
 
 ### Non-Type Template Argument Reference-Blocked Batch
 
@@ -1498,6 +1502,10 @@ canonical build.
   `pa22/tests/general/100-local-pack-template-id-paren-init-in-if.t`. The
   remaining six rows are no-action because the exact focused source already
   passes at Opus start `1963d796e`.
+- PA23 original disposition: the four promoted pack-expansion originals were
+  removed as source-identical or comment/format-only duplicates of the promoted
+  PA21/PA22 reducers. They isolated the earlier feature rather than adding
+  PA23 integration coverage.
 
 | PA23 source row | Candidate owner | Reducer | Disposition | Historical evidence | External reference behavior | Next validation |
 | --- | --- | --- | --- | --- | --- | --- |
