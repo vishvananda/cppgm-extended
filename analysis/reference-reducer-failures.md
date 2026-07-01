@@ -1519,3 +1519,30 @@ canonical build.
 | `pa23/tests/spec/300-constructor-default-pack-partial-ordering.t` | PA22 | PA23 source row itself | `no-missing-opus-feature` | Correct Opus gate accepts at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
 | `pa23/tests/spec/400-explicit-pack-type-argument-uses-bound-type.t` | PA19 | PA23 source row itself | `no-missing-opus-feature` | Correct Opus gate accepts at start `1963d796e`, Opus final `1434a6e11`, and current. | Current local compiler accepts; no reference block remains for the current workflow. | No backfill: the focused shape has no start/fix transition. |
 | `pa23/tests/spec/400-variadic-base-pack-expansion.t` | PA21 | PA23 source row itself | `promoted` | Correct Opus gate rejects at start `1963d796e` with `use of undeclared identifier: sum_bases<Tail...>::sum` and accepts at `1434a6e11`/current. | Current local compiler accepts and generated refs. | Promoted to `pa21/tests/spec/100-variadic-base-pack-expansion.t`; placement audit suggested PA21:100. |
+
+### Portable Hosted-Builtin Rewrite Batch
+
+- Disposition: mixed. Five hosted/vendor-intrinsic PA23 sources were rewritten
+  to portable C++11 helper templates and promoted to PA21/PA22. One portable
+  rewrite already passes at Opus start, and one portable sequence-filter shape
+  still has no reachable Opus pass.
+- Hosted-token check: the portable sources contain none of
+  `__type_pack_element`, `__make_integer_seq`, `__decay`,
+  `__remove_reference`, `__remove_cv`, `__remove_cvref`, or `__SIZE_TYPE__`.
+- C++11/current behavior: `g++ -std=c++11 -x c++ -fsyntax-only` and local
+  canonical `dev/cppgm++ --emit-lowir` accept all seven portable sources.
+- Current refs: generated for the five promoted tests with local
+  `dev/cppgm++`, not an Opus reference binary.
+- PA23 original disposition: the five promoted portable PA23 originals were
+  removed as source-identical or comment/format-only duplicates of the promoted
+  PA21/PA22 reducers. The two non-promoted portable rows remain in PA23.
+
+| PA23 source row | Candidate owner | Promoted test | Historical evidence | Current disposition |
+| --- | --- | --- | --- | --- |
+| `pa23/tests/general/200-dependent-builtin-decay-transform-return.t` | none for backfill | not promoted | Opus start `1963d796e`, Opus final `1434a6e11`, and current all accept and emit the same semantic `decay_copy`/local-constructor shape modulo modern object metadata. | Tracker row marked `no-missing-opus-feature` / `no-action`; intrinsic-specific coverage remains later-owned. |
+| `pa23/tests/general/200-dependent-remove-reference-transform-forwarding.t` | PA22 | `pa22/tests/general/100-dependent-remove-reference-transform-forwarding.t` | Opus start `1963d796e` exits 0 but under-emits the forwarding/value_func/stored constructor path; Opus final `1434a6e11` and current emit the constructor-forwarding LowIR. | Promoted; placement audit suggested PA22:100. |
+| `pa23/tests/general/400-dependent-alias-nontype-sequence-filter.t` | none for now | not promoted | Opus start `1963d796e`, `45820ae4b`, `743b7a920`, and final `1434a6e11` all reject the portable sequence/filter shape with unresolved `from_sequence` / `from_sequence_impl`; current accepts. | Tracker row marked `historical-validation-missing` / `no-action`; needs a reachable Opus pass transition or smaller portable reducer before promotion. |
+| `pa23/tests/general/400-dependent-remove-cv-transform-alias-substitution.t` | PA21 | `pa21/tests/general/200-dependent-remove-cv-transform-alias-substitution.t` | Opus start `1963d796e` rejects with `expected an integral constant expression`; Opus `45820ae4b`, final, and current accept. | Promoted; placement audit suggested PA21:200. |
+| `pa23/tests/general/500-internal-remove-cvref-alias-sfinae.t` | PA22 | `pa22/tests/general/300-internal-remove-cvref-alias-sfinae.t` | Opus start `1963d796e` exits 0 but selects/emits the wrong assignment SFINAE shape; Opus final `1434a6e11` and current emit the local functor assignment probe. | Promoted; placement audit suggested PA22:300. |
+| `pa23/tests/general/500-type-pack-element-preserves-concrete-argument.t` | PA22 | `pa22/tests/general/100-type-pack-element-preserves-concrete-argument.t` | Opus start `1963d796e` rejects `get<0>`; Opus `45820ae4b`, final, and current accept. | Promoted; placement audit suggested PA22:100. |
+| `pa23/tests/general/500-type-pack-element-result-selects-copy-ctor.t` | PA22 | `pa22/tests/general/100-type-pack-element-result-selects-copy-ctor.t` | Opus start `1963d796e` rejects `get<0>`; Opus `45820ae4b` still rejects the constructor result shape; Opus `743b7a920`, final, and current accept. | Promoted; placement audit suggested PA22:100. |

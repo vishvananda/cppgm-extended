@@ -1,6 +1,3 @@
-// N3485 focus: 14.8.2 substitution failure in function-template overloads.
-// Local type-transform aliases must be resolved as concrete unary transforms
-// instead of forcing template-id text fallback while checking SFINAE.
 template<bool B, class T = void>
 struct enable_if {};
 
