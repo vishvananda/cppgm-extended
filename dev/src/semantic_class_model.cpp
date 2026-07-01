@@ -6474,9 +6474,12 @@ bool class_has_virtual_bases(const ClassInfo & info)
   return false;
 }
 
-bool class_uses_extended_virtual_abi(const ClassInfo & info)
+bool class_uses_extended_virtual_abi(const ClassInfo &)
 {
-  return class_has_virtual_bases(info);
+  // Keep vtable entries on the host ABI pointer stride; slot-specific `this`
+  // adjustments are represented by thunks, while virtual-base offsets remain in
+  // the vtable prefix.
+  return false;
 }
 
 bool class_needs_vtt(const ClassInfo & info)
@@ -6498,29 +6501,6 @@ std::string construction_vtable_key(const ClassInfo & dynamic_class,
 }
 
 namespace {
-
-bool resolve_complete_subobject_offset(const ClassInfo & dynamic_class,
-                                       const ClassInfo & target_class,
-                                       size_t & out_offset)
-{
-  bool found = false;
-  for(size_t i = 0; i < dynamic_class.complete_subobjects.size(); ++i) {
-    const SubobjectInfo & subobject = dynamic_class.complete_subobjects[i];
-    if(!subobject.type) {
-      continue;
-    }
-    if(subobject.type != &target_class &&
-       subobject.type->qualified_name != target_class.qualified_name) {
-      continue;
-    }
-    if(found && out_offset != subobject.offset) {
-      return false;
-    }
-    out_offset = subobject.offset;
-    found = true;
-  }
-  return found;
-}
 
 bool direct_base_uses_construction_vtt(const BaseInfo & base)
 {
