@@ -11934,7 +11934,8 @@ private:
       bool suppress_source_capture = false) override
   {
     TypePtr selected_conditional_branch;
-    if(try_instantiate_known_conditional_alias_branch(decl,
+    if(!witness::source_capture_enabled(template_witness_context()) &&
+       try_instantiate_known_conditional_alias_branch(decl,
                                                       use_scope,
                                                       arg_texts,
                                                       arg_syntaxes,
