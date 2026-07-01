@@ -8303,11 +8303,14 @@ void append_function_template_call_candidates_impl(
     args.reserve(arg_options.size());
     const size_t candidate_count_before_combinations = out.size();
     std::vector<template_api::TemplateWitnessSourceDrop> combination_drops;
+    ExprInfo template_implicit_object_arg;
+    bool template_implicit_object_ready = false;
     struct ArgumentCombinationRunner
     {
       SemanticContext & ctx;
       FunctionTemplateDecl & candidate_template;
       bool has_explicit_args;
+      bool instantiate_bodies;
       Scope * instantiation_use_scope;
       std::vector<TemplateArgument> & resolved_explicit_arguments;
       std::vector<std::vector<ExprInfo> > & arg_options;
@@ -8316,7 +8319,66 @@ void append_function_template_call_candidates_impl(
       std::vector<FunctionBinding *> & out;
       std::vector<template_api::TemplateWitnessSourceDrop> & combination_drops;
       std::map<FunctionTemplateDecl *, ClassInfo *> & template_active_owners;
+      const CallAnalysisHints * hints;
+      ExprInfo & template_implicit_object_arg;
+      bool & template_implicit_object_ready;
       const std::string & trace_location;
+
+      bool binding_accepts_implicit_object(FunctionBinding * binding)
+      {
+        if(!binding ||
+           !binding->is_method ||
+           candidate_template.is_static_member ||
+           !hints ||
+           !hints->explicit_member_base) {
+          return true;
+        }
+
+        TypePtr function_type = strip_top_level_cv(binding->type);
+        if(!function_type ||
+           function_type->kind != Type::TK_FUNCTION ||
+           function_type->params.empty()) {
+          return false;
+        }
+
+        if(ref_qualifier_rejects_implicit_object(
+               binding->ref_qualifier,
+               function_type->params[0],
+               hints->explicit_member_base->category)) {
+          return false;
+        }
+
+        if(!template_implicit_object_ready) {
+          ScopedCallSemConstructionPath construction_path(
+              "overload.template-candidate-implicit-object");
+          template_implicit_object_arg =
+              ctx.make_address_of_expr(*hints->explicit_member_base);
+          template_implicit_object_ready = true;
+        }
+
+        ExprInfo adjusted_this = template_implicit_object_arg;
+        ExprInfo converted_this;
+        const bool converted_this_ok =
+            instantiate_bodies ?
+                semantic_conversion::try_apply_unmaterialized_inheritance_conversion(
+                    ctx,
+                    function_type->params[0],
+                    template_implicit_object_arg,
+                    converted_this) :
+                semantic_conversion::try_apply_inheritance_conversion(
+                    ctx,
+                    function_type->params[0],
+                    template_implicit_object_arg,
+                    converted_this);
+        if(converted_this_ok) {
+          adjusted_this = converted_this;
+        }
+
+        return semantic_conversion::implicit_object_conversion_rank(
+                   ctx,
+                   function_type->params[0],
+                   adjusted_this) != CR_BAD;
+      }
 
       void run(size_t index)
       {
@@ -8424,6 +8486,13 @@ void append_function_template_call_candidates_impl(
           if(!binding) {
             return;
           }
+          if(!binding_accepts_implicit_object(binding)) {
+            append_template_function_candidate_drop(ctx,
+                                                    &candidate_template,
+                                                    "implicit_object_conversion_failed",
+                                                    &combination_drops);
+            return;
+          }
           if(!contains_equivalent_function_candidate(seen_candidates, binding)) {
             out.push_back(binding);
             note_function_candidate_bucket(seen_candidates, binding);
@@ -8442,6 +8511,7 @@ void append_function_template_call_candidates_impl(
         ctx,
         *templates[i],
         has_explicit_args,
+        options.instantiate_bodies,
         instantiation_use_scope,
         resolved_explicit_arguments,
         arg_options,
@@ -8450,6 +8520,9 @@ void append_function_template_call_candidates_impl(
         out,
         combination_drops,
         template_active_owners,
+        options.hints,
+        template_implicit_object_arg,
+        template_implicit_object_ready,
         trace_location};
     combination_runner.run(0);
     if(witness_drops && out.size() == candidate_count_before_combinations) {
@@ -10867,6 +10940,14 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             member_template_scope.function = scope.function;
             direct_function_template_slot(member_template_scope, "operator()") =
                 callable_candidates.templates;
+            CallAnalysisHints callable_template_hints =
+                hints ? *hints : CallAnalysisHints();
+            callable_template_hints.explicit_member_base = &callee_expr;
+            callable_template_hints.explicit_member_arg_prefix = 0;
+            callable_template_hints.explicit_member_declared_in =
+                callable_candidates.declared_in;
+            callable_template_hints.explicit_member_path_access =
+                callable_candidates.path_access;
             append_function_template_call_candidates_impl(
                 ctx,
                 member_template_scope,
@@ -10874,7 +10955,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                 "operator()",
                 arg_nodes,
                 candidates,
-                CallAnalysisOptions(instantiate_bodies, hints),
+                CallAnalysisOptions(instantiate_bodies, &callable_template_hints),
                 &direct_function_source_drops);
           }
           if(candidates.empty()) {
@@ -11664,6 +11745,20 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       member_template_scope.function = scope.function;
       direct_function_template_slot(member_template_scope, member_lookup_name) =
           member_callable_candidates.templates;
+      CallAnalysisHints member_template_hints =
+          hints ? *hints : CallAnalysisHints();
+      const CallAnalysisHints * member_template_hints_ptr = hints;
+      if(node_has_simple_type(member_callee_node, OP_DOT)) {
+        member_template_hints.explicit_member_base = &base;
+        member_template_hints.explicit_member_arg_prefix = 0;
+        member_template_hints.explicit_member_declared_in =
+            member_callable_candidates.declared_in ?
+                member_callable_candidates.declared_in :
+                target.target_class;
+        member_template_hints.explicit_member_path_access =
+            member_callable_candidates.path_access;
+        member_template_hints_ptr = &member_template_hints;
+      }
       append_function_template_call_candidates_impl(
           ctx,
           member_template_scope,
@@ -11671,7 +11766,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
           member_lookup_name,
           arg_nodes,
           candidates,
-          CallAnalysisOptions(instantiate_bodies, hints),
+          CallAnalysisOptions(instantiate_bodies, member_template_hints_ptr),
           &direct_function_source_drops,
           &member_callee_node.children[1],
           member_name,

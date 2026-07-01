@@ -7285,6 +7285,14 @@ bool class_member_collection_in_progress(const ClassInfo & info)
          info.reference_member_collection_in_progress;
 }
 
+bool append_leaf_member_function_template_instantiations_from_candidates(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const vector<FunctionTemplateDecl *> & function_templates,
+    ClassInfo * active_owner,
+    const vector<pair<TypePtr, semantic_conversion::ValueCategory> > & arg_infos,
+    vector<FunctionBinding *> & functions);
+
 bool callable_object_structured_invocation_result(
     template_api::TemplateTypeSystem & type_system,
     template_api::TemplateServices * services,
@@ -7345,12 +7353,61 @@ bool callable_object_structured_invocation_result(
     lookup_complete =
         callable_info->complete &&
         !class_member_collection_in_progress(*callable_info);
+  }
+
+  vector<FunctionBinding *> candidate_functions = lookup.functions;
+  if(services && scope.valid()) {
+    semantic_lookup::MemberFunctionTemplateLookupResult template_lookup =
+        semantic_lookup::lookup_visible_member_function_templates(*callable_info,
+                                                                  "operator()");
+    if(!template_lookup.templates.empty()) {
+      vector<FunctionTemplateDecl *> viable_templates;
+      viable_templates.reserve(template_lookup.templates.size());
+      TypePtr implicit_object_parameter = make_pointer(callable_object);
+      for(size_t i = 0; i < template_lookup.templates.size(); ++i) {
+        FunctionTemplateDecl * candidate = template_lookup.templates[i];
+        if(!candidate || candidate->is_deleted) {
+          continue;
+        }
+        if(semantic_conversion::is_const_object_type(callable_expr.type) &&
+           !candidate->is_const_method) {
+          continue;
+        }
+        if(candidate->is_const_method) {
+          implicit_object_parameter = make_pointer(apply_cv(callable_object, true, false));
+        } else {
+          implicit_object_parameter = make_pointer(callable_object);
+        }
+        if(ref_qualifier_rejects_implicit_object(candidate->ref_qualifier,
+                                                 implicit_object_parameter,
+                                                 callable_expr.category)) {
+          continue;
+        }
+        viable_templates.push_back(candidate);
+      }
+
+      vector<pair<TypePtr, semantic_conversion::ValueCategory> > arg_infos;
+      arg_infos.reserve(arg_exprs.size());
+      for(size_t i = 0; i < arg_exprs.size(); ++i) {
+        arg_infos.push_back(make_pair(arg_exprs[i].type, arg_exprs[i].category));
+      }
+      append_leaf_member_function_template_instantiations_from_candidates(
+          *services,
+          scope.require(),
+          viable_templates,
+          const_cast<ClassInfo *>(template_lookup.declared_in),
+          arg_infos,
+          candidate_functions);
+    }
+  }
+
+  if(candidate_functions.empty()) {
     return false;
   }
 
   bool saw_viable = false;
-  for(size_t i = 0; i < lookup.functions.size(); ++i) {
-    FunctionBinding * binding = lookup.functions[i];
+  for(size_t i = 0; i < candidate_functions.size(); ++i) {
+    FunctionBinding * binding = candidate_functions[i];
     if(!binding || binding->is_deleted) {
       continue;
     }
@@ -30286,7 +30343,18 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
   const bool is_result_of =
       qualifier_template_id.name.name == "result_of" &&
       qualifier_template_id.arguments.size() == 1;
-  if(!is_enable_if && !is_conditional && !is_result_of) {
+  const bool is_invoke_result =
+      (qualifier_template_id.name.name == "__invoke_result" ||
+       qualifier_template_id.name.name == "invoke_result") &&
+      !qualifier_template_id.arguments.empty();
+  const bool is_invoke_result_impl =
+      qualifier_template_id.name.name == "__invoke_result_impl" &&
+      qualifier_template_id.arguments.size() >= 2;
+  if(!is_enable_if &&
+     !is_conditional &&
+     !is_result_of &&
+     !is_invoke_result &&
+     !is_invoke_result_impl) {
     return STANDARD_META_MEMBER_NOT_APPLICABLE;
   }
 
@@ -30299,6 +30367,72 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
      decl->name != qualifier_template_id.name.name ||
      !scope_is_std_namespace_or_inline_child(decl->declaring_scope)) {
     return STANDARD_META_MEMBER_NOT_APPLICABLE;
+  }
+
+  const auto resolve_invocation_result =
+      [&](size_t callable_index) -> StandardMetaMemberTypeResolution
+      {
+        TypePtr callable_type;
+        if(!resolve_standard_meta_type_argument(services,
+                                                argument_scope,
+                                                qualifier_template_id,
+                                                callable_index,
+                                                callable_type)) {
+          return STANDARD_META_MEMBER_NOT_APPLICABLE;
+        }
+        if(!callable_type ||
+           service_type_depends_on_template_parameter(services, callable_type)) {
+          return STANDARD_META_MEMBER_NOT_APPLICABLE;
+        }
+
+        vector<TypePtr> argument_types;
+        argument_types.reserve(qualifier_template_id.arguments.size() -
+                               callable_index - 1);
+        for(size_t i = callable_index + 1;
+            i < qualifier_template_id.arguments.size();
+            ++i) {
+          TypePtr argument_type;
+          if(!resolve_standard_meta_type_argument(services,
+                                                  argument_scope,
+                                                  qualifier_template_id,
+                                                  i,
+                                                  argument_type)) {
+            return STANDARD_META_MEMBER_NOT_APPLICABLE;
+          }
+          if(!argument_type ||
+             service_type_depends_on_template_parameter(services, argument_type)) {
+            return STANDARD_META_MEMBER_NOT_APPLICABLE;
+          }
+          argument_types.push_back(argument_type);
+        }
+
+        TypePtr result_type;
+        bool lookup_complete = true;
+        if(!structured_invocation_result_type(
+               service_type_system(services),
+               &services,
+               template_api::make_template_environment(argument_scope),
+               callable_type,
+               argument_types,
+               result_type,
+               lookup_complete)) {
+          return lookup_complete ?
+              STANDARD_META_MEMBER_SUBSTITUTION_FAILURE :
+              STANDARD_META_MEMBER_NOT_APPLICABLE;
+        }
+        if(!result_type ||
+           service_type_depends_on_template_parameter(services, result_type)) {
+          return STANDARD_META_MEMBER_NOT_APPLICABLE;
+        }
+        out = result_type;
+        return STANDARD_META_MEMBER_RESOLVED;
+      };
+
+  if(is_invoke_result) {
+    return resolve_invocation_result(0);
+  }
+  if(is_invoke_result_impl) {
+    return resolve_invocation_result(1);
   }
 
   if(is_result_of) {
