@@ -5082,13 +5082,6 @@ bool class_member_direct_bool_value(const Scope * member_scope,
     return false;
   }
   const ValueBinding & binding = found->second;
-  if(class_member_value_evaluation_incomplete(
-         value_binding_owner_class(binding))) {
-    if(evaluation_incomplete) {
-      *evaluation_incomplete = true;
-    }
-    return false;
-  }
   const auto is_bool_value_type = [](const TypePtr & type) -> bool
   {
     if(!type) {
@@ -5105,8 +5098,17 @@ bool class_member_direct_bool_value(const Scope * member_scope,
     out = binding.constant_value != 0;
     return true;
   }
-  return value_binding_has_constexpr_value(binding) &&
-         constant_value_truthy(value_binding_constexpr_value(binding), out);
+  if(value_binding_has_constexpr_value(binding)) {
+    return constant_value_truthy(value_binding_constexpr_value(binding), out);
+  }
+  if(class_member_value_evaluation_incomplete(
+         value_binding_owner_class(binding))) {
+    if(evaluation_incomplete) {
+      *evaluation_incomplete = true;
+    }
+    return false;
+  }
+  return false;
 }
 
 bool value_binding_owner_has_reentrant_primary_selection(const ValueBinding & binding)
@@ -8388,42 +8390,47 @@ bool materialize_leaf_member_constant_binding(
   if(binding.kind == ValueBinding::VK_FIELD) {
     return false;
   }
-  if(class_member_value_evaluation_incomplete(
-         value_binding_owner_class(binding))) {
-    if(evaluation_incomplete) {
-      *evaluation_incomplete = true;
-    }
-    return false;
-  }
+  const bool owner_value_evaluation_incomplete =
+      class_member_value_evaluation_incomplete(value_binding_owner_class(binding));
   if(binding.has_constant_value) {
-    if(binding.owner_class) {
+    if(binding.owner_class && !owner_value_evaluation_incomplete) {
       require_structured_bool_value_member_output_if_needed(
           services, *binding.owner_class);
     }
-    if(services.semantic_context) {
+    if(services.semantic_context && !owner_value_evaluation_incomplete) {
       template_api::note_template_member_value_instantiation_if_needed(
           *services.semantic_context,
           binding);
     }
-    note_non_bool_static_value_dependency_for_witness(services, binding);
+    if(!owner_value_evaluation_incomplete) {
+      note_non_bool_static_value_dependency_for_witness(services, binding);
+    }
     out = constant_eval::make_integral_value(
         binding.constant_value,
         binding.type ? binding.type : make_fundamental(FT_INT));
     return true;
   }
   if(value_binding_has_constexpr_value(binding)) {
-    if(binding.owner_class) {
+    if(binding.owner_class && !owner_value_evaluation_incomplete) {
       require_structured_bool_value_member_output_if_needed(
           services, *binding.owner_class);
     }
-    if(services.semantic_context) {
+    if(services.semantic_context && !owner_value_evaluation_incomplete) {
       template_api::note_template_member_value_instantiation_if_needed(
           *services.semantic_context,
           binding);
     }
-    note_non_bool_static_value_dependency_for_witness(services, binding);
+    if(!owner_value_evaluation_incomplete) {
+      note_non_bool_static_value_dependency_for_witness(services, binding);
+    }
     out = value_binding_constexpr_value(binding);
     return out.kind != constant_eval::ConstexprValue::CV_INVALID;
+  }
+  if(owner_value_evaluation_incomplete) {
+    if(evaluation_incomplete) {
+      *evaluation_incomplete = true;
+    }
+    return false;
   }
   if(binding.dependent_template_value ||
      service_type_depends_on_template_parameter(services, binding.type) ||
