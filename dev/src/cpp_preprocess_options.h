@@ -10,5 +10,6 @@ struct CppPreprocessOptions
   std::vector<std::string> macro_definitions;
   std::vector<std::string> macro_undefinitions;
   std::vector<std::string> forced_include_files;
+  bool enable_exceptions = true;
   bool emit_insignificant_whitespace = true;
 };

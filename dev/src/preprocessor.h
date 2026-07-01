@@ -165,6 +165,7 @@ protected:
   std::vector<std::string> dependency_files_;
   std::set<std::string> dependency_file_set_;
   std::set<FileId> file_ids;
+  bool enable_exceptions;
   bool emit_insignificant_whitespace;
   std::vector<IfStateStruct> ifstates;
   std::vector< std::unique_ptr<FileState> > files;

@@ -253,6 +253,14 @@ bool consume_toolchain_flag(CppToolInvocation & invocation,
                             const vector<string> & args,
                             size_t & i)
 {
+  if(args[i] == "-fno-exceptions") {
+    invocation.preprocess_options.enable_exceptions = false;
+    return true;
+  }
+  if(args[i] == "-fexceptions") {
+    invocation.preprocess_options.enable_exceptions = true;
+    return true;
+  }
   if(args[i] == "-g0") {
     invocation.debug_info_level = 0;
     return true;
@@ -328,9 +336,6 @@ CppToolInvocation parse_cpp_tool_invocation(const vector<string> & args)
     if(consume_query_family(args, i)) {
       continue;
     }
-    if(consume_benign_flag(args, i)) {
-      continue;
-    }
     if(consume_phase_output_flag(invocation, args, i)) {
       continue;
     }
@@ -347,6 +352,9 @@ CppToolInvocation parse_cpp_tool_invocation(const vector<string> & args)
       continue;
     }
     if(consume_toolchain_flag(invocation, args, i)) {
+      continue;
+    }
+    if(consume_benign_flag(args, i)) {
       continue;
     }
     invocation.inputs.push_back(args[i]);

@@ -282,6 +282,11 @@ bool should_import_host_predefined_macro(const string & name)
          name == "__CHAR_BIT__";
 }
 
+bool is_exception_predefined_macro(const string & name)
+{
+  return name == "__EXCEPTIONS" || name == "__cpp_exceptions";
+}
+
 bool parse_host_define_line(const string & line, string & name, string & value)
 {
   if(line.compare(0, 8, "#define ") != 0) {
@@ -945,8 +950,13 @@ bool is_supported_type_trait_feature_query(const string & name)
          name == "has_trivial_destructor";
 }
 
-bool is_supported_feature_query(const string & id, const string & name)
+bool is_supported_feature_query(const string & id,
+                                const string & name,
+                                bool enable_exceptions)
 {
+  if(name == "cxx_exceptions") {
+    return enable_exceptions;
+  }
   if(id == "__has_feature") {
     return is_supported_type_trait_feature_query(name) ||
            name == "cxx_atomic" ||
@@ -960,7 +970,6 @@ bool is_supported_feature_query(const string & id, const string & name)
            name == "cxx_deleted_functions" ||
            name == "cxx_decltype" ||
            name == "cxx_decltype_incomplete_return_types" ||
-           name == "cxx_exceptions" ||
            name == "cxx_explicit_conversions" ||
            name == "cxx_generalized_initializers" ||
            name == "cxx_inline_namespaces" ||
@@ -995,7 +1004,6 @@ bool is_supported_feature_query(const string & id, const string & name)
            name == "cxx_deleted_functions" ||
            name == "cxx_decltype" ||
            name == "cxx_decltype_incomplete_return_types" ||
-           name == "cxx_exceptions" ||
            name == "cxx_explicit_conversions" ||
            name == "cxx_generalized_initializers" ||
            name == "cxx_inline_namespaces" ||
@@ -1148,6 +1156,7 @@ Preprocessor::Preprocessor(const string & file,
   system_include_paths(options.system_include_paths),
   dependency_files_(),
   dependency_file_set_(),
+  enable_exceptions(options.enable_exceptions),
   emit_insignificant_whitespace(options.emit_insignificant_whitespace),
   cursor(this),
   raw_input(&cursor),
@@ -1171,6 +1180,9 @@ Preprocessor::Preprocessor(const string & file,
   const vector<HostPredefinedMacro> & predefined = host_predefined_macros();
   file_timing::startup_mark("preprocessor.after_host_predefined_macros");
   for(size_t i = 0; i < predefined.size(); ++i) {
+    if(!enable_exceptions && is_exception_predefined_macro(predefined[i].name)) {
+      continue;
+    }
     macroizer.macro_start(predefined[i].name);
     for(size_t j = 0; j < predefined[i].tokens.size(); ++j) {
       macroizer.macro_add_repl(predefined[i].tokens[j].type,
@@ -1700,7 +1712,7 @@ void Preprocessor::finish_if_directive()
         string feature_name;
         const bool supported =
             parse_builtin_name_tokens(argument, feature_name) &&
-            is_supported_feature_query(item.data, feature_name);
+            is_supported_feature_query(item.data, feature_name, enable_exceptions);
         rewritten.push_back(EPPToken{PP_INT_LITERAL, supported ? "1" : "0"});
         i = next - 1;
         continue;
