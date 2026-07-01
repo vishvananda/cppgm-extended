@@ -5146,6 +5146,18 @@ void complete_deferred_class_member_object_layouts(SemanticContext & ctx,
   }
 }
 
+bool class_has_deferred_class_member_object_layouts(SemanticContext & ctx,
+                                                    const ClassInfo & info)
+{
+  for(size_t i = 0; i < info.fields.size(); ++i) {
+    if(!class_member_object_type_supported(info.fields[i].type) &&
+       deferred_class_member_object_layout_supported(ctx, info.fields[i].type)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool bit_field_type_supported(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
@@ -8157,11 +8169,19 @@ void collect_class_simple_declaration(SemanticContext & ctx,
     const CppAstNode * default_initializer =
         init_decl.children.size() > 1 ? &init_decl.children[1] : nullptr;
     maybe_complete_class_member_object_type(ctx, member_type);
-    if(prepared_method.syntax.decl_virtual ||
-       prepared_method.syntax.is_override ||
-       prepared_method.syntax.is_final ||
-       init_decl.children.size() > 2 ||
-       !output_seed_class_member_object_type_supported(ctx, member_type)) {
+    const bool unsupported_member_syntax =
+        prepared_method.syntax.decl_virtual ||
+        prepared_method.syntax.is_override ||
+        prepared_method.syntax.is_final ||
+        init_decl.children.size() > 2;
+    const bool unsupported_member_type =
+        !output_seed_class_member_object_type_supported(ctx, member_type);
+    const bool defer_member_layout =
+        !unsupported_member_syntax &&
+        unsupported_member_type &&
+        deferred_class_member_object_layout_supported(ctx, member_type);
+    if((unsupported_member_syntax || unsupported_member_type) &&
+       !defer_member_layout) {
       std::ostringstream message;
       message << "unsupported class member object";
       if(!member_name.empty()) {
@@ -10454,6 +10474,12 @@ void populate_class_info(SemanticContext & ctx,
     finalize_class_virtuals(ctx, info);
   }
   complete_deferred_class_member_object_layouts(ctx, info);
+  if(class_has_deferred_class_member_object_layouts(ctx, info)) {
+    info.reference_members_collected = true;
+    trace_class_collection_event(ctx, "populate-class-deferred-member-layout", info, node);
+    full_collection_finished = true;
+    return;
+  }
   if(ctx.class_layout_depends_on_template_parameters(info)) {
     info.reference_members_collected = true;
     ctx.finalize_dependent_class_shape(info);
