@@ -33,12 +33,15 @@ VALID_TEST_CLUSTERS = frozenset(range(100, 1000, 100))
 HOSTED_STL_OWNER_PA = "pa35"
 HOSTED_STL_EARLY_PA_MAX = 34
 HOSTED_STL_INTERNAL_INCLUDE_PREFIXES = ("__", "bits/", "ext/")
-HOST_ABI_EH_COMPONENT_HEADERS = {
+HOST_ABI_EH_COMPONENT_HEADERS = set()
+HOSTED_EH_RTTI_HEADERS = {
     "exception",
     "typeinfo",
 }
-HOST_ABI_EH_HEADER_OWNER_PA = "pa32"
-HOST_ABI_EH_HEADER_EARLY_PA_MAX = 31
+HOSTED_EH_RTTI_HEADER_OWNER_PA = "pa35"
+HOSTED_EH_RTTI_HEADER_EARLY_PA_MAX = 34
+HOSTED_EXCEPTION_RUNTIME_OWNER_PA = "pa36"
+HOSTED_EXCEPTION_RUNTIME_EARLY_PA_MAX = 35
 HOSTED_STL_HEADERS = {
     "algorithm",
     "any",
@@ -1052,6 +1055,10 @@ def host_abi_eh_component_include(header: str) -> bool:
     return header.strip() in HOST_ABI_EH_COMPONENT_HEADERS
 
 
+def hosted_eh_rtti_include(header: str) -> bool:
+    return header.strip() in HOSTED_EH_RTTI_HEADERS
+
+
 # LowIR side-effect checks intentionally avoid broad object-name evidence such
 # as object=_Z...; PA13 treats those names as presentation/backend metadata.
 LOWIR_POLYMORPHIC_RE = re.compile(r"__vtable|_ZTV|__rtti|_ZTI|__typeinfo_name|_ZTS|typeinfo")
@@ -1072,6 +1079,9 @@ LOWIR_EH_RUNTIME_DECL_RE = re.compile(
     r"\b__gxx_personality_v0\b"
 )
 SOURCE_EXCEPTION_RE = re.compile(r"\b(?:try|catch|throw)\b")
+HOSTED_EXCEPTION_RUNTIME_RE = re.compile(
+    r"\bstd\s*::\s*(?:exception_ptr|make_exception_ptr|rethrow_exception)\b"
+)
 
 
 def polymorphic_cleanup_lowir_evidence(source: str, ref_text: str) -> str:
@@ -1220,15 +1230,39 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
         if number is None:
             continue
         relative = path.relative_to(root).as_posix()
-        for match in include_re.finditer(read_text(path)):
+        source = read_text(path)
+        if number <= HOSTED_EXCEPTION_RUNTIME_EARLY_PA_MAX:
+            match = HOSTED_EXCEPTION_RUNTIME_RE.search(source)
+            if match:
+                findings.append(HygieneFinding(
+                    path=relative,
+                    kind="early-hosted-exception-runtime",
+                    message=(
+                        "hosted std::exception_ptr/make_exception_ptr/"
+                        f"rethrow_exception runtime behavior belongs in "
+                        f"{HOSTED_EXCEPTION_RUNTIME_OWNER_PA} or later"
+                    ),
+                    evidence=match.group(0),
+                ))
+        for match in include_re.finditer(source):
             header = match.group(1).strip()
-            if number <= HOST_ABI_EH_HEADER_EARLY_PA_MAX and host_abi_eh_component_include(header):
+            if number <= HOSTED_EH_RTTI_HEADER_EARLY_PA_MAX and hosted_eh_rtti_include(header):
+                findings.append(HygieneFinding(
+                    path=relative,
+                    kind="early-hosted-eh-rtti-header",
+                    message=(
+                        f"hosted EH/RTTI header <{header}> belongs in "
+                        f"{HOSTED_EH_RTTI_HEADER_OWNER_PA} or later"
+                    ),
+                    evidence=f"#include <{header}>",
+                ))
+            elif host_abi_eh_component_include(header):
                 findings.append(HygieneFinding(
                     path=relative,
                     kind="early-host-abi-eh-header",
                     message=(
-                        f"host ABI/EH component header <{header}> belongs in "
-                        f"{HOST_ABI_EH_HEADER_OWNER_PA} or later"
+                        f"host ABI/EH component header <{header}> is not "
+                        "allowed before its owner stage"
                     ),
                     evidence=f"#include <{header}>",
                 ))
