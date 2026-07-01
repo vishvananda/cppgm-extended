@@ -20,28 +20,24 @@ The PA19, PA20, PA21, PA22, and PA23 README boundaries all exclude hosted/vendor
 
 ## Counts
 
-- Total no-action rows: 105
+- Total no-action rows: 104
 - `direct-start-pass`: 5
 - `historical-validation-missing`: 2
 - `implementation-bug-only`: 68
 - `no-missing-opus-feature`: 27
-- `owner-unclear-static-emission-contract`: 1
-- `owner-unclear-multifeature`: 1
+- `pa23-integration-static-emission-contract`: 1
 - `pa23-original-removed`: 1
 
 ## Plan Buckets
 
 - `close-no-backfill`: 33
 - `historical-audit-needed`: 2
-- `needs-owner-decision`: 2
+- `keep-pa23-static-emission-integration`: 1
 - `reclassify-no-historical-gap`: 68
 
 ## Rows Needing User Decision
 
-| Test | Cluster | Current Owner Hint | Question |
-| --- | --- | --- | --- |
-| `pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t` | `integral-nontype-template-arguments-and-constant-values` | `pa19-or-pa23-static-emission-contract` | Decide whether this is PA19 integral NTTP/static value semantics or a later PA23 LowIR static-member emission contract. No reducer should be added until that contract is named. |
-| `pa23/tests/spec/400-defaulted-type-arg-specialization-nontype-value.t` | `integral-nontype-template-arguments-and-constant-values` | `pa21-or-pa22` | Either reduce to one owning feature and place at the latest prerequisite PA, or keep as PA23 integration. Needs an owner decision before any test move. |
+None. The previous two owner-unclear rows were resolved in this pass.
 
 ## Current Historical-Validation Missing Rows
 
@@ -54,6 +50,8 @@ The PA19, PA20, PA21, PA22, and PA23 README boundaries all exclude hosted/vendor
 
 - The portable intrinsic rewrite queue has no remaining `portable-rewrite-pending-validation` rows. Five rewrite reducers were promoted, two proved no earlier backfill was needed, and the portable sequence/filter row is now tracked as `historical-validation-missing`.
 - The deleted `pa23/tests/general/100-local-member-call-constructor-template-instantiation.t` inventory row is now `pa23-original-removed`; only the spec twin remains in the current tree, and that row is `no-missing-opus-feature`.
+- `pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t` is now explicitly PA23 static-emission integration coverage. A compile-time-only variant without out-of-class static member definitions passes at Opus start, so no earlier semantic reducer is missing.
+- `pa23/tests/spec/400-defaulted-type-arg-specialization-nontype-value.t` was promoted as exact PA21 spec coverage at `pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t` and the PA23 duplicate was retired.
 - EH declaration drift that blocked several earlier candidates was handled by refreshing stale LowIR references with the local canonical `dev/cppgm++` build.
 
 ## Portable Intrinsic Rewrite Results
@@ -242,12 +240,12 @@ audit history, but the current authoritative status is in
 | `pa23/tests/general/500-type-pack-element-preserves-concrete-argument.t` | `vendor-builtin-template-traits-and-pack-intrinsics` | `portable-rewrite-pending-validation` | `pa22-portable-candidate` | `-` | `-` | `-` | Rerun C++11, current/reference, Opus start/fix, and placement-audit gates for the portable pack-element form before promoting. | Source now uses local recursive `pack_element` instead of `__type_pack_element`; PA23 focused check and placement audit passed. |
 | `pa23/tests/general/500-type-pack-element-result-selects-copy-ctor.t` | `vendor-builtin-template-traits-and-pack-intrinsics` | `portable-rewrite-pending-validation` | `pa22-portable-candidate` | `-` | `-` | `-` | Rerun C++11, current/reference, Opus start/fix, and placement-audit gates for the portable pack-element form before promoting. | Source now uses local recursive `pack_element` instead of `__type_pack_element`; PA23 focused check and placement audit passed. |
 
-### needs-owner-decision (2)
+### resolved owner-decision rows (2)
 
 | Test | Cluster | Classification | Owner Hint | Intrinsics | Host Macros | Local Reserved Names | Proposed Next Step | Evidence Note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t` | `integral-nontype-template-arguments-and-constant-values` | `owner-unclear-static-emission-contract` | `pa19-or-pa23-static-emission-contract` | `-` | `-` | `-` | Decide whether this is PA19 integral NTTP/static value semantics or a later PA23 LowIR static-member emission contract. No reducer should be added until that contract is named. | seed=both_fail; source is C++11-valid and current/reference agree, but the Opus evidence is not a clean PA19 NTTP gap. Start 1963d796e and 8e4c41d4 compute/emits integral_constant<bool,true>; 8bafc1c42 computes false bu... |
-| `pa23/tests/spec/400-defaulted-type-arg-specialization-nontype-value.t` | `integral-nontype-template-arguments-and-constant-values` | `owner-unclear-multifeature` | `pa21-or-pa22` | `-` | `-` | `-` | Either reduce to one owning feature and place at the latest prerequisite PA, or keep as PA23 integration. Needs an owner decision before any test move. | seed=both_fail; sampled Opus commits 1963d796e, 8e4c41d4, and 8bafc1c42 all reject with unknown type boost::mpl::lambda<mpl_::na,mpl_::na>::apply<int,mpl_::na>; source combines PA19 explicit specialization/defaulted NTT... |
+| `pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t` | `integral-nontype-template-arguments-and-constant-values` | `pa23-integration-static-emission-contract` | `pa23-static-emission-contract` | `-` | `-` | `-` | Keep in PA23. Do not add an earlier assignment reducer for the compile-time structured-bool semantics. | Removing the out-of-class static member definitions leaves a compile-time-only shape that passes at Opus start with only `main` in LowIR. The exact source is the PA23 complete-object static emission contract fixed by `693cb4159`. |
+| `pa23/tests/spec/400-defaulted-type-arg-specialization-nontype-value.t` | `integral-nontype-template-arguments-and-constant-values` | `missing-earlier-feature` | `pa21` | `-` | `-` | `-` | Promoted exact source to `pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t`; PA23 duplicate retired. | Opus start through `1434a6e11` reject `boost::mpl::lambda<mpl_::na,mpl_::na>::apply<int,mpl_::na>`; Opus `fb9e82eeb` and current accept. |
 
 ### reclassify-no-historical-gap (65)
 

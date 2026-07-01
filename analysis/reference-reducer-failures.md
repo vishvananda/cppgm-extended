@@ -1102,6 +1102,58 @@ canonical build.
   row; local current acceptance alone is not enough for the Opus-gated backfill
   workflow.
 
+### Structured Bool Boost Convertible MPL Overload
+
+- Disposition: `pa23-integration-static-emission-contract`
+- PA23 source row:
+  `pa23/tests/general/100-structured-bool-boost-convertible-mpl-overload.t`
+- Candidate owner: PA23 static-emission/output contract.
+- Reduced semantic check: `/tmp/structured-bool-no-static-defs.t`, produced by
+  removing the two out-of-class static data member definitions from the PA23
+  source.
+- Historical evidence: the compile-time-only reduced shape is C++11 valid and
+  emits only `main` at Opus start `1963d796e`, Opus `8bafc1c42`, Opus final
+  `1434a6e11`, and current. Therefore the structured-bool semantic assertion
+  is not a missing earlier assignment feature. The exact PA23 source exposes the
+  later LowIR static-emission contract: by-value overload parameter types such
+  as `bool_<false>` make the class-template specialization a complete-object
+  instantiation whose non-constexpr static member storage is emitted even when
+  the member is not odr-used.
+- Fixing evidence: Opus commit `693cb4159` (`pa23: emit static members of
+  complete-object class-template instantiations`) changes the exact source from
+  the wrong/under-emitted static member shape to the current contract.
+- Current disposition: tracker row marked
+  `pa23-integration-static-emission-contract` / `no-action`; no earlier PA test
+  added.
+
+### Defaulted Type-Arg Specialization Nontype Value
+
+- Disposition: `resolved-local-canonical-promoted`
+- PA23 source row:
+  `pa23/tests/spec/400-defaulted-type-arg-specialization-nontype-value.t`
+- Candidate owner: PA21, because the live feature is full explicit
+  specialization keyed with primary defaults through a member class-template
+  `apply` graph, with PA19 defaulted NTTP values as prerequisites.
+- Reducer:
+  `pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t`
+- Historical evidence: Opus start `1963d796e` and sampled commits through
+  `1434a6e11` reject the source with unknown
+  `boost::mpl::lambda<mpl_::na,mpl_::na>::apply<int,mpl_::na>`; Opus
+  `fb9e82eeb` (`pa23: fill primary defaults when keying a full explicit
+  specialization`) accepts it.
+- C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts the
+  source.
+- Current compiler behavior: accepts the source and generated local canonical
+  PA21 refs with `dev/cppgm++`.
+- Witness disposition: existing witness golden was moved with the exact source
+  and updated only for the source-path change from PA23 spec/400 to PA21
+  spec/300.
+- Current disposition: promoted to
+  `pa21/tests/spec/300-defaulted-type-arg-specialization-nontype-value.t`;
+  tracker row marked `missing-earlier-feature` / `test-added`.
+- PA23 original disposition: removed as an exact duplicate of the promoted PA21
+  focused reducer.
+
 ### Template Instantiation Use Location Explicit Specialization
 
 - Disposition: `resolved-local-canonical-promoted`
