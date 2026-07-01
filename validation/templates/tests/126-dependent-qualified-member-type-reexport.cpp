@@ -1,5 +1,5 @@
 // VALIDATION: compile-pass
-// N3485 focus: 14.6.2 [temp.dep.type], 14.5.2 [temp.mem]
+// N3485 focus: 14.6.2.1 [temp.dep.type], 14.5.2 [temp.mem]
 
 template<class T>
 struct node

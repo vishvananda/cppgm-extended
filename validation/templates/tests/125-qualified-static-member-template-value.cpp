@@ -1,5 +1,5 @@
 // VALIDATION: run-pass
-// N3485 focus: 14.6.2 [temp.dep.type], 14.3.2 [temp.arg.nontype]
+// N3485 focus: 14.6.2.1 [temp.dep.type], 14.3.2 [temp.arg.nontype]
 
 template<class A, class B>
 struct is_same

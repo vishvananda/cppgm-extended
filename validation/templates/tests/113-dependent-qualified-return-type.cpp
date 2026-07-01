@@ -1,5 +1,5 @@
 // VALIDATION: run-pass
-// N3485 focus: 14.6.2 [temp.dep.type], 14.8 [temp.fct.spec]
+// N3485 focus: 14.6.2.1 [temp.dep.type], 14.8 [temp.fct.spec]
 
 template<unsigned long I, class T>
 struct tuple;

@@ -1,5 +1,5 @@
 // VALIDATION: run-pass
-// N3485 focus: 14.8.1 [temp.arg.explicit], 14.6.2 [temp.dep.type]
+// N3485 focus: 14.8.1 [temp.arg.explicit], 14.6.2.1 [temp.dep.type]
 
 namespace std {
 inline namespace __1 {

@@ -1,5 +1,5 @@
 // VALIDATION: run-pass
-// N3485 focus: 14.2 [temp.names], 14.6.2 [temp.dep.type], 14.5.7 [temp.alias]
+// N3485 focus: 14.2 [temp.names], 14.6.2.1 [temp.dep.type], 14.5.7 [temp.alias]
 
 template<bool B>
 struct if_impl;
