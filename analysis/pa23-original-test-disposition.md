@@ -49,8 +49,8 @@ checking the test itself and its references.
 Current summary:
 
 ```text
-pa23-original-removed        127
-keep-pa23-integration        50
+pa23-original-removed        183
+keep-pa23-integration        53
 retire-pa23-duplicate        0
 review-retire-or-simplify    0
 review-near-duplicate        0
@@ -62,7 +62,7 @@ Interpretation:
 - The retired PA23 originals were manually treated as isolated single-feature
   checks or non-integration duplicates. Their promoted earlier-owner reducers
   remain in PA19, PA21, or PA22.
-- The 50 kept rows were manually reviewed and kept as PA23 integration tests,
+- The 53 kept rows were manually reviewed and kept as PA23 integration tests,
   including several byte-identical or near-identical sources whose library-like
   shape combines multiple earlier features. Their explicit keep decisions live
   in `analysis/pa23-original-disposition-overrides.tsv`.

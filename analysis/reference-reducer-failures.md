@@ -1,9 +1,8 @@
-# Reference-Blocked Reducers
+# Reducer Disposition Ledger
 
 This ledger records reducers that passed enough investigation to look like useful
-earlier-PA tests, but could not be promoted because the required
-reference-generation workflow rejected the source or produced an incompatible
-reference.
+earlier-PA tests and were initially blocked, skipped, or promoted during the
+PA23 minimizer/backfill pass.
 
 Reference-source note: the canonical generator for current assignment refs is
 the local `dev/cppgm++` built from this checkout. `cppgm++-ref` binaries under
@@ -58,7 +57,7 @@ of classifying it as a reference issue. Do not classify a reducer as
 the entry, has passed the C++11 syntax check and reproduced against the local
 canonical build.
 
-## Active Reference-Blocked Reducers
+## Reducer Dispositions
 
 ### Member Template Implicit Instantiation Not Overload
 
@@ -1503,7 +1502,8 @@ canonical build.
 
 ### Member Template Ownership Reference-Blocked Batch
 
-- Disposition: `reference-compiler-bug` for every reducer listed below.
+- Disposition: mixed. No current local-canonical reference compiler blocker
+  remains for this batch.
 - C++11 validity check: `g++ -std=c++11 -x c++ -fsyntax-only` accepts every
   reducer listed below.
 - Current compiler behavior: accepts every reducer listed below.
