@@ -401,9 +401,27 @@ inline vector<Macroizer::PPToken> Macroizer::handle_join(
         (next->data == "##" || next->data == "%:%:")) {
     if(++next == end || (next->type == PP_WHITESPACE && ++next == end))
       break;
+    const bool gnu_variadic_comma_paste =
+        it->type == PP_PREPROCESSING_OP && it->data == "," &&
+        next->type == PP_IDENTIFIER && next->data == "__VA_ARGS__" &&
+        macro->functional &&
+        !macro->params.empty() &&
+        macro->params.back() == "__VA_ARGS__" &&
+        macro->param_indices.find("__VA_ARGS__") !=
+            macro->param_indices.end();
     auto rresult =
         handle_stringize(next, end, false, expanded_args, expanded_arg_valid);
-    if(result.empty()) {
+    if(gnu_variadic_comma_paste) {
+      if(rresult.empty()) {
+        if(!result.empty()) {
+          result.pop_back();
+        }
+      } else {
+        result.insert(result.end(),
+                      std::make_move_iterator(rresult.begin()),
+                      std::make_move_iterator(rresult.end()));
+      }
+    } else if(result.empty()) {
       result = std::move(rresult);
     } else if(!rresult.empty()) {
       auto lhs = result.back();
