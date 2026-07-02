@@ -16,7 +16,7 @@ You should complete PA36 before starting this assignment.
 
 You will reuse:
 
-- the PA13 LowIR syntax and semantic contract
+- the PA13 LowIR syntax and semantics
 - the PA14 through PA36 source-to-LowIR lowering pipeline
 - the PA28 native backend, PA29 driver, PA30 ABI naming, and PA31 host-runtime path
 - the PA36 hosted compiler driver surface
@@ -90,7 +90,7 @@ must serialize back to valid LowIR, and object generation at a chosen
 optimization level must not require extra semantic facts unavailable from that
 optimized LowIR text.
 
-This LowIR/object boundary is a required PA37 contract. A correct compile path
+This LowIR/object boundary is required in PA37. A correct compile path
 may keep LowIR in memory for speed, but it must not pass private frontend or
 semantic side data around the serialized LowIR representation. If object
 emission needs a fact after optimization, that fact must either be represented
@@ -261,7 +261,7 @@ directory's LowIR validation mode.
 
 PA37 does not require:
 
-- SSA construction as a IR contract
+- SSA construction as an IR requirement
 - global value numbering or partial redundancy elimination
 - alias-driven aggressive dead-store elimination
 - loop optimizations, vectorization, or general-purpose inlining beyond the
@@ -270,8 +270,8 @@ PA37 does not require:
 - interprocedural optimization
 - size-specific `-Os` or `-Oz` behavior
 
-### Handoff
+### After PA37
 
-PA38 builds on this assignment by optimizing after LowIR has already been
-lowered to machine IR. PA37 owns the LowIR optimization pipeline and the
-`lowiropt` structural oracle; PA38 owns machine-backend optimization.
+Later optimization tests build on this assignment by optimizing after LowIR has
+already been lowered to machine IR. PA37 focuses on the LowIR optimization
+pipeline and the `lowiropt` structural oracle.
