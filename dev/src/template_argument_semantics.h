@@ -272,6 +272,11 @@ bool text_mentions_dependent_non_namespace_binding_names(
     template_api::TemplateEnvironmentHandle scope,
     const std::string & text);
 
+bool ast_node_syntax_has_template_dependency(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & node);
+
 void compute_text_template_dependency_flags(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
