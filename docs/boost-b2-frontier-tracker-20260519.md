@@ -1330,3 +1330,11 @@ CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++
 ./run-cppgm-b2.sh -a libs/algorithm/test`; result `rc=0`, log
 `/tmp/boost-algorithm-full-current-20260702.log`. The visible diagnostics were
 expected compile-fail targets marked `(failed-as-expected)`.
+
+2026-07-02 frontier revalidation: `libs/align/test`, previously listed as
+mixed in the older `/Users/vishvananda/boost-survey` data, now passes on the
+current `pr-36` branch without additional compiler changes. Command:
+`/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1
+CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++
+./run-cppgm-b2.sh -a libs/align/test`; result `rc=0`, log
+`/tmp/boost-align-full-current-20260702.log`.
