@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "constructor_lifecycle_service.h"
 #include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
 #include "cppast_dump.h"
@@ -660,6 +661,133 @@ TypePtr catch_match_type(const TypePtr & type)
     return strip_top_level_cv(base->inner);
   }
   return base;
+}
+
+bool class_info_is_abstract_for_throw(const ClassInfo & info)
+{
+  for(map<string, vector<FunctionBinding *> >::const_iterator it =
+          info.methods.begin();
+      it != info.methods.end();
+      ++it) {
+    for(size_t i = 0; i < it->second.size(); ++i) {
+      const FunctionBinding * binding = it->second[i];
+      if(binding && binding->is_pure_virtual) {
+        return true;
+      }
+    }
+  }
+  for(size_t i = 0; i < info.vtable_entries.size(); ++i) {
+    const FunctionBinding * binding = info.vtable_entries[i];
+    if(binding && binding->is_pure_virtual) {
+      return true;
+    }
+  }
+  return false;
+}
+
+FunctionBinding * throw_target_destructor(ClassInfo & info)
+{
+  map<string, vector<FunctionBinding *> >::iterator found =
+      info.methods.find(string("~") + info.name);
+  if(found == info.methods.end()) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < found->second.size(); ++i) {
+    if(found->second[i] && found->second[i]->is_destructor) {
+      return found->second[i];
+    }
+  }
+  return nullptr;
+}
+
+void validate_throw_object_initialization(SemanticContext & ctx,
+                                          Scope & scope,
+                                          const CppAstNode & expr_node,
+                                          const ExprInfo & thrown,
+                                          const TypePtr & thrown_type)
+{
+  if(!thrown_type || ctx.type_depends_on_template_parameter(thrown_type)) {
+    return;
+  }
+
+  ClassInfo * target_class = ctx.complete_class_type(thrown_type);
+  if(!target_class) {
+    if(!can_copy_initialize(ctx, thrown_type, thrown)) {
+      ostringstream err;
+      err << "invalid throw expression";
+      err << " [target " << describe_type(thrown_type) << "]";
+      err << " [expr " << node_text(expr_node) << "]";
+      err << " [expr_type "
+          << (thrown.type ? describe_type(thrown.type) : string("<null>")) << "]";
+      throw logic_error(err.str());
+    }
+    return;
+  }
+
+  if(!target_class->complete) {
+    ostringstream err;
+    err << "invalid throw expression";
+    err << " [incomplete class " << target_class->qualified_name << "]";
+    err << " [expr " << node_text(expr_node) << "]";
+    throw logic_error(err.str());
+  }
+  if(FunctionBinding * destructor = throw_target_destructor(*target_class)) {
+    if(destructor->is_deleted) {
+      ostringstream err;
+      err << "invalid throw expression";
+      err << " [deleted destructor " << destructor->name << "]";
+      err << " [expr " << node_text(expr_node) << "]";
+      throw logic_error(err.str());
+    }
+    if(!semantic_lookup::member_access_allowed(&scope,
+                                               semantic_lookup::current_class_scope(scope),
+                                               semantic_lookup::current_function_scope(scope),
+                                               target_class,
+                                               destructor->access,
+                                               MA_PUBLIC)) {
+      ostringstream err;
+      err << "invalid throw expression";
+      err << " [inaccessible destructor " << destructor->name << "]";
+      err << " [expr " << node_text(expr_node) << "]";
+      throw logic_error(err.str());
+    }
+  }
+  if(class_info_is_abstract_for_throw(*target_class)) {
+    ostringstream err;
+    err << "invalid throw expression";
+    err << " [abstract class " << target_class->qualified_name << "]";
+    err << " [expr " << node_text(expr_node) << "]";
+    throw logic_error(err.str());
+  }
+
+  vector<ExprInfo> source_args(1, thrown);
+  constructor_lifecycle_service::ConstructorSelectionResult selection;
+  ConstructorSelectionOptions ctor_options =
+      constructor_lifecycle_service::selection_options_for(
+          constructor_lifecycle_service::non_explicit_construction_profile(
+              "throw expression"));
+  ctor_options.instantiate_bodies = false;
+  ctor_options.use_location = ctx.source_location_for_node(expr_node);
+  try
+  {
+    constructor_lifecycle_service::select_constructor_from_exprs_into(ctx,
+                                                                      scope,
+                                                                      *target_class,
+                                                                      source_args,
+                                                                      selection,
+                                                                      ctor_options);
+  }
+  catch(const logic_error & e)
+  {
+    ostringstream err;
+    err << "invalid throw expression";
+    err << " [target " << describe_type(thrown_type) << "]";
+    err << " [expr " << node_text(expr_node) << "]";
+    err << " [expr_type "
+        << (thrown.type ? describe_type(thrown.type) : string("<null>")) << "]";
+    err << " [reason " << e.what() << "]";
+    throw logic_error(err.str());
+  }
 }
 
 semantic_source_use::SourceUseRole declaration_alias_class_use_role(
@@ -1984,6 +2112,11 @@ void analyze_statement_impl(SemanticContext & ctx,
       ExprInfo thrown = ctx.analyze_expression(scope, node.children[0]);
       TypePtr thrown_type = catch_match_type(thrown.type);
       if(thrown_type) {
+        validate_throw_object_initialization(ctx,
+                                             scope,
+                                             node.children[0],
+                                             thrown,
+                                             thrown_type);
         ctx.note_rtti_use(thrown_type, false);
       }
       throw_node.children.push_back(std::move(thrown.node));
