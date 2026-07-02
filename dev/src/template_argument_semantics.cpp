@@ -14384,6 +14384,9 @@ const TemplateArgument * direct_non_type_argument_replacement(
       return nullptr;
     }
     const TemplateArgument & replacement = arguments[argument_index];
+    if(replacement.partial_order_placeholder) {
+      return &replacement;
+    }
     if(!replacement_is_simple_concrete_literal(replacement) &&
        !replacement_mentions_other_parameter(replacement) &&
        !replacement_needs_source_scope(replacement)) {
@@ -14422,6 +14425,7 @@ void copy_direct_non_type_argument(
   out = source_argument;
   out.type = replacement.type;
   out.source_defaulted = replacement.source_defaulted;
+  out.partial_order_placeholder = replacement.partial_order_placeholder;
   if(replacement.source_syntax) {
     out.syntax =
         clone_argument_syntax_for_template_substitution(*replacement.source_syntax);

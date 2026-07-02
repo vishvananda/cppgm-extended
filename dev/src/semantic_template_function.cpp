@@ -43,6 +43,7 @@ bool build_partial_ordering_placeholder_arguments(
         << "#" << i;
     if(parameters[i].kind == template_model::TemplateParameterInfo::TP_TYPE) {
       argument.kind = template_model::TemplateArgument::TA_TYPE;
+      argument.partial_order_placeholder = true;
       argument.type =
           cpp_decl::make_named(
               std::string("typename ") +
@@ -56,11 +57,13 @@ bool build_partial_ordering_placeholder_arguments(
       argument.type = parameters[i].value_type;
       argument.text = key.str();
       argument.dependent = true;
+      argument.partial_order_placeholder = true;
     } else if(parameters[i].kind ==
               template_model::TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
       argument.kind = template_model::TemplateArgument::TA_CLASS_TEMPLATE;
       argument.text = key.str();
       argument.dependent = true;
+      argument.partial_order_placeholder = true;
     } else {
       return false;
     }

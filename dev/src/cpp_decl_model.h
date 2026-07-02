@@ -57,6 +57,7 @@ struct DependentAliasTemplateArgumentSyntax
   TypePtr type;
   TemplateArgumentSyntax syntax;
   bool source_defaulted = false;
+  bool partial_order_placeholder = false;
 };
 
 enum FunctionTypeRefQualifier

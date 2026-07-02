@@ -295,6 +295,7 @@ struct TemplateArgument
   long long value = 0;
   bool dependent = false;
   bool source_defaulted = false;
+  bool partial_order_placeholder = false;
 };
 
 inline void set_template_argument_entity_identity(

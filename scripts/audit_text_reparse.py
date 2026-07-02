@@ -77,6 +77,14 @@ CATEGORIES = [
             r"nested_source_template_id_occurrences(?:_at_location)?)\s*\("
         ),
     ),
+    Category(
+        "template_argument_text_shape_deduction",
+        "Template-argument deduction facts recovered from argument spelling shape.",
+        re.compile(
+            r"\bdeduce_template_argument_text_shape\b|"
+            r"\bdeduce(?:-[A-Za-z]+)*-text-shape(?:-[A-Za-z]+)*\b"
+        ),
+    ),
 ]
 
 

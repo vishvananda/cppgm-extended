@@ -10,6 +10,7 @@
     "semantic_type_text_bridge": 0,
     "translation_unit_fragment_parse": 0,
     "ast_text_rebuild": 0,
-    "source_line_recovery": 0
+    "source_line_recovery": 0,
+    "template_argument_text_shape_deduction": 0
   }
 }
