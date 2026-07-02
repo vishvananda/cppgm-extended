@@ -19082,6 +19082,40 @@ private:
           collect_parameter_template_uses(*specifiers, parameter_location);
         }
       }
+      std::size_t parameter_index = 0;
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        const CppAstNode & child = node.children[i];
+        if(child.kind != CppAstKind::parameter_declaration) {
+          continue;
+        }
+        if(parameter_index >= params.size()) {
+          break;
+        }
+        const TypePtr & parameter_type = params[parameter_index].second;
+        ++parameter_index;
+        template_api::ClassTemplateUseInfo use;
+        if(!parameter_type ||
+           !template_api::class_template_use_info_for_type(*this,
+                                                           scope,
+                                                           parameter_type,
+                                                           use) ||
+           !use.origin ||
+           !use.origin->declaring_scope ||
+           !use.origin->declaring_scope->class_info ||
+           !node_has_template_id_syntax_for_unqualified_name(child,
+                                                             use.origin->name)) {
+          continue;
+        }
+        const std::string parameter_location =
+            template_api::normalize_template_witness_source_location(
+                prefer_later_source_location(
+                    source_location_for_node(child),
+                    earliest_child_source_location_for_node(child)));
+        record_declaration_type_class_use_for_resolved_type_node(scope,
+                                                                 child,
+                                                                 parameter_type,
+                                                                 parameter_location);
+      }
     }
     for(size_t i = 0; i < params.size(); ++i) {
       if(params[i].second) {

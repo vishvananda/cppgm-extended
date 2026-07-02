@@ -5123,6 +5123,13 @@ bool class_member_direct_bool_value(const Scope * member_scope,
        is_bool_value_type(value_binding_constexpr_value(binding).type))) {
     return false;
   }
+  const ClassInfo * owner = value_binding_owner_class(binding);
+  if(owner && owner->reentrant_primary_selection) {
+    if(evaluation_incomplete) {
+      *evaluation_incomplete = true;
+    }
+    return false;
+  }
   if(binding.has_constant_value) {
     out = binding.constant_value != 0;
     return true;
@@ -8050,6 +8057,9 @@ bool lookup_leaf_constant_value(Scope & scope,
   if(!binding) {
     return false;
   }
+  if(value_binding_owner_has_reentrant_primary_selection(*binding)) {
+    return false;
+  }
   if(binding->has_constant_value) {
     if(services.semantic_context) {
       template_api::note_template_member_value_instantiation_if_needed(
@@ -8417,6 +8427,12 @@ bool materialize_leaf_member_constant_binding(
     bool * evaluation_incomplete)
 {
   if(binding.kind == ValueBinding::VK_FIELD) {
+    return false;
+  }
+  if(value_binding_owner_has_reentrant_primary_selection(binding)) {
+    if(evaluation_incomplete) {
+      *evaluation_incomplete = true;
+    }
     return false;
   }
   const bool owner_value_evaluation_incomplete =
@@ -30454,6 +30470,36 @@ bool try_resolve_concrete_enable_if_alias_template_id(
                                         dependent_arguments);
         return out != nullptr;
       };
+
+  const bool condition_is_top_level_call =
+      condition_syntax &&
+      condition_syntax->expression &&
+      condition_syntax->expression->kind == CppAstKind::call_expression;
+  if(services.witness_context.session != nullptr &&
+     condition_syntax &&
+     !condition_is_top_level_call &&
+     template_argument_syntax_mentions_template_dependency(
+         services,
+         scope,
+         *condition_syntax,
+         false)) {
+    TemplateArgumentSyntax prepared_condition_syntax;
+    const TemplateArgumentSyntax * dependency_condition_syntax =
+        condition_syntax;
+    if(prepare_standard_meta_bool_argument_syntax(services,
+                                                  scope,
+                                                  *condition_syntax,
+                                                  prepared_condition_syntax)) {
+      dependency_condition_syntax = &prepared_condition_syntax;
+    }
+    if(template_argument_syntax_mentions_template_dependency(
+           services,
+           scope,
+           *dependency_condition_syntax,
+           false)) {
+      return make_dependent_alias();
+    }
+  }
 
   bool condition_value = false;
   NonTypeArgumentStatus condition_status = NT_ARG_PARSE_FAILED;

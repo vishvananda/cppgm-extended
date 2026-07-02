@@ -149,86 +149,72 @@ global @_GLOBAL__N_1__D__vtable [storage=readonly, binding=weak, object=_ZTVN12_
   i64 0
   ptr addr @__rtti_struct_D
   ptr addr @_GLOBAL__N_1__D___D
-  i64 0
   ptr addr @_GLOBAL__N_1__D___D__deleting_entry
-  i64 0
   ptr addr @_GLOBAL__N_1__AB__mark
-  i64 0
 }
 global @_GLOBAL__N_1__D____view___GLOBAL__N_1__B__8__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____view___GLOBAL__N_1__B__8__vtable] = {
   i64 8
   i64 -8
   ptr addr @__rtti_struct_D
-  ptr addr @_GLOBAL__N_1__D___D
-  i64 -8
-  ptr addr @_GLOBAL__N_1__D___D__deleting_entry
-  i64 -8
+  ptr addr @__GLOBAL__N_1__D___D__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__D___D__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__D____view___GLOBAL__N_1__V__16__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____view___GLOBAL__N_1__V__16__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_D
-  ptr addr @__GLOBAL__N_1__D___D__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__D___D__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__D___D__vtable_return_adjust__this_neg16__return_pos0
+  ptr addr @__GLOBAL__N_1__D___D__deleting_entry__vtable_return_adjust__this_neg16__return_pos0
 }
 global @_GLOBAL__N_1__D____construction___GLOBAL__N_1__AB__0__s0__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____construction___GLOBAL__N_1__AB__0__s0__vtable] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_AB
   ptr addr @_GLOBAL__N_1__AB___AB
-  i64 0
   ptr addr @_GLOBAL__N_1__AB___AB__deleting_entry
-  i64 0
   ptr addr @_GLOBAL__N_1__AB__mark
-  i64 0
 }
 global @_GLOBAL__N_1__D____construction___GLOBAL__N_1__AB__0__s1__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____construction___GLOBAL__N_1__AB__0__s1__vtable] = {
   i64 8
   i64 -8
   ptr addr @__rtti_struct_B
-  ptr addr @_GLOBAL__N_1__AB___AB
-  i64 -8
-  ptr addr @_GLOBAL__N_1__AB___AB__deleting_entry
-  i64 -8
+  ptr addr @__GLOBAL__N_1__AB___AB__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__D____construction___GLOBAL__N_1__AB__0__s2__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____construction___GLOBAL__N_1__AB__0__s2__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_V
-  ptr addr @__GLOBAL__N_1__AB___AB__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__AB___AB__vtable_return_adjust__this_neg16__return_pos0
+  ptr addr @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust__this_neg16__return_pos0
 }
 global @_GLOBAL__N_1__D____construction___GLOBAL__N_1__A__0__s0__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____construction___GLOBAL__N_1__A__0__s0__vtable] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_A
   ptr addr @_GLOBAL__N_1__A___A
-  i64 0
   ptr addr @_GLOBAL__N_1__A___A__deleting_entry
-  i64 0
 }
 global @_GLOBAL__N_1__D____construction___GLOBAL__N_1__A__0__s1__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____construction___GLOBAL__N_1__A__0__s1__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_V
-  ptr addr @__GLOBAL__N_1__A___A__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__A___A__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__A___A__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__A___A__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__D____construction___GLOBAL__N_1__B__8__s0__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____construction___GLOBAL__N_1__B__8__s0__vtable] = {
   i64 8
   i64 -8
   ptr addr @__rtti_struct_B
   ptr addr @_GLOBAL__N_1__B___B
-  i64 0
   ptr addr @_GLOBAL__N_1__B___B__deleting_entry
-  i64 0
 }
 global @_GLOBAL__N_1__D____construction___GLOBAL__N_1__B__8__s1__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__D____construction___GLOBAL__N_1__B__8__s1__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_V
-  ptr addr @__GLOBAL__N_1__B___B__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__B___B__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__B___B__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__B___B__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__D____vtt [storage=readonly, binding=weak, object=_ZTTN12_GLOBAL__N_11DE, object_root=yes] = {
   ptr addr @_GLOBAL__N_1__D__vtable + 24
@@ -247,59 +233,50 @@ global @_GLOBAL__N_1__AB__vtable [storage=readonly, binding=weak, object=_ZTVN12
   i64 0
   ptr addr @__rtti_struct_AB
   ptr addr @_GLOBAL__N_1__AB___AB
-  i64 0
   ptr addr @_GLOBAL__N_1__AB___AB__deleting_entry
-  i64 0
   ptr addr @_GLOBAL__N_1__AB__mark
-  i64 0
 }
 global @_GLOBAL__N_1__AB____view___GLOBAL__N_1__B__8__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__AB____view___GLOBAL__N_1__B__8__vtable] = {
   i64 8
   i64 -8
   ptr addr @__rtti_struct_AB
-  ptr addr @_GLOBAL__N_1__AB___AB
-  i64 -8
-  ptr addr @_GLOBAL__N_1__AB___AB__deleting_entry
-  i64 -8
+  ptr addr @__GLOBAL__N_1__AB___AB__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__AB____view___GLOBAL__N_1__V__16__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__AB____view___GLOBAL__N_1__V__16__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_AB
-  ptr addr @__GLOBAL__N_1__AB___AB__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__AB___AB__vtable_return_adjust__this_neg16__return_pos0
+  ptr addr @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust__this_neg16__return_pos0
 }
 global @_GLOBAL__N_1__AB____construction___GLOBAL__N_1__A__0__s0__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__AB____construction___GLOBAL__N_1__A__0__s0__vtable] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_A
   ptr addr @_GLOBAL__N_1__A___A
-  i64 0
   ptr addr @_GLOBAL__N_1__A___A__deleting_entry
-  i64 0
 }
 global @_GLOBAL__N_1__AB____construction___GLOBAL__N_1__A__0__s1__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__AB____construction___GLOBAL__N_1__A__0__s1__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_V
-  ptr addr @__GLOBAL__N_1__A___A__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__A___A__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__A___A__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__A___A__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__AB____construction___GLOBAL__N_1__B__8__s0__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__AB____construction___GLOBAL__N_1__B__8__s0__vtable] = {
   i64 8
   i64 -8
   ptr addr @__rtti_struct_B
   ptr addr @_GLOBAL__N_1__B___B
-  i64 0
   ptr addr @_GLOBAL__N_1__B___B__deleting_entry
-  i64 0
 }
 global @_GLOBAL__N_1__AB____construction___GLOBAL__N_1__B__8__s1__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__AB____construction___GLOBAL__N_1__B__8__s1__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_V
-  ptr addr @__GLOBAL__N_1__B___B__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__B___B__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__B___B__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__B___B__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__AB____vtt [storage=readonly, binding=weak, object=_ZTTN12_GLOBAL__N_12ABE, object_root=yes] = {
   ptr addr @_GLOBAL__N_1__AB__vtable + 24
@@ -315,16 +292,14 @@ global @_GLOBAL__N_1__A__vtable [storage=readonly, binding=weak, object=_ZTVN12_
   i64 0
   ptr addr @__rtti_struct_A
   ptr addr @_GLOBAL__N_1__A___A
-  i64 0
   ptr addr @_GLOBAL__N_1__A___A__deleting_entry
-  i64 0
 }
 global @_GLOBAL__N_1__A____view___GLOBAL__N_1__V__8__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__A____view___GLOBAL__N_1__V__8__vtable] = {
   i64 0
   i64 -8
   ptr addr @__rtti_struct_A
-  ptr addr @__GLOBAL__N_1__A___A__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__A___A__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__A___A__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__A___A__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__A____vtt [storage=readonly, binding=weak, object=_ZTTN12_GLOBAL__N_11AE, object_root=yes] = {
   ptr addr @_GLOBAL__N_1__A__vtable + 24
@@ -335,16 +310,14 @@ global @_GLOBAL__N_1__B__vtable [storage=readonly, binding=weak, object=_ZTVN12_
   i64 0
   ptr addr @__rtti_struct_B
   ptr addr @_GLOBAL__N_1__B___B
-  i64 0
   ptr addr @_GLOBAL__N_1__B___B__deleting_entry
-  i64 0
 }
 global @_GLOBAL__N_1__B____view___GLOBAL__N_1__V__8__vtable [storage=readonly, binding=weak, object=@_GLOBAL__N_1__B____view___GLOBAL__N_1__V__8__vtable] = {
   i64 0
   i64 -8
   ptr addr @__rtti_struct_B
-  ptr addr @__GLOBAL__N_1__B___B__vtable_return_adjust
-  ptr addr @__GLOBAL__N_1__B___B__deleting_entry__vtable_return_adjust
+  ptr addr @__GLOBAL__N_1__B___B__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @__GLOBAL__N_1__B___B__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @_GLOBAL__N_1__B____vtt [storage=readonly, binding=weak, object=_ZTTN12_GLOBAL__N_11BE, object_root=yes] = {
   ptr addr @_GLOBAL__N_1__B__vtable + 24
@@ -1042,51 +1015,75 @@ function @_GLOBAL__N_1__B__B(%this : ptr) -> void [unwind=no, binding=internal, 
     store i32 %t11, @_GLOBAL__N_1__live
     return void
 }
-function @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=internal] {
+function @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> void [binding=internal] {
   block ^entry:
     %t1 = index i8 %arg0, -16
     call void @_GLOBAL__N_1__AB___AB__deleting_entry(%t1)
     return void
 }
-function @__GLOBAL__N_1__AB___AB__vtable_return_adjust(%arg0 : ptr) -> void [binding=internal] {
+function @__GLOBAL__N_1__AB___AB__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=internal] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @_GLOBAL__N_1__AB___AB__deleting_entry(%t1)
+    return void
+}
+function @__GLOBAL__N_1__AB___AB__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> void [binding=internal] {
   block ^entry:
     %t1 = index i8 %arg0, -16
     call void @_GLOBAL__N_1__AB___AB(%t1)
     return void
 }
-function @__GLOBAL__N_1__A___A__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=internal] {
+function @__GLOBAL__N_1__AB___AB__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=internal] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @_GLOBAL__N_1__AB___AB(%t1)
+    return void
+}
+function @__GLOBAL__N_1__A___A__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=internal] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @_GLOBAL__N_1__A___A__deleting_entry(%t1)
     return void
 }
-function @__GLOBAL__N_1__A___A__vtable_return_adjust(%arg0 : ptr) -> void [binding=internal] {
+function @__GLOBAL__N_1__A___A__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=internal] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @_GLOBAL__N_1__A___A(%t1)
     return void
 }
-function @__GLOBAL__N_1__B___B__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=internal] {
+function @__GLOBAL__N_1__B___B__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=internal] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @_GLOBAL__N_1__B___B__deleting_entry(%t1)
     return void
 }
-function @__GLOBAL__N_1__B___B__vtable_return_adjust(%arg0 : ptr) -> void [binding=internal] {
+function @__GLOBAL__N_1__B___B__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=internal] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @_GLOBAL__N_1__B___B(%t1)
     return void
 }
-function @__GLOBAL__N_1__D___D__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=internal] {
+function @__GLOBAL__N_1__D___D__deleting_entry__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> void [binding=internal] {
   block ^entry:
     %t1 = index i8 %arg0, -16
     call void @_GLOBAL__N_1__D___D__deleting_entry(%t1)
     return void
 }
-function @__GLOBAL__N_1__D___D__vtable_return_adjust(%arg0 : ptr) -> void [binding=internal] {
+function @__GLOBAL__N_1__D___D__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=internal] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @_GLOBAL__N_1__D___D__deleting_entry(%t1)
+    return void
+}
+function @__GLOBAL__N_1__D___D__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> void [binding=internal] {
   block ^entry:
     %t1 = index i8 %arg0, -16
+    call void @_GLOBAL__N_1__D___D(%t1)
+    return void
+}
+function @__GLOBAL__N_1__D___D__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=internal] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
     call void @_GLOBAL__N_1__D___D(%t1)
     return void
 }

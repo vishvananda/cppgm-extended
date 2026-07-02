@@ -1322,6 +1322,25 @@ median instructions `267,016,509,653`, RSS `1.15 GiB`, footprint
 `930.22 MiB`, wall `55.550s`. Use this as the active comparison point for
 subsequent Boost frontier compiler fixes on `pr-36`.
 
+2026-07-02 local gate repair after Boost frontier regressions: restored the
+full direct-LowIR report and strict witness gates after earlier Boost patches
+regressed PA23/PA27 refs and PA23 strict witness behavior. Reentrant primary
+selection value materialization now declines cached/static member values until
+selection completes; witness-mode `enable_if_t` condition resolution now keeps
+still-dependent non-call conditions dependent instead of recursively expanding
+static-query families; parameter-clause witness source-use collection records
+spelled member class-template-id parameter types from structured type data. The
+PA23 explicit-specialization ref and PA27 vtable/thunk refs were refreshed for
+current valid LowIR. Validation: `make -C dev cppgm++ -j8`; focused PA22
+`400-dependent-decltype-member-template-conversion-operator.t` and PA23
+`500-reentrant-static-query-callable-enable-if-cache.t` pass; direct PA23
+static-query witness compile completes in `12.97s`; `python3
+scripts/audit_text_reparse.py` reports all zero; full direct-LowIR
+`test-strict-nobuild` passes; full direct-LowIR `test-report-nobuild` passes
+`3415/3415`; three-run perf check against
+`/tmp/cppgm-boost-frontier-pr36-3ee8fb3f8-20260630-perf-baseline.json` passes
+with instructions `+0.63%`, RSS `+2.65%`, footprint `+1.75%`.
+
 2026-07-02 frontier revalidation: `libs/algorithm/test`, previously listed as
 mixed in the older `/Users/vishvananda/boost-survey` data, now passes on the
 current `pr-36` branch without additional compiler changes. Command:

@@ -69,6 +69,10 @@ public:
             << (binding.constant_initializer ? "yes" : "no");
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
+    if(binding.owner_class &&
+       binding.owner_class->reentrant_primary_selection) {
+      return false;
+    }
     if(value_binding_has_constexpr_value(binding)) {
       template_api::note_template_member_value_instantiation_if_needed(
           *this,
@@ -986,6 +990,9 @@ public:
             arguments,
             specialization);
     if(!info) {
+      return false;
+    }
+    if(info->reentrant_primary_selection) {
       return false;
     }
     if(!order_use_location.empty()) {

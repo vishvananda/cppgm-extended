@@ -48,7 +48,9 @@ global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
   ptr addr @YA__f
 }
 global @YD____view__YB__8__vtable [storage=readonly, binding=weak, object=@YD____view__YB__8__vtable] = {
-  ptr addr @_YD__g__vtable_return_adjust
+  i64 -8
+  ptr addr @__rtti_class_YD
+  ptr addr @_YD__g__vtable_return_adjust__this_neg8__return_pos0
 }
 global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
   i64 0
@@ -103,7 +105,8 @@ function @YD__YD(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2YDC1E
     %t8 = load ptr $this
     %t9 = index i8 [projection=base_subobject] %t8, 8
     %t10 = addr @YD____view__YB__8__vtable
-    store ptr %t10, %t9
+    %t11 = index i8 %t10, 16
+    store ptr %t11, %t9
     return void
 }
 function @YD__g(%this : ptr) -> i32 [binding=weak, object=_ZN2YD1gEv] {
@@ -142,7 +145,7 @@ function @YB__YB__base_entry(%this : ptr) -> void [unwind=no, binding=weak, obje
     store ptr %t3, %t1
     return void
 }
-function @_YD__g__vtable_return_adjust(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_N2YD1gEv] {
+function @_YD__g__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_N2YD1gEv] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     %t2 = call i32 @YD__g(%t1)

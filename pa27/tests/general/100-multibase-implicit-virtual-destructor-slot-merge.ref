@@ -46,8 +46,10 @@ global @YC__vtable [storage=readonly, binding=weak, object=_ZTV2YC] = {
   ptr addr @YC___YC__deleting_entry
 }
 global @YC____view__YB__8__vtable [storage=readonly, binding=weak, object=@YC____view__YB__8__vtable] = {
-  ptr addr @_YC___YC__vtable_return_adjust
-  ptr addr @_YC___YC__deleting_entry__vtable_return_adjust
+  i64 -8
+  ptr addr @__rtti_class_YC
+  ptr addr @_YC___YC__vtable_return_adjust__this_neg8__return_pos0
+  ptr addr @_YC___YC__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
 global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
   i64 0
@@ -91,7 +93,8 @@ function @YC__YC(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2YCC1E
     %t8 = load ptr $this
     %t9 = index i8 [projection=base_subobject] %t8, 8
     %t10 = addr @YC____view__YB__8__vtable
-    store ptr %t10, %t9
+    %t11 = index i8 %t10, 16
+    store ptr %t11, %t9
     return void
 }
 function @YC___YC__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN2YCD0Ev] {
@@ -106,15 +109,16 @@ function @YC___YC__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN
     %t4 = load ptr $this
     %t5 = index i8 [projection=base_subobject] %t4, 8
     %t6 = addr @YC____view__YB__8__vtable
-    store ptr %t6, %t5
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=base_subobject] %t7, 8
-    call void @YB___YB__base_entry(%t8)
-    %t9 = load ptr $this
-    %t10 = index i8 [projection=base_subobject] %t9, 0
-    call void @YA___YA__base_entry(%t10)
-    %t11 = load ptr $this
-    call void @operator_delete(%t11)
+    %t7 = index i8 %t6, 16
+    store ptr %t7, %t5
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=base_subobject] %t8, 8
+    call void @YB___YB__base_entry(%t9)
+    %t10 = load ptr $this
+    %t11 = index i8 [projection=base_subobject] %t10, 0
+    call void @YA___YA__base_entry(%t11)
+    %t12 = load ptr $this
+    call void @operator_delete(%t12)
     return void
 }
 function @YC___YC(%this : ptr) -> void [binding=weak, object=_ZN2YCD1Ev] {
@@ -129,13 +133,14 @@ function @YC___YC(%this : ptr) -> void [binding=weak, object=_ZN2YCD1Ev] {
     %t4 = load ptr $this
     %t5 = index i8 [projection=base_subobject] %t4, 8
     %t6 = addr @YC____view__YB__8__vtable
-    store ptr %t6, %t5
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=base_subobject] %t7, 8
-    call void @YB___YB__base_entry(%t8)
-    %t9 = load ptr $this
-    %t10 = index i8 [projection=base_subobject] %t9, 0
-    call void @YA___YA__base_entry(%t10)
+    %t7 = index i8 %t6, 16
+    store ptr %t7, %t5
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=base_subobject] %t8, 8
+    call void @YB___YB__base_entry(%t9)
+    %t10 = load ptr $this
+    %t11 = index i8 [projection=base_subobject] %t10, 0
+    call void @YA___YA__base_entry(%t11)
     return void
 }
 function @YA__g(%this : ptr) -> i32 [binding=weak, object=_ZN2YA1gEv] {
@@ -237,13 +242,13 @@ function @YA___YA(%this : ptr) -> void [binding=weak, object=_ZN2YAD1Ev] {
     store ptr %t3, %t1
     return void
 }
-function @_YC___YC__deleting_entry__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N2YCD0Ev] {
+function @_YC___YC__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N2YCD0Ev] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @YC___YC__deleting_entry(%t1)
     return void
 }
-function @_YC___YC__vtable_return_adjust(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N2YCD1Ev] {
+function @_YC___YC__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N2YCD1Ev] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @YC___YC(%t1)

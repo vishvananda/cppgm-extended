@@ -24,6 +24,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
+function @use_service(%ioc : ptr [pass=reference]) -> ptr [binding=strong, object=_Z11use_serviceI7serviceERT_R10io_context] {
+  slot $ioc : ptr
+
+  block ^entry:
+    store ptr %ioc, $ioc
+    %t1 = load ptr $ioc
+    %t2 = index i8 [projection=field] %t1, 4
+    return ptr %t2
+}
 function @use_service__ov2(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_Z11use_serviceI7serviceERT_R7context] {
   slot $e : ptr
 

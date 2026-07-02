@@ -44,6 +44,8 @@ global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
   ptr addr @YA__f
 }
 global @YD____view__YB__8__vtable [storage=readonly, binding=weak, object=@YD____view__YB__8__vtable] = {
+  i64 -8
+  ptr addr @__rtti_class_YD
   ptr addr @YB__g
 }
 global @YA__vtable [storage=readonly, binding=weak, object=_ZTV2YA] = {
@@ -115,7 +117,8 @@ function @YD__YD(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2YDC1E
     %t8 = load ptr $this
     %t9 = index i8 [projection=base_subobject] %t8, 8
     %t10 = addr @YD____view__YB__8__vtable
-    store ptr %t10, %t9
+    %t11 = index i8 %t10, 16
+    store ptr %t11, %t9
     return void
 }
 function @YA__f(%this : ptr) -> i32 [binding=weak, object=_ZN2YA1fEv] {
