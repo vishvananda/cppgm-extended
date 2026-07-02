@@ -8834,6 +8834,185 @@ bool class_operand_declares_address_of_operator(template_api::TemplateServices &
               .functions.empty();
 }
 
+bool qualified_member_owner_name(const QualifiedName & member_name,
+                                 QualifiedName & owner_name)
+{
+  owner_name = QualifiedName();
+  if(member_name.qualifiers.empty()) {
+    return false;
+  }
+  owner_name.rooted = member_name.rooted;
+  owner_name.qualifiers.assign(member_name.qualifiers.begin(),
+                               member_name.qualifiers.end() - 1);
+  owner_name.name = member_name.qualifiers.back();
+  return !owner_name.name.empty();
+}
+
+void copy_qualified_owner_syntax(const CppAstNode & member_node,
+                                 const QualifiedName & owner_name,
+                                 CppAstNode & owner_node)
+{
+  owner_node = member_node;
+  owner_node.kind = CppAstKind::type_name;
+  owner_node.value = template_api::qualified_name_text(owner_name);
+  owner_node.children.clear();
+  owner_node.template_id_syntax.reset();
+  set_cppast_qualified_name_syntax(owner_node, owner_name);
+
+  vector<TemplateIdSyntax> qualifier_template_ids;
+  qualifier_template_ids.reserve(owner_name.qualifiers.size());
+  for(size_t i = 0; i < owner_name.qualifiers.size(); ++i) {
+    if(const TemplateIdSyntax * syntax =
+           cppast_qualifier_template_id_syntax(member_node, i)) {
+      qualifier_template_ids.push_back(*syntax);
+    } else {
+      qualifier_template_ids.push_back(TemplateIdSyntax());
+    }
+  }
+  set_cppast_qualifier_template_id_syntaxes(owner_node,
+                                            qualifier_template_ids);
+
+  vector<CppAstNode> qualifier_type_syntaxes;
+  qualifier_type_syntaxes.reserve(owner_name.qualifiers.size());
+  for(size_t i = 0; i < owner_name.qualifiers.size(); ++i) {
+    if(const CppAstNode * syntax = cppast_qualifier_type_syntax(member_node, i)) {
+      qualifier_type_syntaxes.push_back(*syntax);
+    } else {
+      qualifier_type_syntaxes.push_back(CppAstNode());
+    }
+  }
+  set_cppast_qualifier_type_syntaxes(owner_node, qualifier_type_syntaxes);
+
+  const size_t owner_component_index =
+      owner_name.qualifiers.size();
+  if(const TemplateIdSyntax * owner_template_id =
+         cppast_qualifier_template_id_syntax(member_node,
+                                             owner_component_index)) {
+    if(template_id_syntax_has_payload(*owner_template_id)) {
+      set_cppast_template_id_syntax(owner_node, *owner_template_id);
+    }
+  }
+}
+
+TypePtr leaf_member_pointer_function_type(const FunctionBinding & binding)
+{
+  TypePtr member_function_type = binding.declared_type ? binding.declared_type :
+                                                         binding.type;
+  TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
+  if(stripped_function_type &&
+     stripped_function_type->kind == Type::TK_FUNCTION &&
+     (stripped_function_type->function_const != binding.is_const_method ||
+      stripped_function_type->function_volatile != binding.is_volatile_method)) {
+    member_function_type = make_function(stripped_function_type->inner,
+                                         stripped_function_type->params,
+                                         stripped_function_type->variadic,
+                                         binding.is_const_method,
+                                         binding.is_volatile_method,
+                                         stripped_function_type->prototype_relaxed,
+                                         stripped_function_type->function_ref_qualifier);
+  }
+  return member_function_type;
+}
+
+bool resolve_leaf_qualified_member_function_pointer_type(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const CppAstNode & operand,
+    TypePtr & out)
+{
+  out.reset();
+  if(operand.kind != CppAstKind::id_expression) {
+    return false;
+  }
+  const QualifiedName * member_name = qualified_syntax_if_qualified(operand);
+  if(!member_name) {
+    return false;
+  }
+
+  QualifiedName owner_name;
+  if(!qualified_member_owner_name(*member_name, owner_name)) {
+    return false;
+  }
+
+  TypePtr owner_type;
+  CppAstNode owner_node;
+  copy_qualified_owner_syntax(operand, owner_name, owner_node);
+  const string owner_lookup_text = template_api::qualified_name_text(owner_name);
+  const StructuredTypeLookupResult qualified_template_result =
+      resolve_qualified_template_type_lookup_node(services,
+                                                  scope,
+                                                  owner_lookup_text,
+                                                  owner_node,
+                                                  false,
+                                                  string(),
+                                                  owner_type);
+  if(qualified_template_result == StructuredTypeLookupResult::NoMatch) {
+    return false;
+  }
+  if(qualified_template_result != StructuredTypeLookupResult::Resolved ||
+     !owner_type) {
+    const StructuredTypeLookupResult structured_result =
+        resolve_structured_type_lookup_node(services,
+                                            scope,
+                                            owner_node,
+                                            false,
+                                            string(),
+                                            owner_type);
+    if(structured_result == StructuredTypeLookupResult::NoMatch) {
+      return false;
+    }
+  }
+  if(!owner_type) {
+    owner_type = lookup_exact_bound_type_name(scope,
+                                             strip_elaborated_type_prefix(
+                                                 owner_lookup_text));
+  }
+  if(!owner_type) {
+    owner_type = lookup_exact_local_type_name(services,
+                                             scope,
+                                             strip_elaborated_type_prefix(
+                                                 owner_lookup_text));
+  }
+  if(owner_type) {
+    resolve_instantiated_dependent_type_if_needed(
+        services, template_api::make_template_environment(scope), owner_type);
+  }
+  if(!owner_type ||
+     service_type_depends_on_template_parameter(services, owner_type)) {
+    return false;
+  }
+
+  vector<FunctionBinding *> functions;
+  if(!service_lookup_leaf_member_function_bindings(
+         services, owner_type, member_name->name, functions)) {
+    return false;
+  }
+
+  FunctionBinding * selected = nullptr;
+  for(size_t i = 0; i < functions.size(); ++i) {
+    FunctionBinding * candidate = functions[i];
+    if(!candidate ||
+       candidate->is_deleted ||
+       !candidate->is_method ||
+       !candidate->owner_class ||
+       candidate->is_constructor ||
+       candidate->is_destructor) {
+      continue;
+    }
+    if(selected) {
+      return false;
+    }
+    selected = candidate;
+  }
+  if(!selected || !selected->owner_class || !selected->owner_class->type) {
+    return false;
+  }
+
+  out = make_member_pointer(selected->owner_class->type,
+                            leaf_member_pointer_function_type(*selected));
+  return out != nullptr;
+}
+
 bool leaf_type_may_have_user_defined_conversion(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(remove_reference_type(type));
@@ -9959,6 +10138,14 @@ bool lookup_leaf_expression_type_category(template_api::TemplateServices & servi
     }
 
     if(node_has_simple_type(expr, OP_AMP)) {
+      TypePtr member_pointer_type;
+      if(resolve_leaf_qualified_member_function_pointer_type(
+             services, scope, expr.children[0], member_pointer_type) &&
+         member_pointer_type) {
+        out = member_pointer_type;
+        category = semantic_conversion::VC_PRVALUE;
+        return true;
+      }
       if(operand_category != semantic_conversion::VC_LVALUE) {
         return false;
       }
