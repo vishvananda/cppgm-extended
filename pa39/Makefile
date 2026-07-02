@@ -623,6 +623,7 @@ $(call inception_binary_path,$(1)): FORCE | $(INCEPTION_BIN_ROOT)
 	else \
 		rm -f "$(call inception_link_output_path,$(1)).tmp"; \
 	fi
+	@touch "$$@.link-stamp"
 
 $(1)-self: $(call inception_binary_path,$(1))
 	@ln -sf $(call inception_binary_path,$(1)) $$@

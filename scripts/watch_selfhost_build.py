@@ -538,6 +538,18 @@ def binary_path(bin_root: Path, checkpoint: str, output_suffix: str) -> Path:
     return bin_root / f"{checkpoint}{output_suffix}"
 
 
+def binary_link_stamp_path(bin_root: Path, checkpoint: str, output_suffix: str) -> Path:
+    return Path(str(binary_path(bin_root, checkpoint, output_suffix)) + ".link-stamp")
+
+
+def checkpoint_from_link_output_name(name: str, output_suffix: str) -> str:
+    if name.endswith(".tmp"):
+        name = name[:-len(".tmp")]
+    if output_suffix and name.endswith(output_suffix):
+        return name[:-len(output_suffix)]
+    return name
+
+
 def shared_object_stem(stem: str) -> str:
     # pa39/Makefile uses $(basename $(notdir <source>)) for shared objects.
     return Path(stem).name
@@ -713,7 +725,8 @@ def compiler_dependencies(spec: BuildSpec) -> List[Path]:
 
 def output_is_current(output: Path,
                       dependencies: Sequence[Path],
-                      active_outputs: Set[Path]) -> bool:
+                      active_outputs: Set[Path],
+                      freshness_stamp: Optional[Path] = None) -> bool:
     output = output.resolve()
     if output in active_outputs:
         return False
@@ -721,6 +734,15 @@ def output_is_current(output: Path,
         output_mtime = output.stat().st_mtime
     except OSError:
         return False
+
+    if freshness_stamp is not None:
+        try:
+            stamp_mtime = freshness_stamp.stat().st_mtime
+        except OSError:
+            pass
+        else:
+            if stamp_mtime > output_mtime:
+                output_mtime = stamp_mtime
 
     for dependency in dependencies:
         try:
@@ -794,7 +816,8 @@ def checkpoint_binary_is_current(spec: BuildSpec,
         dependencies.append(runner_object_path(object_root, spec.test_runner))
     return output_is_current(binary_path(bin_root, checkpoint, spec.output_suffix),
                              dependencies,
-                             active_outputs)
+                             active_outputs,
+                             binary_link_stamp_path(bin_root, checkpoint, spec.output_suffix))
 
 
 def active_tasks_for_build(root_pid: Optional[int],
@@ -843,9 +866,10 @@ def active_tasks_for_build(root_pid: Optional[int],
                                              output_path=output_path.resolve()))
                 continue
             if bin_root in output_path.parents and "-c" not in argv:
-                final_output_path = binary_path(bin_root, output_path.name, spec.output_suffix)
+                checkpoint = checkpoint_from_link_output_name(output_path.name, spec.output_suffix)
+                final_output_path = binary_path(bin_root, checkpoint, spec.output_suffix)
                 add_task(process, ActiveTask(phase="link",
-                                             label=output_path.name,
+                                             label=checkpoint,
                                              detail=str(output_path),
                                              elapsed_seconds=process.elapsed_seconds,
                                              output_path=final_output_path.resolve()))
