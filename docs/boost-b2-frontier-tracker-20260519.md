@@ -1338,3 +1338,12 @@ current `pr-36` branch without additional compiler changes. Command:
 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++
 ./run-cppgm-b2.sh -a libs/align/test`; result `rc=0`, log
 `/tmp/boost-align-full-current-20260702.log`.
+
+2026-07-02 frontier revalidation: `libs/array/test`, previously listed as
+mixed in the older `/Users/vishvananda/boost-survey` data, now passes on the
+current `pr-36` branch without additional compiler changes. Command:
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1
+CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++
+./run-cppgm-b2.sh -a libs/array/test`; result `rc=0`, log
+`/tmp/boost-array-full-current-20260702.log`. The visible `array_getfail*`
+diagnostics are expected compile-fail targets marked `(failed-as-expected)`.
