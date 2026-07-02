@@ -464,10 +464,14 @@ TemplateArgument make_deduced_template_template_argument(
   if(alias_template) {
     arg.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
     arg.template_decl = alias_template;
+    template_scope::set_template_argument_entity_identity_from_decl(arg,
+                                                                    alias_template);
     arg.text = alias_template->name;
   } else {
     arg.kind = TemplateArgument::TA_CLASS_TEMPLATE;
     arg.template_decl = class_template;
+    template_scope::set_template_argument_entity_identity_from_decl(arg,
+                                                                    class_template);
     arg.text = class_template ? class_template->name : parameter.name;
   }
   return arg;

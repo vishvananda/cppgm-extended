@@ -284,6 +284,8 @@ struct TemplateArgument
   cpp_decl::TypePtr type;
   void * template_decl = nullptr;
   cpp_decl::TypePtr template_owner_type;
+  std::string template_entity_scope_prefix;
+  std::string template_entity_name;
   const semantic_model::FunctionBinding * function_value = nullptr;
   const semantic_model::ValueBinding * value_binding = nullptr;
   std::string text;
@@ -294,6 +296,15 @@ struct TemplateArgument
   bool dependent = false;
   bool source_defaulted = false;
 };
+
+inline void set_template_argument_entity_identity(
+    TemplateArgument & argument,
+    const std::string & scope_prefix,
+    const std::string & name)
+{
+  argument.template_entity_scope_prefix = scope_prefix;
+  argument.template_entity_name = name;
+}
 
 bool template_arguments_are_dependent(
     const std::vector<TemplateArgument> & arguments,

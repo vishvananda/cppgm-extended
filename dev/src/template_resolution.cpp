@@ -7123,12 +7123,23 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
           if(found_class_template != info.member_scope->class_templates.end()) {
             arg.kind = TemplateArgument::TA_CLASS_TEMPLATE;
             arg.template_decl = found_class_template->second;
+            if(found_class_template->second) {
+              template_scope::set_template_argument_entity_identity_from_decl(
+                  arg,
+                  found_class_template->second);
+            }
             arg.text = parameter.name;
           } else if(info.member_scope->alias_templates.find(parameter.name) !=
                     info.member_scope->alias_templates.end()) {
             arg.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
-            arg.template_decl =
+            AliasTemplateDecl * alias_template =
                 info.member_scope->alias_templates.find(parameter.name)->second;
+            arg.template_decl = alias_template;
+            if(alias_template) {
+              template_scope::set_template_argument_entity_identity_from_decl(
+                  arg,
+                  alias_template);
+            }
             arg.text = parameter.name;
           } else {
             return false;
@@ -12932,6 +12943,11 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
           actual_template_argument.kind = TemplateArgument::TA_CLASS_TEMPLATE;
           actual_template_argument.template_decl =
               actual_instantiation.source_template;
+          if(actual_instantiation.source_template) {
+            template_scope::set_template_argument_entity_identity_from_decl(
+                actual_template_argument,
+                actual_instantiation.source_template);
+          }
           actual_template_argument.text = qualified_name_text(actual_instantiation.name);
           if(actual_template_argument.text.empty()) {
             actual_template_argument.text = actual_instantiation.source_template->name;

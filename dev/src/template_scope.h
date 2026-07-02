@@ -113,6 +113,14 @@ void bind_alias_template(semantic_model::Scope & scope,
                          const std::string & name,
                          semantic_model::AliasTemplateDecl * decl);
 
+void set_template_argument_entity_identity_from_decl(
+    template_model::TemplateArgument & argument,
+    const semantic_model::ClassTemplateDecl * decl);
+
+void set_template_argument_entity_identity_from_decl(
+    template_model::TemplateArgument & argument,
+    const semantic_model::AliasTemplateDecl * decl);
+
 void bind_template_template_placeholder(semantic_model::Scope & scope,
                                         const std::string & name);
 

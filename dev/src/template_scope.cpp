@@ -24,6 +24,38 @@ void hash_combine(std::size_t & seed, const std::string & value)
   hash_combine(seed, std::hash<std::string>()(value));
 }
 
+std::string template_entity_scope_prefix_text(const Scope * scope,
+                                              const std::string & name)
+{
+  if(!scope || name.empty()) {
+    return std::string();
+  }
+  const std::string qualified =
+      semantic_lookup::scope_qualified_name(*scope, name);
+  const std::string suffix = std::string("::") + name;
+  if(qualified == name) {
+    return std::string();
+  }
+  if(qualified.size() > suffix.size() &&
+     qualified.compare(qualified.size() - suffix.size(),
+                       suffix.size(),
+                       suffix) == 0) {
+    return qualified.substr(0, qualified.size() - suffix.size());
+  }
+  return std::string();
+}
+
+void set_template_argument_entity_identity_from_decl(
+    TemplateArgument & argument,
+    const Scope * scope,
+    const std::string & name)
+{
+  set_template_argument_entity_identity(
+      argument,
+      template_entity_scope_prefix_text(scope, name),
+      name);
+}
+
 std::size_t & global_binding_fingerprint_epoch()
 {
   static std::size_t epoch = 1;
@@ -529,6 +561,30 @@ void bind_alias_template(Scope & scope,
   bump_binding_fingerprint_epoch(scope);
 }
 
+void set_template_argument_entity_identity_from_decl(
+    TemplateArgument & argument,
+    const ClassTemplateDecl * decl)
+{
+  if(!decl) {
+    return;
+  }
+  set_template_argument_entity_identity_from_decl(argument,
+                                                  decl->declaring_scope,
+                                                  decl->name);
+}
+
+void set_template_argument_entity_identity_from_decl(
+    TemplateArgument & argument,
+    const AliasTemplateDecl * decl)
+{
+  if(!decl) {
+    return;
+  }
+  set_template_argument_entity_identity_from_decl(argument,
+                                                  decl->declaring_scope,
+                                                  decl->name);
+}
+
 void bind_template_template_placeholder(Scope & scope, const std::string & name)
 {
   scope.class_templates[name] = nullptr;
@@ -545,6 +601,7 @@ void bind_template_template_argument(Scope & scope,
     AliasTemplateDecl * decl =
         static_cast<AliasTemplateDecl *>(argument.template_decl);
     bind_alias_template(scope, name, decl);
+    set_template_argument_entity_identity_from_decl(stored_argument, decl);
     if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
       stored_argument.text =
           semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
@@ -553,6 +610,7 @@ void bind_template_template_argument(Scope & scope,
     ClassTemplateDecl * decl =
         static_cast<ClassTemplateDecl *>(argument.template_decl);
     bind_class_template(scope, name, decl);
+    set_template_argument_entity_identity_from_decl(stored_argument, decl);
     if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
       stored_argument.text =
           semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);

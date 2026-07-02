@@ -28165,6 +28165,8 @@ bool resolve_member_template_template_argument_text(
       alias_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
     out.template_decl = alias_template;
+    template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                    alias_template);
     out.template_owner_type = owner_type;
     out.text = normalized;
     note_template_trace_if_enabled(
@@ -28196,6 +28198,8 @@ bool resolve_member_template_template_argument_text(
       class_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_CLASS_TEMPLATE;
     out.template_decl = class_template;
+    template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                    class_template);
     out.template_owner_type = owner_type;
     out.text = normalized;
     note_template_trace_if_enabled(
@@ -28356,6 +28360,8 @@ bool resolve_member_template_template_argument_syntax(
       alias_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
     out.template_decl = alias_template;
+    template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                    alias_template);
     out.template_owner_type = owner_type;
     out.text = normalize_template_template_argument_lookup_text(text);
     out.source_syntax.reset(new TemplateArgumentSyntax(syntax));
@@ -28387,6 +28393,8 @@ bool resolve_member_template_template_argument_syntax(
       class_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_CLASS_TEMPLATE;
     out.template_decl = class_template;
+    template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                    class_template);
     out.template_owner_type = owner_type;
     out.text = normalize_template_template_argument_lookup_text(text);
     out.source_syntax.reset(new TemplateArgumentSyntax(syntax));
@@ -28464,6 +28472,8 @@ bool resolve_template_template_argument_text(
       alias_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
     out.template_decl = alias_template;
+    template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                    alias_template);
     out.text = alias_template->declaring_scope ?
         semantic_lookup::scope_qualified_name(*alias_template->declaring_scope,
                                               alias_template->name) :
@@ -28499,6 +28509,8 @@ bool resolve_template_template_argument_text(
       class_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_CLASS_TEMPLATE;
     out.template_decl = class_template;
+    template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                    class_template);
     out.text = class_template->declaring_scope ?
         semantic_lookup::scope_qualified_name(*class_template->declaring_scope,
                                               class_template->name) :
@@ -28605,6 +28617,8 @@ bool resolve_template_template_argument_text(
       alias_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
     out.template_decl = alias_template;
+    template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                    alias_template);
     out.text = alias_template->declaring_scope ?
         semantic_lookup::scope_qualified_name(*alias_template->declaring_scope,
                                               alias_template->name) :
@@ -28633,6 +28647,8 @@ bool resolve_template_template_argument_text(
       class_template->parameters.size() == expected_parameter_count)) {
     out.kind = TemplateArgument::TA_CLASS_TEMPLATE;
     out.template_decl = class_template;
+    template_scope::set_template_argument_entity_identity_from_decl(out,
+                                                                    class_template);
     out.text = class_template->declaring_scope ?
         semantic_lookup::scope_qualified_name(*class_template->declaring_scope,
                                               class_template->name) :

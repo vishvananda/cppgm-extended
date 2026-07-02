@@ -7363,28 +7363,38 @@ static bool try_build_template_entity_argument_name_ir(
   if(template_owner) {
     *template_owner = abi_mangle::Type();
   }
-  if(argument.dependent || !argument.template_decl) {
+  if(argument.dependent) {
     return false;
   }
 
   const semantic_model::Scope * declaring_scope = nullptr;
+  template_name = trim_space(argument.template_entity_name);
   if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
-    const semantic_model::ClassTemplateDecl * decl =
-        static_cast<const semantic_model::ClassTemplateDecl *>(argument.template_decl);
-    if(!decl || trim_space(decl->name).empty()) {
-      return false;
+    if(argument.template_decl) {
+      const semantic_model::ClassTemplateDecl * decl =
+          static_cast<const semantic_model::ClassTemplateDecl *>(argument.template_decl);
+      if(decl) {
+        declaring_scope = decl->declaring_scope;
+        if(template_name.empty()) {
+          template_name = trim_space(decl->name);
+        }
+      }
     }
-    declaring_scope = decl->declaring_scope;
-    template_name = trim_space(decl->name);
   } else if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
-    const semantic_model::AliasTemplateDecl * decl =
-        static_cast<const semantic_model::AliasTemplateDecl *>(argument.template_decl);
-    if(!decl || trim_space(decl->name).empty()) {
-      return false;
+    if(argument.template_decl) {
+      const semantic_model::AliasTemplateDecl * decl =
+          static_cast<const semantic_model::AliasTemplateDecl *>(argument.template_decl);
+      if(decl) {
+        declaring_scope = decl->declaring_scope;
+        if(template_name.empty()) {
+          template_name = trim_space(decl->name);
+        }
+      }
     }
-    declaring_scope = decl->declaring_scope;
-    template_name = trim_space(decl->name);
   } else {
+    return false;
+  }
+  if(template_name.empty()) {
     return false;
   }
 
@@ -7407,8 +7417,10 @@ static bool try_build_template_entity_argument_name_ir(
     return !template_name.empty();
   }
 
-  string prefix_text;
-  scope_prefix_text_for_template_decl(declaring_scope, prefix_text);
+  string prefix_text = trim_space(argument.template_entity_scope_prefix);
+  if(prefix_text.empty() && declaring_scope) {
+    scope_prefix_text_for_template_decl(declaring_scope, prefix_text);
+  }
   string canonical_prefix;
   if(!build_name_prefix_components_ir(prefix_text,
                                       prefix_components,
