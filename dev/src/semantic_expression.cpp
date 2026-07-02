@@ -1,6 +1,7 @@
 #include "semantic_expression.h"
 
 #include <cctype>
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -2545,6 +2546,32 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
                                            std::vector<std::string> & out,
                                            std::set<std::string> & seen);
 
+const std::vector<ValueBinding> * lookup_named_value_pack_for_capture(
+    Scope & scope,
+    const std::string & name)
+{
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    std::map<std::string, std::vector<ValueBinding> >::const_iterator found =
+        current->named_value_packs.find(name);
+    if(found != current->named_value_packs.end()) {
+      return &found->second;
+    }
+  }
+  return nullptr;
+}
+
+void append_capture_name(const std::string & name,
+                         std::vector<std::string> & out,
+                         std::set<std::string> & seen)
+{
+  if(!name.empty() && seen.insert(name).second) {
+    out.push_back(name);
+  }
+}
+
 bool recover_function_style_local_initializer_for_capture(
     SemanticContext & ctx,
     Scope & scope,
@@ -2740,25 +2767,32 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
           if(!binding_requires_lambda_capture(*binding)) {
             return;
           }
+          const std::vector<ValueBinding> * value_pack =
+              lookup_named_value_pack_for_capture(scope, node.value);
+          if(value_pack) {
+            for(size_t i = 0; i < value_pack->size(); ++i) {
+              if(binding_requires_lambda_capture((*value_pack)[i])) {
+                append_capture_name((*value_pack)[i].name, out, seen);
+              }
+            }
+            return;
+          }
           if(binding->kind == ValueBinding::VK_FIELD) {
             if(binding->owner_class &&
                binding->owner_class->is_lambda_closure &&
                binding->name != "this") {
-              if(seen.insert(binding->name).second) {
-                out.push_back(binding->name);
-              }
-            } else if(seen.insert("this").second) {
-              out.push_back("this");
+              append_capture_name(binding->name, out, seen);
+            } else {
+              append_capture_name("this", out, seen);
             }
-          } else if(seen.insert(node.value).second) {
-            out.push_back(node.value);
+          } else {
+            append_capture_name(node.value, out, seen);
           }
         } else {
           MemberValueLookupResult member;
           if(lookup_member_value_in_scope_chain(scope, node.value, member) &&
-             member.binding &&
-             seen.insert("this").second) {
-            out.push_back("this");
+             member.binding) {
+            append_capture_name("this", out, seen);
           } else {
             for(Scope * current = &scope; current; current = current->parent) {
               if(!current->class_info) {
@@ -2768,9 +2802,7 @@ void collect_implicit_lambda_capture_names(SemanticContext & ctx,
                       .functions.empty() ||
                  !lookup_visible_member_function_templates(*current->class_info, node.value)
                       .templates.empty()) {
-                if(seen.insert("this").second) {
-                  out.push_back("this");
-                }
+                append_capture_name("this", out, seen);
                 break;
               }
             }

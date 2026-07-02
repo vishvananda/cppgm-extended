@@ -28170,6 +28170,7 @@ private:
       return false;
     };
 
+    std::set<std::string> captured_field_names;
     for(size_t i = 0; i < captures.size(); ++i) {
       const string & capture_name = captures[i].first;
       const bool capture_by_reference = captures[i].second;
@@ -28202,6 +28203,50 @@ private:
       binding.owner_class = info;
       binding.access = MA_PRIVATE;
       info->member_scope->values[capture_name] = binding;
+      captured_field_names.insert(capture_name);
+    }
+
+    std::set<std::string> mirrored_pack_names;
+    for(Scope * current = &scope; current; current = current->parent) {
+      if(current->namespace_scope || current->parent == nullptr) {
+        break;
+      }
+      for(std::map<std::string, std::vector<ValueBinding> >::const_iterator pack =
+              current->named_value_packs.begin();
+          pack != current->named_value_packs.end();
+          ++pack) {
+        if(pack->first.empty() ||
+           !mirrored_pack_names.insert(pack->first).second ||
+           pack->second.empty()) {
+          continue;
+        }
+        std::vector<ValueBinding> captured_pack;
+        captured_pack.reserve(pack->second.size());
+        bool complete_pack_capture = true;
+        for(size_t j = 0; j < pack->second.size(); ++j) {
+          const std::string & element_name = pack->second[j].name;
+          if(element_name.empty() ||
+             captured_field_names.count(element_name) == 0) {
+            complete_pack_capture = false;
+            break;
+          }
+          std::map<std::string, ValueBinding>::const_iterator field =
+              info->member_scope->values.find(element_name);
+          if(field == info->member_scope->values.end()) {
+            complete_pack_capture = false;
+            break;
+          }
+          captured_pack.push_back(field->second);
+        }
+        if(complete_pack_capture) {
+          semantic_scope_mutation::bind_named_pack_size(*info->member_scope,
+                                                        pack->first,
+                                                        captured_pack.size());
+          semantic_scope_mutation::bind_value_pack(*info->member_scope,
+                                                   pack->first,
+                                                   captured_pack);
+        }
+      }
     }
 
     const CppAstNode * template_parameters =
