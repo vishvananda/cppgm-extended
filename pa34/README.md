@@ -20,8 +20,9 @@ To complete PA34, implement these goals:
 - GNU/Clang parser concessions used by the selected hosted headers
 - GNU builtin type and literal forms used by the selected hosted environment
 - builtin traits, transforms, and intrinsics used by that hosted environment
-- enough hosted-header/source compile compatibility to make later bootstrap
-  work realistic (the heaviest standard-library headers are deferred to PA35)
+- hosted-header/source compile compatibility for the lighter hosted workload
+  covered by the PA34 tests, including C-wrapper headers and selected
+  vendor/header forms
 
 ### Prerequisites
 
@@ -57,8 +58,10 @@ The starter kit provides:
 - `pa34/scripts/`, the hosted preprocessor/compile test harness
 - `pa34/tests/preproc/`, hosted preprocessor tests and references
 - `pa34/tests/compile/`, hosted compile-only tests and references
+- `pa34/tests/run/`, small host-link/run smokes for hosted C-wrapper headers
+  and builtin/runtime interop
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
@@ -128,7 +131,7 @@ stream is written to `<outfile>`.
 `cppgm++ -c` shall continue to write host-linker-compatible relocatable object
 files as in PA32/PA33.
 
-The new PA34 contract is not a new object format. It is the ability to
+The new PA34 requirement is not a new object format. It is the ability to
 preprocess and compile hosted source/header inputs successfully through the
 `cppgm++` path.
 
@@ -161,15 +164,21 @@ To run one test through the shared check target:
 ```sh
 make check TEST=tests/preproc/300-has-include.t
 make check TEST=tests/compile/600-builtin-transforms-and-traits.t
+make check TEST=tests/run/800-hosted-cmath-ceil-run.t
 ```
 
-PA34 has two test directories:
+PA34 has three test directories:
 
 - `tests/preproc/`: hosted preprocessor compatibility. The oracle is the
   PA5-style structured preprocessor stream plus exit status.
 - `tests/compile/`: hosted compile-only compatibility. The oracle is successful
   object emission, compile exit status, and any stdout/reference sidecars used
   by the harness.
+- `tests/run/`: narrow host-link/run compatibility smokes. These tests cover
+  hosted builtins, C library entry points, and lightweight hosted C-wrapper
+  headers such as `<cassert>`, `<cmath>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`,
+  `<cstring>`, and `<csignal>`. They do not require broad template-heavy C++
+  standard-library headers or general hosted header-generated runtime support.
 
 The checked-in tests are hosted/vendor compatibility cases, standard-library
 sentinels, reducers, and bootstrap-facing compile smokes rather than direct
@@ -180,6 +189,9 @@ Optional sidecars include:
 - `x.env`: environment variables for one test, such as additional standard
   include paths
 - `x.compile.flags`: extra flags passed to `cppgm++ -c`
+- `x.ref.impl.exit_status`, `x.ref.program.exit_status`, and
+  `x.ref.program.stdout`: implementation and program-result references for
+  `tests/run` host-link/run smokes
 
 The default preprocessor references are intentionally host-agnostic. The test harness checks that checked-in PA34 preprocessor refs do not accidentally
 pin local host macro values such as platform-specific integer or floating-point
@@ -203,9 +215,9 @@ For compile-only tests, the immediate oracle may be successful object emission,
 but the object must carry host ABI names that PA36 can link and run without a
 separate hosted-only naming scheme.
 
-### Assignment Boundary
+### Required Implementation Surface
 
-PA34 owns hosted compatibility needed before bootstrap, including:
+To complete PA34, implement hosted compatibility for:
 
 - predefined macro import, `_Pragma`, `__has_*`, `#include_next`, `#warning`,
   ignored unknown pragmas, and hosted hex-float preprocessing forms such as
@@ -219,21 +231,27 @@ PA34 owns hosted compatibility needed before bootstrap, including:
 - builtin traits, transforms, intrinsics, and builtin families used during
   hosted compile acceptance
 - semantic and lowering compatibility for hosted source patterns used by those
-  headers and by the bootstrap source base, including post-declarator parameter
+  headers, including post-declarator parameter
   attributes, explicit specializations of primary-template member functions,
   and non-standard hex-float compile acceptance on ordinary floating types
+- lightweight hosted C-wrapper header and C runtime interop smokes where the
+  header surface is mostly builtin macros/functions or ordinary C declarations
+  (`<cassert>`, `<cmath>`, `<cstddef>`, `<cstdio>`, `<cstdlib>`, `<cstring>`,
+  `<csignal>`)
 
-Standard-language bugs discovered here should still be fixed in their true
-earlier owner stage when appropriate. PA34 owns the hosted compatibility
-pressure, not a second copy of every earlier language rule.
+If a failing PA34 test exposes a bug in syntax, semantic analysis, template
+handling, lowering, or object emission that is shared with earlier language
+features, fix the shared compiler behavior rather than adding a PA34-only path.
 
 ### Out Of Scope
 
-The following are out of scope for PA34:
+The PA34 tests do not require:
 
-- host object/link/runtime contracts already owned by PA32 and PA33
-- compiling the heaviest hosted standard-library headers, which belongs in PA35
-- hosted header-emitted link/runtime behavior, which belongs in PA36
+- host object/link/runtime behavior beyond the PA32/PA33 host-compatible path
+- compiling broad template-heavy C++ standard-library headers such as
+  `<vector>`, `<tuple>`, `<functional>`, `<iostream>`, `<string>`, or container
+  and stream headers
+- general hosted C++ header-emitted link/runtime behavior
 - full build-system emulation beyond the documented query and compatibility
   flags
 - recursive hosted-header coverage reporting
@@ -252,9 +270,8 @@ arguments, ABI tags, and local context available until the ABI naming layer can
 consume them. Reconstructing those facts later from pretty-printed strings tends
 to create fragile library-version-specific behavior.
 
-### Stage Handoff
+### After PA34
 
-The next stage is PA35, which keeps the same hosted source/header environment
-but raises the bar to compiling the heaviest hosted standard-library headers
-(the perf-gated header-compile workload split out of PA34). PA36 then raises the
-contract from "it compiles" to "its emitted code also links and runs."
+Later hosted tests keep the same hosted source/header environment while adding
+larger template-heavy standard-library headers and then link/run behavior for
+code emitted from hosted headers.

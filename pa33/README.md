@@ -5,8 +5,8 @@
 Write one C++ application called `cppgm++`.
 
 PA33 is the host C++ ABI/runtime interoperability assignment. It builds on the
-ordinary host-linkable object contract from PA32 and makes the behavior of the
-host-linked program part of the assignment contract.
+ordinary host-linkable object requirements from PA32 and makes the behavior of
+the host-linked program observable.
 
 The main PA33 question is: once host link succeeds, does the resulting program
 behave correctly under the ordinary host C++ ABI/runtime?
@@ -42,8 +42,8 @@ If those are not set, the harness searches for common compilers such as
 also require `ar`, `nm`, and `readelf`. The checked-in tests assume the normal
 x86_64 Linux host C++ ABI.
 
-The basic host-EH object-facts surface is owned by PA31. PA33 keeps the same
-host-link path but raises the contract to richer host ABI/runtime interactions.
+PA31 introduced the basic host-EH object-facts surface. PA33 keeps the same
+host-link path while exercising richer host ABI/runtime interactions.
 
 ### Starter Kit
 
@@ -57,7 +57,7 @@ The starter kit provides:
 - `pa33/scripts/`, the host-ABI test harness
 - `pa33/tests/general/`, the PA33 tests and checked-in reference files
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
@@ -171,7 +171,7 @@ work.
 
 ### Host ABI Symbol Names
 
-PA33 extends the PA32 object contract into host C++ ABI/runtime behavior. The
+PA33 extends the PA32 object requirements into host C++ ABI/runtime behavior. The
 same ABI naming behavior from PA30 and PA32 is still observable for every C++
 symbol that the host linker, unwinder, RTTI system, or virtual-dispatch
 machinery can observe.
@@ -188,11 +188,10 @@ match the configured toolchain:
 - local classes, lambdas, dependent/template names, ABI tags, and inline
   namespaces when they affect the host name
 
-### Assignment Boundary
+### Required Implementation Surface
 
-PA33 owns practical host-linked C++ ABI/runtime behavior.
-
-To complete PA33, preserve this behavior within the supported subset:
+To complete PA33, preserve practical host-linked C++ ABI/runtime behavior within
+the supported subset:
 
 - virtual dispatch and imported/exported vtable ownership
 - RTTI-driven `dynamic_cast` / `typeid`
@@ -201,18 +200,18 @@ To complete PA33, preserve this behavior within the supported subset:
 - cleanup and unwind interactions beyond the basic PA31 fact owners
 - foreign catch-all interaction in the tested subset
 
-If host link succeeds but the host C++ ABI/runtime behavior is wrong, the issue
-belongs in PA33.
+If host link succeeds but the host C++ ABI/runtime behavior is wrong, fix the
+host ABI/runtime lowering, metadata, or object-emission path.
 
 ### Out Of Scope
 
-The following are out of scope for PA33:
+The PA33 tests do not require:
 
-- basic host-EH metadata/object facts, which belong in PA31
+- basic host-EH metadata/object facts beyond the PA31 surface
 - private course-only exception/runtime ABI details that are not visible through
   the host-linked program or object checks
-- hosted standard-library header/source compatibility, which belongs in PA34
-- hosted header-emitted link/runtime behavior, which belongs in PA36
+- hosted standard-library header/source compatibility
+- hosted header-emitted link/runtime behavior
 - bootstrap or self-host builds
 
 ### Design Notes (Non-Normative)
@@ -229,7 +228,7 @@ mangler, then let the object writer preserve the final raw symbol name. That
 keeps ABI spelling decisions close to semantic information and avoids a second
 name-construction path in object-format code.
 
-### Stage Handoff
+### After PA33
 
-The next stage is PA34, which shifts from host ABI/runtime ownership to hosted
-source/header compatibility.
+Later hosted tests keep the same host object and ABI/runtime path while adding
+hosted source/header compatibility.

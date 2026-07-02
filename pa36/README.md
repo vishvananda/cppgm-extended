@@ -5,9 +5,8 @@
 PA36 is the hosted header-emission and link/runtime compatibility assignment.
 
 By PA34 and PA35, hosted source and heavy hosted headers should preprocess and
-compile. PA36 owns the next question: once hosted headers compile, do the
-emitted inline, template, and header-generated definitions also link and run
-correctly through the host toolchain?
+compile. PA36 asks whether the emitted inline, template, and header-generated
+definitions also link and run correctly through the host toolchain.
 
 This milestone is narrower than a second general host ABI assignment. It is
 specifically about hosted header-emitted code on top of the ordinary host object
@@ -55,7 +54,7 @@ The starter kit provides:
 - `pa36/scripts/`, the hosted link/runtime test harness
 - `pa36/tests/link/`, the PA36 tests and checked-in reference files
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
@@ -85,15 +84,15 @@ compiler driver.
 `cppgm++ -c` shall continue to write host-linker-compatible relocatable object
 files.
 
-The PA36 contract is not a new file format. It is correct symbol ownership,
+The PA36 requirement is not a new file format. It is correct symbol ownership,
 ABI spelling, and runtime behavior for hosted header-generated code once those
 objects are host-linked.
 
 Hosted objects should still be generated from the same LowIR facts exposed by
 `cppgm++ --emit-lowir`. If hosted header emission needs symbol ownership,
 object symbol spellings, TLS wrapper facts, or runtime hooks, those facts
-belong in LowIR metadata, declarations, definitions, or object aliases rather
-than in a hosted-only side channel.
+should be represented in LowIR metadata, declarations, definitions, or object
+aliases rather than in a hosted-only side channel.
 
 The PA36 tests observe:
 
@@ -213,7 +212,7 @@ implementation detail, not a conformance requirement.)
 The checked-in tests are hosted link/runtime smokes, ABI spelling checks, and
 object-inspection checks rather than direct N3485 clause tests.
 
-### Assignment Boundary
+### Required Implementation Surface
 
 To complete PA36, implement hosted link/runtime behavior for:
 
@@ -225,16 +224,16 @@ To complete PA36, implement hosted link/runtime behavior for:
   spelling, or runtime behavior of hosted header-generated code
 
 If hosted header code compiles but the emitted objects do not link or run
-correctly, the issue belongs in PA36.
+correctly, fix the hosted symbol emission, ABI spelling, object ownership, or
+runtime lowering path.
 
 ### Out Of Scope
 
-The following are out of scope for PA36:
+The PA36 tests do not require:
 
-- earlier hosted preprocess/compile compatibility already owned by PA34 and
-  PA35
-- general host object or host ABI ownership outside the hosted-header-triggered
-  surface already owned by PA32/PA33
+- new hosted preprocess/compile compatibility beyond the PA34/PA35 surface
+- general host object or host ABI behavior outside the hosted-header-triggered
+  surface already required before PA36
 - build-system wrapper emulation
 - recursive hosted-header coverage reporting
 - bootstrap or self-host builds
@@ -254,8 +253,8 @@ hosted symbol case is missing information, prefer threading that semantic fact
 forward instead of building already-mangled or partly-mangled strings in later
 object/link stages.
 
-### Stage Handoff
+### After PA36
 
-The hosted compatibility work from PA34, PA35, and PA36 prepares the later
-optimizer and self-host stages to compile larger source bases with the course
-compiler.
+After PA36, the compiler can preprocess, compile, link, and run hosted-header
+programs through the host toolchain. Later tests use that foundation while
+adding optimization and self-host workloads.

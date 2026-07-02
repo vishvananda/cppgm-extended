@@ -64,7 +64,7 @@ The starter kit provides:
 - `pa32/scripts/`, the host-interoperability test harness
 - `pa32/tests/general/`, the PA32 tests and checked-in reference files
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
@@ -131,7 +131,7 @@ make check TEST=tests/general/100-host-main-argv.t
 
 The local tests live in `tests/general/`. They cover host object
 interoperability, host final-link behavior, symbol spelling/coalescing, and
-object inspection where the object surface is part of the contract. They are
+object inspection where the object surface is directly checked. They are
 not direct N3485 clause tests.
 
 For each test anchor `x.t`, companion C++ sources are named:
@@ -172,11 +172,11 @@ compile.
 
 ### Using PA30 ABI Names
 
-PA32 is still before the broader host C++ ABI/runtime stage in PA33, but ordinary
-host object interoperability already requires correct raw symbol spelling for
-user-defined entities.
+PA32 does not require the broader host C++ ABI/runtime behavior exercised later,
+but ordinary host object interoperability already requires correct raw symbol
+spelling for user-defined entities.
 
-The object-file contract is that visible symbol names match the configured host
+The object-file requirement is that visible symbol names match the configured host
 ABI. The PA30 ABI naming layer is the recommended path for producing those
 names:
 
@@ -193,11 +193,10 @@ Reference:
 - Local copy of Itanium C++ ABI, Chapter 5.1 "External Names (a.k.a.
   Mangling)": [`../doc/itanium-mangling.txt`](../doc/itanium-mangling.txt)
 
-### Assignment Boundary
+### Required Implementation Surface
 
-PA32 owns ordinary host-toolchain interoperability of emitted object files.
-
-To complete PA32, implement this behavior within the supported subset:
+To complete PA32, implement ordinary host-toolchain interoperability of emitted
+object files within the supported subset:
 
 1. Emit host-linker-compatible relocatable objects.
 2. Expose a hosted entrypoint through the host CRT.
@@ -207,23 +206,23 @@ To complete PA32, implement this behavior within the supported subset:
 5. Interoperate with host-built objects, archives, shared libraries, and tested
    `thread_local` variables through practical function/global boundaries.
 
-If the host linker rejects generated objects as ordinary objects, the issue
-belongs in PA32.
+If the host linker rejects generated objects as ordinary objects, fix the
+host-compatible object-emission path.
 
 ### Out Of Scope
 
-The following are out of scope for PA32:
+The PA32 tests do not require:
 
-- host C++ ABI/runtime behavior after link, which belongs in PA33
-- hosted standard-library header/source compatibility, which belongs in PA34
-- hosted header-emitted link/runtime behavior, which belongs in PA36
+- host C++ ABI/runtime behavior after link
+- hosted standard-library header/source compatibility
+- hosted header-emitted link/runtime behavior
 - bootstrap or self-host builds
 
 ### Design Notes (Non-Normative)
 
 A simple implementation strategy is to keep PA29's source-to-LowIR path, use
 PA30 to derive concrete C++ object symbols, and retarget only the object
-emission details needed by the host object format. The observable contract is
+emission details needed by the host object format. The observable result is
 whether the host toolchain can consume and link the result, not whether your
 internal object pipeline has the same structure as the course implementation.
 
@@ -235,7 +234,7 @@ LowIR/object symbol. This keeps lower object-format and toolchain-driver code
 focused on preserving the spelling it was given instead of reconstructing C++
 ABI names from text fragments.
 
-### Stage Handoff
+### After PA32
 
-The next stage is PA33, which keeps the host-link path but raises the contract
-from ordinary object interoperability to host C++ ABI/runtime interoperability.
+Later host-link tests keep the same object path and then exercise richer host
+C++ ABI/runtime behavior.

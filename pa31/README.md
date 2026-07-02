@@ -62,7 +62,7 @@ The starter kit provides:
 - `pa31/scripts/`, the host-interoperability test harness
 - `pa31/tests/general/`, the PA31 tests and checked-in reference files
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you to
 add or update tests.
@@ -102,7 +102,7 @@ The PA31 tests do not compare object bytes directly. They observe:
 - normalized object-facts output for tests that include `.inspect.facts`
   sidecars
 
-The object-facts sidecars are part of the PA31 contract. The shared Perl
+The object-facts sidecars are part of the PA31 test surface. The shared Perl
 harness dumps platform-normalized facts such as required EH runtime imports,
 unwind/LSDA section presence, relocation classes, decoded basic LSDA facts, and
 absence of private `cppgm_eh_*` symbols.
@@ -176,12 +176,10 @@ For each test case:
 5. The recorded `.my.*` outputs are compared with the checked-in `.ref.*`
    oracle files.
 
-### Assignment Boundary
+### Required Implementation Surface
 
-PA31 owns the basic host-compatible EH metadata and runtime-helper object
-surface for `cppgm++ -c`.
-
-To complete PA31, implement this behavior within the supported subset:
+To complete PA31, implement the basic host-compatible EH metadata and
+runtime-helper object surface for `cppgm++ -c` within the supported subset:
 
 1. Lower `throw` expressions to host ABI throw helper calls.
 2. Lower typed catches to host landing-pad selector dispatch and
@@ -193,7 +191,7 @@ To complete PA31, implement this behavior within the supported subset:
 6. Keep private course-only exception runtime symbols out of host-EH objects.
 
 If object inspection shows missing or malformed host EH metadata for a basic
-throw/catch/cleanup case, the issue belongs in PA31.
+throw/catch/cleanup case, fix the host-EH lowering or object-emission path.
 
 ### Out Of Scope
 
@@ -208,10 +206,9 @@ The following are out of scope for PA31:
 - hosted standard-library header/source compatibility
 - bootstrap or self-host builds
 
-Later host-EH assignments keep the same host-link path but raise the contract
-from basic object facts to richer host ABI/runtime interactions such as foreign
-catch-all, virtual-base catches, nested cleanup chains, and hosted library EH
-behavior.
+Later host-EH tests keep the same host-link path while exercising richer
+host ABI/runtime interactions such as foreign catch-all, virtual-base catches,
+nested cleanup chains, and hosted library EH behavior.
 
 ### Design Notes (Non-Normative)
 

@@ -3,20 +3,20 @@
 ### Overview
 
 PA35 is the hosted header-compile assignment. It is split out of PA34: where
-PA34 establishes that hosted source and headers preprocess and compile at all
+PA34 establishes that hosted source/header inputs preprocess and compile at all
 (intrinsics, parser concessions, builtin traits, header-free conformance
-anchors), PA35 raises the bar to **compiling the heaviest real standard-library
-headers** end to end with `cppgm++ -c`, within a workable time and memory budget.
+anchors, and lightweight C-wrapper header smokes). PA35 raises the bar to
+**compiling the heaviest real C++ standard-library headers** end to end with
+`cppgm++ -c`, within a workable time and memory budget.
 
-By PA34, hosted headers and source should preprocess and compile. PA35 owns the
-next question: can `cppgm++` actually compile the large, template- and
-trait-heavy STL headers (`<vector>`, `<unordered_map>`, `<tuple>`, `<random>`,
-`<functional>`, and the iostream/string/exception machinery) that later
-bootstrap-style builds depend on?
+By PA34, hosted headers and source should preprocess and compile for the
+lighter hosted workload. PA35 raises the bar to large, template- and trait-heavy
+STL headers (`<vector>`, `<unordered_map>`, `<tuple>`, `<random>`,
+`<functional>`, and the iostream/string/exception machinery).
 
 This is the perf-gated tier of hosted compatibility. It is not a link or runtime
-test — once the heavy headers compile, making the emitted code link and run is
-PA36's contract.
+test. The PA35 tests require clean object emission from heavy hosted headers;
+later hosted tests exercise whether emitted header code also links and runs.
 
 To complete PA35, implement these goals:
 
@@ -34,7 +34,8 @@ You will want to reuse:
 
 - the full earlier language, template, semantic, and lowering stack
 - the PA34 hosted preprocess/compile compatibility surface (intrinsics, parser
-  concessions, builtin traits/types, header-free conformance anchors)
+  concessions, builtin traits/types, header-free conformance anchors, and
+  lightweight C-wrapper header smokes)
 - the PA32/PA33 `cppgm++ -c` host-object path
 
 The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
@@ -57,7 +58,7 @@ The starter kit provides:
 - `pa35/tests/compile/`, the heavy-STL header-compile tests and checked-in
   reference files
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you to
 add or update tests.
@@ -79,7 +80,7 @@ cppgm++ -c -D <macro> -U <macro> -include <file> -o <objfile> <srcfile>
 ### Output Format
 
 `cppgm++ -c` shall write a host-linker-compatible relocatable object as in
-PA32/PA33/PA34. For PA35 the emitted object is discarded — the contract is
+PA32/PA33/PA34. For PA35 the emitted object is discarded — the requirement is
 simply that the heavy hosted header compiles cleanly to an object without error.
 
 The hosted header path should still lower through the same LowIR representation
@@ -116,23 +117,25 @@ header together with a cheat-proof anchor — a trait, `decltype`, `sizeof`, or
 `static_assert` that cannot be satisfied without genuinely compiling the header,
 so a test cannot pass by skipping or stubbing the include.
 
-### Assignment Boundary
+### Required Implementation Surface
 
-PA35 owns:
+To complete PA35, support:
 
 - compiling the heaviest hosted standard-library headers within the perf budget
 - the template, trait, and overload-resolution depth those headers exercise
   during `-c` compilation
 
-PA35 does not own:
+The PA35 tests do not require:
 
-- intrinsics, parser concessions, and header-free conformance anchors (PA34)
-- hosted header-emitted link/runtime behavior (PA36)
+- new intrinsics, parser concessions, header-free conformance anchors, or
+  lightweight hosted C-wrapper behavior beyond the hosted compatibility already
+  needed before PA35
+- hosted header-emitted link/runtime behavior
 - bootstrap or self-host builds
 
-Standard-language bugs discovered here should still be fixed in their true
-earlier owner stage when appropriate. PA35 owns the heavy-header compile
-pressure, not a second copy of every earlier language rule.
+If a failing PA35 test exposes a bug in syntax, semantic analysis, template
+handling, lowering, or object emission that is shared with earlier language
+features, fix the shared compiler behavior rather than adding a PA35-only path.
 
 ### Design Notes (Non-Normative)
 
@@ -143,9 +146,7 @@ are usually performance cliffs (re-resolving the same bound template pack,
 re-instantiating the same specialization) rather than missing features. Prefer
 memoizing repeated resolution over deepening recursion guards.
 
-### Stage Handoff
+### After PA35
 
-The previous stage is PA34 (hosted intrinsics and header-free compile
-conformance). The next stage is PA36, which keeps the same hosted header
-environment but raises the contract from "it compiles" to "its emitted code also
-links and runs."
+Later hosted tests keep the same hosted header environment and then check that
+the emitted code from those headers also links and runs.
