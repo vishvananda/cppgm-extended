@@ -6936,10 +6936,24 @@ bool CppAstParser::parse_parameter_declaration(CppAstNode & out)
   out.children.push_back(std::move(specifiers));
 
   CppAstNode declarator;
-  if(parse_declarator(declarator)) {
-    out.children.push_back(std::move(declarator));
+  bool have_declarator = false;
+  if(peek().is_simple(OP_LPAREN)) {
+    const size_t abstract_start = pos;
+    if(parse_abstract_declarator(declarator) &&
+       declarator_has_parameter_clause(declarator)) {
+      have_declarator = true;
+    } else {
+      pos = abstract_start;
+      declarator = CppAstNode();
+    }
   }
-  else if(parse_abstract_declarator(declarator)) {
+  if(!have_declarator && parse_declarator(declarator)) {
+    have_declarator = true;
+  }
+  if(!have_declarator && parse_abstract_declarator(declarator)) {
+    have_declarator = true;
+  }
+  if(have_declarator) {
     out.children.push_back(std::move(declarator));
   }
 

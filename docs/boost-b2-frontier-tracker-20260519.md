@@ -1551,3 +1551,36 @@ against `/tmp/cppgm-before-partial-conversion-operator-binding-baseline.json`
 passes three-run perf with instructions `+0.21%`, RSS `-0.70%`, footprint
 `-0.03%`; report:
 `/tmp/cppgm-perf-after-partial-conversion-operator-binding-isolated.json`.
+
+2026-07-03 Boost.Xpressive `libs/xpressive/test//test_actions` Proto callable
+transform frontier: `to_vector((s1,s2))` instantiates nested function-type
+template arguments such as `push(get_value(value))`. Parameter declarations in
+function-type template arguments tried the parenthesized declarator-name parse
+before the function-style abstract declarator parse, so `get_value(value)` lost
+the known `value` type and collapsed to `get_value`. Proto then deduced
+`A0=get_value` instead of `A0=get_value (*)(value)`, and later calls through
+`when<_, A0>::impl` failed as unknown functions. The fix prefers a
+function-style abstract declarator when a parenthesized parameter tail can be
+parsed that way, matching Clang for `A(B)` when `B` names a type. Owner:
+`pa21:400` class partial-specialization matching of function-type template
+arguments. New regression:
+`pa21/tests/general/400-nested-function-type-argument-partial-specialization.t`.
+Pre-fix evidence: the no-STL Proto-shaped reducer failed with `unknown function
+typename when<_,A0>::template impl<Expr,State,Data>` and traced `A0` as
+`get_value`; after the parser fix, the new PA21 witness records
+`specialize #2 = get_value (*)(value)`. Temporary Proto-specific
+`template_argument_semantics`, `semantic_overload`, and `callsemantic` edits
+from the paused stash were checked in a detached parser-only worktree and found
+unnecessary: parser-only passed the Proto reducer, the direct Xpressive
+`to_vector` reducer, the new PA21 regression, and focused B2
+`libs/xpressive/test//test_actions`, so those stale edits were dropped. The
+focused B2 run with the cleaned main worktree also passes and updates 41
+targets; `test_actions.cpp` remains an expensive compile, taking several
+minutes at one core and peaking around 2.7 GB RSS, with sample
+`/tmp/cppgm-xpressive-test-actions.sample.txt` showing normal template semantic
+analysis. Validation: `make -C dev cppgm++ -j8`; focused Proto and Xpressive
+reducers compile; focused PA21 regression passes; PA21 direct-LowIR report
+passes `185/185`; PA21 placement audit exits cleanly; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; full direct-LowIR
+`test-report-nobuild` passes `3426/3426`; strict direct-LowIR witness suite
+passes.
