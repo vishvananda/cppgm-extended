@@ -2050,3 +2050,40 @@ passes; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
 `/tmp/cppgm-before-enum-trivial-dtor-baseline.json` passes with instructions
 `+0.00%`, RSS `-1.45%`, footprint `-0.01%`; detailed report
 `/tmp/cppgm-after-enum-trivial-dtor-perf-report.json`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_serialization`
+Boost.Serialization protected friend access frontier: the full Flyweight suite
+advanced to `test_serialization.cpp`, where
+`interface_oarchive<text_oarchive>::get_helper` calls
+`this->This()->get_helper_collection()` through an `Archive *`. The selected
+member is `basic_oarchive::get_helper_collection`, protected in a base of
+`text_oarchive`; Boost grants access by friending `interface_oarchive<Archive>`
+from intermediate archive bases such as `common_oarchive<Archive>`. The old
+access check only looked for friend access on the immediate object class or one
+direct intermediate base, so it missed the deeper public base path and rejected
+the viable member call. The fix generalizes the protected object access helper
+to search public base paths from the object class to an intermediate class
+derived from the declaring base, and grants access only when the current context
+has friend access to that intermediate class. Protected/private object-to-
+intermediate paths remain rejected; private inheritance below the friended
+intermediate still works. No source-text reparse, fallback resolver, cache, or
+Boost special case is added. Owner: `pa21:300` friend class-template access
+composed with PA15 protected member access. New regression:
+`pa21/tests/spec/300-friend-class-template-protected-base-access.t`. Pre-fix
+evidence: the Boost-shaped no-STL reducer and the focused Boost target both
+fail with `reject=member access not allowed`; Clang accepts the reducer. After
+the fix, the reducer compiles and runs with exit `0`, the focused B2
+`/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/flyweight/test//test_serialization`
+passes and updates 51 targets, and the full B2 Flyweight suite
+`/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/flyweight/test`
+passes and updates 111 targets. Validation: `make -C dev cppgm++ -j8`;
+focused PA21 regression passes after refs generated with
+`REF_TEST_APP=../dev/cppgm++`; PA21 direct-LowIR report passes `186/186`; PA21
+strict direct-LowIR report passes; PA21 placement audit reports no placement
+findings; full direct-LowIR report passes `3443/3443`; full strict
+direct-LowIR compare passes; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes; isolated perf against clean
+`992324e07` baseline
+`/tmp/cppgm-before-protected-friend-access-baseline.json` passes with
+instructions `+0.09%`, RSS `-0.78%`, footprint `-0.05%`; detailed report
+`/tmp/cppgm-after-protected-friend-access-perf-report.json`.

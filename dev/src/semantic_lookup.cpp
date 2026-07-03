@@ -3982,6 +3982,77 @@ bool member_access_allowed(const Scope * lexical_scope,
   return false;
 }
 
+bool context_has_friend_access_to_class(const Scope * lexical_scope,
+                                        const ClassInfo * current_class,
+                                        const FunctionBinding * current_function,
+                                        const ClassInfo * access_class)
+{
+  if(!access_class) {
+    return false;
+  }
+  if(class_has_friend_class_access(current_class, access_class)) {
+    return true;
+  }
+  if(current_function &&
+     class_has_friend_class_access(current_function->owner_class, access_class)) {
+    return true;
+  }
+  if(current_function &&
+     class_has_friend_class_access(current_function->lexical_access_class, access_class)) {
+    return true;
+  }
+  if(current_function && function_has_friend_access(current_function, access_class)) {
+    return true;
+  }
+  if(current_function &&
+     current_function->lexical_access_function &&
+     function_has_friend_access(current_function->lexical_access_function,
+                                access_class)) {
+    return true;
+  }
+  return scope_has_friend_class_access(lexical_scope, access_class);
+}
+
+bool protected_object_access_via_public_intermediate_base(
+    const Scope * lexical_scope,
+    const ClassInfo * current_class,
+    const FunctionBinding * current_function,
+    const ClassInfo * object_class,
+    const ClassInfo * declared_in)
+{
+  if(!object_class || !declared_in) {
+    return false;
+  }
+
+  set<const ClassInfo *> visited;
+  vector<const ClassInfo *> stack;
+  stack.push_back(object_class);
+  while(!stack.empty()) {
+    const ClassInfo * current = stack.back();
+    stack.pop_back();
+    if(!current || !visited.insert(current).second) {
+      continue;
+    }
+
+    for(size_t i = 0; i < current->bases.size(); ++i) {
+      const BaseInfo & base = current->bases[i];
+      if(!base.type || base.access != MA_PUBLIC) {
+        continue;
+      }
+      if(base.type != declared_in &&
+         is_same_or_derived(base.type, declared_in) &&
+         context_has_friend_access_to_class(lexical_scope,
+                                            current_class,
+                                            current_function,
+                                            base.type)) {
+        return true;
+      }
+      stack.push_back(base.type);
+    }
+  }
+  return false;
+}
+
 bool member_access_allowed_through_object(const Scope * lexical_scope,
                                           const ClassInfo * current_class,
                                           const FunctionBinding * current_function,
@@ -4032,35 +4103,11 @@ bool member_access_allowed_through_object(const Scope * lexical_scope,
     return false;
   }
 
-  const ClassInfo * access_base = nullptr;
-  for(size_t i = 0; i < object_class->bases.size(); ++i) {
-    const BaseInfo & base = object_class->bases[i];
-    if(!base.type || base.access == MA_PRIVATE || base.type == declared_in) {
-      continue;
-    }
-    for(size_t j = 0; j < base.type->bases.size(); ++j) {
-      if(base.type->bases[j].type == declared_in) {
-        access_base = base.type;
-        break;
-      }
-    }
-    if(access_base) {
-      break;
-    }
-  }
-  return access_base &&
-         (class_has_friend_class_access(current_class, access_base) ||
-          (current_function &&
-           class_has_friend_class_access(current_function->owner_class, access_base)) ||
-          (current_function &&
-           class_has_friend_class_access(current_function->lexical_access_class,
-                                         access_base)) ||
-          (current_function && function_has_friend_access(current_function, access_base)) ||
-          (current_function &&
-           current_function->lexical_access_function &&
-           function_has_friend_access(current_function->lexical_access_function,
-                                      access_base)) ||
-          scope_has_friend_class_access(lexical_scope, access_base));
+  return protected_object_access_via_public_intermediate_base(lexical_scope,
+                                                             current_class,
+                                                             current_function,
+                                                             object_class,
+                                                             declared_in);
 }
 
 const vector<FunctionBinding *> * find_direct_function_set_by_canonical_name(
