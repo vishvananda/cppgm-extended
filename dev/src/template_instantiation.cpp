@@ -4459,6 +4459,106 @@ bool erase_parameter_pack_nodes(CppAstNode & current)
   return removed;
 }
 
+void overlay_referenced_template_bound_scope_bindings(Scope & target,
+                                                      const Scope & source,
+                                                      const CppAstNode & node)
+{
+  for(std::set<std::string>::const_iterator it =
+          source.template_bound_type_names.begin();
+      it != source.template_bound_type_names.end();
+      ++it) {
+    if(!ast_node_mentions_identifier_token(node, *it)) {
+      continue;
+    }
+    Scope::NamedTypeMap::const_iterator found = source.named_types.find(*it);
+    if(found != source.named_types.end()) {
+      template_scope::bind_named_type(target, *it, found->second);
+    }
+  }
+
+  for(std::set<std::string>::const_iterator it =
+          source.template_bound_type_pack_names.begin();
+      it != source.template_bound_type_pack_names.end();
+      ++it) {
+    if(!ast_node_mentions_identifier_token(node, *it)) {
+      continue;
+    }
+    std::map<std::string, std::vector<TypePtr> >::const_iterator found =
+        source.named_type_packs.find(*it);
+    if(found != source.named_type_packs.end()) {
+      template_scope::bind_type_pack(target, *it, found->second);
+    }
+  }
+
+  for(std::set<std::string>::const_iterator it =
+          source.template_bound_value_names.begin();
+      it != source.template_bound_value_names.end();
+      ++it) {
+    if(!ast_node_mentions_identifier_token(node, *it)) {
+      continue;
+    }
+    std::map<std::string, ValueBinding>::const_iterator found =
+        source.values.find(*it);
+    if(found != source.values.end()) {
+      template_scope::bind_value(target, *it, found->second, true);
+    }
+  }
+
+  for(std::set<std::string>::const_iterator it =
+          source.template_bound_value_pack_names.begin();
+      it != source.template_bound_value_pack_names.end();
+      ++it) {
+    if(!ast_node_mentions_identifier_token(node, *it)) {
+      continue;
+    }
+    std::map<std::string, std::vector<ValueBinding> >::const_iterator found =
+        source.named_value_packs.find(*it);
+    if(found != source.named_value_packs.end()) {
+      template_scope::bind_value_pack(target, *it, found->second, true);
+    }
+  }
+
+  for(std::set<std::string>::const_iterator it =
+          source.template_bound_template_names.begin();
+      it != source.template_bound_template_names.end();
+      ++it) {
+    if(!ast_node_mentions_identifier_token(node, *it)) {
+      continue;
+    }
+    std::map<std::string, TemplateArgument>::const_iterator argument =
+        source.template_bound_template_arguments.find(*it);
+    if(argument != source.template_bound_template_arguments.end()) {
+      template_scope::bind_template_template_argument(target,
+                                                      *it,
+                                                      argument->second);
+      continue;
+    }
+    std::map<std::string, ClassTemplateDecl *>::const_iterator class_template =
+        source.class_templates.find(*it);
+    if(class_template != source.class_templates.end()) {
+      template_scope::bind_class_template(target, *it, class_template->second);
+      continue;
+    }
+    std::map<std::string, AliasTemplateDecl *>::const_iterator alias_template =
+        source.alias_templates.find(*it);
+    if(alias_template != source.alias_templates.end()) {
+      template_scope::bind_alias_template(target, *it, alias_template->second);
+    }
+  }
+}
+
+void initialize_instantiated_function_parameter_scope(Scope & parameter_scope,
+                                                      Scope & inst_scope,
+                                                      const CppAstNode & node)
+{
+  parameter_scope.class_info = inst_scope.class_info;
+  parameter_scope.function = inst_scope.function;
+  parameter_scope.namespace_scope = inst_scope.namespace_scope;
+  overlay_referenced_template_bound_scope_bindings(parameter_scope,
+                                                   inst_scope,
+                                                   node);
+}
+
 bool expand_instantiated_function_parameter_clause(
     SemanticContext & ctx,
     Scope & inst_scope,
@@ -4470,9 +4570,9 @@ bool expand_instantiated_function_parameter_clause(
   default_args.clear();
 
   Scope parameter_scope(&inst_scope, "<parameter-clause>", false);
-  parameter_scope.class_info = inst_scope.class_info;
-  parameter_scope.function = inst_scope.function;
-  parameter_scope.namespace_scope = inst_scope.namespace_scope;
+  initialize_instantiated_function_parameter_scope(parameter_scope,
+                                                  inst_scope,
+                                                  parameter_clause);
 
   for(std::size_t i = 0; i < parameter_clause.children.size(); ++i) {
     const CppAstNode & parameter = parameter_clause.children[i];
@@ -4532,9 +4632,9 @@ bool expand_instantiated_function_parameter_clause(
 
     for(std::size_t pack_index = 0; pack_index < pack_size; ++pack_index) {
       Scope single_scope(&parameter_scope, "<pack-param>", false);
-      single_scope.class_info = parameter_scope.class_info;
-      single_scope.function = parameter_scope.function;
-      single_scope.namespace_scope = parameter_scope.namespace_scope;
+      initialize_instantiated_function_parameter_scope(single_scope,
+                                                      parameter_scope,
+                                                      stripped_parameter);
       for(std::size_t pack = 0; pack < packs.size(); ++pack) {
         template_scope::bind_named_type(single_scope,
                                         packs[pack].first,

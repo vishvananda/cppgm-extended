@@ -1456,3 +1456,35 @@ scripts/audit_text_reparse.py --strict` reports all zero; full direct-LowIR
 strict suite passes; direct Boost `test3.cpp` produces
 `/tmp/boost-xpressive-test3-after-cstyle.o`; `git diff --check` passes. | this
 commit |
+
+2026-07-02 Boost.Xpressive `libs/xpressive/test/test5.cpp` and `test5u.cpp`
+member-template NTTP shadowing frontier: `static_xpression::get_width()` calls
+`this->get_width_(mpl::size_t<width>())`, where `width` is the instantiated
+class value `3`, while the selected member-template overload has a non-type
+template parameter named `Width`. Source signature collection already let that
+member-template parameter shadow inherited values, but instantiated parameter-
+clause refresh reparsed `mpl::size_t<Width>` in a temporary scope whose
+`class_info` lookup saw the inherited `base_value<0>::Width` before the parent
+function-template binding `Width=3`. The refreshed overload parameter became
+`mpl::size_t<0>`, so overload resolution rejected the exact `mpl::size_t<3>`
+call. The fix seeds instantiated parameter-clause scopes with only referenced
+template-bound names as direct bindings before class member lookup, and also
+overlays template-bound names into instantiated function body scopes before
+body statements are analyzed. This preserves template-parameter shadowing
+without source reparsing or fallback resolution. Owner: `pa22:200` member
+function-template deduction/signature refresh and instantiated body scope
+materialization. New regression:
+`pa22/tests/spec/200-member-template-nontype-param-shadows-inherited-value-sum.t`.
+Pre-fix evidence: the no-STL reducer failed with `no viable overload for member
+call get_width_`, and the trace showed deduction binding `Width=3` followed by
+parameter refresh resolving `mpl_::size_t<0>`; after the parameter-clause fix,
+the same reducer compiled but lowered `result(Width)` in the function body as
+`result(0)`, matching the Xpressive runtime assertion. Validation: `make -C dev
+cppgm++ -j8`; direct reducer emits `result(3)` and exits `0`; focused PA22 old
+and new shadowing reducers pass; PA22 direct-LowIR report passes `183/183`;
+serialized full direct-LowIR report passes `3424/3424`; strict direct-LowIR
+suite passes with the long-template timeout knobs `CPPGM_TEXT_TEST_TIMEOUT_SEC=60`
+and `CPPGM_BATCH_TIMEOUT_SEC=60` (the PA23 static-query witness reducer is about
+13.5s with or without this fix); PA22 placement audit passes; text-reparse audit
+reports all zero; `git diff --check` passes. Focused B2 `test5` and `test5u`
+both pass end to end with `CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++`.

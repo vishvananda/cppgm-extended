@@ -35,6 +35,7 @@
 #include "symbol_linkage.h"
 #include "template_api.h"
 #include "template_instantiation.h"
+#include "template_scope.h"
 #include "parser_trace.h"
 #include "witness_api.h"
 
@@ -4188,6 +4189,9 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
         Scope function_scope(parent_scope);
         function_scope.class_info = binding.owner_class;
         function_scope.function = &binding;
+        template_scope::overlay_scope_bindings(function_scope,
+                                               *parent_scope,
+                                               template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
         const auto emit_function_body_and_collect =
             [&]() -> void
         {
@@ -4417,6 +4421,9 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
   Scope function_scope(parent_scope);
   function_scope.class_info = binding.owner_class;
   function_scope.function = &binding;
+  template_scope::overlay_scope_bindings(function_scope,
+                                         *parent_scope,
+                                         template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
   for(std::size_t i = 0; i < binding.params.size(); ++i) {
     bind_function_parameter_lookup(function_scope, binding, i);
   }
