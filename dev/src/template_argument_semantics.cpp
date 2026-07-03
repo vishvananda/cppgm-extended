@@ -18688,6 +18688,90 @@ bool try_evaluate_integral_text(const string & text, long long & out)
   return try_evaluate_integral_text(compact.substr(comma + 1), out);
 }
 
+bool is_nullable_template_value_type(const TypePtr & type)
+{
+  if(!type) {
+    return false;
+  }
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  return base &&
+         (base->kind == Type::TK_POINTER ||
+          base->kind == Type::TK_MEMBER_POINTER);
+}
+
+bool expression_is_integral_zero_template_argument(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & expr)
+{
+  long long text_value = 0;
+  const string described =
+      trim_space(callsemantic_internal::describe_expression_for_diagnostic(expr));
+  if(!described.empty() &&
+     try_evaluate_integral_text(described, text_value)) {
+    return text_value == 0;
+  }
+  const string source_text = trim_space(node_text(expr));
+  if(!source_text.empty() &&
+     try_evaluate_integral_text(source_text, text_value)) {
+    return text_value == 0;
+  }
+
+  long long evaluated_value = 0;
+  try {
+    const NonTypeArgumentStatus status =
+        evaluate_non_type_argument_expression(
+            services,
+            scope,
+            expr,
+            evaluated_value,
+            nullptr,
+            make_fundamental(FT_LONG_LONG_INT));
+    return status == NT_ARG_EVALUATED && evaluated_value == 0;
+  } catch(const TemplateSubstitutionFailure &) {
+  } catch(const SemanticSoftFailure &) {
+  } catch(const SemanticDiagnosticError &) {
+  } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+  } catch(const logic_error &) {
+  }
+  return false;
+}
+
+bool try_evaluate_null_pointer_cast_template_argument(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & expr,
+    const TypePtr & target_type,
+    long long & value)
+{
+  if(expr.kind == CppAstKind::parenthesized_expression &&
+     expr.children.size() == 1) {
+    return try_evaluate_null_pointer_cast_template_argument(
+        services, scope, expr.children[0], target_type, value);
+  }
+  if(!is_nullable_template_value_type(target_type) ||
+     expr.kind != CppAstKind::cast_expression ||
+     expr.children.size() != 2 ||
+     expr.children[0].kind != CppAstKind::type_id) {
+    return false;
+  }
+
+  TypePtr cast_type = expr.children[0].semantic_type;
+  if(!cast_type &&
+     !parse_type_id_node_for_templates(
+         services, scope.require(), expr.children[0], cast_type, true)) {
+    return false;
+  }
+  if(!is_nullable_template_value_type(cast_type) ||
+     !expression_is_integral_zero_template_argument(
+         services, scope, expr.children[1])) {
+    return false;
+  }
+
+  value = 0;
+  return true;
+}
+
 bool parse_sizeof_pack_count_text(Scope & scope,
                                   const string & text,
                                   long long & out)
@@ -36480,8 +36564,14 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
         status = NT_ARG_EVALUATED;
         skip_leaf_constant_discovery =
             structured_template_member_bool_value_is_pure_trait(
-              services, scope, expr);
+                services, scope, expr);
       }
+    }
+    if(status != NT_ARG_EVALUATED &&
+       status != NT_ARG_DEPENDENT &&
+       try_evaluate_null_pointer_cast_template_argument(
+           services, scope, expr, effective_target_type, value)) {
+      status = NT_ARG_EVALUATED;
     }
     if(status != NT_ARG_EVALUATED &&
        status != NT_ARG_DEPENDENT &&
