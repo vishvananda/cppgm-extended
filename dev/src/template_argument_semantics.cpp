@@ -9222,6 +9222,78 @@ bool leaf_scalar_or_member_pointer_type(const TypePtr & type)
            base->fundamental == FT_NULLPTR_T));
 }
 
+bool scope_bound_type_name_is_still_dependent(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const string & name)
+{
+  if(scope.template_bound_type_names.count(name) != 0) {
+    Scope::NamedTypeMap::const_iterator found = scope.named_types.find(name);
+    return found == scope.named_types.end() ||
+           !found->second ||
+           service_type_depends_on_template_parameter(services, found->second);
+  }
+  if(scope.template_bound_type_pack_names.count(name) != 0) {
+    std::map<string, vector<TypePtr> >::const_iterator found =
+        scope.named_type_packs.find(name);
+    if(found == scope.named_type_packs.end()) {
+      return true;
+    }
+    for(size_t i = 0; i < found->second.size(); ++i) {
+      if(!found->second[i] ||
+         service_type_depends_on_template_parameter(
+             services, found->second[i])) {
+        return true;
+      }
+    }
+    return false;
+  }
+  std::map<string, vector<TypePtr> >::const_iterator found_pack =
+      scope.named_type_packs.find(name);
+  if(found_pack != scope.named_type_packs.end()) {
+    for(size_t i = 0; i < found_pack->second.size(); ++i) {
+      if(!found_pack->second[i] ||
+         service_type_depends_on_template_parameter(
+             services, found_pack->second[i])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool text_mentions_dependent_leaf_template_bound_type_name(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const string & text)
+{
+  const callsemantic_internal::IdentifierTokenSet identifiers =
+      callsemantic_internal::collect_identifier_tokens(text);
+  for(callsemantic_internal::IdentifierTokenSet::InternedName interned_name :
+      identifiers.names) {
+    const string & name = *interned_name;
+    for(Scope * current = &scope; current; current = current->parent) {
+      if(current->namespace_scope || current->parent == nullptr) {
+        break;
+      }
+      const bool binding_present =
+          current->template_bound_type_names.count(name) != 0 ||
+          current->template_bound_type_pack_names.count(name) != 0 ||
+          current->named_types.count(name) != 0 ||
+          current->named_type_packs.count(name) != 0 ||
+          current->named_pack_sizes.count(name) != 0;
+      if(!binding_present) {
+        continue;
+      }
+      if(scope_bound_type_name_is_still_dependent(services, *current, name)) {
+        return true;
+      }
+      break;
+    }
+  }
+  return false;
+}
+
 bool leaf_zero_arg_type_initialization_result(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -35017,6 +35089,31 @@ static bool ast_subtree_text_mentions_template_dependency(
   return false;
 }
 
+static bool ast_subtree_text_mentions_bound_template_dependency(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & node)
+{
+  string node_dependency_text = dependency_check_text_for_ast_value(node);
+  if(node_dependency_text.empty()) {
+    node_dependency_text = node.value;
+  }
+  if(!node_dependency_text.empty() &&
+     text_mentions_dependent_leaf_template_bound_type_name(
+         services,
+         scope.require(),
+         node_dependency_text)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_subtree_text_mentions_bound_template_dependency(
+           services, scope, node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static bool type_id_ast_mentions_template_dependency(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -35703,6 +35800,47 @@ static const CppAstNode * decltype_or_typeof_operand_node(const CppAstNode & nod
     }
   }
   return node.children.empty() ? nullptr : &node.children[0];
+}
+
+static bool dependent_decltype_operand_should_defer(const CppAstNode & node)
+{
+  switch(node.kind) {
+  case CppAstKind::assignment_expression:
+  case CppAstKind::binary_expression:
+  case CppAstKind::call_expression:
+  case CppAstKind::conditional_expression:
+  case CppAstKind::member_expression:
+  case CppAstKind::parenthesized_expression:
+  case CppAstKind::postfix_expression:
+  case CppAstKind::subscript_expression:
+  case CppAstKind::unary_expression:
+    return true;
+  default:
+    return false;
+  }
+}
+
+static bool ast_subtree_mentions_declval_identifier(const CppAstNode & node)
+{
+  if((node.kind == CppAstKind::id_expression ||
+      node.kind == CppAstKind::identifier ||
+      node.kind == CppAstKind::type_name) &&
+     (unqualified_member_name(node.value) == "declval" ||
+      unqualified_member_name(node.value) == "__declval")) {
+    return true;
+  }
+  if(const TemplateIdSyntax * syntax = cppast_template_id_syntax(node)) {
+    const std::string name = unqualified_member_name(syntax->name.name);
+    if(name == "declval" || name == "__declval") {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_subtree_mentions_declval_identifier(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
 }
 
 static void note_leaf_constant_values_in_expression_ast(
@@ -37398,14 +37536,15 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
   }();
 
   const auto dependent_fallback =
-      [&]() -> bool
+      [&](bool force = false) -> bool
   {
     out.reset();
     const bool unresolved_template_dependency =
         mentions_template_placeholders ||
         mentions_dependent_names ||
         (scope_has_placeholders && !mentions_bound_names);
-    if(unresolved_template_dependency ||
+    if(force ||
+       unresolved_template_dependency ||
        (comma_prefix_mentions_template_dependency &&
         (mentions_template_placeholders ||
          mentions_dependent_names ||
@@ -37460,6 +37599,23 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
                                      template_api::make_template_environment(scope)) &&
      ast_node_has_member_template_call(*request_expr) &&
      dependent_fallback()) {
+    return true;
+  }
+
+  const bool request_expr_mentions_structured_template_dependency =
+      expression_ast_mentions_template_dependency(services, env, *request_expr, false);
+  const bool request_expr_mentions_bound_template_dependency =
+      ast_subtree_text_mentions_bound_template_dependency(
+          services, env, *request_expr);
+  const bool request_expr_text_still_depends =
+      mentions_dependent_names ||
+      (scope_has_placeholders && !mentions_bound_names);
+  if(dependent_decltype_operand_should_defer(*request_expr) &&
+     !ast_subtree_mentions_declval_identifier(*request_expr) &&
+     (request_expr_mentions_bound_template_dependency ||
+      (request_expr_mentions_structured_template_dependency &&
+       request_expr_text_still_depends)) &&
+     dependent_fallback(true)) {
     return true;
   }
 

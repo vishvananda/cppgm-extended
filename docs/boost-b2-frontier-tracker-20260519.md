@@ -1374,3 +1374,25 @@ current `pr-36` branch without additional compiler changes. Command:
 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++
 ./run-cppgm-b2.sh -a libs/assign/test`; result `rc=0`, log
 `/tmp/boost-assign-full-current-20260702.log`.
+
+2026-07-02 Boost.Bimap WIP necessity check: the nlohmann-looking pieces from
+the paused Boost stash are stale. Tracker rows for `nlohmann_json_test` already
+show the path fixed by `dbb648d5c`, `a2b0acd82`, `0b748eed7`, `b5d924d4c`,
+`d0f362e94`, and `1aa3bb1a5`, ending in a full Boost.Exception suite pass. The
+current retained changes were validated against Bimap/MP11 reducers instead:
+dependent `decltype` operands with still-dependent bound names, bound
+template-template applications, function-type pack template arguments, and
+reference-pass collection of MP11 static assertions/special-member definitions.
+Validation on the retained work: `make -C dev cppgm++ -j8`; focused PA22/PA23
+reducers including `400-dependent-decltype-bound-base-call.t`,
+`400-template-template-bound-application.t`, and
+`500-mp11-static-assert-index-list-flatten.t`; direct-LowIR PA22+PA23 report
+`559/559`; full direct-LowIR report `3421/3421`; full strict witness suite
+passes; text-reparse and PA22/PA23 placement audits report zero findings.
+Focused B2 checks now pass for `libs/bimap/test//assign`,
+`libs/bimap/test//test_bimap_assign`,
+`libs/bimap/test//test_bimap_unconstrained`, and
+`libs/bimap/test//test_bimap_operator_bracket`. The next visible frontier is no
+longer the earlier Proto special-member-definition ABI-symbol diagnostic; after
+skipping that reference-pass-only work, `libs/xpressive/test` reaches a
+diagnostic-free 900s timeout.

@@ -5436,6 +5436,32 @@ bool lookup_direct_bound_type_argument(Scope & scope,
   return false;
 }
 
+const std::vector<TypePtr> * lookup_direct_bound_type_pack_argument(
+    Scope & scope,
+    const std::string & text)
+{
+  std::string name = strip_elaborated_type_prefix(trim_space(text));
+  std::string stripped_typename;
+  if(strip_leading_typename_argument_text(name, stripped_typename)) {
+    name = stripped_typename;
+  }
+  if(name.empty() ||
+     !is_identifier_text(name)) {
+    return nullptr;
+  }
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+    std::map<std::string, std::vector<TypePtr> >::const_iterator found =
+        current->named_type_packs.find(name);
+    if(found != current->named_type_packs.end()) {
+      return &found->second;
+    }
+  }
+  return nullptr;
+}
+
 bool text_is_top_level_function_type_argument(const std::string & text)
 {
   const std::string trimmed = trim_space(text);
@@ -5472,6 +5498,265 @@ bool text_is_top_level_function_type_argument(const std::string & text)
          open != 0 &&
          paren_depth == 0 &&
          angle_depth == 0;
+}
+
+bool split_top_level_function_type_argument_text(const std::string & text,
+                                                 std::string & result_text,
+                                                 std::string & parameter_text)
+{
+  result_text.clear();
+  parameter_text.clear();
+  const std::string trimmed = trim_space(text);
+  if(!text_is_top_level_function_type_argument(trimmed)) {
+    return false;
+  }
+
+  int angle_depth = 0;
+  int paren_depth = 0;
+  for(std::size_t i = 0; i < trimmed.size(); ++i) {
+    const char ch = trimmed[i];
+    if(ch == '<') {
+      ++angle_depth;
+      continue;
+    }
+    if(ch == '>' && angle_depth > 0) {
+      --angle_depth;
+      continue;
+    }
+    if(ch == '(' && angle_depth == 0) {
+      if(paren_depth == 0) {
+        result_text = trim_space(trimmed.substr(0, i));
+        parameter_text =
+            trim_space(trimmed.substr(i + 1, trimmed.size() - i - 2));
+        return !result_text.empty();
+      }
+      ++paren_depth;
+      continue;
+    }
+  }
+  return false;
+}
+
+bool resolve_bound_function_type_pack_argument(Scope & scope,
+                                               const std::string & text,
+                                               TypePtr & out)
+{
+  out.reset();
+  std::string result_text;
+  std::string parameter_text;
+  if(!split_top_level_function_type_argument_text(text,
+                                                  result_text,
+                                                  parameter_text)) {
+    return false;
+  }
+  if(parameter_text.size() < 3 ||
+     parameter_text.substr(parameter_text.size() - 3) != "...") {
+    return false;
+  }
+  const std::string pack_text =
+      trim_space(parameter_text.substr(0, parameter_text.size() - 3));
+  if(pack_text.empty()) {
+    return false;
+  }
+
+  TypePtr result_type;
+  if(!lookup_direct_bound_type_argument(scope, result_text, result_type) ||
+     !result_type) {
+    return false;
+  }
+  const std::vector<TypePtr> * pack =
+      lookup_direct_bound_type_pack_argument(scope, pack_text);
+  if(!pack) {
+    return false;
+  }
+  out = make_function(result_type, *pack, false);
+  return out != nullptr;
+}
+
+std::string template_id_text_from_head_and_args(
+    const std::string & head,
+    const std::vector<std::string> & arg_texts)
+{
+  std::ostringstream out;
+  out << trim_space(head) << "<";
+  for(std::size_t i = 0; i < arg_texts.size(); ++i) {
+    if(i != 0) {
+      out << ", ";
+    }
+    out << trim_space(arg_texts[i]);
+  }
+  out << ">";
+  return out.str();
+}
+
+bool scope_has_template_template_parameter_head(Scope & scope,
+                                                const std::string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(current->template_bound_template_arguments.count(name) != 0) {
+      return true;
+    }
+    if(current->template_bound_template_names.count(name) != 0) {
+      std::map<std::string, ClassTemplateDecl *>::const_iterator found_class =
+          current->class_templates.find(name);
+      if(found_class != current->class_templates.end() &&
+         found_class->second == nullptr) {
+        return true;
+      }
+      std::map<std::string, AliasTemplateDecl *>::const_iterator found_alias =
+          current->alias_templates.find(name);
+      if(found_alias != current->alias_templates.end() &&
+         found_alias->second == nullptr) {
+        return true;
+      }
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return false;
+}
+
+bool make_dependent_bound_template_template_id_argument(
+    const TemplateArgument & replacement,
+    const std::vector<std::string> & arg_texts,
+    TypePtr & out)
+{
+  out.reset();
+  if((replacement.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+      replacement.kind != TemplateArgument::TA_ALIAS_TEMPLATE) ||
+     replacement.text.empty()) {
+    return false;
+  }
+
+  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
+  arguments.reserve(arg_texts.size());
+  for(std::size_t i = 0; i < arg_texts.size(); ++i) {
+    DependentAliasTemplateArgumentSyntax argument;
+    argument.text = trim_space(arg_texts[i]);
+    argument.syntax.text = argument.text;
+    arguments.push_back(argument);
+  }
+
+  const std::string head = trim_space(replacement.text);
+  const std::string display = template_id_text_from_head_and_args(head, arg_texts);
+  out = make_semantic_named(display.empty() ? head : display,
+                            Type::NSK_DEPENDENT_TYPE,
+                            display.empty() ? head : display,
+                            true);
+  set_named_type_dependent_template_template_parameter(out,
+                                                       head,
+                                                       arguments.size(),
+                                                       arguments);
+  return out != nullptr;
+}
+
+bool resolve_bound_template_template_id_argument(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const std::string & text,
+    TypePtr & out)
+{
+  out.reset();
+  QualifiedName template_name;
+  std::vector<std::string> arg_texts;
+  if(!semantic_utils::split_top_level_template_id_text(trim_space(text),
+                                                       template_name,
+                                                       arg_texts) ||
+     template_name.rooted ||
+     !template_name.qualifiers.empty() ||
+     template_name.name.empty() ||
+     !is_identifier_text(template_name.name)) {
+    return false;
+  }
+  if(!scope_has_template_template_parameter_head(scope, template_name.name)) {
+    return false;
+  }
+
+  TemplateArgument replacement;
+  if(!template_argument_semantics::resolve_template_template_argument_text(
+         services,
+         template_api::make_template_environment(scope),
+         template_name.name,
+         static_cast<std::size_t>(-1),
+         true,
+         replacement) ||
+     (replacement.dependent && replacement.text.empty())) {
+    return false;
+  }
+
+  std::vector<std::string> expanded_arg_texts =
+      template_argument_semantics::expand_bound_type_pack_texts(
+          services,
+          scope,
+          arg_texts);
+  if(replacement.dependent || !replacement.template_decl) {
+    return make_dependent_bound_template_template_id_argument(
+        replacement,
+        expanded_arg_texts,
+        out);
+  }
+  if(replacement.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
+    if(!services.semantic_context) {
+      return false;
+    }
+    AliasTemplateDecl * alias_template =
+        static_cast<AliasTemplateDecl *>(replacement.template_decl);
+    out = services.semantic_context->instantiate_alias_template_with_syntax(
+        *alias_template,
+        scope,
+        expanded_arg_texts,
+        nullptr,
+        true);
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        template_api::make_template_environment(scope),
+        out);
+    return out != nullptr;
+  }
+  if(replacement.kind != TemplateArgument::TA_CLASS_TEMPLATE) {
+    return false;
+  }
+
+  ClassTemplateDecl * class_template =
+      static_cast<ClassTemplateDecl *>(replacement.template_decl);
+  std::vector<TemplateArgument> resolved_arguments;
+  if(!template_api::resolve_template_arguments(
+         services,
+         scope,
+         class_template->parameters,
+         expanded_arg_texts,
+         nullptr,
+         resolved_arguments,
+         class_template->declaring_scope)) {
+    return false;
+  }
+
+  template_api::TemplateTypeLookupRequest lookup;
+  lookup.scope = &scope;
+  lookup.allow_class_templates = true;
+  lookup.name.name = class_template->name;
+  lookup.source_use_mode =
+      template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly;
+
+  template_api::TemplateSelectedClassTemplateIdRequest request;
+  request.lookup = lookup;
+  request.argument_scope = &scope;
+  request.class_template = class_template;
+  request.resolved_arguments.swap(resolved_arguments);
+  request.source_arg_texts = expanded_arg_texts;
+  if(!services.type_system.resolve_selected_class_template_id(request, out) ||
+     !out) {
+    return false;
+  }
+  template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+      services,
+      template_api::make_template_environment(scope),
+      out);
+  return out != nullptr;
 }
 
 bool scope_is_inside_source_template_class_instantiation(Scope & scope)
@@ -10839,6 +11124,27 @@ bool resolve_template_argument(template_api::TemplateServices & services,
        direct_bound_type) {
       resolve_type_argument_if_needed(direct_bound_type);
       type = direct_bound_type;
+    }
+  }
+  if(!type) {
+    TypePtr bound_template_id_type;
+    if(resolve_bound_template_template_id_argument(services,
+                                                  raw_argument_scope,
+                                                  trimmed,
+                                                  bound_template_id_type) &&
+       bound_template_id_type) {
+      resolve_type_argument_if_needed(bound_template_id_type);
+      type = bound_template_id_type;
+    }
+  }
+  if(!type && !has_structured_type_syntax) {
+    TypePtr function_type;
+    if(resolve_bound_function_type_pack_argument(raw_argument_scope,
+                                                trimmed,
+                                                function_type) &&
+       function_type) {
+      resolve_type_argument_if_needed(function_type);
+      type = function_type;
     }
   }
   if(!type && !has_structured_type_syntax) {

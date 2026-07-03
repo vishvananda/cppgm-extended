@@ -8799,6 +8799,47 @@ void collect_class_reference_bit_field_declaration(SemanticContext & ctx,
   }
 }
 
+const CppAstNode * innermost_template_declaration_payload(const CppAstNode & node)
+{
+  const CppAstNode * current = &node;
+  while(current &&
+        current->kind == CppAstKind::template_declaration &&
+        !current->children.empty()) {
+    current = &current->children.back();
+  }
+  return current;
+}
+
+bool node_has_friend_specifier(const CppAstNode & node)
+{
+  const CppAstNode * specifiers = find_child(node, CppAstKind::decl_specifier_seq);
+  if(!specifiers) {
+    specifiers = find_child(node, CppAstKind::member_specifiers);
+  }
+  return specifiers &&
+         any_of(specifiers->children.begin(),
+                specifiers->children.end(),
+                [](const CppAstNode & child) { return node_has_simple_type(child, KW_FRIEND); });
+}
+
+bool reference_collection_needs_template_declaration(const CppAstNode & node)
+{
+  const CppAstNode * payload = innermost_template_declaration_payload(node);
+  if(!payload) {
+    return false;
+  }
+  if(payload->kind == CppAstKind::class_specifier ||
+     payload->kind == CppAstKind::class_forward_declaration ||
+     payload->kind == CppAstKind::alias_declaration ||
+     payload->kind == CppAstKind::deduction_guide_declaration ||
+     payload->kind == CppAstKind::function_definition ||
+     payload->kind == CppAstKind::special_member_declaration ||
+     payload->kind == CppAstKind::simple_declaration) {
+    return true;
+  }
+  return node_has_friend_specifier(*payload);
+}
+
 void populate_class_reference_members(SemanticContext & ctx,
                                       ClassInfo & info,
                                       const CppAstNode & node)
@@ -8843,6 +8884,9 @@ void populate_class_reference_members(SemanticContext & ctx,
   {
     collect_class_friend_declaration(ctx, info, inner);
     if(inner.kind == CppAstKind::template_declaration) {
+      if(!reference_collection_needs_template_declaration(inner)) {
+        return;
+      }
       const template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause
           class_source_capture_pause;
       try {
@@ -8882,11 +8926,15 @@ void populate_class_reference_members(SemanticContext & ctx,
       continue;
     }
     if(child.kind == CppAstKind::static_assert_declaration) {
-      semantic_declaration::analyze_static_assert_declaration(ctx, *info.member_scope, child);
+      if(witness::source_capture_enabled(ctx.template_witness_context())) {
+        semantic_declaration::analyze_static_assert_declaration(ctx, *info.member_scope, child);
+      }
       continue;
     }
-    if(child.kind == CppAstKind::special_member_definition ||
-       child.kind == CppAstKind::special_member_declaration) {
+    if(child.kind == CppAstKind::special_member_definition) {
+      continue;
+    }
+    if(child.kind == CppAstKind::special_member_declaration) {
       collect_class_reference_special_member(ctx, info, child, current_access);
       continue;
     }
@@ -8958,12 +9006,16 @@ void populate_class_reference_members(SemanticContext & ctx,
             continue;
           }
           if(member.kind == CppAstKind::static_assert_declaration) {
-            semantic_declaration::analyze_static_assert_declaration(
-                ctx, *info.member_scope, member);
+            if(witness::source_capture_enabled(ctx.template_witness_context())) {
+              semantic_declaration::analyze_static_assert_declaration(
+                  ctx, *info.member_scope, member);
+            }
             continue;
           }
-          if(member.kind == CppAstKind::special_member_definition ||
-             member.kind == CppAstKind::special_member_declaration) {
+          if(member.kind == CppAstKind::special_member_definition) {
+            continue;
+          }
+          if(member.kind == CppAstKind::special_member_declaration) {
             collect_class_reference_special_member(ctx, info, member, inner_access);
             continue;
           }
