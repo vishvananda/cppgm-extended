@@ -163,6 +163,46 @@ bool class_redeclares_template_parameter_name(const ClassInfo & info,
   return false;
 }
 
+const PartialClassTemplateSpecializationDecl *
+selected_partial_specialization_for_class_output_node(const ClassInfo & info)
+{
+  if(!info.source_template ||
+     !info.template_output_node ||
+     !info.source_template->class_node ||
+     info.template_output_node == info.source_template->class_node) {
+    return nullptr;
+  }
+  for(std::size_t i = 0; i < info.source_template->partial_specializations.size(); ++i) {
+    const PartialClassTemplateSpecializationDecl & partial =
+        info.source_template->partial_specializations[i];
+    if(partial.class_node == info.template_output_node) {
+      return &partial;
+    }
+  }
+  return nullptr;
+}
+
+void class_template_member_substitution_bindings(
+    const ClassInfo & info,
+    const std::vector<template_model::TemplateParameterInfo> *& parameters,
+    const std::vector<template_model::TemplateArgument> *& arguments)
+{
+  parameters = nullptr;
+  arguments = nullptr;
+  if(!info.source_template) {
+    return;
+  }
+  parameters = &info.source_template->parameters;
+  arguments = &info.instantiation_arguments;
+  if(info.has_instantiation_binding_arguments) {
+    if(const PartialClassTemplateSpecializationDecl * partial =
+           selected_partial_specialization_for_class_output_node(info)) {
+      parameters = &partial->parameters;
+    }
+    arguments = &info.instantiation_binding_arguments;
+  }
+}
+
 bool ast_node_contains(const CppAstNode * outer, const CppAstNode * inner)
 {
   if(!outer || !inner ||
@@ -5822,15 +5862,22 @@ bool try_parse_conversion_operator_result_type(SemanticContext & ctx,
       identifier ? cppast_conversion_type_id_syntax(*identifier) : nullptr;
   CppAstNode substituted_conversion_type_id;
   const CppAstNode * conversion_type_id_for_parse = conversion_type_id;
+  const std::vector<template_model::TemplateParameterInfo> * substitution_parameters = nullptr;
+  const std::vector<template_model::TemplateArgument> * substitution_arguments = nullptr;
+  if(scope.class_info) {
+    class_template_member_substitution_bindings(*scope.class_info,
+                                                substitution_parameters,
+                                                substitution_arguments);
+  }
   if(conversion_type_id &&
-     scope.class_info &&
-     scope.class_info->source_template &&
-     !scope.class_info->instantiation_arguments.empty() &&
+     substitution_parameters &&
+     substitution_arguments &&
+     !substitution_arguments->empty() &&
      template_argument_semantics::substitute_expression_node_for_template_arguments(
          scope,
          *conversion_type_id,
-         scope.class_info->source_template->parameters,
-         scope.class_info->instantiation_arguments,
+         *substitution_parameters,
+         *substitution_arguments,
          substituted_conversion_type_id)) {
     conversion_type_id_for_parse = &substituted_conversion_type_id;
   }

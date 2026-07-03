@@ -1517,3 +1517,37 @@ isolated with a same-head before/after baseline: removing only this guard,
 recording `/tmp/cppgm-before-class-event-guard-baseline.json`, then reapplying
 it passes three-run perf with instructions `-0.31%`, RSS `+0.18%`, footprint
 `-0.02%`.
+
+2026-07-02 Boost.Xpressive `libs/xpressive/test//test_format` surrogate-call
+frontier: after the `test10` guard, a no-force Xpressive continuation reached
+`test_format.cpp`, where `formatter_arity<formatter_function*, ...>` incorrectly
+classified a unary formatter as the zero-argument fallback. The real conversion
+operator lives in the partial specialization `formatter_wrapper<Formatter *>`;
+conversion-operator result substitution was still using the primary template
+argument list, so `Formatter` was rebound as the pointer type instead of the
+partial specialization's function-type binding. The inherited dummy conversion
+operators then won surrogate-call overload resolution and Xpressive routed the
+function pointer through the string-format path. The fix substitutes conversion
+operator type-id syntax with the selected partial specialization's template
+parameters and `ClassInfo::instantiation_binding_arguments` when present,
+falling back to the primary binding for primary instantiations. No source-text
+reparse, fallback resolver, cache, or Boost special case is added. Owner:
+`pa21:400` class-template partial-specialization member substitution. New
+regression:
+`pa21/tests/general/400-partial-specialization-conversion-operator-pointer-binding.t`.
+Pre-fix evidence: the no-STL reducer and direct Boost `test_format.cpp` compile
+failed by treating `ForwardIterator` as a pointer-to-function formatter instead
+of a string iterator path; tracing showed the partial specialization's
+`operator Formatter*()` parsed but substituted with the primary `Formatter =
+formatter_function*` argument. After the fix, the reducer passes, PA21 direct
+LowIR report passes `184/184`, direct Boost `test_format.cpp` produces
+`/tmp/boost-xpressive-test_format-fixed.o`, text-reparse audit reports all zero,
+strict direct-LowIR witness suite passes, full direct-LowIR
+`test-report-nobuild` passes `3425/3425`, and `git diff --check` passes. The
+long-lived active baseline at
+`/tmp/cppgm-boost-frontier-pr36-3ee8fb3f8-20260630-perf-baseline.json` misses the
+cumulative dirty-tree instruction gate at `+1.81%`, while this fix isolated
+against `/tmp/cppgm-before-partial-conversion-operator-binding-baseline.json`
+passes three-run perf with instructions `+0.21%`, RSS `-0.70%`, footprint
+`-0.03%`; report:
+`/tmp/cppgm-perf-after-partial-conversion-operator-binding-isolated.json`.
