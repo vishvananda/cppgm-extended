@@ -770,7 +770,7 @@ Local Boost wrapper state:
 | 39 | `libs/exception/test` | pass | Fresh `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/exception/test` on 2026-07-01 initially updated 127 targets, skipped 29, and failed 13; log `/tmp/boost-exception-current-20260701.log`. The `-fno-exceptions` predefine/config cluster, host RTTI secondary-vtable prefix, safe-bool streamability ranking, throw-operand cleanup, cloning/copy/thunk/vtable runtime path, throw-exception runtime path, enable-error-info base lookup, optional `nlohmann_json_test` chain, and final `exception_fail` compile-fail validation are now fixed. Full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/exception/test` exits `0` and updates 170 targets; focused `exception_fail` is marked `(failed-as-expected)`. See the detailed fixed rows below for reducer ownership and validation. |
 | 40 | `libs/fiber/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/fiber/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-fiber-current-20260703.log`. |
 | 41 | `libs/filesystem/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/filesystem/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-filesystem-current-20260703.log`. |
-| 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. The default pointer NTTP frontier is fixed. Focused `libs/flyweight/test//test_basic` then advanced through the Boost.Parameter duplicate nested class definition replay frontier, the `core::insert` member-typedef qualifier frontier, and the `insert_rep`/MPL assertion lazy nested-member-class frontier. Focused `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_basic` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-basic-after-lazy-nested-b2-20260703.log`. Full Flyweight rerun after that found five remaining compile targets, with build-order first `test_init.o` failing non-type template argument evaluation for `marked_hashed_factory<&mark2>`; log `/tmp/boost-flyweight-full-after-test-basic-20260703.log`. The namespace object-pointer NTTP frontier is fixed here. Focused `libs/flyweight/test//test_init` now advances to `unsupported class member object name=factory` while completing `flyweight_core<...>::holder_arg`; log `/tmp/boost-flyweight-test-init-object-pointer-nttp-20260703.log`. Next action: reduce the `holder_arg::factory` member-object frontier. |
+| 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. The default pointer NTTP frontier is fixed. Focused `libs/flyweight/test//test_basic` then advanced through the Boost.Parameter duplicate nested class definition replay frontier, the `core::insert` member-typedef qualifier frontier, and the `insert_rep`/MPL assertion lazy nested-member-class frontier. Focused `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_basic` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-basic-after-lazy-nested-b2-20260703.log`. Full Flyweight rerun after that found five remaining compile targets, with build-order first `test_init.o` failing non-type template argument evaluation for `marked_hashed_factory<&mark2>`; log `/tmp/boost-flyweight-full-after-test-basic-20260703.log`. The namespace object-pointer NTTP and follow-up global member-template rebound frontiers are fixed. Focused `libs/flyweight/test//test_init` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-init-rebound-nttp-20260703.log`. Full Flyweight rerun after that updates 97 targets, skips 10, and fails 4 compile targets; log `/tmp/boost-flyweight-full-after-test-init-rebound-20260703.log`. The next build-order frontier is `test_concurrent_factory.o`, failing `std::__1::unique_ptr<std::__1::tuple<...>>` construction because ABI symbol construction fails for a weak lambda `operator=` while completing the tuple. Remaining same-run failures are `intermod_holder_dll.o` and `test_intermod_holder.o` on an enum/integral NTTP evaluation chain through Boost.Interprocess/Intrusive, plus `test_serialization.o` on private base member access to `get_helper_collection`. |
 
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
@@ -1785,3 +1785,35 @@ passes and updates 14 targets, log
 perf against clean `387defdad` baseline
 `/tmp/cppgm-before-lazy-nested-baseline.json` passes with instructions
 `-0.01%`, RSS `-0.74%`, footprint `-0.02%`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_init` object-pointer
+NTTP rebound frontier: after the namespace object-pointer NTTP fix, the focused
+target advanced to `unsupported class member object name=factory` while
+completing `flyweight_core<...>::holder_arg`. The reduced shape is a global
+factory specifier template whose nested member template reuses an object-pointer
+non-type parameter bound to `&ns::mark`; rebinding that parameter inside the
+global nested member template tried to re-resolve the saved source text
+`&mark` in the global factory scope, where the namespace object is not visible.
+The fix reuses the already-bound semantic object value when rebinding a
+`ValueBinding` non-type template argument to an object-pointer parameter, so the
+target object identity is preserved without source-text recovery, cache bypass,
+or a Boost special case. Owner: `pa22:400` object pointer non-type template
+argument binding. New regression:
+`pa22/tests/general/400-object-pointer-nttp-rebound-member-template.t`.
+Pre-fix evidence: focused Boost `libs/flyweight/test//test_init` failed while
+completing `holder_arg::factory`; no-STL reducers for the global factory
+specifier and the public Flyweight shape failed the same path. Validation:
+`make -C dev cppgm++ -j8`; both reducers pass; focused PA22 regression passes;
+PA22 placement audit reports no early-placement findings; PA22 direct-LowIR
+report passes `187/187`; full direct-LowIR report passes `3435/3435`; default
+strict witness suite passes; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes. Focused B2
+`/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_init`
+passes and updates 14 targets, log
+`/tmp/boost-flyweight-test-init-rebound-nttp-20260703.log`. Full Flyweight
+rerun after this fix updates 97 targets, skips 10, and fails 4 compile targets;
+log `/tmp/boost-flyweight-full-after-test-init-rebound-20260703.log`. Isolated
+perf against clean `fe12c7bec` baseline
+`/tmp/cppgm-before-rebound-nttp-baseline.json` passes with instructions
+`+0.18%`, RSS `+0.34%`, footprint `-0.05%`; detailed report
+`/tmp/cppgm-after-rebound-nttp-perf-report.json`.

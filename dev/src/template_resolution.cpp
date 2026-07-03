@@ -913,6 +913,25 @@ bool bind_value_binding_non_type_template_argument(
     return true;
   }
 
+  if(binding.non_type_template_value_binding) {
+    const std::string rebound_text =
+        !binding.non_type_template_argument_text.empty() ?
+            trim_space(binding.non_type_template_argument_text) :
+            trim_space(fallback_text);
+    if(bind_object_pointer_non_type_template_argument(
+           rebound_text,
+           target_type,
+           target_base,
+           *binding.non_type_template_value_binding,
+           out,
+           nullptr)) {
+      if(out_binding) {
+        *out_binding = &binding;
+      }
+      return true;
+    }
+  }
+
   if(!binding.non_type_template_argument_text.empty()) {
     const std::string rebound_text =
         trim_space(binding.non_type_template_argument_text);
