@@ -770,6 +770,9 @@ bool is_supported_builtin_name(const string & name)
          name == "__builtin_offsetof" ||
          name == "__builtin_expect" ||
          name == "__builtin_prefetch" ||
+         name == "__sync_synchronize" ||
+         name == "__sync_fetch_and_add" ||
+         name == "__sync_val_compare_and_swap" ||
          name == "__sync_lock_test_and_set" ||
          name == "__sync_lock_release" ||
          name == "__builtin_assume_aligned" ||

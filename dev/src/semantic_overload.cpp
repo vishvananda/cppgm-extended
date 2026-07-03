@@ -6347,6 +6347,48 @@ bool try_analyze_builtin_call_expression(SemanticContext & ctx,
                                    vector<ExprInfo>{ptr_arg, order_arg});
     return true;
   }
+  if(builtin_name == "__sync_synchronize") {
+    if(!arg_nodes.empty()) {
+      throw logic_error("__sync_synchronize arity");
+    }
+    out = make_builtin_call_result(ctx,
+                                   builtin_name,
+                                   make_fundamental(FT_VOID),
+                                   vector<TypePtr>(),
+                                   vector<ExprInfo>());
+    return true;
+  }
+  if(builtin_name == "__sync_fetch_and_add") {
+    if(arg_nodes.size() != 2) {
+      throw logic_error("__sync_fetch_and_add arity");
+    }
+    ExprInfo ptr_arg;
+    TypePtr value_type;
+    analyze_atomic_pointer_arg(ctx, scope, builtin_name, *arg_nodes[0], ptr_arg, value_type);
+    ExprInfo delta_arg = analyze_atomic_delta_arg(ctx, scope, value_type, *arg_nodes[1]);
+    out = make_builtin_call_result(ctx,
+                                   builtin_name,
+                                   value_type,
+                                   vector<TypePtr>{ptr_arg.type, delta_arg.type},
+                                   vector<ExprInfo>{ptr_arg, delta_arg});
+    return true;
+  }
+  if(builtin_name == "__sync_val_compare_and_swap") {
+    if(arg_nodes.size() != 3) {
+      throw logic_error("__sync_val_compare_and_swap arity");
+    }
+    ExprInfo ptr_arg;
+    TypePtr value_type;
+    analyze_atomic_pointer_arg(ctx, scope, builtin_name, *arg_nodes[0], ptr_arg, value_type);
+    ExprInfo compare_arg = ctx.analyze_expression_for_target(scope, *arg_nodes[1], value_type);
+    ExprInfo value_arg = ctx.analyze_expression_for_target(scope, *arg_nodes[2], value_type);
+    out = make_builtin_call_result(ctx,
+                                   builtin_name,
+                                   value_type,
+                                   vector<TypePtr>{ptr_arg.type, compare_arg.type, value_arg.type},
+                                   vector<ExprInfo>{ptr_arg, compare_arg, value_arg});
+    return true;
+  }
   if(builtin_name == "__sync_lock_test_and_set") {
     if(arg_nodes.size() != 2) {
       throw logic_error("__sync_lock_test_and_set arity");

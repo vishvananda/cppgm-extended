@@ -12128,6 +12128,50 @@ private:
                                       lowir_type_for(node.semantic_type) + " " +
                                       ptr + ", " + to_string(order));
         }
+        if(builtin_name == "__sync_synchronize") {
+          if(node.children.size() != 1) {
+            throw logic_error("__sync_synchronize child count");
+          }
+          emit_line("atomic_thread_fence 5");
+          return "0";
+        }
+        if(builtin_name == "__sync_fetch_and_add") {
+          if(node.children.size() != 3) {
+            throw logic_error("__sync_fetch_and_add child count");
+          }
+          const string ptr = emit_rvalue(node.children[1]);
+          const string value = emit_rvalue(node.children[2]);
+          const string value_type = lowir_type_for(node.semantic_type);
+          const string updated =
+              emit_temp_assignment(value_type,
+                                  string("atomic_add_fetch ") + value_type + " " +
+                                  ptr + ", " + value + ", 5");
+          return emit_temp_assignment(value_type,
+                                      string("binary sub ") + value_type + " " +
+                                      updated + ", " + value);
+        }
+        if(builtin_name == "__sync_val_compare_and_swap") {
+          if(node.children.size() != 4) {
+            throw logic_error("__sync_val_compare_and_swap child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__sync_val_compare_and_swap");
+          const string ptr = emit_rvalue(node.children[1]);
+          const string expected = emit_rvalue(node.children[2]);
+          const string desired = emit_rvalue(node.children[3]);
+          const string expected_slot =
+              new_hidden_slot(value_type, "sync_cas_expected");
+          const string expected_ptr = emit_storage_address(expected_slot);
+          emit_line(string("store ") + value_type + " " + expected + ", " +
+                    expected_slot);
+          emit_temp_assignment("i64",
+                               string("atomic_compare_exchange ") + value_type +
+                               " " + ptr + ", " + expected_ptr + ", " +
+                               desired + ", 5, 5");
+          return emit_temp_assignment(value_type,
+                                      string("load ") + value_type + " " +
+                                      expected_slot);
+        }
         if(builtin_name == "__sync_lock_test_and_set") {
           if(node.children.size() != 3) {
             throw logic_error("__sync_lock_test_and_set child count");
