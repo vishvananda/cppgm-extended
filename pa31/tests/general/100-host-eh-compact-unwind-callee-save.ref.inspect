@@ -2,7 +2,6 @@ object 1 define _ZTI4Boom
 object 1 define _ZTS4Boom
 object 1 lsda action_has_catch
 object 1 lsda call_site_has_action
-object 1 lsda call_site_has_cleanup
 object 1 lsda call_site_has_landingpad
 object 1 lsda call_site_has_no_landingpad
 object 1 lsda call_site_starts_at_zero

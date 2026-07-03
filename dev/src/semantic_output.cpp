@@ -1132,6 +1132,9 @@ bool is_trivially_destructible_type(SemanticContext & ctx, const TypePtr & type)
   if(base->kind == Type::TK_FUNCTION || is_void_type(base)) {
     return false;
   }
+  if(is_named_enum_type(ctx, base)) {
+    return true;
+  }
   if(base->kind == Type::TK_FUNDAMENTAL ||
      base->kind == Type::TK_MEMBER_POINTER ||
      is_integral_type(base) ||

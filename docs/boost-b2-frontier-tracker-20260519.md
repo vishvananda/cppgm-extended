@@ -2016,3 +2016,37 @@ Isolated perf against clean `e80df834d` baseline
 `/tmp/cppgm-before-defaulted-rebind-baseline.json` passes with instructions
 `+0.07%`, RSS `+0.13%`, footprint `+0.00%`; detailed report
 `/tmp/cppgm-after-defaulted-rebind-perf-report.json`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_intermod_holder`
+enum-member trivial-destructor frontier: after the defaulted rebind fix, the
+focused target reached a dynamic-library link failure from
+`boost::interprocess::ec_xlate` static table cleanup: LowIR emitted an internal
+`ec_xlate::~ec_xlate` declaration and `__cppgm_fini` calls, but no object
+definition. The reduced no-STL shape is a `static const` aggregate class array
+with an enum member; enum-valued aggregate initialization forced runtime
+construction, while the output/lifetime trivial-destructor predicates treated
+named enum fields as nontrivial unless class metadata lookup succeeded. The fix
+recognizes named enum types as trivially destructible before class metadata
+lookup in semantic lifetime and output. Owner: PA15 global class-array lifetime
+lowering. New regression:
+`pa15/tests/general/200-global-class-array-enum-trivial-dtor.t`. The old
+`pa31/tests/general/100-host-eh-compact-unwind-callee-save.ref.inspect` cleanup
+fact was refreshed because that fixture's enum-containing token list no longer
+creates a spurious cleanup-only call site; dedicated PA31 cleanup tests still
+cover real cleanup facts. Pre-fix evidence: clean `8741ab159` emits
+`declare function @Entry___Entry` and two `__cppgm_fini` calls for the PA15
+reducer, and the Boost `ec_xlate` header probe fails to link with the same
+undefined internal destructor. Validation: `make -C dev cppgm++ -j8`; focused
+PA15 regression passes; PA15 direct-LowIR report passes `170/170`; PA15
+placement audit reports no placement findings; focused PA31 compact-unwind
+check passes after the inspect refresh; direct Boost `ec_xlate` probe links and
+runs with exit `0`; focused B2
+`/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/flyweight/test//test_intermod_holder`
+passes and updates 24 targets, log
+`/tmp/boost-flyweight-test-intermod-holder-after-enum-trivial-dtor-current-20260703.log`;
+full direct-LowIR report passes `3442/3442`; full strict direct-LowIR compare
+passes; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; isolated perf against clean `8741ab159` baseline
+`/tmp/cppgm-before-enum-trivial-dtor-baseline.json` passes with instructions
+`+0.00%`, RSS `-1.45%`, footprint `-0.01%`; detailed report
+`/tmp/cppgm-after-enum-trivial-dtor-perf-report.json`.

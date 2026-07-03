@@ -1,0 +1,63 @@
+global @table [binding=internal, object=_Z5table] = {
+  zero 16
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr @table
+    %t2 = unary decay ptr %t1
+    %t3 = binary mul i64 1, 8
+    %t4 = index i8 [projection=array_element] %t2, %t3
+    %t5 = index i8 [projection=field] %t4, 4
+    %t6 = load i32 %t5
+    %t7 = cmp eq i32 %t6, 2
+    branch %t7, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t8 = load i32 $cond__1
+    return i32 %t8
+}
+function @Entry__Entry__ov2(%this : ptr, %native : i32, %mapped : i32) -> void [unwind=no, binding=weak, object=_ZN5EntryC1Ei4Code] {
+  slot $this : ptr
+  slot $native : i32
+  slot $mapped : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %native, $native
+    store i32 %mapped, $mapped
+    %t1 = load i32 $native
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load i32 $mapped
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 4
+    store i32 %t4, %t6
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @table
+    %t2 = unary decay ptr %t1
+    %t3 = binary mul i64 0, 8
+    %t4 = index i8 [projection=array_element] %t2, %t3
+    call void @Entry__Entry__ov2(%t4, 13, 1)
+    %t5 = addr @table
+    %t6 = unary decay ptr %t5
+    %t7 = binary mul i64 1, 8
+    %t8 = index i8 [projection=array_element] %t6, %t7
+    call void @Entry__Entry__ov2(%t8, 30, 2)
+    return void
+}
+alias object _ZN5EntryC2Ei4Code = @Entry__Entry__ov2
