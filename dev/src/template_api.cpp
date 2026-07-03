@@ -4179,6 +4179,9 @@ void note_class_closure_event(
     const std::string & detail,
     TemplateLifecycleCause cause)
 {
+  if(ctx.template_witness_context().session == nullptr) {
+    return;
+  }
   note_template_witness_log_event(
       kind,
       location,

@@ -1488,3 +1488,32 @@ and `CPPGM_BATCH_TIMEOUT_SEC=60` (the PA23 static-query witness reducer is about
 13.5s with or without this fix); PA22 placement audit passes; text-reparse audit
 reports all zero; `git diff --check` passes. Focused B2 `test5` and `test5u`
 both pass end to end with `CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++`.
+
+2026-07-02 Boost.Xpressive `libs/xpressive/test//test10` compile-time frontier:
+after the `test5`/`test5u` fix, a forced full `libs/xpressive/test` run no
+longer emitted compiler diagnostics but timed out at 900s with `test10.cpp`,
+`test2u.cpp`, and `test8u.cpp` still active. Isolating `test10` showed
+`test10.cpp` consuming CPU beyond five minutes. A 10s macOS sample
+(`/tmp/cppgm-xpressive-test10-sample.txt`) showed the hot path in normal object
+compilation under `semantic_output::collect_required_callees_from_node` ->
+`note_output_tracked_class_instantiation_if_needed` ->
+`note_class_closure_event`, spending most samples constructing witness-style
+class entity text even though object compilation had no template witness
+session. The fix adds the same no-session early return to class closure events
+that function closure events already used; semantic tracking flags are still
+set by the callers, and witness-mode event construction is unchanged. No
+assignment reducer was added because this is a no-output performance guard, not
+a semantic behavior change. Validation: `make -C dev cppgm++ -j8`; forced B2
+`JOBS=1 ./run-cppgm-b2.sh -a libs/xpressive/test//test10` passes and updates
+41 targets in `331.19s`, with `test10.o` finishing around the one-minute mark
+and the remaining time spent rebuilding Boost.Test/Regex/Container
+dependencies; no-force `libs/xpressive/test//test10` exits `0`; text-reparse
+audit reports all zero; strict direct-LowIR witness suite passes; full
+direct-LowIR `test-report-nobuild` passes `3424/3424`; `git diff --check`
+passes. The long-lived active baseline at
+`/tmp/cppgm-boost-frontier-pr36-3ee8fb3f8-20260630-perf-baseline.json` now
+misses the cumulative dirty-tree instruction gate at `+2.02%`, so the guard was
+isolated with a same-head before/after baseline: removing only this guard,
+recording `/tmp/cppgm-before-class-event-guard-baseline.json`, then reapplying
+it passes three-run perf with instructions `-0.31%`, RSS `+0.18%`, footprint
+`-0.02%`.
