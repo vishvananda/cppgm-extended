@@ -7575,6 +7575,121 @@ static bool build_external_member_object_payload(
   return true;
 }
 
+static bool scope_value_binding_matches_argument(
+    const semantic_model::ValueBinding & candidate,
+    const semantic_model::ValueBinding * binding)
+{
+  if(!binding) {
+    return false;
+  }
+  if(&candidate == binding) {
+    return true;
+  }
+  return candidate.name == binding->name &&
+         candidate.kind == binding->kind &&
+         candidate.owner_class == binding->owner_class &&
+         !candidate.symbol.object_symbol.empty() &&
+         candidate.symbol.object_symbol == binding->symbol.object_symbol;
+}
+
+static const semantic_model::Scope * direct_scope_for_value_binding(
+    const semantic_model::Scope * scope,
+    const semantic_model::ValueBinding * binding)
+{
+  if(!scope || !binding) {
+    return nullptr;
+  }
+  std::map<string, semantic_model::ValueBinding>::const_iterator found =
+      scope->values.find(binding->name);
+  if(found != scope->values.end() &&
+     scope_value_binding_matches_argument(found->second, binding)) {
+    return scope;
+  }
+  return nullptr;
+}
+
+static const semantic_model::Scope * find_value_binding_scope_in_namespace_tree(
+    const semantic_model::Scope * scope,
+    const semantic_model::ValueBinding * binding)
+{
+  if(!scope || !binding) {
+    return nullptr;
+  }
+  if(const semantic_model::Scope * direct =
+         direct_scope_for_value_binding(scope, binding)) {
+    return direct;
+  }
+  for(size_t i = 0; i < scope->namespace_children.size(); ++i) {
+    if(const semantic_model::Scope * found =
+           find_value_binding_scope_in_namespace_tree(
+               scope->namespace_children[i].get(),
+               binding)) {
+      return found;
+    }
+  }
+  return nullptr;
+}
+
+static const semantic_model::Scope * find_value_binding_scope_for_symbol(
+    const semantic_model::ValueBinding & binding,
+    const TypeMangleContext * mangle_ctx)
+{
+  if(binding.declaration_scope) {
+    return binding.declaration_scope;
+  }
+  if(!mangle_ctx || !mangle_ctx->lookup_scope) {
+    return nullptr;
+  }
+  for(const semantic_model::Scope * current = mangle_ctx->lookup_scope;
+      current;
+      current = current->parent) {
+    if(const semantic_model::Scope * direct =
+           direct_scope_for_value_binding(current, &binding)) {
+      return direct;
+    }
+  }
+  return find_value_binding_scope_in_namespace_tree(
+      root_scope(mangle_ctx->lookup_scope),
+      &binding);
+}
+
+static bool try_build_value_binding_object_symbol_ir_payload(
+    const semantic_model::ValueBinding & binding,
+    const TypeMangleContext * mangle_ctx,
+    string & out)
+{
+  out.clear();
+  if(!binding.symbol.object_symbol.empty()) {
+    out = binding.symbol.object_symbol;
+    return true;
+  }
+  if(binding.kind != semantic_model::ValueBinding::VK_VARIABLE) {
+    return false;
+  }
+  if(binding.owner_class) {
+    return try_emit_static_member_object_symbol_ir(*binding.owner_class,
+                                                   binding.name,
+                                                   out);
+  }
+  const semantic_model::Scope * scope =
+      find_value_binding_scope_for_symbol(binding, mangle_ctx);
+  if(!scope) {
+    return false;
+  }
+  try {
+    SymbolIdentity symbol =
+        make_scoped_variable_symbol_identity(*scope,
+                                             binding.name,
+                                             binding.is_c_linkage,
+                                             binding.symbol.linkage);
+    out = symbol.object_symbol;
+    return !out.empty();
+  } catch(const std::logic_error &) {
+    out.clear();
+    return false;
+  }
+}
+
 static bool try_build_external_entity_argument_ir_payload(
     const TemplateArgument & argument,
     const TypeMangleContext * mangle_ctx,
@@ -7627,12 +7742,26 @@ static bool try_build_external_entity_argument_ir_payload(
   }
 
   if(argument.value_binding && base) {
+    const bool is_object_pointer =
+        base->kind == Type::TK_POINTER &&
+        base->inner &&
+        strip_top_level_cv(base->inner)->kind != Type::TK_FUNCTION;
     const bool is_object_reference =
         base->kind == Type::TK_LVALUE_REFERENCE ||
         base->kind == Type::TK_RVALUE_REFERENCE;
+    if(is_object_pointer) {
+      payload.address_of = true;
+      return try_build_value_binding_object_symbol_ir_payload(
+          *argument.value_binding,
+          mangle_ctx,
+          payload.symbol);
+    }
     if(is_object_reference) {
-      payload.symbol = argument.value_binding->symbol.object_symbol;
-      return !payload.symbol.empty();
+      payload.address_of = false;
+      return try_build_value_binding_object_symbol_ir_payload(
+          *argument.value_binding,
+          mangle_ctx,
+          payload.symbol);
     }
   }
 

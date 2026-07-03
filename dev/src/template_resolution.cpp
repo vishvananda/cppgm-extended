@@ -820,6 +820,55 @@ bool integral_value_binding_compatible_with_non_type_target(
          integral_value_fits_non_type_target(target_base, binding.constant_value);
 }
 
+bool object_pointer_value_binding_compatible_with_non_type_target(
+    const TypePtr & target_base,
+    const ValueBinding & binding)
+{
+  if(!target_base ||
+     target_base->kind != Type::TK_POINTER ||
+     !target_base->inner ||
+     !binding.type ||
+     binding.kind == ValueBinding::VK_FIELD ||
+     binding.is_bit_field) {
+    return false;
+  }
+
+  TypePtr pointee_base = strip_top_level_cv(target_base->inner);
+  if(pointee_base && pointee_base->kind == Type::TK_FUNCTION) {
+    return false;
+  }
+
+  TypePtr binding_object_type = remove_reference_type(binding.type);
+  return same_type_with_compatible_top_cv(target_base->inner,
+                                          binding_object_type);
+}
+
+bool bind_object_pointer_non_type_template_argument(
+    const std::string & text,
+    const TypePtr & target_type,
+    const TypePtr & target_base,
+    const ValueBinding & binding,
+    TemplateArgument & out,
+    const ValueBinding ** out_binding)
+{
+  if(!object_pointer_value_binding_compatible_with_non_type_target(target_base,
+                                                                   binding)) {
+    return false;
+  }
+
+  if(out_binding) {
+    *out_binding = &binding;
+  }
+  out.kind = TemplateArgument::TA_VALUE;
+  out.type = target_type;
+  out.value = 0;
+  out.function_value = nullptr;
+  out.value_binding = &binding;
+  out.text = text;
+  out.dependent = false;
+  return true;
+}
+
 bool bind_value_binding_non_type_template_argument(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -1634,6 +1683,50 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
            trimmed,
            false,
            out)) {
+      return true;
+    }
+  }
+
+  if(target_base &&
+     target_base->kind == Type::TK_POINTER &&
+     target_base->inner &&
+     trimmed.size() > 1 &&
+     trimmed[0] == '&' &&
+     !text_mentions_template_dependency(
+         services,
+         template_api::make_template_environment(scope),
+         trimmed)) {
+    const std::string object_text = trim_space(trimmed.substr(1));
+    const ValueBinding * binding = nullptr;
+    if(is_identifier_text(object_text)) {
+      binding = lookup_unqualified_value(services, scope, object_text);
+    } else if(services.semantic_context) {
+      QualifiedName qualified;
+      if(semantic_utils::split_qualified_name_text(object_text, qualified) &&
+         (qualified.rooted || !qualified.qualifiers.empty())) {
+        try {
+          binding =
+              semantic_lookup::lookup_qualified_value_binding(*services.semantic_context,
+                                                              scope,
+                                                              qualified);
+        } catch(const TemplateSubstitutionFailure &) {
+          binding = nullptr;
+        } catch(const SemanticSoftFailure &) {
+          binding = nullptr;
+        } catch(const SemanticDiagnosticError &) {
+          binding = nullptr;
+        } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+          binding = nullptr;
+        }
+      }
+    }
+    if(binding &&
+       bind_object_pointer_non_type_template_argument(trimmed,
+                                                      target_type,
+                                                      target_base,
+                                                      *binding,
+                                                      out,
+                                                      out_binding)) {
       return true;
     }
   }

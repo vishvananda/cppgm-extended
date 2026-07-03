@@ -4459,6 +4459,62 @@ ExprInfo make_value_binding_expr(SemanticContext & ctx,
   return result;
 }
 
+bool try_analyze_non_type_template_object_pointer_value(
+    SemanticContext & ctx,
+    Scope & scope,
+    const ValueBinding & binding,
+    ExprInfo & out)
+{
+  const ValueBinding * target_binding = binding.non_type_template_value_binding;
+  TypePtr binding_base = strip_top_level_cv(remove_reference_type(binding.type));
+  if(!target_binding ||
+     !binding_base ||
+     binding_base->kind != Type::TK_POINTER ||
+     !binding_base->inner ||
+     strip_top_level_cv(binding_base->inner)->kind == Type::TK_FUNCTION ||
+     target_binding->kind != ValueBinding::VK_VARIABLE ||
+     !target_binding->type ||
+     target_binding->is_bit_field) {
+    return false;
+  }
+
+  TypePtr target_object_type = remove_reference_type(target_binding->type);
+  if(!same_type_with_compatible_top_cv(binding_base->inner, target_object_type)) {
+    return false;
+  }
+
+  CppAstNode target_node;
+  target_node.kind = CppAstKind::id_expression;
+  target_node.value = target_binding->name;
+  ExprInfo target = make_value_binding_expr(ctx,
+                                            scope,
+                                            target_node,
+                                            *target_binding,
+                                            false);
+  if(target.category != VC_LVALUE) {
+    return false;
+  }
+
+  symbol_linkage::SymbolIdentity symbol = target_binding->symbol;
+  if(symbol.internal_symbol.empty() &&
+     target_binding->owner_class &&
+     target_binding->owner_class->member_scope) {
+    symbol = expression_static_member_variable_symbol_identity(
+        *target_binding->owner_class,
+        *target_binding);
+  }
+
+  out.type = binding.type;
+  out.category = VC_PRVALUE;
+  out.node = make_dump_node(CallSemKind::unary_expression, "&");
+  out.node.has_token = true;
+  out.node.token_type = OP_AMP;
+  set_dump_symbol(out.node, symbol);
+  out.node.children.push_back(std::move(target.node));
+  set_expr_metadata(out.node, out.type, out.category);
+  return true;
+}
+
 ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
                                           const ValueBinding & binding,
                                           bool allow_constant_fold)
@@ -5469,6 +5525,14 @@ ExprInfo analyze_id_expression(SemanticContext & ctx,
                                                     *binding,
                                                     template_function_value)) {
       return template_function_value;
+    }
+    ExprInfo template_object_pointer_value;
+    if(try_analyze_non_type_template_object_pointer_value(
+           ctx,
+           scope,
+           *binding,
+           template_object_pointer_value)) {
+      return template_object_pointer_value;
     }
     if(!binding->non_type_template_argument_text.empty()) {
       ExprInfo member_pointer_template_argument;
