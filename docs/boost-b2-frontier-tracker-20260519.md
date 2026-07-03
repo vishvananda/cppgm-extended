@@ -1620,3 +1620,37 @@ misses the cumulative dirty-tree instruction gate at `+2.10%`, while this fix
 isolated against `/tmp/cppgm-before-xpressive-non-char-baseline.json` passes
 three-run perf with instructions `+0.02%`, RSS `+0.30%`, footprint `+0.02%`;
 report: `/tmp/cppgm-perf-after-xpressive-non-char-isolated.json`.
+
+2026-07-03 Boost.Xpressive `libs/xpressive/test//test_symbols` elaborated
+type-scope frontier: after the `test_non_char` fix, a no-force Xpressive
+continuation built and ran `test_symbols` but failed at runtime by replaying
+symbol-table semantic actions during skipped/repeated static-regex matching
+(`"foo"` produced `11`, and the full test produced long duplicated action
+traces). Instrumenting a shadow copy of Xpressive showed the action queue held
+one action; the extra execution came from `keep(*_s)` selecting
+`independent_end_xpression` instead of `true_xpression` for Boost.Proto's
+`NotHasAction` grammar. The root cause was scope introduction for unqualified
+elaborated type specifiers: in `struct NotHasAction :
+proto::switch_<struct NotHasActionCases> {};`, cppgm++ introduced
+`NotHasAction::NotHasActionCases`, while Clang introduces the forward
+declaration in the enclosing namespace, matching the later namespace-scope
+definition. The fix changes elaborated forward-type introduction to skip
+class member scopes for unqualified names and declare in the nearest enclosing
+namespace/block scope, while leaving ordinary class definitions unchanged.
+Owner: `pa23:500` template argument elaborated type scope. New regression:
+`pa23/tests/general/500-elaborated-template-argument-enclosing-scope.t`.
+Pre-fix evidence: the compile-time reducer selected
+`independent_end_xpression=1` for `decltype(*boost::xpressive::_s)` and direct
+`boost::proto::matches<terminal, NotHasAction>` failed with an incomplete
+nested `NotHasAction::NotHasActionCases` base; runtime reducers showed
+`skip(_s)(+(a1 = map)[result += a1])` produced `11` for `"foo"`. After the fix,
+the type reducer selects `true_xpression=1`, the Proto `matches` reducer
+passes, the one-token and full-symbol reducers produce the expected strings,
+PA23 direct-LowIR report passes `379/379`, focused B2
+`libs/xpressive/test//test_symbols` passes and updates 41 targets, and the
+no-force `libs/xpressive/test` continuation passes all updated Xpressive
+targets. The focused `test_symbols.cpp` compile remains expensive; samples
+`/tmp/cppgm-boost-test_symbols-compile.sample.txt` and
+`/tmp/cppgm-boost-test_symbols-compile-2.sample.txt` show template semantic
+output/name-mangling and nested template instantiation work rather than a
+single tight spin.

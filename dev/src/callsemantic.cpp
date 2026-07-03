@@ -5797,6 +5797,19 @@ private:
     return true;
   }
 
+  static Scope & unqualified_elaborated_type_declaration_scope(Scope & scope)
+  {
+    Scope * current = &scope;
+    while(current &&
+          current->class_info &&
+          !current->function &&
+          !current->namespace_scope &&
+          current->parent) {
+      current = current->parent;
+    }
+    return current ? *current : scope;
+  }
+
   ClassInfo * lookup_declared_class_info(Scope & scope, const string & text) override
   {
     Scope * target_scope = nullptr;
@@ -5967,8 +5980,16 @@ private:
 
     Scope * target_scope = nullptr;
     string class_name;
-    if(!resolve_declared_class_scope_and_name(scope, declared_name, target_scope, class_name) ||
-       !target_scope) {
+    QualifiedName qualified;
+    if(!split_qualified_name_text(declared_name, qualified) ||
+       (!qualified.rooted && qualified.qualifiers.empty())) {
+      target_scope = &unqualified_elaborated_type_declaration_scope(scope);
+      class_name = declared_name;
+    } else if(!resolve_declared_class_scope_and_name(scope,
+                                                     declared_name,
+                                                     target_scope,
+                                                     class_name) ||
+              !target_scope) {
       return TypePtr();
     }
 
