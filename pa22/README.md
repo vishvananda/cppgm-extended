@@ -150,6 +150,9 @@ the implemented surface, including:
 - braced-init deduction in the supported template-call subset
 - pointer, reference, enum, and static-member non-type template argument values
   over the supported constant-expression subset
+- template deduction from arguments whose types come from already-resolved
+  member-function calls, including the implicit-object overload selection from
+  PA15/PA16
 - dependent-call, dependent-alias, and no-eager-instantiation behavior when the
   primary assertion is a single PA22-owned feature rather than a broad
   multi-feature composition
