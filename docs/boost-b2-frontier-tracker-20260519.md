@@ -770,7 +770,7 @@ Local Boost wrapper state:
 | 39 | `libs/exception/test` | pass | Fresh `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/exception/test` on 2026-07-01 initially updated 127 targets, skipped 29, and failed 13; log `/tmp/boost-exception-current-20260701.log`. The `-fno-exceptions` predefine/config cluster, host RTTI secondary-vtable prefix, safe-bool streamability ranking, throw-operand cleanup, cloning/copy/thunk/vtable runtime path, throw-exception runtime path, enable-error-info base lookup, optional `nlohmann_json_test` chain, and final `exception_fail` compile-fail validation are now fixed. Full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/exception/test` exits `0` and updates 170 targets; focused `exception_fail` is marked `(failed-as-expected)`. See the detailed fixed rows below for reducer ownership and validation. |
 | 40 | `libs/fiber/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/fiber/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-fiber-current-20260703.log`. |
 | 41 | `libs/filesystem/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/filesystem/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-filesystem-current-20260703.log`. |
-| 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. That first frontier is fixed by evaluating C-style null pointer casts in non-type template arguments. Focused `libs/flyweight/test//test_basic` now advances to a separate Boost.Parameter duplicate nested class definition for `BOOST_MPL_ASSERT_MSG`'s `duplicate_keyword379` in `boost/parameter/aux_/arg_list.hpp:379`; log `/tmp/boost-flyweight-test-basic-after-nullptr-cast-20260703.log`. |
+| 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. The default pointer NTTP frontier is fixed. Focused `libs/flyweight/test//test_basic` then advanced to Boost.Parameter duplicate nested class definition for `BOOST_MPL_ASSERT_MSG`'s `duplicate_keyword379` in `boost/parameter/aux_/arg_list.hpp:379`; that replay frontier is also fixed. Current focused `test_basic` frontier is a `refcounted_handle` constructor rejection because `core::insert` is not found while analyzing the `flyweight` constructor body; log `/tmp/boost-flyweight-test-basic-after-duplicate-class-guard-20260703.log`. |
 
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
@@ -1686,3 +1686,35 @@ fix passes three-run perf with instructions `-0.14%`, RSS `-0.03%`, footprint
 default NTTP failure to the next Boost.Parameter duplicate-class frontier at
 `boost/parameter/aux_/arg_list.hpp:379`, log
 `/tmp/boost-flyweight-test-basic-after-nullptr-cast-20260703.log`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_basic` Boost.Parameter
+duplicate nested class frontier: after the pointer NTTP fix, completing the
+Flyweight type forced reference-member collection through a chain of
+`boost::parameter::aux::arg_list` instantiations. The `using Next::has_key`
+member in one reference-only pass completed the `Next` arg-list, whose
+`BOOST_MPL_ASSERT_MSG` expansion defines `typedef struct duplicate_keyword379
+: boost::mpl::assert_ { ... } mpl_assert_arg379;`. That generated nested class
+was completed and then the same instantiated class-specifier was visited again,
+with a different cloned AST address but the same source token span, so the
+general class declaration collector reported a duplicate definition at the same
+location. The fix makes completed class collection idempotent only for the same
+class binding and same class-specifier token span, preserving duplicate
+diagnostics for distinct definitions. Owner: `pa26:300` member-pointer syntax
+and class-template reference/full collection replay. New regression:
+`pa26/tests/general/300-replayed-nested-typedef-class-definition.t`. Pre-fix
+evidence: focused B2 failed at `boost/parameter/aux_/arg_list.hpp:379:9`, and
+`CPPGM_TRACE=class.collect` showed `duplicate_keyword379` completed and then
+collected again under
+`arg_list<boost::flyweights::tag<int>, boost::parameter::aux::empty_arg_list,
+mpl_::bool_<true>>`. Validation: `make -C dev cppgm++ -j8`; focused PA26
+reducer passes; PA26 placement audit reports no early-placement findings; PA26
+direct-LowIR report passes `54/54`; full direct-LowIR report passes
+`3431/3431`; default strict witness suite passes; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; focused B2
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_basic`
+advances to the next `core::insert` constructor-analysis frontier, log
+`/tmp/boost-flyweight-test-basic-after-duplicate-class-guard-20260703.log`;
+isolated perf against clean `b35209bb3` baseline
+`/tmp/cppgm-before-flyweight-duplicate-class-baseline.json` passes three-run
+perf with instructions `-0.04%`, RSS `-1.97%`, footprint `-0.00%`.

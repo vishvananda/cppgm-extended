@@ -2961,6 +2961,19 @@ void trace_class_collection_event(SemanticContext & ctx,
   parser_trace::note("class.collect", ctx.source_location_for_node(node), trace.str());
 }
 
+bool class_definition_is_replayed_complete_node(const ClassInfo & info,
+                                                const CppAstNode & node)
+{
+  if(!info.class_node) {
+    return false;
+  }
+  return info.class_node == &node ||
+         (info.class_node->kind == node.kind &&
+          info.class_node->value == node.value &&
+          info.class_node->token_start == node.token_start &&
+          info.class_node->token_end == node.token_end);
+}
+
 TypePtr refine_instantiated_class_alias(SemanticContext & ctx,
                                         Scope & scope,
                                         const TypePtr & alias)
@@ -10785,6 +10798,9 @@ void collect_class_declaration(SemanticContext & ctx,
     return;
   }
   if(info->complete) {
+    if(class_definition_is_replayed_complete_node(*info, node)) {
+      return;
+    }
     throw std::logic_error(std::string("duplicate class definition") +
                            semantic_trace::current_location_note(ctx, &node) +
                            semantic_trace::previous_class_location_note(
