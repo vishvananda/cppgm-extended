@@ -3975,6 +3975,146 @@ int compare_partial_order_placeholder_specificity(const vector<TypePtr> & curren
   return 0;
 }
 
+int partial_order_template_structure_score(const TypePtr & type);
+
+int partial_order_template_argument_structure_score(const TemplateArgument & argument)
+{
+  if(argument.partial_order_placeholder) {
+    return 0;
+  }
+  int score = 0;
+  if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+    score += partial_order_template_structure_score(argument.type);
+  } else if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+            argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
+    ++score;
+  } else if(argument.kind == TemplateArgument::TA_VALUE && !argument.dependent) {
+    ++score;
+  }
+  return score;
+}
+
+int partial_order_dependent_argument_structure_score(
+    const vector<DependentAliasTemplateArgumentSyntax> & arguments)
+{
+  int score = 0;
+  for(size_t i = 0; i < arguments.size(); ++i) {
+    if(arguments[i].partial_order_placeholder) {
+      continue;
+    }
+    score += partial_order_template_structure_score(arguments[i].type);
+    if(!arguments[i].type && !arguments[i].text.empty()) {
+      ++score;
+    }
+  }
+  return score;
+}
+
+int partial_order_template_structure_score(const TypePtr & type)
+{
+  if(!type) {
+    return 0;
+  }
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    base = type;
+  }
+
+  switch(base->kind) {
+  case Type::TK_NAMED:
+  {
+    if(named_type_is_partial_order_placeholder(base)) {
+      return 0;
+    }
+
+    int score = 0;
+    if(shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
+           named_type_class_template_specialization_mangle_info_const(base)) {
+      ++score;
+      for(size_t i = 0; i < info->arguments.size(); ++i) {
+        score += partial_order_template_argument_structure_score(
+            info->arguments[i]);
+      }
+    }
+    if(base->named_dependent_alias_template_decl) {
+      ++score;
+      score += partial_order_dependent_argument_structure_score(
+          base->named_dependent_alias_arguments);
+    }
+    if(base->named_dependent_class_template_decl) {
+      ++score;
+      score += partial_order_dependent_argument_structure_score(
+          base->named_dependent_class_arguments);
+    }
+    if(!base->named_dependent_template_template_parameter_name.empty()) {
+      ++score;
+      score += partial_order_dependent_argument_structure_score(
+          base->named_dependent_template_template_arguments);
+    }
+    if(base->named_dependent_qualified_owner) {
+      score += partial_order_template_structure_score(
+          base->named_dependent_qualified_owner);
+    }
+    return score;
+  }
+
+  case Type::TK_FUNCTION:
+  {
+    int score = partial_order_template_structure_score(base->inner);
+    for(size_t i = 0; i < base->params.size(); ++i) {
+      score += partial_order_template_structure_score(base->params[i]);
+    }
+    return score;
+  }
+
+  case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+  case Type::TK_ARRAY:
+  case Type::TK_ATOMIC:
+  case Type::TK_CV:
+  {
+    int score = partial_order_template_structure_score(base->inner);
+    if(base->owner) {
+      score += partial_order_template_structure_score(base->owner);
+    }
+    return score;
+  }
+
+  case Type::TK_MEMBER_POINTER:
+    return partial_order_template_structure_score(base->owner) +
+           partial_order_template_structure_score(base->inner);
+
+  case Type::TK_FUNDAMENTAL:
+    return 0;
+  }
+  return 0;
+}
+
+int compare_partial_order_template_structure_specificity(
+    const vector<TypePtr> & current_params,
+    const vector<TypePtr> & best_params)
+{
+  int current_score = 0;
+  for(size_t i = 0; i < current_params.size(); ++i) {
+    current_score += partial_order_template_structure_score(current_params[i]);
+  }
+
+  int best_score = 0;
+  for(size_t i = 0; i < best_params.size(); ++i) {
+    best_score += partial_order_template_structure_score(best_params[i]);
+  }
+
+  if(current_score > best_score) {
+    return -1;
+  }
+  if(best_score > current_score) {
+    return 1;
+  }
+  return 0;
+}
+
 int compare_function_template_parameter_count_preference(const CandidateMatch & current,
                                                          const CandidateMatch & best)
 {
@@ -7167,6 +7307,12 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
                                                       best_transformed_params);
     if(placeholder_specificity != 0) {
       return placeholder_specificity;
+    }
+    const int template_structure_specificity =
+        compare_partial_order_template_structure_specificity(current_transformed_params,
+                                                            best_transformed_params);
+    if(template_structure_specificity != 0) {
+      return template_structure_specificity;
     }
     const int parameter_count_preference =
         compare_function_template_parameter_count_preference(current, best);

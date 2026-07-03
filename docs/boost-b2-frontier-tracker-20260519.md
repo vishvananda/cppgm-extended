@@ -1396,3 +1396,31 @@ Focused B2 checks now pass for `libs/bimap/test//assign`,
 longer the earlier Proto special-member-definition ABI-symbol diagnostic; after
 skipping that reference-pass-only work, `libs/xpressive/test` reaches a
 diagnostic-free 900s timeout.
+
+2026-07-02 Boost.Xpressive `libs/xpressive/test/regress.cpp` constructor-template
+partial-ordering frontier: `make_dynamic` constructs
+`sequence<BidiIter>(xpr)` where `xpr` is an `intrusive_ptr` to a
+`dynamic_xpression<alternate_matcher<alternates_vector<BidiIter>, Traits>,
+BidiIter>`. The two viable `sequence` constructor templates instantiate to the
+same concrete parameter type, but the narrower constructor keeps more concrete
+nested template-id structure than the generic `Matcher` wrapper. The normal
+bidirectional partial-order deduction path and existing placeholder-count
+tie-breaker still tied, so overload resolution reported an ambiguous
+constructor. The fix adds a structured template-id specificity tie-breaker that
+scores semantic template argument structure after ordinary partial ordering and
+the existing local tie-breakers tie; it uses carried type/template argument data
+and adds no source-text reparse or Boost special case. Owner: `pa22:200`
+function-template partial ordering. New regression:
+`pa22/tests/spec/200-constructor-template-qualified-nested-id-partial-ordering.t`.
+Pre-fix evidence: the namespace-qualified reducer and direct Boost
+`regress.cpp` compile failed with the ambiguous
+`boost::xpressive::detail::sequence<...>` constructor diagnostic. After the fix,
+the reducer passes, direct Boost `regress.cpp` produces
+`/tmp/boost-xpressive-regress-current.o`, and a focused B2
+`libs/xpressive/test` run produces `regress.o` before moving on to unrelated
+Boost.Test dependency rebuilds. Validation: `make -C dev cppgm++ -j8`; focused
+PA22 and existing PA23 partial-ordering guards pass; direct-LowIR PA22 report
+passes `182/182`; full direct-LowIR `test-report-nobuild` passes `3422/3422`;
+full direct-LowIR strict suite passes; PA22 placement audit reports no
+early-placement findings; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes. | this commit |
