@@ -1937,3 +1937,39 @@ isolated perf against clean `1bb1bfef7` baseline
 `/tmp/cppgm-before-sync-builtins-baseline.json` passes with instructions
 `+0.33%`, RSS `-0.65%`, footprint `-0.04%`; detailed report
 `/tmp/cppgm-after-sync-builtins-perf-report.json`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_intermod_holder` lazy
+member-template disambiguator frontier: after the GNU sync builtin fix,
+Boost.Interprocess materialized
+`segment_manager<...>::priv_generic_named_construct` lazily and failed parsing
+the header-body expression
+`static_cast<CharT *>(hdr->template name<CharT>())`. The function also has a
+parameter named `name`, so the replay parser treated the member-template name as
+a local value-name collision and left `<CharT>` as an expression operator. The
+fix has member access consume the optional `.template` / `->template`
+disambiguator before qualified-name parsing, preserves the textual `template `
+marker on the AST identifier for dependent-member validation, and lets an
+explicit template prefix override the qualified-name parser's value-name
+template-suffix suppression. Owner: PA34 lazy hosted header-body replay, even
+though the language construct itself is PA21 member-template syntax. New
+regression: `pa34/tests/compile/700-lazy-header-member-template-shadow.t`.
+Pre-fix evidence: detached clean `57c6097b9` compiler fails the reducer with
+`failed to materialize lazy function body` in
+`lazy_header_member_template_shadow::manager<int>::get`; Clang accepts the
+reducer and the patched reducer executable exits `0`. Validation:
+`make -C dev cppgm++ -j8`; focused PA23 member-template call regression passes;
+focused PA34 reducer/ref/check/direct executable passes; PA34 direct-LowIR
+report passes `277/277`; PA34 placement audit has no failing findings;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; full strict direct-LowIR compare passes; full direct-LowIR
+report passes `3440/3440`; focused B2
+`/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_intermod_holder`
+advances both `intermod_holder_dll.o` and `test_intermod_holder.o` to the next
+Boost.Intrusive overload frontier, `node_algorithms::unique(to_erase)` inside
+`boost::intrusive::bstree_impl<...>::erase` at `boost/intrusive/bstree.hpp:1429`,
+surfacing as `no viable overload for call __builtin_expect`; final log
+`/tmp/boost-flyweight-test-intermod-holder-after-member-template-shadow-final-20260703.log`.
+Isolated perf against clean `57c6097b9` baseline
+`/tmp/cppgm-before-member-template-shadow-baseline.json` passes with
+instructions `+0.00%`, RSS `+1.73%`, footprint `+0.02%`; detailed report
+`/tmp/cppgm-after-member-template-shadow-perf-report.json`.

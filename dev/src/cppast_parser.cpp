@@ -9154,6 +9154,7 @@ bool CppAstParser::parse_postfix_suffixes(CppAstNode & out, size_t start)
       RecogToken op_token = peek();
       string op = op_token.source;
       ++pos;
+      const bool member_template_disambiguator = consume_simple(KW_TEMPLATE);
       string member_name;
       cpp_decl::QualifiedName member_name_syntax;
       cpp_decl::TemplateIdSyntax member_template_id_syntax;
@@ -9173,7 +9174,11 @@ bool CppAstParser::parse_postfix_suffixes(CppAstNode & out, size_t start)
       CppAstNode member = make_node(CppAstKind::member_expression, op);
       set_node_token(member, op_token);
       member.children.push_back(std::move(out));
-      CppAstNode identifier = make_node(CppAstKind::identifier, member_name);
+      CppAstNode identifier =
+          make_node(CppAstKind::identifier,
+                    member_template_disambiguator ?
+                        string("template ") + member_name :
+                        member_name);
       set_cppast_qualified_name_syntax(identifier, std::move(member_name_syntax));
       if(!member_template_id_syntax.name.name.empty()) {
         set_cppast_template_id_syntax(identifier, std::move(member_template_id_syntax));

@@ -170,6 +170,10 @@ struct QualifiedNameCursor : RecogTokenCursor
       pos = start;
       return false;
     }
+    const bool explicit_template =
+        forced_template ||
+        (identifier_start > 0 &&
+         tokens.peek(identifier_start - 1).is_simple(KW_TEMPLATE));
 
     out = NameComponentParseResult();
     out.name_component = make_pair(identifier_start, pos);
@@ -186,7 +190,7 @@ struct QualifiedNameCursor : RecogTokenCursor
             lookup.is_known_value_template_parameter_identifier(prev);
         const bool known_value = lookup.is_known_value_name_identifier(prev);
         if((known_value_template || known_value) &&
-           !known_template && !known_type) {
+           !known_template && !known_type && !explicit_template) {
           if(!allow_value_template_id_qualifier) {
             return true;
           }
@@ -201,7 +205,7 @@ struct QualifiedNameCursor : RecogTokenCursor
           }
         }
         const bool crosses_logical_operator =
-            !forced_template &&
+            !explicit_template &&
             ambiguous_value_template_suffix_crosses_logical_operator(tokens,
                                                                      pos + 1,
                                                                      lookup);
