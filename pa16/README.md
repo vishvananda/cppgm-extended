@@ -117,6 +117,10 @@ named local directly in `%ret` instead of building a separate local object and t
 copying or moving it into the return destination. That direct return-slot form is part of
 the accepted PA16 output contract.
 
+Ref-qualified member functions extend the PA15 member-call model: overload resolution still
+uses the implicit object argument, and the object expression's value category participates in
+viability and ranking for supported `&` and `&&` qualified members.
+
 For supported synthesized copy/move special members, PA16 may lower a leading trivially
 copyable storage prefix directly as `copyobj <span> <src>, <dst>` instead of spelling that
 prefix as separate field operations or a `__builtin_memcpy` helper call in the emitted

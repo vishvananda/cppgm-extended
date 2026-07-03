@@ -1,0 +1,12 @@
+translation-unit
+  function-call at pa22/tests/spec/200-member-call-result-deduction-uses-object-cv.t:28:10
+    callee same_mutable
+    selected instantiation
+    bind #1 = int source=deduced
+template-closure-events
+  ensure-definition
+    entity same_mutable
+  function-instantiation
+    entity same_mutable
+  require-definition
+    entity same_mutable

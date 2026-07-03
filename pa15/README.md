@@ -109,8 +109,11 @@ blocks, item order inside structured globals, vtable slot order, and action
 order inside generated initialization, finalization, constructor, destructor,
 and cleanup bodies.
 
-For non-static member functions, the generated LowIR uses an explicit hidden first parameter
-for the object pointer (`this`).
+For non-static member functions, call analysis should treat the object expression as an
+implicit object argument. Member lookup gathers the candidate methods; overload resolution
+then checks and ranks those candidates using the cv-qualification of the object expression.
+After a non-static member function is selected, the generated LowIR uses an explicit hidden
+first parameter for the object pointer (`this`).
 
 Namespace-scope object lifetime is represented through synthetic startup/shutdown helpers when
 needed:
@@ -232,6 +235,8 @@ PA15 supports the following in addition to the PA14 procedural subset:
   - direct methods
   - inherited methods
 - `this`, implicit member lookup inside methods, and member access expressions `.` and `->`
+- non-static member-function calls selected through overload resolution with the implicit
+  object argument described above
 - ordinary non-template operator overloading over the supported object-model subset, including:
   - member operators such as `operator[]`
   - hidden-friend and namespace-scope non-member operators found through ordinary lookup / ADL
