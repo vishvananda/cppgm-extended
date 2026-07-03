@@ -6737,6 +6737,24 @@ struct DeductionContextOps
     return lookup_type_for_deduction(*services, scope, text, allow_class_templates);
   }
 
+  const ValueBinding * lookup_value(Scope & scope,
+                                    const std::string & text) const
+  {
+    if(services) {
+      return lookup_unqualified_value(*services, scope, text);
+    }
+
+    const ValueBinding * out = nullptr;
+    template_api::with_template_services(
+        *semantic_context,
+        [&](template_api::TemplateServices & current_services)
+        {
+          out = lookup_unqualified_value(current_services, scope, text);
+          return true;
+        });
+    return out;
+  }
+
   std::string lookup_type_text(const TypePtr & type) const
   {
     return type_system ?
@@ -13628,6 +13646,29 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                           normalized_type_lookup_text_matches(normalized_arg,
                                                               normalized_default);
                   if(!matches_default) {
+                    if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE &&
+                       structured_arg &&
+                       structured_arg->kind == TemplateArgument::TA_VALUE &&
+                       source_template->declaring_scope) {
+                      const std::string default_name =
+                          trim_space(substituted_default.text);
+                      if(!default_name.empty() &&
+                         (std::isalpha(static_cast<unsigned char>(
+                              default_name[0])) ||
+                          default_name[0] == '_') &&
+                         is_identifier_text(default_name)) {
+                        const ValueBinding * binding =
+                            deduction_ops.lookup_value(
+                                *source_template->declaring_scope,
+                                default_name);
+                        matches_default =
+                            binding &&
+                            binding->has_constant_value &&
+                            binding->constant_value == structured_arg->value;
+                      }
+                    }
+                  }
+                  if(!matches_default) {
                     TemplateArgument default_argument;
                     TemplateArgument current_argument;
                     bool resolved_default = false;
@@ -13640,6 +13681,18 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                               parameter,
                               substituted_default.text,
                               default_argument);
+                      if(!resolved_default &&
+                         source_template->declaring_scope &&
+                         source_template->declaring_scope != deduction_scope) {
+                        resolved_default =
+                            resolve_template_argument_for_deduction(
+                                ctx,
+                                *source_template->declaring_scope,
+                                *source_template->declaring_scope,
+                                parameter,
+                                substituted_default.text,
+                                default_argument);
+                      }
                     } catch(const TemplateSubstitutionFailure &) {
                       resolved_default = false;
                     }

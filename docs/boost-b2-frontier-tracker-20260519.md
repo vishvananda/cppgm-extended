@@ -772,6 +772,12 @@ Local Boost wrapper state:
 | 41 | `libs/filesystem/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/filesystem/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-filesystem-current-20260703.log`. |
 | 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. The default pointer NTTP frontier is fixed. Focused `libs/flyweight/test//test_basic` then advanced through the Boost.Parameter duplicate nested class definition replay frontier, the `core::insert` member-typedef qualifier frontier, and the `insert_rep`/MPL assertion lazy nested-member-class frontier. Focused `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_basic` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-basic-after-lazy-nested-b2-20260703.log`. Full Flyweight rerun after that found five remaining compile targets, with build-order first `test_init.o` failing non-type template argument evaluation for `marked_hashed_factory<&mark2>`; log `/tmp/boost-flyweight-full-after-test-basic-20260703.log`. The namespace object-pointer NTTP and follow-up global member-template rebound frontiers are fixed. Focused `libs/flyweight/test//test_init` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-init-rebound-nttp-20260703.log`. Full Flyweight rerun after that updates 97 targets, skips 10, and fails 4 compile targets; log `/tmp/boost-flyweight-full-after-test-init-rebound-20260703.log`. The `test_concurrent_factory.o` lambda closure assignment frontier and its follow-up static constexpr floating global runtime frontier are fixed. Focused `libs/flyweight/test//test_concurrent_factory` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-concurrent-after-float-constexpr-20260703.log`. Full Flyweight rerun after that updates 101 targets, skips 7, and fails 3 compile targets; log `/tmp/boost-flyweight-full-after-concurrent-float-constexpr-20260703.log`. The Interprocess/Intrusive enum/integral NTTP frontier in `intermod_holder_dll.o` / `test_intermod_holder.o` is fixed. Focused `libs/flyweight/test//test_intermod_holder` after the enum fix updates 18 targets and advances both compile targets to `unknown function __sync_synchronize` in `boost::interprocess::ipcdetail::atomic_read32`; log `/tmp/boost-flyweight-test-intermod-holder-after-enum-nttp-20260703.log`. The hosted Boost.Interprocess legacy sync builtin frontier (`__sync_synchronize`, `__sync_fetch_and_add`, `__sync_val_compare_and_swap`) is fixed. Focused `libs/flyweight/test//test_intermod_holder` after the sync builtin fix updates 18 targets and advances both compile targets to `failed to materialize lazy function body: expected compound-statement fragment near OP_LBRACE:{` while emitting `boost::interprocess::segment_manager<...>::priv_generic_named_construct`; log `/tmp/boost-flyweight-test-intermod-holder-after-sync-builtins-20260703.log`. The current next frontier is that lazy function-body materialization parse failure. The remaining same-run failure from the last full Flyweight run is `test_serialization.o` on private base member access to `get_helper_collection`. |
 
+- 2026-07-03 Flyweight cursor correction: detailed rows below now fix the
+  lazy member-template disambiguator and Boost.Intrusive defaulted rebind
+  constructor-deduction frontiers. Focused `test_intermod_holder` now compiles
+  the objects and stops linking `libintermod_holder_dll.dylib` on the unresolved
+  CPPGM `__ec_xlate` runtime symbol from `intermod_holder_dll.o`; current log
+  `/tmp/boost-flyweight-test-intermod-holder-after-defaulted-rebind-optimized-20260703.log`.
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
   `/tmp/boost-frontier-placement-pa31-idiv-normalize.md` and
@@ -1973,3 +1979,40 @@ Isolated perf against clean `57c6097b9` baseline
 `/tmp/cppgm-before-member-template-shadow-baseline.json` passes with
 instructions `+0.00%`, RSS `+1.73%`, footprint `+0.02%`; detailed report
 `/tmp/cppgm-after-member-template-shadow-perf-report.json`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_intermod_holder`
+Boost.Intrusive defaulted rebind constructor-deduction frontier:
+`bstree_impl<...>::erase` calls `node_algorithms::unique(to_erase)`, where
+`node_ptr` is a Boost.Interprocess `offset_ptr<compact_rbtree_node<...>>` and
+the selected overload takes the rebound const-node pointer. Constructor-template
+deduction compared the pattern
+`offset_ptr<T2, long, unsigned long, offset_type_alignment>` with an actual
+instantiation that carried the explicit non-type argument `0`; default-tail
+normalization could not prove that the named namespace-scope constant default
+matched the concrete value, so the viable pointer-conversion constructor was
+dropped and the call surfaced as `no viable overload for call __builtin_expect`.
+The fix keeps the default-tail trim on structured template metadata, resolves
+source defaults in the declaring scope when the old deduction-scope path cannot,
+and adds a narrow source-scope constant binding comparison for plain named
+non-type defaults. No source-text reparse, fallback resolver, cache, or Boost
+special case is added. Owner: `pa22:500` constructor-template deduction through
+defaulted class-template arguments and non-type defaults. New regression:
+`pa22/tests/spec/500-defaulted-rebind-constructor-deduction.t`. Pre-fix
+evidence: clean `e80df834d` fails the checked-in reducer and the Boost-shaped
+`offset_ptr` scratch reducer with the same no-viable `unique` overload path.
+Validation: `make -C dev cppgm++ -j8`; focused PA22 regression passes after
+refs generated with `REF_TEST_APP=../dev/cppgm++`; Boost-shaped direct compile
+passes; PA22 direct-LowIR report passes `189/189`; PA22 placement audit reports
+no early-placement findings; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes; full strict direct-LowIR compare
+passes; full direct-LowIR report passes `3441/3441`; focused B2
+`/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_intermod_holder`
+compiles both Flyweight objects and advances to dynamic-library link failure:
+undefined CPPGM runtime symbol
+`__cppgm_40626f6f73745f5f696e74657270726f636573735f5f65635f786c6174655f5f5f65635f786c617465`
+from `intermod_holder_dll.o`; log
+`/tmp/boost-flyweight-test-intermod-holder-after-defaulted-rebind-optimized-20260703.log`.
+Isolated perf against clean `e80df834d` baseline
+`/tmp/cppgm-before-defaulted-rebind-baseline.json` passes with instructions
+`+0.07%`, RSS `+0.13%`, footprint `+0.00%`; detailed report
+`/tmp/cppgm-after-defaulted-rebind-perf-report.json`.
