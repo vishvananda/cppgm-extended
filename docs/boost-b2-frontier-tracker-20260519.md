@@ -1718,3 +1718,34 @@ advances to the next `core::insert` constructor-analysis frontier, log
 isolated perf against clean `b35209bb3` baseline
 `/tmp/cppgm-before-flyweight-duplicate-class-baseline.json` passes three-run
 perf with instructions `-0.04%`, RSS `-1.97%`, footprint `-0.00%`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_basic` member-typedef
+qualifier frontier: `flyweight<T>` aliases its instantiated implementation as
+`typedef detail::flyweight_core<T> core`, while namespace `boost::core` is also
+visible. Constructor analysis for `h(core::insert(...))` resolved the leading
+qualifier as the namespace first, so ordinary function lookup reported
+`unknown function core::insert` against `boost::core` instead of looking in the
+instantiated `flyweight_core` member scope. The fix makes unrooted qualifier
+resolution honor the ordinary lexical lookup order at each scope level, so a
+current-instantiation member typedef can hide an outer namespace, and it keeps
+source-template member function bindings when they belong to a concrete
+class-template instantiation. Node-qualified function lookup now reuses the
+resolved class/namespace scope for simple qualifiers; structured qualifier
+syntax stays on the existing path to preserve witness source-use behavior. No
+source-text fallback, cache bypass, or Boost special case is added. Owner:
+`pa18:300` class-template member typedef/current-instantiation qualified
+lookup. New regression:
+`pa18/tests/general/300-member-typedef-qualifier-hides-outer-namespace.t`.
+Pre-fix evidence: the no-STL reducer failed with `unknown function core::insert`
+and the direct Boost object failed at the same lookup frontier. Validation:
+`make -C dev cppgm++ -j8`; focused reducer and PA18 regression pass; PA18
+direct-LowIR report passes `195/195`; PA18 placement audit reports no
+early-placement findings; default strict witness suite passes; full
+direct-LowIR report passes `3432/3432`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; focused direct Boost object compile advances to the next
+`insert_rep`/`unsupported enumerator value` frontier, log
+`/tmp/boost-flyweight-test-basic-direct-after-qualified-node2-20260703.log`;
+isolated perf against clean `3af8cc787` baseline
+`/tmp/cppgm-before-flyweight-qualified-baseline.json` passes three-run perf with
+instructions `+0.17%`, RSS `+0.63%`, footprint `-0.00%`.

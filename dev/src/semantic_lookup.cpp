@@ -1815,34 +1815,33 @@ Scope * lookup_namespace_from_template_source_scopes(Scope & scope,
   return nullptr;
 }
 
-Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
-                                     Scope & scope,
-                                     Scope & lookup_scope,
-                                     const string & name,
-                                     bool allow_dependent_class_qualifiers)
+Scope * scope_for_resolved_type_qualifier(SemanticContext & ctx,
+                                          Scope & scope,
+                                          Scope & lookup_scope,
+                                          const string & name,
+                                          const TypePtr & as_type,
+                                          bool allow_dependent_class_qualifiers,
+                                          const char * defer_trace_name,
+                                          const char * resolve_trace_name,
+                                          bool & deferred)
 {
-  Scope * as_namespace = lookup_namespace_from_scope(scope, name);
-  if(!as_namespace) {
-    as_namespace = lookup_namespace_from_template_source_scopes(scope, name);
+  deferred = false;
+  if(!as_type) {
+    return nullptr;
   }
-  if(as_namespace) {
-    return as_namespace;
-  }
-
-  TypePtr as_type =
-      lookup_qualifier_type_name(ctx, scope, lookup_scope, name, true);
-  if(as_type &&
-     ctx.type_depends_on_template_parameter(as_type) &&
+  if(ctx.type_depends_on_template_parameter(as_type) &&
      !allow_dependent_class_qualifiers &&
      !is_enclosing_current_specialization_type(lookup_scope, as_type)) {
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
-      trace << "defer-dependent-qualifier name=" << name
+      trace << defer_trace_name << " name=" << name
             << " type=" << describe_type(as_type);
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
+    deferred = true;
     return nullptr;
   }
+
   Scope * type_scope = ctx.scope_for_type(as_type);
   if(type_scope) {
     return type_scope;
@@ -1855,7 +1854,7 @@ Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
   }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
-    trace << "resolve-qualifier-scope name=" << name
+    trace << resolve_trace_name << " name=" << name
           << " in=" << scope_qualified_name(scope, "<here>")
           << " type=" << (as_type ? describe_type(as_type) : string("<none>"));
     TypePtr base = strip_top_level_cv(as_type);
@@ -1910,6 +1909,63 @@ Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
   return info ? info->member_scope.get() : nullptr;
 }
 
+Scope * resolve_type_qualifier_scope(SemanticContext & ctx,
+                                     Scope & scope,
+                                     Scope & lookup_scope,
+                                     const string & name,
+                                     bool allow_dependent_class_qualifiers)
+{
+  for(Scope * current = &scope; current; current = current->parent) {
+    if(Scope * direct_namespace = resolve_direct_namespace(*current, name)) {
+      return direct_namespace;
+    }
+
+    bool deferred = false;
+    TypePtr direct_type;
+    {
+      const template_api::ScopedTemplateWitnessSourceCapturePause
+          source_capture_pause;
+      direct_type =
+          resolve_type_qualifier_in_qualified_scope(ctx, *current, lookup_scope, name);
+    }
+    Scope * type_scope =
+        scope_for_resolved_type_qualifier(ctx,
+                                          scope,
+                                          lookup_scope,
+                                          name,
+                                          direct_type,
+                                          allow_dependent_class_qualifiers,
+                                          "defer-dependent-qualifier",
+                                          "resolve-qualifier-scope",
+                                          deferred);
+    if(type_scope || deferred) {
+      return type_scope;
+    }
+
+    if(Scope * imported_namespace =
+           lookup_namespace_from_using_directives_in_scope(*current, name)) {
+      return imported_namespace;
+    }
+  }
+
+  if(Scope * as_namespace = lookup_namespace_from_template_source_scopes(scope, name)) {
+    return as_namespace;
+  }
+
+  TypePtr as_type =
+      lookup_qualifier_type_name(ctx, scope, lookup_scope, name, false);
+  bool deferred = false;
+  return scope_for_resolved_type_qualifier(ctx,
+                                           scope,
+                                           lookup_scope,
+                                           name,
+                                           as_type,
+                                           allow_dependent_class_qualifiers,
+                                           "defer-dependent-qualifier",
+                                           "resolve-qualifier-scope",
+                                           deferred);
+}
+
 Scope * resolve_nested_type_qualifier_scope(SemanticContext & ctx,
                                             Scope & scope,
                                             Scope & lookup_scope,
@@ -1923,83 +1979,16 @@ Scope * resolve_nested_type_qualifier_scope(SemanticContext & ctx,
 
   TypePtr as_type =
       lookup_qualifier_type_name(ctx, scope, lookup_scope, name, true);
-  if(as_type &&
-     ctx.type_depends_on_template_parameter(as_type) &&
-     !allow_dependent_class_qualifiers &&
-     !is_enclosing_current_specialization_type(lookup_scope, as_type)) {
-    if(parser_trace::enabled("template.resolve")) {
-      std::ostringstream trace;
-      trace << "defer-dependent-nested-qualifier name=" << name
-            << " type=" << describe_type(as_type);
-      parser_trace::note("template.resolve", std::string(), trace.str());
-    }
-    return nullptr;
-  }
-  Scope * type_scope = ctx.scope_for_type(as_type);
-  if(type_scope) {
-    return type_scope;
-  }
-  ClassInfo * info = ctx.class_info_for_type(as_type);
-  if(!info) {
-    parser_trace::push_use_location("\x1d");
-    info = ctx.complete_class_type(as_type);
-    parser_trace::pop_use_location();
-  }
-  if(parser_trace::enabled("template.resolve")) {
-    std::ostringstream trace;
-    trace << "resolve-nested-qualifier-scope name=" << name
-          << " in=" << scope_qualified_name(scope, "<here>")
-          << " type=" << (as_type ? describe_type(as_type) : string("<none>"));
-    TypePtr base = strip_top_level_cv(as_type);
-    if(base && base->kind == Type::TK_NAMED) {
-      trace << " key=" << base->named_key;
-    }
-    trace << " class="
-          << (info ? info->qualified_name : string("<none>"));
-    if(info) {
-      trace << " complete=" << (info->complete ? "yes" : "no")
-            << " ref-members=" << (info->reference_members_collected ? "yes" : "no")
-            << " source-template=" << (info->source_template ? "yes" : "no")
-            << " class-node="
-            << (info->class_node ? cppast_kind_text(info->class_node->kind) : string("<none>"))
-            << " template-node="
-            << (info->template_output_node
-                    ? cppast_kind_text(info->template_output_node->kind)
-                    : string("<none>"));
-    }
-    parser_trace::note("template.resolve", std::string(), trace.str());
-  }
-  if(info) {
-    const string use_location = parser_trace::current_order_use_location();
-    if(!use_location.empty()) {
-      info->first_qualifier_use_location =
-          prefer_earlier_source_location(info->first_qualifier_use_location,
-                                         use_location);
-    }
-    if(is_concrete_class_template_qualifier(ctx, info) &&
-       !info->complete &&
-       !info->full_member_collection_in_progress &&
-       !info->template_instantiation_in_progress) {
-      parser_trace::push_use_location("\x1d");
-      if(ClassInfo * completed = ctx.complete_class_type(as_type)) {
-        info = completed;
-      }
-      parser_trace::pop_use_location();
-    }
-    if(!info->complete) {
-      ensure_class_reference_members_if_needed(ctx, scope, *info);
-    }
-    if(!info->member_scope) {
-      parser_trace::push_use_location("\x1d");
-      info = ctx.complete_class_type(as_type);
-      parser_trace::pop_use_location();
-      type_scope = ctx.scope_for_type(as_type);
-      if(type_scope) {
-        return type_scope;
-      }
-    }
-  }
-  return info ? info->member_scope.get() : nullptr;
+  bool deferred = false;
+  return scope_for_resolved_type_qualifier(ctx,
+                                           scope,
+                                           lookup_scope,
+                                           name,
+                                           as_type,
+                                           allow_dependent_class_qualifiers,
+                                           "defer-dependent-nested-qualifier",
+                                           "resolve-nested-qualifier-scope",
+                                           deferred);
 }
 
 template<typename Result, typename FinalLookup>

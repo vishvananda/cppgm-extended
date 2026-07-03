@@ -119,6 +119,30 @@ using callsemantic::split_unqualified_template_head_text;
 using callsemantic::subtree_alias_redeclares_template_parameter;
 using callsemantic::template_parameter_names;
 
+bool function_binding_is_concrete_class_template_member_candidate(
+    const FunctionBinding * binding)
+{
+  if(!binding ||
+     !binding->source_template ||
+     !binding->owner_class ||
+     !binding->owner_class->source_template ||
+     binding->owner_class->dependent_instantiation) {
+    return false;
+  }
+  const ClassInfo & owner = *binding->owner_class;
+  return owner.is_explicit_specialization ||
+         !owner.instantiation_key.empty() ||
+         !owner.instantiation_arguments.empty() ||
+         !owner.instantiation_arg_texts.empty();
+}
+
+bool ordinary_lookup_should_drop_source_template_candidate(
+    FunctionBinding * binding)
+{
+  return template_api::function_binding_has_source_template_identity(binding) &&
+         !function_binding_is_concrete_class_template_member_candidate(binding);
+}
+
 bool named_type_has_function_local_marker(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(remove_reference_type(type));
@@ -14850,7 +14874,7 @@ private:
                         bindings.end(),
                         [](FunctionBinding * binding)
                         {
-                          return template_api::function_binding_has_source_template_identity(
+                          return ordinary_lookup_should_drop_source_template_candidate(
                               binding);
                         }),
               bindings.end());
@@ -15119,11 +15143,73 @@ private:
                         bindings.end(),
                         [](FunctionBinding * binding)
                         {
-                          return template_api::function_binding_has_source_template_identity(
+                          return ordinary_lookup_should_drop_source_template_candidate(
                               binding);
                         }),
               bindings.end());
         };
+
+    const auto lookup_in_resolved_qualified_scope =
+        [&](Scope & resolved_scope) -> vector<FunctionBinding *>
+    {
+      Scope * lookup_scope = &resolved_scope;
+      if(lookup_scope->class_info) {
+        ClassInfo * target_class = lookup_scope->class_info;
+        if(!target_class->complete && target_class->type) {
+          if(ClassInfo * completed = complete_class_type(target_class->type)) {
+            target_class = completed;
+          }
+        }
+        if(target_class->member_scope) {
+          lookup_scope = target_class->member_scope.get();
+        }
+        if(target_class->member_scope &&
+           !target_class->reference_members_collected &&
+           !target_class->reference_member_collection_in_progress &&
+           !target_class->full_member_collection_in_progress) {
+          ensure_class_reference_members(*target_class);
+        }
+      }
+
+      vector<FunctionBinding *> out;
+      if(lookup_scope->class_info) {
+        if(leaf_name == "operator=") {
+          ensure_implicit_special_members(*lookup_scope->class_info);
+          ensure_implicit_copy_assignment(*lookup_scope->class_info);
+          ensure_implicit_move_assignment(*lookup_scope->class_info);
+        }
+        MemberCallableLookupResult callables =
+            semantic_lookup::lookup_visible_member_callables(*lookup_scope->class_info,
+                                                             leaf_name);
+        if(!callables.templates.empty()) {
+          out = callables.functions;
+        } else {
+          MemberFunctionLookupResult result =
+              semantic_lookup::lookup_class_scoped_functions(*lookup_scope->class_info,
+                                                             leaf_name);
+          if(!result.functions.empty()) {
+            out = result.functions;
+          } else {
+            out = lookup_direct_functions(*lookup_scope, leaf_name);
+          }
+        }
+      } else {
+        semantic_lookup::lookup_functions_in_scopes(
+            vector<Scope *>(1, lookup_scope), leaf_name, out);
+      }
+      filter_ordinary_candidates(out);
+      return out;
+    };
+
+    const bool has_structured_qualifier_syntax =
+        !node.qualifier_template_id_syntaxes.empty() ||
+        !node.qualifier_type_syntaxes.empty();
+    if(!has_structured_qualifier_syntax) {
+      if(Scope * resolved_scope =
+             resolve_qualified_scope_for_node(scope, *qualified, node, true)) {
+        return lookup_in_resolved_qualified_scope(*resolved_scope);
+      }
+    }
 
     Scope * current_scope = &scope;
     if(qualified->rooted) {
@@ -15249,34 +15335,7 @@ private:
       current_scope = qualifier_info->member_scope.get();
     }
 
-    vector<FunctionBinding *> out;
-    if(current_scope->class_info) {
-      if(leaf_name == "operator=") {
-        ensure_implicit_special_members(*current_scope->class_info);
-        ensure_implicit_copy_assignment(*current_scope->class_info);
-        ensure_implicit_move_assignment(*current_scope->class_info);
-      }
-      MemberCallableLookupResult callables =
-          semantic_lookup::lookup_visible_member_callables(*current_scope->class_info,
-                                                           leaf_name);
-      if(!callables.templates.empty()) {
-        out = callables.functions;
-      } else {
-        MemberFunctionLookupResult result =
-            semantic_lookup::lookup_class_scoped_functions(*current_scope->class_info,
-                                                           leaf_name);
-        if(!result.functions.empty()) {
-          out = result.functions;
-        } else {
-          out = lookup_direct_functions(*current_scope, leaf_name);
-        }
-      }
-    } else {
-      semantic_lookup::lookup_functions_in_scopes(
-          vector<Scope *>(1, current_scope), leaf_name, out);
-    }
-    filter_ordinary_candidates(out);
-    return out;
+    return lookup_in_resolved_qualified_scope(*current_scope);
   }
 
   vector<FunctionBinding *> lookup_function_template_id(
