@@ -10468,7 +10468,10 @@ void populate_class_info(SemanticContext & ctx,
                               node_text(*class_key),
                               member.value,
                               &member);
+    const bool owner_template_member_instantiation =
+        template_api::class_template_completion_has_owner_definition(info);
     if(!info.source_template &&
+       !owner_template_member_instantiation &&
        !dependent_class &&
        nested &&
        member.kind != CppAstKind::class_forward_declaration &&

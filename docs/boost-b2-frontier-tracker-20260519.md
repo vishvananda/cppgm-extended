@@ -770,7 +770,7 @@ Local Boost wrapper state:
 | 39 | `libs/exception/test` | pass | Fresh `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/exception/test` on 2026-07-01 initially updated 127 targets, skipped 29, and failed 13; log `/tmp/boost-exception-current-20260701.log`. The `-fno-exceptions` predefine/config cluster, host RTTI secondary-vtable prefix, safe-bool streamability ranking, throw-operand cleanup, cloning/copy/thunk/vtable runtime path, throw-exception runtime path, enable-error-info base lookup, optional `nlohmann_json_test` chain, and final `exception_fail` compile-fail validation are now fixed. Full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/exception/test` exits `0` and updates 170 targets; focused `exception_fail` is marked `(failed-as-expected)`. See the detailed fixed rows below for reducer ownership and validation. |
 | 40 | `libs/fiber/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/fiber/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-fiber-current-20260703.log`. |
 | 41 | `libs/filesystem/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/filesystem/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-filesystem-current-20260703.log`. |
-| 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. The default pointer NTTP frontier is fixed. Focused `libs/flyweight/test//test_basic` then advanced to Boost.Parameter duplicate nested class definition for `BOOST_MPL_ASSERT_MSG`'s `duplicate_keyword379` in `boost/parameter/aux_/arg_list.hpp:379`; that replay frontier is also fixed. Current focused `test_basic` frontier is a `refcounted_handle` constructor rejection because `core::insert` is not found while analyzing the `flyweight` constructor body; log `/tmp/boost-flyweight-test-basic-after-duplicate-class-guard-20260703.log`. |
+| 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. The default pointer NTTP frontier is fixed. Focused `libs/flyweight/test//test_basic` then advanced through the Boost.Parameter duplicate nested class definition replay frontier, the `core::insert` member-typedef qualifier frontier, and the `insert_rep`/MPL assertion lazy nested-member-class frontier. Focused `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_basic` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-basic-after-lazy-nested-b2-20260703.log`. Next action: rerun the full `libs/flyweight/test` suite to find the next non-`test_basic` frontier. |
 
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
@@ -1749,3 +1749,39 @@ passes; focused direct Boost object compile advances to the next
 isolated perf against clean `3af8cc787` baseline
 `/tmp/cppgm-before-flyweight-qualified-baseline.json` passes three-run perf with
 instructions `+0.17%`, RSS `+0.63%`, footprint `-0.00%`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_basic` lazy nested
+member-class frontier: after the member-typedef qualifier fix, constructor
+analysis reached `flyweight_core::insert`, which calls
+`insert_rep(rep_type(...))`. For the `key_value<int, factorization,
+no_key_from_value>` policy, `product_key_value<Key, Value>::rep_type` contains
+an unused nested `no_key_from_value_failure` class whose enum initializer
+expands a `BOOST_MPL_ASSERT_MSG(false, ...)`. Completing the `rep_type`
+specialization eagerly completed that nested member class body and evaluated
+the assertion enum even though the viable forwarding constructor does not use
+the bad value-conversion constructor. The fix still binds named nested member
+class declarations while populating a class materialized from an enclosing
+class-template definition, but defers full nested class body completion until
+the nested class itself is completed. Ordinary concrete classes keep the
+existing eager nested-class completion path. No enum diagnostic weakening,
+source-text fallback, cache bypass, or Boost special case is added. Owner:
+`pa22:300` no-eager-instantiation of class-template member class definitions.
+New regression:
+`pa22/tests/general/300-lazy-nested-member-class-instantiation.t`. Pre-fix
+evidence: the reduced no-STL case
+`scratch/flyweight_insert_rep_enum_reduce.cpp` and focused direct Boost object
+compile failed with `unsupported enumerator value` while completing the unused
+nested failure class. Validation: `make -C dev cppgm++ -j8`; scratch reducer
+and focused PA22 regression pass; scratch negative still rejects direct use of
+the bad nested enum; PA22 placement audit reports no early-placement findings;
+PA22 direct-LowIR report passes `185/185`; default strict witness suite passes;
+full direct-LowIR report passes `3433/3433`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; focused direct Boost object compile succeeds, log
+`/tmp/boost-flyweight-test-basic-after-lazy-nested-20260703.log`; focused B2
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_basic`
+passes and updates 14 targets, log
+`/tmp/boost-flyweight-test-basic-after-lazy-nested-b2-20260703.log`; isolated
+perf against clean `387defdad` baseline
+`/tmp/cppgm-before-lazy-nested-baseline.json` passes with instructions
+`-0.01%`, RSS `-0.74%`, footprint `-0.02%`.
