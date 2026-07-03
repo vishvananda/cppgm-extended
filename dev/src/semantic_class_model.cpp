@@ -11042,6 +11042,10 @@ FunctionBinding * ensure_implicit_move_assignment(SemanticContext & ctx,
     }
   }
 
+  if(info.is_lambda_closure) {
+    return nullptr;
+  }
+
   if(has_user_declared_copy_constructor(info) ||
      has_user_declared_copy_assignment(info) ||
      has_user_declared_move_constructor(info) ||
@@ -11253,6 +11257,10 @@ FunctionBinding * ensure_implicit_copy_assignment(SemanticContext & ctx,
         return existing_methods->second[i];
       }
     }
+  }
+
+  if(info.is_lambda_closure) {
+    return nullptr;
   }
 
   std::vector<TypePtr> effective_params;

@@ -1,6 +1,7 @@
 #include "semantic_output.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <iterator>
 #include <map>
 #include <set>
@@ -1473,6 +1474,72 @@ bool is_int128_integral_type(const TypePtr & type)
          (base->fundamental == FT_INT128 || base->fundamental == FT_UINT128);
 }
 
+string constexpr_floating_literal_text(long double value, const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  EFundamentalType fundamental =
+      base && base->kind == Type::TK_FUNDAMENTAL ? base->fundamental : FT_DOUBLE;
+
+  long double emitted_value = value;
+  if(fundamental == FT_FLOAT) {
+    emitted_value = static_cast<float>(value);
+  } else if(fundamental == FT_DOUBLE) {
+    emitted_value = static_cast<double>(value);
+  }
+
+  ostringstream out;
+  out << setprecision(20) << emitted_value;
+  string text = out.str();
+  if(fundamental == FT_FLOAT) {
+    text += "f";
+  } else if(fundamental == FT_LONG_DOUBLE) {
+    text += "L";
+  }
+  return text;
+}
+
+bool make_constexpr_scalar_literal_node(SemanticContext & ctx,
+                                        const constant_eval::ConstexprValue & value,
+                                        const TypePtr & type,
+                                        DumpNode & out)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base || is_int128_integral_type(type)) {
+    return false;
+  }
+
+  if(is_floating_type(base)) {
+    constant_eval::ConstexprValue converted = value;
+    if(converted.kind != constant_eval::ConstexprValue::CV_FLOATING &&
+       !constant_eval::constexpr_value_cast(value, type, converted)) {
+      return false;
+    }
+    if(converted.kind != constant_eval::ConstexprValue::CV_FLOATING) {
+      return false;
+    }
+    out = make_dump_node(
+        CallSemKind::literal,
+        constexpr_floating_literal_text(converted.floating_value, type));
+    out.semantic_type = type;
+    out.value_category = CVC_PRVALUE;
+    return true;
+  }
+
+  if(is_integral_type(base) || is_named_enum_type(ctx, base)) {
+    long long constant_value = 0;
+    if(!constant_eval::constexpr_value_to_integral(value, constant_value)) {
+      return false;
+    }
+    out = make_dump_node(CallSemKind::literal, to_string(constant_value));
+    set_callsem_int_value(out, constant_value);
+    out.semantic_type = type;
+    out.value_category = CVC_PRVALUE;
+    return true;
+  }
+
+  return false;
+}
+
 bool is_indirect_class_reference_type_for_output(const TypePtr & type)
 {
   return is_reference_type(type) &&
@@ -2934,8 +3001,8 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
           symbol_linkage::thread_local_guard_internal_symbol(symbol.internal_symbol));
     }
 
-    long long constant_value = 0;
     constant_eval::ConstexprValue constexpr_value;
+    DumpNode literal_node;
     Scope * initializer_scope =
         binding.constant_initializer_scope ?
             binding.constant_initializer_scope :
@@ -2954,16 +3021,11 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
     if(binding.constant_initializer &&
        initializer_scope &&
        !ctx.complete_class_type(binding.type) &&
-       !is_int128_integral_type(binding.type) &&
        ctx.evaluate_initializer_constant_value(*initializer_scope,
                                                *binding.constant_initializer,
                                                binding.type,
                                                constexpr_value) &&
-       constant_eval::constexpr_value_to_integral(constexpr_value, constant_value)) {
-      DumpNode literal_node = make_dump_node(CallSemKind::literal, to_string(constant_value));
-      set_callsem_int_value(literal_node, constant_value);
-      literal_node.semantic_type = binding.type;
-      literal_node.value_category = CVC_PRVALUE;
+       make_constexpr_scalar_literal_node(ctx, constexpr_value, binding.type, literal_node)) {
       var_node.children.push_back(std::move(literal_node));
     } else if(!var_node.is_extern_declaration &&
               initializer_scope &&
@@ -5647,27 +5709,24 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
           }
         }
         if(is_definition) {
-          long long constant_value = 0;
           constant_eval::ConstexprValue constexpr_value;
+          DumpNode literal_node;
           TypePtr constant_base = strip_top_level_cv(remove_reference_type(emitted_type));
           const std::string lifetime_object_name = binding ? binding->name : name;
           const bool has_constant_initializer =
               initializer &&
               !is_reference_type(emitted_type) &&
               constant_base &&
-              constant_base->kind == Type::TK_FUNDAMENTAL &&
               !ctx.complete_class_type(emitted_type) &&
-              !is_int128_integral_type(emitted_type) &&
               ctx.evaluate_initializer_constant_value(*initializer_scope,
                                                      *initializer,
                                                      emitted_type,
                                                      constexpr_value) &&
-              constant_eval::constexpr_value_to_integral(constexpr_value, constant_value);
+              make_constexpr_scalar_literal_node(ctx,
+                                                 constexpr_value,
+                                                 emitted_type,
+                                                 literal_node);
           if(has_constant_initializer) {
-            DumpNode literal_node = make_dump_node(CallSemKind::literal, to_string(constant_value));
-            set_callsem_int_value(literal_node, constant_value);
-            literal_node.semantic_type = emitted_type;
-            literal_node.value_category = CVC_PRVALUE;
             var_node.children.push_back(std::move(literal_node));
           } else if(ctx.complete_class_type(emitted_type)) {
             semantic_lifetime::analyze_object_lifetime_actions(

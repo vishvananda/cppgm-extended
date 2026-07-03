@@ -770,7 +770,7 @@ Local Boost wrapper state:
 | 39 | `libs/exception/test` | pass | Fresh `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/exception/test` on 2026-07-01 initially updated 127 targets, skipped 29, and failed 13; log `/tmp/boost-exception-current-20260701.log`. The `-fno-exceptions` predefine/config cluster, host RTTI secondary-vtable prefix, safe-bool streamability ranking, throw-operand cleanup, cloning/copy/thunk/vtable runtime path, throw-exception runtime path, enable-error-info base lookup, optional `nlohmann_json_test` chain, and final `exception_fail` compile-fail validation are now fixed. Full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/exception/test` exits `0` and updates 170 targets; focused `exception_fail` is marked `(failed-as-expected)`. See the detailed fixed rows below for reducer ownership and validation. |
 | 40 | `libs/fiber/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/fiber/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-fiber-current-20260703.log`. |
 | 41 | `libs/filesystem/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/filesystem/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-filesystem-current-20260703.log`. |
-| 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. The default pointer NTTP frontier is fixed. Focused `libs/flyweight/test//test_basic` then advanced through the Boost.Parameter duplicate nested class definition replay frontier, the `core::insert` member-typedef qualifier frontier, and the `insert_rep`/MPL assertion lazy nested-member-class frontier. Focused `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_basic` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-basic-after-lazy-nested-b2-20260703.log`. Full Flyweight rerun after that found five remaining compile targets, with build-order first `test_init.o` failing non-type template argument evaluation for `marked_hashed_factory<&mark2>`; log `/tmp/boost-flyweight-full-after-test-basic-20260703.log`. The namespace object-pointer NTTP and follow-up global member-template rebound frontiers are fixed. Focused `libs/flyweight/test//test_init` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-init-rebound-nttp-20260703.log`. Full Flyweight rerun after that updates 97 targets, skips 10, and fails 4 compile targets; log `/tmp/boost-flyweight-full-after-test-init-rebound-20260703.log`. The next build-order frontier is `test_concurrent_factory.o`, failing `std::__1::unique_ptr<std::__1::tuple<...>>` construction because ABI symbol construction fails for a weak lambda `operator=` while completing the tuple. Remaining same-run failures are `intermod_holder_dll.o` and `test_intermod_holder.o` on an enum/integral NTTP evaluation chain through Boost.Interprocess/Intrusive, plus `test_serialization.o` on private base member access to `get_helper_collection`. |
+| 42 | `libs/flyweight/test` | active | Fresh `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 failed with default pointer non-type template argument evaluation in Flyweight factory specifier templates; log `/tmp/boost-flyweight-current-20260703.log`. The default pointer NTTP frontier is fixed. Focused `libs/flyweight/test//test_basic` then advanced through the Boost.Parameter duplicate nested class definition replay frontier, the `core::insert` member-typedef qualifier frontier, and the `insert_rep`/MPL assertion lazy nested-member-class frontier. Focused `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_basic` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-basic-after-lazy-nested-b2-20260703.log`. Full Flyweight rerun after that found five remaining compile targets, with build-order first `test_init.o` failing non-type template argument evaluation for `marked_hashed_factory<&mark2>`; log `/tmp/boost-flyweight-full-after-test-basic-20260703.log`. The namespace object-pointer NTTP and follow-up global member-template rebound frontiers are fixed. Focused `libs/flyweight/test//test_init` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-init-rebound-nttp-20260703.log`. Full Flyweight rerun after that updates 97 targets, skips 10, and fails 4 compile targets; log `/tmp/boost-flyweight-full-after-test-init-rebound-20260703.log`. The `test_concurrent_factory.o` lambda closure assignment frontier and its follow-up static constexpr floating global runtime frontier are fixed. Focused `libs/flyweight/test//test_concurrent_factory` now passes and updates 14 targets; log `/tmp/boost-flyweight-test-concurrent-after-float-constexpr-20260703.log`. Full Flyweight rerun after that updates 101 targets, skips 7, and fails 3 compile targets; log `/tmp/boost-flyweight-full-after-concurrent-float-constexpr-20260703.log`. The next build-order frontier is `intermod_holder_dll.o` / `test_intermod_holder.o`, failing enum/integral NTTP evaluation through Boost.Interprocess/Intrusive at `internal_any_hook_bool_is_true<BaseHook>::value` and legacy text evaluation of `(boost::intrusive::algo_types)5`. The remaining same-run failure is `test_serialization.o` on private base member access to `get_helper_collection`. |
 
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
@@ -1817,3 +1817,61 @@ perf against clean `fe12c7bec` baseline
 `/tmp/cppgm-before-rebound-nttp-baseline.json` passes with instructions
 `+0.18%`, RSS `+0.34%`, footprint `-0.05%`; detailed report
 `/tmp/cppgm-after-rebound-nttp-perf-report.json`.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_concurrent_factory`
+lambda closure assignment frontier: after the object-pointer NTTP fixes, the
+focused target reached libc++ `std::tuple<std::unique_ptr<int>, lambda>`
+construction while completing the concurrent factory task wrapper. The
+compiler synthesized implicit copy/move assignment operators for lambda closure
+classes, so libc++ assignment SFINAE treated the closure as assignable and
+forced ABI symbol construction for a weak lambda `operator=`. C++11 closure
+types do not have those assignment operators. The fix makes implicit copy and
+move assignment synthesis return no binding for lambda closure class metadata;
+no libc++ or Boost special case is added. Owner: `pa24:200` lambda closure
+semantics. New regression:
+`pa24/tests/general/200-lambda-closure-assignment-sfinae.t`. Pre-fix evidence:
+the focused Boost object compile failed during tuple/unique_ptr construction,
+and reduced hosted tuple/unique_ptr and no-STL SFINAE probes reproduced the
+same assignability shape. Validation: `make -C dev cppgm++ -j8`; direct
+reducers pass; focused PA24 check passes; PA24 placement audit reports no
+early-placement findings; focused direct Boost object compile advances through
+the lambda assignment compile frontier, log
+`/tmp/boost-flyweight-test-concurrent-direct-after-lambda-assign-20260703.log`.
+The following focused B2 run linked but aborted at runtime with `std::bad_alloc`,
+which reduced to the static constexpr floating global output frontier below.
+
+2026-07-03 Boost.Flyweight `libs/flyweight/test//test_concurrent_factory`
+static constexpr floating global frontier: Boost.Unordered's concurrent node
+set uses a namespace-scope `static constexpr float mlf = 0.875f`. When that
+object was referenced, semantic output folded the constant initializer through
+the integral constexpr conversion helper and emitted `global ... = 0`, so
+runtime growth divided by zero and requested an enormous allocation. The fix
+keeps the existing integral/enum path but emits typed floating constexpr
+literal nodes for floating object definitions, preserving float and long-double
+suffixes in LowIR text. Owner: `pa20:400` constexpr floating/static storage.
+New regression:
+`pa20/tests/general/400-static-constexpr-floating-global-storage.t`; existing
+`pa20/tests/general/400-constexpr-floating-suffix-literals.ref` was refreshed
+for the intentional `1f` and `3L` direct-text output. Pre-fix evidence:
+`scratch/static_constexpr_float_reduce.cpp` emitted `@ns__mlf ... = 0`, and
+the Boost concurrent-node-set and Flyweight concurrent-factory reducers aborted
+with `std::bad_alloc`. Validation: `make -C dev cppgm++ -j8`; the LowIR dump
+for the reducer now contains `global @ns__mlf : f32 ... = 0.875f`; focused
+PA20 check passes; PA20 placement audit reports no early-placement findings;
+Boost concurrent-node-set and Flyweight concurrent-factory reducers run with
+exit `0`; focused B2
+`/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 ... ./run-cppgm-b2.sh -a libs/flyweight/test//test_concurrent_factory`
+passes and updates 14 targets, log
+`/tmp/boost-flyweight-test-concurrent-after-float-constexpr-20260703.log`.
+Full Flyweight rerun after both concurrent-factory fixes updates 101 targets,
+skips 7, and fails 3 compile targets, log
+`/tmp/boost-flyweight-full-after-concurrent-float-constexpr-20260703.log`; the
+remaining first frontier is the Interprocess/Intrusive enum NTTP chain in
+`intermod_holder_dll.o` and `test_intermod_holder.o`, with the separate
+serialization private-access failure in `test_serialization.o`. Full
+direct-LowIR report passes `3437/3437`; full strict direct-LowIR compare
+passes; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; isolated perf against clean `d680fd3a3` baseline
+`/tmp/cppgm-before-lambda-float-baseline.json` passes with instructions
+`-0.06%`, RSS `-1.61%`, footprint `+0.04%`; detailed report
+`/tmp/cppgm-after-lambda-float-perf-report.json`.

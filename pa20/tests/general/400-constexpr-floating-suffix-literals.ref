@@ -1,6 +1,6 @@
-global @f : f32 [binding=internal, object=_Z1f] = 1
+global @f : f32 [binding=internal, object=_Z1f] = 1f
 global @d : f64 [binding=internal, object=_Z1d] = 2
-global @ld : f80 [binding=internal, object=_Z2ld] = 3
+global @ld : f80 [binding=internal, object=_Z2ld] = 3L
 global @arr [binding=internal, object=_Z3arr] = {
   f80 1e0L
   f80 1e1L
