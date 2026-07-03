@@ -5669,6 +5669,93 @@ ExprInfo make_builtin_call_result(SemanticContext & ctx,
                           std::move(args));
 }
 
+bool scope_is_std_namespace_or_inline_child(const Scope * scope)
+{
+  const Scope * current = scope;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "std") {
+    return false;
+  }
+  for(const Scope * parent = current->parent; parent; parent = parent->parent) {
+    if(parent->namespace_scope &&
+       parent->name != "<global>" &&
+       parent->name != "<unnamed>") {
+      return false;
+    }
+  }
+  return true;
+}
+
+const TemplateIdSyntax * standard_char_traits_qualifier(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & callee_node)
+{
+  const QualifiedName * qualified = cppast_qualified_name_syntax(callee_node);
+  if(!qualified ||
+     (!qualified->rooted && qualified->qualifiers.empty()) ||
+     (qualified->name != "to_char_type" && qualified->name != "to_int_type")) {
+    return nullptr;
+  }
+
+  const TemplateIdSyntax * match = nullptr;
+  for(size_t i = 0; i < callee_node.qualifier_template_id_syntaxes.size(); ++i) {
+    const TemplateIdSyntax & syntax =
+        callee_node.qualifier_template_id_syntaxes[i];
+    if(syntax.name.name != "char_traits" ||
+       syntax.arguments.size() != 1 ||
+       syntax.argument_syntaxes.size() != 1) {
+      continue;
+    }
+
+    ClassTemplateDecl * decl = ctx.lookup_class_template(scope, syntax.name);
+    if(!decl ||
+       decl->name != syntax.name.name ||
+       !scope_is_std_namespace_or_inline_child(decl->declaring_scope)) {
+      continue;
+    }
+    match = &syntax;
+  }
+  return match;
+}
+
+bool try_analyze_standard_char_traits_call(SemanticContext & ctx,
+                                           Scope & scope,
+                                           const CppAstNode & callee_node,
+                                           const vector<const CppAstNode *> & arg_nodes,
+                                           ExprInfo & out)
+{
+  const QualifiedName * qualified = cppast_qualified_name_syntax(callee_node);
+  const TemplateIdSyntax * char_traits =
+      standard_char_traits_qualifier(ctx, scope, callee_node);
+  if(!qualified || !char_traits || arg_nodes.size() != 1) {
+    return false;
+  }
+
+  TypePtr char_type;
+  if(!template_api::type::resolve_type_argument_input(
+         ctx,
+         scope,
+         &char_traits->argument_syntaxes[0],
+         true,
+         char_type) ||
+     !char_type) {
+    return false;
+  }
+
+  TypePtr result_type =
+      qualified->name == "to_char_type" ? char_type : make_fundamental(FT_INT);
+  out = ctx.analyze_expression_for_target(scope, *arg_nodes[0], result_type);
+  out.type = result_type;
+  out.category = VC_PRVALUE;
+  ctx.set_expr_info_metadata(out, out.type, out.category);
+  return true;
+}
+
 ExprInfo make_integer_literal_result(SemanticContext & ctx, long long value)
 {
   ExprInfo result;
@@ -12131,6 +12218,14 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                         "] [available " + join_string_list(available_methods, ",") + "]");
     }
   } else if(lookup_callee_node.kind == CppAstKind::id_expression) {
+    ExprInfo standard_char_traits_result;
+    if(try_analyze_standard_char_traits_call(ctx,
+                                             scope,
+                                             lookup_callee_node,
+                                             arg_nodes,
+                                             standard_char_traits_result)) {
+      return standard_char_traits_result;
+    }
     ExprInfo builtin_result;
     if(try_analyze_builtin_call_expression(ctx, scope, lookup_callee_node.value, arg_nodes,
                                            options,

@@ -4457,6 +4457,56 @@ bool has_qualifier_type_syntax(const CppAstNode & node)
   return false;
 }
 
+bool char_traits_declaring_scope_is_std(const Scope * scope)
+{
+  const Scope * current = scope;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "std") {
+    return false;
+  }
+  for(const Scope * parent = current->parent; parent; parent = parent->parent) {
+    if(parent->namespace_scope &&
+       parent->name != "<global>" &&
+       parent->name != "<unnamed>") {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool try_resolve_standard_char_traits_member_type(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const std::string & member_name,
+    const TemplateIdSyntax & qualifier_template_id,
+    TypePtr & out)
+{
+  out.reset();
+  if(member_name != "int_type" ||
+     qualifier_template_id.name.name != "char_traits" ||
+     qualifier_template_id.arguments.size() != 1) {
+    return false;
+  }
+
+  ClassTemplateDecl * decl =
+      lookup_class_template_impl(
+          services,
+          scope,
+          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+  if(!decl ||
+     decl->name != qualifier_template_id.name.name ||
+     !char_traits_declaring_scope_is_std(decl->declaring_scope)) {
+    return false;
+  }
+
+  out = make_fundamental(FT_INT);
+  return true;
+}
+
 StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -4590,6 +4640,14 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     }
     if(lookup_qualifier_template_id &&
        i + 1 == qualified.qualifiers.size()) {
+      if(try_resolve_standard_char_traits_member_type(
+             services,
+             *current,
+             qualified.name,
+             *lookup_qualifier_template_id,
+             out)) {
+        return StructuredTypeLookupResult::Resolved;
+      }
       switch(try_resolve_standard_meta_member_type(
           services,
           *current,

@@ -7423,15 +7423,15 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
 
   TypePtr cast_target_base = strip_top_level_cv(target_type);
   TypePtr cast_target_object_type = strip_top_level_cv(remove_reference_type(target_type));
-  const bool class_object_static_cast =
-      node.simple_type == KW_STATIC_CAST &&
+  const bool class_object_direct_cast =
+      (node.simple_type == KW_STATIC_CAST || c_style_cast) &&
       cast_target_base &&
       cast_target_base->kind != Type::TK_LVALUE_REFERENCE &&
       cast_target_base->kind != Type::TK_RVALUE_REFERENCE &&
       cast_target_object_type &&
       (ctx.class_info_for_type(cast_target_object_type) ||
        complete_class_type_for_lookup(ctx, cast_target_object_type));
-  if(class_object_static_cast) {
+  if(class_object_direct_cast) {
     vector<const CppAstNode *> arg_nodes(1, &node.children[1]);
     return semantic_overload::analyze_functional_cast(
         ctx,

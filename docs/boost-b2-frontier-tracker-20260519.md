@@ -1584,3 +1584,39 @@ passes `185/185`; PA21 placement audit exits cleanly; `python3
 scripts/audit_text_reparse.py --strict` reports all zero; full direct-LowIR
 `test-report-nobuild` passes `3426/3426`; strict direct-LowIR witness suite
 passes.
+
+2026-07-03 Boost.Xpressive `libs/xpressive/test//test_non_char` hosted
+`char_traits` frontier: after the `test_actions` fix, a no-force Xpressive
+continuation reached `test_non_char.cpp`, where Boost.Xpressive's `UChar`
+iterator path asks for `std::char_traits<UChar>::int_type`, then casts an
+integer through `(Char)i`, then calls
+`std::char_traits<UChar>::to_char_type` and `to_int_type`. On the hosted libc++
+lane the `char_traits` primary is undefined, but this Boost path still expects
+the compiler compatibility surface to treat the primary like a narrow integer
+conversion shim. The fix extends class-object direct casts so C-style
+class-object casts reuse the existing functional/direct-initialization path,
+and adds a hosted compatibility hook only for qualified `std::char_traits<T>`
+`int_type`, `to_char_type`, and `to_int_type` when lookup resolves the declaring
+template in namespace `std`. The shim maps `int_type` to `int`; the two
+conversion calls still analyze their single argument through normal target
+expression analysis and do not emit an unresolved library call. Owners:
+`pa16:200` C-style class-object direct initialization and `pa34:700` hosted
+`char_traits` primary compatibility. New regressions:
+`pa16/tests/general/200-cstyle-class-cast-direct-initializes.t` and
+`pa34/tests/compile/700-hosted-char-traits-primary-conversion-shims.t`.
+Pre-fix evidence: direct `test_non_char.cpp` first failed resolving
+`std::char_traits<UChar>::int_type`, then failed `(Char)i` as a built-in cast,
+then failed the `to_char_type` member call. Validation: `make -C dev cppgm++
+-j8`; compact C-style class-cast and `char_traits` reducers compile; focused
+PA16 and PA34 owner checks pass; PA16/PA34 direct-LowIR report passes
+`411/411`; PA16 and PA34 placement audits report zero placement findings and
+zero local hygiene findings; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; focused B2
+`libs/xpressive/test//test_non_char` passes and updates 41 targets; strict
+direct-LowIR witness suite passes; full direct-LowIR `test-report-nobuild`
+passes `3428/3428`; `git diff --check` passes. The long-lived active baseline
+at `/tmp/cppgm-boost-frontier-pr36-3ee8fb3f8-20260630-perf-baseline.json`
+misses the cumulative dirty-tree instruction gate at `+2.10%`, while this fix
+isolated against `/tmp/cppgm-before-xpressive-non-char-baseline.json` passes
+three-run perf with instructions `+0.02%`, RSS `+0.30%`, footprint `+0.02%`;
+report: `/tmp/cppgm-perf-after-xpressive-non-char-isolated.json`.
