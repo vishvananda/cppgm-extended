@@ -18487,6 +18487,87 @@ bool try_evaluate_static_cast_integral_text(const string & text, long long & out
   return false;
 }
 
+bool is_integral_cstyle_cast_type_text(const string & text)
+{
+  if(text.empty()) {
+    return false;
+  }
+  static const char * const names[] = {
+      "bool",
+      "char",
+      "signedchar",
+      "unsignedchar",
+      "short",
+      "shortint",
+      "signedshort",
+      "signedshortint",
+      "unsignedshort",
+      "unsignedshortint",
+      "int",
+      "signed",
+      "signedint",
+      "unsigned",
+      "unsignedint",
+      "long",
+      "longint",
+      "signedlong",
+      "signedlongint",
+      "unsignedlong",
+      "unsignedlongint",
+      "longlong",
+      "longlongint",
+      "signedlonglong",
+      "signedlonglongint",
+      "unsignedlonglong",
+      "unsignedlonglongint"
+  };
+  for(size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
+    if(text == names[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool try_evaluate_cstyle_cast_integral_text(const string & text, long long & out)
+{
+  const string compact = compact_expression_text(text);
+  if(compact.size() < 4 || compact[0] != '(') {
+    return false;
+  }
+
+  int depth = 0;
+  size_t close_paren = string::npos;
+  for(size_t i = 0; i < compact.size(); ++i) {
+    if(compact[i] == '(') {
+      ++depth;
+    } else if(compact[i] == ')') {
+      --depth;
+      if(depth == 0) {
+        close_paren = i;
+        break;
+      }
+      if(depth < 0) {
+        return false;
+      }
+    }
+  }
+  if(close_paren == string::npos ||
+     close_paren <= 1 ||
+     close_paren + 1 >= compact.size()) {
+    return false;
+  }
+
+  const string type_text = compact.substr(1, close_paren - 1);
+  if(!is_integral_cstyle_cast_type_text(type_text)) {
+    return false;
+  }
+
+  string operand = compact.substr(close_paren + 1);
+  strip_balanced_outer_parens(operand);
+  return parse_simple_signed_integer_text(operand, out);
+}
+
 bool parse_simple_integral_constant_text(string text, long long & out)
 {
   strip_balanced_outer_parens(text);
@@ -18533,7 +18614,8 @@ bool try_evaluate_integral_text(const string & text, long long & out)
   string compact = compact_expression_text(text);
   strip_balanced_outer_parens(compact);
   if(parse_simple_integral_constant_text(compact, out) ||
-     try_evaluate_static_cast_integral_text(compact, out)) {
+     try_evaluate_static_cast_integral_text(compact, out) ||
+     try_evaluate_cstyle_cast_integral_text(compact, out)) {
     return true;
   }
 
@@ -18686,6 +18768,8 @@ bool try_evaluate_integral_text_with_pack_scope(Scope & scope,
   string compact = compact_expression_text(text);
   strip_balanced_outer_parens(compact);
   if(parse_simple_integral_constant_text(compact, out) ||
+     try_evaluate_static_cast_integral_text(compact, out) ||
+     try_evaluate_cstyle_cast_integral_text(compact, out) ||
      parse_sizeof_pack_count_text(scope, compact, out) ||
 	     lookup_integral_constant_count_text(scope, compact, out)) {
     return true;

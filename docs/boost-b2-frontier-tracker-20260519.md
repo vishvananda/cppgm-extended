@@ -1424,3 +1424,35 @@ passes `182/182`; full direct-LowIR `test-report-nobuild` passes `3422/3422`;
 full direct-LowIR strict suite passes; PA22 placement audit reports no
 early-placement findings; `python3 scripts/audit_text_reparse.py --strict`
 reports all zero; `git diff --check` passes. | this commit |
+
+2026-07-02 Boost.Xpressive `libs/xpressive/test/test3.cpp` `make_adaptor`
+frontier: argument analysis for `make_adaptor<matchable_ex<BidiIter>>`
+instantiates Proto `reverse_fold`/`use_simple_repeat` machinery and reaches a
+compiler-generated unsigned non-type value spelling `(unsigned int)1048578ULL`.
+The legacy NTTP text evaluator already accepted simple integer literals and
+`static_cast` forms, but not this synthetic C-style cast form, so overload
+probing dropped the valid adaptor candidate and reported `unknown function
+make_adaptor<matchable_ex<BidiIter>>`. The fix adds a narrow evaluator for
+C-style casts to fundamental integral type spellings in the existing integral
+text path; it adds no source-text reparse, fallback resolver, cache, or Boost
+special case. Owner: `pa34:500` hosted compiler-intrinsic compatibility because
+the compact reducer exercises `__make_integer_seq` count evaluation through the
+hosted intrinsic surface; the implementation path is the shared NTTP evaluator.
+New regression: `pa34/tests/compile/500-make-integer-seq-cstyle-cast-count.t`.
+Pre-fix evidence: the no-STL `__make_integer_seq<integer_sequence, unsigned,
+(unsigned int)3ULL>` reducer failed with `legacy non-type template argument text
+evaluation: (unsigned int)3ULL`; the small Xpressive header probe and direct
+Boost `test3.cpp` compile failed with the `make_adaptor` diagnostic. After the
+fix, the reducer, the header probe, and direct Boost `test3.cpp` compile all
+pass. A focused B2 `libs/xpressive/test` rerun no longer contains the
+`make_adaptor` or legacy non-type diagnostics, but still exits `1` on later
+frontiers: Boost.Test dependency `framework.o` reports `unknown function
+call_impl`, and several Xpressive targets report failure to build an ABI IR
+symbol for weak `boost::proto::exprns_::extends<...>::extends` while populating
+`basic_regex<BidiIter>::ECMAScript`. Validation: `make -C dev cppgm++ -j8`;
+focused PA34 regression passes; PA34 direct-LowIR report passes `885/885`; PA34
+placement audit reports no early-placement findings; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; full direct-LowIR
+strict suite passes; direct Boost `test3.cpp` produces
+`/tmp/boost-xpressive-test3-after-cstyle.o`; `git diff --check` passes. | this
+commit |
