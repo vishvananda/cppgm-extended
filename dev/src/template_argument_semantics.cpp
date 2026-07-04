@@ -3183,6 +3183,21 @@ bool resolve_member_template_owner_type_text(
       }
       out.reset();
     }
+    bool simple_owner_arguments = true;
+    for(size_t i = 0; i < owner_args.size(); ++i) {
+      if(owner_args[i].find("::") != string::npos ||
+         owner_args[i].find("...") != string::npos) {
+        simple_owner_arguments = false;
+        break;
+      }
+    }
+    if(simple_owner_arguments) {
+      std::vector<TemplateArgumentSyntax> empty_syntaxes;
+      if(resolve_owner_syntax_structurally(empty_syntaxes)) {
+        return true;
+      }
+      out.reset();
+    }
   }
 
   if(owner_split) {
@@ -26838,7 +26853,11 @@ TypePtr try_resolve_direct_concrete_qualified_member_type(
 
   const size_t owner_split = semantic_utils::top_level_scope_split(normalized_text);
   if(owner_split != string::npos) {
-    const string owner_text = trim_space(normalized_text.substr(0, owner_split));
+    string owner_text = trim_space(normalized_text.substr(0, owner_split));
+    string stripped_typename_text;
+    if(strip_leading_typename_text(owner_text, stripped_typename_text)) {
+      owner_text = trim_space(stripped_typename_text);
+    }
     if(owner_text.find('<') != string::npos) {
       TypePtr direct = resolve_from_owner_type(
           owner_text,
@@ -27802,14 +27821,39 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
     return DependentNamedTypeResolutionStatus::Resolved;
   }
 
-  if(normalized_text.find('<') != string::npos) {
+  if(normalized_text.find('<') != string::npos &&
+     normalized_text.find("...") != string::npos) {
     return DependentNamedTypeResolutionStatus::KeepDependent;
+  }
+  if(normalized_text.find('<') != string::npos) {
+    const size_t direct_owner_split =
+        semantic_utils::top_level_scope_split(normalized_text);
+    const string direct_owner_text =
+        direct_owner_split == string::npos ?
+            normalized_text :
+            trim_space(normalized_text.substr(0, direct_owner_split));
+    QualifiedName direct_owner_name;
+    std::vector<string> direct_owner_args;
+    if(semantic_utils::split_top_level_template_id_text(direct_owner_text,
+                                                        direct_owner_name,
+                                                        direct_owner_args)) {
+      for(size_t i = 0; i < direct_owner_args.size(); ++i) {
+        if(direct_owner_args[i].find("::") != string::npos ||
+           direct_owner_args[i].find("...") != string::npos) {
+          return DependentNamedTypeResolutionStatus::KeepDependent;
+        }
+      }
+    }
   }
 
   if(TypePtr direct_member =
          try_resolve_direct_concrete_qualified_member_type(services, scope, normalized_text)) {
     out = direct_member;
     return DependentNamedTypeResolutionStatus::Resolved;
+  }
+
+  if(normalized_text.find('<') != string::npos) {
+    return DependentNamedTypeResolutionStatus::KeepDependent;
   }
 
   if(!syntactically_dependent) {
@@ -37301,6 +37345,12 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(
           services, scope, trimmed, value, target_type);
   if(member_value_status != NT_ARG_PARSE_FAILED) {
     return finish(member_value_status);
+  }
+
+  if(trimmed.find("::") == string::npos &&
+     scope_contains_template_context_for_unresolved_identifier(services, scope) &&
+     !callsemantic_internal::collect_identifier_tokens(trimmed).names.empty()) {
+    return finish(NT_ARG_DEPENDENT);
   }
 
   throw logic_error("legacy non-type template argument text evaluation: " + trimmed);

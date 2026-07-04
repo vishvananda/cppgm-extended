@@ -13058,28 +13058,40 @@ private:
       }
       return decl.type_id;
     };
-	    auto resolve_nested_alias_type_id_syntax =
-	        [&](TypePtr & out) -> bool
-	    {
-	      out.reset();
-	      const CppAstNode * type_id_node = substituted_alias_type_id_node();
-	      if(!type_id_node) {
-	        return false;
-	      }
-	      const TemplateIdSyntax * syntax =
-	          first_template_id_syntax_in_subtree(*type_id_node);
-	      if(!syntax || syntax->name.name.empty()) {
-	        return false;
-	      }
-	      AliasTemplateDecl * nested_alias =
-	          lookup_alias_template(*inst_scope, syntax->name);
-	      if(!nested_alias || nested_alias == &decl) {
-	        return false;
-	      }
-	      const vector<string> arg_texts =
-	          template_id_argument_texts_preserving_spacing(*syntax);
-	      const witness::ScopedTemplateWitnessSourceCapturePause
-	          source_capture_pause;
+    const auto compact_type_id_text =
+        [](const string & text) -> string
+    {
+      string out;
+      out.reserve(text.size());
+      for(size_t i = 0; i < text.size(); ++i) {
+        if(!isspace(static_cast<unsigned char>(text[i]))) {
+          out.push_back(text[i]);
+        }
+      }
+      return out;
+    };
+    auto resolve_nested_alias_type_id_syntax =
+        [&](TypePtr & out) -> bool
+    {
+      out.reset();
+      const CppAstNode * type_id_node = substituted_alias_type_id_node();
+      if(!type_id_node) {
+        return false;
+      }
+      const TemplateIdSyntax * syntax =
+          first_template_id_syntax_in_subtree(*type_id_node);
+      if(!syntax || syntax->name.name.empty()) {
+        return false;
+      }
+      AliasTemplateDecl * nested_alias =
+          lookup_alias_template(*inst_scope, syntax->name);
+      if(!nested_alias || nested_alias == &decl) {
+        return false;
+      }
+      const vector<string> arg_texts =
+          template_id_argument_texts_preserving_spacing(*syntax);
+      const witness::ScopedTemplateWitnessSourceCapturePause
+          source_capture_pause;
       out = instantiate_alias_template_with_syntax(
           *nested_alias,
           *inst_scope,
@@ -13087,73 +13099,139 @@ private:
           &syntax->argument_syntaxes,
           reference_class_templates_only);
       return out && !type_depends_on_template_parameter(out);
-	    };
-	    auto resolve_direct_alias_type_id_syntax =
-	        [&](TypePtr & out) -> bool
-	    {
-	      out.reset();
-	      const CppAstNode * type_id_node = substituted_alias_type_id_node();
-	      if(!type_id_node) {
-	        return false;
-	      }
-	      const TemplateIdSyntax * syntax =
-	          first_template_id_syntax_in_subtree(*type_id_node);
-	      if(!syntax || syntax->name.name.empty()) {
-	        return false;
-	      }
-	      const auto compact =
-	          [](const string & text) -> string
-	      {
-	        string out;
-	        out.reserve(text.size());
-	        for(size_t i = 0; i < text.size(); ++i) {
-	          if(!isspace(static_cast<unsigned char>(text[i]))) {
-	            out.push_back(text[i]);
-	          }
-	        }
-	        return out;
-	      };
-	      if(compact(spaced_node_text(*type_id_node)) !=
-	         compact(template_id_syntax_text_preserving_spacing(*syntax))) {
-	        return false;
-	      }
-	      AliasTemplateDecl * nested_alias =
-	          lookup_alias_template(*inst_scope, syntax->name);
-	      if(!nested_alias || nested_alias == &decl) {
-	        return false;
-	      }
-	      const vector<string> arg_texts =
-	          template_id_argument_texts_preserving_spacing(*syntax);
-	      const witness::ScopedTemplateWitnessSourceCapturePause
-	          source_capture_pause;
-	      out = instantiate_alias_template_with_syntax(
-	          *nested_alias,
-	          *inst_scope,
-	          arg_texts,
-	          &syntax->argument_syntaxes,
-	          reference_class_templates_only);
-	      return out && !type_depends_on_template_parameter(out);
-	    };
-		    auto refine_instantiated_alias = [&](TypePtr candidate) -> TypePtr
-		    {
-		      if(!candidate || !type_depends_on_template_parameter(candidate)) {
-		        return candidate;
-	      }
+    };
+    auto resolve_direct_alias_type_id_syntax =
+        [&](TypePtr & out) -> bool
+    {
+      out.reset();
+      const CppAstNode * type_id_node = substituted_alias_type_id_node();
+      if(!type_id_node) {
+        return false;
+      }
+      const TemplateIdSyntax * syntax =
+          first_template_id_syntax_in_subtree(*type_id_node);
+      if(!syntax || syntax->name.name.empty()) {
+        return false;
+      }
+      if(compact_type_id_text(spaced_node_text(*type_id_node)) !=
+         compact_type_id_text(
+             template_id_syntax_text_preserving_spacing(*syntax))) {
+        return false;
+      }
+      AliasTemplateDecl * nested_alias =
+          lookup_alias_template(*inst_scope, syntax->name);
+      if(!nested_alias || nested_alias == &decl) {
+        return false;
+      }
+      const vector<string> arg_texts =
+          template_id_argument_texts_preserving_spacing(*syntax);
+      const witness::ScopedTemplateWitnessSourceCapturePause
+          source_capture_pause;
+      out = instantiate_alias_template_with_syntax(
+          *nested_alias,
+          *inst_scope,
+          arg_texts,
+          &syntax->argument_syntaxes,
+          reference_class_templates_only);
+      return out && !type_depends_on_template_parameter(out);
+    };
+    bool alias_type_id_is_direct_class_template_id_known = false;
+    bool alias_type_id_is_direct_class_template_id = false;
+    auto direct_class_template_alias_type_id =
+        [&]() -> bool
+    {
+      if(alias_type_id_is_direct_class_template_id_known) {
+        return alias_type_id_is_direct_class_template_id;
+      }
+      alias_type_id_is_direct_class_template_id_known = true;
+      if(!decl.type_id) {
+        return false;
+      }
+      const TemplateIdSyntax * syntax =
+          first_template_id_syntax_in_subtree(*decl.type_id);
+      if(!syntax || syntax->name.name.empty()) {
+        return false;
+      }
+      if(compact_type_id_text(spaced_type_id_text) !=
+         compact_type_id_text(
+             template_id_syntax_text_preserving_spacing(*syntax))) {
+        return false;
+      }
+      alias_type_id_is_direct_class_template_id =
+          lookup_class_template(*inst_scope, syntax->name) != nullptr;
+      return alias_type_id_is_direct_class_template_id;
+    };
+    auto materialize_concrete_alias_class_type =
+        [&](TypePtr candidate) -> TypePtr
+    {
+      if(!candidate ||
+         !direct_class_template_alias_type_id() ||
+         type_depends_on_template_parameter(candidate)) {
+        return candidate;
+      }
+      TypePtr base = strip_top_level_cv(candidate);
+      if(!base ||
+         base->kind != Type::TK_NAMED ||
+         class_info_for_type(base)) {
+        return candidate;
+      }
+      std::string lookup_text = trim_space(base->named_display);
+      if(lookup_text.empty()) {
+        lookup_text = trim_space(base->named_key);
+      }
+      lookup_text =
+          strip_elaborated_type_prefix(trim_space(lookup_text));
+      QualifiedName ignored_name;
+      std::vector<std::string> ignored_args;
+      if(!semantic_utils::split_top_level_template_id_text(lookup_text,
+                                                            ignored_name,
+                                                            ignored_args)) {
+        return candidate;
+      }
+      const witness::ScopedTemplateWitnessSourceCapturePause
+          source_capture_pause;
+      const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
+          class_source_capture_pause;
+      TypePtr resolved = lookup_type(use_scope,
+                                     lookup_text,
+                                     reference_class_templates_only);
+      if(!resolved ||
+         resolved.get() == candidate.get() ||
+         type_depends_on_template_parameter(resolved)) {
+        return candidate;
+      }
+      TypePtr candidate_cv_base;
+      bool candidate_const = false;
+      bool candidate_volatile = false;
+      top_level_cv_flags(candidate,
+                         candidate_cv_base,
+                         candidate_const,
+                         candidate_volatile);
+      if(candidate_const || candidate_volatile) {
+        resolved = apply_cv(resolved, candidate_const, candidate_volatile);
+      }
+      return resolved;
+    };
+    auto refine_instantiated_alias = [&](TypePtr candidate) -> TypePtr
+    {
+      if(!candidate || !type_depends_on_template_parameter(candidate)) {
+        return materialize_concrete_alias_class_type(candidate);
+      }
 
       TypePtr resolved_alias;
       if(resolve_instantiated_dependent_type(*inst_scope, candidate, resolved_alias) &&
          resolved_alias &&
          !type_depends_on_template_parameter(resolved_alias)) {
-        return resolved_alias;
+        return materialize_concrete_alias_class_type(resolved_alias);
       }
 
       TypePtr nested_syntax_alias;
       if(resolve_nested_alias_type_id_syntax(nested_syntax_alias)) {
-        return nested_syntax_alias;
+        return materialize_concrete_alias_class_type(nested_syntax_alias);
       }
       return candidate;
-	    };
-	    auto alias_mentions_instantiation_bindings =
+    };
+    auto alias_mentions_instantiation_bindings =
 	        [&](const TypePtr & candidate) -> bool
 	    {
 	      if(!candidate) {
@@ -13222,8 +13300,8 @@ private:
 	                   false);
 	             });
 	      if(structural_expanded && structural_alias) {
-	        out = structural_alias;
-	        return true;
+	        out = refine_instantiated_alias(structural_alias);
+	        return out != nullptr;
 	      }
 	      AstDeclHooks hooks =
 	          make_decl_hooks(*inst_scope, reference_class_templates_only);

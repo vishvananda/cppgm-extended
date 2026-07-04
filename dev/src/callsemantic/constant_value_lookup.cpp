@@ -908,7 +908,61 @@ public:
     }
 
     if(!class_template) {
-      return false;
+      AliasTemplateDecl * alias_template =
+          ctx.lookup_alias_template(scope, qualifier_template_id.name);
+      if(!alias_template) {
+        return false;
+      }
+      TypePtr alias_type =
+          ctx.instantiate_alias_template_with_syntax(
+              *alias_template,
+              scope,
+              qualifier_template_id.arguments,
+              &qualifier_template_id.argument_syntaxes,
+              false);
+      if(!alias_type || type_depends_on_template_parameter(alias_type)) {
+        return false;
+      }
+      ClassInfo * alias_info = class_info_for_type(alias_type);
+      if(ClassInfo * completed_alias_info = complete_class_type(alias_type)) {
+        alias_info = completed_alias_info;
+      }
+      if(!alias_info || alias_info->reentrant_primary_selection) {
+        return false;
+      }
+      if(member_name == "value") {
+        bool structured_bool_value = false;
+        if(template_api::with_template_services(
+               ctx,
+               [&](template_api::TemplateServices & services)
+               {
+                 return template_argument_semantics::
+                     structured_bool_constant_value_for_class_info(
+                         services,
+                         template_api::make_template_environment(scope),
+                         *alias_info,
+                         structured_bool_value);
+               })) {
+          MemberValueLookupResult member =
+              lookup_member_value(*alias_info, "value");
+          if(member.binding && member.binding->kind != ValueBinding::VK_FIELD) {
+            template_api::note_template_member_value_instantiation_if_needed(
+                ctx,
+                *member.binding);
+          }
+          out = constant_eval::make_integral_value(
+              structured_bool_value ? 1 : 0,
+              make_fundamental(FT_BOOL));
+          return true;
+        }
+      }
+      finalize_class_constant_members(*alias_info);
+      MemberValueLookupResult member =
+          lookup_member_value(*alias_info, member_name);
+      return member.binding &&
+             materialize_constant_binding_value(
+                 const_cast<ValueBinding &>(*member.binding),
+                 out);
     }
 
     std::string source_use_location =

@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "class_template_mangle_info.h"
 #include "cpp_decl_bridge.h"
 #include "cpp_scope_lookup.h"
 #include "parser_trace.h"
@@ -4726,6 +4727,24 @@ bool collect_associated_namespace_scopes_for_type_impl(
       if(is_named_enum_type(ctx, base)) {
         append_associated_namespace_scope_for_declaration_scope(
             ctx.scope_for_type(base), out);
+      }
+      if(shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+             named_type_class_template_specialization_mangle_info_const(base)) {
+        if(ClassTemplateDecl * class_template =
+               static_cast<ClassTemplateDecl *>(mangle_info->class_template_decl)) {
+          append_associated_namespace_scope_for_declaration_scope(
+              class_template->declaring_scope, out);
+        }
+        for(size_t i = 0; i < mangle_info->arguments.size(); ++i) {
+          cacheable =
+              collect_associated_namespace_scopes_for_template_argument(
+                  ctx,
+                  mangle_info->arguments[i],
+                  visited_types,
+                  visited_classes,
+                  out) &&
+              cacheable;
+        }
       }
       break;
   }

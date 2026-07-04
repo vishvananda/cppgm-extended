@@ -1,0 +1,57 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $value : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $value
+    call void @bitset_64___bitset(%t1)
+    %t2 = addr $value
+    %t3 = addr $value
+    %t4 = call ptr @bitset_64___operator__(%t2, %t3)
+    return i32 0
+}
+function @bitset_64___bitset(%this : ptr) -> void [binding=weak, object=_ZN6bitsetILm64EEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @bitset_base_1__64___bitset_base__base_entry(%t2)
+    return void
+}
+function @bitset_64___operator__(%this : ptr, %rhs : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN6bitsetILm64EEaNERKS0_] {
+  slot $this : ptr
+  slot $rhs : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %rhs, $rhs
+    %t1 = load ptr $this
+    return ptr %t1
+}
+function @bitset_base_1__64___bitset_base__base_entry(%this : ptr) -> void [binding=weak, object=_ZN11bitset_baseILm1ELm64EEC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = unary decay ptr %t2
+    %t4 = index i32 [projection=array_element] %t3, 0
+    store i32 0, %t4
+    return void
+}
+function @bitset_base_1__64___bitset_base(%this : ptr) -> void [binding=weak, object=_ZN11bitset_baseILm1ELm64EEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = unary decay ptr %t2
+    %t4 = index i32 [projection=array_element] %t3, 0
+    store i32 0, %t4
+    return void
+}
+alias object _ZN6bitsetILm64EEC2Ev = @bitset_64___bitset
+alias object _ZN11bitset_baseILm1ELm64EEC2Ev = @bitset_base_1__64___bitset_base

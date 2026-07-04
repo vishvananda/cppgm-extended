@@ -5978,6 +5978,10 @@ bool lookup_rewritten_bound_type_argument(Scope & scope,
         pack != current->named_type_packs.end();
         ++pack) {
       for(std::size_t i = 0; i < pack->second.size(); ++i) {
+        if(type_argument_text_matches(pack->second[i], name)) {
+          out = pack->second[i];
+          return true;
+        }
         if(find_class_template_argument_type(pack->second[i], out)) {
           return true;
         }

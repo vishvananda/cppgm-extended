@@ -2132,3 +2132,43 @@ passes `3444/3444`; full strict direct-LowIR compare passes;
 `/tmp/cppgm-before-global-function-style-init-baseline.json` passes with
 instructions `+0.01%`, RSS `+1.17%`, footprint `-0.02%`; detailed report
 `/tmp/cppgm-after-global-function-style-init-perf-report.json`.
+
+2026-07-03 Boost.Fusion `libs/fusion/test//erase_key` alias/pack frontier:
+the Fusion target exposed several adjacent template surfaces: trailing
+partial-specialization arguments that are pack-expansion patterns, explicit
+key packs combined with deduced value packs in qualified member result types,
+current-specialization non-type defaults that must remain dependent, direct
+class-template aliases whose return types must still participate in ADL, and
+alias-template qualifiers used for constant member lookup. The fixes add
+argument-level pack-expansion deduction for partial-specialization matching,
+carry class-template mangle metadata through alias structural substitution and
+ADL, materialize only direct class-template alias results that need class
+identity, resolve simple concrete qualified-member owners before preserving
+template-id dependent names, keep complex pack/qualified owners dependent,
+retry constant member lookup through alias-template qualifiers, and treat
+unqualified unresolved non-type arguments in template context as dependent.
+The broad parsed class-template fallback in alias structural substitution was
+removed after sampling showed it was a hot recovery path; no Boost special
+case, fallback resolver, or source-text reparse is added. Owners: PA21 partial
+specialization matching and PA22 template argument/alias/ADL behavior. New
+regressions:
+`pa21/tests/general/100-partial-specialization-pack-expansion-value-pattern.t`,
+`pa22/tests/general/500-adl-alias-return-operator-template.t`,
+`pa22/tests/general/500-constructor-pack-default-rewritten-pointer.t`,
+`pa22/tests/general/500-current-specialization-nontype-default-dependent.t`,
+and
+`pa22/tests/general/500-explicit-pack-deduced-pack-member-result.t`; existing
+`pa22/tests/general/500-index-sequence-alias-constructor-deduction.ref` now
+records the concrete `integer_sequence<unsigned long,0>` constructor/alias
+shape. After the fix, focused B2
+`/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test//erase_key`
+passes and updates 4 targets. Validation: `make -C dev cppgm++ -j8`; PA21/PA22
+direct-LowIR report passes `380/380`; PA21 and PA22 placement audits report no
+placement findings; full direct-LowIR report passes `3450/3450`; full strict
+direct-LowIR compare passes; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes. The older
+`/tmp/cppgm-boost-frontier-pr36-f0124b911-20260630-perf-baseline.json` is stale
+for this branch head: a clean `61a57cacc` worktree already fails it at
+instructions `+2.47%`. Isolated perf against clean `61a57cacc` baseline
+`/tmp/cppgm-boost-frontier-pr36-61a57cacc-clean-perf-baseline.json` passes with
+instructions `+0.72%`, RSS `-0.88%`, footprint `+0.10%`.
