@@ -2873,6 +2873,16 @@ public:
           static_member_identifier ?
               cppast_qualified_name_syntax(*static_member_identifier) :
               nullptr;
+      QualifiedName text_static_member_name_syntax;
+      if(static_member_identifier &&
+         static_member_identifier->value.find("::") != string::npos &&
+         split_qualified_name_text(static_member_identifier->value,
+                                   text_static_member_name_syntax) &&
+         !text_static_member_name_syntax.qualifiers.empty() &&
+         (!static_member_name_syntax ||
+          static_member_name_syntax->qualifiers.empty())) {
+        static_member_name_syntax = &text_static_member_name_syntax;
+      }
       if(static_member_name_syntax &&
          !static_member_name_syntax->qualifiers.empty()) {
         const QualifiedName & static_member_name = *static_member_name_syntax;
@@ -2901,11 +2911,17 @@ public:
             QualifiedName owner_scope_name;
             owner_scope_name.rooted = static_member_name.rooted;
             if(candidate_index > 0) {
-              owner_scope_name.qualifiers.assign(
-                  static_member_name.qualifiers.begin(),
-                  static_member_name.qualifiers.begin() + candidate_index - 1);
-              owner_scope_name.name =
-                  static_member_name.qualifiers[candidate_index - 1];
+              if(static_member_name.rooted) {
+                owner_scope_name.qualifiers.assign(
+                    static_member_name.qualifiers.begin(),
+                    static_member_name.qualifiers.begin() + candidate_index);
+              } else {
+                owner_scope_name.qualifiers.assign(
+                    static_member_name.qualifiers.begin(),
+                    static_member_name.qualifiers.begin() + candidate_index - 1);
+                owner_scope_name.name =
+                    static_member_name.qualifiers[candidate_index - 1];
+              }
             }
             candidate_scope =
                 semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
