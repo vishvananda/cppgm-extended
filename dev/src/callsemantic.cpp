@@ -8689,10 +8689,14 @@ private:
   {
     TypePtr normalized_declared_type = declared_type;
     vector<pair<string, TypePtr> > normalized_explicit_params = explicit_params;
-    if(class_has_template_origin(&info) && info.member_scope) {
+    const bool class_template_identity =
+        template_api::class_has_template_identity(&info);
+    if(class_template_identity && info.member_scope) {
+      Scope class_resolution_scope(info.member_scope.get());
+      class_resolution_scope.class_info = &info;
       TypePtr resolved_declared_type;
       if(normalized_declared_type &&
-         resolve_instantiated_dependent_type(*info.member_scope,
+         resolve_instantiated_dependent_type(class_resolution_scope,
                                             normalized_declared_type,
                                             resolved_declared_type) &&
          resolved_declared_type) {
@@ -8701,7 +8705,7 @@ private:
       for(size_t i = 0; i < normalized_explicit_params.size(); ++i) {
         TypePtr resolved_param_type;
         if(normalized_explicit_params[i].second &&
-           resolve_instantiated_dependent_type(*info.member_scope,
+           resolve_instantiated_dependent_type(class_resolution_scope,
                                               normalized_explicit_params[i].second,
                                               resolved_param_type) &&
            resolved_param_type) {
@@ -9282,10 +9286,12 @@ private:
   {
     TypePtr normalized_declared_type = declared_type;
     vector<pair<string, TypePtr> > normalized_params = params;
-    if(class_has_template_origin(&info) && info.member_scope) {
+    if(template_api::class_has_template_identity(&info) && info.member_scope) {
+      Scope class_resolution_scope(info.member_scope.get());
+      class_resolution_scope.class_info = &info;
       TypePtr resolved_declared_type;
       if(normalized_declared_type &&
-         resolve_instantiated_dependent_type(*info.member_scope,
+         resolve_instantiated_dependent_type(class_resolution_scope,
                                             normalized_declared_type,
                                             resolved_declared_type) &&
          resolved_declared_type) {
@@ -9294,7 +9300,7 @@ private:
       for(size_t i = 0; i < normalized_params.size(); ++i) {
         TypePtr resolved_param_type;
         if(normalized_params[i].second &&
-           resolve_instantiated_dependent_type(*info.member_scope,
+           resolve_instantiated_dependent_type(class_resolution_scope,
                                               normalized_params[i].second,
                                               resolved_param_type) &&
            resolved_param_type) {
