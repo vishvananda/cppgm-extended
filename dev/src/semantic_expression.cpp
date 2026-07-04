@@ -6486,6 +6486,75 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           return false;
         }
 
+        const auto try_convert_class_operand_for_pointer_arithmetic =
+            [&](const ExprInfo & class_expr,
+                bool class_complete,
+                const ExprInfo & pointer_expr,
+                bool class_is_lhs,
+                ExprInfo & converted_out,
+                ConversionRank & converted_rank_out) -> bool
+            {
+              TypePtr pointer_base = value_conversion_type(pointer_expr);
+              if(!is_pointer_type(pointer_base)) {
+                return false;
+              }
+              if(!node_has_simple_type(node, OP_PLUS) &&
+                 !(node_has_simple_type(node, OP_MINUS) && !class_is_lhs)) {
+                return false;
+              }
+
+              struct Candidate
+              {
+                ExprInfo expr;
+                ConversionRank rank = CR_BAD;
+              };
+
+              std::vector<Candidate> candidates;
+              const std::vector<TypePtr> targets = builtin_numeric_conversion_targets();
+              for(size_t i = 0; i < targets.size(); ++i) {
+                if(!is_integral_or_unscoped_enum_type(targets[i])) {
+                  continue;
+                }
+                Candidate candidate;
+                if(!try_builtin_user_defined_class_conversion(targets[i],
+                                                              class_expr,
+                                                              class_complete,
+                                                              candidate.expr,
+                                                              candidate.rank,
+                                                              conversion_options)) {
+                  continue;
+                }
+                if(!is_integral_or_unscoped_enum_type(
+                       value_conversion_type(candidate.expr))) {
+                  continue;
+                }
+                candidates.push_back(candidate);
+              }
+              if(candidates.empty()) {
+                return false;
+              }
+
+              size_t best = 0;
+              bool ambiguous = false;
+              for(size_t i = 1; i < candidates.size(); ++i) {
+                if(candidates[i].rank < candidates[best].rank) {
+                  best = i;
+                  ambiguous = false;
+                } else if(candidates[i].rank == candidates[best].rank &&
+                          !type_equals(value_conversion_type(candidates[i].expr),
+                                       value_conversion_type(candidates[best].expr))) {
+                  ambiguous = true;
+                }
+              }
+              if(ambiguous) {
+                return false;
+              }
+
+              converted_out = candidates[best].expr;
+              converted_rank_out = candidates[best].rank;
+              return true;
+            };
+
         const auto try_convert_single_class_operand =
             [&](const ExprInfo & class_expr,
                 bool class_complete,
@@ -6535,12 +6604,38 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
           ConversionRank converted_rank = CR_BAD;
           TypePtr target;
           if(lhs_class &&
-             try_convert_single_class_operand(lhs_expr,
-                                              lhs_class,
-                                              rhs_base,
-                                              converted,
-                                              converted_rank,
-                                              target)) {
+             try_convert_class_operand_for_pointer_arithmetic(lhs_expr,
+                                                              lhs_class,
+                                                              rhs_expr,
+                                                              true,
+                                                              converted,
+                                                              converted_rank)) {
+            lhs_expr = converted;
+            if(ranks_out) {
+              ranks_out->push_back(converted_rank);
+              ranks_out->push_back(CR_EXACT);
+            }
+            return true;
+          } else if(rhs_class &&
+                    try_convert_class_operand_for_pointer_arithmetic(rhs_expr,
+                                                                     rhs_class,
+                                                                     lhs_expr,
+                                                                     false,
+                                                                     converted,
+                                                                     converted_rank)) {
+            rhs_expr = converted;
+            if(ranks_out) {
+              ranks_out->push_back(CR_EXACT);
+              ranks_out->push_back(converted_rank);
+            }
+            return true;
+          } else if(lhs_class &&
+                    try_convert_single_class_operand(lhs_expr,
+                                                     lhs_class,
+                                                     rhs_base,
+                                                     converted,
+                                                     converted_rank,
+                                                     target)) {
             ConversionRank other_rank = standard_conversion_rank(target, rhs_expr);
             if(other_rank == CR_BAD) {
               return false;

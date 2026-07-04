@@ -779,7 +779,7 @@ Local Boost wrapper state:
 | 48 | `libs/fusion/test` | pass | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster, then incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`, then the `invoke_function_object`, `invoke`, and `invoke_procedure` runtime failures. All frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the global function-pointer rvalue fix exits `0` and updates 842 targets. |
 | 49 | `libs/geometry/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.9s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__geometry__test.log`. |
 | 50 | `libs/gil/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.8s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__gil__test.log`. |
-| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, Boost.Parameter keyword `instance` link frontier, `sp_convertible<Y[], T[]>` known-bound array selection frontier, Boost.Tuple member-template non-type source-replay frontier, Boost.Parameter imported member-template owner frontier, `dijkstra_shortest_paths` named-parameter partial-order frontier, and CSR graph vertex-all property-map result-type scope-binding frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test`, `libs/graph/test//finish_edge_bug`, `libs/graph/test//test_graphs`, `libs/graph/test//transitive_closure_test`, `libs/graph/test//betweenness_centrality_test`, and `libs/graph/test//csr_graph_test` pass. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`, `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`, `/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`, `/tmp/boost-graph-finish-edge-and-test-graphs-after-nontype-order-20260704.log`, `/tmp/boost-graph-transitive-closure-after-imported-member-owner-20260704-r2.log`, `/tmp/boost-graph-betweenness-after-template-structure-20260704.log`, and `/tmp/boost-graph-csr-after-partial-order-guard-20260704.log`. |
+| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, Boost.Parameter keyword `instance` link frontier, `sp_convertible<Y[], T[]>` known-bound array selection frontier, Boost.Tuple member-template non-type source-replay frontier, Boost.Parameter imported member-template owner frontier, `dijkstra_shortest_paths` named-parameter partial-order frontier, CSR graph vertex-all property-map result-type scope-binding frontier, Boost.Optional proxy defaulted non-type argument scope frontier, and pointer-arithmetic class-conversion frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test`, `libs/graph/test//finish_edge_bug`, `libs/graph/test//test_graphs`, `libs/graph/test//transitive_closure_test`, `libs/graph/test//betweenness_centrality_test`, `libs/graph/test//csr_graph_test`, `libs/graph/test//dfs_cc`, and `libs/graph/test//dijkstra_cc` pass. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`, `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`, `/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`, `/tmp/boost-graph-finish-edge-and-test-graphs-after-nontype-order-20260704.log`, `/tmp/boost-graph-transitive-closure-after-imported-member-owner-20260704-r2.log`, `/tmp/boost-graph-betweenness-after-template-structure-20260704.log`, `/tmp/boost-graph-csr-after-partial-order-guard-20260704.log`, `/tmp/boost-graph-dfs-cc-after-default-nontype-scope-20260704.log`, and `/tmp/boost-graph-dijkstra-cc-after-pointer-arithmetic-conversion-20260704.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -2876,3 +2876,41 @@ and recorded as
 candidate perf check passes with instructions `-0.14%`, RSS `-0.48%`,
 footprint `-0.01%`; detailed report
 `/tmp/cppgm-after-default-nontype-scope-perf-report.json`.
+
+2026-07-04 Boost.Graph `libs/graph/test//dijkstra_cc` pointer-arithmetic
+class-conversion frontier: Boost.PropertyMap lowers
+`boost::iterator_property_map::operator[]` as `*(iter + get(index, v))`, where
+`iter` is a pointer and `get(index, v)` returns
+`boost::convertible_to_archetype<int, boost::default_archetype_base>`. Operator
+overload lookup found no `operator+`, but CPPGM's built-in binary fallback only
+tried converting the class operand to the other operand's pointer type. It did
+not form the built-in pointer-plus-integral candidate, so the direct Boost
+compile stopped with the `operator-overload-to-builtin` fallback diagnostic.
+The fix adds a narrow built-in pointer-arithmetic class-conversion candidate
+for `pointer + class`, `class + pointer`, and `pointer - class`, probing
+integral built-in targets through the normal user-defined conversion machinery
+and preserving the existing overloaded-vs-built-in rank comparison. No Boost
+special case, cache, fallback resolver, or source-text reparse is added. Owner:
+PA16 conversion operators participating in the existing built-in operator
+machinery. New regression:
+`pa16/tests/general/400-pointer-arithmetic-class-conversion.t`. Pre-fix
+evidence: `/tmp/cppgm-pointer-plus-conversion-reducer.cpp` failed on the
+pre-fix compiler with `unsupported arithmetic operands`, while clang accepted
+the reducer; the direct Boost compile failed at
+`boost/property_map/property_map.hpp:341`. After the fix, the reducer compiles
+with clang and CPPGM, direct `libs/graph/test/dijkstra_cc.cpp` compiles, and
+focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/graph/test//dijkstra_cc`
+passes and updates 2 targets; log
+`/tmp/boost-graph-dijkstra-cc-after-pointer-arithmetic-conversion-20260704.log`.
+Validation: `make -C dev cppgm++ -j12`; focused PA16 regression passes after
+refs generated with `REF_TEST_APP=../dev/cppgm++`; PA16 placement audit passes
+with `--fail-on-early`; PA16 direct-LowIR report passes `137/137`;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; full strict direct-LowIR compare passes; full direct-LowIR
+report passes `3469/3469`. A detached pre-fix `588e92776` worktree was built
+and recorded as
+`/tmp/cppgm-before-pointer-arithmetic-conversion-588e92776-perf-baseline.json`;
+the three-run candidate perf check passes with instructions `+0.00%`, RSS
+`-0.95%`, footprint `+0.09%`; detailed report
+`/tmp/cppgm-after-pointer-arithmetic-conversion-perf-report.json`.
