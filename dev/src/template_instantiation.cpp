@@ -8401,12 +8401,27 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     if(!declared_owner || !scope) {
       return declared_owner;
     }
+    const auto candidate_matches_declared_owner =
+        [declared_owner](const ClassInfo * candidate) -> bool
+        {
+          if(!candidate ||
+             candidate == declared_owner ||
+             candidate->name != declared_owner->name) {
+            return false;
+          }
+          if(!declared_owner->dependent_instantiation &&
+             !declared_owner->instantiation_key.empty()) {
+            return candidate->instantiation_key ==
+                   declared_owner->instantiation_key;
+          }
+          return true;
+        };
 
     if(active_owner) {
       if(active_owner == declared_owner) {
         return active_owner;
       }
-      if(active_owner->name == declared_owner->name) {
+      if(candidate_matches_declared_owner(active_owner)) {
         return active_owner;
       }
     }
@@ -8419,8 +8434,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       if(current_owner == declared_owner) {
         return current_owner;
       }
-      if(current_owner->source_template &&
-         current_owner->name == declared_owner->name) {
+      if(candidate_matches_declared_owner(current_owner)) {
         return current_owner;
       }
     }
@@ -8433,24 +8447,20 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           ctx, *scope, declared_owner->name);
     }
     if(current_instantiation &&
-       current_instantiation != declared_owner &&
-       current_instantiation->name == declared_owner->name) {
+       candidate_matches_declared_owner(current_instantiation)) {
       return current_instantiation;
     }
     if(!scope->class_info) {
       return declared_owner;
     }
-    ClassInfo * active_owner = scope->class_info;
-    if(active_owner == declared_owner) {
-      return active_owner;
+    ClassInfo * scope_owner = scope->class_info;
+    if(scope_owner == declared_owner) {
+      return scope_owner;
     }
-    if(!active_owner->source_template) {
+    if(!candidate_matches_declared_owner(scope_owner)) {
       return declared_owner;
     }
-    if(active_owner->name != declared_owner->name) {
-      return declared_owner;
-    }
-    return active_owner;
+    return scope_owner;
   };
   const auto effective_template_body = [&](FunctionTemplateDecl & source_decl) -> const CppAstNode *
   {
