@@ -4928,18 +4928,6 @@ private:
             emit_temp_assignment("ptr", string("addr ") + lookup_function_symbol(node)));
         return true;
       }
-      if(expr_type &&
-         expr_type->kind == Type::TK_POINTER &&
-         expr_type->inner &&
-         is_function_type(strip_top_level_cv(expr_type->inner)) &&
-         !preserve_member_pointer_storage) {
-        out = emit_temp_assignment("ptr",
-                                   string("addr ") +
-                                       lookup_function_symbol(node.text,
-                                                              strip_top_level_cv(
-                                                                  expr_type->inner)));
-        return true;
-      }
       if(expr_base && expr_base->kind == Type::TK_ARRAY) {
         out = emit_decay_pointer(
             emit_temp_assignment("ptr", string("addr ") + global->storage));

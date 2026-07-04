@@ -775,7 +775,7 @@ Local Boost wrapper state:
 | 44 | `libs/format/test` | pass | Current-head suite survey on 2026-07-03 passes in 42.9s; log `/tmp/boost-suite-survey-20260703-162104-j4-5f9951dae/libs__format__test.log`. |
 | 45 | `libs/function/test` | pass | Current-head suite survey first found the `issue_42` namespace-scope direct-initialization frontier. After the function-style initializer output fix, full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/function/test` passes and updates 214 targets; log `/tmp/boost-function-full-after-global-function-style-init-20260703.log`. |
 | 46 | `libs/function_types/test` | pass | Current-head rerun first stopped at `interface_example.cpp` with `failed to build ABI IR function symbol for weak function example::member<interface_x::vtable::inf0<a_class>, ...>::wrap`. After the owner-dependent return fallback fix, focused `interface_example` passes with log `/tmp/boost-function-types-interface-example-after-owner-return-fallback-20260703.log`, and full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/function_types/test` passes and updates 89 targets; log `/tmp/boost-function-types-full-after-owner-return-fallback-20260703.log`. |
-| 47 | `libs/fusion/test` | frontier | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster; all six frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the static-cast fix updates 830 targets, skips 6 dependency targets, and leaves 6 failed updates. Remaining compile clusters are incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`. Remaining runtime failures are `invoke`, `invoke_function_object`, and `invoke_procedure`. |
+| 47 | `libs/fusion/test` | pass | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster, then incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`, then the `invoke_function_object`, `invoke`, and `invoke_procedure` runtime failures. All frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the global function-pointer rvalue fix exits `0` and updates 842 targets. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -800,9 +800,9 @@ Local Boost wrapper state:
   The following detailed row fixes the `tuple_traits__maybe_variadic`
   constructibility frontier. The next row fixes the
   `zip_view_ignore`/`zip_view2`/`zip_view`/`swap` static-reference-cast
-  constructor compile cluster. Full `libs/fusion/test` now advances to the
-  incomplete-type trait probes and `invoke*` runtime failures, with 6 failed
-  updates in the final summary.
+  constructor compile cluster. The following rows fix the incomplete-type trait
+  probes, const function-object invocation, and global function-pointer rvalue
+  runtime failures. Full `libs/fusion/test` now passes.
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
   `/tmp/boost-frontier-placement-pa31-idiv-normalize.md` and
@@ -2468,3 +2468,38 @@ strict direct-LowIR compare passes. Perf check for the dirty working tree after
 `/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
 instructions `+0.31%`, RSS `+0.14%`, footprint `+0.32%`; detailed report
 `/tmp/cppgm-after-const-param-object-perf-report.json`.
+
+2026-07-04 Boost.Fusion `libs/fusion/test//invoke` and
+`//invoke_procedure` global function-pointer rvalue frontier: Fusion stores
+free-function targets in namespace-scope function-pointer objects and passes
+those objects by value into the invoke helpers. CPPGM lowered a global
+id-expression whose type was pointer-to-function as the address of a function
+symbol, so a variable such as `func_ptr fp = &callee; invoke(fp, 1);` passed
+the storage address of `fp` instead of loading the stored function pointer; the
+native call then jumped through data storage and bus-errored. The fix removes
+that global object shortcut and lets function-pointer objects use the ordinary
+scalar global load path, while true function designators continue through the
+existing function-type `addr @symbol` path. No Boost special case, fallback
+resolver, cache, or source-text reparse is added. Owner: PA14:100 global
+object rvalue lowering for function-pointer call arguments. New regression:
+`pa14/tests/general/100-global-function-pointer-argument-call.t`. Existing
+LowIR refs that intentionally exercise global function-pointer objects were
+updated in PA18, PA24, and PA26 to load from the object instead of taking its
+address. Pre-fix evidence: the no-STL reducer and the template-shaped reducer
+both bus-errored when calling through a function-pointer parameter; focused
+Fusion left runtime bus errors in `invoke` and `invoke_procedure`. After the
+fix, both reducers exit 0, focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test//invoke libs/fusion/test//invoke_procedure`
+passes and updates 8 targets, and full Fusion
+`/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test`
+passes the suite and updates 842 targets. Validation: `make -C dev cppgm++ -j8`;
+focused PA14 regression passes after refs generated with
+`REF_TEST_APP=../dev/cppgm++`; PA14 direct-LowIR report passes `69/69`; PA14
+placement audit reports no placement findings;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; full direct-LowIR report passes `3458/3458`; full
+strict direct-LowIR compare passes. Perf check for the dirty working tree after
+`30b609bbb` against clean `db445d926` baseline
+`/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
+instructions `+0.43%`, RSS `+0.08%`, footprint `+0.24%`; detailed report
+`/tmp/cppgm-after-global-function-pointer-rvalue-perf-report.json`.
