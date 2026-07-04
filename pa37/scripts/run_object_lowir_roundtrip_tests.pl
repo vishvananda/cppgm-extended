@@ -6,7 +6,6 @@ use Cwd qw(abs_path);
 use File::Find qw(find);
 use FindBin qw($Bin);
 use File::Temp qw(tempdir);
-use Text::ParseWords qw(shellwords);
 
 sub usage {
   die "usage: run_object_lowir_roundtrip_tests.pl [--debuginfo] --app APP (--test-root DIR | --test FILE)...\n";
@@ -66,48 +65,6 @@ sub collect_tests {
   return grep { !$seen{$_}++ } @out;
 }
 
-sub read_flags {
-  my ($path) = @_;
-  return () unless -f $path;
-  open(my $fh, "<", $path) or die "open $path: $!\n";
-  local $/;
-  my $text = <$fh>;
-  close($fh) or die "close $path: $!\n";
-  return () unless defined($text) && $text =~ /\S/;
-  return shellwords($text);
-}
-
-sub add_flag_paths_for {
-  my ($paths, $path) = @_;
-  if($path =~ /\.t\z/) {
-    (my $base_flags = $path) =~ s/\.t\z/.compile.flags/;
-    push @$paths, $base_flags;
-  }
-  if($path =~ /\.t\.\d+\z/) {
-    (my $base_flags = $path) =~ s/\.t\.\d+\z/.compile.flags/;
-    push @$paths, $base_flags;
-  }
-  push @$paths, "$path.compile.flags";
-}
-
-sub compile_flags {
-  my ($test, $source) = @_;
-  my @paths;
-  add_flag_paths_for(\@paths, $test);
-  add_flag_paths_for(\@paths, $source);
-  for my $path ($test, $source) {
-    my $real = abs_path($path);
-    add_flag_paths_for(\@paths, $real) if defined $real && $real ne $path;
-  }
-
-  my %seen;
-  my @flags;
-  for my $path (grep { !$seen{$_}++ } @paths) {
-    push @flags, read_flags($path);
-  }
-  return @flags;
-}
-
 sub harness_sources {
   my ($test) = @_;
   if($test =~ /\.t\z/) {
@@ -161,7 +118,6 @@ sub check_source {
   my ($test, $source, $temp) = @_;
   die "missing object-roundtrip test source: $source\n" unless -f $source;
 
-  my @extra_flags = compile_flags($test, $source);
   my $name = safe_name($source);
   my @modes = $debuginfo
     ? (["-gline-tables-only", "-O0"], ["-gline-tables-only", "-O1"])
@@ -175,12 +131,11 @@ sub check_source {
     my $from_lowir = "$temp/$name.$mode_name.from-lowir.o";
 
     my @debug_flags = defined($debug_flag) ? ($debug_flag) : ("-g0");
-    my @direct_cmd = ($app, "-c", @extra_flags, @debug_flags, $opt);
+    my @direct_cmd = ($app, "-c", @debug_flags, $opt);
     my $direct_error = run_command(@direct_cmd, "-o", $direct, $source);
     return $direct_error if defined $direct_error;
     my $emit_error = run_command($app,
                                  "--emit-lowir",
-                                 @extra_flags,
                                  @debug_flags,
                                  "-O0",
                                  "-o",
@@ -189,7 +144,6 @@ sub check_source {
     return $emit_error if defined $emit_error;
     my $from_lowir_error = run_command($app,
                                        "-c",
-                                       @extra_flags,
                                        @debug_flags,
                                        $opt,
                                        "-o",

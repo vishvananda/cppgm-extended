@@ -51,7 +51,8 @@ sub process_one_test
 	write_file($test_out, '');
 
 	my $env = read_env_file("$test_base.env");
-	my @flags = read_word_list("$test_base.compile.flags");
+	my @system_include_dirs = read_word_list("$test_base.system-includes");
+	my @system_include_flags = map { ('-isystem', $_) } @system_include_dirs;
 	my $build_timeout = get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 45);
 	if (defined($env->{CPPGM_BUILD_TEST_TIMEOUT_SEC}) &&
 		$env->{CPPGM_BUILD_TEST_TIMEOUT_SEC} =~ m/^\d+$/ &&
@@ -65,7 +66,7 @@ sub process_one_test
 	if (scalar(keys %{$env}) != 0)
 	{
 		$status = run_command_capture(
-			cmd => [$app, @flags, '-c', '-o', $obj, $test],
+			cmd => [$app, @system_include_flags, '-c', '-o', $obj, $test],
 			stdout => "$test_out.stdout",
 			stderr => "$test_out.stdout",
 			env => \%worker_env,
@@ -80,7 +81,7 @@ sub process_one_test
 			"$test_out.stdout",
 			"$test_out.stdout",
 			\%worker_env,
-			@flags,
+			@system_include_flags,
 			'-c',
 			'-o',
 			$obj,

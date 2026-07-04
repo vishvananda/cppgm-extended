@@ -6,7 +6,6 @@ import json
 import os
 import pathlib
 import re
-import shlex
 import subprocess
 import sys
 import tempfile
@@ -110,29 +109,10 @@ def witness_path_for_test(test: pathlib.Path) -> pathlib.Path:
     return pathlib.Path(str(test)[:-2] + ".ref.witness")
 
 
-def test_base_for_aux_files(test: pathlib.Path) -> pathlib.Path:
-    if LINK_SOURCE_RE.search(test.name):
-        return pathlib.Path(LINK_SOURCE_RE.sub("", str(test)))
-    return pathlib.Path(str(test)[:-2])
-
-
-def read_word_list(path: pathlib.Path) -> List[str]:
-    if not path.exists():
-        return []
-    out: List[str] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        out.extend(shlex.split(line))
-    return out
-
-
 def clang_command(clang: pathlib.Path,
                   libcxx: pathlib.Path,
                   sdk: pathlib.Path,
                   test: pathlib.Path) -> List[str]:
-    test_base = test_base_for_aux_files(test)
     return [
         str(clang),
         "-std=gnu++11",
@@ -142,7 +122,6 @@ def clang_command(clang: pathlib.Path,
         str(libcxx),
         "-isysroot",
         str(sdk),
-        *read_word_list(pathlib.Path(str(test_base) + ".compile.flags")),
         "-x",
         "c++",
         str(test),

@@ -59,11 +59,9 @@ failures that first require hosted linking may stay in `pa35`.
      redeclares Clang builtin `__builtin_operator_new`.
    - PA34 preprocessor tests are intentionally skipped. They are
      preprocessor-output fixtures, not C++ translation units.
-   - The generator now follows the harness default `gnu++11` mode and honors
-     per-test `.compile.flags`. Four valid post-C++11 parser-concession tests
-     carry explicit language-mode flags for witness generation:
-     `522`, `523`, and `524` use `-std=gnu++17`; `HHC-334` uses
-     `-std=gnu++14`.
+   - The generator now follows the harness default `gnu++11` mode; tests that
+     need another language mode should be moved to a harness bucket with that
+     mode rather than using per-test compile flags.
    - Current witness coverage after that cleanup:
      PA34 has 306 expected-success C++ translation-unit candidates, 302 with
      witness refs, and four missing Clang witness refs. PA35 has 98/98 link

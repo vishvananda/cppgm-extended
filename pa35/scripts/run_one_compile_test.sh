@@ -18,14 +18,9 @@ fi
 obj="$3.o"
 rm -f "$obj"
 
-flags=()
-if [ -f "${2%.t}.compile.flags" ]; then
-  read -r -a flags < "${2%.t}.compile.flags"
-fi
-
 : > "$3"
 if command -v timeout >/dev/null 2>&1; then
-  timeout "$compile_timeout" ./"$1" "${app_args[@]}" "${flags[@]}" -c -o "$obj" "$2" &> "$3.stdout"
+  timeout "$compile_timeout" ./"$1" "${app_args[@]}" -c -o "$obj" "$2" &> "$3.stdout"
 else
   perl -e '
     use strict;
@@ -54,6 +49,6 @@ else
     }
 
     exit(($? & 127) == 0 ? ($? >> 8) : (128 + ($? & 127)));
-  ' "$compile_timeout" ./"$1" "${app_args[@]}" "${flags[@]}" -c -o "$obj" "$2" &> "$3.stdout"
+  ' "$compile_timeout" ./"$1" "${app_args[@]}" -c -o "$obj" "$2" &> "$3.stdout"
 fi
 rm -f "$obj"
