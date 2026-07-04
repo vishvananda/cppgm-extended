@@ -17536,10 +17536,12 @@ static bool try_emit_itanium_function_symbol_ir(
           hybridize_pattern_type_with_actual(pattern_type->inner,
                                              actual_function_type->inner,
                                              &mangle_ctx);
+      const bool return_type_has_owner_dependent_mangle_state =
+          type_has_structured_dependent_qualified_member(hybrid_return_type) ||
+          type_has_dependent_class_template_nested_owner_mangle_state(
+              hybrid_return_type);
       bool typed_return_substitutes_parameter = false;
-      if(type_has_structured_dependent_qualified_member(hybrid_return_type) ||
-         type_has_dependent_class_template_nested_owner_mangle_state(
-             hybrid_return_type)) {
+      if(return_type_has_owner_dependent_mangle_state) {
         abi_mangle::SubstitutionKey return_key;
         if(type_ir_substitution_key_for_type(hybrid_return_type,
                                              &mangle_ctx,
@@ -17634,9 +17636,23 @@ static bool try_emit_itanium_function_symbol_ir(
                                    state,
                                    candidate,
                                    captured_return_type.get())) {
-          return false;
+          if(return_type_has_owner_dependent_mangle_state &&
+             actual_function_type->inner &&
+             !type_has_dependent_mangle_state(actual_function_type->inner) &&
+             build_and_emit_type_ir(actual_function_type->inner,
+                                    &mangle_ctx,
+                                    state,
+                                    candidate,
+                                    captured_return_type.get())) {
+            mangled_return = true;
+            have_captured_return_type = true;
+          } else {
+            return false;
+          }
         }
-        have_captured_return_type = true;
+        if(!mangled_return) {
+          have_captured_return_type = true;
+        }
       }
 	      if(have_captured_function && have_captured_return_type) {
 	        captured_function.has_result_type = true;
