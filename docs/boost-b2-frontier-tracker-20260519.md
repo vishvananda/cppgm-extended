@@ -771,12 +771,20 @@ Local Boost wrapper state:
 | 40 | `libs/fiber/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/fiber/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-fiber-current-20260703.log`. |
 | 41 | `libs/filesystem/test` | pass | Current-head revalidation on 2026-07-03 with `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/filesystem/test` exits `0`; B2 found one current target and no failures. Log `/tmp/boost-filesystem-current-20260703.log`. |
 | 42 | `libs/flyweight/test` | pass | Current-head full run `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/flyweight/test` on 2026-07-03 passes and updates 111 targets; log `/tmp/boost-flyweight-full-after-protected-friend-access-20260703.log`. The detailed fixed rows below cover the default pointer NTTP, Boost.Parameter replay, member typedef qualifier, lazy nested-member-class, object-pointer NTTP, lambda closure assignment, static constexpr floating global, enum NTTP, legacy sync builtin, lazy member-template disambiguator, defaulted rebind constructor, enum-member trivial destructor, and Boost.Serialization protected friend access frontiers. |
+| 43 | `libs/foreach/test` | pass | Current-head suite survey on 2026-07-03 passes in 56.2s; log `/tmp/boost-suite-survey-20260703-162104-j4-5f9951dae/libs__foreach__test.log`. |
+| 44 | `libs/format/test` | pass | Current-head suite survey on 2026-07-03 passes in 42.9s; log `/tmp/boost-suite-survey-20260703-162104-j4-5f9951dae/libs__format__test.log`. |
+| 45 | `libs/function/test` | pass | Current-head suite survey first found the `issue_42` namespace-scope direct-initialization frontier. After the function-style initializer output fix, full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/function/test` passes and updates 214 targets; log `/tmp/boost-function-full-after-global-function-style-init-20260703.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
   constructor-deduction, enum-member trivial-destructor, and Boost.Serialization
   protected friend access frontiers. Full `libs/flyweight/test` now passes with
   log `/tmp/boost-flyweight-full-after-protected-friend-access-20260703.log`.
+- 2026-07-03 Function cursor advance: current-head survey passed
+  `libs/foreach/test` and `libs/format/test`, then stopped at
+  `libs/function/test//issue_42`. The detailed Function row below fixes that
+  frontier, and full `libs/function/test` now passes with log
+  `/tmp/boost-function-full-after-global-function-style-init-20260703.log`.
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
   `/tmp/boost-frontier-placement-pa31-idiv-normalize.md` and
@@ -2086,3 +2094,34 @@ reports all zero; `git diff --check` passes; isolated perf against clean
 `/tmp/cppgm-before-protected-friend-access-baseline.json` passes with
 instructions `+0.09%`, RSS `-0.78%`, footprint `-0.05%`; detailed report
 `/tmp/cppgm-after-protected-friend-access-perf-report.json`.
+
+2026-07-03 Boost.Function `libs/function/test//issue_42` namespace-scope
+function-style initializer frontier: after Flyweight passed, the current-head
+suite survey passed `libs/foreach/test` and `libs/format/test`, then
+`issue_42.cpp` failed at `X x(f2);` with `no viable constructor [class X]
+[arg_count 0]`. Collection had already recovered `X x(f2)` as a namespace
+variable, but declaration-driven output walked the original AST and passed a
+null initializer into class-object lifetime analysis. The fix reuses the
+structured function-style declarator recovery helper in `semantic_output.cpp`
+when a collected value binding proves the declaration is a variable, then
+feeds the synthesized initializer into the existing namespace variable
+lifetime/initializer paths. No source-text reparse, fallback resolver, cache,
+or Boost special case is added. Owner: `pa15:200` namespace-scope class object
+lifetime and constructor initialization. New regression:
+`pa15/tests/general/200-global-function-style-constructor.t`. Pre-fix
+evidence: the no-STL Boost-shaped reducer and focused Boost target both failed
+with the zero-argument constructor diagnostic; Clang accepts the reducer. After
+the fix, the Boost-shaped reducer compiles and runs with exit `0`, focused B2
+`/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/function/test//issue_42`
+passes and updates 2 targets, and full B2
+`/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/function/test`
+passes and updates 214 targets. Validation: `make -C dev cppgm++ -j8`;
+focused PA15 regression passes after refs generated with
+`REF_TEST_APP=../dev/cppgm++`; PA15 direct-LowIR report passes `171/171`;
+PA15 placement audit reports no placement findings; full direct-LowIR report
+passes `3444/3444`; full strict direct-LowIR compare passes;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; isolated perf against clean `5f9951dae` baseline
+`/tmp/cppgm-before-global-function-style-init-baseline.json` passes with
+instructions `+0.01%`, RSS `+1.17%`, footprint `-0.02%`; detailed report
+`/tmp/cppgm-after-global-function-style-init-perf-report.json`.

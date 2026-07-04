@@ -27,6 +27,7 @@
 #include "semantic_lifetime.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
+#include "semantic_parameter_recovery.h"
 #include "semantic_scope_mutation.h"
 #include "semantic_statement.h"
 #include "semantic_template_function.h"
@@ -5552,10 +5553,27 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
           semantic_lookup::resolve_qualified_variable_parse_scope(ctx,
                                                                   scope,
                                                                   init_decl.children[0]);
+      CppAstNode stripped_function_style_declarator;
+      CppAstNode synthesized_function_style_initializer;
+      const CppAstNode * effective_declarator = &init_decl.children[0];
+      if(!initializer &&
+         rebound_value_binding &&
+         rebound_value_binding->type &&
+         strip_top_level_cv(rebound_value_binding->type)->kind != Type::TK_FUNCTION) {
+        std::string recovery_error;
+        if(semantic_parameter_recovery::recover_function_style_initializer_declarator(
+               init_decl.children[0],
+               stripped_function_style_declarator,
+               synthesized_function_style_initializer,
+               recovery_error)) {
+          effective_declarator = &stripped_function_style_declarator;
+          initializer = &synthesized_function_style_initializer;
+        }
+      }
       if(init_decl.children.empty() ||
          !ctx.parse_variable_declaration_type(*parse_scope,
                                              prepared_specifiers.resolved_specifiers,
-                                             init_decl.children[0],
+                                             *effective_declarator,
                                              initializer, true, name, type, is_typedef)) {
         if(rebound_value_binding &&
            rebound_value_binding->type &&
@@ -5737,12 +5755,12 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
                 *initializer_scope,
                 lifetime_object_name,
                 emitted_type,
-                init_decl.children.size() > 1 ? &init_decl.children[1] : nullptr,
+                initializer,
                 var_node,
                 ctx.source_location_for_name_in_node(init_decl, lifetime_object_name));
-          } else if(init_decl.children.size() > 1) {
+          } else if(initializer) {
             semantic_lifetime::analyze_initializer(
-                ctx, *initializer_scope, emitted_type, init_decl.children[1], var_node);
+                ctx, *initializer_scope, emitted_type, *initializer, var_node);
           }
         }
         apply_local_static_guard_to_lifetime_actions(var_node);
