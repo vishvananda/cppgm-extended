@@ -602,9 +602,7 @@ vector<FunctionTemplateDecl *> lookup_using_target_function_templates(
   if(!target_scope) {
     return vector<FunctionTemplateDecl *>();
   }
-  const vector<FunctionTemplateDecl *> * found =
-      semantic_lookup::find_direct_function_template_set(*target_scope, qualified.name);
-  return found ? *found : vector<FunctionTemplateDecl *>();
+  return semantic_lookup::lookup_direct_function_templates(*target_scope, qualified.name);
 }
 
 void build_alias_name_declarators(const string & alias_name, CppAstNode & out)

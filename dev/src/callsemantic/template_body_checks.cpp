@@ -1078,6 +1078,32 @@ static bool collect_using_directive_for_template_body(
   }
 }
 
+static bool collect_using_declaration_for_template_body(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & node,
+    const CppAstNode *& offending_node,
+    std::string & offending_name)
+{
+  try {
+    semantic_declaration::collect_using_declaration(ctx, scope, node);
+    return false;
+  } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+    throw;
+  } catch(const std::exception &) {
+    offending_node = &node;
+    offending_name.clear();
+    const CppAstNode * target = find_child_kind(node, CppAstKind::target);
+    if(target) {
+      offending_node = target;
+      const QualifiedName * qualified = cppast_qualified_name_syntax(*target);
+      offending_name =
+          qualified && !qualified->name.empty() ? qualified->name : target->value;
+    }
+    return true;
+  }
+}
+
 static bool template_body_has_invalid_nondependent_id_expression(
     SemanticContext & ctx,
     Scope & scope,
@@ -1102,6 +1128,14 @@ static bool template_body_has_invalid_nondependent_id_expression(
                                                      node,
                                                      offending_node,
                                                      offending_name);
+  }
+
+  if(node.kind == CppAstKind::using_declaration) {
+    return collect_using_declaration_for_template_body(ctx,
+                                                       scope,
+                                                       node,
+                                                       offending_node,
+                                                       offending_name);
   }
 
   if(node.kind == CppAstKind::simple_declaration ||

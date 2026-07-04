@@ -779,7 +779,7 @@ Local Boost wrapper state:
 | 48 | `libs/fusion/test` | pass | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster, then incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`, then the `invoke_function_object`, `invoke`, and `invoke_procedure` runtime failures. All frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the global function-pointer rvalue fix exits `0` and updates 842 targets. |
 | 49 | `libs/geometry/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.9s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__geometry__test.log`. |
 | 50 | `libs/gil/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.8s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__gil__test.log`. |
-| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, Boost.Parameter keyword `instance` link frontier, `sp_convertible<Y[], T[]>` known-bound array selection frontier, Boost.Tuple member-template non-type source-replay frontier, Boost.Parameter imported member-template owner frontier, `dijkstra_shortest_paths` named-parameter partial-order frontier, CSR graph vertex-all property-map result-type scope-binding frontier, Boost.Optional proxy defaulted non-type argument scope frontier, pointer-arithmetic class-conversion frontier, and late-member subscript structured-binding recovery frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test`, `libs/graph/test//finish_edge_bug`, `libs/graph/test//test_graphs`, `libs/graph/test//transitive_closure_test`, `libs/graph/test//betweenness_centrality_test`, `libs/graph/test//csr_graph_test`, `libs/graph/test//dfs_cc`, `libs/graph/test//dijkstra_cc`, and `libs/graph/test//disjoint_set_test` pass. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`, `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`, `/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`, `/tmp/boost-graph-finish-edge-and-test-graphs-after-nontype-order-20260704.log`, `/tmp/boost-graph-transitive-closure-after-imported-member-owner-20260704-r2.log`, `/tmp/boost-graph-betweenness-after-template-structure-20260704.log`, `/tmp/boost-graph-csr-after-partial-order-guard-20260704.log`, `/tmp/boost-graph-dfs-cc-after-default-nontype-scope-20260704.log`, `/tmp/boost-graph-dijkstra-cc-after-pointer-arithmetic-conversion-20260704.log`, and `/tmp/boost-graph-disjoint-set-after-structured-binding-recovery-noseed-20260704-r2.log`. |
+| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, Boost.Parameter keyword `instance` link frontier, `sp_convertible<Y[], T[]>` known-bound array selection frontier, Boost.Tuple member-template non-type source-replay frontier, Boost.Parameter imported member-template owner frontier, `dijkstra_shortest_paths` named-parameter partial-order frontier, CSR graph vertex-all property-map result-type scope-binding frontier, Boost.Optional proxy defaulted non-type argument scope frontier, pointer-arithmetic class-conversion frontier, late-member subscript structured-binding recovery frontier, and local using-declaration inline function-template body-check frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test`, `libs/graph/test//finish_edge_bug`, `libs/graph/test//test_graphs`, `libs/graph/test//transitive_closure_test`, `libs/graph/test//betweenness_centrality_test`, `libs/graph/test//csr_graph_test`, `libs/graph/test//dfs_cc`, `libs/graph/test//dijkstra_cc`, `libs/graph/test//disjoint_set_test`, and `libs/graph/test//generator_test` pass. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`, `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`, `/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`, `/tmp/boost-graph-finish-edge-and-test-graphs-after-nontype-order-20260704.log`, `/tmp/boost-graph-transitive-closure-after-imported-member-owner-20260704-r2.log`, `/tmp/boost-graph-betweenness-after-template-structure-20260704.log`, `/tmp/boost-graph-csr-after-partial-order-guard-20260704.log`, `/tmp/boost-graph-dfs-cc-after-default-nontype-scope-20260704.log`, `/tmp/boost-graph-dijkstra-cc-after-pointer-arithmetic-conversion-20260704.log`, `/tmp/boost-graph-disjoint-set-after-structured-binding-recovery-noseed-20260704-r2.log`, and `/tmp/boost-graph-generator-test-after-local-using-declaration-template-body-20260704.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -2952,3 +2952,42 @@ and recorded as
 three-run candidate perf check passes with instructions `-0.06%`, RSS
 `+0.42%`, footprint `+0.01%`; detailed report
 `/tmp/cppgm-after-late-member-subscript-perf-report.json`.
+
+2026-07-04 Boost.Graph `libs/graph/test//generator_test` local using-declaration
+inline function-template frontier: `boost::ssca_iterator::operator++` begins
+with `using std::min;` and later calls `min(clique_size(*gen),
+verticesRemaining)` inside a class-template member body. During class-template
+declaration collection, the non-dependent body lookup checker applied local
+using-directives but ignored local using-declarations, so its sequential block
+scope never imported `std::min` before checking the later unqualified call.
+The same path also exposed that using-declaration target resolution for function
+templates checked only the immediate namespace template map and missed templates
+declared in injected inline namespace children. The fix collects local
+using-declarations in the template body checker, using the existing semantic
+using-declaration collector, and makes function-template using targets use the
+existing inline-aware direct lookup helper. No source-text reparse, fallback
+resolver, or Boost special case is added. Owner: PA18 first-tier template body
+lookup, dependent names, local using-declarations, and inline namespace
+function-template lookup. New regression:
+`pa18/tests/general/300-local-using-inline-namespace-function-template.t`.
+Pre-fix evidence:
+`/tmp/cppgm-local-using-inline-namespace-function-template-reducer.cpp` and
+`/tmp/cppgm-local-using-std-min-algorithm-class-reducer.cpp` failed with
+`unknown id-expression min` while clang accepted both; the direct Boost compile
+failed at `boost/graph/ssca_graph_generator.hpp:85`. After the fix, both
+reducers compile with clang and CPPGM, direct
+`libs/graph/test/generator_test.cpp` compiles, and focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/graph/test//generator_test`
+passes and updates 4 targets; log
+`/tmp/boost-graph-generator-test-after-local-using-declaration-template-body-20260704.log`.
+Validation: `make -C dev cppgm++ -j12`; focused PA18 regression passes after
+refs generated with `REF_TEST_APP=../dev/cppgm++`; PA18 placement audit passes
+with `--fail-on-early`; PA18 direct-LowIR report passes `198/198`;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; full strict direct-LowIR compare passes; full direct-LowIR
+report passes `3471/3471`. A detached pre-fix `20e4102f9` worktree was built
+and recorded as
+`/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`;
+the three-run candidate perf check passes with instructions `-0.04%`, RSS
+`+1.27%`, footprint `+0.03%`; detailed report
+`/tmp/cppgm-after-local-using-inline-function-template-perf-report.json`.
