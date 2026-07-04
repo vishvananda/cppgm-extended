@@ -205,6 +205,144 @@ bool recover_instantiation_bound_type(SemanticContext & ctx,
       ctx, scope, type, out);
 }
 
+void validate_instantiated_result_sizeof_arguments(
+    SemanticContext & ctx,
+    Scope & scope,
+    const ClassTemplateDecl & class_template,
+    const std::vector<DependentAliasTemplateArgumentSyntax> & arguments)
+{
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(i >= class_template.parameters.size()) {
+      break;
+    }
+    const TemplateParameterInfo & parameter = class_template.parameters[i];
+    if(parameter.kind != TemplateParameterInfo::TP_NON_TYPE) {
+      continue;
+    }
+    std::string text = semantic_utils::trim_space(arguments[i].text);
+    if(text.empty()) {
+      text = semantic_utils::trim_space(arguments[i].syntax.text);
+    }
+    if(text.empty()) {
+      text = semantic_utils::trim_space(arguments[i].syntax.source_text);
+    }
+    if(text.find("sizeof") == std::string::npos) {
+      continue;
+    }
+    if(!parameter.value_type ||
+       template_argument_semantics::type_depends_on_template_parameter(
+           ctx,
+           parameter.value_type)) {
+      continue;
+    }
+
+    long long value = 0;
+    std::string eval_error;
+    const template_argument_semantics::NonTypeArgumentStatus status =
+        template_api::with_template_services(
+            ctx,
+            [&](template_api::TemplateServices & services)
+            {
+              if(arguments[i].syntax.expression ||
+                 arguments[i].syntax.type_id ||
+                 arguments[i].syntax.template_id) {
+                return template_argument_semantics::evaluate_non_type_argument_syntax(
+                    services,
+                    template_api::make_template_environment(scope),
+                    arguments[i].syntax,
+                    value,
+                    &eval_error,
+                    parameter.value_type);
+              }
+              return template_argument_semantics::evaluate_non_type_argument_text(
+                  services,
+                  template_api::make_template_environment(scope),
+                  text,
+                  value,
+                  &eval_error,
+                  parameter.value_type);
+            });
+    if(status != template_argument_semantics::NT_ARG_EVALUATED) {
+      throw TemplateSubstitutionFailure(
+          "failed function template result sizeof non-type argument substitution: " +
+          text);
+    }
+  }
+}
+
+void validate_instantiated_result_template_arguments(SemanticContext & ctx,
+                                                     Scope & scope,
+                                                     const TypePtr & type)
+{
+  if(!type) {
+    return;
+  }
+
+  switch(type->kind) {
+  case Type::TK_FUNDAMENTAL:
+    return;
+
+  case Type::TK_NAMED:
+  {
+    void * class_template_decl = nullptr;
+    std::vector<DependentAliasTemplateArgumentSyntax> arguments;
+    if(named_type_dependent_class_template(type,
+                                           class_template_decl,
+                                           arguments) &&
+       class_template_decl) {
+      ClassTemplateDecl * class_template =
+          static_cast<ClassTemplateDecl *>(class_template_decl);
+      validate_instantiated_result_sizeof_arguments(ctx,
+                                                    scope,
+                                                    *class_template,
+                                                    arguments);
+    }
+
+    for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
+      validate_instantiated_result_template_arguments(
+          ctx,
+          scope,
+          type->named_dependent_class_arguments[i].type);
+    }
+    for(std::size_t i = 0; i < type->named_dependent_alias_arguments.size(); ++i) {
+      validate_instantiated_result_template_arguments(
+          ctx,
+          scope,
+          type->named_dependent_alias_arguments[i].type);
+    }
+    validate_instantiated_result_template_arguments(ctx, scope, type->owner);
+    validate_instantiated_result_template_arguments(ctx, scope, type->inner);
+    validate_instantiated_result_template_arguments(
+        ctx,
+        scope,
+        type->named_dependent_qualified_owner);
+    return;
+  }
+
+  case Type::TK_CV:
+  case Type::TK_ATOMIC:
+  case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+  case Type::TK_ARRAY:
+    validate_instantiated_result_template_arguments(ctx, scope, type->inner);
+    return;
+
+  case Type::TK_MEMBER_POINTER:
+    validate_instantiated_result_template_arguments(ctx, scope, type->owner);
+    validate_instantiated_result_template_arguments(ctx, scope, type->inner);
+    return;
+
+  case Type::TK_FUNCTION:
+    validate_instantiated_result_template_arguments(ctx, scope, type->inner);
+    for(std::size_t i = 0; i < type->params.size(); ++i) {
+      validate_instantiated_result_template_arguments(ctx, scope, type->params[i]);
+    }
+    return;
+  }
+}
+
 bool template_arguments_are_dependent_for_instantiation(
     SemanticContext & ctx,
     const std::vector<TemplateArgument> & arguments);
@@ -9309,8 +9447,33 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
           result_type = recovered_substituted_result;
           result_type_still_dependent =
               template_argument_semantics::type_depends_on_template_parameter(
-                  ctx,
-                  result_type);
+              ctx,
+              result_type);
+        }
+      }
+      if(!dependent_template_arguments &&
+         source_result_type_was_dependent &&
+         !template_argument_semantics::type_depends_on_template_parameter(ctx,
+                                                                          result_type)) {
+        TypePtr resolved_result;
+        try {
+          if(recover_instantiation_bound_type(ctx,
+                                             inst_scope,
+                                             result_type,
+                                             resolved_result) &&
+             resolved_result) {
+            result_type = resolved_result;
+          }
+          validate_instantiated_result_template_arguments(ctx,
+                                                         inst_scope,
+                                                         result_type);
+        } catch(const TemplateSubstitutionFailure &) {
+          throw;
+        } catch(const std::logic_error &) {
+          throw_substitution_failure(
+              "failed function template result type substitution",
+              std::string(),
+              "template-instantiation");
         }
       }
       const bool source_result_mentions_template_parameter =

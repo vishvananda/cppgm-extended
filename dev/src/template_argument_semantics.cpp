@@ -37006,7 +37006,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
       }
     }
   }
-
   if(status == NT_ARG_EVALUATED) {
     if(!encode_data_member_pointer_template_argument_if_needed(
            effective_target_type, expr, value)) {
@@ -38596,6 +38595,27 @@ bool substitute_type_id_node_for_template_arguments(
   out = substituted;
   normalize_substituted_type_id_specifier_nodes(out);
   return true;
+}
+
+bool substitute_type_id_node_for_template_arguments(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & node,
+    const vector<TemplateParameterInfo> & parameters,
+    const vector<TemplateArgument> & arguments,
+    CppAstNode & out)
+{
+  return template_api::with_template_services(
+      ctx,
+      [&](template_api::TemplateServices & services)
+      {
+        return substitute_type_id_node_for_template_arguments(services,
+                                                             scope,
+                                                             node,
+                                                             parameters,
+                                                             arguments,
+                                                             out);
+      });
 }
 
 vector<string> expand_bound_expression_pack_texts(template_api::TemplateServices & services,

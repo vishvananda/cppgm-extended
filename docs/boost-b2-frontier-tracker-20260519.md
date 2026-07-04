@@ -2381,3 +2381,48 @@ perf against clean `db445d926` baseline
 `/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
 instructions `+0.11%`, RSS `-1.23%`, footprint `+0.01%`; detailed report
 `/tmp/cppgm-after-static-cast-reference-perf-report.json`.
+
+2026-07-04 Boost.Fusion `libs/fusion/test//is_sequence`, `//is_view`, and
+`//tag_of` incomplete-type trait frontier: Fusion routes
+`boost::is_complete<T>` through a Boost.MPL `nested_type_wknd` inheritance
+path. The primary completion probe returns `ok_tag<sizeof(T)>`, so for an
+incomplete `T` that function-template overload must be discarded by
+substitution failure and the ellipsis fallback must determine the trait value.
+CPPGM substituted the dependent function result to a non-dependent type without
+revalidating the carried `sizeof(T)` non-type argument, and the concrete
+`is_complete<T>` instantiation then looked up its inherited boolean base from
+the unsubstituted base AST. The fix revalidates substituted function-template
+result types only for carried class-template non-type arguments containing
+`sizeof`, treating failed evaluation as SFINAE, and substitutes concrete owner
+template arguments into `sizeof`-bearing base-specifier type nodes before base
+lookup. The base substitution path is deliberately limited to `sizeof` bases,
+and no Boost special case, broad result-template materialization, varargs leaf
+resolver change, cache, or source-text reparse is added. Owner: PA22:500
+dependent result-type SFINAE and no-eager inherited trait base resolution. New
+regression:
+`pa22/tests/general/500-dependent-result-sizeof-sfinae-base.t`.
+Pre-fix evidence: the no-STL `integral_constant<bool,
+sizeof(check_complete<incomplete>(0)) != sizeof(char)>` reducer and Boost
+header probes failed by selecting or preserving the `ok_tag<sizeof(T)>`
+overload for an incomplete type; full Fusion left compile failures in
+`is_sequence`, `is_view`, and `tag_of`. After the fix, the direct reducers pass,
+focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test//is_sequence libs/fusion/test//is_view libs/fusion/test//tag_of`
+passes and updates 6 targets, and full Fusion
+`/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test`
+keeps the incomplete-type cluster green, updates 836 targets, skips the 3
+failed invoke test targets, and leaves only 3 failed run updates:
+`invoke_function_object` now compiles/links but exits with 10 const
+function-object invocation test failures, while `invoke` and
+`invoke_procedure` compile/link and then bus-error at runtime (`EXIT STATUS:
+138`; `invoke` prints the first const nullary/unary function-object failures
+before the crash). Validation: `make -C dev cppgm++ -j8`; focused PA22
+regression passes after refs generated with `REF_TEST_APP=../dev/cppgm++`;
+PA22 direct-LowIR report passes `196/196`; PA22 placement audit reports no
+placement findings; `python3 scripts/audit_text_reparse.py --strict` reports
+all zero; `git diff --check` passes; full direct-LowIR report passes
+`3456/3456`; full strict direct-LowIR compare passes. Perf check for the dirty
+working tree after `640ecf2ba` against clean `db445d926` baseline
+`/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
+instructions `-0.07%`, RSS `+0.71%`, footprint `-0.09%`; detailed report
+`/tmp/cppgm-after-dependent-result-sizeof-perf-report.json`.

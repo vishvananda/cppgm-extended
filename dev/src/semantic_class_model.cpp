@@ -1391,6 +1391,73 @@ bool resolve_instantiated_base_type_if_needed(SemanticContext & ctx,
          resolved;
 }
 
+bool base_text_mentions_template_parameters(
+    const std::string & text,
+    const std::vector<template_model::TemplateParameterInfo> & parameters)
+{
+  for(std::size_t i = 0; i < parameters.size(); ++i) {
+    const template_model::TemplateParameterInfo & parameter = parameters[i];
+    if(!parameter.name.empty() &&
+       callsemantic_internal::contains_identifier_token(text, parameter.name)) {
+      return true;
+    }
+    for(std::size_t j = 0; j < parameter.alternate_names.size(); ++j) {
+      if(!parameter.alternate_names[j].empty() &&
+         callsemantic_internal::contains_identifier_token(
+             text,
+             parameter.alternate_names[j])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool try_resolve_instantiated_base_type_node(SemanticContext & ctx,
+                                             Scope & scope,
+                                             const CppAstNode & node,
+                                             bool allow_incomplete_lookup,
+                                             const ClassInfo * owner_info,
+                                             TypePtr & out)
+{
+  out.reset();
+  if(!owner_info ||
+     !owner_info->source_template ||
+     owner_info->dependent_instantiation ||
+     owner_info->instantiation_arguments.empty() ||
+     node.value.find("sizeof") == std::string::npos ||
+     (!base_text_mentions_template_parameters(
+          node.value,
+          owner_info->source_template->parameters) &&
+      !ctx.text_mentions_template_placeholders(scope, node.value) &&
+      !ctx.text_mentions_dependent_non_namespace_binding_names(scope, node.value))) {
+    return false;
+  }
+
+  CppAstNode substituted;
+  const bool substituted_node =
+      template_argument_semantics::substitute_type_id_node_for_template_arguments(
+          ctx,
+          scope,
+          node,
+          owner_info->source_template->parameters,
+          owner_info->instantiation_arguments,
+          substituted);
+  if(!substituted_node) {
+    return false;
+  }
+
+  out = ctx.lookup_type_node(scope,
+                             substituted,
+                             substituted.value,
+                             allow_incomplete_lookup);
+  TypePtr resolved;
+  if(resolve_instantiated_base_type_if_needed(ctx, scope, out, resolved)) {
+    out = resolved;
+  }
+  return out != nullptr;
+}
+
 TypePtr lookup_base_type_name(SemanticContext & ctx,
                               Scope & scope,
                               const std::string & text,
@@ -1428,6 +1495,14 @@ TypePtr resolve_base_type_node(SemanticContext & ctx,
   const template_argument_semantics::ScopedBaseSpecifierTypeLookup
       base_lookup_guard(node.value, owner_info);
   TypePtr base_type;
+  if(try_resolve_instantiated_base_type_node(ctx,
+                                             scope,
+                                             node,
+                                             allow_incomplete_lookup,
+                                             owner_info,
+                                             base_type)) {
+    return base_type;
+  }
   if(node.base_type_syntax &&
      template_api::type::parse_decltype_or_typeof_node(ctx,
                                                        scope,
