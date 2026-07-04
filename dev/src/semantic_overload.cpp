@@ -7437,12 +7437,15 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
     if(placeholder_specificity != 0) {
       return placeholder_specificity;
     }
-    const int template_structure_specificity =
-        compare_partial_order_template_structure_specificity(current_transformed_params,
-                                                            best_transformed_params);
-    if(template_structure_specificity != 0) {
-      return template_structure_specificity;
-    }
+  }
+  const int template_structure_specificity =
+      compare_partial_order_template_structure_specificity(current_transformed_params,
+                                                          best_transformed_params);
+  if(template_structure_specificity != 0) {
+    return template_structure_specificity;
+  }
+  if(current.function->type && best.function->type &&
+     type_equals(current.function->type, best.function->type)) {
     const int parameter_count_preference =
         compare_function_template_parameter_count_preference(current, best);
     if(parameter_count_preference != 0) {
