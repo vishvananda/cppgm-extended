@@ -6443,13 +6443,21 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
         }
         ExprInfo converted;
         ConversionRank rank = CR_BAD;
-        if(!ctx.try_argument_conversion(
-               scope,
-               target,
-               expr,
-               converted,
-               rank,
-               conversion_options)) {
+        bool converted_ok = false;
+        try
+        {
+          converted_ok = ctx.try_argument_conversion(scope,
+                                                     target,
+                                                     expr,
+                                                     converted,
+                                                     rank,
+                                                     conversion_options);
+        }
+        catch(const logic_error &)
+        {
+          converted_ok = false;
+        }
+        if(!converted_ok) {
           return false;
         }
         TypePtr converted_type = value_conversion_type(converted);
