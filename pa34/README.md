@@ -188,7 +188,6 @@ Optional sidecars include:
 
 - `x.env`: environment variables for one test, such as additional standard
   include paths
-- `x.compile.flags`: extra flags passed to `cppgm++ -c`
 - `x.ref.impl.exit_status`, `x.ref.program.exit_status`, and
   `x.ref.program.stdout`: implementation and program-result references for
   `tests/run` host-link/run smokes

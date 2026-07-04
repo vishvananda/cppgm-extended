@@ -182,7 +182,8 @@ sub build_test_context
 	write_file($impl_stdout, '');
 	write_file($impl_stderr, '');
 
-	my @compile_flags = read_word_list("$test_base.compile.flags");
+	my @system_include_dirs = read_word_list("$test_base.system-includes");
+	my @system_include_flags = map { ('-isystem', $_) } @system_include_dirs;
 	my @link_flags = read_word_list("$test_base.link.flags");
 	my @run_args = read_word_list("$test_base.argv");
 	my $inspect_cmd_file = -f "$test_base.inspect.cmd.$host_tag"
@@ -250,7 +251,7 @@ sub build_test_context
 		link_command => $link_command,
 		link_verbose => $link_verbose,
 		nm_report => $nm_report,
-		compile_flags => \@compile_flags,
+		system_include_flags => \@system_include_flags,
 		link_flags => \@link_flags,
 		run_args => \@run_args,
 		inspect_cmd_file => $inspect_cmd_file,
@@ -394,7 +395,7 @@ sub compile_one_test
 			$ctx->{impl_stdout},
 			$ctx->{impl_stderr},
 			$ctx->{env},
-			@{$ctx->{compile_flags}},
+			@{$ctx->{system_include_flags}},
 			'-c',
 			'-o',
 			$objfile,

@@ -30,6 +30,24 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_hygiene_reports_compile_flags_sidecar(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            test = root / "pa36" / "tests" / "link" / "600-hosted-smoke.t"
+            write(test, "int main() { return 0; }\n")
+            write(test.with_suffix(".compile.flags"), "-O1\n")
+
+            findings = audit.scan_test_hygiene(root, ["pa36"])
+            self.assertEqual(
+                [(finding.path, finding.kind) for finding in findings],
+                [
+                    (
+                        "pa36/tests/link/600-hosted-smoke.compile.flags",
+                        "compile-flags-sidecar",
+                    ),
+                ],
+            )
+
     def test_hygiene_reports_early_hosted_eh_rtti_headers(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)

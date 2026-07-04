@@ -135,7 +135,6 @@ x.t.2
 
 Optional sidecars control or check the host flow:
 
-- `x.compile.flags`: extra flags passed to `cppgm++ -c`
 - `x.link.flags`: extra flags passed to the host link driver
 - `x.lib.*`: host-built C or C++ helper sources
 - `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: object-inspection

@@ -1183,6 +1183,20 @@ def pa24_lowir_side_effect_findings(path: Path, source: str, ref_text: str) -> l
 def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
     findings: list[HygieneFinding] = []
     selected_pas = tuple(pas)
+    for pa in iter_local_hygiene_pas(selected_pas):
+        test_root = root / pa / "tests"
+        if not test_root.exists():
+            continue
+        for path in sorted(test_root.rglob("*.compile.flags")):
+            findings.append(HygieneFinding(
+                path=path.relative_to(root).as_posix(),
+                kind="compile-flags-sidecar",
+                message=(
+                    "per-test .compile.flags sidecars are not allowed; add a "
+                    "dedicated harness sidecar for the specific behavior being "
+                    "tested"
+                ),
+            ))
     for path in iter_local_test_files(root, selected_pas):
         relative = path.relative_to(root).as_posix()
         cluster = cluster_for(path)

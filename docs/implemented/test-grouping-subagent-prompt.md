@@ -65,7 +65,7 @@ Grouping policy:
 Rename policy:
 - Use git mv for test moves/renames.
 - Move every sidecar with the test: .ref, .ref.stdout, .ref.exit_status,
-  .ref.witness, .inspect.expect, .inspect.cmd, .compile.flags, helper .t.1/.t.2,
+  .ref.witness, .inspect.expect, .inspect.cmd, helper .t.1/.t.2,
   .link.flags, support .h/.cpp/.inc files, etc.
 - Follow the pa1-pa9 numbering style: the three-digit prefix is a shared
   feature-family anchor, not a globally unique sequence number.

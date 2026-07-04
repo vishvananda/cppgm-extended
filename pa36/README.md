@@ -196,7 +196,6 @@ x.t.2
 
 Optional sidecars include:
 
-- `x.compile.flags`: extra flags passed to `cppgm++ -c`
 - `x.link.flags`: extra flags passed to the host link driver
 - `x.env`: environment variables for one test
 - `x.lib.*`: host-built C or C++ helper sources

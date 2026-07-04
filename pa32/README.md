@@ -144,7 +144,8 @@ x.t.2
 
 Optional sidecars control or check the host flow:
 
-- `x.compile.flags`: extra flags passed to `cppgm++ -c`
+- `x.system-includes`: system include search directories passed to `cppgm++`
+  as `-isystem <dir>`
 - `x.link.flags`: extra flags passed to the host link driver
 - `x.lib.*`: host-built C or C++ helper sources
 - `x.argv`: program arguments for the runtime check
