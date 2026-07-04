@@ -17849,14 +17849,30 @@ static bool try_emit_itanium_function_symbol_ir(
           have_captured_param_type = true;
         }
       }
-      if(!mangled_param &&
-         !build_and_emit_type_ir(
-             hybrid_param_type,
-             &mangle_ctx,
-             state,
-             candidate,
-             captured_param_type.get())) {
-        return false;
+      if(!mangled_param) {
+        const size_t hybrid_begin = candidate.size();
+        if(build_and_emit_type_ir(hybrid_param_type,
+                                  &mangle_ctx,
+                                  state,
+                                  candidate,
+                                  captured_param_type.get())) {
+          mangled_param = true;
+          have_captured_param_type = true;
+        } else {
+          candidate.resize(hybrid_begin);
+          if(actual_param &&
+             !type_has_dependent_mangle_state(actual_param) &&
+             build_and_emit_type_ir(actual_param,
+                                    &mangle_ctx,
+                                    state,
+                                    candidate,
+                                    captured_param_type.get())) {
+            mangled_param = true;
+            have_captured_param_type = true;
+          } else {
+            return false;
+          }
+        }
       }
       if(!mangled_param) {
         have_captured_param_type = true;

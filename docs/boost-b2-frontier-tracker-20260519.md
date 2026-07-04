@@ -779,7 +779,7 @@ Local Boost wrapper state:
 | 48 | `libs/fusion/test` | pass | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster, then incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`, then the `invoke_function_object`, `invoke`, and `invoke_procedure` runtime failures. All frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the global function-pointer rvalue fix exits `0` and updates 842 targets. |
 | 49 | `libs/geometry/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.9s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__geometry__test.log`. |
 | 50 | `libs/gil/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.8s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__gil__test.log`. |
-| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster is now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test` advances to a separate libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier. |
+| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster and the libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test` compiles and advances to the undefined Boost.Parameter keyword `instance` link frontier. Log `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -2575,3 +2575,39 @@ working tree after `a4b730218` against clean `db445d926` baseline
 `/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
 instructions `+0.27%`, RSS `-0.91%`, footprint `+0.23%`; detailed report
 `/tmp/cppgm-after-pure-override-pure-virtual-perf-report.json`.
+
+2026-07-04 Boost.Graph `libs/graph/test//vf2_sub_graph_iso_test` libc++
+Mersenne Twister ABI-symbol frontier: constructing `std::mt19937` instantiates
+`std::__1::mersenne_twister_engine<...>::__rshift`, whose function-template
+parameter pattern is the dependent class member typedef `result_type` while the
+selected specialization's actual parameter is the concrete `unsigned int`.
+The weak function-symbol builder tried to emit only the hybrid pattern type;
+when that owner-dependent typedef could not be structurally encoded for the
+ABI IR parameter, symbol construction failed before it could use the already
+known concrete specialization type. The fix preserves the existing hybrid
+spelling path when it succeeds, but rolls back and emits the concrete
+non-dependent actual parameter type when hybrid emission fails. No Boost
+special case, fallback resolver, cache, or source-text reparse is added. Owner:
+PA35 hosted standard-library compile coverage. New regression:
+`pa35/tests/compile/700-hosted-random-mersenne-rshift-compile.t`.
+Pre-fix evidence: the PA35 hosted `<random>` reducer and focused Boost target
+both failed with `failed to build ABI IR function symbol for weak function
+std::__1::mersenne_twister_engine<...>::__rshift`; the direct non-STL
+template-shape reducers compiled, so the checked-in reducer stays on the
+hosted libc++ surface that reproduced the bug. After the fix, the PA35 reducer
+compiles and focused B2
+`/usr/local/bin/timeout 300 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/graph/test//vf2_sub_graph_iso_test`
+advances to the separate undefined Boost.Parameter keyword `instance` link
+frontier; log
+`/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`. Validation:
+`make -C dev cppgm++ -j12`; focused PA35 regression passes and refs were
+generated with `REF_TEST_APP=../dev/cppgm++`; PA35 placement audit reports no
+placement findings; PA35 direct-LowIR report passes `83/83`;
+`python3 scripts/audit_text_reparse.py` reports all zero; full direct-LowIR
+report passes `3461/3461`; full strict direct-LowIR compare passes. The active
+`/tmp` baseline was absent, so a detached pre-fix `3956ec7a0` worktree was
+built and recorded as
+`/tmp/cppgm-before-rshift-param-fallback-3956ec7a0-perf-baseline.json`; the
+three-run dirty working tree perf check passes with instructions `+0.02%`, RSS
+`-0.25%`, footprint `+0.01%`; detailed report
+`/tmp/cppgm-after-rshift-param-fallback-perf-report.json`.
