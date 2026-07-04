@@ -5129,6 +5129,11 @@ bool is_pure_virtual_initializer(const CppAstNode & initializer)
          semantic_utils::trim_space(node_text(child)) == "0";
 }
 
+bool method_syntax_allows_pure_virtual_initializer(const MethodSyntaxInfo & syntax)
+{
+  return syntax.decl_virtual || syntax.is_override || syntax.is_final;
+}
+
 bool decl_specifiers_have_virtual(const CppAstNode & specifiers)
 {
   for(size_t i = 0; i < specifiers.children.size(); ++i) {
@@ -8348,7 +8353,7 @@ void collect_class_simple_declaration(SemanticContext & ctx,
         if(!special ||
            special->kind != CppAstKind::special_initializer ||
            (special->value != "delete" && special->value != "default")) {
-          if(!prepared_method.syntax.decl_virtual ||
+          if(!method_syntax_allows_pure_virtual_initializer(prepared_method.syntax) ||
              !is_pure_virtual_initializer(initializer)) {
             throw std::logic_error("unsupported member function initializer" +
                                    diagnostic_location_for_member(ctx, init_decl, &node));
@@ -8748,7 +8753,7 @@ void collect_class_reference_simple_declaration(SemanticContext & ctx,
         if(!special ||
            special->kind != CppAstKind::special_initializer ||
            (special->value != "delete" && special->value != "default")) {
-          if(!prepared_method.syntax.decl_virtual ||
+          if(!method_syntax_allows_pure_virtual_initializer(prepared_method.syntax) ||
              !is_pure_virtual_initializer(initializer)) {
             continue;
           }
@@ -9781,7 +9786,7 @@ void collect_dependent_class_simple_declaration(SemanticContext & ctx,
         if(!special ||
            special->kind != CppAstKind::special_initializer ||
            (special->value != "delete" && special->value != "default")) {
-          if(!prepared_method.syntax.decl_virtual ||
+          if(!method_syntax_allows_pure_virtual_initializer(prepared_method.syntax) ||
              !is_pure_virtual_initializer(initializer)) {
             throw std::logic_error("unsupported dependent member function initializer");
           }
