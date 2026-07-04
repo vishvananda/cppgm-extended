@@ -12,9 +12,10 @@ function @f() -> void [binding=strong, object=_Z1fv] {
   block ^entry:
     %t1 = addr $s
     %t2 = addr @deleter
-    store ptr %t2, $refarg__1
-    %t3 = addr $refarg__1
-    call void @S_void_____void______S(%t1, 0, %t3)
+    %t3 = unary decay ptr %t2
+    store ptr %t3, $refarg__1
+    %t4 = addr $refarg__1
+    call void @S_void_____void______S(%t1, 0, %t4)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

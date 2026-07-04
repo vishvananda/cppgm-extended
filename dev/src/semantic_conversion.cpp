@@ -349,6 +349,14 @@ bool top_level_cv_allows_reference_binding(const TypePtr & target_referent,
   return (!source_const || target_const) && (!source_volatile || target_volatile);
 }
 
+bool reference_referents_are_same_ignoring_top_cv(const TypePtr & lhs,
+                                                  const TypePtr & rhs)
+{
+  TypePtr lhs_base = strip_top_level_cv(lhs);
+  TypePtr rhs_base = strip_top_level_cv(rhs);
+  return lhs_base && rhs_base && type_equals(lhs_base, rhs_base);
+}
+
 bool pointer_pointee_cv_allows_base_conversion(const TypePtr & target_pointer,
                                                const TypePtr & source_pointer,
                                                TypePtr * target_pointee_base_out,
@@ -398,17 +406,6 @@ bool is_class_or_union_object_type(const TypePtr & type)
   return base->named_key.compare(0, 6, "class ") == 0 ||
          base->named_key.compare(0, 7, "struct ") == 0 ||
          base->named_key.compare(0, 6, "union ") == 0;
-}
-
-bool is_decay_only_lvalue_reference_source(const ExprInfo & expr)
-{
-  if(expr.category != VC_LVALUE || !expr.type) {
-    return false;
-  }
-  TypePtr base = strip_top_level_cv(remove_reference_type(expr.type));
-  return base &&
-         (base->kind == Type::TK_ARRAY ||
-          base->kind == Type::TK_FUNCTION);
 }
 
 bool reference_referent_accepts_temporary(const TypePtr & referent)
@@ -1126,26 +1123,17 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
   }
 
   if(base_target->kind == Type::TK_RVALUE_REFERENCE) {
-    bool decay_only_lvalue_source = false;
-    if(expr.category == VC_LVALUE) {
-      if(!is_decay_only_lvalue_reference_source(expr)) {
-        return CR_BAD;
-      }
-      decay_only_lvalue_source = true;
-
-      TypePtr referred_base = strip_top_level_cv(base_target->inner);
-      if(referred_base &&
-         (referred_base->kind == Type::TK_ARRAY ||
-          referred_base->kind == Type::TK_FUNCTION)) {
-        return CR_BAD;
-      }
-    }
     TypePtr source_type = reference_binding_source_type(expr);
-    if(same_type_with_compatible_top_cv(base_target->inner, source_type)) {
+    if(reference_referents_are_same_ignoring_top_cv(base_target->inner, source_type)) {
+      if(expr.category == VC_LVALUE) {
+        return CR_BAD;
+      }
+      if(!same_type_with_compatible_top_cv(base_target->inner, source_type)) {
+        return CR_BAD;
+      }
       return CR_EXACT;
     }
-    if((expr.category != VC_PRVALUE && !decay_only_lvalue_source) ||
-       is_class_or_union_object_type(source_type)) {
+    if(is_class_or_union_object_type(source_type)) {
       return CR_BAD;
     }
     return standard_conversion_rank_non_reference(base_target->inner, expr);
@@ -1193,10 +1181,14 @@ void apply_standard_conversion_result_metadata(SemanticContext & ctx,
          standard_conversion_rank_non_reference(referred_base, expr) != CR_BAD) {
         set_standard_converted_prvalue_result(ctx, referent_type, expr, out);
       }
-    } else if(is_decay_only_lvalue_reference_source(expr)) {
-      TypePtr decayed = value_conversion_type(expr);
-      if(decayed) {
-        ctx.set_expr_info_metadata(out, decayed, VC_PRVALUE);
+    } else {
+      TypePtr source_type = reference_binding_source_type(expr);
+      const bool direct_binding =
+          expr.category != VC_LVALUE &&
+          reference_referents_are_same_ignoring_top_cv(referent_type, source_type);
+      if(!direct_binding &&
+         standard_conversion_rank_non_reference(referent_type, expr) != CR_BAD) {
+        set_standard_converted_prvalue_result(ctx, referent_type, expr, out);
       }
     }
     target_base = strip_top_level_cv(referent_type);

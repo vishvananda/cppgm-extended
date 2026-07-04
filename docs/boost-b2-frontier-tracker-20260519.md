@@ -775,7 +775,7 @@ Local Boost wrapper state:
 | 44 | `libs/format/test` | pass | Current-head suite survey on 2026-07-03 passes in 42.9s; log `/tmp/boost-suite-survey-20260703-162104-j4-5f9951dae/libs__format__test.log`. |
 | 45 | `libs/function/test` | pass | Current-head suite survey first found the `issue_42` namespace-scope direct-initialization frontier. After the function-style initializer output fix, full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/function/test` passes and updates 214 targets; log `/tmp/boost-function-full-after-global-function-style-init-20260703.log`. |
 | 46 | `libs/function_types/test` | pass | Current-head rerun first stopped at `interface_example.cpp` with `failed to build ABI IR function symbol for weak function example::member<interface_x::vtable::inf0<a_class>, ...>::wrap`. After the owner-dependent return fallback fix, focused `interface_example` passes with log `/tmp/boost-function-types-interface-example-after-owner-return-fallback-20260703.log`, and full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/function_types/test` passes and updates 89 targets; log `/tmp/boost-function-types-full-after-owner-return-fallback-20260703.log`. |
-| 47 | `libs/fusion/test` | frontier | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`; all three frontiers are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` now updates 804 targets and leaves 13 real failures. First compile frontier is `map_comparison`/`map_copy`, both failing in `boost::fusion::pair<First, Second>::pair` at `boost/fusion/support/pair.hpp:56:53` with `no viable overload for call std::forward<Second>` after both `std::__1::forward` overloads are rejected. Later failures are `zip_view`, `zip_view2`, `zip_view_ignore`, `swap`, `is_sequence`, `is_view`, `tag_of`, plus runtime `invoke`, `invoke_function_object`, `invoke_procedure`, and `tuple_traits__maybe_variadic`. |
+| 47 | `libs/fusion/test` | frontier | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`; all four frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the map fix updates 812 targets, skips 19 dependency targets, and leaves 11 failed updates. First remaining visible frontier is runtime `tuple_traits__maybe_variadic`, where variadic `boost::fusion::tuple` constructibility reports invalid arities as constructible. Remaining compile clusters are `zip_view`, `zip_view2`, `zip_view_ignore`, and `swap` failing during Fusion vector store construction with unresolved `std::forward<U>`, plus incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`. Remaining runtime failures are `invoke`, `invoke_function_object`, and `invoke_procedure`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -795,9 +795,11 @@ Local Boost wrapper state:
 - 2026-07-03 Fusion cursor advance: current-head rerun first stopped in
   `libs/fusion/test//erase_key`, then `//segmented_for_each`, then
   `//front_extended_deque` and `//back_extended_deque`. The detailed Fusion
-  rows below fix those three frontiers. Full `libs/fusion/test` now advances to
-  the `map_comparison`/`map_copy` `std::forward<Second>(val)` compile frontier,
-  with 13 remaining failed updates in the final summary.
+  rows below fix those three frontiers. The next detailed Fusion row fixes the
+  `map_comparison`/`map_copy` `std::forward<Second>(val)` compile frontier.
+  Full `libs/fusion/test` now advances to `tuple_traits__maybe_variadic` as the
+  first visible remaining runtime failure, with 11 failed updates in the final
+  summary.
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
   `/tmp/boost-frontier-placement-pa31-idiv-normalize.md` and
@@ -2243,3 +2245,51 @@ strict direct-LowIR compare passes. Isolated perf against clean `eacf5389f`
 baseline `/tmp/cppgm-before-builtin-probe-baseline.json` passes with
 instructions `+0.06%`, RSS `-0.88%`, footprint `-0.02%`; detailed report
 `/tmp/cppgm-after-builtin-probe-perf-report.json`.
+
+2026-07-04 Boost.Fusion `libs/fusion/test//map_comparison` and `//map_copy`
+rvalue-reference converted-temporary frontier: Fusion constructs
+`boost::fusion::pair<First, Second>` from source values whose type differs from
+`Second`, and `BOOST_FUSION_FWD_ELEM(Second, val)` expands on this host to
+`std::forward<Second>(val)`. For `Second=short` or `Second=long`, Clang selects
+the rvalue-reference `std::forward` overload and materializes a converted
+temporary before binding `Second&&`. CPPGM rejected the call too early because
+its rvalue-reference standard-conversion path rejected lvalue sources except
+array/function decay. The fix distinguishes direct rvalue-reference binding
+from binding a converted temporary: same referent ignoring top-level cv still
+rejects lvalues and cv-incompatible xvalues, while a different non-class
+source type can use the ordinary non-reference conversion path to form a
+temporary. No Boost special case, fallback resolver, cache, or source-text
+reparse is added. Owner: PA21 rvalue-reference/template forwarding conversion
+semantics, with a PA24 LowIR reference update for the newly explicit
+function-to-pointer decay emitted by the shared reference metadata path. New
+regression:
+`pa21/tests/general/100-rvalue-reference-binds-converted-temporary.t`;
+existing
+`pa24/tests/general/200-defaulted-member-alias-constructor.ref` now records an
+explicit `unary decay` before passing the `D&&` alias constructor argument.
+Pre-fix evidence: the no-STL reducers for `forward<short>(int)` and the
+Boost-shaped `pair<key1, short>` constructor failed with no viable
+`std::forward<Second>` overload, while Clang accepted both; focused B2
+`map_comparison` and `map_copy` failed at `boost/fusion/support/pair.hpp:56:53`.
+After the fix, both reducers compile, and focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test//map_comparison`
+passes and updates 4 targets; the same command for
+`libs/fusion/test//map_copy` also passes and updates 4 targets. Full Fusion
+rerun
+`/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test`
+keeps the map targets green and advances to 11 failed updates: first visible
+runtime `tuple_traits__maybe_variadic`, compile clusters `zip_view`,
+`zip_view2`, `zip_view_ignore`, `swap`, `is_sequence`, `is_view`, and
+`tag_of`, and runtime `invoke`, `invoke_function_object`, and
+`invoke_procedure`. Validation: `make -C dev cppgm++ -j8`; focused PA12
+top-level-const rvalue-reference rejection still passes; focused PA21
+regression passes after refs generated with `REF_TEST_APP=../dev/cppgm++`;
+PA21 direct-LowIR report passes `188/188`; PA21 placement audit reports no
+placement findings; PA24 focused ref regeneration/check passes; PA24 placement
+audit reports no placement findings; combined PA12/PA21/PA24 direct-LowIR
+report passes `411/411`; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; full direct-LowIR report passes `3453/3453`; full strict
+direct-LowIR compare passes. Isolated perf against clean `809f15888` baseline
+`/tmp/cppgm-before-rvalue-ref-converted-temp-baseline.json` passes with
+instructions `+0.04%`, RSS `+0.22%`, footprint `-0.02%`; detailed report
+`/tmp/cppgm-after-rvalue-ref-converted-temp-perf-report.json`.
