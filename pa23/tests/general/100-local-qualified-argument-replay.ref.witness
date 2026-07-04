@@ -36,57 +36,57 @@ translation-unit
     selected primary
     bind #1 = const proto::expr<tag_assign, proto::list2<const mark_type &, deref_leaf &>, 2> & source=explicit
   class-use at pa23/tests/general/100-local-qualified-argument-replay.t:118:25
-    template mangle_outer
+    template replay_outer
     selected primary
     bind #1 = int source=explicit
   class-use at pa23/tests/general/100-local-qualified-argument-replay.t:118:44
-    template mangle_outer<int>::inner
+    template replay_outer<int>::inner
     selected primary
     bind #1 = int & source=defaulted
   function-call at pa23/tests/general/100-local-qualified-argument-replay.t:120:5
-    callee mangle_access::increment
+    callee replay_access::increment
     selected instantiation
-    bind #1 = mangle_outer<int>::inner<> source=deduced
+    bind #1 = replay_outer<int>::inner<> source=deduced
   class-use at pa23/tests/general/100-local-qualified-argument-replay.t:123:23
-    template mangle_outer
+    template replay_outer
     selected primary
     bind #1 = int source=explicit
   class-use at pa23/tests/general/100-local-qualified-argument-replay.t:123:42
-    template mangle_outer<int>::inner
+    template replay_outer<int>::inner
     selected primary
     bind #1 = const int & source=explicit
   function-call at pa23/tests/general/100-local-qualified-argument-replay.t:125:5
-    callee mangle_access::increment
+    callee replay_access::increment
     selected instantiation
-    bind #1 = mangle_outer<int>::inner<const int &> source=deduced
+    bind #1 = replay_outer<int>::inner<const int &> source=deduced
 template-closure-events
   ensure-definition
     entity as_marker::impl<const proto::expr<tag_assign, proto::list2<const mark_type &, deref_leaf &>, 2> &>::operator()
   ensure-definition
     entity as_marker::impl<const proto::expr<tag_assign, proto::list2<const mark_type &, plus_leaf &>, 2> &>::operator()
   ensure-definition
-    entity mangle_access::increment
+    entity replay_access::increment
   function-instantiation
     entity as_marker::impl<const proto::expr<tag_assign, proto::list2<const mark_type &, deref_leaf &>, 2> &>::operator()
   function-instantiation
     entity as_marker::impl<const proto::expr<tag_assign, proto::list2<const mark_type &, plus_leaf &>, 2> &>::operator()
   function-instantiation
-    entity mangle_access::increment
-  function-instantiation
-    entity mangle_outer<int>::inner<>::member
-  function-instantiation
-    entity mangle_outer<int>::inner<const int &>::member
-  function-instantiation
     entity proto::right
+  function-instantiation
+    entity replay_access::increment
+  function-instantiation
+    entity replay_outer<int>::inner<>::member
+  function-instantiation
+    entity replay_outer<int>::inner<const int &>::member
   require-definition
     entity as_marker::impl<const proto::expr<tag_assign, proto::list2<const mark_type &, deref_leaf &>, 2> &>::operator()
   require-definition
     entity as_marker::impl<const proto::expr<tag_assign, proto::list2<const mark_type &, plus_leaf &>, 2> &>::operator()
   require-definition
-    entity mangle_access::increment
-  require-definition
-    entity mangle_outer<int>::inner<>::member
-  require-definition
-    entity mangle_outer<int>::inner<const int &>::member
-  require-definition
     entity proto::right
+  require-definition
+    entity replay_access::increment
+  require-definition
+    entity replay_outer<int>::inner<>::member
+  require-definition
+    entity replay_outer<int>::inner<const int &>::member

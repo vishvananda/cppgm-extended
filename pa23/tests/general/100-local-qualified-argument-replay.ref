@@ -1,5 +1,5 @@
-declare function @mangle_outer_int___inner_int_____member(%arg0 : ptr) -> void [binding=weak, object=_ZN12mangle_outerIiE5innerIRiE6memberEv]
-declare function @mangle_outer_int___inner_int_const_____member(%arg0 : ptr) -> void [binding=weak, object=_ZN12mangle_outerIiE5innerIRKiE6memberEv]
+declare function @replay_outer_int___inner_int_____member(%arg0 : ptr) -> void [binding=weak, object=_ZN12replay_outerIiE5innerIRiE6memberEv]
+declare function @replay_outer_int___inner_int_const_____member(%arg0 : ptr) -> void [binding=weak, object=_ZN12replay_outerIiE5innerIRKiE6memberEv]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $mark : obj<1x1>
@@ -43,22 +43,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____deref_leaf_____2__const_____operator__(%t18, %t19, %t20)
     return i32 0
 }
-function @use_default_mangle(%it : ptr [pass=reference]) -> void [binding=strong, object=_Z18use_default_mangleRN12mangle_outerIiE5innerIRiEE] {
+function @use_default_replay(%it : ptr [pass=reference]) -> void [binding=strong, object=_Z18use_default_replayRN12replay_outerIiE5innerIRiEE] {
   slot $it : ptr
 
   block ^entry:
     store ptr %it, $it
     %t1 = load ptr $it
-    call void @mangle_access__increment(%t1)
+    call void @replay_access__increment(%t1)
     return void
 }
-function @use_const_mangle(%it : ptr [pass=reference]) -> void [binding=strong, object=_Z16use_const_mangleRN12mangle_outerIiE5innerIRKiEE] {
+function @use_const_replay(%it : ptr [pass=reference]) -> void [binding=strong, object=_Z16use_const_replayRN12replay_outerIiE5innerIRKiEE] {
   slot $it : ptr
 
   block ^entry:
     store ptr %it, $it
     %t1 = load ptr $it
-    call void @mangle_access__increment__ov2(%t1)
+    call void @replay_access__increment__ov2(%t1)
     return void
 }
 function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____plus_leaf_____2__const_____operator__(%ret : ptr [pass=indirect_result], %this : ptr, %expr : ptr [pass=reference]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEclESD_] {
@@ -121,22 +121,22 @@ function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const__
     store ptr %this, $this
     return void
 }
-function @mangle_access__increment(%f : ptr [pass=reference]) -> void [binding=weak, object=_ZN13mangle_access9incrementIN12mangle_outerIiE5innerIRiEEEEvRT_] {
+function @replay_access__increment(%f : ptr [pass=reference]) -> void [binding=weak, object=_ZN13replay_access9incrementIN12replay_outerIiE5innerIRiEEEEvRT_] {
   slot $f : ptr
 
   block ^entry:
     store ptr %f, $f
     %t1 = load ptr $f
-    call void @mangle_outer_int___inner_int_____member(%t1)
+    call void @replay_outer_int___inner_int_____member(%t1)
     return void
 }
-function @mangle_access__increment__ov2(%f : ptr [pass=reference]) -> void [binding=weak, object=_ZN13mangle_access9incrementIN12mangle_outerIiE5innerIRKiEEEEvRT_] {
+function @replay_access__increment__ov2(%f : ptr [pass=reference]) -> void [binding=weak, object=_ZN13replay_access9incrementIN12replay_outerIiE5innerIRKiEEEEvRT_] {
   slot $f : ptr
 
   block ^entry:
     store ptr %f, $f
     %t1 = load ptr $f
-    call void @mangle_outer_int___inner_int_const_____member(%t1)
+    call void @replay_outer_int___inner_int_const_____member(%t1)
     return void
 }
 function @proto__right(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR9plus_leafEELi2EEEEES8_RT_] {

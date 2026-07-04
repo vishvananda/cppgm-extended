@@ -97,7 +97,7 @@ int main() {
 // when building object symbols.
 
 template<typename T>
-struct mangle_outer
+struct replay_outer
 {
     template<typename Ref = T &>
     struct inner
@@ -106,7 +106,7 @@ struct mangle_outer
     };
 };
 
-struct mangle_access
+struct replay_access
 {
     template<typename Facade>
     static void increment(Facade &f)
@@ -115,12 +115,12 @@ struct mangle_access
     }
 };
 
-void use_default_mangle(mangle_outer<int>::inner<> &it)
+void use_default_replay(replay_outer<int>::inner<> &it)
 {
-    mangle_access::increment(it);
+    replay_access::increment(it);
 }
 
-void use_const_mangle(mangle_outer<int>::inner<int const &> &it)
+void use_const_replay(replay_outer<int>::inner<int const &> &it)
 {
-    mangle_access::increment(it);
+    replay_access::increment(it);
 }
