@@ -381,6 +381,32 @@ CppAstNode make_id_expr_ast_node(const string & name)
   return node;
 }
 
+CppAstNode make_subscript_expr_ast_node(const CppAstNode & base,
+                                        const CppAstNode & index)
+{
+  CppAstNode node;
+  node.kind = CppAstKind::subscript_expression;
+  node.children.push_back(base);
+  node.children.push_back(index);
+  return node;
+}
+
+CppAstNode make_assignment_expr_ast_node(ETokenType token_type,
+                                         const string & text,
+                                         const CppAstNode & lhs,
+                                         const CppAstNode & rhs)
+{
+  CppAstNode node;
+  node.kind = CppAstKind::assignment_expression;
+  node.has_token = true;
+  node.token_kind = RT_SIMPLE;
+  node.simple_type = token_type;
+  node.value = text;
+  node.children.push_back(lhs);
+  node.children.push_back(rhs);
+  return node;
+}
+
 CppAstNode make_ptr_operator_ast_node(ETokenType token_type,
                                       const string & text)
 {
@@ -891,6 +917,58 @@ void analyze_structured_binding_declaration_statement(SemanticContext & ctx,
                                                                           field.name)))));
     const CppAstNode * owned_binding_decl = ctx.own_synthetic_ast(std::move(binding_decl));
     analyze_simple_declaration_statement(ctx, scope, *owned_binding_decl, out);
+  }
+}
+
+bool try_analyze_structured_binding_as_subscript_assignment(SemanticContext & ctx,
+                                                            Scope & scope,
+                                                            const CppAstNode & node,
+                                                            DumpNode & out)
+{
+  const CppAstNode * specifiers = find_child_kind(node, CppAstKind::decl_specifier_seq);
+  const CppAstNode * declarator =
+      find_child_kind(node, CppAstKind::structured_binding_declarator);
+  const CppAstNode * initializer = find_child_kind(node, CppAstKind::initializer);
+  if(!specifiers || !declarator || !initializer || initializer->children.size() != 1) {
+    return false;
+  }
+  if(find_child_kind(*declarator, CppAstKind::ref_qualifier)) {
+    return false;
+  }
+
+  const CppAstNode * identifiers =
+      find_child_kind(*declarator, CppAstKind::structured_binding_identifier_list);
+  if(!identifiers || identifiers->children.size() != 1) {
+    return false;
+  }
+
+  const string object_name = simple_type_identifier_from_specifiers(*specifiers);
+  const string index_name = identifiers->children[0].value;
+  if(object_name.empty() ||
+     !simple_identifier_text(index_name) ||
+     !unqualified_lookup_prefers_expression_binding(scope, object_name)) {
+    return false;
+  }
+
+  CppAstNode assignment =
+      make_assignment_expr_ast_node(
+          OP_ASS,
+          "=",
+          make_subscript_expr_ast_node(make_id_expr_ast_node(object_name),
+                                       make_id_expr_ast_node(index_name)),
+          initializer->children[0]);
+  try
+  {
+    const CppAstNode * owned_assignment = ctx.own_synthetic_ast(std::move(assignment));
+    ExprInfo expr = ctx.analyze_expression(scope, *owned_assignment);
+    DumpNode expr_stmt = make_located_dump_node(CallSemKind::expression_statement, node);
+    expr_stmt.children.push_back(std::move(expr.node));
+    out.children.push_back(std::move(expr_stmt));
+    return true;
+  }
+  catch(const logic_error &)
+  {
+    return false;
   }
 }
 
@@ -1612,6 +1690,12 @@ void analyze_for_init_statement(SemanticContext & ctx,
   }
 
   if(node.children[0].kind == CppAstKind::structured_binding_declaration) {
+    if(try_analyze_structured_binding_as_subscript_assignment(ctx,
+                                                              scope,
+                                                              node.children[0],
+                                                              out)) {
+      return;
+    }
     analyze_structured_binding_declaration_statement(ctx, scope, node.children[0], out);
     return;
   }
@@ -2018,6 +2102,9 @@ void analyze_statement_impl(SemanticContext & ctx,
   }
 
   if(node.kind == CppAstKind::structured_binding_declaration) {
+    if(try_analyze_structured_binding_as_subscript_assignment(ctx, scope, node, out)) {
+      return;
+    }
     analyze_structured_binding_declaration_statement(ctx, scope, node, out);
     return;
   }
