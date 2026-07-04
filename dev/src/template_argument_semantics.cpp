@@ -12542,8 +12542,12 @@ string carried_dependent_class_template_argument_text(const TypePtr & type)
 
   ostringstream out;
   out << template_name << "<";
+  size_t emitted_argument_count = 0;
   for(size_t i = 0; i < arguments.size(); ++i) {
-    if(i != 0) {
+    if(arguments[i].source_defaulted) {
+      continue;
+    }
+    if(emitted_argument_count != 0) {
       out << ", ";
     }
     string argument_text = trim_space(arguments[i].text);
@@ -12554,6 +12558,7 @@ string carried_dependent_class_template_argument_text(const TypePtr & type)
       return string();
     }
     out << argument_text;
+    ++emitted_argument_count;
   }
   out << ">";
   return out.str();
@@ -14595,10 +14600,22 @@ void copy_direct_non_type_argument(
   } else {
     out.syntax = TemplateArgumentSyntax();
   }
+  const bool use_evaluated_default_text =
+      replacement.source_defaulted &&
+      !replacement.dependent &&
+      !replacement.text.empty();
   const string replacement_source_text =
-      replacement.dependent ? string() :
-                               direct_non_type_replacement_source_text(replacement);
-  if(!replacement_source_text.empty()) {
+      (replacement.dependent || use_evaluated_default_text) ?
+          string() :
+          direct_non_type_replacement_source_text(replacement);
+  if(use_evaluated_default_text) {
+    out.text = trim_space(replacement.text);
+    out.syntax.text = out.text;
+    out.syntax.source_text = out.text;
+    out.syntax.expression.reset();
+    out.syntax.type_id.reset();
+    out.syntax.template_id.reset();
+  } else if(!replacement_source_text.empty()) {
     out.text = replacement_source_text;
   } else if(!replacement.text.empty()) {
     out.text = trim_space(replacement.text);
@@ -15018,8 +15035,12 @@ bool substitute_dependent_class_type(const TypePtr & type,
     ostringstream specialization_key_name;
     specialization_name << specialization_head << "<";
     specialization_key_name << specialization_head << "<";
+    size_t emitted_argument_count = 0;
     for(size_t i = 0; i < substituted_arguments.size(); ++i) {
-      if(i != 0) {
+      if(substituted_arguments[i].source_defaulted) {
+        continue;
+      }
+      if(emitted_argument_count != 0) {
         specialization_name << ", ";
         specialization_key_name << ", ";
       }
@@ -15054,6 +15075,7 @@ bool substitute_dependent_class_type(const TypePtr & type,
       }
       specialization_name << argument_text;
       specialization_key_name << argument_key_text;
+      ++emitted_argument_count;
     }
     specialization_name << ">";
     specialization_key_name << ">";

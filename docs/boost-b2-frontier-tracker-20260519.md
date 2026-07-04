@@ -2838,3 +2838,41 @@ and recorded as
 the candidate perf check passes with instructions `+0.26%`, RSS `-0.62%`,
 footprint `+0.04%`; detailed report
 `/tmp/cppgm-after-function-result-template-id-shadow-perf-report.json`.
+
+2026-07-04 Boost.Graph `libs/graph/test//dfs_cc` Boost.Optional proxy
+assignment frontier: `boost::optional<Edge>::operator=(Expr&&)` returns
+`enable_if<optional_detail::is_optional_val_assign_candidate<T, Expr>,
+optional&>::type`, where `is_optional_val_assign_candidate` has a defaulted
+bool argument `has_dedicated_constructor<T, U>::value` declared in
+`boost::optional_detail`. During `optional<T>` member-template result
+substitution CPPGM carried that source-defaulted argument into reparseable
+dependent class-template text. After substituting `Expr` for Boost's iterator
+proxy reference, the text replay evaluated the unqualified default expression
+from the later `boost::enable_if` scope instead of the declaring
+`boost::optional_detail` scope, dropping every viable assignment template. The
+fix keeps source-defaulted class-template arguments in structured metadata but
+omits them from reparseable dependent class-template-id text, matching the
+alias-template path; direct concrete non-type default copies also prefer the
+evaluated text over the original default expression. No Boost special case,
+cache, fallback resolver, or source-text reparse is added. Owner: PA22
+function-template result substitution. New regression:
+`pa22/tests/spec/500-function-result-default-nontype-scope.t`.
+Pre-fix evidence: `/tmp/cppgm-default-nontype-scope-medium.cpp` and the
+Boost.Optional proxy reducer failed with `no viable operator=` under the
+detached pre-fix `2c4006d4b` compiler, while clang accepted the reduced case.
+After the fix, both reducers compile, the direct Boost.Graph
+`libs/graph/test/dfs_cc.cpp` compile passes, and focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/graph/test//dfs_cc`
+passes and updates 2 targets; log
+`/tmp/boost-graph-dfs-cc-after-default-nontype-scope-20260704.log`.
+Validation: `make -C dev cppgm++ -j12`; focused PA22 regression passes after
+refs generated with `REF_TEST_APP=../dev/cppgm++`; PA22 placement audit passes
+with `--fail-on-early`; PA22 direct-LowIR report passes `199/199`;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; full strict direct-LowIR compare passes; full direct-LowIR
+report passes `3468/3468`. A detached pre-fix `2c4006d4b` worktree was built
+and recorded as
+`/tmp/cppgm-before-default-nontype-scope-2c4006d4b-perf-baseline.json`; the
+candidate perf check passes with instructions `-0.14%`, RSS `-0.48%`,
+footprint `-0.01%`; detailed report
+`/tmp/cppgm-after-default-nontype-scope-perf-report.json`.
