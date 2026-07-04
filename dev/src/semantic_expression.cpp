@@ -6975,6 +6975,11 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
         return info && info->class_kind != "enum";
       };
   if(deferred_operator_builtin_fallback &&
+     (has_non_enum_class_value_type(lhs) || has_non_enum_class_value_type(rhs)) &&
+     !builtin_binary_operator_supported(lhs, rhs)) {
+    throw logic_error(deferred_operator_builtin_fallback_error);
+  }
+  if(deferred_operator_builtin_fallback &&
      (has_non_enum_class_value_type(lhs) || has_non_enum_class_value_type(rhs))) {
     if(parser_trace::enabled("overload")) {
       ostringstream trace;
