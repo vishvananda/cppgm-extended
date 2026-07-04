@@ -2426,3 +2426,45 @@ working tree after `640ecf2ba` against clean `db445d926` baseline
 `/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
 instructions `-0.07%`, RSS `+0.71%`, footprint `-0.09%`; detailed report
 `/tmp/cppgm-after-dependent-result-sizeof-perf-report.json`.
+
+2026-07-04 Boost.Fusion `libs/fusion/test//invoke_function_object` const
+function-object invocation frontier: Fusion's invocation helper takes the
+function object by value but explicitly instantiates the helper with
+`Function = F const`, so the parameter object inside the instantiated function
+body must remain const even though the canonical function signature drops
+top-level cv from by-value parameters. CPPGM used the normalized signature
+parameter type for function-body lookup, so `f()` selected the mutable
+`operator()` overload in `invoke_function_object<nullary_fobj const>` and
+related arities. The fix distinguishes canonical signature parameter types
+from parameter-object types while parsing parameter clauses: arrays/functions
+still adjust, references stay references, and top-level cv is preserved only
+for the body-local parameter binding. Recovery from source parameter syntax is
+used only as an AST-based fallback for function-body lookup, and failed
+recovery is ignored so defaulted SFINAE constraints that mention earlier
+parameters keep using the already-instantiated bindings. No Boost special case,
+source-text reparse, varargs resolver change, or cache is added. Owner:
+PA18:100 function-template instantiation and function-body parameter lookup.
+New regression:
+`pa18/tests/general/100-function-template-const-by-value-parameter-call.t`.
+Pre-fix evidence: the no-STL `call0<fobj const>(f)` reducer returned the
+mutable overload result, and the semantic dump selected `fobj::operator()`
+instead of `fobj::operator() const`; focused Fusion still had 10
+`invoke_function_object` assertion failures. After the fix, the reducer exits
+0, emitted LowIR calls the const operator symbols for the `F const`
+instantiations, and focused B2
+`/usr/local/bin/timeout 300 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test//invoke_function_object`
+passes and updates 4 targets. Combined focused B2 for
+`invoke_function_object`, `invoke`, and `invoke_procedure` now leaves only
+runtime bus errors in `invoke` and `invoke_procedure`; `invoke_function_object`
+passes cleanly. Validation: `make -C dev cppgm++ -j8`; focused PA18 regression
+passes after refs generated with `REF_TEST_APP=../dev/cppgm++`; the PA23
+previous-parameter default-constraint regression remains green after recovery
+failures were made non-fatal; PA18 direct-LowIR report passes `196/196`; PA18
+placement audit reports no placement findings;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; full direct-LowIR report passes `3457/3457`; full
+strict direct-LowIR compare passes. Perf check for the dirty working tree after
+`1c1ed08ac` against clean `db445d926` baseline
+`/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
+instructions `+0.31%`, RSS `+0.14%`, footprint `+0.32%`; detailed report
+`/tmp/cppgm-after-const-param-object-perf-report.json`.

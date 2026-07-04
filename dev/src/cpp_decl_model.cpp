@@ -919,6 +919,24 @@ TypePtr normalize_parameter_type(const TypePtr & type)
   return strip_top_level_cv(type);
 }
 
+TypePtr parameter_object_type(const TypePtr & type)
+{
+  if(type->kind == Type::TK_LVALUE_REFERENCE ||
+     type->kind == Type::TK_RVALUE_REFERENCE) {
+    return type;
+  }
+
+  if(type->kind == Type::TK_ARRAY) {
+    return make_pointer(type->inner);
+  }
+
+  if(type->kind == Type::TK_FUNCTION) {
+    return make_pointer(type);
+  }
+
+  return type;
+}
+
 bool type_equals(const TypePtr & lhs, const TypePtr & rhs)
 {
   if(lhs.get() == rhs.get()) {

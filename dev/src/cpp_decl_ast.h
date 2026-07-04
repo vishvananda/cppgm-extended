@@ -40,7 +40,8 @@ bool parse_parameter_clause_ast(
     const AstDeclHooks & hooks,
     std::vector<std::pair<std::string, TypePtr> > & params,
     std::vector<const CppAstNode *> * default_args_out = nullptr,
-    bool * variadic_out = nullptr);
+    bool * variadic_out = nullptr,
+    std::vector<TypePtr> * parameter_object_types_out = nullptr);
 bool parse_declarator_ast(const CppAstNode & node,
                           const AstDeclHooks & hooks,
                           const TypePtr & base,

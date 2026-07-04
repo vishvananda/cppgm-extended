@@ -733,7 +733,8 @@ std::size_t binding_explicit_parameter_offset(const FunctionBinding & binding)
 
 void bind_function_parameter_lookup(Scope & function_scope,
                                     const FunctionBinding & binding,
-                                    std::size_t index)
+                                    std::size_t index,
+                                    const std::vector<TypePtr> * parameter_object_types = nullptr)
 {
   const std::string binding_name = function_parameter_binding_name(binding, index);
   if(binding_name.empty()) {
@@ -741,9 +742,15 @@ void bind_function_parameter_lookup(Scope & function_scope,
   }
 
   const std::string output_name = function_parameter_output_name(binding, index);
+  TypePtr parameter_type = binding.params[index].second;
+  if(parameter_object_types &&
+     index < parameter_object_types->size() &&
+     (*parameter_object_types)[index]) {
+    parameter_type = (*parameter_object_types)[index];
+  }
   ValueBinding parameter(ValueBinding::VK_PARAMETER,
                          output_name,
-                         binding.params[index].second);
+                         parameter_type);
   const std::string alias_name = function_parameter_alias_name(binding, index);
   semantic_scope_mutation::bind_value_aliases(function_scope,
                                               binding_name,
@@ -939,6 +946,51 @@ std::vector<const CppAstNode *> function_parameter_declarations(
     }
   }
   return parameters;
+}
+
+std::vector<TypePtr> recover_function_parameter_object_types(
+    SemanticContext & ctx,
+    Scope & function_scope,
+    const FunctionBinding & binding)
+{
+  std::vector<TypePtr> out;
+  out.reserve(binding.params.size());
+  for(std::size_t i = 0; i < binding.params.size(); ++i) {
+    out.push_back(binding.params[i].second);
+  }
+
+  const CppAstNode * parameter_clause = binding_parameter_clause(binding);
+  if(!parameter_clause) {
+    return out;
+  }
+
+  std::vector<std::pair<std::string, TypePtr> > parsed_params;
+  std::vector<TypePtr> explicit_parameter_object_types;
+  bool parsed = false;
+  try {
+    parsed = ctx.parse_parameter_clause(function_scope,
+                                        *parameter_clause,
+                                        parsed_params,
+                                        nullptr,
+                                        false,
+                                        &explicit_parameter_object_types);
+  } catch(const std::logic_error &) {
+    return out;
+  }
+  if(!parsed) {
+    return out;
+  }
+
+  const std::size_t explicit_offset = binding_explicit_parameter_offset(binding);
+  if(binding.params.size() != explicit_offset + explicit_parameter_object_types.size()) {
+    return out;
+  }
+  for(std::size_t i = 0; i < explicit_parameter_object_types.size(); ++i) {
+    if(explicit_parameter_object_types[i]) {
+      out[explicit_offset + i] = explicit_parameter_object_types[i];
+    }
+  }
+  return out;
 }
 
 /*
@@ -4265,8 +4317,13 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
             ++counters->function_body_emit_by_demand[
                 static_cast<std::size_t>(semantic_metrics::current_class_demand())];
           }
+          const std::vector<TypePtr> parameter_object_types =
+              recover_function_parameter_object_types(ctx, function_scope, binding);
           for(size_t i = 0; i < binding.params.size(); ++i) {
-            bind_function_parameter_lookup(function_scope, binding, i);
+            bind_function_parameter_lookup(function_scope,
+                                           binding,
+                                           i,
+                                           &parameter_object_types);
             DumpNode param_node =
                 make_dump_node(CallSemKind::parameter, function_parameter_display_name(binding, i));
             param_node.semantic_type = binding.params[i].second;
@@ -4490,8 +4547,13 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
   template_scope::overlay_scope_bindings(function_scope,
                                          *parent_scope,
                                          template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+  const std::vector<TypePtr> parameter_object_types =
+      recover_function_parameter_object_types(ctx, function_scope, binding);
   for(std::size_t i = 0; i < binding.params.size(); ++i) {
-    bind_function_parameter_lookup(function_scope, binding, i);
+    bind_function_parameter_lookup(function_scope,
+                                   binding,
+                                   i,
+                                   &parameter_object_types);
   }
   bind_function_parameter_pack_sizes(ctx, function_scope, binding);
   bind_function_parameter_value_packs(ctx, function_scope, binding);

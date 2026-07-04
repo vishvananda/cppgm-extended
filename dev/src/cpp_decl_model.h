@@ -281,6 +281,7 @@ TypePtr make_rvalue_reference_raw(const TypePtr & base);
 TypePtr apply_cv(const TypePtr & base, bool cv_const, bool cv_volatile);
 TypePtr strip_top_level_cv(const TypePtr & type);
 TypePtr normalize_parameter_type(const TypePtr & type);
+TypePtr parameter_object_type(const TypePtr & type);
 bool type_equals(const TypePtr & lhs, const TypePtr & rhs);
 TypePtr merge_types(const TypePtr & lhs, const TypePtr & rhs);
 TypePtr remove_reference_type(const TypePtr & type);

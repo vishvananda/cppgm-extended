@@ -19110,7 +19110,8 @@ private:
                               const CppAstNode & node,
                               vector<pair<string, TypePtr> > & params,
                               vector<const CppAstNode *> * default_args_out = nullptr,
-                              bool reference_class_templates_only = false) override
+                              bool reference_class_templates_only = false,
+                              vector<TypePtr> * parameter_object_types_out = nullptr) override
   {
     const bool capture_template_source_uses =
         witness::source_capture_enabled(template_witness_context());
@@ -19140,7 +19141,9 @@ private:
         parse_parameter_clause_ast(node,
                                    make_decl_hooks(scope, reference_class_templates_only),
                                    params,
-                                   default_args_out);
+                                   default_args_out,
+                                   nullptr,
+                                   parameter_object_types_out);
     if(!parsed) {
       return false;
     }

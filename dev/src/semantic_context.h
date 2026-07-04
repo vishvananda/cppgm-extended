@@ -521,7 +521,8 @@ public:
                                       const CppAstNode & node,
                                       std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
                                       std::vector<const CppAstNode *> * default_args_out,
-                                      bool reference_class_templates_only = false) = 0;
+                                      bool reference_class_templates_only = false,
+                                      std::vector<cpp_decl::TypePtr> * parameter_object_types_out = nullptr) = 0;
   virtual semantic_model::FunctionBinding * register_block_scope_function_declaration(
       semantic_model::Scope & block_scope,
       const std::string & name,

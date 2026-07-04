@@ -403,7 +403,8 @@ bool parse_parameter_clause_ast(
     const AstDeclHooks & hooks,
     vector<pair<string, TypePtr> > & params,
     vector<const CppAstNode *> * default_args_out,
-    bool * variadic_out)
+    bool * variadic_out,
+    vector<TypePtr> * parameter_object_types_out)
 {
   const auto try_expanded_pack_clause =
       [&]() -> bool
@@ -420,15 +421,25 @@ bool parse_parameter_clause_ast(
       return false;
     }
     vector<pair<string, TypePtr> > expanded_params;
+    vector<TypePtr> expanded_parameter_object_types;
     bool expanded_variadic = false;
     if(!parse_parameter_clause_ast(expanded_clause,
                                    hooks,
                                    expanded_params,
                                    nullptr,
-                                   variadic_out ? &expanded_variadic : nullptr)) {
+                                   variadic_out ? &expanded_variadic : nullptr,
+                                   parameter_object_types_out ?
+                                       &expanded_parameter_object_types :
+                                       nullptr)) {
       return false;
     }
     params.swap(expanded_params);
+    if(parameter_object_types_out) {
+      if(expanded_parameter_object_types.size() != params.size()) {
+        return false;
+      }
+      parameter_object_types_out->swap(expanded_parameter_object_types);
+    }
     if(default_args_out) {
       if(expanded_default_args.size() != params.size()) {
         return false;
@@ -448,6 +459,9 @@ bool parse_parameter_clause_ast(
   params.clear();
   if(default_args_out) {
     default_args_out->clear();
+  }
+  if(parameter_object_types_out) {
+    parameter_object_types_out->clear();
   }
   bool variadic = false;
   for(size_t i = 0; i < node.children.size(); ++i) {
@@ -519,12 +533,16 @@ bool parse_parameter_clause_ast(
       throw logic_error("parse_parameter_clause_ast: null parameter type");
     }
 
+    const TypePtr object_type = parameter_object_type(type);
     params.push_back(
         make_pair(name,
                   hooks.normalize_function_parameters ? normalize_parameter_type(type) :
                                                         type));
+    if(parameter_object_types_out) {
+      parameter_object_types_out->push_back(object_type);
+    }
     if(hooks.bind_parameter_name) {
-      hooks.bind_parameter_name(params.back().first, params.back().second);
+      hooks.bind_parameter_name(params.back().first, object_type);
     }
     if(default_args_out) {
       default_args_out->push_back(find_child(child, CppAstKind::default_argument));
@@ -540,6 +558,9 @@ bool parse_parameter_clause_ast(
     params.clear();
     if(default_args_out) {
       default_args_out->clear();
+    }
+    if(parameter_object_types_out) {
+      parameter_object_types_out->clear();
     }
   }
 
