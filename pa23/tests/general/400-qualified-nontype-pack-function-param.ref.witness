@@ -1,14 +1,14 @@
 translation-unit
-  class-use at pa23/tests/general/400-qualified-nontype-pack-function-param-mangle.t:16:11
+  class-use at pa23/tests/general/400-qualified-nontype-pack-function-param.t:16:11
     template boost::container::dtl::index_tuple
     selected primary
     bind #1 = <0> source=explicit
-  class-use at pa23/tests/general/400-qualified-nontype-pack-function-param-mangle.t:45:26
+  class-use at pa23/tests/general/400-qualified-nontype-pack-function-param.t:45:26
     template boost::container::dtl::proxy
     selected primary
     bind #1 = int source=explicit
     bind #2 = <int> source=explicit
-  function-call at pa23/tests/general/400-qualified-nontype-pack-function-param-mangle.t:47:6
+  function-call at pa23/tests/general/400-qualified-nontype-pack-function-param.t:47:6
     callee boost::container::dtl::proxy<int, int>::call
     selected instantiation
     bind #1 = int * source=deduced

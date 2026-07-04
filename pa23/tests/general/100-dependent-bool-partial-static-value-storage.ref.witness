@@ -1,20 +1,20 @@
 translation-unit
-  class-use at pa23/tests/general/100-dependent-bool-partial-static-value-mangle.t:38:11
+  class-use at pa23/tests/general/100-dependent-bool-partial-static-value-storage.t:38:11
     template boost::integral_constant
     selected primary
     bind #1 = unsigned int source=explicit
     bind #2 = 4 source=explicit
-  class-use at pa23/tests/general/100-dependent-bool-partial-static-value-mangle.t:45:13
+  class-use at pa23/tests/general/100-dependent-bool-partial-static-value-storage.t:45:13
     template boost::integral_constant
     selected explicit
     bind #1 = bool source=explicit
     bind #2 = value-parameter-0-0 source=explicit
-  class-use at pa23/tests/general/100-dependent-bool-partial-static-value-mangle.t:57:14
+  class-use at pa23/tests/general/100-dependent-bool-partial-static-value-storage.t:57:14
     template boost::integral_constant
     selected explicit
     bind #1 = bool source=explicit
     bind #2 = value-parameter-0-0 source=explicit
-  function-call at pa23/tests/general/100-dependent-bool-partial-static-value-mangle.t:83:10
+  function-call at pa23/tests/general/100-dependent-bool-partial-static-value-storage.t:83:10
     callee align_value
     selected instantiation
     bind #1 = int source=deduced

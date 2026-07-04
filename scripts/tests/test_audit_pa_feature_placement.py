@@ -104,6 +104,44 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
                 ],
             )
 
+    def test_hygiene_reports_early_abi_naming_wording(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            early_path = (
+                root / "pa23" / "tests" / "general" /
+                "100-dependent-mangling-case.t"
+            )
+            write(early_path, "int main() { return 0; }\n")
+
+            early_content = (
+                root / "pa23" / "tests" / "general" /
+                "100-dependent-value-case.t"
+            )
+            write(early_content, "// ABI mangling should not be named here.\n")
+
+            owner_stage = (
+                root / "pa30" / "tests" / "abi" /
+                "100-dependent-mangling-case.t"
+            )
+            write(owner_stage, "target function\n")
+
+            findings = audit.scan_test_hygiene(root, ["pa23", "pa30"])
+            self.assertEqual(
+                [(finding.path, finding.kind, finding.evidence) for finding in findings],
+                [
+                    (
+                        "pa23/tests/general/100-dependent-mangling-case.t",
+                        "early-abi-naming-wording",
+                        "path:mangl",
+                    ),
+                    (
+                        "pa23/tests/general/100-dependent-value-case.t",
+                        "early-abi-naming-wording",
+                        "source:mangl",
+                    ),
+                ],
+            )
+
     def test_lowir_eh_review_reports_hidden_source_to_lowir_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)

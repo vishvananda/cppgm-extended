@@ -42,6 +42,9 @@ HOSTED_EH_RTTI_HEADER_OWNER_PA = "pa35"
 HOSTED_EH_RTTI_HEADER_EARLY_PA_MAX = 34
 HOSTED_EXCEPTION_RUNTIME_OWNER_PA = "pa36"
 HOSTED_EXCEPTION_RUNTIME_EARLY_PA_MAX = 35
+ABI_NAMING_OWNER_PA = "pa30"
+ABI_NAMING_EARLY_PA_MAX = 29
+ABI_NAMING_WORD_RE = re.compile(r"mangl", re.IGNORECASE)
 HOSTED_STL_HEADERS = {
     "algorithm",
     "any",
@@ -1231,6 +1234,24 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
             continue
         relative = path.relative_to(root).as_posix()
         source = read_text(path)
+        if number <= ABI_NAMING_EARLY_PA_MAX:
+            path_match = ABI_NAMING_WORD_RE.search(relative)
+            source_match = ABI_NAMING_WORD_RE.search(source)
+            if path_match or source_match:
+                evidence = (
+                    f"path:{path_match.group(0)}" if path_match
+                    else f"source:{source_match.group(0)}"
+                )
+                findings.append(HygieneFinding(
+                    path=relative,
+                    kind="early-abi-naming-wording",
+                    message=(
+                        f"ABI naming/mangling terminology belongs in "
+                        f"{ABI_NAMING_OWNER_PA} or later; earlier tests "
+                        "should describe the source-language behavior instead"
+                    ),
+                    evidence=evidence,
+                ))
         if number <= HOSTED_EXCEPTION_RUNTIME_EARLY_PA_MAX:
             match = HOSTED_EXCEPTION_RUNTIME_RE.search(source)
             if match:
