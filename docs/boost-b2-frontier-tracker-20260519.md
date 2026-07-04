@@ -775,7 +775,7 @@ Local Boost wrapper state:
 | 44 | `libs/format/test` | pass | Current-head suite survey on 2026-07-03 passes in 42.9s; log `/tmp/boost-suite-survey-20260703-162104-j4-5f9951dae/libs__format__test.log`. |
 | 45 | `libs/function/test` | pass | Current-head suite survey first found the `issue_42` namespace-scope direct-initialization frontier. After the function-style initializer output fix, full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/function/test` passes and updates 214 targets; log `/tmp/boost-function-full-after-global-function-style-init-20260703.log`. |
 | 46 | `libs/function_types/test` | pass | Current-head rerun first stopped at `interface_example.cpp` with `failed to build ABI IR function symbol for weak function example::member<interface_x::vtable::inf0<a_class>, ...>::wrap`. After the owner-dependent return fallback fix, focused `interface_example` passes with log `/tmp/boost-function-types-interface-example-after-owner-return-fallback-20260703.log`, and full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/function_types/test` passes and updates 89 targets; log `/tmp/boost-function-types-full-after-owner-return-fallback-20260703.log`. |
-| 47 | `libs/fusion/test` | frontier | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`; all four frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the map fix updates 812 targets, skips 19 dependency targets, and leaves 11 failed updates. First remaining visible frontier is runtime `tuple_traits__maybe_variadic`, where variadic `boost::fusion::tuple` constructibility reports invalid arities as constructible. Remaining compile clusters are `zip_view`, `zip_view2`, `zip_view_ignore`, and `swap` failing during Fusion vector store construction with unresolved `std::forward<U>`, plus incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`. Remaining runtime failures are `invoke`, `invoke_function_object`, and `invoke_procedure`. |
+| 47 | `libs/fusion/test` | frontier | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`; all five frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the tuple fix updates 814 targets, skips 18 dependency targets, and leaves 10 failed updates. First remaining visible frontier is the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` compile cluster, all failing during Fusion vector store construction from a `zip_view_iterator` base object. Remaining compile clusters also include incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`. Remaining runtime failures are `invoke`, `invoke_function_object`, and `invoke_procedure`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -797,8 +797,10 @@ Local Boost wrapper state:
   `//front_extended_deque` and `//back_extended_deque`. The detailed Fusion
   rows below fix those three frontiers. The next detailed Fusion row fixes the
   `map_comparison`/`map_copy` `std::forward<Second>(val)` compile frontier.
-  Full `libs/fusion/test` now advances to `tuple_traits__maybe_variadic` as the
-  first visible remaining runtime failure, with 11 failed updates in the final
+  The following detailed row fixes the `tuple_traits__maybe_variadic`
+  constructibility frontier. Full `libs/fusion/test` now advances to the
+  `zip_view_ignore`/`zip_view2`/`zip_view`/`swap` constructor compile cluster
+  as the first visible remaining frontier, with 10 failed updates in the final
   summary.
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
@@ -2293,3 +2295,47 @@ direct-LowIR compare passes. Isolated perf against clean `809f15888` baseline
 `/tmp/cppgm-before-rvalue-ref-converted-temp-baseline.json` passes with
 instructions `+0.04%`, RSS `+0.22%`, footprint `-0.02%`; detailed report
 `/tmp/cppgm-after-rvalue-ref-converted-temp-perf-report.json`.
+
+2026-07-04 Boost.Fusion `libs/fusion/test//tuple_traits__maybe_variadic`
+pack-expansion size-mismatch SFINAE frontier: Fusion's variadic tuple
+constructor is enabled through
+`and_<is_convertible<U, T>...>::value && sizeof...(U) >= 1`. Invalid arities
+such as `tuple<>` from one argument and `tuple<int, int>` from one or three
+arguments must discard that constructor by substitution failure because `U`
+and `T` are co-expanded with different lengths. CPPGM recognized the bound
+pack size mismatch but returned "not expanded", so the caller preserved the
+unexpanded template argument pattern and the invalid default argument stayed
+viable in Boost's `is_constructible` probe. The fix raises
+`TemplateSubstitutionFailure` for current-level bound-pack size mismatches,
+while filtering out pack identifiers that are already consumed by an inner
+`...` so valid nested/empty expansions such as `leaf<T, Rest...>...` and
+`__type_pack_element<Idx, Types...>...` still use the existing fallback path.
+No Boost special case, fallback resolver, cache, or source-text reparse is
+added. Owner: PA22:400 template argument substitution/SFINAE for bound
+pack-expansion patterns. New regression:
+`pa22/tests/general/400-pack-expansion-size-mismatch-sfinae.t`.
+Pre-fix evidence: the no-STL reducer and focused B2
+`libs/fusion/test//tuple_traits__maybe_variadic` failed with four runtime
+assertions reporting invalid tuple arities as constructible; Clang accepts the
+reducer and reports those probes as not constructible. After the fix, the
+reducer compiles and focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test//tuple_traits__maybe_variadic`
+passes and updates 4 targets. Full Fusion rerun
+`/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test`
+keeps the tuple and map targets green, updates 814 targets, skips 18
+dependency targets, and leaves 10 failed updates. The first remaining visible
+frontier is the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap`
+constructor compile cluster; remaining compile failures also include
+`is_sequence`, `is_view`, and `tag_of`, and remaining runtime failures are
+`invoke`, `invoke_function_object`, and `invoke_procedure`. Validation:
+`make -C dev cppgm++ -j8`; focused no-STL reducer compile passes; focused PA22
+regression passes after refs generated with `REF_TEST_APP=../dev/cppgm++`;
+PA22 direct-LowIR report passes `195/195`; PA22 placement audit reports no
+placement findings; focused PA21 `100-nested-pack-expansion-outer-type-pack`
+and PA34 `700-nonstl-empty-value-pack-nested-alias` regressions pass after the
+inner-ellipsis filter; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; full direct-LowIR report passes `3454/3454`; full strict
+direct-LowIR compare passes. Isolated perf against clean `6ca59360d` baseline
+`/tmp/cppgm-before-pack-expansion-mismatch-baseline.json` passes with
+instructions `-0.07%`, RSS `+1.10%`, footprint `+0.00%`; detailed report
+`/tmp/cppgm-after-pack-expansion-mismatch-perf-report.json`.

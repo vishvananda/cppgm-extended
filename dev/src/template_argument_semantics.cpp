@@ -25394,6 +25394,43 @@ string template_pack_pattern_text(const QualifiedName & name,
   return text.str();
 }
 
+void throw_pack_expansion_size_mismatch(const string & pattern)
+{
+  throw TemplateSubstitutionFailure(
+      "pack expansion size mismatch in template argument pattern: " + pattern);
+}
+
+bool pattern_mentions_current_expansion_pack(const string & pattern,
+                                             const string & pack_name)
+{
+  if(pack_name.empty()) {
+    return false;
+  }
+  size_t pos = 0;
+  while((pos = pattern.find(pack_name, pos)) != string::npos) {
+    if((pos != 0 && is_identifier_char_for_rewrite(pattern[pos - 1])) ||
+       (pos + pack_name.size() < pattern.size() &&
+        is_identifier_char_for_rewrite(pattern[pos + pack_name.size()]))) {
+      pos += pack_name.size();
+      continue;
+    }
+    size_t after = pos + pack_name.size();
+    while(after < pattern.size() &&
+          std::isspace(static_cast<unsigned char>(pattern[after]))) {
+      ++after;
+    }
+    if(after + 2 < pattern.size() &&
+       pattern[after] == '.' &&
+       pattern[after + 1] == '.' &&
+       pattern[after + 2] == '.') {
+      pos += pack_name.size();
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
 bool collect_bound_type_packs_for_pattern(
     Scope & scope,
     const string & pattern,
@@ -25413,7 +25450,8 @@ bool collect_bound_type_packs_for_pattern(
         ++pack) {
       if(pack->first.empty() ||
          seen_type_pack_names.count(pack->first) != 0 ||
-         !identifiers.contains(pack->first)) {
+         !identifiers.contains(pack->first) ||
+         !pattern_mentions_current_expansion_pack(pattern, pack->first)) {
         continue;
       }
       seen_type_pack_names.insert(pack->first);
@@ -25439,7 +25477,8 @@ bool pattern_mentions_bound_value_pack(Scope & scope,
         ++pack) {
       if(pack->first.empty() ||
          seen_value_pack_names.count(pack->first) != 0 ||
-         !identifiers.contains(pack->first)) {
+         !identifiers.contains(pack->first) ||
+         !pattern_mentions_current_expansion_pack(pattern, pack->first)) {
         continue;
       }
       return true;
@@ -25467,7 +25506,7 @@ bool expand_template_id_type_pack_pattern(
   const size_t pack_size = packs[0].second->size();
   for(size_t i = 1; i < packs.size(); ++i) {
     if(packs[i].second->size() != pack_size) {
-      return false;
+      throw_pack_expansion_size_mismatch(pattern);
     }
   }
 
@@ -38196,7 +38235,8 @@ bool expand_bound_pack_driven_type_pattern(
       const string & pack_name = pack.first;
       if(pack_name.empty() ||
          seen_type_pack_names.count(pack_name) != 0 ||
-         !callsemantic_internal::contains_identifier_token(masked, pack_name)) {
+         !callsemantic_internal::contains_identifier_token(masked, pack_name) ||
+         !pattern_mentions_current_expansion_pack(masked, pack_name)) {
         continue;
       }
       seen_type_pack_names.insert(pack_name);
@@ -38206,7 +38246,8 @@ bool expand_bound_pack_driven_type_pattern(
       const string & pack_name = pack.first;
       if(pack_name.empty() ||
          seen_value_pack_names.count(pack_name) != 0 ||
-         !callsemantic_internal::contains_identifier_token(masked, pack_name)) {
+         !callsemantic_internal::contains_identifier_token(masked, pack_name) ||
+         !pattern_mentions_current_expansion_pack(masked, pack_name)) {
         continue;
       }
       seen_value_pack_names.insert(pack_name);
@@ -38227,12 +38268,12 @@ bool expand_bound_pack_driven_type_pattern(
                              type_packs.front().second->size();
   for(size_t i = value_packs.empty() ? 1 : 0; i < type_packs.size(); ++i) {
     if(type_packs[i].second->size() != pack_size) {
-      return false;
+      throw_pack_expansion_size_mismatch(pattern);
     }
   }
   for(size_t i = 1; i < value_packs.size(); ++i) {
     if(value_packs[i].second->size() != pack_size) {
-      return false;
+      throw_pack_expansion_size_mismatch(pattern);
     }
   }
 
