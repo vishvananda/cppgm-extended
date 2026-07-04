@@ -7526,6 +7526,7 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
       is_reference_type(target_type) &&
       !is_void_type(reinterpret_reference_target) &&
       !is_function_type(reinterpret_reference_target);
+  bool applied_direct_static_reference_cast = false;
   if(node.simple_type == KW_STATIC_CAST || c_style_cast) {
     TypePtr explicit_target = strip_top_level_cv(remove_reference_type(target_type));
     ClassInfo * explicit_target_info =
@@ -7558,37 +7559,54 @@ ExprInfo analyze_cast_expression(SemanticContext & ctx,
     if(explicit_class_reference_target && !direct_static_class_reference_cast) {
       ExprInfo converted;
       ConversionRank conversion_rank = CR_BAD;
-      if(ctx.try_argument_conversion(scope,
-                                     target_type,
-                                     operand,
-                                     converted,
-                                     conversion_rank,
-                                     semantic_policy::allow_explicit_argument_conversion())) {
+      if(semantic_conversion::try_apply_inheritance_conversion(ctx,
+                                                               target_type,
+                                                               operand,
+                                                               converted) ||
+         try_apply_static_reference_base_cast(ctx,
+                                              target_type,
+                                              operand,
+                                              converted) ||
+         try_apply_static_reference_derived_cast(ctx,
+                                                 target_type,
+                                                 operand,
+                                                 converted)) {
+        operand = converted;
+        applied_direct_static_reference_cast = true;
+      } else if(ctx.try_argument_conversion(
+                    scope,
+                    target_type,
+                    operand,
+                    converted,
+                    conversion_rank,
+                    semantic_policy::allow_explicit_argument_conversion())) {
         operand = converted;
       }
     }
 
     ExprInfo inherited_conversion;
-    if(semantic_conversion::try_apply_inheritance_conversion(ctx,
-                                                             target_type,
-                                                             operand,
-                                                             inherited_conversion)) {
-      operand = inherited_conversion;
-    } else if(try_apply_static_reference_base_cast(ctx,
-                                                   target_type,
-                                                   operand,
-                                                   inherited_conversion)) {
-      operand = inherited_conversion;
-    } else if(try_apply_static_reference_derived_cast(ctx,
+    if(!applied_direct_static_reference_cast) {
+      if(semantic_conversion::try_apply_inheritance_conversion(ctx,
+                                                               target_type,
+                                                               operand,
+                                                               inherited_conversion)) {
+        operand = inherited_conversion;
+      } else if(try_apply_static_reference_base_cast(ctx,
+                                                     target_type,
+                                                     operand,
+                                                     inherited_conversion)) {
+        operand = inherited_conversion;
+      } else if(try_apply_static_reference_derived_cast(ctx,
+                                                        target_type,
+                                                        operand,
+                                                        inherited_conversion)) {
+        operand = inherited_conversion;
+      } else if(try_apply_static_pointer_derived_cast(ctx,
                                                       target_type,
                                                       operand,
                                                       inherited_conversion)) {
-      operand = inherited_conversion;
-    } else if(try_apply_static_pointer_derived_cast(ctx,
-                                                    target_type,
-                                                    operand,
-                                                    inherited_conversion)) {
-      operand = inherited_conversion;
+        operand = inherited_conversion;
+      }
     }
   }
   if(node.simple_type == KW_DYNAMIC_CAST) {

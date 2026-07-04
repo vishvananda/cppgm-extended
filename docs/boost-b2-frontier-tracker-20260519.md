@@ -775,7 +775,7 @@ Local Boost wrapper state:
 | 44 | `libs/format/test` | pass | Current-head suite survey on 2026-07-03 passes in 42.9s; log `/tmp/boost-suite-survey-20260703-162104-j4-5f9951dae/libs__format__test.log`. |
 | 45 | `libs/function/test` | pass | Current-head suite survey first found the `issue_42` namespace-scope direct-initialization frontier. After the function-style initializer output fix, full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/function/test` passes and updates 214 targets; log `/tmp/boost-function-full-after-global-function-style-init-20260703.log`. |
 | 46 | `libs/function_types/test` | pass | Current-head rerun first stopped at `interface_example.cpp` with `failed to build ABI IR function symbol for weak function example::member<interface_x::vtable::inf0<a_class>, ...>::wrap`. After the owner-dependent return fallback fix, focused `interface_example` passes with log `/tmp/boost-function-types-interface-example-after-owner-return-fallback-20260703.log`, and full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/function_types/test` passes and updates 89 targets; log `/tmp/boost-function-types-full-after-owner-return-fallback-20260703.log`. |
-| 47 | `libs/fusion/test` | frontier | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`; all five frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the tuple fix updates 814 targets, skips 18 dependency targets, and leaves 10 failed updates. First remaining visible frontier is the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` compile cluster, all failing during Fusion vector store construction from a `zip_view_iterator` base object. Remaining compile clusters also include incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`. Remaining runtime failures are `invoke`, `invoke_function_object`, and `invoke_procedure`. |
+| 47 | `libs/fusion/test` | frontier | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster; all six frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the static-cast fix updates 830 targets, skips 6 dependency targets, and leaves 6 failed updates. Remaining compile clusters are incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`. Remaining runtime failures are `invoke`, `invoke_function_object`, and `invoke_procedure`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -798,10 +798,11 @@ Local Boost wrapper state:
   rows below fix those three frontiers. The next detailed Fusion row fixes the
   `map_comparison`/`map_copy` `std::forward<Second>(val)` compile frontier.
   The following detailed row fixes the `tuple_traits__maybe_variadic`
-  constructibility frontier. Full `libs/fusion/test` now advances to the
-  `zip_view_ignore`/`zip_view2`/`zip_view`/`swap` constructor compile cluster
-  as the first visible remaining frontier, with 10 failed updates in the final
-  summary.
+  constructibility frontier. The next row fixes the
+  `zip_view_ignore`/`zip_view2`/`zip_view`/`swap` static-reference-cast
+  constructor compile cluster. Full `libs/fusion/test` now advances to the
+  incomplete-type trait probes and `invoke*` runtime failures, with 6 failed
+  updates in the final summary.
 - 2026-05-29 DateTime idiv-normalize validation: PA31 placement audit passed
   with `--fail-on-early`; reports
   `/tmp/boost-frontier-placement-pa31-idiv-normalize.md` and
@@ -2339,3 +2340,44 @@ direct-LowIR compare passes. Isolated perf against clean `6ca59360d` baseline
 `/tmp/cppgm-before-pack-expansion-mismatch-baseline.json` passes with
 instructions `-0.07%`, RSS `+1.10%`, footprint `+0.00%`; detailed report
 `/tmp/cppgm-after-pack-expansion-mismatch-perf-report.json`.
+
+2026-07-04 Boost.Fusion `libs/fusion/test//zip_view_ignore`, `//zip_view2`,
+`//zip_view`, and `//swap` CRTP static-reference-cast frontier: Fusion's
+`begin` returns a `const zip_view_iterator` by value, `operator*` accepts
+`iterator_base<zip_view_iterator> const&`, and `iterator_base::cast()` returns
+`static_cast<zip_view_iterator const&>(*this)`. CPPGM treated the explicit
+class-reference `static_cast` as an explicit argument conversion before trying
+the direct static reference base/derived adjustment, so it probed the
+`zip_view_iterator(InitSeq const&)` constructor template with
+`InitSeq = iterator_base<zip_view_iterator>` and then failed while constructing
+the iterator's stored Fusion vector. The fix applies direct inheritance/static
+reference base/derived casts before constructor-style explicit conversion
+probing for explicit class-reference `static_cast`, and skips the duplicate
+post-conversion inheritance pass once that direct cast succeeds. No Boost
+special case, fallback resolver, cache, or source-text reparse is added.
+Owner: PA21:300 class-reference cast and constructor-template SFINAE
+interaction. New regression:
+`pa21/tests/general/300-crtp-static-cast-reference-before-constructor-template.t`.
+Pre-fix evidence: the no-STL CRTP reducer failed with no viable constructor
+for `derived::derived` instantiated from `base<derived>`, while Clang accepted
+it; the Boost-shaped reducer reproduced the same incorrect constructor probe
+inside Fusion's iterator base cast. After the fix, both reducers compile,
+focused B2
+`/usr/local/bin/timeout 300 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=1 ./run-cppgm-b2.sh -a libs/fusion/test//zip_view_ignore`
+passes and updates 4 targets, and combined focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test//zip_view libs/fusion/test//zip_view2 libs/fusion/test//swap`
+passes and updates 12 targets. Full Fusion rerun
+`/usr/local/bin/timeout 1200 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test`
+keeps the zip/swap cluster green, updates 830 targets, skips 6 dependency
+targets, and leaves 6 failed updates: compile failures in `is_sequence`,
+`is_view`, and `tag_of`, plus runtime failures in `invoke`,
+`invoke_function_object`, and `invoke_procedure`. Validation:
+`make -C dev cppgm++ -j8`; focused PA21 regression passes after refs generated
+with `REF_TEST_APP=../dev/cppgm++`; PA21 direct-LowIR report passes `189/189`;
+PA21 placement audit reports no placement findings;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; full direct-LowIR
+report passes `3455/3455`; full strict direct-LowIR compare passes. Isolated
+perf against clean `db445d926` baseline
+`/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
+instructions `+0.11%`, RSS `-1.23%`, footprint `+0.01%`; detailed report
+`/tmp/cppgm-after-static-cast-reference-perf-report.json`.
