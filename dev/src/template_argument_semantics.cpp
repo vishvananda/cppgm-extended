@@ -20603,6 +20603,12 @@ bool substitute_qualified_name_qualifier_type(
     return false;
   }
 
+  QualifiedName source_qualified;
+  const bool have_source_qualified =
+      semantic_utils::split_qualified_name_text(node.value, source_qualified) &&
+      source_qualified.qualifiers.size() == qualified.qualifiers.size() &&
+      source_qualified.name == qualified.name;
+
   string replacement_component = trim_space(replacement_text);
   bool replacement_rooted = false;
   if(replacement_component.compare(0, 2, "::") == 0) {
@@ -20620,19 +20626,17 @@ bool substitute_qualified_name_qualifier_type(
                         qualified.qualifiers.begin() + qualifier_index);
   const size_t replacement_component_index = new_qualifiers.size();
   new_qualifiers.push_back(replacement_component);
-  new_qualifiers.insert(new_qualifiers.end(),
-                        qualified.qualifiers.begin() + qualifier_index + 1,
-                        qualified.qualifiers.end());
+  for(size_t old_i = qualifier_index + 1;
+      old_i < qualified.qualifiers.size();
+      ++old_i) {
+    new_qualifiers.push_back(have_source_qualified ?
+                                 source_qualified.qualifiers[old_i] :
+                                 qualified.qualifiers[old_i]);
+  }
 
   vector<TemplateIdSyntax> new_qualifier_template_ids(new_qualifiers.size());
   for(size_t old_i = 0; old_i < qualifier_index &&
          old_i < node.qualifier_template_id_syntaxes.size(); ++old_i) {
-    new_qualifier_template_ids[old_i] = node.qualifier_template_id_syntaxes[old_i];
-  }
-  for(size_t old_i = qualifier_index + 1;
-      old_i < qualified.qualifiers.size() &&
-          old_i < node.qualifier_template_id_syntaxes.size();
-      ++old_i) {
     new_qualifier_template_ids[old_i] = node.qualifier_template_id_syntaxes[old_i];
   }
   TemplateIdSyntax replacement_template_id;
@@ -20649,12 +20653,6 @@ bool substitute_qualified_name_qualifier_type(
   }
   new_qualifier_types[replacement_component_index] =
       make_substituted_type_id_node(type, replacement_text);
-  for(size_t old_i = qualifier_index + 1;
-      old_i < qualified.qualifiers.size() &&
-          old_i < node.qualifier_type_syntaxes.size();
-      ++old_i) {
-    new_qualifier_types[old_i] = node.qualifier_type_syntaxes[old_i];
-  }
 
   qualified.rooted = qualified.rooted ||
       (qualifier_index == 0 && replacement_rooted);
@@ -21200,11 +21198,26 @@ bool substitute_type_pack_expression_node(
       ++it) {
     bool replaced_qualified_component = false;
     if(out.qualified_name_syntax) {
+      QualifiedName source_qualified;
+      const bool have_source_qualified =
+          semantic_utils::split_qualified_name_text(out.value, source_qualified) &&
+          source_qualified.qualifiers.size() ==
+              out.qualified_name_syntax->qualifiers.size() &&
+          source_qualified.name == out.qualified_name_syntax->name;
       const std::vector<std::string> qualifiers =
           out.qualified_name_syntax->qualifiers;
       for(size_t i = 0; i < qualifiers.size(); ++i) {
         if(callsemantic_internal::is_identifier_text(qualifiers[i]) &&
            qualifiers[i] == it->first) {
+          if(i != 0) {
+            replaced_qualified_component = true;
+            break;
+          }
+          if(have_source_qualified &&
+             i < source_qualified.qualifiers.size() &&
+             trim_space(source_qualified.qualifiers[i]) != qualifiers[i]) {
+            continue;
+          }
           const string replacement_text = reparseable_type_argument_text(it->second);
           if(!substitute_qualified_name_qualifier_type(out,
                                                        i,

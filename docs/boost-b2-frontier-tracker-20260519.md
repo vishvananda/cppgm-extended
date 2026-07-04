@@ -2172,3 +2172,34 @@ for this branch head: a clean `61a57cacc` worktree already fails it at
 instructions `+2.47%`. Isolated perf against clean `61a57cacc` baseline
 `/tmp/cppgm-boost-frontier-pr36-61a57cacc-clean-perf-baseline.json` passes with
 instructions `+0.72%`, RSS `-0.88%`, footprint `+0.10%`.
+
+2026-07-03 Boost.Fusion `libs/fusion/test//segmented_for_each` member-template
+default qualified-suffix frontier: Fusion's segmented iterator compares two
+iterator specializations using default non-type arguments
+`It1::context_type::size::value` and `It2::context_type::size::value`. When the
+second iterator was `segmented_iterator<nil>`, template substitution rewrote the
+qualified suffix `context_type` from the enclosing
+`segmented_iterator<cons<...>>` scope, so both defaults became `2` and the
+`Size, Size` partial specialization matched incorrectly. The fix keeps
+source-spelled suffix qualifiers when substituting a qualified owner and does
+not apply lexical type substitutions to non-leading qualified-name components;
+suffix member names now resolve through the substituted owner. No source-text
+reparse, fallback resolver, cache, or Boost special case is added. Owner:
+PA22 member-template default non-type argument substitution and partial
+specialization selection. New regression:
+`pa22/tests/general/500-member-template-default-qualified-suffix-owner.t`.
+Pre-fix evidence: the no-STL reducer failed
+`defaults<begin_iter, end_iter>::second == 0`, and focused B2 failed while
+instantiating `nested_type_wknd<segmented_equal_to<cons<...>, nil_> >::value`.
+After the fix, the reducer and Boost-shaped scratch reducer compile, and
+focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test//segmented_for_each`
+passes and updates 4 targets. Validation: `make -C dev cppgm++ -j8`; focused
+PA22 regression passes after refs generated with `REF_TEST_APP=../dev/cppgm++`;
+PA22 direct-LowIR report passes `194/194`; PA22 placement audit reports no
+placement findings; `python3 scripts/audit_text_reparse.py --strict` reports
+all zero; `git diff --check` passes; full strict direct-LowIR compare passes;
+full direct-LowIR report passes `3451/3451`. Isolated perf against clean
+`861b2e145` baseline `/tmp/cppgm-before-qualified-suffix-baseline.json` passes
+with instructions `-0.29%`, RSS `+0.82%`, footprint `+0.16%`; detailed report
+`/tmp/cppgm-after-qualified-suffix-perf-report.json`.
