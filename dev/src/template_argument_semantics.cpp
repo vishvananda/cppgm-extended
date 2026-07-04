@@ -36679,14 +36679,14 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
   const bool structured_bool_shortcut_allowed =
       effective_target_type &&
       is_bool_type(remove_reference_type(effective_target_type));
-	  const auto evaluate_structured_bool_shortcut =
-	      [&](const CppAstNode & candidate, bool & bool_value) -> NonTypeArgumentStatus
-	  {
-	    const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
-	        function_call_source_capture_pause;
-	    return evaluate_structured_bool_expression(
-	        services, scope, candidate, bool_value);
-	  };
+  const auto evaluate_structured_bool_shortcut =
+      [&](const CppAstNode & candidate, bool & bool_value) -> NonTypeArgumentStatus
+  {
+    const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
+        function_call_source_capture_pause;
+    return evaluate_structured_bool_expression(
+        services, scope, candidate, bool_value);
+  };
   try {
     if(expr.kind == CppAstKind::type_trait_expression ||
        expr.kind == CppAstKind::call_expression) {
@@ -36756,6 +36756,14 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
           status = member_status;
         }
       }
+    }
+    if(status != NT_ARG_EVALUATED &&
+       status != NT_ARG_DEPENDENT &&
+       expr.kind == CppAstKind::id_expression &&
+       !scope_has_template_placeholders(services, scope) &&
+       callsemantic::scope_is_inside_source_template_context(raw_scope) &&
+       expression_ast_mentions_template_dependency(services, scope, expr, true)) {
+      status = NT_ARG_DEPENDENT;
     }
     constant_eval::ConstexprValue constexpr_value;
     if(status != NT_ARG_EVALUATED &&

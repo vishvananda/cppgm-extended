@@ -1,0 +1,185 @@
+global @N : i64 [binding=internal, object=_Z1N] = 6
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $first : ptr
+  slot $last : ptr
+  slot $tmpobj__1 : obj<16x8>
+  slot $arg__2 : obj<16x8>
+
+  block ^entry:
+    store ptr 0, $first
+    store ptr 0, $last
+    %t1 = addr $tmpobj__1
+    %t2 = addr $first
+    %t3 = addr $last
+    %t4 = call obj<16x8> @boost__tuples__tie(%t2, %t3)
+    copyobj 16x8 %t4, %t1
+    %t5 = addr $arg__2
+    %t6 = load ptr $first
+    %t7 = load ptr $last
+    %t8 = call obj<16x8> @std__make_pair(%t6, %t7)
+    copyobj 16x8 %t8, %t5
+    %t9 = call ptr @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________operator___ov3(%t1, %t5)
+    return i32 0
+}
+function @boost__tuples__tie(%t0 : ptr [pass=reference], %t1 : ptr [pass=reference]) -> obj<16x8> [binding=weak, object=_ZN5boost6tuples3tieIPSt4pairImmES4_EENS0_5tupleIRT_RT0_EES7_S9_] {
+  slot $t0 : ptr
+  slot $t1 : ptr
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store ptr %t0, $t0
+    store ptr %t1, $t1
+    %t2 = addr $retobj__1
+    %t3 = load ptr $t0
+    %t4 = load ptr $t1
+    call void @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________tuple(%t2, %t3, %t4)
+    return obj<16x8> $retobj__1
+}
+function @std__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=_ZSt9make_pairIPSt4pairImmES2_ES0_IT_T0_ES3_S4_] {
+  slot $a : ptr
+  slot $b : ptr
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store ptr %a, $a
+    store ptr %b, $b
+    %t1 = addr $retobj__1
+    %t2 = load ptr $a
+    %t3 = load ptr $b
+    call void @std__pair_std__pair_unsigned_long_int__unsigned_long_int_____std__pair_unsigned_long_int__unsigned_long_int______pair(%t1, %t2, %t3)
+    return obj<16x8> $retobj__1
+}
+function @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________operator___ov3(%this : ptr, %pair : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EaSIS4_S4_EERS6_RKS2_IT_T0_E] {
+  slot $this : ptr
+  slot $pair : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %pair, $pair
+    %t1 = load ptr $pair
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t6 = index i8 [projection=reference_field] %t5, 0
+    %t7 = load ptr %t6
+    store ptr %t3, %t7
+    %t8 = load ptr $pair
+    %t9 = index i8 [projection=field] %t8, 8
+    %t10 = load ptr %t9
+    %t11 = load ptr $this
+    %t12 = index i8 [projection=base_subobject] %t11, 0
+    %t13 = index i8 [projection=field] %t12, 8
+    %t14 = index i8 [projection=reference_field] %t13, 0
+    %t15 = load ptr %t14
+    store ptr %t10, %t15
+    %t16 = load ptr $this
+    return ptr %t16
+}
+function @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________tuple(%this : ptr, %t0 : ptr [pass=reference], %t1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EC1ES5_S5_] {
+  slot $this : ptr
+  slot $t0 : ptr
+  slot $t1 : ptr
+  slot $arg__1 : obj<8x8>
+  slot $arg__2 : obj<1x1>
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %t0, $t0
+    store ptr %t1, $t1
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t4 = load ptr $t0
+    %t5 = addr $arg__1
+    %t6 = load ptr $t1
+    %t7 = addr $arg__2
+    call void @boost__tuples__null_type__null_type(%t7)
+    call void @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type___cons(%t5, %t6, %t7)
+    call void @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons__base_entry(%t3, %t4, %t5)
+    return void
+}
+function @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type___cons(%this : ptr, %h : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS0_9null_typeEEC1ES5_RKS6_] {
+  slot $this : ptr
+  slot $h : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %h, $h
+    store ptr %__param2, $__param2
+    %t1 = load ptr $h
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
+function @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons__base_entry(%this : ptr, %h : ptr [pass=reference], %t : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC2ES5_RKS7_] {
+  slot $this : ptr
+  slot $h : ptr
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %h, $h
+    store ptr %t, $t
+    %t1 = load ptr $h
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    %t6 = load ptr $t
+    copyobj 8x8 %t6, %t5
+    return void
+}
+function @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons(%this : ptr, %h : ptr [pass=reference], %t : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC1ES5_RKS7_] {
+  slot $this : ptr
+  slot $h : ptr
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %h, $h
+    store ptr %t, $t
+    %t1 = load ptr $h
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    %t6 = load ptr $t
+    copyobj 8x8 %t6, %t5
+    return void
+}
+function @std__pair_std__pair_unsigned_long_int__unsigned_long_int_____std__pair_unsigned_long_int__unsigned_long_int______pair(%this : ptr, %a : ptr, %b : ptr) -> void [binding=weak, object=_ZNSt4pairIPS_ImmES1_EC1ES1_S1_] {
+  slot $this : ptr
+  slot $a : ptr
+  slot $b : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %a, $a
+    store ptr %b, $b
+    %t1 = load ptr $a
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $b
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store ptr %t4, %t6
+    return void
+}
+function @boost__tuples__null_type__null_type(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5boost6tuples9null_typeC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN5boost6tuples5tupleIRPSt4pairImmES5_EC2ES5_S5_ = @boost__tuples__tuple_std__pair_unsigned_long_int__unsigned_long_int_______std__pair_unsigned_long_int__unsigned_long_int________tuple
+alias object _ZN5boost6tuples4consIRPSt4pairImmENS0_9null_typeEEC2ES5_RKS6_ = @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type___cons
+alias object _ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC2ES5_RKS7_ = @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons
+alias object _ZNSt4pairIPS_ImmES1_EC2ES1_S1_ = @std__pair_std__pair_unsigned_long_int__unsigned_long_int_____std__pair_unsigned_long_int__unsigned_long_int______pair
+alias object _ZN5boost6tuples9null_typeC2Ev = @boost__tuples__null_type__null_type
