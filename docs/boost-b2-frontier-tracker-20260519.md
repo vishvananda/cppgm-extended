@@ -775,7 +775,11 @@ Local Boost wrapper state:
 | 44 | `libs/format/test` | pass | Current-head suite survey on 2026-07-03 passes in 42.9s; log `/tmp/boost-suite-survey-20260703-162104-j4-5f9951dae/libs__format__test.log`. |
 | 45 | `libs/function/test` | pass | Current-head suite survey first found the `issue_42` namespace-scope direct-initialization frontier. After the function-style initializer output fix, full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ./run-cppgm-b2.sh -a libs/function/test` passes and updates 214 targets; log `/tmp/boost-function-full-after-global-function-style-init-20260703.log`. |
 | 46 | `libs/function_types/test` | pass | Current-head rerun first stopped at `interface_example.cpp` with `failed to build ABI IR function symbol for weak function example::member<interface_x::vtable::inf0<a_class>, ...>::wrap`. After the owner-dependent return fallback fix, focused `interface_example` passes with log `/tmp/boost-function-types-interface-example-after-owner-return-fallback-20260703.log`, and full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/function_types/test` passes and updates 89 targets; log `/tmp/boost-function-types-full-after-owner-return-fallback-20260703.log`. |
-| 47 | `libs/fusion/test` | pass | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster, then incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`, then the `invoke_function_object`, `invoke`, and `invoke_procedure` runtime failures. All frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the global function-pointer rvalue fix exits `0` and updates 842 targets. |
+| 47 | `libs/functional/test` | pass | Historical manual rerun passed on 2026-05-12 after the indirect member-pointer reference-parameter hidden-argument fix; no current-head regression is parked here. |
+| 48 | `libs/fusion/test` | pass | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster, then incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`, then the `invoke_function_object`, `invoke`, and `invoke_procedure` runtime failures. All frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the global function-pointer rvalue fix exits `0` and updates 842 targets. |
+| 49 | `libs/geometry/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.9s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__geometry__test.log`. |
+| 50 | `libs/gil/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.8s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__gil__test.log`. |
+| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters: `unsupported member function initializer` in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -2503,3 +2507,41 @@ strict direct-LowIR compare passes. Perf check for the dirty working tree after
 `/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
 instructions `+0.43%`, RSS `+0.08%`, footprint `+0.24%`; detailed report
 `/tmp/cppgm-after-global-function-pointer-rvalue-perf-report.json`.
+
+2026-07-04 Boost.Graph `libs/graph/test//labeled_graph` dependent ADL
+class-template body frontier: Graph concept checks call `num_vertices(cg)`
+inside a class-template member body where `cg` has dependent type `const G&`.
+Ordinary lookup is empty at the template definition point, but the call is
+dependent and ADL can find the graph namespace overload when `G` is known.
+CPPGM's early class-template body lookup checker tracked visible local names
+but did not remember that function parameters and locals whose declared types
+mention template parameters are dependent values, so it diagnosed the
+unqualified callee before instantiation. The fix records dependent declared
+value names while walking template bodies and skips only unqualified calls
+with no ordinary function and at least one dependent argument; nondependent
+missing calls still diagnose early. No Boost special case, fallback resolver,
+cache, or source-text reparse is added. Owner: PA18:300 class-template member
+body dependent lookup and ADL. New regression:
+`pa18/tests/spec/300-dependent-adl-class-member-parameter.t`. Pre-fix evidence:
+the no-STL reducer failed with `unknown id-expression num_vertices`, and the
+current-head Graph survey first stopped on the same diagnostic in
+`boost/graph/graph_concepts.hpp:218`. After the fix, the reducer exits 0 and
+focused B2
+`/usr/local/bin/timeout 300 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/graph/test//labeled_graph`
+passes and updates 4 targets. A broad Graph sweep moved past `num_vertices`
+and repeated later independent clusters before it was interrupted: member
+function initializers in `boost/graph/exception.hpp`, Boost.SmartPtr array
+enumerator values in `sp_convertible`, undefined Boost.Parameter keyword
+instances at link time, `std::min`/`max` lookup in class-template members,
+structured binding parsing, and named-parameter overload selection. Validation:
+`make -C dev cppgm++ -j8`; clang and cppgm no-STL reducers compile/run;
+focused PA18 regression passes after refs generated with
+`REF_TEST_APP=../dev/cppgm++`; PA18 direct-LowIR report passes `197/197`;
+PA18 placement audit reports no placement findings;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; full direct-LowIR report passes `3459/3459`; full
+strict direct-LowIR compare passes. Perf check for the dirty working tree after
+`1ed1f4d92` against clean `db445d926` baseline
+`/tmp/cppgm-before-static-cast-reference-baseline.json` passes with
+instructions `+0.10%`, RSS `-0.74%`, footprint `+0.20%`; detailed report
+`/tmp/cppgm-after-dependent-adl-body-check-perf-report.json`.
