@@ -14364,6 +14364,8 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                                            deduced_values)) {
         return false;
       }
+    } else if(actual_base->has_bound || !actual_base->bound_text.empty()) {
+      return false;
     }
     return deduce_template_argument_impl(ctx,
                                          parameters,

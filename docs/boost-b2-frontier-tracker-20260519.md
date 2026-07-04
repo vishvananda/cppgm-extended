@@ -779,7 +779,7 @@ Local Boost wrapper state:
 | 48 | `libs/fusion/test` | pass | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster, then incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`, then the `invoke_function_object`, `invoke`, and `invoke_procedure` runtime failures. All frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the global function-pointer rvalue fix exits `0` and updates 842 targets. |
 | 49 | `libs/geometry/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.9s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__geometry__test.log`. |
 | 50 | `libs/gil/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.8s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__gil__test.log`. |
-| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, and Boost.Parameter keyword `instance` link frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test` passes and updates 4 targets. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log` and `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`. |
+| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, Boost.Parameter keyword `instance` link frontier, and `sp_convertible<Y[], T[]>` known-bound array selection frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test` and `libs/graph/test//finish_edge_bug` pass. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`, `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`, and `/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -2654,3 +2654,37 @@ pre-fix `6ba1b65d4` worktree was built and recorded as
 three-run dirty working tree perf check passes with instructions `+0.03%`, RSS
 `-0.48%`, footprint `-0.05%`; detailed report
 `/tmp/cppgm-after-rooted-static-member-perf-report.json`.
+
+2026-07-04 Boost.Graph `libs/graph/test//finish_edge_bug`
+Boost.SmartPtr `sp_convertible` array partial-specialization frontier:
+`boost::detail::sp_convertible<Y[], T[]>` computes its enum value through
+`sp_convertible<Y[1], T[1]>::value`. The class partial-specialization matcher
+incorrectly allowed the unknown-bound pattern `Y[]` to match known-bound actual
+array types such as `color[1]`, so the known-bound instantiation reselected
+the same partial specialization and recursively tried to collect the same enum
+value until it failed with `unsupported enumerator value`. Host clang confirms
+that `S<Y[], T[]>` must not match `S<int[1], int[1]>`. The fix rejects
+known-bound or text-bound actual arrays when the pattern is an unknown-bound
+array in both active template deduction paths, preserving explicit bound
+patterns such as `Y[N]`. No Boost special case, fallback resolver, cache, or
+source-text reparse is added. Owner: PA21 class partial-specialization
+selection. New regression:
+`pa21/tests/spec/100-class-partial-specialization-unbounded-array-mismatch.t`.
+Pre-fix evidence: `/tmp/cppgm-sp-convertible-reducer.cpp` and the reduced
+primary-true variant failed with the Boost-shaped `unsupported enumerator
+value` diagnostic, and trace showed `sp_convertible<color[1], color[1]>`
+selecting the `sp_convertible<Y[], T[]>` partial specialization. After the fix,
+the reducers pass, the selection probe proves `S<int[1], int[1]>` uses the
+primary while `S<int[], int[]>` uses the partial, and focused B2
+`/usr/local/bin/timeout 300 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/graph/test//finish_edge_bug`
+passes and updates 4 targets; log
+`/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`. Validation:
+`make -C dev cppgm++ -j12`; focused PA21 regression passes after refs generated
+with the fixed `dev/cppgm++`; PA21 placement audit reports no placement
+findings; PA21 direct-LowIR report passes `191/191`;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; full
+direct-LowIR report passes `3463/3463`; full strict direct-LowIR compare
+passes. A detached pre-fix `961766c41` worktree was built and recorded as
+`/tmp/cppgm-before-array-partial-961766c41-perf-baseline.json`; the candidate
+perf check passes with instructions `+0.01%`, RSS `+1.34%`, footprint `-0.03%`;
+detailed report `/tmp/cppgm-after-array-partial-perf-report.json`.

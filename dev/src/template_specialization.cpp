@@ -307,6 +307,8 @@ bool deduce_type_pattern_to_state(
       }
     } else if(!pattern_base->bound_text.empty()) {
       return false;
+    } else if(actual_base->has_bound || !actual_base->bound_text.empty()) {
+      return false;
     }
     return deduce_type_pattern_to_state(parameters,
                                         pattern_base->inner,
