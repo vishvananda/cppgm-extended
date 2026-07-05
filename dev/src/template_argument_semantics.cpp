@@ -4737,6 +4737,131 @@ bool try_resolve_lazy_enable_if_member_type(
   return true;
 }
 
+bool scope_is_boost_namespace_or_inline_child(const Scope * scope)
+{
+  const Scope * current = scope;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "boost") {
+    return false;
+  }
+  for(const Scope * parent = current->parent; parent; parent = parent->parent) {
+    if(parent->namespace_scope &&
+       parent->name != "<global>" &&
+       parent->name != "<unnamed>") {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool try_resolve_boost_enable_if_member_type(
+    template_api::TemplateServices & services,
+    Scope & lookup_scope,
+    Scope & argument_scope,
+    const std::string & member_name,
+    const TemplateIdSyntax & qualifier_template_id,
+    TypePtr & out)
+{
+  out.reset();
+  if(member_name != "type" ||
+     qualifier_template_id.name.name != "enable_if" ||
+     qualifier_template_id.arguments.empty() ||
+     qualifier_template_id.arguments.size() > 2) {
+    return false;
+  }
+
+  ClassTemplateDecl * decl =
+      lookup_class_template_impl(
+          services,
+          lookup_scope,
+          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+  if(!decl ||
+     decl->name != qualifier_template_id.name.name ||
+     !scope_is_boost_namespace_or_inline_child(decl->declaring_scope)) {
+    return false;
+  }
+
+  const auto try_evaluate_known_bool_type_text =
+      [](const string & raw_text, bool & value) -> bool
+      {
+        string text = normalize_type_lookup_name(trim_space(raw_text));
+        if(text.compare(0, 2, "::") == 0) {
+          text = trim_space(text.substr(2));
+        }
+        if(text == "boost::mp11::mp_true" ||
+           text == "boost::mpl::true_" ||
+           text == "std::true_type" ||
+           text == "true_type" ||
+           text == "mp_true" ||
+           text == "true_") {
+          value = true;
+          return true;
+        }
+        if(text == "boost::mp11::mp_false" ||
+           text == "boost::mpl::false_" ||
+           text == "std::false_type" ||
+           text == "false_type" ||
+           text == "mp_false" ||
+           text == "false_") {
+          value = false;
+          return true;
+        }
+        return false;
+      };
+
+  bool condition_value = false;
+  bool condition_resolved = false;
+  TypePtr condition_type;
+  if(resolve_standard_meta_type_argument(services,
+                                         argument_scope,
+                                         qualifier_template_id,
+                                         0,
+                                         condition_type) &&
+     condition_type) {
+    const NonTypeArgumentStatus condition_status =
+        evaluate_structured_bool_constant_type(
+            services,
+            template_api::make_template_environment(argument_scope),
+            condition_type,
+            condition_value);
+    if(condition_status == NT_ARG_EVALUATED) {
+      condition_resolved = true;
+    } else if(condition_status != NT_ARG_DEPENDENT) {
+      return false;
+    }
+  }
+  if(!condition_resolved &&
+     try_evaluate_known_bool_type_text(qualifier_template_id.arguments[0],
+                                       condition_value)) {
+    condition_resolved = true;
+  }
+  if(!condition_resolved) {
+    return false;
+  }
+  if(!condition_value) {
+    throw_substitution_failure(
+        "boost enable_if member type substitution failed",
+        std::string(),
+        "template-resolution");
+  }
+
+  if(qualifier_template_id.arguments.size() == 1) {
+    out = make_fundamental(FT_VOID);
+    return true;
+  }
+
+  return resolve_standard_meta_type_argument(services,
+                                             argument_scope,
+                                             qualifier_template_id,
+                                             1,
+                                             out) &&
+         out != nullptr;
+}
+
 StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -4879,6 +5004,15 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
         return StructuredTypeLookupResult::Resolved;
       }
       if(try_resolve_lazy_enable_if_member_type(
+             services,
+             *current,
+             scope,
+             qualified.name,
+             *lookup_qualifier_template_id,
+             out)) {
+        return StructuredTypeLookupResult::Resolved;
+      }
+      if(try_resolve_boost_enable_if_member_type(
              services,
              *current,
              scope,

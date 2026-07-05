@@ -3711,3 +3711,38 @@ perf against a clean `432a9b246` baseline passes with instructions `+0.07%`,
 RSS `+0.19%`, footprint `+0.08%`; baseline
 `/tmp/cppgm-before-mp11-owner-432a9b246-perf-baseline.json`, report
 `/tmp/cppgm-after-mp11-owner-432a9b246-perf-check.log`.
+
+2026-07-05 Boost.Graph Boost.Parameter `keyword::operator|` type-condition
+`enable_if` frontier: after the member alias owner fix, the graph tests reached
+Boost.Parameter's scalar default path `keyword<Tag>::operator|(Default&&)`.
+For `Default=int`, `boost::enable_if<mp_if<is_scalar<int>, mp_false, ...>,
+default_r_<Tag,int>>::type` should be a substitution failure, leaving the
+`Default const&` overload viable. The compiler did not have a structured
+resolver for Boost's `enable_if<Cond,T>::type`, where `Cond` is a bool-constant
+type rather than a bool non-type argument. In the real `keyword` class, the
+static `keyword<Tag>::instance` definition forced the member function template
+through the source-owner instantiation path, so the false rvalue overload
+retained a dependent result and was accepted until output required its body.
+The fix adds a narrow `boost::enable_if` member `type` resolver beside the
+existing `lazy_enable_if` resolver: it verifies the real Boost namespace,
+resolves the condition as a type, evaluates `Cond::value`, returns `T` for true
+conditions, and reports SFINAE substitution failure for false conditions.
+Owner: PA22:300 function-template result SFINAE and overload viability. New
+regression:
+`pa22/tests/general/300-boost-enable-if-type-condition-static-keyword-overload.t`.
+Pre-fix evidence: the self-contained static-keyword reducer and
+`/tmp/boost_parameter_keyword_header_min.cpp` both failed with
+`instantiated function template retained dependent function type [name
+operator|]` on the `default_r_` rvalue overload, while clang accepted both.
+After the fix, both reducers pass, focused PA22 report passes `207/207`, full
+direct-LowIR report passes `3500/3500`, full strict direct-LowIR compare
+passes, `git diff --check` passes, and `python3
+scripts/audit_text_reparse.py --strict` reports all zero. Focused Boost B2 for
+`libs/graph/test//dfs`, `//finish_edge_bug`, `//random_spanning_tree_test`,
+`//stoer_wagner_test`, `//transitive_closure_test`, and
+`//transitive_closure_test2` now compiles, links, and runs all six selected
+tests; final log `/tmp/boost-graph-parameter-enable-if-focused-20260705.log`.
+Isolated perf against clean `056248df4` passes with instructions `+0.05%`, RSS
+`-0.07%`, footprint `+0.04%`; baseline
+`/tmp/cppgm-before-boost-enable-if-056248df4-perf-baseline.json`, report
+`/tmp/cppgm-after-boost-enable-if-056248df4-perf-check.log`.
