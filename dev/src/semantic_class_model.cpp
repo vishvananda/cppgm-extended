@@ -7270,6 +7270,14 @@ bool class_definition_has_member_function_static_assert(const CppAstNode & node)
   return false;
 }
 
+bool function_definition_is_static_constexpr_member(const CppAstNode & node)
+{
+  const CppAstNode * specifiers = find_child(node, CppAstKind::decl_specifier_seq);
+  return specifiers &&
+         decl_spec_contains_token(*specifiers, KW_STATIC) &&
+         decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
+}
+
 TypePtr resolve_class_lexical_type(SemanticContext & ctx,
                                    ClassInfo & info,
                                    const TypePtr & type)
@@ -8710,6 +8718,8 @@ void populate_class_reference_members(SemanticContext & ctx,
                function_specifiers->children.end(),
                [](const CppAstNode & member) { return node_has_simple_type(member, KW_FRIEND); })) {
         collect_class_friend_function_definition(ctx, info, child, true);
+      } else if(function_definition_is_static_constexpr_member(child)) {
+        collect_class_method_definition(ctx, info, child, current_access);
       }
       continue;
     }
@@ -8786,6 +8796,8 @@ void populate_class_reference_members(SemanticContext & ctx,
                       [](const CppAstNode & spec)
                       { return node_has_simple_type(spec, KW_FRIEND); })) {
               collect_class_friend_function_definition(ctx, info, member, true);
+            } else if(function_definition_is_static_constexpr_member(member)) {
+              collect_class_method_definition(ctx, info, member, inner_access);
             }
             continue;
           }
@@ -10317,7 +10329,7 @@ void populate_class_info(SemanticContext & ctx,
       }
       DIAG_CONTEXT("class_member_function_definition [" + node_text(child) + "]" +
                    ctx.source_location_for_node(child));
-      if(!dependent_class) {
+      if(!dependent_class || function_definition_is_static_constexpr_member(child)) {
         collect_class_method_definition(ctx, info, child, current_access);
       }
       continue;
