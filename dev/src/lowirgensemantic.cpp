@@ -184,10 +184,17 @@ struct FunctionSymbolEntry
   bool has_definition = false;
 };
 
+struct ParameterVirtualBaseLayoutEntry
+{
+  size_t parameter_index = 0;
+  vector<pair<string, unsigned long long> > layout;
+};
+
 struct ParameterVirtualBaseLayout
 {
   size_t parameter_index = 0;
   vector<pair<string, unsigned long long> > layout;
+  vector<ParameterVirtualBaseLayoutEntry> additional_layouts;
 };
 
 struct ParameterVirtualBaseForwardingCandidate
@@ -744,6 +751,13 @@ const CallSemNode * peel_base_subobject_root_shared(const CallSemNode & node)
 string class_qualified_name(const TypePtr & type);
 vector<pair<string, unsigned long long> > normalize_parameter_virtual_base_layout(
     const vector<pair<string, unsigned long long> > & layout);
+ParameterVirtualBaseLayoutEntry make_parameter_virtual_base_layout_entry(
+    size_t parameter_index,
+    const vector<pair<string, unsigned long long> > & layout);
+bool merge_parameter_virtual_base_layout_entry(
+    ParameterVirtualBaseLayout & target,
+    const ParameterVirtualBaseLayoutEntry & incoming,
+    bool & changed);
 
 TypePtr lowir_class_object_type(const TypePtr & type)
 {
@@ -804,6 +818,7 @@ bool infer_parameter_virtual_base_layout(
     return false;
   }
 
+  bool found_layout = false;
   vector<pair<const CallSemNode *, unsigned long long> > stack(
       1, make_pair(&function_node, 0ULL));
   while(!stack.empty()) {
@@ -826,12 +841,17 @@ bool infer_parameter_virtual_base_layout(
       if(root &&
          (root->kind == CallSemKind::variable ||
          root->kind == CallSemKind::id_expression ||
-          root->kind == CallSemKind::parameter) &&
+         root->kind == CallSemKind::parameter) &&
         parameter_it != parameter_indices.end()) {
-        out_layout.parameter_index = parameter_it->second;
-        out_layout.layout =
-            normalize_parameter_virtual_base_layout(current_virtual_base_layout);
-        return true;
+        ParameterVirtualBaseLayoutEntry entry =
+            make_parameter_virtual_base_layout_entry(
+                parameter_it->second,
+                normalize_parameter_virtual_base_layout(current_virtual_base_layout));
+        bool changed = false;
+        if(!merge_parameter_virtual_base_layout_entry(out_layout, entry, changed)) {
+          return false;
+        }
+        found_layout = true;
       }
       if(root && root->kind == CallSemKind::call_expression) {
         size_t forwarded_child_index = 0;
@@ -850,10 +870,15 @@ bool infer_parameter_virtual_base_layout(
               forwarded_root->kind == CallSemKind::id_expression ||
               forwarded_root->kind == CallSemKind::parameter) &&
              forwarded_parameter_it != parameter_indices.end()) {
-            out_layout.parameter_index = forwarded_parameter_it->second;
-            out_layout.layout =
-                normalize_parameter_virtual_base_layout(current_virtual_base_layout);
-            return true;
+            ParameterVirtualBaseLayoutEntry entry =
+                make_parameter_virtual_base_layout_entry(
+                    forwarded_parameter_it->second,
+                    normalize_parameter_virtual_base_layout(current_virtual_base_layout));
+            bool changed = false;
+            if(!merge_parameter_virtual_base_layout_entry(out_layout, entry, changed)) {
+              return false;
+            }
+            found_layout = true;
           }
         }
       }
@@ -862,7 +887,97 @@ bool infer_parameter_virtual_base_layout(
       stack.push_back(make_pair(&current->children[i], node_base_offset));
     }
   }
-  return false;
+  return found_layout;
+}
+
+ParameterVirtualBaseLayoutEntry make_parameter_virtual_base_layout_entry(
+    size_t parameter_index,
+    const vector<pair<string, unsigned long long> > & layout)
+{
+  ParameterVirtualBaseLayoutEntry entry;
+  entry.parameter_index = parameter_index;
+  entry.layout = layout;
+  return entry;
+}
+
+vector<ParameterVirtualBaseLayoutEntry> parameter_virtual_base_layout_entries(
+    const ParameterVirtualBaseLayout & layout)
+{
+  vector<ParameterVirtualBaseLayoutEntry> entries;
+  if(!layout.layout.empty()) {
+    entries.push_back(
+        make_parameter_virtual_base_layout_entry(layout.parameter_index, layout.layout));
+  }
+  for(size_t i = 0; i < layout.additional_layouts.size(); ++i) {
+    if(!layout.additional_layouts[i].layout.empty()) {
+      entries.push_back(layout.additional_layouts[i]);
+    }
+  }
+  sort(entries.begin(),
+       entries.end(),
+       [](const ParameterVirtualBaseLayoutEntry & lhs,
+          const ParameterVirtualBaseLayoutEntry & rhs)
+       {
+         return lhs.parameter_index < rhs.parameter_index;
+       });
+  return entries;
+}
+
+bool merge_virtual_base_layout_vector(
+    vector<pair<string, unsigned long long> > & target,
+    const vector<pair<string, unsigned long long> > & incoming,
+    bool & changed)
+{
+  for(size_t i = 0; i < incoming.size(); ++i) {
+    bool found = false;
+    for(size_t j = 0; j < target.size(); ++j) {
+      if(target[j].first != incoming[i].first) {
+        continue;
+      }
+      if(target[j].second != incoming[i].second) {
+        return false;
+      }
+      found = true;
+      break;
+    }
+    if(!found) {
+      target.push_back(incoming[i]);
+      changed = true;
+    }
+  }
+  return true;
+}
+
+bool merge_parameter_virtual_base_layout_entry(
+    ParameterVirtualBaseLayout & target,
+    const ParameterVirtualBaseLayoutEntry & incoming,
+    bool & changed)
+{
+  if(incoming.layout.empty()) {
+    return true;
+  }
+
+  if(!target.layout.empty() && target.parameter_index == incoming.parameter_index) {
+    return merge_virtual_base_layout_vector(target.layout, incoming.layout, changed);
+  }
+
+  for(size_t i = 0; i < target.additional_layouts.size(); ++i) {
+    if(target.additional_layouts[i].parameter_index != incoming.parameter_index) {
+      continue;
+    }
+    return merge_virtual_base_layout_vector(target.additional_layouts[i].layout,
+                                            incoming.layout,
+                                            changed);
+  }
+
+  if(target.layout.empty()) {
+    target.parameter_index = incoming.parameter_index;
+    target.layout = incoming.layout;
+  } else {
+    target.additional_layouts.push_back(incoming);
+  }
+  changed = true;
+  return true;
 }
 
 bool merge_parameter_virtual_base_layout(ParameterVirtualBaseLayout & target,
@@ -870,26 +985,14 @@ bool merge_parameter_virtual_base_layout(ParameterVirtualBaseLayout & target,
                                          bool & changed)
 {
   changed = false;
-  if(target.parameter_index != incoming.parameter_index) {
-    return false;
-  }
-
-  for(size_t i = 0; i < incoming.layout.size(); ++i) {
-    bool found = false;
-    for(size_t j = 0; j < target.layout.size(); ++j) {
-      if(target.layout[j].first != incoming.layout[i].first) {
-        continue;
-      }
-      if(target.layout[j].second != incoming.layout[i].second) {
-        return false;
-      }
-      found = true;
-      break;
+  const vector<ParameterVirtualBaseLayoutEntry> entries =
+      parameter_virtual_base_layout_entries(incoming);
+  for(size_t i = 0; i < entries.size(); ++i) {
+    bool entry_changed = false;
+    if(!merge_parameter_virtual_base_layout_entry(target, entries[i], entry_changed)) {
+      return false;
     }
-    if(!found) {
-      target.layout.push_back(incoming.layout[i]);
-      changed = true;
-    }
+    changed = changed || entry_changed;
   }
   return true;
 }
@@ -911,6 +1014,7 @@ bool infer_reference_parameter_type_virtual_base_layout(
     ParameterVirtualBaseLayout & out_layout)
 {
   size_t parameter_index = 0;
+  bool found = false;
   for(size_t i = 0; i < function_node.children.size(); ++i) {
     if(function_node.children[i].kind != CallSemKind::parameter) {
       continue;
@@ -925,15 +1029,21 @@ bool infer_reference_parameter_type_virtual_base_layout(
       if(!parameter_class.empty() &&
          layout_it != class_virtual_base_layouts.end() &&
          !layout_it->second.empty()) {
-        out_layout.parameter_index = parameter_index;
-        out_layout.layout = normalize_parameter_virtual_base_layout(layout_it->second);
-        return true;
+        ParameterVirtualBaseLayoutEntry entry =
+            make_parameter_virtual_base_layout_entry(
+                parameter_index,
+                normalize_parameter_virtual_base_layout(layout_it->second));
+        bool changed = false;
+        if(!merge_parameter_virtual_base_layout_entry(out_layout, entry, changed)) {
+          return false;
+        }
+        found = true;
       }
     }
 
     ++parameter_index;
   }
-  return false;
+  return found;
 }
 
 bool infer_function_type_reference_parameter_virtual_base_layout(
@@ -946,6 +1056,7 @@ bool infer_function_type_reference_parameter_virtual_base_layout(
     return false;
   }
 
+  bool found = false;
   for(size_t i = 0; i < base->params.size(); ++i) {
     const TypePtr parameter_type = base->params[i];
     if(!is_reference_type(parameter_type)) {
@@ -959,13 +1070,19 @@ bool infer_function_type_reference_parameter_virtual_base_layout(
     if(!parameter_class.empty() &&
        layout_it != class_virtual_base_layouts.end() &&
        !layout_it->second.empty()) {
-      out_layout.parameter_index = i;
-      out_layout.layout = normalize_parameter_virtual_base_layout(layout_it->second);
-      return true;
+      ParameterVirtualBaseLayoutEntry entry =
+          make_parameter_virtual_base_layout_entry(
+              i,
+              normalize_parameter_virtual_base_layout(layout_it->second));
+      bool changed = false;
+      if(!merge_parameter_virtual_base_layout_entry(out_layout, entry, changed)) {
+        return false;
+      }
+      found = true;
     }
   }
 
-  return false;
+  return found;
 }
 
 bool infer_reference_storage_parameter_virtual_base_layout(
@@ -2608,9 +2725,15 @@ void append_parameter_virtual_base_signature_params_for_layout(
     LowIRFunctionSignatureText & signature,
     const ParameterVirtualBaseLayout & layout)
 {
-  for(size_t i = 0; i < layout.layout.size(); ++i) {
-    signature.params.push_back(
-        make_lowir_parameter_text(string("%__pvbptr") + to_string(i), "ptr"));
+  const vector<ParameterVirtualBaseLayoutEntry> entries =
+      parameter_virtual_base_layout_entries(layout);
+  size_t hidden_index = 0;
+  for(size_t ei = 0; ei < entries.size(); ++ei) {
+    for(size_t i = 0; i < entries[ei].layout.size(); ++i) {
+      signature.params.push_back(
+          make_lowir_parameter_text(string("%__pvbptr") + to_string(hidden_index), "ptr"));
+      ++hidden_index;
+    }
   }
 }
 
@@ -3122,11 +3245,17 @@ public:
     map<string, ParameterVirtualBaseLayout>::const_iterator parameter_layout_it =
         function_parameter_virtual_base_layouts_.find(function_symbol);
     if(parameter_layout_it != function_parameter_virtual_base_layouts_.end()) {
-      for(size_t i = 0; i < parameter_layout_it->second.layout.size(); ++i) {
-        const string param_temp = string("%__pvbptr") + to_string(i);
-        function_.params.push_back(make_lowir_parameter_text(param_temp, "ptr"));
-        parameter_hidden_virtual_base_params_[parameter_layout_it->second.layout[i].first] =
-            param_temp;
+      const vector<ParameterVirtualBaseLayoutEntry> entries =
+          parameter_virtual_base_layout_entries(parameter_layout_it->second);
+      size_t hidden_index = 0;
+      for(size_t ei = 0; ei < entries.size(); ++ei) {
+        for(size_t i = 0; i < entries[ei].layout.size(); ++i) {
+          const string param_temp = string("%__pvbptr") + to_string(hidden_index);
+          function_.params.push_back(make_lowir_parameter_text(param_temp, "ptr"));
+          parameter_hidden_virtual_base_params_[entries[ei].parameter_index]
+              [entries[ei].layout[i].first] = param_temp;
+          ++hidden_index;
+        }
       }
     }
   }
@@ -3233,9 +3362,14 @@ public:
                   binding.hidden_virtual_base_slots.begin();
               hidden != binding.hidden_virtual_base_slots.end();
               ++hidden) {
+            map<size_t, map<string, string> >::const_iterator parameter_hidden_params =
+                parameter_hidden_virtual_base_params_.find(i);
             map<string, string>::const_iterator parameter_hidden =
-                parameter_hidden_virtual_base_params_.find(hidden->first);
-            if(parameter_hidden != parameter_hidden_virtual_base_params_.end()) {
+                parameter_hidden_params != parameter_hidden_virtual_base_params_.end() ?
+                    parameter_hidden_params->second.find(hidden->first) :
+                    map<string, string>::const_iterator();
+            if(parameter_hidden_params != parameter_hidden_virtual_base_params_.end() &&
+               parameter_hidden != parameter_hidden_params->second.end()) {
               emit_line("store ptr " + parameter_hidden->second + ", " + hidden->second);
               continue;
             }
@@ -3439,6 +3573,35 @@ private:
 
     const VariableBinding * binding = find_local_binding(root->text);
     return binding && binding->is_parameter;
+  }
+
+  const map<string, string> * parameter_hidden_virtual_base_params_for_node(
+      const CallSemNode & node) const
+  {
+    const CallSemNode * root = peel_base_subobject_root(node);
+    if(!root ||
+       (root->kind != CallSemKind::variable &&
+        root->kind != CallSemKind::id_expression &&
+        root->kind != CallSemKind::parameter)) {
+      return nullptr;
+    }
+
+    const VariableBinding * binding = find_local_binding(root->text);
+    if(!binding || !binding->is_parameter) {
+      return nullptr;
+    }
+
+    for(size_t i = 0; i < param_names_.size(); ++i) {
+      if(param_names_[i] != root->text) {
+        continue;
+      }
+      map<size_t, map<string, string> >::const_iterator hidden =
+          parameter_hidden_virtual_base_params_.find(i);
+      return hidden == parameter_hidden_virtual_base_params_.end() ?
+          nullptr :
+          &hidden->second;
+    }
+    return nullptr;
   }
 
   bool base_subobject_pointer_operand_may_be_null(const CallSemNode & node) const
@@ -3745,9 +3908,12 @@ private:
     }
 
     if(root_is_parameter_binding(object_arg)) {
+      const map<string, string> * parameter_hidden_params =
+          parameter_hidden_virtual_base_params_for_node(object_arg);
       map<string, string>::const_iterator parameter_hidden =
-          parameter_hidden_virtual_base_params_.find(virtual_base.first);
-      if(parameter_hidden != parameter_hidden_virtual_base_params_.end()) {
+          parameter_hidden_params ? parameter_hidden_params->find(virtual_base.first) :
+              map<string, string>::const_iterator();
+      if(parameter_hidden_params && parameter_hidden != parameter_hidden_params->end()) {
         out = parameter_hidden->second;
         return true;
       }
@@ -3775,8 +3941,31 @@ private:
       map<string, ParameterVirtualBaseLayout>::const_iterator layout_it =
           function_parameter_virtual_base_layouts_.find(callee_symbol);
       if(layout_it != function_parameter_virtual_base_layouts_.end()) {
-        const size_t child_index = layout_it->second.parameter_index + 1;
-        if(child_index < root->children.size()) {
+        const vector<ParameterVirtualBaseLayoutEntry> entries =
+            parameter_virtual_base_layout_entries(layout_it->second);
+        bool found_parameter = false;
+        size_t parameter_index = 0;
+        bool ambiguous_parameter = false;
+        for(size_t ei = 0; ei < entries.size(); ++ei) {
+          bool entry_has_virtual_base = false;
+          for(size_t li = 0; li < entries[ei].layout.size(); ++li) {
+            if(entries[ei].layout[li].first == requested_virtual_base.first) {
+              entry_has_virtual_base = true;
+              break;
+            }
+          }
+          if(!entry_has_virtual_base) {
+            continue;
+          }
+          if(found_parameter) {
+            ambiguous_parameter = true;
+            break;
+          }
+          found_parameter = true;
+          parameter_index = entries[ei].parameter_index;
+        }
+        const size_t child_index = parameter_index + 1;
+        if(found_parameter && !ambiguous_parameter && child_index < root->children.size()) {
           return emit_hidden_virtual_base_argument(requested_virtual_base,
                                                   root->children[child_index],
                                                   object_ptr);
@@ -4062,98 +4251,100 @@ private:
                                                    parameter_virtual_base_layout)) {
       return;
     }
-    const size_t child_index =
-        constructor_call ? parameter_virtual_base_layout.parameter_index :
-            (parameter_virtual_base_layout.parameter_index + 1);
-    if(child_index >= call.children.size()) {
-      throw logic_error("parameter virtual base argument source missing");
-    }
-    const CallSemNode & object_arg = call.children[child_index];
-    const CallSemVirtualBaseLayout & object_arg_virtual_base_layout =
-        callsem_virtual_base_layout(object_arg);
-    const size_t physical_parameter_index =
-        have_function_type ?
-            lowir_physical_argument_index(function_type,
-                                          parameter_virtual_base_layout.parameter_index) :
-            parameter_virtual_base_layout.parameter_index;
-    bool parameter_reference_to_pointer = false;
-    if(have_function_type) {
-      TypePtr base = strip_top_level_cv(function_type);
-      if(base &&
-         base->kind == Type::TK_FUNCTION &&
-         parameter_virtual_base_layout.parameter_index < base->params.size()) {
-        TypePtr parameter_type =
-            strip_top_level_cv(base->params[parameter_virtual_base_layout.parameter_index]);
-        if(parameter_type && is_reference_type(parameter_type)) {
-          TypePtr referent = strip_top_level_cv(remove_reference_type(parameter_type));
-          parameter_reference_to_pointer = referent && referent->kind == Type::TK_POINTER;
+    const vector<ParameterVirtualBaseLayoutEntry> entries =
+        parameter_virtual_base_layout_entries(parameter_virtual_base_layout);
+    for(size_t ei = 0; ei < entries.size(); ++ei) {
+      const ParameterVirtualBaseLayoutEntry & entry = entries[ei];
+      const size_t child_index =
+          constructor_call ? entry.parameter_index : (entry.parameter_index + 1);
+      if(child_index >= call.children.size()) {
+        throw logic_error("parameter virtual base argument source missing");
+      }
+      const CallSemNode & object_arg = call.children[child_index];
+      const CallSemVirtualBaseLayout & object_arg_virtual_base_layout =
+          callsem_virtual_base_layout(object_arg);
+      const size_t physical_parameter_index =
+          have_function_type ?
+              lowir_physical_argument_index(function_type, entry.parameter_index) :
+              entry.parameter_index;
+      bool parameter_reference_to_pointer = false;
+      if(have_function_type) {
+        TypePtr base = strip_top_level_cv(function_type);
+        if(base &&
+           base->kind == Type::TK_FUNCTION &&
+           entry.parameter_index < base->params.size()) {
+          TypePtr parameter_type =
+              strip_top_level_cv(base->params[entry.parameter_index]);
+          if(parameter_type && is_reference_type(parameter_type)) {
+            TypePtr referent = strip_top_level_cv(remove_reference_type(parameter_type));
+            parameter_reference_to_pointer = referent && referent->kind == Type::TK_POINTER;
+          }
         }
       }
-    }
-    string referenced_pointer_object;
-    for(size_t i = 0; i < parameter_virtual_base_layout.layout.size(); ++i) {
-      const string * object_ptr =
-          physical_parameter_index < args.size() ?
-              &args[physical_parameter_index] :
-              nullptr;
-      if(object_ptr && parameter_reference_to_pointer) {
-        if(referenced_pointer_object.empty()) {
-          referenced_pointer_object =
-              emit_temp_assignment("ptr", string("load ptr ") + *object_ptr);
+      string referenced_pointer_object;
+      for(size_t i = 0; i < entry.layout.size(); ++i) {
+        const string * object_ptr =
+            physical_parameter_index < args.size() ?
+                &args[physical_parameter_index] :
+                nullptr;
+        if(object_ptr && parameter_reference_to_pointer) {
+          if(referenced_pointer_object.empty()) {
+            referenced_pointer_object =
+                emit_temp_assignment("ptr", string("load ptr ") + *object_ptr);
+          }
+          object_ptr = &referenced_pointer_object;
         }
-        object_ptr = &referenced_pointer_object;
-      }
-      const pair<string, unsigned long long> requested_virtual_base =
-          make_pair(parameter_virtual_base_layout.layout[i].first, 0ULL);
-      if(object_ptr) {
-        const CallSemNode * root = peel_base_subobject_root(object_arg);
-        if(root &&
-           (root->kind == CallSemKind::variable ||
-            root->kind == CallSemKind::id_expression ||
-            root->kind == CallSemKind::parameter ||
-            root->kind == CallSemKind::call_expression)) {
-          args.push_back(
-              emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
-          continue;
-        }
-        if(object_arg.kind == CallSemKind::member_expression &&
-           is_reference_type(object_arg.semantic_type)) {
-          args.push_back(
-              emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
-          continue;
-        }
-        bool appended_from_root_layout = false;
-        if(root && root != &object_arg && !object_arg_virtual_base_layout.empty()) {
-          bool found_root_offset = false;
-          unsigned long long root_offset = 0;
-          for(size_t j = 0; j < object_arg_virtual_base_layout.size(); ++j) {
-            if(object_arg_virtual_base_layout[j].first ==
-               parameter_virtual_base_layout.layout[i].first) {
-              root_offset = object_arg_virtual_base_layout[j].second;
+        const pair<string, unsigned long long> requested_virtual_base =
+            make_pair(entry.layout[i].first, 0ULL);
+        if(object_ptr) {
+          const CallSemNode * root = peel_base_subobject_root(object_arg);
+          if(root &&
+             (root->kind == CallSemKind::variable ||
+              root->kind == CallSemKind::id_expression ||
+              root->kind == CallSemKind::parameter ||
+              root->kind == CallSemKind::call_expression)) {
+            args.push_back(
+                emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
+            continue;
+          }
+          if(object_arg.kind == CallSemKind::member_expression &&
+             is_reference_type(object_arg.semantic_type)) {
+            args.push_back(
+                emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
+            continue;
+          }
+          bool appended_from_root_layout = false;
+          if(root && root != &object_arg && !object_arg_virtual_base_layout.empty()) {
+            bool found_root_offset = false;
+            unsigned long long root_offset = 0;
+            for(size_t j = 0; j < object_arg_virtual_base_layout.size(); ++j) {
+              if(object_arg_virtual_base_layout[j].first == entry.layout[i].first) {
+                root_offset = object_arg_virtual_base_layout[j].second;
+                found_root_offset = true;
+                break;
+              }
+            }
+            if(!found_root_offset && i < object_arg_virtual_base_layout.size()) {
+              root_offset = object_arg_virtual_base_layout[i].second;
               found_root_offset = true;
-              break;
+            }
+            if(found_root_offset) {
+              args.push_back(
+                  adjust_hidden_virtual_base_pointer(
+                      emit_pointer_operand(*root),
+                      root_offset));
+              appended_from_root_layout = true;
             }
           }
-          if(!found_root_offset && i < object_arg_virtual_base_layout.size()) {
-            root_offset = object_arg_virtual_base_layout[i].second;
-            found_root_offset = true;
-          }
-          if(found_root_offset) {
+          if(!appended_from_root_layout) {
             args.push_back(
-                adjust_hidden_virtual_base_pointer(
-                    emit_pointer_operand(*root),
-                    root_offset));
-            appended_from_root_layout = true;
+                emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
           }
+          continue;
         }
-        if(!appended_from_root_layout) {
-          args.push_back(
-              emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
-        }
-        continue;
+        args.push_back(
+            emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
       }
-      args.push_back(
-          emit_hidden_virtual_base_argument(requested_virtual_base, object_arg, object_ptr));
     }
   }
 
@@ -4248,7 +4439,7 @@ private:
   vector<TypePtr> param_types_;
   vector<ParamAbiPlan> param_abi_plans_;
   map<string, string> hidden_virtual_base_params_;
-  map<string, string> parameter_hidden_virtual_base_params_;
+  map<size_t, map<string, string> > parameter_hidden_virtual_base_params_;
   map<string, unsigned long long> current_virtual_base_offsets_;
   string current_vtt_param_;
   size_t temp_counter_ = 0;
@@ -12795,9 +12986,12 @@ private:
                                                             virtual_base.second);
         }
         if(root_is_parameter_binding(node.children[0])) {
+          const map<string, string> * parameter_hidden_params =
+              parameter_hidden_virtual_base_params_for_node(node.children[0]);
           map<string, string>::const_iterator hidden =
-              parameter_hidden_virtual_base_params_.find(virtual_base.first);
-          if(hidden != parameter_hidden_virtual_base_params_.end()) {
+              parameter_hidden_params ? parameter_hidden_params->find(virtual_base.first) :
+                  map<string, string>::const_iterator();
+          if(parameter_hidden_params && hidden != parameter_hidden_params->end()) {
             return address_from_parameter_hidden_virtual_base(hidden->second,
                                                               virtual_base.second);
           }
@@ -12876,9 +13070,12 @@ private:
                                                     false);
         }
         if(root_is_parameter_binding(node.children[0])) {
+          const map<string, string> * parameter_hidden_params =
+              parameter_hidden_virtual_base_params_for_node(node.children[0]);
           map<string, string>::const_iterator hidden =
-              parameter_hidden_virtual_base_params_.find(qualified_name);
-          if(hidden != parameter_hidden_virtual_base_params_.end()) {
+              parameter_hidden_params ? parameter_hidden_params->find(qualified_name) :
+                  map<string, string>::const_iterator();
+          if(parameter_hidden_params && hidden != parameter_hidden_params->end()) {
             return emit_index_address_with_projection("i8",
                                                       hidden->second,
                                                       0,
@@ -18456,10 +18653,16 @@ private:
     }
     vector<string> forwarded_hidden_virtual_base_args;
     if(has_parameter_virtual_base_layout) {
-      for(size_t i = 0; i < parameter_virtual_base_layout.layout.size(); ++i) {
-        const string arg_name = string("%__pvbptr") + to_string(i);
-        function.params.push_back(make_lowir_parameter_text(arg_name, "ptr"));
-        forwarded_hidden_virtual_base_args.push_back(arg_name);
+      const vector<ParameterVirtualBaseLayoutEntry> entries =
+          parameter_virtual_base_layout_entries(parameter_virtual_base_layout);
+      size_t hidden_index = 0;
+      for(size_t ei = 0; ei < entries.size(); ++ei) {
+        for(size_t i = 0; i < entries[ei].layout.size(); ++i) {
+          const string arg_name = string("%__pvbptr") + to_string(hidden_index);
+          function.params.push_back(make_lowir_parameter_text(arg_name, "ptr"));
+          forwarded_hidden_virtual_base_args.push_back(arg_name);
+          ++hidden_index;
+        }
       }
     }
 
@@ -19128,15 +19331,38 @@ private:
       }
 
       ParameterVirtualBaseLayout inferred_layout;
-      if(!infer_parameter_virtual_base_layout(node, inferred_layout) &&
-         !infer_reference_parameter_type_virtual_base_layout(
+      bool inferred = infer_parameter_virtual_base_layout(node, inferred_layout);
+      ParameterVirtualBaseLayout reference_storage_layout;
+      if(infer_reference_storage_parameter_virtual_base_layout(
              node,
              class_virtual_base_layouts_,
-             inferred_layout) &&
-         !infer_reference_storage_parameter_virtual_base_layout(
-             node,
-             class_virtual_base_layouts_,
-             inferred_layout)) {
+             reference_storage_layout)) {
+        bool changed = false;
+        if(!merge_parameter_virtual_base_layout(inferred_layout,
+                                                reference_storage_layout,
+                                                changed)) {
+          throw logic_error("conflicting parameter virtual base layout for " +
+                            node_internal_symbol(node));
+        }
+        inferred = true;
+      }
+      if(!inferred) {
+        ParameterVirtualBaseLayout reference_type_layout;
+        if(infer_reference_parameter_type_virtual_base_layout(
+               node,
+               class_virtual_base_layouts_,
+               reference_type_layout)) {
+          bool changed = false;
+          if(!merge_parameter_virtual_base_layout(inferred_layout,
+                                                  reference_type_layout,
+                                                  changed)) {
+            throw logic_error("conflicting parameter virtual base layout for " +
+                              node_internal_symbol(node));
+          }
+          inferred = true;
+        }
+      }
+      if(!inferred) {
         continue;
       }
 
@@ -19372,23 +19598,27 @@ private:
       for(size_t i = 0; i < candidates->second.size(); ++i) {
         const ParameterVirtualBaseForwardingCandidate & candidate =
             candidates->second[i];
-        if(callee_layout->second.parameter_index >=
-           candidate.argument_parameter_indices.size()) {
-          continue;
-        }
-        const size_t caller_parameter_index =
-            candidate.argument_parameter_indices[callee_layout->second.parameter_index];
-        if(caller_parameter_index == invalid_parameter_index()) {
-          continue;
-        }
+        const vector<ParameterVirtualBaseLayoutEntry> entries =
+            parameter_virtual_base_layout_entries(callee_layout->second);
+        for(size_t ei = 0; ei < entries.size(); ++ei) {
+          if(entries[ei].parameter_index >=
+             candidate.argument_parameter_indices.size()) {
+            continue;
+          }
+          const size_t caller_parameter_index =
+              candidate.argument_parameter_indices[entries[ei].parameter_index];
+          if(caller_parameter_index == invalid_parameter_index()) {
+            continue;
+          }
 
-        ParameterVirtualBaseLayout inferred_layout;
-        inferred_layout.parameter_index = caller_parameter_index;
-        inferred_layout.layout =
-            normalize_parameter_virtual_base_layout(callee_layout->second.layout);
-        record_parameter_virtual_base_layout(candidate.caller_symbol,
-                                            inferred_layout,
-                                            &pending);
+          ParameterVirtualBaseLayout inferred_layout;
+          inferred_layout.parameter_index = caller_parameter_index;
+          inferred_layout.layout =
+              normalize_parameter_virtual_base_layout(entries[ei].layout);
+          record_parameter_virtual_base_layout(candidate.caller_symbol,
+                                              inferred_layout,
+                                              &pending);
+        }
       }
     }
   }

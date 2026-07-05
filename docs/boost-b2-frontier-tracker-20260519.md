@@ -3572,3 +3572,38 @@ direct-LowIR report passes `3492/3492`. Perf check against
 passes the candidate with instructions `+0.09%`, RSS `-0.17%`, footprint
 `+0.00%`; detailed report
 `/tmp/cppgm-perf-after-canonical-ordering-report.json`.
+
+2026-07-05 Boost.Graph `read_graph_file` two-stream hidden virtual-base
+parameter frontier: six graph examples define a local `read_graph_file` helper
+that takes two `std::istream&` parameters. Both parameters need hidden
+virtual-base metadata, but LowIR tracked only one `(parameter_index, layout)`
+per function and keyed the function-entry hidden-parameter map only by virtual
+base name. One reduced PA27 shape silently stored the same hidden pointer into
+both reference-parameter slots; the Boost.Graph examples surfaced the harder
+case as `ERROR: conflicting parameter virtual base layout for @read_graph_file`.
+The fix widens parameter virtual-base layouts to a sorted set of per-parameter
+entries, merges concrete body-derived entries independently, reserves
+type-wide reference-parameter inference for declarations or functions with no
+concrete body use, and keys function-entry hidden virtual-base parameters by
+logical parameter index before virtual-base name. It keeps the existing
+forwarding and root-layout adjustment logic, with call signatures and argument
+emission now flattening the per-parameter entries in logical parameter order.
+Owner: PA27:100 virtual-base LowIR hidden-argument lowering. New regression:
+`pa27/tests/general/100-multiple-reference-virtual-base-parameters.t`.
+Pre-fix evidence: the PA27 reducer emitted one `%__pvbptr0` and stored it into
+both `$left__pvb0` and `$right__pvb0`; the focused Boost target
+`libs/graph/example//edge-function` failed with the `@read_graph_file`
+conflict. After the fix, the reducer emits `%__pvbptr0` for `left` and
+`%__pvbptr1` for `right`, and focused B2 for
+`libs/graph/example//edge-function`, `//print-adjacent-vertices`,
+`//print-edges`, `//print-in-edges`, `//print-out-edges`, and
+`//vertex-name-property` passes; final log
+`/tmp/boost-graph-read-graph-file-cluster-after-multi-pvb-narrow-20260705.log`.
+Validation: `make -C dev -j12 cppgm++`; focused PA27 direct check for the new
+test passes; PA27 placement audit reports no early-placement findings; PA27
+direct-LowIR report passes `27/27`; `python3 scripts/audit_text_reparse.py
+--strict` reports all zero; full strict direct-LowIR compare passes; full
+direct-LowIR report passes `3493/3493`. Perf check against
+`/tmp/cppgm-perf-baseline-boost-frontier-a6c1a9-explicit-member-template.json`
+passes the candidate with instructions `+0.68%`, RSS `+0.79%`, footprint
+`+0.01%`.
