@@ -3437,3 +3437,43 @@ baseline recorded from `5805379ab` at
 the candidate with instructions `+0.05%`, RSS `-0.57%`, footprint `+0.01%`;
 detailed report
 `/tmp/cppgm-perf-after-partial-order-fixed-fundamental-report.json`.
+
+2026-07-05 Boost.Graph `libs/graph/test//random_spanning_tree_test`
+Boost.Parameter defaulted-keyword member-operator frontier: after the cycle
+ratio fix, `random_spanning_tree_test` failed in
+`boost::random_spanning_tree` because
+`arg_pack[_weight_map | default_weight_map]` selected Boost.Parameter's
+inherited generic default fallback and produced `static_property_map<double>`
+instead of the supplied `shared_array_property_map<double>`. The same
+mis-selection also broke `libs/graph/example//astar_maze` and
+`libs/graph/example//astar-cities` for the visitor keyword. The root cause had
+two parts: member-call overload ranking compared the implicit object parameter
+after adjusting it to the candidate's base subobject, which made an inherited
+fallback look exact, and the late function-template structure score still gave
+plain fixed named tag types the same score as partial-order placeholders. The
+fix ranks member candidates' explicit arguments before using the implicit
+object slot as a tiebreaker, computes the implicit-object rank from the
+original object expression while preserving the adjusted object for emission,
+and gives non-placeholder named types a nonzero partial-order structure score.
+No Boost special case, fallback resolver, cache, or source-text reparse is
+added. Owner: PA22:200 function-template partial ordering and member-template
+overload selection. New regression:
+`pa22/tests/spec/200-member-operator-fixed-tag-default-partial-order.t`.
+Pre-fix evidence: the reducer failed with an invalid initializer from
+`default_map` to `supplied_map const&`, and the Boost target failed with a
+`static_property_map<double>` source for the supplied weight-map variable.
+After the fix, the reducer compiles/runs under `cppgm++` and clang, the PA18
+dependent-base `using` overload guard remains green, and focused B2
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//random_spanning_tree_test libs/graph/example//astar_maze libs/graph/example//astar-cities`
+builds, links, runs, and passes all three targets; final log
+`/tmp/boost-graph-random-spanning-after-member-default-key-final-20260705.log`.
+Validation: `make -C dev cppgm++ -j12`; focused PA18 and PA22 checks pass;
+PA22 direct-LowIR report passes `202/202`; PA22 placement audit reports no
+early-placement findings; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes; full strict direct-LowIR compare
+passes; full direct-LowIR report passes `3488/3488`. A clean pre-change
+baseline recorded from `5a1d7ea29` at
+`/tmp/cppgm-perf-baseline-boost-frontier-5a1d7ea-member-default-key.json`
+passes the candidate with instructions `+0.08%`, RSS `-0.43%`, footprint
+`+0.04%`; detailed report
+`/tmp/cppgm-perf-after-member-default-key-report.json`.
