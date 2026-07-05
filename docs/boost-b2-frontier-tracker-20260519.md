@@ -782,6 +782,10 @@ Local Boost wrapper state:
 | 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, Boost.Parameter keyword `instance` link frontier, `sp_convertible<Y[], T[]>` known-bound array selection frontier, Boost.Tuple member-template non-type source-replay frontier, Boost.Parameter imported member-template owner frontier, `dijkstra_shortest_paths` named-parameter partial-order frontier, CSR graph vertex-all property-map result-type scope-binding frontier, Boost.Optional proxy defaulted non-type argument scope frontier, pointer-arithmetic class-conversion frontier, late-member subscript structured-binding recovery frontier, local using-declaration inline function-template body-check frontier, Boost.PropertyTree nested current-specialization owner frontier, lexical_cast wide-stream insertion SFINAE frontier, and libc++ `__make_unsigned_t<char>` signedness-transform alias frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test`, `libs/graph/test//finish_edge_bug`, `libs/graph/test//test_graphs`, `libs/graph/test//transitive_closure_test`, `libs/graph/test//betweenness_centrality_test`, `libs/graph/test//csr_graph_test`, `libs/graph/test//dfs_cc`, `libs/graph/test//dijkstra_cc`, `libs/graph/test//disjoint_set_test`, `libs/graph/test//generator_test`, and `libs/graph/test//graphml_test` pass. Focused `graphml_test` now builds, links, runs, and updates 8 targets. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`, `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`, `/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`, `/tmp/boost-graph-finish-edge-and-test-graphs-after-nontype-order-20260704.log`, `/tmp/boost-graph-transitive-closure-after-imported-member-owner-20260704-r2.log`, `/tmp/boost-graph-betweenness-after-template-structure-20260704.log`, `/tmp/boost-graph-csr-after-partial-order-guard-20260704.log`, `/tmp/boost-graph-dfs-cc-after-default-nontype-scope-20260704.log`, `/tmp/boost-graph-dijkstra-cc-after-pointer-arithmetic-conversion-20260704.log`, `/tmp/boost-graph-disjoint-set-after-structured-binding-recovery-noseed-20260704-r2.log`, `/tmp/boost-graph-generator-test-after-local-using-declaration-template-body-20260704.log`, `/tmp/boost-graph-graphml-test-after-current-specialization-20260704.log`, `/tmp/boost-graph-graphml-test-after-stream-insertion-sfinae-20260704.log`, and `/tmp/boost-graph-graphml-test-after-make-unsigned-20260704-r2.log`. |
 | 51a | `libs/graph/test//astar_search_test` | advanced | Boost.Parameter member-operator template partial ordering now skips the implicit object slot when applying the existing reference-pattern tie-break, fixing the `arg_pack[_visitor \| default_visitor]` ambiguity. Focused B2 advances to the next independent frontier, `boost::shared_array<my_float>` construction from an array `new` expression: `/tmp/boost-graph-astar-search-b2-after-ref-pattern.log`. |
 | 51b | `libs/graph/test//astar_search_test` | pass | Class array-new lowering now carries default constructor arguments through the per-element construction loop, fixing the `boost::shared_array<my_float>` construction frontier. Focused B2 builds, links, runs, and updates 4 targets: `/tmp/boost-graph-astar-search-b2-after-array-new-default-arg.log`. |
+| 51c | `libs/graph/test//graphviz_test` | pass | Global class-array named-element copy and hosted `std::ostream` C1/C2 coalescing are fixed. Focused B2 builds `read_graphviz_new.o`, links, runs, and updates the target: `/tmp/boost-graph-graphviz-test-b2-after-ostream-alias.log`. |
+| 51d | `libs/graph/test//weighted_matching_test2` | pass | Hosted vector temporary lifetime/export, alias partial-specialization default/dependent argument preservation, and exported-symbol closure issues are fixed. Focused B2 builds, links, runs, and updates the target: `/tmp/boost-graph-weighted-matching-test2-final-20260705.log`. |
+| 51e | `libs/graph/test//isomorphism` | pass | Boost.Parameter defaulted class-template base/reference identity is fixed. Focused B2 builds, links, runs, and updates the target: `/tmp/boost-graph-isomorphism-final-20260705.log`. |
+| 51f | `libs/graph/test//boykov_kolmogorov_max_flow_test` | pass | Class-template body lookup now defers unqualified calls whose arguments recursively depend on member calls through dependent typedef/base aliases. Focused B2 builds, links, runs, and updates 4 targets: `/tmp/boost-graph-boykov-after-dependent-member-argument-20260705.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -3331,3 +3335,37 @@ already fails clean head `648277546` at instructions `+1.25%`; a clean
 pre-change baseline recorded at
 `/tmp/cppgm-before-isomorphism-648277546-perf-baseline.json` passes the
 candidate with instructions `+0.40%`, RSS `-0.77%`, footprint `+0.07%`.
+
+2026-07-05 Boost.Graph `libs/graph/test//boykov_kolmogorov_max_flow_test`
+dependent member-call ADL frontier: `boykov_kolmogorov_test::invariant_four`
+calls unqualified `find(tSuper::m_orphans.begin(), tSuper::m_orphans.end(),
+v)` inside a class-template member body. Ordinary lookup is empty at the
+template definition point, but both iterator arguments are formed from member
+calls on `tSuper`, a typedef whose underlying base type depends on the class
+template arguments, and the value parameter is declared through another
+dependent typedef. The existing class-template body checker only recognized
+directly dependent parameter/local names, so it diagnosed `find` before
+instantiation instead of deferring the dependent call for ADL. The fix tracks
+dependent typedef/alias names in class-template bodies and treats unqualified
+calls as dependent when any argument recursively mentions those dependent type
+aliases, dependent value names, or a dependent semantic type. Nondependent
+missing-name diagnostics are preserved. No Boost special case, fallback
+resolver, cache, or source-text reparse is added. Owner: PA18:300
+class-template member body dependent lookup and ADL. New regression:
+`pa18/tests/spec/300-dependent-adl-member-call-argument.t`. Pre-fix evidence:
+the checked-in reducer and focused B2 target both failed with `unknown
+id-expression find`. After the fix, the reducer compiles/runs, the existing
+`100-nondependent-template-member-body-lookup-bad.t` guard still fails with
+`unknown id-expression missing_name`, and focused B2
+`/usr/local/bin/timeout 600 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//boykov_kolmogorov_max_flow_test`
+builds, links, runs, and updates 4 targets; final log
+`/tmp/boost-graph-boykov-after-dependent-member-argument-20260705.log`.
+Validation: `make -C dev cppgm++ -j12`; focused PA18 direct-LowIR report
+passes `202/202`; PA18 placement audit reports no early-placement findings;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; full strict direct-LowIR compare passes; full direct-LowIR
+report passes `3485/3485`. A clean pre-change baseline recorded at
+`/tmp/cppgm-before-dependent-member-call-argument-ef0fe2737-perf-baseline.json`
+passes the candidate with instructions `-0.27%`, RSS `-1.00%`, footprint
+`+0.01%`; detailed report
+`/tmp/cppgm-after-dependent-member-call-argument-perf-report.json`.
