@@ -3477,3 +3477,42 @@ baseline recorded from `5a1d7ea29` at
 passes the candidate with instructions `+0.08%`, RSS `-0.43%`, footprint
 `+0.04%`; detailed report
 `/tmp/cppgm-perf-after-member-default-key-report.json`.
+
+2026-07-05 Boost.Graph
+`libs/graph/test//filtered_graph_properties_dijkstra` explicit member-function
+template instantiation frontier: the file explicitly instantiates
+`template void UndirectedGraph::dijkstra(LengthEvaluator<UndirectedGraph>const&,
+EdgeFilter<UndirectedGraph>const&) const;` with no explicit template-id, so
+the compiler must deduce the member function template arguments from the
+written function type and then select the instantiated member. The first
+failure was target-type deduction against the raw `FunctionTemplateDecl`
+`type_pattern`, which stores member cv/ref qualifiers separately and therefore
+looked non-const while the written target was `const`. After deduction was
+fixed, final selection still compared the registered member binding type,
+including the implicit `this` parameter, against the written explicit
+function type. The fix verifies the written target's cv/ref qualifiers against
+the member-template flags, uses the raw template pattern's cv/ref flags only
+for deduction, and compares explicit-instantiation member bindings through
+their explicit parameter slice. No Boost special case, fallback resolver,
+cache, or source-text reparse is added. Owner: PA21:300 explicit
+instantiation. New regression:
+`pa21/tests/spec/300-explicit-instantiation-deduced-member-function-template.t`.
+Pre-fix evidence: the no-STL reducer failed with `invalid deduced function
+template explicit instantiation arguments`, and the Boost target failed with
+the same diagnostic at
+`libs/graph/test/filtered_graph_properties_dijkstra.cpp:99`. After the fix,
+the no-STL reducer compiles under `cppgm++`, the checked-in PA21 reducer
+compiles under clang, and focused B2
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//filtered_graph_properties_dijkstra`
+passes; final log
+`/tmp/boost-graph-filtered-dijkstra-after-explicit-member-template-20260705.log`.
+Validation: `make -C dev cppgm++ -j8`; focused PA21 check passes; PA21
+direct-LowIR report passes `194/194`; PA21 placement audit reports no
+early-placement findings; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes; full strict direct-LowIR compare
+passes; full direct-LowIR report passes `3489/3489`. A clean pre-change
+baseline recorded from `a6c1a9a79` at
+`/tmp/cppgm-perf-baseline-boost-frontier-a6c1a9-explicit-member-template.json`
+passes the candidate with instructions `+0.08%`, RSS `+0.28%`, footprint
+`-0.00%`; detailed report
+`/tmp/cppgm-perf-after-explicit-member-template-report.json`.

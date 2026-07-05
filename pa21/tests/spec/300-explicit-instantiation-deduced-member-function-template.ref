@@ -1,0 +1,15 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @Graph__search(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK5Graph6searchI6Length6FilterEEiRKT_RKT0_, object_root=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+  slot $__param2 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    store ptr %__param2, $__param2
+    return i32 7
+}

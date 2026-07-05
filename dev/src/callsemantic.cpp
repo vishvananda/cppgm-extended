@@ -137,6 +137,101 @@ bool function_binding_is_concrete_class_template_member_candidate(
          !owner.instantiation_arg_texts.empty();
 }
 
+FunctionTypeRefQualifier function_type_ref_qualifier_from_method_ref(
+    RefQualifier qualifier)
+{
+  switch(qualifier) {
+  case RQ_LVALUE:
+    return FTRQ_LVALUE;
+  case RQ_RVALUE:
+    return FTRQ_RVALUE;
+  case RQ_NONE:
+    return FTRQ_NONE;
+  }
+  return FTRQ_NONE;
+}
+
+TypePtr explicit_instantiation_member_template_deduction_target(
+    const FunctionTemplateDecl & decl,
+    const TypePtr & target_type)
+{
+  if(!decl.declaring_scope ||
+     !decl.declaring_scope->class_info ||
+     decl.is_static_member ||
+     decl.is_constructor ||
+     decl.is_destructor) {
+    return target_type;
+  }
+
+  TypePtr target_base = strip_top_level_cv(target_type);
+  TypePtr pattern_base = strip_top_level_cv(decl.type_pattern);
+  if(!target_base ||
+     target_base->kind != Type::TK_FUNCTION ||
+     !pattern_base ||
+     pattern_base->kind != Type::TK_FUNCTION) {
+    return target_type;
+  }
+
+  const FunctionTypeRefQualifier method_ref =
+      function_type_ref_qualifier_from_method_ref(decl.ref_qualifier);
+  if(target_base->function_const != decl.is_const_method ||
+     target_base->function_volatile != decl.is_volatile_method ||
+     target_base->function_ref_qualifier != method_ref) {
+    return TypePtr();
+  }
+
+  if(target_base->function_const == pattern_base->function_const &&
+     target_base->function_volatile == pattern_base->function_volatile &&
+     target_base->function_ref_qualifier == pattern_base->function_ref_qualifier) {
+    return target_type;
+  }
+
+  return make_function(target_base->inner,
+                       target_base->params,
+                       target_base->variadic,
+                       pattern_base->function_const,
+                       pattern_base->function_volatile,
+                       target_base->prototype_relaxed,
+                       pattern_base->function_ref_qualifier);
+}
+
+TypePtr explicit_instantiation_member_binding_comparison_type(
+    const FunctionBinding & binding)
+{
+  if(!binding.is_method) {
+    return binding.type;
+  }
+
+  TypePtr binding_base = strip_top_level_cv(binding.type);
+  if(!binding_base || binding_base->kind != Type::TK_FUNCTION) {
+    return binding.type;
+  }
+
+  const std::size_t offset = function_binding_explicit_parameter_offset(binding);
+  if(offset == 0 || binding_base->params.size() < offset) {
+    return binding.type;
+  }
+
+  std::vector<TypePtr> explicit_params(binding_base->params.begin() + offset,
+                                       binding_base->params.end());
+  return make_function(binding_base->inner,
+                       explicit_params,
+                       binding_base->variadic,
+                       binding.is_const_method,
+                       binding.is_volatile_method,
+                       binding_base->prototype_relaxed,
+                       function_type_ref_qualifier_from_method_ref(binding.ref_qualifier));
+}
+
+bool explicit_instantiation_binding_type_matches_target(
+    const FunctionBinding & binding,
+    const TypePtr & target_type)
+{
+  return callsemantic::types_equivalent_for_member_binding(
+      explicit_instantiation_member_binding_comparison_type(binding),
+      target_type);
+}
+
 bool ordinary_lookup_should_drop_source_template_candidate(
     FunctionBinding * binding)
 {
@@ -26526,7 +26621,7 @@ private:
         if(!binding ||
            template_api::function_binding_excluded_from_explicit_instantiation(
                *binding) ||
-           !types_equivalent_for_member_binding(binding->type, type)) {
+           !explicit_instantiation_binding_type_matches_target(*binding, type)) {
           continue;
         }
         if(selected) {
@@ -26555,9 +26650,15 @@ private:
       std::map<std::string, std::size_t> pack_sizes;
       if(has_explicit_template_id) {
         if(arg_texts.empty()) {
+          TypePtr deduction_target_type =
+              explicit_instantiation_member_template_deduction_target(*templates[i],
+                                                                      type);
+          if(!deduction_target_type) {
+            continue;
+          }
           template_api::TemplateFunctionDeductionRequest request;
           request.decl = templates[i];
-          request.target_type = type;
+          request.target_type = deduction_target_type;
           request.use_scope = parse_scope;
           template_api::TemplateFunctionDeductionResult result;
           if(!template_api::deduce_function_template(*this, request, result)) {
@@ -26576,9 +26677,15 @@ private:
           }
         }
       } else {
+        TypePtr deduction_target_type =
+            explicit_instantiation_member_template_deduction_target(*templates[i],
+                                                                    type);
+        if(!deduction_target_type) {
+          continue;
+        }
         template_api::TemplateFunctionDeductionRequest request;
         request.decl = templates[i];
-        request.target_type = type;
+        request.target_type = deduction_target_type;
         request.use_scope = parse_scope;
         template_api::TemplateFunctionDeductionResult result;
         if(!template_api::deduce_function_template(*this, request, result)) {
@@ -26598,7 +26705,7 @@ private:
       if(!binding) {
         continue;
       }
-      if(!types_equivalent_for_member_binding(binding->type, type)) {
+      if(!explicit_instantiation_binding_type_matches_target(*binding, type)) {
         if(parser_trace::enabled("template.resolve")) {
           parser_trace::note(
               "template.resolve",
