@@ -43,6 +43,7 @@ struct DeducedState
   std::map<std::string, std::vector<long long> > value_packs;
   std::map<std::string, ClassTemplateDecl *> class_templates;
   std::map<std::string, AliasTemplateDecl *> alias_templates;
+  std::map<std::string, TemplateArgument> template_template_arguments;
 };
 
 bool store_deduced_type(DeducedState & deduced,
@@ -128,6 +129,111 @@ bool store_deduced_value_argument(DeducedState & deduced,
     return true;
   }
   return non_type_template_argument_values_match(found->second, stored);
+}
+
+bool template_template_arguments_match(const TemplateArgument & lhs,
+                                       const TemplateArgument & rhs)
+{
+  if(lhs.kind != rhs.kind ||
+     lhs.template_decl != rhs.template_decl) {
+    return false;
+  }
+
+  if(lhs.template_owner_type && rhs.template_owner_type &&
+     !type_equals(lhs.template_owner_type, rhs.template_owner_type)) {
+    return false;
+  }
+
+  const std::string lhs_text = semantic_utils::trim_space(lhs.text);
+  const std::string rhs_text = semantic_utils::trim_space(rhs.text);
+  if(!lhs_text.empty() && !rhs_text.empty() && lhs_text != rhs_text) {
+    return false;
+  }
+
+  return true;
+}
+
+bool template_template_argument_has_more_identity(const TemplateArgument & candidate,
+                                                 const TemplateArgument & current)
+{
+  if(candidate.template_owner_type && !current.template_owner_type) {
+    return true;
+  }
+  if(!candidate.text.empty() && current.text.empty()) {
+    return true;
+  }
+  if(!candidate.template_entity_name.empty() &&
+     current.template_entity_name.empty()) {
+    return true;
+  }
+  if(!candidate.template_entity_scope_prefix.empty() &&
+     current.template_entity_scope_prefix.empty()) {
+    return true;
+  }
+  return false;
+}
+
+TemplateArgument template_template_identity_argument(const TemplateArgument & argument)
+{
+  TemplateArgument stored;
+  stored.kind = argument.kind;
+  stored.template_decl = argument.template_decl;
+  stored.template_owner_type = argument.template_owner_type;
+  stored.template_entity_scope_prefix = argument.template_entity_scope_prefix;
+  stored.template_entity_name = argument.template_entity_name;
+  stored.text = argument.text;
+  stored.dependent = argument.dependent;
+  return stored;
+}
+
+bool store_deduced_template_template_argument(DeducedState & deduced,
+                                             const std::string & parameter_name,
+                                             const TemplateArgument & argument)
+{
+  if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
+    AliasTemplateDecl * alias_template =
+        static_cast<AliasTemplateDecl *>(argument.template_decl);
+    std::map<std::string, AliasTemplateDecl *>::iterator found =
+        deduced.alias_templates.find(parameter_name);
+    if(found == deduced.alias_templates.end()) {
+      deduced.alias_templates[parameter_name] = alias_template;
+    } else if(found->second != alias_template) {
+      return false;
+    }
+    if(deduced.class_templates.count(parameter_name) != 0) {
+      return false;
+    }
+  } else if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
+    ClassTemplateDecl * class_template =
+        static_cast<ClassTemplateDecl *>(argument.template_decl);
+    std::map<std::string, ClassTemplateDecl *>::iterator found =
+        deduced.class_templates.find(parameter_name);
+    if(found == deduced.class_templates.end()) {
+      deduced.class_templates[parameter_name] = class_template;
+    } else if(found->second != class_template) {
+      return false;
+    }
+    if(deduced.alias_templates.count(parameter_name) != 0) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  std::map<std::string, TemplateArgument>::iterator found =
+      deduced.template_template_arguments.find(parameter_name);
+  const TemplateArgument stored = template_template_identity_argument(argument);
+  if(found == deduced.template_template_arguments.end()) {
+    deduced.template_template_arguments[parameter_name] = stored;
+    return true;
+  }
+  if(!template_template_arguments_match(found->second, stored)) {
+    return false;
+  }
+  if(template_template_argument_has_more_identity(stored, found->second)) {
+    found->second = stored;
+  }
+  return true;
 }
 
 bool store_deduced_type_pack(DeducedState & deduced,
@@ -7086,10 +7192,21 @@ Scope make_partial_match_scope(const std::vector<TemplateParameterInfo> & parame
     template_scope::bind_non_type_value_pack(
         eval_scope, entry.first, value_type, entry.second, false);
   }
+  for(const auto & entry : deduced.template_template_arguments) {
+    template_scope::bind_template_template_argument(eval_scope,
+                                                    entry.first,
+                                                    entry.second);
+  }
   for(const auto & entry : deduced.class_templates) {
+    if(deduced.template_template_arguments.count(entry.first) != 0) {
+      continue;
+    }
     template_scope::bind_class_template(eval_scope, entry.first, entry.second);
   }
   for(const auto & entry : deduced.alias_templates) {
+    if(deduced.template_template_arguments.count(entry.first) != 0) {
+      continue;
+    }
     template_scope::bind_alias_template(eval_scope, entry.first, entry.second);
   }
   return eval_scope;
@@ -7115,47 +7232,13 @@ TypePtr resolved_non_type_parameter_value_type(
   return value_type;
 }
 
-bool store_deduced_alias_template(DeducedState & deduced,
-                                  const std::string & parameter_name,
-                                  AliasTemplateDecl * alias_template)
-{
-  std::map<std::string, AliasTemplateDecl *>::iterator found =
-      deduced.alias_templates.find(parameter_name);
-  if(found == deduced.alias_templates.end()) {
-    deduced.alias_templates[parameter_name] = alias_template;
-  } else if(found->second != alias_template) {
-    return false;
-  }
-  return deduced.class_templates.count(parameter_name) == 0;
-}
-
-bool store_deduced_class_template(DeducedState & deduced,
-                                  const std::string & parameter_name,
-                                  ClassTemplateDecl * class_template)
-{
-  std::map<std::string, ClassTemplateDecl *>::iterator found =
-      deduced.class_templates.find(parameter_name);
-  if(found == deduced.class_templates.end()) {
-    deduced.class_templates[parameter_name] = class_template;
-  } else if(found->second != class_template) {
-    return false;
-  }
-  return deduced.alias_templates.count(parameter_name) == 0;
-}
-
 bool deduce_template_template_parameter_from_argument(DeducedState & deduced,
                                                       const std::string & parameter_name,
                                                       const TemplateArgument & actual)
 {
-  if(actual.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
-    return store_deduced_alias_template(
-        deduced, parameter_name, static_cast<AliasTemplateDecl *>(actual.template_decl));
-  }
-  if(actual.kind == TemplateArgument::TA_CLASS_TEMPLATE) {
-    return store_deduced_class_template(
-        deduced, parameter_name, static_cast<ClassTemplateDecl *>(actual.template_decl));
-  }
-  return false;
+  return store_deduced_template_template_argument(deduced,
+                                                 parameter_name,
+                                                 actual);
 }
 
 cpp_decl::TypePtr make_partial_order_placeholder_type(const TemplateParameterInfo & parameter,
@@ -8379,6 +8462,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         state.value_packs.erase(parameter->name);
         state.class_templates.erase(parameter->name);
         state.alias_templates.erase(parameter->name);
+        state.template_template_arguments.erase(parameter->name);
       }
     };
     const auto merge_non_pack_deductions =
@@ -8462,6 +8546,19 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         if(found == deduced.alias_templates.end()) {
           deduced.alias_templates[it->first] = it->second;
         } else if(found->second != it->second) {
+          return false;
+        }
+      }
+      for(std::map<std::string, TemplateArgument>::const_iterator it =
+              element_deduced.template_template_arguments.begin();
+          it != element_deduced.template_template_arguments.end();
+          ++it) {
+        if(is_pack_parameter_name(it->first)) {
+          continue;
+        }
+        if(!store_deduced_template_template_argument(deduced,
+                                                     it->first,
+                                                     it->second)) {
           return false;
         }
       }
@@ -8951,6 +9048,13 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
             make_deduced_value_argument_from(value_type, argument_found->second) :
             make_deduced_value_argument(value_type, found->second);
       } else {
+        std::map<std::string, TemplateArgument>::const_iterator argument_found =
+            deduced.template_template_arguments.find(parameter.name);
+        if(argument_found != deduced.template_template_arguments.end()) {
+          arg = argument_found->second;
+          deduced_arguments.push_back(arg);
+          continue;
+        }
         std::map<std::string, ClassTemplateDecl *>::iterator class_found =
             deduced.class_templates.find(parameter.name);
         std::map<std::string, AliasTemplateDecl *>::iterator alias_found =

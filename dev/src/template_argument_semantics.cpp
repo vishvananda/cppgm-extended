@@ -13852,6 +13852,10 @@ bool substitute_dependent_argument_expression(
 string template_template_argument_replacement_text(
     const TemplateArgument & argument)
 {
+  const string concrete_text = trim_space(argument.text);
+  if(argument.template_owner_type && !concrete_text.empty()) {
+    return concrete_text;
+  }
   if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE &&
      argument.template_decl) {
     ClassTemplateDecl * class_template =

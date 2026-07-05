@@ -597,23 +597,35 @@ void bind_template_template_argument(Scope & scope,
                                      const TemplateArgument & argument)
 {
   TemplateArgument stored_argument = argument;
+  const bool preserve_concrete_member_template =
+      static_cast<bool>(stored_argument.template_owner_type);
   if(argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
     AliasTemplateDecl * decl =
         static_cast<AliasTemplateDecl *>(argument.template_decl);
     bind_alias_template(scope, name, decl);
-    set_template_argument_entity_identity_from_decl(stored_argument, decl);
+    if(!preserve_concrete_member_template ||
+       stored_argument.template_entity_name.empty()) {
+      set_template_argument_entity_identity_from_decl(stored_argument, decl);
+    }
     if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
-      stored_argument.text =
-          semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
+      if(!preserve_concrete_member_template || stored_argument.text.empty()) {
+        stored_argument.text =
+            semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
+      }
     }
   } else {
     ClassTemplateDecl * decl =
         static_cast<ClassTemplateDecl *>(argument.template_decl);
     bind_class_template(scope, name, decl);
-    set_template_argument_entity_identity_from_decl(stored_argument, decl);
+    if(!preserve_concrete_member_template ||
+       stored_argument.template_entity_name.empty()) {
+      set_template_argument_entity_identity_from_decl(stored_argument, decl);
+    }
     if(decl && decl->declaring_scope && decl->declaring_scope->class_info) {
-      stored_argument.text =
-          semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
+      if(!preserve_concrete_member_template || stored_argument.text.empty()) {
+        stored_argument.text =
+            semantic_lookup::scope_qualified_name(*decl->declaring_scope, decl->name);
+      }
     }
   }
   scope.template_bound_template_arguments[name] = stored_argument;

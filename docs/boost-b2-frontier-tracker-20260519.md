@@ -3677,3 +3677,37 @@ passes; full direct-LowIR report passes `3498/3498`. Perf check against
 passes the candidate with instructions `+0.62%`, RSS `+0.21%`, footprint
 `+0.00%`; detailed report
 `/tmp/cppgm-perf-after-boost-config-put-get-helper-report.json`.
+
+2026-07-05 Boost.Graph MP11 member alias template-template owner frontier:
+Boost.Parameter's `value_type` path passes a concrete member alias template
+`Q::template fn` through Boost.MP11 `mp_rename_impl<L<T...>, B>` partial
+specialization deduction. The old partial-match state stored only the alias or
+class template declaration pointer for deduced template-template parameter `B`,
+discarding the concrete member owner carried by `Q::template fn`. Later
+bindings for `F`/`G` in `mp_valid_impl` rebuilt the template name from the
+source owner pattern, so Boost.Graph targets failed while building the ABI
+symbol for `boost::mp11::detail::mp_valid_impl<...arg_list<...>::binding::fn,
+...>::check`. The fix preserves concrete member-template argument text during
+template-template binding and replacement, and carries a compact full
+template-template identity through partial-specialization deduction, match-scope
+construction, and result emission before falling back to declaration-only
+class/alias template maps. Owner: PA22:400 template-template argument
+deduction through member alias templates. New regression:
+`pa22/tests/general/400-member-alias-template-template-partial-deduction-owner.t`.
+Pre-fix evidence: the reduced no-STL Boost.MP11/Boost.Parameter shape failed in
+the `mp_valid_impl<...binding::fn...>::check` ABI-symbol path, and the focused
+Boost.Graph cluster failed with the same owner-mangled member alias template.
+After the fix, the reducer and new PA22 test compile and run with `cppgm++` and
+clang, focused PA22 report passes `206/206`, full direct-LowIR report passes
+`3499/3499`, full strict direct-LowIR compare passes, `git diff --check`
+passes, and `python3 scripts/audit_text_reparse.py --strict` reports all zero.
+Focused Boost B2 for `libs/graph/test//dfs`, `//finish_edge_bug`,
+`//random_spanning_tree_test`, `//stoer_wagner_test`,
+`//transitive_closure_test`, and `//transitive_closure_test2` no longer shows
+the `mp_valid_impl<...binding::fn...>` ABI-symbol failure and advances to the
+next `boost::parameter::keyword<Tag>::operator|` dependent-result frontier;
+final log `/tmp/boost-graph-mp11-owner-focused-final-20260705.log`. Isolated
+perf against a clean `432a9b246` baseline passes with instructions `+0.07%`,
+RSS `+0.19%`, footprint `+0.08%`; baseline
+`/tmp/cppgm-before-mp11-owner-432a9b246-perf-baseline.json`, report
+`/tmp/cppgm-after-mp11-owner-432a9b246-perf-check.log`.
