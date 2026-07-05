@@ -751,6 +751,25 @@ static void collect_alias_type_name_for_template_body(const CppAstNode & node,
   }
 }
 
+static void collect_enum_enumerator_names_for_template_body(
+    const CppAstNode & node,
+    AtomNameSet & names)
+{
+  if(node.kind == CppAstKind::enum_specifier) {
+    for(std::size_t i = 0; i < node.children.size(); ++i) {
+      const CppAstNode & enumerator = node.children[i];
+      if(enumerator.kind == CppAstKind::enumerator &&
+         !enumerator.value.empty()) {
+        names.insert(enumerator.value);
+      }
+    }
+  }
+
+  for(std::size_t i = 0; i < node.children.size(); ++i) {
+    collect_enum_enumerator_names_for_template_body(node.children[i], names);
+  }
+}
+
 static void collect_class_member_names_for_template_body(
     const CppAstNode & class_node,
     AtomNameSet & names)
@@ -783,13 +802,7 @@ static void collect_class_member_names_for_template_body(
     }
 
     if(child.kind == CppAstKind::enum_specifier) {
-      for(std::size_t j = 0; j < child.children.size(); ++j) {
-        const CppAstNode & enumerator = child.children[j];
-        if(enumerator.kind == CppAstKind::enumerator &&
-           !enumerator.value.empty()) {
-          names.insert(enumerator.value);
-        }
-      }
+      collect_enum_enumerator_names_for_template_body(child, names);
       continue;
     }
 
@@ -801,6 +814,11 @@ static void collect_class_member_names_for_template_body(
     }
 
     if(child.kind == CppAstKind::simple_declaration) {
+      const CppAstNode * specifiers =
+          find_child_kind(child, CppAstKind::decl_specifier_seq);
+      if(specifiers) {
+        collect_enum_enumerator_names_for_template_body(*specifiers, names);
+      }
       const CppAstNode * declarators =
           find_child_kind(child, CppAstKind::init_declarator_list);
       if(!declarators) {

@@ -786,6 +786,7 @@ Local Boost wrapper state:
 | 51d | `libs/graph/test//weighted_matching_test2` | pass | Hosted vector temporary lifetime/export, alias partial-specialization default/dependent argument preservation, and exported-symbol closure issues are fixed. Focused B2 builds, links, runs, and updates the target: `/tmp/boost-graph-weighted-matching-test2-final-20260705.log`. |
 | 51e | `libs/graph/test//isomorphism` | pass | Boost.Parameter defaulted class-template base/reference identity is fixed. Focused B2 builds, links, runs, and updates the target: `/tmp/boost-graph-isomorphism-final-20260705.log`. |
 | 51f | `libs/graph/test//boykov_kolmogorov_max_flow_test` | pass | Class-template body lookup now defers unqualified calls whose arguments recursively depend on member calls through dependent typedef/base aliases. Focused B2 builds, links, runs, and updates 4 targets: `/tmp/boost-graph-boykov-after-dependent-member-argument-20260705.log`. |
+| 51g | `libs/graph/test//cycle_ratio_tests` | pass | Class-template body lookup now sees class-scope unscoped enumerators introduced by `typedef enum { ... } name;`, fixing `my_white` in `boost/graph/howard_cycle_ratio.hpp`. Focused B2 builds, links, runs, and updates the test target; the paired `libs/graph/example//cycle_ratio_example` advances to the next independent `generate_random_graph` overload/default-argument ambiguity. Log: `/tmp/boost-graph-cycle-ratio-after-typedef-enum-20260705.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -3369,3 +3370,36 @@ report passes `3485/3485`. A clean pre-change baseline recorded at
 passes the candidate with instructions `-0.27%`, RSS `-1.00%`, footprint
 `+0.01%`; detailed report
 `/tmp/cppgm-after-dependent-member-call-argument-perf-report.json`.
+
+2026-07-05 Boost.Graph `libs/graph/test//cycle_ratio_tests` typedef enum
+member-enumerator frontier: `boost/graph/howard_cycle_ratio.hpp` declares
+`typedef enum { my_white = 0, my_black } my_color_type;` as a class-template
+member and later uses `my_white` in member function bodies. The class-template
+body checker harvested direct class-child `enum_specifier` declarations but
+missed enum specifiers nested under a `simple_declaration`'s
+`decl_specifier_seq`, so it diagnosed `my_white` before instantiation. The fix
+recursively collects unscoped enumerators from class-scope enum specifiers in
+member declarations, including `typedef enum` forms, while leaving
+nondependent missing-name diagnostics intact. No Boost special case, fallback
+resolver, cache, or source-text reparse is added. Owner: PA18:300
+class-template member body lookup. New regression:
+`pa18/tests/general/300-template-body-typedef-enum-member-lookup.t`.
+Pre-fix evidence: the reducer failed with `unknown id-expression white`, and
+the focused Boost target failed with `unknown id-expression my_white`. After
+the fix, the reducer compiles/runs, the existing
+`100-nondependent-template-member-body-lookup-bad.t` guard still fails with
+`unknown id-expression missing_name`, and focused B2
+`/usr/local/bin/timeout 600 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//cycle_ratio_tests libs/graph/example//cycle_ratio_example`
+builds, links, runs, and passes `cycle_ratio_tests`; `cycle_ratio_example`
+advances to the next independent `boost::generate_random_graph` overload
+default-argument ambiguity. Final log:
+`/tmp/boost-graph-cycle-ratio-after-typedef-enum-20260705.log`. Validation:
+`make -C dev cppgm++ -j12`; focused PA18 check passes; PA18 direct-LowIR
+report passes `203/203`; PA18 placement audit reports no early-placement
+findings; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; full strict direct-LowIR compare passes; full
+direct-LowIR report passes `3486/3486`. A clean pre-change baseline recorded
+from `15e119a9e` at
+`/tmp/cppgm-before-typedef-enum-member-15e119a9e-perf-baseline.json` passes the
+candidate with instructions `+0.16%`, RSS `-0.01%`, footprint `+0.01%`;
+detailed report `/tmp/cppgm-after-typedef-enum-member-perf-report.json`.
