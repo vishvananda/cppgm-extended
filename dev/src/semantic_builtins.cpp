@@ -705,9 +705,45 @@ TypePtr map_signedness_builtin_transform(const std::string & builtin_name,
     return TypePtr();
   }
 
+  const auto unsigned_integral_type_for_size =
+      [](std::size_t size) -> EFundamentalType
+      {
+        switch(size) {
+        case 1: return FT_UNSIGNED_CHAR;
+        case 2: return FT_UNSIGNED_SHORT_INT;
+        case 4: return FT_UNSIGNED_INT;
+        case 8: return FT_UNSIGNED_LONG_LONG_INT;
+        case 16: return FT_UINT128;
+        default: return FT_VOID;
+        }
+      };
+  const auto signed_integral_type_for_size =
+      [](std::size_t size) -> EFundamentalType
+      {
+        switch(size) {
+        case 1: return FT_SIGNED_CHAR;
+        case 2: return FT_SHORT_INT;
+        case 4: return FT_INT;
+        case 8: return FT_LONG_LONG_INT;
+        case 16: return FT_INT128;
+        default: return FT_VOID;
+        }
+      };
+
   EFundamentalType mapped = base->fundamental;
   if(builtin_name == "__make_unsigned") {
     switch(base->fundamental) {
+    case FT_CHAR:
+      mapped = FT_UNSIGNED_CHAR;
+      break;
+    case FT_WCHAR_T:
+    case FT_CHAR16_T:
+    case FT_CHAR32_T:
+      mapped = unsigned_integral_type_for_size(type_to_size(base->fundamental));
+      if(mapped == FT_VOID) {
+        return TypePtr();
+      }
+      break;
     case FT_SIGNED_CHAR: mapped = FT_UNSIGNED_CHAR; break;
     case FT_SHORT_INT: mapped = FT_UNSIGNED_SHORT_INT; break;
     case FT_INT: mapped = FT_UNSIGNED_INT; break;
@@ -727,6 +763,17 @@ TypePtr map_signedness_builtin_transform(const std::string & builtin_name,
     }
   } else if(builtin_name == "__make_signed") {
     switch(base->fundamental) {
+    case FT_CHAR:
+      mapped = FT_SIGNED_CHAR;
+      break;
+    case FT_WCHAR_T:
+    case FT_CHAR16_T:
+    case FT_CHAR32_T:
+      mapped = signed_integral_type_for_size(type_to_size(base->fundamental));
+      if(mapped == FT_VOID) {
+        return TypePtr();
+      }
+      break;
     case FT_UNSIGNED_CHAR: mapped = FT_SIGNED_CHAR; break;
     case FT_UNSIGNED_SHORT_INT: mapped = FT_SHORT_INT; break;
     case FT_UNSIGNED_INT: mapped = FT_INT; break;

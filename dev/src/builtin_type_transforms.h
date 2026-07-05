@@ -96,6 +96,8 @@ inline const AliasInfo * all_alias_templates(std::size_t & count)
       {"remove_all_extents_t", BTK_REMOVE_ALL_EXTENTS},
       {"__decay_t", BTK_DECAY},
       {"decay_t", BTK_DECAY},
+      {"__make_unsigned_t", BTK_MAKE_UNSIGNED},
+      {"__make_signed_t", BTK_MAKE_SIGNED},
       {"__libcpp_add_pointer_t", BTK_ADD_POINTER},
       {"__add_pointer_t", BTK_ADD_POINTER},
       {"add_pointer_t", BTK_ADD_POINTER},
@@ -165,6 +167,9 @@ inline Kind kind_for_alias_template_name(const std::string & name)
     if(name == "__add_pointer_t") {
       return BTK_ADD_POINTER;
     }
+    if(name == "__make_signed_t") {
+      return BTK_MAKE_SIGNED;
+    }
     if(name == "remove_extent_t") {
       return BTK_REMOVE_EXTENT;
     }
@@ -178,6 +183,9 @@ inline Kind kind_for_alias_template_name(const std::string & name)
     }
     return name == "remove_pointer_t" ? BTK_REMOVE_POINTER : BTK_UNKNOWN;
   case 17:
+    if(name == "__make_unsigned_t") {
+      return BTK_MAKE_UNSIGNED;
+    }
     if(name == "__remove_extent_t") {
       return BTK_REMOVE_EXTENT;
     }
