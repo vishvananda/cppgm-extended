@@ -18090,6 +18090,26 @@ private:
     return out.str();
   }
 
+  bool pre_lowir_symbol_has_semantic_owner(const string & symbol) const
+  {
+    const CallSemNode * best = nullptr;
+    int best_rank = -1;
+    size_t match_count = 0;
+    bool saw_definition = false;
+    bool saw_declaration = false;
+    for(size_t i = 0; i < translation_units_.size(); ++i) {
+      collect_pre_lowir_symbol_owner(translation_units_[i],
+                                     symbol,
+                                     best,
+                                     best_rank,
+                                     match_count,
+                                     saw_definition,
+                                     saw_declaration);
+    }
+    return best != nullptr && match_count != 0 &&
+           (saw_definition || saw_declaration);
+  }
+
   void set_exported_symbol(const string & symbol,
                            const symbol_linkage::SymbolIdentity & identity,
                            const string & reason,
@@ -18275,6 +18295,9 @@ private:
         continue;
       }
       if(backend_passthrough) {
+        continue;
+      }
+      if(pre_lowir_symbol_has_semantic_owner(it->first)) {
         continue;
       }
       note_output_export_closure_state(it->first,
@@ -19089,7 +19112,10 @@ private:
 
     if(node.kind == CallSemKind::variable) {
       note_global_binding(node);
-      return;
+    }
+
+    for(size_t i = 0; i < node.children.size(); ++i) {
+      collect_symbols(node.children[i]);
     }
   }
 

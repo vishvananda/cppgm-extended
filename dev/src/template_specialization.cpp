@@ -1101,6 +1101,147 @@ bool parse_template_argument_type_syntax(
   return false;
 }
 
+bool parse_simple_fundamental_type_text(const std::string & text, TypePtr & out)
+{
+  out.reset();
+  const std::string trimmed = trim_space(text);
+  if(trimmed.empty()) {
+    return false;
+  }
+
+  int signed_count = 0;
+  int unsigned_count = 0;
+  int short_count = 0;
+  int long_count = 0;
+  bool saw_int = false;
+  bool saw_char = false;
+  bool saw_char16 = false;
+  bool saw_char32 = false;
+  bool saw_wchar = false;
+  bool saw_bool = false;
+  bool saw_float = false;
+  bool saw_double = false;
+  bool saw_void = false;
+  bool cv_const = false;
+  bool cv_volatile = false;
+
+  std::istringstream in(trimmed);
+  std::string token;
+  while(in >> token) {
+    if(token == "signed") {
+      ++signed_count;
+    } else if(token == "unsigned") {
+      ++unsigned_count;
+    } else if(token == "short") {
+      ++short_count;
+    } else if(token == "long") {
+      ++long_count;
+    } else if(token == "int") {
+      saw_int = true;
+    } else if(token == "char") {
+      saw_char = true;
+    } else if(token == "char16_t") {
+      saw_char16 = true;
+    } else if(token == "char32_t") {
+      saw_char32 = true;
+    } else if(token == "wchar_t") {
+      saw_wchar = true;
+    } else if(token == "bool") {
+      saw_bool = true;
+    } else if(token == "float") {
+      saw_float = true;
+    } else if(token == "double") {
+      saw_double = true;
+    } else if(token == "void") {
+      saw_void = true;
+    } else if(token == "const") {
+      cv_const = true;
+    } else if(token == "volatile") {
+      cv_volatile = true;
+    } else {
+      return false;
+    }
+  }
+
+  TypePtr base;
+  if(!finalize_fundamental_type_specifiers(signed_count,
+                                           unsigned_count,
+                                           short_count,
+                                           long_count,
+                                           saw_int,
+                                           saw_char,
+                                           saw_char16,
+                                           saw_char32,
+                                           saw_wchar,
+                                           saw_bool,
+                                           saw_float,
+                                           saw_double,
+                                           saw_void,
+                                           base) ||
+     !base) {
+    return false;
+  }
+  out = apply_cv(base, cv_const, cv_volatile);
+  return out != nullptr;
+}
+
+bool parse_simple_integral_value_text(const std::string & text, long long & out)
+{
+  const std::string trimmed = trim_space(text);
+  if(trimmed.empty()) {
+    return false;
+  }
+  if(trimmed == "true") {
+    out = 1;
+    return true;
+  }
+  if(trimmed == "false") {
+    out = 0;
+    return true;
+  }
+  std::size_t index = 0;
+  bool negative = false;
+  if(trimmed[index] == '+' || trimmed[index] == '-') {
+    negative = trimmed[index] == '-';
+    ++index;
+    if(index >= trimmed.size()) {
+      return false;
+    }
+  }
+  int base = 10;
+  if(index + 1 < trimmed.size() &&
+     trimmed[index] == '0' &&
+     (trimmed[index + 1] == 'x' || trimmed[index + 1] == 'X')) {
+    base = 16;
+    index += 2;
+    if(index >= trimmed.size()) {
+      return false;
+    }
+  }
+  unsigned long long value = 0;
+  for(; index < trimmed.size(); ++index) {
+    const unsigned char ch = static_cast<unsigned char>(trimmed[index]);
+    int digit = -1;
+    if(ch >= '0' && ch <= '9') {
+      digit = ch - '0';
+    } else if(base == 16 && ch >= 'a' && ch <= 'f') {
+      digit = 10 + ch - 'a';
+    } else if(base == 16 && ch >= 'A' && ch <= 'F') {
+      digit = 10 + ch - 'A';
+    } else {
+      return false;
+    }
+    if(digit >= base) {
+      return false;
+    }
+    value = value * static_cast<unsigned>(base) + static_cast<unsigned>(digit);
+  }
+  out = negative ?
+      -static_cast<long long>(value) :
+      static_cast<long long>(value);
+  return true;
+}
+
 bool parsed_pattern_type_allows_direct_function_fallback(const TypePtr & pattern_type)
 {
   if(!pattern_type) {
@@ -5410,8 +5551,9 @@ bool try_expand_alias_template_pattern_structurally(
             nullptr);
     if(!source_template ||
        !instantiation_arguments ||
-       !template_arguments_fully_bind_parameters(source_template->parameters,
-                                                 *instantiation_arguments) ||
+       !template_api::trailing_pack_accepts_argument_count(
+           source_template->parameters,
+           instantiation_arguments->size()) ||
        template_arguments_are_dependent(
            *instantiation_arguments,
            [&type_is_dependent](const TypePtr & type)
@@ -6031,6 +6173,12 @@ bool try_expand_alias_template_pattern_structurally(
         }
       }
       if(!source_template || instantiation_arguments->empty()) {
+        if(!alias_template_type_pattern_mentions_parameters(
+               pattern,
+               alias_template.parameters)) {
+          out = pattern;
+          return true;
+        }
         return false;
       }
       std::vector<TemplateArgument> substituted_arguments;
@@ -6241,6 +6389,47 @@ bool try_expand_alias_template_pattern_structurally(
         substituted_arguments.push_back(argument);
       }
 
+      Scope & selected_scope =
+          selected_arguments_need_alias_target_scope ?
+              ensure_alias_target_scope() :
+              match_scope.require();
+      const auto complete_defaulted_substituted_arguments = [&]() -> bool
+      {
+        if(template_arguments_fully_bind_parameters(source_template->parameters,
+                                                    substituted_arguments)) {
+          return true;
+        }
+        if(!template_api::trailing_pack_accepts_argument_count(
+               source_template->parameters,
+               substituted_arguments.size())) {
+          return false;
+        }
+        std::vector<std::string> source_texts;
+        source_texts.reserve(substituted_arguments.size());
+        for(std::size_t j = 0; j < substituted_arguments.size(); ++j) {
+          source_texts.push_back(argument_text(substituted_arguments[j]));
+        }
+        std::vector<TemplateArgument> completed_arguments;
+        if(!template_api::resolve_template_arguments(
+               services,
+               template_api::make_template_environment(selected_scope),
+               source_template->parameters,
+               source_texts,
+               nullptr,
+               completed_arguments,
+               source_template->declaring_scope ?
+                   template_api::make_template_environment(
+                       *source_template->declaring_scope) :
+                   template_api::TemplateEnvironmentHandle())) {
+          return false;
+        }
+        substituted_arguments.swap(completed_arguments);
+        return true;
+      };
+      if(!complete_defaulted_substituted_arguments()) {
+        return false;
+      }
+
       if(template_arguments_are_dependent(substituted_arguments,
                                           [&type_is_dependent](const TypePtr & type)
                                           {
@@ -6313,10 +6502,6 @@ bool try_expand_alias_template_pattern_structurally(
       bool pattern_const = false;
       bool pattern_volatile = false;
       top_level_cv_flags(pattern, pattern_cv_base, pattern_const, pattern_volatile);
-      Scope & selected_scope =
-          selected_arguments_need_alias_target_scope ?
-              ensure_alias_target_scope() :
-              match_scope.require();
       const bool materialize_selected_class_template =
           materialize_class_template_targets ||
           selected_arguments_need_alias_target_scope;
@@ -7467,12 +7652,16 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     const auto decompose_source_template =
         [&](ClassTemplateDecl * source_template,
             const std::vector<TemplateArgument> & instantiation_arguments) -> bool
-    {
-      if(!source_template) {
-        return false;
-      }
-      const std::string source_template_name =
-          source_template->declaring_scope ?
+	    {
+	      if(!source_template) {
+	        return false;
+	      }
+	      if(instantiation_arguments.empty() &&
+	         !source_template->parameters.empty()) {
+	        return false;
+	      }
+	      const std::string source_template_name =
+	          source_template->declaring_scope ?
               semantic_lookup::scope_qualified_name(*source_template->declaring_scope,
                                                     source_template->name) :
               source_template->name;
@@ -7486,22 +7675,63 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       }
       out_template_name_text = source_template_name;
       out_args.reserve(instantiation_arguments.size());
+      actual_dependent_class_arguments.clear();
+      actual_dependent_class_arguments.reserve(instantiation_arguments.size());
       for(std::size_t i = 0; i < instantiation_arguments.size(); ++i) {
-        const std::string arg_text = argument_text(instantiation_arguments[i]);
+        TemplateArgument argument = instantiation_arguments[i];
+        if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+          template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+              services,
+              template_api::make_template_environment(match_scope),
+              argument.type);
+          if(argument.type && !type_is_dependent(argument.type)) {
+            argument.text = type_text(argument.type);
+          }
+        }
+        const std::string arg_text = argument_text(argument);
         if(arg_text.empty()) {
           return false;
         }
         out_args.push_back(arg_text);
-      }
-      actual_source_template = source_template;
-      actual_structured_args = &instantiation_arguments;
-      return true;
-    };
+        actual_dependent_class_arguments.push_back(argument);
+	      }
+	      actual_source_template = source_template;
+	      actual_structured_args = &actual_dependent_class_arguments;
+	      return true;
+	    };
 
-    if(have_actual_class && actual_class.source_template) {
-      return decompose_source_template(actual_class.source_template,
-                                       actual_class.instantiation_arguments);
-    }
+	  const auto decompose_actual_type_text =
+	      [&]() -> bool
+	  {
+	    const std::string actual_type_text =
+	        strip_elaborated_type_prefix(trim_space(type_text(actual_type)));
+	    if(!semantic_utils::split_top_level_template_id_text(actual_type_text,
+	                                                          out_name,
+	                                                          out_args)) {
+	      return false;
+	    }
+	    out_template_name_text =
+	        actual_type_text.substr(0, actual_type_text.find('<'));
+	    actual_source_template = nullptr;
+	    actual_structured_args = nullptr;
+	    return true;
+	  };
+
+	  if(have_actual_class && actual_class.source_template) {
+	    if(!actual_class.instantiation_arguments.empty()) {
+	      if(decompose_source_template(actual_class.source_template,
+	                                   actual_class.instantiation_arguments)) {
+	        return true;
+	      }
+	    }
+	    if(actual_class.source_template->parameters.empty()) {
+	      if(decompose_actual_type_text()) {
+	        return true;
+	      }
+	      return decompose_source_template(actual_class.source_template,
+	                                       actual_class.instantiation_arguments);
+	    }
+	  }
     void * dependent_class_template_decl = nullptr;
     std::vector<DependentAliasTemplateArgumentSyntax> dependent_class_args;
     if(named_type_dependent_class_template(actual_type,
@@ -7536,7 +7766,14 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
           if(!argument.type) {
             return false;
           }
+          template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+              services,
+              template_api::make_template_environment(match_scope),
+              argument.type);
           if(argument.text.empty()) {
+            argument.text = type_text(argument.type);
+          }
+          if(argument.type && !type_is_dependent(argument.type)) {
             argument.text = type_text(argument.type);
           }
         } else if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE) {
@@ -7587,16 +7824,27 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
         }
         actual_dependent_class_arguments.push_back(argument);
       }
-      return decompose_source_template(source_template,
-                                       actual_dependent_class_arguments);
-    }
-    if(actual_mangle_info &&
-       actual_mangle_info->class_template_decl &&
-       !actual_mangle_info->arguments.empty()) {
-      return decompose_source_template(
-          static_cast<ClassTemplateDecl *>(actual_mangle_info->class_template_decl),
-          actual_mangle_info->arguments);
-    }
+	      if(!actual_dependent_class_arguments.empty() ||
+	         source_template->parameters.empty()) {
+	        if(decompose_source_template(source_template,
+	                                     actual_dependent_class_arguments)) {
+	          return true;
+	        }
+	      }
+	    }
+	    if(actual_mangle_info &&
+	       actual_mangle_info->class_template_decl &&
+	       !actual_mangle_info->arguments.empty()) {
+	      if(decompose_source_template(
+	             static_cast<ClassTemplateDecl *>(actual_mangle_info->class_template_decl),
+	             actual_mangle_info->arguments)) {
+	        return true;
+	      }
+	    }
+
+	  if(decompose_actual_type_text()) {
+	    return true;
+	  }
 
     return false;
   };
@@ -7668,9 +7916,6 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
   const std::vector<TemplateArgumentSyntax> * pattern_arg_syntaxes =
       parsed_pattern_id ? &parsed_pattern_id->argument_syntaxes : nullptr;
   if(!parsed_pattern && !decompose_template_id_pair(normalized_pattern)) {
-    if(structural_only) {
-      return false;
-    }
     std::string expanded_pattern_text;
     if(pattern_decomposed &&
        expand_alias_template_pattern_id_impl(
@@ -7695,6 +7940,9 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
             nullptr,
             actual_type);
       }
+    }
+    if(structural_only) {
+      return false;
     }
     TypePtr canonical_pattern_type;
     if(pattern_syntax) {
@@ -7723,15 +7971,26 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
   const auto resolve_actual_arg_type =
       [&](std::size_t arg_index, const std::string & actual_arg, TypePtr & actual_arg_type) -> bool
   {
-    if(actual_structured_args &&
-       arg_index < actual_structured_args->size() &&
-       (*actual_structured_args)[arg_index].kind == TemplateArgument::TA_TYPE &&
-       (*actual_structured_args)[arg_index].type) {
-      actual_arg_type = (*actual_structured_args)[arg_index].type;
-      return true;
-    }
-    return false;
-  };
+	    if(actual_structured_args &&
+	       arg_index < actual_structured_args->size() &&
+	       (*actual_structured_args)[arg_index].kind == TemplateArgument::TA_TYPE &&
+	       (*actual_structured_args)[arg_index].type) {
+	      actual_arg_type = (*actual_structured_args)[arg_index].type;
+	      return true;
+	    }
+	    if(services.semantic_context) {
+	      actual_arg_type =
+	          services.semantic_context->lookup_type(match_scope, actual_arg, true);
+	    }
+	    if(actual_arg_type) {
+	      return true;
+	    }
+	    if(parse_simple_fundamental_type_text(actual_arg, actual_arg_type) &&
+	       actual_arg_type) {
+	      return true;
+	    }
+	    return false;
+	  };
   const auto resolve_pattern_arg_type =
       [&](std::size_t arg_index, const std::string & pattern_arg, TypePtr & pattern_arg_type) -> bool
   {
@@ -7760,6 +8019,10 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     if(pattern_arg_type) {
       return true;
     }
+    if(parse_simple_fundamental_type_text(pattern_arg, pattern_arg_type) &&
+       pattern_arg_type) {
+      return true;
+    }
     return false;
   };
   const auto resolve_actual_non_type_value =
@@ -7775,14 +8038,11 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       value = (*actual_structured_args)[arg_index].value;
       return true;
     }
-    if(parser_trace::enabled("template.resolve")) {
-      parser_trace::note("template.resolve",
-                         std::string(),
-                         std::string("partial-match missing structured non-type actual: ") +
-                             actual_arg);
-    }
-    return false;
-  };
+	    if(parse_simple_integral_value_text(actual_arg, value)) {
+	      return true;
+	    }
+	    return false;
+	  };
 
   const TemplateParameterInfo * trailing_pack_parameter = nullptr;
   const DirectTemplateParameterMatch template_name_parameter =
@@ -7816,13 +8076,13 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     }
   }
 
-  if(trailing_pack_parameter) {
-    if(actual_args.size() < fixed_argument_count) {
-      return false;
-    }
-  } else if(pattern_args.size() != actual_args.size()) {
-    return false;
-  }
+	  if(trailing_pack_parameter) {
+	    if(actual_args.size() < fixed_argument_count) {
+	      return false;
+	    }
+	  } else if(pattern_args.size() != actual_args.size()) {
+	    return false;
+	  }
 
   for(std::size_t arg_index = 0; arg_index < fixed_argument_count; ++arg_index) {
     const std::string pattern_arg = trim_space(pattern_args[arg_index]);
@@ -7887,17 +8147,17 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
           continue;
         }
       }
-      if(pattern_arg != actual_arg) {
-        return false;
-      }
+	      if(pattern_arg != actual_arg) {
+	        return false;
+	      }
       continue;
     }
 
     if(direct_parameter->kind == TemplateParameterInfo::TP_TYPE) {
-      TypePtr actual_arg_type;
-      if(!resolve_actual_arg_type(arg_index, actual_arg, actual_arg_type)) {
-        return false;
-      }
+	      TypePtr actual_arg_type;
+	      if(!resolve_actual_arg_type(arg_index, actual_arg, actual_arg_type)) {
+	        return false;
+	      }
       if(!store_deduced_type(deduced, direct_parameter->name, actual_arg_type)) {
         return false;
       }
@@ -7945,30 +8205,30 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
         }
         deduced_pack.push_back(actual_arg_type);
       }
-      if(!store_deduced_type_pack(deduced,
-                                  trailing_pack_parameter->name,
-                                  deduced_pack)) {
-        return false;
-      }
+	      if(!store_deduced_type_pack(deduced,
+	                                  trailing_pack_parameter->name,
+	                                  deduced_pack)) {
+	        return false;
+	      }
     } else if(trailing_pack_parameter->kind == TemplateParameterInfo::TP_NON_TYPE) {
       std::vector<long long> deduced_pack;
       for(std::size_t arg_index = fixed_argument_count;
           arg_index < actual_args.size();
           ++arg_index) {
         long long value = 0;
-        if(!resolve_actual_non_type_value(arg_index,
-                                          trim_space(actual_args[arg_index]),
-                                          *trailing_pack_parameter,
-                                          value)) {
-          return false;
-        }
+	        if(!resolve_actual_non_type_value(arg_index,
+	                                          trim_space(actual_args[arg_index]),
+	                                          *trailing_pack_parameter,
+	                                          value)) {
+	          return false;
+	        }
         deduced_pack.push_back(value);
       }
-      if(!store_deduced_value_pack(deduced,
-                                   trailing_pack_parameter->name,
-                                   deduced_pack)) {
-        return false;
-      }
+	      if(!store_deduced_value_pack(deduced,
+	                                   trailing_pack_parameter->name,
+	                                   deduced_pack)) {
+	        return false;
+	      }
     } else {
       return false;
     }
@@ -8566,20 +8826,13 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                   pattern_syntax,
                   actual.type,
                   expected);
-          if(expected_status != template_api::NT_ARG_EVALUATED) {
-            if(expected_status == template_api::NT_ARG_DEPENDENT &&
-               match_deferred) {
-              *match_deferred = true;
-            }
-            if(parser_trace::enabled("template.resolve")) {
-              parser_trace::note(
-                  "template.resolve",
-                  std::string(),
-                  std::string("partial-match missing structured non-type pattern: ") +
-                      pattern_text);
-            }
-            return false;
-          }
+	          if(expected_status != template_api::NT_ARG_EVALUATED) {
+	            if(expected_status == template_api::NT_ARG_DEPENDENT &&
+	               match_deferred) {
+	              *match_deferred = true;
+	            }
+	            return false;
+	          }
           if(expected != actual.value) {
             return false;
           }

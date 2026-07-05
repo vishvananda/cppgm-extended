@@ -14884,7 +14884,29 @@ bool deduce_function_template_arguments_uncached(
       TypePtr pattern = prepare_function_template_deduction_pattern(
           ctx, decl.parameters, bound_scope, original_pattern);
       const TypePtr parameter_scope_pattern = pattern;
-      TypePtr actual = remove_reference_type(args[i].type);
+      const bool braced_init_arg = argument_is_braced_init_list_for_deduction(args[i]);
+      if(braced_init_arg &&
+         (!deduction_pattern_accepts_braced_init_list_argument(ctx, pattern) ||
+          !args[i].type)) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "deduction-braced-init-nondeduced template=" << decl.name
+                << " param_index=" << pattern_index
+                << " pattern=" << describe_type(pattern)
+                << " actual="
+                << (args[i].type ? describe_type(args[i].type) :
+                                    std::string("<braced-init-list>"));
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        parameter_scope_pattern);
+        continue;
+      }
+      TypePtr actual = args[i].type ? remove_reference_type(args[i].type) : TypePtr();
       if(!actual) {
         actual = args[i].type;
       }
@@ -14919,17 +14941,23 @@ bool deduce_function_template_arguments_uncached(
                                                         parameter_scope_pattern);
         continue;
       }
-      if(argument_is_braced_init_list_for_deduction(args[i]) &&
+      if(braced_init_arg &&
          !deduction_pattern_accepts_braced_init_list_argument(ctx, pattern)) {
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
-          trace << "deduction-braced-init-rejected template=" << decl.name
+          trace << "deduction-braced-init-nondeduced template=" << decl.name
                 << " param_index=" << pattern_index
                 << " pattern=" << describe_type(pattern)
                 << " actual=" << describe_type(actual);
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
-        return false;
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        parameter_scope_pattern);
+        continue;
       }
       if(can_skip_resolved_non_dependent_pattern_check(
              ctx, bound_scope, decl, pattern_index, original_pattern, pattern)) {
@@ -15504,7 +15532,29 @@ bool deduce_function_template_arguments_with_explicit(
       TypePtr pattern = prepare_function_template_deduction_pattern(
           ctx, decl.parameters, bound_scope, original_pattern);
       const TypePtr parameter_scope_pattern = pattern;
-      TypePtr actual = remove_reference_type(args[i].type);
+      const bool braced_init_arg = argument_is_braced_init_list_for_deduction(args[i]);
+      if(braced_init_arg &&
+         (!deduction_pattern_accepts_braced_init_list_argument(ctx, pattern) ||
+          !args[i].type)) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "explicit-deduction-braced-init-nondeduced template=" << decl.name
+                << " param_index=" << pattern_index
+                << " pattern=" << describe_type(pattern)
+                << " actual="
+                << (args[i].type ? describe_type(args[i].type) :
+                                    std::string("<braced-init-list>"));
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        parameter_scope_pattern);
+        continue;
+      }
+      TypePtr actual = args[i].type ? remove_reference_type(args[i].type) : TypePtr();
       if(!actual) {
         actual = args[i].type;
       }
@@ -15540,17 +15590,23 @@ bool deduce_function_template_arguments_with_explicit(
                                                         parameter_scope_pattern);
         continue;
       }
-      if(argument_is_braced_init_list_for_deduction(args[i]) &&
+      if(braced_init_arg &&
          !deduction_pattern_accepts_braced_init_list_argument(ctx, pattern)) {
         if(parser_trace::enabled("template.resolve")) {
           std::ostringstream trace;
-          trace << "explicit-deduction-braced-init-rejected template=" << decl.name
+          trace << "explicit-deduction-braced-init-nondeduced template=" << decl.name
                 << " param_index=" << pattern_index
                 << " pattern=" << describe_type(pattern)
                 << " actual=" << describe_type(actual);
           parser_trace::note("template.resolve", std::string(), trace.str());
         }
-        return false;
+        bind_preceding_function_parameter_for_deduction(ctx,
+                                                        decl,
+                                                        bound_scope,
+                                                        pattern_index,
+                                                        deducing_pack_element,
+                                                        parameter_scope_pattern);
+        continue;
       }
       if(can_skip_resolved_non_dependent_pattern_check(
              ctx, bound_scope, decl, pattern_index, original_pattern, pattern)) {

@@ -4958,7 +4958,87 @@ private:
         template_argument_type_text(type);
   }
 
-  TypeSpellingParts spell_instantiation_identity_type_argument(const TypePtr & type) const
+  bool template_argument_has_concrete_instantiation_identity(
+      const TemplateArgument & argument,
+      unsigned depth) const
+  {
+    if(depth >= 8) {
+      return false;
+    }
+    if(argument.kind == TemplateArgument::TA_TYPE) {
+      return argument.type &&
+             !type_depends_on_template_parameter(argument.type);
+    }
+    if(argument.kind == TemplateArgument::TA_VALUE) {
+      return !argument.dependent;
+    }
+    if(argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+       argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE) {
+      return !argument.dependent &&
+             argument.template_decl &&
+             (!argument.template_owner_type ||
+              !type_depends_on_template_parameter(argument.template_owner_type));
+    }
+    return false;
+  }
+
+  bool structured_instantiation_identity_text_for_named_type(
+      const TypePtr & type,
+      unsigned depth,
+      string & out) const
+  {
+    out.clear();
+    if(!type || depth >= 8) {
+      return false;
+    }
+    shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+        named_type_class_template_specialization_mangle_info_const(type);
+    if(!mangle_info ||
+       mangle_info->template_name.empty() ||
+       mangle_info->arguments.empty()) {
+      return false;
+    }
+    for(size_t i = 0; i < mangle_info->arguments.size(); ++i) {
+      if(!template_argument_has_concrete_instantiation_identity(
+             mangle_info->arguments[i],
+             depth + 1)) {
+        return false;
+      }
+    }
+
+    ostringstream rendered;
+    if(!mangle_info->template_scope_prefix.empty()) {
+      rendered << mangle_info->template_scope_prefix << "::";
+    }
+    rendered << mangle_info->template_name << "<";
+    for(size_t i = 0; i < mangle_info->arguments.size(); ++i) {
+      if(i != 0) {
+        rendered << ", ";
+      }
+      const TemplateArgument & argument = mangle_info->arguments[i];
+      if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+        const TypeSpellingParts parts =
+            spell_instantiation_identity_type_argument(argument.type, depth + 1);
+        rendered << trim_space(parts.before + parts.after);
+      } else {
+        rendered << template_model::template_argument_text(
+            argument,
+            [this, depth](const TypePtr & current_type)
+            {
+              const TypeSpellingParts parts =
+                  spell_instantiation_identity_type_argument(current_type, depth + 1);
+              return trim_space(parts.before + parts.after);
+            });
+      }
+    }
+    rendered << ">";
+    out = collapse_reparseable_scope_operators(rendered.str());
+    return !out.empty();
+  }
+
+  TypeSpellingParts spell_instantiation_identity_type_argument(
+      const TypePtr & type,
+      unsigned depth = 0) const
   {
     switch(type->kind) {
     case Type::TK_FUNDAMENTAL:
@@ -4974,6 +5054,15 @@ private:
         text = type->named_display;
       }
       text = collapse_reparseable_scope_operators(strip_elaborated_type_prefix(text));
+      string structured_text;
+      if(structured_instantiation_identity_text_for_named_type(
+             type,
+             depth,
+             structured_text) &&
+         !structured_text.empty() &&
+         structured_text != text) {
+        text = structured_text;
+      }
       return TypeSpellingParts{text + " ", ""};
     }
 
@@ -19753,6 +19842,7 @@ private:
   }
 
   bool deduce_auto_declarator_base_from_expr(Scope & scope,
+                                             const CppAstNode & specifiers,
                                              const CppAstNode & declarator,
                                              const ExprInfo & expr,
                                              string & name,
@@ -19773,10 +19863,22 @@ private:
 
     TypePtr argument_type;
     if(stripped_pattern->kind == Type::TK_LVALUE_REFERENCE) {
-      if(expr.category != VC_LVALUE) {
-        return false;
+      if(expr.category == VC_LVALUE) {
+        argument_type = remove_reference_type(expr.type);
+        if(!argument_type) {
+          return false;
+        }
+      } else {
+        TypePtr cv_referent_pattern =
+            apply_auto_cv_qualifiers(specifiers, stripped_pattern->inner);
+        if(!type_is_const_object(cv_referent_pattern)) {
+          return false;
+        }
+        argument_type = value_conversion_type(expr);
+        if(!argument_type) {
+          return false;
+        }
       }
-      argument_type = remove_reference_type(expr.type);
       return deduce_auto_placeholder_from_type_pattern(stripped_pattern->inner,
                                                        argument_type,
                                                        auto_placeholder_key,
@@ -19814,6 +19916,7 @@ private:
   {
     TypePtr deduced_base;
     if(!deduce_auto_declarator_base_from_expr(scope,
+                                              specifiers,
                                               declarator,
                                               expr,
                                               name,
@@ -20174,6 +20277,7 @@ private:
       }
       TypePtr deduced_base;
       if(!deduce_auto_declarator_base_from_expr(scope,
+                                                specifiers,
                                                 declarator,
                                                 initializer_expr,
                                                 name,

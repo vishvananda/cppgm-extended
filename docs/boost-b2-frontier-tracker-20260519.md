@@ -3262,3 +3262,37 @@ passes; full strict direct-LowIR compare passes; full direct-LowIR report passes
 `/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`
 passes with instructions `+0.07%`, RSS `+1.08%`, footprint `+0.20%`; detailed
 report `/tmp/cppgm-after-ostream-vbase-alias-perf-report.json`.
+
+2026-07-05 Boost.Graph `libs/graph/test//weighted_matching_test2` hosted
+alias/lifetime/export frontier: the target reached three independent compiler
+gaps. First, a braced `std::vector` temporary bound to a const-reference
+parameter in the Boost.Graph weighted matching test did not force the
+temporary's destructor symbol, so the hosted link missed vector cleanup
+runtime. Second, alias-template partial-specialization matching lost defaulted
+and dependent class-template arguments through `adj_list_test_graph<WeightType>`
+and the `vertex_index_installer` alias path, selecting the wrong Boost.Graph
+specialization for list-backed vertex indices. Third, the LowIR exported-symbol
+closure rejected a declaration-only SFINAE probe (`has_category`'s nested
+`test(...)`) that had a semantic pre-LowIR owner but no direct emitted LowIR
+owner. Follow-on strict validation exposed a witness-only alias canonicalization
+bug where `index_sequence_for<T...>` replayed an AST alias result
+`integer_sequence<unsigned long, 0, 1>` before the structural path could reuse
+the canonical `integer_sequence<unsigned long int, 0, 1>` specialization. The
+fix adds lifetime destructor requirements for reference-bound temporaries,
+teaches alias partial-specialization deduction to preserve defaulted/dependent
+arguments and textual fallback for simple fundamental/non-type arguments,
+prefers concrete structural alias results during witness source capture, and
+accepts exact pre-LowIR semantic owners in the exported-symbol closure. New
+regressions: `pa23/tests/general/400-alias-template-partial-specialization-default-dependent-arg.t`,
+`pa24/tests/general/200-range-for-inherited-member-begin-end.t`,
+`pa35/tests/compile/700-hosted-template-vector-braced-nondeduced-compile.t`,
+and `pa36/tests/link/700-hosted-vector-braced-temporary-dtor-link-smoke.t`.
+Related reference updates cover canonical internal symbol spelling in PA18/PA25
+and the expanded PA23 witness surface. Focused B2
+`/usr/local/bin/timeout 600 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//weighted_matching_test2`
+passes and runs the test executable; final log
+`/tmp/boost-graph-weighted-matching-test2-final-20260705.log`. Validation:
+`make -C dev cppgm++ -j12`; exact PA21 strict witness/LowIR reducer passes;
+full strict direct-LowIR compare passes; full direct-LowIR report passes
+`3483/3483`; `python3 scripts/audit_text_reparse.py --strict` reports all
+zero; `git diff --check` passes.

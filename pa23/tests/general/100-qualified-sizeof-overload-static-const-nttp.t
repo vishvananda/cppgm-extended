@@ -4,11 +4,20 @@
 
 typedef unsigned long size_t;
 
+namespace std {
+struct input_iterator_tag {};
+}
+
 namespace boost {
 namespace iterators {
 struct incrementable_traversal_tag {};
 struct bidirectional_traversal_tag : incrementable_traversal_tag {};
 struct random_access_traversal_tag : bidirectional_traversal_tag {};
+
+namespace detail {
+template<class Category, class Traversal>
+struct iterator_category_with_traversal : Category, Traversal {};
+}
 }
 
 typedef iterators::incrementable_traversal_tag incrementable_traversal_tag;
@@ -22,6 +31,16 @@ template<class T>
 struct iterator_traversal<T *>
 {
   typedef random_access_traversal_tag type;
+};
+
+struct composite_iterator {};
+
+template<>
+struct iterator_traversal<composite_iterator>
+{
+  typedef iterators::detail::iterator_category_with_traversal<
+      std::input_iterator_tag,
+      iterators::bidirectional_traversal_tag> type;
 };
 
 namespace iterator_range_detail {
@@ -68,5 +87,9 @@ int main()
 {
   boost::iterator_range_detail::pure_iterator_traversal<int *>::type value;
   (void)value;
+  boost::iterator_range_detail::pure_iterator_traversal<
+      boost::composite_iterator>::type composite_value;
+  boost::bidirectional_traversal_tag & composite_ref = composite_value;
+  (void)composite_ref;
   return 0;
 }

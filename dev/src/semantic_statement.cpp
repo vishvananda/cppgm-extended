@@ -526,16 +526,23 @@ void append_hidden_variable_declaration(DumpNode & outer,
   outer.children.push_back(std::move(decl));
 }
 
-bool class_has_range_member_name(ClassInfo * info, const string & name)
+bool class_has_range_member_name(SemanticContext & ctx,
+                                 ClassInfo * info,
+                                 const string & name)
 {
   if(!info || !info->member_scope) {
     return false;
   }
 
-  return info->methods.find(name) != info->methods.end() ||
-         info->member_scope->function_sets.find(name) != info->member_scope->function_sets.end() ||
-         info->member_scope->values.find(name) != info->member_scope->values.end() ||
-         info->member_scope->named_types.find(name) != info->member_scope->named_types.end();
+  semantic_lookup::MemberCallableLookupResult callables =
+      semantic_lookup::lookup_visible_member_callables(*info, name);
+  if(!callables.functions.empty() || !callables.templates.empty()) {
+    return true;
+  }
+  if(semantic_lookup::lookup_member_value(*info, name).binding) {
+    return true;
+  }
+  return semantic_lookup::lookup_member_type(ctx, *info, name).type != nullptr;
 }
 
 void track_embedded_local_class_output(SemanticContext & ctx,
@@ -1808,8 +1815,8 @@ void analyze_range_for_statement(SemanticContext & ctx,
     }
 
     const bool use_member_begin_end =
-        class_has_range_member_name(range_info, "begin") &&
-        class_has_range_member_name(range_info, "end");
+        class_has_range_member_name(ctx, range_info, "begin") &&
+        class_has_range_member_name(ctx, range_info, "end");
     const CppAstNode range_id = make_id_expr_ast_node(range_name);
     ExprInfo begin_expr;
     ExprInfo end_expr;

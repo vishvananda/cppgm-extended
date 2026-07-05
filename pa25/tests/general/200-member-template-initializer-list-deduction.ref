@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i64 2, %t6
     store i32 7, $refarg__3
     %t7 = addr $refarg__3
-    %t8 = call ptr @any_like__emplace(%t2, $argobj__1, %t7)
+    %t8 = call ptr @any_like__emplace__ov2(%t2, $argobj__1, %t7)
     store ptr %t8, $ref
     %t9 = load ptr $ref
     %t10 = index i8 [projection=field] %t9, 0
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__4
     return i32 %t13
 }
-function @any_like__emplace(%this : ptr, %il : obj<16x8>, %args : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8any_like7emplaceI7payload4itemJiEEERT_St16initializer_listIT0_EDpOT1_] {
+function @any_like__emplace__ov2(%this : ptr, %il : obj<16x8>, %args : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8any_like7emplaceI7payload4itemJiEEERT_St16initializer_listIT0_EDpOT1_] {
   slot $this : ptr
   slot $il : obj<16x8>
   slot $args : ptr

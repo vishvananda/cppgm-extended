@@ -1,6 +1,7 @@
 #include "semantic_expression.h"
 
 #include <cctype>
+#include <iomanip>
 #include <map>
 #include <memory>
 #include <set>
@@ -395,6 +396,43 @@ bool constexpr_value_to_literal_value(SemanticContext & ctx,
     return false;
   }
 
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  TypePtr value_base = strip_top_level_cv(remove_reference_type(value.type));
+  if(is_floating_type(base) || is_floating_type(value_base)) {
+    constant_eval::ConstexprValue converted = value;
+    if(converted.kind != constant_eval::ConstexprValue::CV_FLOATING &&
+       !constant_eval::constexpr_value_cast(value, type, converted)) {
+      return false;
+    }
+    if(converted.kind != constant_eval::ConstexprValue::CV_FLOATING) {
+      return false;
+    }
+
+    EFundamentalType fundamental =
+        base && base->kind == Type::TK_FUNDAMENTAL ? base->fundamental : FT_DOUBLE;
+    long double emitted_value = converted.floating_value;
+    if(fundamental == FT_FLOAT) {
+      emitted_value = static_cast<float>(converted.floating_value);
+    } else if(fundamental == FT_DOUBLE) {
+      emitted_value = static_cast<double>(converted.floating_value);
+    }
+
+    ostringstream text;
+    text << setprecision(20) << emitted_value;
+    out.text = text.str();
+    if(out.text.find('.') == string::npos &&
+       out.text.find('e') == string::npos &&
+       out.text.find('E') == string::npos) {
+      out.text += ".0";
+    }
+    if(fundamental == FT_FLOAT) {
+      out.text += "f";
+    } else if(fundamental == FT_LONG_DOUBLE) {
+      out.text += "L";
+    }
+    return true;
+  }
+
   long long signed_value = 0;
   if(constant_eval::constexpr_value_to_integral(value, signed_value)) {
     out.text = to_string(signed_value);
@@ -403,8 +441,6 @@ bool constexpr_value_to_literal_value(SemanticContext & ctx,
     return true;
   }
 
-  TypePtr base = strip_top_level_cv(remove_reference_type(type));
-  TypePtr value_base = strip_top_level_cv(remove_reference_type(value.type));
   if((is_unsigned_integral_type(base) ||
       is_named_enum_type(ctx, base) ||
       is_unsigned_integral_type(value_base) ||
@@ -4537,12 +4573,18 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
   if(allow_constant_fold &&
      constant_foldable_static_member &&
      (is_integral_type(binding.type) ||
+      is_floating_type(strip_top_level_cv(binding.type)) ||
       is_named_enum_type(ctx, strip_top_level_cv(binding.type)))) {
     bool can_fold = false;
+    const TypePtr binding_fold_type = strip_top_level_cv(binding.type);
+    const bool binding_fold_type_integral_like =
+        is_integral_type(binding_fold_type) ||
+        is_named_enum_type(ctx, binding_fold_type);
     const bool narrow_constant_value_allowed =
         !is_int128_integral_type(binding.type);
     if(!force_storage_load &&
        narrow_constant_value_allowed &&
+       binding_fold_type_integral_like &&
        binding.has_constant_value) {
       folded_literal.text = to_string(binding.constant_value);
       folded_literal.has_int_value = true;
@@ -4843,6 +4885,9 @@ ExprInfo analyze_expression_for_target(SemanticContext & ctx,
       expr = ctx.analyze_expression(scope, node);
     }
   }
+  semantic_lifetime::require_reference_bound_temporary_destructor_if_needed(ctx,
+                                                                            target,
+                                                                            expr);
   ExprInfo converted;
   ConversionRank rank = CR_BAD;
   if(ctx.try_argument_conversion(scope,

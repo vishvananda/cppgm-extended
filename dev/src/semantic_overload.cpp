@@ -28,6 +28,7 @@
 #include "semantic_errors.h"
 #include "semantic_expression.h"
 #include "semantic_hotspot.h"
+#include "semantic_lifetime.h"
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_output.h"
@@ -2260,11 +2261,25 @@ struct SharedCallArgumentAnalyzer
       if(child.kind == CppAstKind::lambda_expression) {
         note_argument_path("target-aware", "target-expression");
       }
+      semantic_lifetime::require_reference_bound_temporary_destructor_if_needed(ctx,
+                                                                                target,
+                                                                                expr);
       return expr;
     }
 
     string error;
     if(!analyze_generic_arg(index, expr, error)) {
+      if(child.kind == CppAstKind::braced_init_list &&
+         target &&
+         ctx.type_depends_on_template_parameter(target)) {
+        ExprInfo placeholder;
+        placeholder.type = TypePtr();
+        placeholder.category = VC_LVALUE;
+        placeholder.node = make_dump_node(CallSemKind::braced_init_list);
+        ctx.set_expr_info_metadata(placeholder, placeholder.type, placeholder.category);
+        note_argument_path("generic-placeholder", "dependent-braced-init-list");
+        return placeholder;
+      }
       throw logic_error(error);
     }
     return expr;
@@ -5194,6 +5209,12 @@ TypePtr reference_conversion_source_object_type(const ExprInfo & arg)
   return strip_top_level_cv(remove_reference_type(arg.type));
 }
 
+TypePtr object_conversion_target_type(const TypePtr & param)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(param));
+  return base && base->kind == Type::TK_NAMED ? base : TypePtr();
+}
+
 ClassInfo * complete_class_info_for_conversion_type(SemanticContext & ctx,
                                                     const TypePtr & type)
 {
@@ -5223,6 +5244,12 @@ int compare_class_base_conversion_target_preference(SemanticContext & ctx,
     rhs_target = pointer_conversion_pointee_type(rhs_param);
     lhs_source = pointer_conversion_source_pointee_type(lhs_source_arg);
     rhs_source = pointer_conversion_source_pointee_type(rhs_source_arg);
+  }
+  if(!lhs_target && !rhs_target) {
+    lhs_target = object_conversion_target_type(lhs_param);
+    rhs_target = object_conversion_target_type(rhs_param);
+    lhs_source = reference_conversion_source_object_type(lhs_source_arg);
+    rhs_source = reference_conversion_source_object_type(rhs_source_arg);
   }
   if(!lhs_target ||
      !rhs_target ||

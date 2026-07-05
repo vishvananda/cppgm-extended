@@ -62,6 +62,15 @@ void analyze_object_lifetime_actions(SemanticContext & ctx,
 void note_constructor_witness_closure(SemanticContext & ctx,
                                       semantic_model::FunctionBinding * ctor);
 
+void require_destructor_action_if_needed(SemanticContext & ctx,
+                                         const cpp_decl::TypePtr & type,
+                                         bool allow_host_abi_skip = true);
+
+void require_reference_bound_temporary_destructor_if_needed(
+    SemanticContext & ctx,
+    const cpp_decl::TypePtr & target,
+    const semantic_conversion::ExprInfo & expr);
+
 void append_constructor_generated_statements(SemanticContext & ctx,
                                              semantic_model::Scope & scope,
                                              semantic_model::FunctionBinding & binding,

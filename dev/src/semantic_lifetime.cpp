@@ -3520,16 +3520,13 @@ void append_move_constructor_action(SemanticContext & ctx,
   out.children.push_back(std::move(action));
 }
 
-void append_destructor_action(SemanticContext & ctx,
-                              ClassInfo & info,
-                              const ExprInfo & object_ptr,
-                              ClassInfo * vtt_owner_info,
-                              bool allow_host_abi_skip,
-                              DumpNode & out)
+bool require_destructor_function_if_needed(SemanticContext & ctx,
+                                           ClassInfo & info,
+                                           FunctionBinding * dtor,
+                                           bool allow_host_abi_skip)
 {
-  FunctionBinding * dtor = destructor_for(info);
   if(!dtor) {
-    return;
+    return false;
   }
   if(allow_host_abi_skip &&
      can_skip_destructor_action_for_host_abi(ctx, info)) {
@@ -3540,12 +3537,26 @@ void append_destructor_action(SemanticContext & ctx,
     } else if(template_api::class_has_template_identity(&info)) {
       note_skipped_template_lifecycle_definition(ctx, dtor);
     }
-    return;
+    return false;
   }
-  vector<ExprInfo> args(1, object_ptr);
   constructor_lifecycle_service::require_lifecycle_function(ctx,
                                                             dtor,
                                                             OutputReason::SyntheticDependency);
+  return true;
+}
+
+void append_destructor_action(SemanticContext & ctx,
+                              ClassInfo & info,
+                              const ExprInfo & object_ptr,
+                              ClassInfo * vtt_owner_info,
+                              bool allow_host_abi_skip,
+                              DumpNode & out)
+{
+  FunctionBinding * dtor = destructor_for(info);
+  if(!require_destructor_function_if_needed(ctx, info, dtor, allow_host_abi_skip)) {
+    return;
+  }
+  vector<ExprInfo> args(1, object_ptr);
   DumpNode call = ctx.make_direct_call_expr(*dtor, args).node;
   annotate_special_member_call_with_vtt(ctx, vtt_owner_info, info, call);
   append_wrapped_action(out,
@@ -3690,6 +3701,45 @@ void append_move_assignment_action(SemanticContext & ctx,
 }
 
 }  // namespace
+
+void require_destructor_action_if_needed(SemanticContext & ctx,
+                                         const TypePtr & type,
+                                         bool allow_host_abi_skip)
+{
+  TypePtr object_type = strip_top_level_cv(remove_reference_type(type));
+  ClassInfo * info = ctx.complete_class_type(object_type);
+  if(!info) {
+    return;
+  }
+  FunctionBinding * dtor = destructor_for(*info);
+  require_destructor_function_if_needed(ctx, *info, dtor, allow_host_abi_skip);
+}
+
+void require_reference_bound_temporary_destructor_if_needed(
+    SemanticContext & ctx,
+    const TypePtr & target,
+    const ExprInfo & expr)
+{
+  if(expr.category != VC_PRVALUE) {
+    return;
+  }
+  TypePtr target_base = strip_top_level_cv(target);
+  if(!target_base ||
+     (target_base->kind != Type::TK_LVALUE_REFERENCE &&
+      target_base->kind != Type::TK_RVALUE_REFERENCE)) {
+    return;
+  }
+  TypePtr referent = strip_top_level_cv(remove_reference_type(target));
+  TypePtr expr_object_type = strip_top_level_cv(remove_reference_type(expr.type));
+  if(!referent || !expr_object_type) {
+    return;
+  }
+  if(!type_equals(referent, expr_object_type) &&
+     semantic_conversion::inheritance_conversion_rank(ctx, target, expr) == CR_BAD) {
+    return;
+  }
+  require_destructor_action_if_needed(ctx, expr_object_type);
+}
 
 void note_constructor_witness_closure(SemanticContext & ctx,
                                       FunctionBinding * ctor)

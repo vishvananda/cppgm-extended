@@ -17781,7 +17781,17 @@ bool try_resolve_alias_template_id_locally(
       TypePtr ast_alias;
       const bool ast_ok = resolve_alias_type_id_ast(ast_alias, false);
       if(ast_ok) {
-        out = ast_alias;
+        TypePtr structural_alias;
+        const bool structural_ok =
+            resolve_structural_alias_type(structural_alias, false);
+        if(structural_ok &&
+           structural_alias &&
+           !service_type_depends_on_template_parameter(services,
+                                                       structural_alias)) {
+          out = structural_alias;
+        } else {
+          out = ast_alias;
+        }
       } else {
         TypePtr structural_alias;
         const bool structural_ok =
