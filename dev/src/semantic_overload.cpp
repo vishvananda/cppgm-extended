@@ -4102,7 +4102,7 @@ int partial_order_template_structure_score(const TypePtr & type)
            partial_order_template_structure_score(base->inner);
 
   case Type::TK_FUNDAMENTAL:
-    return 0;
+    return 1;
   }
   return 0;
 }

@@ -787,6 +787,7 @@ Local Boost wrapper state:
 | 51e | `libs/graph/test//isomorphism` | pass | Boost.Parameter defaulted class-template base/reference identity is fixed. Focused B2 builds, links, runs, and updates the target: `/tmp/boost-graph-isomorphism-final-20260705.log`. |
 | 51f | `libs/graph/test//boykov_kolmogorov_max_flow_test` | pass | Class-template body lookup now defers unqualified calls whose arguments recursively depend on member calls through dependent typedef/base aliases. Focused B2 builds, links, runs, and updates 4 targets: `/tmp/boost-graph-boykov-after-dependent-member-argument-20260705.log`. |
 | 51g | `libs/graph/test//cycle_ratio_tests` | pass | Class-template body lookup now sees class-scope unscoped enumerators introduced by `typedef enum { ... } name;`, fixing `my_white` in `boost/graph/howard_cycle_ratio.hpp`. Focused B2 builds, links, runs, and updates the test target; the paired `libs/graph/example//cycle_ratio_example` advances to the next independent `generate_random_graph` overload/default-argument ambiguity. Log: `/tmp/boost-graph-cycle-ratio-after-typedef-enum-20260705.log`. |
+| 51h | `libs/graph/example//cycle_ratio_example` | pass | Function-template partial ordering now treats fixed fundamental transformed parameter types as more structured than partial-order placeholders, so `boost::generate_random_graph(g, nV, nE, rng, true, true)` selects the fixed `bool, bool` overload before the broader output-iterator overload with a defaulted trailing parameter. Focused B2 builds, links, runs, and passes both cycle-ratio targets: `/tmp/boost-graph-cycle-ratio-after-partial-order-20260705.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -3403,3 +3404,36 @@ from `15e119a9e` at
 `/tmp/cppgm-before-typedef-enum-member-15e119a9e-perf-baseline.json` passes the
 candidate with instructions `+0.16%`, RSS `-0.01%`, footprint `+0.01%`;
 detailed report `/tmp/cppgm-after-typedef-enum-member-perf-report.json`.
+
+2026-07-05 Boost.Graph `libs/graph/example//cycle_ratio_example`
+`generate_random_graph` partial-order/default-argument frontier: the call
+`boost::generate_random_graph(g, nV, nE, rng, true, true)` has two viable
+function-template candidates in `boost/graph/random.hpp`: the fixed
+`bool, bool` overload and the broader `VertexOutputIterator,
+EdgeOutputIterator, bool = false` overload. After conversion ranking, both
+instantiations are exact for the six supplied arguments. The transformed
+partial-order acceptance check was symmetric, and the final structure score
+treated fundamental fixed parameter types as zero, the same as partial-order
+placeholders, so overload selection reported ambiguity. The fix gives
+fundamental transformed parameter types a nonzero structure score while
+partial-order placeholders remain zero. This makes the fixed `bool, bool`
+candidate more specialized without changing ordinary conversion ranking. No
+Boost special case, fallback resolver, cache, or source-text reparse is added.
+Owner: PA22:200 function-template partial ordering. New regression:
+`pa22/tests/spec/200-function-template-fixed-parameter-default-tail-partial-order.t`.
+Pre-fix evidence: the reducer and focused Boost example both failed with an
+ambiguous `generate_random_graph` overload set. After the fix, the reducer
+compiles/runs under `cppgm++` and clang, and focused B2
+`/usr/local/bin/timeout 600 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//cycle_ratio_tests libs/graph/example//cycle_ratio_example`
+builds, links, runs, and passes both cycle-ratio targets; final log
+`/tmp/boost-graph-cycle-ratio-after-partial-order-20260705.log`.
+Validation: `make -C dev cppgm++ -j12`; focused PA22 check passes; PA22
+direct-LowIR report passes `201/201`; PA22 placement audit reports no
+early-placement findings; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes; full strict direct-LowIR compare
+passes; full direct-LowIR report passes `3487/3487`. A clean pre-change
+baseline recorded from `5805379ab` at
+`/tmp/cppgm-perf-baseline-boost-frontier-5805379ab-partial-order.json` passes
+the candidate with instructions `+0.05%`, RSS `-0.57%`, footprint `+0.01%`;
+detailed report
+`/tmp/cppgm-perf-after-partial-order-fixed-fundamental-report.json`.
