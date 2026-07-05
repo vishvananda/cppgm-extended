@@ -121,4 +121,3 @@ function @OStream__OStream__base_entry(%this : ptr, %__vbptr0 : ptr, %__vbptr1 :
     store ptr %this, $this
     return void
 }
-alias object _ZN12StringStreamC2Ev = @StringStream__StringStream

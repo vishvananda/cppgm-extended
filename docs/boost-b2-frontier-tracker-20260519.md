@@ -3224,3 +3224,41 @@ passes; full strict direct-LowIR compare passes; full direct-LowIR report passes
 `/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`
 passes with instructions `+0.24%`, RSS `+1.78%`, footprint `+0.19%`; detailed
 report `/tmp/cppgm-after-global-array-named-copy-perf-report.json`.
+
+2026-07-05 Boost.Graph `libs/graph/test//graphviz_test` hosted
+`std::ostream` constructor-entry coalescing runtime frontier: after
+`graphviz_test` built and linked, the runtime crashed in
+`std::__1::ios_base::init` while Boost.LexicalCast constructed
+`boost::detail::lcast::ios_src_stream`. The final executable had both libc++
+`std::basic_ostream<char>::basic_ostream(streambuf*)` C1 and C2 symbols
+coalesced to a C2/base-entry body supplied by `graphviz_test.o`, while
+`read_graphviz_new.o` needed C1/complete construction for an `std::ostream`
+member. The root cause was semantic output aliasing base-entry object symbols
+onto complete constructors/destructors even when the owner class has virtual
+bases. On Mach-O, that made C1 ride along when the weak C2 symbol coalesced to a
+different object's C2-only body. The fix keeps C1/C2 aliases for ordinary
+classes but suppresses them for special members whose owner class has virtual
+bases. No Boost special case, fallback resolver, cache, or source-text reparse
+is added. Owner: PA27 virtual-base construction ABI plus PA36 hosted
+link/runtime behavior. New regression:
+`pa36/tests/link/700-hosted-ostream-ctor-entry-coalescing.t`. Existing PA27
+LowIR refs for virtual-base constructor tests were refreshed to remove the
+now-invalid C2-to-C1 alias lines. Pre-fix evidence: `read_graphviz_new.o`
+defined C1 and aliased C2 to it, `graphviz_test.o` defined a C2-only weak body,
+and the linked executable resolved both constructor object symbols to the C2
+body; LLDB showed `ios_base::init` receiving a null `this` after the member
+constructor call used the base-entry ABI. After the fix, focused B2
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//graphviz_test`
+builds `read_graphviz_new.o`, archives `libboost_graph.a`, builds, links, and
+runs `graphviz_test`. Logs:
+`/tmp/boost-graph-graphviz-test-b2-after-ostream-alias.log` and
+`/tmp/boost_read_graphviz_new_after_alias.lowir`. Validation:
+`make -C dev cppgm++ -j12`; focused PA36 regression passes; PA36 placement
+audit reports no early placement findings; PA36 direct-LowIR report passes
+`72/72`; PA27 direct-LowIR report passes `26/26`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-LowIR compare passes; full direct-LowIR report passes
+`3479/3479`. The candidate perf check against
+`/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`
+passes with instructions `+0.07%`, RSS `+1.08%`, footprint `+0.20%`; detailed
+report `/tmp/cppgm-after-ostream-vbase-alias-perf-report.json`.

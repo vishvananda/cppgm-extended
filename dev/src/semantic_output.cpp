@@ -4295,7 +4295,8 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
         }
         set_dump_symbol(function_node, function_symbol);
         if((binding.is_constructor || binding.is_destructor) &&
-           entry_point_kind == symbol_linkage::SMEK_COMPLETE) {
+           entry_point_kind == symbol_linkage::SMEK_COMPLETE &&
+           (!binding.owner_class || !class_has_virtual_bases(*binding.owner_class))) {
           const symbol_linkage::SymbolIdentity base_entry_symbol =
               function_entry_point_symbol(binding, symbol_linkage::SMEK_BASE);
           if(symbol_linkage::has_exported_object_symbol(base_entry_symbol) &&

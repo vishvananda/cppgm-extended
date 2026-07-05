@@ -111,5 +111,3 @@ function @D__D__ov2__base_entry(%this : ptr, %other : ptr [pass=reference], %__v
     store ptr %t3, $other__pvb2
     return void
 }
-alias object _ZN1DC2Ev = @D__D
-alias object _ZN1WI1DEC2ERKS0_RKi = @W_D___W

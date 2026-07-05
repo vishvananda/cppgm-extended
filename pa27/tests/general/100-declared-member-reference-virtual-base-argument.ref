@@ -75,6 +75,5 @@ function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
     store i32 0, %t2
     return void
 }
-alias object _ZN7OStreamC2Ev = @OStream__OStream
 alias object _ZN6HolderC2ER7OStream = @Holder__Holder
 alias object _ZN3IOSC2Ev = @IOS__IOS

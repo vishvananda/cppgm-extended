@@ -64,6 +64,5 @@ function @V__V(%this : ptr) -> void [binding=weak, object=_ZN1VC1Ev] {
     store i32 42, %t2
     return void
 }
-alias object _ZN1DC2Ev = @D__D
 alias object _ZN1AC2Ev = @A__A
 alias object _ZN1VC2Ev = @V__V
