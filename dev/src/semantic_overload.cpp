@@ -4686,6 +4686,13 @@ bool try_cached_overload_argument_conversion(
                                                                    out);
     return true;
   }
+  if(semantic_conversion::try_semantic_exact_reference_binding(ctx,
+                                                               target,
+                                                               source_arg,
+                                                               out,
+                                                               rank)) {
+    return true;
+  }
 
   ExprInfo inherited;
   const bool inherited_ok =
@@ -4774,6 +4781,14 @@ bool try_cached_overload_argument_conversion(
     }
   }
   if(same_or_derived_reference_source) {
+    if(source_class == target_class &&
+       semantic_conversion::try_semantic_exact_reference_binding(ctx,
+                                                                 target,
+                                                                 source_arg,
+                                                                 out,
+                                                                 rank)) {
+      return true;
+    }
     return false;
   }
 

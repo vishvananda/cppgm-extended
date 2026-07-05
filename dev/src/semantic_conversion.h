@@ -47,6 +47,11 @@ ConversionRank standard_conversion_rank_non_reference(const cpp_decl::TypePtr & 
                                                       const ExprInfo & expr);
 ConversionRank standard_conversion_rank(const cpp_decl::TypePtr & target,
                                         const ExprInfo & expr);
+bool try_semantic_exact_reference_binding(SemanticContext & ctx,
+                                          const cpp_decl::TypePtr & target,
+                                          const ExprInfo & expr,
+                                          ExprInfo & out,
+                                          ConversionRank & rank);
 bool ref_qualifier_accepts_implicit_object(semantic_model::RefQualifier ref_qualifier,
                                            const cpp_decl::TypePtr & implicit_object_parameter,
                                            ValueCategory category);

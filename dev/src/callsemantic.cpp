@@ -75,6 +75,7 @@ using namespace std;
 #include "template_api.h"
 #include "template_audit.h"
 #include "template_argument_semantics.h"
+#include "template_instantiation.h"
 #include "template_specialization.h"
 #include "semantic_template_function.h"
 #include "template_resolution.h"
@@ -1332,6 +1333,8 @@ private:
   mutable std::unordered_map<const Type *, ClassInfo *> class_info_for_type_cache_;
   mutable std::unordered_map<std::string, ClassInfoForTypeNamedKeyCacheEntry>
       class_info_for_type_named_key_cache_;
+  mutable std::unordered_map<std::string, ClassInfo *>
+      class_info_for_template_metadata_cache_;
   mutable std::size_t class_info_for_type_cache_classes_by_key_version_ = 0;
   mutable long long next_live_metrics_dump_us_ = 0;
   mutable std::map<std::pair<const Scope *, std::string>, witness::ClassUseSourceDecision>
@@ -1461,7 +1464,52 @@ private:
       return nullptr;
     }
     auto found = classes_by_key.find(base->named_key);
-    return found == classes_by_key.end() ? nullptr : found->second;
+    if(found != classes_by_key.end()) {
+      return found->second;
+    }
+    return class_info_for_template_specialization_metadata(base);
+  }
+
+  ClassInfo * class_info_for_template_specialization_metadata(const TypePtr & base) const
+  {
+    if(!class_template_declarations_complete_) {
+      return nullptr;
+    }
+    if(!base || base->kind != Type::TK_NAMED) {
+      return nullptr;
+    }
+    auto cached = class_info_for_template_metadata_cache_.find(base->named_key);
+    if(cached != class_info_for_template_metadata_cache_.end()) {
+      return cached->second;
+    }
+    std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+        named_type_class_template_specialization_mangle_info_const(base);
+    if(!mangle_info ||
+       !mangle_info->class_template_decl ||
+       mangle_info->arguments.empty()) {
+      return nullptr;
+    }
+    ClassTemplateDecl * decl =
+        static_cast<ClassTemplateDecl *>(mangle_info->class_template_decl);
+    if(!decl->explicit_specializations.empty() ||
+       !decl->partial_specializations.empty()) {
+      return nullptr;
+    }
+    const std::string key =
+        template_instantiation::template_argument_key_for_instantiation(
+            *const_cast<Analyzer *>(this),
+            mangle_info->arguments);
+    auto found = decl->instantiations.find(key);
+    if(found != decl->instantiations.end()) {
+      class_info_for_template_metadata_cache_[base->named_key] = found->second;
+      return found->second;
+    }
+    found = decl->reference_instantiations.find(key);
+    if(found == decl->reference_instantiations.end()) {
+      return nullptr;
+    }
+    class_info_for_template_metadata_cache_[base->named_key] = found->second;
+    return found->second;
   }
 
   FunctionBinding * function_binding_for_probe_symbol(const string & symbol) const
@@ -5775,6 +5823,9 @@ private:
       auto found = state.classes_by_key.find(base->named_key);
       ClassInfo * result =
           found == state.classes_by_key.end() ? nullptr : found->second;
+      if(!result) {
+        result = class_info_for_template_specialization_metadata(base);
+      }
       if(collect_metrics_) {
         if(result) {
           ++metrics_.class_info_for_type_map_hits;
@@ -5822,6 +5873,9 @@ private:
     auto found = state.classes_by_key.find(base->named_key);
     ClassInfo * result =
         found == state.classes_by_key.end() ? nullptr : found->second;
+    if(!result) {
+      result = class_info_for_template_specialization_metadata(base);
+    }
     if(collect_metrics_) {
       if(result) {
         ++metrics_.class_info_for_type_map_hits;
@@ -5833,9 +5887,7 @@ private:
     entry.info = result;
     entry.epoch = key_epoch;
     entry.key_present = key_present;
-    if(!result || key_present) {
-      class_info_for_type_named_key_cache_[base->named_key] = entry;
-    }
+    class_info_for_type_named_key_cache_[base->named_key] = entry;
     class_info_for_type_cache_[cache_key] = result;
     return result;
   }
@@ -13230,52 +13282,97 @@ private:
           reference_class_templates_only);
       return out && !type_depends_on_template_parameter(out);
     };
-    bool alias_type_id_is_direct_class_template_id_known = false;
-    bool alias_type_id_is_direct_class_template_id = false;
-    auto direct_class_template_alias_type_id =
-        [&]() -> bool
-    {
-      if(alias_type_id_is_direct_class_template_id_known) {
-        return alias_type_id_is_direct_class_template_id;
-      }
-      alias_type_id_is_direct_class_template_id_known = true;
-      if(!decl.type_id) {
-        return false;
-      }
-      const TemplateIdSyntax * syntax =
-          first_template_id_syntax_in_subtree(*decl.type_id);
-      if(!syntax || syntax->name.name.empty()) {
-        return false;
-      }
-      if(compact_type_id_text(spaced_type_id_text) !=
-         compact_type_id_text(
-             template_id_syntax_text_preserving_spacing(*syntax))) {
-        return false;
-      }
-      alias_type_id_is_direct_class_template_id =
-          lookup_class_template(*inst_scope, syntax->name) != nullptr;
-      return alias_type_id_is_direct_class_template_id;
-    };
-    auto materialize_concrete_alias_class_type =
+    std::function<TypePtr(TypePtr)> materialize_concrete_alias_class_type;
+    materialize_concrete_alias_class_type =
         [&](TypePtr candidate) -> TypePtr
     {
-      if(!candidate ||
-         !direct_class_template_alias_type_id() ||
-         type_depends_on_template_parameter(candidate)) {
+      if(!candidate) {
         return candidate;
       }
-      TypePtr base = strip_top_level_cv(candidate);
+      TypePtr candidate_base;
+      bool candidate_const = false;
+      bool candidate_volatile = false;
+      if(!top_level_cv_flags(candidate,
+                             candidate_base,
+                             candidate_const,
+                             candidate_volatile) ||
+         !candidate_base) {
+        return candidate;
+      }
+      const auto restore_cv =
+          [&](const TypePtr & type) -> TypePtr
+      {
+        return (candidate_const || candidate_volatile) ?
+            apply_cv(type, candidate_const, candidate_volatile) :
+            type;
+      };
+
+      switch(candidate_base->kind) {
+      case Type::TK_POINTER:
+      {
+        TypePtr inner = materialize_concrete_alias_class_type(candidate_base->inner);
+        return inner && inner.get() != candidate_base->inner.get() ?
+            restore_cv(make_pointer(inner)) :
+            candidate;
+      }
+      case Type::TK_LVALUE_REFERENCE:
+      {
+        TypePtr inner = materialize_concrete_alias_class_type(candidate_base->inner);
+        return inner && inner.get() != candidate_base->inner.get() ?
+            restore_cv(make_lvalue_reference_raw(inner)) :
+            candidate;
+      }
+      case Type::TK_RVALUE_REFERENCE:
+      {
+        TypePtr inner = materialize_concrete_alias_class_type(candidate_base->inner);
+        return inner && inner.get() != candidate_base->inner.get() ?
+            restore_cv(make_rvalue_reference_raw(inner)) :
+            candidate;
+      }
+      case Type::TK_ATOMIC:
+      {
+        TypePtr inner = materialize_concrete_alias_class_type(candidate_base->inner);
+        return inner && inner.get() != candidate_base->inner.get() ?
+            restore_cv(make_atomic(inner)) :
+            candidate;
+      }
+      case Type::TK_ARRAY:
+      {
+        TypePtr inner = materialize_concrete_alias_class_type(candidate_base->inner);
+        return inner && inner.get() != candidate_base->inner.get() ?
+            restore_cv(make_array(inner,
+                                  candidate_base->has_bound,
+                                  candidate_base->bound,
+                                  candidate_base->bound_text)) :
+            candidate;
+      }
+      default:
+        break;
+      }
+
+      TypePtr base = candidate_base;
       if(!base ||
-         base->kind != Type::TK_NAMED ||
-         class_info_for_type(base)) {
+         base->kind != Type::TK_NAMED) {
         return candidate;
       }
-      std::string lookup_text = trim_space(base->named_display);
+      const bool candidate_dependent =
+          type_depends_on_template_parameter(candidate);
+      if(!candidate_dependent && class_info_for_type(base)) {
+        return candidate;
+      }
+      std::string lookup_text =
+          candidate_dependent ? describe_type(base) : trim_space(base->named_display);
       if(lookup_text.empty()) {
         lookup_text = trim_space(base->named_key);
       }
       lookup_text =
           strip_elaborated_type_prefix(trim_space(lookup_text));
+      if(candidate_dependent &&
+         (text_mentions_template_placeholders(*inst_scope, lookup_text) ||
+          text_mentions_dependent_non_namespace_binding_names(*inst_scope,
+                                                              lookup_text))) {
+        return candidate;
+      }
       QualifiedName ignored_name;
       std::vector<std::string> ignored_args;
       if(!semantic_utils::split_top_level_template_id_text(lookup_text,
@@ -13295,17 +13392,7 @@ private:
          type_depends_on_template_parameter(resolved)) {
         return candidate;
       }
-      TypePtr candidate_cv_base;
-      bool candidate_const = false;
-      bool candidate_volatile = false;
-      top_level_cv_flags(candidate,
-                         candidate_cv_base,
-                         candidate_const,
-                         candidate_volatile);
-      if(candidate_const || candidate_volatile) {
-        resolved = apply_cv(resolved, candidate_const, candidate_volatile);
-      }
-      return resolved;
+      return restore_cv(resolved);
     };
     auto refine_instantiated_alias = [&](TypePtr candidate) -> TypePtr
     {
@@ -13324,7 +13411,7 @@ private:
       if(resolve_nested_alias_type_id_syntax(nested_syntax_alias)) {
         return materialize_concrete_alias_class_type(nested_syntax_alias);
       }
-      return candidate;
+      return materialize_concrete_alias_class_type(candidate);
     };
     auto alias_mentions_instantiation_bindings =
 	        [&](const TypePtr & candidate) -> bool
@@ -13600,6 +13687,14 @@ private:
           }
         }
         throw_substitution_failure(out.str(), std::string(), "callsemantic");
+      }
+    }
+    if(alias &&
+       !dependent_arguments &&
+       type_depends_on_template_parameter(alias)) {
+      TypePtr repaired = refine_instantiated_alias(alias);
+      if(repaired && !type_depends_on_template_parameter(repaired)) {
+        alias = repaired;
       }
     }
     if(alias &&

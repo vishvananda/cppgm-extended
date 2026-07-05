@@ -1506,6 +1506,21 @@ const CppAstNode * find_ctor_mem_initializer(const FunctionBinding & binding,
   return nullptr;
 }
 
+bool ctor_initializer_type_matches_base(SemanticContext & ctx,
+                                        const TypePtr & candidate,
+                                        const ClassInfo & base)
+{
+  TypePtr candidate_base = strip_top_level_cv(candidate);
+  if(!candidate_base || !base.type) {
+    return false;
+  }
+  if(type_equals(candidate_base, base.type)) {
+    return true;
+  }
+  ClassInfo * candidate_info = ctx.complete_class_type(candidate_base);
+  return candidate_info == &base;
+}
+
 const CppAstNode * find_ctor_base_initializer(SemanticContext & ctx,
                                               Scope & scope,
                                               const FunctionBinding & binding,
@@ -1547,12 +1562,12 @@ const CppAstNode * find_ctor_base_initializer(SemanticContext & ctx,
         semantic_type = resolved_type;
       }
       if(semantic_type &&
-         type_equals(strip_top_level_cv(semantic_type), base.type)) {
+         ctor_initializer_type_matches_base(ctx, semantic_type, base)) {
         return &init;
       }
     }
     TypePtr named = ctx.lookup_type_node(scope, *id, id->value);
-    if(named && type_equals(strip_top_level_cv(named), base.type)) {
+    if(named && ctor_initializer_type_matches_base(ctx, named, base)) {
       return &init;
     }
   }

@@ -4,6 +4,7 @@
 #include <set>
 #include <stdexcept>
 
+#include "class_template_mangle_info.h"
 #include "cpp_decl_ast.h"
 #include "cpp_decl_bridge.h"
 #include "cppast_dump.h"
@@ -17,6 +18,7 @@
 #include "semantic_metrics.h"
 #include "semantic_template_function.h"
 #include "template_api.h"
+#include "template_instantiation.h"
 
 using namespace std;
 
@@ -355,6 +357,86 @@ bool reference_referents_are_same_ignoring_top_cv(const TypePtr & lhs,
   TypePtr lhs_base = strip_top_level_cv(lhs);
   TypePtr rhs_base = strip_top_level_cv(rhs);
   return lhs_base && rhs_base && type_equals(lhs_base, rhs_base);
+}
+
+bool class_template_specialization_metadata_has_same_identity(
+    SemanticContext & ctx,
+    const TypePtr & lhs,
+    const TypePtr & rhs)
+{
+  std::shared_ptr<const ClassTemplateSpecializationMangleInfo> lhs_info =
+      named_type_class_template_specialization_mangle_info_const(lhs);
+  std::shared_ptr<const ClassTemplateSpecializationMangleInfo> rhs_info =
+      named_type_class_template_specialization_mangle_info_const(rhs);
+  if(!lhs_info ||
+     !rhs_info ||
+     !lhs_info->class_template_decl ||
+     lhs_info->class_template_decl != rhs_info->class_template_decl ||
+     lhs_info->arguments.empty() ||
+     rhs_info->arguments.empty()) {
+    return false;
+  }
+  if(ctx.type_depends_on_template_parameter(lhs) ||
+     ctx.type_depends_on_template_parameter(rhs)) {
+    return false;
+  }
+
+  const std::string lhs_key =
+      template_instantiation::template_argument_key_for_instantiation(
+          ctx,
+          lhs_info->arguments);
+  const std::string rhs_key =
+      template_instantiation::template_argument_key_for_instantiation(
+          ctx,
+          rhs_info->arguments);
+  return lhs_key == rhs_key;
+}
+
+bool class_object_types_have_same_semantic_identity(SemanticContext & ctx,
+                                                    const TypePtr & lhs,
+                                                    const TypePtr & rhs)
+{
+  TypePtr lhs_base = strip_top_level_cv(lhs);
+  TypePtr rhs_base = strip_top_level_cv(rhs);
+  if(!lhs_base || !rhs_base) {
+    return false;
+  }
+  if(type_equals(lhs_base, rhs_base)) {
+    return true;
+  }
+  if(lhs_base->kind != Type::TK_NAMED || rhs_base->kind != Type::TK_NAMED) {
+    return false;
+  }
+  return class_template_specialization_metadata_has_same_identity(ctx,
+                                                                  lhs_base,
+                                                                  rhs_base);
+}
+
+bool same_type_with_compatible_top_cv_for_semantic_identity(
+    SemanticContext & ctx,
+    const TypePtr & target,
+    const TypePtr & source)
+{
+  if(same_type_with_compatible_top_cv(target, source)) {
+    return true;
+  }
+
+  TypePtr target_base;
+  TypePtr source_base;
+  bool target_const = false;
+  bool target_volatile = false;
+  bool source_const = false;
+  bool source_volatile = false;
+  if(!top_level_cv_flags(target, target_base, target_const, target_volatile) ||
+     !top_level_cv_flags(source, source_base, source_const, source_volatile)) {
+    return false;
+  }
+  if((source_const && !target_const) ||
+     (source_volatile && !target_volatile)) {
+    return false;
+  }
+
+  return class_object_types_have_same_semantic_identity(ctx, target_base, source_base);
 }
 
 bool pointer_pointee_cv_allows_base_conversion(const TypePtr & target_pointer,
@@ -1142,6 +1224,50 @@ ConversionRank standard_conversion_rank(const TypePtr & target, const ExprInfo &
   return standard_conversion_rank_non_reference(target, expr);
 }
 
+bool try_semantic_exact_reference_binding(SemanticContext & ctx,
+                                          const TypePtr & target,
+                                          const ExprInfo & expr,
+                                          ExprInfo & out,
+                                          ConversionRank & rank)
+{
+  rank = CR_BAD;
+  if(!target || !expr.type) {
+    return false;
+  }
+
+  TypePtr base_target = strip_top_level_cv(target);
+  if(!base_target ||
+     (base_target->kind != Type::TK_LVALUE_REFERENCE &&
+      base_target->kind != Type::TK_RVALUE_REFERENCE)) {
+    return false;
+  }
+
+  TypePtr source_type = reference_binding_source_type(expr);
+  bool binds = false;
+  if(base_target->kind == Type::TK_LVALUE_REFERENCE) {
+    binds =
+        (expr.category == VC_LVALUE ||
+         reference_referent_accepts_temporary(base_target->inner)) &&
+        same_type_with_compatible_top_cv_for_semantic_identity(ctx,
+                                                              base_target->inner,
+                                                              source_type);
+  } else {
+    binds =
+        expr.category != VC_LVALUE &&
+        same_type_with_compatible_top_cv_for_semantic_identity(ctx,
+                                                              base_target->inner,
+                                                              source_type);
+  }
+
+  if(!binds) {
+    return false;
+  }
+
+  out = expr;
+  rank = CR_EXACT;
+  return true;
+}
+
 static void set_standard_converted_prvalue_result(SemanticContext & ctx,
                                                   const TypePtr & converted_type,
                                                   const ExprInfo & expr,
@@ -1286,6 +1412,10 @@ ConversionRank conversion_rank(SemanticContext & ctx,
 {
   ConversionRank rank = standard_conversion_rank(target, arg);
   if(rank != CR_BAD) {
+    return rank;
+  }
+  ExprInfo ignored;
+  if(try_semantic_exact_reference_binding(ctx, target, arg, ignored, rank)) {
     return rank;
   }
   if(target &&
@@ -2166,6 +2296,9 @@ bool try_argument_conversion(SemanticContext & ctx,
   rank = standard_conversion_rank(target, expr);
   if(rank != CR_BAD) {
     apply_standard_conversion_result_metadata(ctx, target, expr, out);
+    return true;
+  }
+  if(try_semantic_exact_reference_binding(ctx, target, expr, out, rank)) {
     return true;
   }
 

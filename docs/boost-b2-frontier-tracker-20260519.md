@@ -3296,3 +3296,38 @@ passes and runs the test executable; final log
 full strict direct-LowIR compare passes; full direct-LowIR report passes
 `3483/3483`; `python3 scripts/audit_text_reparse.py --strict` reports all
 zero; `git diff --check` passes.
+
+2026-07-05 Boost.Graph `libs/graph/test//isomorphism` Boost.Parameter
+defaulted class-template base/reference frontier: `isomorphism.cpp` failed
+while instantiating Boost.Parameter `arg_list` because the base class `Next`
+was represented with a default-elided specialization spelling, while the
+existing instantiated class and constructor parameter paths used the fully
+materialized default-argument identity. The immediate failures were an
+incomplete base lookup, a missed constructor base initializer, and rejected
+exact reference binding between the two spellings of the same semantic class.
+The fix lets class-template specialization metadata recover already-created
+class infos after declarations are complete, keeps that recovery away from
+templates with explicit/partial specializations to preserve SFINAE behavior,
+matches constructor base initializers by semantic class identity, and adds a
+standard-conversion fallback for exact reference binding when template metadata
+proves that two non-dependent named class-template specializations have the
+same instantiation identity. Broad validation also exposed stale alias repair
+edges: concrete alias materialization now works for default-elided direct class
+template ids and through pointer/reference/cv/array wrappers, which repairs the
+hosted `pointer_traits::rebind` path without reintroducing the PA21/PA22/PA23
+alias/SFINAE regressions. New regression:
+`pa18/tests/general/200-defaulted-template-arg-base-reference-chain.t`.
+Focused B2
+`/usr/local/bin/timeout 600 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//isomorphism`
+builds, links, and runs the test executable; final log
+`/tmp/boost-graph-isomorphism-final-20260705.log`. Validation:
+`make -C dev cppgm++ -j12`; focused PA18/PA21/PA22/PA23/PA35/PA36 regressions
+pass with direct LowIR comparison; PA18 direct-LowIR report passes `201/201`;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-LowIR compare passes; full direct-LowIR
+report passes `3484/3484`. The older frontier perf baseline
+`/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`
+already fails clean head `648277546` at instructions `+1.25%`; a clean
+pre-change baseline recorded at
+`/tmp/cppgm-before-isomorphism-648277546-perf-baseline.json` passes the
+candidate with instructions `+0.40%`, RSS `-0.77%`, footprint `+0.07%`.
