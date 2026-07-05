@@ -6,7 +6,9 @@ Write one C++ application called `cppgm++`.
 
 PA32 is the host object/toolchain interoperability assignment. It does not add
 new language features. Instead, it combines the PA29 compile-mode driver with
-the PA30 ABI naming layer:
+the PA30 ABI naming layer. PA30 built ABI names from normalized fact files;
+PA32 connects that same naming work to the compiler's semantic/linkage facts
+and writes the resulting names into real object files:
 
 - `cppgm++ -c` must emit ordinary relocatable object files for the current host
   object format.
