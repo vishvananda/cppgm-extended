@@ -10828,6 +10828,7 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     }
     match.ranks.push_back(this_rank);
     match.args.push_back(adjusted_this);
+    match.call_args.push_back(adjusted_this);
     match.source_args.push_back(this_source_arg);
     match.params.push_back(function_type->params[0]);
     match.needs_rematerialization.push_back(converted_this_ok);
@@ -10865,6 +10866,7 @@ ExprInfo analyze_overloaded_assignment_expression(SemanticContext & ctx,
     }
     match.ranks.push_back(rhs_rank);
     match.args.push_back(rhs);
+    match.call_args.push_back(rhs);
     match.source_args.push_back(source_rhs);
     match.params.push_back(function_type->params[1]);
     matches.push_back(std::move(match));

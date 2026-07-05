@@ -482,6 +482,33 @@ bool substitute_owner_arguments_in_class_type(
   switch(type->kind) {
   case Type::TK_NAMED:
   {
+    TypePtr dependent_qualified_owner;
+    std::vector<std::string> dependent_qualified_members;
+    bool dependent_qualified_leading_typename = false;
+    if(named_type_dependent_qualified_member(type,
+                                             dependent_qualified_owner,
+                                             dependent_qualified_members,
+                                             dependent_qualified_leading_typename,
+                                             nullptr)) {
+      TypePtr substituted;
+      if(template_argument_semantics::substitute_type(scope,
+                                                      type,
+                                                      parameters,
+                                                      arguments,
+                                                      substituted) &&
+         substituted &&
+         substituted.get() != type.get()) {
+        TypePtr resolved;
+        if(recover_instantiation_bound_type(ctx, scope, substituted, resolved) &&
+           resolved) {
+          out = resolved;
+          return true;
+        }
+        out = substituted;
+        return true;
+      }
+    }
+
     void * dependent_class_template_decl = nullptr;
     std::vector<DependentAliasTemplateArgumentSyntax> dependent_class_arguments;
     if(named_type_dependent_class_template(type,
@@ -9507,6 +9534,12 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                            false);
                   FunctionBinding synthetic_function;
                   Scope * parse_scope = &inst_scope;
+                  const std::vector<TemplateParameterInfo> * owner_result_parameters =
+                      nullptr;
+                  const std::vector<TemplateArgument> * owner_result_arguments =
+                      nullptr;
+                  std::vector<TemplateArgument> selected_owner_result_arguments;
+                  std::map<std::string, std::size_t> selected_owner_result_pack_sizes;
                   if(source_decl->declaring_scope &&
                      source_decl->declaring_scope->class_info &&
                      !source_decl->is_static_member &&
@@ -9559,8 +9592,6 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                         &instantiation_owner->instantiation_arguments;
                     const std::map<std::string, std::size_t> * owner_pack_sizes =
                         nullptr;
-                    std::vector<TemplateArgument> selected_arguments;
-                    std::map<std::string, std::size_t> selected_pack_sizes;
                     if(selected_partial_specialization(owner_template,
                                                        *instantiation_owner)) {
                       const template_selection::ClassSpecializationSelection selection =
@@ -9576,14 +9607,16 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                              template_selection::MS_PARTIAL_SPECIALIZATION &&
                          selection.parameters) {
                         owner_parameters = selection.parameters;
-                        selected_arguments = selection.arguments;
-                        selected_pack_sizes = selection.pack_sizes;
-                        owner_arguments = &selected_arguments;
-                        owner_pack_sizes = selected_pack_sizes.empty() ?
+                        selected_owner_result_arguments = selection.arguments;
+                        selected_owner_result_pack_sizes = selection.pack_sizes;
+                        owner_arguments = &selected_owner_result_arguments;
+                        owner_pack_sizes = selected_owner_result_pack_sizes.empty() ?
                             nullptr :
-                            &selected_pack_sizes;
+                            &selected_owner_result_pack_sizes;
                       }
                     }
+                    owner_result_parameters = owner_parameters;
+                    owner_result_arguments = owner_arguments;
                     ::template_instantiation::bind_template_arguments_into_scope(
                         services,
                         *parse_scope,
@@ -9603,8 +9636,24 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                          substituted_pattern)) {
                     parse_pattern = substituted_pattern;
                   }
+                  if(owner_result_parameters && owner_result_arguments) {
+                    CppAstNode owner_substituted_pattern;
+                    if(template_argument_semantics::substitute_type_id_node_for_template_arguments(
+                           services,
+                           *parse_scope,
+                           parse_pattern,
+                           *owner_result_parameters,
+                           *owner_result_arguments,
+                           owner_substituted_pattern)) {
+                      parse_pattern = owner_substituted_pattern;
+                    }
+                  }
                   clear_dependent_cached_semantic_types(parse_pattern,
                                                         source_decl->parameters);
+                  if(owner_result_parameters) {
+                    clear_dependent_cached_semantic_types(parse_pattern,
+                                                          *owner_result_parameters);
+                  }
                   const bool parsed =
                       template_decl_ast::parse_type_id(services,
                                                        *parse_scope,
@@ -9613,6 +9662,17 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                        parsed_result,
                                                        !include_body) &&
                       parsed_result;
+                  if(parsed && parsed_result) {
+                    TypePtr parse_scope_resolved;
+                    if(recover_instantiation_bound_type(
+                           services,
+                           template_api::make_template_environment(*parse_scope),
+                           parsed_result,
+                           parse_scope_resolved) &&
+                       parse_scope_resolved) {
+                      parsed_result = parse_scope_resolved;
+                    }
+                  }
                   return parsed;
         });
         if(parsed_result_type && parsed_result) {
@@ -9690,8 +9750,25 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                  {
                    return template_argument_semantics::type_depends_on_template_parameter(ctx, param_type);
                  }))) {
+        std::ostringstream out;
+        out << "instantiated function template retained dependent function type";
+        out << " [name " << source_decl->name << "]";
+        out << " [result " << describe_type(result_type)
+            << ":dependent="
+            << (template_argument_semantics::type_depends_on_template_parameter(ctx, result_type) ? "yes" : "no")
+            << "]";
+        out << " [params";
+        for(std::size_t i = 0; i < rebuilt_params.size(); ++i) {
+          out << (i == 0 ? " " : ", ");
+          out << describe_type(rebuilt_params[i])
+              << ":dependent="
+              << (template_argument_semantics::type_depends_on_template_parameter(ctx, rebuilt_params[i]) ? "yes" : "no");
+        }
+        out << "]";
+        out << " [scope " << scope_name_for_diagnostic(inst_scope) << "]";
+        out << " [bindings " << scope_bindings_for_diagnostic(inst_scope) << "]";
         throw_substitution_failure(
-            "instantiated function template retained dependent function type",
+            out.str(),
             std::string(),
             "template-instantiation");
       }

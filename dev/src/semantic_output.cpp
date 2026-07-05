@@ -816,7 +816,8 @@ const CppAstNode * binding_parameter_clause(const FunctionBinding & binding)
 }
 
 void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
-                                                 FunctionBinding & binding)
+                                                 FunctionBinding & binding,
+                                                 Scope * parent_scope)
 {
   (void)ctx;
 
@@ -849,6 +850,27 @@ void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
   }
 
   ensure_function_parameter_aliases(binding);
+  Scope alias_scope(parent_scope, "<parameter-alias-recovery>", false);
+  Scope * alias_scope_ptr = nullptr;
+  if(parent_scope) {
+    alias_scope.class_info = binding.owner_class;
+    alias_scope.function = &binding;
+    template_scope::overlay_scope_bindings(alias_scope,
+                                           *parent_scope,
+                                           template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+    alias_scope_ptr = &alias_scope;
+  }
+
+  const auto infer_pack_size =
+      [&](std::size_t parameter_index, std::size_t & out_size) -> bool
+      {
+        return alias_scope_ptr &&
+               pack_parameter_analysis::infer_named_type_pack_size(
+                   *alias_scope_ptr,
+                   *parameter_nodes[parameter_index],
+                   out_size);
+      };
+
   std::size_t binding_index = explicit_offset;
   for(std::size_t i = 0; i < parameter_nodes.size(); ++i) {
     if(!parameter_declaration_has_pack(*parameter_nodes[i])) {
@@ -872,17 +894,29 @@ void recover_function_parameter_aliases_from_ast(SemanticContext & ctx,
       return;
     }
 
-    std::size_t remaining_fixed_params = 0;
+    std::size_t inferred_pack_size = 0;
+    bool have_inferred_pack_size = infer_pack_size(i, inferred_pack_size);
+    std::size_t remaining_reserved_params = 0;
     for(std::size_t j = i + 1; j < parameter_nodes.size(); ++j) {
       if(!parameter_declaration_has_pack(*parameter_nodes[j])) {
-        ++remaining_fixed_params;
+        ++remaining_reserved_params;
+        continue;
+      }
+      std::size_t later_pack_size = 0;
+      if(infer_pack_size(j, later_pack_size)) {
+        remaining_reserved_params += later_pack_size;
       }
     }
-    if(binding.params.size() < binding_index + remaining_fixed_params) {
+    if(binding.params.size() < binding_index + remaining_reserved_params) {
       return;
     }
     const std::size_t pack_size =
-        binding.params.size() - binding_index - remaining_fixed_params;
+        have_inferred_pack_size ?
+            inferred_pack_size :
+            binding.params.size() - binding_index - remaining_reserved_params;
+    if(binding.params.size() < binding_index + pack_size) {
+      return;
+    }
     for(std::size_t j = 0; j < pack_size; ++j) {
       const std::size_t index = binding_index + j;
       binding.parameter_aliases[index] = pack_value_alias_name(pack_name, j);
@@ -4216,7 +4250,7 @@ void analyze_function_binding_output_impl(SemanticContext & ctx,
                              std::string("<none>"));
     parser_trace::note("template.resolve", std::string(), trace.str());
   }
-  recover_function_parameter_aliases_from_ast(ctx, binding);
+  recover_function_parameter_aliases_from_ast(ctx, binding, parent_scope);
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;
     trace << "function-output-binding name=" << binding.name
@@ -4553,7 +4587,7 @@ void analyze_function_body_for_witness_semantics_impl(SemanticContext & ctx,
     return;
   }
 
-  recover_function_parameter_aliases_from_ast(ctx, binding);
+  recover_function_parameter_aliases_from_ast(ctx, binding, parent_scope);
 
   Scope function_scope(parent_scope);
   function_scope.class_info = binding.owner_class;

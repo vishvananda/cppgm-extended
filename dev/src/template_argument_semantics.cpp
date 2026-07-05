@@ -137,6 +137,13 @@ NonTypeArgumentStatus evaluate_structured_bool_constant_type(
     const TypePtr & type,
     bool & out);
 
+bool resolve_standard_meta_type_argument(
+    template_api::TemplateServices & services,
+    Scope & argument_scope,
+    const TemplateIdSyntax & qualifier_template_id,
+    std::size_t index,
+    TypePtr & out);
+
 const char * standard_type_trait_builtin_name(const string & name);
 bool standard_constructibility_shorthand_name(const string & name);
 bool evaluate_standard_constructibility_shorthand_type(
@@ -4555,6 +4562,181 @@ bool try_resolve_standard_char_traits_member_type(
   return true;
 }
 
+bool try_resolve_lazy_enable_if_member_type(
+    template_api::TemplateServices & services,
+    Scope & lookup_scope,
+    Scope & argument_scope,
+    const std::string & member_name,
+    const TemplateIdSyntax & qualifier_template_id,
+    TypePtr & out)
+{
+  out.reset();
+  if(member_name != "type" ||
+     qualifier_template_id.name.name != "lazy_enable_if" ||
+     qualifier_template_id.arguments.size() != 2) {
+    return false;
+  }
+
+  ClassTemplateDecl * decl =
+      lookup_class_template_impl(
+          services,
+          lookup_scope,
+          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+  if(!decl || decl->name != qualifier_template_id.name.name) {
+    return false;
+  }
+
+  const auto try_evaluate_known_bool_type_text =
+      [](const string & raw_text, bool & value) -> bool
+      {
+        string text = normalize_type_lookup_name(trim_space(raw_text));
+        if(text.compare(0, 2, "::") == 0) {
+          text = trim_space(text.substr(2));
+        }
+        if(text == "boost::mp11::mp_true" ||
+           text == "boost::mpl::true_" ||
+           text == "std::true_type" ||
+           text == "true_type" ||
+           text == "mp_true" ||
+           text == "true_") {
+          value = true;
+          return true;
+        }
+        if(text == "boost::mp11::mp_false" ||
+           text == "boost::mpl::false_" ||
+           text == "std::false_type" ||
+           text == "false_type" ||
+           text == "mp_false" ||
+           text == "false_") {
+          value = false;
+          return true;
+        }
+        return false;
+      };
+
+  bool condition_value = false;
+  bool condition_resolved = false;
+  TypePtr condition_type;
+  if(resolve_standard_meta_type_argument(services,
+                                         argument_scope,
+                                         qualifier_template_id,
+                                         0,
+                                         condition_type) &&
+     condition_type) {
+    const NonTypeArgumentStatus condition_status =
+        evaluate_structured_bool_constant_type(
+            services,
+            template_api::make_template_environment(argument_scope),
+            condition_type,
+            condition_value);
+    if(condition_status == NT_ARG_EVALUATED) {
+      condition_resolved = true;
+    } else if(condition_status != NT_ARG_DEPENDENT) {
+      return false;
+    }
+  }
+  if(!condition_resolved &&
+     try_evaluate_known_bool_type_text(qualifier_template_id.arguments[0],
+                                       condition_value)) {
+    condition_resolved = true;
+  }
+  if(!condition_resolved) {
+    return false;
+  }
+  if(!condition_value) {
+    throw_substitution_failure(
+        "lazy enable_if member type substitution failed",
+        std::string(),
+        "template-resolution");
+  }
+
+  TypePtr metafunction_type;
+  if(!resolve_standard_meta_type_argument(services,
+                                          argument_scope,
+                                          qualifier_template_id,
+                                          1,
+                                          metafunction_type) ||
+     !metafunction_type) {
+    return false;
+  }
+
+  vector<string> type_member(1, "type");
+  const string owner_text = service_lookup_text_for_type_argument(
+      services,
+      metafunction_type);
+  const string display =
+      string("typename ") +
+      (owner_text.empty() ? describe_type(metafunction_type) : owner_text) +
+      "::type";
+  TypePtr metafunction_member =
+      make_dependent_qualified_member_type(display,
+                                           metafunction_type,
+                                           type_member,
+                                           true);
+  TypePtr resolved_metafunction_member;
+  if(metafunction_member &&
+     resolve_instantiated_dependent_type(
+         services,
+         template_api::make_template_environment(argument_scope),
+         metafunction_member,
+         resolved_metafunction_member) &&
+     resolved_metafunction_member &&
+     !service_type_depends_on_template_parameter(services,
+                                                 resolved_metafunction_member)) {
+    out = resolved_metafunction_member;
+    return true;
+  }
+
+  TypePtr resolved_metafunction_type;
+  if(resolve_instantiated_dependent_type(
+         services,
+         template_api::make_template_environment(argument_scope),
+         metafunction_type,
+         resolved_metafunction_type) &&
+     resolved_metafunction_type) {
+    metafunction_type = resolved_metafunction_type;
+  }
+  if(!metafunction_type ||
+     service_type_depends_on_template_parameter(services, metafunction_type)) {
+    return false;
+  }
+
+  Scope * metafunction_scope = nullptr;
+  if(!prepare_concrete_type_member_scope(
+         services,
+         template_api::make_template_environment(argument_scope),
+         metafunction_type,
+         metafunction_scope) ||
+     !metafunction_scope) {
+    return false;
+  }
+  TypePtr member_type =
+      lookup_concrete_type_in_resolved_scope(
+          services,
+          template_api::make_template_environment(argument_scope),
+          *metafunction_scope,
+          "type",
+          true);
+  if(!member_type) {
+    return false;
+  }
+  TypePtr resolved_member;
+  if(resolve_instantiated_dependent_type(
+         services,
+         template_api::make_template_environment(argument_scope),
+         member_type,
+         resolved_member) &&
+     resolved_member) {
+    member_type = resolved_member;
+  }
+  if(!member_type ||
+     service_type_depends_on_template_parameter(services, member_type)) {
+    return false;
+  }
+  out = member_type;
+  return true;
+}
+
 StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -4691,6 +4873,15 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
       if(try_resolve_standard_char_traits_member_type(
              services,
              *current,
+             qualified.name,
+             *lookup_qualifier_template_id,
+             out)) {
+        return StructuredTypeLookupResult::Resolved;
+      }
+      if(try_resolve_lazy_enable_if_member_type(
+             services,
+             *current,
+             scope,
              qualified.name,
              *lookup_qualifier_template_id,
              out)) {
@@ -27368,6 +27559,14 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
               "template-resolution");
         case STANDARD_META_MEMBER_NOT_APPLICABLE:
           break;
+        }
+        if(try_resolve_lazy_enable_if_member_type(services,
+                                                  *class_template->declaring_scope,
+                                                  raw_scope,
+                                                  "type",
+                                                  template_id,
+                                                  out)) {
+          return DependentNamedTypeResolutionStatus::Resolved;
         }
       }
     }

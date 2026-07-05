@@ -1,0 +1,97 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : i32
+  slot $b : i32
+  slot $discard__1 : obj<1x1>
+
+  block ^entry:
+    store i32 0, $a
+    store i32 0, $b
+    %t1 = addr $discard__1
+    %t2 = addr $a
+    %t3 = addr $b
+    %t4 = call obj<1x1> @arg_list_factory_arg_list__int____int_____reverse(%t2, %t3)
+    copyobj 1x1 %t4, %t1
+    return i32 0
+}
+function @arg_list_factory_arg_list__int____int_____reverse(%a0 : ptr [pass=reference], %args : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJRiS1_EE7reverseES1_S1_] {
+  slot $a0 : ptr
+  slot $args : ptr
+  slot $retobj__1 : obj<1x1>
+
+  block ^entry:
+    store ptr %a0, $a0
+    store ptr %args, $args
+    %t1 = addr $retobj__1
+    %t2 = load ptr $args
+    %t3 = call ptr @forward(%t2)
+    %t4 = load ptr $a0
+    %t5 = call ptr @forward(%t4)
+    %t6 = call obj<1x1> @arg_list_factory_arg_list__int_____reverse(%t3, %t5)
+    copyobj 1x1 %t6, %t1
+    return obj<1x1> $retobj__1
+}
+function @forward(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardIRiEOT_RS1_] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}
+function @arg_list_factory_arg_list__int_____reverse(%a0 : ptr [pass=reference], %reversed_args : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJRiEE7reverseIJS1_EEES0_O2A0DpOT_] {
+  slot $a0 : ptr
+  slot $reversed_args : ptr
+  slot $retobj__1 : obj<1x1>
+
+  block ^entry:
+    store ptr %a0, $a0
+    store ptr %reversed_args, $reversed_args
+    %t1 = addr $retobj__1
+    %t2 = load ptr $a0
+    %t3 = call ptr @forward(%t2)
+    %t4 = load ptr $reversed_args
+    %t5 = call ptr @forward(%t4)
+    %t6 = call obj<1x1> @arg_list_factory_arg_list___reverse(%t3, %t5)
+    copyobj 1x1 %t6, %t1
+    return obj<1x1> $retobj__1
+}
+function @arg_list_factory_arg_list___reverse(%reversed_args : ptr [pass=reference], %reversed_args__pack2 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJEE7reverseIJRiS3_EEES0_DpOT_] {
+  slot $reversed_args : ptr
+  slot $reversed_args__pack2 : ptr
+  slot $retobj__1 : obj<1x1>
+  slot $argobj__2 : obj<1x1>
+
+  block ^entry:
+    store ptr %reversed_args, $reversed_args
+    store ptr %reversed_args__pack2, $reversed_args__pack2
+    %t1 = addr $retobj__1
+    %t2 = addr $argobj__2
+    call void @tag__tag(%t2)
+    %t3 = load ptr $reversed_args
+    %t4 = call ptr @forward(%t3)
+    %t5 = load ptr $reversed_args__pack2
+    %t6 = call ptr @forward(%t5)
+    call void @arg_list__arg_list(%t1, $argobj__2, %t4, %t6)
+    return obj<1x1> $retobj__1
+}
+function @arg_list__arg_list(%this : ptr, %__param1 : obj<1x1>, %__param2 : ptr [pass=reference], %__param3 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8arg_listC1IJRiS1_EEE3tagDpOT_] {
+  slot $this : ptr
+  slot $__param1 : obj<1x1>
+  slot $__param2 : ptr
+  slot $__param3 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param2, $__param2
+    store ptr %__param3, $__param3
+    return void
+}
+function @tag__tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3tagC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN8arg_listC2IJRiS1_EEE3tagDpOT_ = @arg_list__arg_list
+alias object _ZN3tagC2Ev = @tag__tag

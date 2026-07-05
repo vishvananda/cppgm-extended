@@ -788,6 +788,7 @@ Local Boost wrapper state:
 | 51f | `libs/graph/test//boykov_kolmogorov_max_flow_test` | pass | Class-template body lookup now defers unqualified calls whose arguments recursively depend on member calls through dependent typedef/base aliases. Focused B2 builds, links, runs, and updates 4 targets: `/tmp/boost-graph-boykov-after-dependent-member-argument-20260705.log`. |
 | 51g | `libs/graph/test//cycle_ratio_tests` | pass | Class-template body lookup now sees class-scope unscoped enumerators introduced by `typedef enum { ... } name;`, fixing `my_white` in `boost/graph/howard_cycle_ratio.hpp`. Focused B2 builds, links, runs, and updates the test target; the paired `libs/graph/example//cycle_ratio_example` advances to the next independent `generate_random_graph` overload/default-argument ambiguity. Log: `/tmp/boost-graph-cycle-ratio-after-typedef-enum-20260705.log`. |
 | 51h | `libs/graph/example//cycle_ratio_example` | pass | Function-template partial ordering now treats fixed fundamental transformed parameter types as more structured than partial-order placeholders, so `boost::generate_random_graph(g, nV, nE, rng, true, true)` selects the fixed `bool, bool` overload before the broader output-iterator overload with a defaulted trailing parameter. Focused B2 builds, links, runs, and passes both cycle-ratio targets: `/tmp/boost-graph-cycle-ratio-after-partial-order-20260705.log`. |
+| 51i | `libs/graph/example//canonical_ordering` | pass | Boost.Parameter named-argument construction for Boyer-Myrvold planarity now resolves `lazy_enable_if<Cond, MetaFn>::type` result/member types, ranks the lvalue member assignment overload ahead of the forwarding-reference overload with real call arguments, and recovers empty middle function-parameter packs during `arg_list_factory` reversal. Focused B2 builds, links, runs, and passes: `/tmp/boost-graph-canonical-ordering-after-boost-parameter-20260705.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -3516,3 +3517,58 @@ baseline recorded from `a6c1a9a79` at
 passes the candidate with instructions `+0.08%`, RSS `+0.28%`, footprint
 `-0.00%`; detailed report
 `/tmp/cppgm-perf-after-explicit-member-template-report.json`.
+
+2026-07-05 Boost.Graph `libs/graph/example//canonical_ordering`
+Boost.Parameter named-argument frontier: the canonical-ordering example calls
+`boyer_myrvold_planarity_test(boyer_myrvold_params::graph = g,
+boyer_myrvold_params::embedding = ...)`. That named-argument expression exposed
+three separate semantic gaps. First, `lazy_enable_if<mp_true,
+aux::tag<...>>::type` retained a dependent member type while replaying the
+Boost.Parameter keyword `operator=` result. Second, overload ranking for member
+assignment had the converted operands but did not keep the corresponding
+`call_args`, so the partial-order reference-pattern tie-break could not prefer
+`operator=(T&)` over the forwarding-reference `operator=(T&&)` for an lvalue
+RHS. Third, `arg_list_factory` reverses variadic argument lists with adjacent
+function-parameter packs; when the middle `Args...` pack is empty and the
+following `ReversedArgs...` pack is nonempty, semantic output recovered the
+remaining parameter aliases under `args` instead of `reversed_args`, producing
+an `unknown lvalue id-expression reversed_args` LowIR failure. The larger
+planarity reducer also exposed a crash from keeping selected partial
+specialization argument pointers past their storage lifetime during
+owner-result reparsing.
+
+The fix is split along those owners. Dependent `lazy_enable_if<Cond,
+MetaFn>::type` member resolution now has a narrow helper that evaluates known
+bool-type conditions and resolves `MetaFn::type`; the broader experimental
+type-text fallback was removed after the reducers and focused B2 still passed.
+Function-template result reparsing now overlays owner class-template arguments,
+keeps selected partial-specialization arguments alive, and still uses the lazy
+reference-only parse mode when the function body is not being instantiated so
+dropped overload candidates do not force unrelated class completions. Member
+assignment overload candidates now populate `call_args` for the implicit object
+and RHS. Function-parameter alias recovery now builds a temporary parent-based
+alias scope and reserves inferred later pack sizes before assigning aliases to
+an earlier pack. Owners: PA22:300 dependent result/member SFINAE, PA22:200
+member operator partial ordering, and PA22:100 function-template pack deduction
+and parameter-alias recovery. New regressions:
+`pa22/tests/spec/300-lazy-enable-if-member-result-type.t`,
+`pa22/tests/spec/200-member-assignment-lvalue-beats-forwarding-ref.t`, and
+`pa22/tests/general/100-function-parameter-empty-middle-pack-alias.t`.
+Pre-fix evidence: the reduced Boost.Parameter named-argument call reproduced
+the retained dependent result, assignment ambiguity, and `reversed_args`
+LowIR error; focused Boost `libs/graph/example//canonical_ordering` failed in
+the same planarity named-argument path. After the fix, the focused reducers
+compile, focused B2
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/example//canonical_ordering`
+passes; final log
+`/tmp/boost-graph-canonical-ordering-after-boost-parameter-20260705.log`.
+Validation: `make -C dev -j12 cppgm++`; focused PA22 checks for all three new
+tests pass; PA21 and PA22 placement audits report no early-placement findings;
+PA22 template-placement audit completes; PA21/PA22 direct-LowIR report passes
+`399/399`; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; full strict direct-LowIR compare passes; full
+direct-LowIR report passes `3492/3492`. Perf check against
+`/tmp/cppgm-perf-baseline-boost-frontier-a6c1a9-explicit-member-template.json`
+passes the candidate with instructions `+0.09%`, RSS `-0.17%`, footprint
+`+0.00%`; detailed report
+`/tmp/cppgm-perf-after-canonical-ordering-report.json`.
