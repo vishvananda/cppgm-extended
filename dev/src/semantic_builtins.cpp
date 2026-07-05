@@ -2138,6 +2138,7 @@ void register_builtin_functions(Scope & scope,
   const TypePtr void_ptr = make_pointer(make_fundamental(FT_VOID));
   const TypePtr const_void_ptr = make_pointer(make_cv(make_fundamental(FT_VOID), true, false));
   const TypePtr size_type = make_fundamental(FT_UNSIGNED_LONG_INT);
+  const TypePtr builtin_va_list_type = scope.named_types["__builtin_va_list"];
   const TypePtr align_val_type =
       make_named("enum class align_val_t",
                  "enum class std::__1::align_val_t",
@@ -2381,6 +2382,9 @@ void register_builtin_functions(Scope & scope,
   add_builtin("__builtin_strcmp", int_type, std::vector<TypePtr>(2, const_char_ptr));
   add_builtin("__builtin_strchr", char_ptr, std::vector<TypePtr>{const_char_ptr, int_type});
   add_builtin("__builtin_strlen", size_type, std::vector<TypePtr>(1, const_char_ptr));
+  add_builtin("__builtin_vsnprintf",
+              int_type,
+              std::vector<TypePtr>{char_ptr, size_type, const_char_ptr, builtin_va_list_type});
   add_builtin("__builtin_alloca", void_ptr, std::vector<TypePtr>{size_type});
   add_builtin("__builtin_expect", long_type, std::vector<TypePtr>{long_type, long_type});
   add_builtin("__builtin_prefetch", make_fundamental(FT_VOID), std::vector<TypePtr>{const_void_ptr});
