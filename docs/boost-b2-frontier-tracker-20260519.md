@@ -781,6 +781,7 @@ Local Boost wrapper state:
 | 50 | `libs/gil/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.8s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__gil__test.log`. |
 | 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, Boost.Parameter keyword `instance` link frontier, `sp_convertible<Y[], T[]>` known-bound array selection frontier, Boost.Tuple member-template non-type source-replay frontier, Boost.Parameter imported member-template owner frontier, `dijkstra_shortest_paths` named-parameter partial-order frontier, CSR graph vertex-all property-map result-type scope-binding frontier, Boost.Optional proxy defaulted non-type argument scope frontier, pointer-arithmetic class-conversion frontier, late-member subscript structured-binding recovery frontier, local using-declaration inline function-template body-check frontier, Boost.PropertyTree nested current-specialization owner frontier, lexical_cast wide-stream insertion SFINAE frontier, and libc++ `__make_unsigned_t<char>` signedness-transform alias frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test`, `libs/graph/test//finish_edge_bug`, `libs/graph/test//test_graphs`, `libs/graph/test//transitive_closure_test`, `libs/graph/test//betweenness_centrality_test`, `libs/graph/test//csr_graph_test`, `libs/graph/test//dfs_cc`, `libs/graph/test//dijkstra_cc`, `libs/graph/test//disjoint_set_test`, `libs/graph/test//generator_test`, and `libs/graph/test//graphml_test` pass. Focused `graphml_test` now builds, links, runs, and updates 8 targets. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`, `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`, `/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`, `/tmp/boost-graph-finish-edge-and-test-graphs-after-nontype-order-20260704.log`, `/tmp/boost-graph-transitive-closure-after-imported-member-owner-20260704-r2.log`, `/tmp/boost-graph-betweenness-after-template-structure-20260704.log`, `/tmp/boost-graph-csr-after-partial-order-guard-20260704.log`, `/tmp/boost-graph-dfs-cc-after-default-nontype-scope-20260704.log`, `/tmp/boost-graph-dijkstra-cc-after-pointer-arithmetic-conversion-20260704.log`, `/tmp/boost-graph-disjoint-set-after-structured-binding-recovery-noseed-20260704-r2.log`, `/tmp/boost-graph-generator-test-after-local-using-declaration-template-body-20260704.log`, `/tmp/boost-graph-graphml-test-after-current-specialization-20260704.log`, `/tmp/boost-graph-graphml-test-after-stream-insertion-sfinae-20260704.log`, and `/tmp/boost-graph-graphml-test-after-make-unsigned-20260704-r2.log`. |
 | 51a | `libs/graph/test//astar_search_test` | advanced | Boost.Parameter member-operator template partial ordering now skips the implicit object slot when applying the existing reference-pattern tie-break, fixing the `arg_pack[_visitor \| default_visitor]` ambiguity. Focused B2 advances to the next independent frontier, `boost::shared_array<my_float>` construction from an array `new` expression: `/tmp/boost-graph-astar-search-b2-after-ref-pattern.log`. |
+| 51b | `libs/graph/test//astar_search_test` | pass | Class array-new lowering now carries default constructor arguments through the per-element construction loop, fixing the `boost::shared_array<my_float>` construction frontier. Focused B2 builds, links, runs, and updates 4 targets: `/tmp/boost-graph-astar-search-b2-after-array-new-default-arg.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -3147,3 +3148,38 @@ passes; full strict direct-LowIR compare passes; full direct-LowIR report passes
 `/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`
 passes with instructions `+0.11%`, RSS `+1.70%`, footprint `+0.24%`; detailed
 report `/tmp/cppgm-after-member-operator-ref-pattern-perf-report.json`.
+
+2026-07-04 Boost.Graph `libs/graph/test//astar_search_test`
+`boost::shared_array<my_float>` array-new default-constructor argument frontier:
+after the Boost.Parameter partial-order fix, `shared_array_property_map`
+initialized `data(new T[n])` where `T` was `my_float`, whose default constructor
+is `explicit my_float(float v = float())`. Class array-new semantic analysis
+selected that constructor but rejected the prepared constructor action whenever
+it contained arguments beyond the element object pointer. That also caused
+constructor-template argument analysis for `shared_array(Y*)` to fail before the
+templated pointer constructor reached the diagnostic set. The fix carries
+constructor action argument nodes on class array-new `new_expression` nodes and
+emits them inside the per-element LowIR construction loop, matching the existing
+scalar `new` constructor-call path. No Boost special case, fallback resolver,
+cache, or source-text reparse is added. Owner: PA16 class array-new/value
+semantics. New regression:
+`pa16/tests/general/400-array-new-default-ctor-default-arg.t`.
+Pre-fix evidence: the no-STL PA16 reducer `item *items = new item[2];` failed
+with `array new-expression constructor arguments unsupported`, and the
+Boost-shaped `holder<item> h(new item[2])` reducer failed before selecting its
+constructor template. Clang accepted and ran both reducers. After the fix, both
+reducers compile and run under CPPGM, direct
+`libs/graph/test/astar_search_test.cpp` compiles, and focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/graph/test//astar_search_test`
+builds, links, runs, and updates 4 targets. Logs
+`/tmp/boost-graph-astar-search-after-array-new-default-arg.log` and
+`/tmp/boost-graph-astar-search-b2-after-array-new-default-arg.log`.
+Validation: `make -C dev cppgm++ -j12`; focused PA16 regression plus neighboring
+array-new tests pass; PA16 placement audit reports no placement findings; PA16
+direct-LowIR report passes `138/138`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-LowIR compare passes; full direct-LowIR report passes
+`3477/3477`. The candidate perf check against
+`/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`
+passes with instructions `-0.02%`, RSS `+1.01%`, footprint `+0.24%`; detailed
+report `/tmp/cppgm-after-array-new-default-arg-perf-report.json`.

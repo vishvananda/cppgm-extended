@@ -10858,13 +10858,17 @@ private:
     if(!node.has_uint_value || node.children.size() == 1) {
       return;
     }
-    if(node.children.size() != 2 || node.children[1].kind != CallSemKind::callee) {
+    if(node.children.size() < 2 || node.children[1].kind != CallSemKind::callee) {
       throw logic_error("class array new-expression constructor shape");
     }
 
     TypePtr result_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
     if(!result_type || result_type->kind != Type::TK_POINTER || !result_type->inner) {
       throw logic_error("class array new-expression requires pointer result");
+    }
+    TypePtr function_type = strip_top_level_cv(node.children[1].semantic_type);
+    if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+      throw logic_error("class array new-expression constructor callee requires function type");
     }
     const unsigned long long element_size = callsem_uint_value(node);
     const string element_count = array_new_element_count(node, evaluated_byte_count);
@@ -10894,8 +10898,26 @@ private:
                                          string("index i8 ") + object_ptr + ", " +
                                              byte_offset);
     }
-    emit_line("call void " + lookup_function_symbol(node.children[1]) + "(" +
-              element_ptr + ")");
+    vector<string> args;
+    args.push_back(element_ptr);
+    for(size_t i = 2; i < node.children.size(); ++i) {
+      const size_t param_index = i - 1;
+      if(param_index < function_type->params.size()) {
+        append_call_argument_values(args, function_type->params[param_index], node.children[i]);
+      } else {
+        append_variadic_call_argument_value(args, node.children[i]);
+      }
+    }
+    ostringstream op;
+    op << "call void " << lookup_function_symbol(node.children[1]) << "(";
+    for(size_t i = 0; i < args.size(); ++i) {
+      if(i != 0) {
+        op << ", ";
+      }
+      op << args[i];
+    }
+    op << ")";
+    emit_line(op.str());
     const string next =
         emit_temp_assignment("i64", string("binary add i64 ") + index + ", 1");
     emit_line("store i64 " + next + ", " + index_slot);

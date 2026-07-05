@@ -3537,10 +3537,10 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
           false,
           OutputReason::NewExpression,
           ctor_action);
-      if(ctor_action.call_args.size() != 1) {
-        throw logic_error("array new-expression constructor arguments unsupported");
-      }
       result.node.children.push_back(make_bound_callee_node(ctx, *ctor_action.ctor));
+      for(size_t i = 1; i < ctor_action.call_args.size(); ++i) {
+        result.node.children.push_back(std::move(ctor_action.call_args[i].node));
+      }
     }
     return result;
   }
