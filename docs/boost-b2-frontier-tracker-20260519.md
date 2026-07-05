@@ -3746,3 +3746,29 @@ Isolated perf against clean `056248df4` passes with instructions `+0.05%`, RSS
 `-0.07%`, footprint `+0.04%`; baseline
 `/tmp/cppgm-before-boost-enable-if-056248df4-perf-baseline.json`, report
 `/tmp/cppgm-after-boost-enable-if-056248df4-perf-check.log`.
+
+2026-07-05 Boost.Graph broad post-`enable_if` survey: full
+`libs/graph/test` with `JOBS=4` progressed through the main Graph test body and
+many examples before the 1800s wrapper timeout; log
+`/tmp/boost-graph-tests-after-enable-if-20260705.log`. The apparent
+`cycle_ratio_tests` compile diagnostic in the broad log did not reproduce with
+the current compiler: direct single-file compile passed, and focused B2
+`libs/graph/test//cycle_ratio_tests` compiled, linked, ran, and updated eight
+targets; log `/tmp/boost-graph-cycle-ratio-focused-20260705.log`. The
+remaining focused `libs/graph/test//weighted_matching_test` failure is a Boost
+test-harness data-file staging issue: B2 runs the executable from the build
+directory without `weighted_matching.dat`, so it fails at
+`weighted_matching_test.cpp:142`; the same `cppgm++`-built executable run from
+`libs/graph/test` exits 0 with `No errors detected.` Focused B2 log:
+`/tmp/boost-graph-weighted-matching-test-focused-20260705.log`. Staging
+`libs/graph/test/weighted_matching.dat` at the Boost root makes the same
+focused B2 target pass; log
+`/tmp/boost-graph-weighted-matching-test-root-data-20260705.log`.
+With the data file staged, a non-`-a` continuation of full `libs/graph/test`
+using current `/Users/vishvananda/cppgm-extended/dev/cppgm++`, `JOBS=4`, and
+the existing B2 build tree completed cleanly, updating the remaining 510
+targets with no failure/skip/error markers in the log; final log
+`/tmp/boost-graph-tests-continuation-after-enable-if-20260705.log`. A
+five-second sample from the slower `johnson-eg.cpp` compile was preserved at
+`/tmp/cppgm-boost-graph-johnson-eg-sample-20260705.txt`; the target completed
+and ran successfully.
