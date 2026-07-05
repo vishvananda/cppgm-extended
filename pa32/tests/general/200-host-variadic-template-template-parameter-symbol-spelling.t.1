@@ -1,5 +1,5 @@
 // Variadic template-template parameters use an open-ended arity sentinel; host
-// mangling must not treat it as an exact parameter count.
+// symbol spelling must not treat it as an exact parameter count.
 template <typename... Ts>
 struct box {
   box(const Ts &...) {}
