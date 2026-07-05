@@ -6918,10 +6918,21 @@ int compare_function_template_reference_pattern_preference(
 
   FunctionTemplateDecl & current_template = *current.function->source_template;
   FunctionTemplateDecl & best_template = *best.function->source_template;
+  const size_t current_arg_offset =
+      current.function->is_method &&
+      !current_template.is_static_member &&
+      current.call_args.size() > current_template.params_pattern.size() ?
+          1u :
+          0u;
+  const size_t best_arg_offset =
+      best.function->is_method &&
+      !best_template.is_static_member &&
+      best.call_args.size() > best_template.params_pattern.size() ?
+          1u :
+          0u;
   const size_t common_arg_count =
-      std::min(std::min(current.call_args.size(), best.call_args.size()),
-               std::min(current_template.params_pattern.size(),
-                        best_template.params_pattern.size()));
+      std::min(current_template.params_pattern.size(),
+               best_template.params_pattern.size());
   if(common_arg_count == 0) {
     return 0;
   }
@@ -6929,8 +6940,14 @@ int compare_function_template_reference_pattern_preference(
   bool current_better = false;
   bool best_better = false;
   for(size_t i = 0; i < common_arg_count; ++i) {
-    if(current.call_args[i].category != VC_LVALUE ||
-       best.call_args[i].category != VC_LVALUE) {
+    const size_t current_arg_index = i + current_arg_offset;
+    const size_t best_arg_index = i + best_arg_offset;
+    if(current_arg_index >= current.call_args.size() ||
+       best_arg_index >= best.call_args.size()) {
+      continue;
+    }
+    if(current.call_args[current_arg_index].category != VC_LVALUE ||
+       best.call_args[best_arg_index].category != VC_LVALUE) {
       continue;
     }
 
@@ -6950,7 +6967,9 @@ int compare_function_template_reference_pattern_preference(
     }
 
     const ExprInfo & actual =
-        i < current.source_args.size() ? current.source_args[i] : current.call_args[i];
+        current_arg_index < current.source_args.size() ?
+            current.source_args[current_arg_index] :
+            current.call_args[current_arg_index];
     const int current_cv_score =
         reference_pattern_cv_match_score(current_template.params_pattern[i].second,
                                          actual.type);
