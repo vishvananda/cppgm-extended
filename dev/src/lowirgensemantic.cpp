@@ -16270,6 +16270,45 @@ private:
     return found->second;
   }
 
+  string copy_constructor_symbol(const TypePtr & class_type) const
+  {
+    TypePtr object_type = strip_top_level_cv(remove_reference_type(class_type));
+    if(!is_complete_class_value_type(object_type)) {
+      return string();
+    }
+
+    const string qualified = class_qualified_name(object_type);
+    if(qualified.empty()) {
+      return string();
+    }
+    const string simple = class_constructor_name(qualified);
+    vector<TypePtr> params;
+    params.push_back(make_pointer(object_type));
+    params.push_back(make_lvalue_reference_raw(make_cv(object_type, true, false)));
+    const TypePtr lookup_type =
+        make_function(make_fundamental(FT_VOID), params, false);
+    const string lookup_name = qualified + "::" + simple;
+    map<string, string>::const_iterator found =
+        function_symbols_.find(function_key(lookup_name, lookup_type));
+    if(found != function_symbols_.end()) {
+      note_referenced_function_signature(found->second, lookup_type);
+      return found->second;
+    }
+
+    const string symbol = try_lookup_special_member_symbol_by_index(
+        function_symbol_entries_,
+        function_symbol_lookup_index(),
+        lookup_name,
+        [&](const TypePtr & entry_type)
+        {
+          return matches_constructor_entry_type_for_lowir(entry_type,
+                                                          object_type,
+                                                          Type::TK_LVALUE_REFERENCE);
+        });
+    note_referenced_function_signature(symbol, lookup_type);
+    return symbol;
+  }
+
   string destructor_symbol(const TypePtr & class_type) const
   {
     TypePtr object_type = strip_top_level_cv(remove_reference_type(class_type));
@@ -16477,11 +16516,88 @@ private:
     global_ctor_actions_.push_back(&action);
   }
 
+  void note_global_constructor_function_reference(const string & symbol)
+  {
+    if(symbol.empty() || function_symbol_has_trivial_lifecycle(symbol)) {
+      return;
+    }
+    if(referenced_function_symbols_.insert(symbol).second) {
+      collect_reachable_function_symbols();
+    }
+  }
+
+  bool is_global_array_class_copy_source(const TypePtr & element_type,
+                                         const CallSemNode & source) const
+  {
+    TypePtr target_base = strip_top_level_cv(remove_reference_type(element_type));
+    TypePtr source_base = strip_top_level_cv(remove_reference_type(source.semantic_type));
+    if(!is_complete_class_value_type(target_base) ||
+       !source_base ||
+       !semantic_conversion::same_type_with_compatible_top_cv(target_base, source_base)) {
+      return false;
+    }
+
+    return source.value_category == CVC_LVALUE ||
+           source.value_category == CVC_XVALUE ||
+           is_reference_type(source.semantic_type);
+  }
+
+  void append_global_array_copy_constructor_action(const CallSemNode & variable,
+                                                   const TypePtr & array_type,
+                                                   size_t index,
+                                                   const CallSemNode & source)
+  {
+    TypePtr object_type = strip_top_level_cv(remove_reference_type(array_type->inner));
+    const string qualified = class_qualified_name(object_type);
+    if(qualified.empty()) {
+      throw logic_error("unsupported global array class initializer");
+    }
+
+    const string simple = class_constructor_name(qualified);
+    vector<TypePtr> params;
+    params.push_back(make_pointer(object_type));
+    params.push_back(make_lvalue_reference_raw(make_cv(object_type, true, false)));
+    const TypePtr callee_type =
+        make_function(make_fundamental(FT_VOID), params, false);
+    const string symbol = copy_constructor_symbol(object_type);
+
+    CallSemNode & callee =
+        make_synthetic_node(CallSemKind::callee, qualified + "::" + simple);
+    callee.semantic_type = callee_type;
+    callee.value_category = CVC_PRVALUE;
+    if(!symbol.empty()) {
+      set_callsem_symbol(
+          callee,
+          symbol_linkage::make_internal_symbol_identity(symbol, symbol_linkage::SL_WEAK));
+    }
+
+    CallSemNode & call =
+        make_synthetic_node(CallSemKind::call_expression);
+    call.semantic_type = make_fundamental(FT_VOID);
+    call.value_category = CVC_PRVALUE;
+    call.children.push_back(callee);
+    call.children.push_back(make_global_array_element_address_expr(variable, array_type, index));
+    call.children.push_back(source);
+
+    CallSemNode & action =
+        make_synthetic_node(CallSemKind::constructor_action, callee.text);
+    action.trivial_lifecycle =
+        symbol.empty() || function_symbol_has_trivial_lifecycle(symbol);
+    action.children.push_back(call);
+    note_global_constructor_function_reference(symbol);
+    global_ctor_actions_.push_back(&action);
+  }
+
   void append_global_array_constructor_action(const CallSemNode & variable,
                                               const TypePtr & array_type,
                                               size_t index,
                                               const CallSemNode & init_call)
   {
+    if(is_global_array_class_copy_source(array_type->inner, init_call)) {
+      append_global_array_copy_constructor_action(variable, array_type, index, init_call);
+      return;
+    }
+
     if(init_call.kind != CallSemKind::call_expression ||
        init_call.children.empty() ||
        init_call.children[0].kind != CallSemKind::callee ||
@@ -16587,6 +16703,7 @@ private:
       CallSemNode & action =
           make_synthetic_node(CallSemKind::constructor_action, callee.text);
       action.children.push_back(call);
+      note_global_constructor_function_reference(default_ctor);
       global_ctor_actions_.push_back(&action);
       ++constructed_count;
     }

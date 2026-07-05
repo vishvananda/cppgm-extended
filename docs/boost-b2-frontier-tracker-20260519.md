@@ -3183,3 +3183,44 @@ passes; full strict direct-LowIR compare passes; full direct-LowIR report passes
 `/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`
 passes with instructions `-0.02%`, RSS `+1.01%`, footprint `+0.24%`; detailed
 report `/tmp/cppgm-after-array-new-default-arg-perf-report.json`.
+
+2026-07-04 Boost.Graph `libs/graph/test//graphviz_test` global class-array
+named-element copy frontier: Boost.Graph initializes namespace-scope
+`Fixture const all_directed[]` / `all_undirected[]` arrays from named
+`Fixture` objects such as `Directed::basic`. Global array construction only
+accepted constructor-call element nodes, so same-class id-expression elements
+reported `unsupported global array class initializer`. The related implicit
+nontrivial copy path could also miss generated copy-constructor emission before
+LowIR output when array braced-init-list children were not collected with the
+array element target type. The fix teaches semantic output to collect
+array-element storage support under braced-init-list nodes, and teaches global
+array LowIR construction to synthesize copy-constructor actions for same-class
+lvalue/xvalue/reference element sources while marking nontrivial constructor
+symbols reachable. No Boost special case, fallback resolver, cache, or
+source-text reparse is added. Owner: PA16 class value semantics and global
+class-array construction. New regression:
+`pa16/tests/general/400-global-class-array-named-implicit-copy.t`.
+Pre-fix evidence: the no-STL reducers for global named class-array elements
+failed with `unsupported global array class initializer`, and the implicit
+nontrivial array-copy reducer either missed `Holder::Holder(Holder const&)` or
+bit-copied the subobject copy counter. Direct
+`libs/graph/test/graphviz_test.cpp` failed at the same global array
+initializer. After the fix, the reducers compile and run, direct
+`graphviz_test.cpp` compiles, and focused B2
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/graph/test//graphviz_test`
+builds `read_graphviz_new.o`, archives `libboost_graph.a`, builds and links
+`graphviz_test`, then advances to the next runtime frontier: a segmentation
+fault in `std::__1::ios_base::init` while Boost.LexicalCast formats the
+subgraph-nesting-limit parse error. Logs:
+`/tmp/boost-graph-graphviz-test-after-global-array-copy-final.log` and
+`/tmp/boost-graph-graphviz-test-b2-after-global-array-copy-final.log`.
+Validation: `make -C dev cppgm++ -j12`; focused PA16 regression passes after
+refs generated with `REF_TEST_APP=../dev/cppgm++`; clang control for the PA16
+regression exits `0`; PA16 placement audit reports no placement findings; PA16
+direct-LowIR report passes `139/139`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-LowIR compare passes; full direct-LowIR report passes
+`3478/3478`. The candidate perf check against
+`/tmp/cppgm-before-local-using-inline-function-template-20e4102f9-perf-baseline.json`
+passes with instructions `+0.24%`, RSS `+1.78%`, footprint `+0.19%`; detailed
+report `/tmp/cppgm-after-global-array-named-copy-perf-report.json`.

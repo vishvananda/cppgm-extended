@@ -2129,6 +2129,19 @@ void collect_required_storage_value_to_target_support(SemanticContext & ctx,
   const TypePtr effective_node_type =
       resolve_output_support_type(ctx, resolution_scope, node.semantic_type);
 
+  if(node.kind == CallSemKind::braced_init_list) {
+    TypePtr target_base = strip_top_level_cv(effective_target_type);
+    if(target_base && target_base->kind == Type::TK_ARRAY) {
+      for(size_t i = 0; i < node.children.size(); ++i) {
+        collect_required_storage_value_to_target_support(ctx,
+                                                         target_base->inner,
+                                                         node.children[i],
+                                                         resolution_scope);
+      }
+      return;
+    }
+  }
+
   if(node.kind == CallSemKind::statement_expression) {
     if(node.children.size() == 2) {
       collect_required_storage_value_to_target_support(ctx,
