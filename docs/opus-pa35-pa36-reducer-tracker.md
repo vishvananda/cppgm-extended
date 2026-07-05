@@ -1,0 +1,293 @@
+# Opus PA35/PA36 Reducer Tracker
+
+This tracker implements the inventory required by [opus-pa35-pa36-reducer-extraction-plan.md](opus-pa35-pa36-reducer-extraction-plan.md).
+
+Opus evidence is read-only. Each behavior-changing compiler fix from the PA35/PA36 Opus range should end as one of:
+
+- `reduced`: a focused reducer was added and validated.
+- `covered`: an equivalent focused reducer already exists.
+- `evidence-only`: documentation, audit, relocation, or other non-behavioral transition.
+- `blocked`: reducer ownership or portability needs a decision.
+
+Placement uses the earliest essential owner rule: place the reducer in the earliest PA that owns every feature the minimized test truly requires. Do not place a reducer in PA35/PA36 just because the original symptom came from hosted headers.
+
+Generated range:
+
+- First PA35 commit: `a23a6a5837e15ddc93df70355f8f8a3a7776e701`
+- Last PA36 commit: `2102aeeb70ef29165cb23ea6bb3e0b1be024c51e`
+- First-parent transitions: 269
+
+| Status | Opus transition | Original tests fixed | Root cause | Reducer path | Target PA | Prev fails | Next passes | Extended passes | Audit | Commit |
+|---|---|---|---|---|---|---|---|---|---|---|
+| reduced | `2c792218 -> a23a6a58` pa35: parser fixes for heavy hosted headers (condition/attr/member-template/F32) / condition ambiguity | hosted condition-expression parse blocker | `condition()` must not parse `a && f(x)` as a condition declaration with paren init; this is standard statement/declaration ambiguity parsing | `pa10/tests/general/200-condition-expression-call-chain-not-declaration.t` | pa10 | fails at Opus `2c792218`: parse error | passes at Opus `a23a6a58` | focused PA10 check passes; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa10 pa21 pa34' make test-report` passes `590/590` | placement audit passes | `e76a46c98` |
+| reduced | `2c792218 -> a23a6a58` pa35: parser fixes for heavy hosted headers (condition/attr/member-template/F32) / non-dependent member-template call | `<functional>` first blocker `_M_access<_Functor>()` | Inside a template, `obj.f<T>(...)` must parse as a member-template-id call when `obj` is known non-dependent; dependent objects still require the `template` keyword | `pa21/tests/general/300-nondependent-member-template-id-call.t` | pa21 | fails at Opus `2c792218`: parse error | passes at Opus `a23a6a58` | focused PA21 check passes; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa10 pa21 pa34' make test-report` passes `590/590` | placement audit passes | `52e30965d` |
+| reduced | `2c792218 -> a23a6a58` pa35: parser fixes for heavy hosted headers (condition/attr/member-template/F32) / GNU bare attribute and enumerator attribute | hosted headers using bare `__attribute` and attributes after enumerators | GNU bare `__attribute((...))` spelling and trailing enumerator attributes are PA34 vendor-compat parser support | `pa34/tests/compile/500-gnu-bare-attribute-enumerator.t` | pa34 | fails at Opus `2c792218`: parse error | passes at Opus `a23a6a58` | focused PA34 check passes; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa10 pa21 pa34' make test-report` passes `590/590` | placement audit passes | `646080fc3` |
+| reduced | `2c792218 -> a23a6a58` pa35: parser fixes for heavy hosted headers (condition/attr/member-template/F32) / GCC extended float suffixes | `_Float32`/`_Float64` hosted limits constants with `FNN` suffixes | GCC GNU++11 extended float suffixes must classify semantically and remain parseable after LowIR emission; `F128x` is not included because GCC and Clang both reject it on this host | `pa34/tests/compile/700-gcc-extended-float-suffixes.t` plus current LowIR literal parser fix | pa34 | fails at Opus `2c792218`: invalid token `1.0F16` | passes at Opus `a23a6a58` | focused PA34 check passes; `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa10 pa21 pa34' make test-report` passes `590/590` | placement audit passes | `b2a97c329`, `11dcfa599` |
+| todo | `a23a6a58 -> b31b0c0c` pa35: complete forward-only class instantiation from a later explicit specialization |  |  |  |  |  |  |  |  |  |
+| todo | `b31b0c0c -> e0dad360` pa35: const/non-const member-overload tiebreak + anon-union member lowering |  |  |  |  |  |  |  |  |  |
+| todo | `e0dad360 -> 2a44dd32` pa35: __builtin_vsnprintf + capture defaults from in-class member declarations |  |  |  |  |  |  |  |  |  |
+| todo | `2a44dd32 -> 78fecb31` pa35: lower builtin type-trait expressions as constant values |  |  |  |  |  |  |  |  |  |
+| todo | `78fecb31 -> 7317dcbd` pa35: remove debug scaffolding; relocate to satisfy file-size audit |  |  |  |  |  |  |  |  |  |
+| todo | `7317dcbd -> 3286764c` pa35: parse typeid(...) as a postfix-expression so member suffixes apply |  |  |  |  |  |  |  |  |  |
+| todo | `3286764c -> 86af5874` pa35: fold NTTP calls to a static constexpr member of the class being instantiated |  |  |  |  |  |  |  |  |  |
+| todo | `86af5874 -> b6ec5e2c` pa35: plan.md — loop-94 final state (29/70) + updated remaining-cluster analysis |  |  |  |  |  |  |  |  |  |
+| todo | `b6ec5e2c -> ed284dad` pa35: don't emit throwaway instantiations formed during partial ordering |  |  |  |  |  |  |  |  |  |
+| todo | `ed284dad -> 37af5059` pa35: resolve qualified function-template calls (std::__iterator_category) |  |  |  |  |  |  |  |  |  |
+| todo | `37af5059 -> 81b0a59f` pa35: plan.md — loop-94 continuation state (14 fixes, 29/70) + updated clusters |  |  |  |  |  |  |  |  |  |
+| todo | `81b0a59f -> 0f0beaef` pa35: trim a Pa14Lower.h comment to keep the file under the audit size cap |  |  |  |  |  |  |  |  |  |
+| todo | `0f0beaef -> a62c1a64` pa35: integral_constant-like class converts to its static value member |  |  |  |  |  |  |  |  |  |
+| todo | `a62c1a64 -> 2c9f4165` pa35: type typeid(...) in the expression analyzer for decltype/constant contexts |  |  |  |  |  |  |  |  |  |
+| todo | `2c9f4165 -> 1f4d7d48` pa35: a scalar assignment yields the assignee as an lvalue |  |  |  |  |  |  |  |  |  |
+| todo | `1f4d7d48 -> 521fbf08` pa35: plan.md — loop-94 continuation state (17 fixes, 35/70) + updated clusters |  |  |  |  |  |  |  |  |  |
+| todo | `521fbf08 -> 1433299b` pa35: a nested class accesses the enclosing class's private/protected members |  |  |  |  |  |  |  |  |  |
+| todo | `1433299b -> e1f7f156` pa35: operator lookup unions ordinary lookup with ADL hidden friends |  |  |  |  |  |  |  |  |  |
+| todo | `e1f7f156 -> 24ef61c5` pa35: plan.md — loop-94 fixes 18-19 (nested-access, operator ADL union), 35/70 |  |  |  |  |  |  |  |  |  |
+| todo | `24ef61c5 -> 979212b1` pa35: inherited-member overload set + __builtin_constant_p lowering |  |  |  |  |  |  |  |  |  |
+| todo | `979212b1 -> 15cf0b64` pa35: reactive frame-spiller handles EH, alloca, obj-copy, signed div |  |  |  |  |  |  |  |  |  |
+| todo | `15cf0b64 -> acf9d01d` pa35: dependent-base qualified-member call is an expression-statement |  |  |  |  |  |  |  |  |  |
+| todo | `acf9d01d -> 6046fb04` pa35: plan.md + memory — loop-95 fixes 20-23 (35->45/70) |  |  |  |  |  |  |  |  |  |
+| todo | `6046fb04 -> b9d13e51` pa35: is_constructible honors constructor default arguments |  |  |  |  |  |  |  |  |  |
+| todo | `b9d13e51 -> 4eace851` pa35: plan.md — fix 24 (is_constructible default args), 46/70 |  |  |  |  |  |  |  |  |  |
+| todo | `4eace851 -> 5d9c1ed3` pa35: injected-class-name qualified lookup + same-entity dedup |  |  |  |  |  |  |  |  |  |
+| todo | `5d9c1ed3 -> 61fe2fc2` pa35: plan.md — fix 25 (injected-class-name lookup) + __streambuf_type diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `61fe2fc2 -> 940d3c2c` pa35: out-of-line member body sees the class's (inherited) member type-names |  |  |  |  |  |  |  |  |  |
+| todo | `940d3c2c -> 29ab6a30` pa35: plan.md — fix 26 (out-of-line member type-names) + vbase-nav diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `29ab6a30 -> 575e589e` pa35: plan.md header cleanup |  |  |  |  |  |  |  |  |  |
+| todo | `575e589e -> 90557e97` pa35: host-ABI virtual-base method call needs the object address (not lazy) |  |  |  |  |  |  |  |  |  |
+| todo | `90557e97 -> 2280e8ea` pa35: plan.md — fix 27 (host vbase method addr) + locale-machinery blockers |  |  |  |  |  |  |  |  |  |
+| todo | `2280e8ea -> 67b40a96` pa35: plan.md — precise __add_grouping deduction diagnosis (arg0 over-const) |  |  |  |  |  |  |  |  |  |
+| todo | `67b40a96 -> b3c99c4e` pa35: non-const object subscript picks the non-const operator[] overload |  |  |  |  |  |  |  |  |  |
+| todo | `b3c99c4e -> 8659b534` pa35: lay out complete-but-blocked class dependencies; clamp obj slot size >= 1 |  |  |  |  |  |  |  |  |  |
+| todo | `8659b534 -> 1236e21f` pa35: plan.md — precise ctor-selection diagnosis (non-viable 3-param basic_string) |  |  |  |  |  |  |  |  |  |
+| todo | `1236e21f -> 2dd1fd21` pa35: plan.md — refine ctor-selection diagnosis (regression + _InputIterator next blocker) |  |  |  |  |  |  |  |  |  |
+| todo | `2dd1fd21 -> 2f975608` pa35: plan.md — ctor-selection scope-threading blocker (ctorParamTypes needs def binding scope) |  |  |  |  |  |  |  |  |  |
+| todo | `2f975608 -> b6eea5b7` pa35: honor out-of-line ctor default args in arity selection (Pa16CtorArg.cpp) |  |  |  |  |  |  |  |  |  |
+| todo | `b6eea5b7 -> e2ce6b73` pa35: refine ordinary ctor by arg type before preferring a ctor template |  |  |  |  |  |  |  |  |  |
+| todo | `e2ce6b73 -> e46d335d` pa35: fix LIFO imbalance when a temporary's construction materializes an arg temp |  |  |  |  |  |  |  |  |  |
+| todo | `e46d335d -> 2380d1d7` pa35: resolve constructor overloads against external declarations, by all args |  |  |  |  |  |  |  |  |  |
+| todo | `2380d1d7 -> 88b46411` pa35: plan.md loop-94 — 4 landed fixes + locale-cluster backend blocker diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `88b46411 -> 2a973e7e` pa35: plan.md — deeper root traces (unordered_set/_Hashtable NTTP, __is_same, pointer-traits, incomplete-vector) |  |  |  |  |  |  |  |  |  |
+| todo | `2a973e7e -> 2c6f7c83` pa35: resolve overloaded member-call return type by arity (fixes infinite recursion) |  |  |  |  |  |  |  |  |  |
+| todo | `2c6f7c83 -> 3851d23e` pa35: plan.md — arity-based member-overload return typing (47->48), fstream next blocker |  |  |  |  |  |  |  |  |  |
+| todo | `3851d23e -> 2c3a1933` pa35: build the converting temporary when assigning a scalar to a class (<fstream>) |  |  |  |  |  |  |  |  |  |
+| todo | `2c3a1933 -> 8d1ac15c` pa35: keep converting-constructor viability when refining a ctor by argument |  |  |  |  |  |  |  |  |  |
+| todo | `8d1ac15c -> a12013bb` pa35: refine ctor by argument before the copy-init explicit-ctor test |  |  |  |  |  |  |  |  |  |
+| todo | `a12013bb -> c78fb8d3` pa35: close nested temp region before the managed-arg region (EH LIFO balance) |  |  |  |  |  |  |  |  |  |
+| todo | `c78fb8d3 -> 2fb953b7` pa35: plan.md loop-94 — five more fixes (47->52), num_put/argICS blocker diagnosed |  |  |  |  |  |  |  |  |  |
+| todo | `2fb953b7 -> f6acf186` pa35: model converting-constructor user conversions to a by-value class parameter |  |  |  |  |  |  |  |  |  |
+| todo | `f6acf186 -> 9693969a` pa35: plan.md loop-94 — converting-ctor ICS (52->53), turn total 47->53 |  |  |  |  |  |  |  |  |  |
+| todo | `9693969a -> 1d10dc06` pa35: drop the buggy lowerClassInto unrelated-class branch (compiler SIGSEGV) |  |  |  |  |  |  |  |  |  |
+| todo | `1d10dc06 -> 335d3efb` pa35: plan.md — note the self-inflicted SIGSEGV was removed (locale back to backend error) |  |  |  |  |  |  |  |  |  |
+| todo | `335d3efb -> e151aac6` pa35: record friend class templates and re-check friendship live at access time |  |  |  |  |  |  |  |  |  |
+| todo | `e151aac6 -> 8133ae19` pa35: plan.md — friend-access fix + remaining deep-cluster map (turn 47->53) |  |  |  |  |  |  |  |  |  |
+| todo | `8133ae19 -> 7694a210` pa35: defer a non-type default template argument that depends on a symbolic param |  |  |  |  |  |  |  |  |  |
+| todo | `7694a210 -> b82c2e79` pa35: plan.md — constexpr cluster full trace + recommended engine attack |  |  |  |  |  |  |  |  |  |
+| todo | `b82c2e79 -> 4946b957` pa35: resolve a member-template call operator when folding noexcept() |  |  |  |  |  |  |  |  |  |
+| todo | `4946b957 -> 5d8ab06d` pa35: plan.md — member-template noexcept landed; constexpr cluster root = invoke_result SFINAE |  |  |  |  |  |  |  |  |  |
+| todo | `5d8ab06d -> e894d42a` pa35: plan.md FINAL — constexpr cluster reduced to 15-line nested-SFINAE minimal repro |  |  |  |  |  |  |  |  |  |
+| todo | `e894d42a -> e3f3c0aa` pa35: constant-fold a fold-expression whose pack is a template argument |  |  |  |  |  |  |  |  |  |
+| todo | `e3f3c0aa -> fe1d5341` pa35: teach the frame-spilled allocator varargs (register-save area + va_start) |  |  |  |  |  |  |  |  |  |
+| todo | `fe1d5341 -> 043dc6a5` pa35: plan.md loop-95 — correct is_invocable red herring, real 14-failure map |  |  |  |  |  |  |  |  |  |
+| todo | `043dc6a5 -> 08ee9328` pa35: recognize an overloaded name as a template-name in the parser |  |  |  |  |  |  |  |  |  |
+| todo | `08ee9328 -> 4b2971b4` pa35: mangle a compound dependent condition whose last operand is a call |  |  |  |  |  |  |  |  |  |
+| todo | `4b2971b4 -> f70d37e3` pa35: plan.md loop-95 progress (57/70) + refined remaining-13 root-cause map |  |  |  |  |  |  |  |  |  |
+| todo | `f70d37e3 -> be871dd0` pa35: __is_invocable searches base classes for an inherited call operator |  |  |  |  |  |  |  |  |  |
+| todo | `be871dd0 -> c0fe50a2` pa35: plan.md loop-96 — partial-instantiation-drops-members pattern (2 roots) |  |  |  |  |  |  |  |  |  |
+| todo | `c0fe50a2 -> 05f8c3c4` pa35: defer a member-function body's instantiation-time failure ([temp.inst]/4) |  |  |  |  |  |  |  |  |  |
+| todo | `05f8c3c4 -> 411495b8` pa35: resolve a qualified function-template base in most-vexing-parse recovery |  |  |  |  |  |  |  |  |  |
+| todo | `411495b8 -> 9e7fa7a0` pa35: expand a pack-expansion driven only by template parameter packs |  |  |  |  |  |  |  |  |  |
+| todo | `9e7fa7a0 -> 23a6ecf5` pa35: plan.md loop-96 — 61/70 (8 flips); remaining-9 root-cause map |  |  |  |  |  |  |  |  |  |
+| todo | `23a6ecf5 -> 063248a5` pa35: plan.md — map unordered-set's 6-layer fix chain (layers 2-6 detailed) |  |  |  |  |  |  |  |  |  |
+| todo | `063248a5 -> f3a721a1` pa35: constexpr engine calls template operators + registers local typedefs |  |  |  |  |  |  |  |  |  |
+| todo | `f3a721a1 -> 63c8f728` pa35: plan.md loop-97 — record constexpr flips + std::sort 5-layer chain map |  |  |  |  |  |  |  |  |  |
+| todo | `63c8f728 -> 6e7ce820` pa35: identity-beats-decay ICS tiebreak + __function_type_info RTTI |  |  |  |  |  |  |  |  |  |
+| todo | `6e7ce820 -> aad1ef6e` pa35: const_cast/reinterpret_cast between pointers falls back to a bit copy |  |  |  |  |  |  |  |  |  |
+| todo | `aad1ef6e -> 9cfd4db1` pa35: plan.md loop-97 — function-typeid 4-layer map + turn summary |  |  |  |  |  |  |  |  |  |
+| todo | `9cfd4db1 -> a27c33a4` pa35: extract requestFunctionTypeRtti to satisfy the file audit |  |  |  |  |  |  |  |  |  |
+| todo | `a27c33a4 -> abc0d432` pa35: forwarding-ref deduction keeps a const lvalue's top cv (flips function-typeid) |  |  |  |  |  |  |  |  |  |
+| todo | `abc0d432 -> 75789da2` pa35: plan.md — record function-typeid flip (+3 flips this loop, 64/70) |  |  |  |  |  |  |  |  |  |
+| todo | `75789da2 -> 8aca3095` pa35: plan.md — record random (__m128 vectors) + regex (template-name recog) parse roots |  |  |  |  |  |  |  |  |  |
+| todo | `8aca3095 -> ce60de89` pa35: plan.md — record member-const + symbolic-pack-binding dead-ends |  |  |  |  |  |  |  |  |  |
+| todo | `ce60de89 -> a8cb3984` pa35: expand co-varying type+index packs in a scalar member-initializer |  |  |  |  |  |  |  |  |  |
+| todo | `a8cb3984 -> bfe29184` pa35: plan.md — record map-subscript flip (+4, 65/70) + unordered-set noexcept layer |  |  |  |  |  |  |  |  |  |
+| todo | `bfe29184 -> 359bd94c` pa35: merge default template arguments from a non-defining redeclaration |  |  |  |  |  |  |  |  |  |
+| todo | `359bd94c -> da5720e3` pa35: plan.md — record default-arg-merge fix advancing unreachable-inline |  |  |  |  |  |  |  |  |  |
+| todo | `da5720e3 -> aa15c3f3` pa35: relocate nestedNameScope to Pa18ExplicitInst.cpp for the file-size cap |  |  |  |  |  |  |  |  |  |
+| todo | `aa15c3f3 -> eeca6f2a` pa35: reject a member-template ctor candidate whose scalar arg can't bind its class param |  |  |  |  |  |  |  |  |  |
+| todo | `eeca6f2a -> 7057a911` pa35: plan.md — record unreachable-inline flip (+5, 66/70) |  |  |  |  |  |  |  |  |  |
+| todo | `7057a911 -> b95fbaa9` pa35: plan.md — record unordered-set noexcept fn-resolution wall |  |  |  |  |  |  |  |  |  |
+| todo | `b95fbaa9 -> 786eddc0` pa35: plan.md — local-class/member-const conclusively a dead-end |  |  |  |  |  |  |  |  |  |
+| todo | `786eddc0 -> 7d50ed91` pa35: read an inherited member's noexcept-spec by walking the class hierarchy |  |  |  |  |  |  |  |  |  |
+| todo | `7d50ed91 -> c43b7728` pa35: plan.md — unordered-set noexcept layer landed, next (_M_node_allocator) mapped |  |  |  |  |  |  |  |  |  |
+| todo | `c43b7728 -> f873a013` pa35: parse x86-intrinsic <random> and unqualified class-template <regex> (68/70) |  |  |  |  |  |  |  |  |  |
+| todo | `f873a013 -> 0f72ad89` pa35: resolve local most-vexing-parse over a class type (advances unordered-set) |  |  |  |  |  |  |  |  |  |
+| todo | `0f72ad89 -> 9033f8f4` pa35: plan.md loop-98 — random+regex flipped (68/70), unordered-set _M_cur layer |  |  |  |  |  |  |  |  |  |
+| todo | `9033f8f4 -> 33eed067` pa35: keep files within audit caps after the local-MVP change |  |  |  |  |  |  |  |  |  |
+| todo | `33eed067 -> b9256239` pa35: plan.md loop-99 — unordered-set failing access is __n._M_hash_code (not _M_cur) |  |  |  |  |  |  |  |  |  |
+| todo | `b9256239 -> e121603c` pa35: deduce auto in a condition-declaration; value-init a braced scalar NSDMI |  |  |  |  |  |  |  |  |  |
+| todo | `e121603c -> fa47ffa7` pa35: plan.md loop-100 — auto-if + braced-NSDMI landed; unordered-set at ctor-overload layer |  |  |  |  |  |  |  |  |  |
+| todo | `fa47ffa7 -> 4e0737d6` pa35: plan.md loop-101 — ctor-overload layer roots in an upstream _Hashtable* mis-type |  |  |  |  |  |  |  |  |  |
+| todo | `4e0737d6 -> d840e4f0` pa35: plan.md loop-102 — ctor arg is a variadic forward-pack deduced to _Hashtable* (layer 6) |  |  |  |  |  |  |  |  |  |
+| todo | `d840e4f0 -> 9211d526` pa35: plan.md loop-103 — layer-6 backtrace pinned to an upstream element-type mis-resolution |  |  |  |  |  |  |  |  |  |
+| todo | `9211d526 -> f683bb17` pa35: plan.md loop-104 — root is *__first typed _Hashtable* in the insert-range context (non-isolatable) |  |  |  |  |  |  |  |  |  |
+| todo | `f683bb17 -> 2e188b9f` pa35: reject an incompatible-pointer arg to a variadic ctor's fixed param (unordered-set) |  |  |  |  |  |  |  |  |  |
+| todo | `2e188b9f -> 6517a54a` pa35: plan.md loop-105 — unordered-set FLIPPED (3136/3137); local-class two-layer diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `6517a54a -> f32c52a7` pa35: type a lambda argument + reject a non-viable binary member operator (local-class) |  |  |  |  |  |  |  |  |  |
+| todo | `f32c52a7 -> e0226e47` pa35: plan.md loop-106 — local-class advanced 2 layers; remaining bad_alloc diagnosed |  |  |  |  |  |  |  |  |  |
+| todo | `e0226e47 -> 92baa9f4` pa35: fix a cross-function landing-pad use-after-free; type the bit-count builtins |  |  |  |  |  |  |  |  |  |
+| todo | `92baa9f4 -> 34f65aff` pa35: plan.md loop-107 — unordered-set FLIPPED; 4 local-class layers cracked; layer 5 = member-const |  |  |  |  |  |  |  |  |  |
+| todo | `34f65aff -> 8a5f1cf8` pa35: plan.md loop-108 — local-class layer 5 root found; member-const fix MEASURED regressive (8 tests) |  |  |  |  |  |  |  |  |  |
+| todo | `8a5f1cf8 -> b525fbd8` pa35: select member-function overloads by object cv during deduction (local-class -> 3137/3137) |  |  |  |  |  |  |  |  |  |
+| todo | `b525fbd8 -> a57d4306` pa35: plan.md loop-109 — COMPLETE, 3137/3137 full green |  |  |  |  |  |  |  |  |  |
+| todo | `a57d4306 -> 7828aab2` pa35: loop-96 audit — clean, no blockers (3137/3137, fileAudit pass) |  |  |  |  |  |  |  |  |  |
+| todo | `7828aab2 -> 63be03d6` pa36: mangle free operators + emit effectful defaulted ctors (link fixes) |  |  |  |  |  |  |  |  |  |
+| todo | `63be03d6 -> eedba186` pa36: drop top-level cv on mangled function parameters |  |  |  |  |  |  |  |  |  |
+| todo | `eedba186 -> 67f624e5` pa36: delete-expression selects the usual single-arg deallocation |  |  |  |  |  |  |  |  |  |
+| todo | `67f624e5 -> bf4a9af2` pa36: RTTI type names use the St substitution for std |  |  |  |  |  |  |  |  |  |
+| todo | `bf4a9af2 -> c4448f11` pa36: host Itanium names for library/namespace variable references |  |  |  |  |  |  |  |  |  |
+| todo | `c4448f11 -> 55ff4234` pa36: relocate mangling helpers to keep files under file-audit caps |  |  |  |  |  |  |  |  |  |
+| todo | `55ff4234 -> c61b6d56` pa36: update plan.md loop-97 progress (13->16/69, remaining-failure taxonomy) |  |  |  |  |  |  |  |  |  |
+| todo | `c61b6d56 -> 7ca4bba0` pa36: plan.md — pin MIR reg-alloc root cause for the runtime-segfault cluster |  |  |  |  |  |  |  |  |  |
+| todo | `7ca4bba0 -> 65362a8f` pa36: inline __builtin_signbit/isinf/isfinite/isnormal |  |  |  |  |  |  |  |  |  |
+| todo | `65362a8f -> c3cecaa1` pa36: plan.md — loop-97 end summary (17/69, negative-zero folding gap noted) |  |  |  |  |  |  |  |  |  |
+| todo | `c3cecaa1 -> 0d8841c6` pa36: fix MIR miscompile of indirect call with a member-address argument |  |  |  |  |  |  |  |  |  |
+| todo | `0d8841c6 -> d864059d` pa36: plan.md — MIR indirect-call fix landed (18/69); new std::function assignment finding |  |  |  |  |  |  |  |  |  |
+| todo | `d864059d -> 83df5ac9` pa36: implement GNU asm labels on declarations |  |  |  |  |  |  |  |  |  |
+| todo | `83df5ac9 -> 61ed2fd7` pa36: plan.md — session 2 (asm labels landed 19/69; extern-template + trivial-assign roadmap) |  |  |  |  |  |  |  |  |  |
+| todo | `61ed2fd7 -> 4c2c1819` pa36: empty class with defaulted assignment is trivially assignable |  |  |  |  |  |  |  |  |  |
+| todo | `4c2c1819 -> 69dca1d2` pa36: plan.md — session 3 (empty-class trivial-assign landed; _Rb_tree runtime bug pinned) |  |  |  |  |  |  |  |  |  |
+| todo | `69dca1d2 -> 111e1fb3` pa36: plan.md — _Rb_tree runtime root is multi-empty-base EBO layout |  |  |  |  |  |  |  |  |  |
+| todo | `111e1fb3 -> d44ea093` pa36: plan.md — container runtime root pinned to MIR reg-alloc collision in set::insert |  |  |  |  |  |  |  |  |  |
+| todo | `d44ea093 -> 8eba974e` pa36: inline std::move/forward/move_if_noexcept on the host path |  |  |  |  |  |  |  |  |  |
+| todo | `8eba974e -> 86932a2c` pa36: plan.md — std::move inline landed; set-insert advanced to node-alloc null-this |  |  |  |  |  |  |  |  |  |
+| todo | `86932a2c -> 188aef08` pa36: plan.md — container root pinned to >4-reg-param materialization clobber in _M_insert_ |  |  |  |  |  |  |  |  |  |
+| todo | `188aef08 -> 32de8cce` pa36: fix MIR param clobber in >4-register-param functions |  |  |  |  |  |  |  |  |  |
+| todo | `32de8cce -> 38c2da0d` pa36: plan.md — set-insert passes (20/69); map/unordered root is call-arg global-addr clobber |  |  |  |  |  |  |  |  |  |
+| todo | `38c2da0d -> 44bd4f2a` pa36: mark std::move/move_if_noexcept result as an xvalue |  |  |  |  |  |  |  |  |  |
+| todo | `44bd4f2a -> 16dfac4f` pa36: plan.md — session 6 (std::move xvalue fix; deque/vector-bool/iostream next blockers) |  |  |  |  |  |  |  |  |  |
+| todo | `16dfac4f -> 38759f2f` pa36: materialize a class prvalue (objVal) before taking its address |  |  |  |  |  |  |  |  |  |
+| todo | `38759f2f -> 51bf4d55` pa36: lower postfix class operator++/-- via the member overload |  |  |  |  |  |  |  |  |  |
+| todo | `51bf4d55 -> 786ee21e` pa36: pass straddling 16-byte object arguments per the SysV ABI |  |  |  |  |  |  |  |  |  |
+| todo | `786ee21e -> a23f0c86` pa36: plan.md — session 7 (postfix operators + SysV 16-byte-straddle ABI landed) |  |  |  |  |  |  |  |  |  |
+| todo | `a23f0c86 -> 611ca626` pa36: don't classify an allocator-extended ctor as the move constructor |  |  |  |  |  |  |  |  |  |
+| todo | `611ca626 -> 2f27ac77` pa36: synthesize the move ctor instead of falling back to a user copy ctor |  |  |  |  |  |  |  |  |  |
+| todo | `2f27ac77 -> 2cdb6100` pa36: plan.md — session 8 (move-ctor resolution fixes; _M_reset next blocker) |  |  |  |  |  |  |  |  |  |
+| todo | `2cdb6100 -> 78bcdfd3` pa36: keep a resident-param-shadow call-arg in its preserve register across calls |  |  |  |  |  |  |  |  |  |
+| todo | `78bcdfd3 -> 5f235ea8` pa36: do not sink a call-argument index across an intervening call |  |  |  |  |  |  |  |  |  |
+| todo | `5f235ea8 -> ec5222e9` pa36: plan.md — session 9 (cross-call regalloc fixes; _M_insert_aux writeback next) |  |  |  |  |  |  |  |  |  |
+| todo | `ec5222e9 -> ff856135` pa36: disambiguate the implicit operator= symbol from operator* |  |  |  |  |  |  |  |  |  |
+| todo | `ff856135 -> e7d891e1` pa36: plan.md — session 10 (operator= symbol-collision fix; operator++(int) next) |  |  |  |  |  |  |  |  |  |
+| todo | `e7d891e1 -> 16e120f0` pa36: relocate live values out of rdi/rsi/rcx across a copyobj rep-movsb |  |  |  |  |  |  |  |  |  |
+| todo | `16e120f0 -> 6e0a111a` pa36: plan.md — session 11 (copyobj clobber fix flips vector-bool; alloc-copy next) |  |  |  |  |  |  |  |  |  |
+| todo | `6e0a111a -> 5934fcd8` pa36: keep a spilled value-temp live across a call in a frame slot |  |  |  |  |  |  |  |  |  |
+| todo | `5934fcd8 -> 299b5dda` pa36: plan.md — session 12 (spilled value-temp fix flips vector-char-assign) |  |  |  |  |  |  |  |  |  |
+| todo | `299b5dda -> 0e151365` pa36: plan.md — vector-class-brace-init root (init-list ctor preference) documented |  |  |  |  |  |  |  |  |  |
+| todo | `0e151365 -> 0f6ad005` pa36: emit string-literal globals as internal (local) symbols |  |  |  |  |  |  |  |  |  |
+| todo | `0f6ad005 -> 5a51d058` pa36: internal/weak linkage for const namespace objects and template statics |  |  |  |  |  |  |  |  |  |
+| todo | `5a51d058 -> 48fbd35c` pa36: virtual dispatch for same-name virtual overloads; ref-to-folded-static-member address |  |  |  |  |  |  |  |  |  |
+| todo | `48fbd35c -> 59557830` pa36: correct host linkage for C-linkage inline free fns and const namespace vars |  |  |  |  |  |  |  |  |  |
+| todo | `59557830 -> bdef6b48` pa36: suppress synthetic partial-ordering emission; fix std-enum + C-linkage mangling |  |  |  |  |  |  |  |  |  |
+| todo | `bdef6b48 -> 17769b10` pa36: a C-linkage function definition inherits a prior extern "C" declaration |  |  |  |  |  |  |  |  |  |
+| todo | `17769b10 -> 0df7b1c1` pa36: a using-declaration carries the aliased entity's asm label and C linkage |  |  |  |  |  |  |  |  |  |
+| todo | `0df7b1c1 -> 2db75e3d` pa36: C-linkage inheritance requires a matching signature, not just the name |  |  |  |  |  |  |  |  |  |
+| todo | `2db75e3d -> d7509568` pa36: exact float negation (sign-bit flip) and f80-literal conversion |  |  |  |  |  |  |  |  |  |
+| todo | `d7509568 -> 4a54a23f` pa36: emit exact bit patterns for __builtin_nan/nans and float/long-double variants |  |  |  |  |  |  |  |  |  |
+| todo | `4a54a23f -> 4cdf2918` pa36: a defaulted-on-first-declaration destructor is trivial for the ABI |  |  |  |  |  |  |  |  |  |
+| todo | `4cdf2918 -> 1007005b` pa36: bind a class reference parameter to a temporary converted from a non-class argument |  |  |  |  |  |  |  |  |  |
+| todo | `1007005b -> f64c9113` pa36: don't keep a cross-call value argument in the caller-saved R8 (spilled path) |  |  |  |  |  |  |  |  |  |
+| todo | `f64c9113 -> be3eecee` pa36: record loop-98 progress and remaining container/vbase root causes in plan |  |  |  |  |  |  |  |  |  |
+| todo | `be3eecee -> 8508705e` pa36: materialize_addr must add a variable index offset, not only a constant |  |  |  |  |  |  |  |  |  |
+| todo | `8508705e -> ab20b235` pa36: record the variable-index-offset fix and remaining container per-body bugs in plan |  |  |  |  |  |  |  |  |  |
+| todo | `ab20b235 -> 643d98b2` pa36: relocate helpers to satisfy file-size caps |  |  |  |  |  |  |  |  |  |
+| todo | `643d98b2 -> eed12a05` pa36: type resident index/addr results as pointers, not their element type |  |  |  |  |  |  |  |  |  |
+| todo | `eed12a05 -> 7fdaedc4` pa36: fix Pa12 analyzer operator\|/^/&=/\|=/^= token names + enum-operand ADL |  |  |  |  |  |  |  |  |  |
+| todo | `7fdaedc4 -> 4bd96581` pa36: compile os<<std::endl (manipulator fn-template operand) + deduceTargetOverload sig check |  |  |  |  |  |  |  |  |  |
+| todo | `4bd96581 -> 8ce984af` pa36: extract nonMemberOperatorFn / resolveManipulatorOperator for file-size caps |  |  |  |  |  |  |  |  |  |
+| todo | `8ce984af -> fa0adf75` pa36: [dcl.typedef]/9 typedef-name-for-linkage for unnamed class/enum |  |  |  |  |  |  |  |  |  |
+| todo | `fa0adf75 -> 61e879e6` pa36: record loop-100 deep-tail diagnostics (Pa12 functor typing, vector push_back corruption) |  |  |  |  |  |  |  |  |  |
+| todo | `61e879e6 -> 97352f7f` pa36: pass hidden %__pvbptr args in converting-ctor + ctor-template call sites |  |  |  |  |  |  |  |  |  |
+| todo | `97352f7f -> a710cd5d` pa36: document iostream-chain diagnosis (pvbptr fixed; 16-byte-class ABI inconsistency is the ostream-cluster root) |  |  |  |  |  |  |  |  |  |
+| todo | `a710cd5d -> f711b65d` pa36: fully isolate ostream-cluster root cause to spilled-path obj-by-value ABI (minimal non-hosted repro) |  |  |  |  |  |  |  |  |  |
+| todo | `f711b65d -> 210298eb` pa36: fix 16-byte by-value class ABI in the frame-spilled native path |  |  |  |  |  |  |  |  |  |
+| todo | `210298eb -> 494ea28d` pa36: document next ostream lever (leave extern-template out-of-line members external) |  |  |  |  |  |  |  |  |  |
+| todo | `494ea28d -> d342fbfe` pa36: fully characterize the extern-template externalization fix vs g++ (ostream cluster lever) |  |  |  |  |  |  |  |  |  |
+| todo | `d342fbfe -> 17e68123` pa36: materialize sunk address-chain value in the spilled slot-store path |  |  |  |  |  |  |  |  |  |
+| todo | `17e68123 -> 4f39099b` pa36: fix const char*->class implicit conversion in argument materialization |  |  |  |  |  |  |  |  |  |
+| todo | `4f39099b -> b59e2ee7` pa36: document vector<string> cluster (3 layered codegen bugs fixed, string-move data copy remaining) |  |  |  |  |  |  |  |  |  |
+| todo | `b59e2ee7 -> 8e7cc148` pa36: force reactive spill when a cross-call value exhausts the preserve pool |  |  |  |  |  |  |  |  |  |
+| todo | `8e7cc148 -> 10736ba6` pa36: relocate a sunk-index call-arg base clobbered by an earlier argument |  |  |  |  |  |  |  |  |  |
+| todo | `10736ba6 -> 54a6bcfe` pa36: document loop-101 resident-allocator fixes (cross-call preserve, sunk-index base) |  |  |  |  |  |  |  |  |  |
+| todo | `54a6bcfe -> c53ec02d` pa36: [over.match.list] prefer an initializer_list ctor for a braced list |  |  |  |  |  |  |  |  |  |
+| todo | `c53ec02d -> 17732ce8` pa36: document loop-101 initializer_list ctor fix + remaining hosted-link failures |  |  |  |  |  |  |  |  |  |
+| todo | `17732ce8 -> cfd41289` pa36: keep C++ linkage for variadic C++ functions (host Itanium rename) |  |  |  |  |  |  |  |  |  |
+| todo | `cfd41289 -> 51315940` pa36: document loop-101 variadic-linkage fix + container-move-assign cluster |  |  |  |  |  |  |  |  |  |
+| todo | `51315940 -> b6f4efd0` pa36: fold const-integral local's value for use as a non-type template argument |  |  |  |  |  |  |  |  |  |
+| todo | `b6f4efd0 -> 3c9655f1` pa36: document loop-101 local-constexpr fix + __alloc_on_move remaining blocker |  |  |  |  |  |  |  |  |  |
+| todo | `3c9655f1 -> dbf51fc7` pa36: record deeper __alloc_on_move diagnosis (curFn-empty body-typing, const-this + scope) |  |  |  |  |  |  |  |  |  |
+| todo | `dbf51fc7 -> 02c290f5` pa36: using-declaration introduces the whole member-function overload set |  |  |  |  |  |  |  |  |  |
+| todo | `02c290f5 -> 638bd251` pa36: document using-declaration overload-set fix + driver-link runtime-abort follow-up |  |  |  |  |  |  |  |  |  |
+| todo | `638bd251 -> 82fb83e4` pa36: record deque move-assign runtime root (32-byte _Deque_iterator swap mis-compiled) |  |  |  |  |  |  |  |  |  |
+| todo | `82fb83e4 -> f69cfb25` pa36: relocate an rdx/rax parameter live across a division (idiv clobber) |  |  |  |  |  |  |  |  |  |
+| todo | `f69cfb25 -> 550361f3` pa36: record deque size() abort roots (idiv-clobber fixed; bool(ptr)->byte-truncate remaining) |  |  |  |  |  |  |  |  |  |
+| todo | `550361f3 -> 0c5dfeb5` pa36: correct deque diagnosis - operator- is fine; iterators corrupted in setup (_M_last=bufsize) |  |  |  |  |  |  |  |  |  |
+| todo | `0c5dfeb5 -> 5d85ee23` pa36: document deque _M_initialize_map promoted-value clobber cascade (2 reverted attempts) |  |  |  |  |  |  |  |  |  |
+| todo | `5d85ee23 -> c44b40e2` pa36: protect a multi-loaded promoted value's shared register from reuse and early free |  |  |  |  |  |  |  |  |  |
+| todo | `c44b40e2 -> 51c6442c` pa36: document remaining deque _M_initialize_map clobber after aliased-value protection |  |  |  |  |  |  |  |  |  |
+| todo | `51c6442c -> da88bfef` pa36: conclude deque needs allocator-liveness fix (promotion-disqualify regresses); keep aliased guard |  |  |  |  |  |  |  |  |  |
+| todo | `da88bfef -> 6aa11d09` pa36: type functor call whose callee is a class object (template operator()) |  |  |  |  |  |  |  |  |  |
+| todo | `6aa11d09 -> 8e406919` pa36: fix saved-RBP corruption from call_arg_addr Addr result in spilled path |  |  |  |  |  |  |  |  |  |
+| todo | `8e406919 -> 0cd11682` pa36: document loop-102 fixes + fully-mapped unordered_set -O1 invalid-free cascade |  |  |  |  |  |  |  |  |  |
+| todo | `0cd11682 -> 857b3dd9` pa36: keep Pa14Lower.h/Pa15Operator.cpp within file-audit size caps |  |  |  |  |  |  |  |  |  |
+| todo | `857b3dd9 -> 180e317c` pa36: unblock local-stream static-init cluster (37->41); externalize extern-template out-of-line members |  |  |  |  |  |  |  |  |  |
+| todo | `180e317c -> 6922e2c3` pa36: document mbstate_t/inline-union layout root cause for the local-stream cluster (reverted, too broad) |  |  |  |  |  |  |  |  |  |
+| todo | `6922e2c3 -> 1bfee398` pa36: fix inline unnamed-union-member layout (mbstate_t 12->8), flip fstream + ostream-ref (41->43) |  |  |  |  |  |  |  |  |  |
+| todo | `1bfee398 -> 3b7b3e51` pa36: document ofstream vtable-import non-viability (extern-template vtables not uniformly provided) |  |  |  |  |  |  |  |  |  |
+| todo | `3b7b3e51 -> 7cfa1225` pa36: associate out-of-line partial-spec member defs that match a template-argument pattern |  |  |  |  |  |  |  |  |  |
+| todo | `7cfa1225 -> 6c56ea00` pa36: refine constructor overload resolution across all arguments (fill-vs-count), flip vector-pair-abi (43->44) |  |  |  |  |  |  |  |  |  |
+| todo | `6c56ea00 -> 99cfcc67` pa36: spilled-path >4-register-param prologue — spill frame-homed params before clobbering moves (45) |  |  |  |  |  |  |  |  |  |
+| todo | `99cfcc67 -> b06c1a89` pa36: forward hidden pvbptr args on the multi-overload call path, flip getline + ostream (45->47) |  |  |  |  |  |  |  |  |  |
+| todo | `b06c1a89 -> 207be122` pa36: document loop-104 fixes (43->47) + remaining-cluster diagnoses |  |  |  |  |  |  |  |  |  |
+| todo | `207be122 -> 87d47274` pa36: document ostringstream operator== two-layer blocker (typing + EH duplicate-block) |  |  |  |  |  |  |  |  |  |
+| todo | `87d47274 -> a772b73f` pa36: fix two backend obj-param/copyobj bugs in the make_shared ctor chain |  |  |  |  |  |  |  |  |  |
+| todo | `a772b73f -> 96b41b21` pa36: fix make_shared construction — relocate all register-aliased temps across a copyobj |  |  |  |  |  |  |  |  |  |
+| todo | `96b41b21 -> eb6d81f0` pa36: keep a sunk-index base live until its sink in the resident allocator (flips shared-ptr-odr) |  |  |  |  |  |  |  |  |  |
+| todo | `eb6d81f0 -> 612006de` pa36: basic_iostream move-assign — 4 correctness fixes (47->49) |  |  |  |  |  |  |  |  |  |
+| todo | `612006de -> 83321689` pa36: document std::function-from-lambda ctor-body-not-instantiated diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `83321689 -> faf4b792` pa36: std::function-from-lambda + underlying substr member-call fix (49->52) |  |  |  |  |  |  |  |  |  |
+| todo | `faf4b792 -> 56900498` pa36: document loop-108 std::function-from-lambda resolution (substr member-call root) |  |  |  |  |  |  |  |  |  |
+| todo | `56900498 -> cbd0d3a1` pa36: PC-rel/GOT global-data addressing + C++-linkage global var mangling (52->54) |  |  |  |  |  |  |  |  |  |
+| todo | `cbd0d3a1 -> 793394c6` pa36: externalize library-provided facet static data members (54->55) |  |  |  |  |  |  |  |  |  |
+| todo | `793394c6 -> a39901e0` pa36: relocate __cppgm_init/fini emitters to Pa14GlobalInit.cpp (file-audit) |  |  |  |  |  |  |  |  |  |
+| todo | `a39901e0 -> 632bce85` pa36: temp-string == fix — member-overload re-resolution + EH region close-by-dispatch (55->56) |  |  |  |  |  |  |  |  |  |
+| todo | `632bce85 -> 5ec3baa1` pa36: document loop-103 str==/EH landing + endl/inherited-ctor diagnoses |  |  |  |  |  |  |  |  |  |
+| todo | `5ec3baa1 -> 23046180` pa36: inheriting-constructor from a library base (56->57) |  |  |  |  |  |  |  |  |  |
+| todo | `23046180 -> 70b7e4e4` pa36: document loop-103 session-3 inherited-ctor landing + num-put/endl diagnoses |  |  |  |  |  |  |  |  |  |
+| todo | `70b7e4e4 -> f16c19c5` pa36: postfix ++/-- on a class is typed from operator++(int)'s return |  |  |  |  |  |  |  |  |  |
+| todo | `f16c19c5 -> f931143c` pa36: document postfix-++ compile fix + num-put runtime backend diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `f931143c -> 2ac7afec` pa36: document num-put runtime deep ABI diagnosis (session 5) |  |  |  |  |  |  |  |  |  |
+| todo | `2ac7afec -> 54696f6d` pa36: refine num-put runtime diagnosis to _M_insert_int by-value-return codegen |  |  |  |  |  |  |  |  |  |
+| todo | `54696f6d -> e7c578ce` pa36: document unordered-map __hashtable dependent-typedef compile diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `e7c578ce -> fe64d1f3` pa36: partial-spec member type-names resolve in out-of-line member bodies |  |  |  |  |  |  |  |  |  |
+| todo | `fe64d1f3 -> c12940e8` pa36: document partial-spec typedef landing + unordered-map runtime advance |  |  |  |  |  |  |  |  |  |
+| todo | `c12940e8 -> 0ff32dc1` pa36: free cross-call param shadow-home once (register clobber fix) |  |  |  |  |  |  |  |  |  |
+| todo | `0ff32dc1 -> 74b5f853` pa36: spill-path returns small by-value object by value, not address (57->58) |  |  |  |  |  |  |  |  |  |
+| todo | `74b5f853 -> 89777216` pa36: document session-7 backend fixes + remaining-test diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `89777216 -> 881e6277` pa36: precise unordered_map root cause (wrong _Scoped_node ctor selected) |  |  |  |  |  |  |  |  |  |
+| todo | `881e6277 -> 3e07d2f9` pa36: MI-aware derived-to-base conversion in overload ICS (unordered-map) |  |  |  |  |  |  |  |  |  |
+| todo | `3e07d2f9 -> caa75dfd` pa36: document session-7 MI-overload landing + deque/sret + batch-leak diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `caa75dfd -> 1f0a5260` pa36: keep MirLowerOps/MirLowerSpill under the 1500-line file-audit cap |  |  |  |  |  |  |  |  |  |
+| todo | `1f0a5260 -> 7c1da1d0` pa36: place preserve-save area below the true locals depth (deque ctor) |  |  |  |  |  |  |  |  |  |
+| todo | `7c1da1d0 -> 4f2f42d4` pa36: document session-7 four-fix summary + deque-move-assign/remaining diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `4f2f42d4 -> 27eb0010` pa36: empty base subobject copies zero bytes, not sizeof (deque move-assign) |  |  |  |  |  |  |  |  |  |
+| todo | `27eb0010 -> 01d50418` pa36: spill path captures small-object call results into a home slot (iostream) |  |  |  |  |  |  |  |  |  |
+| todo | `01d50418 -> f8d63733` pa36: document session-7 fixes 5-6 (empty-base copy, spill obj result) + remaining |  |  |  |  |  |  |  |  |  |
+| todo | `f8d63733 -> fc84ffde` pa36: refine stringstream diagnosis (good()=1; write/read divergence, not sentry) |  |  |  |  |  |  |  |  |  |
+| todo | `fc84ffde -> dd96128b` pa36: MI-aware derived-to-base template argument deduction (stringstream) |  |  |  |  |  |  |  |  |  |
+| todo | `dd96128b -> f7b036f2` pa36: document stringstream fix + unreachable-inline param-shift diagnosis |  |  |  |  |  |  |  |  |  |
+| todo | `f7b036f2 -> 9747429b` pa36: spill-path call-arg value skips caller-saved spare across obj-build stores |  |  |  |  |  |  |  |  |  |
+| todo | `9747429b -> 6484afcf` pa36: register block-scope static/thread_local dtors via __cxa_[thread_]atexit |  |  |  |  |  |  |  |  |  |
+| todo | `6484afcf -> 63d3b333` pa36: implement dynamic exception specifications (throw(T...)) |  |  |  |  |  |  |  |  |  |
+| todo | `63d3b333 -> 6b867e87` pa36: preserve a cross-call promoted-shadow param (sret ptr) across calls |  |  |  |  |  |  |  |  |  |
+| todo | `6b867e87 -> 8088064c` pa36: partial-ordering fix + free-fn extern-template import (iostream flip) |  |  |  |  |  |  |  |  |  |
+| todo | `8088064c -> fa30c002` pa36: import extern-template fstream ctor/dtor + private-name vbase stream vtables (ofstream 69/69) |  |  |  |  |  |  |  |  |  |
+| todo | `fa30c002 -> 2102aeeb` pa36: loop-105 audit — dedup kAbbrevOwner + __ovN counter, drop dead div-scan state |  |  |  |  |  |  |  |  |  |
