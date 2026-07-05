@@ -27,13 +27,13 @@ You will want to reuse:
 The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
 working host C/C++ toolchain with hosted C++ headers and libraries installed.
 You may override the compiler with `CXX=...`.
-`CPPGM_HOST_CXX` selects the host compiler/link driver used by the harness and
-by host-symbol comparison helpers. If it is not set, it defaults to `CXX`.
+`CPPGM_HOST_CXX` selects the host compiler/link driver used by the harness. If
+it is not set, it defaults to `CXX`.
 
 PA36 tests also use host object tools:
 
 - `nm` for symbol inspection
-- `c++filt` for demangling in host-symbol comparison tests
+- `c++filt` for demangling in optional object-inspection checks
 - `readelf` for selected object/relocation checks
 - `ar` and the host C/C++ compilers for helper libraries when a test provides
   `x.lib.*` sidecars
@@ -100,8 +100,8 @@ The PA36 tests observe:
 - host final-link exit status
 - final program exit status
 - final program standard output
-- optional object-inspection output for symbol ownership, unresolved-symbol
-  spelling, relocation, and ABI checks
+- optional object-inspection output for needed symbol ownership, unresolved
+  references, relocation, and ABI checks
 
 ### Error Handling
 
@@ -136,12 +136,12 @@ including `<functional>`, using `std::forward`, using placement `new`, or
 instantiating an `unordered_set` should not by itself cause unrelated libc++ or
 libstdc++ helper definitions to appear as defined symbols in the output object.
 
-### Hosted Mangling Rules
+### Hosted ABI Names
 
-PA36 uses the ordinary host C++ ABI spelling. Generic substitution mechanics
-should be tested with source-level spellings, and hosted standard-library
-ABI checks should be derived from the configured host compiler rather than from
-hard-coded library-private names.
+PA36 uses the ordinary host C++ ABI spelling for every hosted symbol that is
+defined or referenced by an emitted object. The implementation should continue
+to derive those spellings from semantic facts and the PA30 ABI naming layer
+rather than from hard-coded library-private names.
 
 The hosted emission policy decides which entities are defined or left
 unresolved. Those decisions still need to preserve ordinary host ABI spelling
@@ -159,14 +159,10 @@ For Itanium-style mangling on GNU/libstdc++ and Clang/libc++ style hosts:
 - hosted weak/header-emitted definitions must still use the same symbol names
   that the host library expects for the corresponding inline/template bodies
 
-In practice, PA36 symbol tests should prefer source spellings, such as
-`std::string` versus `std::basic_string<char, std::char_traits<char>,
-std::allocator<char>>`, and compare the unresolved symbol surface against the
-configured host compiler where the exact raw spelling is library-specific.
-
-PA36 symbol tests should avoid hard-coding implementation namespaces such as
-`std::__1` or `std::__cxx11` unless the test is explicitly guarded for that host
-library.
+When hosted library implementation details affect ABI names, preserve the
+source semantic facts that imply the name: inline namespaces, ABI tags,
+template arguments, local contexts, and owner scopes. Avoid constructing
+already-mangled strings in the hosted emission path.
 
 ### Testing
 
