@@ -1375,6 +1375,10 @@ ClassTemplateDecl * lookup_class_template_in_scope_or_inherited_members(
   if(!scope.class_info) {
     return nullptr;
   }
+  if(scope.class_info->source_template &&
+     scope.class_info->source_template->name == name) {
+    return scope.class_info->source_template;
+  }
   if(scope.class_info->member_scope &&
      scope.class_info->member_scope.get() != &scope) {
     if(ClassTemplateDecl * owner_direct =
@@ -5116,6 +5120,11 @@ ClassTemplateDecl * lookup_unqualified_class_template(Scope & scope,
       scope, name,
       [](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
       {
+        if(target.class_info &&
+           target.class_info->source_template &&
+           target.class_info->source_template->name == lookup_name) {
+          return target.class_info->source_template;
+        }
         map<string, ClassTemplateDecl *>::iterator found =
             target.class_templates.find(lookup_name);
         return found == target.class_templates.end() ? nullptr : found->second;

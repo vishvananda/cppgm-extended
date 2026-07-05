@@ -11843,8 +11843,29 @@ bool resolve_template_arguments(
       }
     }
   };
+  const auto trace_argument_failure =
+      [&](std::size_t parameter_index,
+          std::size_t argument_index,
+          const std::string & reason) -> void
+  {
+    if(!parser_trace::enabled("template.resolve")) {
+      return;
+    }
+    std::ostringstream trace;
+    trace << "resolve-template-args-fail reason=" << reason
+          << " parameter-index=" << parameter_index
+          << " argument-index=" << argument_index;
+    if(parameter_index < parameters.size()) {
+      trace << " parameter=" << parameters[parameter_index].name;
+    }
+    if(argument_index < cache_texts.size()) {
+      trace << " text=" << cache_texts[argument_index];
+    }
+    parser_trace::note("template.resolve", std::string(), trace.str());
+  };
   const bool trailing_pack = !parameters.empty() && parameters.back().parameter_pack;
   if(!trailing_pack && cache_texts.size() > parameters.size()) {
+    trace_argument_failure(parameters.size(), cache_texts.size(), "too-many-arguments");
     note_cache_failure();
     return false;
   }
@@ -11902,6 +11923,7 @@ bool resolve_template_arguments(
 	                cache_texts[text_index],
 	                resolution_inputs.syntax_for(text_index),
 	                arg)) {
+	          trace_argument_failure(i, text_index, "pack-argument");
 	          note_cache_failure();
 	          return false;
 	        }
@@ -11938,6 +11960,7 @@ bool resolve_template_arguments(
 		    cache_texts[text_index],
 		    resolution_inputs.syntax_for(text_index),
 		    arg)) {
+      trace_argument_failure(i, text_index, "explicit-argument");
       note_cache_failure();
       return false;
     }

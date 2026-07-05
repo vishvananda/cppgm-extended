@@ -3607,3 +3607,73 @@ direct-LowIR report passes `3493/3493`. Perf check against
 `/tmp/cppgm-perf-baseline-boost-frontier-a6c1a9-explicit-member-template.json`
 passes the candidate with instructions `+0.68%`, RSS `+0.79%`, footprint
 `+0.01%`.
+
+2026-07-05 Boost.Config/Boost.Graph probe cleanup frontier: after retiring the
+old local `BOOST_NO_CXX11_HDR_INITIALIZER_LIST` hook in Boost's
+`boost/config/detail/suffix.hpp`, the Boost.Config initializer-list probe
+exposed target-aware braced initialization of `const std::initializer_list<T>&`.
+The compiler was checking the raw reference target instead of the stripped
+initializer-list object type. Separately, Boost.Config's user-literals probes
+needed cooked numeric literal operator lookup (`operator "" _x(unsigned long
+long)` / floating forms), and Boost.Config's `__has_feature` probes needed
+`cxx_constexpr` and `cxx_user_literals` answers for hosted feature detection.
+The fixes strip reference/top-level cv before initializer-list target-aware
+analysis, add cooked numeric UDL lookup alongside the existing literal-template
+path, and report the supported Clang feature probes. Owners: PA25:200
+initializer-list target-aware calls, PA19:200 user-defined literal lookup, and
+PA34:400 hosted feature probes. New regressions:
+`pa25/tests/general/200-initializer-list-const-reference-call.t`,
+`pa19/tests/general/200-user-defined-cooked-integer-literal.t`,
+`pa34/tests/preproc/400-has-feature-constexpr.t`, and
+`pa34/tests/preproc/400-has-feature-user-literals.t`. Focused PA checks pass
+for all four tests, and focused Boost.Config probes now classify initializer
+lists and user literals correctly without the removed local Boost hook.
+
+2026-07-05 Boost.Graph straight-line drawing C++14 gate: the straight-line
+drawing test and example include Boost.Math headers that require C++14, while
+the current frontier lane is `cxxstd-11`. Host clang/libc++ fails the same
+Boost.Math C++11 surface (`std::is_null_pointer`, `is_final`, transformation
+trait aliases, and variable-template dependencies), and Boost.Math's config
+header warns that C++14 is required. The local Boost tree now gates
+`libs/graph/test//is_straight_line_draw_test` and
+`libs/graph/example//straight_line_drawing` with `[ requires cxx14 ]` instead
+of carrying a compiler workaround. Focused B2 confirms both targets skip cleanly
+with `cxx14 : no`; logs:
+`/tmp/boost-graph-is-straight-gated-cxx14-20260705.log` and
+`/tmp/boost-graph-straight-line-gated-cxx14-20260705.log`.
+
+2026-07-05 Boost.Graph `libs/graph/example//put-get-helper-eg` current class
+template-id/using-directive frontier: the local `foo::iterator_property_map`
+uses `using namespace boost;` and also names its current class template as a
+CRTP argument to `boost::put_get_helper`. Boost also provides a
+`boost::iterator_property_map`, so unqualified lookup for
+`iterator_property_map<RandomAccessIterator, IndexMap>` inside the current
+class template reached namespace-scope using-directive candidates and treated
+the self type as unresolved. That made Boost.MPL `has_xxx` property-map probes
+false and caused `Mutable_LvaluePropertyMapConcept` to fail when
+`property_traits<PMap>::category` selected `null_property_traits`. The fix makes
+both regular class-template lookup and the lighter template-argument lookup
+recognize the injected current class template from `ClassInfo::source_template`
+before climbing into namespace using-directive lookup. The same investigation
+also tightened source-use replay bookkeeping by including the template-argument
+key in the dependent source-drop cache and allowing concrete replay for neutral
+source-template locations. No Boost special case, source rewrite, or text
+fallback is added. Owner: PA18:100 class-template current-instantiation lookup
+and template-id type arguments. New regression:
+`pa18/tests/general/100-current-class-template-id-using-directive-template-arg.t`.
+Pre-fix evidence: the no-STL reducer failed with `failed class template
+instantiation: sink<iterator_property_map<RandomAccessIterator,IndexMap>,int>`;
+the Boost-header reducer failed through `boost::has_key_type<pmap_t>::value`;
+and focused B2 `libs/graph/example//put-get-helper-eg` failed in
+`BOOST_CONCEPT_ASSERT((Mutable_LvaluePropertyMapConcept<pmap_t, int>))`. After
+the fix, the no-STL reducer, Boost-header reducer, and focused B2 target pass;
+final B2 log:
+`/tmp/boost-graph-put-get-helper-after-current-class-20260705.log`.
+Current batch validation: `make -C dev -j12 cppgm++`; focused PA18, PA19,
+PA25, and PA34 checks pass; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes; full strict direct-LowIR compare
+passes; full direct-LowIR report passes `3498/3498`. Perf check against
+`/tmp/cppgm-perf-baseline-boost-frontier-a6c1a9-explicit-member-template.json`
+passes the candidate with instructions `+0.62%`, RSS `+0.21%`, footprint
+`+0.00%`; detailed report
+`/tmp/cppgm-perf-after-boost-config-put-get-helper-report.json`.

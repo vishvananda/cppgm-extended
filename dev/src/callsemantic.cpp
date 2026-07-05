@@ -10391,9 +10391,12 @@ private:
         };
 
     TypePtr element_type;
+    TypePtr initializer_list_target =
+        strip_top_level_cv(remove_reference_type(target));
     if(node.kind == CppAstKind::braced_init_list &&
-       is_initializer_list_type(target, &element_type)) {
-      out = semantic_expression::make_initializer_list_expression(*this, scope, target, node);
+       is_initializer_list_type(initializer_list_target, &element_type)) {
+      out = semantic_expression::make_initializer_list_expression(
+          *this, scope, initializer_list_target, node);
       return true;
     }
 

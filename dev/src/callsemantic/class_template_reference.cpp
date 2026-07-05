@@ -2665,7 +2665,7 @@ public:
       }
       const std::pair<std::string, std::string> source_dependent_drop_key(
           chosen_use_location,
-          decl.name);
+          decl.name + "|" + key);
       if(source_dependent_class_template_use_drops_.count(
              source_dependent_drop_key) != 0) {
         if(parser_trace::enabled("template.resolve")) {
@@ -2691,6 +2691,7 @@ public:
           return false;
         }
         return source_use_in_template_header ||
+               !source_use_in_template_body ||
                !source_use_mentions_template_context;
       };
       const auto use_concrete_replay_arg_texts = [&]() -> bool

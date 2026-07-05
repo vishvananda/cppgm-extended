@@ -968,6 +968,7 @@ bool is_supported_feature_query(const string & id,
            name == "cxx_alignof" ||
            name == "cxx_auto_type" ||
            name == "__cxx_binary_literals__" ||
+           name == "cxx_constexpr" ||
            name == "cxx_default_function_template_args" ||
            name == "cxx_defaulted_functions" ||
            name == "cxx_deleted_functions" ||
@@ -991,6 +992,7 @@ bool is_supported_feature_query(const string & id,
            name == "cxx_trailing_return" ||
            name == "cxx_unicode_literals" ||
            name == "cxx_unrestricted_unions" ||
+           name == "cxx_user_literals" ||
            name == "cxx_variadic_templates" ||
            name == "__cxx_variable_templates__";
   }
@@ -1002,6 +1004,7 @@ bool is_supported_feature_query(const string & id,
            name == "cxx_alignof" ||
            name == "cxx_auto_type" ||
            name == "__cxx_binary_literals__" ||
+           name == "cxx_constexpr" ||
            name == "cxx_default_function_template_args" ||
            name == "cxx_defaulted_functions" ||
            name == "cxx_deleted_functions" ||
@@ -1025,6 +1028,7 @@ bool is_supported_feature_query(const string & id,
            name == "cxx_trailing_return" ||
            name == "cxx_unicode_literals" ||
            name == "cxx_unrestricted_unions" ||
+           name == "cxx_user_literals" ||
            name == "cxx_variadic_templates" ||
            name == "__cxx_variable_templates__";
   }

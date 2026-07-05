@@ -169,6 +169,42 @@ ExprInfo analyze_string_user_defined_literal(SemanticContext & ctx,
   return ctx.analyze_call_expression(scope, call);
 }
 
+ExprInfo analyze_cooked_numeric_user_defined_literal(SemanticContext & ctx,
+                                                     Scope & scope,
+                                                     const CppAstNode & node,
+                                                     const string & ud_suffix,
+                                                     const string & literal_text)
+{
+  const string operator_name = string("operator\"\"") + ud_suffix;
+
+  CppAstNode call;
+  call.kind = CppAstKind::call_expression;
+  call.source_location_id = node.source_location_id;
+  call.token_start = node.token_start;
+  call.token_end = node.token_end;
+  call.name_lookup_snapshot = node.name_lookup_snapshot;
+
+  CppAstNode callee;
+  callee.kind = CppAstKind::id_expression;
+  callee.value = operator_name;
+  callee.source_location_id = node.source_location_id;
+  callee.token_start = node.token_start;
+  callee.token_end = node.token_end;
+  callee.name_lookup_snapshot = node.name_lookup_snapshot;
+  call.children.push_back(callee);
+
+  CppAstNode arguments;
+  arguments.kind = CppAstKind::paren_argument_list;
+  arguments.source_location_id = node.source_location_id;
+  arguments.token_start = node.token_start;
+  arguments.token_end = node.token_end;
+  arguments.name_lookup_snapshot = node.name_lookup_snapshot;
+  arguments.children.push_back(make_synthetic_literal_node(node, literal_text));
+  call.children.push_back(arguments);
+
+  return ctx.analyze_call_expression(scope, call);
+}
+
 ExprInfo analyze_integer_user_defined_literal_template(SemanticContext & ctx,
                                                        Scope & scope,
                                                        const CppAstNode & node,
@@ -4801,7 +4837,7 @@ bool target_aware_decline_requires_audit(SemanticContext & ctx,
   TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
   if(payload->kind == CppAstKind::braced_init_list) {
     TypePtr element_type;
-    if(is_initializer_list_type(ctx, target, &element_type)) {
+    if(is_initializer_list_type(ctx, target_base, &element_type)) {
       detail = "target-aware initializer_list braced-init declined [target " +
                describe_type(target) + "]";
       return true;
@@ -5422,7 +5458,12 @@ ExprInfo analyze_literal(SemanticContext & ctx, Scope & scope, const CppAstNode 
       throw logic_error("invalid floating literal suffix");
     }
     if(!ud_suffix.empty()) {
-      throw logic_error("user-defined literals unsupported");
+      const string operator_name = string("operator\"\"") + ud_suffix;
+      if(!ctx.lookup_functions(scope, operator_name).empty()) {
+        return analyze_cooked_numeric_user_defined_literal(
+            ctx, scope, node, ud_suffix, literal_without_ud_suffix(node.value, ud_suffix));
+      }
+      throw logic_error("user-defined floating literal unsupported");
     }
     result.type = make_fundamental(literal_type);
     result.category = VC_PRVALUE;
@@ -5435,6 +5476,11 @@ ExprInfo analyze_literal(SemanticContext & ctx, Scope & scope, const CppAstNode 
     string ud_suffix;
     EFundamentalType literal_type = classify_int(node.value, literal_value, ud_suffix);
     if(!ud_suffix.empty()) {
+      const string operator_name = string("operator\"\"") + ud_suffix;
+      if(!ctx.lookup_functions(scope, operator_name).empty()) {
+        return analyze_cooked_numeric_user_defined_literal(
+            ctx, scope, node, ud_suffix, literal_without_ud_suffix(node.value, ud_suffix));
+      }
       return analyze_integer_user_defined_literal_template(ctx, scope, node, ud_suffix);
     }
     result.type = make_fundamental(literal_type);
