@@ -2036,6 +2036,65 @@ void append_vptr_action(const string & dynamic_class_key,
   out.children.push_back(std::move(action));
 }
 
+bool vtable_view_virtual_base_root(const ClassInfo & info,
+                                   const VTableInfo & table,
+                                   string & root_name,
+                                   unsigned long long & offset_in_root)
+{
+  if(table.view_offset == 0 || !table.view_type) {
+    return false;
+  }
+  for(size_t i = 0; i < info.virtual_base_subobjects.size(); ++i) {
+    const SubobjectInfo & virtual_base = info.virtual_base_subobjects[i];
+    if(!virtual_base.type || table.view_offset < virtual_base.offset) {
+      continue;
+    }
+    const unsigned long long relative_offset =
+        static_cast<unsigned long long>(table.view_offset - virtual_base.offset);
+    if((virtual_base.type == table.view_type ||
+        virtual_base.type->qualified_name == table.view_type->qualified_name) &&
+       relative_offset == 0) {
+      root_name = virtual_base.type->qualified_name;
+      offset_in_root = 0;
+      return true;
+    }
+    for(size_t j = 0; j < virtual_base.type->complete_subobjects.size(); ++j) {
+      const SubobjectInfo & nested = virtual_base.type->complete_subobjects[j];
+      if(!nested.type || nested.offset != relative_offset) {
+        continue;
+      }
+      if(nested.type == table.view_type ||
+         nested.type->qualified_name == table.view_type->qualified_name) {
+        root_name = virtual_base.type->qualified_name;
+        offset_in_root = relative_offset;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void mark_virtual_base_vptr_target(ExprInfo & object_ptr,
+                                   const string & root_name,
+                                   unsigned long long offset_in_root,
+                                   const string & view_name)
+{
+  object_ptr.node.is_virtual_base_subobject = true;
+  set_callsem_resolved_name(object_ptr.node, view_name);
+  mutable_callsem_virtual_base_layout(object_ptr.node).push_back(
+      make_pair(root_name, offset_in_root));
+  if(object_ptr.node.kind == CallSemKind::unary_expression &&
+     callsem_has_token(object_ptr.node, OP_AMP) &&
+     object_ptr.node.children.size() == 1 &&
+     object_ptr.node.children[0].kind == CallSemKind::member_expression) {
+    object_ptr.node.children[0].is_base_subobject = true;
+    object_ptr.node.children[0].is_virtual_base_subobject = true;
+    set_callsem_resolved_name(object_ptr.node.children[0], view_name);
+    set_callsem_virtual_base_layout(object_ptr.node.children[0],
+                                    callsem_virtual_base_layout(object_ptr.node));
+  }
+}
+
 void append_all_vptr_actions(SemanticContext & ctx,
                              ClassInfo & info,
                              const ExprInfo & this_expr,
@@ -2051,6 +2110,17 @@ void append_all_vptr_actions(SemanticContext & ctx,
     ExprInfo object_ptr = table.view_offset == 0 ?
         this_expr :
         ctx.make_base_pointer_expr(this_expr, *table.view_type, table.view_offset);
+    string virtual_base_root;
+    unsigned long long virtual_base_offset = 0;
+    if(vtable_view_virtual_base_root(info,
+                                     table,
+                                     virtual_base_root,
+                                     virtual_base_offset)) {
+      mark_virtual_base_vptr_target(object_ptr,
+                                    virtual_base_root,
+                                    virtual_base_offset,
+                                    table.view_type->qualified_name);
+    }
     size_t vtt_entry_index = 0;
     const size_t * vtt_entry_index_ptr = nullptr;
     if(entry_point_kind == symbol_linkage::SMEK_BASE &&

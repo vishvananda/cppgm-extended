@@ -4454,3 +4454,31 @@ the wrapper timeout after no failures; the non-forced continuation of
 targets. Perf check against
 `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes: instructions
 `-0.27%`, RSS `+1.41%`, footprint `+0.54%`.
+
+2026-07-06 Boost.IO `nullstream_test` virtual-base construction-vptr frontier:
+after Intrusive passed, full `libs/io/test` reached a runtime `Bus error: 10`
+in `nullstream_test`. The reduced shape is the same as
+`boost::io::basic_onullstream`: a non-polymorphic holder base is declared
+before `std::basic_ostream`, but the ABI lays out the dynamic ostream base at
+offset zero and the holder after it. The holder's streambuf was constructed
+first, then the ostream base-entry constructor installed the `basic_ios`
+virtual-base construction vptr at the standalone ostream static offset
+(`this + 8`), overwriting the holder streambuf vptr. The fix keeps the existing
+typed virtual-base metadata path: synthetic vptr actions now recognize when a
+vtable view is rooted in a virtual base and annotate the target expression with
+the virtual-base root/layout, so LowIR uses the supplied hidden virtual-base
+pointer in base-entry constructors and the runtime vbase offset in complete
+constructors/destructors. No source-text reparse, Boost special case, or
+parallel ABI/symbol wiring is added. Owner: PA27 virtual-base construction ABI.
+New regression:
+`pa27/tests/general/100-virtual-base-constructor-vptr-hidden-target.t`. Existing
+PA27 virtual-base constructor refs were refreshed for the same static-to-hidden
+vptr target correction. Validation: clang accepts and runs the reducer with
+`-std=c++11`; the cppgm++ native reducer exits 0; focused PA27 check passes;
+PA27 direct-LowIR report passes `28/28`; full direct-LowIR report passes
+`5622/5622`; strict direct-LowIR checks pass; `python3
+scripts/audit_text_reparse.py --strict` and `git diff --check` pass; focused
+B2 `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ ... ./run-cppgm-b2.sh -a libs/io/test`
+passes and updates 32 targets, including `nullstream_test`. Perf check against
+`/tmp/cppgm-before-global-delete-baseline-20260706.json` passes: instructions
+`-0.26%`, RSS `+0.82%`, footprint `+0.61%`.
