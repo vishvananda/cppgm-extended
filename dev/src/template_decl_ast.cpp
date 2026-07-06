@@ -12,6 +12,7 @@
 #include "cpp_decl_bridge.h"
 #include "parser_trace.h"
 #include "semantic_class_model.h"
+#include "semantic_context.h"
 #include "semantic_utils.h"
 #include "template_argument_semantics.h"
 #include "template_scope.h"
@@ -671,6 +672,69 @@ std::string template_public_use_location_or(
   return !current.empty() ? current : fallback;
 }
 
+bool sizeof_type_id_bound_is_dependent(template_api::TemplateServices & services,
+                                       Scope & semantic_scope,
+                                       Scope & parse_scope,
+                                       bool reference_class_templates_only,
+                                       const CppAstNode & node)
+{
+  if(node.kind != CppAstKind::sizeof_expression ||
+     node.children.size() != 1 ||
+     node.children[0].kind != CppAstKind::type_id) {
+    return false;
+  }
+
+  TypePtr operand_type;
+  try {
+    if(!cpp_decl::parse_type_id_ast(
+           node.children[0],
+           make_decl_hooks(services,
+                           semantic_scope,
+                           parse_scope,
+                           reference_class_templates_only),
+           operand_type) ||
+       !operand_type) {
+      return false;
+    }
+  } catch(const std::logic_error &) {
+    return false;
+  }
+
+  if(services.semantic_context) {
+    return services.semantic_context->scope_has_template_placeholders(semantic_scope) &&
+           services.semantic_context->sizeof_depends_on_template_parameters(operand_type);
+  }
+  return template_argument_semantics::type_depends_on_template_parameter(
+      service_type_system(services),
+      operand_type);
+}
+
+bool sizeof_pack_bound_is_dependent(Scope & scope, const CppAstNode & node)
+{
+  return node.kind == CppAstKind::sizeof_pack_expression &&
+         node.children.size() == 1 &&
+         node.children[0].kind == CppAstKind::identifier &&
+         (template_scope::scope_has_type_parameter_pack_name(scope,
+                                                             node.children[0].value) ||
+          template_scope::scope_has_value_parameter_pack_name(scope,
+                                                              node.children[0].value));
+}
+
+bool text_bound_is_dependent(template_api::TemplateServices & services,
+                             Scope & scope,
+                             const CppAstNode & node)
+{
+  if(!services.semantic_context) {
+    return false;
+  }
+  const std::string text = node_text(node);
+  return !text.empty() &&
+         (services.semantic_context->text_mentions_template_placeholders(scope, text) ||
+          services.semantic_context->text_mentions_dependent_non_namespace_binding_names(
+              scope,
+              text));
+}
+
 cpp_decl::AstDeclHooks make_decl_hooks(template_api::TemplateServices & services,
                                        semantic_model::Scope & semantic_scope,
                                        semantic_model::Scope & parse_scope,
@@ -753,6 +817,18 @@ cpp_decl::AstDeclHooks make_decl_hooks(template_api::TemplateServices & services
                 service_evaluate_initializer_constant_value(
                     services, request, value)) &&
                constant_eval::constexpr_value_to_integral(value, out);
+      };
+  hooks.array_bound_is_dependent =
+      [&services, &semantic_scope, &parse_scope, reference_class_templates_only](
+          const CppAstNode & node)
+      {
+        return sizeof_type_id_bound_is_dependent(services,
+                                                 semantic_scope,
+                                                 parse_scope,
+                                                 reference_class_templates_only,
+                                                 node) ||
+               sizeof_pack_bound_is_dependent(semantic_scope, node) ||
+               text_bound_is_dependent(services, semantic_scope, node);
       };
   hooks.expand_parameter_clause_packs =
       [type_system, &semantic_scope](

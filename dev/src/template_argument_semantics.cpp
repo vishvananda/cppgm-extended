@@ -4758,6 +4758,36 @@ bool scope_is_boost_namespace_or_inline_child(const Scope * scope)
   return true;
 }
 
+bool scope_is_boost_mp11_namespace_or_inline_child(const Scope * scope)
+{
+  const Scope * current = scope;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "mp11") {
+    return false;
+  }
+  current = current->parent;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "boost") {
+    return false;
+  }
+  for(const Scope * parent = current->parent; parent; parent = parent->parent) {
+    if(parent->namespace_scope &&
+       parent->name != "<global>" &&
+       parent->name != "<unnamed>") {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool try_resolve_boost_enable_if_member_type(
     template_api::TemplateServices & services,
     Scope & lookup_scope,
@@ -9000,7 +9030,16 @@ bool materialize_leaf_member_constant_binding(
     out = value_binding_constexpr_value(binding);
     return out.kind != constant_eval::ConstexprValue::CV_INVALID;
   }
-  if(owner_value_evaluation_incomplete) {
+  const bool can_evaluate_full_collection_constant =
+      owner_value_evaluation_incomplete &&
+      binding.owner_class &&
+      binding.owner_class->full_member_collection_in_progress &&
+      !binding.owner_class->reference_member_collection_in_progress &&
+      binding.constant_initializer &&
+      binding.constant_initializer_scope &&
+      !binding.constant_value_in_progress;
+  if(owner_value_evaluation_incomplete &&
+     !can_evaluate_full_collection_constant) {
     if(evaluation_incomplete) {
       *evaluation_incomplete = true;
     }
@@ -9041,15 +9080,19 @@ bool materialize_leaf_member_constant_binding(
   }
   binding.dependent_template_value = false;
   if(binding.owner_class) {
-    require_structured_bool_value_member_output_if_needed(
-        services, *binding.owner_class);
+    if(!owner_value_evaluation_incomplete) {
+      require_structured_bool_value_member_output_if_needed(
+          services, *binding.owner_class);
+    }
   }
-  if(services.semantic_context) {
+  if(services.semantic_context && !owner_value_evaluation_incomplete) {
     template_api::note_template_member_value_instantiation_if_needed(
         *services.semantic_context,
         binding);
   }
-  note_non_bool_static_value_dependency_for_witness(services, binding);
+  if(!owner_value_evaluation_incomplete) {
+    note_non_bool_static_value_dependency_for_witness(services, binding);
+  }
   out = value;
   return out.kind != constant_eval::ConstexprValue::CV_INVALID;
 }
@@ -34663,6 +34706,74 @@ NonTypeArgumentStatus evaluate_standard_type_trait_template_value(
   return NT_ARG_EVALUATED;
 }
 
+NonTypeArgumentStatus evaluate_boost_mp11_empty_template_value(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const TemplateIdSyntax & syntax,
+    bool & out)
+{
+  if(syntax.name.name != "mp_empty" ||
+     syntax.arguments.size() != 1 ||
+     !scope.valid()) {
+    return NT_ARG_PARSE_FAILED;
+  }
+
+  Scope & raw_scope = scope.require();
+  AliasTemplateDecl * alias_decl =
+      lookup_alias_template_impl(
+          services,
+          raw_scope,
+          qualified_name_text_for_structured_lookup(syntax.name));
+  if(!alias_decl ||
+     alias_decl->name != syntax.name.name ||
+     !scope_is_boost_mp11_namespace_or_inline_child(alias_decl->declaring_scope)) {
+    return NT_ARG_PARSE_FAILED;
+  }
+
+  TypePtr list_type;
+  if(!resolve_standard_meta_type_argument(services,
+                                          raw_scope,
+                                          syntax,
+                                          0,
+                                          list_type) ||
+     !list_type) {
+    return template_id_syntax_mentions_template_dependency(
+               services, scope, syntax, false) ?
+        NT_ARG_DEPENDENT :
+        NT_ARG_EVAL_FAILED;
+  }
+  resolve_instantiated_dependent_type_if_needed(services, scope, list_type);
+  if(service_type_depends_on_template_parameter(services, list_type)) {
+    return NT_ARG_DEPENDENT;
+  }
+
+  TypePtr list_base = strip_top_level_cv(list_type);
+  ClassInfo * list_info =
+      template_api::find_named_type_class_info(
+          service_type_system(services).model,
+          list_base);
+  if((!list_info || !list_info->source_template) && list_base) {
+    Scope * member_scope = nullptr;
+    if(prepare_concrete_type_member_scope(services,
+                                          scope,
+                                          list_base,
+                                          member_scope) &&
+       member_scope &&
+       member_scope->class_info) {
+      list_info = member_scope->class_info;
+    }
+  }
+  if(!list_info ||
+     !list_info->source_template ||
+     list_info->source_template->parameters.empty() ||
+     !list_info->source_template->parameters.back().parameter_pack) {
+    return NT_ARG_EVAL_FAILED;
+  }
+
+  out = list_info->instantiation_arguments.empty();
+  return NT_ARG_EVALUATED;
+}
+
 NonTypeArgumentStatus evaluate_structured_bool_template_value(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -34808,6 +34919,12 @@ NonTypeArgumentStatus evaluate_structured_bool_template_value(
       evaluate_standard_type_trait_template_value(services, scope, syntax, out);
   if(trait_status != NT_ARG_PARSE_FAILED) {
     return trait_status;
+  }
+
+  const NonTypeArgumentStatus boost_mp11_empty_status =
+      evaluate_boost_mp11_empty_template_value(services, scope, syntax, out);
+  if(boost_mp11_empty_status != NT_ARG_PARSE_FAILED) {
+    return boost_mp11_empty_status;
   }
 
   const NonTypeArgumentStatus hash_requirements_status =

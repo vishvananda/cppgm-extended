@@ -7312,6 +7312,9 @@ bool CppAstParser::parse_compound_statement(CppAstNode & out)
   while(!at_eof() && !peek().is_simple(OP_RBRACE)) {
     CppAstNode item;
     if(!parse_block_item(item)) {
+      if(error_msg.empty()) {
+        set_error("expected block-item near " + token_label(peek()));
+      }
       value_name_scopes.pop_back();
       type_name_scopes.pop_back();
       template_name_scopes.pop_back();
@@ -7604,6 +7607,18 @@ bool CppAstParser::parse_statement(CppAstNode & out)
          is_known_value_name_identifier(peek()))) {
     return parse_coroutine_return_statement(out);
   }
+  if(can_start_block_declaration()) {
+    if(parse_declaration(out)) {
+      return true;
+    }
+    if(parser_trace::enabled("parser.decl")) {
+      std::ostringstream trace;
+      trace << "statement declaration candidate rejected near "
+            << token_label(peek());
+      parser_trace::note("parser.decl", tokens, pos, trace.str());
+    }
+    pos = start;
+  }
   if(parse_expression_statement(out)) {
     return true;
   }
@@ -7688,6 +7703,7 @@ bool CppAstParser::parse_if_statement(CppAstNode & out)
 
   const bool is_constexpr = consume_simple(KW_CONSTEXPR);
   if(!consume_simple(OP_LPAREN)) {
+    set_error("expected '(' after if near " + token_label(peek()));
     pos = start;
     return false;
   }
@@ -7702,6 +7718,7 @@ bool CppAstParser::parse_if_statement(CppAstNode & out)
   if(!has_init) {
     pos = after_lparen;
     if(!parse_condition(condition_expr, OP_RPAREN) || !consume_simple(OP_RPAREN)) {
+      set_error("expected if condition near " + token_label(peek()));
       pos = start;
       return false;
     }
@@ -7709,6 +7726,7 @@ bool CppAstParser::parse_if_statement(CppAstNode & out)
 
   CppAstNode then_stmt;
   if(!parse_statement(then_stmt)) {
+    set_error("expected if statement body near " + token_label(peek()));
     pos = start;
     return false;
   }
@@ -7735,6 +7753,7 @@ bool CppAstParser::parse_if_statement(CppAstNode & out)
   if(consume_simple(KW_ELSE)) {
     CppAstNode else_stmt;
     if(!parse_statement(else_stmt)) {
+      set_error("expected else statement body near " + token_label(peek()));
       pos = start;
       return false;
     }

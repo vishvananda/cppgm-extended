@@ -7140,9 +7140,78 @@ bool named_type_key_is_class_object(const TypePtr & type)
           base->named_key.compare(0, 6, "union ") == 0);
 }
 
+ClassInfo * output_class_info_for_named_type(SemanticContext & ctx,
+                                             const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED ||
+     base->named_key.compare(0, 5, "enum ") == 0 ||
+     base->named_key.compare(0, 11, "enum class ") == 0 ||
+     base->named_key.compare(0, 12, "enum struct ") == 0) {
+    return nullptr;
+  }
+
+  if(ClassInfo * info = ctx.class_info_for_type(base)) {
+    return info;
+  }
+
+  const string unprefixed =
+      semantic_utils::strip_elaborated_type_prefix(base->named_key);
+  if(unprefixed.empty() ||
+     (unprefixed == base->named_key && named_type_key_is_class_object(base))) {
+    return nullptr;
+  }
+
+  static const char * const prefixes[] = {"class ", "struct ", "union "};
+  for(size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
+    TypePtr candidate(new Type(*base));
+    candidate->named_key = string(prefixes[i]) + unprefixed;
+    if(ClassInfo * info = ctx.class_info_for_type(candidate)) {
+      return info;
+    }
+  }
+  return nullptr;
+}
+
+void synchronize_output_named_type_layout(const TypePtr & type,
+                                          const ClassInfo & info)
+{
+  TypePtr base = strip_top_level_cv(type);
+  if(!base || base->kind != Type::TK_NAMED || !info.type) {
+    return;
+  }
+  TypePtr info_base = strip_top_level_cv(info.type);
+  if(!info_base || info_base->kind != Type::TK_NAMED) {
+    return;
+  }
+  const string base_key =
+      semantic_utils::strip_elaborated_type_prefix(base->named_key);
+  const string info_key =
+      semantic_utils::strip_elaborated_type_prefix(info_base->named_key);
+  if(base_key != info_key) {
+    return;
+  }
+  base->named_display = info_base->named_display;
+  base->named_key = info_base->named_key;
+  base->named_semantic_kind = info_base->named_semantic_kind;
+  base->named_semantic_payload = info_base->named_semantic_payload;
+  base->named_complete = info_base->named_complete;
+  base->named_has_layout = info_base->named_has_layout;
+  base->named_alignment = info_base->named_alignment;
+  base->named_size = info_base->named_size;
+  base->named_is_empty = info_base->named_is_empty;
+  base->named_host_abi_chunks = info_base->named_host_abi_chunks;
+  base->named_lambda_mangle = info_base->named_lambda_mangle;
+  base->named_class_template_specialization_mangle_info =
+      info_base->named_class_template_specialization_mangle_info;
+  base->named_member_owner_type = info_base->named_member_owner_type;
+  base->named_member_name = info_base->named_member_name;
+}
+
 void complete_output_object_layout_type(SemanticContext & ctx,
                                         const TypePtr & type,
-                                        std::set<std::string> & active)
+                                        std::set<std::string> & active,
+                                        bool allow_completion)
 {
   TypePtr base = strip_top_level_cv(type);
   if(!base) {
@@ -7151,24 +7220,44 @@ void complete_output_object_layout_type(SemanticContext & ctx,
 
   switch(base->kind) {
   case Type::TK_ARRAY:
-    complete_output_object_layout_type(ctx, base->inner, active);
+    complete_output_object_layout_type(ctx, base->inner, active, allow_completion);
     return;
 
   case Type::TK_ATOMIC:
   case Type::TK_CV:
-    complete_output_object_layout_type(ctx, base->inner, active);
+    complete_output_object_layout_type(ctx, base->inner, active, allow_completion);
     return;
 
   case Type::TK_NAMED:
-    if(!named_type_key_is_class_object(base) || base->named_has_layout) {
+  {
+    if(base->named_has_layout) {
+      return;
+    }
+    ClassInfo * info = output_class_info_for_named_type(ctx, base);
+    if(!info && !named_type_key_is_class_object(base)) {
+      return;
+    }
+    if(info) {
+      if(info->complete) {
+        synchronize_output_named_type_layout(base, *info);
+        return;
+      }
+    }
+    if(!allow_completion) {
       return;
     }
     if(!active.insert(base->named_key).second) {
       return;
     }
-    ctx.complete_class_type(base);
+    ClassInfo * completed = info && info->type ?
+        ctx.complete_class_type(info->type) :
+        ctx.complete_class_type(base);
     active.erase(base->named_key);
+    if(completed && completed->complete) {
+      synchronize_output_named_type_layout(base, *completed);
+    }
     return;
+  }
 
   default:
     return;
@@ -7190,12 +7279,20 @@ void complete_output_abi_layout_type(SemanticContext & ctx,
     }
     return;
   }
-  if(is_reference_type(base) || base->kind == Type::TK_POINTER ||
-     base->kind == Type::TK_BLOCK_POINTER ||
-     base->kind == Type::TK_MEMBER_POINTER) {
+  if(is_reference_type(base)) {
+    complete_output_object_layout_type(ctx, base->inner, active, false);
     return;
   }
-  complete_output_object_layout_type(ctx, base, active);
+  if(base->kind == Type::TK_POINTER || base->kind == Type::TK_BLOCK_POINTER) {
+    complete_output_object_layout_type(ctx, base->inner, active, false);
+    return;
+  }
+  if(base->kind == Type::TK_MEMBER_POINTER) {
+    complete_output_object_layout_type(ctx, base->owner, active, false);
+    complete_output_object_layout_type(ctx, base->inner, active, false);
+    return;
+  }
+  complete_output_object_layout_type(ctx, base, active, true);
 }
 
 void complete_output_layout_types_impl(SemanticContext & ctx,
@@ -7204,9 +7301,17 @@ void complete_output_layout_types_impl(SemanticContext & ctx,
 {
   if(node.kind != CallSemKind::type_alias) {
     complete_output_abi_layout_type(ctx, node.semantic_type, active);
+    complete_output_abi_layout_type(ctx, callsem_vtt_owner_type(node), active);
+    complete_output_abi_layout_type(ctx, callsem_materialization_source_type(node), active);
+    complete_output_abi_layout_type(ctx, callsem_conversion_source_type(node), active);
+    complete_output_abi_layout_type(ctx, callsem_initializer_list_element_type(node), active);
+    complete_output_abi_layout_type(ctx, callsem_typeid_operand_type(node), active);
   }
   for(size_t i = 0; i < node.children.size(); ++i) {
     complete_output_layout_types_impl(ctx, node.children[i], active);
+  }
+  if(callsem_lowered_condition_test(node)) {
+    complete_output_layout_types_impl(ctx, *callsem_lowered_condition_test(node), active);
   }
 }
 

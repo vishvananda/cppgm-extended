@@ -2081,6 +2081,7 @@ bool try_analyze_declval_call_expression(SemanticContext & ctx,
 
 bool should_use_target_aware_argument_analysis(const CppAstNode & node,
                                                const TypePtr & target);
+bool target_has_unknown_array_bound(const TypePtr & target);
 
 struct CachedArgumentAnalysis
 {
@@ -2102,18 +2103,21 @@ struct SharedCallArgumentAnalyzer
   const vector<const CppAstNode *> & arg_nodes;
   const CallAnalysisOptions & options;
   const CallAnalysisHints * hints;
+  bool allow_unknown_bound_array_placeholder;
   vector<CachedArgumentAnalysis> generic_arg_cache;
   vector<CachedReferenceSourceAnalysis> reference_source_cache;
 
   SharedCallArgumentAnalyzer(SemanticContext & ctx_in,
                              Scope & scope_in,
                              const vector<const CppAstNode *> & arg_nodes_in,
-                             const CallAnalysisOptions & options_in)
+                             const CallAnalysisOptions & options_in,
+                             bool allow_unknown_bound_array_placeholder_in = false)
       : ctx(ctx_in),
         scope(scope_in),
         arg_nodes(arg_nodes_in),
         options(options_in),
         hints(options_in.hints),
+        allow_unknown_bound_array_placeholder(allow_unknown_bound_array_placeholder_in),
         generic_arg_cache(arg_nodes_in.size()),
         reference_source_cache(arg_nodes_in.size())
   {}
@@ -2271,7 +2275,9 @@ struct SharedCallArgumentAnalyzer
     if(!analyze_generic_arg(index, expr, error)) {
       if(child.kind == CppAstKind::braced_init_list &&
          target &&
-         ctx.type_depends_on_template_parameter(target)) {
+         (ctx.type_depends_on_template_parameter(target) ||
+          (allow_unknown_bound_array_placeholder &&
+           target_has_unknown_array_bound(target)))) {
         ExprInfo placeholder;
         placeholder.type = TypePtr();
         placeholder.category = VC_LVALUE;
@@ -3822,6 +3828,50 @@ const TemplateParameterInfo * type_parameter_pack_for_reference_text(
              nullptr;
 }
 
+const TemplateParameterInfo * non_type_parameter_pack_for_reference_text(
+    const vector<TemplateParameterInfo> & parameters,
+    const std::string & text)
+{
+  std::string normalized = normalize_template_parameter_reference_text(text);
+  if(normalized.compare(0, 16, "dependent value ") == 0) {
+    normalized = semantic_utils::trim_space(normalized.substr(16));
+  }
+  if(normalized.empty()) {
+    return nullptr;
+  }
+  const TemplateParameterInfo * parameter =
+      find_template_parameter(parameters, normalized);
+  if(!parameter) {
+    parameter = template_model::find_template_parameter_by_name(parameters, normalized);
+  }
+  return parameter &&
+         parameter->kind == TemplateParameterInfo::TP_NON_TYPE &&
+         parameter->parameter_pack ?
+             parameter :
+             nullptr;
+}
+
+void collect_non_type_parameter_pack_references_from_text(
+    const vector<TemplateParameterInfo> & parameters,
+    const std::string & text,
+    std::set<const TemplateParameterInfo *> & out)
+{
+  if(text.empty()) {
+    return;
+  }
+  for(size_t i = 0; i < parameters.size(); ++i) {
+    const TemplateParameterInfo & parameter = parameters[i];
+    if(parameter.kind != TemplateParameterInfo::TP_NON_TYPE ||
+       !parameter.parameter_pack ||
+       parameter.name.empty()) {
+      continue;
+    }
+    if(text.find(parameter.name + "...") != std::string::npos) {
+      out.insert(&parameter);
+    }
+  }
+}
+
 const TemplateParameterInfo * direct_type_parameter_pack_reference(
     const vector<TemplateParameterInfo> & parameters,
     const TypePtr & type)
@@ -3843,6 +3893,47 @@ const TemplateParameterInfo * direct_type_parameter_pack_reference(
   if(!parameter && base->named_display != base->named_key) {
     parameter = type_parameter_pack_for_reference_text(
         parameters, base->named_display);
+  }
+  return parameter;
+}
+
+const TemplateParameterInfo * direct_non_type_parameter_pack_reference(
+    const vector<TemplateParameterInfo> & parameters,
+    const TemplateArgument & argument)
+{
+  if(argument.kind != TemplateArgument::TA_VALUE) {
+    return nullptr;
+  }
+  const TemplateParameterInfo * parameter = nullptr;
+  if(!argument.text.empty()) {
+    parameter = non_type_parameter_pack_for_reference_text(parameters, argument.text);
+  }
+  if(!parameter && argument.source_syntax) {
+    if(!argument.source_syntax->text.empty()) {
+      parameter =
+          non_type_parameter_pack_for_reference_text(parameters,
+                                                    argument.source_syntax->text);
+    }
+    if(!parameter && !argument.source_syntax->source_text.empty()) {
+      parameter =
+          non_type_parameter_pack_for_reference_text(parameters,
+                                                    argument.source_syntax->source_text);
+    }
+  }
+  return parameter;
+}
+
+const TemplateParameterInfo * direct_non_type_parameter_pack_reference_syntax(
+    const vector<TemplateParameterInfo> & parameters,
+    const TemplateArgumentSyntax & syntax)
+{
+  const TemplateParameterInfo * parameter = nullptr;
+  if(!syntax.text.empty()) {
+    parameter = non_type_parameter_pack_for_reference_text(parameters, syntax.text);
+  }
+  if(!parameter && !syntax.source_text.empty()) {
+    parameter =
+        non_type_parameter_pack_for_reference_text(parameters, syntax.source_text);
   }
   return parameter;
 }
@@ -3909,6 +4000,100 @@ void collect_type_parameter_pack_references(const vector<TemplateParameterInfo> 
   }
 }
 
+void collect_non_type_parameter_pack_references(
+    const vector<TemplateParameterInfo> & parameters,
+    const TypePtr & type,
+    std::set<const TemplateParameterInfo *> & out)
+{
+  if(!type) {
+    return;
+  }
+  TypePtr base = strip_top_level_cv(type);
+  if(!base) {
+    base = type;
+  }
+  switch(base->kind) {
+  case Type::TK_NAMED:
+  {
+    collect_non_type_parameter_pack_references_from_text(
+        parameters, base->named_semantic_payload, out);
+    collect_non_type_parameter_pack_references_from_text(
+        parameters, base->named_key, out);
+    if(base->named_display != base->named_key) {
+      collect_non_type_parameter_pack_references_from_text(
+          parameters, base->named_display, out);
+    }
+    if(shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
+           named_type_class_template_specialization_mangle_info_const(base)) {
+      for(size_t i = 0; i < info->arguments.size(); ++i) {
+        const TemplateArgument & argument = info->arguments[i];
+        if(const TemplateParameterInfo * direct =
+               direct_non_type_parameter_pack_reference(parameters, argument)) {
+          out.insert(direct);
+        }
+        if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+          collect_non_type_parameter_pack_references(parameters, argument.type, out);
+        }
+      }
+    }
+    for(size_t i = 0; i < base->named_dependent_alias_arguments.size(); ++i) {
+      collect_non_type_parameter_pack_references(
+          parameters, base->named_dependent_alias_arguments[i].type, out);
+      if(const TemplateParameterInfo * direct =
+             direct_non_type_parameter_pack_reference_syntax(
+                 parameters, base->named_dependent_alias_arguments[i].syntax)) {
+        out.insert(direct);
+      }
+    }
+    for(size_t i = 0; i < base->named_dependent_class_arguments.size(); ++i) {
+      collect_non_type_parameter_pack_references(
+          parameters, base->named_dependent_class_arguments[i].type, out);
+      if(const TemplateParameterInfo * direct =
+             direct_non_type_parameter_pack_reference_syntax(
+                 parameters, base->named_dependent_class_arguments[i].syntax)) {
+        out.insert(direct);
+      }
+    }
+    for(size_t i = 0;
+        i < base->named_dependent_template_template_arguments.size();
+        ++i) {
+      collect_non_type_parameter_pack_references(
+          parameters, base->named_dependent_template_template_arguments[i].type, out);
+      if(const TemplateParameterInfo * direct =
+             direct_non_type_parameter_pack_reference_syntax(
+                 parameters, base->named_dependent_template_template_arguments[i].syntax)) {
+        out.insert(direct);
+      }
+    }
+    return;
+  }
+  case Type::TK_FUNCTION:
+    collect_non_type_parameter_pack_references(parameters, base->inner, out);
+    for(size_t i = 0; i < base->params.size(); ++i) {
+      collect_non_type_parameter_pack_references(parameters, base->params[i], out);
+    }
+    return;
+  case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+  case Type::TK_ARRAY:
+  case Type::TK_ATOMIC:
+  case Type::TK_CV:
+    collect_non_type_parameter_pack_references(parameters, base->inner, out);
+    if(base->owner) {
+      collect_non_type_parameter_pack_references(parameters, base->owner, out);
+    }
+    return;
+  case Type::TK_MEMBER_POINTER:
+    collect_non_type_parameter_pack_references(parameters, base->owner, out);
+    collect_non_type_parameter_pack_references(parameters, base->inner, out);
+    return;
+  case Type::TK_FUNDAMENTAL:
+    return;
+  }
+}
+
 size_t count_function_template_type_parameter_pack_references(
     const FunctionTemplateDecl & decl)
 {
@@ -3921,10 +4106,33 @@ size_t count_function_template_type_parameter_pack_references(
   return references.size();
 }
 
+size_t count_function_template_non_type_parameter_pack_references(
+    const FunctionTemplateDecl & decl)
+{
+  std::set<const TemplateParameterInfo *> references;
+  for(size_t i = 0; i < decl.params_pattern.size(); ++i) {
+    collect_non_type_parameter_pack_references(decl.parameters,
+                                               decl.params_pattern[i].second,
+                                               references);
+  }
+  return references.size();
+}
+
 bool function_template_declares_type_parameter_pack(const FunctionTemplateDecl & decl)
 {
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
     if(decl.parameters[i].kind == TemplateParameterInfo::TP_TYPE &&
+       decl.parameters[i].parameter_pack) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool function_template_declares_non_type_parameter_pack(const FunctionTemplateDecl & decl)
+{
+  for(size_t i = 0; i < decl.parameters.size(); ++i) {
+    if(decl.parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE &&
        decl.parameters[i].parameter_pack) {
       return true;
     }
@@ -3959,6 +4167,50 @@ int compare_function_template_type_pack_pattern_preference(
   const size_t best_packs =
       best_declares_pack ?
           count_function_template_type_parameter_pack_references(
+              *best.function->source_template) :
+          0;
+  if(current_packs == 0 && best_packs != 0) {
+    return -1;
+  }
+  if(best_packs == 0 && current_packs != 0) {
+    return 1;
+  }
+  if(!current_declares_pack && best_declares_pack) {
+    return -1;
+  }
+  if(!best_declares_pack && current_declares_pack) {
+    return 1;
+  }
+  return 0;
+}
+
+int compare_function_template_non_type_pack_pattern_preference(
+    const CandidateMatch & current,
+    const CandidateMatch & best)
+{
+  if(!current.function || !best.function ||
+     !current.function->source_template || !best.function->source_template) {
+    return 0;
+  }
+
+  const bool current_declares_pack =
+      function_template_declares_non_type_parameter_pack(
+          *current.function->source_template);
+  const bool best_declares_pack =
+      function_template_declares_non_type_parameter_pack(
+          *best.function->source_template);
+  if(!current_declares_pack && !best_declares_pack) {
+    return 0;
+  }
+
+  const size_t current_packs =
+      current_declares_pack ?
+          count_function_template_non_type_parameter_pack_references(
+              *current.function->source_template) :
+          0;
+  const size_t best_packs =
+      best_declares_pack ?
+          count_function_template_non_type_parameter_pack_references(
               *best.function->source_template) :
           0;
   if(current_packs == 0 && best_packs != 0) {
@@ -7468,6 +7720,12 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
     return trailing_pack_preference;
   }
 
+  const int early_non_type_pack_pattern_preference =
+      compare_function_template_non_type_pack_pattern_preference(current, best);
+  if(early_non_type_pack_pattern_preference != 0) {
+    return early_non_type_pack_pattern_preference;
+  }
+
   if(semantic_metrics::AnalyzerCounters * counters = performance_counters(ctx)) {
     counters->candidate_partial_order_acceptance_checks += 2;
   }
@@ -7513,6 +7771,11 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
       compare_function_template_class_template_arg_cv_preference(current, best);
   if(class_template_arg_cv_preference != 0) {
     return class_template_arg_cv_preference;
+  }
+  const int non_type_pack_pattern_preference =
+      compare_function_template_non_type_pack_pattern_preference(current, best);
+  if(non_type_pack_pattern_preference != 0) {
+    return non_type_pack_pattern_preference;
   }
   if(current.function->type && best.function->type &&
      type_equals(current.function->type, best.function->type)) {
@@ -7567,6 +7830,14 @@ TypePtr target_function_type(const TypePtr & target)
   return TypePtr();
 }
 
+bool target_has_unknown_array_bound(const TypePtr & target)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(target));
+  return base &&
+         base->kind == Type::TK_ARRAY &&
+         !base->has_bound;
+}
+
 bool should_use_target_aware_argument_analysis(const CppAstNode & node,
                                                const TypePtr & target)
 {
@@ -7600,7 +7871,8 @@ bool should_use_template_deduction_target_aware_argument_analysis(
        ctx.type_depends_on_template_parameter(initializer_list_element)) {
       return false;
     }
-    if(ctx.type_depends_on_template_parameter(target)) {
+    if(ctx.type_depends_on_template_parameter(target) ||
+       target_has_unknown_array_bound(target)) {
       return false;
     }
   }
@@ -8603,7 +8875,11 @@ void append_function_template_call_candidates_impl(
     return;
   }
 
-  SharedCallArgumentAnalyzer argument_analyzer(ctx, argument_scope, arg_nodes, options);
+  SharedCallArgumentAnalyzer argument_analyzer(ctx,
+                                               argument_scope,
+                                               arg_nodes,
+                                               options,
+                                               true);
 
   for(size_t i = 0; i < templates.size(); ++i) {
     if(!templates[i]) {
@@ -9686,6 +9962,11 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
       candidate_rejection = candidate->name + ": member access not allowed";
       return;
     }
+    if(!options.synthesize_implicit_copy_move &&
+       constructor_is_class_copy_or_move_candidate(target_info, candidate)) {
+      candidate_rejection = candidate->name + ": copy/move constructor not considered";
+      return;
+    }
 
     TypePtr function_type = strip_top_level_cv(candidate->type);
     if(!function_type || function_type->kind != Type::TK_FUNCTION ||
@@ -10092,6 +10373,18 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
       }
       return;
     }
+    if(!options.synthesize_implicit_copy_move &&
+       constructor_is_class_copy_or_move_candidate(target_info, candidate)) {
+      candidate_rejection = candidate->name + ": copy/move constructor not considered";
+      if(parser_trace::enabled("overload")) {
+        ostringstream trace;
+        trace << "ctor-action-skip class=" << target_info.qualified_name
+              << " candidate=" << candidate->name
+              << " reason=copy-move-not-considered";
+        parser_trace::note("overload", std::string(), trace.str());
+      }
+      return;
+    }
 
     TypePtr function_type = strip_top_level_cv(candidate->type);
     if(!function_type || function_type->kind != Type::TK_FUNCTION ||
@@ -10455,6 +10748,24 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
   }
   state.matches.swap(deduped_matches);
 
+  if(!options.initializer_list_only &&
+     effective_arg_nodes.size() == 1 &&
+     effective_arg_nodes[0]->kind == CppAstKind::braced_init_list) {
+    vector<CandidateMatch> initializer_list_matches;
+    for(size_t i = 0; i < state.matches.size(); ++i) {
+      if(!state.matches[i].params.empty()) {
+        TypePtr param = strip_top_level_cv(
+            remove_reference_type(state.matches[i].params[0]));
+        if(ctx.is_initializer_list_type(param, nullptr, nullptr)) {
+          initializer_list_matches.push_back(std::move(state.matches[i]));
+        }
+      }
+    }
+    if(!initializer_list_matches.empty()) {
+      state.matches.swap(initializer_list_matches);
+    }
+  }
+
   BestCandidateSelection selection = select_best_candidate_match(ctx, state.matches);
 
   if(selection.ambiguous) {
@@ -10549,6 +10860,23 @@ FunctionBinding * select_constructor_for_direct_braced_init(
   {
     ConstructorSelectionOptions expanded_options = options;
     expanded_options.initializer_list_only = false;
+    if(expanded_arg_nodes.size() == 1 &&
+       expanded_arg_nodes[0]->kind == CppAstKind::braced_init_list) {
+      const vector<const CppAstNode *> nested_args =
+          initializer_argument_nodes(*expanded_arg_nodes[0]);
+      const bool nested_braces_may_copy_object =
+          nested_args.size() == 1 &&
+          nested_args[0]->kind != CppAstKind::braced_init_list;
+      if(!nested_braces_may_copy_object) {
+        expanded_options.synthesize_implicit_copy_move = false;
+      }
+    }
+    if(expanded_arg_nodes.size() == 1 &&
+       expanded_arg_nodes[0]->kind == CppAstKind::braced_init_list &&
+       semantic_class_model::can_synthesize_aggregate_constructor(info) &&
+       semantic_class_model::aggregate_element_count(info) == 1) {
+      expanded_options.synthesize_implicit_copy_move = false;
+    }
     return select_constructor(ctx,
                               scope,
                               info,

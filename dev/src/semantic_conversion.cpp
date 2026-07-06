@@ -2140,7 +2140,11 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
     ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
-    if(target_class && source_class && target_class != source_class &&
+    if(target_class && source_class && target_class == source_class) {
+      set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
+      return true;
+    }
+    if(target_class && source_class &&
        find_unique_base_path(*source_class, target_class, offset, access)) {
       if(materialize) {
         out = ctx.apply_base_subobject_adjustment(expr, target, *target_class, offset);
@@ -2160,7 +2164,11 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
     ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
-    if(target_class && source_class && target_class != source_class &&
+    if(target_class && source_class && target_class == source_class) {
+      set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
+      return true;
+    }
+    if(target_class && source_class &&
        find_unique_base_path(*source_class, target_class, offset, access)) {
       if(materialize) {
         out = ctx.apply_base_subobject_adjustment(expr, target, *target_class, offset);
@@ -2186,7 +2194,11 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
         ensure_complete_class_info(ctx, expr_pointee_base);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
-    if(target_class && source_class && target_class != source_class &&
+    if(target_class && source_class && target_class == source_class) {
+      set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
+      return true;
+    }
+    if(target_class && source_class &&
        find_unique_base_path(*source_class, target_class, offset, access)) {
       if(materialize) {
         out = ctx.apply_base_subobject_adjustment(expr, target, *target_class, offset);
@@ -2219,7 +2231,11 @@ bool try_apply_inheritance_conversion_impl(SemanticContext & ctx,
     ClassInfo * source_class = ensure_complete_class_info(ctx, expr_object_type);
     size_t offset = 0;
     MemberAccess access = MA_PUBLIC;
-    if(target_class && source_class && target_class != source_class &&
+    if(target_class && source_class && target_class == source_class) {
+      set_unmaterialized_inheritance_conversion_result(ctx, target, expr, target_class, out);
+      return true;
+    }
+    if(target_class && source_class &&
        find_unique_base_path(*source_class, target_class, offset, access)) {
       if(materialize) {
         out = ctx.apply_base_subobject_adjustment(expr, target, *target_class, offset);

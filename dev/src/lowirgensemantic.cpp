@@ -1721,14 +1721,14 @@ size_t class_array_new_cookie_size(const TypePtr & element_type)
 string storage_span_text(const TypePtr & type)
 {
   ostringstream out;
-  out << backend_storage_size(type) << "x" << backend_storage_alignment(type);
+  out << max<size_t>(1, backend_storage_size(type)) << "x" << backend_storage_alignment(type);
   return out.str();
 }
 
 string lowir_storage_type_for_span(size_t bytes, size_t alignment)
 {
   ostringstream out;
-  out << "obj<" << bytes << "x" << max<size_t>(1, min<size_t>(16, alignment)) << ">";
+  out << "obj<" << max<size_t>(1, bytes) << "x" << max<size_t>(1, min<size_t>(16, alignment)) << ">";
   return out.str();
 }
 
@@ -5014,7 +5014,10 @@ private:
   {
     const bool preserve_member_pointer_storage =
         is_member_function_pointer_type(callsem_materialization_source_type(node));
-    const VariableBinding * local = find_local_binding(node.text);
+    const bool has_resolved_nonlocal_symbol =
+        !callsem_symbol(node).internal_symbol.empty();
+    const VariableBinding * local =
+        has_resolved_nonlocal_symbol ? nullptr : find_local_binding(node.text);
     if(local) {
       TypePtr expr_base = strip_top_level_cv(remove_reference_type(node.semantic_type));
       const bool local_indirect_value =
@@ -5190,7 +5193,10 @@ private:
 
   bool try_emit_known_id_address(const CallSemNode & node, string & out)
   {
-    const VariableBinding * local = find_local_binding(node.text);
+    const bool has_resolved_nonlocal_symbol =
+        !callsem_symbol(node).internal_symbol.empty();
+    const VariableBinding * local =
+        has_resolved_nonlocal_symbol ? nullptr : find_local_binding(node.text);
     if(local) {
       if(binding_has_external_storage_address(*local)) {
         out = local->external_storage_address;
@@ -5251,7 +5257,10 @@ private:
 
   bool try_emit_known_id_storage(const CallSemNode & node, string & out)
   {
-    const VariableBinding * local = find_local_binding(node.text);
+    const bool has_resolved_nonlocal_symbol =
+        !callsem_symbol(node).internal_symbol.empty();
+    const VariableBinding * local =
+        has_resolved_nonlocal_symbol ? nullptr : find_local_binding(node.text);
     if(local) {
       if(binding_has_external_storage_address(*local)) {
         out = local->external_storage_address;

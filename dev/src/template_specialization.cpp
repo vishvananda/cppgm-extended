@@ -46,6 +46,36 @@ struct DeducedState
   std::map<std::string, TemplateArgument> template_template_arguments;
 };
 
+bool scope_is_boost_mp11_namespace_or_inline_child(const Scope * scope)
+{
+  const Scope * current = scope;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "mp11") {
+    return false;
+  }
+  current = current->parent;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "boost") {
+    return false;
+  }
+  for(const Scope * parent = current->parent; parent; parent = parent->parent) {
+    if(parent->namespace_scope &&
+       parent->name != "<global>" &&
+       parent->name != "<unnamed>") {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool store_deduced_type(DeducedState & deduced,
                         const std::string & parameter_name,
                         const TypePtr & type)
@@ -4820,6 +4850,142 @@ bool try_expand_alias_template_pattern_structurally(
     return true;
   }
 
+  const auto try_expand_known_boost_mp11_conditional_alias = [&]() -> bool
+  {
+    const bool is_mp_if = alias_template.name == "mp_if";
+    const bool is_mp_if_c = alias_template.name == "mp_if_c";
+    if((!is_mp_if && !is_mp_if_c) ||
+       !scope_is_boost_mp11_namespace_or_inline_child(
+           alias_template.declaring_scope) ||
+       alias_template.parameters.size() != 3 ||
+       !alias_template.parameters[2].parameter_pack ||
+       arguments.size() < 2 ||
+       (is_mp_if &&
+        (alias_template.parameters[0].kind != TemplateParameterInfo::TP_TYPE ||
+         alias_template.parameters[1].kind != TemplateParameterInfo::TP_TYPE ||
+         alias_template.parameters[2].kind != TemplateParameterInfo::TP_TYPE ||
+         arguments[0].kind != TemplateArgument::TA_TYPE ||
+         !arguments[0].type)) ||
+       (is_mp_if_c &&
+        (alias_template.parameters[0].kind != TemplateParameterInfo::TP_NON_TYPE ||
+         !is_bool_type(alias_template.parameters[0].value_type) ||
+         alias_template.parameters[1].kind != TemplateParameterInfo::TP_TYPE ||
+         alias_template.parameters[2].kind != TemplateParameterInfo::TP_TYPE ||
+         arguments[0].kind != TemplateArgument::TA_VALUE))) {
+      return false;
+    }
+
+    bool condition_value = false;
+    if(is_mp_if_c) {
+      TemplateArgument condition_argument = arguments[0];
+      if(condition_argument.dependent) {
+        TemplateArgument evaluated_condition;
+        if(try_evaluate_value_argument_in_scope(condition_argument,
+                                                effective_body_scope.require(),
+                                                evaluated_condition)) {
+          condition_argument = evaluated_condition;
+        }
+      }
+      if(condition_argument.dependent) {
+        return false;
+      }
+      condition_value = condition_argument.value != 0;
+    } else {
+      template_argument_semantics::NonTypeArgumentStatus condition_status =
+          template_argument_semantics::NT_ARG_PARSE_FAILED;
+      if(arg_syntaxes && !arg_syntaxes->empty()) {
+        try {
+          condition_status =
+              template_argument_semantics::evaluate_structured_bool_template_argument(
+                  services,
+                  effective_body_scope,
+                  (*arg_syntaxes)[0],
+                  condition_value);
+        } catch(const ExplicitSpecializationAfterInstantiationError &) {
+          throw;
+        } catch(const DependentQualifiedTypeMissingTypenameError &) {
+          condition_status = template_argument_semantics::NT_ARG_DEPENDENT;
+        } catch(const TemplateSubstitutionFailure &) {
+          condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+        } catch(const SemanticSoftFailure &) {
+          condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+        } catch(const SemanticDiagnosticError &) {
+          condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+        } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+          condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+        } catch(const std::logic_error &) {
+          condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+        }
+      }
+      if(condition_status != template_argument_semantics::NT_ARG_EVALUATED) {
+        TypePtr condition_type = arguments[0].type;
+        template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+            services,
+            effective_body_scope,
+            condition_type);
+        condition_status =
+            template_argument_semantics::evaluate_structured_bool_constant_type(
+                services,
+                effective_body_scope,
+                condition_type,
+                condition_value);
+      }
+      if(condition_status != template_argument_semantics::NT_ARG_EVALUATED) {
+        return false;
+      }
+    }
+
+    const std::size_t selected_index = condition_value ? 1 : 2;
+    if(selected_index >= arguments.size() ||
+       (!condition_value && arguments.size() != 3)) {
+      return false;
+    }
+    const TemplateArgument & selected = arguments[selected_index];
+    if(selected.kind != TemplateArgument::TA_TYPE || !selected.type) {
+      return false;
+    }
+
+    TypePtr selected_type = selected.type;
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        effective_body_scope,
+        selected_type);
+    if(!selected_type) {
+      return false;
+    }
+
+    if(expanded_type) {
+      *expanded_type = selected_type;
+    }
+    expanded_text = type_text(selected_type);
+    if(expanded_text.empty()) {
+      expanded_text = selected.text;
+    }
+    if(expanded_text.empty() &&
+       arg_syntaxes &&
+       selected_index < arg_syntaxes->size()) {
+      expanded_text = (*arg_syntaxes)[selected_index].text;
+    }
+    if(expanded_text.empty()) {
+      return false;
+    }
+    cache_alias_success(expanded_text, selected_type);
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "expand-alias-boost-mp11-conditional alias="
+            << alias_template.name
+            << " condition=" << (condition_value ? "true" : "false")
+            << " selected=" << selected_index
+            << " type=" << describe_type(selected_type)
+            << " text=" << expanded_text;
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    return true;
+  };
+  if(try_expand_known_boost_mp11_conditional_alias()) {
+    return true;
+  }
+
   const auto find_type_parameter =
       [&](const TypePtr & type) -> const TemplateParameterInfo *
   {
@@ -8174,6 +8340,49 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
         find_direct_template_parameter_from_arg(pattern_arg).parameter;
     if(!direct_parameter) {
       if(pattern_arg == actual_arg) {
+        continue;
+      }
+      long long actual_value = 0;
+      TypePtr actual_value_type;
+      bool have_actual_value = false;
+      if(actual_structured_args &&
+         arg_index < actual_structured_args->size()) {
+        const TemplateArgument & actual_value_arg =
+            (*actual_structured_args)[arg_index];
+        if(actual_value_arg.kind == TemplateArgument::TA_VALUE &&
+           !actual_value_arg.dependent) {
+          actual_value = actual_value_arg.value;
+          actual_value_type = actual_value_arg.type;
+          have_actual_value = true;
+        }
+      }
+      if(!have_actual_value &&
+         parse_simple_integral_value_text(actual_arg, actual_value)) {
+        if(arg_index > 0) {
+          parse_simple_fundamental_type_text(actual_args[0], actual_value_type);
+        }
+        if(!actual_value_type) {
+          actual_value_type = make_fundamental(
+              (actual_arg == "true" || actual_arg == "false") ? FT_BOOL : FT_INT);
+        }
+        have_actual_value = true;
+      }
+      if(have_actual_value) {
+        long long expected_value = 0;
+        const template_api::NonTypeArgumentStatus expected_status =
+            evaluate_partial_non_type_pattern_value(
+                services,
+                template_api::make_template_environment(match_scope),
+                pattern_arg,
+                pattern_arg_syntaxes && arg_index < pattern_arg_syntaxes->size() ?
+                    &(*pattern_arg_syntaxes)[arg_index] :
+                    nullptr,
+                actual_value_type,
+                expected_value);
+        if(expected_status != template_api::NT_ARG_EVALUATED ||
+           expected_value != actual_value) {
+          return false;
+        }
         continue;
       }
       TypePtr pattern_arg_type;

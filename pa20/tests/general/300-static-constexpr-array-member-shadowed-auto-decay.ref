@@ -1,0 +1,39 @@
+global @constants_void___data [binding=weak, object=_ZN9constantsIvE4dataE] = {
+  u32 11
+  u32 22
+  u32 33
+  u32 44
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = call u32 @reader__first()
+    %t2 = cmp eq u32 %t1, 11
+    branch %t2, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t3 = load i32 $cond__1
+    return i32 %t3
+}
+function @reader__first() -> u32 [binding=weak, object=_ZN6reader5firstEv] {
+  slot $data : ptr
+
+  block ^entry:
+    %t1 = addr @constants_void___data
+    %t2 = unary decay ptr %t1
+    store ptr %t2, $data
+    %t3 = load ptr $data
+    %t4 = index u32 [projection=array_element] %t3, 0
+    %t5 = load u32 %t4
+    return u32 %t5
+}

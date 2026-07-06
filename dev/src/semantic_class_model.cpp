@@ -47,6 +47,8 @@ namespace {
 
 const int kMaxReferenceMemberCollectionDepth = 512;
 
+bool reference_collection_can_defer_alias_failure(const std::string & message);
+
 struct ScopedTemplateUseLocation
 {
   explicit ScopedTemplateUseLocation(const std::string & location)
@@ -3625,12 +3627,30 @@ TypePtr parse_or_defer_reference_class_alias_type_id(SemanticContext & ctx,
                                                            dependent_class)) {
     return deferred;
   }
-  return parse_or_defer_class_alias_type_id(ctx,
-                                            info,
-                                            alias_name,
-                                            type_id,
-                                            type_id_text,
-                                            dependent_class);
+  try {
+    return parse_or_defer_class_alias_type_id(ctx,
+                                              info,
+                                              alias_name,
+                                              type_id,
+                                              type_id_text,
+                                              dependent_class);
+  } catch(const std::logic_error & e) {
+    const std::string message = e.what();
+    if(info.reference_member_collection_in_progress &&
+       info.source_template &&
+       reference_collection_can_defer_alias_failure(message)) {
+      ClassInfo::DeferredMemberAlias deferred;
+      deferred.type_id = &type_id;
+      deferred.type_id_text = type_id_text;
+      deferred.dependent_class = dependent_class;
+      info.deferred_member_aliases[alias_name] = deferred;
+      return make_dependent_class_alias_placeholder(info,
+                                                    alias_name,
+                                                    type_id_text,
+                                                    &type_id);
+    }
+    throw;
+  }
 }
 
 void trace_class_alias_store(SemanticContext & ctx,
@@ -8980,6 +9000,79 @@ bool reference_collection_needs_template_declaration(const CppAstNode & node)
   return node_has_friend_specifier(*payload);
 }
 
+bool declarator_subtree_has_parameter_clause(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::parameter_clause) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(declarator_subtree_has_parameter_clause(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool template_declaration_payload_is_function_like(const CppAstNode & node)
+{
+  const CppAstNode * payload = innermost_template_declaration_payload(node);
+  if(!payload) {
+    return false;
+  }
+  if(payload->kind == CppAstKind::function_definition ||
+     payload->kind == CppAstKind::special_member_definition ||
+     payload->kind == CppAstKind::special_member_declaration) {
+    return true;
+  }
+  if(payload->kind != CppAstKind::simple_declaration) {
+    return false;
+  }
+  const CppAstNode * declarators =
+      find_child(*payload, CppAstKind::init_declarator_list);
+  if(!declarators) {
+    return false;
+  }
+  for(size_t i = 0; i < declarators->children.size(); ++i) {
+    const CppAstNode & init_decl = declarators->children[i];
+    for(size_t j = 0; j < init_decl.children.size(); ++j) {
+      if(init_decl.children[j].kind == CppAstKind::declarator &&
+         declarator_subtree_has_parameter_clause(init_decl.children[j])) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool reference_collection_can_defer_function_template_failure(
+    const std::string & message)
+{
+  return message.find("unsupported function template ") != std::string::npos ||
+         message.find("unsupported class member decl-specifier-seq") !=
+             std::string::npos ||
+         message.find("unsupported dependent class member decl-specifier-seq") !=
+             std::string::npos ||
+         message.find("failed non-type template argument evaluation") !=
+             std::string::npos ||
+         message.find("failed function template result type substitution") !=
+             std::string::npos ||
+         message.find("retained dependent result type") != std::string::npos;
+}
+
+bool reference_collection_can_defer_alias_failure(
+    const std::string & message)
+{
+  return message.find("unsupported class member decl-specifier-seq") !=
+             std::string::npos ||
+         message.find("unsupported dependent class member decl-specifier-seq") !=
+             std::string::npos ||
+         message.find("failed non-type template argument evaluation") !=
+             std::string::npos ||
+         message.find("failed function template result type substitution") !=
+             std::string::npos ||
+         message.find("retained dependent result type") != std::string::npos;
+}
+
 void populate_class_reference_members(SemanticContext & ctx,
                                       ClassInfo & info,
                                       const CppAstNode & node)
@@ -9032,8 +9125,9 @@ void populate_class_reference_members(SemanticContext & ctx,
       try {
         ctx.collect_template_declaration(*info.member_scope, inner, access);
       } catch(const std::logic_error & e) {
-        if(std::string(e.what()).find("unsupported function template ") !=
-           std::string::npos) {
+        const std::string message = e.what();
+        if(template_declaration_payload_is_function_like(inner) &&
+           reference_collection_can_defer_function_template_failure(message)) {
           return;
         }
         throw;

@@ -779,7 +779,7 @@ Local Boost wrapper state:
 | 48 | `libs/fusion/test` | pass | Current-head rerun first exposed `erase_key`, then `segmented_for_each`, then `front_extended_deque`/`back_extended_deque`, then `map_comparison`/`map_copy`, then `tuple_traits__maybe_variadic`, then the `zip_view_ignore` / `zip_view2` / `zip_view` / `swap` static-reference-cast cluster, then incomplete-type trait probes `is_sequence`, `is_view`, and `tag_of`, then the `invoke_function_object`, `invoke`, and `invoke_procedure` runtime failures. All frontier batches are fixed in detailed rows below. Full rerun `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/fusion/test` after the global function-pointer rvalue fix exits `0` and updates 842 targets. |
 | 49 | `libs/geometry/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.9s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__geometry__test.log`. |
 | 50 | `libs/gil/test` | pass | Current-head suite survey `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/summary.md` passed this suite in 3.8s with log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__gil__test.log`. |
-| 51 | `libs/graph/test` | mixed | Current-head survey at `1ed1f4d92` first stopped on `unknown id-expression num_vertices` in `boost/graph/graph_concepts.hpp`; log `/tmp/boost-suite-survey-20260704-055751-j4-1ed1f4d92/libs__graph__test.log`. After the dependent-ADL body-check fix, focused `libs/graph/test//labeled_graph` passes. A broad post-fix Graph sweep was intentionally interrupted after it had already moved well past `num_vertices` and repeated later independent clusters, including pure `override = 0` declarations in `boost/graph/exception.hpp`, `unsupported enumerator value` in `boost/smart_ptr/detail/sp_convertible.hpp`, undefined Boost.Parameter keyword `instance` symbols, `std::min`/`max` lookup in class-template members, structured-binding parsing, and named-parameter overload-selection failures. The pure-override declaration cluster, libc++ `mersenne_twister_engine::__rshift` ABI-symbol frontier, Boost.Parameter keyword `instance` link frontier, `sp_convertible<Y[], T[]>` known-bound array selection frontier, Boost.Tuple member-template non-type source-replay frontier, Boost.Parameter imported member-template owner frontier, `dijkstra_shortest_paths` named-parameter partial-order frontier, CSR graph vertex-all property-map result-type scope-binding frontier, Boost.Optional proxy defaulted non-type argument scope frontier, pointer-arithmetic class-conversion frontier, late-member subscript structured-binding recovery frontier, local using-declaration inline function-template body-check frontier, Boost.PropertyTree nested current-specialization owner frontier, lexical_cast wide-stream insertion SFINAE frontier, and libc++ `__make_unsigned_t<char>` signedness-transform alias frontier are now fixed; focused `libs/graph/test//vf2_sub_graph_iso_test`, `libs/graph/test//finish_edge_bug`, `libs/graph/test//test_graphs`, `libs/graph/test//transitive_closure_test`, `libs/graph/test//betweenness_centrality_test`, `libs/graph/test//csr_graph_test`, `libs/graph/test//dfs_cc`, `libs/graph/test//dijkstra_cc`, `libs/graph/test//disjoint_set_test`, `libs/graph/test//generator_test`, and `libs/graph/test//graphml_test` pass. Focused `graphml_test` now builds, links, runs, and updates 8 targets. Logs `/tmp/boost-graph-vf2-after-rshift-param-fallback-20260704.log`, `/tmp/boost-graph-vf2-after-keyword-instance-20260704.log`, `/tmp/boost-graph-finish-edge-after-array-partial-20260704.log`, `/tmp/boost-graph-finish-edge-and-test-graphs-after-nontype-order-20260704.log`, `/tmp/boost-graph-transitive-closure-after-imported-member-owner-20260704-r2.log`, `/tmp/boost-graph-betweenness-after-template-structure-20260704.log`, `/tmp/boost-graph-csr-after-partial-order-guard-20260704.log`, `/tmp/boost-graph-dfs-cc-after-default-nontype-scope-20260704.log`, `/tmp/boost-graph-dijkstra-cc-after-pointer-arithmetic-conversion-20260704.log`, `/tmp/boost-graph-disjoint-set-after-structured-binding-recovery-noseed-20260704-r2.log`, `/tmp/boost-graph-generator-test-after-local-using-declaration-template-body-20260704.log`, `/tmp/boost-graph-graphml-test-after-current-specialization-20260704.log`, `/tmp/boost-graph-graphml-test-after-stream-insertion-sfinae-20260704.log`, and `/tmp/boost-graph-graphml-test-after-make-unsigned-20260704-r2.log`. |
+| 51 | `libs/graph/test` | pass | The current-head Graph cluster is clean after the focused fixes through Boost.Parameter/MP11, the weighted-matching data-file staging clarification, and the non-`-a` continuation that updated the remaining 510 targets with no failure/skip/error markers; final continuation log `/tmp/boost-graph-tests-continuation-after-enable-if-20260705.log`. Earlier focused logs are preserved in the detailed rows below. |
 | 51a | `libs/graph/test//astar_search_test` | advanced | Boost.Parameter member-operator template partial ordering now skips the implicit object slot when applying the existing reference-pattern tie-break, fixing the `arg_pack[_visitor \| default_visitor]` ambiguity. Focused B2 advances to the next independent frontier, `boost::shared_array<my_float>` construction from an array `new` expression: `/tmp/boost-graph-astar-search-b2-after-ref-pattern.log`. |
 | 51b | `libs/graph/test//astar_search_test` | pass | Class array-new lowering now carries default constructor arguments through the per-element construction loop, fixing the `boost::shared_array<my_float>` construction frontier. Focused B2 builds, links, runs, and updates 4 targets: `/tmp/boost-graph-astar-search-b2-after-array-new-default-arg.log`. |
 | 51c | `libs/graph/test//graphviz_test` | pass | Global class-array named-element copy and hosted `std::ostream` C1/C2 coalescing are fixed. Focused B2 builds `read_graphviz_new.o`, links, runs, and updates the target: `/tmp/boost-graph-graphviz-test-b2-after-ostream-alias.log`. |
@@ -789,6 +789,10 @@ Local Boost wrapper state:
 | 51g | `libs/graph/test//cycle_ratio_tests` | pass | Class-template body lookup now sees class-scope unscoped enumerators introduced by `typedef enum { ... } name;`, fixing `my_white` in `boost/graph/howard_cycle_ratio.hpp`. Focused B2 builds, links, runs, and updates the test target; the paired `libs/graph/example//cycle_ratio_example` advances to the next independent `generate_random_graph` overload/default-argument ambiguity. Log: `/tmp/boost-graph-cycle-ratio-after-typedef-enum-20260705.log`. |
 | 51h | `libs/graph/example//cycle_ratio_example` | pass | Function-template partial ordering now treats fixed fundamental transformed parameter types as more structured than partial-order placeholders, so `boost::generate_random_graph(g, nV, nE, rng, true, true)` selects the fixed `bool, bool` overload before the broader output-iterator overload with a defaulted trailing parameter. Focused B2 builds, links, runs, and passes both cycle-ratio targets: `/tmp/boost-graph-cycle-ratio-after-partial-order-20260705.log`. |
 | 51i | `libs/graph/example//canonical_ordering` | pass | Boost.Parameter named-argument construction for Boyer-Myrvold planarity now resolves `lazy_enable_if<Cond, MetaFn>::type` result/member types, ranks the lvalue member assignment overload ahead of the forwarding-reference overload with real call arguments, and recovers empty middle function-parameter packs during `arg_list_factory` reversal. Focused B2 builds, links, runs, and passes: `/tmp/boost-graph-canonical-ordering-after-boost-parameter-20260705.log`. |
+| 52 | `libs/graph_parallel/test` | setup-fail | Current local Boost setup still cannot select the Graph Parallel/MPI/Python alternatives, matching the historical non-compiler setup failure shape. Survey log: `/tmp/boost-suite-survey-post-heap-gap-20260705/libs__graph_parallel__test.log`. |
+| 53 | `libs/hana/test` | pass | Post-Heap gap survey passes in 4.6s; log `/tmp/boost-suite-survey-post-heap-gap-20260705/libs__hana__test.log`. |
+| 54 | `libs/hash2/test` | mixed | Active frontier suite. The current batch fixes `digest`, `append_pointer`, and focused `append_tuple_like_2`; the last full Hash2 survey before the `append_tuple_like_2` fix still showed seven failed updates including `append_tag_invoke_2`, `append_tag_invoke_3`, `append_tuple_like_2`, `hash_32_64`, `hash_append_5`, `sha2_cx`, and `detail_has_tag_invoke`. Focused `append_tuple_like_2` now passes; full rerun pending. Latest full-survey log before that focused fix: `/tmp/boost-suite-survey-hash2-after-append-pointer-20260706/libs__hash2__test.log`. |
+| 55 | `libs/heap/test` | pass | Current-head suite survey after the friend-access fixes passes in 322.5s, updating 69 targets. `d_ary_heap_test` now builds, links, runs, and passes along with the existing priority queue, mutable heap, skew heap, move-only, pairing, fibonacci, and binomial targets. Summary `/tmp/boost-suite-survey-heap-after-friend-access-20260705/summary.md`; log `/tmp/boost-suite-survey-heap-after-friend-access-20260705/libs__heap__test.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind
@@ -3772,3 +3776,93 @@ targets with no failure/skip/error markers in the log; final log
 five-second sample from the slower `johnson-eg.cpp` compile was preserved at
 `/tmp/cppgm-boost-graph-johnson-eg-sample-20260705.txt`; the target completed
 and ran successfully.
+
+2026-07-05 Boost.Heap `libs/heap/test//d_ary_heap_test` friend class nested
+type-access frontier: the mutable d-ary heap wrapper derives its
+`ordered_iterator` from `q_type::ordered_iterator_dispatcher`, where `q_type`
+is a rebound private `d_ary_heap` implementation type. `d_ary_heap` grants
+`template<class U> friend class priority_queue_mutable_wrapper`, but the access
+checker only walked enclosing class scopes when a current function was active.
+Base-specifier and typedef parsing inside the friend class's nested
+`ordered_iterator` therefore rejected a private forwarding typedef even though
+the containing wrapper was a friend. After that was fixed, the next
+`q_type::internal_compare` typedef exposed the inherited private-base path:
+the member itself is public in the base, but reaching it through
+`d_ary_heap`'s private base requires friend access to the lookup root, not to
+the base that declared the member. The fix lets class-scope lookups use
+enclosing friend/class access without a current function, and lets inherited
+member-type lookup retry the non-public base path against the lookup root when
+the base member itself is not private. Owner: PA21:300 template friend/member
+template access. New regression:
+`pa21/tests/spec/300-friend-class-template-nested-private-typedef-access.t`.
+Pre-fix evidence: reduced no-STL cases failed with `base class must be
+complete: q_type::dispatcher` and `unsupported class member decl-specifier-seq`
+for `q_type::inherited_type`; Boost header reducer failed first on
+`q_type::ordered_iterator_dispatcher` and then on `q_type::internal_compare`.
+After the fix, both no-STL reducers and the Boost header reducer pass; focused
+direct-LowIR PA21 check passes; PA21 placement audit reports zero placement
+findings and marks the new test's `template.friend`/`template.member_template`
+owners reached; `python3 scripts/audit_text_reparse.py` reports all zero;
+direct-LowIR report for `pa15 pa21 pa22` passes `576/576`; full Boost.Heap
+survey passes in 322.5s with all heap targets passing. Survey summary:
+`/tmp/boost-suite-survey-heap-after-friend-access-20260705/summary.md`.
+Suite log:
+`/tmp/boost-suite-survey-heap-after-friend-access-20260705/libs__heap__test.log`.
+A five-second sample from the slower `d_ary_heap_test.cpp` compile was
+preserved at
+`/tmp/cppgm-boost-heap-dary-after-friend-access-sample-20260705.txt`.
+
+2026-07-06 Boost.Hash2 `libs/hash2/test` frontier cluster: the post-Heap gap
+survey identified row 54 as the first active compiler suite after the
+Graph Parallel setup failure and passing Hana target. The current batch fixes
+three focused Hash2 targets. `digest` reduced to a constexpr local default
+object whose member call had to read the full local constexpr object value;
+owner PA20:400, new regression
+`pa20/tests/general/400-constexpr-local-default-object-member-call.t`.
+`append_pointer` reduced to a function-template array-reference parameter with
+an empty braced initializer for an unknown-bound array; owner PA22 function
+template deduction/target-aware argument analysis, new regression
+`pa22/tests/spec/100-function-template-array-bound-braced-empty-argument.t`.
+`append_tuple_like_2` exposed two independent issues: first, an empty pack
+expansion in `int a[] = { ((void)J, 0)... };` produced a zero-sized semantic
+object whose LowIR slot was printed as invalid `obj<0x4>`; the fix gives
+addressable zero-sized storage a one-byte backing object without changing the
+semantic object size, with regression
+`pa22/tests/general/300-empty-pack-unknown-bound-array-lowir.t`. Second, empty
+`index_sequence<>` overload resolution selected the variadic
+`index_sequence<J...>` overload over the exact non-pack overload, so empty tuple
+hashing skipped the required sentinel byte; function-template partial ordering
+now prefers otherwise tied non-type pack-free patterns over non-type pack
+patterns, with regression
+`pa22/tests/general/200-empty-index-sequence-overload-order.t`.
+
+The same outstanding post-Graph/Hash2 batch also carries the focused reducers
+that unblocked the earlier Hash2 survey steps and supporting hosted headers:
+`pa19/tests/general/100-qualified-template-head-shadowed-by-nontype.t`,
+`pa19/tests/general/401-defaulted-template-member-call-rematerialization.t`,
+`pa20/tests/general/300-static-constexpr-array-member-shadowed-auto-decay.t`,
+`pa22/tests/general/500-boost-mp11-conditional-alias-reference-set.t`,
+`pa22/tests/general/500-reference-member-dependent-variadic-return.t`,
+`pa25/tests/general/200-nested-braced-constructor-prefers-initializer-list.t`,
+`pa34/tests/compile/700-lazy-header-if-declaration-statement.t`, and
+`pa35/tests/compile/700-hosted-initializer-list-pair-layout-sync.t`.
+
+Hash2 validation: focused B2 targets
+`libs/hash2/test//digest`, `libs/hash2/test//append_pointer`, and
+`libs/hash2/test//append_tuple_like_2` all pass with
+`CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++`. PA20 focused
+direct-LowIR report passed after the constexpr fix, and PA22 direct-LowIR
+report with `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1` passes `212/212` after the two
+`append_tuple_like_2` regressions. The combined direct-text report for the
+touched post-Graph batch passes with
+`CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa19 pa20 pa21 pa22
+pa25 pa34 pa35' ... make test-report`, reporting `1023/1023`. Placement audits
+for the touched PA20/PA22 tests report no early-placement findings. The
+documented 2026-06-18 perf baseline was not present on this host, so a clean
+detached `HEAD` worktree at `c4ff0e546` was used to record
+`/tmp/cppgm-perf-baseline-clean-head-c4ff0e546-20260706.json`; the three-run
+dirty-tree check passed with instructions `+0.26%`, max RSS `+0.75%`, and
+footprint `-0.03%`, report
+`/tmp/cppgm-perf-report-boost-hash2-empty-pack-20260706.json`. The next action
+is a fresh full Hash2 survey to find the next first real frontier beyond
+`append_tuple_like_2`.

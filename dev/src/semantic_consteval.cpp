@@ -2686,6 +2686,10 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
                      const std::vector<constant_eval::ConstexprValue> & args,
                      constant_eval::ConstexprValue & value)
       {
+        (void)args;
+        if(evaluate_constexpr_member_call_expression(ctx, scope, evaluator, call, value)) {
+          return true;
+        }
         return ctx.evaluate_constant_call_expression_value(scope, evaluator, call, args, value);
       };
   return hooks;

@@ -168,6 +168,18 @@ NonTypeArgumentStatus evaluate_structured_bool_condition_expression(
     const CppAstNode & expr,
     bool & out);
 
+NonTypeArgumentStatus evaluate_structured_bool_template_argument(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax,
+    bool & out);
+
+NonTypeArgumentStatus evaluate_structured_bool_constant_type(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const cpp_decl::TypePtr & type,
+    bool & out);
+
 bool note_constant_value_member_instantiations_in_expression(
     template_api::TemplateServices & services,
     semantic_model::Scope & scope,

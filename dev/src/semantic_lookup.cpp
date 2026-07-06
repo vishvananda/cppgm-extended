@@ -3739,14 +3739,31 @@ MemberTypeLookupResult lookup_member_type(SemanticContext & ctx,
   result.path_access = candidate_path_access[0];
   const MemberAccess member_access =
       named_type_access_for_lookup(*declared_in->member_scope, name);
-  if(lexical_scope &&
-     !member_access_allowed(lexical_scope,
-                            current_class_scope(*lexical_scope),
-                            current_function_scope(*lexical_scope),
-                            declared_in,
-                            member_access,
-                            result.path_access)) {
-    return MemberTypeLookupResult();
+  if(lexical_scope) {
+    const ClassInfo * lookup_current_class = current_class_scope(*lexical_scope);
+    const FunctionBinding * lookup_current_function =
+        current_function_scope(*lexical_scope);
+    bool access_allowed =
+        member_access_allowed(lexical_scope,
+                              lookup_current_class,
+                              lookup_current_function,
+                              declared_in,
+                              member_access,
+                              result.path_access);
+    if(!access_allowed &&
+       member_access != MA_PRIVATE &&
+       result.path_access != MA_PUBLIC) {
+      access_allowed =
+          member_access_allowed(lexical_scope,
+                                lookup_current_class,
+                                lookup_current_function,
+                                &info,
+                                MA_PUBLIC,
+                                result.path_access);
+    }
+    if(!access_allowed) {
+      return MemberTypeLookupResult();
+    }
   }
   result.type = refine_instantiated_member_type(
       *declared_in,
@@ -3966,7 +3983,7 @@ bool member_access_allowed(const Scope * lexical_scope,
           (lexical_scope ? lexical_scope :
            (current_function ? current_function->declaration_scope : nullptr)) :
           nullptr;
-  if(current_function && access_scope &&
+  if(access_scope &&
      (scope_has_friend_class_access(access_scope, declared_in) ||
       scope_has_class_access(access_scope,
                             declared_in,

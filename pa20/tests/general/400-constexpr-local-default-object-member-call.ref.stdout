@@ -1,0 +1,4 @@
+ERROR: static_assert unevaluated: d.size() == 4 [bindings {values:d=const struct Digest}] [function test] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:d=const struct Digest}]
+Diagnostic context:
+analyze_function_binding_output [test]
+  analyze_statement [static-assert-declaration] at tests/general/400-constexpr-local-default-object-member-call.t:17:3

@@ -17,6 +17,7 @@
 #include "semantic_context.h"
 #include "semantic_conversion.h"
 #include "semantic_declaration.h"
+#include "semantic_consteval.h"
 #include "semantic_dependent_type.h"
 #include "semantic_lifetime.h"
 #include "semantic_lookup.h"
@@ -80,6 +81,46 @@ bool scope_level_has_expression_binding(const Scope & scope, const std::string &
          scope.template_bound_value_pack_names.find(name) !=
              scope.template_bound_value_pack_names.end() ||
          scope.named_value_packs.find(name) != scope.named_value_packs.end();
+}
+
+void note_local_binding_constexpr_value(ValueBinding & binding,
+                                        const constant_eval::ConstexprValue & value)
+{
+  set_value_binding_constexpr_value(binding, value);
+  binding.has_constant_value = false;
+  binding.constant_value = 0;
+  long long integral = 0;
+  if(constant_eval::constexpr_value_to_integral(value, integral)) {
+    binding.has_constant_value = true;
+    binding.constant_value = integral;
+  }
+}
+
+bool try_note_local_binding_initializer_constexpr_value(SemanticContext & ctx,
+                                                        Scope & scope,
+                                                        ValueBinding & binding,
+                                                        const CppAstNode & initializer,
+                                                        const TypePtr & target)
+{
+  constant_eval::ConstexprValue value;
+  if(!ctx.evaluate_initializer_constant_value(scope, initializer, target, value)) {
+    return false;
+  }
+  note_local_binding_constexpr_value(binding, value);
+  return true;
+}
+
+bool try_note_local_binding_default_initialized_constexpr_value(SemanticContext & ctx,
+                                                                Scope & scope,
+                                                                ValueBinding & binding,
+                                                                const TypePtr & type)
+{
+  constant_eval::ConstexprValue value;
+  if(!semantic_consteval::evaluate_default_initialized_value(ctx, scope, type, value)) {
+    return false;
+  }
+  note_local_binding_constexpr_value(binding, value);
+  return true;
 }
 
 bool scope_level_has_type_binding(const Scope & scope, const std::string & name)
@@ -1597,6 +1638,9 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
       ValueBinding binding(ValueBinding::VK_VARIABLE, name, type);
       binding.declaration_node = &init_decl;
       binding.is_thread_local = is_thread_local;
+      const bool is_constexpr_variable =
+          decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
+      binding.requires_constant_initializer = is_constexpr_variable;
       if(use_global_static_storage) {
         binding.symbol = symbol_linkage::make_internal_symbol_identity(
             local_static_internal_symbol(scope, name, &init_decl),
@@ -1608,8 +1652,24 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
         }
         binding.declaration_scope = &scope;
       }
+      if(initializer && is_constexpr_variable) {
+        try_note_local_binding_initializer_constexpr_value(ctx,
+                                                           scope,
+                                                           binding,
+                                                           *initializer,
+                                                           type);
+      }
+      if(is_constexpr_variable &&
+         !binding.has_constexpr_value &&
+         !initializer) {
+        try_note_local_binding_default_initialized_constexpr_value(ctx,
+                                                                   scope,
+                                                                   binding,
+                                                                   type);
+      }
       if(initializer &&
-         (decl_spec_contains_token(*specifiers, KW_CONSTEXPR) || is_const_object_type(type))) {
+         !binding.has_constant_value &&
+         (is_constexpr_variable || is_const_object_type(type))) {
         long long value = 0;
         if(ctx.evaluate_initializer_constant(scope, *initializer, value)) {
           binding.has_constant_value = true;

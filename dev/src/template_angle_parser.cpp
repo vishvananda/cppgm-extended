@@ -274,13 +274,15 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
 
     if(explicit_template_prefix) {
       result = true;
-    } else if(known_value_template) {
-      result = false;
-    } else if(known_value && qualified_member_prefix &&
-              !known_type) {
+    } else if((known_value_template || known_value) &&
+              qualified_member_prefix &&
+              !known_type &&
+              !known_template) {
       unknown_nested =
           looks_like_unknown_nested_template_id_at_impl(tokens, boundary, lookup, cache);
       result = unknown_nested;
+    } else if(known_value_template) {
+      result = false;
     } else if(known_type || known_template) {
       result = true;
     } else if(known_value) {
