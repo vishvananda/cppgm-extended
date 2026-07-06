@@ -42,6 +42,7 @@ bool is_non_result_type_decl_specifier(const CppAstNode & node)
 
   return node.value == "__inline" ||
          node.value == "__inline__" ||
+         node.value == "__forceinline" ||
          node.value == "__thread";
 }
 

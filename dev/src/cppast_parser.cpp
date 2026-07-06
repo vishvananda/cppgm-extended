@@ -1705,6 +1705,7 @@ bool is_gnu_decl_specifier_identifier(const RecogToken & token)
   return token.is_identifier() &&
          (token.source == "__inline" ||
           token.source == "__inline__" ||
+          token.source == "__forceinline" ||
           token.source == "__volatile" ||
           token.source == "__volatile__" ||
           token.source == "__const" ||
@@ -2765,6 +2766,7 @@ bool CppAstParser::can_start_type_id() const
          token.is_simple(KW_ENUM) ||
          is_cv_qualifier(token) ||
          is_simple_type_specifier(token) ||
+         is_gnu_attribute_name_token(token) ||
          is_gnu_int128_type_specifier_identifier(token) ||
          is_known_type_name_identifier(token) ||
          is_template_type_parameter_name(token) ||
