@@ -7608,6 +7608,28 @@ private:
                 return lookup_inline_children(target);
               });
         };
+    const auto current_injected_class_type =
+        [&]() -> TypePtr
+        {
+          if(!is_identifier_text(normalized_name)) {
+            return TypePtr();
+          }
+          for(Scope * current = &scope; current; current = current->parent) {
+            if(current->namespace_scope || current->parent == nullptr) {
+              break;
+            }
+            ClassInfo * info = current->class_info;
+            if(!info || !info->type) {
+              continue;
+            }
+            if(info->name == normalized_name ||
+               (info->source_template &&
+                info->source_template->name == normalized_name)) {
+              return info->type;
+            }
+          }
+          return TypePtr();
+        };
 
     if(is_identifier_text(normalized_name)) {
       TypePtr lexical_type = lookup_unqualified_type();
@@ -7620,6 +7642,9 @@ private:
           }
         }
         return lexical_type;
+      }
+      if(TypePtr injected_type = current_injected_class_type()) {
+        return injected_type;
       }
     }
 
@@ -11967,8 +11992,12 @@ private:
             leaf_template_id->name.name :
             strip_trailing_top_level_template_arguments(qualified->name);
 
-    if(Scope * qualified_scope =
-           resolve_qualified_scope_for_node(scope, *qualified, node, false)) {
+    const bool has_structured_qualifier_syntax =
+        !node.qualifier_template_id_syntaxes.empty() ||
+        !node.qualifier_type_syntaxes.empty();
+    if(!has_structured_qualifier_syntax) {
+      if(Scope * qualified_scope =
+             resolve_qualified_scope_for_node(scope, *qualified, node, false)) {
       vector<FunctionTemplateDecl *> out;
       if(qualified_scope->class_info) {
         if(qualified_scope->class_info->member_scope &&
@@ -11993,6 +12022,7 @@ private:
       semantic_lookup::lookup_function_templates_in_scopes(
           vector<Scope *>(1, qualified_scope), leaf_name, out);
       return out;
+      }
     }
 
     Scope * current_scope = &scope;
@@ -12001,19 +12031,13 @@ private:
     }
 
     for(size_t i = 0; i < qualified->qualifiers.size(); ++i) {
-      Scope * namespace_scope = nullptr;
-      if(i == 0 && !qualified->rooted) {
-        for(Scope * lexical = current_scope; lexical; lexical = lexical->parent) {
-          namespace_scope =
-              resolve_direct_namespace(*lexical, qualified->qualifiers[i]);
-          if(namespace_scope) {
-            break;
-          }
-        }
-      } else {
-        namespace_scope =
-            resolve_direct_namespace(*current_scope, qualified->qualifiers[i]);
-      }
+      QualifiedName namespace_lookup;
+      namespace_lookup.rooted = qualified->rooted;
+      namespace_lookup.qualifiers.assign(qualified->qualifiers.begin(),
+                                        qualified->qualifiers.begin() + i);
+      namespace_lookup.name = qualified->qualifiers[i];
+      Scope * namespace_scope =
+          semantic_lookup::lookup_namespace_name(scope, namespace_lookup);
       if(namespace_scope) {
         current_scope = namespace_scope;
         continue;
@@ -15583,19 +15607,13 @@ private:
     }
 
     for(size_t i = 0; i < qualified->qualifiers.size(); ++i) {
-      Scope * namespace_scope = nullptr;
-      if(i == 0 && !qualified->rooted) {
-        for(Scope * lexical = current_scope; lexical; lexical = lexical->parent) {
-          namespace_scope =
-              resolve_direct_namespace(*lexical, qualified->qualifiers[i]);
-          if(namespace_scope) {
-            break;
-          }
-        }
-      } else {
-        namespace_scope =
-            resolve_direct_namespace(*current_scope, qualified->qualifiers[i]);
-      }
+      QualifiedName namespace_lookup;
+      namespace_lookup.rooted = qualified->rooted;
+      namespace_lookup.qualifiers.assign(qualified->qualifiers.begin(),
+                                        qualified->qualifiers.begin() + i);
+      namespace_lookup.name = qualified->qualifiers[i];
+      Scope * namespace_scope =
+          semantic_lookup::lookup_namespace_name(scope, namespace_lookup);
       if(namespace_scope) {
         current_scope = namespace_scope;
         continue;

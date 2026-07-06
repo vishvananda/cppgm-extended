@@ -1063,6 +1063,8 @@ struct ClassTemplateDecl
   std::set<std::string> explicit_static_member_specializations;
   std::set<std::pair<std::string, std::string> >
       explicit_static_member_specialization_keys;
+  std::set<std::pair<std::string, std::string> >
+      explicit_member_function_specialization_keys;
   std::map<std::string, ClassTemplateSpecializationDecl> explicit_specializations;
   std::vector<PartialClassTemplateSpecializationDecl> partial_specializations;
   std::vector<DeductionGuideDecl> deduction_guides;

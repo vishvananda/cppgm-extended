@@ -6202,6 +6202,15 @@ PreExpansionResolveStatus try_resolve_pre_expansion_simple_type_arguments(
   for(std::size_t index = 0; index < parameters.size(); ++index) {
     const TemplateArgumentSyntax * syntax =
         syntaxes ? &(*syntaxes)[index] : nullptr;
+    if(syntax &&
+       !syntax->resolved_type &&
+       (syntax->expression ||
+        syntax->template_id ||
+        (syntax->type_id &&
+         !is_identifier_text(
+             strip_elaborated_type_prefix(trim_space(texts[index])))))) {
+      return PERTA_UNSUPPORTED;
+    }
     const std::string simple_name =
         strip_elaborated_type_prefix(trim_space(texts[index]));
     TypePtr type;

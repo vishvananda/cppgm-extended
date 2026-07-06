@@ -3999,3 +3999,36 @@ zero; `git diff --check` passes. Perf gate against
 `/tmp/cppgm-perf-baseline-da2d8e82b-tt-collision-20260706.json` passes:
 instructions `+0.26%`, max RSS `-0.44%`, footprint `+0.07%`; report
 `/tmp/cppgm-perf-report-hof-namespace-lambda-constexpr-ref-20260706.json`.
+
+2026-07-06 Boost.ICL `fastest_icl_interval` frontier: after the HOF checkpoint,
+direct ICL interval replay exposed adjacent issues in explicit specialization
+member replay, typed qualified template/member lookup, and Boost.Detail
+incrementability probes. `traits::identity_element<date>::value()` was being
+overwritten by primary out-of-class member replay even though an explicit
+specialization existed; nested
+`size_type_of<interval<string>::type>::type` needed typed qualifier/template-id
+preservation through value and function lookup with using-directive namespace
+prefixes; and Boost's `(++x,0)` incrementability probe requires legal fallback
+to built-in comma when a found overloaded comma candidate is not viable. The
+typed lookup fix preserves witness class-use emission for qualified static
+member expressions while keeping `decltype(T)::value` no-fold LowIR behavior.
+Symbol linkage remains centralized through `symbol_linkage` and the
+`abi_mangle` backend; no parallel object-symbol spelling was added. Owners:
+PA21 explicit specialization/out-of-class member replay, PA21/PA22 typed
+template-argument and qualified value/function lookup, PA20 `decltype`
+qualified static-member direct-text stability, and PA15 ordinary
+overloaded-operator/built-in comma behavior. New regressions:
+`pa21/tests/spec/300-explicit-specialization-out-of-class-member-overrides-primary.t`
+and
+`pa15/tests/spec/300-overloaded-comma-nonviable-falls-back-builtin.t`.
+Validation: Clang and `dev/cppgm++` accept the ICL identity-element,
+interval-infinity, and overloaded-comma reducers; focused PA15, PA20, and PA21
+checks pass; focused PA21 strict witness check passes; combined direct-LowIR
+report for `pa15 pa20 pa21 pa22` passes `648/648`; full strict direct-LowIR
+checks pass; full direct-LowIR `test-report` passes `3521/3521`; final
+Boost.ICL
+`libs/icl/test/fastest_icl_interval_/fastest_icl_interval.cpp` compile with
+Boost 1.91 headers passes. A sample of the earlier ICL compile is recorded at
+`/tmp/cppgm-boost-icl-fastest-sample-20260706.txt`; it showed time concentrated
+in machine object generation rather than a semantic/template loop. `git diff
+--check` passes.

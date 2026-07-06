@@ -2985,6 +2985,17 @@ const ValueBinding * lookup_id_expression_value_binding_for_call(
         nullptr;
   }
 
+  const bool structured_qualified_lookup =
+      !node.qualifier_template_id_syntaxes.empty() ||
+      !node.qualifier_type_syntaxes.empty();
+  if(structured_qualified_lookup) {
+    const ValueBinding * binding =
+        lookup_qualified_value_binding_node(ctx, scope, *qualified, node);
+    return binding && value_binding_visible_at_call_source(ctx, node, *binding) ?
+        binding :
+        nullptr;
+  }
+
   if(!node.qualifier_template_id_syntaxes.empty()) {
     Scope * qualifier_scope =
         ctx.resolve_qualified_scope_for_node(scope, *qualified, node, false);

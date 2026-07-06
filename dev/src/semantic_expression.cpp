@@ -4136,10 +4136,37 @@ string qualified_template_use_location(SemanticContext & ctx,
   return template_api::normalize_template_witness_source_location(location);
 }
 
+void emit_structured_qualified_value_class_use(SemanticContext & ctx,
+                                               Scope & scope,
+                                               const CppAstNode & node,
+                                               const QualifiedName & qualified,
+                                               const ValueBinding & binding)
+{
+  if(!(binding.owner_class ||
+       (binding.declaration_scope && binding.declaration_scope->class_info))) {
+    return;
+  }
+  const string qualifier_name = qualifier_name_text(qualified);
+  if(qualifier_name.empty()) {
+    return;
+  }
+  const CppAstNode qualifier_node =
+      make_value_qualifier_type_lookup_node(node, qualified, qualifier_name);
+  TypePtr qualifier_type =
+      ctx.lookup_type_node(scope, qualifier_node, qualifier_name, false);
+  if(qualifier_type) {
+    ctx.record_class_use_for_resolved_type_node(
+        scope,
+        qualifier_node,
+        qualifier_type,
+        ctx.source_location_for_node(qualifier_node));
+  }
+}
+
 const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
                                                         Scope & scope,
                                                         const CppAstNode & node,
-  bool & allow_constant_fold)
+                                                        bool & allow_constant_fold)
 {
   allow_constant_fold = false;
   const QualifiedName * qualified = cppast_qualified_name_syntax(node);
@@ -4163,6 +4190,23 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
   }
 
   if(!qualified || (!qualified->rooted && qualified->qualifiers.empty())) {
+    return nullptr;
+  }
+
+  if(structured_qualified_lookup) {
+    const ValueBinding * structured_binding =
+        lookup_qualified_value_binding_node(ctx, scope, *qualified, node);
+    if(structured_binding) {
+      emit_structured_qualified_value_class_use(ctx,
+                                                scope,
+                                                node,
+                                                *qualified,
+                                                *structured_binding);
+      allow_constant_fold =
+          node.qualifier_type_syntaxes.empty() &&
+          id_expression_binding_allows_constant_fold(*structured_binding);
+      return structured_binding;
+    }
     return nullptr;
   }
 
@@ -4198,16 +4242,6 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
         return nullptr;
       }
     }
-  }
-
-  if(!node.qualifier_template_id_syntaxes.empty() ||
-     !node.qualifier_type_syntaxes.empty()) {
-    const ValueBinding * structured_binding =
-        lookup_qualified_value_binding_node(ctx, scope, *qualified, node);
-    if(structured_binding) {
-      return structured_binding;
-    }
-    return nullptr;
   }
 
   const ValueBinding * qualified_binding =
@@ -7165,13 +7199,18 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
             complete_class_type_for_lookup(ctx, value_conversion_type(expr));
         return info && info->class_kind != "enum";
       };
+  const bool legal_builtin_comma_fallback =
+      deferred_operator_builtin_fallback &&
+      node_has_simple_type(node, OP_COMMA) &&
+      builtin_binary_operator_supported(lhs, rhs);
   if(deferred_operator_builtin_fallback &&
      (has_non_enum_class_value_type(lhs) || has_non_enum_class_value_type(rhs)) &&
      !builtin_binary_operator_supported(lhs, rhs)) {
     throw logic_error(deferred_operator_builtin_fallback_error);
   }
   if(deferred_operator_builtin_fallback &&
-     (has_non_enum_class_value_type(lhs) || has_non_enum_class_value_type(rhs))) {
+     (has_non_enum_class_value_type(lhs) || has_non_enum_class_value_type(rhs)) &&
+     !legal_builtin_comma_fallback) {
     if(parser_trace::enabled("overload")) {
       ostringstream trace;
       trace << "binary-operator-fallback-check"

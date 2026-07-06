@@ -5460,6 +5460,53 @@ bool node_has_structured_qualifier_syntax(const CppAstNode & node)
          !node.qualifier_type_syntaxes.empty();
 }
 
+bool template_id_syntax_matches_component(const TemplateIdSyntax & syntax,
+                                          const string & component)
+{
+  if(syntax.name.name.empty()) {
+    return false;
+  }
+  const string syntax_name =
+      semantic_utils::unqualified_member_name(syntax.name.name);
+  const string component_name =
+      semantic_utils::unqualified_member_name(
+          semantic_utils::strip_trailing_top_level_template_arguments(
+              component));
+  if(!syntax_name.empty() &&
+     !component_name.empty() &&
+     syntax_name == component_name) {
+    return true;
+  }
+  const size_t first_angle = component.find('<');
+  if(first_angle == string::npos) {
+    return false;
+  }
+  const string component_prefix =
+      semantic_utils::unqualified_member_name(
+          semantic_utils::trim_space(component.substr(0, first_angle)));
+  return !syntax_name.empty() &&
+         !component_prefix.empty() &&
+         syntax_name == component_prefix;
+}
+
+const TemplateIdSyntax * qualifier_template_id_syntax_for_component(
+    const CppAstNode & node,
+    size_t qualifier_index,
+    const string & component)
+{
+  if(const TemplateIdSyntax * aligned =
+         cppast_qualifier_template_id_syntax(node, qualifier_index)) {
+    return aligned;
+  }
+  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    const TemplateIdSyntax & syntax = node.qualifier_template_id_syntaxes[i];
+    if(template_id_syntax_matches_component(syntax, component)) {
+      return &syntax;
+    }
+  }
+  return nullptr;
+}
+
 CppAstNode make_value_qualifier_type_lookup_node(const CppAstNode & node,
                                                  const QualifiedName & qualified,
                                                  const string & qualifier_name)
@@ -5506,10 +5553,12 @@ CppAstNode make_value_qualifier_type_lookup_node(const CppAstNode & node,
     set_cppast_qualifier_type_syntaxes(out, std::move(qualifier_type_syntaxes));
   }
 
-  if(final_index < node.qualifier_template_id_syntaxes.size() &&
-     !node.qualifier_template_id_syntaxes[final_index].name.name.empty()) {
-    set_cppast_template_id_syntax(out,
-                                  node.qualifier_template_id_syntaxes[final_index]);
+  if(const TemplateIdSyntax * final_template_id =
+         qualifier_template_id_syntax_for_component(
+             node,
+             final_index,
+             qualified.qualifiers[final_index])) {
+    set_cppast_template_id_syntax(out, *final_template_id);
   }
   return out;
 }

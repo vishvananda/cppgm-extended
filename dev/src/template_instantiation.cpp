@@ -2688,6 +2688,9 @@ bool stored_member_definition_suppressed_by_explicit_instantiation(
          !template_api::function_binding_excluded_from_explicit_instantiation(binding);
 }
 
+std::string class_instantiation_key_for_metadata(SemanticContext & ctx,
+                                                 const ClassInfo & info);
+
 void apply_stored_out_of_class_member_function_abi_metadata_map(
     SemanticContext & ctx,
     const std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> > & stored_definitions,
@@ -2695,10 +2698,17 @@ void apply_stored_out_of_class_member_function_abi_metadata_map(
     const std::vector<TemplateArgument> & arguments,
     bool bind_stored_parameters)
 {
+  const std::string specialization_key =
+      class_instantiation_key_for_metadata(ctx, info);
   for(std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> >::const_iterator it =
           stored_definitions.begin();
       it != stored_definitions.end();
       ++it) {
+    if(info.source_template &&
+       info.source_template->explicit_member_function_specialization_keys.count(
+           std::make_pair(it->first, specialization_key)) != 0) {
+      continue;
+    }
     for(std::size_t i = 0; i < it->second.size(); ++i) {
       const OutOfClassMemberFunctionDecl & stored = it->second[i];
       if(!stored.body ||
@@ -2843,10 +2853,24 @@ void apply_stored_out_of_class_member_function_definitions_map(
     bool selected_specialization,
     bool bind_stored_parameters)
 {
+  const std::string specialization_key =
+      class_instantiation_key_for_metadata(ctx, info);
   for(std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> >::const_iterator it =
           stored_definitions.begin();
       it != stored_definitions.end();
       ++it) {
+    if(info.source_template &&
+       info.source_template->explicit_member_function_specialization_keys.count(
+           std::make_pair(it->first, specialization_key)) != 0) {
+      if(parser_trace::enabled("template.resolve")) {
+        std::ostringstream trace;
+        trace << "apply-out-of-class-member-function class=" << info.qualified_name
+              << " member=" << it->first
+              << " skipped=explicit-specialization";
+        parser_trace::note("template.resolve", std::string(), trace.str());
+      }
+      continue;
+    }
     for(std::size_t i = 0; i < it->second.size(); ++i) {
       const OutOfClassMemberFunctionDecl & stored = it->second[i];
       if(!stored_member_definition_matches_target_class(ctx, stored, info)) {

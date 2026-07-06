@@ -1440,10 +1440,6 @@ bool resolve_type_argument_expression_syntax(
     TypePtr & out)
 {
   out.reset();
-  if(expr.kind != CppAstKind::id_expression &&
-     expr.kind != CppAstKind::type_name) {
-    return false;
-  }
 
   const string lookup_name =
       expr.kind == CppAstKind::type_name && !expr.value.empty() ?
@@ -1451,6 +1447,22 @@ bool resolve_type_argument_expression_syntax(
           node_text(expr);
   const string repaired_lookup_name =
       repair_compacted_template_argument_expression_spacing(lookup_name);
+
+  CppAstNode type_lookup_expr = expr;
+  type_lookup_expr.semantic_type.reset();
+  out = lookup_structured_type_node(services,
+                                    scope,
+                                    type_lookup_expr,
+                                    repaired_lookup_name,
+                                    reference_class_templates_only,
+                                    source_location);
+  if(out) {
+    return true;
+  }
+  if(expr.kind != CppAstKind::id_expression &&
+     expr.kind != CppAstKind::type_name) {
+    return false;
+  }
 
   const StructuredTypeLookupResult qualified_template_result =
       resolve_qualified_template_type_lookup_node(services,
@@ -4975,15 +4987,29 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
   }
 
   for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    const bool qualifier_template_id_from_source =
-        i < node.qualifier_template_id_syntaxes.size() &&
-        template_id_syntax_matches_qualified_component(
-            node.qualifier_template_id_syntaxes[i],
-            qualified.qualifiers[i]);
-    const TemplateIdSyntax * qualifier_template_id =
-        qualifier_template_id_from_source ?
-            &node.qualifier_template_id_syntaxes[i] :
-            nullptr;
+    bool qualifier_template_id_from_source = false;
+    const TemplateIdSyntax * qualifier_template_id = nullptr;
+    if(i < node.qualifier_template_id_syntaxes.size() &&
+       template_id_syntax_matches_qualified_component(
+           node.qualifier_template_id_syntaxes[i],
+           qualified.qualifiers[i])) {
+      qualifier_template_id_from_source = true;
+      qualifier_template_id = &node.qualifier_template_id_syntaxes[i];
+    }
+    if(!qualifier_template_id) {
+      for(size_t syntax_index = 0;
+          syntax_index < node.qualifier_template_id_syntaxes.size();
+          ++syntax_index) {
+        if(template_id_syntax_matches_qualified_component(
+               node.qualifier_template_id_syntaxes[syntax_index],
+               qualified.qualifiers[i])) {
+          qualifier_template_id_from_source = true;
+          qualifier_template_id =
+              &node.qualifier_template_id_syntaxes[syntax_index];
+          break;
+        }
+      }
+    }
     if(!qualifier_template_id &&
        i == 0 &&
        lone_template_id &&
