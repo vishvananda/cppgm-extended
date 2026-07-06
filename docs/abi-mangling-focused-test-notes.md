@@ -23,6 +23,12 @@ should become focused mangling tests in the ABI assignment branch.
     typed ABI IR emission.
   - Focused test: mangle a template specialization with `&Class::member` as an
     NTTP.
+  - Follow-up coverage:
+    `pa30/tests/abi/300-function-owner-member-pointer-nttp-data.t` covers the
+    backend function-owner component, and
+    `pa32/tests/general/200-host-data-member-pointer-owner-template-mangling.t`
+    covers the compiler symbol-linkage path that must preserve the member
+    entity through template-bound rebinding.
 
 - `pa28/tests/general/300-member-function-pointer-nontype-partial-specialization-call.t`
   - Gap: member function pointer NTTP payloads did not build an external entity

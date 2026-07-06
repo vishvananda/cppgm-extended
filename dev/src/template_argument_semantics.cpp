@@ -14414,6 +14414,10 @@ bool substitute_dependent_argument_text_and_syntax(
       if(bound_argument.dependent) {
         binding.non_type_template_argument_text = binding.name;
       } else {
+        binding.non_type_template_function_value =
+            const_cast<semantic_model::FunctionBinding *>(
+                bound_argument.function_value);
+        binding.non_type_template_value_binding = bound_argument.value_binding;
         // Member-pointer, pointer, reference and other non-integral non-type
         // arguments cannot be represented by a single integral constant, so
         // preserve their symbolic argument text (e.g. "&target::id") rather
@@ -14728,6 +14732,10 @@ ValueBinding make_value_binding_for_substitution_argument(
     binding.non_type_template_argument_text = binding.name;
     return binding;
   }
+
+  binding.non_type_template_function_value =
+      const_cast<semantic_model::FunctionBinding *>(argument.function_value);
+  binding.non_type_template_value_binding = argument.value_binding;
 
   // Member-pointer, pointer, reference and other non-integral non-type
   // arguments cannot be represented by a single integral constant, so
@@ -25548,6 +25556,10 @@ bool substitute_expression_node_for_template_arguments(
       if(argument.dependent) {
         binding.non_type_template_argument_text = binding.name;
       } else {
+        binding.non_type_template_function_value =
+            const_cast<semantic_model::FunctionBinding *>(
+                argument.function_value);
+        binding.non_type_template_value_binding = argument.value_binding;
         // Member-pointer, pointer, reference and other non-integral non-type
         // arguments cannot be represented by a single integral constant, so
         // preserve their symbolic argument text (e.g. "&target::id") rather

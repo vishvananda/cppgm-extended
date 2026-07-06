@@ -870,6 +870,48 @@ bool bind_object_pointer_non_type_template_argument(
   return true;
 }
 
+bool bind_data_member_pointer_non_type_template_argument(
+    const TypePtr & target_type,
+    const TypePtr & target_base,
+    const ValueBinding & binding,
+    TemplateArgument & out,
+    const ValueBinding ** out_binding)
+{
+  if(!target_base ||
+     target_base->kind != Type::TK_MEMBER_POINTER ||
+     !target_base->owner ||
+     !target_base->inner ||
+     is_function_type(target_base->inner) ||
+     binding.kind != ValueBinding::VK_FIELD ||
+     binding.is_bit_field ||
+     !binding.owner_class ||
+     !binding.owner_class->type ||
+     !binding.type ||
+     !type_equals(strip_top_level_cv(binding.type),
+                  strip_top_level_cv(target_base->inner)) ||
+     !type_equals(strip_top_level_cv(binding.owner_class->type),
+                  strip_top_level_cv(target_base->owner))) {
+    return false;
+  }
+
+  long long encoded_offset = 0;
+  if(!encode_data_member_pointer_template_argument_offset(binding.field_offset,
+                                                          encoded_offset)) {
+    return false;
+  }
+
+  if(out_binding) {
+    *out_binding = &binding;
+  }
+  out.kind = TemplateArgument::TA_VALUE;
+  out.type = target_type;
+  out.value_binding = &binding;
+  out.value = encoded_offset;
+  out.text.clear();
+  out.dependent = false;
+  return true;
+}
+
 bool bind_value_binding_non_type_template_argument(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -899,22 +941,19 @@ bool bind_value_binding_non_type_template_argument(
     return false;
   }
 
-  if(binding.has_constant_value) {
-    if(out_binding) {
-      *out_binding = &binding;
-    }
-    out.kind = TemplateArgument::TA_VALUE;
-    out.type = target_type;
-    out.value = binding.constant_value;
-    out.text = non_type_argument_text_for_value(services,
-                                                target_type,
-                                                target_base,
-                                                binding.constant_value);
-    out.dependent = false;
-    return true;
-  }
-
   if(binding.non_type_template_value_binding) {
+    if(bind_data_member_pointer_non_type_template_argument(
+           target_type,
+           target_base,
+           *binding.non_type_template_value_binding,
+           out,
+           nullptr)) {
+      if(out_binding) {
+        *out_binding = &binding;
+      }
+      return true;
+    }
+
     const std::string rebound_text =
         !binding.non_type_template_argument_text.empty() ?
             trim_space(binding.non_type_template_argument_text) :
@@ -931,6 +970,21 @@ bool bind_value_binding_non_type_template_argument(
       }
       return true;
     }
+  }
+
+  if(binding.has_constant_value) {
+    if(out_binding) {
+      *out_binding = &binding;
+    }
+    out.kind = TemplateArgument::TA_VALUE;
+    out.type = target_type;
+    out.value = binding.constant_value;
+    out.text = non_type_argument_text_for_value(services,
+                                                target_type,
+                                                target_base,
+                                                binding.constant_value);
+    out.dependent = false;
+    return true;
   }
 
   if(!binding.non_type_template_argument_text.empty()) {
@@ -1784,24 +1838,11 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
                                                               qualified) :
               nullptr;
       if(binding &&
-         binding->kind == ValueBinding::VK_FIELD &&
-         binding->owner_class &&
-         binding->owner_class->type &&
-         type_equals(strip_top_level_cv(binding->type),
-                     strip_top_level_cv(target_base->inner)) &&
-         type_equals(strip_top_level_cv(binding->owner_class->type),
-                     strip_top_level_cv(target_base->owner))) {
-        long long encoded_offset = 0;
-        if(!encode_data_member_pointer_template_argument_offset(
-               binding->field_offset, encoded_offset)) {
-          return false;
-        }
-        out.kind = TemplateArgument::TA_VALUE;
-        out.type = target_type;
-        out.value_binding = binding;
-        out.value = encoded_offset;
-        out.text.clear();
-        out.dependent = false;
+         bind_data_member_pointer_non_type_template_argument(target_type,
+                                                             target_base,
+                                                             *binding,
+                                                             out,
+                                                             out_binding)) {
         return true;
       }
     }

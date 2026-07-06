@@ -4288,3 +4288,30 @@ frontier, primarily `failed to build ABI IR function symbol for weak function
 boost::intrusive::mhtraits<...>::to_node_ptr`. Perf check against
 `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
 instructions `-0.35%`, RSS `+0.93%`, footprint `+0.56%`.
+
+2026-07-06 Boost.Intrusive `mhtraits::to_node_ptr` ABI symbol frontier:
+the next full Intrusive build-only frontier was `failed to build ABI IR
+function symbol for weak function boost::intrusive::mhtraits<...>::to_node_ptr`.
+The symbol path was already centralized through `symbol_linkage` and the
+typed `abi_mangle::FunctionEncoding` backend, but a data-member-pointer NTTP
+that originally named `&Value::hook` could be rebound through template
+substitution as only its encoded offset. That made the owner-template safety
+gate reject structured mangling and fall into the syntax fallback. The fix
+preserves non-type template entity payloads while building substitution value
+bindings, and rehydrates stored field payloads as typed data-member-pointer
+template arguments before falling back to integral constants. No parallel
+symbol spelling, source-text reparse, or Boost special case was added. Owners:
+PA30 ABI member-entity template arguments and PA32 host object symbol
+mangling. New regressions:
+`pa30/tests/abi/300-function-owner-member-pointer-nttp-data.t` and
+`pa32/tests/general/200-host-data-member-pointer-owner-template-mangling.t`.
+Validation: `/usr/local/opt/llvm/bin/clang++ -x c++ -std=c++11 -fsyntax-only`
+accepts the PA32 reducer; focused PA30 and PA32 checks pass; direct-LowIR
+report for `pa22 pa30 pa32` passes `381/381`; strict direct-LowIR checks pass;
+`python3 scripts/audit_text_reparse.py` reports all zero; direct Boost
+`libs/intrusive/test/list_test.cpp` compile now emits `mhtraits::to_node_ptr`
+with the `XadL_Z...` member-entity ABI form and advances to the next
+independent frontier, `unsupported cast expression [op const_cast]` in
+`boost::intrusive::pointer_traits<bounded_pointer<...>>`. Perf check against
+`/tmp/cppgm-before-global-delete-baseline-20260706.json` passes: instructions
+`-0.43%`, RSS `+0.06%`, footprint `+0.64%`.
