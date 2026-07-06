@@ -4400,3 +4400,23 @@ two compile failures: `hash_functor_test` unsupported `nullptr_t == nullptr_t`
 and `callable_with_no_decltype` backend array without bound. Perf check against
 `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
 instructions `+0.03%`, RSS `+2.45%`, footprint `+0.60%`.
+
+2026-07-06 Boost.Intrusive `nullptr_t` equality frontier: `hash_functor_test`
+instantiated `boost::intrusive::value_equal<nullptr_t>::operator()` and
+compiled `return a == b;` for two `const nullptr_t&` operands. The expression
+analyzer already supported pointer/member-pointer comparisons against
+`nullptr_t`, but did not accept built-in equality between two `nullptr_t`
+operands. The fix adds an explicit semantic `nullptr_t` equality/inequality
+case for `==` and `!=` only, so relational comparisons stay rejected. No
+source-text reparse or Boost-specific rule was added. Owner: PA12 nullptr
+expression conversions and built-in comparisons. New regression:
+`pa12/tests/general/300-nullptr-equality.t`. Validation: clang accepts the
+reducer with `-std=c++11`; the focused PA12 check passes;
+`CPPGM_SKIP_DEV_REBUILD=1 make test-pa12` passes `127/127`; PA12 direct-LowIR
+report passes `127/127`; strict direct-LowIR checks pass; `python3
+scripts/audit_text_reparse.py` reports all zero; focused B2
+`libs/intrusive/test//hash_functor_test testing.execute=off` compiles and
+links; full Intrusive build-only now updates 79 targets and leaves only
+`callable_with_no_decltype` failing with backend array without bound. Perf
+check against `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
+instructions `-0.43%`, RSS `+1.23%`, footprint `+0.58%`.

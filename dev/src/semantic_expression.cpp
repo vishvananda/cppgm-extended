@@ -406,6 +406,14 @@ bool is_nullable_pointer_like_type(const TypePtr & type)
          (base && base->kind == Type::TK_MEMBER_POINTER);
 }
 
+bool is_nullptr_type(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  return base &&
+         base->kind == Type::TK_FUNDAMENTAL &&
+         base->fundamental == FT_NULLPTR_T;
+}
+
 struct FoldedIntegralLiteral
 {
   string text;
@@ -7079,9 +7087,14 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
                 is_null_pointer_constant_for_syntax(rhs_expr, node.children[1])) ||
                (is_nullable_pointer_like_type(rhs_type) &&
                 is_null_pointer_constant_for_syntax(lhs_expr, node.children[0])));
+          const bool nullptr_equality_comparison =
+              (node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE)) &&
+              is_nullptr_type(lhs_type) &&
+              is_nullptr_type(rhs_type);
           return pointer_equality_operands_compatible(lhs_type, rhs_type) ||
                  pointer_class_hierarchy_equality_compatible(ctx, lhs_type, rhs_type) ||
                  pointer_null_constant_comparison ||
+                 nullptr_equality_comparison ||
                  ((is_integral_type(lhs_type) || is_floating_type(lhs_type) ||
                    is_named_enum_type(ctx, lhs_type)) &&
                   (is_integral_type(rhs_type) || is_floating_type(rhs_type) ||
@@ -7281,6 +7294,10 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
         is_null_pointer_constant(rhs, node.children[1])) ||
        (is_nullable_pointer_like_type(rhs_type) &&
         is_null_pointer_constant(lhs, node.children[0])));
+  const bool nullptr_equality_comparison =
+      (node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE)) &&
+      is_nullptr_type(lhs_type) &&
+      is_nullptr_type(rhs_type);
   const bool rtti_object_comparison =
       (node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE)) &&
       lhs.node.kind == CallSemKind::typeid_expression &&
@@ -7342,6 +7359,9 @@ ExprInfo analyze_binary_expression(SemanticContext & ctx,
        ((node_has_simple_type(node, OP_EQ) || node_has_simple_type(node, OP_NE)) ||
         (node_has_simple_type(node, OP_LT) || node_has_simple_type(node, OP_GT) ||
          node_has_simple_type(node, OP_LE) || node_has_simple_type(node, OP_GE)))) {
+      result.type = make_fundamental(FT_BOOL);
+      result.category = VC_PRVALUE;
+    } else if(nullptr_equality_comparison) {
       result.type = make_fundamental(FT_BOOL);
       result.category = VC_PRVALUE;
     } else if((is_integral_type(lhs_type) || is_floating_type(lhs_type) ||
