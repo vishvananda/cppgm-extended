@@ -4315,3 +4315,34 @@ independent frontier, `unsupported cast expression [op const_cast]` in
 `boost::intrusive::pointer_traits<bounded_pointer<...>>`. Perf check against
 `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes: instructions
 `-0.43%`, RSS `+0.06%`, footprint `+0.64%`.
+
+2026-07-06 Boost.Intrusive static member-template function-pointer NTTP
+frontier: the next `list_test.cpp` frontier looked like an illegal
+`const_cast<element_type&>(*uptr)` from a proxy prvalue, but clang accepted the
+full Boost source because Boost's typed detection should select the
+`Ptr::const_cast_from(uptr)` branch. The failing trait was
+`BOOST_INTRUSIVE_HAS_STATIC_MEMBER_FUNC_SIGNATURE`, which forms
+`template<Signature> struct helper; helper<&T::const_cast_from>`. The compiler
+already resolved typed non-type function arguments through structured
+`TemplateArgumentSyntax`, but the ordinary function-pointer path only looked at
+materialized functions for qualified class members and skipped static member
+function templates. The fix extends that typed path to qualified callable
+lookup plus target-type function-template deduction for static member templates
+and keeps non-static methods out of plain function-pointer targets. No
+source-text reparse, Boost-specific rule, or `const_cast` relaxation was added.
+Owner: PA22 non-type template argument resolution and function-template
+deduction. New regression:
+`pa22/tests/general/300-static-member-template-function-pointer-nttp.t`.
+Validation: clang accepts the reducer with `-std=c++11`; focused PA22 check
+passes; `CPPGM_SKIP_DEV_REBUILD=1 make test-pa22` passes `222/222`; PA22
+direct-LowIR report passes `222/222`; strict direct-LowIR checks pass;
+`python3 scripts/audit_text_reparse.py` reports all zero; direct Boost
+`libs/intrusive/test/list_test.cpp` compile exits 0; focused B2
+`libs/intrusive/test//list_test testing.execute=off` compiles and links; full
+Intrusive build-only advances past `list_test` and updates 71 targets before
+later independent failures in unordered-set `Container::s_iterator_to`,
+`parent_from_member_test` final-overrider analysis, `hash_functor_test`
+`nullptr_t == nullptr_t`, and `callable_with_no_decltype` unbounded backend
+array handling. Perf check against
+`/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
+instructions `-0.36%`, RSS `+1.73%`, footprint `+0.55%`.
