@@ -3113,6 +3113,10 @@ bool should_emit_free_function_definition(SemanticContext & ctx,
   if(binding.is_explicit_instantiation_definition) {
     return true;
   }
+  if(template_api::function_binding_output_suppressed_by_explicit_instantiation(
+         binding)) {
+    return false;
+  }
   if(symbol_linkage::has_weak_linkage(binding.symbol)) {
     if(eager_out_of_class_member_definition) {
       return true;

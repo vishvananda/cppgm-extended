@@ -2016,6 +2016,70 @@ bool class_suppresses_implicit_instantiation_definition(
   return info && info->suppress_implicit_instantiation_definition;
 }
 
+bool template_parameter_lists_have_same_identity(
+    const std::vector<template_model::TemplateParameterInfo> & left,
+    const std::vector<template_model::TemplateParameterInfo> & right)
+{
+  if(left.size() != right.size()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < left.size(); ++i) {
+    if(left[i].kind != right[i].kind ||
+       left[i].name != right[i].name ||
+       left[i].placeholder_key != right[i].placeholder_key ||
+       left[i].parameter_pack != right[i].parameter_pack ||
+       left[i].template_parameter_count != right[i].template_parameter_count) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool function_binding_is_member_function_template(
+    const semantic_model::FunctionBinding & binding)
+{
+  if(!binding.source_template ||
+     !binding.source_template->declaring_scope ||
+     !binding.source_template->declaring_scope->class_info) {
+    return false;
+  }
+  const semantic_model::ClassInfo * source_owner =
+      binding.source_template->declaring_scope->class_info;
+  if(source_owner->source_template) {
+    return !template_parameter_lists_have_same_identity(
+        binding.source_template->parameters,
+        source_owner->source_template->parameters);
+  }
+  return !binding.source_template->parameters.empty() ||
+         binding.has_instantiation_arguments ||
+         !binding.template_instantiation_key.empty();
+}
+
+bool function_binding_owner_class_suppresses_implicit_instantiation_definition(
+    const semantic_model::FunctionBinding & binding)
+{
+  const semantic_model::ClassInfo * owner = binding.owner_class;
+  if(!owner) {
+    return false;
+  }
+  if(function_binding_is_member_function_template(binding)) {
+    return false;
+  }
+  if(owner->suppress_implicit_instantiation_definition) {
+    return true;
+  }
+  const semantic_model::ClassTemplateDecl * source_template = owner->source_template;
+  const std::string & instantiation_key =
+      !binding.template_instantiation_key.empty() ?
+          binding.template_instantiation_key :
+          owner->instantiation_key;
+  return source_template &&
+         !instantiation_key.empty() &&
+         source_template->suppress_implicit_instantiation_definitions.find(
+             instantiation_key) !=
+             source_template->suppress_implicit_instantiation_definitions.end();
+}
+
 bool function_binding_excluded_from_explicit_instantiation(
     const semantic_model::FunctionBinding & binding)
 {
@@ -2027,15 +2091,12 @@ bool function_binding_excluded_from_explicit_instantiation(
 }
 
 bool function_binding_bypasses_explicit_instantiation_suppression(
-    const semantic_model::FunctionBinding & binding)
+    const semantic_model::FunctionBinding & binding,
+    bool explicit_instantiation_suppressed)
 {
   if(binding.is_explicit_instantiation_definition) {
     return true;
   }
-  const bool explicit_instantiation_suppressed =
-      binding.suppress_implicit_instantiation_definition ||
-      (binding.owner_class &&
-       binding.owner_class->suppress_implicit_instantiation_definition);
   const bool weak_local_definition_candidate =
       symbol_linkage::has_weak_linkage(binding.symbol) &&
       (binding.has_definition ||
@@ -2072,20 +2133,43 @@ bool function_binding_bypasses_explicit_instantiation_suppression(
          binding.is_move_assignment;
 }
 
+bool function_binding_bypasses_explicit_instantiation_suppression(
+    const semantic_model::FunctionBinding & binding)
+{
+  const bool explicit_instantiation_suppressed =
+      binding.suppress_implicit_instantiation_definition ||
+      function_binding_owner_class_suppresses_implicit_instantiation_definition(
+          binding);
+  return function_binding_bypasses_explicit_instantiation_suppression(
+      binding,
+      explicit_instantiation_suppressed);
+}
+
+bool function_binding_has_in_class_member_definition(
+    const semantic_model::FunctionBinding & binding)
+{
+  return binding.owner_class &&
+         binding.declaration_node &&
+         binding.definition_node &&
+         binding.declaration_node == binding.definition_node;
+}
+
 bool function_binding_output_suppressed_by_explicit_instantiation(
     const semantic_model::FunctionBinding & binding)
 {
   const bool class_instantiation_suppressed =
-      binding.owner_class &&
-      binding.owner_class->suppress_implicit_instantiation_definition;
+      function_binding_owner_class_suppresses_implicit_instantiation_definition(
+          binding);
   if(class_instantiation_suppressed &&
-     binding.source_template &&
-     !binding.suppress_implicit_instantiation_definition) {
+     !binding.suppress_implicit_instantiation_definition &&
+     function_binding_has_in_class_member_definition(binding)) {
     return false;
   }
   return class_instantiation_suppressed &&
          !function_binding_excluded_from_explicit_instantiation(binding) &&
-         !function_binding_bypasses_explicit_instantiation_suppression(binding);
+         !function_binding_bypasses_explicit_instantiation_suppression(
+             binding,
+             class_instantiation_suppressed);
 }
 
 void apply_function_template_symbol_options(
