@@ -205,7 +205,20 @@ bool recover_instantiation_bound_type(SemanticContext & ctx,
       ctx, scope, type, out);
 }
 
-void validate_instantiated_result_sizeof_arguments(
+std::string instantiated_result_argument_text(
+    const DependentAliasTemplateArgumentSyntax & argument)
+{
+  std::string text = semantic_utils::trim_space(argument.text);
+  if(text.empty()) {
+    text = semantic_utils::trim_space(argument.syntax.text);
+  }
+  if(text.empty()) {
+    text = semantic_utils::trim_space(argument.syntax.source_text);
+  }
+  return text;
+}
+
+void validate_instantiated_result_non_type_arguments(
     SemanticContext & ctx,
     Scope & scope,
     const ClassTemplateDecl & class_template,
@@ -219,20 +232,18 @@ void validate_instantiated_result_sizeof_arguments(
     if(parameter.kind != TemplateParameterInfo::TP_NON_TYPE) {
       continue;
     }
-    std::string text = semantic_utils::trim_space(arguments[i].text);
-    if(text.empty()) {
-      text = semantic_utils::trim_space(arguments[i].syntax.text);
-    }
-    if(text.empty()) {
-      text = semantic_utils::trim_space(arguments[i].syntax.source_text);
-    }
-    if(text.find("sizeof") == std::string::npos) {
-      continue;
-    }
     if(!parameter.value_type ||
        template_argument_semantics::type_depends_on_template_parameter(
            ctx,
            parameter.value_type)) {
+      continue;
+    }
+
+    const std::string text = instantiated_result_argument_text(arguments[i]);
+    if(text.empty() &&
+       !arguments[i].syntax.expression &&
+       !arguments[i].syntax.type_id &&
+       !arguments[i].syntax.template_id) {
       continue;
     }
 
@@ -262,11 +273,41 @@ void validate_instantiated_result_sizeof_arguments(
                   &eval_error,
                   parameter.value_type);
             });
-    if(status != template_argument_semantics::NT_ARG_EVALUATED) {
-      throw TemplateSubstitutionFailure(
-          "failed function template result sizeof non-type argument substitution: " +
-          text);
+    bool dependency_still_visible = false;
+    if(status == template_argument_semantics::NT_ARG_DEPENDENT &&
+       !text.empty()) {
+      dependency_still_visible =
+          template_api::with_template_services(
+              ctx,
+              [&](template_api::TemplateServices & services)
+              {
+                template_api::TemplateEnvironmentHandle env =
+                    template_api::make_template_environment(scope);
+                return template_argument_semantics::
+                           text_mentions_template_placeholders(services,
+                                                               env,
+                                                               text) ||
+                       template_argument_semantics::
+                           text_mentions_dependent_non_namespace_binding_names(
+                               services,
+                               env,
+                               text);
+              });
     }
+    if(status == template_argument_semantics::NT_ARG_EVALUATED ||
+       (status == template_argument_semantics::NT_ARG_DEPENDENT &&
+        dependency_still_visible)) {
+      continue;
+    }
+    std::string detail =
+        "failed function template result non-type argument substitution";
+    if(!text.empty()) {
+      detail += ": " + text;
+    }
+    if(!eval_error.empty()) {
+      detail += " [" + eval_error + "]";
+    }
+    throw TemplateSubstitutionFailure(detail);
   }
 }
 
@@ -292,10 +333,10 @@ void validate_instantiated_result_template_arguments(SemanticContext & ctx,
        class_template_decl) {
       ClassTemplateDecl * class_template =
           static_cast<ClassTemplateDecl *>(class_template_decl);
-      validate_instantiated_result_sizeof_arguments(ctx,
-                                                    scope,
-                                                    *class_template,
-                                                    arguments);
+      validate_instantiated_result_non_type_arguments(ctx,
+                                                     scope,
+                                                     *class_template,
+                                                     arguments);
     }
 
     for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
@@ -8770,6 +8811,33 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         std::string(),
         "template-instantiation");
   };
+  const auto validate_cached_function_result_type =
+      [&](FunctionTemplateDecl & pattern_decl,
+          Scope & refreshed_scope,
+          FunctionBinding & binding) -> void
+  {
+    if(pattern_decl.is_constructor ||
+       pattern_decl.is_destructor ||
+       !binding.type) {
+      return;
+    }
+    TypePtr function_base = strip_top_level_cv(binding.type);
+    if(!function_base || function_base->kind != Type::TK_FUNCTION) {
+      return;
+    }
+    try {
+      validate_instantiated_result_template_arguments(ctx,
+                                                     refreshed_scope,
+                                                     function_base->inner);
+    } catch(const TemplateSubstitutionFailure &) {
+      throw;
+    } catch(const std::logic_error &) {
+      throw_substitution_failure(
+          "failed cached function template result type validation",
+          std::string(),
+          "template-instantiation");
+    }
+  };
   const auto cached_binding_has_retained_dependent_parameter =
       [&](FunctionTemplateDecl & pattern_decl,
           const FunctionBinding & binding) -> bool
@@ -8973,6 +9041,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         use_owner_scope_for_member_template &&
         cache_instantiation_context_scope->class_info == instantiation_owner;
     Scope * refreshed_instantiation_scope = nullptr;
+    Scope * cached_validation_scope = nullptr;
     if(use_scope) {
       Scope & refreshed_scope =
           member_template_decl_already_in_active_owner ?
@@ -9016,6 +9085,22 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       }
       found->second->declaration_scope = &refreshed_scope;
       refreshed_instantiation_scope = &refreshed_scope;
+      cached_validation_scope = &refreshed_scope;
+    } else if(cache_instantiation_context_scope) {
+      Scope & validation_scope =
+          bind_template_arguments(ctx,
+                                  *cache_instantiation_context_scope,
+                                  cache_source_decl->parameters,
+                                  arguments,
+                                  effective_pack_sizes);
+      if(use_owner_scope_for_member_template && instantiation_owner) {
+        validation_scope.class_info = instantiation_owner;
+        bind_active_owner_instantiation_context(ctx,
+                                                validation_scope,
+                                                *cache_instantiation_context_scope,
+                                                *instantiation_owner);
+      }
+      cached_validation_scope = &validation_scope;
     }
     if(found->second->source_template &&
        found->second->symbol.linkage == symbol_linkage::SL_WEAK) {
@@ -9115,6 +9200,11 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                          *refreshed_instantiation_scope,
                                          *found->second,
                                          !include_body);
+    }
+    if(cached_validation_scope && !explicit_specialization) {
+      validate_cached_function_result_type(*cache_source_decl,
+                                           *cached_validation_scope,
+                                           *found->second);
     }
     if(!include_body && !explicit_specialization) {
       reject_cached_retained_dependent_function_type(*cache_source_decl,

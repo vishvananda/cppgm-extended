@@ -4251,3 +4251,40 @@ JOBS=4 ./run-cppgm-b2.sh -a libs/interprocess/test//shared_ptr_test
 testing.execute=off` compiles and links. Perf check against
 `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
 instructions `-0.27%`, RSS `+0.61%`, footprint `+0.61%`.
+
+2026-07-06 Boost.Interprocess full build-only checkpoint: after the
+`shared_ptr_test` fix, full
+`/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++
+CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang
+CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1
+JOBS=4 ./run-cppgm-b2.sh -a libs/interprocess/test testing.execute=off`
+exits `0` and updates 199 targets. Previously listed Interprocess compile
+frontiers including `string_test`, `stable_vector_test`, `shared_ptr_test`,
+`segment_manager_v1_test`, `segment_manager_test`, and
+`iunordered_set_index_allocation_test` all compile and link in that full run.
+
+2026-07-06 Boost.Intrusive cached function-result non-type SFINAE frontier:
+the first Intrusive compile frontier was
+`failed default non-type template argument evaluation:
+internal_base_hook_bool_is_true<SupposedValueTraits>::value`. A cached
+function-template result type had retained an invalid non-type template
+argument in a qualified member probe as still dependent, so the SFINAE
+candidate survived after concrete template arguments were known. The fix keeps
+the check on typed template-argument data: cached function-template results are
+validated in a refreshed template-argument scope, and concrete non-type
+template arguments in dependent alias result types are re-evaluated with the
+existing structured non-type evaluator. Owners: PA22 function-template result
+substitution and template argument replay. New regression:
+`pa22/tests/general/500-cached-result-nontype-sfinae-qualified-member.t`.
+Validation: `/usr/local/opt/llvm/bin/clang++ -std=c++11 -x c++ -fsyntax-only`
+accepts the reducer; focused reducer compiles and runs with `dev/cppgm++`;
+direct Boost-header repro for `boost::intrusive::list` member hooks compiles;
+`CPPGM_SKIP_DEV_REBUILD=1 make test-pa22` passes `221/221`; PA22 direct-LowIR
+report passes `221/221`; full strict direct-LowIR checks pass; focused B2
+`libs/intrusive/test//virtual_base_test testing.execute=off` compiles and
+links. Full Intrusive build-only now advances past the
+`internal_base_hook_bool_is_true` failure and reaches the next ABI symbol
+frontier, primarily `failed to build ABI IR function symbol for weak function
+boost::intrusive::mhtraits<...>::to_node_ptr`. Perf check against
+`/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
+instructions `-0.35%`, RSS `+0.93%`, footprint `+0.56%`.
