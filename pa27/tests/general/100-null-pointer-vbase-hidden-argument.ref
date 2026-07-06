@@ -1,0 +1,30 @@
+function @read(%p : ptr, %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z4readP1A] {
+  slot $p : ptr
+  slot $cond__1 : i32
+
+  block ^entry:
+    store ptr %p, $p
+    %t1 = load ptr $p
+    branch %t1, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    %t2 = index i8 [projection=base_subobject] %__pvbptr0, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    store i32 %t4, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t5 = load i32 $cond__1
+    return i32 %t5
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = copy ptr nullptr
+    %t2 = call i32 @read(%t1, %t1)
+    return i32 %t2
+}
