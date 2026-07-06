@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @ttp_deduce__test()
     return i32 %t1
 }
-function @ttp_deduce__pass(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN10ttp_deduce4passIdNS_3boxEEEiRKNS1_IdEE] {
+function @ttp_deduce__pass(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN10ttp_deduce4passIdNS_3boxEEEiRKT0_IT_E] {
   slot $__param0 : ptr
 
   block ^entry:
