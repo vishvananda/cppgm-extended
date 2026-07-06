@@ -4346,3 +4346,32 @@ later independent failures in unordered-set `Container::s_iterator_to`,
 array handling. Perf check against
 `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
 instructions `-0.36%`, RSS `+1.73%`, footprint `+0.55%`.
+
+2026-07-06 Boost.Intrusive inherited type/member detector NTTP frontier: the
+next unordered-set frontier was a false ordered-container path after
+`BOOST_INTRUSIVE_HAS_MEMBER_FUNC_CALLED(is_unordered, hasher)` reported the
+wrong answer. Boost forms a detector base `struct Base : Type, BaseMixin` and
+then substitutes `Helper<void (BaseMixin::*)(), &U::hasher>`. When `Type`
+contributes a nested type named `hasher`, `&Base::hasher` is invalid during
+substitution and the ellipsis overload must be selected. The compiler only
+searched callable members for member-function-pointer non-type template
+arguments, so an inherited `BaseMixin::hasher()` survived despite a
+non-callable declaration with the same name from another base. The fix keeps
+this on typed semantic data: member-pointer NTTP callable lookup now checks the
+member type, value, class-template, alias-template, and variable-template
+lookup spaces for inherited non-callable collisions before accepting callable
+candidates. No source-text reparse, Boost-specific rule, or parallel ABI symbol
+spelling was added. Owner: PA22 non-type template argument substitution and
+SFINAE for member-function pointers. New regression:
+`pa22/tests/general/300-member-function-pointer-nttp-inherited-type-collision-sfinae.t`.
+Validation: clang accepts the reducer with `-std=c++11`; focused PA22 check
+passes; `CPPGM_SKIP_DEV_REBUILD=1 make test-pa22` passes `223/223`; PA22
+direct-LowIR report passes `223/223`; strict direct-LowIR checks pass;
+`python3 scripts/audit_text_reparse.py` reports all zero; focused B2
+`libs/intrusive/test//unordered_set_test testing.execute=off` compiles and
+links; full Intrusive build-only now updates 75 targets before three remaining
+independent failures: `parent_from_member_test` ambiguous final overrider,
+`hash_functor_test` unsupported `nullptr_t == nullptr_t`, and
+`callable_with_no_decltype` backend array without bound. Perf check against
+`/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
+instructions `-0.25%`, RSS `+2.67%`, footprint `+0.58%`.

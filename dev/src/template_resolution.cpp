@@ -1416,6 +1416,79 @@ FunctionBinding * select_non_type_member_function_template_argument(
   return selected;
 }
 
+bool member_pointer_callable_lookup_has_non_callable_collision(
+    SemanticContext & ctx,
+    Scope & scope,
+    ClassInfo & target_class,
+    const std::string & name,
+    const ClassInfo * callable_declared_in)
+{
+  if(!callable_declared_in || callable_declared_in == &target_class) {
+    return false;
+  }
+
+  const auto collides_with_callable =
+      [callable_declared_in](const ClassInfo * declared_in) -> bool
+      {
+        return declared_in && declared_in != callable_declared_in;
+      };
+
+  try {
+    semantic_lookup::MemberTypeLookupResult type =
+        semantic_lookup::lookup_member_type(ctx, target_class, name, true, &scope);
+    if(type.type && collides_with_callable(type.declared_in)) {
+      return true;
+    }
+  } catch(const std::logic_error &) {
+    return true;
+  }
+
+  try {
+    semantic_lookup::MemberValueLookupResult value =
+        semantic_lookup::lookup_member_value(target_class, name);
+    if(value.binding && collides_with_callable(value.declared_in)) {
+      return true;
+    }
+  } catch(const std::logic_error &) {
+    return true;
+  }
+
+  try {
+    semantic_lookup::MemberClassTemplateLookupResult class_template =
+        semantic_lookup::lookup_member_class_template(ctx, target_class, name);
+    if(class_template.class_template &&
+       collides_with_callable(class_template.declared_in)) {
+      return true;
+    }
+  } catch(const std::logic_error &) {
+    return true;
+  }
+
+  try {
+    semantic_lookup::MemberAliasTemplateLookupResult alias_template =
+        semantic_lookup::lookup_member_alias_template(ctx, target_class, name);
+    if(alias_template.alias_template &&
+       collides_with_callable(alias_template.declared_in)) {
+      return true;
+    }
+  } catch(const std::logic_error &) {
+    return true;
+  }
+
+  try {
+    semantic_lookup::MemberVariableTemplateLookupResult variable_template =
+        semantic_lookup::lookup_member_variable_template(ctx, target_class, name);
+    if(variable_template.variable_template &&
+       collides_with_callable(variable_template.declared_in)) {
+      return true;
+    }
+  } catch(const std::logic_error &) {
+    return true;
+  }
+
+  return false;
+}
+
 bool bind_non_type_function_argument(const TypePtr & target_type,
                                      FunctionBinding * function,
                                      const std::string & text,
@@ -1509,6 +1582,14 @@ bool lookup_member_pointer_function_candidates(template_api::TemplateServices & 
 
   semantic_lookup::MemberCallableLookupResult callables =
       semantic_lookup::lookup_visible_member_callables(*target_class, qualified.name);
+  if(member_pointer_callable_lookup_has_non_callable_collision(
+         *services.semantic_context,
+         scope,
+         *target_class,
+         qualified.name,
+         callables.declared_in)) {
+    return false;
+  }
   if(callables.functions.empty() && !callables.templates.empty()) {
     return false;
   }
@@ -1609,6 +1690,14 @@ bool lookup_member_pointer_callable_candidates_node(
 
   semantic_lookup::MemberCallableLookupResult callables =
       semantic_lookup::lookup_visible_member_callables(*target_class, qualified.name);
+  if(member_pointer_callable_lookup_has_non_callable_collision(
+         *services.semantic_context,
+         scope,
+         *target_class,
+         qualified.name,
+         callables.declared_in)) {
+    return false;
+  }
   functions = callables.functions;
   templates = callables.templates;
   return !functions.empty() || !templates.empty();
