@@ -785,6 +785,17 @@ bool member_functions_same_explicit_signature(const FunctionBinding & lhs,
     return false;
   }
 
+  const bool lhs_nonstatic_member = lhs.owner_class && lhs.is_method;
+  const bool rhs_nonstatic_member = rhs.owner_class && rhs.is_method;
+  if(lhs_nonstatic_member || rhs_nonstatic_member) {
+    if(lhs_nonstatic_member != rhs_nonstatic_member ||
+       lhs.is_const_method != rhs.is_const_method ||
+       lhs.is_volatile_method != rhs.is_volatile_method ||
+       lhs.ref_qualifier != rhs.ref_qualifier) {
+      return false;
+    }
+  }
+
   const bool static_member_functions =
       lhs.owner_class && rhs.owner_class && !lhs.is_method && !rhs.is_method;
   if(static_member_functions) {

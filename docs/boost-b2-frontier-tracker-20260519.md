@@ -4420,3 +4420,37 @@ links; full Intrusive build-only now updates 79 targets and leaves only
 `callable_with_no_decltype` failing with backend array without bound. Perf
 check against `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
 instructions `-0.43%`, RSS `+1.23%`, footprint `+0.58%`.
+
+2026-07-06 Boost.Intrusive `callable_with_no_decltype` using-imported
+member overload frontier: the last Intrusive compile frontier was an unbounded
+backend array after
+`BOOST_INTRUSIVE_HAS_MEMBER_FUNCTION_CALLABLE_WITH_FUNCNAME` reported a
+callable member as not callable. The Boost no-decltype detector derives a
+wrapper from the probed function object, imports `Fun::func` with a
+using-declaration, and adds a private `func(...) const` member-template
+fallback. For a non-const wrapper object, overload resolution must keep the
+using-imported non-const base member visible and prefer it over the const
+fallback. The compiler was collapsing those declarations while comparing
+explicit member signatures, and then its implicit-object tie-breaker preferred
+the more-derived const fallback. The fix keeps this on typed semantic data:
+using-imported member hiding now compares non-static member cv/ref metadata, and
+overload ranking prefers the candidate that adds fewer cv qualifiers to the same
+implicit object source. No source-text reparse, Boost-specific rule, or parallel
+symbol spelling was added. The symbol-linkage path for the related
+data-member-pointer ABI case remains centralized through `symbol_linkage` and
+the `abi_mangle::FunctionEncoding` backend; the stale PA26 direct-ref drift was
+refreshed to the typed `XadL_Z...` member-entity ABI spelling. Owner: PA22
+using-declaration member overload resolution and implicit-object ranking. New
+regression:
+`pa22/tests/general/300-using-member-template-implicit-object-cv-overload.t`.
+Validation: clang accepts the reducer with `-std=c++11`; focused PA22 check
+passes; PA22 direct-LowIR report passes; full direct-LowIR `make test-report`
+passes `3542/3542`; strict direct-LowIR checks pass; `python3
+scripts/audit_text_reparse.py` reports all zero; focused B2
+`libs/intrusive/test//callable_with_no_decltype testing.execute=off` compiles
+and links, updating 11 targets. A full forced Intrusive build-only run reached
+the wrapper timeout after no failures; the non-forced continuation of
+`libs/intrusive/test testing.execute=off` exits 0 and updates the remaining 33
+targets. Perf check against
+`/tmp/cppgm-before-global-delete-baseline-20260706.json` passes: instructions
+`-0.27%`, RSS `+1.41%`, footprint `+0.54%`.

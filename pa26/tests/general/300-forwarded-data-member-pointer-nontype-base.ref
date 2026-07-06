@@ -36,7 +36,7 @@ function @member_record__int__1___member(%this : ptr) -> void [unwind=no, bindin
     store ptr %this, $this
     return void
 }
-function @member_base_record__int__1___operator__(%this : ptr, %x : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK11member_baseI6recordiLi1EEclERS0_] {
+function @member_base_record__int__1___operator__(%this : ptr, %x : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK11member_baseI6recordiXadL_ZNS0_2idEEEEclERS0_] {
   slot $this : ptr
   slot $x : ptr
 

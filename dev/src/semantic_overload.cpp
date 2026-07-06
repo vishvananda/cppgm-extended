@@ -5614,6 +5614,67 @@ bool user_defined_conversions_share_intermediate_type(const CandidateMatch & lhs
   return lhs_type && rhs_type && type_equals(lhs_type, rhs_type);
 }
 
+TypePtr implicit_object_source_pointee_type(const CandidateMatch & match)
+{
+  if(match.source_args.empty()) {
+    return TypePtr();
+  }
+  TypePtr source = strip_top_level_cv(match.source_args[0].type);
+  if(source && source->kind == Type::TK_POINTER) {
+    return source->inner;
+  }
+  return TypePtr();
+}
+
+int compare_implicit_object_cv_preference(const CandidateMatch & current,
+                                          const CandidateMatch & best)
+{
+  if(!current.function ||
+     !best.function ||
+     !current.function->is_method ||
+     !best.function->is_method) {
+    return 0;
+  }
+
+  TypePtr current_source = implicit_object_source_pointee_type(current);
+  TypePtr best_source = implicit_object_source_pointee_type(best);
+  TypePtr current_source_base;
+  TypePtr best_source_base;
+  bool current_source_const = false;
+  bool current_source_volatile = false;
+  bool best_source_const = false;
+  bool best_source_volatile = false;
+  if(!top_level_cv_flags(current_source,
+                         current_source_base,
+                         current_source_const,
+                         current_source_volatile) ||
+     !top_level_cv_flags(best_source,
+                         best_source_base,
+                         best_source_const,
+                         best_source_volatile) ||
+     current_source_const != best_source_const ||
+     current_source_volatile != best_source_volatile ||
+     !type_equals(strip_top_level_cv(current_source_base),
+                  strip_top_level_cv(best_source_base))) {
+    return 0;
+  }
+
+  int current_added_cv = 0;
+  int best_added_cv = 0;
+  if(!current_source_const) {
+    current_added_cv += current.function->is_const_method ? 1 : 0;
+    best_added_cv += best.function->is_const_method ? 1 : 0;
+  }
+  if(!current_source_volatile) {
+    current_added_cv += current.function->is_volatile_method ? 1 : 0;
+    best_added_cv += best.function->is_volatile_method ? 1 : 0;
+  }
+  if(current_added_cv == best_added_cv) {
+    return 0;
+  }
+  return current_added_cv < best_added_cv ? -1 : 1;
+}
+
 int compare_candidate_match_preference(SemanticContext & ctx,
                                        const CandidateMatch & current,
                                        const CandidateMatch & best)
@@ -5712,6 +5773,11 @@ int compare_candidate_match_preference(SemanticContext & ctx,
   }
 
   if(compare_implicit_object_last) {
+    const int object_cv_pref =
+        compare_implicit_object_cv_preference(current, best);
+    if(object_cv_pref != 0) {
+      return object_cv_pref;
+    }
     compare_slots(0, 1, current_better, best_better);
   }
 
