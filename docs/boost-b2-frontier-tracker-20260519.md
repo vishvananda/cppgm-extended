@@ -791,7 +791,7 @@ Local Boost wrapper state:
 | 51i | `libs/graph/example//canonical_ordering` | pass | Boost.Parameter named-argument construction for Boyer-Myrvold planarity now resolves `lazy_enable_if<Cond, MetaFn>::type` result/member types, ranks the lvalue member assignment overload ahead of the forwarding-reference overload with real call arguments, and recovers empty middle function-parameter packs during `arg_list_factory` reversal. Focused B2 builds, links, runs, and passes: `/tmp/boost-graph-canonical-ordering-after-boost-parameter-20260705.log`. |
 | 52 | `libs/graph_parallel/test` | setup-fail | Current local Boost setup still cannot select the Graph Parallel/MPI/Python alternatives, matching the historical non-compiler setup failure shape. Survey log: `/tmp/boost-suite-survey-post-heap-gap-20260705/libs__graph_parallel__test.log`. |
 | 53 | `libs/hana/test` | pass | Post-Heap gap survey passes in 4.6s; log `/tmp/boost-suite-survey-post-heap-gap-20260705/libs__hana__test.log`. |
-| 54 | `libs/hash2/test` | mixed | Active frontier suite. The current batch fixes `digest`, `append_pointer`, and focused `append_tuple_like_2`; the last full Hash2 survey before the `append_tuple_like_2` fix still showed seven failed updates including `append_tag_invoke_2`, `append_tag_invoke_3`, `append_tuple_like_2`, `hash_32_64`, `hash_append_5`, `sha2_cx`, and `detail_has_tag_invoke`. Focused `append_tuple_like_2` now passes; full rerun pending. Latest full-survey log before that focused fix: `/tmp/boost-suite-survey-hash2-after-append-pointer-20260706/libs__hash2__test.log`. |
+| 54 | `libs/hash2/test` | mixed | Active frontier suite. The current Hash2 work fixes `digest`, `append_pointer`, `append_tuple_like_2`, and `detail_has_tag_invoke`. Fresh full survey after the hidden-friend pointer ADL fix still reports mixed, but the real remaining failed updates are down to `hash_32_64.o` (`unknown function detail::class_template_name<L<T...>>`) and `sha2_cx.o` (duplicate `test<sha2_256, 57>` symbol). The survey detail also includes an expected-fail `append_tag_invoke_4` `do_hash_append` diagnostic, but B2 marks that test passed as expected. Latest survey summary: `/tmp/boost-suite-survey-hash2-after-hidden-friend-pointer-adl-20260706/summary.md`; log: `/tmp/boost-suite-survey-hash2-after-hidden-friend-pointer-adl-20260706/libs__hash2__test.log`. |
 | 55 | `libs/heap/test` | pass | Current-head suite survey after the friend-access fixes passes in 322.5s, updating 69 targets. `d_ary_heap_test` now builds, links, runs, and passes along with the existing priority queue, mutable heap, skew heap, move-only, pairing, fibonacci, and binomial targets. Summary `/tmp/boost-suite-survey-heap-after-friend-access-20260705/summary.md`; log `/tmp/boost-suite-survey-heap-after-friend-access-20260705/libs__heap__test.log`. |
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
@@ -3866,3 +3866,32 @@ footprint `-0.03%`, report
 `/tmp/cppgm-perf-report-boost-hash2-empty-pack-20260706.json`. The next action
 is a fresh full Hash2 survey to find the next first real frontier beyond
 `append_tuple_like_2`.
+
+2026-07-06 Boost.Hash2 `detail_has_tag_invoke` frontier: the fresh post-batch
+Hash2 survey exposed a runtime failure in
+`libs/hash2/test//detail_has_tag_invoke`, where Boost's
+`has_tag_invoke<T>` detector did not find a private inline hidden friend
+function template when the ADL argument was `T const*`. A no-STL reducer failed
+pre-fix with `static_assert false: has_tag_invoke<X>::value` while Clang
+accepted it. The root cause was that ordinary associated namespace collection
+already descends through pointer/cv/reference/array/function/member-pointer
+wrapper types, but the associated hidden-friend candidate lookup tried to
+complete only the wrapper type itself before collecting class-owned hidden
+friends. The fix makes hidden-friend candidate lookup mirror the same wrapper
+descent and then collect friend functions/templates from the associated class.
+Owner: PA22 expression SFINAE/detected-idiom behavior composed with PA21 hidden
+friend templates. New regression:
+`pa22/tests/spec/300-hidden-friend-template-pointer-sfinae-adl.t`.
+Validation: the reducer compiles with both Clang and `dev/cppgm++`; focused
+PA22 check passes; final PA22 placement audit reports no early-placement
+findings; direct-LowIR report for `pa21 pa22` with
+`CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1` passes `408/408`; focused B2
+`libs/hash2/test//detail_has_tag_invoke` passes; full Hash2 survey now leaves
+only `hash_32_64.o` and `sha2_cx.o` as real failed updates, summary
+`/tmp/boost-suite-survey-hash2-after-hidden-friend-pointer-adl-20260706/summary.md`.
+The survey log is
+`/tmp/boost-suite-survey-hash2-after-hidden-friend-pointer-adl-20260706/libs__hash2__test.log`.
+Perf gate against a clean detached `HEAD` worktree at `b85324d9b` passed:
+instructions `-0.16%`, max RSS `-0.37%`, footprint `-0.01%`; baseline
+`/tmp/cppgm-perf-baseline-clean-head-b85324d9b-hidden-friend-20260706.json`,
+report `/tmp/cppgm-perf-report-hidden-friend-adl-20260706.json`.

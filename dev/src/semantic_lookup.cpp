@@ -5018,6 +5018,35 @@ void lookup_associated_friend_candidates_for_type(
   if(!base) {
     return;
   }
+  switch(base->kind) {
+  case Type::TK_CV:
+  case Type::TK_ATOMIC:
+  case Type::TK_POINTER:
+  case Type::TK_BLOCK_POINTER:
+  case Type::TK_LVALUE_REFERENCE:
+  case Type::TK_RVALUE_REFERENCE:
+  case Type::TK_ARRAY:
+    lookup_associated_friend_candidates_for_type(
+        ctx, base->inner, name, functions_out, templates_out);
+    return;
+  case Type::TK_MEMBER_POINTER:
+    lookup_associated_friend_candidates_for_type(
+        ctx, base->owner, name, functions_out, templates_out);
+    lookup_associated_friend_candidates_for_type(
+        ctx, base->inner, name, functions_out, templates_out);
+    return;
+  case Type::TK_FUNCTION:
+    lookup_associated_friend_candidates_for_type(
+        ctx, base->inner, name, functions_out, templates_out);
+    for(size_t i = 0; i < base->params.size(); ++i) {
+      lookup_associated_friend_candidates_for_type(
+          ctx, base->params[i], name, functions_out, templates_out);
+    }
+    return;
+  case Type::TK_FUNDAMENTAL:
+  case Type::TK_NAMED:
+    break;
+  }
 
   ClassInfo * info = ctx.complete_class_type(base);
   if(!info) {
