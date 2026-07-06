@@ -1,0 +1,123 @@
+function @read(%a : ptr [pass=reference], %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z4readR1A] {
+  slot $a : ptr
+  slot $a__pvb0 : ptr
+
+  block ^entry:
+    store ptr %a, $a
+    store ptr %__pvbptr0, $a__pvb0
+    %t1 = load ptr $a__pvb0
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    return i32 %t4
+}
+function @read__ov2(%__param0 : i32) -> i32 [binding=strong, object=_Z4readi] {
+  slot $__param0 : i32
+
+  block ^entry:
+    store i32 %__param0, $__param0
+    return i32 0
+}
+function @poison(%__param0 : i32, %p : ptr) -> void [binding=strong, object=_Z6poisoniP1V] {
+  slot $__param0 : i32
+  slot $p : ptr
+
+  block ^entry:
+    store i32 %__param0, $__param0
+    store ptr %p, $p
+    %t1 = load ptr $p
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 13, %t2
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $d : obj<8x4>
+  slot $other : obj<4x4>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $d
+    call void @D__D(%t1)
+    %t2 = addr $other
+    call void @V__V(%t2)
+    %t3 = addr $d
+    %t4 = index i8 [projection=base_subobject] %t3, 4
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 7, %t5
+    %t6 = addr $other
+    call void @poison(0, %t6)
+    %t7 = addr $d
+    %t8 = index i8 [projection=base_subobject] %t7, 0
+    %t9 = addr $d
+    %t10 = index i8 %t9, 4
+    %t11 = call i32 @read(%t8, %t10)
+    %t12 = cmp eq i32 %t11, 7
+    branch %t12, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t13 = load i32 $cond__1
+    return i32 %t13
+}
+function @V__V__base_entry(%this : ptr) -> void [binding=weak, object=_ZN1VC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @V__V(%this : ptr) -> void [binding=weak, object=_ZN1VC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @D__D(%this : ptr) -> void [binding=weak, object=_ZN1DC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    call void @V__V__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t5 = load ptr $this
+    %t6 = index i8 %t5, 4
+    call void @A__A__base_entry(%t4, %t6)
+    return void
+}
+function @A__A__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1AC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @A__A(%this : ptr) -> void [binding=weak, object=_ZN1AC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    call void @V__V__base_entry(%t2)
+    return void
+}
+alias object _ZN1VC2Ev = @V__V
+alias object _ZN1DC2Ev = @D__D
+alias object _ZN1AC2Ev = @A__A
