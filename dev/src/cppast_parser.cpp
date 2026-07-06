@@ -8934,7 +8934,8 @@ bool CppAstParser::parse_unary_expression(CppAstNode & out)
     return true;
   }
 
-  if(peek().is_simple(KW_DELETE)) {
+  if(peek().is_simple(KW_DELETE) ||
+     (peek().is_simple(OP_COLON2) && peek(1).is_simple(KW_DELETE))) {
     if(!parse_delete_expression(out)) {
       pos = start;
       return false;
@@ -9855,12 +9856,16 @@ bool CppAstParser::parse_new_expression(CppAstNode & out)
 bool CppAstParser::parse_delete_expression(CppAstNode & out)
 {
   size_t start = pos;
+  bool global_scope = consume_simple(OP_COLON2);
   if(!consume_simple(KW_DELETE)) {
     pos = start;
     return false;
   }
 
   out = make_node(CppAstKind::delete_expression);
+  if(global_scope) {
+    out.children.push_back(make_node(CppAstKind::global_scope));
+  }
   if(consume_simple(OP_LSQUARE)) {
     if(!consume_simple(OP_RSQUARE)) {
       pos = start;

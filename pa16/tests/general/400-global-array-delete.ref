@@ -1,0 +1,17 @@
+declare function @operator_delete__(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete_array]
+declare function @operator_new__(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new_array]
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $p : ptr
+
+  block ^entry:
+    %t1 = convert sext i64 i32 3
+    %t2 = call ptr @operator_new__(%t1)
+    store ptr %t2, $p
+    %t3 = load ptr $p
+    %t4 = index i8 [projection=array_element] %t3, 0
+    store i8 7, %t4
+    %t5 = load ptr $p
+    call void @operator_delete__(%t5)
+    return i32 0
+}

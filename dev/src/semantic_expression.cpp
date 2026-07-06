@@ -3692,10 +3692,19 @@ ExprInfo analyze_delete_expression(SemanticContext & ctx,
   DIAG_CONTEXT("analyze_delete_expression [" + node_text(node) + "]" +
                ctx.source_location_for_node(node));
 
+  size_t child_index = 0;
+  if(child_index < node.children.size() &&
+     node.children[child_index].kind == CppAstKind::global_scope) {
+    ++child_index;
+  }
   const bool is_array_delete =
-      !node.children.empty() && node.children[0].kind == CppAstKind::array_delete;
+      child_index < node.children.size() &&
+      node.children[child_index].kind == CppAstKind::array_delete;
+  if(is_array_delete) {
+    ++child_index;
+  }
   const CppAstNode * operand =
-      node.children.empty() ? nullptr : &node.children[is_array_delete ? 1 : 0];
+      child_index < node.children.size() ? &node.children[child_index] : nullptr;
   if(!operand) {
     throw logic_error("delete-expression missing operand");
   }

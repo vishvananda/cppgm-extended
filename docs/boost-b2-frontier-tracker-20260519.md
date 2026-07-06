@@ -4176,3 +4176,42 @@ interprocess reducers for vector<int>, vector<string>, and the earlier string
 `python3 scripts/audit_text_reparse.py` reports all zero; full direct LowIR
 `make test-report-nobuild` and strict PA18/PA19/PA21/PA22/PA23 pass; focused B2
 `libs/interprocess/test//string_test testing.execute=off` passes.
+
+2026-07-06 Boost.Interprocess `stable_vector_test` global array-delete
+frontier: broader Interprocess replay next failed lazy materialization of
+`heap_allocator_v1<T, SegmentManager>::deallocate`, whose body contains the
+valid C++11 delete-expression `::delete[] ptr_raw;`.  Clang accepts the reduced
+form `void f(char *p) { ::delete[] p; }` under `-std=c++11 -pedantic`, while
+cppgm++ failed before the fix with `ERROR: expected block-item near OP_COLON2`.
+The parser already accepted `::new`, but delete-expression parsing only started
+at `delete`.  The fix teaches unary-expression/delete-expression parsing to
+consume the optional global qualifier and updates semantic delete-expression
+readers to skip the preserved `global-scope` marker before the optional
+`array-delete` marker.  The associated builtin host ABI aliases for
+`operator new/delete` and array variants now classify through the typed
+`abi_mangle::FunctionEncoding` backend instead of storing parallel hardcoded
+Itanium strings in `runtime_symbol_policy`; PA30 already documents
+`operator-terminal delete-array`, so no README update was needed. Owners: PA16
+array new/delete source lowering and PA30 ABI operator terminals. New
+regressions: `pa16/tests/general/400-global-array-delete.t` and
+`pa30/tests/abi/200-delete-array-operator-terminal-function.t`. Validation:
+`/usr/local/opt/llvm/bin/clang++ -x c++ -std=c++11 -fsyntax-only -Wall -Wextra
+-pedantic` accepts the reduced source; `make -C dev cppgm++ abimangle -j12`;
+focused PA16 and PA30 tests pass; PA16/PA30 direct-LowIR report passes
+`216/216`; full strict direct-LowIR compare passes; `python3
+scripts/audit_text_reparse.py` reports all zero; native symbol smoke for the
+reducer imports `__ZdaPv`/`__Znam`; full direct-LowIR report passes
+`3531/3531`; focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++
+CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang
+CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1
+JOBS=4 ./run-cppgm-b2.sh -a libs/interprocess/test//stable_vector_test
+testing.execute=off` compiles and links.  A 5-second sample from the long
+focused compile is recorded at `/tmp/cppgm-stable-vector-sample.txt` and showed
+broad semantic/template work rather than a tight loop.  Because the tracker
+baseline file was gone from `/tmp`, a detached worktree at pre-fix
+`f8d36d67e` was used to record
+`/tmp/cppgm-before-global-delete-baseline-20260706.json`; the current-tree
+perf check passed against it with instructions `+0.14%`, RSS `-0.06%`,
+footprint `+0.01%`, report
+`/tmp/cppgm-perf-after-global-delete-abi-alias-20260706.json`.

@@ -4260,10 +4260,19 @@ private:
       suppressed_policy.instantiate_function_bodies = false;
       ScopedAnalysisPolicyOverride suppression(*this, suppressed_policy);
       if(!is_typeof && expr.kind == CppAstKind::delete_expression) {
-        const bool is_array_delete =
-            !expr.children.empty() && expr.children[0].kind == CppAstKind::array_delete;
+        size_t delete_child_index = 0;
+        if(delete_child_index < expr.children.size() &&
+           expr.children[delete_child_index].kind == CppAstKind::global_scope) {
+          ++delete_child_index;
+        }
+        if(delete_child_index < expr.children.size() &&
+           expr.children[delete_child_index].kind == CppAstKind::array_delete) {
+          ++delete_child_index;
+        }
         const CppAstNode * delete_operand =
-            expr.children.empty() ? nullptr : &expr.children[is_array_delete ? 1 : 0];
+            delete_child_index < expr.children.size() ?
+                &expr.children[delete_child_index] :
+                nullptr;
         if(!delete_operand) {
           return dependent_fallback();
         }
