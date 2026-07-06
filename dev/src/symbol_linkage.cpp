@@ -10387,16 +10387,21 @@ static bool try_build_dependent_template_template_parameter_type_ir(
 
   size_t template_parameter_index = 0;
   const TemplateParameterInfo * template_parameter = nullptr;
-  if(!try_find_template_template_parameter_index(parameter_name,
+  const bool found_template_parameter_index =
+      try_find_template_template_parameter_index(parameter_name,
                                                 mangle_ctx,
                                                 template_parameter_index,
-                                                template_parameter)) {
+                                                template_parameter);
+  if(!found_template_parameter_index &&
+     (!mangle_ctx ||
+      (!mangle_ctx->template_parameters && !mangle_ctx->owner_template_parameters))) {
     return false;
   }
 
   vector<TemplateParameterInfo> template_template_parameters;
   const vector<TemplateParameterInfo> * argument_parameters = nullptr;
-  if(template_parameter &&
+  if(found_template_parameter_index &&
+     template_parameter &&
      template_parameter->template_parameter_count != 0 &&
      template_parameter->template_parameter_count != static_cast<size_t>(-1)) {
     template_template_parameters.resize(
@@ -10415,9 +10420,27 @@ static bool try_build_dependent_template_template_parameter_type_ir(
     return false;
   }
 
-	  out = abi_mangle::Type::template_parameter_class_template_specialization(
-	      template_parameter_index,
-	      std::move(arguments));
+  if(found_template_parameter_index) {
+    out = abi_mangle::Type::template_parameter_class_template_specialization(
+        template_parameter_index,
+        std::move(arguments));
+  } else {
+    const string template_name = trim_space(parameter_name);
+    if(template_name.empty() ||
+       template_name.find("::") != string::npos ||
+       !is_identifier_text_for_mangling(template_name)) {
+      return false;
+    }
+    const string canonical_name = canonical_component_text(template_name);
+    out = abi_mangle::Type::class_template_specialization(
+        vector<abi_mangle::Type::NameComponent>(),
+        template_name,
+        canonical_name,
+        std::move(arguments),
+        string(),
+        false);
+    attach_type_ir_substitution(out);
+  }
   return true;
 }
 

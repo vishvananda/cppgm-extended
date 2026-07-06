@@ -4032,3 +4032,25 @@ Boost 1.91 headers passes. A sample of the earlier ICL compile is recorded at
 `/tmp/cppgm-boost-icl-fastest-sample-20260706.txt`; it showed time concentrated
 in machine object generation rather than a semantic/template loop. `git diff
 --check` passes.
+
+2026-07-06 Boost.ICL `fastest_interval_map` ABI frontier: direct replay of
+`libs/icl/test/fastest_interval_map_/fastest_interval_map.cpp` exposed weak
+symbol construction for a dependent libc++ `std::__1::__tree` special member
+whose `const allocator_type&` parameter had been reduced to a dependent
+template-template specialization `Alloc<std::pair<const DomainT,CodomainT>>`.
+The symbol path already routed through `symbol_linkage` into the typed
+`abi_mangle` backend, so the fix stays there: template-parameter class-template
+specializations now have structural substitution keys, and dependent
+template-template specializations with preserved typed arguments can fall back
+to named class-template-specialization IR when no ABI template-parameter index
+is in scope. No parallel object-symbol spelling or source-text reparsing was
+added. New regression:
+`pa30/tests/abi/600-template-param-template-type-substitution.t`; PA30 README
+now documents `type template-param-template <index> <arg-ref>...`. Validation:
+`/usr/bin/clang++ -std=c++11` accepts the STL reducer
+`scratch/abi_tree_alias_stdmap_reducer.cpp`, `dev/cppgm++ -std=c++11 -c` now
+accepts the same reducer, PA30 passes `75/75`, focused direct-LowIR report for
+`pa30 pa35 pa36` passes `233/233`, and direct Boost replay advances past the
+ABI symbol failure to the next semantic frontier: `operator+=` overload
+fallback at `libs/icl/test/test_interval_map_shared.hpp:68`. `git diff
+--check` passes.

@@ -282,6 +282,16 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
         !metadata->template_name_is_template_parameter)) {
       return false;
     }
+    const std::string template_key_text =
+        metadata->template_name_is_template_parameter ?
+            std::string("template-parameter:") +
+                std::to_string(metadata->template_name_parameter_index) :
+            metadata->template_name_substitution.empty() ?
+                metadata->template_name :
+                metadata->template_name_substitution;
+    if(template_key_text.empty()) {
+      return false;
+    }
     std::vector<SubstitutionKey> argument_keys;
     argument_keys.reserve(metadata->template_arguments.size());
     for(std::size_t i = 0; i < metadata->template_arguments.size(); ++i) {
@@ -294,8 +304,7 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
     }
     out = SubstitutionKey::class_template_specialization(
         0,
-        metadata->template_name_substitution.empty() ?
-            metadata->template_name : metadata->template_name_substitution,
+        template_key_text,
         std::move(argument_keys));
     return !out.empty();
   }
