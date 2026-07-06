@@ -3956,6 +3956,23 @@ bool class_derives_from(const ClassInfo & derived,
   return found;
 }
 
+bool virtual_function_overrides(SemanticContext & ctx,
+                                const FunctionBinding & overriding,
+                                const FunctionBinding & overridden)
+{
+  if(&overriding == &overridden) {
+    return true;
+  }
+  if(!same_virtual_signature(ctx, overriding, overridden)) {
+    return false;
+  }
+  if(!overriding.owner_class || !overridden.owner_class) {
+    return true;
+  }
+  return overriding.owner_class == overridden.owner_class ||
+         class_derives_from(*overriding.owner_class, *overridden.owner_class);
+}
+
 bool owner_on_primary_polymorphic_path(const ClassInfo & info,
                                        const FunctionBinding & binding)
 {
@@ -4002,7 +4019,8 @@ FunctionBinding * find_overridden_virtual(SemanticContext & ctx,
         ++it) {
       for(size_t i = 0; i < it->second.size(); ++i) {
         FunctionBinding * candidate = it->second[i];
-        if(!candidate->is_virtual || !same_virtual_signature(ctx, *candidate, binding)) {
+        if(!candidate->is_virtual ||
+           !virtual_function_overrides(ctx, binding, *candidate)) {
           continue;
         }
         if(trace_virtuals) {
@@ -4227,7 +4245,7 @@ FunctionBinding * find_final_overrider(SemanticContext & ctx,
     for(size_t i = 0; i < it->second.size(); ++i) {
       FunctionBinding * binding = it->second[i];
       if(binding != &base_virtual &&
-         same_virtual_signature(ctx, *binding, base_virtual)) {
+         virtual_function_overrides(ctx, *binding, base_virtual)) {
         found = binding;
       }
     }
@@ -4240,7 +4258,7 @@ FunctionBinding * find_final_overrider(SemanticContext & ctx,
       for(size_t i = 0; i < it->second.size(); ++i) {
         FunctionBinding * binding = it->second[i];
         if(binding != &base_virtual &&
-           same_virtual_signature(ctx, *binding, base_virtual)) {
+           virtual_function_overrides(ctx, *binding, base_virtual)) {
           if(found == &base_virtual) {
             if(found->owner_class && binding->owner_class &&
                class_derives_from(*found->owner_class, *binding->owner_class)) {

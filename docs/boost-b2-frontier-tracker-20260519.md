@@ -4375,3 +4375,28 @@ independent failures: `parent_from_member_test` ambiguous final overrider,
 `callable_with_no_decltype` backend array without bound. Perf check against
 `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
 instructions `-0.25%`, RSS `+2.67%`, footprint `+0.58%`.
+
+2026-07-06 Boost.Intrusive unrelated virtual-root final-overrider frontier:
+`parent_from_member_test` declared two independent abstract roots with matching
+virtual signatures (`Abstract::virtual_func1` and `Abstract2::virtual_func1`)
+and two intermediate classes that each override only its own root. The
+compiler's final-overrider search compared inherited methods by virtual
+signature alone, so `DerivedPoly2::virtual_func1` was considered a candidate
+final overrider for `Abstract::virtual_func1`. The fix routes virtual override
+and final-overrider selection through typed ownership: a candidate must have a
+matching virtual signature and its owner class must be the same as, or derived
+from, the overridden virtual's owner. This keeps unrelated virtual roots
+independent while preserving true diamond/more-derived override ambiguity. No
+source-text reparse or Boost-specific rule was added. Owner: PA17 virtual
+dispatch/final-overrider class metadata. New regression:
+`pa17/tests/general/300-unrelated-virtual-roots-final-overrider.t`.
+Validation: clang accepts the reducer with `-std=c++11`; the focused PA17
+check passes; `CPPGM_SKIP_DEV_REBUILD=1 make test-pa17` passes `24/24`; PA17
+direct-LowIR report passes `24/24`; strict direct-LowIR checks pass;
+`python3 scripts/audit_text_reparse.py` reports all zero; focused B2
+`libs/intrusive/test//parent_from_member_test testing.execute=off` compiles
+and links; full Intrusive build-only now updates 77 targets and leaves only
+two compile failures: `hash_functor_test` unsupported `nullptr_t == nullptr_t`
+and `callable_with_no_decltype` backend array without bound. Perf check against
+`/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
+instructions `+0.03%`, RSS `+2.45%`, footprint `+0.60%`.
