@@ -824,9 +824,39 @@ TypePtr conversion_function_template_deduction_target_type(const TypePtr & targe
   if(base &&
      (base->kind == Type::TK_LVALUE_REFERENCE ||
       base->kind == Type::TK_RVALUE_REFERENCE)) {
-    return strip_top_level_cv(base->inner);
+    return target;
   }
   return target;
+}
+
+vector<TypePtr> conversion_function_template_deduction_target_types(
+    const TypePtr & target)
+{
+  vector<TypePtr> targets;
+  if(target) {
+    targets.push_back(conversion_function_template_deduction_target_type(target));
+  }
+
+  TypePtr base = strip_top_level_cv(target);
+  if(base &&
+     (base->kind == Type::TK_LVALUE_REFERENCE ||
+      base->kind == Type::TK_RVALUE_REFERENCE)) {
+    TypePtr object_target = strip_top_level_cv(base->inner);
+    if(object_target) {
+      bool duplicate = false;
+      for(size_t i = 0; i < targets.size(); ++i) {
+        if(type_equals(targets[i], object_target)) {
+          duplicate = true;
+          break;
+        }
+      }
+      if(!duplicate) {
+        targets.push_back(object_target);
+      }
+    }
+  }
+
+  return targets;
 }
 
 void update_conversion_function_template_binding_result(
@@ -2640,47 +2670,56 @@ bool try_argument_conversion(SemanticContext & ctx,
               decl->declaring_scope);
         }
 
-        TypePtr conversion_target =
-            conversion_function_template_deduction_target_type(target);
-        TypePtr target_function_type =
-            build_conversion_function_template_target_type(ctx,
-                                                           template_use_scope,
-                                                           *decl,
-                                                           conversion_target);
-        if(!target_function_type) {
-          continue;
-        }
+        vector<TypePtr> conversion_targets =
+            conversion_function_template_deduction_target_types(target);
+        for(size_t target_index = 0;
+            target_index < conversion_targets.size();
+            ++target_index) {
+          TypePtr conversion_target = conversion_targets[target_index];
+          TypePtr target_function_type =
+              build_conversion_function_template_target_type(ctx,
+                                                             template_use_scope,
+                                                             *decl,
+                                                             conversion_target);
+          if(!target_function_type) {
+            continue;
+          }
 
-        semantic_template_function::FunctionTemplateDeduction result;
-        if(!semantic_template_function::deduce_function_template_from_target_type(
-               ctx, *decl, target_function_type, &template_use_scope, result)) {
-          continue;
-        }
+          semantic_template_function::FunctionTemplateDeduction result;
+          if(!semantic_template_function::deduce_function_template_from_target_type(
+                 ctx, *decl, target_function_type, &template_use_scope, result)) {
+            continue;
+          }
 
-        FunctionBinding * binding = nullptr;
-        try
-        {
-          binding = semantic_template_function::acquire_function_template_binding(
-              ctx,
-              *decl,
-              result.arguments,
-              &template_use_scope,
-              result.pack_sizes.empty() ? nullptr : &result.pack_sizes,
-              options.instantiate_user_defined_bodies);
-        }
-        catch(const TemplateSubstitutionFailure &)
-        {
-          binding = nullptr;
-        }
-        if(!binding) {
-          continue;
-        }
-        update_conversion_function_template_binding_result(ctx, *binding, conversion_target);
+          FunctionBinding * binding = nullptr;
+          try
+          {
+            binding = semantic_template_function::acquire_function_template_binding(
+                ctx,
+                *decl,
+                result.arguments,
+                &template_use_scope,
+                result.pack_sizes.empty() ? nullptr : &result.pack_sizes,
+                options.instantiate_user_defined_bodies);
+          }
+          catch(const TemplateSubstitutionFailure &)
+          {
+            binding = nullptr;
+          }
+          if(!binding) {
+            continue;
+          }
+          update_conversion_function_template_binding_result(ctx,
+                                                             *binding,
+                                                             conversion_target);
 
-        maybe_add_conversion_function_candidate(binding,
-                                                declared_in ? declared_in : binding->owner_class,
-                                                visible.path_access,
-                                                visible.path_offset);
+          maybe_add_conversion_function_candidate(
+              binding,
+              declared_in ? declared_in : binding->owner_class,
+              visible.path_access,
+              visible.path_offset);
+          break;
+        }
       }
     }
   }

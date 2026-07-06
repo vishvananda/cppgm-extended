@@ -374,6 +374,17 @@ void apply_local_context(Type::LambdaMetadata & lambda,
   }
 }
 
+void apply_namespace_lambda(FunctionEncoding::LambdaMetadata & lambda,
+                            const string & source_name,
+                            const vector<string> & namespace_qualifiers)
+{
+  lambda.context_fragment.clear();
+  lambda.context_substitution_slots.clear();
+  lambda.context_function.reset();
+  lambda.source_name = source_name;
+  lambda.namespace_qualifiers = namespace_qualifiers;
+}
+
 vector<TemplateArgument> template_args_from_refs(const ParseContext & ctx,
                                                  const vector<string> & refs)
 {
@@ -875,6 +886,20 @@ Type parse_type_spec(const ParseContext & ctx, const vector<string> & words, siz
     apply_local_context(*out.lambda, require_context_ref(ctx, words[begin + 1]));
     return out;
   }
+  if(kind == "namespace-lambda") {
+    if(begin + 2 > words.size()) {
+      throw logic_error("namespace-lambda type requires a source name");
+    }
+    Type out = Type::lambda_closure(string(),
+                                    vector<SubstitutionSlot>(),
+                                    shared_ptr<FunctionEncoding>(),
+                                    vector<Type>(),
+                                    string(),
+                                    words[begin + 1],
+                                    vector<string>(words.begin() + begin + 2,
+                                                   words.end()));
+    return out;
+  }
   throw logic_error("unknown ABI fact type kind '" + kind + "'");
 }
 
@@ -1367,6 +1392,19 @@ void parse_function_target(FunctionEncoding & function,
     apply_terminal_word(function, words[begin + 3]);
     return;
   }
+  if(words[begin] == "namespace-lambda") {
+    if(begin + 2 >= words.size()) {
+      throw logic_error(command + " function namespace-lambda requires source name and terminal");
+    }
+    FunctionEncoding::LambdaMetadata & lambda =
+        FunctionEncoding::ensure_lambda_metadata(function);
+    apply_namespace_lambda(lambda,
+                           words[begin + 1],
+                           vector<string>(words.begin() + begin + 3,
+                                          words.end()));
+    apply_terminal_word(function, words[begin + 2]);
+    return;
+  }
 
   c_qualified_name = words[begin];
   parse_function_path(function, ctx, words, begin);
@@ -1647,6 +1685,17 @@ void apply_fact_words(model::AbiFactCase & fact_case,
     apply_local_context(lambda, require_context_ref(ctx, words[1]));
     lambda.discriminator = words[2];
     lambda.signature_parameter_types = parse_type_tokens(ctx, words, 3);
+    return;
+  }
+  if(command == "namespace-lambda-context") {
+    if(words.size() < 2) {
+      throw logic_error("namespace-lambda-context requires source name");
+    }
+    FunctionEncoding::LambdaMetadata & lambda =
+        FunctionEncoding::ensure_lambda_metadata(target_function(fact_case));
+    apply_namespace_lambda(lambda,
+                           words[1],
+                           vector<string>(words.begin() + 2, words.end()));
     return;
   }
   if(command == "terminal-source") {
@@ -2302,6 +2351,17 @@ struct FactSerializer
       return;
     case Type::TK_LAMBDA_CLOSURE:
       if(!type.lambda) { throw logic_error("lambda ABI type has no metadata"); }
+      if(!type.lambda->source_name.empty() &&
+         type.lambda->context_fragment.empty() &&
+         !type.lambda->context_function) {
+        words.push_back("namespace-lambda");
+        words.push_back(type.lambda->source_name);
+        words.insert(words.end(),
+                     type.lambda->namespace_qualifiers.begin(),
+                     type.lambda->namespace_qualifiers.end());
+        add_line(words);
+        return;
+      }
       words.push_back(type.lambda->source_name.empty() ?
                       "lambda-closure" :
                       "local-type");
@@ -2738,6 +2798,16 @@ struct FactSerializer
     if(function.lambda) {
       const FunctionEncoding::LambdaMetadata & lambda = *function.lambda;
       vector<string> words;
+      if(!lambda.source_name.empty() &&
+         lambda.context_fragment.empty() &&
+         !lambda.context_function) {
+        words.push_back("namespace-lambda-context");
+        words.push_back(lambda.source_name);
+        words.insert(words.end(),
+                     lambda.namespace_qualifiers.begin(),
+                     lambda.namespace_qualifiers.end());
+        add_line(words);
+      } else {
       words.push_back(lambda.source_name.empty() ?
                       "lambda-context" :
                       "local-context");
@@ -2754,6 +2824,7 @@ struct FactSerializer
         words.push_back(lambda.discriminator);
       }
       add_line(words);
+      }
     } else {
       for(size_t i = 0; i < function.name_components.size(); ++i) {
         const FunctionNameComponent & component = function.name_components[i];
@@ -3326,6 +3397,16 @@ AbiType parse_public_type_spec(const vector<string> & words, size_t begin)
     type.discriminator = words[begin + 3];
     return type;
   }
+  if(kind == "namespace-lambda") {
+    if(begin + 2 > words.size()) {
+      throw logic_error("namespace-lambda type requires a source name");
+    }
+    AbiType type;
+    type.kind = ABI_TYPE_NAMESPACE_LAMBDA;
+    type.name = words[begin + 1];
+    type.namespace_qualifiers.assign(words.begin() + begin + 2, words.end());
+    return type;
+  }
   throw logic_error("unknown ABI fact type kind '" + kind + "'");
 }
 
@@ -3374,6 +3455,7 @@ string type_token_from_public_type(const AbiType & type)
   case ABI_TYPE_DECLTYPE_EXPRESSION:
   case ABI_TYPE_LAMBDA_CLOSURE:
   case ABI_TYPE_LOCAL_TYPE:
+  case ABI_TYPE_NAMESPACE_LAMBDA:
     break;
   }
   throw logic_error("ABI type cannot be written as one type token");
@@ -3467,6 +3549,13 @@ void append_public_type_spec_words(const AbiType & type, vector<string> & words)
     words.push_back(type.context_ref);
     words.push_back(type.name);
     words.push_back(type.discriminator);
+    return;
+  case ABI_TYPE_NAMESPACE_LAMBDA:
+    words.push_back("namespace-lambda");
+    words.push_back(type.name);
+    words.insert(words.end(),
+                 type.namespace_qualifiers.begin(),
+                 type.namespace_qualifiers.end());
     return;
   }
 }
@@ -3964,6 +4053,16 @@ AbiFunctionTarget parse_public_function_target(const vector<string> & words,
     function.terminal = words[begin + 3];
     function.discriminator = begin + 4 < words.size() ? words[begin + 4] : "0";
     return function;
+  } else if(words[begin] == "namespace-lambda") {
+    if(begin + 2 >= words.size()) {
+      throw logic_error(command + " function namespace-lambda requires source name and terminal");
+    }
+    function.kind = ABI_FUNCTION_TARGET_NAMESPACE_LAMBDA;
+    function.source_name = words[begin + 1];
+    function.terminal = words[begin + 2];
+    function.namespace_qualifiers.assign(words.begin() + begin + 3,
+                                         words.end());
+    return function;
   } else {
     function.kind = ABI_FUNCTION_TARGET_PATH;
     function.qualified_name = words[begin++];
@@ -4039,6 +4138,14 @@ void append_function_target_words(const AbiFunctionTarget & function,
     words.push_back(function.source_name);
     words.push_back(function.terminal);
     words.push_back(function.discriminator);
+    return;
+  case ABI_FUNCTION_TARGET_NAMESPACE_LAMBDA:
+    words.push_back("namespace-lambda");
+    words.push_back(function.source_name);
+    words.push_back(function.terminal);
+    words.insert(words.end(),
+                 function.namespace_qualifiers.begin(),
+                 function.namespace_qualifiers.end());
     return;
   }
 }
@@ -4253,6 +4360,14 @@ AbiFactRecord parse_fact_record_words_with_context(
     }
     return record;
   }
+  if(command == "namespace-lambda-context") {
+    if(words.size() < 2) { throw logic_error("namespace-lambda-context requires source name"); }
+    record.function.kind = ABI_FUNCTION_RECORD_NAMESPACE_LAMBDA_CONTEXT;
+    record.function.source_name = words[1];
+    record.function.namespace_qualifiers.assign(words.begin() + 2,
+                                                words.end());
+    return record;
+  }
   if(command == "terminal-source") {
     if(words.size() != 2) { throw logic_error("terminal-source requires one source name"); }
     record.function.kind = ABI_FUNCTION_RECORD_TERMINAL_SOURCE;
@@ -4374,6 +4489,13 @@ vector<string> words_from_function_record(const AbiFunctionRecord & function)
     for(size_t i = 0; i < function.types.size(); ++i) {
       words.push_back(type_token_from_public_type(function.types[i]));
     }
+    return words;
+  case ABI_FUNCTION_RECORD_NAMESPACE_LAMBDA_CONTEXT:
+    words.push_back("namespace-lambda-context");
+    words.push_back(function.source_name);
+    words.insert(words.end(),
+                 function.namespace_qualifiers.begin(),
+                 function.namespace_qualifiers.end());
     return words;
   case ABI_FUNCTION_RECORD_TERMINAL_SOURCE:
     words.push_back("terminal-source");

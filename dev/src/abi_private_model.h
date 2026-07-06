@@ -644,6 +644,7 @@ struct Type
     std::vector<SubstitutionSlot> context_substitution_slots;
     std::shared_ptr<FunctionEncoding> context_function;
     std::string source_name;
+    std::vector<std::string> namespace_qualifiers;
     std::string discriminator;
   };
 
@@ -896,7 +897,9 @@ struct Type
       const std::shared_ptr<FunctionEncoding> & context_function,
       const std::vector<Type> & signature_parameter_types,
       const std::string & discriminator,
-      const std::string & source_name = std::string())
+      const std::string & source_name = std::string(),
+      const std::vector<std::string> & namespace_qualifiers =
+          std::vector<std::string>())
   {
     Type type;
     type.kind = TK_LAMBDA_CLOSURE;
@@ -905,6 +908,7 @@ struct Type
     type.lambda->context_substitution_slots = context_substitution_slots;
     type.lambda->context_function = context_function;
     type.lambda->source_name = source_name;
+    type.lambda->namespace_qualifiers = namespace_qualifiers;
     type.params = signature_parameter_types;
     type.lambda->discriminator = discriminator;
     return type;
@@ -1452,6 +1456,7 @@ struct FunctionEncoding
     std::vector<SubstitutionSlot> context_substitution_slots;
     std::shared_ptr<FunctionEncoding> context_function;
     std::string source_name;
+    std::vector<std::string> namespace_qualifiers;
     std::vector<Type> signature_parameter_types;
     std::string discriminator;
   };

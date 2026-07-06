@@ -6097,6 +6097,104 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
     };
     const auto try_common_conditional_conversion = [&]() -> bool
     {
+      const auto reference_target_for_conditional_operand =
+          [](const ExprInfo & expr) -> TypePtr
+          {
+            if(!expr.type) {
+              return TypePtr();
+            }
+            if(expr.category == VC_LVALUE) {
+              return make_lvalue_reference_raw(expr.type);
+            }
+            if(expr.category == VC_XVALUE) {
+              return make_rvalue_reference_raw(expr.type);
+            }
+            return TypePtr();
+          };
+      const auto converted_matches_reference_target =
+          [&](const TypePtr & target, const ExprInfo & converted) -> bool
+          {
+            TypePtr target_base = strip_top_level_cv(target);
+            if(!target_base) {
+              return false;
+            }
+            if(target_base->kind == Type::TK_LVALUE_REFERENCE &&
+               converted.category != VC_LVALUE) {
+              return false;
+            }
+            if(target_base->kind == Type::TK_RVALUE_REFERENCE &&
+               converted.category != VC_XVALUE) {
+              return false;
+            }
+            TypePtr target_object = remove_reference_type(target_base);
+            return target_object &&
+                   same_type_with_compatible_conditional_top_cv(
+                       target_object,
+                       converted.type);
+          };
+      const auto try_reference_conditional_conversion = [&]() -> bool
+      {
+        const bool class_operand =
+            complete_class_type_for_lookup(ctx, then_type) ||
+            complete_class_type_for_lookup(ctx, else_type);
+        if(!class_operand) {
+          return false;
+        }
+
+        TypePtr then_reference_target =
+            reference_target_for_conditional_operand(then_expr);
+        TypePtr else_reference_target =
+            reference_target_for_conditional_operand(else_expr);
+        if(!then_reference_target && !else_reference_target) {
+          return false;
+        }
+
+        ExprInfo converted_then;
+        ExprInfo converted_else;
+        ConversionRank then_to_else_rank = CR_BAD;
+        ConversionRank else_to_then_rank = CR_BAD;
+        const bool then_to_else =
+            else_reference_target &&
+            ctx.try_argument_conversion(
+                scope,
+                else_reference_target,
+                then_expr,
+                converted_then,
+                then_to_else_rank,
+                semantic_policy::default_argument_conversion()) &&
+            converted_matches_reference_target(else_reference_target,
+                                               converted_then);
+        const bool else_to_then =
+            then_reference_target &&
+            ctx.try_argument_conversion(
+                scope,
+                then_reference_target,
+                else_expr,
+                converted_else,
+                else_to_then_rank,
+                semantic_policy::default_argument_conversion()) &&
+            converted_matches_reference_target(then_reference_target,
+                                               converted_else);
+        if(then_to_else &&
+           (!else_to_then || then_to_else_rank < else_to_then_rank)) {
+          then_expr = converted_then;
+          result.type = remove_reference_type(else_reference_target);
+          result.category = else_expr.category;
+          return result.type != nullptr;
+        }
+        if(else_to_then &&
+           (!then_to_else || else_to_then_rank < then_to_else_rank)) {
+          else_expr = converted_else;
+          result.type = remove_reference_type(then_reference_target);
+          result.category = then_expr.category;
+          return result.type != nullptr;
+        }
+        return false;
+      };
+      if(try_reference_conditional_conversion()) {
+        return true;
+      }
+
       ExprInfo converted_then;
       ExprInfo converted_else;
       ConversionRank then_to_else_rank = CR_BAD;
@@ -6173,7 +6271,9 @@ ExprInfo analyze_conditional_expression(SemanticContext & ctx,
     } else if(!try_common_conditional_conversion()) {
       throw logic_error("unsupported conditional operands");
     }
-    result.category = VC_PRVALUE;
+    if(result.category != VC_LVALUE && result.category != VC_XVALUE) {
+      result.category = VC_PRVALUE;
+    }
   }
   if(condition_known) {
     ExprInfo & selected_expr =

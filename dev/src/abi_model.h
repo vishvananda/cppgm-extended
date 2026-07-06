@@ -53,6 +53,7 @@ inline bool make_lambda_closure_substitution_key(
     const std::string & context_fragment,
     const std::shared_ptr<FunctionEncoding> & context_function,
     const std::string & source_name,
+    const std::vector<std::string> & namespace_qualifiers,
     const std::vector<Type> & signature_parameter_types,
     const std::string & discriminator,
     SubstitutionKey & out)
@@ -66,6 +67,13 @@ inline bool make_lambda_closure_substitution_key(
       return false;
     }
     context_key = std::string("function:") + encoded_context;
+  }
+  if(context_key.empty() && !source_name.empty()) {
+    context_key = "namespace";
+    for(std::size_t i = 0; i < namespace_qualifiers.size(); ++i) {
+      context_key += "::";
+      context_key += namespace_qualifiers[i];
+    }
   }
   if(context_key.empty()) {
     return false;
@@ -315,6 +323,7 @@ inline bool make_type_substitution_key(const Type & type, SubstitutionKey & out)
         type.lambda->context_fragment,
         type.lambda->context_function,
         type.lambda->source_name,
+        type.lambda->namespace_qualifiers,
         type.params,
         type.lambda->discriminator,
         out);
@@ -971,6 +980,8 @@ inline bool emit_type_as_member_expression_owner_prefix_body(
     std::string & out,
     SubstitutionSink * sink);
 inline bool emit_source_name(const std::string & name, std::string & out);
+inline bool emit_source_name_sequence(const std::vector<std::string> & names,
+                                      std::string & out);
 inline bool emit_function_operator_terminal(
     FunctionOperatorTerminal terminal,
     const std::string & literal_suffix,
@@ -2328,10 +2339,24 @@ inline bool emit_type_body(const Type & type, std::string & out, SubstitutionSin
     return true;
 
   case Type::TK_LAMBDA_CLOSURE:
-    if(!type.lambda ||
-       (type.lambda->context_fragment.empty() &&
-        !type.lambda->context_function)) {
+    if(!type.lambda) {
       return false;
+    }
+    if(type.lambda->context_fragment.empty() &&
+       !type.lambda->context_function) {
+      if(type.lambda->source_name.empty()) {
+        return false;
+      }
+      if(!type.lambda->namespace_qualifiers.empty()) {
+        out += 'N';
+        if(!emit_source_name_sequence(type.lambda->namespace_qualifiers, out) ||
+           !emit_source_name(type.lambda->source_name, out)) {
+          return false;
+        }
+        out += 'E';
+        return true;
+      }
+      return emit_source_name(type.lambda->source_name, out);
     }
     if(!emit_local_entity_context_fragment(type.lambda->context_fragment,
                                            type.lambda->context_substitution_slots,
@@ -2513,10 +2538,24 @@ inline bool emit_type_body_owned(Type & type, std::string & out, SubstitutionSin
     return true;
 
   case Type::TK_LAMBDA_CLOSURE:
-    if(!type.lambda ||
-       (type.lambda->context_fragment.empty() &&
-        !type.lambda->context_function)) {
+    if(!type.lambda) {
       return false;
+    }
+    if(type.lambda->context_fragment.empty() &&
+       !type.lambda->context_function) {
+      if(type.lambda->source_name.empty()) {
+        return false;
+      }
+      if(!type.lambda->namespace_qualifiers.empty()) {
+        out += 'N';
+        if(!emit_source_name_sequence(type.lambda->namespace_qualifiers, out) ||
+           !emit_source_name(type.lambda->source_name, out)) {
+          return false;
+        }
+        out += 'E';
+        return true;
+      }
+      return emit_source_name(type.lambda->source_name, out);
     }
     if(!emit_local_entity_context_fragment(type.lambda->context_fragment,
                                            type.lambda->context_substitution_slots,
@@ -3747,6 +3786,17 @@ inline bool emit_function_name_component(const FunctionNameComponent & component
   return true;
 }
 
+inline bool emit_source_name_sequence(const std::vector<std::string> & names,
+                                      std::string & out)
+{
+  for(std::size_t i = 0; i < names.size(); ++i) {
+    if(!emit_source_name(names[i], out)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 inline bool emit_function_name_prefix_components(
     const std::vector<FunctionNameComponent> & components,
     std::string & out,
@@ -3777,15 +3827,19 @@ inline bool emit_function_name(const FunctionEncoding & function,
 {
   if(function.lambda) {
     const FunctionEncoding::LambdaMetadata & lambda = *function.lambda;
-    if(lambda.context_fragment.empty() && !lambda.context_function) {
+    const bool has_local_context =
+        !lambda.context_fragment.empty() || lambda.context_function;
+    if(!has_local_context && lambda.source_name.empty()) {
       return false;
     }
-    if(!emit_local_entity_context_fragment(lambda.context_fragment,
-                                           lambda.context_substitution_slots,
-                                           lambda.context_function,
-                                           out,
-                                           sink)) {
-      return false;
+    if(has_local_context) {
+      if(!emit_local_entity_context_fragment(lambda.context_fragment,
+                                             lambda.context_substitution_slots,
+                                             lambda.context_function,
+                                             out,
+                                             sink)) {
+        return false;
+      }
     }
     out += 'N';
     if(function.nested_const) {
@@ -3800,6 +3854,10 @@ inline bool emit_function_name(const FunctionEncoding & function,
       out += 'O';
     }
     if(!lambda.source_name.empty()) {
+      if(!has_local_context &&
+         !emit_source_name_sequence(lambda.namespace_qualifiers, out)) {
+        return false;
+      }
       if(!emit_source_name(lambda.source_name, out)) {
         return false;
       }
@@ -3827,6 +3885,7 @@ inline bool emit_function_name(const FunctionEncoding & function,
       if(!make_lambda_closure_substitution_key(lambda.context_fragment,
                                                lambda.context_function,
                                                lambda.source_name,
+                                               lambda.namespace_qualifiers,
                                                lambda.signature_parameter_types,
                                                lambda.discriminator,
                                                lambda_key)) {

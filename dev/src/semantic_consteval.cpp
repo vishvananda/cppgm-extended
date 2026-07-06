@@ -987,6 +987,99 @@ bool append_default_arguments(SemanticContext & ctx,
   return true;
 }
 
+void set_constexpr_parameter_value(ValueBinding & binding,
+                                   const constant_eval::ConstexprValue & value)
+{
+  set_value_binding_constexpr_value(binding, value);
+  binding.has_constant_value = false;
+  binding.constant_value = 0;
+  long long integral = 0;
+  if(constant_eval::constexpr_value_to_integral(value, integral)) {
+    binding.has_constant_value = true;
+    binding.constant_value = integral;
+  }
+}
+
+void bind_constexpr_function_argument_values(FunctionBinding & binding,
+                                             Scope & scope,
+                                             std::size_t explicit_param_offset,
+                                             const std::vector<constant_eval::ConstexprValue> & args)
+{
+  const std::vector<std::pair<std::string, TypePtr> > params =
+      constexpr_function_parameters_impl(binding);
+  for(std::size_t i = 0; i < args.size(); ++i) {
+    const std::size_t param_index = explicit_param_offset + i;
+    if(param_index >= params.size()) {
+      break;
+    }
+
+    constant_eval::ConstexprValue value = args[i];
+    if(params[param_index].second) {
+      constant_eval::ConstexprValue converted;
+      if(constant_eval::constexpr_value_cast(value,
+                                             params[param_index].second,
+                                             converted)) {
+        value = converted;
+      }
+    }
+
+    const std::string & binding_name = params[param_index].first;
+    if(!binding_name.empty()) {
+      std::map<std::string, ValueBinding>::iterator found =
+          scope.values.find(binding_name);
+      if(found != scope.values.end()) {
+        set_constexpr_parameter_value(found->second, value);
+      }
+    }
+
+    const std::string alias_name =
+        function_parameter_alias_name(binding, param_index);
+    if(!alias_name.empty() && alias_name != binding_name) {
+      std::map<std::string, ValueBinding>::iterator found =
+          scope.values.find(alias_name);
+      if(found != scope.values.end()) {
+        set_constexpr_parameter_value(found->second, value);
+      }
+    }
+  }
+}
+
+bool retarget_constexpr_aggregate_from_semantic_type(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & source_node,
+    const TypePtr & target,
+    const constant_eval::ConstexprValue & value,
+    constant_eval::ConstexprValue & out)
+{
+  if(value.kind != constant_eval::ConstexprValue::CV_AGGREGATE) {
+    return false;
+  }
+  TypePtr target_base = strip_top_level_cv(remove_reference_type(target));
+  if(!target_base) {
+    return false;
+  }
+
+  ExprInfo source_expr;
+  try
+  {
+    source_expr = ctx.analyze_expression(scope, source_node);
+  }
+  catch(const std::logic_error &)
+  {
+    return false;
+  }
+
+  TypePtr source_type = strip_top_level_cv(remove_reference_type(source_expr.type));
+  if(!source_type || !type_equals(source_type, target_base)) {
+    return false;
+  }
+
+  out = value;
+  out.type = target;
+  return true;
+}
+
 bool evaluate_constexpr_constructor(SemanticContext & ctx,
                                     Scope & scope,
                                     constant_eval::Evaluator & evaluator,
@@ -1002,7 +1095,16 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
       explicit_args.empty() &&
       (binding.is_defaulted || binding.synthesized) &&
       !binding.is_deleted;
-  if((!binding.is_constexpr && !zero_arg_default_constructor) || !binding.owner_class) {
+  const bool implicit_constexpr_copy_or_move_constructor =
+      binding.is_constructor &&
+      (binding.is_copy_constructor || binding.is_move_constructor) &&
+      explicit_args.size() == 1 &&
+      (binding.is_defaulted || binding.synthesized) &&
+      !binding.is_deleted;
+  if((!binding.is_constexpr &&
+      !zero_arg_default_constructor &&
+      !implicit_constexpr_copy_or_move_constructor) ||
+     !binding.owner_class) {
     return false;
   }
   ClassInfo * info = binding.owner_class;
@@ -1023,30 +1125,30 @@ bool evaluate_constexpr_constructor(SemanticContext & ctx,
   if(args.size() + 1 != binding.params.size()) {
     return false;
   }
+  if(implicit_constexpr_copy_or_move_constructor) {
+    TypePtr result_type = target ? target : info->type;
+    if(constant_eval::constexpr_value_cast(args[0], result_type, out)) {
+      return true;
+    }
+    return false;
+  }
 
   Scope & ctor_scope = binding.declaration_scope ? *binding.declaration_scope : scope;
   Scope constexpr_ctor_scope = make_constexpr_call_scope(ctor_scope, &binding);
+  bind_constexpr_function_argument_values(binding, constexpr_ctor_scope, 1, args);
   const constant_eval::Hooks ctor_hooks = build_hooks(ctx, constexpr_ctor_scope);
   const auto evaluate_ctor_initializer =
       [&](const CppAstNode & init_node,
           const TypePtr & init_type,
           constant_eval::ConstexprValue & value) -> bool
       {
-        CppAstNode body;
-        body.kind = CppAstKind::compound_statement;
-        CppAstNode ret;
-        ret.kind = CppAstKind::return_statement;
-        ret.children.push_back(init_node);
-        body.children.push_back(ret);
-
-        constant_eval::FunctionInfo info;
-        info.name = binding.name;
-        info.return_type = init_type;
-        info.params.assign(binding.params.begin() + 1, binding.params.end());
-        info.body = &body;
-
-        constant_eval::Evaluator call_evaluator(ctor_hooks);
-        return call_evaluator.call(info, args, value, &ctor_hooks);
+        constant_eval::Evaluator init_evaluator(ctor_hooks);
+        return evaluate_typed_initializer_value(ctx,
+                                                constexpr_ctor_scope,
+                                                init_evaluator,
+                                                init_node,
+                                                init_type,
+                                                value);
       };
 
   std::vector<std::pair<std::string, constant_eval::ConstexprValue> > members;
@@ -1217,10 +1319,17 @@ bool evaluate_class_typed_initializer(SemanticContext & ctx,
   std::vector<constant_eval::ConstexprValue> evaluated_args;
   if(args.size() == 1) {
     constant_eval::ConstexprValue direct_value;
-    if(eval_initializer_or_soft_fail(evaluator, *args[0], direct_value) &&
-       constant_eval::constexpr_value_cast(direct_value, target, out)) {
-      out.type = target;
-      return true;
+    if(eval_initializer_or_soft_fail(evaluator, *args[0], direct_value)) {
+      if(constant_eval::constexpr_value_cast(direct_value, target, out) ||
+         retarget_constexpr_aggregate_from_semantic_type(ctx,
+                                                        scope,
+                                                        *args[0],
+                                                        target,
+                                                        direct_value,
+                                                        out)) {
+        out.type = target;
+        return true;
+      }
     }
   }
   const ConstructorSelectionOptions ctor_options =

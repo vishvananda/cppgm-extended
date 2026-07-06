@@ -10655,13 +10655,27 @@ static const Type::LambdaMangleMetadata * named_type_lambda_mangle_metadata(
 {
   if(!type ||
      type->kind != Type::TK_NAMED ||
-     !type->named_lambda_mangle ||
-     !type->named_lambda_mangle->context_function_type ||
-     !type->named_lambda_mangle->context_function_symbol_options ||
-     type->named_lambda_mangle->context_function_qualified_name.name.empty()) {
+     !type->named_lambda_mangle) {
     return nullptr;
   }
-  return type->named_lambda_mangle.get();
+  const Type::LambdaMangleMetadata * metadata =
+      type->named_lambda_mangle.get();
+  const bool function_context =
+      metadata->context_function_type &&
+      metadata->context_function_symbol_options &&
+      !metadata->context_function_qualified_name.name.empty();
+  const bool namespace_context =
+      !metadata->local_source_name.empty() &&
+      !function_context;
+  return function_context || namespace_context ? metadata : nullptr;
+}
+
+static bool lambda_metadata_has_function_context(
+    const Type::LambdaMangleMetadata & metadata)
+{
+  return metadata.context_function_type &&
+         metadata.context_function_symbol_options &&
+         !metadata.context_function_qualified_name.name.empty();
 }
 
 static bool itanium_lambda_context_options_from_type(
@@ -10670,7 +10684,7 @@ static bool itanium_lambda_context_options_from_type(
 {
   const Type::LambdaMangleMetadata * metadata =
       named_type_lambda_mangle_metadata(type);
-  if(!metadata) {
+  if(!metadata || !lambda_metadata_has_function_context(*metadata)) {
     return false;
   }
   shared_ptr<FunctionSymbolOptions> context_options =
@@ -10810,6 +10824,27 @@ static bool initialize_local_entity_function_metadata(
     const TypeMangleContext * signature_mangle_ctx,
     abi_mangle::FunctionEncoding & function)
 {
+  const Type::LambdaMangleMetadata * metadata =
+      named_type_lambda_mangle_metadata(local_entity_type);
+  if(!metadata) {
+    return false;
+  }
+  if(!lambda_metadata_has_function_context(*metadata)) {
+    if(metadata->local_source_name.empty()) {
+      return false;
+    }
+    abi_mangle::FunctionEncoding::LambdaMetadata & lambda =
+        abi_mangle::FunctionEncoding::ensure_lambda_metadata(function);
+    lambda.context_fragment.clear();
+    lambda.context_substitution_slots.clear();
+    lambda.context_function.reset();
+    lambda.source_name = metadata->local_source_name;
+    lambda.namespace_qualifiers = metadata->namespace_qualifiers;
+    lambda.signature_parameter_types.clear();
+    lambda.discriminator = metadata->discriminator;
+    return true;
+  }
+
   string context_fragment;
   vector<abi_mangle::SubstitutionSlot> context_substitution_slots;
   shared_ptr<abi_mangle::FunctionEncoding> context_function;
@@ -10822,11 +10857,6 @@ static bool initialize_local_entity_function_metadata(
   shared_ptr<FunctionSymbolOptions> context_options;
   if(!itanium_lambda_context_options_from_type(local_entity_type,
                                               context_options)) {
-    return false;
-  }
-  const Type::LambdaMangleMetadata * metadata =
-      named_type_lambda_mangle_metadata(local_entity_type);
-  if(!metadata) {
     return false;
   }
 
@@ -10847,6 +10877,7 @@ static bool initialize_local_entity_function_metadata(
   lambda.context_substitution_slots = context_substitution_slots;
   lambda.context_function = context_function;
   lambda.source_name = source_name;
+  lambda.namespace_qualifiers.clear();
   lambda.signature_parameter_types = signature_parameter_types;
   lambda.discriminator = metadata->discriminator;
   return true;
@@ -10857,6 +10888,27 @@ static bool try_build_itanium_abi_lambda_closure_type_ir(
     const TypeMangleContext * mangle_ctx,
     abi_mangle::Type & out)
 {
+  const Type::LambdaMangleMetadata * metadata =
+      named_type_lambda_mangle_metadata(type);
+  if(!metadata) {
+    return false;
+  }
+  if(!lambda_metadata_has_function_context(*metadata)) {
+    if(metadata->local_source_name.empty()) {
+      return false;
+    }
+    out = abi_mangle::Type::lambda_closure(
+        string(),
+        vector<abi_mangle::SubstitutionSlot>(),
+        shared_ptr<abi_mangle::FunctionEncoding>(),
+        vector<abi_mangle::Type>(),
+        metadata->discriminator,
+        metadata->local_source_name,
+        metadata->namespace_qualifiers);
+    attach_context_free_type_ir_substitution(out);
+    return true;
+  }
+
   shared_ptr<FunctionSymbolOptions> context_options;
   if(!itanium_lambda_context_options_from_type(type, context_options)) {
     return false;
@@ -10873,11 +10925,6 @@ static bool try_build_itanium_abi_lambda_closure_type_ir(
   }
 
   vector<abi_mangle::Type> parameter_types;
-  const Type::LambdaMangleMetadata * metadata =
-      named_type_lambda_mangle_metadata(type);
-  if(!metadata) {
-    return false;
-  }
   const string source_name =
       local_entity_source_name(*metadata, *context_options);
   if(source_name.empty() &&
@@ -10893,7 +10940,8 @@ static bool try_build_itanium_abi_lambda_closure_type_ir(
       context_function,
       parameter_types,
       metadata->discriminator,
-      source_name);
+      source_name,
+      vector<string>());
   attach_context_free_type_ir_substitution(out);
   return true;
 }

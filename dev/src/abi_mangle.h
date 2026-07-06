@@ -47,7 +47,8 @@ enum AbiTypeKind
   ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION,
   ABI_TYPE_DECLTYPE_EXPRESSION,
   ABI_TYPE_LAMBDA_CLOSURE,
-  ABI_TYPE_LOCAL_TYPE
+  ABI_TYPE_LOCAL_TYPE,
+  ABI_TYPE_NAMESPACE_LAMBDA
 };
 
 enum AbiArrayBoundKind
@@ -127,7 +128,8 @@ enum AbiFunctionTargetKind
   ABI_FUNCTION_TARGET_PATH,
   ABI_FUNCTION_TARGET_ENCODING,
   ABI_FUNCTION_TARGET_LAMBDA,
-  ABI_FUNCTION_TARGET_LOCAL
+  ABI_FUNCTION_TARGET_LOCAL,
+  ABI_FUNCTION_TARGET_NAMESPACE_LAMBDA
 };
 
 enum AbiFunctionPathOperandKind
@@ -147,6 +149,7 @@ enum AbiFunctionRecordKind
   ABI_FUNCTION_RECORD_FUNCTION_TEMPLATE_PREFIX,
   ABI_FUNCTION_RECORD_LOCAL_CONTEXT,
   ABI_FUNCTION_RECORD_LAMBDA_CONTEXT,
+  ABI_FUNCTION_RECORD_NAMESPACE_LAMBDA_CONTEXT,
   ABI_FUNCTION_RECORD_TERMINAL_SOURCE,
   ABI_FUNCTION_RECORD_TERMINAL,
   ABI_FUNCTION_RECORD_VARIADIC,
@@ -192,6 +195,7 @@ struct AbiType
   bool standard_substitution_includes_arguments = false;
   std::vector<AbiType> types;
   std::vector<std::string> argument_refs;
+  std::vector<std::string> namespace_qualifiers;
 };
 
 struct AbiTemplateArgument
@@ -252,6 +256,7 @@ struct AbiFunctionTarget
   std::string terminal;
   std::vector<AbiFunctionPathOperand> path_operands;
   std::vector<AbiType> signature_parameter_types;
+  std::vector<std::string> namespace_qualifiers;
 };
 
 struct AbiLocalContext
@@ -310,6 +315,7 @@ struct AbiFunctionRecord
   AbiType type;
   std::vector<AbiType> types;
   std::vector<std::string> argument_refs;
+  std::vector<std::string> namespace_qualifiers;
   std::vector<AbiFunctionQualifier> qualifiers;
 };
 

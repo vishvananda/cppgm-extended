@@ -3956,3 +3956,46 @@ Perf gate against a clean detached `da2d8e82b` worktree passed:
 instructions `-0.02%`, max RSS `-0.77%`, footprint `+0.04%`; baseline
 `/tmp/cppgm-perf-baseline-da2d8e82b-tt-collision-20260706.json`, report
 `/tmp/cppgm-perf-report-tt-collision-20260706.json`.
+
+2026-07-06 Boost.HOF static lambda frontier: direct HOF header and source
+probes exposed three adjacent typed frontend issues before the HOF test harness
+registration surface. Namespace-scope lambda closure names were carried as
+source-like `$` spellings but not as typed ABI lambda metadata, so Itanium
+symbol linkage could not route the closure type and `operator()` name through
+the `abi_mangle` backend. Boost.HOF's `unpack(BOOST_HOF_STATIC_LAMBDA(...))`
+then exposed constexpr construction of an adaptor base subobject from a
+constructor parameter via a synthesized copy/move constructor. Finally,
+`BOOST_HOF_STATIC_LAMBDA_FUNCTION` exposed a conditional expression whose left
+operand uses a conversion-function template returning `const F&` and whose
+right operand returns `const wrapper<F>&`, with the result bound to
+`static constexpr auto&`. The fixes add typed namespace-lambda metadata through
+`symbol_linkage` into `abi_mangle`, evaluate constexpr constructor
+member-initializers in a parameter-bound constexpr scope, preserve reference
+targets for conversion-function-template deduction while retaining the old
+stripped-object fallback, and keep the conditional result's reference value
+category when one branch converts to the other branch's reference target. No
+source-text parsing or fallback text resolver was added. Owners: PA30 ABI
+lambda mangling, PA20 constexpr object construction, and PA22
+conversion-function-template deduction/reference conditional behavior. New
+regressions:
+`pa30/tests/abi/200-namespace-lambda-closure.t`,
+`pa20/tests/general/300-constexpr-base-copy-constructor-init.t`, and
+`pa22/tests/spec/500-conversion-function-template-reference-conditional-auto-ref.t`.
+Validation: namespace-lambda mangling is covered by direct `abimangle` facts and
+the PA30 check; the HOF no-STL reducers
+`scratch/hof_static_lambda_function_ref_probe.cpp`,
+`scratch/hof_constexpr_direct_base_copy_probe.cpp`, and
+`scratch/hof_constexpr_adaptor_inherit_probe.cpp` compile with `dev/cppgm++`;
+the Boost.HOF header probe `scratch/hof_unpack_static_lambda_probe.cpp` compiles
+with Boost 1.91 headers; direct Boost.HOF `lambda.cpp`, `unpack.cpp`, and
+`static.cpp` now advance past the static-lambda frontiers and stop only at the
+shared `boost::hof::test::test_cases` harness object. Boost.Build
+`libs/hof/test` remains config-gated on this toolset because
+`cxx11_constexpr` probes as `no`, so B2 finds only one target. Focused PA20,
+PA22, and PA30 checks pass; the combined direct-LowIR report for
+`pa20 pa22 pa30` passes `353/353`; strict direct-LowIR checks pass; full
+direct-LowIR `test-report` passes `3519/3519`; text-reparse audit reports all
+zero; `git diff --check` passes. Perf gate against
+`/tmp/cppgm-perf-baseline-da2d8e82b-tt-collision-20260706.json` passes:
+instructions `+0.26%`, max RSS `-0.44%`, footprint `+0.07%`; report
+`/tmp/cppgm-perf-report-hof-namespace-lambda-constexpr-ref-20260706.json`.

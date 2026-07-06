@@ -154,6 +154,15 @@ the function-template prefix is substitutable; local entities use
 `local-context ...` or `lambda-context ...` followed by the same terminal,
 qualifier, result, and parameter lines as ordinary functions.
 
+Namespace-scope lambda closure types use
+`type namespace-lambda <source-name> [namespace-qualifier...]`. Their call
+operators may be written either as
+`function namespace-lambda <source-name> <terminal> [namespace-qualifier...]`
+or, in a `function encoding` case, as
+`namespace-lambda-context <source-name> [namespace-qualifier...]` followed by
+ordinary terminal, qualifier, result, and parameter lines. The source name is
+the ABI source-name component, such as `$_0`.
+
 `operator-terminal <name>` names the C++ operator semantically. Supported names
 include `plus`, `minus`, `address-of`, `deref`, `new`, `new-array`,
 `delete`, `delete-array`, `multiply`, `divide`, `remainder`, `bit-or`,
@@ -196,8 +205,8 @@ situations:
 
 - `100-*`: basic functions, variables, named types, builtin types, pointers,
   arrays, member pointers, typeinfo, vtables, VTTs, and variadic forms
-- `200-*`: ABI tags, local entities, lambdas, operators, conversion terminals,
-  TLS wrappers, and thunks
+- `200-*`: ABI tags, local entities, local and namespace-scope lambdas,
+  operators, conversion terminals, TLS wrappers, and thunks
 - `300-*`: entity-valued template arguments, template-template arguments,
   standard substitutions, construction vtables, and dependent integral values
 - `400-*`: dependent aliases and dependent member/owner types

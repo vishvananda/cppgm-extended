@@ -87,6 +87,7 @@ struct Type
     TypePtr context_function_type;
     std::shared_ptr<void> context_function_symbol_options;
     std::vector<TypePtr> signature_parameter_types;
+    std::vector<std::string> namespace_qualifiers;
     std::string discriminator;
     std::string local_source_name;
   };

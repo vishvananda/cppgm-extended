@@ -28220,6 +28220,46 @@ private:
     return out.str();
   }
 
+  string namespace_lambda_source_name_count_key(Scope & scope) const
+  {
+    const Scope * owner = &scope;
+    while(owner && !owner->namespace_scope && owner->parent) {
+      owner = owner->parent;
+    }
+    ostringstream out;
+    out << "namespace-lambda@";
+    out << (owner ? scope_fragment_parse_fingerprint(*owner) : 0);
+    return out.str();
+  }
+
+  string next_namespace_lambda_source_name(Scope & scope)
+  {
+    size_t & count =
+        lambda_itanium_signature_counts[namespace_lambda_source_name_count_key(scope)];
+    ostringstream out;
+    out << "$_" << count++;
+    return out.str();
+  }
+
+  void assign_namespace_lambda_itanium_metadata(ClassInfo & info,
+                                                Scope & scope)
+  {
+    if(!info.type || info.type->kind != Type::TK_NAMED) {
+      return;
+    }
+
+    const string source_name = next_namespace_lambda_source_name(scope);
+    const QualifiedName qualified_name_syntax =
+        semantic_lookup::scope_symbol_qualified_name_syntax(scope, source_name);
+    info.symbol_qualified_name_syntax = qualified_name_syntax;
+
+    shared_ptr<Type::LambdaMangleMetadata> metadata(
+        new Type::LambdaMangleMetadata);
+    metadata->local_source_name = source_name;
+    metadata->namespace_qualifiers = qualified_name_syntax.qualifiers;
+    info.type->named_lambda_mangle = metadata;
+  }
+
   bool lambda_uses_clang_local_source_name(
       const FunctionBinding & current,
       const FunctionTemplateRegistrationIdentity & template_identity) const
@@ -28236,6 +28276,7 @@ private:
   {
     FunctionBinding * current = current_function_scope(scope);
     if(!current || !current->type) {
+      assign_namespace_lambda_itanium_metadata(info, scope);
       return;
     }
 
