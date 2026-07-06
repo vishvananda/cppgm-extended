@@ -1,0 +1,19 @@
+template<class T>
+struct Box {
+  int out();
+  int in() { return 4; }
+};
+
+template<class T>
+int Box<T>::out()
+{
+  return 1;
+}
+
+extern template struct Box<int>;
+
+int main()
+{
+  Box<int> box;
+  return box.out() == 9 && box.in() == 4 ? 0 : 1;
+}
