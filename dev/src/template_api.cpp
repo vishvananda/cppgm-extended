@@ -2016,43 +2016,19 @@ bool class_suppresses_implicit_instantiation_definition(
   return info && info->suppress_implicit_instantiation_definition;
 }
 
-bool template_parameter_lists_have_same_identity(
-    const std::vector<template_model::TemplateParameterInfo> & left,
-    const std::vector<template_model::TemplateParameterInfo> & right)
+bool function_template_decl_is_member_function_template(
+    const semantic_model::FunctionTemplateDecl & decl)
 {
-  if(left.size() != right.size()) {
-    return false;
-  }
-  for(std::size_t i = 0; i < left.size(); ++i) {
-    if(left[i].kind != right[i].kind ||
-       left[i].name != right[i].name ||
-       left[i].placeholder_key != right[i].placeholder_key ||
-       left[i].parameter_pack != right[i].parameter_pack ||
-       left[i].template_parameter_count != right[i].template_parameter_count) {
-      return false;
-    }
-  }
-  return true;
+  return decl.is_member_function_template &&
+         decl.declaring_scope &&
+         decl.declaring_scope->class_info;
 }
 
 bool function_binding_is_member_function_template(
     const semantic_model::FunctionBinding & binding)
 {
-  if(!binding.source_template ||
-     !binding.source_template->declaring_scope ||
-     !binding.source_template->declaring_scope->class_info) {
-    return false;
-  }
-  const semantic_model::ClassInfo * source_owner =
-      binding.source_template->declaring_scope->class_info;
-  if(source_owner->source_template) {
-    return !template_parameter_lists_have_same_identity(
-        binding.source_template->parameters,
-        source_owner->source_template->parameters);
-  }
-  return !binding.source_template->parameters.empty() ||
-         binding.has_instantiation_arguments ||
-         !binding.template_instantiation_key.empty();
+  return binding.source_template &&
+         function_template_decl_is_member_function_template(*binding.source_template);
 }
 
 bool function_binding_owner_class_suppresses_implicit_instantiation_definition(

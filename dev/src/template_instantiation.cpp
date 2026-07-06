@@ -8052,39 +8052,6 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                !source_decl.definition_declarator &&
                !source_decl.definition_inner;
       };
-  const auto template_parameter_lists_have_same_identity =
-      [](const std::vector<TemplateParameterInfo> & left,
-         const std::vector<TemplateParameterInfo> & right) -> bool
-      {
-        if(left.size() != right.size()) {
-          return false;
-        }
-        for(std::size_t i = 0; i < left.size(); ++i) {
-          if(left[i].kind != right[i].kind ||
-             left[i].name != right[i].name ||
-             left[i].placeholder_key != right[i].placeholder_key ||
-             left[i].parameter_pack != right[i].parameter_pack ||
-             left[i].template_parameter_count != right[i].template_parameter_count) {
-            return false;
-          }
-        }
-        return true;
-      };
-  const auto source_decl_is_member_function_template =
-      [&](FunctionTemplateDecl & source_decl) -> bool
-      {
-        const ClassInfo * source_owner =
-            source_decl.declaring_scope ? source_decl.declaring_scope->class_info : nullptr;
-        if(!source_owner) {
-          return false;
-        }
-        if(source_owner->source_template) {
-          return !template_parameter_lists_have_same_identity(
-              source_decl.parameters,
-              source_owner->source_template->parameters);
-        }
-        return !source_decl.parameters.empty();
-      };
   const auto effective_function_qualifier = [&](FunctionTemplateDecl & source_decl)
       -> const CppAstNode *
   {
@@ -8426,7 +8393,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     const bool source_template_body_bypasses_owner_suppression =
         !found->second->suppress_implicit_instantiation_definition &&
         (template_body_is_in_class_definition(*cache_source_decl) ||
-         source_decl_is_member_function_template(*cache_source_decl));
+         template_api::function_template_decl_is_member_function_template(
+             *cache_source_decl));
     const bool suppressed_by_owner =
         found->second->owner_class &&
         found->second->owner_class->suppress_implicit_instantiation_definition &&
@@ -9281,7 +9249,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       instantiation_owner &&
       instantiation_owner->suppress_implicit_instantiation_definition &&
       !template_body_is_in_class_definition(*source_decl) &&
-      !source_decl_is_member_function_template(*source_decl);
+      !template_api::function_template_decl_is_member_function_template(
+          *source_decl);
   const CppAstNode * instantiated_body =
       (include_body && !source_template_body_suppressed_by_owner) ?
           (explicit_specialization ? body_override : effective_template_body(*source_decl)) :

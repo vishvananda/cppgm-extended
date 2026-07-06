@@ -3471,6 +3471,7 @@ public:
       bool decl_virtual = false;
       bool is_override = false;
       bool is_final = false;
+      bool is_member_function_template = false;
       bool exclude_from_explicit_instantiation = false;
       const CppAstNode * function_qualifier = nullptr;
       bool has_function_qualifier_copy = false;
@@ -3520,6 +3521,8 @@ public:
     candidate_traits.is_constexpr =
         specifiers && decl_spec_contains_token(*specifiers, KW_CONSTEXPR);
     candidate_traits.is_deleted = declaration_has_deleted_definition(inner);
+    candidate_traits.is_member_function_template =
+        (scope.class_info && (method_like_template || special_member_template));
     candidate_traits.exclude_from_explicit_instantiation =
         declaration_marks_exclude_from_explicit_instantiation(&inner);
     candidate_traits.function_qualifier =
@@ -3632,6 +3635,9 @@ public:
       existing->decl_virtual = existing->decl_virtual || candidate_traits.decl_virtual;
       existing->is_override = existing->is_override || candidate_traits.is_override;
       existing->is_final = existing->is_final || candidate_traits.is_final;
+      existing->is_member_function_template =
+          existing->is_member_function_template ||
+          candidate_traits.is_member_function_template;
       existing->exclude_from_explicit_instantiation =
           existing->exclude_from_explicit_instantiation ||
           candidate_traits.exclude_from_explicit_instantiation;
@@ -3700,6 +3706,8 @@ public:
     decl->decl_virtual = candidate_traits.decl_virtual;
     decl->is_override = candidate_traits.is_override;
     decl->is_final = candidate_traits.is_final;
+    decl->is_member_function_template =
+        candidate_traits.is_member_function_template;
     decl->exclude_from_explicit_instantiation =
         candidate_traits.exclude_from_explicit_instantiation;
     decl->inner = &inner;
