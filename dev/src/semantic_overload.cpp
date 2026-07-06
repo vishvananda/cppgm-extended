@@ -7890,6 +7890,49 @@ bool should_use_template_deduction_target_aware_argument_analysis(
   return true;
 }
 
+ExprInfo make_target_parameter_deduction_argument(const TypePtr & parameter_type)
+{
+  ExprInfo arg;
+  TypePtr base = strip_top_level_cv(parameter_type);
+  if(base &&
+     (base->kind == Type::TK_LVALUE_REFERENCE ||
+      base->kind == Type::TK_RVALUE_REFERENCE)) {
+    arg.type = base->inner;
+    arg.category = base->kind == Type::TK_LVALUE_REFERENCE ? VC_LVALUE : VC_XVALUE;
+  } else {
+    arg.type = parameter_type;
+    arg.category = VC_PRVALUE;
+  }
+  arg.node = make_dump_node(CallSemKind::id_expression, "<target-parameter>");
+  return arg;
+}
+
+bool deduce_function_template_from_target_parameter_types(
+    SemanticContext & ctx,
+    FunctionTemplateDecl & decl,
+    Scope & scope,
+    const TypePtr & function_target,
+    semantic_template_function::FunctionTemplateDeduction & out)
+{
+  TypePtr target_base = strip_top_level_cv(function_target);
+  if(!target_base || target_base->kind != Type::TK_FUNCTION) {
+    return false;
+  }
+
+  vector<ExprInfo> args;
+  args.reserve(target_base->params.size());
+  for(size_t i = 0; i < target_base->params.size(); ++i) {
+    args.push_back(make_target_parameter_deduction_argument(target_base->params[i]));
+  }
+  return semantic_template_function::deduce_function_template_from_arguments(
+      ctx,
+      decl,
+      args,
+      &scope,
+      out,
+      &scope);
+}
+
 vector<const CppAstNode *> initializer_argument_nodes(const CppAstNode & node)
 {
   vector<const CppAstNode *> args;
@@ -8409,14 +8452,24 @@ bool resolve_function_id_for_target(SemanticContext & ctx,
       explicit_arguments_ptr = &explicit_arguments;
     }
     semantic_template_function::FunctionTemplateDeduction result;
-    if(!semantic_template_function::deduce_function_template_from_target_type(
-           ctx,
-           *templates[i],
-           function_target,
-           &scope,
-           result,
-           &scope,
-           explicit_arguments_ptr)) {
+    bool deduced =
+        semantic_template_function::deduce_function_template_from_target_type(
+            ctx,
+            *templates[i],
+            function_target,
+            &scope,
+            result,
+            &scope,
+            explicit_arguments_ptr);
+    if(!deduced && !explicit_arguments_ptr) {
+      deduced =
+          deduce_function_template_from_target_parameter_types(ctx,
+                                                              *templates[i],
+                                                              scope,
+                                                              function_target,
+                                                              result);
+    }
+    if(!deduced) {
       continue;
     }
     FunctionBinding * binding = nullptr;
@@ -8712,6 +8765,76 @@ bool collect_overloaded_function_id_argument_options(SemanticContext & ctx,
   return !out.empty();
 }
 
+bool id_expression_names_function_or_template_set(SemanticContext & ctx,
+                                                  Scope & scope,
+                                                  const CppAstNode & id_node)
+{
+  if(id_node.kind != CppAstKind::id_expression ||
+     lookup_id_expression_value_binding_for_call(ctx, scope, id_node)) {
+    return false;
+  }
+
+  const TemplateIdSyntax * template_id = cppast_template_id_syntax(id_node);
+  try {
+    vector<FunctionBinding *> functions =
+        template_id ?
+            ctx.lookup_function_template_id_node(
+                scope,
+                id_node,
+                *template_id,
+                semantic_policy::without_body_instantiation()) :
+            ctx.lookup_functions(scope,
+                                 id_node.value,
+                                 semantic_policy::without_body_instantiation());
+    if(!functions.empty()) {
+      return true;
+    }
+  } catch(const TemplateSubstitutionFailure &) {
+    // A target type may be needed before an explicit function-template-id can
+    // materialize a binding.  The template set lookup below still proves that
+    // this is a function-id argument.
+  }
+
+  vector<FunctionTemplateDecl *> templates;
+  try {
+    if(template_id) {
+      collect_function_templates(ctx, scope, template_id->name, templates);
+    } else {
+      collect_function_templates(ctx, scope, id_node.value, templates);
+    }
+  } catch(const TemplateSubstitutionFailure &) {
+    templates.clear();
+  }
+  return !templates.empty();
+}
+
+bool collect_dependent_overloaded_function_id_placeholder(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & id_node,
+    const TypePtr & target,
+    vector<ExprInfo> & out)
+{
+  if(!target ||
+     !ctx.type_depends_on_template_parameter(target) ||
+     !id_expression_names_function_or_template_set(ctx, scope, id_node)) {
+    return false;
+  }
+
+  static const TypePtr placeholder_type =
+      make_named("<unresolved overloaded function id>",
+                 "__cppgm_unresolved_overloaded_function_id",
+                 true);
+  ExprInfo placeholder;
+  placeholder.type = placeholder_type;
+  placeholder.category = VC_LVALUE;
+  placeholder.node = make_dump_node(CallSemKind::id_expression, id_node.value);
+  set_dump_token(placeholder.node, id_node);
+  out.clear();
+  out.push_back(placeholder);
+  return true;
+}
+
 void append_function_template_call_candidates_impl(
     SemanticContext & ctx,
     Scope & lookup_scope,
@@ -8948,14 +9071,14 @@ void append_function_template_call_candidates_impl(
       const TypePtr target =
           j < templates[i]->params_pattern.size() ? templates[i]->params_pattern[j].second :
                                                     TypePtr();
+      vector<ExprInfo> overload_options;
       try {
-        vector<ExprInfo> overload_options;
         if(arg_nodes[source_arg_index]->kind == CppAstKind::id_expression &&
-                  target_function_type(target) &&
-                  collect_overloaded_function_id_argument_options(ctx,
-                                                                  argument_scope,
-                                                                  *arg_nodes[source_arg_index],
-                                                                  overload_options)) {
+           target_function_type(target) &&
+           collect_overloaded_function_id_argument_options(ctx,
+                                                           argument_scope,
+                                                           *arg_nodes[source_arg_index],
+                                                           overload_options)) {
           arg_options.push_back(overload_options);
           continue;
         }
@@ -8985,6 +9108,16 @@ void append_function_template_call_candidates_impl(
         }
         arg_options.push_back(vector<ExprInfo>(1, arg));
       } catch(const logic_error & e) {
+        if(arg_nodes[source_arg_index]->kind == CppAstKind::id_expression &&
+           collect_dependent_overloaded_function_id_placeholder(
+               ctx,
+               argument_scope,
+               *arg_nodes[source_arg_index],
+               target,
+               overload_options)) {
+          arg_options.push_back(overload_options);
+          continue;
+        }
         args_ok = false;
         arg_error = e.what();
         break;

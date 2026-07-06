@@ -4115,3 +4115,41 @@ headers now compiles successfully. A 5-second sample from the long direct replay
 is recorded at
 `/tmp/cppgm-fastest-interval-map-template-template.sample.txt` and showed broad
 template/semantic and ABI-mangling work rather than a single tight loop.
+
+2026-07-06 Boost.ICL quantifier overloaded-function-id frontier: full ICL B2
+replay then exposed the partial/total interval and ICL quantifier targets. The
+core reduced shape is legal C++11: a function template argument such as
+`is_distinct_equal` is passed through an unqualified lookup path with a using
+directive to a dependent target slot like `typename equality<T>::type *`, then
+the final overloaded function-id resolution must select an `enable_if`
+dependent-return function template against that target function type. Clang
+accepts the PA18 reducer. The fix keeps the implementation typed: function
+template candidate analysis first tries normal argument analysis, then uses a
+typed function/template-set lookup fallback only when a dependent target slot
+cannot analyze an overloaded function-id yet. Target function-id resolution also
+falls back to deduction from the target parameter types, then still requires
+the instantiated binding type to exactly match the target before accepting it.
+No source-text reparsing, Boost-specific lookup rule, or parallel object-symbol
+spelling was added. The selected `FunctionBinding` continues to emit through
+`semantic_output` into `symbol_linkage::make_function_symbol_identity`, which
+routes object names through the typed `abi_mangle` backend; the placeholder
+argument is semantic-only and never owns an emitted symbol. New regression:
+`pa18/tests/general/300-using-directive-overloaded-function-template-arg.t`.
+The PA23 direct-text ref
+`500-constructor-template-default-constraint-previous-param.ref` was refreshed
+for the now-preserved dependent constructor-template parameter symbol; clang's
+C++11 object for the source uses the same dependent function-template-parameter
+shape for the first constructor parameter. Validation: `make -C dev cppgm++`;
+focused PA18 reducer and host Clang C++11 syntax pass; the five broad-report
+regressions found during tightening (PA18 function reference template
+parameter, PA21 parenthesized qualified template functional call, PA23 member
+template cached overload, PA23 constructor default constraint direct-text, and
+PA34 function-reference constructible SFINAE) pass; full direct-LowIR
+`CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ... make test-report-nobuild` passes
+`3525/3525`; `python3 scripts/audit_text_reparse.py` reports all zero; focused
+B2 `libs/icl/test//fastest_partial_interval_quantifier testing.execute=off`
+passes; broader Boost.ICL `libs/icl/test testing.execute=off` updates all 56
+pending targets successfully, including the prior quantifier failures. A sample
+of the long direct quantifier compile is recorded at
+`/tmp/cppgm-boost-icl-quantifier-sample-20260706.txt` and showed broad
+semantic/template work rather than a tight loop.

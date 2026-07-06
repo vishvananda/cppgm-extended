@@ -1,0 +1,47 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    call void @run_check()
+    return i32 0
+}
+function @run_check() -> void [binding=weak, object=_Z9run_checkIiEvv] {
+  slot $a : i32
+
+  block ^entry:
+    store i32 0, $a
+    %t1 = addr @algebra__is_distinct_equal
+    %t2 = unary decay ptr %t1
+    %t3 = addr $a
+    %t4 = addr $a
+    %t5 = addr $a
+    call void @algebra__check_partial(%t2, %t3, %t4, %t5)
+    return void
+}
+function @algebra__is_distinct_equal(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN7algebra17is_distinct_equalIiEENS_9enable_ifIXsr7is_goodIT_EE5valueEbE4typeERKS2_S6_] {
+  slot $__param0 : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %__param1, $__param1
+    return u8 1
+}
+function @algebra__check_partial(%equal : ptr, %a : ptr [pass=reference], %b : ptr [pass=reference], %c : ptr [pass=reference]) -> void [binding=weak, object=_ZN7algebra13check_partialIiiiEEvPNS_8equalityIT_E4typeERKS2_RKT0_RKT1_] {
+  slot $equal : ptr
+  slot $a : ptr
+  slot $b : ptr
+  slot $c : ptr
+
+  block ^entry:
+    store ptr %equal, $equal
+    store ptr %a, $a
+    store ptr %b, $b
+    store ptr %c, $c
+    %t1 = load ptr $equal
+    %t2 = load ptr $a
+    %t3 = load i32 %t2
+    %t4 = load ptr $b
+    %t5 = load i32 %t4
+    %t6 = load ptr $c
+    %t7 = load i32 %t6
+    return void
+}
