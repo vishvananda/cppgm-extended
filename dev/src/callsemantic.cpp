@@ -6104,6 +6104,13 @@ private:
               }
               if(direct_scope.class_info &&
                  direct_scope.class_info->reference_member_collection_in_progress) {
+                TypePtr enclosing =
+                    lookup_enclosing_type_before_reference_placeholder(
+                        direct_scope,
+                        lookup_name);
+                if(enclosing) {
+                  return enclosing;
+                }
                 return make_named(lookup_name,
                                   "dependent alias " +
                                       direct_scope.class_info->qualified_name +
@@ -7523,9 +7530,11 @@ private:
                          !template_argument_semantics::
                              base_specifier_type_lookup_suppresses_inherited_member_lookup(
                                  direct_scope.class_info)) {
+                        const bool class_collection_in_progress =
+                            direct_scope.class_info->full_member_collection_in_progress ||
+                            direct_scope.class_info->reference_member_collection_in_progress;
                         const bool ensure_current_member_references =
-                            !(((direct_scope.class_info->full_member_collection_in_progress ||
-                                direct_scope.class_info->reference_member_collection_in_progress) &&
+                            !((class_collection_in_progress &&
                                direct_scope.class_info->member_scope &&
                                scope_is_within(direct_scope,
                                                direct_scope.class_info->member_scope.get())));
@@ -7555,6 +7564,18 @@ private:
                               semantic_class_model::resolve_instantiated_member_alias_type(
                                   *this, scope, member.type, direct_scope.class_info);
                           return resolved ? resolved : member.type;
+                        }
+                        if(class_collection_in_progress &&
+                           direct_scope.class_info->member_scope &&
+                           scope_is_within(direct_scope,
+                                           direct_scope.class_info->member_scope.get())) {
+                          TypePtr enclosing =
+                              lookup_enclosing_type_before_reference_placeholder(
+                                  direct_scope,
+                                  lookup_name);
+                          if(enclosing) {
+                            return enclosing;
+                          }
                         }
                       }
                       const bool has_lexical_class =

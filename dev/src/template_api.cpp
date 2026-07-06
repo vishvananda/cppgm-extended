@@ -3978,6 +3978,9 @@ void note_template_member_value_instantiation_if_needed(
         (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
     dependency.entity_has_template_identity =
         value_or_owner_has_template_identity(&binding);
+    dependency.public_use_location =
+        normalize_template_witness_source_location(
+            strip_at_prefix(ctx.template_witness_context().public_use_location));
     if(template_argument_semantics::
            collect_template_member_value_dependency_if_active(dependency)) {
       trace_skip("lifecycle-collected");

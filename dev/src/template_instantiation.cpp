@@ -8741,6 +8741,130 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
         std::string(),
         "template-instantiation");
   };
+  const auto cached_binding_has_retained_dependent_parameter =
+      [&](FunctionTemplateDecl & pattern_decl,
+          const FunctionBinding & binding) -> bool
+  {
+    if(template_arguments_are_dependent_for_instantiation(ctx, arguments)) {
+      return false;
+    }
+
+    const std::size_t offset =
+        function_binding_explicit_parameter_offset(binding);
+    TypePtr function_base = strip_top_level_cv(binding.type);
+    if(function_base && function_base->kind == Type::TK_FUNCTION) {
+      for(std::size_t i = offset; i < function_base->params.size(); ++i) {
+        if(template_argument_semantics::type_depends_on_template_parameter(
+               ctx,
+               function_base->params[i])) {
+          return true;
+        }
+      }
+    }
+
+    for(std::size_t i = offset; i < binding.params.size(); ++i) {
+      if(template_argument_semantics::type_depends_on_template_parameter(
+             ctx,
+             binding.params[i].second)) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const auto refresh_cached_dependent_parameter_clause =
+      [&](FunctionTemplateDecl & pattern_decl,
+          Scope & refreshed_scope,
+          FunctionBinding & binding) -> void
+  {
+    if(pattern_decl.has_trailing_function_parameter_pack ||
+       !cached_binding_has_retained_dependent_parameter(pattern_decl, binding)) {
+      return;
+    }
+
+    const CppAstNode * parameter_clause =
+        function_template_parameter_clause(pattern_decl);
+    TypePtr function_base = strip_top_level_cv(binding.type);
+    if(!parameter_clause ||
+       !function_base ||
+       function_base->kind != Type::TK_FUNCTION) {
+      return;
+    }
+
+    std::vector<std::pair<std::string, TypePtr> > refreshed_params;
+    std::vector<const CppAstNode *> refreshed_default_args;
+    parse_instantiated_function_template_parameter_clause(
+        ctx,
+        refreshed_scope,
+        pattern_decl.name,
+        *parameter_clause,
+        refreshed_params,
+        refreshed_default_args);
+
+    const std::size_t offset =
+        function_binding_explicit_parameter_offset(binding);
+    if(binding.params.size() != offset + refreshed_params.size() ||
+       function_base->params.size() != offset + refreshed_params.size()) {
+      return;
+    }
+
+    std::vector<std::pair<std::string, TypePtr> > rebuilt_params;
+    rebuilt_params.reserve(offset + refreshed_params.size());
+    for(std::size_t i = 0; i < offset; ++i) {
+      rebuilt_params.push_back(binding.params[i]);
+    }
+    rebuilt_params.insert(rebuilt_params.end(),
+                          refreshed_params.begin(),
+                          refreshed_params.end());
+
+    std::vector<TypePtr> rebuilt_param_types;
+    rebuilt_param_types.reserve(offset + refreshed_params.size());
+    for(std::size_t i = 0; i < offset; ++i) {
+      rebuilt_param_types.push_back(function_base->params[i]);
+    }
+    for(std::size_t i = 0; i < refreshed_params.size(); ++i) {
+      rebuilt_param_types.push_back(refreshed_params[i].second);
+    }
+
+    TypePtr refreshed_type =
+        make_function(function_base->inner,
+                      rebuilt_param_types,
+                      function_base->variadic,
+                      function_base->function_const,
+                      function_base->function_volatile,
+                      function_base->prototype_relaxed,
+                      function_base->function_ref_qualifier);
+    if(!refreshed_type) {
+      return;
+    }
+
+    binding.params.swap(rebuilt_params);
+    binding.type = refreshed_type;
+    binding.declared_type = refreshed_type;
+    std::vector<const CppAstNode *> rebuilt_default_args(
+        binding.params.size(),
+        nullptr);
+    for(std::size_t i = 0; i < offset && i < binding.default_arguments.size(); ++i) {
+      rebuilt_default_args[i] = binding.default_arguments[i];
+    }
+    for(std::size_t i = 0; i < refreshed_params.size(); ++i) {
+      rebuilt_default_args[offset + i] =
+          i < refreshed_default_args.size() ? refreshed_default_args[i] : nullptr;
+    }
+    binding.default_arguments.swap(rebuilt_default_args);
+    binding.cached_lookup_dedupe_key_valid = false;
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "function-instantiation-parameter-cache-refresh name="
+            << pattern_decl.name
+            << " key=" << key
+            << " params=";
+      for(std::size_t i = offset; i < binding.params.size(); ++i) {
+        trace << (i == offset ? "" : ",")
+              << describe_type(binding.params[i].second);
+      }
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+  };
   std::map<std::string, FunctionBinding *>::iterator found =
       source_decl->instantiations.find(key);
   const std::map<std::string, std::size_t> * effective_pack_sizes = pack_sizes;
@@ -8947,6 +9071,11 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
        found->second->symbol.linkage == symbol_linkage::SL_WEAK) {
       ctx.upgrade_function_symbol_linkage(found->second,
                                           found->second->symbol.linkage);
+    }
+    if(refreshed_instantiation_scope && !explicit_specialization) {
+      refresh_cached_dependent_parameter_clause(*cache_source_decl,
+                                                *refreshed_instantiation_scope,
+                                                *found->second);
     }
     apply_instantiated_parameter_aliases(
         *found->second,

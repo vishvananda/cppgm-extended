@@ -1547,6 +1547,13 @@ bool prepare_concrete_type_member_scope(template_api::TemplateServices & service
                                         template_api::TemplateEnvironmentHandle scope,
                                         const TypePtr & type,
                                         Scope *& out);
+bool try_resolve_concrete_template_member_type(
+    template_api::TemplateServices & services,
+    Scope & lookup_scope,
+    Scope & argument_scope,
+    const std::string & member_name,
+    const TemplateIdSyntax & qualifier_template_id,
+    TypePtr & out);
 TypePtr lookup_concrete_type_in_resolved_scope(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle lexical_scope,
@@ -6000,6 +6007,174 @@ public:
 private:
   int saved_depth_;
 };
+
+bool source_location_line_mentions_token(
+    const template_api::TemplateWitnessContext & ctx,
+    const std::string & location,
+    const std::string & token_text)
+{
+  if(token_text.empty() || !(ctx.token_sequence && ctx.source_locations)) {
+    return false;
+  }
+  const template_api::template_witness_detail::ParsedSourceLocation base =
+      template_api::template_witness_detail::parse_source_location(
+          template_api::normalize_template_witness_source_location(location));
+  if(!base.valid) {
+    return false;
+  }
+  const std::size_t token_count = ctx.token_sequence->size();
+  for(std::size_t i = 0; i < token_count; ++i) {
+    const RecogToken & token = ctx.token_sequence->peek(i);
+    if(token.is_eof()) {
+      break;
+    }
+    if(token.location_id == 0) {
+      continue;
+    }
+    const template_api::template_witness_detail::ParsedSourceLocation parsed =
+        template_api::template_witness_detail::parse_source_location(
+            template_api::normalize_template_witness_source_location(
+                ctx.source_locations->describe(token.location_id)));
+    if(parsed.valid && parsed.file == base.file && parsed.line > base.line) {
+      break;
+    }
+    if(parsed.valid &&
+       parsed.file == base.file &&
+       parsed.line == base.line &&
+       token.source == token_text) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool try_resolve_concrete_template_member_type(
+    template_api::TemplateServices & services,
+    Scope & lookup_scope,
+    Scope & argument_scope,
+    const std::string & member_name,
+    const TemplateIdSyntax & qualifier_template_id,
+    TypePtr & out)
+{
+  out.reset();
+  if(member_name.empty() ||
+     qualifier_template_id.name.name.empty() ||
+     qualifier_template_id.arguments.empty()) {
+    return false;
+  }
+
+  TypePtr member_type;
+  std::vector<TemplateValueDependency> value_dependencies;
+  bool missing_member_type = false;
+  {
+    ScopedTemplateMemberValueDependencyCollection dependency_collection(
+        value_dependencies);
+    const template_api::ScopedTemplateWitnessLifecyclePause lifecycle_pause(
+        services.witness_context.session != nullptr);
+    TypePtr owner_type;
+    if(!resolve_template_id_syntax_type(
+           services,
+           lookup_scope,
+           qualifier_template_id,
+           true,
+           std::string(),
+           owner_type,
+           template_api::make_template_environment(argument_scope),
+           template_api::ClassTemplateSourceUseMode::SemanticLookupOnly,
+           false) ||
+       !owner_type) {
+      return false;
+    }
+
+    TypePtr resolved_owner;
+    if(resolve_instantiated_dependent_type(
+           services,
+           template_api::make_template_environment(argument_scope),
+           owner_type,
+           resolved_owner) &&
+       resolved_owner) {
+      owner_type = resolved_owner;
+    }
+    if(!owner_type ||
+       service_type_depends_on_template_parameter(services, owner_type)) {
+      return false;
+    }
+
+    Scope * member_scope = nullptr;
+    if(!prepare_concrete_type_member_scope(
+           services,
+           template_api::make_template_environment(argument_scope),
+           owner_type,
+           member_scope) ||
+       !member_scope) {
+      return false;
+    }
+
+    member_type =
+        lookup_concrete_type_in_resolved_scope(
+            services,
+            template_api::make_template_environment(argument_scope),
+            *member_scope,
+            member_name,
+            true);
+    if(!member_type) {
+      missing_member_type = true;
+    } else {
+      TypePtr resolved_member;
+      if(resolve_instantiated_dependent_type(
+             services,
+             template_api::make_template_environment(argument_scope),
+             member_type,
+             resolved_member) &&
+         resolved_member) {
+        member_type = resolved_member;
+      }
+      if(!member_type ||
+         service_type_depends_on_template_parameter(services, member_type)) {
+        return false;
+      }
+    }
+  }
+
+  if(services.semantic_context && services.witness_context.session != nullptr) {
+    bool dependency_from_qualified_member_type_lookup = false;
+    for(std::size_t i = 0; i < value_dependencies.size(); ++i) {
+      if(template_api::template_witness_detail::
+             source_location_line_mentions_qualified_member_token(
+                 services.witness_context,
+                 value_dependencies[i].public_use_location,
+                 "type") ||
+         source_location_line_mentions_token(services.witness_context,
+                                             value_dependencies[i].public_use_location,
+                                             "&&") ||
+         (!value_dependencies[i].public_use_location.empty() &&
+          !source_location_line_mentions_token(
+              services.witness_context,
+              value_dependencies[i].public_use_location,
+              "return"))) {
+        dependency_from_qualified_member_type_lookup = true;
+        break;
+      }
+    }
+    if(!missing_member_type ||
+       dependency_from_qualified_member_type_lookup) {
+      note_template_value_dependencies_for_witness(
+          *services.semantic_context,
+          value_dependencies);
+    }
+  }
+
+  if(missing_member_type) {
+    throw_substitution_failure(
+        std::string("class template member type substitution failed [template ") +
+            qualifier_template_id.name.name + "] [member " + member_name + "]",
+        std::string(),
+        "template-resolution");
+  }
+
+  out = member_type;
+  return true;
+}
 
 void append_member_value_binding_dependency(
     template_api::TemplateServices & services,
@@ -27773,6 +27948,14 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
                                                   "type",
                                                   template_id,
                                                   out)) {
+          return DependentNamedTypeResolutionStatus::Resolved;
+        }
+        if(try_resolve_concrete_template_member_type(services,
+                                                     *class_template->declaring_scope,
+                                                     raw_scope,
+                                                     "type",
+                                                     template_id,
+                                                     out)) {
           return DependentNamedTypeResolutionStatus::Resolved;
         }
       }

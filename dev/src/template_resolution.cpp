@@ -7287,6 +7287,17 @@ std::string template_argument_text_for_matching(template_api::TemplateServices &
                                                 const TemplateArgument & arg)
 {
   template_api::TemplateTypeSystem & type_system = service_type_system(services);
+  if(arg.kind == TemplateArgument::TA_TYPE &&
+     arg.type &&
+     !arg.dependent &&
+     !template_argument_semantics::type_depends_on_template_parameter(
+         type_system, arg.type)) {
+    const std::string canonical =
+        trim_space(type_argument_text_for_deduction(type_system, arg.type));
+    if(!canonical.empty()) {
+      return canonical;
+    }
+  }
   if(arg.kind == TemplateArgument::TA_VALUE &&
      !arg.dependent &&
      arg.type) {
@@ -8580,9 +8591,15 @@ bool template_argument_mentions_function_template_parameter(
     const std::vector<TemplateParameterInfo> & parameters,
     const TemplateArgument & argument)
 {
-  if(argument.kind == TemplateArgument::TA_TYPE && argument.type &&
-     type_mentions_function_template_parameter(ctx, parameters, argument.type)) {
-    return true;
+  if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+    if(type_mentions_function_template_parameter(ctx, parameters, argument.type)) {
+      return true;
+    }
+    if(!argument.dependent &&
+       !template_argument_semantics::type_depends_on_template_parameter(
+           ctx, argument.type)) {
+      return false;
+    }
   }
   return !argument.text.empty() &&
          template_argument_text_mentions_function_template_parameter(
@@ -8600,9 +8617,14 @@ bool dependent_alias_arguments_mention_function_template_parameter(
     return false;
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].type &&
-       type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
-      return true;
+    if(arguments[i].type) {
+      if(type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
+        return true;
+      }
+      if(!template_argument_semantics::type_depends_on_template_parameter(
+             ctx, arguments[i].type)) {
+        continue;
+      }
     }
     if(!arguments[i].text.empty() &&
        template_argument_text_mentions_function_template_parameter(
@@ -8624,9 +8646,14 @@ bool dependent_class_arguments_mention_function_template_parameter(
     return false;
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].type &&
-       type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
-      return true;
+    if(arguments[i].type) {
+      if(type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
+        return true;
+      }
+      if(!template_argument_semantics::type_depends_on_template_parameter(
+             ctx, arguments[i].type)) {
+        continue;
+      }
     }
     if(!arguments[i].text.empty() &&
        template_argument_text_mentions_function_template_parameter(
@@ -8711,9 +8738,15 @@ bool template_argument_mentions_function_template_parameter(
     const std::vector<TemplateParameterInfo> & parameters,
     const TemplateArgument & argument)
 {
-  if(argument.kind == TemplateArgument::TA_TYPE && argument.type &&
-     type_mentions_function_template_parameter(type_system, parameters, argument.type)) {
-    return true;
+  if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+    if(type_mentions_function_template_parameter(type_system, parameters, argument.type)) {
+      return true;
+    }
+    if(!argument.dependent &&
+       !template_argument_semantics::type_depends_on_template_parameter(
+           type_system, argument.type)) {
+      return false;
+    }
   }
   return !argument.text.empty() &&
          template_argument_text_mentions_function_template_parameter(
@@ -8731,10 +8764,15 @@ bool dependent_alias_arguments_mention_function_template_parameter(
     return false;
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].type &&
-       type_mentions_function_template_parameter(
-           type_system, parameters, arguments[i].type)) {
-      return true;
+    if(arguments[i].type) {
+      if(type_mentions_function_template_parameter(
+             type_system, parameters, arguments[i].type)) {
+        return true;
+      }
+      if(!template_argument_semantics::type_depends_on_template_parameter(
+             type_system, arguments[i].type)) {
+        continue;
+      }
     }
     if(!arguments[i].text.empty() &&
        template_argument_text_mentions_function_template_parameter(
@@ -8756,10 +8794,15 @@ bool dependent_class_arguments_mention_function_template_parameter(
     return false;
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].type &&
-       type_mentions_function_template_parameter(
-           type_system, parameters, arguments[i].type)) {
-      return true;
+    if(arguments[i].type) {
+      if(type_mentions_function_template_parameter(
+             type_system, parameters, arguments[i].type)) {
+        return true;
+      }
+      if(!template_argument_semantics::type_depends_on_template_parameter(
+             type_system, arguments[i].type)) {
+        continue;
+      }
     }
     if(!arguments[i].text.empty() &&
        template_argument_text_mentions_function_template_parameter(
@@ -8801,10 +8844,16 @@ bool template_argument_mentions_unbound_function_template_parameter(
     Scope & scope,
     const TemplateArgument & argument)
 {
-  if(argument.kind == TemplateArgument::TA_TYPE && argument.type &&
-     type_mentions_unbound_function_template_parameter(
-         ctx, parameters, scope, argument.type)) {
-    return true;
+  if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+    if(type_mentions_unbound_function_template_parameter(
+           ctx, parameters, scope, argument.type)) {
+      return true;
+    }
+    if(!argument.dependent &&
+       !template_argument_semantics::type_depends_on_template_parameter(
+           ctx, argument.type)) {
+      return false;
+    }
   }
   return !argument.text.empty() &&
          template_argument_text_mentions_unbound_function_template_parameter(
@@ -8823,10 +8872,15 @@ bool dependent_alias_arguments_mention_unbound_function_template_parameter(
     return false;
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].type &&
-       type_mentions_unbound_function_template_parameter(
-           ctx, parameters, scope, arguments[i].type)) {
-      return true;
+    if(arguments[i].type) {
+      if(type_mentions_unbound_function_template_parameter(
+             ctx, parameters, scope, arguments[i].type)) {
+        return true;
+      }
+      if(!template_argument_semantics::type_depends_on_template_parameter(
+             ctx, arguments[i].type)) {
+        continue;
+      }
     }
     if(!arguments[i].text.empty() &&
        template_argument_text_mentions_unbound_function_template_parameter(
@@ -8849,10 +8903,15 @@ bool dependent_class_arguments_mention_unbound_function_template_parameter(
     return false;
   }
   for(std::size_t i = 0; i < arguments.size(); ++i) {
-    if(arguments[i].type &&
-       type_mentions_unbound_function_template_parameter(
-           ctx, parameters, scope, arguments[i].type)) {
-      return true;
+    if(arguments[i].type) {
+      if(type_mentions_unbound_function_template_parameter(
+             ctx, parameters, scope, arguments[i].type)) {
+        return true;
+      }
+      if(!template_argument_semantics::type_depends_on_template_parameter(
+             ctx, arguments[i].type)) {
+        continue;
+      }
     }
     if(!arguments[i].text.empty() &&
        template_argument_text_mentions_unbound_function_template_parameter(
@@ -13096,8 +13155,16 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
       {
         if(!direct_match.parameter ||
            direct_match.parameter->kind != TemplateParameterInfo::TP_TYPE ||
-           !structured_pattern ||
-           !structured_pattern->source_syntax) {
+           !structured_pattern) {
+          return true;
+        }
+        if(structured_pattern->kind == TemplateArgument::TA_TYPE &&
+           structured_pattern->type &&
+           !structured_pattern->dependent &&
+           !deduction_ops.type_depends(structured_pattern->type)) {
+          return false;
+        }
+        if(!structured_pattern->source_syntax) {
           return true;
         }
         return syntax_is_direct_type_parameter(*structured_pattern->source_syntax,

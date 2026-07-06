@@ -847,6 +847,40 @@ std::string constructor_template_argument_count_drop_reason(const FunctionTempla
                                                        "too_few_arguments";
 }
 
+bool function_template_specialization_retained_dependent_parameter(
+    SemanticContext & ctx,
+    const FunctionBinding & binding,
+    const TypePtr & function_type)
+{
+  if(!binding.source_template ||
+     (!binding.has_instantiation_arguments &&
+      binding.instantiation_arguments.empty()) ||
+     template_api::function_binding_instantiation_arguments_dependent(ctx, binding)) {
+    return false;
+  }
+  if(binding.owner_class &&
+     (binding.owner_class->dependent_instantiation ||
+      ctx.type_depends_on_template_parameter(binding.owner_class->type))) {
+    return false;
+  }
+
+  TypePtr base = strip_top_level_cv(function_type);
+  const std::size_t offset = function_binding_explicit_parameter_offset(binding);
+  if(base && base->kind == Type::TK_FUNCTION) {
+    for(std::size_t i = offset; i < base->params.size(); ++i) {
+      if(ctx.type_depends_on_template_parameter(base->params[i])) {
+        return true;
+      }
+    }
+  }
+  for(std::size_t i = offset; i < binding.params.size(); ++i) {
+    if(ctx.type_depends_on_template_parameter(binding.params[i].second)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 TypePtr collapse_lvalue_reference_type_for_deduction_reason(const TypePtr & inner)
 {
   if(!inner) {
@@ -7860,7 +7894,16 @@ bool should_use_target_aware_argument_analysis(const CppAstNode & node,
      node.kind == CppAstKind::braced_init_list) {
     return true;
   }
-  return node.kind == CppAstKind::id_expression && target_function_type(target);
+  if(!target_function_type(target)) {
+    return false;
+  }
+  if(node.kind == CppAstKind::id_expression) {
+    return true;
+  }
+  return node.kind == CppAstKind::unary_expression &&
+         node_has_simple_type(node, OP_AMP) &&
+         node.children.size() == 1 &&
+         node.children[0].kind == CppAstKind::id_expression;
 }
 
 bool should_use_template_deduction_target_aware_argument_analysis(
@@ -13191,6 +13234,13 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
       TypePtr function_type = strip_top_level_cv(candidate->type);
       if(function_type->kind != Type::TK_FUNCTION) {
         candidate_rejections[i] = "candidate type is not function";
+        continue;
+      }
+      if(function_template_specialization_retained_dependent_parameter(
+             ctx,
+             *candidate,
+             function_type)) {
+        candidate_rejections[i] = "substitution failure";
         continue;
       }
 

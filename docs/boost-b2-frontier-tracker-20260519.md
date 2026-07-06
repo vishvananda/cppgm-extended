@@ -4153,3 +4153,26 @@ pending targets successfully, including the prior quantifier failures. A sample
 of the long direct quantifier compile is recorded at
 `/tmp/cppgm-boost-icl-quantifier-sample-20260706.txt` and showed broad
 semantic/template work rather than a tight loop.
+
+2026-07-06 Boost.Interprocess `string_test` vector-insert frontier: after the
+ICL checkpoint, focused Interprocess replay reached
+`boost::container::vector<int, boost::interprocess::allocator<...>>::insert`,
+where `priv_insert(const const_iterator&, U&&)` was dropped before overload
+binding.  The first parameter was a concrete `vec_iterator<offset_ptr<int,...>>`
+type, but the nested `offset_ptr<int,...>` metadata still carried the original
+member-template rebind text `U`; deduction treated that stale spelling as the
+current `priv_insert` template parameter and bound `U=int`, then rejected the
+real forwarding-reference deduction `U=const int&`.  The fix keeps deduction
+typed: concrete typed template arguments now use canonical `TypePtr` data for
+matching and template-parameter mention checks, while dependent arguments can
+still use source text when that is the only available shape.  No Boost-specific
+rule or source-text reparsing was added. Owner: PA22 function-template deduction
+through concrete alias-rebind arguments. New regression:
+`pa22/tests/general/501-alias-rebind-forwarding-nondependent-param.t`.
+Validation: `/usr/local/opt/llvm/bin/clang++ -x c++ -std=c++11 -fsyntax-only`
+accepts the PA22 reducer; focused PA19, PA22, and PA35 checks pass; Boost
+interprocess reducers for vector<int>, vector<string>, and the earlier string
+`expand_bwd` retained-dependent-parameter case compile with `dev/cppgm++`;
+`python3 scripts/audit_text_reparse.py` reports all zero; full direct LowIR
+`make test-report-nobuild` and strict PA18/PA19/PA21/PA22/PA23 pass; focused B2
+`libs/interprocess/test//string_test testing.execute=off` passes.
