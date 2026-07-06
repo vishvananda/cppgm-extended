@@ -4085,3 +4085,33 @@ Direct Boost replay advances past the old `operator+=` fallback to the next
 frontier: unknown unqualified function
 `test_interval_map_copy_via_inserter` at
 `libs/icl/test/test_interval_map_shared.hpp:1376`.
+
+2026-07-06 Boost.ICL `fastest_interval_map` copy-via-inserter frontier:
+the next direct replay failed at
+`libs/icl/test/test_interval_map_shared.hpp:1376`, where unqualified
+`test_interval_map_copy_via_inserter(seg_vec_a, std_copied_map)` should find
+the Boost.ICL helper through the existing using directive and deduce its
+`IntervalMap` template-template parameter. Lookup was already finding the
+function template; deduction dropped it while matching the explicit
+`IntervalMap<T,U,Traits,less<T>,plus<U>,section<U>,interval<T,less<T>>,allocator>`
+parameter against an `interval_map<T,U,Traits>` object with defaulted trailing
+arguments. The pattern head is itself the template-template parameter, so the
+pattern initially has no source class-template metadata. The fix uses the
+actual class-template parameter list, once the template-template head has
+matched, to resolve each explicit pattern argument into typed
+`TemplateArgument` data before structured comparison. Dependent class-template
+decomposition also now resolves stored template-template parameter arguments
+when the owning source parameter kind is known. No source-text fallback matcher
+or Boost-specific lookup rule was added. Owner: PA22 function-template
+deduction for template-template parameters. New regression:
+`pa22/tests/general/100-function-template-template-defaulted-argument-deduction.t`.
+Validation: `/usr/local/opt/llvm/bin/clang++ -std=c++11 -x c++ -fsyntax-only`
+accepts the PA22 reducer; `dev/cppgm++ -std=c++11 -c` accepts the scratch
+Boost.ICL reducer and the PA22 regression; focused PA22 check passes; combined
+direct-LowIR report for `pa21 pa22 pa35 pa36` passes `570/570`; direct Boost
+replay of
+`libs/icl/test/fastest_interval_map_/fastest_interval_map.cpp` with Boost 1.91
+headers now compiles successfully. A 5-second sample from the long direct replay
+is recorded at
+`/tmp/cppgm-fastest-interval-map-template-template.sample.txt` and showed broad
+template/semantic and ABI-mangling work rather than a single tight loop.

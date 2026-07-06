@@ -7809,6 +7809,19 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
           arg.partial_order_placeholder = true;
           attach_template_argument_source_syntax(&dependent_arg.syntax, arg);
           out.arguments.push_back(arg);
+        } else if(parameter &&
+                  parameter->kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+          TemplateArgument arg;
+          if(template_api::resolve_template_template_argument_text(
+                 services,
+                 template_api::make_template_environment(lookup_scope),
+                 dependent_arg.text,
+                 parameter->template_parameter_count,
+                 true,
+                 arg)) {
+            attach_template_argument_source_syntax(&dependent_arg.syntax, arg);
+            out.arguments.push_back(arg);
+          }
         }
       }
       return true;
@@ -13777,8 +13790,97 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         };
         const std::vector<std::string> & actual_args =
             actual_instantiation.argument_texts;
+        const ClassTemplateDecl * actual_template_decl =
+            actual_instantiation.source_template;
+        const auto parameter_for_explicit_argument_index =
+            [](const std::vector<TemplateParameterInfo> & source_parameters,
+               std::size_t argument_count,
+               std::size_t argument_index) -> const TemplateParameterInfo *
+        {
+          std::size_t current_argument = 0;
+          for(std::size_t param_i = 0;
+              param_i < source_parameters.size();
+              ++param_i) {
+            const TemplateParameterInfo & parameter =
+                source_parameters[param_i];
+            if(parameter.parameter_pack) {
+              std::size_t trailing_non_pack = 0;
+              for(std::size_t j = param_i + 1;
+                  j < source_parameters.size();
+                  ++j) {
+                if(!source_parameters[j].parameter_pack) {
+                  ++trailing_non_pack;
+                }
+              }
+              if(argument_count < current_argument + trailing_non_pack) {
+                return static_cast<const TemplateParameterInfo *>(nullptr);
+              }
+              const std::size_t pack_count =
+                  argument_count - current_argument - trailing_non_pack;
+              if(argument_index >= current_argument &&
+                 argument_index < current_argument + pack_count) {
+                return &parameter;
+              }
+              current_argument += pack_count;
+              continue;
+            }
+
+            if(argument_index == current_argument) {
+              return &parameter;
+            }
+            ++current_argument;
+          }
+          return static_cast<const TemplateParameterInfo *>(nullptr);
+        };
+        const auto resolve_pattern_arguments_from_actual_template =
+            [&](std::vector<TemplateArgument> & out) -> bool
+        {
+          out.clear();
+          if(!parsed_template_template_deduction || !actual_template_decl) {
+            return false;
+          }
+          out.reserve(pattern_args_ptr->size());
+          for(std::size_t arg_i = 0;
+              arg_i < pattern_args_ptr->size();
+              ++arg_i) {
+            const TemplateParameterInfo * parameter =
+                parameter_for_explicit_argument_index(
+                    actual_template_decl->parameters,
+                    pattern_args_ptr->size(),
+                    arg_i);
+            if(!parameter) {
+              out.clear();
+              return false;
+            }
+            TemplateArgument argument;
+            bool resolved = false;
+            try {
+              resolved =
+                  resolve_template_argument_for_deduction(
+                      ctx,
+                      *deduction_scope,
+                      *deduction_scope,
+                      *parameter,
+                      (*pattern_args_ptr)[arg_i],
+                      argument);
+            } catch(const TemplateSubstitutionFailure &) {
+              resolved = false;
+            }
+            if(!resolved) {
+              out.clear();
+              return false;
+            }
+            out.push_back(argument);
+          }
+          return out.size() == pattern_args_ptr->size();
+        };
         std::vector<TemplateArgument> pattern_explicit_structured_args_storage;
+        std::vector<TemplateArgument>
+            pattern_template_template_structured_args_storage;
         const std::vector<TemplateArgument> * pattern_structured_args =
+            resolve_pattern_arguments_from_actual_template(
+                pattern_template_template_structured_args_storage) ?
+                &pattern_template_template_structured_args_storage :
             pattern_instantiation.source_template &&
                     align_explicit_template_arguments(
                         pattern_instantiation.source_template->parameters,
@@ -13805,8 +13907,6 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
                   nullptr;
         }
         const std::vector<std::string> & pattern_args = *pattern_args_ptr;
-        const ClassTemplateDecl * actual_template_decl =
-            actual_instantiation.source_template;
         if(parsed_template_template_deduction) {
           TemplateArgument actual_template_argument;
           actual_template_argument.kind = TemplateArgument::TA_CLASS_TEMPLATE;
