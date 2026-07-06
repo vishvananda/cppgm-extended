@@ -3895,3 +3895,31 @@ Perf gate against a clean detached `HEAD` worktree at `b85324d9b` passed:
 instructions `-0.16%`, max RSS `-0.37%`, footprint `-0.01%`; baseline
 `/tmp/cppgm-perf-baseline-clean-head-b85324d9b-hidden-friend-20260706.json`,
 report `/tmp/cppgm-perf-report-hidden-friend-adl-20260706.json`.
+
+2026-07-06 Boost.Hash2 `sha2_cx` array-reference function-template mangling
+frontier: after the hidden-friend ADL fix, `libs/hash2/test//sha2_cx` failed
+with duplicate weak symbols for the `char const (&)[N]` and
+`unsigned char const (&)[N]` overloads of `test`. The reducer showed both
+function-template specializations emitted `RAT0__Kc`; the unsigned-char
+overload must emit `RAT0__Kh`. The AST-dependent parameter mangling path was
+correctly preserving the dependent array bound `N`, but when it rebuilt the
+decl-specifier sequence it selected the last type child (`char`) and lost the
+preceding `unsigned` specifier. The fix teaches ABI AST decl-specifier
+construction to fold compound fundamental specifier sequences directly before
+falling back to the old last-type-node path. Owner: PA32 source-to-host-object
+symbol spelling via the PA30 ABI layer. New regression:
+`pa32/tests/general/200-function-template-array-ref-fundamental-mangling.t`.
+Validation: the reducer compiles with both Clang and `dev/cppgm++`, and its
+LowIR now contains distinct object symbols ending in `RAT0__Kc` and
+`RAT0__Kh`; focused PA32 check passes; direct-LowIR PA32 report passes
+`82/82`; focused B2 `libs/hash2/test//sha2_cx` passes. Full Hash2 survey is
+mixed only because the next real frontier is `hash_32_64.o` failing on
+`ERROR: unknown function detail::class_template_name<L<T...>>`; `sha2_cx`
+passes in that full survey. Summary:
+`/tmp/boost-suite-survey-hash2-after-array-ref-fundamental-mangle-20260706/summary.md`;
+log:
+`/tmp/boost-suite-survey-hash2-after-array-ref-fundamental-mangle-20260706/libs__hash2__test.log`.
+Perf gate against a clean detached `c423c1f37` worktree passed:
+instructions `+0.25%`, max RSS `-0.45%`, footprint `-0.04%`; baseline
+`/tmp/cppgm-perf-baseline-c423c1f37-array-ref-mangle-20260706.json`, report
+`/tmp/cppgm-perf-report-array-ref-mangle-20260706.json`.

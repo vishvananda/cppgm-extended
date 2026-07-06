@@ -6813,6 +6813,99 @@ static bool build_parameter_declaration_ir_from_ast(
   return build_type_id_ir_from_ast(type_id, actual_type, mangle_ctx, out);
 }
 
+static bool token_or_text_is(const CppAstNode & node, ETokenType token, const char * text)
+{
+  return (node.has_token &&
+          node.token_kind == RT_SIMPLE &&
+          node.simple_type == token) ||
+         trim_space(node.value) == text;
+}
+
+static bool try_build_fundamental_type_specifier_seq_ast_ir(
+    const CppAstNode & node,
+    const TypeMangleContext * mangle_ctx,
+    abi_mangle::Type & out)
+{
+  if(node.kind != CppAstKind::decl_specifier_seq &&
+     node.kind != CppAstKind::type_specifier_seq) {
+    return false;
+  }
+
+  bool cv_const = false;
+  bool cv_volatile = false;
+  int signed_count = 0;
+  int unsigned_count = 0;
+  int short_count = 0;
+  int long_count = 0;
+  bool saw_int = false;
+  bool saw_char = false;
+  bool saw_char16 = false;
+  bool saw_char32 = false;
+  bool saw_wchar = false;
+  bool saw_bool = false;
+  bool saw_float = false;
+  bool saw_double = false;
+  bool saw_void = false;
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    const CppAstNode & child = node.children[i];
+    if(token_or_text_is(child, KW_CONST, "const")) {
+      cv_const = true;
+    } else if(token_or_text_is(child, KW_VOLATILE, "volatile")) {
+      cv_volatile = true;
+    } else if(token_or_text_is(child, KW_SIGNED, "signed")) {
+      ++signed_count;
+    } else if(token_or_text_is(child, KW_UNSIGNED, "unsigned")) {
+      ++unsigned_count;
+    } else if(token_or_text_is(child, KW_SHORT, "short")) {
+      ++short_count;
+    } else if(token_or_text_is(child, KW_LONG, "long")) {
+      ++long_count;
+    } else if(token_or_text_is(child, KW_INT, "int")) {
+      saw_int = true;
+    } else if(token_or_text_is(child, KW_CHAR, "char")) {
+      saw_char = true;
+    } else if(token_or_text_is(child, KW_CHAR16_T, "char16_t")) {
+      saw_char16 = true;
+    } else if(token_or_text_is(child, KW_CHAR32_T, "char32_t")) {
+      saw_char32 = true;
+    } else if(token_or_text_is(child, KW_WCHAR_T, "wchar_t")) {
+      saw_wchar = true;
+    } else if(token_or_text_is(child, KW_BOOL, "bool")) {
+      saw_bool = true;
+    } else if(token_or_text_is(child, KW_FLOAT, "float")) {
+      saw_float = true;
+    } else if(token_or_text_is(child, KW_DOUBLE, "double")) {
+      saw_double = true;
+    } else if(token_or_text_is(child, KW_VOID, "void")) {
+      saw_void = true;
+    } else {
+      return false;
+    }
+  }
+
+  TypePtr fundamental;
+  if(!finalize_fundamental_type_specifiers(signed_count,
+                                           unsigned_count,
+                                           short_count,
+                                           long_count,
+                                           saw_int,
+                                           saw_char,
+                                           saw_char16,
+                                           saw_char32,
+                                           saw_wchar,
+                                           saw_bool,
+                                           saw_float,
+                                           saw_double,
+                                           saw_void,
+                                           fundamental)) {
+    return false;
+  }
+
+  TypePtr typed = apply_cv(fundamental, cv_const, cv_volatile);
+  return try_build_type_ir(typed, mangle_ctx, out);
+}
+
 static bool emit_type_ir_owned(abi_mangle::Type & type,
                                MangleSubstitutionState * state,
                                string & out)
@@ -11242,6 +11335,9 @@ static bool try_build_type_specifier_seq_ast_ir(const CppAstNode & node,
     return true;
   }
   if(try_build_builtin_type_transform_ast_ir(node, mangle_ctx, out)) {
+    return true;
+  }
+  if(try_build_fundamental_type_specifier_seq_ast_ir(node, mangle_ctx, out)) {
     return true;
   }
 
