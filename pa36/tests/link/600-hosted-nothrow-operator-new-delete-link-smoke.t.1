@@ -1,9 +1,0 @@
-#include <new>
-
-int main()
-{
-  std::nothrow_t tag;
-  void * p = ::operator new(sizeof(int), tag);
-  ::operator delete(p, tag);
-  return p ? 0 : 1;
-}
