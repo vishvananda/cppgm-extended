@@ -298,6 +298,12 @@ symbol_linkage::SymbolLinkage expression_variable_symbol_linkage(const ValueBind
   if(binding.is_c_linkage) {
     return symbol_linkage::SL_EXTERNAL;
   }
+  if(binding.owner_class &&
+     (!binding.has_storage_definition ||
+      template_api::value_binding_output_suppressed_by_explicit_instantiation(
+          binding))) {
+    return symbol_linkage::SL_EXTERNAL;
+  }
   if(template_api::value_or_owner_has_template_identity(&binding)) {
     return symbol_linkage::SL_WEAK;
   }
@@ -4415,16 +4421,21 @@ ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
     if(required != binding.owner_class->member_scope->values.end() &&
        required->second.kind == ValueBinding::VK_VARIABLE &&
        required->second.owner_class == binding.owner_class) {
-      add_output_requirement(required->second.output_requirements, ORK_DEFINITION);
-      if(binding.owner_class->definition_output_emitted &&
-         !binding.owner_class->definition_output_in_progress &&
-         !required->second.definition_output_emitted) {
-        binding.owner_class->has_late_required_static_member_output = true;
+      const bool emit_required_static_member_definition =
+          !template_api::value_binding_output_suppressed_by_explicit_instantiation(
+              required->second);
+      if(emit_required_static_member_definition) {
+        add_output_requirement(required->second.output_requirements, ORK_DEFINITION);
+        if(binding.owner_class->definition_output_emitted &&
+           !binding.owner_class->definition_output_in_progress &&
+           !required->second.definition_output_emitted) {
+          binding.owner_class->has_late_required_static_member_output = true;
+        }
+        ctx.track_instantiated_class(binding.owner_class);
+        template_api::note_template_member_value_instantiation_if_needed(
+            ctx,
+            required->second);
       }
-      ctx.track_instantiated_class(binding.owner_class);
-      template_api::note_template_member_value_instantiation_if_needed(
-          ctx,
-          required->second);
     }
   }
 

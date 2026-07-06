@@ -524,6 +524,13 @@ bool class_has_required_member_output(const ClassInfo & info)
   return false;
 }
 
+bool static_member_variable_definition_output_suppressed(
+    const ValueBinding & binding)
+{
+  return template_api::value_binding_output_suppressed_by_explicit_instantiation(
+      binding);
+}
+
 bool class_has_required_static_member_output(const ClassInfo & info)
 {
   if(!info.member_scope) {
@@ -536,6 +543,7 @@ bool class_has_required_static_member_output(const ClassInfo & info)
     if(binding.owner_class == &info &&
        binding.kind == ValueBinding::VK_VARIABLE &&
        !binding.definition_output_emitted &&
+       !static_member_variable_definition_output_suppressed(binding) &&
        has_output_requirement(binding.output_requirements, ORK_DEFINITION)) {
       return true;
     }
@@ -2831,6 +2839,11 @@ symbol_linkage::SymbolLinkage output_variable_symbol_linkage(const ValueBinding 
   if(scope_has_internal_namespace_linkage(binding.declaration_scope)) {
     return symbol_linkage::SL_INTERNAL;
   }
+  if(binding.owner_class &&
+     (!binding.has_storage_definition ||
+      static_member_variable_definition_output_suppressed(binding))) {
+    return symbol_linkage::SL_EXTERNAL;
+  }
   if(template_api::value_or_owner_has_template_identity(&binding)) {
     return symbol_linkage::SL_WEAK;
   }
@@ -2938,6 +2951,7 @@ void analyze_required_class_static_member_output(SemanticContext & ctx,
        binding.owner_class != &info ||
        !binding.definition_node ||
        binding.definition_output_emitted ||
+       static_member_variable_definition_output_suppressed(binding) ||
        source_capture_header_static_member_output ||
        witness_only_unrequired_integral_constant ||
        is_unrequired_constexpr_static_member_definition(binding)) {

@@ -2172,6 +2172,41 @@ bool function_binding_output_suppressed_by_explicit_instantiation(
              class_instantiation_suppressed);
 }
 
+bool value_binding_owner_class_suppresses_implicit_instantiation_definition(
+    const semantic_model::ValueBinding & binding)
+{
+  const semantic_model::ClassInfo * owner = binding.owner_class;
+  if(!owner) {
+    return false;
+  }
+  if(binding.variable_template_instantiation &&
+     binding.variable_template_instantiation->source_template) {
+    return false;
+  }
+  if(binding.is_explicit_specialization ||
+     owner->is_explicit_specialization) {
+    return false;
+  }
+  if(owner->suppress_implicit_instantiation_definition) {
+    return true;
+  }
+  const semantic_model::ClassTemplateDecl * source_template =
+      owner->source_template;
+  const std::string & instantiation_key = owner->instantiation_key;
+  return source_template &&
+         !instantiation_key.empty() &&
+         source_template->suppress_implicit_instantiation_definitions.find(
+             instantiation_key) !=
+             source_template->suppress_implicit_instantiation_definitions.end();
+}
+
+bool value_binding_output_suppressed_by_explicit_instantiation(
+    const semantic_model::ValueBinding & binding)
+{
+  return value_binding_owner_class_suppresses_implicit_instantiation_definition(
+      binding);
+}
+
 void apply_function_template_symbol_options(
     semantic_model::FunctionTemplateDecl * source_template,
     const std::vector<template_model::TemplateArgument> * instantiation_arguments,
