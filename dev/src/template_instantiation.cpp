@@ -929,6 +929,10 @@ bool template_argument_syntax_mentions_template_parameter_name(
     const TemplateArgumentSyntax & syntax,
     const std::vector<TemplateParameterInfo> & parameters);
 
+bool dependent_template_argument_mentions_template_parameter_name(
+    const DependentAliasTemplateArgumentSyntax & arg,
+    const std::vector<TemplateParameterInfo> & parameters);
+
 bool type_mentions_template_parameter_name(
     const TypePtr & type,
     const std::vector<TemplateParameterInfo> & parameters)
@@ -938,25 +942,28 @@ bool type_mentions_template_parameter_name(
   }
 
   if(type->kind == Type::TK_NAMED) {
-    if(text_mentions_template_parameter_name(type->named_key, parameters) ||
-       text_mentions_template_parameter_name(type->named_display, parameters) ||
-       text_mentions_template_parameter_name(named_type_semantic_payload(type),
-                                             parameters)) {
+    const bool dependent_named_type =
+        named_type_has_dependent_semantic(type) ||
+        named_type_key_contains_dependent_semantic(type) ||
+        type->named_dependent_class_template_decl != nullptr;
+    if(dependent_named_type &&
+       (text_mentions_template_parameter_name(type->named_key, parameters) ||
+        text_mentions_template_parameter_name(type->named_display, parameters) ||
+        text_mentions_template_parameter_name(named_type_semantic_payload(type),
+                                              parameters))) {
       return true;
     }
     for(std::size_t i = 0; i < type->named_dependent_alias_arguments.size(); ++i) {
-      const DependentAliasTemplateArgumentSyntax & arg =
-          type->named_dependent_alias_arguments[i];
-      if(text_mentions_template_parameter_name(arg.text, parameters) ||
-         type_mentions_template_parameter_name(arg.type, parameters)) {
+      if(dependent_template_argument_mentions_template_parameter_name(
+             type->named_dependent_alias_arguments[i],
+             parameters)) {
         return true;
       }
     }
     for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
-      const DependentAliasTemplateArgumentSyntax & arg =
-          type->named_dependent_class_arguments[i];
-      if(text_mentions_template_parameter_name(arg.text, parameters) ||
-         type_mentions_template_parameter_name(arg.type, parameters)) {
+      if(dependent_template_argument_mentions_template_parameter_name(
+             type->named_dependent_class_arguments[i],
+             parameters)) {
         return true;
       }
     }
@@ -1043,6 +1050,28 @@ bool ast_mentions_template_parameter_name(
     }
   }
   return false;
+}
+
+bool dependent_template_argument_mentions_template_parameter_name(
+    const DependentAliasTemplateArgumentSyntax & arg,
+    const std::vector<TemplateParameterInfo> & parameters)
+{
+  if(arg.syntax.expression) {
+    return text_mentions_template_parameter_name(arg.text, parameters) ||
+           template_argument_syntax_mentions_template_parameter_name(
+               arg.syntax, parameters) ||
+           type_mentions_template_parameter_name(arg.type, parameters);
+  }
+  if(arg.type) {
+    return type_mentions_template_parameter_name(arg.type, parameters);
+  }
+  if(arg.syntax.resolved_type) {
+    return type_mentions_template_parameter_name(arg.syntax.resolved_type,
+                                                parameters);
+  }
+  return text_mentions_template_parameter_name(arg.text, parameters) ||
+         template_argument_syntax_mentions_template_parameter_name(
+             arg.syntax, parameters);
 }
 
 bool template_parameters_have_pack(

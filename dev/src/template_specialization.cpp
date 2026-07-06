@@ -384,9 +384,13 @@ bool deduce_type_pattern_to_state(
        (pattern_volatile && !actual_volatile)) {
       return false;
     }
+    TypePtr adjusted_actual =
+        apply_cv(actual_cv_inner,
+                 actual_const && !pattern_const,
+                 actual_volatile && !pattern_volatile);
     return deduce_type_pattern_to_state(parameters,
                                         pattern_cv_inner,
-                                        actual_cv_inner,
+                                        adjusted_actual,
                                         deduced);
   }
 
@@ -1654,7 +1658,8 @@ bool partial_specialization_top_cv_matches(const TypePtr & pattern, const TypePt
   if(!pattern_const && !pattern_volatile) {
     return true;
   }
-  return pattern_const == actual_const && pattern_volatile == actual_volatile;
+  return (!pattern_const || actual_const) &&
+         (!pattern_volatile || actual_volatile);
 }
 
 bool template_names_match(const QualifiedName & pattern_name,

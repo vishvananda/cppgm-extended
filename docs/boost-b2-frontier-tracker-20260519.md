@@ -4215,3 +4215,39 @@ baseline file was gone from `/tmp`, a detached worktree at pre-fix
 perf check passed against it with instructions `+0.14%`, RSS `-0.06%`,
 footprint `+0.01%`, report
 `/tmp/cppgm-perf-after-global-delete-abi-alias-20260706.json`.
+
+2026-07-06 Boost.Interprocess `shared_ptr_test` typed template-argument
+frontier: after the global array-delete fix, focused replay reached
+`boost::interprocess::ipcdetail::weak_ptr`, where construction from
+`shared_ptr<Y, A, D>` was rejected because stale resolved template-argument
+annotations were preferred over the current function-template bindings. The
+supporting reducers also exposed two adjacent typed-template issues: ADL lookup
+for an explicit function-template-id with defaulted template arguments, and
+top-level cv subset matching for partial specializations. The fix keeps the
+argument path structured: template-bound-name checks walk
+`TemplateArgumentSyntax`/AST data instead of scanning source text, concrete
+substituted `resolved_type` annotations survive class-template argument
+sanitization when their `source_text` records the replaced parameter, dependent
+annotations are still re-resolved in the current scope, direct template
+parameters are not treated as default-tail matches, and partial-specialization
+matching preserves actual extra top-level cv qualifiers while accepting subset
+patterns. No source-text reparsing, Boost-specific rule, or parallel ABI symbol
+spelling was added. Owners: PA22 function-template and class-template argument
+resolution plus PA21/PA22 partial-specialization matching. New regressions:
+`pa22/tests/general/500-adl-explicit-function-template-id.t`,
+`pa22/tests/general/500-partial-specialization-cv-qualifier-subset.t`, and
+`pa22/tests/general/500-weak-ptr-shared-ptr-template-ctor.t`.
+Validation: `/usr/local/opt/llvm/bin/clang++ -x c++ -std=c++11
+-fsyntax-only -Wall -Wextra -pedantic` accepts the reducers with only expected
+unused/deprecated-copy warnings; focused reducers compile and run with
+`dev/cppgm++`; `CPPGM_SKIP_DEV_REBUILD=1 make test-pa22` passes `220/220`;
+`CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 ACTIVE_TEST_REPORT_PAS='pa22' ... make
+test-report` passes `220/220`; full strict direct-LowIR checks pass; `python3
+scripts/audit_text_reparse.py` reports all zero; focused B2
+`/usr/local/bin/timeout 600 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++
+CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang
+CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1
+JOBS=4 ./run-cppgm-b2.sh -a libs/interprocess/test//shared_ptr_test
+testing.execute=off` compiles and links. Perf check against
+`/tmp/cppgm-before-global-delete-baseline-20260706.json` passes:
+instructions `-0.27%`, RSS `+0.61%`, footprint `+0.61%`.
