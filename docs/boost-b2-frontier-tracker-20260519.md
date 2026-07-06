@@ -4054,3 +4054,34 @@ accepts the same reducer, PA30 passes `75/75`, focused direct-LowIR report for
 ABI symbol failure to the next semantic frontier: `operator+=` overload
 fallback at `libs/icl/test/test_interval_map_shared.hpp:68`. `git diff
 --check` passes.
+
+2026-07-06 Boost.ICL `fastest_interval_map` interval-map derivative frontier:
+the next direct replay failed at
+`libs/icl/test/test_interval_map_shared.hpp:68`, where
+`(mt_map += mt_u1) += mt_u1` should select
+`boost::icl::operator+=(Type&, const OperandT&)` through
+`is_intra_derivative<Type, OperandT>`. The real failure was earlier in class
+partial-specialization matching: for
+`is_interval_map_derivative<map_type, map_type::value_type>`, the
+`interval_mapping_type` partial was incorrectly accepted against
+`value_type`. The pattern and actual template arguments had both resolved to
+concrete typed arguments, `interval_type` and `const interval_type`, but the
+non-deducible mismatch was allowed to fall through into nested template-id
+deduction, which stripped the cv distinction and made specialization selection
+ambiguous. The fix keeps the existing typed deduction path for patterns that
+still contain deducible template parameters, but rejects resolved concrete
+mismatches before the looser nested template-id fallback. No Boost special case,
+source-text reparsing, or fallback resolver was added. Owner: PA21 class
+partial-specialization matching. New regression:
+`pa21/tests/general/400-partial-specialization-member-template-id-cv-mismatch.t`.
+Validation: `/usr/local/opt/llvm/bin/clang++ -std=c++11` accepts the standalone
+local-pair reducer; a clean temporary pre-fix `HEAD` compiler rejects it with
+`ambiguous partial class specialization`; current `dev/cppgm++` accepts that
+reducer, the Boost.ICL trait probe, and the Boost.ICL compound-assignment
+reducer. Focused PA21 checks pass; PA21 direct-LowIR report passes `197/197`;
+combined direct-LowIR report for `pa21 pa22 pa35 pa36` passes `569/569` after
+separately refreshing the stale PA22 direct-text ABI reference in `cf743e54c`.
+Direct Boost replay advances past the old `operator+=` fallback to the next
+frontier: unknown unqualified function
+`test_interval_map_copy_via_inserter` at
+`libs/icl/test/test_interval_map_shared.hpp:1376`.

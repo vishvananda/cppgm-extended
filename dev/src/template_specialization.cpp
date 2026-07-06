@@ -8400,7 +8400,9 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
         if(type_equals(pattern_arg_type, actual_arg_type)) {
           continue;
         }
-        if(type_pattern_has_deducible_template_parameter(type_system, pattern_arg_type)) {
+        const bool pattern_arg_has_deducible_parameter =
+            type_pattern_has_deducible_template_parameter(type_system, pattern_arg_type);
+        if(pattern_arg_has_deducible_parameter) {
           DeducedState nested_type_deduced = deduced;
           if(deduce_type_pattern_to_state(partial.parameters,
                                           pattern_arg_type,
@@ -8409,6 +8411,9 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
             deduced = nested_type_deduced;
             continue;
           }
+        }
+        if(!pattern_arg_has_deducible_parameter) {
+          return false;
         }
       }
       bool pattern_arg_is_template_id =
