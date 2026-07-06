@@ -8301,14 +8301,21 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
      template_name_parameter.parameter->kind ==
          TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
     TemplateArgument resolved;
-    if(!template_api::resolve_template_template_argument_text(
-           services,
-           template_api::make_template_environment(match_scope),
-           actual_template_name_text,
-           static_cast<std::size_t>(-1),
-           false,
-           resolved) ||
-       !deduce_template_template_parameter_from_argument(
+    if(actual_source_template) {
+      resolved = make_deduced_template_template_argument(
+          *template_name_parameter.parameter,
+          actual_source_template,
+          nullptr);
+    } else if(!template_api::resolve_template_template_argument_text(
+                  services,
+                  template_api::make_template_environment(match_scope),
+                  actual_template_name_text,
+                  static_cast<std::size_t>(-1),
+                  false,
+                  resolved)) {
+      return false;
+    }
+    if(!deduce_template_template_parameter_from_argument(
            deduced, template_name_parameter.parameter->name, resolved)) {
       return false;
     }

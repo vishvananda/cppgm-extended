@@ -3923,3 +3923,36 @@ Perf gate against a clean detached `c423c1f37` worktree passed:
 instructions `+0.25%`, max RSS `-0.45%`, footprint `-0.04%`; baseline
 `/tmp/cppgm-perf-baseline-c423c1f37-array-ref-mangle-20260706.json`, report
 `/tmp/cppgm-perf-report-array-ref-mangle-20260706.json`.
+
+2026-07-06 Boost.Hash2 `hash_32_64` template-template identity frontier: after
+the array-reference mangling fix, the remaining Hash2 failure was
+`libs/hash2/test//hash_32_64`, failing during Boost.Core `type_name` with
+`ERROR: unknown function detail::class_template_name<L<T...>>`. A no-STL
+reducer failed at the previous commit `da2d8e82b` while Clang accepted it: a
+partial specialization `tn_holder<L<T...>>` correctly matched a global
+three-parameter `::hash`, but template-template argument deduction later
+re-resolved the unqualified matched head inside the library namespace and
+captured the one-parameter `library::hash` instead. The fix keeps the
+structured `actual_source_template` identity when the pattern head is the
+direct template-template parameter, falling back to textual resolution only
+when no structured source template is available. Owner: PA23 template
+composition over PA21 template-template parameters and partial specialization
+matching. New regression:
+`pa23/tests/spec/400-template-template-bound-application-shadowed-head.t`.
+Validation: reducer compiles with both Clang and `dev/cppgm++`; previous
+commit `da2d8e82b` fails the reducer with the same `class_template_name`
+diagnostic; focused PA23 regression passes; PA23 direct-LowIR report passes
+`382/382`; strict tests pass all default strict PAs; text-reparse audit is
+clean; narrowed PA23 template-template and pack placement audits are clean.
+The broad PA23 placement audit still reports the pre-existing unrelated
+`pa23/tests/general/100-qualified-sizeof-overload-static-const-nttp.t`
+multiple-inheritance placement issue. Focused B2
+`libs/hash2/test//hash_32_64` passes. Full direct-LowIR `test-report` passes
+`3516/3516`. Full Hash2 survey now passes:
+`/tmp/boost-suite-survey-hash2-after-template-template-collision-20260706/summary.md`;
+log:
+`/tmp/boost-suite-survey-hash2-after-template-template-collision-20260706/libs__hash2__test.log`.
+Perf gate against a clean detached `da2d8e82b` worktree passed:
+instructions `-0.02%`, max RSS `-0.77%`, footprint `+0.04%`; baseline
+`/tmp/cppgm-perf-baseline-da2d8e82b-tt-collision-20260706.json`, report
+`/tmp/cppgm-perf-report-tt-collision-20260706.json`.

@@ -1,0 +1,36 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @library__detail__type_name()
+    return i32 %t1
+}
+function @library__detail__type_name() -> i32 [binding=weak, object=_ZN7library6detail9type_nameI4hashIiclEEEiv] {
+  block ^entry:
+    %t1 = call i32 @library__detail__tn_holder_hash_int__char__long_int____type_name()
+    return i32 %t1
+}
+function @library__detail__tn_holder_hash_int__char__long_int____type_name() -> i32 [binding=weak, object=_ZN7library6detail9tn_holderI4hashIiclEE9type_nameEv] {
+  slot $tn : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $tn
+    %t2 = call obj<1x1> @library__detail__class_template_name()
+    copyobj 1x1 %t2, %t1
+    %t3 = addr $tn
+    return i32 0
+}
+function @library__detail__class_template_name() -> obj<1x1> [binding=weak, object=_ZN7library6detail19class_template_nameI4hashIiclEEENS0_4textEv] {
+  slot $retobj__1 : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    call void @library__detail__text__text(%t1)
+    return obj<1x1> $retobj__1
+}
+function @library__detail__text__text(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7library6detail4textC1Ev, trivial_lifecycle=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN7library6detail4textC2Ev = @library__detail__text__text
