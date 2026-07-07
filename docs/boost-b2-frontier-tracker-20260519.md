@@ -4581,3 +4581,42 @@ Boost.Filesystem `libs/filesystem/src/directory.cpp` compile moves past
 `it.m_imp` and reaches the next frontier, unknown GCC atomic builtin
 `__atomic_store_n`; perf check against fresh `a227d561a` baseline passes:
 instructions `-0.06%`, RSS `-0.01%`, footprint `-0.02%`.
+
+2026-07-06 Boost.Filesystem GNU atomic builtin frontier: after qualified friend
+access, `directory.cpp` reached Boost.Atomic's
+`core_operations_gcc_atomic<8>::store` and failed on the GCC builtin
+`__atomic_store_n`. Existing hosted atomic support covered `__atomic_load_n`,
+the pointer-form `__atomic_load`/`__atomic_store`, and arithmetic fetch builtins,
+but omitted the rest of the typed `_n` family and Boost-used
+test-and-set/clear/bitwise fetch forms. The fix extends the existing typed
+builtin analyzer and LowIR atomic backend for `__atomic_store_n`,
+`__atomic_exchange_n`, `__atomic_compare_exchange_n`,
+`__atomic_fetch_{and,or,xor}`, `__atomic_test_and_set`, and `__atomic_clear`.
+No source-text parsing, declaration spoofing, or Boost-specific path was added.
+Owner: PA34 hosted GNU atomic builtins. New regression:
+`pa34/tests/compile/500-gnu-atomic-n-builtins.t`. Validation: clang accepts the
+reducer with `-std=c++11`; PA34 direct-text report passes `283/283`; focused
+Boost.Filesystem `libs/filesystem/src/directory.cpp` compile moves past
+`__atomic_store_n` and reaches the next frontier, enclosing-function local enum
+lookup inside `local::push_directory`.
+
+2026-07-06 Boost.Filesystem local-enumerator durable-scope frontier: after GNU
+atomic builtin support, `directory.cpp` failed inside the function-local
+`struct local` at `push_directory_result result = directory_not_pushed;`. The
+enclosing function's unscoped enum type survived into the persistent local scope
+used for the local class method body, but its enumerators were added after that
+durable scope had been captured and were not mirrored there. The fix updates
+enum collection to mirror unscoped enumerator value bindings into the durable
+scope when the original scope is ephemeral, preserving the existing typed
+binding model. No ordinary automatic variables are synthesized, and no
+source-text lookup fallback is added. Owner: PA29 local-class runtime/lookup.
+New regression:
+`pa29/tests/general/300-runtime-local-class-enclosing-enumerator.t`. Validation:
+clang accepts the reducer with `-std=c++11`; PA29 direct-text report passes
+`71/71`; full direct-text report passes `3550/3550`; strict direct-text suite
+passes; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; focused Boost.Filesystem
+`libs/filesystem/src/directory.cpp` compile moves past `directory_not_pushed`
+and reaches the next frontier, inaccessible member lookup while resolving
+`filesystem::type_present`; perf check against a fresh `f0e8b1263` baseline
+passes: instructions `-0.09%`, RSS `+0.85%`, footprint `+0.04%`.

@@ -10260,6 +10260,9 @@ private:
         next_value_known = false;
       }
       enumerator_scope->values[child.value] = binding;
+      if(enumerator_scope == &scope && &durable_scope != &scope) {
+        durable_scope.values[child.value] = binding;
+      }
       enum_initializer_scope.values[child.value] = binding;
     }
   }

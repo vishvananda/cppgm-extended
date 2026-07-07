@@ -12338,6 +12338,52 @@ private:
                                       lowir_type_for(node.semantic_type) + " " +
                                       ptr + ", " + to_string(order));
         }
+        if(builtin_name == "__atomic_store_n") {
+          if(node.children.size() != 4) {
+            throw logic_error("__atomic_store_n child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__atomic_store_n");
+          const string dst = emit_rvalue(node.children[1]);
+          const string src = emit_rvalue(node.children[2]);
+          const long long order = atomic_order_value(3);
+          emit_line(string("atomic_store ") + value_type + " " + src + ", " +
+                    dst + ", " + to_string(order));
+          return "0";
+        }
+        if(builtin_name == "__atomic_exchange_n") {
+          if(node.children.size() != 4) {
+            throw logic_error("__atomic_exchange_n child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__atomic_exchange_n");
+          const string ptr = emit_rvalue(node.children[1]);
+          const string value = emit_rvalue(node.children[2]);
+          const long long order = atomic_order_value(3);
+          return emit_temp_assignment(value_type,
+                                      string("atomic_exchange ") + value_type +
+                                      " " + ptr + ", " + value + ", " +
+                                      to_string(order));
+        }
+        if(builtin_name == "__atomic_compare_exchange_n") {
+          if(node.children.size() != 7) {
+            throw logic_error("__atomic_compare_exchange_n child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__atomic_compare_exchange_n");
+          const string ptr = emit_rvalue(node.children[1]);
+          const string expected_ptr = emit_rvalue(node.children[2]);
+          const string desired = emit_rvalue(node.children[3]);
+          emit_rvalue(node.children[4]);
+          const long long success_order = atomic_order_value(5);
+          const long long failure_order = atomic_order_value(6);
+          return emit_temp_assignment("i64",
+                                      string("atomic_compare_exchange ") +
+                                      value_type + " " + ptr + ", " +
+                                      expected_ptr + ", " + desired + ", " +
+                                      to_string(success_order) + ", " +
+                                      to_string(failure_order));
+        }
         if(builtin_name == "__sync_synchronize") {
           if(node.children.size() != 1) {
             throw logic_error("__sync_synchronize child count");
@@ -12512,6 +12558,39 @@ private:
                     dst + ", " + to_string(order));
           return "0";
         }
+        if(builtin_name == "__atomic_test_and_set") {
+          if(node.children.size() != 3) {
+            throw logic_error("__atomic_test_and_set child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__atomic_test_and_set");
+          const string ptr = emit_rvalue(node.children[1]);
+          const long long order = atomic_order_value(2);
+          const string one =
+              emit_temp_assignment(value_type, string("const ") + value_type + " 1");
+          const string previous =
+              emit_temp_assignment(value_type,
+                                  string("atomic_exchange ") + value_type +
+                                  " " + ptr + ", " + one + ", " +
+                                  to_string(order));
+          return emit_temp_assignment("i64",
+                                      string("cmp ne ") + value_type + " " +
+                                      previous + ", 0");
+        }
+        if(builtin_name == "__atomic_clear") {
+          if(node.children.size() != 3) {
+            throw logic_error("__atomic_clear child count");
+          }
+          const string value_type =
+              atomic_value_type_for_pointer(1, "__atomic_clear");
+          const string ptr = emit_rvalue(node.children[1]);
+          const long long order = atomic_order_value(2);
+          const string zero =
+              emit_temp_assignment(value_type, string("const ") + value_type + " 0");
+          emit_line(string("atomic_store ") + value_type +
+                    " " + zero + ", " + ptr + ", " + to_string(order));
+          return "0";
+        }
         if(builtin_name == "__atomic_add_fetch") {
           if(node.children.size() != 4) {
             throw logic_error("__atomic_add_fetch child count");
@@ -12565,7 +12644,10 @@ private:
         }
         if(builtin_name == "__c11_atomic_fetch_and" ||
            builtin_name == "__c11_atomic_fetch_or" ||
-           builtin_name == "__c11_atomic_fetch_xor") {
+           builtin_name == "__c11_atomic_fetch_xor" ||
+           builtin_name == "__atomic_fetch_and" ||
+           builtin_name == "__atomic_fetch_or" ||
+           builtin_name == "__atomic_fetch_xor") {
           if(node.children.size() != 4) {
             throw logic_error(builtin_name + " child count");
           }
@@ -12574,9 +12656,11 @@ private:
           const string value_type = lowir_type_for(node.semantic_type);
           const long long order = atomic_order_value(3);
           string op = "xor";
-          if(builtin_name == "__c11_atomic_fetch_and") {
+          if(builtin_name == "__c11_atomic_fetch_and" ||
+             builtin_name == "__atomic_fetch_and") {
             op = "and";
-          } else if(builtin_name == "__c11_atomic_fetch_or") {
+          } else if(builtin_name == "__c11_atomic_fetch_or" ||
+                    builtin_name == "__atomic_fetch_or") {
             op = "or";
           }
           return emit_atomic_compare_exchange_loop(value_type, ptr, value, order, op);

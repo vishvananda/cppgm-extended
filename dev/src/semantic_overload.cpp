@@ -6781,6 +6781,74 @@ bool try_analyze_builtin_call_expression(SemanticContext & ctx,
                                    vector<ExprInfo>{ptr_arg, order_arg});
     return true;
   }
+  if(builtin_name == "__atomic_store_n") {
+    if(arg_nodes.size() != 3) {
+      throw logic_error("__atomic_store_n arity");
+    }
+    ExprInfo ptr_arg;
+    TypePtr value_type;
+    analyze_atomic_pointer_arg(ctx, scope, builtin_name, *arg_nodes[0], ptr_arg, value_type);
+    ExprInfo value_arg = ctx.analyze_expression_for_target(scope, *arg_nodes[1], value_type);
+    ExprInfo order_arg = analyze_atomic_order_arg(ctx, scope, *arg_nodes[2]);
+    out = make_builtin_call_result(ctx,
+                                   builtin_name,
+                                   make_fundamental(FT_VOID),
+                                   vector<TypePtr>{ptr_arg.type, value_arg.type, order_arg.type},
+                                   vector<ExprInfo>{ptr_arg, value_arg, order_arg});
+    return true;
+  }
+  if(builtin_name == "__atomic_exchange_n") {
+    if(arg_nodes.size() != 3) {
+      throw logic_error("__atomic_exchange_n arity");
+    }
+    ExprInfo ptr_arg;
+    TypePtr value_type;
+    analyze_atomic_pointer_arg(ctx, scope, builtin_name, *arg_nodes[0], ptr_arg, value_type);
+    ExprInfo value_arg = ctx.analyze_expression_for_target(scope, *arg_nodes[1], value_type);
+    ExprInfo order_arg = analyze_atomic_order_arg(ctx, scope, *arg_nodes[2]);
+    out = make_builtin_call_result(ctx,
+                                   builtin_name,
+                                   value_type,
+                                   vector<TypePtr>{ptr_arg.type, value_arg.type, order_arg.type},
+                                   vector<ExprInfo>{ptr_arg, value_arg, order_arg});
+    return true;
+  }
+  if(builtin_name == "__atomic_compare_exchange_n") {
+    if(arg_nodes.size() != 6) {
+      throw logic_error("__atomic_compare_exchange_n arity");
+    }
+    ExprInfo ptr_arg;
+    TypePtr value_type;
+    analyze_atomic_pointer_arg(ctx, scope, builtin_name, *arg_nodes[0], ptr_arg, value_type);
+    ExprInfo expected_arg;
+    analyze_atomic_value_pointer_arg(ctx,
+                                     scope,
+                                     builtin_name,
+                                     *arg_nodes[1],
+                                     value_type,
+                                     expected_arg);
+    ExprInfo desired_arg = ctx.analyze_expression_for_target(scope, *arg_nodes[2], value_type);
+    ExprInfo weak_arg =
+        ctx.analyze_expression_for_target(scope, *arg_nodes[3], make_fundamental(FT_BOOL));
+    ExprInfo success_arg = analyze_atomic_order_arg(ctx, scope, *arg_nodes[4]);
+    ExprInfo failure_arg = analyze_atomic_order_arg(ctx, scope, *arg_nodes[5]);
+    out = make_builtin_call_result(ctx,
+                                   builtin_name,
+                                   make_fundamental(FT_BOOL),
+                                   vector<TypePtr>{ptr_arg.type,
+                                                   expected_arg.type,
+                                                   desired_arg.type,
+                                                   weak_arg.type,
+                                                   success_arg.type,
+                                                   failure_arg.type},
+                                   vector<ExprInfo>{ptr_arg,
+                                                    expected_arg,
+                                                    desired_arg,
+                                                    weak_arg,
+                                                    success_arg,
+                                                    failure_arg});
+    return true;
+  }
   if(builtin_name == "__sync_synchronize") {
     if(!arg_nodes.empty()) {
       throw logic_error("__sync_synchronize arity");
@@ -6991,6 +7059,36 @@ bool try_analyze_builtin_call_expression(SemanticContext & ctx,
                                    vector<ExprInfo>{ptr_arg, src_arg, order_arg});
     return true;
   }
+  if(builtin_name == "__atomic_test_and_set") {
+    if(arg_nodes.size() != 2) {
+      throw logic_error("__atomic_test_and_set arity");
+    }
+    ExprInfo ptr_arg;
+    TypePtr value_type;
+    analyze_atomic_pointer_arg(ctx, scope, builtin_name, *arg_nodes[0], ptr_arg, value_type);
+    ExprInfo order_arg = analyze_atomic_order_arg(ctx, scope, *arg_nodes[1]);
+    out = make_builtin_call_result(ctx,
+                                   builtin_name,
+                                   make_fundamental(FT_BOOL),
+                                   vector<TypePtr>{ptr_arg.type, order_arg.type},
+                                   vector<ExprInfo>{ptr_arg, order_arg});
+    return true;
+  }
+  if(builtin_name == "__atomic_clear") {
+    if(arg_nodes.size() != 2) {
+      throw logic_error("__atomic_clear arity");
+    }
+    ExprInfo ptr_arg;
+    TypePtr value_type;
+    analyze_atomic_pointer_arg(ctx, scope, builtin_name, *arg_nodes[0], ptr_arg, value_type);
+    ExprInfo order_arg = analyze_atomic_order_arg(ctx, scope, *arg_nodes[1]);
+    out = make_builtin_call_result(ctx,
+                                   builtin_name,
+                                   make_fundamental(FT_VOID),
+                                   vector<TypePtr>{ptr_arg.type, order_arg.type},
+                                   vector<ExprInfo>{ptr_arg, order_arg});
+    return true;
+  }
   if(builtin_name == "__atomic_add_fetch") {
     if(arg_nodes.size() != 3) {
       throw logic_error("__atomic_add_fetch arity");
@@ -7028,7 +7126,10 @@ bool try_analyze_builtin_call_expression(SemanticContext & ctx,
   }
   if(builtin_name == "__c11_atomic_fetch_and" ||
      builtin_name == "__c11_atomic_fetch_or" ||
-     builtin_name == "__c11_atomic_fetch_xor") {
+     builtin_name == "__c11_atomic_fetch_xor" ||
+     builtin_name == "__atomic_fetch_and" ||
+     builtin_name == "__atomic_fetch_or" ||
+     builtin_name == "__atomic_fetch_xor") {
     if(arg_nodes.size() != 3) {
       throw logic_error(builtin_name + " arity");
     }
