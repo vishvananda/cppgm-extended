@@ -5742,8 +5742,11 @@ private:
   {
     if(node.kind == CallSemKind::call_expression &&
        is_reference_type(node.semantic_type)) {
-      const TypePtr result_object_type = indirect_call_result_object_type(node);
-      if(result_object_type) {
+      TypePtr result_object_type = indirect_call_result_object_type(node);
+      if(!result_object_type && is_constructor_materialization_call(node)) {
+        result_object_type = strip_top_level_cv(remove_reference_type(node.semantic_type));
+      }
+      if(result_object_type && is_complete_class_value_type(result_object_type)) {
         const string temp_ptr = new_hidden_object_address(result_object_type, "refcall");
         emit_call_expression_to_target(node, temp_ptr);
         register_materialized_temporary_cleanup_live(result_object_type, temp_ptr);

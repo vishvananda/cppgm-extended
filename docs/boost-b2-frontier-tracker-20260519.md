@@ -4644,3 +4644,28 @@ reports all zero; `git diff --check` passes; focused Boost.Filesystem
 access failure and reaches the next frontier, `value-initialized constructor
 call missing target`; perf check against the `fc5945a80` baseline passes:
 instructions `+0.07%`, RSS `-1.75%`, footprint `-0.01%`.
+
+2026-07-06 Boost.Filesystem rvalue-reference value-initialized temporary
+frontier: after local-class friend access, `directory.cpp` reached
+`static_cast<...>(deleter_type())` in Boost.Scope `unique_resource` member
+initialization. The empty function-style `fd_deleter()` temporary was analyzed
+as a value-initialized constructor call and then cast to `fd_deleter&&`; LowIR
+reference-argument emission treated the resulting call as a raw
+reference-returning function instead of materializing the constructor call into
+a hidden object, so the constructor had no target pointer. The fix extends the
+existing typed constructor-materialization path used by reference storage: when
+a call-expression has reference type and is a constructor materialization call,
+LowIR now creates a hidden object, emits the constructor into that object, and
+uses that object address as the bound reference. No source-text reparsing or
+Boost-specific rule was added. Owner: PA16 class xvalue/reference lowering.
+New regression:
+`pa16/tests/general/300-rvalue-reference-cast-value-init-temporary.t`.
+Validation: clang accepts the reducer with `-std=c++11`; focused native reducer
+compiled with cppgm++ and exited `0`; PA16 direct-text report passes `142/142`;
+focused Boost.Filesystem `libs/filesystem/src/directory.cpp` compile passes;
+focused Boost.Filesystem B2 target `libs/filesystem/test` exits `0`; full
+direct-text report passes `3552/3552`; strict direct-text suite passes;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; perf check against the local `fc5945a80` baseline passes:
+instructions `+0.03%`, RSS `+1.40%`, footprint `-0.02%`, report
+`/tmp/cppgm-rref-temp-perf-20260706.json`.
