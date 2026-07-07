@@ -1,0 +1,550 @@
+declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+declare function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+
+global @__typeinfo_name__struct_Stream [storage=readonly, binding=weak, object=_ZTS6Stream] = {
+  i8 54
+  i8 83
+  i8 116
+  i8 114
+  i8 101
+  i8 97
+  i8 109
+  i8 0
+}
+global @__typeinfo_name__struct_StreamBase [storage=readonly, binding=weak, object=_ZTS10StreamBase] = {
+  i8 49
+  i8 48
+  i8 83
+  i8 116
+  i8 114
+  i8 101
+  i8 97
+  i8 109
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__typeinfo_name__struct_BaseFromMember_DeviceBuffer_ [storage=readonly, binding=weak, object=_ZTS14BaseFromMemberI12DeviceBufferE] = {
+  i8 49
+  i8 52
+  i8 66
+  i8 97
+  i8 115
+  i8 101
+  i8 70
+  i8 114
+  i8 111
+  i8 109
+  i8 77
+  i8 101
+  i8 109
+  i8 98
+  i8 101
+  i8 114
+  i8 73
+  i8 49
+  i8 50
+  i8 68
+  i8 101
+  i8 118
+  i8 105
+  i8 99
+  i8 101
+  i8 66
+  i8 117
+  i8 102
+  i8 102
+  i8 101
+  i8 114
+  i8 69
+  i8 0
+}
+global @__rtti_struct_BaseFromMember_DeviceBuffer_ [storage=readonly, binding=weak, object=_ZTI14BaseFromMemberI12DeviceBufferE] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_BaseFromMember_DeviceBuffer_
+}
+global @__typeinfo_name__struct_PrimaryStream [storage=readonly, binding=weak, object=_ZTS13PrimaryStream] = {
+  i8 49
+  i8 51
+  i8 80
+  i8 114
+  i8 105
+  i8 109
+  i8 97
+  i8 114
+  i8 121
+  i8 83
+  i8 116
+  i8 114
+  i8 101
+  i8 97
+  i8 109
+  i8 0
+}
+global @__rtti_struct_PrimaryStream [storage=readonly, binding=weak, object=_ZTI13PrimaryStream] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_PrimaryStream
+}
+global @__rtti_struct_StreamBase [storage=readonly, binding=weak, object=_ZTI10StreamBase] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_StreamBase
+  i32 0
+  i32 2
+  ptr addr @__rtti_struct_BaseFromMember_DeviceBuffer_
+  i64 4096
+  ptr addr @__rtti_struct_PrimaryStream
+  i64 2
+}
+global @__rtti_struct_Stream [storage=readonly, binding=weak, object=_ZTI6Stream] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_Stream
+  ptr addr @__rtti_struct_StreamBase
+}
+global @Stream__vtable [storage=readonly, binding=weak, object=_ZTV6Stream] = {
+  i64 0
+  ptr addr @__rtti_struct_Stream
+  ptr addr @Stream___Stream
+  ptr addr @Stream___Stream__deleting_entry
+}
+global @StreamBase__vtable [storage=readonly, binding=weak, object=_ZTV10StreamBase] = {
+  i64 0
+  ptr addr @__rtti_struct_StreamBase
+  ptr addr @StreamBase___StreamBase
+  ptr addr @StreamBase___StreamBase__deleting_entry
+}
+global @PrimaryStream__vtable [storage=readonly, binding=weak, object=_ZTV13PrimaryStream] = {
+  i64 0
+  ptr addr @__rtti_struct_PrimaryStream
+  ptr addr @PrimaryStream___PrimaryStream
+  ptr addr @PrimaryStream___PrimaryStream__deleting_entry
+}
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $stream : obj<24x8>
+  slot $call__1 : i64
+  slot $call__2 : i64
+  slot $call__3 : i64
+  slot $call__4 : i32
+  slot $call__5 : i32
+  slot $call__6 : i32
+
+  block ^entry:
+    %t1 = addr $stream
+    call void @Stream__Stream(%t1)
+    eh_try ^call_unwind_dispatch_4
+    %t2 = addr $stream
+    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t4 = call i64 @StreamBase__member_delta(%t3)
+    store i64 %t4, $call__1
+    %t5 = load i64 $call__1
+    %t6 = cmp le i64 %t5, 0
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^call_unwind_dispatch_4:
+    %t7 = addr $stream
+    call void @Stream___Stream(%t7)
+    resume
+
+  block ^call_unwind_end_5:
+    branch %t6, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t8 = addr $stream
+    call void @Stream___Stream(%t8)
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    eh_try ^call_unwind_dispatch_4
+    %t9 = addr $stream
+    %t10 = call i64 @Stream__derived_delta(%t9)
+    store i64 %t10, $call__2
+    %t11 = load i64 $call__2
+    %t12 = addr $stream
+    %t13 = index i8 [projection=base_subobject] %t12, 0
+    %t14 = call i64 @StreamBase__member_delta(%t13)
+    store i64 %t14, $call__3
+    %t15 = load i64 $call__3
+    %t16 = cmp ne i64 %t11, %t15
+    eh_end
+    branch %t16, ^if_then_6, ^if_else_7
+
+  block ^if_then_6:
+    %t17 = addr $stream
+    call void @Stream___Stream(%t17)
+    return i32 2
+
+  block ^if_else_7:
+    jump ^if_end_8
+
+  block ^if_end_8:
+    eh_try ^call_unwind_dispatch_4
+    %t18 = addr $stream
+    %t19 = index i8 [projection=base_subobject] %t18, 0
+    %t20 = call i32 @StreamBase__read(%t19)
+    store i32 %t20, $call__4
+    %t21 = load i32 $call__4
+    %t22 = cmp ne i32 %t21, 7
+    eh_end
+    branch %t22, ^if_then_9, ^if_else_10
+
+  block ^if_then_9:
+    %t23 = addr $stream
+    call void @Stream___Stream(%t23)
+    return i32 3
+
+  block ^if_else_10:
+    jump ^if_end_11
+
+  block ^if_end_11:
+    eh_try ^call_unwind_dispatch_4
+    %t24 = addr $stream
+    call void @Stream__write_derived(%t24, 42)
+    eh_end
+    eh_try ^call_unwind_dispatch_4
+    %t25 = addr $stream
+    %t26 = index i8 [projection=base_subobject] %t25, 0
+    %t27 = call i32 @StreamBase__read(%t26)
+    store i32 %t27, $call__5
+    %t28 = load i32 $call__5
+    %t29 = cmp ne i32 %t28, 42
+    eh_end
+    branch %t29, ^if_then_12, ^if_else_13
+
+  block ^if_then_12:
+    %t30 = addr $stream
+    call void @Stream___Stream(%t30)
+    return i32 4
+
+  block ^if_else_13:
+    jump ^if_end_14
+
+  block ^if_end_14:
+    eh_try ^call_unwind_dispatch_4
+    %t31 = addr $stream
+    %t32 = index i8 [projection=base_subobject] %t31, 0
+    call void @StreamBase__write(%t32, 13)
+    eh_end
+    eh_try ^call_unwind_dispatch_4
+    %t33 = addr $stream
+    %t34 = call i32 @Stream__read_derived(%t33)
+    store i32 %t34, $call__6
+    %t35 = load i32 $call__6
+    %t36 = cmp ne i32 %t35, 13
+    eh_end
+    branch %t36, ^if_then_15, ^if_else_16
+
+  block ^if_then_15:
+    %t37 = addr $stream
+    call void @Stream___Stream(%t37)
+    return i32 5
+
+  block ^if_else_16:
+    jump ^if_end_17
+
+  block ^if_end_17:
+    %t38 = addr $stream
+    call void @Stream___Stream(%t38)
+    return i32 0
+}
+function @StreamBase__member_delta(%this : ptr) -> i64 [binding=weak, object=_ZN10StreamBase12member_deltaEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 16
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr $this
+    %t5 = binary sub ptr %t3, %t4
+    return i64 %t5
+}
+function @StreamBase__read(%this : ptr) -> i32 [binding=weak, object=_ZN10StreamBase4readEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 16
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    return i32 %t5
+}
+function @StreamBase__write(%this : ptr, %value : i32) -> void [binding=weak, object=_ZN10StreamBase5writeEi] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 16
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 $value
+    call void @DeviceBuffer__set(%t3, %t4)
+    return void
+}
+function @Stream__Stream(%this : ptr) -> void [binding=weak, object=_ZN6StreamC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    call void @StreamBase__StreamBase__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = addr @Stream__vtable
+    %t5 = index i8 %t4, 16
+    store ptr %t5, %t3
+    return void
+}
+function @Stream__derived_delta(%this : ptr) -> i64 [binding=weak, object=_ZN6Stream13derived_deltaEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 16
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr $this
+    %t5 = binary sub ptr %t3, %t4
+    return i64 %t5
+}
+function @Stream__read_derived(%this : ptr) -> i32 [binding=weak, object=_ZN6Stream12read_derivedEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 16
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    return i32 %t5
+}
+function @Stream__write_derived(%this : ptr, %value : i32) -> void [binding=weak, object=_ZN6Stream13write_derivedEi] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 16
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 $value
+    call void @DeviceBuffer__set(%t3, %t4)
+    return void
+}
+function @Stream___Stream__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN6StreamD0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Stream__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @StreamBase___StreamBase__base_entry(%t5)
+    %t6 = load ptr $this
+    call void @operator_delete(%t6)
+    return void
+}
+function @Stream___Stream(%this : ptr) -> void [binding=weak, object=_ZN6StreamD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Stream__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @StreamBase___StreamBase__base_entry(%t5)
+    return void
+}
+function @DeviceBuffer__set(%this : ptr, %value : i32) -> void [binding=weak, object=_ZN12DeviceBuffer3setEi] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @StreamBase__StreamBase__base_entry(%this : ptr) -> void [binding=weak, object=_ZN10StreamBaseC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 16
+    call void @BaseFromMember_DeviceBuffer___BaseFromMember__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    call void @PrimaryStream__PrimaryStream__base_entry(%t4)
+    %t5 = load ptr $this
+    %t6 = addr @StreamBase__vtable
+    %t7 = index i8 %t6, 16
+    store ptr %t7, %t5
+    return void
+}
+function @StreamBase___StreamBase__base_entry(%this : ptr) -> void [binding=weak, object=_ZN10StreamBaseD2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @StreamBase__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @PrimaryStream___PrimaryStream__base_entry(%t5)
+    return void
+}
+function @StreamBase___StreamBase__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN10StreamBaseD0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @StreamBase__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @PrimaryStream___PrimaryStream__base_entry(%t5)
+    %t6 = load ptr $this
+    call void @operator_delete(%t6)
+    return void
+}
+function @StreamBase___StreamBase(%this : ptr) -> void [binding=weak, object=_ZN10StreamBaseD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @StreamBase__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    call void @PrimaryStream___PrimaryStream__base_entry(%t5)
+    return void
+}
+function @BaseFromMember_DeviceBuffer___BaseFromMember__base_entry(%this : ptr) -> void [binding=weak, object=_ZN14BaseFromMemberI12DeviceBufferEC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @DeviceBuffer__DeviceBuffer(%t2)
+    return void
+}
+function @BaseFromMember_DeviceBuffer___BaseFromMember(%this : ptr) -> void [binding=weak, object=_ZN14BaseFromMemberI12DeviceBufferEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @DeviceBuffer__DeviceBuffer(%t2)
+    return void
+}
+function @PrimaryStream__PrimaryStream__base_entry(%this : ptr) -> void [binding=weak, object=_ZN13PrimaryStreamC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @PrimaryStream__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    store i32 99, %t5
+    return void
+}
+function @PrimaryStream__PrimaryStream(%this : ptr) -> void [binding=weak, object=_ZN13PrimaryStreamC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @PrimaryStream__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    store i32 99, %t5
+    return void
+}
+function @PrimaryStream___PrimaryStream__base_entry(%this : ptr) -> void [binding=weak, object=_ZN13PrimaryStreamD2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @PrimaryStream__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @PrimaryStream___PrimaryStream__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN13PrimaryStreamD0Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @PrimaryStream__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    %t4 = load ptr $this
+    call void @operator_delete(%t4)
+    return void
+}
+function @PrimaryStream___PrimaryStream(%this : ptr) -> void [binding=weak, object=_ZN13PrimaryStreamD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @PrimaryStream__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @DeviceBuffer__DeviceBuffer(%this : ptr) -> void [binding=weak, object=_ZN12DeviceBufferC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+alias object _ZN6StreamC2Ev = @Stream__Stream
+alias object _ZN6StreamD2Ev = @Stream___Stream
+alias object _ZN10StreamBaseD2Ev = @StreamBase___StreamBase
+alias object _ZN14BaseFromMemberI12DeviceBufferEC2Ev = @BaseFromMember_DeviceBuffer___BaseFromMember
+alias object _ZN13PrimaryStreamC2Ev = @PrimaryStream__PrimaryStream
+alias object _ZN13PrimaryStreamD2Ev = @PrimaryStream___PrimaryStream
+alias object _ZN12DeviceBufferC2Ev = @DeviceBuffer__DeviceBuffer

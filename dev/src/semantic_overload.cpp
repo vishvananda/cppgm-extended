@@ -7740,6 +7740,72 @@ int compare_function_template_class_template_arg_cv_preference(
   return 0;
 }
 
+const TemplateParameterInfo * direct_type_template_parameter_pack_reference(
+    const vector<TemplateParameterInfo> & parameters,
+    const TypePtr & pattern)
+{
+  TypePtr base = strip_top_level_cv(pattern);
+  if(base &&
+     (base->kind == Type::TK_LVALUE_REFERENCE ||
+      base->kind == Type::TK_RVALUE_REFERENCE)) {
+    base = strip_top_level_cv(base->inner);
+  }
+  if(!base || base->kind != Type::TK_NAMED) {
+    return nullptr;
+  }
+
+  const std::string semantic_payload = named_type_semantic_payload(base);
+  const TemplateParameterInfo * parameter =
+      !semantic_payload.empty() ? find_template_parameter(parameters, semantic_payload) :
+                                  nullptr;
+  if(!parameter) {
+    parameter = find_template_parameter(parameters, base->named_key);
+  }
+  if(!parameter) {
+    parameter = find_template_parameter_by_name(parameters, base->named_key);
+  }
+  if(!parameter && base->named_display != base->named_key) {
+    parameter = find_template_parameter(parameters, base->named_display);
+  }
+  if(!parameter && base->named_display != base->named_key) {
+    parameter = find_template_parameter_by_name(parameters, base->named_display);
+  }
+  return parameter &&
+                 parameter->kind == TemplateParameterInfo::TP_TYPE &&
+                 parameter->parameter_pack ?
+             parameter :
+             nullptr;
+}
+
+bool function_template_has_generic_trailing_type_pack(FunctionTemplateDecl & decl)
+{
+  const bool has_trailing_pack =
+      decl.has_trailing_function_parameter_pack ||
+      function_template_has_trailing_parameter_pack_fast(decl);
+  if(!has_trailing_pack || decl.params_pattern.empty()) {
+    return false;
+  }
+  return direct_type_template_parameter_pack_reference(
+             decl.parameters, decl.params_pattern.back().second) != nullptr;
+}
+
+size_t explicit_function_arg_count_for_template_match(
+    const CandidateMatch & match,
+    const FunctionTemplateDecl & decl)
+{
+  size_t count =
+      match.explicit_arg_count == static_cast<size_t>(-1) ?
+          match.params.size() :
+          match.explicit_arg_count;
+  if(match.function &&
+     match.function->is_method &&
+     !decl.is_static_member &&
+     count > decl.params_pattern.size()) {
+    --count;
+  }
+  return count;
+}
+
 int compare_function_template_trailing_pack_preference(const CandidateMatch & current,
                                                        const CandidateMatch & best)
 {
@@ -7748,19 +7814,35 @@ int compare_function_template_trailing_pack_preference(const CandidateMatch & cu
     return 0;
   }
 
-  const FunctionTemplateDecl & current_template = *current.function->source_template;
-  const FunctionTemplateDecl & best_template = *best.function->source_template;
-  if(!current_template.has_trailing_function_parameter_pack &&
-     !best_template.has_trailing_function_parameter_pack) {
+  FunctionTemplateDecl & current_template = *current.function->source_template;
+  FunctionTemplateDecl & best_template = *best.function->source_template;
+  const bool current_has_trailing_pack =
+      current_template.has_trailing_function_parameter_pack ||
+      function_template_has_trailing_parameter_pack_fast(current_template);
+  const bool best_has_trailing_pack =
+      best_template.has_trailing_function_parameter_pack ||
+      function_template_has_trailing_parameter_pack_fast(best_template);
+  if(!current_has_trailing_pack && !best_has_trailing_pack) {
+    return 0;
+  }
+  const bool current_generic_pack =
+      function_template_has_generic_trailing_type_pack(current_template);
+  const bool best_generic_pack =
+      function_template_has_generic_trailing_type_pack(best_template);
+  if(!current_generic_pack && !best_generic_pack) {
     return 0;
   }
 
   const size_t current_fixed =
-      current_template.params_pattern.size() -
-      (current_template.has_trailing_function_parameter_pack ? 1u : 0u);
+      std::min(current_template.params_pattern.size() -
+                   (current_has_trailing_pack ? 1u : 0u),
+               explicit_function_arg_count_for_template_match(current,
+                                                              current_template));
   const size_t best_fixed =
-      best_template.params_pattern.size() -
-      (best_template.has_trailing_function_parameter_pack ? 1u : 0u);
+      std::min(best_template.params_pattern.size() -
+                   (best_has_trailing_pack ? 1u : 0u),
+               explicit_function_arg_count_for_template_match(best,
+                                                              best_template));
   if(current_fixed > best_fixed) {
     return -1;
   }
@@ -7937,6 +8019,9 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
   if(early_non_type_pack_pattern_preference != 0) {
     return early_non_type_pack_pattern_preference;
   }
+  if(trailing_pack_preference != 0) {
+    return trailing_pack_preference;
+  }
 
   if(semantic_metrics::AnalyzerCounters * counters = performance_counters(ctx)) {
     counters->candidate_partial_order_acceptance_checks += 2;
@@ -7965,9 +8050,6 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
   }
   if(best_more_specialized && !current_more_specialized) {
     return 1;
-  }
-  if(trailing_pack_preference != 0) {
-    return trailing_pack_preference;
   }
   const int reference_pattern_preference =
       compare_function_template_reference_pattern_preference(current, best);
@@ -10936,6 +11018,7 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
               function_type->params[j + explicit_param_offset] :
               TypePtr());
     }
+    match.explicit_arg_count = match.params.size();
 
     if(okay) {
       Scope & decl_scope = candidate->declaration_scope ? *candidate->declaration_scope : scope;

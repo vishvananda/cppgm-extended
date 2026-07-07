@@ -14641,6 +14641,29 @@ private:
     return text.empty() || text == "\"memory\"";
   }
 
+  static string gnu_asm_clause_text_without_space(const string & text)
+  {
+    string out;
+    for(size_t i = 0; i < text.size(); ++i) {
+      const unsigned char ch = static_cast<unsigned char>(text[i]);
+      if(!isspace(ch)) {
+        out.push_back(static_cast<char>(ch));
+      }
+    }
+    return out;
+  }
+
+  static bool is_supported_locked_notb_fence_gnu_asm(const string & asm_template,
+                                                     const string & outputs,
+                                                     const string & inputs,
+                                                     const string & clobbers)
+  {
+    return asm_template == "\"lock; notb %0\"" &&
+           gnu_asm_clause_text_without_space(outputs) == "\"+m\"(dummy)" &&
+           inputs.empty() &&
+           clobbers == "\"memory\"";
+  }
+
   bool emit_supported_gnu_asm_statement(const CallSemNode & node)
   {
     if(node.children.empty() || node.children.size() > 4) {
@@ -14654,6 +14677,14 @@ private:
     const string outputs = gnu_asm_clause_text(node, 1);
     const string inputs = gnu_asm_clause_text(node, 2);
     const string clobbers = gnu_asm_clause_text(node, 3);
+    if(is_supported_locked_notb_fence_gnu_asm(asm_template,
+                                              outputs,
+                                              inputs,
+                                              clobbers)) {
+      emit_line("atomic_thread_fence 5");
+      return true;
+    }
+
     if(!is_supported_no_operand_gnu_asm_template(asm_template) ||
        !outputs.empty() ||
        !inputs.empty() ||

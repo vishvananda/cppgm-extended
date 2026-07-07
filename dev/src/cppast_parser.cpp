@@ -8290,6 +8290,21 @@ bool CppAstParser::parse_asm_statement(CppAstNode & out)
       continue;
     }
     if(paren_depth == 1 && bracket_depth == 0 && brace_depth == 0 &&
+       peek().is_simple(OP_COLON2)) {
+      CppAstNode clause =
+          make_node(CppAstKind::asm_clause, token_span_text_spaced(clause_start, pos));
+      clause.token_start = clause_start;
+      clause.token_end = pos;
+      out.children.push_back(std::move(clause));
+      CppAstNode empty_clause = make_node(CppAstKind::asm_clause, "");
+      empty_clause.token_start = pos;
+      empty_clause.token_end = pos;
+      out.children.push_back(std::move(empty_clause));
+      ++pos;
+      clause_start = pos;
+      continue;
+    }
+    if(paren_depth == 1 && bracket_depth == 0 && brace_depth == 0 &&
        peek().is_simple(OP_COLON)) {
       CppAstNode clause =
           make_node(CppAstKind::asm_clause, token_span_text_spaced(clause_start, pos));

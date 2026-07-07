@@ -4693,3 +4693,142 @@ direct-text report passes `3552/3552`; strict direct-text suite passes;
 --check` passes; perf check against the local `fc5945a80` baseline passes:
 instructions `+0.03%`, RSS `+1.40%`, footprint `-0.02%`, report
 `/tmp/cppgm-rref-temp-perf-20260706.json`.
+
+2026-07-07 Boost.Iostreams `auto_close_test` using-declared base-field
+runtime frontier: after the Boost.Filesystem dependency chain passed,
+`libs/iostreams/test//auto_close_test` linked and ran but aborted in the
+auto-close check. The failing object shape was
+`boost::iostreams::detail::stream_base`, which publicly re-exposes the
+`base_from_member<stream_buffer<...>>::member` data member through a
+using-declaration. Lookup correctly found the field binding, but expression
+lowering used the path offset to the class containing the using-declaration as
+if it were the offset to the field binding owner. That treated the streambuf
+field as if it lived at the `stream_base` primary base address, so the runtime
+closed the wrong object state. The fix keeps the existing typed lookup result:
+field access now derives an owner-class path offset from the lookup
+`declared_in` class to the field binding owner and uses that owner for both
+implicit and explicit member expressions. No Boost-specific rule or source-text
+member parsing was added. Owner: PA15 inherited data-member lookup/lowering.
+New regression:
+`pa15/tests/general/300-using-base-field-primary-base-offset.t`; existing
+reference refreshed for
+`pa15/tests/general/300-class-using-declaration-reexposes-protected-field.t`.
+Validation: clang accepts and runs the new reducer with `-std=c++11`; cppgm++
+native reducer exits `0`; focused PA15 check passes; PA15/PA19/PA23 direct-text
+report passes `685/685`; focused Boost B2
+`/usr/local/bin/timeout 1200 env JOBS=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/iostreams/test//auto_close_test`
+advanced past the runtime abort into the Boost.Test dependency frontier below.
+
+2026-07-07 Boost.Test libc++ `__invoke` trailing-pack fallback frontier: after
+the using-declared field fix, `auto_close_test` advanced into its Boost.Test
+dependency build and failed in libc++ algorithms: `std::__count`,
+`std::__find`, and `std::__lexicographical_compare` selected the all-pack
+fallback `__invoke(_Args&&...)` / `__nat` path instead of the fixed-prefix
+callable overload. The stored trailing-pack bit was not reliable for every
+instantiated function-template candidate, and the partial-order acceptance
+probe could incorrectly report the catch-all pack as more specialized. The fix
+stays on typed data: it detects generic trailing type-parameter packs from the
+`FunctionTemplateDecl` parameter pattern, applies the existing fast trailing-pack
+AST check when the stored bit is missing, and prefers the candidate with more
+participating fixed parameters only against those generic catch-all packs.
+Defaulted SFINAE parameters are not counted as participating fixed arguments:
+the constructor candidate path now records the explicit argument count before
+default arguments are appended, preserving the existing PA23
+`any_like(in_place_type_t<T>, Args&&...)` partial-ordering behavior. Owner:
+PA19 function-template partial ordering with parameter packs, with the PA23
+constructor default-argument guard covered by the existing
+`pa23/tests/spec/300-constructor-default-pack-partial-ordering.t` test. New
+regression:
+`pa19/tests/general/200-function-template-fixed-over-trailing-pack-fallback.t`.
+Validation: clang accepts and runs the PA19 reducer with `-std=c++11`; the
+cppgm++ native PA19 and PA23 reducers exit `0`; focused PA15, PA19, and PA23
+checks pass; PA15/PA19/PA23 direct-text report passes `685/685`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; focused Boost B2 advanced through Boost.Test and into the
+Boost.Filesystem dependency frontier below.
+
+2026-07-07 Boost.Filesystem target-aware member-call frontier: after the
+Boost.Test dependency chain passed, Boost.Filesystem `path.cpp` reached an
+explicit specialization of `path::string<std::string>(codecvt const&)` whose
+body returns `string(cvt)`. Inside the member template specialization,
+`string(cvt)` names the current member function, but target-aware return
+analysis saw the enclosing `path::string` type alias/name first and attempted
+to construct the return target from the `codecvt` argument. The fix keeps the
+target-aware path on typed lookup data: when the leading unqualified name also
+resolves to a callable in the current scope, target-aware construction declines
+and normal call analysis resolves the member call. The same guard is used in
+the target-aware audit path. Owner: PA23 member-template specialization return
+analysis. New regression:
+`pa23/tests/general/100-member-template-specialization-return-prefers-member-call.t`.
+Validation: clang accepts the reducer with `-std=c++11`; cppgm++ compiles the
+reducer; focused PA23 regression and existing constructor default-pack
+partial-ordering guard pass; direct Boost.Filesystem `path.cpp`/dependency
+compiles advanced to the Boost.Iostreams local-call frontier below.
+
+2026-07-07 Boost.Iostreams local call/declaration ambiguity frontier: after
+the target-aware member-call fix, `auto_close_test.o` reached
+`boost::iostreams::detail::linked_streambuf<...>::close` and failed on
+`close_impl(which);`. The namespace also declares
+`template<class T> struct close_impl;`, so the parser produced a local
+simple-declaration shape, but typed lookup in the member scope resolves
+`close_impl` as a callable member. The fix adds a narrow statement-analysis
+recovery for the one-identifier `callee(argument);` shape: if declaration
+specifier parsing fails, there is exactly one declarator argument, and typed
+function lookup finds the callee, analyze a synthetic call expression statement
+instead of throwing an unsupported local declaration. Owner: PA18 statement
+semantics for declaration/expression ambiguity. New regression:
+`pa18/tests/general/100-local-call-prefers-member-over-template-type-declaration.t`.
+Validation: clang accepts and runs the reducer with `-std=c++11`; cppgm++
+native reducer exits `0`; focused PA18 regression passes; focused B2 advanced
+through `auto_close_test.o` into the Boost.Atomic dependency frontier below.
+
+2026-07-07 Boost.Atomic function-type-alias extern-definition frontier: after
+the local-call fix, Boost.Atomic `lock_pool.cpp` failed in
+`find_address_generic` because the `size` parameter name was not bound in the
+function body. The namespace first declares the function through a function
+type alias:
+`using find_address_t = std::size_t (..., std::size_t size); extern find_address_t find_address_generic;`.
+That declaration has no direct parameter clause on the declarator, so the
+collector created a function binding with an empty parameter vector. The later
+definition found the binding but could not refresh names because the parameter
+counts differed. The fix synthesizes unnamed parameter slots from the resolved
+function type when a namespace-scope function declaration has no explicit
+parameter clause. Owner: PA18 namespace-scope function declaration collection.
+New regression:
+`pa18/tests/general/100-function-type-alias-extern-definition-parameter-names.t`.
+Validation: clang accepts and runs the reducer with `-std=c++11`; cppgm++
+native reducer exits `0`; focused PA18 regressions pass; direct
+`libs/atomic/src/lock_pool.cpp` compile then advanced to the GNU asm frontier
+below.
+
+2026-07-07 Boost.Atomic x86 GNU asm fence frontier: after the
+function-type-alias parameter fix, `lock_pool.cpp` failed lowering
+Boost.Atomic's x86 fence implementation:
+`__asm__ __volatile__("lock; notb %0" : "+m"(dummy) : : "memory")`, followed
+by the compact compiler-fence spelling `__asm__ __volatile__("" ::: "memory")`.
+The locked-not form is not general inline asm support; Boost uses it as a
+seq_cst fence on a private initialized stack byte. The fix keeps the existing
+hosted GNU asm whitelist narrow: parsed asm clauses matching exactly that
+dummy memory-output pattern lower to `atomic_thread_fence 5`, while other
+operand-bearing asm remains unsupported. Separately, the asm parser now treats
+top-level `OP_COLON2` inside `asm(...)` as two asm clause separators, so the
+compact `:::` spelling produces the same four structured clauses as `: : :`.
+Owner: PA34 hosted GNU asm compatibility plus LowIR fence lowering. New
+regression:
+`pa34/tests/compile/500-gnu-asm-locked-notb-fence.t`; existing unsupported
+output-operand guard
+`pa34/tests/compile/500-gnu-asm-output-operand-statement.t` remains passing.
+Validation: clang accepts the reducer with `-std=c++11`; cppgm++ emits
+`atomic_thread_fence 5` for the locked-not fence and `atomic_signal_fence 5`
+for compact empty asm; focused PA34 asm checks pass; direct
+`libs/atomic/src/lock_pool.cpp` compile passes with
+`CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++`; focused Boost B2
+`/usr/local/bin/timeout 1200 env JOBS=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./run-cppgm-b2.sh -a libs/iostreams/test//auto_close_test`
+exits `0`, updates 49 targets, links `auto_close_test`, and the captured test
+passes; log
+`/tmp/boost-iostreams-auto-close-after-atomic-asm-fix-20260707.log`. Samples:
+`/tmp/cppgm-boost-iostreams-auto-close-after-atomic-asm-sample-20260707.txt`
+and `/tmp/cppgm-boost-auto-close-after-atomic-asm-sample-20260707.txt`.
+Full direct-text report passes `3561/3561`; strict direct-text suite passes;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes.

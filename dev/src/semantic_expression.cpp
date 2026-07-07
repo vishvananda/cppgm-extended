@@ -1714,6 +1714,28 @@ ExprInfo adjust_member_declaring_base_if_needed(SemanticContext & ctx,
                                              path_offset);
 }
 
+size_t member_binding_owner_path_offset(const MemberValueLookupResult & member)
+{
+  size_t offset = member.path_offset;
+  if(!member.binding ||
+     member.binding->kind != ValueBinding::VK_FIELD ||
+     !member.binding->owner_class ||
+     !member.declared_in ||
+     member.binding->owner_class == member.declared_in) {
+    return offset;
+  }
+
+  size_t nested_offset = 0;
+  MemberAccess nested_access = MA_PUBLIC;
+  if(find_unique_base_path(*member.declared_in,
+                           member.binding->owner_class,
+                           nested_offset,
+                           nested_access)) {
+    offset += nested_offset;
+  }
+  return offset;
+}
+
 bool classify_literal_token(const string & text, EPPTokenType & out)
 {
   vector<EPPToken> tokens = tokenize(text);
@@ -2531,25 +2553,27 @@ ExprInfo make_implicit_member_expression_impl(SemanticContext & ctx,
     base = ctx.analyze_this_expression(scope, this_node);
   }
   if(binding.is_bit_field) {
+    const size_t owner_path_offset = member_binding_owner_path_offset(member);
     ExprInfo adjusted_base =
         adjust_member_declaring_base_if_needed(ctx,
                                                base,
                                                member_object_cv_source_type(base),
                                                current_class,
                                                binding.owner_class,
-                                               member.path_offset);
+                                               owner_path_offset);
     return make_bit_field_storage_expr(ctx,
                                        adjusted_base,
                                        binding,
-                                       binding.owner_class == current_class ? member.path_offset : 0);
+                                       binding.owner_class == current_class ? owner_path_offset : 0);
   }
+  const size_t owner_path_offset = member_binding_owner_path_offset(member);
   ExprInfo member_base =
       adjust_member_declaring_base_if_needed(ctx,
                                              base,
                                              member_object_cv_source_type(base),
                                              current_class,
                                              binding.owner_class,
-                                             member.path_offset);
+                                             owner_path_offset);
   ExprInfo result;
   result.type = apply_member_object_cv(binding.type,
                                        member_object_cv_source_type(base),
@@ -2559,7 +2583,7 @@ ExprInfo make_implicit_member_expression_impl(SemanticContext & ctx,
   set_expr_metadata(result.node, result.type, result.category);
   set_callsem_uint_value(
       result.node,
-      (binding.owner_class == current_class ? member.path_offset : 0) +
+      (binding.owner_class == current_class ? owner_path_offset : 0) +
           binding.field_offset);
   result.node.is_reference_storage = is_reference_type(binding.type);
   result.node.children.push_back(std::move(member_base.node));
@@ -4986,6 +5010,13 @@ bool target_aware_decline_requires_audit(SemanticContext & ctx,
     return false;
   }
 
+  if(!ctx.lookup_functions_node(scope,
+                                payload->children[0],
+                                payload->children[0].value,
+                                semantic_policy::without_body_instantiation()).empty()) {
+    return false;
+  }
+
   detail = "target-aware type-style construction declined [target " +
            describe_type(target) + "]";
   return true;
@@ -5442,25 +5473,28 @@ ExprInfo analyze_member_expression(SemanticContext & ctx,
   if(field.binding->kind != ValueBinding::VK_FIELD) {
     throw NotDataMemberExpressionError("member expression is not a data member");
   }
+  const ClassInfo * field_owner_class =
+      field.binding->owner_class ? field.binding->owner_class : field.declared_in;
+  const size_t owner_path_offset = member_binding_owner_path_offset(field);
   ExprInfo member_base =
       adjust_member_declaring_base_if_needed(ctx,
                                              base,
                                              member_object_type,
                                              target.target_class,
-                                             field.declared_in,
-                                             field.path_offset);
+                                             field_owner_class,
+                                             owner_path_offset);
   if(field.binding->is_bit_field) {
     return make_bit_field_storage_expr(ctx,
                                        member_base,
                                        *field.binding,
-                                       field.declared_in == target.target_class ?
-                                           field.path_offset : 0);
+                                       field_owner_class == target.target_class ?
+                                           owner_path_offset : 0);
   }
 
   ClassInfo * base_subobject_class = ctx.class_info_for_type(
       strip_top_level_cv(remove_reference_type(field.binding->type)));
   const size_t subobject_offset =
-      (field.declared_in == target.target_class ? field.path_offset : 0) +
+      (field_owner_class == target.target_class ? owner_path_offset : 0) +
       field.binding->field_offset;
   if(!is_reference_type(field.binding->type) &&
      base_subobject_class &&

@@ -1020,6 +1020,65 @@ bool try_analyze_structured_binding_as_subscript_assignment(SemanticContext & ct
   }
 }
 
+const CppAstNode * nested_declarator_identifier(const CppAstNode & declarator)
+{
+  const CppAstNode * nested = find_child_kind(declarator, CppAstKind::nested_declarator);
+  if(!nested) {
+    return nullptr;
+  }
+  const CppAstNode * inner = find_child_kind(*nested, CppAstKind::declarator);
+  if(!inner) {
+    return nullptr;
+  }
+  return find_child_kind(*inner, CppAstKind::identifier);
+}
+
+bool try_analyze_ambiguous_local_call_statement(SemanticContext & ctx,
+                                                Scope & scope,
+                                                const CppAstNode & node,
+                                                const CppAstNode & specifiers,
+                                                const CppAstNode * declarators,
+                                                DumpNode & out)
+{
+  const string callee_name = simple_type_identifier_from_specifiers(specifiers);
+  if(callee_name.empty() ||
+     !declarators ||
+     declarators->children.size() != 1 ||
+     ctx.lookup_functions(scope, callee_name).empty()) {
+    return false;
+  }
+
+  const CppAstNode & init_declarator = declarators->children[0];
+  if(init_declarator.kind != CppAstKind::init_declarator) {
+    return false;
+  }
+  const CppAstNode * declarator = find_child_kind(init_declarator, CppAstKind::declarator);
+  if(!declarator) {
+    return false;
+  }
+  const CppAstNode * argument = nested_declarator_identifier(*declarator);
+  if(!argument || argument->value.empty()) {
+    return false;
+  }
+
+  CppAstNode call =
+      make_call_expr_ast(make_id_expr_ast_node(callee_name),
+                         vector<CppAstNode>(1, make_id_expr_ast_node(argument->value)));
+  try
+  {
+    const CppAstNode * owned_call = ctx.own_synthetic_ast(std::move(call));
+    ExprInfo expr = ctx.analyze_expression(scope, *owned_call);
+    DumpNode expr_stmt = make_located_dump_node(CallSemKind::expression_statement, node);
+    expr_stmt.children.push_back(std::move(expr.node));
+    out.children.push_back(std::move(expr_stmt));
+    return true;
+  }
+  catch(const logic_error &)
+  {
+    return false;
+  }
+}
+
 void analyze_exception_declaration(SemanticContext & ctx,
                                    Scope & handler_scope,
                                    const CppAstNode & node,
@@ -1381,6 +1440,14 @@ void analyze_simple_declaration_statement(SemanticContext & ctx,
   }
   declaration_is_typedef = prepared_specifiers.declaration_is_typedef;
   if(!prepared_specifiers.has_auto && !prepared_specifiers.parsed_decl_spec) {
+    if(try_analyze_ambiguous_local_call_statement(ctx,
+                                                  scope,
+                                                  node,
+                                                  *specifiers,
+                                                  declarators,
+                                                  out)) {
+      return;
+    }
     ostringstream outmsg;
     outmsg << "unsupported local decl-specifier-seq";
     outmsg << " [specifiers " << node_text(*specifiers) << "]";

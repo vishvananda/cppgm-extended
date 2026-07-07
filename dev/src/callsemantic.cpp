@@ -10402,6 +10402,12 @@ private:
                                                strip_top_level_cv(target))) {
             return false;
           }
+          if(!lookup_functions_node(scope,
+                                    payload->children[0],
+                                    payload->children[0].value,
+                                    semantic_policy::without_body_instantiation()).empty()) {
+            return false;
+          }
           record_class_use_for_resolved_type_node(
               scope,
               payload->children[0],
@@ -26114,6 +26120,17 @@ private:
                                    &default_args,
                                    reference_function_parameter_types_only)) {
           throw logic_error("unsupported namespace-scope parameter-clause");
+        }
+        if(!parameter_clause) {
+          TypePtr function_type = strip_top_level_cv(type);
+          if(function_type && function_type->kind == Type::TK_FUNCTION) {
+            params.reserve(function_type->params.size());
+            for(size_t param_index = 0;
+                param_index < function_type->params.size();
+                ++param_index) {
+              params.push_back(make_pair(string(), function_type->params[param_index]));
+            }
+          }
         }
         if(has_special_initializer &&
            collect_out_of_class_method_special_initializer(scope,
