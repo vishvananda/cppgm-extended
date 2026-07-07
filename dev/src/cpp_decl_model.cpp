@@ -1205,6 +1205,15 @@ bool type_is_const_object(const TypePtr & type)
   return false;
 }
 
+TypePtr sizeof_operand_type(const TypePtr & type)
+{
+  if(!type) {
+    return TypePtr();
+  }
+  TypePtr base = remove_reference_type(type);
+  return base ? base : type;
+}
+
 bool type_is_complete(const TypePtr & type)
 {
   switch(type->kind) {
@@ -1231,6 +1240,19 @@ bool type_is_complete(const TypePtr & type)
   }
 
   return false;
+}
+
+bool type_is_valid_sizeof_operand(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(sizeof_operand_type(type));
+  if(!base) {
+    return false;
+  }
+  if((base->kind == Type::TK_FUNDAMENTAL && base->fundamental == FT_VOID) ||
+     base->kind == Type::TK_FUNCTION) {
+    return false;
+  }
+  return type_is_complete(base);
 }
 
 size_t type_alignment(const TypePtr & type)

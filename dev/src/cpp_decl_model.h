@@ -298,6 +298,8 @@ bool is_unsigned_integral_type(const TypePtr & type);
 bool resolve_callable_function_type(const TypePtr & type, TypePtr & out);
 bool is_void_type(const TypePtr & type);
 bool type_is_const_object(const TypePtr & type);
+TypePtr sizeof_operand_type(const TypePtr & type);
+bool type_is_valid_sizeof_operand(const TypePtr & type);
 bool type_is_complete(const TypePtr & type);
 std::size_t type_alignment(const TypePtr & type);
 std::size_t type_size(const TypePtr & type);

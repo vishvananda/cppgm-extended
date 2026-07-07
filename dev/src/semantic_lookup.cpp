@@ -940,8 +940,8 @@ bool same_inline_namespace_template_parameter_list(
   return true;
 }
 
-bool same_inline_namespace_class_template_entity(const ClassTemplateDecl * lhs,
-                                                 const ClassTemplateDecl * rhs)
+bool same_inline_namespace_class_template_entity_impl(const ClassTemplateDecl * lhs,
+                                                      const ClassTemplateDecl * rhs)
 {
   if(lhs == rhs) {
     return true;
@@ -2022,6 +2022,12 @@ Result lookup_qualified_class_or_namespace_generic(SemanticContext & ctx,
 }
 
 }  // namespace
+
+bool same_inline_namespace_class_template_entity(const ClassTemplateDecl * lhs,
+                                                 const ClassTemplateDecl * rhs)
+{
+  return same_inline_namespace_class_template_entity_impl(lhs, rhs);
+}
 
 TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                       Scope & scope,

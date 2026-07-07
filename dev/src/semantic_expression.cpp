@@ -1371,6 +1371,12 @@ void maybe_complete_layout_type(SemanticContext & ctx, const TypePtr & type)
   }
 }
 
+bool prepare_sizeof_operand_type(SemanticContext & ctx, const TypePtr & type)
+{
+  maybe_complete_layout_type(ctx, type);
+  return type_is_valid_sizeof_operand(type);
+}
+
 void set_expr_metadata(CallSemNode & node,
                        const TypePtr & type,
                        ValueCategory category)
@@ -2161,6 +2167,25 @@ bool try_overloaded_unary_operator(SemanticContext & ctx,
       };
 
   ExprInfo operand = ctx.analyze_expression(scope, node.children[0]);
+  if(parser_trace::enabled("overload")) {
+    OverloadableOperandInfo operand_info =
+        classify_overloadable_operator_operand(ctx, operand.type);
+    ostringstream trace;
+    trace << "unary-operator-operand"
+          << " op=" << operator_name
+          << " operand=" << describe_type(operand.type)
+          << " base="
+          << (operand_info.base_type ? describe_type(operand_info.base_type) :
+                                      string("<none>"))
+          << " class="
+          << (operand_info.class_info ?
+                  operand_info.class_info->qualified_name :
+                  string("<none>"))
+          << " has_class=" << (operand_info.has_class_operand ? "yes" : "no")
+          << " overloadable="
+          << (operand_info.has_overloadable_operand ? "yes" : "no");
+    parser_trace::note("overload", ctx.source_location_for_node(node), trace.str());
+  }
   if(!has_overloadable_operator_operand(ctx, operand.type)) {
     return false;
   }
@@ -2174,7 +2199,20 @@ bool try_overloaded_unary_operator(SemanticContext & ctx,
     filter_function_bindings_by_argument_count(
         member_candidates.functions,
         postfix ? 2 : 1);
-    if(!member_candidates.functions.empty()) {
+    MemberFunctionTemplateLookupResult member_template_candidates =
+        lookup_visible_member_function_templates(*class_info, operator_name);
+    if(parser_trace::enabled("overload")) {
+      ostringstream trace;
+      trace << "unary-operator-member-candidates"
+            << " op=" << operator_name
+            << " operand=" << describe_type(operand.type)
+            << " class=" << class_info->qualified_name
+            << " function_count=" << member_candidates.functions.size()
+            << " template_count=" << member_template_candidates.templates.size();
+      parser_trace::note("overload", ctx.source_location_for_node(node), trace.str());
+    }
+    if(!member_candidates.functions.empty() ||
+       !member_template_candidates.templates.empty()) {
       CppAstNode call;
       call.kind = CppAstKind::call_expression;
       call.children.push_back(make_dot_member_operator_callee(node.children[0], operator_name));
@@ -7544,19 +7582,19 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
     bool parsed_type_id = ctx.parse_type_id(scope, child, operand_type) &&
                           static_cast<bool>(operand_type);
     if(parsed_type_id) {
-      maybe_complete_layout_type(ctx, operand_type);
+      prepare_sizeof_operand_type(ctx, operand_type);
     }
-    if(!parsed_type_id || !operand_type || !type_is_complete(operand_type)) {
+    if(!parsed_type_id || !type_is_valid_sizeof_operand(operand_type)) {
       TypePtr recovered_operand_type;
       if(try_analyze_recovered_sizeof_type_id_operand(ctx,
                                                       scope,
                                                       child,
                                                       recovered_operand_type)) {
         operand_type = recovered_operand_type;
-        maybe_complete_layout_type(ctx, operand_type);
+        prepare_sizeof_operand_type(ctx, operand_type);
       }
     }
-    if(!operand_type || !type_is_complete(operand_type)) {
+    if(!type_is_valid_sizeof_operand(operand_type)) {
       throw logic_error("invalid sizeof type-id");
     }
   } else if(child.kind == CppAstKind::id_expression) {
@@ -7570,15 +7608,13 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
     } else {
       operand_type = lookup_id_expression_type_name(ctx, scope, child);
     }
-    maybe_complete_layout_type(ctx, operand_type);
-    if(!operand_type || !type_is_complete(operand_type)) {
+    if(!prepare_sizeof_operand_type(ctx, operand_type)) {
       throw logic_error("invalid sizeof operand");
     }
   } else {
     ExprInfo expr = analyze_unevaluated_sizeof_operand(ctx, scope, child);
     operand_type = expr.type;
-    maybe_complete_layout_type(ctx, operand_type);
-    if(!operand_type || !type_is_complete(operand_type)) {
+    if(!prepare_sizeof_operand_type(ctx, operand_type)) {
       throw logic_error("invalid sizeof operand");
     }
   }
@@ -7592,10 +7628,7 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
      ctx.scope_has_template_placeholders(scope)) {
     return result;
   }
-  TypePtr sizeof_type = remove_reference_type(operand_type);
-  if(!sizeof_type) {
-    sizeof_type = operand_type;
-  }
+  TypePtr sizeof_type = sizeof_operand_type(operand_type);
   set_callsem_uint_value(result.node, type_size(sizeof_type));
   return result;
 }

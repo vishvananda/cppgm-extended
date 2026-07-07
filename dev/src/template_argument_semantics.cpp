@@ -12063,17 +12063,6 @@ constant_eval::Hooks build_leaf_constant_eval_hooks(template_api::TemplateServic
             services,
             template_api::make_template_environment(scope),
             type);
-        if(services.semantic_context) {
-          TypePtr sizeof_type = remove_reference_type(type);
-          if(!sizeof_type) {
-            sizeof_type = type;
-          }
-          callsemantic_internal::maybe_complete_sizeof_type(
-              *services.semantic_context, sizeof_type);
-          if(!sizeof_type || !type_is_complete(sizeof_type)) {
-            return false;
-          }
-        }
         return true;
       };
   hooks.evaluate_sizeof_operand =
@@ -12089,15 +12078,12 @@ constant_eval::Hooks build_leaf_constant_eval_hooks(template_api::TemplateServic
             services,
             template_api::make_template_environment(scope),
             type);
-        TypePtr sizeof_type = remove_reference_type(type);
-        if(!sizeof_type) {
-          sizeof_type = type;
-        }
+        TypePtr sizeof_type = sizeof_operand_type(type);
         if(services.semantic_context) {
           callsemantic_internal::maybe_complete_sizeof_type(
               *services.semantic_context, sizeof_type);
         }
-        if(!sizeof_type || !type_is_complete(sizeof_type)) {
+        if(!type_is_valid_sizeof_operand(sizeof_type)) {
           return false;
         }
         size = type_size(sizeof_type);

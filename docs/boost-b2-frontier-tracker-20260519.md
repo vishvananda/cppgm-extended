@@ -793,6 +793,30 @@ Local Boost wrapper state:
 | 53 | `libs/hana/test` | pass | Post-Heap gap survey passes in 4.6s; log `/tmp/boost-suite-survey-post-heap-gap-20260705/libs__hana__test.log`. |
 | 54 | `libs/hash2/test` | mixed | Active frontier suite. The current Hash2 work fixes `digest`, `append_pointer`, `append_tuple_like_2`, and `detail_has_tag_invoke`. Fresh full survey after the hidden-friend pointer ADL fix still reports mixed, but the real remaining failed updates are down to `hash_32_64.o` (`unknown function detail::class_template_name<L<T...>>`) and `sha2_cx.o` (duplicate `test<sha2_256, 57>` symbol). The survey detail also includes an expected-fail `append_tag_invoke_4` `do_hash_append` diagnostic, but B2 marks that test passed as expected. Latest survey summary: `/tmp/boost-suite-survey-hash2-after-hidden-friend-pointer-adl-20260706/summary.md`; log: `/tmp/boost-suite-survey-hash2-after-hidden-friend-pointer-adl-20260706/libs__hash2__test.log`. |
 | 55 | `libs/heap/test` | pass | Current-head suite survey after the friend-access fixes passes in 322.5s, updating 69 targets. `d_ary_heap_test` now builds, links, runs, and passes along with the existing priority queue, mutable heap, skew heap, move-only, pairing, fibonacci, and binomial targets. Summary `/tmp/boost-suite-survey-heap-after-friend-access-20260705/summary.md`; log `/tmp/boost-suite-survey-heap-after-friend-access-20260705/libs__heap__test.log`. |
+| 56 | `libs/iterator/test` | pass | Full `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/iterator/test` on 2026-07-06 reports `failed updating 0 target` and only skipped expected-fail dependency targets, matching the row-28 Core convention for a clean suite despite B2's nonzero status. Log `/tmp/boost-iterator-full-after-sizeof-unary-20260706.log`. |
+
+- 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
+  `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
+  a concrete template-id head beat a direct template-template-parameter head
+  with a compatible trailing pack, and named template-id deduction now compares
+  typed class-template entities with inline namespace equivalence instead of
+  relying on spelling. `iterator_adaptor_test` needed unary overloaded
+  operators to consider member function templates, so `operator*` on
+  `operator_brackets_proxy` enters the existing member-call overload path.
+  `is_iterator` needed `sizeof` SFINAE to reject invalid typed operands such
+  as `void` in the constant-evaluator hooks while preserving reference removal
+  and completion for valid operands. Owners/regressions:
+  `pa21/tests/general/300-unary-member-operator-template-default.t`,
+  `pa21/tests/general/400-concrete-template-head-beats-template-template-pack.t`,
+  and `pa22/tests/general/500-sizeof-void-sfinae-fallback.t`. Validation:
+  clang accepts the reducers with `-std=c++11`; the focused Boost.Iterator
+  frontier targets pass; full `libs/iterator/test` has no failed updates;
+  full direct-LowIR `test-report` passes `3555/3555`; strict direct-LowIR
+  suite passes; text-reparse audit and `git diff --check` pass; PA21 placement
+  audit has no failing findings; PA22 placement audit still reports only the
+  pre-existing hygiene/member-pointer findings; perf check against
+  `/tmp/cppgm-rref-temp-baseline-b3e03cd71-20260706.json` passes:
+  instructions `-0.36%`, RSS `+0.97%`, footprint `+0.01%`.
 
 - 2026-07-03 Flyweight final cursor correction: detailed rows below now fix
   the lazy member-template disambiguator, Boost.Intrusive defaulted rebind

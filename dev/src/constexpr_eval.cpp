@@ -545,9 +545,9 @@ bool Evaluator::eval_expr_inner(const CppAstNode & node, ConstexprValue & out)
       if(!hooks_.parse_type_id || !hooks_.parse_type_id(payload, type)) {
         return false;
       }
-      TypePtr sizeof_type = remove_reference_type(type);
-      if(!sizeof_type) {
-        sizeof_type = type;
+      TypePtr sizeof_type = sizeof_operand_type(type);
+      if(!type_is_valid_sizeof_operand(sizeof_type)) {
+        return false;
       }
       out = make_integral_value(static_cast<long long>(type_size(sizeof_type)),
                                 make_fundamental(FT_UNSIGNED_LONG_INT));

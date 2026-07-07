@@ -18304,17 +18304,14 @@ private:
       type = lookup_type(scope, expr.value);
     }
     maybe_complete_sizeof_type(*this, type);
-    if(!type || !type_is_complete(type)) {
+    if(!type_is_valid_sizeof_operand(type)) {
       return false;
     }
     if(sizeof_depends_on_template_parameters(type) &&
        scope_has_template_placeholders(scope)) {
       return false;
     }
-    TypePtr sizeof_type = remove_reference_type(type);
-    if(!sizeof_type) {
-      sizeof_type = type;
-    }
+    TypePtr sizeof_type = sizeof_operand_type(type);
     size = type_size(sizeof_type);
     return true;
   }

@@ -115,6 +115,8 @@ std::string inline_namespace_collapsed_scope_name(const Scope * scope);
 Scope * unqualified_friend_entity_scope(const ClassInfo & info);
 bool same_inline_namespace_function_template_entity(const FunctionTemplateDecl * lhs,
                                                     const FunctionTemplateDecl * rhs);
+bool same_inline_namespace_class_template_entity(const ClassTemplateDecl * lhs,
+                                                 const ClassTemplateDecl * rhs);
 bool class_has_friend_class_access(const ClassInfo * current_class,
                                    const ClassInfo * declared_in);
 bool same_function_template_entity_type(

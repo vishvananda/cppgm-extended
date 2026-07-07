@@ -2118,6 +2118,41 @@ bool template_argument_template_id_head_pattern(
   return false;
 }
 
+const TemplateIdSyntax * template_argument_template_id_syntax(
+    const TemplateArgumentSyntax & syntax);
+
+bool template_id_trailing_pack_suffix(
+    const TemplateIdSyntax & syntax,
+    std::size_t & fixed_count);
+
+bool template_id_fixed_prefix_patterns_compatible(
+    const std::vector<TemplateParameterInfo> & current_parameters,
+    const TemplateIdSyntax & current,
+    const std::vector<TemplateParameterInfo> & best_parameters,
+    const TemplateIdSyntax & best,
+    std::size_t prefix_count);
+
+bool template_id_head_arity_matches_direct_pattern(
+    const std::vector<TemplateParameterInfo> & concrete_parameters,
+    const TemplateIdSyntax & concrete,
+    const std::vector<TemplateParameterInfo> & direct_parameters,
+    const TemplateIdSyntax & direct)
+{
+  if(concrete.arguments.size() == direct.arguments.size()) {
+    return true;
+  }
+  std::size_t direct_fixed = 0;
+  if(!template_id_trailing_pack_suffix(direct, direct_fixed) ||
+     concrete.arguments.size() < direct_fixed) {
+    return false;
+  }
+  return template_id_fixed_prefix_patterns_compatible(concrete_parameters,
+                                                      concrete,
+                                                      direct_parameters,
+                                                      direct,
+                                                      direct_fixed);
+}
+
 template <typename PartialDecl>
 int compare_template_id_head_specificity(const PartialDecl & current,
                                          const PartialDecl & best)
@@ -2130,26 +2165,35 @@ int compare_template_id_head_specificity(const PartialDecl & current,
       std::min(std::min(current.arg_texts.size(), best.arg_texts.size()),
                std::min(current.arg_syntaxes.size(), best.arg_syntaxes.size()));
   for(std::size_t i = 0; i < limit; ++i) {
+    const TemplateIdSyntax * current_id =
+        template_argument_template_id_syntax(current.arg_syntaxes[i]);
+    const TemplateIdSyntax * best_id =
+        template_argument_template_id_syntax(best.arg_syntaxes[i]);
     TemplateIdHeadPattern current_head;
     TemplateIdHeadPattern best_head;
-    if(!template_argument_template_id_head_pattern(current.parameters,
-                                                   &current.arg_syntaxes[i],
-                                                   current_head) ||
-       !template_argument_template_id_head_pattern(best.parameters,
-                                                   &best.arg_syntaxes[i],
-                                                   best_head) ||
+    if(!current_id ||
+       !best_id ||
+       !template_id_syntax_head_pattern(current.parameters, *current_id, current_head) ||
+       !template_id_syntax_head_pattern(best.parameters, *best_id, best_head) ||
        !current_head.valid ||
-       !best_head.valid ||
-       current_head.arity != best_head.arity) {
+       !best_head.valid) {
       continue;
     }
 
     int argument_preference = 0;
     if(current_head.concrete_template &&
-       best_head.direct_template_template_parameter) {
+       best_head.direct_template_template_parameter &&
+       template_id_head_arity_matches_direct_pattern(current.parameters,
+                                                     *current_id,
+                                                     best.parameters,
+                                                     *best_id)) {
       argument_preference = -1;
     } else if(best_head.concrete_template &&
-              current_head.direct_template_template_parameter) {
+              current_head.direct_template_template_parameter &&
+              template_id_head_arity_matches_direct_pattern(best.parameters,
+                                                            *best_id,
+                                                            current.parameters,
+                                                            *current_id)) {
       argument_preference = 1;
     }
     if(argument_preference == 0) {
@@ -8111,13 +8155,20 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     if(template_names_match(candidate_name, actual_name)) {
       return true;
     }
-    if(actual_source_template &&
-       services.semantic_context) {
+    if(services.semantic_context) {
       ClassTemplateDecl * pattern_template =
           semantic_lookup::lookup_class_template(*services.semantic_context,
                                                  match_scope,
                                                  candidate_name);
-      if(pattern_template == actual_source_template) {
+      ClassTemplateDecl * actual_template =
+          actual_source_template ?
+              actual_source_template :
+              semantic_lookup::lookup_class_template(*services.semantic_context,
+                                                     match_scope,
+                                                     actual_name);
+      if(semantic_lookup::same_inline_namespace_class_template_entity(
+             pattern_template,
+             actual_template)) {
         return true;
       }
     }
