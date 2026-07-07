@@ -18102,6 +18102,31 @@ private:
     apply_host_builtin_metadata(*binding, params);
   }
 
+  void inherit_function_local_class_access(ClassInfo & info,
+                                           FunctionBinding * binding)
+  {
+    if(!binding ||
+       !info.source_is_named_function_local_class ||
+       !info.member_scope) {
+      return;
+    }
+
+    FunctionBinding * enclosing_function = current_function_scope(*info.member_scope);
+    if(!enclosing_function || enclosing_function == binding) {
+      return;
+    }
+
+    if(!binding->lexical_access_function) {
+      binding->lexical_access_function = enclosing_function;
+    }
+    if(!binding->lexical_access_class) {
+      binding->lexical_access_class =
+          enclosing_function->lexical_access_class ?
+              enclosing_function->lexical_access_class :
+              enclosing_function->owner_class;
+    }
+  }
+
   FunctionBinding * register_function_entity(const FunctionRegistrationRequest & request) override
   {
     const FunctionTemplateRegistrationIdentity & template_identity =
@@ -18138,6 +18163,7 @@ private:
       if(binding && request.semantic_flags.is_deleted) {
         binding->is_deleted = true;
       }
+      inherit_function_local_class_access(*request.owner_class, binding);
       return binding;
     }
 

@@ -4620,3 +4620,27 @@ passes; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
 and reaches the next frontier, inaccessible member lookup while resolving
 `filesystem::type_present`; perf check against a fresh `f0e8b1263` baseline
 passes: instructions `-0.09%`, RSS `+0.85%`, footprint `+0.04%`.
+
+2026-07-06 Boost.Filesystem local-class friend-access frontier: after the
+durable enumerator fix, `directory.cpp` reached
+`filesystem::type_present(dir_it->m_symlink_status)` inside the same
+function-local `struct local`. `directory_entry` grants friendship to the
+enclosing `detail::recursive_directory_iterator_increment` function, and C++11
+allows a local class member defined inside that friend function to use the same
+access context. Class member registration, however, discarded the enclosing
+lexical function when the class was function-local, so access checking saw only
+`local::push_directory` and rejected `directory_entry::m_symlink_status`. The
+fix stamps named function-local class member functions with the enclosing
+function and its lexical/owner class using the existing typed
+`lexical_access_function` / `lexical_access_class` access model. No access-site
+bypass or source-text fallback was added. Owner: PA29 local-class runtime and
+access context. New regression:
+`pa29/tests/general/300-runtime-local-class-member-friend-access.t`.
+Validation: clang accepts the reducer with `-std=c++11`; PA29 direct-text
+report passes `72/72`; full direct-text report passes `3551/3551`; strict
+direct-text suite passes; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes; focused Boost.Filesystem
+`libs/filesystem/src/directory.cpp` compile moves past the `type_present`
+access failure and reaches the next frontier, `value-initialized constructor
+call missing target`; perf check against the `fc5945a80` baseline passes:
+instructions `+0.07%`, RSS `-1.75%`, footprint `-0.01%`.
