@@ -3498,6 +3498,8 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
   maybe_complete_layout_type(ctx, allocated_object_type);
   ClassInfo * array_element_class =
       is_array_new ? ctx.complete_class_type(allocated_object_type) : nullptr;
+  ClassInfo * allocation_class =
+      is_array_new ? array_element_class : ctx.complete_class_type(allocated_object_type);
   const size_t array_cookie_size =
       array_element_class ? class_array_new_cookie_size(allocated_object_type) : 0;
 
@@ -3505,7 +3507,19 @@ ExprInfo analyze_new_expression(SemanticContext & ctx,
   allocation_call.kind = CppAstKind::call_expression;
   CppAstNode callee;
   callee.kind = CppAstKind::id_expression;
-  callee.value = is_array_new ? "operator new[]" : "operator new";
+  const string allocation_name = is_array_new ? "operator new[]" : "operator new";
+  callee.value = allocation_name;
+  if(allocation_class && allocation_class->member_scope) {
+    MemberFunctionLookupResult class_allocation =
+        lookup_visible_member_functions(*allocation_class, allocation_name);
+    if(!class_allocation.functions.empty()) {
+      QualifiedName qualified_allocation =
+          scope_qualified_name_syntax(*allocation_class->member_scope,
+                                      allocation_name);
+      set_cppast_qualified_name_syntax(callee, qualified_allocation);
+      callee.value = allocation_class->qualified_name + "::" + allocation_name;
+    }
+  }
   allocation_call.children.push_back(callee);
 
   CppAstNode arguments;

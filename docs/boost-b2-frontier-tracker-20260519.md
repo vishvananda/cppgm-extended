@@ -4512,3 +4512,28 @@ checks pass; `python3 scripts/audit_text_reparse.py --strict` and `git diff
 --check` pass; focused Boost.Filesystem `libs/filesystem/src/path_traits.cpp`
 compile exits 0 with cppgm++; perf check against a fresh `2dc52f477` baseline
 passes: instructions `+0.07%`, RSS `-0.59%`, footprint `+0.01%`.
+
+2026-07-06 Boost.Filesystem class-specific placement-new frontier: after the
+member-template specialization fix, the next fresh `libs/iostreams/test` run
+reached Boost.Filesystem `directory.cpp` and failed at
+`new (extra_size) detail::dir_itr_imp()` with a global `operator new` overload
+set. `dir_itr_imp` declares a class-specific `operator new(std::size_t,
+std::size_t)`, and a direct `dir_itr_imp::operator new(sizeof(dir_itr_imp),
+extra_size)` call already resolved, but the compiler's new-expression lowering
+always synthesized an unqualified global allocation-function call before
+constructor selection. The fix keeps allocation lookup on the existing typed
+call path: for class object new, or class-element array new, the synthesized
+allocation callee is class-qualified only when class lookup finds
+`operator new`/`operator new[]`; the call is then analyzed by normal overload
+resolution, with the old global call remaining the fallback. No Boost-specific
+rule or alternate allocation-code path was added. Owner: PA16 new-expression
+allocation function lookup. New regression:
+`pa16/tests/general/300-class-specific-placement-new.t`. Validation: clang
+accepts the reducer with `-std=c++11`; cppgm++ native reducer exits 0; focused
+PA16 check passes; PA16 direct-text report passes `141/141`; full direct-text
+report passes `4266/4266`; strict direct-text suite passes; `python3
+scripts/audit_text_reparse.py --strict` and `git diff --check` pass; focused
+Boost.Filesystem `libs/filesystem/src/directory.cpp` compile moves past the
+placement-new site and reaches the next frontier, deleted move-assignment
+handling for `boost::scope::unique_fd`; perf check against fresh `8c98a6b0c`
+baseline passes: instructions `-0.04%`, RSS `-0.17%`, footprint `-0.01%`.
