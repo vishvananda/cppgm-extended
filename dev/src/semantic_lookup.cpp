@@ -3841,6 +3841,21 @@ bool function_has_friend_access(const FunctionBinding * current_function,
       }
     }
   }
+  for(size_t i = 0; i < declared_in->friend_access_functions.size(); ++i) {
+    FunctionBinding * friend_function = declared_in->friend_access_functions[i];
+    const bool same_binding = friend_function == current_function;
+    const bool same_entity =
+        friend_function &&
+        same_inline_namespace_function_entity(*friend_function, *current_function);
+    const bool same_source_template =
+        friend_function &&
+        friend_function->source_template &&
+        current_function->source_template &&
+        friend_function->source_template == current_function->source_template;
+    if(same_binding || same_entity || same_source_template) {
+      return true;
+    }
+  }
   for(size_t i = 0; i < declared_in->friend_functions.size(); ++i) {
     FunctionBinding * friend_function = declared_in->friend_functions[i];
     const bool same_binding = friend_function == current_function;

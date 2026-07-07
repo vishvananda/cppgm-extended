@@ -4559,3 +4559,25 @@ direct-text suite passes; `python3 scripts/audit_text_reparse.py --strict` and
 move-assignment site and reaches the next frontier, inaccessible member lookup
 in `directory_iterator_construct`; perf check against fresh `86b74c885`
 baseline passes: instructions `-0.14%`, RSS `-0.70%`, footprint `+0.06%`.
+
+2026-07-06 Boost.Filesystem qualified friend access frontier: after the
+assignability-trait fix, `directory.cpp` reached `it.m_imp.swap(imp)` in
+`detail::directory_iterator_construct` and rejected access to
+`directory_iterator::m_imp` even though `directory_iterator` declares
+`friend void detail::directory_iterator_construct(...)`. Qualified friend
+function declarations were registered as namespace functions but not retained
+in the class's friend access set; the existing `friend_functions` set is also
+used for associated friend lookup, so adding qualified friends there would
+change ADL behavior. The fix adds an access-only `friend_access_functions`
+vector and teaches access checking, class reset, and memory census to use it.
+Unqualified friends keep the existing ADL-visible path. Owner: PA15 friend
+member access. New regression:
+`pa15/tests/general/300-qualified-friend-function-access.t`. Validation: clang
+accepts the reducer with `-std=c++11`; focused PA15 check passes; PA15
+direct-text report passes `174/174`; full direct-text report passes
+`5628/5628`; strict direct-text suite passes; `python3
+scripts/audit_text_reparse.py --strict` and `git diff --check` pass; focused
+Boost.Filesystem `libs/filesystem/src/directory.cpp` compile moves past
+`it.m_imp` and reaches the next frontier, unknown GCC atomic builtin
+`__atomic_store_n`; perf check against fresh `a227d561a` baseline passes:
+instructions `-0.06%`, RSS `-0.01%`, footprint `-0.02%`.

@@ -520,6 +520,7 @@ struct ClassInfo
   std::vector<SubobjectInfo> virtual_base_subobjects;
   std::vector<VTableInfo> vtables;
   std::vector<FunctionBinding *> friend_functions;
+  std::vector<FunctionBinding *> friend_access_functions;
   std::vector<FunctionTemplateDecl *> friend_function_templates;
   std::vector<FunctionTemplateDecl *> friend_access_function_templates;
   std::vector<std::string> friend_class_names;

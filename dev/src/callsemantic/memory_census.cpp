@@ -688,6 +688,7 @@ void census_class_info(const ClassInfo * info,
                  vector_storage_bytes(info->virtual_base_subobjects) +
                  vector_storage_bytes(info->vtables) +
                  vector_storage_bytes(info->friend_functions) +
+                 vector_storage_bytes(info->friend_access_functions) +
                  vector_storage_bytes(info->friend_function_templates) +
                  vector_storage_bytes(info->friend_access_function_templates) +
                  vector_storage_bytes(info->friend_class_names) +
@@ -738,6 +739,17 @@ void census_class_info(const ClassInfo * info,
   }
   for(size_t i = 0; i < info->friend_functions.size(); ++i) {
     census_function_binding(info->friend_functions[i],
+                            census,
+                            seen_functions,
+                            seen_types,
+                            seen_callsem_extras,
+                            seen_callsem_rare_strings,
+                            seen_callsem_rare_payloads,
+                            seen_callsem_source_files,
+                            seen_callsem_symbols);
+  }
+  for(size_t i = 0; i < info->friend_access_functions.size(); ++i) {
+    census_function_binding(info->friend_access_functions[i],
                             census,
                             seen_functions,
                             seen_types,

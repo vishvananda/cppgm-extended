@@ -6493,6 +6493,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.virtual_base_subobjects.clear();
   info.vtables.clear();
   info.friend_functions.clear();
+  info.friend_access_functions.clear();
   info.friend_function_templates.clear();
   info.friend_access_function_templates.clear();
   info.deferred_member_aliases.clear();
@@ -6666,6 +6667,7 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
   info.virtual_base_subobjects.clear();
   info.vtables.clear();
   info.friend_functions.clear();
+  info.friend_access_functions.clear();
   info.friend_function_templates.clear();
   info.friend_access_function_templates.clear();
   info.friend_class_names.clear();
@@ -7720,6 +7722,12 @@ bool register_friend_function_binding(SemanticContext & ctx,
   ctx.register_function_entity(request);
   FunctionBinding * binding =
       ctx.find_exact_function(*registration_scope, registration_name, effective_friend_type);
+  if(binding &&
+     std::find(info.friend_access_functions.begin(),
+               info.friend_access_functions.end(),
+               binding) == info.friend_access_functions.end()) {
+    info.friend_access_functions.push_back(binding);
+  }
   if(!qualified_friend_name &&
      binding &&
      std::find(info.friend_functions.begin(), info.friend_functions.end(), binding) ==
