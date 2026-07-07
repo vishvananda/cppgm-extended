@@ -1686,6 +1686,14 @@ SameClassAssignmentTrait evaluate_same_class_assignment_trait(SemanticContext & 
     copy = ctx.ensure_implicit_copy_assignment(*info);
   }
   if(copy && assignment_binding_accepts_rhs(ctx, scope, *copy, rhs)) {
+    if(copy->is_deleted) {
+      if(FunctionBinding * alternate =
+             find_class_assignment_operator_for_trait(ctx, scope, target, rhs)) {
+        result.binding = alternate;
+        result.assignable = !alternate->is_deleted;
+        return result;
+      }
+    }
     result.binding = copy;
     result.assignable = !copy->is_deleted;
   }

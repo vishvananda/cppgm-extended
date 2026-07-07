@@ -4537,3 +4537,25 @@ Boost.Filesystem `libs/filesystem/src/directory.cpp` compile moves past the
 placement-new site and reaches the next frontier, deleted move-assignment
 handling for `boost::scope::unique_fd`; perf check against fresh `8c98a6b0c`
 baseline passes: instructions `-0.04%`, RSS `-0.17%`, footprint `-0.01%`.
+
+2026-07-06 Boost.Filesystem assignment-template trait frontier: after
+class-specific placement-new lookup, the next `directory.cpp` failure was
+`fd = std::move(params->dir_fd)`, where overload resolution selected the
+deleted `unique_resource::operator=(unique_resource const&)`. Tracing showed
+Boost.Scope's member-template move assignment was instantiated with
+`Requires=false` because `std::is_move_assignable<data>` lowered through
+`__is_assignable(data&, data&&)` and the same-class assignment trait
+short-circuited on the deleted copy assignment before considering member
+assignment templates. The fix keeps the existing typed assignment-template
+lookup as the alternate path when the same-class shortcut finds only a deleted
+copy assignment. Owner: PA34 builtin assignability traits. New regression:
+`pa34/tests/compile/700-is-assignable-member-assignment-template.t`.
+Validation: clang accepts the reducer with `-std=c++11`; focused Boost.Scope
+`unique_fd` assignment reducer compiles with cppgm++; PA34 direct-text report
+passes `282/282`; full direct-text report passes `5627/5627`; strict
+direct-text suite passes; `python3 scripts/audit_text_reparse.py --strict` and
+`git diff --check` pass; focused Boost.Filesystem
+`libs/filesystem/src/directory.cpp` compile moves past the deleted
+move-assignment site and reaches the next frontier, inaccessible member lookup
+in `directory_iterator_construct`; perf check against fresh `86b74c885`
+baseline passes: instructions `-0.14%`, RSS `-0.70%`, footprint `+0.06%`.
