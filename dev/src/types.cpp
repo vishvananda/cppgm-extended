@@ -567,11 +567,15 @@ bool split_floating_literal(const string& text,
   }
   if(suffix == "l" || suffix == "L" ||
      suffix == "q" || suffix == "Q" ||
-     suffix == "f128" || suffix == "F128") {
+     suffix == "f128" || suffix == "F128" ||
+     suffix == "f64x" || suffix == "F64x" ||
+     suffix == "F64X") {
     type = FT_LONG_DOUBLE;
     return true;
   }
-  if(suffix == "f64" || suffix == "F64") {
+  if(suffix == "f64" || suffix == "F64" ||
+     suffix == "f32x" || suffix == "F32x" ||
+     suffix == "F32X") {
     type = FT_DOUBLE;
     return true;
   }

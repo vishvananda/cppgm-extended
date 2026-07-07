@@ -625,6 +625,7 @@ struct FunctionTemplateDecl
   bool is_override = false;
   bool is_final = false;
   bool is_lambda_call_operator_template = false;
+  bool is_member_function_template = false;
   bool exclude_from_explicit_instantiation = false;
   const CppAstNode * declaration_node = nullptr;
   const CppAstNode * definition_node = nullptr;

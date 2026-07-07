@@ -28081,6 +28081,7 @@ private:
       decl->access = MA_PUBLIC;
       decl->is_const_method = !mutable_lambda;
       decl->is_lambda_call_operator_template = true;
+      decl->is_member_function_template = true;
       decl->specifiers = own_synthetic_ast(synthetic_specifiers);
       decl->declarator = own_synthetic_ast(synthetic_declarator);
       decl->declaration_node = declarator ? declarator : decl->declarator;

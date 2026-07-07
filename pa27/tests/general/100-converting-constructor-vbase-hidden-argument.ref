@@ -1,0 +1,94 @@
+function @take(%it : obj<4x4>) -> i32 [binding=strong, object=_Z4take4Iter] {
+  slot $it : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $it
+    copyobj 4x4 %it, %t1
+    %t2 = addr $it
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    return i32 %t4
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : obj<8x4>
+  slot $cond__1 : i32
+  slot $argobj__2 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $s
+    call void @Stream__Stream(%t1)
+    %t2 = addr $s
+    %t3 = index i8 [projection=base_subobject] %t2, 4
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 7, %t4
+    %t5 = addr $argobj__2
+    %t6 = addr $s
+    %t7 = index i8 %t6, 4
+    call void @Iter__Iter(%t5, %t6, %t7)
+    %t8 = call i32 @take($argobj__2)
+    %t9 = cmp eq i32 %t8, 7
+    branch %t9, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t10 = load i32 $cond__1
+    return i32 %t10
+}
+function @Stream__Stream(%this : ptr) -> void [binding=weak, object=_ZN6StreamC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 4
+    call void @IOS__IOS__base_entry(%t2)
+    return void
+}
+function @Iter__Iter(%this : ptr, %s : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN4IterC1ER6Stream] {
+  slot $this : ptr
+  slot $s : ptr
+  slot $s__pvb0 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %s, $s
+    store ptr %__pvbptr0, $s__pvb0
+    %t1 = load ptr $s__pvb0
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    store i32 %t4, %t6
+    return void
+}
+function @IOS__IOS__base_entry(%this : ptr) -> void [binding=weak, object=_ZN3IOSC2Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+alias object _ZN6StreamC2Ev = @Stream__Stream
+alias object _ZN4IterC2ER6Stream = @Iter__Iter
+alias object _ZN3IOSC2Ev = @IOS__IOS

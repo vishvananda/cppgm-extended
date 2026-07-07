@@ -40,10 +40,40 @@ bool implicit_instantiation_definition_suppressed(const semantic_model::ClassInf
 }
 
 bool function_obeys_implicit_instantiation_definition_suppression(
+    const semantic_model::FunctionBinding & binding,
+    bool explicit_instantiation_suppressed)
+{
+  const bool in_class_member_definition =
+      binding.owner_class &&
+      binding.declaration_node &&
+      binding.definition_node &&
+      binding.declaration_node == binding.definition_node;
+  if(explicit_instantiation_suppressed &&
+     template_api::function_binding_is_member_function_template(binding) &&
+     !binding.suppress_implicit_instantiation_definition) {
+    return false;
+  }
+  if(explicit_instantiation_suppressed &&
+     in_class_member_definition &&
+     !binding.suppress_implicit_instantiation_definition) {
+    return false;
+  }
+  return !template_api::function_binding_excluded_from_explicit_instantiation(binding) &&
+         !template_api::function_binding_bypasses_explicit_instantiation_suppression(
+             binding,
+             explicit_instantiation_suppressed);
+}
+
+bool function_obeys_implicit_instantiation_definition_suppression(
     const semantic_model::FunctionBinding & binding)
 {
-  return !template_api::function_binding_excluded_from_explicit_instantiation(binding) &&
-         !template_api::function_binding_bypasses_explicit_instantiation_suppression(binding);
+  const bool explicit_instantiation_suppressed =
+      binding.suppress_implicit_instantiation_definition ||
+      template_api::function_binding_owner_class_suppresses_implicit_instantiation_definition(
+          binding);
+  return function_obeys_implicit_instantiation_definition_suppression(
+      binding,
+      explicit_instantiation_suppressed);
 }
 
 bool should_emit_instantiated_class_method_definition(
@@ -61,8 +91,15 @@ bool should_emit_instantiated_class_method_definition(
   if(!class_output_readiness.templated_context) {
     return definition_required || synthesized_definition;
   }
-  if(class_output_readiness.suppress_implicit_definition &&
-     function_obeys_implicit_instantiation_definition_suppression(binding)) {
+  const bool explicit_instantiation_suppressed =
+      class_output_readiness.suppress_implicit_definition ||
+      binding.suppress_implicit_instantiation_definition ||
+      template_api::function_binding_owner_class_suppresses_implicit_instantiation_definition(
+          binding);
+  if(explicit_instantiation_suppressed &&
+     function_obeys_implicit_instantiation_definition_suppression(
+         binding,
+         explicit_instantiation_suppressed)) {
     return false;
   }
   if(definition_required &&

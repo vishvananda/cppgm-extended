@@ -3607,6 +3607,10 @@ void append_copy_assignment_action(SemanticContext & ctx,
                                    const ExprInfo & rhs,
                                    DumpNode & out)
 {
+  if(ctx.is_empty_class_info(&info) &&
+     is_trivially_copy_assignable_type(ctx, info.type)) {
+    return;
+  }
   if(info.class_kind == "union") {
     append_union_copy_action(ctx,
                              scope,

@@ -423,12 +423,25 @@ void adopt_function_template_identity_from_materialized(
     const semantic_model::FunctionBinding & materialized);
 bool class_suppresses_implicit_instantiation_definition(
     const semantic_model::ClassInfo * info);
+bool function_template_decl_is_member_function_template(
+    const semantic_model::FunctionTemplateDecl & decl);
+bool function_binding_is_member_function_template(
+    const semantic_model::FunctionBinding & binding);
+bool function_binding_owner_class_suppresses_implicit_instantiation_definition(
+    const semantic_model::FunctionBinding & binding);
 bool function_binding_excluded_from_explicit_instantiation(
     const semantic_model::FunctionBinding & binding);
+bool function_binding_bypasses_explicit_instantiation_suppression(
+    const semantic_model::FunctionBinding & binding,
+    bool explicit_instantiation_suppressed);
 bool function_binding_bypasses_explicit_instantiation_suppression(
     const semantic_model::FunctionBinding & binding);
 bool function_binding_output_suppressed_by_explicit_instantiation(
     const semantic_model::FunctionBinding & binding);
+bool value_binding_owner_class_suppresses_implicit_instantiation_definition(
+    const semantic_model::ValueBinding & binding);
+bool value_binding_output_suppressed_by_explicit_instantiation(
+    const semantic_model::ValueBinding & binding);
 void apply_function_template_symbol_options(
     semantic_model::FunctionTemplateDecl * source_template,
     const std::vector<template_model::TemplateArgument> * instantiation_arguments,

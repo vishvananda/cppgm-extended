@@ -783,6 +783,22 @@ bool parse_float_literal_token(const string & token,
                                long double & value,
                                LowType & literal_type)
 {
+  auto lower_ascii = [](string text) -> string {
+    for(char & ch : text) {
+      ch = static_cast<char>(tolower(static_cast<unsigned char>(ch)));
+    }
+    return text;
+  };
+  auto strip_suffix = [](const string & text,
+                         const string & suffix,
+                         string & stripped) -> bool {
+    if(text.size() < suffix.size() ||
+       text.compare(text.size() - suffix.size(), suffix.size(), suffix) != 0) {
+      return false;
+    }
+    stripped = text.substr(0, text.size() - suffix.size());
+    return true;
+  };
   auto try_parse_signaling_nan = [&]() -> bool {
     bool negative = false;
     string parsed = token;
@@ -849,21 +865,44 @@ bool parse_float_literal_token(const string & token,
     return true;
   }
 
+  const string lowered = lower_ascii(token);
+  string parsed;
+  if(strip_suffix(lowered, "f16", parsed) ||
+     strip_suffix(lowered, "bf16", parsed) ||
+     strip_suffix(lowered, "f32", parsed)) {
+    literal_type.text = "f32";
+    return try_parse_f32(parsed);
+  }
+  if(strip_suffix(lowered, "f64", parsed) ||
+     strip_suffix(lowered, "f32x", parsed)) {
+    literal_type.text = "f64";
+    return try_parse_f64(parsed);
+  }
+  if(strip_suffix(lowered, "f128", parsed) ||
+     strip_suffix(lowered, "f64x", parsed)) {
+    literal_type.text = "f80";
+    return try_parse_f80(parsed);
+  }
+
   literal_type.text = "f64";
   if(try_parse_f64(token)) {
     return true;
   }
 
-  string parsed = token;
-  if(!parsed.empty() && (parsed.back() == 'f' || parsed.back() == 'F')) {
+  string standard_suffix_parsed = token;
+  if(!standard_suffix_parsed.empty() &&
+     (standard_suffix_parsed.back() == 'f' ||
+      standard_suffix_parsed.back() == 'F')) {
     literal_type.text = "f32";
-    parsed.erase(parsed.end() - 1);
-    return try_parse_f32(parsed);
+    standard_suffix_parsed.erase(standard_suffix_parsed.end() - 1);
+    return try_parse_f32(standard_suffix_parsed);
   }
-  if(!parsed.empty() && (parsed.back() == 'l' || parsed.back() == 'L')) {
+  if(!standard_suffix_parsed.empty() &&
+     (standard_suffix_parsed.back() == 'l' ||
+      standard_suffix_parsed.back() == 'L')) {
     literal_type.text = "f80";
-    parsed.erase(parsed.end() - 1);
-    return try_parse_f80(parsed);
+    standard_suffix_parsed.erase(standard_suffix_parsed.end() - 1);
+    return try_parse_f80(standard_suffix_parsed);
   }
   return false;
 }

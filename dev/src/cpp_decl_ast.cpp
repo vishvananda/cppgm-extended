@@ -42,7 +42,7 @@ bool hosted_decl_specifier_alias(const CppAstNode & node,
     mapped = KW_VOLATILE;
     return true;
   }
-  if(text == "__inline" || text == "__inline__") {
+  if(text == "__inline" || text == "__inline__" || text == "__forceinline") {
     mapped = KW_INLINE;
     return true;
   }
@@ -213,6 +213,13 @@ bool decl_spec_contains_token(const CppAstNode & node, ETokenType token)
 
   for(size_t i = 0; i < node.children.size(); ++i) {
     const CppAstNode & child = node.children[i];
+    ETokenType mapped = KW_CONST;
+    bool ignore = false;
+    if(hosted_decl_specifier_alias(child, mapped, ignore) &&
+       !ignore &&
+       mapped == token) {
+      return true;
+    }
     if((child.kind == CppAstKind::decl_specifier ||
         child.kind == CppAstKind::specifier) &&
        child.has_token &&

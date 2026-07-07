@@ -2509,6 +2509,20 @@ void apply_definition_abi_metadata_to_binding(
   ctx.upgrade_function_symbol_linkage(&binding, binding.symbol.linkage);
 }
 
+bool stored_member_definition_suppressed_by_explicit_instantiation(
+    const ClassInfo & info,
+    const FunctionBinding & binding,
+    const OutOfClassMemberFunctionDecl & stored)
+{
+  return stored.body &&
+         (info.suppress_implicit_instantiation_definition ||
+          template_api::
+              function_binding_owner_class_suppresses_implicit_instantiation_definition(
+                  binding)) &&
+         !stored.exclude_from_explicit_instantiation &&
+         !template_api::function_binding_excluded_from_explicit_instantiation(binding);
+}
+
 void apply_stored_out_of_class_member_function_abi_metadata_map(
     SemanticContext & ctx,
     const std::map<std::string, std::vector<OutOfClassMemberFunctionDecl> > & stored_definitions,
@@ -2644,6 +2658,12 @@ void apply_stored_out_of_class_member_function_abi_metadata_map(
                                                          binding));
       }
       if(found && binding) {
+        if(stored_member_definition_suppressed_by_explicit_instantiation(
+               info,
+               *binding,
+               stored)) {
+          continue;
+        }
         apply_definition_abi_metadata_to_binding(ctx, *binding, stored);
       }
     }
@@ -2810,6 +2830,20 @@ void apply_stored_out_of_class_member_function_definitions_map(
         parser_trace::note("template.resolve", std::string(), trace.str());
       }
       if(!found || !binding) {
+        continue;
+      }
+      if(stored_member_definition_suppressed_by_explicit_instantiation(
+             info,
+             *binding,
+             stored)) {
+        if(parser_trace::enabled("template.resolve")) {
+          std::ostringstream trace;
+          trace << "apply-out-of-class-member-function class=" << info.qualified_name
+                << " member=" << it->first
+                << " qualified-name=" << stored.qualified_name
+                << " skipped=explicit-instantiation-suppression";
+          parser_trace::note("template.resolve", std::string(), trace.str());
+        }
         continue;
       }
       apply_definition_abi_metadata_to_binding(ctx, *binding, stored);
@@ -8010,6 +8044,14 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
     return nullptr;
   };
+  const auto template_body_is_in_class_definition =
+      [&](FunctionTemplateDecl & source_decl) -> bool
+      {
+        return effective_template_body(source_decl) &&
+               !source_decl.definition_node &&
+               !source_decl.definition_declarator &&
+               !source_decl.definition_inner;
+      };
   const auto effective_function_qualifier = [&](FunctionTemplateDecl & source_decl)
       -> const CppAstNode *
   {
@@ -8348,11 +8390,15 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
        found->second->symbol.linkage == symbol_linkage::SL_WEAK) {
       ctx.upgrade_function_symbol_linkage(found->second, found->second->symbol.linkage);
     }
+    const bool source_template_body_bypasses_owner_suppression =
+        !found->second->suppress_implicit_instantiation_definition &&
+        (template_body_is_in_class_definition(*cache_source_decl) ||
+         template_api::function_template_decl_is_member_function_template(
+             *cache_source_decl));
     const bool suppressed_by_owner =
         found->second->owner_class &&
         found->second->owner_class->suppress_implicit_instantiation_definition &&
-        !(found->second->source_template &&
-          !found->second->suppress_implicit_instantiation_definition);
+        !source_template_body_bypasses_owner_suppression;
     bool definition_materialized_from_source_template = false;
     if(explicit_specialization) {
       found->second->body = body_override;
@@ -9198,10 +9244,17 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
   const std::vector<std::string> parameter_aliases =
       instantiate_function_parameter_aliases(*source_decl, params);
 
+  const bool source_template_body_suppressed_by_owner =
+      !explicit_specialization &&
+      instantiation_owner &&
+      instantiation_owner->suppress_implicit_instantiation_definition &&
+      !template_body_is_in_class_definition(*source_decl) &&
+      !template_api::function_template_decl_is_member_function_template(
+          *source_decl);
   const CppAstNode * instantiated_body =
-      include_body ? (explicit_specialization ? body_override :
-                                             effective_template_body(*source_decl)) :
-                     nullptr;
+      (include_body && !source_template_body_suppressed_by_owner) ?
+          (explicit_specialization ? body_override : effective_template_body(*source_decl)) :
+          nullptr;
   FunctionBinding * binding = nullptr;
   if(source_decl->declaring_scope && source_decl->declaring_scope->class_info) {
     ClassInfo & info = *instantiation_owner;

@@ -1,0 +1,54 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : obj<4x4>
+  slot $b : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $a
+    %t2 = addr $b
+    %t3 = addr $a
+    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 1, %t5
+    %t6 = addr $b
+    %t7 = index i8 [projection=base_subobject] %t6, 0
+    %t8 = index i8 [projection=field] %t7, 0
+    store i32 2, %t8
+    %t9 = addr $a
+    %t10 = addr $b
+    %t11 = call i32 @Derived__run(%t9, %t10)
+    return i32 %t11
+}
+function @Derived__run(%this : ptr, %other : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN7Derived3runERS_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t3 = call ptr @Base__get(%t2)
+    %t4 = load ptr $other
+    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t6 = call ptr @Base__get(%t5)
+    %t7 = call i32 @same_ref(%t3, %t6)
+    return i32 %t7
+}
+function @Base__get(%this : ptr) -> ptr [binding=weak, object=_ZN4Base3getEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+function @same_ref(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z8same_refIiEiRT_S1_] {
+  slot $__param0 : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %__param1, $__param1
+    return i32 0
+}

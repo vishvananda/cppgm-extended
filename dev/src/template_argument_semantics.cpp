@@ -26,6 +26,7 @@
 #include "semantic_lookup.h"
 #include "semantic_metrics.h"
 #include "semantic_consteval.h"
+#include "semantic_template_function.h"
 #include "semantic_template_variable.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
@@ -9590,6 +9591,13 @@ bool evaluate_leaf_constexpr_binding(template_api::TemplateServices & services,
     }
     binding.body =
         services.semantic_context->materialize_lazy_function_body(*binding.body);
+  }
+  if(services.semantic_context &&
+     services.witness_context.session != nullptr &&
+     template_api::function_binding_has_template_identity(&binding)) {
+    semantic_template_function::note_ensured_function_definition_materialized_by_lifecycle(
+        *services.semantic_context,
+        &binding);
   }
   const size_t explicit_param_offset = binding.is_method ? 1u : 0u;
 
