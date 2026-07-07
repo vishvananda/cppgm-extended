@@ -4482,3 +4482,33 @@ B2 `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-
 passes and updates 32 targets, including `nullstream_test`. Perf check against
 `/tmp/cppgm-before-global-delete-baseline-20260706.json` passes: instructions
 `-0.26%`, RSS `+0.82%`, footprint `+0.61%`.
+
+2026-07-06 Boost.Filesystem member function-template explicit-specialization
+frontier: after Boost.IO passed, `libs/iostreams/test` pulled in
+Boost.Filesystem and failed while compiling `boost/filesystem/path.hpp` at
+`template<> inline std::string path::string<std::string>() const` with
+`unsupported function explicit specialization`. The compiler handled
+namespace-scope explicit function-template specializations, but rejected a
+qualified explicit template-id naming a member function template. The fix
+resolves the qualified owner class from the parsed template-id syntax, looks up
+the member function templates in the owner member scope, resolves the explicit
+template arguments through the existing template-argument path, deduces the
+specialization signature, and acquires the function binding through the normal
+template-instantiation API. Symbol linkage remains centralized: the resulting
+binding is emitted through `symbol_linkage::make_function_symbol_identity`, and
+frontend `--emit-abi-facts` exports the same typed `function encoding` records
+that the PA30 `abimangle` backend consumes. No parallel object-symbol builder,
+Boost-specific rule, or new ABI fact syntax was added, so the PA30 README did
+not need an update. Owner: PA23 function-template explicit specializations and
+PA30 ABI fact encoding coverage. New regressions:
+`pa23/tests/general/100-member-function-template-explicit-specialization-definition.t`
+and `pa30/tests/abi/300-member-function-template-specialization.t`.
+Validation: clang accepts the PA23 reducer with `-std=c++11`; focused PA23 and
+PA30 checks pass; the PA23 reducer's `--emit-abi-facts` output exactly matches
+the PA30 fact file and `dev/abimangle` emits
+`_ZNK4path6stringI11string_likeEET_v`; PA23+PA30 direct-LowIR report passes
+`461/461`; full direct-LowIR report passes `5625/5625`; strict direct-LowIR
+checks pass; `python3 scripts/audit_text_reparse.py --strict` and `git diff
+--check` pass; focused Boost.Filesystem `libs/filesystem/src/path_traits.cpp`
+compile exits 0 with cppgm++; perf check against a fresh `2dc52f477` baseline
+passes: instructions `+0.07%`, RSS `-0.59%`, footprint `+0.01%`.

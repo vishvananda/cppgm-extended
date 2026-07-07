@@ -3418,7 +3418,78 @@ public:
       vector<FunctionTemplateDecl *> templates;
       if(has_explicit_template_id) {
         if(specialization_name.rooted || !specialization_name.qualifiers.empty()) {
-          throw logic_error("unsupported function explicit specialization");
+          ClassInfo * owner =
+              resolve_qualified_owner_class_from_template_id_syntax(
+                  pattern_scope,
+                  specialization_name,
+                  function_template_identifier);
+          if(!owner) {
+            QualifiedName owner_name_syntax;
+            owner_name_syntax.rooted = specialization_name.rooted;
+            if(!specialization_name.qualifiers.empty()) {
+              owner_name_syntax.qualifiers.assign(specialization_name.qualifiers.begin(),
+                                                  specialization_name.qualifiers.end() - 1);
+              owner_name_syntax.name = specialization_name.qualifiers.back();
+            }
+            owner = resolve_qualified_owner_class(
+                pattern_scope,
+                qualified_name_syntax_text(owner_name_syntax));
+          }
+          if(!owner || !owner->member_scope) {
+            throw logic_error("unsupported function explicit specialization");
+          }
+          if(!owner->complete && !owner->reference_member_collection_in_progress) {
+            ctx.ensure_class_reference_members(*owner);
+          }
+          templates =
+              semantic_lookup::lookup_direct_function_templates(*owner->member_scope,
+                                                                specialization_name.name);
+          const vector<ExprInfo> deduction_args =
+              build_function_template_deduction_args();
+          for(size_t i = 0; i < templates.size(); ++i) {
+            vector<TemplateArgument> explicit_arguments;
+            if(!resolve_template_arguments(scope,
+                                           templates[i]->parameters,
+                                           arg_texts,
+                                           &function_template_id->argument_syntaxes,
+                                           explicit_arguments,
+                                           templates[i]->declaring_scope)) {
+              continue;
+            }
+            template_api::TemplateFunctionDeductionRequest deduction_request;
+            deduction_request.decl = templates[i];
+            deduction_request.args = &deduction_args;
+            deduction_request.resolution_scope = &scope;
+            deduction_request.explicit_arguments = &explicit_arguments;
+            template_api::TemplateFunctionDeductionResult deduction_result;
+            if(!template_api::deduce_function_template(ctx,
+                                                       deduction_request,
+                                                       deduction_result)) {
+              continue;
+            }
+            if(!function_template_specialization_type_matches(*templates[i],
+                                                             deduction_result.arguments)) {
+              continue;
+            }
+            record_explicit_function_specialization_binding(
+                acquire_function_template(*templates[i],
+                                          deduction_result.arguments,
+                                          &scope,
+                                          deduction_result.pack_sizes.empty() ?
+                                              nullptr :
+                                              &deduction_result.pack_sizes,
+                                          true,
+                                          true,
+                                          body,
+                                          &node,
+                                          specifiers &&
+                                              decl_spec_contains_token(*specifiers,
+                                                                      KW_CONSTEXPR),
+                                          false,
+                                          owner));
+            return;
+          }
+          throw logic_error("unknown function template explicit specialization");
         }
         templates = lookup_function_templates(scope, specialization_name.name);
         const vector<ExprInfo> deduction_args =
