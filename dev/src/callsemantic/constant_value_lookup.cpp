@@ -419,9 +419,26 @@ public:
       }
       return false;
     };
+    const string template_identifier = variable_template->name;
     std::string source_use_location =
         template_api::normalize_template_witness_source_location(
             parser_trace::current_use_location());
+    if(!source_location_points_at_identifier(source_use_location,
+                                             template_identifier)) {
+      const string identifier_location =
+          template_api::template_witness_detail::
+              source_location_for_identifier_token_on_or_after(
+                  template_witness_context(),
+                  source_use_location,
+                  template_identifier,
+                  true,
+                  true);
+      if(!identifier_location.empty()) {
+        source_use_location =
+            template_api::normalize_template_witness_source_location(
+                identifier_location);
+      }
+    }
     std::string syntax_source_use_location;
     const auto syntax_location = [&]() -> const std::string &
     {
@@ -435,9 +452,9 @@ public:
     };
     const bool syntax_source_spells_template =
         source_location_id_points_at_identifier(template_id.source_location_id,
-                                                template_id.name.name);
+                                                template_identifier);
     if(!source_location_points_at_identifier(source_use_location,
-                                             template_id.name.name) &&
+                                             template_identifier) &&
        syntax_source_spells_template) {
       source_use_location = syntax_location();
     }

@@ -868,11 +868,8 @@ std::string template_lookup_fragment_identifier(
   if(template_fragment.empty()) {
     return std::string();
   }
-  const std::string::size_type open = template_fragment.find('<');
   const std::string without_args =
-      open == std::string::npos ?
-          template_fragment :
-          trim_space(template_fragment.substr(0, open));
+      strip_trailing_top_level_template_arguments(trim_space(template_fragment));
   const std::string identifier = unqualified_member_name(without_args);
   return !identifier.empty() ? identifier : without_args;
 }

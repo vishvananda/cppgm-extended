@@ -6658,6 +6658,36 @@ bool class_template_instance_arguments_need_refresh(
          info.instantiation_arg_texts.size() != arguments.size();
 }
 
+bool append_template_value_dependency_if_new(
+    std::vector<template_model::TemplateValueDependency> & target,
+    const template_model::TemplateValueDependency & dependency)
+{
+  if(dependency.entity.empty() || dependency.decl_location.empty()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < target.size(); ++i) {
+    if(target[i].entity == dependency.entity &&
+       target[i].decl_location == dependency.decl_location) {
+      return false;
+    }
+  }
+  target.push_back(dependency);
+  return true;
+}
+
+void merge_template_argument_value_dependencies(
+    std::vector<TemplateArgument> & target,
+    const std::vector<TemplateArgument> & source)
+{
+  const std::size_t count = std::min(target.size(), source.size());
+  for(std::size_t i = 0; i < count; ++i) {
+    for(std::size_t j = 0; j < source[i].value_dependencies.size(); ++j) {
+      append_template_value_dependency_if_new(target[i].value_dependencies,
+                                             source[i].value_dependencies[j]);
+    }
+  }
+}
+
 void record_class_template_dependent_argument_texts(
     ClassInfo & info,
     const std::vector<std::string> & argument_texts)
@@ -6769,6 +6799,9 @@ bool record_class_template_instantiation_state(
         canonical_instantiation_arg_texts_impl(ctx, arguments);
     info.instantiation_arguments = arguments;
     clear_class_template_cached_lambda_mangle_metadata(info, arguments);
+  } else if(!info.instantiation_arguments.empty()) {
+    merge_template_argument_value_dependencies(info.instantiation_arguments,
+                                               arguments);
   }
   if(refresh_arguments || !info.has_instantiation_binding_arguments) {
     record_class_template_binding_state(info, arguments, nullptr);

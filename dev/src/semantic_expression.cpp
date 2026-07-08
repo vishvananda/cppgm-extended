@@ -45,6 +45,7 @@
 #include "template_api.h"
 #include "template_services.h"
 #include "types.h"
+#include "witness_api.h"
 
 using namespace std;
 
@@ -3424,10 +3425,10 @@ DumpNode make_nullptr_literal_node()
   return node;
 }
 
-bool extract_disguised_call_callee_text(const CppAstNode & type_id,
-                                        std::string & out)
+bool extract_disguised_call_callee(const CppAstNode & type_id,
+                                   CppAstNode & out)
 {
-  out.clear();
+  out = CppAstNode();
   if(type_id.kind != CppAstKind::type_id ||
      type_id.children.empty() ||
      type_id.children[0].kind != CppAstKind::type_specifier_seq) {
@@ -3456,7 +3457,10 @@ bool extract_disguised_call_callee_text(const CppAstNode & type_id,
     return false;
   }
 
-  out = type_name->value;
+  out = *type_name;
+  out.kind = CppAstKind::id_expression;
+  out.semantic_type.reset();
+  out.children.clear();
   return true;
 }
 
@@ -3482,8 +3486,8 @@ bool try_analyze_disguised_parenthesized_call(SemanticContext & ctx,
     return false;
   }
 
-  std::string callee_text;
-  if(!extract_disguised_call_callee_text(node.children[0], callee_text)) {
+  CppAstNode callee;
+  if(!extract_disguised_call_callee(node.children[0], callee)) {
     return false;
   }
 
@@ -3492,10 +3496,6 @@ bool try_analyze_disguised_parenthesized_call(SemanticContext & ctx,
      operand.children.size() != 1) {
     return false;
   }
-
-  CppAstNode callee;
-  callee.kind = CppAstKind::id_expression;
-  callee.value = callee_text;
 
   CppAstNode arguments;
   arguments.kind = CppAstKind::paren_argument_list;
@@ -4071,6 +4071,128 @@ bool try_analyze_recovered_sizeof_type_id_operand(SemanticContext & ctx,
   } catch(const logic_error &) {
     return false;
   }
+}
+
+const CppAstNode * sizeof_type_id_witness_anchor(const CppAstNode & type_id)
+{
+  const CppAstNode * specifiers = find_child(type_id, CppAstKind::type_specifier_seq);
+  if(!specifiers) {
+    return nullptr;
+  }
+  for(size_t i = 0; i < specifiers->children.size(); ++i) {
+    if(specifiers->children[i].kind == CppAstKind::type_name) {
+      return &specifiers->children[i];
+    }
+  }
+  return nullptr;
+}
+
+std::string class_template_identifier_for_witness_type(SemanticContext & ctx,
+                                                       const TypePtr & type)
+{
+  ClassInfo * info = ctx.class_info_for_type(strip_top_level_cv(type));
+  if(!info || !info->source_template) {
+    return std::string();
+  }
+  return info->source_template->name;
+}
+
+std::size_t final_template_identifier_offset(const std::string & text,
+                                             const std::string & identifier)
+{
+  if(text.empty() || identifier.empty()) {
+    return std::string::npos;
+  }
+  const std::size_t search_end = text.find('<');
+  std::size_t pos = search_end == std::string::npos ?
+      text.rfind(identifier) :
+      text.rfind(identifier, search_end);
+  while(pos != std::string::npos) {
+    const bool left_ok =
+        pos == 0 ||
+        !(std::isalnum(static_cast<unsigned char>(text[pos - 1])) ||
+          text[pos - 1] == '_');
+    const std::size_t after = pos + identifier.size();
+    const bool right_ok =
+        after >= text.size() ||
+        !(std::isalnum(static_cast<unsigned char>(text[after])) ||
+          text[after] == '_');
+    if(left_ok && right_ok) {
+      return pos;
+    }
+    if(pos == 0) {
+      break;
+    }
+    pos = text.rfind(identifier, pos - 1);
+  }
+  return std::string::npos;
+}
+
+std::string source_location_with_column_offset(const std::string & location,
+                                               std::size_t offset)
+{
+  if(offset == 0 || location.empty()) {
+    return location;
+  }
+  const std::string normalized =
+      template_api::normalize_template_witness_source_location(location);
+  const template_api::template_witness_detail::ParsedSourceLocation parsed =
+      template_api::template_witness_detail::parse_source_location(normalized);
+  if(!parsed.valid || parsed.column <= 0) {
+    return location;
+  }
+  std::ostringstream out;
+  out << " at " << parsed.file << ":" << parsed.line << ":"
+      << (parsed.column + static_cast<int>(offset));
+  return out.str();
+}
+
+void record_sizeof_type_id_class_use_if_needed(SemanticContext & ctx,
+                                               Scope & scope,
+                                               const CppAstNode & type_id,
+                                               const TypePtr & type)
+{
+  if(!witness::source_capture_enabled(ctx.template_witness_context())) {
+    return;
+  }
+
+  const CppAstNode * anchor = sizeof_type_id_witness_anchor(type_id);
+  if(!anchor) {
+    anchor = &type_id;
+  } else {
+    CppAstNode witness_anchor = *anchor;
+    witness_anchor.template_id_syntax.reset();
+    witness_anchor.qualifier_template_id_syntaxes.clear();
+    const CppAstNode * owned_anchor =
+        ctx.own_synthetic_ast(std::move(witness_anchor));
+    if(owned_anchor) {
+      anchor = owned_anchor;
+    }
+  }
+
+  std::string anchor_location = ctx.source_location_for_node(*anchor);
+  const std::string template_identifier =
+      class_template_identifier_for_witness_type(ctx, type);
+  if(!template_identifier.empty()) {
+    const std::string template_name_location =
+        ctx.source_location_for_name_in_node(*anchor, template_identifier);
+    if(!template_name_location.empty()) {
+      anchor_location = template_name_location;
+    } else {
+      const std::size_t offset =
+          final_template_identifier_offset(anchor->value,
+                                           template_identifier);
+      if(offset != std::string::npos) {
+        anchor_location =
+            source_location_with_column_offset(anchor_location, offset);
+      }
+    }
+  }
+
+  ctx.record_class_use_for_resolved_type_node(scope,
+                                              *anchor,
+                                              type,
+                                              anchor_location);
 }
 
 ExprInfo make_static_member_variable_expr(SemanticContext & ctx,
@@ -7617,6 +7739,12 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
                           static_cast<bool>(operand_type);
     if(parsed_type_id) {
       prepare_sizeof_operand_type(ctx, operand_type);
+      if(type_is_valid_sizeof_operand(operand_type)) {
+        record_sizeof_type_id_class_use_if_needed(ctx,
+                                                  scope,
+                                                  child,
+                                                  operand_type);
+      }
     }
     if(!parsed_type_id || !type_is_valid_sizeof_operand(operand_type)) {
       TypePtr recovered_operand_type;
@@ -7626,6 +7754,10 @@ ExprInfo analyze_sizeof_expression(SemanticContext & ctx,
                                                       recovered_operand_type)) {
         operand_type = recovered_operand_type;
         prepare_sizeof_operand_type(ctx, operand_type);
+        record_sizeof_type_id_class_use_if_needed(ctx,
+                                                  scope,
+                                                  child,
+                                                  operand_type);
       }
     }
     if(!type_is_valid_sizeof_operand(operand_type)) {

@@ -46,7 +46,10 @@ using namespace std;
 #include "constexpr_eval.h"
 #include "constructor_lifecycle_service.h"
 #include "parser_trace.h"
+#include "posttokenizer.h"
 #include "preprocessor.h"
+#include "pptokenizer.h"
+#include "recog_token.h"
 #include "semantic_metrics.h"
 #include "semantic_model.h"
 #include "semantic_conversion.h"
@@ -411,7 +414,10 @@ using callsemantic::current_exact_template_type_lookup_anchor;
 using callsemantic::exact_template_type_lookup_anchor_matches;
 using callsemantic::exact_template_type_lookup_anchor_matches_syntax;
 using callsemantic::exact_template_type_lookup_anchor_matches_identifier;
+using callsemantic::exact_template_type_lookup_anchor_matches_identifier_syntax;
 using callsemantic::exact_template_type_lookup_anchor_arg_texts;
+using callsemantic::exact_template_type_lookup_anchor_texts;
+using callsemantic::exact_template_type_lookup_anchor_syntaxes;
 using callsemantic::exact_template_type_lookup_anchor_arg_texts_are_full_match;
 using callsemantic::exact_template_type_lookup_anchor_arg_syntaxes;
 using callsemantic::source_template_id_args_are_arity_compatible;
@@ -7678,20 +7684,238 @@ private:
       }
     }
 
+    const auto parenthesize_compact_less_template_arguments =
+        [](const string & text) -> string
+        {
+          if(text.find('<') == string::npos || text.empty() || text.back() != '>') {
+            return text;
+          }
+          const size_t open = text.find('<');
+          if(open == string::npos || open + 1 >= text.size()) {
+            return text;
+          }
+          const string body = text.substr(open + 1, text.size() - open - 2);
+          vector<string> parts;
+          size_t start = 0;
+          int paren_depth = 0;
+          int bracket_depth = 0;
+          int brace_depth = 0;
+          for(size_t i = 0; i <= body.size(); ++i) {
+            const char ch = i < body.size() ? body[i] : ',';
+            const bool separator =
+                (i == body.size() || ch == ',') &&
+                paren_depth == 0 &&
+                bracket_depth == 0 &&
+                brace_depth == 0;
+            if(separator) {
+              string arg = trim_space(body.substr(start, i - start));
+              if(arg.find('<') != string::npos &&
+                 arg.find('>') == string::npos &&
+                 !(arg.size() >= 2 && arg.front() == '(' && arg.back() == ')')) {
+                arg = "(" + arg + ")";
+              }
+              parts.push_back(arg);
+              start = i + 1;
+              continue;
+            }
+            switch(ch) {
+            case '(': ++paren_depth; break;
+            case ')': if(paren_depth > 0) { --paren_depth; } break;
+            case '[': ++bracket_depth; break;
+            case ']': if(bracket_depth > 0) { --bracket_depth; } break;
+            case '{': ++brace_depth; break;
+            case '}': if(brace_depth > 0) { --brace_depth; } break;
+            default: break;
+            }
+          }
+          if(parts.empty()) {
+            return text;
+          }
+          string repaired = text.substr(0, open + 1);
+          for(size_t i = 0; i < parts.size(); ++i) {
+            if(i != 0) {
+              repaired += ",";
+            }
+            repaired += parts[i];
+          }
+          repaired += ">";
+          return repaired;
+        };
+    const auto restore_repaired_less_argument_text =
+        [](const string & text) -> string
+        {
+          string trimmed = trim_space(text);
+          if(trimmed.size() < 3 ||
+             trimmed.front() != '(' ||
+             trimmed.back() != ')') {
+            return text;
+          }
+          string inner = trim_space(trimmed.substr(1, trimmed.size() - 2));
+          if(inner.find('<') == string::npos ||
+             inner.find('>') != string::npos) {
+            return text;
+          }
+          string out;
+          out.reserve(inner.size() + 4);
+          for(size_t i = 0; i < inner.size(); ++i) {
+            if(inner[i] == '<') {
+              if(!out.empty() && out.back() != ' ') {
+                out += ' ';
+              }
+              out += '<';
+              if(i + 1 < inner.size() && inner[i + 1] != ' ') {
+                out += ' ';
+              }
+            } else {
+              out += inner[i];
+            }
+          }
+          return trim_space(out);
+        };
+    const auto parse_repaired_template_argument_syntax =
+        [](const string & text, TemplateArgumentSyntax & out) -> bool
+        {
+          out = TemplateArgumentSyntax();
+          const string trimmed = trim_space(text);
+          if(trimmed.empty()) {
+            return false;
+          }
+          try {
+            istringstream input(trimmed);
+            PPTokenizer pp_tokens(input.rdbuf());
+            PostTokenizer post_tokens(pp_tokens);
+            RecogTokenizer recog_tokens(post_tokens);
+            vector<RecogToken> tokens;
+            for(;;) {
+              RecogToken token = recog_tokens.get();
+              const bool done = token.is_eof() || token.is_invalid();
+              if(token.is_invalid()) {
+                return false;
+              }
+              tokens.push_back(std::move(token));
+              if(done) {
+                break;
+              }
+            }
+            if(tokens.size() <= 1 || !tokens.back().is_eof()) {
+              return false;
+            }
+            CppAstParser parser(tokens);
+            if(!parser.parse_template_argument_fragment_syntax(
+                   0,
+                   tokens.size() - 1,
+                   out,
+                   CppAstParser::TAF_PARSE_BOTH,
+                   true)) {
+              out = TemplateArgumentSyntax();
+              return false;
+            }
+            out.text = trimmed;
+            out.source_text = trimmed;
+            return true;
+          } catch(const logic_error &) {
+            out = TemplateArgumentSyntax();
+            return false;
+          }
+        };
+
     QualifiedName template_id;
     vector<string> arg_texts;
+    vector<TemplateArgumentSyntax> repaired_arg_syntax_storage;
     const vector<TemplateArgumentSyntax> * arg_syntaxes = nullptr;
+    string template_lookup_name = normalized_name;
     bool parsed_template_id =
-        normalized_name.find('<') != string::npos &&
-        !normalized_name.empty() &&
-        normalized_name.back() == '>' &&
-        semantic_utils::split_top_level_template_id_text(normalized_name,
+        template_lookup_name.find('<') != string::npos &&
+        !template_lookup_name.empty() &&
+        template_lookup_name.back() == '>' &&
+        semantic_utils::split_top_level_template_id_text(template_lookup_name,
                                                          template_id,
                                                          arg_texts);
+    if(!parsed_template_id &&
+       normalized_name.find('<') != string::npos &&
+       !normalized_name.empty() &&
+       normalized_name.back() == '>') {
+      const ExactTemplateTypeLookupAnchor * anchor =
+          current_exact_template_type_lookup_anchor();
+      const std::string anchor_identifier =
+          template_lookup_fragment_identifier(normalized_name);
+      if(anchor &&
+         anchor->has_argument_list &&
+         exact_template_type_lookup_anchor_matches_identifier_syntax(
+             *anchor,
+             anchor_identifier) &&
+         semantic_utils::split_qualified_name_text(anchor->identifier,
+                                                   template_id)) {
+        const vector<string> & anchor_arg_texts =
+            exact_template_type_lookup_anchor_texts(*anchor);
+        const vector<TemplateArgumentSyntax> * anchor_arg_syntaxes =
+            exact_template_type_lookup_anchor_syntaxes(*anchor);
+        if(anchor_arg_syntaxes &&
+           anchor_arg_syntaxes->size() == anchor_arg_texts.size()) {
+          template_lookup_name = anchor->template_text;
+          arg_texts = anchor_arg_texts;
+          arg_syntaxes = anchor_arg_syntaxes;
+          parsed_template_id = true;
+        }
+      }
+    }
+    if(!parsed_template_id &&
+       normalized_name.find('<') != string::npos &&
+       !normalized_name.empty() &&
+       normalized_name.back() == '>') {
+      const string repaired_lookup_name =
+          parenthesize_compact_less_template_arguments(normalized_name);
+      if(repaired_lookup_name != normalized_name &&
+         semantic_utils::split_top_level_template_id_text(repaired_lookup_name,
+                                                          template_id,
+                                                          arg_texts)) {
+        template_lookup_name = repaired_lookup_name;
+        for(size_t i = 0; i < arg_texts.size(); ++i) {
+          arg_texts[i] = restore_repaired_less_argument_text(arg_texts[i]);
+        }
+        repaired_arg_syntax_storage.clear();
+        repaired_arg_syntax_storage.reserve(arg_texts.size());
+        bool parsed_repaired_arg_syntaxes = true;
+        for(size_t i = 0; i < arg_texts.size(); ++i) {
+          TemplateArgumentSyntax syntax;
+          if(!parse_repaired_template_argument_syntax(arg_texts[i], syntax)) {
+            parsed_repaired_arg_syntaxes = false;
+            break;
+          }
+          repaired_arg_syntax_storage.push_back(std::move(syntax));
+        }
+        if(parsed_repaired_arg_syntaxes &&
+           repaired_arg_syntax_storage.size() == arg_texts.size()) {
+          arg_syntaxes = &repaired_arg_syntax_storage;
+        }
+        parsed_template_id = true;
+      }
+    }
     if(parsed_template_id) {
-      arg_syntaxes =
-          exact_template_type_lookup_anchor_arg_syntaxes(normalized_name,
-                                                         template_id.name);
+      if(!arg_syntaxes) {
+        arg_syntaxes =
+            exact_template_type_lookup_anchor_arg_syntaxes(template_lookup_name,
+                                                           template_id.name);
+      }
+      if(!arg_syntaxes) {
+        const ExactTemplateTypeLookupAnchor * anchor =
+            current_exact_template_type_lookup_anchor();
+        if(anchor &&
+           anchor->has_argument_list &&
+           exact_template_type_lookup_anchor_matches_identifier_syntax(
+               *anchor,
+               template_id.name)) {
+          const vector<string> & anchor_arg_texts =
+              exact_template_type_lookup_anchor_texts(*anchor);
+          const vector<TemplateArgumentSyntax> * anchor_arg_syntaxes =
+              exact_template_type_lookup_anchor_syntaxes(*anchor);
+          if(anchor_arg_syntaxes &&
+             anchor_arg_syntaxes->size() == anchor_arg_texts.size()) {
+            arg_texts = anchor_arg_texts;
+            arg_syntaxes = anchor_arg_syntaxes;
+          }
+        }
+      }
     } else if(normalized_name.find('<') != string::npos &&
               !normalized_name.empty() &&
               normalized_name.back() == '>') {
@@ -7925,6 +8149,19 @@ private:
           alias_template = lookup_alias_template(scope, template_id.name);
         }
         if(alias_template) {
+          std::string alias_use_location =
+              !entry_use_location.empty() ? entry_use_location :
+                                            parser_trace::current_use_location();
+          if(const ExactTemplateTypeLookupAnchor * anchor =
+                 current_exact_template_type_lookup_anchor()) {
+            if(exact_template_type_lookup_anchor_matches_identifier(
+                   *anchor,
+                   template_id.name)) {
+              alias_use_location = anchor->location;
+            }
+          }
+          const ScopedTemplateUseLocation alias_use_location_guard(
+              alias_use_location);
           TypePtr alias = instantiate_alias_template_with_syntax(
               *alias_template,
               scope,
@@ -7962,19 +8199,19 @@ private:
               !source_template_name.empty() ?
                   source_template_name :
                   template_id.name;
-            const auto note_lookup_class_use =
-                [&](ClassInfo * resolved_info,
-                    const std::string & use_location) -> void
-            {
-              const bool trace_enabled = parser_trace::enabled("template.resolve");
-              const bool source_capture_enabled =
-                  witness::source_capture_enabled(template_witness_context());
-              if(use_location.empty() || !resolved_info) {
-                return;
-              }
-              if(!trace_enabled && !source_capture_enabled) {
-                return;
-              }
+          const auto note_lookup_class_use =
+              [&](ClassInfo * resolved_info,
+                  const std::string & use_location) -> void
+          {
+            const bool trace_enabled = parser_trace::enabled("template.resolve");
+            const bool source_capture_enabled =
+                witness::source_capture_enabled(template_witness_context());
+            if(use_location.empty() || !resolved_info) {
+              return;
+            }
+            if(!trace_enabled && !source_capture_enabled) {
+              return;
+            }
             if(resolved_info->template_instantiation_in_progress ||
                resolved_info->full_member_collection_in_progress ||
                resolved_info->reference_member_collection_in_progress ||
@@ -8010,63 +8247,63 @@ private:
             std::vector<std::string> recovered_source_arg_texts;
             const std::vector<std::string> * binding_arg_texts = &arg_texts;
             bool binding_arg_texts_from_source_template_id = false;
-              if(exact_template_type_lookup_anchor_arg_texts(normalized_name,
-                                                             anchor_identifier,
-                                                             anchored_arg_texts)) {
-                binding_arg_texts = &anchored_arg_texts;
-              }
-              const std::vector<std::string> * source_template_arg_texts =
-                  template_api::current_template_id_source_arguments_ptr(
-                      chosen_use_location,
-                      anchor_identifier);
-              if(source_template_arg_texts) {
-                if(template_argument_texts_mention_enclosing_source_template_parameters(
-                       scope,
-                       *source_template_arg_texts) ||
-                   template_argument_texts_mention_template_bound_scope_names(
-                       scope,
-                       *source_template_arg_texts)) {
-                  return;
-                }
-                binding_arg_texts = source_template_arg_texts;
-                binding_arg_texts_from_source_template_id = true;
-              }
-              if(!source_template_arg_texts &&
-                 source_location_points_at_identifier(chosen_use_location,
-                                                      anchor_identifier)) {
-                std::size_t template_token = 0;
-                std::size_t open_token = 0;
-                std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
-                if(token_index_for_source_location(chosen_use_location,
-                                                   anchor_identifier,
-                                                   template_token) &&
-                   find_next_token_source_on_same_line(template_token, "<", open_token) &&
-                   template_argument_token_ranges_from_open(open_token, arg_ranges)) {
-                  recovered_source_arg_texts.reserve(arg_ranges.size());
-                  for(std::size_t i = 0; i < arg_ranges.size(); ++i) {
-                    recovered_source_arg_texts.push_back(
-                        compact_token_range_text(arg_ranges[i].first,
-                                                 arg_ranges[i].second));
-                  }
-                  if(recovered_source_arg_texts.size() == arg_texts.size()) {
-                    binding_arg_texts = &recovered_source_arg_texts;
-                    binding_arg_texts_from_source_template_id = true;
-                  }
-                }
-              }
+            if(exact_template_type_lookup_anchor_arg_texts(normalized_name,
+                                                           anchor_identifier,
+                                                           anchored_arg_texts)) {
+              binding_arg_texts = &anchored_arg_texts;
+            }
+            const std::vector<std::string> * source_template_arg_texts =
+                template_api::current_template_id_source_arguments_ptr(
+                    chosen_use_location,
+                    anchor_identifier);
+            if(source_template_arg_texts) {
               if(template_argument_texts_mention_enclosing_source_template_parameters(
                      scope,
-                     *binding_arg_texts)) {
+                     *source_template_arg_texts) ||
+                 template_argument_texts_mention_template_bound_scope_names(
+                     scope,
+                     *source_template_arg_texts)) {
                 return;
               }
-              if(template_argument_texts_mention_template_bound_scope_names(
-                     scope,
-                     *binding_arg_texts) ||
-                 template_argument_texts_mention_instantiated_class_local_type_aliases(
-                     scope,
-                     *binding_arg_texts)) {
-                return;
+              binding_arg_texts = source_template_arg_texts;
+              binding_arg_texts_from_source_template_id = true;
+            }
+            if(!source_template_arg_texts &&
+               source_location_points_at_identifier(chosen_use_location,
+                                                    anchor_identifier)) {
+              std::size_t template_token = 0;
+              std::size_t open_token = 0;
+              std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
+              if(token_index_for_source_location(chosen_use_location,
+                                                 anchor_identifier,
+                                                 template_token) &&
+                 find_next_token_source_on_same_line(template_token, "<", open_token) &&
+                 template_argument_token_ranges_from_open(open_token, arg_ranges)) {
+                recovered_source_arg_texts.reserve(arg_ranges.size());
+                for(std::size_t i = 0; i < arg_ranges.size(); ++i) {
+                  recovered_source_arg_texts.push_back(
+                      compact_token_range_text(arg_ranges[i].first,
+                                               arg_ranges[i].second));
+                }
+                if(recovered_source_arg_texts.size() == arg_texts.size()) {
+                  binding_arg_texts = &recovered_source_arg_texts;
+                  binding_arg_texts_from_source_template_id = true;
+                }
               }
+            }
+            if(template_argument_texts_mention_enclosing_source_template_parameters(
+                   scope,
+                   *binding_arg_texts)) {
+              return;
+            }
+            if(template_argument_texts_mention_template_bound_scope_names(
+                   scope,
+                   *binding_arg_texts) ||
+               template_argument_texts_mention_instantiated_class_local_type_aliases(
+                   scope,
+                   *binding_arg_texts)) {
+              return;
+            }
             if(!binding_arg_texts_from_source_template_id &&
                template_argument_texts_mention_source_bindings(*this,
                                                                scope,
@@ -8116,11 +8353,11 @@ private:
                                                   arg_syntaxes,
                                                   resolved_arguments_for_note,
                                                   class_template->declaring_scope)) {
-                return;
-              }
+              return;
+            }
             if(template_arguments_are_dependent(resolved_arguments_for_note)) {
-                return;
-              }
+              return;
+            }
             canonicalize_simple_dependent_argument_texts(resolved_arguments_for_note);
             if(binding_arg_texts_from_source_template_id) {
               const std::size_t compare_count =
@@ -8148,8 +8385,8 @@ private:
                                      selection_for_note.class_node) ||
                 location_within_node(chosen_use_location,
                                      class_template_origin_class_node(resolved_info)))) {
-                return;
-              }
+              return;
+            }
             const std::string note_location =
                 prefer_later_source_location(resolved_info->first_qualifier_use_location,
                                              chosen_use_location);
@@ -8224,9 +8461,9 @@ private:
                 }
               }
             }
-              if(!selected_decl_location.empty() &&
-                 source_event_location == selected_decl_location) {
-                return;
+            if(!selected_decl_location.empty() &&
+               source_event_location == selected_decl_location) {
+              return;
             }
 
             if(source_capture_enabled) {
@@ -8245,20 +8482,20 @@ private:
                   !source_template_name.empty() ?
                       source_template_name :
                       qualified_template_name;
-                const bool use_source_spelling =
-                    source_location_points_at_identifier(
-                        source_event_location,
-                        anchor_identifier);
-                if(!use_source_spelling) {
-                  return;
-                }
-                request.use_anchor_present = true;
-                request.use_anchor_location = source_event_location;
-                if(template_argument_texts_mention_instantiated_class_local_type_aliases(
-                       scope,
-                       *binding_arg_texts)) {
-                  return;
-                }
+              const bool use_source_spelling =
+                  source_location_points_at_identifier(
+                      source_event_location,
+                      anchor_identifier);
+              if(!use_source_spelling) {
+                return;
+              }
+              request.use_anchor_present = true;
+              request.use_anchor_location = source_event_location;
+              if(template_argument_texts_mention_instantiated_class_local_type_aliases(
+                     scope,
+                     *binding_arg_texts)) {
+                return;
+              }
                 template_api::append_template_witness_source_bindings(
                     *this,
                     request.bindings,
@@ -11846,6 +12083,76 @@ private:
                                                           clear_template_id_occurrence,
                                                           allow_source_template_header_replay);
       }
+      if(syntaxes[i].text.find('<') != std::string::npos) {
+        QualifiedName fallback_template_id;
+        std::vector<std::string> fallback_arg_texts;
+        const bool parsed_fallback_template_id =
+            semantic_utils::split_top_level_template_id_text(
+                syntaxes[i].text,
+                fallback_template_id,
+                fallback_arg_texts);
+        std::string location =
+            template_api::normalize_template_witness_source_location(
+                template_api::template_witness_detail::
+                    source_location_for_location_id(template_witness_context(),
+                                                   syntaxes[i].source_location_id));
+        if(location.empty() && syntaxes[i].has_source_token_start) {
+          location =
+              template_api::normalize_template_witness_source_location(
+                  source_location_for_token_index(syntaxes[i].source_token_start));
+        }
+        if(location.empty() && parsed_fallback_template_id) {
+          const std::string fallback_identifier =
+              unqualified_member_name(fallback_template_id.name);
+          const std::string current_use_location =
+              parser_trace::current_use_location();
+          if(!fallback_identifier.empty() && !current_use_location.empty()) {
+            location =
+                template_api::normalize_template_witness_source_location(
+                    template_api::template_witness_detail::
+                        source_location_for_identifier_token_on_or_after(
+                            template_witness_context(),
+                            current_use_location,
+                            fallback_identifier,
+                            true,
+                            true));
+          }
+        }
+        if(!witness::source_location_capture_enabled(template_witness_context(),
+                                                     location)) {
+          continue;
+        }
+        if(source_location_in_current_template_body_range(location) &&
+           !scope_has_template_placeholders(scope) &&
+           scope_is_inside_source_template_context(scope)) {
+          continue;
+        }
+        if(!skip_exact_template_name.empty()) {
+          if(parsed_fallback_template_id) {
+            const std::string fallback_unqualified =
+                unqualified_member_name(fallback_template_id.name);
+            const std::string skip_unqualified =
+                unqualified_member_name(skip_exact_template_name);
+            if(fallback_template_id.name == skip_exact_template_name ||
+               (!fallback_unqualified.empty() &&
+                fallback_unqualified == skip_unqualified)) {
+              continue;
+            }
+          }
+        }
+        const ScopedTemplateUseLocation use_location_guard(location);
+        try {
+          TypePtr fallback_type =
+              lookup_type_impl(scope,
+                               syntaxes[i].text,
+                               true,
+                               false,
+                               template_api::ClassTemplateSourceUseMode::
+                                   EmitClassUse);
+          (void)fallback_type;
+        } catch(...) {
+        }
+      }
     }
   }
 
@@ -12557,6 +12864,11 @@ private:
       const bool trace_enabled = parser_trace::enabled("template.resolve");
       const bool source_capture_enabled =
           witness::source_capture_enabled(template_witness_context());
+      const witness::AliasUseEmissionOrigin alias_use_origin =
+          witness::AliasUseEmissionOrigin::QualifiedSourceTemplateId;
+      const bool alias_use_recording_enabled =
+          witness::alias_use_recording_enabled(template_witness_context(),
+                                               alias_use_origin);
       const bool namespace_scope_alias =
           !decl.declaring_scope || !decl.declaring_scope->class_info;
       if(template_witness_context().session != nullptr &&
@@ -12582,7 +12894,7 @@ private:
       if(raw_use_location.empty() || !resolved_alias) {
         return;
       }
-      if(!trace_enabled && !source_capture_enabled) {
+      if(!trace_enabled && !alias_use_recording_enabled) {
         return;
       }
       const bool exact_identifier_location =
@@ -12610,6 +12922,23 @@ private:
         if(semantic_trace::source_location_points_at_identifier(same_line_location,
                                                                 decl.name)) {
           source_event_location = same_line_location;
+        }
+        if(source_event_location == raw_use_location &&
+           alias_use_recording_enabled &&
+           dependent_arguments) {
+          const std::string forward_location =
+              template_api::template_witness_detail::
+                  source_location_for_identifier_token_on_or_after(
+                  template_witness_context(),
+                  raw_use_location,
+                  decl.name,
+                  false,
+                  true);
+          if(semantic_trace::source_location_points_at_identifier(
+                 forward_location,
+                 decl.name)) {
+            source_event_location = forward_location;
+          }
         }
       }
       const bool exact_source_event_location =
@@ -12671,7 +13000,7 @@ private:
            (!alias_owner_is_current_scope() &&
             (scope_is_inside_source_template_context(use_scope) ||
              member_alias_has_source_bound_arguments)));
-      if(source_capture_enabled &&
+      if(alias_use_recording_enabled &&
          exact_source_event_location &&
          !suppress_member_alias_source_capture &&
          !suppress_source_capture) {
@@ -12708,8 +13037,7 @@ private:
               });
         }
         request.template_name = alias_template_name;
-        request.origin =
-            witness::AliasUseEmissionOrigin::QualifiedSourceTemplateId;
+        request.origin = alias_use_origin;
         const semantic_model::SourceDeclAnchorCache & decl_anchor =
             semantic_trace::alias_template_decl_anchor(*this, &decl);
         witness::set_selected_decl_anchor(request.selected_decl_location,
@@ -13378,6 +13706,22 @@ private:
       }
       return out;
     };
+    const auto alias_pattern_template_id_source_location =
+        [&](const TemplateIdSyntax & syntax) -> std::string
+    {
+      std::string location = source_location_for_template_id_syntax_name(syntax);
+      if(!location.empty() || !decl.type_id) {
+        return location;
+      }
+      const TemplateIdSyntax * source_syntax =
+          first_template_id_syntax_in_subtree(*decl.type_id);
+      if(!source_syntax ||
+         unqualified_member_name(source_syntax->name.name) !=
+             unqualified_member_name(syntax.name.name)) {
+        return location;
+      }
+      return source_location_for_template_id_syntax_name(*source_syntax);
+    };
     auto resolve_nested_alias_type_id_syntax =
         [&](TypePtr & out) -> bool
     {
@@ -13398,14 +13742,28 @@ private:
       }
       const vector<string> arg_texts =
           template_id_argument_texts_preserving_spacing(*syntax);
-      const witness::ScopedTemplateWitnessSourceCapturePause
-          source_capture_pause;
-      out = instantiate_alias_template_with_syntax(
-          *nested_alias,
-          *inst_scope,
-          arg_texts,
-          &syntax->argument_syntaxes,
-          reference_class_templates_only);
+      const std::string nested_use_location =
+          alias_pattern_template_id_source_location(*syntax);
+      const ScopedTemplateUseLocation nested_use_location_guard(
+          nested_use_location);
+      if(witness::source_capture_enabled(template_witness_context()) &&
+         !nested_use_location.empty()) {
+        out = instantiate_alias_template_with_syntax(
+            *nested_alias,
+            *inst_scope,
+            arg_texts,
+            &syntax->argument_syntaxes,
+            reference_class_templates_only);
+      } else {
+        const witness::ScopedTemplateWitnessSourceCapturePause
+            source_capture_pause;
+        out = instantiate_alias_template_with_syntax(
+            *nested_alias,
+            *inst_scope,
+            arg_texts,
+            &syntax->argument_syntaxes,
+            reference_class_templates_only);
+      }
       return out && !type_depends_on_template_parameter(out);
     };
     auto resolve_direct_alias_type_id_syntax =
@@ -13433,14 +13791,28 @@ private:
       }
       const vector<string> arg_texts =
           template_id_argument_texts_preserving_spacing(*syntax);
-      const witness::ScopedTemplateWitnessSourceCapturePause
-          source_capture_pause;
-      out = instantiate_alias_template_with_syntax(
-          *nested_alias,
-          *inst_scope,
-          arg_texts,
-          &syntax->argument_syntaxes,
-          reference_class_templates_only);
+      const std::string nested_use_location =
+          alias_pattern_template_id_source_location(*syntax);
+      const ScopedTemplateUseLocation nested_use_location_guard(
+          nested_use_location);
+      if(witness::source_capture_enabled(template_witness_context()) &&
+         !nested_use_location.empty()) {
+        out = instantiate_alias_template_with_syntax(
+            *nested_alias,
+            *inst_scope,
+            arg_texts,
+            &syntax->argument_syntaxes,
+            reference_class_templates_only);
+      } else {
+        const witness::ScopedTemplateWitnessSourceCapturePause
+            source_capture_pause;
+        out = instantiate_alias_template_with_syntax(
+            *nested_alias,
+            *inst_scope,
+            arg_texts,
+            &syntax->argument_syntaxes,
+            reference_class_templates_only);
+      }
       return out && !type_depends_on_template_parameter(out);
     };
     std::function<TypePtr(TypePtr)> materialize_concrete_alias_class_type;
@@ -16448,7 +16820,8 @@ private:
       }
       return true;
     };
-    std::function<void(const TemplateIdSyntax &)>
+    std::function<void(const TemplateIdSyntax &,
+                       witness::AliasUseEmissionOrigin)>
         record_template_id_source_use_from_syntax;
     std::function<void(const CppAstNode &)>
         record_nested_template_id_source_uses_from_node;
@@ -16618,7 +16991,8 @@ private:
       return qualified_template_name_has_dependent_source_owner(syntax.name);
     };
 	    record_template_id_source_use_from_syntax =
-	        [&](const TemplateIdSyntax & nested_syntax) -> void
+	        [&](const TemplateIdSyntax & nested_syntax,
+              witness::AliasUseEmissionOrigin alias_origin) -> void
 	    {
       if(nested_syntax.name.name.empty()) {
         return;
@@ -16670,7 +17044,7 @@ private:
 	        };
         const bool dependent_source_owner =
             template_id_syntax_has_dependent_source_owner(nested_syntax);
-	        AliasTemplateDecl * alias_template =
+        AliasTemplateDecl * alias_template =
             dependent_source_owner ?
                 nullptr :
                 lookup_alias_template_for_source_use(pattern_scope,
@@ -16682,7 +17056,7 @@ private:
                 *alias_template,
                 nested_syntax,
                 location,
-                witness::AliasUseEmissionOrigin::NestedSourceTemplateId);
+                alias_origin);
           }
 	        } else {
 	          ClassTemplateDecl * class_template =
@@ -16726,7 +17100,9 @@ private:
     {
       if(const TemplateIdSyntax * syntax =
              cppast_template_id_syntax(syntax_node)) {
-        record_template_id_source_use_from_syntax(*syntax);
+        record_template_id_source_use_from_syntax(
+            *syntax,
+            witness::AliasUseEmissionOrigin::NestedSourceTemplateId);
       }
       if(const CppAstNode * conversion_type_id =
              cppast_conversion_type_id_syntax(syntax_node)) {
@@ -16736,7 +17112,8 @@ private:
           i < syntax_node.qualifier_template_id_syntaxes.size();
           ++i) {
         record_template_id_source_use_from_syntax(
-            syntax_node.qualifier_template_id_syntaxes[i]);
+            syntax_node.qualifier_template_id_syntaxes[i],
+            witness::AliasUseEmissionOrigin::NestedSourceTemplateId);
       }
       for(size_t i = 0; i < syntax_node.qualifier_type_syntaxes.size(); ++i) {
         record_nested_template_id_source_uses_from_node(
@@ -16752,7 +17129,9 @@ private:
     {
       for(size_t i = 0; i < syntaxes.size(); ++i) {
         if(syntaxes[i].template_id) {
-          record_template_id_source_use_from_syntax(*syntaxes[i].template_id);
+          record_template_id_source_use_from_syntax(
+              *syntaxes[i].template_id,
+              witness::AliasUseEmissionOrigin::NestedSourceTemplateId);
         }
         if(syntaxes[i].type_id) {
           record_nested_template_id_source_uses_from_node(
@@ -16764,9 +17143,55 @@ private:
         }
       }
     };
+    auto record_direct_type_id_source_uses =
+        [&](const CppAstNode & type_id_node) -> bool
+    {
+      if(type_id_node.kind != CppAstKind::type_id) {
+        return false;
+      }
+      const TemplateIdSyntax * syntax =
+          first_template_id_syntax_in_subtree(type_id_node);
+      if(!syntax) {
+        return false;
+      }
+      if(compact_lookup_text(spaced_node_text(type_id_node)) !=
+         compact_lookup_text(template_id_syntax_text_preserving_spacing(
+             *syntax))) {
+        return false;
+      }
+      record_template_id_source_use_from_syntax(
+          *syntax,
+          witness::AliasUseEmissionOrigin::DirectSourceTemplateId);
+      record_nested_template_id_source_uses_from_syntaxes(
+          syntax->argument_syntaxes);
+      return true;
+    };
     std::function<void(const CppAstNode &)> record_alias_uses =
         [&](const CppAstNode & current) -> void
     {
+      if(current.kind == CppAstKind::type_id) {
+        if(!record_direct_type_id_source_uses(current)) {
+          record_nested_template_id_source_uses_from_node(current);
+        }
+      }
+      if((current.kind == CppAstKind::decl_specifier ||
+          current.kind == CppAstKind::type_name) &&
+         cppast_template_id_syntax(current)) {
+        const TemplateIdSyntax * syntax = cppast_template_id_syntax(current);
+        record_template_id_source_use_from_syntax(
+            *syntax,
+            witness::AliasUseEmissionOrigin::DirectSourceTemplateId);
+        record_nested_template_id_source_uses_from_syntaxes(
+            syntax->argument_syntaxes);
+      }
+      if(current.kind == CppAstKind::alias_declaration) {
+        if(const CppAstNode * type_id =
+               find_child_kind(current, CppAstKind::type_id)) {
+          if(!record_direct_type_id_source_uses(*type_id)) {
+            record_nested_template_id_source_uses_from_node(*type_id);
+          }
+        }
+      }
       std::string template_text;
       const TemplateIdSyntax * declared_template_id =
           (current.kind == CppAstKind::class_specifier ||
@@ -17006,7 +17431,9 @@ private:
                 witness::emit_alias_use(template_witness_context(), request);
               }
               if(syntax) {
-                record_template_id_source_use_from_syntax(*syntax);
+                record_template_id_source_use_from_syntax(
+                    *syntax,
+                    witness::AliasUseEmissionOrigin::NestedSourceTemplateId);
               }
               const vector<NestedSourceTemplateIdOccurrence>
                   nested_occurrences =

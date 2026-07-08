@@ -68,6 +68,163 @@ inline void mark_cached_heuristic_in_progress(std::vector<unsigned char> * cache
   (*cache)[key] = PHCS_IN_PROGRESS;
 }
 
+bool template_id_candidate_crosses_logical_operator(
+    const IRecogTokenSequence & tokens,
+    std::size_t start)
+{
+  int angle_depth = 1;
+  int paren_depth = 0;
+  int bracket_depth = 0;
+  int brace_depth = 0;
+
+  for(std::size_t pos = start; !tokens.peek(pos).is_eof(); ++pos) {
+    const RecogToken & token = tokens.peek(pos);
+    const bool track_angles =
+        paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+
+    if(track_angles && token.is_simple(OP_LT)) {
+      ++angle_depth;
+      continue;
+    }
+    if(track_angles && token.is_close_angle_bracket()) {
+      if(angle_depth == 1) {
+        return false;
+      }
+      if(angle_depth > 1) {
+        --angle_depth;
+      }
+      continue;
+    }
+
+    if(token.is_simple(OP_LPAREN)) {
+      ++paren_depth;
+      continue;
+    }
+    if(token.is_simple(OP_RPAREN)) {
+      if(paren_depth == 0) {
+        return false;
+      }
+      --paren_depth;
+      continue;
+    }
+    if(token.is_simple(OP_LSQUARE)) {
+      ++bracket_depth;
+      continue;
+    }
+    if(token.is_simple(OP_RSQUARE)) {
+      if(bracket_depth == 0) {
+        return false;
+      }
+      --bracket_depth;
+      continue;
+    }
+    if(token.is_simple(OP_LBRACE)) {
+      ++brace_depth;
+      continue;
+    }
+    if(token.is_simple(OP_RBRACE)) {
+      if(brace_depth == 0) {
+        return false;
+      }
+      --brace_depth;
+      continue;
+    }
+
+    const bool top_level = angle_depth == 1 &&
+                           paren_depth == 0 &&
+                           bracket_depth == 0 &&
+                           brace_depth == 0;
+    if(top_level && token.is_simple(OP_LOR)) {
+      return true;
+    }
+    if(top_level && token.is_simple(OP_LAND)) {
+      const RecogToken & next = tokens.peek(pos + 1);
+      if(next.is_close_angle_bracket() ||
+         next.is_simple(OP_COMMA) ||
+         next.is_simple(OP_DOTS)) {
+        continue;
+      }
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool template_id_candidate_is_nested_name_qualifier(
+    const IRecogTokenSequence & tokens,
+    std::size_t boundary,
+    const NameLookup & lookup,
+    ParseHeuristicCache * cache)
+{
+  int angle_depth = 1;
+  int paren_depth = 0;
+  int bracket_depth = 0;
+  int brace_depth = 0;
+
+  for(std::size_t pos = boundary + 1; !tokens.peek(pos).is_eof(); ++pos) {
+    const RecogToken & token = tokens.peek(pos);
+    const bool track_angles =
+        paren_depth == 0 && bracket_depth == 0 && brace_depth == 0;
+
+    if(track_angles && token.is_simple(OP_LT) &&
+       pos > boundary + 1 &&
+       can_open_nested_template_angle_at(tokens, pos, lookup, cache)) {
+      ++angle_depth;
+      continue;
+    }
+    if(track_angles && token.is_close_angle_bracket()) {
+      if(angle_depth == 1) {
+        return tokens.peek(pos + 1).is_simple(OP_COLON2);
+      }
+      if(angle_depth > 1) {
+        --angle_depth;
+      }
+      continue;
+    }
+
+    if(token.is_simple(OP_LPAREN)) {
+      ++paren_depth;
+      continue;
+    }
+    if(token.is_simple(OP_RPAREN)) {
+      if(paren_depth == 0) {
+        return false;
+      }
+      --paren_depth;
+      continue;
+    }
+    if(token.is_simple(OP_LSQUARE)) {
+      ++bracket_depth;
+      continue;
+    }
+    if(token.is_simple(OP_RSQUARE)) {
+      if(bracket_depth == 0) {
+        return false;
+      }
+      --bracket_depth;
+      continue;
+    }
+    if(token.is_simple(OP_LBRACE)) {
+      ++brace_depth;
+      continue;
+    }
+    if(token.is_simple(OP_RBRACE)) {
+      if(brace_depth == 0) {
+        return false;
+      }
+      --brace_depth;
+      continue;
+    }
+
+    if(track_angles && token.is_simple(OP_SEMICOLON)) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
 inline void append_token_text_for_span(std::string & out, const RecogToken & token)
 {
   if(token.is_rshift_piece()) {
@@ -110,16 +267,50 @@ bool token_text_needs_separator(const RecogToken & lhs,
 
 bool token_can_precede_nested_template_angle(const RecogToken & token)
 {
-  return token.is_identifier() ||
-         token.is_close_angle_bracket() ||
-         token.is_simple(OP_COLON2) ||
-         token.is_simple(KW_TEMPLATE) ||
-         token.is_simple(KW_OPERATOR) ||
-         token.is_simple(KW_STATIC_CAST) ||
-         token.is_simple(KW_CONST_CAST) ||
-         token.is_simple(KW_DYNAMIC_CAST) ||
-         token.is_simple(KW_REINTERPET_CAST) ||
-         token.is_simple(OP_COMPL);
+  if(token.is_identifier() ||
+     token.is_close_angle_bracket() ||
+     token.is_simple(OP_COLON2) ||
+     token.is_simple(KW_TEMPLATE) ||
+     token.is_simple(KW_OPERATOR) ||
+     token.is_simple(KW_STATIC_CAST) ||
+     token.is_simple(KW_CONST_CAST) ||
+     token.is_simple(KW_DYNAMIC_CAST) ||
+     token.is_simple(KW_REINTERPET_CAST)) {
+    return true;
+  }
+
+  if(token.kind != RT_SIMPLE) {
+    return false;
+  }
+
+  switch(token.simple_type) {
+  case OP_PLUS:      case OP_MINUS:     case OP_STAR:       case OP_DIV:
+  case OP_MOD:       case OP_XOR:       case OP_AMP:        case OP_BOR:
+  case OP_COMPL:     case OP_LNOT:      case OP_ASS:        case OP_LT:
+  case OP_GT:        case OP_PLUSASS:   case OP_MINUSASS:   case OP_STARASS:
+  case OP_DIVASS:    case OP_MODASS:    case OP_XORASS:     case OP_BANDASS:
+  case OP_BORASS:    case OP_LSHIFT:    case OP_RSHIFTASS:  case OP_LSHIFTASS:
+  case OP_EQ:        case OP_NE:        case OP_LE:         case OP_GE:
+  case OP_LAND:      case OP_LOR:       case OP_INC:        case OP_DEC:
+  case OP_COMMA:     case OP_ARROWSTAR: case OP_ARROW:      case OP_DOTSTAR:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool implicit_template_id_has_dependent_type_qualifier(
+    const IRecogTokenSequence & tokens,
+    std::size_t boundary,
+    const NameLookup & lookup)
+{
+  if(boundary < 3 || !tokens.peek(boundary - 2).is_simple(OP_COLON2)) {
+    return false;
+  }
+
+  const RecogToken & qualifier = tokens.peek(boundary - 3);
+  return qualifier.is_identifier() &&
+         lookup.is_template_type_parameter_identifier(qualifier);
 }
 
 bool token_can_start_template_id_component_suffix(const RecogToken & token)
@@ -268,27 +459,60 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
     const bool known_value = lookup.is_known_value_name_identifier(prev);
     const bool explicit_template_prefix =
         boundary >= 2 && tokens.peek(boundary - 2).is_simple(KW_TEMPLATE);
-    const bool qualified_member_prefix =
-        boundary >= 2 && tokens.peek(boundary - 2).is_simple(OP_COLON2);
+    const bool member_access_or_qualified_prefix =
+        boundary >= 2 &&
+        (tokens.peek(boundary - 2).is_simple(OP_COLON2) ||
+         tokens.peek(boundary - 2).is_simple(OP_DOT) ||
+         tokens.peek(boundary - 2).is_simple(OP_ARROW));
+    const bool dependent_type_qualified_prefix =
+        implicit_template_id_has_dependent_type_qualifier(tokens, boundary, lookup);
+    const bool value_name_preferred =
+        !member_access_or_qualified_prefix &&
+        lookup.unqualified_identifier_prefers_value_name(prev);
+    const bool candidate_is_nested_name_qualifier =
+        (known_type || known_template) &&
+        (known_value_template || known_value) &&
+        template_id_candidate_is_nested_name_qualifier(tokens,
+                                                       boundary,
+                                                       lookup,
+                                                       cache);
     bool unknown_nested = false;
 
     if(explicit_template_prefix) {
       result = true;
+    } else if(candidate_is_nested_name_qualifier) {
+      result = true;
+    } else if(value_name_preferred) {
+      if(known_value) {
+        result = false;
+      } else if(known_value_template) {
+        result = !template_id_candidate_crosses_logical_operator(tokens, boundary + 1);
+      } else {
+        unknown_nested =
+            looks_like_unknown_nested_template_id_at_impl(tokens, boundary, lookup, cache);
+        result = unknown_nested &&
+                 !template_id_candidate_crosses_logical_operator(tokens, boundary + 1);
+      }
     } else if((known_value_template || known_value) &&
-              qualified_member_prefix &&
+              member_access_or_qualified_prefix &&
               !known_type &&
               !known_template) {
-      unknown_nested =
-          looks_like_unknown_nested_template_id_at_impl(tokens, boundary, lookup, cache);
-      result = unknown_nested;
+      if(lookup.prefer_template_id_for_unknown_identifiers()) {
+        result = !template_id_candidate_crosses_logical_operator(tokens,
+                                                                 boundary + 1);
+      } else {
+        unknown_nested =
+            looks_like_unknown_nested_template_id_at_impl(tokens, boundary, lookup, cache);
+        result = unknown_nested;
+      }
     } else if(known_value_template) {
-      result = false;
+      result = !template_id_candidate_crosses_logical_operator(tokens, boundary + 1);
     } else if(known_type || known_template) {
       result = true;
     } else if(known_value) {
       result = false;
     } else if(lookup.prefer_template_id_for_unknown_identifiers()) {
-      result = true;
+      result = !dependent_type_qualified_prefix;
     } else {
       unknown_nested =
           looks_like_unknown_nested_template_id_at_impl(tokens, boundary, lookup, cache);
@@ -309,6 +533,12 @@ bool can_open_nested_template_angle_at(const IRecogTokenSequence & tokens,
                                   << " known_value_template="
                                   << (known_value_template ? "yes" : "no")
                                   << " known_value=" << (known_value ? "yes" : "no")
+                                  << " value_preferred="
+                                  << (value_name_preferred ? "yes" : "no")
+                                  << " qualifier_suffix="
+                                  << (candidate_is_nested_name_qualifier ? "yes" : "no")
+                                  << " dependent_qualifier="
+                                  << (dependent_type_qualified_prefix ? "yes" : "no")
                                   << " prefer_unknown="
                                   << (lookup.prefer_template_id_for_unknown_identifiers()
                                           ? "yes" :
@@ -584,6 +814,9 @@ bool parse_template_id_suffix_ranges(
   arg_ranges.clear();
 
   if(!tokens.peek(start).is_simple(OP_LT)) {
+    return false;
+  }
+  if(!can_open_nested_template_angle_at(tokens, start, lookup, cache)) {
     return false;
   }
 

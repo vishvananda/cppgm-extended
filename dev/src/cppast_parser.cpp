@@ -471,6 +471,34 @@ LazyHeaderFunctionBodyStats & lazy_body_stats()
   return stats;
 }
 
+string format_name_set_for_trace(const template_angle_lookup::NameSet & names)
+{
+  vector<string> values;
+  for(template_angle_lookup::NameSet::const_iterator it = names.begin();
+      it != names.end();
+      ++it) {
+    if(*it) {
+      values.push_back(**it);
+    }
+  }
+  sort(values.begin(), values.end());
+
+  ostringstream out;
+  out << '{';
+  const size_t limit = 16;
+  for(size_t i = 0; i < values.size() && i < limit; ++i) {
+    if(i != 0) {
+      out << ',';
+    }
+    out << values[i];
+  }
+  if(values.size() > limit) {
+    out << ",...";
+  }
+  out << '}';
+  return out.str();
+}
+
 bool token_is_from_non_primary_source_file(const IRecogTokenSequence & tokens,
                                            size_t index)
 {
@@ -1060,6 +1088,13 @@ struct TemplateArgumentFragmentNameLookup : template_angle::NameLookup
   virtual bool is_known_value_name_identifier(const RecogToken & token) const
   {
     return scoped_lookup.is_known_value_name_identifier(token);
+  }
+
+  virtual bool is_template_type_parameter_identifier(
+      const RecogToken & token) const
+  {
+    return parser.is_template_type_parameter_name(token) ||
+           scoped_lookup.is_template_type_parameter_identifier(token);
   }
 
   virtual bool prefer_template_id_for_unknown_identifiers() const
@@ -1848,6 +1883,7 @@ int nearest_name_scope_index(const template_angle_lookup::NameSetStack * primary
 CppAstParser::CppAstParser(const vector<RecogToken> & tokens) :
   RecogTokenCursor(tokens)
 {
+  template_value_parameter_scopes.push_back(NameSet());
   template_name_scopes.push_back(NameSet());
   type_name_scopes.push_back(NameSet());
   value_name_scopes.push_back(NameSet());
@@ -1856,6 +1892,7 @@ CppAstParser::CppAstParser(const vector<RecogToken> & tokens) :
 CppAstParser::CppAstParser(IRecogTokenSequence & tokens) :
   RecogTokenCursor(tokens)
 {
+  template_value_parameter_scopes.push_back(NameSet());
   template_name_scopes.push_back(NameSet());
   type_name_scopes.push_back(NameSet());
   value_name_scopes.push_back(NameSet());
@@ -2164,6 +2201,7 @@ string CppAstParser::normalized_lookup_name(const string & text) const
 bool CppAstParser::namespace_scope_exists(const string & key) const
 {
   return namespace_template_name_scopes.count(key) != 0 ||
+         namespace_template_value_name_scopes.count(key) != 0 ||
          namespace_type_name_scopes.count(key) != 0 ||
          namespace_value_name_scopes.count(key) != 0 ||
          namespace_alias_targets.count(key) != 0;
@@ -2583,6 +2621,11 @@ bool CppAstParser::parse_explicit_instantiation(CppAstNode & out)
 bool CppAstParser::parse_explicit_instantiation_target(CppAstNode & out)
 {
   size_t start = pos;
+  if(parse_explicit_class_instantiation_target(out)) {
+    return true;
+  }
+
+  pos = start;
   if(parse_class_declaration(out)) {
     return true;
   }
@@ -2602,6 +2645,62 @@ bool CppAstParser::parse_explicit_instantiation_target(CppAstNode & out)
   return false;
 }
 
+bool CppAstParser::parse_explicit_class_instantiation_target(CppAstNode & out)
+{
+  size_t start = pos;
+  if(!is_class_key(peek())) {
+    pos = start;
+    return false;
+  }
+
+  RecogToken class_key_token = peek();
+  ++pos;
+
+  CppAstNode attributes = make_node(CppAstKind::specifier);
+  if(!skip_attribute_specifier_seq(&attributes)) {
+    pos = start;
+    return false;
+  }
+
+  string name;
+  cpp_decl::QualifiedName name_syntax;
+  cpp_decl::TemplateIdSyntax template_id_syntax;
+  vector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
+  vector<CppAstNode> qualifier_type_syntaxes;
+  if(!parse_qualified_name_text(name,
+                                &name_syntax,
+                                &template_id_syntax,
+                                &qualifier_template_id_syntaxes,
+                                &qualifier_type_syntaxes,
+                                true,
+                                false,
+                                false,
+                                true) ||
+     template_id_syntax.name.name.empty() ||
+     !consume_simple(OP_SEMICOLON)) {
+    pos = start;
+    return false;
+  }
+
+  out = make_node(CppAstKind::class_forward_declaration, name);
+  set_cppast_qualified_name_syntax(out, std::move(name_syntax));
+  set_cppast_template_id_syntax(out, std::move(template_id_syntax));
+  if(!qualifier_template_id_syntaxes.empty()) {
+    set_cppast_qualifier_template_id_syntaxes(
+        out,
+        std::move(qualifier_template_id_syntaxes));
+  }
+  if(!qualifier_type_syntaxes.empty()) {
+    set_cppast_qualifier_type_syntaxes(out,
+                                       std::move(qualifier_type_syntaxes));
+  }
+  out.children.push_back(make_token_node(CppAstKind::class_key,
+                                         class_key_token));
+  apply_leading_declaration_attributes(out, attributes);
+  set_span(out, start);
+  return true;
+}
+
 bool CppAstParser::can_start_decl_specifier_seq() const
 {
   size_t cursor = 0;
@@ -2614,6 +2713,7 @@ bool CppAstParser::can_start_decl_specifier_seq() const
   const bool known_value_template =
       is_known_value_template_parameter_identifier(token);
   const bool known_value = is_known_value_name_identifier(token);
+  const bool known_template = is_known_template_name_identifier(token);
   const bool value_name_preferred =
       unqualified_identifier_prefers_value_name(token);
   const bool known_type_name =
@@ -2623,7 +2723,8 @@ bool CppAstParser::can_start_decl_specifier_seq() const
       token.is_simple(OP_COLON2) ||
       (token.is_identifier() &&
        (next.is_simple(OP_COLON2) ||
-        (!value_name_preferred && next.is_simple(OP_LT))));
+        ((known_template || !value_name_preferred) &&
+         next.is_simple(OP_LT))));
   const bool result = is_decltype_token(token) ||
          (is_gnu_typeof_token(token) && next.is_simple(OP_LPAREN)) ||
          (token.is_identifier() && token.source == "_Atomic" &&
@@ -2650,10 +2751,22 @@ bool CppAstParser::can_start_decl_specifier_seq() const
           (next.is_identifier() || is_cv_qualifier(next) ||
            next.is_simple(OP_STAR) || next.is_simple(OP_AMP) ||
            next.is_simple(OP_LAND)));
-  if(result && parser_trace::enabled("parser.decl")) {
+  if(parser_trace::enabled("parser.decl") &&
+     (result || (token.is_identifier() &&
+                 (next.is_identifier() ||
+                  next.is_simple(OP_LT) ||
+                  next.is_simple(OP_COLON2) ||
+                  next.is_simple(OP_LPAREN))))) {
     std::ostringstream trace;
     trace << "can-start-decl-specifier-seq token=" << token_label(token)
-          << " next=" << token_label(peek(1));
+          << " next=" << token_label(next)
+          << " result=" << (result ? "yes" : "no")
+          << " named-candidate=" << (named_candidate ? "yes" : "no")
+          << " known-template=" << (known_template ? "yes" : "no")
+          << " known-type=" << (known_type_name ? "yes" : "no")
+          << " known-value-template=" << (known_value_template ? "yes" : "no")
+          << " known-value=" << (known_value ? "yes" : "no")
+          << " value-preferred=" << (value_name_preferred ? "yes" : "no");
     parser_trace::note("parser.decl", tokens, pos, trace.str());
   }
   return result;
@@ -2698,7 +2811,7 @@ bool CppAstParser::can_start_named_decl_specifier_seq() const
 bool CppAstParser::scan_named_decl_specifier_seq_end(size_t & end) const
 {
   size_t cursor = pos;
-  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
+  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup(true);
   std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
 
   if(tokens.peek(cursor).is_simple(OP_COLON2)) {
@@ -4138,9 +4251,11 @@ bool CppAstParser::parse_template_declaration(CppAstNode & out)
   template_type_parameter_scopes.push_back(parameter_names);
   template_value_parameter_scopes.push_back(parameter_value_names);
   template_name_scopes.push_back(parameter_template_names);
+  value_name_scopes.push_back(parameter_value_names);
   ++template_declaration_depth;
   bool ok = parse_declaration(declaration);
   --template_declaration_depth;
+  value_name_scopes.pop_back();
   template_name_scopes.pop_back();
   template_value_parameter_scopes.pop_back();
   template_type_parameter_scopes.pop_back();
@@ -4188,7 +4303,8 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
                                &name_syntax,
                                &template_id_syntax,
                                &qualifier_template_id_syntaxes,
-                               &qualifier_type_syntaxes)) {
+                               &qualifier_type_syntaxes,
+                               true)) {
     // handled by helper
   }
 
@@ -4308,6 +4424,7 @@ bool CppAstParser::parse_class_specifier(CppAstNode & out)
     stored.template_names = template_name_scopes.back();
     stored.type_names = type_name_scopes.back();
     stored.value_names = value_name_scopes.back();
+    refresh_lazy_function_body_snapshots_for_class(out, stored);
   }
   if(pushed_class_scope) {
     class_name_stack.pop_back();
@@ -4790,7 +4907,7 @@ bool CppAstParser::parse_qualified_special_member_declaration(CppAstNode & out)
     break;
   }
 
-  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
+  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup(true);
   const size_t name_start = pos;
   qualified_name_parser::QualifiedNameParseResult parsed_name;
   if(!qualified_name_parser::parse_qualified_name(tokens,
@@ -5064,7 +5181,9 @@ bool CppAstParser::parse_template_special_member_declaration(CppAstNode & out)
   collect_template_parameter_value_names(parameters, parameter_value_names);
   template_type_parameter_scopes.push_back(parameter_names);
   template_value_parameter_scopes.push_back(parameter_value_names);
+  value_name_scopes.push_back(parameter_value_names);
   const bool ok = parse_special_member_declaration(declaration);
+  value_name_scopes.pop_back();
   template_value_parameter_scopes.pop_back();
   template_type_parameter_scopes.pop_back();
   if(!ok) {
@@ -5952,7 +6071,11 @@ bool CppAstParser::parse_declarator(CppAstNode & out, bool require_parameters)
                                   &name_syntax,
                                   &template_id_syntax,
                                   &qualifier_template_id_syntaxes,
-                                  &qualifier_type_syntaxes)) {
+                                  &qualifier_type_syntaxes,
+                                  false,
+                                  false,
+                                  false,
+                                  true)) {
       pos = start;
       return false;
     }
@@ -6374,7 +6497,9 @@ bool CppAstParser::parse_template_parameter_clause(CppAstNode & out)
   template_type_parameter_scopes.push_back(NameSet());
   template_value_parameter_scopes.push_back(NameSet());
   template_name_scopes.push_back(NameSet());
+  value_name_scopes.push_back(NameSet());
   const bool have_parameters = parse_template_parameter_list(parameters);
+  value_name_scopes.pop_back();
   template_name_scopes.pop_back();
   template_value_parameter_scopes.pop_back();
   template_type_parameter_scopes.pop_back();
@@ -6407,6 +6532,10 @@ bool CppAstParser::parse_template_parameter_list(CppAstNode & out)
     collect_template_parameter_value_names(parameter,
                                            template_value_parameter_scopes.back());
   }
+  if(!value_name_scopes.empty()) {
+    collect_template_parameter_value_names(parameter,
+                                           value_name_scopes.back());
+  }
   if(!template_name_scopes.empty()) {
     collect_template_parameter_template_names(parameter, template_name_scopes.back());
   }
@@ -6425,6 +6554,10 @@ bool CppAstParser::parse_template_parameter_list(CppAstNode & out)
     if(!template_value_parameter_scopes.empty()) {
       collect_template_parameter_value_names(next,
                                              template_value_parameter_scopes.back());
+    }
+    if(!value_name_scopes.empty()) {
+      collect_template_parameter_value_names(next,
+                                             value_name_scopes.back());
     }
     if(!template_name_scopes.empty()) {
       collect_template_parameter_template_names(next, template_name_scopes.back());
@@ -9648,6 +9781,7 @@ bool CppAstParser::parse_lambda_expression(CppAstNode & out)
   }
   if(!lambda_template_value_parameter_names.empty()) {
     template_value_parameter_scopes.push_back(lambda_template_value_parameter_names);
+    value_name_scopes.push_back(lambda_template_value_parameter_names);
   }
   if(!lambda_parameter_value_names.empty()) {
     value_name_scopes.push_back(lambda_parameter_value_names);
@@ -9657,6 +9791,7 @@ bool CppAstParser::parse_lambda_expression(CppAstNode & out)
     value_name_scopes.pop_back();
   }
   if(!lambda_template_value_parameter_names.empty()) {
+    value_name_scopes.pop_back();
     template_value_parameter_scopes.pop_back();
   }
   if(!lambda_template_parameter_names.empty()) {
@@ -9697,6 +9832,7 @@ bool CppAstParser::parse_lambda_declarator(CppAstNode & out)
     out.children.push_back(std::move(template_parameters));
     template_type_parameter_scopes.push_back(lambda_template_parameter_names);
     template_value_parameter_scopes.push_back(lambda_template_value_parameter_names);
+    value_name_scopes.push_back(lambda_template_value_parameter_names);
     saw_template_parameter_clause = true;
   }
 
@@ -9720,6 +9856,7 @@ bool CppAstParser::parse_lambda_declarator(CppAstNode & out)
       CppAstNode expression;
       if(!parse_expression(expression) || !consume_simple(OP_RPAREN)) {
         if(saw_template_parameter_clause) {
+          value_name_scopes.pop_back();
           template_value_parameter_scopes.pop_back();
           template_type_parameter_scopes.pop_back();
         }
@@ -9735,6 +9872,7 @@ bool CppAstParser::parse_lambda_declarator(CppAstNode & out)
     CppAstNode type_id;
     if(!parse_type_id(type_id)) {
       if(saw_template_parameter_clause) {
+        value_name_scopes.pop_back();
         template_value_parameter_scopes.pop_back();
         template_type_parameter_scopes.pop_back();
       }
@@ -9747,6 +9885,7 @@ bool CppAstParser::parse_lambda_declarator(CppAstNode & out)
   }
 
   if(saw_template_parameter_clause) {
+    value_name_scopes.pop_back();
     template_value_parameter_scopes.pop_back();
     template_type_parameter_scopes.pop_back();
   }
@@ -10098,16 +10237,109 @@ bool CppAstParser::parse_id_expression(CppAstNode & out)
 {
   size_t start = pos;
 
-  string name;
-  cpp_decl::QualifiedName name_syntax;
-  cpp_decl::TemplateIdSyntax template_id_syntax;
-  vector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
-  vector<CppAstNode> qualifier_type_syntaxes;
-  if(parse_qualified_name_text(name,
-                               &name_syntax,
-                               &template_id_syntax,
-                               &qualifier_template_id_syntaxes,
-                               &qualifier_type_syntaxes)) {
+  const auto current_id_has_known_value_template_suffix = [&]() -> bool
+  {
+    for(size_t cursor = start; !tokens.peek(cursor).is_eof(); ++cursor) {
+      const RecogToken & token = tokens.peek(cursor);
+      if(token.is_simple(OP_LT)) {
+        return cursor > start &&
+               tokens.peek(cursor - 1).is_identifier() &&
+               is_known_value_template_parameter_identifier(
+                   tokens.peek(cursor - 1));
+      }
+      if(token.is_simple(OP_COLON2) ||
+         token.is_identifier() ||
+         token.is_simple(KW_TEMPLATE)) {
+        continue;
+      }
+      break;
+    }
+    return false;
+  };
+
+  const auto current_id_has_potential_template_suffix = [&]() -> bool
+  {
+    for(size_t cursor = start; !tokens.peek(cursor).is_eof(); ++cursor) {
+      const RecogToken & token = tokens.peek(cursor);
+      if(token.is_simple(OP_LT)) {
+        return cursor > start && tokens.peek(cursor - 1).is_identifier();
+      }
+      if(token.is_simple(OP_COLON2) ||
+         token.is_identifier() ||
+         token.is_simple(KW_TEMPLATE)) {
+        continue;
+      }
+      break;
+    }
+    return false;
+  };
+
+  const auto current_id_has_qualified_potential_template_suffix = [&]() -> bool
+  {
+    bool saw_qualifier = false;
+    const template_angle_lookup::ScopedNameLookup lookup =
+        make_template_angle_lookup(true);
+    for(size_t cursor = start; !tokens.peek(cursor).is_eof();) {
+      const RecogToken & token = tokens.peek(cursor);
+      if(token.is_simple(OP_LT)) {
+        if(cursor <= start || !tokens.peek(cursor - 1).is_identifier()) {
+          return false;
+        }
+        if(saw_qualifier) {
+          return true;
+        }
+        size_t suffix_end = cursor;
+        vector<pair<size_t, size_t> > arg_ranges;
+        if(!template_angle::parse_template_id_suffix_ranges(tokens,
+                                                            cursor,
+                                                            lookup,
+                                                            suffix_end,
+                                                            arg_ranges)) {
+          return false;
+        }
+        cursor = suffix_end;
+        continue;
+      }
+      if(token.is_simple(OP_COLON2)) {
+        saw_qualifier = true;
+        ++cursor;
+        continue;
+      }
+      if(token.is_identifier() || token.is_simple(KW_TEMPLATE)) {
+        ++cursor;
+        continue;
+      }
+      break;
+    }
+    return false;
+  };
+
+  const auto parse_qualified_id = [&](bool prefer_unknown_template_ids,
+                                      bool suppress_template_id_crossing_logical_operator,
+                                      bool allow_value_template_id,
+                                      bool * parsed_template_suffix) -> bool
+  {
+    string name;
+    cpp_decl::QualifiedName name_syntax;
+    cpp_decl::TemplateIdSyntax template_id_syntax;
+    vector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
+    vector<CppAstNode> qualifier_type_syntaxes;
+    if(!parse_qualified_name_text(name,
+                                  &name_syntax,
+                                  &template_id_syntax,
+                                  &qualifier_template_id_syntaxes,
+                                  &qualifier_type_syntaxes,
+                                  prefer_unknown_template_ids,
+                                  suppress_template_id_crossing_logical_operator,
+                                  false,
+                                  allow_value_template_id)) {
+      return false;
+    }
+    if(parsed_template_suffix != nullptr) {
+      *parsed_template_suffix =
+          !template_id_syntax.name.name.empty() ||
+          !qualifier_template_id_syntaxes.empty();
+    }
     out = make_node(CppAstKind::id_expression, name);
     set_cppast_qualified_name_syntax(out, std::move(name_syntax));
     if(!template_id_syntax.name.name.empty()) {
@@ -10121,6 +10353,28 @@ bool CppAstParser::parse_id_expression(CppAstNode & out)
       set_cppast_qualifier_type_syntaxes(out, std::move(qualifier_type_syntaxes));
     }
     set_span(out, start);
+    return true;
+  };
+
+  if(current_id_has_known_value_template_suffix() &&
+     parse_qualified_id(false, false, true, nullptr)) {
+    return true;
+  }
+
+  pos = start;
+  if(current_id_has_potential_template_suffix()) {
+    bool parsed_template_suffix = false;
+    if(parse_qualified_id(true,
+                          true,
+                          current_id_has_qualified_potential_template_suffix(),
+                          &parsed_template_suffix) &&
+       parsed_template_suffix) {
+      return true;
+    }
+  }
+
+  pos = start;
+  if(parse_qualified_id(false, false, false, nullptr)) {
     return true;
   }
 
@@ -10597,7 +10851,8 @@ bool CppAstParser::parse_qualified_name_text(string & out,
                                                  qualifier_type_syntaxes,
                                              bool prefer_unknown_template_ids,
                                              bool suppress_unforced_template_id_crossing_logical_operator,
-                                             bool allow_conversion_operator_type_without_call)
+                                             bool allow_conversion_operator_type_without_call,
+                                             bool allow_value_template_id_final_component)
 {
   size_t start = pos;
   template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
@@ -10610,6 +10865,8 @@ bool CppAstParser::parse_qualified_name_text(string & out,
       suppress_unforced_template_id_crossing_logical_operator;
   options.allow_conversion_operator_type_without_call =
       allow_conversion_operator_type_without_call;
+  options.allow_value_template_id_final_component =
+      allow_value_template_id_final_component;
   if(!qualified_name_parser::parse_qualified_name(tokens,
                                                   start,
                                                   lookup,
@@ -10820,7 +11077,7 @@ bool CppAstParser::parse_angle_clause_text(string & out)
     return false;
   }
 
-  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup();
+  const template_angle_lookup::ScopedNameLookup lookup = make_template_angle_lookup(true);
 
   std::size_t end = start;
   std::vector<std::pair<std::size_t, std::size_t> > arg_ranges;
@@ -10886,10 +11143,13 @@ template_angle_lookup::ScopedNameLookup CppAstParser::make_template_angle_lookup
 {
   template_angle_lookup::ScopedNameLookup out;
   out.template_name_scopes = &template_name_scopes;
+  out.template_type_parameter_scopes = &template_type_parameter_scopes;
   out.type_name_scopes = &type_name_scopes;
   out.template_value_name_scopes = &template_value_parameter_scopes;
   out.value_name_scopes = &value_name_scopes;
   out.inherited_template_name_scopes = inherited_template_name_scopes;
+  out.inherited_template_type_parameter_scopes =
+      inherited_template_type_parameter_scopes;
   out.inherited_type_name_scopes = inherited_type_name_scopes;
   out.inherited_template_value_name_scopes =
       inherited_template_value_parameter_scopes;
@@ -11086,9 +11346,6 @@ void CppAstParser::collect_declared_value_names(const CppAstNode & node,
                                                 NameSet & out) const
 {
   if(node.kind == CppAstKind::template_declaration) {
-    if(node.children.size() > 1) {
-      collect_declared_value_names(node.children[1], out);
-    }
     return;
   }
 
@@ -11124,6 +11381,91 @@ void CppAstParser::collect_declared_value_names(const CppAstNode & node,
       }
     }
     return;
+  }
+}
+
+void CppAstParser::collect_identifier_names_in_token_range(size_t start,
+                                                           size_t end,
+                                                           NameSet & out) const
+{
+  for(size_t i = start; i < end; ++i) {
+    const RecogToken & token = tokens.peek(i);
+    if(token.is_identifier()) {
+      out.insert(token.cached_identifier_atom());
+    }
+  }
+}
+
+void CppAstParser::refresh_lazy_function_body_snapshots_for_class(
+    CppAstNode & node,
+    const ClassMemberNameScopes & scopes,
+    bool root_class) const
+{
+  if(node.kind == CppAstKind::class_specifier && !root_class) {
+    return;
+  }
+
+  if(node.kind == CppAstKind::lazy_function_body) {
+    NameSet used_names;
+    collect_identifier_names_in_token_range(node.token_start,
+                                            node.token_end,
+                                            used_names);
+
+    const auto filter_used_names =
+        [&used_names](const NameSet & source) -> NameSet
+    {
+      NameSet filtered;
+      if(source.empty() || used_names.empty()) {
+        return filtered;
+      }
+      if(used_names.size() < source.size()) {
+        for(NameSet::const_iterator it = used_names.begin();
+            it != used_names.end();
+            ++it) {
+          if(source.count(*it) != 0) {
+            filtered.insert(*it);
+          }
+        }
+      } else {
+        for(NameSet::const_iterator it = source.begin();
+            it != source.end();
+            ++it) {
+          if(used_names.count(*it) != 0) {
+            filtered.insert(*it);
+          }
+        }
+      }
+      return filtered;
+    };
+
+    NameSet template_names = filter_used_names(scopes.template_names);
+    NameSet type_names = filter_used_names(scopes.type_names);
+    NameSet value_names = filter_used_names(scopes.value_names);
+    if(!template_names.empty() || !type_names.empty() || !value_names.empty()) {
+      if(parser_trace::enabled("parser.decl")) {
+        std::ostringstream trace;
+        trace << "lazy body class snapshot refresh"
+              << " template-names=" << format_name_set_for_trace(template_names)
+              << " type-names=" << format_name_set_for_trace(type_names)
+              << " value-names=" << format_name_set_for_trace(value_names);
+        parser_trace::note("parser.decl", tokens, node.token_start, trace.str());
+      }
+      shared_ptr<CppAstNameLookupSnapshot> refreshed(
+          new CppAstNameLookupSnapshot(
+              node.name_lookup_snapshot ? *node.name_lookup_snapshot :
+                                           CppAstNameLookupSnapshot()));
+      refreshed->template_name_scopes.push_back(template_names);
+      refreshed->type_name_scopes.push_back(type_names);
+      refreshed->value_name_scopes.push_back(value_names);
+      node.name_lookup_snapshot = refreshed;
+    }
+    return;
+  }
+
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    refresh_lazy_function_body_snapshots_for_class(node.children[i],
+                                                   scopes,
+                                                   false);
   }
 }
 
@@ -11168,6 +11510,27 @@ void CppAstParser::collect_declared_template_names(const CppAstNode & node,
   collect_declarator_identifiers(declaration, out);
 }
 
+void CppAstParser::collect_declared_template_value_names(const CppAstNode & node,
+                                                        NameSet & out) const
+{
+  if(node.kind != CppAstKind::template_declaration || node.children.size() < 2) {
+    return;
+  }
+
+  const CppAstNode & declaration = node.children[1];
+  if(declaration.kind == CppAstKind::class_specifier ||
+     declaration.kind == CppAstKind::class_forward_declaration ||
+     declaration.kind == CppAstKind::alias_declaration) {
+    return;
+  }
+
+  if(declaration.kind == CppAstKind::simple_declaration ||
+     declaration.kind == CppAstKind::bit_field_declaration ||
+     declaration.kind == CppAstKind::function_definition) {
+    collect_declarator_identifiers(declaration, out);
+  }
+}
+
 void CppAstParser::note_declared_type_names(const CppAstNode & node)
 {
   if(type_name_scopes.empty()) {
@@ -11191,6 +11554,20 @@ void CppAstParser::note_declared_template_names(const CppAstNode & node)
   NameSet names;
   collect_declared_template_names(node, names);
   template_name_scopes.back().insert(names.begin(), names.end());
+  if(!names.empty()) {
+    note_name_lookup_mutation();
+  }
+}
+
+void CppAstParser::note_declared_template_value_names(const CppAstNode & node)
+{
+  if(template_value_parameter_scopes.empty()) {
+    template_value_parameter_scopes.push_back(NameSet());
+  }
+
+  NameSet names;
+  collect_declared_template_value_names(node, names);
+  template_value_parameter_scopes.back().insert(names.begin(), names.end());
   if(!names.empty()) {
     note_name_lookup_mutation();
   }
@@ -11233,7 +11610,10 @@ void CppAstParser::note_namespace_alias_definition(const CppAstNode & node)
 
 void CppAstParser::note_using_imports(const CppAstNode & node)
 {
-  if(template_name_scopes.empty() || type_name_scopes.empty() || value_name_scopes.empty()) {
+  if(template_value_parameter_scopes.empty() ||
+     template_name_scopes.empty() ||
+     type_name_scopes.empty() ||
+     value_name_scopes.empty()) {
     return;
   }
 
@@ -11251,6 +11631,13 @@ void CppAstParser::note_using_imports(const CppAstNode & node)
     if(template_found != namespace_template_name_scopes.end()) {
       template_name_scopes.back().insert(template_found->second.begin(),
                                          template_found->second.end());
+      changed = true;
+    }
+    const auto template_value_found =
+        namespace_template_value_name_scopes.find(target_key);
+    if(template_value_found != namespace_template_value_name_scopes.end()) {
+      template_value_parameter_scopes.back().insert(template_value_found->second.begin(),
+                                                    template_value_found->second.end());
       changed = true;
     }
     const auto type_found = namespace_type_name_scopes.find(target_key);
@@ -11287,6 +11674,13 @@ void CppAstParser::note_using_imports(const CppAstNode & node)
       template_name_scopes.back().insert(target_name);
       changed = true;
     }
+    const auto template_value_found =
+        namespace_template_value_name_scopes.find(namespace_key);
+    if(template_value_found != namespace_template_value_name_scopes.end() &&
+       template_value_found->second.count(target_name) != 0) {
+      template_value_parameter_scopes.back().insert(target_name);
+      changed = true;
+    }
     const auto type_found = namespace_type_name_scopes.find(namespace_key);
     if(type_found != namespace_type_name_scopes.end() &&
        type_found->second.count(target_name) != 0) {
@@ -11309,6 +11703,7 @@ void CppAstParser::note_using_imports(const CppAstNode & node)
 void CppAstParser::note_visible_names_after_declaration(const CppAstNode & node)
 {
   note_declared_template_names(node);
+  note_declared_template_value_names(node);
   note_declared_type_names(node);
   note_declared_value_names(node);
   note_namespace_alias_definition(node);
@@ -11407,6 +11802,13 @@ void CppAstParser::push_namespace_name_scopes(const string & name, bool is_inlin
   namespace_path_stack.push_back(component);
   namespace_inline_stack.push_back(is_inline);
 
+  const auto template_value_found = namespace_template_value_name_scopes.find(key);
+  if(template_value_found == namespace_template_value_name_scopes.end()) {
+    template_value_parameter_scopes.push_back(NameSet());
+  } else {
+    template_value_parameter_scopes.push_back(template_value_found->second);
+  }
+
   const auto template_found = namespace_template_name_scopes.find(key);
   if(template_found == namespace_template_name_scopes.end()) {
     template_name_scopes.push_back(NameSet());
@@ -11433,6 +11835,7 @@ void CppAstParser::pop_namespace_name_scopes(bool commit)
 {
   if(namespace_path_stack.empty() ||
      namespace_inline_stack.empty() ||
+     template_value_parameter_scopes.empty() ||
      template_name_scopes.empty() ||
      type_name_scopes.empty() ||
      value_name_scopes.empty()) {
@@ -11441,6 +11844,9 @@ void CppAstParser::pop_namespace_name_scopes(bool commit)
 
   const string key = current_namespace_path_key();
   if(commit) {
+    namespace_template_value_name_scopes[key].insert(
+        template_value_parameter_scopes.back().begin(),
+        template_value_parameter_scopes.back().end());
     namespace_template_name_scopes[key].insert(template_name_scopes.back().begin(),
                                                template_name_scopes.back().end());
     namespace_type_name_scopes[key].insert(type_name_scopes.back().begin(),
@@ -11448,9 +11854,14 @@ void CppAstParser::pop_namespace_name_scopes(bool commit)
     namespace_value_name_scopes[key].insert(value_name_scopes.back().begin(),
                                             value_name_scopes.back().end());
 
-    if(namespace_inline_stack.back() && template_name_scopes.size() >= 2 &&
+    if(namespace_inline_stack.back() &&
+       template_value_parameter_scopes.size() >= 2 &&
+       template_name_scopes.size() >= 2 &&
        type_name_scopes.size() >= 2 &&
        value_name_scopes.size() >= 2) {
+      template_value_parameter_scopes[template_value_parameter_scopes.size() - 2].insert(
+          template_value_parameter_scopes.back().begin(),
+          template_value_parameter_scopes.back().end());
       template_name_scopes[template_name_scopes.size() - 2].insert(
           template_name_scopes.back().begin(), template_name_scopes.back().end());
       type_name_scopes[type_name_scopes.size() - 2].insert(
@@ -11461,6 +11872,9 @@ void CppAstParser::pop_namespace_name_scopes(bool commit)
       const std::size_t split = key.rfind("::");
       if(split != std::string::npos) {
         const std::string parent_key = key.substr(0, split);
+        namespace_template_value_name_scopes[parent_key].insert(
+            template_value_parameter_scopes.back().begin(),
+            template_value_parameter_scopes.back().end());
         namespace_template_name_scopes[parent_key].insert(
             template_name_scopes.back().begin(), template_name_scopes.back().end());
         namespace_type_name_scopes[parent_key].insert(
@@ -11472,6 +11886,7 @@ void CppAstParser::pop_namespace_name_scopes(bool commit)
   }
 
   value_name_scopes.pop_back();
+  template_value_parameter_scopes.pop_back();
   template_name_scopes.pop_back();
   type_name_scopes.pop_back();
   namespace_path_stack.pop_back();

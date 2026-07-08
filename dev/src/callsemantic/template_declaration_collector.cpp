@@ -273,7 +273,22 @@ public:
     const vector<TemplateParameterInfo> & owner_template_parameters =
         inherited_template_parameters ? *inherited_template_parameters : template_parameters;
 
-    const CppAstNode & inner = node.children.back();
+    const CppAstNode & parsed_inner = node.children.back();
+    const CppAstNode * effective_inner = &parsed_inner;
+    if(parsed_inner.kind == CppAstKind::simple_declaration) {
+      const CppAstNode * parsed_specifiers =
+          find_child_kind(parsed_inner, CppAstKind::decl_specifier_seq);
+      const CppAstNode * parsed_declarators =
+          find_child_kind(parsed_inner, CppAstKind::init_declarator_list);
+      if(parsed_specifiers &&
+         !parsed_declarators &&
+         parsed_specifiers->children.size() == 1 &&
+         (parsed_specifiers->children[0].kind == CppAstKind::class_specifier ||
+          parsed_specifiers->children[0].kind == CppAstKind::class_forward_declaration)) {
+        effective_inner = &parsed_specifiers->children[0];
+      }
+    }
+    const CppAstNode & inner = *effective_inner;
     if(inner.kind == CppAstKind::template_declaration) {
       collect_template_declaration_impl(pattern_scope,
                                         inner,

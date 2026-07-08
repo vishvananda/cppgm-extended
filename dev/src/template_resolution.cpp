@@ -20,8 +20,12 @@
 #include "callsemantic_internal.h"
 #include "class_template_mangle_info.h"
 #include "cpp_decl_bridge.h"
+#include "cppast_parser.h"
 #include "pack_parameter_analysis.h"
 #include "parser_trace.h"
+#include "posttokenizer.h"
+#include "pptokenizer.h"
+#include "recog_token.h"
 #include "semantic_context.h"
 #include "semantic_conversion.h"
 #include "semantic_errors.h"
@@ -93,6 +97,83 @@ FunctionTypeRefQualifier function_type_ref_qualifier_from_method_ref(
     return FTRQ_NONE;
   }
   return FTRQ_NONE;
+}
+
+bool type_argument_text_has_declarator_surface(const std::string & text)
+{
+  QualifiedName template_name;
+  std::vector<std::string> template_args;
+  if(semantic_utils::split_top_level_template_id_text(text,
+                                                      template_name,
+                                                      template_args) &&
+     !template_args.empty()) {
+    return true;
+  }
+
+  for(std::size_t i = 0; i < text.size(); ++i) {
+    switch(text[i]) {
+    case '*':
+    case '&':
+    case '(':
+    case ')':
+    case '[':
+    case ']':
+      return true;
+    default:
+      break;
+    }
+  }
+  return false;
+}
+
+bool parse_type_argument_text_syntax(const std::string & text,
+                                     TemplateArgumentSyntax & out)
+{
+  out = TemplateArgumentSyntax();
+  const std::string trimmed = semantic_utils::trim_space(text);
+  if(trimmed.empty() || !type_argument_text_has_declarator_surface(trimmed)) {
+    return false;
+  }
+
+  try {
+    std::istringstream input(trimmed);
+    PPTokenizer pp_tokens(input.rdbuf());
+    PostTokenizer post_tokens(pp_tokens);
+    RecogTokenizer recog_tokens(post_tokens);
+    std::vector<RecogToken> tokens;
+    for(;;) {
+      RecogToken token = recog_tokens.get();
+      const bool done = token.is_eof() || token.is_invalid();
+      if(token.is_invalid()) {
+        return false;
+      }
+      tokens.push_back(std::move(token));
+      if(done) {
+        break;
+      }
+    }
+
+    if(tokens.size() <= 1 || !tokens.back().is_eof()) {
+      return false;
+    }
+
+    CppAstParser parser(tokens);
+    if(!parser.parse_template_argument_fragment_syntax(
+           0,
+           tokens.size() - 1,
+           out,
+           CppAstParser::TAF_PARSE_TYPE_ONLY,
+           true) ||
+       !out.type_id) {
+      out = TemplateArgumentSyntax();
+      return false;
+    }
+    out.text = trimmed;
+    return true;
+  } catch(const std::logic_error &) {
+    out = TemplateArgumentSyntax();
+    return false;
+  }
 }
 
 bool resolve_template_argument(SemanticContext & ctx,
@@ -11674,6 +11755,8 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   };
   bool attempted_structured_type_syntax = false;
   bool bound_member_type_failure = false;
+  TemplateArgumentSyntax reparsed_text_type_syntax;
+  bool have_reparsed_text_type_syntax = false;
   const auto try_parse_type_id_syntax =
       [&]() -> void
   {
@@ -11832,6 +11915,25 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       type = recovered_template_id;
     }
   }
+  if(!type && !has_structured_type_syntax) {
+    if(parse_type_argument_text_syntax(trimmed, reparsed_text_type_syntax)) {
+      try {
+        template_argument_semantics::parse_type_id_node_for_templates(
+            services,
+            raw_argument_scope,
+            *reparsed_text_type_syntax.type_id,
+            type,
+            true);
+        resolve_type_argument_if_needed(type);
+        if(type) {
+          have_reparsed_text_type_syntax = true;
+          reparsed_text_type_syntax.resolved_type = type;
+        }
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+        type.reset();
+      }
+    }
+  }
   if(!type) {
     compute_type_dependency_flags();
   }
@@ -11965,6 +12067,9 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   }
 
   set_resolved_type_template_argument(type_system, type, trimmed, out);
+  if(!out.source_syntax && have_reparsed_text_type_syntax) {
+    attach_template_argument_source_syntax(&reparsed_text_type_syntax, out);
+  }
   if(syntax && services.witness_context.session != nullptr) {
     template_argument_semantics::
         append_structured_bool_value_dependencies_in_template_argument_syntax(

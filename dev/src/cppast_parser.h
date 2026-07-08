@@ -61,6 +61,7 @@ protected:
   bool parse_namespace_declaration(CppAstNode & out);
   bool parse_explicit_instantiation(CppAstNode & out);
   bool parse_explicit_instantiation_target(CppAstNode & out);
+  bool parse_explicit_class_instantiation_target(CppAstNode & out);
   bool parse_linkage_specification(CppAstNode & out);
   bool parse_using_or_alias_declaration(CppAstNode & out);
   bool parse_template_declaration(CppAstNode & out);
@@ -236,7 +237,8 @@ protected:
                                  bool prefer_unknown_template_ids = false,
                                  bool suppress_unforced_template_id_crossing_logical_operator =
                                      false,
-                                 bool allow_conversion_operator_type_without_call = false);
+                                 bool allow_conversion_operator_type_without_call = false,
+                                 bool allow_value_template_id_final_component = false);
   void attach_qualified_name_syntax_from_span(CppAstNode & node,
                                               std::size_t start,
                                               std::size_t end);
@@ -292,10 +294,20 @@ protected:
                                    NameSet & out) const;
   void collect_declared_template_names(const CppAstNode & node,
                                        NameSet & out) const;
+  void collect_declared_template_value_names(const CppAstNode & node,
+                                             NameSet & out) const;
   void collect_declared_value_names(const CppAstNode & node,
                                     NameSet & out) const;
+  void collect_identifier_names_in_token_range(std::size_t start,
+                                               std::size_t end,
+                                               NameSet & out) const;
+  void refresh_lazy_function_body_snapshots_for_class(
+      CppAstNode & node,
+      const ClassMemberNameScopes & scopes,
+      bool root_class = true) const;
   void note_declared_type_names(const CppAstNode & node);
   void note_declared_template_names(const CppAstNode & node);
+  void note_declared_template_value_names(const CppAstNode & node);
   void note_declared_value_names(const CppAstNode & node);
   void note_namespace_alias_definition(const CppAstNode & node);
   void note_using_imports(const CppAstNode & node);
@@ -394,6 +406,7 @@ protected:
   std::vector<bool> namespace_inline_stack;
   std::unordered_map<std::string, ClassMemberNameScopes> class_member_name_scopes;
   std::unordered_map<std::string, NameSet> namespace_template_name_scopes;
+  std::unordered_map<std::string, NameSet> namespace_template_value_name_scopes;
   std::unordered_map<std::string, NameSet> namespace_type_name_scopes;
   std::unordered_map<std::string, NameSet> namespace_value_name_scopes;
   std::unordered_map<std::string, std::string> namespace_alias_targets;

@@ -146,6 +146,9 @@ bool exact_template_type_lookup_anchor_matches_syntax(
 bool exact_template_type_lookup_anchor_matches_identifier(
     const ExactTemplateTypeLookupAnchor & anchor,
     const std::string & identifier);
+bool exact_template_type_lookup_anchor_matches_identifier_syntax(
+    const ExactTemplateTypeLookupAnchor & anchor,
+    const std::string & identifier);
 bool exact_template_type_lookup_anchor_arg_texts(
     const std::string & normalized_name,
     const std::string & identifier,

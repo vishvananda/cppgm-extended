@@ -160,7 +160,8 @@ struct QualifiedNameCursor : RecogTokenCursor
   bool parse_name_component(
       NameComponentParseResult & out,
       bool suppress_unforced_template_id_crossing_logical_operator = false,
-      bool allow_value_template_id_qualifier = false)
+      bool allow_value_template_id = false,
+      bool require_value_template_id_qualifier = false)
   {
     const size_t start = pos;
     const bool forced_template = consume_simple(KW_TEMPLATE);
@@ -174,6 +175,12 @@ struct QualifiedNameCursor : RecogTokenCursor
         forced_template ||
         (identifier_start > 0 &&
          tokens.peek(identifier_start - 1).is_simple(KW_TEMPLATE));
+    const bool qualified_component =
+        (identifier_start > 0 &&
+         tokens.peek(identifier_start - 1).is_simple(OP_COLON2)) ||
+        (identifier_start >= 2 &&
+         tokens.peek(identifier_start - 1).is_simple(KW_TEMPLATE) &&
+         tokens.peek(identifier_start - 2).is_simple(OP_COLON2));
 
     out = NameComponentParseResult();
     out.name_component = make_pair(identifier_start, pos);
@@ -182,6 +189,13 @@ struct QualifiedNameCursor : RecogTokenCursor
       size_t suffix_end = pos;
       std::vector<std::pair<size_t, size_t> > arg_ranges;
       bool parsed_suffix = false;
+      QualifiedFinalComponentLookup value_template_lookup(lookup);
+      const bool allow_qualified_value_template_id =
+          allow_value_template_id || qualified_component;
+      const NameLookup & template_suffix_lookup =
+          allow_qualified_value_template_id ?
+              static_cast<const NameLookup &>(value_template_lookup) :
+              lookup;
       const RecogToken & prev = tokens.peek(pos - 1);
       if(prev.is_identifier()) {
         const bool known_template = lookup.is_known_template_name_identifier(prev);
@@ -191,16 +205,18 @@ struct QualifiedNameCursor : RecogTokenCursor
         const bool known_value = lookup.is_known_value_name_identifier(prev);
         if((known_value_template || known_value) &&
            !known_template && !known_type && !explicit_template) {
-          if(!allow_value_template_id_qualifier) {
+          if(!allow_qualified_value_template_id) {
             return true;
           }
           parsed_suffix =
               template_angle::parse_template_id_suffix_ranges(tokens,
                                                               pos,
-                                                              lookup,
+                                                              template_suffix_lookup,
                                                               suffix_end,
                                                               arg_ranges);
-          if(!parsed_suffix || !tokens.peek(suffix_end).is_simple(OP_COLON2)) {
+          if(!parsed_suffix ||
+             (require_value_template_id_qualifier &&
+              !tokens.peek(suffix_end).is_simple(OP_COLON2))) {
             return true;
           }
         }
@@ -220,9 +236,26 @@ struct QualifiedNameCursor : RecogTokenCursor
         parsed_suffix =
             template_angle::parse_template_id_suffix_ranges(tokens,
                                                             pos,
-                                                            lookup,
+                                                            template_suffix_lookup,
                                                             suffix_end,
                                                             arg_ranges);
+      }
+      if(parsed_suffix &&
+         qualified_component &&
+         !explicit_template &&
+         !allow_value_template_id) {
+        const RecogToken & after_suffix = tokens.peek(suffix_end);
+        const bool known_template_suffix =
+            prev.is_identifier() &&
+            (lookup.is_known_template_name_identifier(prev) ||
+             lookup.is_known_type_name_identifier(prev) ||
+             lookup.is_known_value_template_parameter_identifier(prev));
+        if(!known_template_suffix &&
+           !after_suffix.is_simple(OP_COLON2) &&
+           !after_suffix.is_simple(OP_LPAREN) &&
+           !after_suffix.is_simple(OP_LSQUARE)) {
+          parsed_suffix = false;
+        }
       }
       if(parsed_suffix) {
         pos = suffix_end;
@@ -521,7 +554,8 @@ struct QualifiedNameCursor : RecogTokenCursor
     NameComponentParseResult component;
     if(!parse_name_component(
            component,
-           options.suppress_unforced_template_id_crossing_logical_operator)) {
+           options.suppress_unforced_template_id_crossing_logical_operator,
+           options.allow_value_template_id_final_component)) {
       pos = start;
       return false;
     }
@@ -554,6 +588,7 @@ struct QualifiedNameCursor : RecogTokenCursor
       bool parsed_component =
           parse_name_component(component,
                                options.suppress_unforced_template_id_crossing_logical_operator,
+                               true,
                                true);
       if(!parsed_component) {
         parsed_component = parse_decltype_specifier(decltype_end);

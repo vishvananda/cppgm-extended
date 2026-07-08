@@ -19,6 +19,18 @@ struct NameLookup
   virtual bool is_known_value_template_parameter_identifier(
       const RecogToken & token) const = 0;
   virtual bool is_known_value_name_identifier(const RecogToken & token) const = 0;
+  virtual bool is_template_type_parameter_identifier(
+      const RecogToken & token) const
+  {
+    (void)token;
+    return false;
+  }
+  virtual bool unqualified_identifier_prefers_value_name(
+      const RecogToken & token) const
+  {
+    (void)token;
+    return false;
+  }
   virtual bool prefer_template_id_for_unknown_identifiers() const { return false; }
 };
 

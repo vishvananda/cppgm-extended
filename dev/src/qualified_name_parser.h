@@ -34,6 +34,7 @@ struct UnqualifiedNameOptions
   bool allow_operator = true;
   bool allow_conversion_operator_type_without_call = false;
   bool suppress_unforced_template_id_crossing_logical_operator = false;
+  bool allow_value_template_id_final_component = false;
 };
 
 struct UnqualifiedNameParseResult

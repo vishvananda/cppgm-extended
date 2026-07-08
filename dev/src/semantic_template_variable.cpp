@@ -7,6 +7,7 @@
 #include "semantic_context.h"
 #include "semantic_trace.h"
 #include "template_api.h"
+#include "template_witness.h"
 #include "witness_api.h"
 
 namespace semantic_template_variable {
@@ -35,12 +36,24 @@ std::string variable_template_source_use_location(SemanticContext & ctx,
     source_use_location = trace_use_location;
   }
 
+  std::string node_location;
   if(source_use_location.empty()) {
-    const std::string node_location = ctx.source_location_for_node(source_node);
+    node_location = ctx.source_location_for_node(source_node);
     if(semantic_trace::source_location_points_at_identifier(node_location,
                                                             template_name)) {
       source_use_location = node_location;
     }
+  }
+
+  if(source_use_location.empty() && !node_location.empty()) {
+    source_use_location =
+        template_api::template_witness_detail::
+            source_location_for_identifier_token_on_or_after(
+                ctx.template_witness_context(),
+                node_location,
+                template_name,
+                true,
+                true);
   }
   return source_use_location;
 }
@@ -103,7 +116,7 @@ acquire_variable_template_binding_for_template_id_source_use(
                                                           arguments,
                                                           source_use_scope,
                                                           source_node,
-                                                          template_id.name.name);
+                                                          decl.name);
 }
 
 const semantic_model::ValueBinding *
@@ -132,7 +145,7 @@ acquire_member_variable_template_binding_for_template_id_source_use(
           arguments,
           source_use_scope,
           source_node,
-          template_id.name.name);
+          decl.name);
   if(!binding || !owner.member_scope) {
     return binding;
   }

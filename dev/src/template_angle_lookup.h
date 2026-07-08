@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -131,6 +132,33 @@ inline bool lookup_in_scoped_names(const NameSetStack * primary,
          lookup_in_stack(inherited, atom);
 }
 
+inline int nearest_scope_index(const NameSetStack * primary,
+                               const NameSetStack * inherited,
+                               text_intern::Atom atom)
+{
+  if(!atom) {
+    return -1;
+  }
+
+  const int inherited_size =
+      inherited ? static_cast<int>(inherited->size()) : 0;
+  if(primary) {
+    for(std::size_t i = primary->size(); i > 0; --i) {
+      if((*primary)[i - 1].count(atom) != 0) {
+        return inherited_size + static_cast<int>(i - 1);
+      }
+    }
+  }
+  if(inherited) {
+    for(std::size_t i = inherited->size(); i > 0; --i) {
+      if((*inherited)[i - 1].count(atom) != 0) {
+        return static_cast<int>(i - 1);
+      }
+    }
+  }
+  return -1;
+}
+
 struct NameSetLookup : template_angle::NameLookup
 {
   bool is_known_template_name_identifier(const RecogToken & token) const override
@@ -160,6 +188,21 @@ struct NameSetLookup : template_angle::NameLookup
     return prefer_unknown_template_ids;
   }
 
+  bool unqualified_identifier_prefers_value_name(
+      const RecogToken & token) const override
+  {
+    if(!token.is_identifier()) {
+      return false;
+    }
+    const bool known_value =
+        known_template_value_names.count(token.source) != 0 ||
+        known_value_names.count(token.source) != 0;
+    const bool known_type_or_template =
+        known_template_names.count(token.source) != 0 ||
+        known_type_names.count(token.source) != 0;
+    return known_value && !known_type_or_template;
+  }
+
   NameSet known_template_names;
   NameSet known_type_names;
   NameSet known_template_value_names;
@@ -170,10 +213,12 @@ struct NameSetLookup : template_angle::NameLookup
 struct ScopedNameLookup : template_angle::NameLookup
 {
   const NameSetStack * template_name_scopes = nullptr;
+  const NameSetStack * template_type_parameter_scopes = nullptr;
   const NameSetStack * type_name_scopes = nullptr;
   const NameSetStack * template_value_name_scopes = nullptr;
   const NameSetStack * value_name_scopes = nullptr;
   const NameSetStack * inherited_template_name_scopes = nullptr;
+  const NameSetStack * inherited_template_type_parameter_scopes = nullptr;
   const NameSetStack * inherited_type_name_scopes = nullptr;
   const NameSetStack * inherited_template_value_name_scopes = nullptr;
   const NameSetStack * inherited_value_name_scopes = nullptr;
@@ -195,6 +240,16 @@ struct ScopedNameLookup : template_angle::NameLookup
            (fallback_lookup && fallback_lookup->is_known_type_name_identifier(token));
   }
 
+  bool is_template_type_parameter_identifier(
+      const RecogToken & token) const override
+  {
+    return lookup_in_scoped_names(template_type_parameter_scopes,
+                                  inherited_template_type_parameter_scopes,
+                                  token) ||
+           (fallback_lookup &&
+            fallback_lookup->is_template_type_parameter_identifier(token));
+  }
+
   bool is_known_value_template_parameter_identifier(
       const RecogToken & token) const override
   {
@@ -214,6 +269,34 @@ struct ScopedNameLookup : template_angle::NameLookup
   bool prefer_template_id_for_unknown_identifiers() const override
   {
     return prefer_unknown_template_ids;
+  }
+
+  bool unqualified_identifier_prefers_value_name(
+      const RecogToken & token) const override
+  {
+    if(!token.is_identifier()) {
+      return false;
+    }
+    text_intern::Atom atom = token.cached_identifier_atom();
+    const int value_index =
+        std::max(nearest_scope_index(value_name_scopes,
+                                     inherited_value_name_scopes,
+                                     atom),
+                 nearest_scope_index(template_value_name_scopes,
+                                     inherited_template_value_name_scopes,
+                                     atom));
+    const int non_value_index =
+        std::max(nearest_scope_index(type_name_scopes,
+                                     inherited_type_name_scopes,
+                                     atom),
+                 nearest_scope_index(template_name_scopes,
+                                     inherited_template_name_scopes,
+                                     atom));
+    if(value_index >= 0 || non_value_index >= 0) {
+      return value_index >= non_value_index;
+    }
+    return fallback_lookup &&
+           fallback_lookup->unqualified_identifier_prefers_value_name(token);
   }
 };
 
