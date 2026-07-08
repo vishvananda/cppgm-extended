@@ -4911,3 +4911,8 @@ strict direct-text suite passes; focused Boost B2
 `/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./b2 --user-config=/tmp/cppgm-zlib-user-config.jam -j4 toolset=gcc-cppgm cxxstd=11 variant=debug link=static runtime-link=shared threading=multi --build-dir=/Users/vishvananda/boost_1_91_0/bin.cppgm -a libs/iostreams/test//stream_state_test`
 updates 49 targets, links `stream_state_test`, and the captured test passes;
 log `/tmp/boost-iostreams-stream-state-after-catch-handler-20260708.log`.
+Fresh full Iostreams replay with the same zlib-aware config,
+`/usr/local/bin/timeout 1800 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./b2 --user-config=/tmp/cppgm-zlib-user-config.jam -j4 toolset=gcc-cppgm cxxstd=11 variant=debug link=static runtime-link=shared threading=multi --build-dir=/Users/vishvananda/boost_1_91_0/bin.cppgm -a libs/iostreams/test`,
+updates 246 targets and passes; log
+`/tmp/boost-iostreams-full-zlib-frontier-after-catch-handler-20260708.log`.
+The next suite-status row after Iostreams is `libs/iterator/test`.
