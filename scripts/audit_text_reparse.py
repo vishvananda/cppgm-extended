@@ -112,6 +112,16 @@ CATEGORIES = [
             r"\bsplit_top_level_function_type_argument_text\s*\("
         ),
     ),
+    Category(
+        "semantic_nttp_text_rebind",
+        "Non-type template argument semantics recovered by re-looking up saved text.",
+        re.compile(
+            r"\btry_analyze_non_type_template_member_pointer_text\b|"
+            r"\bnon_type_template_argument_text\b.*\blookup_(?:value|functions)\b|"
+            r"\blookup_(?:value|functions)\b.*\bnon_type_template_argument_text\b|"
+            r"\brebound_text\b"
+        ),
+    ),
 ]
 
 

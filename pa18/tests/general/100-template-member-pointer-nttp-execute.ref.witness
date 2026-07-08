@@ -1,0 +1,19 @@
+translation-unit
+  class-use at pa18/tests/general/100-template-member-pointer-nttp-execute.t:12:12
+    template machine
+    selected primary
+    bind #1 = f source=explicit
+  class-use at pa18/tests/general/100-template-member-pointer-nttp-execute.t:23:11
+    template machine<f>::row
+    selected primary
+    bind #1 = 0 source=explicit
+    bind #2 = int source=explicit
+    bind #3 = 0 source=explicit
+    bind #4 = &self::on source=explicit
+template-closure-events
+  ensure-definition
+    entity machine<f>::row<0, int, 0, &self::on>::execute
+  function-instantiation
+    entity machine<f>::row<0, int, 0, &self::on>::execute
+  require-definition
+    entity machine<f>::row<0, int, 0, &self::on>::execute

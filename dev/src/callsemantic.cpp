@@ -21177,6 +21177,33 @@ private:
                                                            internal_symbol);
   }
 
+  FunctionBinding * first_function_by_object_symbol(const string & object_symbol) const override
+  {
+    if(object_symbol.empty()) {
+      return nullptr;
+    }
+
+    FunctionBinding * first = nullptr;
+    FunctionBinding * first_defined = nullptr;
+    for(size_t i = 0; i < functions.size(); ++i) {
+      FunctionBinding * candidate = functions[i].get();
+      if(!candidate || candidate->symbol.object_symbol != object_symbol) {
+        continue;
+      }
+      if(!first) {
+        first = candidate;
+      }
+      if(candidate->has_definition && !first_defined) {
+        first_defined = candidate;
+      }
+      if(candidate->has_definition &&
+         has_output_requirement(candidate->output_requirements, ORK_DEFINITION)) {
+        return candidate;
+      }
+    }
+    return first_defined ? first_defined : first;
+  }
+
   FunctionBinding * find_exact_class_function(ClassInfo & info,
                                               const string & name,
                                               const TypePtr & type,

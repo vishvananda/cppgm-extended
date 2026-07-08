@@ -53,6 +53,7 @@ class AuditTextReparseTests(unittest.TestCase):
                         "semantic_template_fragment_reparse": 0,
                         "semantic_text_tokenizer_reparse": 0,
                         "manual_template_argument_text_parse": 0,
+                        "semantic_nttp_text_rebind": 0,
                     }
                 }),
                 encoding="utf-8",
@@ -96,6 +97,7 @@ class AuditTextReparseTests(unittest.TestCase):
                         "semantic_template_fragment_reparse": 0,
                         "semantic_text_tokenizer_reparse": 0,
                         "manual_template_argument_text_parse": 0,
+                        "semantic_nttp_text_rebind": 0,
                     }
                 }),
                 encoding="utf-8",
@@ -112,6 +114,49 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("RecogTokenizer recog_tokens", result.stdout)
             self.assertIn("manual_template_argument_text_parse", result.stdout)
             self.assertIn("split_top_level_function_type_argument_text", result.stdout)
+
+    def test_semantic_nttp_text_rebind_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "semantic_expression.cpp").write_text(
+                "bool try_analyze_non_type_template_member_pointer_text();\n"
+                "auto x = ctx.lookup_value(scope, binding.non_type_template_argument_text);\n"
+                "auto y = ctx.lookup_functions(scope, binding.non_type_template_argument_text, policy);\n"
+                "std::string rebound_text = binding.non_type_template_argument_text;\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({
+                    "limits": {
+                        "qualified_name_string_parse": 0,
+                        "template_id_string_parse": 0,
+                        "expression_fragment_parse": 0,
+                        "type_fragment_parse": 0,
+                        "semantic_type_text_bridge": 0,
+                        "translation_unit_fragment_parse": 0,
+                        "ast_text_rebuild": 0,
+                        "source_line_recovery": 0,
+                        "template_argument_text_shape_deduction": 0,
+                        "semantic_template_fragment_reparse": 0,
+                        "semantic_text_tokenizer_reparse": 0,
+                        "manual_template_argument_text_parse": 0,
+                        "semantic_nttp_text_rebind": 0,
+                    }
+                }),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("semantic_nttp_text_rebind", result.stdout)
+            self.assertIn("try_analyze_non_type_template_member_pointer_text", result.stdout)
+            self.assertIn("ctx.lookup_value", result.stdout)
+            self.assertIn("ctx.lookup_functions", result.stdout)
+            self.assertIn("rebound_text", result.stdout)
 
 
 if __name__ == "__main__":

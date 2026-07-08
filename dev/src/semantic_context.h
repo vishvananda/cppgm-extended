@@ -785,6 +785,8 @@ public:
       bool mark_output_required = true) = 0;
   virtual semantic_model::FunctionBinding * first_function_by_internal_symbol(
       const std::string & internal_symbol) const = 0;
+  virtual semantic_model::FunctionBinding * first_function_by_object_symbol(
+      const std::string & object_symbol) const = 0;
   virtual semantic_conversion::ExprInfo apply_base_subobject_adjustment(
       const semantic_conversion::ExprInfo & expr,
       const cpp_decl::TypePtr & adjusted_type,

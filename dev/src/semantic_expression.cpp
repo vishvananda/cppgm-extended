@@ -1502,7 +1502,20 @@ bool try_analyze_non_type_template_function_value(
     const ValueBinding & binding,
     ExprInfo & out)
 {
-  FunctionBinding * function = binding.non_type_template_function_value;
+  FunctionBinding * function = nullptr;
+  if(!binding.non_type_template_function_internal_symbol.empty()) {
+    function = ctx.first_function_by_internal_symbol(
+        binding.non_type_template_function_internal_symbol);
+  }
+  if(!function) {
+    function = binding.non_type_template_function_value;
+  }
+  if(function && !function->symbol.object_symbol.empty()) {
+    if(FunctionBinding * canonical =
+           ctx.first_function_by_object_symbol(function->symbol.object_symbol)) {
+      function = canonical;
+    }
+  }
   TypePtr binding_base = strip_top_level_cv(remove_reference_type(binding.type));
   if(!function || !binding_base) {
     return false;
@@ -1519,6 +1532,10 @@ bool try_analyze_non_type_template_function_value(
     ctx.require_function_definition(function,
                                     OutputReason::FunctionIdUse,
                                     !function->is_deleted);
+    if(FunctionBinding * refreshed =
+           ctx.refresh_required_function_definition(function, true)) {
+      function = refreshed;
+    }
     out.type = function->type;
     out.category = VC_LVALUE;
     out.node = make_dump_node(CallSemKind::id_expression, function->name);
@@ -1549,6 +1566,13 @@ bool try_analyze_non_type_template_function_value(
   ctx.require_function_definition(function,
                                   OutputReason::FunctionIdUse,
                                   !function->is_deleted);
+  if(FunctionBinding * refreshed =
+         ctx.refresh_required_function_definition(function, true)) {
+    function = refreshed;
+  }
+  member_function_type = member_function_pointer_target_type(*function);
+  member_pointer_type =
+      make_member_pointer(function->owner_class->type, member_function_type);
   out.type = member_pointer_type;
   out.category = VC_PRVALUE;
   out.node = make_dump_node(CallSemKind::unary_expression, "&");
@@ -1571,56 +1595,6 @@ bool try_analyze_non_type_template_function_value(
   set_expr_metadata(child, function->type, VC_LVALUE);
   out.node.children.push_back(std::move(child));
   set_expr_metadata(out.node, out.type, out.category);
-  return true;
-}
-
-bool try_analyze_non_type_template_member_pointer_text(
-    SemanticContext & ctx,
-    Scope & scope,
-    const ValueBinding & binding,
-    ExprInfo & out)
-{
-  TypePtr binding_base = strip_top_level_cv(remove_reference_type(binding.type));
-  if(!binding_base ||
-     binding_base->kind != Type::TK_MEMBER_POINTER ||
-     binding.non_type_template_argument_text.empty()) {
-    return false;
-  }
-
-  const string text = semantic_utils::trim_space(binding.non_type_template_argument_text);
-  if(text.size() <= 1 || text[0] != '&') {
-    return false;
-  }
-
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(
-         semantic_utils::trim_space(text.substr(1)), qualified) ||
-     (!qualified.rooted && qualified.qualifiers.empty())) {
-    return false;
-  }
-
-  CppAstNode operand;
-  operand.kind = CppAstKind::id_expression;
-  operand.value = (qualified.rooted ? string("::") : string());
-  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    if(!operand.value.empty() && operand.value != "::") {
-      operand.value += "::";
-    }
-    operand.value += qualified.qualifiers[i];
-  }
-  if(!operand.value.empty() && operand.value != "::") {
-    operand.value += "::";
-  }
-  operand.value += qualified.name;
-  set_cppast_qualified_name_syntax(operand, std::move(qualified));
-  if(!try_analyze_qualified_member_pointer_expression(ctx, scope, operand, out)) {
-    return false;
-  }
-  if(!type_equals(strip_top_level_cv(remove_reference_type(out.type)), binding_base)) {
-    return false;
-  }
-  out.node.has_token = true;
-  out.node.token_type = OP_AMP;
   return true;
 }
 
@@ -5008,15 +4982,18 @@ bool try_analyze_reference_binding_source_expression_impl(SemanticContext & ctx,
   if(!binding || pure_constant_only_value_binding(*binding)) {
     return false;
   }
-  if(!binding->non_type_template_argument_text.empty()) {
-    const ValueBinding * actual_binding =
-        ctx.lookup_value(scope, binding->non_type_template_argument_text);
-    if(actual_binding) {
-      CppAstNode resolved_node = node;
-      resolved_node.value = binding->non_type_template_argument_text;
-      out = make_value_binding_expr(ctx, scope, resolved_node, *actual_binding, false);
-      return true;
-    }
+  if(binding->non_type_template_value_binding &&
+     binding->type &&
+     (binding->type->kind == Type::TK_LVALUE_REFERENCE ||
+      binding->type->kind == Type::TK_RVALUE_REFERENCE)) {
+    CppAstNode resolved_node = node;
+    resolved_node.value = binding->non_type_template_value_binding->name;
+    out = make_value_binding_expr(ctx,
+                                  scope,
+                                  resolved_node,
+                                  *binding->non_type_template_value_binding,
+                                  false);
+    return true;
   }
   out = make_value_binding_expr(ctx, scope, node, *binding, false);
   return true;
@@ -5884,52 +5861,17 @@ ExprInfo analyze_id_expression(SemanticContext & ctx,
            template_object_pointer_value)) {
       return template_object_pointer_value;
     }
-    if(!binding->non_type_template_argument_text.empty()) {
-      ExprInfo member_pointer_template_argument;
-      if(try_analyze_non_type_template_member_pointer_text(ctx,
-                                                           scope,
-                                                           *binding,
-                                                           member_pointer_template_argument)) {
-        return member_pointer_template_argument;
-      }
-
-      TypePtr bound_type = strip_top_level_cv(remove_reference_type(binding->type));
-      if(bound_type &&
-         bound_type->kind == Type::TK_POINTER &&
-         bound_type->inner &&
-         strip_top_level_cv(bound_type->inner)->kind == Type::TK_FUNCTION) {
-        vector<FunctionBinding *> functions =
-            ctx.lookup_functions(scope,
-                                 binding->non_type_template_argument_text,
-                                 semantic_policy::default_call_analysis());
-        if(functions.size() == 1) {
-          ctx.require_function_definition(functions[0],
-                                          OutputReason::FunctionIdUse,
-                                          !functions[0]->is_deleted);
-          ExprInfo result;
-          result.type = functions[0]->type;
-          result.category = VC_LVALUE;
-          result.node =
-              make_dump_node(CallSemKind::id_expression,
-                             binding->non_type_template_argument_text);
-          result.node.is_c_linkage = functions[0]->is_c_linkage;
-          set_dump_symbol(result.node, functions[0]->symbol);
-          set_expr_metadata(result.node, result.type, result.category);
-          return result;
-        }
-      }
-
-      const ValueBinding * actual_binding =
-          ctx.lookup_value(scope, binding->non_type_template_argument_text);
-      if(actual_binding) {
-        CppAstNode resolved_node = node;
-        resolved_node.value = binding->non_type_template_argument_text;
-        return make_value_binding_expr(ctx,
-                                       scope,
-                                       resolved_node,
-                                       *actual_binding,
-                                       allow_constant_fold);
-      }
+    if(binding->non_type_template_value_binding &&
+       binding->type &&
+       (binding->type->kind == Type::TK_LVALUE_REFERENCE ||
+        binding->type->kind == Type::TK_RVALUE_REFERENCE)) {
+      CppAstNode resolved_node = node;
+      resolved_node.value = binding->non_type_template_value_binding->name;
+      return make_value_binding_expr(ctx,
+                                     scope,
+                                     resolved_node,
+                                     *binding->non_type_template_value_binding,
+                                     allow_constant_fold);
     }
     return make_value_binding_expr(ctx, scope, node, *binding, allow_constant_fold);
   }

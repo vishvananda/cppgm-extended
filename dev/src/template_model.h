@@ -288,6 +288,7 @@ struct TemplateArgument
   std::string template_entity_scope_prefix;
   std::string template_entity_name;
   const semantic_model::FunctionBinding * function_value = nullptr;
+  std::string function_internal_symbol;
   const semantic_model::ValueBinding * value_binding = nullptr;
   std::string text;
   std::vector<TemplateValueDependency> value_dependencies;

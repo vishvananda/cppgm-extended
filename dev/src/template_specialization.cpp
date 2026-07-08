@@ -128,6 +128,10 @@ bool non_type_template_argument_values_match(const TemplateArgument & lhs,
   if(integral_like) {
     return lhs.value == rhs.value;
   }
+  if(!lhs.function_internal_symbol.empty() ||
+     !rhs.function_internal_symbol.empty()) {
+    return lhs.function_internal_symbol == rhs.function_internal_symbol;
+  }
   if(lhs.function_value || rhs.function_value) {
     return lhs.function_value == rhs.function_value;
   }
@@ -3285,6 +3289,7 @@ bool stable_alias_expansion_argument_key(
   out.dependent = argument.dependent;
   out.source_defaulted = argument.source_defaulted;
   out.function_value = argument.function_value;
+  out.function_internal_symbol = argument.function_internal_symbol;
   out.value_binding = argument.value_binding;
   if(argument.kind == TemplateArgument::TA_TYPE ||
      argument.kind == TemplateArgument::TA_VALUE) {
@@ -4407,6 +4412,7 @@ bool try_expand_alias_template_pattern_structurally(
               !argument.dependent ?
                   const_cast<FunctionBinding *>(argument.function_value) :
                   nullptr,
+              !argument.dependent ? argument.function_internal_symbol : std::string(),
               !argument.dependent ? argument.value_binding : nullptr);
         } else if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
                   (argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||

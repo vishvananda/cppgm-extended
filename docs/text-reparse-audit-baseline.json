@@ -14,6 +14,7 @@
     "template_argument_text_shape_deduction": 0,
     "semantic_template_fragment_reparse": 0,
     "semantic_text_tokenizer_reparse": 0,
-    "manual_template_argument_text_parse": 0
+    "manual_template_argument_text_parse": 0,
+    "semantic_nttp_text_rebind": 0
   }
 }

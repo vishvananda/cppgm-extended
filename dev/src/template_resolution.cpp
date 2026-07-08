@@ -214,6 +214,29 @@ bool try_reparse_non_type_template_parameter_type(
     const TemplateParameterInfo & parameter,
     TypePtr & out);
 
+bool non_type_function_target_type(const TypePtr & target_type,
+                                   bool explicit_address,
+                                   TypePtr & out_function_type);
+
+bool non_type_member_function_target_type(const TypePtr & target_type,
+                                          bool explicit_address,
+                                          TypePtr & out_owner_type,
+                                          TypePtr & out_function_type);
+
+FunctionBinding * select_non_type_function_argument(
+    const std::vector<FunctionBinding *> & functions,
+    const TypePtr & function_type);
+
+FunctionBinding * select_non_type_member_function_argument(
+    const std::vector<FunctionBinding *> & functions,
+    const TypePtr & owner_type,
+    const TypePtr & function_type);
+
+bool bind_non_type_function_argument(const TypePtr & target_type,
+                                     FunctionBinding * function,
+                                     const std::string & text,
+                                     TemplateArgument & out);
+
 struct ExplicitFunctionTemplateArgumentBindings
 {
   std::vector<TemplateArgument> fixed_arguments;
@@ -864,6 +887,7 @@ bool bind_object_pointer_non_type_template_argument(
   out.type = target_type;
   out.value = 0;
   out.function_value = nullptr;
+  out.function_internal_symbol.clear();
   out.value_binding = &binding;
   out.text = text;
   out.dependent = false;
@@ -905,6 +929,8 @@ bool bind_data_member_pointer_non_type_template_argument(
   }
   out.kind = TemplateArgument::TA_VALUE;
   out.type = target_type;
+  out.function_value = nullptr;
+  out.function_internal_symbol.clear();
   out.value_binding = &binding;
   out.value = encoded_offset;
   out.text.clear();
@@ -954,12 +980,12 @@ bool bind_value_binding_non_type_template_argument(
       return true;
     }
 
-    const std::string rebound_text =
+    const std::string argument_text =
         !binding.non_type_template_argument_text.empty() ?
             trim_space(binding.non_type_template_argument_text) :
             trim_space(fallback_text);
     if(bind_object_pointer_non_type_template_argument(
-           rebound_text,
+           argument_text,
            target_type,
            target_base,
            *binding.non_type_template_value_binding,
@@ -969,6 +995,55 @@ bool bind_value_binding_non_type_template_argument(
         *out_binding = &binding;
       }
       return true;
+    }
+  }
+
+  FunctionBinding * function = nullptr;
+  if(services.semantic_context &&
+     !binding.non_type_template_function_internal_symbol.empty()) {
+    function = services.semantic_context->first_function_by_internal_symbol(
+        binding.non_type_template_function_internal_symbol);
+  }
+  if(!function) {
+    function = binding.non_type_template_function_value;
+  }
+  if(function) {
+    bool compatible = false;
+    std::vector<FunctionBinding *> single_function(1, function);
+    TypePtr function_type;
+    if(non_type_function_target_type(target_type, false, function_type)) {
+      compatible =
+          select_non_type_function_argument(single_function, function_type) ==
+          function;
+    }
+    if(!compatible) {
+      TypePtr owner_type;
+      TypePtr member_function_type;
+      if(non_type_member_function_target_type(target_type,
+                                              true,
+                                              owner_type,
+                                              member_function_type)) {
+        compatible =
+            select_non_type_member_function_argument(single_function,
+                                                     owner_type,
+                                                     member_function_type) ==
+            function;
+      }
+    }
+    if(compatible) {
+      const std::string argument_text =
+          !binding.non_type_template_argument_text.empty() ?
+              trim_space(binding.non_type_template_argument_text) :
+              trim_space(fallback_text);
+      if(bind_non_type_function_argument(target_type,
+                                         function,
+                                         argument_text,
+                                         out)) {
+        if(out_binding) {
+          *out_binding = &binding;
+        }
+        return true;
+      }
     }
   }
 
@@ -985,23 +1060,6 @@ bool bind_value_binding_non_type_template_argument(
                                                 binding.constant_value);
     out.dependent = false;
     return true;
-  }
-
-  if(!binding.non_type_template_argument_text.empty()) {
-    const std::string rebound_text =
-        trim_space(binding.non_type_template_argument_text);
-    if(rebound_text != trim_space(fallback_text) &&
-       try_resolve_named_non_type_template_argument(services,
-                                                    scope,
-                                                    rebound_text,
-                                                    target_type,
-                                                    out,
-                                                    nullptr)) {
-      if(out_binding) {
-        *out_binding = &binding;
-      }
-      return true;
-    }
   }
 
   if(binding.dependent_template_value) {
@@ -1497,9 +1555,11 @@ bool bind_non_type_function_argument(const TypePtr & target_type,
   if(!function) {
     return false;
   }
+  add_output_requirement(function->output_requirements, ORK_DEFINITION);
   out.kind = TemplateArgument::TA_VALUE;
   out.type = target_type;
   out.function_value = function;
+  out.function_internal_symbol = function->symbol.internal_symbol;
   out.text = text;
   out.dependent = false;
   return true;
@@ -1656,6 +1716,7 @@ bool lookup_member_pointer_callable_candidates_node(
     Scope & scope,
     const QualifiedName & qualified,
     const CppAstNode & node,
+    const TypePtr & owner_type,
     std::vector<FunctionBinding *> & functions,
     std::vector<FunctionTemplateDecl *> & templates)
 {
@@ -1671,11 +1732,33 @@ bool lookup_member_pointer_callable_candidates_node(
                                                                   qualified,
                                                                   node,
                                                                   false);
-  if(!target || !target->class_info) {
-    return false;
+  ClassInfo * target_class = target ? target->class_info : nullptr;
+  if(!target_class) {
+    TypePtr lookup_owner_type = owner_type;
+    if(!lookup_owner_type) {
+      return false;
+    }
+    TypePtr resolved_owner_type;
+    if(template_argument_semantics::resolve_instantiated_dependent_type(
+           services,
+           template_api::make_template_environment(scope),
+           lookup_owner_type,
+           resolved_owner_type) &&
+       resolved_owner_type) {
+      lookup_owner_type = resolved_owner_type;
+    }
+    if(template_argument_semantics::type_depends_on_template_parameter(
+           service_type_system(services),
+           lookup_owner_type)) {
+      return false;
+    }
+    target_class =
+        template_api::find_named_type_class_info(service_type_system(services).model,
+                                                lookup_owner_type);
+    if(!target_class) {
+      return false;
+    }
   }
-
-  ClassInfo * target_class = target->class_info;
   if(!target_class->complete && target_class->type) {
     if(ClassInfo * completed =
            services.semantic_context->complete_class_type(target_class->type)) {
@@ -1771,6 +1854,7 @@ bool try_resolve_function_non_type_template_argument_syntax(
                                                           scope,
                                                           *qualified,
                                                           *operand,
+                                                          owner_type,
                                                           functions,
                                                           templates)) {
           FunctionBinding * selected =
@@ -2125,12 +2209,7 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
         selected = binding;
       }
       if(selected) {
-        out.kind = TemplateArgument::TA_VALUE;
-        out.type = target_type;
-        out.function_value = selected;
-        out.text = trimmed;
-        out.dependent = false;
-        return true;
+        return bind_non_type_function_argument(target_type, selected, trimmed, out);
       }
     }
   }
@@ -2402,9 +2481,13 @@ void hash_value_binding_for_scope_cache(std::size_t & seed,
   hash_combine(seed, binding.constant_value);
   hash_combine(seed, binding.dependent_template_value ? 1 : 0);
   hash_combine(seed, binding.non_type_template_argument_text);
-  hash_combine(seed,
-               reinterpret_cast<std::uintptr_t>(
-                   binding.non_type_template_function_value));
+  if(!binding.non_type_template_function_internal_symbol.empty()) {
+    hash_combine(seed, binding.non_type_template_function_internal_symbol);
+  } else {
+    hash_combine(seed,
+                 reinterpret_cast<std::uintptr_t>(
+                     binding.non_type_template_function_value));
+  }
   hash_combine(seed,
                reinterpret_cast<std::uintptr_t>(
                    binding.non_type_template_value_binding));
@@ -2421,7 +2504,11 @@ void hash_template_argument_for_scope_cache(std::size_t & seed,
   hash_combine(seed, argument.text);
   hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.template_decl));
   hash_type_ptr_for_scope_cache(seed, argument.template_owner_type);
-  hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.function_value));
+  if(!argument.function_internal_symbol.empty()) {
+    hash_combine(seed, argument.function_internal_symbol);
+  } else {
+    hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.function_value));
+  }
   hash_combine(seed, reinterpret_cast<std::uintptr_t>(argument.value_binding));
 }
 
@@ -6801,14 +6888,23 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
              bound_value_type)) {
         return FRTA_UNSUPPORTED;
       }
+      const TemplateArgumentSyntax * syntax = inputs.syntax_for(i);
+      const bool structured_function_resolved =
+          syntax &&
+          try_resolve_function_non_type_template_argument_syntax(
+              services,
+              raw_scope,
+              syntax,
+              bound_value_type,
+              arg);
       const ValueBinding * named_binding = nullptr;
-      if(!try_resolve_named_non_type_template_argument(services,
+      if(!structured_function_resolved &&
+         !try_resolve_named_non_type_template_argument(services,
                                                        raw_scope,
                                                        inputs.texts[i],
                                                        bound_value_type,
                                                        arg,
                                                        &named_binding)) {
-        const TemplateArgumentSyntax * syntax = inputs.syntax_for(i);
         if(!allow_expensive_resolution) {
           return FRTA_UNSUPPORTED;
         }
@@ -6843,14 +6939,16 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
                  eval_error,
                  status)) {
             if(can_evaluate_structured_syntax) {
-              status = static_cast<template_api::NonTypeArgumentStatus>(
-                  template_argument_semantics::evaluate_non_type_argument_syntax(
-                      services,
-                      argument_scope,
-                      *syntax,
-                      value,
-                      &eval_error,
-                      bound_value_type));
+              const template_api::NonTypeArgumentStatus evaluated_status =
+                  static_cast<template_api::NonTypeArgumentStatus>(
+                      template_argument_semantics::evaluate_non_type_argument_syntax(
+                          services,
+                          argument_scope,
+                          *syntax,
+                          value,
+                          &eval_error,
+                          bound_value_type));
+              status = evaluated_status;
             }
             if(status != template_api::NT_ARG_EVALUATED) {
               status = template_api::NT_ARG_DEPENDENT;

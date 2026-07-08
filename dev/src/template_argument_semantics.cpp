@@ -14784,6 +14784,8 @@ bool substitute_dependent_argument_text_and_syntax(
         binding.non_type_template_function_value =
             const_cast<semantic_model::FunctionBinding *>(
                 bound_argument.function_value);
+        binding.non_type_template_function_internal_symbol =
+            bound_argument.function_internal_symbol;
         binding.non_type_template_value_binding = bound_argument.value_binding;
         // Member-pointer, pointer, reference and other non-integral non-type
         // arguments cannot be represented by a single integral constant, so
@@ -15102,6 +15104,8 @@ ValueBinding make_value_binding_for_substitution_argument(
 
   binding.non_type_template_function_value =
       const_cast<semantic_model::FunctionBinding *>(argument.function_value);
+  binding.non_type_template_function_internal_symbol =
+      argument.function_internal_symbol;
   binding.non_type_template_value_binding = argument.value_binding;
 
   // Member-pointer, pointer, reference and other non-integral non-type
@@ -25805,6 +25809,8 @@ bool substitute_expression_node_for_template_arguments(
         binding.non_type_template_function_value =
             const_cast<semantic_model::FunctionBinding *>(
                 argument.function_value);
+        binding.non_type_template_function_internal_symbol =
+            argument.function_internal_symbol;
         binding.non_type_template_value_binding = argument.value_binding;
         // Member-pointer, pointer, reference and other non-integral non-type
         // arguments cannot be represented by a single integral constant, so
@@ -27613,6 +27619,9 @@ void bind_resolved_class_template_argument_for_later_parameters(
                                               const_cast<FunctionBinding *>(
                                                   argument.function_value) :
                                               nullptr,
+                                          !argument.dependent ?
+                                              argument.function_internal_symbol :
+                                              string(),
                                           !argument.dependent ?
                                               argument.value_binding :
                                               nullptr);

@@ -228,6 +228,7 @@ template_binding::Hooks make_scope_binding_hooks(Scope & scope)
         !argument.dependent ?
             const_cast<FunctionBinding *>(argument.function_value) :
             nullptr,
+        !argument.dependent ? argument.function_internal_symbol : std::string(),
         !argument.dependent ? argument.value_binding : nullptr);
   };
   return hooks;
@@ -325,6 +326,7 @@ void bind_non_type_value(Scope & scope,
                          bool dependent,
                          const std::string & text,
                          FunctionBinding * function_value,
+                         const std::string & function_internal_symbol,
                          const ValueBinding * value_binding)
 {
   ValueBinding binding(ValueBinding::VK_VARIABLE, name, value_type);
@@ -344,6 +346,8 @@ void bind_non_type_value(Scope & scope,
            base_type->named_display.compare(0, 5, "enum ") == 0))));
   if(!dependent) {
     binding.non_type_template_function_value = function_value;
+    binding.non_type_template_function_internal_symbol =
+        function_internal_symbol;
     binding.non_type_template_value_binding = value_binding;
     if(prefer_textual_binding) {
       binding.non_type_template_argument_text = text;
@@ -381,6 +385,9 @@ void bind_non_type_pack(Scope & scope,
                         !dependent ?
                             const_cast<FunctionBinding *>(bound_pack[i].function_value) :
                             nullptr,
+                        !dependent ?
+                            bound_pack[i].function_internal_symbol :
+                            std::string(),
                         !dependent ? bound_pack[i].value_binding : nullptr);
     pack_bindings.push_back(scope.values[alias_name]);
   }
@@ -428,6 +435,9 @@ void bind_template_argument_pack(Scope & scope,
                           !arguments[i].dependent ?
                               const_cast<FunctionBinding *>(arguments[i].function_value) :
                               nullptr,
+                          !arguments[i].dependent ?
+                              arguments[i].function_internal_symbol :
+                              std::string(),
                           !arguments[i].dependent ? arguments[i].value_binding : nullptr);
     } else {
       bind_non_type_value(scope, alias_name, value_type, 0, true);

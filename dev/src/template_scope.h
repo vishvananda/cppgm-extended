@@ -84,6 +84,8 @@ void bind_non_type_value(semantic_model::Scope & scope,
                          bool dependent,
                          const std::string & text = std::string(),
                          semantic_model::FunctionBinding * function_value = nullptr,
+                         const std::string & function_internal_symbol =
+                             std::string(),
                          const semantic_model::ValueBinding * value_binding = nullptr);
 
 void bind_non_type_pack(semantic_model::Scope & scope,

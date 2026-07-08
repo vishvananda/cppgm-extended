@@ -185,6 +185,7 @@ struct ValueBinding
   bool dependent_template_value = false;
   std::string non_type_template_argument_text;
   FunctionBinding * non_type_template_function_value = nullptr;
+  std::string non_type_template_function_internal_symbol;
   const ValueBinding * non_type_template_value_binding = nullptr;
   std::shared_ptr<VariableTemplateInstantiationIdentity> variable_template_instantiation;
   Scope * declaration_scope = nullptr;
@@ -854,6 +855,7 @@ struct AliasTemplateDecl
     int type_code = 0;
     const void * template_decl = nullptr;
     const void * function_value = nullptr;
+    std::string function_internal_symbol;
     const void * value_binding = nullptr;
     long long value = 0;
     std::string text;
@@ -884,7 +886,12 @@ struct AliasTemplateDecl
       if(template_decl != other.template_decl) {
         return std::less<const void *>()(template_decl, other.template_decl);
       }
-      if(function_value != other.function_value) {
+      if(function_internal_symbol != other.function_internal_symbol) {
+        return function_internal_symbol < other.function_internal_symbol;
+      }
+      if(function_internal_symbol.empty() &&
+         other.function_internal_symbol.empty() &&
+         function_value != other.function_value) {
         return std::less<const void *>()(function_value, other.function_value);
       }
       return std::less<const void *>()(value_binding, other.value_binding);
