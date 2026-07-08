@@ -4849,3 +4849,28 @@ and `/tmp/cppgm-boost-auto-close-after-atomic-asm-sample-20260707.txt`.
 Full direct-text report passes `3561/3561`; strict direct-text suite passes;
 `python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
 --check` passes.
+
+2026-07-08 Boost.Iostreams member typedef pointer-cv frontier: after
+`finite_state_filter_test` passed, `gzip_test.cpp` failed in
+`boost::iostreams::detail::buffer<char>::ptr() const` while returning `ptr_`
+from a function declared as `const_pointer&`, where `const_pointer` is
+`char * const`. Class member declarator preparation treated every member
+declarator as method syntax, so a typedef declarator with no parameter clause
+lost the pointer-level `const`; the same method filter also conflated pointer
+cv before a function parameter clause with method cv after it. The fix stays on
+typed AST data: method syntax is only active for declarators with a direct
+parameter clause, and the method filter removes only cv/ref/function qualifiers
+that appear after that clause. Owner: PA15 class member typedef/function
+declarator semantics. New regression:
+`pa15/tests/general/200-member-pointer-const-typedef-return.t`.
+Validation: clang accepts the reducers with `-std=c++11`; cppgm++ compiles the
+typedef and direct `char * const&` reducers and emits call semantics preserving
+`lvalue-reference to const pointer to char`; focused PA15 check passes; PA15
+direct-text report passes `176/176`; `python3 scripts/audit_text_reparse.py
+--strict` reports all zero; `git diff --check` passes; direct
+`libs/iostreams/test/gzip_test.cpp` compile passes. Focused B2 required a
+temporary user-config adding `using zlib ;` because the local default
+`cppgm-user-config.jam` does not declare `/zlib//zlib`; with that config,
+`/usr/local/bin/timeout 1200 env JOBS=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./b2 --user-config=/tmp/cppgm-zlib-user-config.jam -j1 toolset=gcc-cppgm cxxstd=11 variant=debug link=static runtime-link=shared threading=multi --build-dir=/Users/vishvananda/boost_1_91_0/bin.cppgm -a libs/iostreams/test//gzip_test`
+updates 49 targets, links `gzip_test`, and the captured test passes; log
+`/tmp/boost-iostreams-gzip-after-member-typedef-cv-zlib-20260708.log`.

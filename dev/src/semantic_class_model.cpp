@@ -5097,8 +5097,14 @@ bool class_member_specifiers_supported(const CppAstNode & specifiers,
 
 bool declarator_is_const_method(const CppAstNode & declarator)
 {
+  bool after_parameter_clause = false;
   for(size_t i = 0; i < declarator.children.size(); ++i) {
-    if(declarator.children[i].kind == CppAstKind::cv_qualifier &&
+    if(declarator.children[i].kind == CppAstKind::parameter_clause) {
+      after_parameter_clause = true;
+      continue;
+    }
+    if(after_parameter_clause &&
+       declarator.children[i].kind == CppAstKind::cv_qualifier &&
        node_has_simple_type(declarator.children[i], KW_CONST)) {
       return true;
     }
@@ -5108,8 +5114,14 @@ bool declarator_is_const_method(const CppAstNode & declarator)
 
 bool declarator_is_volatile_method(const CppAstNode & declarator)
 {
+  bool after_parameter_clause = false;
   for(size_t i = 0; i < declarator.children.size(); ++i) {
-    if(declarator.children[i].kind == CppAstKind::cv_qualifier &&
+    if(declarator.children[i].kind == CppAstKind::parameter_clause) {
+      after_parameter_clause = true;
+      continue;
+    }
+    if(after_parameter_clause &&
+       declarator.children[i].kind == CppAstKind::cv_qualifier &&
        node_has_simple_type(declarator.children[i], KW_VOLATILE)) {
       return true;
     }
@@ -5204,15 +5216,23 @@ CppAstNode filtered_method_declarator(const CppAstNode & declarator)
 {
   CppAstNode filtered = declarator;
   std::vector<CppAstNode> kept;
+  bool after_parameter_clause = false;
   for(size_t i = 0; i < filtered.children.size(); ++i) {
-    if(filtered.children[i].kind == CppAstKind::virt_specifier ||
-       filtered.children[i].kind == CppAstKind::function_qualifier ||
-       filtered.children[i].kind == CppAstKind::cv_qualifier ||
-       filtered.children[i].kind == CppAstKind::ref_qualifier ||
-       filtered.children[i].kind == CppAstKind::nullability_qualifier) {
+    const CppAstNode & child = filtered.children[i];
+    if(child.kind == CppAstKind::parameter_clause) {
+      after_parameter_clause = true;
+      kept.push_back(child);
       continue;
     }
-    kept.push_back(filtered.children[i]);
+    if(child.kind == CppAstKind::virt_specifier ||
+       child.kind == CppAstKind::function_qualifier ||
+       (after_parameter_clause &&
+        (child.kind == CppAstKind::cv_qualifier ||
+         child.kind == CppAstKind::ref_qualifier ||
+         child.kind == CppAstKind::nullability_qualifier))) {
+      continue;
+    }
+    kept.push_back(child);
   }
   filtered.children.swap(kept);
   return filtered;
@@ -5621,13 +5641,14 @@ void prepare_method_parse_context(const CppAstNode * specifiers,
   reset_prepared_method_parse_context(out);
   out.has_method_syntax = has_method_syntax;
   out.set_parse_sources(specifiers, &declarator);
-  if(!has_method_syntax) {
+  const bool has_parameter_clause =
+      find_child(declarator, CppAstKind::parameter_clause) != nullptr;
+  if(!has_method_syntax || !has_parameter_clause) {
+    out.has_method_syntax = false;
     return;
   }
 
   analyze_method_syntax(specifiers, declarator, out.syntax);
-  const bool has_parameter_clause =
-      find_child(declarator, CppAstKind::parameter_clause) != nullptr;
   const bool can_use_filtered_parse =
       (!require_parameter_clause_for_filtered_parse || has_parameter_clause) &&
       !declarator_has_direct_nested_declarator(declarator);
