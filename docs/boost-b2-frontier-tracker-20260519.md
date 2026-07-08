@@ -4890,3 +4890,24 @@ Validation: cppgm++ now emits `index i8`/`load i8` for the hosted
 `/usr/local/bin/timeout 600 env JOBS=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./b2 --user-config=/tmp/cppgm-zlib-user-config.jam -j1 toolset=gcc-cppgm cxxstd=11 variant=debug link=static runtime-link=shared threading=multi --build-dir=/Users/vishvananda/boost_1_91_0/bin.cppgm -a libs/iostreams/test//read_nonblocking_test`
 updates 49 targets, links `read_nonblocking_test`, and the captured test
 passes.
+
+2026-07-08 Boost.Iostreams template catch-variable frontier: after
+`read_nonblocking_test` passed, the full Iostreams run advanced through the
+remaining zlib/bzip2/gzip tests and failed only at `stream_state_test.cpp`.
+The class-template declaration-time body scanner rejected
+`boost::ignore_unused(ex)` inside Boost.Test's generated
+`catch(std::exception const& ex)` handler because it recursed through handler
+children without introducing the exception declaration's local scope. The fix
+stays on typed AST data: `handler` nodes now create a scanner child scope,
+parse their `exception-declaration` with `parse_variable_declaration_type`,
+record the catch name/type in the scanner's local visibility tables, and scan
+only the handler compound under that extended visibility. Owner: PA25
+source-level try/catch semantics plus template declaration body checking. New
+regression:
+`pa25/tests/general/300-template-catch-variable-member-body.t`.
+Validation: focused PA25 check passes; PA25 direct-text report passes
+`62/62`; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+strict direct-text suite passes; focused Boost B2
+`/usr/local/bin/timeout 900 env JOBS=4 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./b2 --user-config=/tmp/cppgm-zlib-user-config.jam -j4 toolset=gcc-cppgm cxxstd=11 variant=debug link=static runtime-link=shared threading=multi --build-dir=/Users/vishvananda/boost_1_91_0/bin.cppgm -a libs/iostreams/test//stream_state_test`
+updates 49 targets, links `stream_state_test`, and the captured test passes;
+log `/tmp/boost-iostreams-stream-state-after-catch-handler-20260708.log`.

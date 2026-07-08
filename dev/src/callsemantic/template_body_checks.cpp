@@ -541,6 +541,59 @@ static void collect_declared_value_types_for_template_body(
   }
 }
 
+static void collect_exception_declaration_for_template_body(
+    SemanticContext & ctx,
+    Scope & scope,
+    const CppAstNode & node,
+    AtomNameSet & declared_names,
+    TemplateBodyValueTypes & declared_value_types)
+{
+  if(node.kind != CppAstKind::exception_declaration ||
+     node.children.empty() ||
+     node.children[0].kind == CppAstKind::ellipsis) {
+    return;
+  }
+
+  const CppAstNode * specifiers =
+      find_child_kind(node, CppAstKind::decl_specifier_seq);
+  const CppAstNode * declarator =
+      find_child_kind(node, CppAstKind::declarator);
+  if(!specifiers || !declarator) {
+    return;
+  }
+
+  std::string declared_name;
+  TypePtr type;
+  bool is_typedef = false;
+  bool parsed = false;
+  try {
+    parsed = ctx.parse_variable_declaration_type(scope,
+                                                 *specifiers,
+                                                 *declarator,
+                                                 nullptr,
+                                                 false,
+                                                 declared_name,
+                                                 type,
+                                                 is_typedef);
+  } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+    throw;
+  } catch(const std::exception &) {
+    parsed = false;
+  }
+
+  if(declared_name.empty()) {
+    declarator_declared_identifier(*declarator, declared_name);
+  }
+  if(declared_name.empty()) {
+    return;
+  }
+
+  declared_names.insert(declared_name);
+  if(parsed && !is_typedef && type) {
+    record_template_body_value_type(declared_value_types, declared_name, type);
+  }
+}
+
 static bool declared_type_syntax_mentions_template_dependency(
     SemanticContext & ctx,
     const CppAstNode & declaration,
@@ -1600,6 +1653,34 @@ static bool template_body_has_invalid_nondependent_id_expression(
                                                 sequential_type_names);
     }
     return false;
+  }
+
+  if(node.kind == CppAstKind::handler) {
+    if(node.children.size() != 2 ||
+       node.children[0].kind != CppAstKind::exception_declaration) {
+      return false;
+    }
+
+    Scope handler_scope(&scope, "", false);
+    AtomNameSet handler_visible = visible_names;
+    TemplateBodyValueTypes handler_value_types = visible_value_types;
+    collect_exception_declaration_for_template_body(ctx,
+                                                    handler_scope,
+                                                    node.children[0],
+                                                    handler_visible,
+                                                    handler_value_types);
+    return template_body_has_invalid_nondependent_id_expression(
+        ctx,
+        handler_scope,
+        node.children[1],
+        handler_visible,
+        type_parameter_names,
+        template_parameter_names,
+        dependent_type_names,
+        handler_value_types,
+        dependent_value_names,
+        offending_node,
+        offending_name);
   }
 
   if(node.kind == CppAstKind::range_for_statement) {
