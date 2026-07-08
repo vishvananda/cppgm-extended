@@ -4874,3 +4874,19 @@ temporary user-config adding `using zlib ;` because the local default
 `/usr/local/bin/timeout 1200 env JOBS=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./b2 --user-config=/tmp/cppgm-zlib-user-config.jam -j1 toolset=gcc-cppgm cxxstd=11 variant=debug link=static runtime-link=shared threading=multi --build-dir=/Users/vishvananda/boost_1_91_0/bin.cppgm -a libs/iostreams/test//gzip_test`
 updates 49 targets, links `gzip_test`, and the captured test passes; log
 `/tmp/boost-iostreams-gzip-after-member-typedef-cv-zlib-20260708.log`.
+
+2026-07-08 Boost.Iostreams char_traits subscript load-width frontier: after
+`gzip_test` passed, the full Iostreams run reached `read_nonblocking_test` and
+failed at runtime because `std::char_traits<char>::to_int_type(read_data[i])`
+was lowered as a four-byte `i32` load from `char` array storage. The semantic
+node is a typed converted subscript expression, so LowIR address and load
+lowering must derive the storage element from the subscript pointer operand
+rather than from the converted result type. Owner: PA36 hosted header-emitted
+runtime behavior over the PA14 LowIR subscript lowering contract. New
+regression:
+`pa36/tests/link/700-hosted-char-traits-to-int-array-runtime.t`.
+Validation: cppgm++ now emits `index i8`/`load i8` for the hosted
+`char_traits` reducer; focused PA36 regression passes; focused Boost B2
+`/usr/local/bin/timeout 600 env JOBS=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 ./b2 --user-config=/tmp/cppgm-zlib-user-config.jam -j1 toolset=gcc-cppgm cxxstd=11 variant=debug link=static runtime-link=shared threading=multi --build-dir=/Users/vishvananda/boost_1_91_0/bin.cppgm -a libs/iostreams/test//read_nonblocking_test`
+updates 49 targets, links `read_nonblocking_test`, and the captured test
+passes.

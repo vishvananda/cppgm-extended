@@ -9012,6 +9012,18 @@ private:
         fallback;
   }
 
+  TypePtr subscript_storage_element_type(const CallSemNode & node) const
+  {
+    if(node.kind == CallSemKind::subscript_expression &&
+       node.children.size() == 2) {
+      TypePtr pointer_type = lowir_value_conversion_type(node.children[0].semantic_type);
+      if(pointer_type && pointer_type->kind == Type::TK_POINTER && pointer_type->inner) {
+        return pointer_type->inner;
+      }
+    }
+    return remove_reference_type(node.semantic_type);
+  }
+
   string emit_loaded_scalar_value(const string & loaded_value,
                                   const TypePtr & loaded_type,
                                   const CallSemNode & node)
@@ -12278,7 +12290,7 @@ private:
       }
       const string storage = emit_lvalue_storage(node);
       const TypePtr loaded_type =
-          materialization_source_type_for(node, node.semantic_type);
+          materialization_source_type_for(node, subscript_storage_element_type(node));
       const string memory_type = lowir_memory_type_for(loaded_type);
       const string loaded_value =
           emit_temp_assignment(memory_type, string("load ") + memory_type + " " + storage);
@@ -13342,7 +13354,7 @@ private:
     if(node.kind == CallSemKind::subscript_expression && node.children.size() == 2) {
       const string base = emit_array_base(node.children[0]);
       const string index = emit_rvalue(node.children[1]);
-      TypePtr element_type = remove_reference_type(node.semantic_type);
+      TypePtr element_type = subscript_storage_element_type(node);
       TypePtr element_base = strip_top_level_cv(element_type);
       if(is_indirect_value_type(element_type) ||
          (element_base && element_base->kind == Type::TK_ARRAY)) {
