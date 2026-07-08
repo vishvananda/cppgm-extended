@@ -21,6 +21,21 @@ size_t remaining_non_pack_parameter_count(
   return count;
 }
 
+bool is_primary_parameter_name(
+    const vector<template_model::TemplateParameterInfo> & parameters,
+    const string & name)
+{
+  if(name.empty()) {
+    return false;
+  }
+  for(size_t i = 0; i < parameters.size(); ++i) {
+    if(parameters[i].name == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 void bind_arguments(const vector<template_model::TemplateParameterInfo> & parameters,
@@ -74,15 +89,16 @@ void bind_arguments(const vector<template_model::TemplateParameterInfo> & parame
     }
   };
   const auto for_each_parameter_name =
-      [](const template_model::TemplateParameterInfo & parameter,
-         const std::function<void(const std::string &)> & fn)
+      [&parameters](const template_model::TemplateParameterInfo & parameter,
+                    const std::function<void(const std::string &)> & fn)
   {
     if(!parameter.name.empty()) {
       fn(parameter.name);
     }
     for(size_t i = 0; i < parameter.alternate_names.size(); ++i) {
       if(parameter.alternate_names[i].empty() ||
-         parameter.alternate_names[i] == parameter.name) {
+         parameter.alternate_names[i] == parameter.name ||
+         is_primary_parameter_name(parameters, parameter.alternate_names[i])) {
         continue;
       }
       fn(parameter.alternate_names[i]);

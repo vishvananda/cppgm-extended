@@ -19775,191 +19775,6 @@ bool try_evaluate_static_cast_integral_text(const string & text, long long & out
   return false;
 }
 
-bool is_integral_cstyle_cast_type_text(const string & text)
-{
-  if(text.empty()) {
-    return false;
-  }
-  static const char * const names[] = {
-      "bool",
-      "char",
-      "signedchar",
-      "unsignedchar",
-      "short",
-      "shortint",
-      "signedshort",
-      "signedshortint",
-      "unsignedshort",
-      "unsignedshortint",
-      "int",
-      "signed",
-      "signedint",
-      "unsigned",
-      "unsignedint",
-      "long",
-      "longint",
-      "signedlong",
-      "signedlongint",
-      "unsignedlong",
-      "unsignedlongint",
-      "longlong",
-      "longlongint",
-      "signedlonglong",
-      "signedlonglongint",
-      "unsignedlonglong",
-      "unsignedlonglongint"
-  };
-  for(size_t i = 0; i < sizeof(names) / sizeof(names[0]); ++i) {
-    if(text == names[i]) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool try_evaluate_cstyle_cast_integral_text(const string & text, long long & out)
-{
-  const string compact = compact_expression_text(text);
-  if(compact.size() < 4 || compact[0] != '(') {
-    return false;
-  }
-
-  int depth = 0;
-  size_t close_paren = string::npos;
-  for(size_t i = 0; i < compact.size(); ++i) {
-    if(compact[i] == '(') {
-      ++depth;
-    } else if(compact[i] == ')') {
-      --depth;
-      if(depth == 0) {
-        close_paren = i;
-        break;
-      }
-      if(depth < 0) {
-        return false;
-      }
-    }
-  }
-  if(close_paren == string::npos ||
-     close_paren <= 1 ||
-     close_paren + 1 >= compact.size()) {
-    return false;
-  }
-
-  const string type_text = compact.substr(1, close_paren - 1);
-  if(!is_integral_cstyle_cast_type_text(type_text)) {
-    return false;
-  }
-
-  string operand = compact.substr(close_paren + 1);
-  strip_balanced_outer_parens(operand);
-  return parse_simple_signed_integer_text(operand, out);
-}
-
-bool split_cstyle_cast_integral_text(const string & text,
-                                     string & cast_type_text,
-                                     long long & out)
-{
-  cast_type_text.clear();
-  const string compact = compact_expression_text(text);
-  if(compact.size() < 4 || compact[0] != '(') {
-    return false;
-  }
-
-  int depth = 0;
-  size_t close_paren = string::npos;
-  for(size_t i = 0; i < compact.size(); ++i) {
-    if(compact[i] == '(') {
-      ++depth;
-    } else if(compact[i] == ')') {
-      --depth;
-      if(depth == 0) {
-        close_paren = i;
-        break;
-      }
-      if(depth < 0) {
-        return false;
-      }
-    }
-  }
-  if(close_paren == string::npos ||
-     close_paren <= 1 ||
-     close_paren + 1 >= compact.size()) {
-    return false;
-  }
-
-  string operand = compact.substr(close_paren + 1);
-  strip_balanced_outer_parens(operand);
-  if(!parse_simple_signed_integer_text(operand, out)) {
-    return false;
-  }
-  cast_type_text = compact.substr(1, close_paren - 1);
-  return !cast_type_text.empty();
-}
-
-bool type_is_integral_or_named_enum_for_template_value(const TypePtr & type)
-{
-  TypePtr base = strip_top_level_cv(remove_reference_type(type));
-  return base &&
-         (is_integral_type(base) ||
-          (base->kind == Type::TK_NAMED &&
-           (base->named_key.compare(0, 5, "enum ") == 0 ||
-            base->named_display.compare(0, 5, "enum ") == 0)));
-}
-
-string normalized_cstyle_cast_type_text(string text)
-{
-  text = trim_space(semantic_utils::strip_elaborated_type_prefix(text));
-  return compact_expression_text(text);
-}
-
-bool normalized_cstyle_cast_type_text_matches(const string & cast_type_text,
-                                              const string & candidate)
-{
-  return !candidate.empty() &&
-         normalized_cstyle_cast_type_text(cast_type_text) ==
-             normalized_cstyle_cast_type_text(candidate);
-}
-
-bool cstyle_cast_type_text_matches_target(const string & cast_type_text,
-                                          const TypePtr & target_type,
-                                          const string & lookup_text)
-{
-  TypePtr base = strip_top_level_cv(remove_reference_type(target_type));
-  if(!base || !type_is_integral_or_named_enum_for_template_value(base)) {
-    return false;
-  }
-  if(normalized_cstyle_cast_type_text_matches(cast_type_text, lookup_text) ||
-     normalized_cstyle_cast_type_text_matches(cast_type_text,
-                                              reparseable_type_argument_text(base))) {
-    return true;
-  }
-  if(base->kind == Type::TK_NAMED) {
-    return normalized_cstyle_cast_type_text_matches(cast_type_text, base->named_key) ||
-           normalized_cstyle_cast_type_text_matches(cast_type_text, base->named_display);
-  }
-  return is_integral_cstyle_cast_type_text(
-      normalized_cstyle_cast_type_text(cast_type_text));
-}
-
-bool try_evaluate_target_cstyle_cast_integral_text(
-    const string & text,
-    const TypePtr & target_type,
-    const string & target_lookup_text,
-    long long & out)
-{
-  string cast_type_text;
-  long long value = 0;
-  if(!split_cstyle_cast_integral_text(text, cast_type_text, value) ||
-     !cstyle_cast_type_text_matches_target(cast_type_text,
-                                           target_type,
-                                           target_lookup_text)) {
-    return false;
-  }
-  out = value;
-  return true;
-}
-
 bool parse_simple_integral_constant_text(string text, long long & out)
 {
   strip_balanced_outer_parens(text);
@@ -20006,8 +19821,7 @@ bool try_evaluate_integral_text(const string & text, long long & out)
   string compact = compact_expression_text(text);
   strip_balanced_outer_parens(compact);
   if(parse_simple_integral_constant_text(compact, out) ||
-     try_evaluate_static_cast_integral_text(compact, out) ||
-     try_evaluate_cstyle_cast_integral_text(compact, out)) {
+     try_evaluate_static_cast_integral_text(compact, out)) {
     return true;
   }
 
@@ -20104,6 +19918,49 @@ bool try_evaluate_null_pointer_cast_template_argument(
 
   value = 0;
   return true;
+}
+
+bool type_is_integral_or_named_enum_for_template_value(const TypePtr & type)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  return base &&
+         (is_integral_type(base) ||
+          (base->kind == Type::TK_NAMED &&
+           (base->named_key.compare(0, 5, "enum ") == 0 ||
+            base->named_display.compare(0, 5, "enum ") == 0)));
+}
+
+bool try_evaluate_integral_cast_template_argument(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & expr,
+    long long & value)
+{
+  if(expr.kind == CppAstKind::parenthesized_expression &&
+     expr.children.size() == 1) {
+    return try_evaluate_integral_cast_template_argument(
+        services, scope, expr.children[0], value);
+  }
+  if(expr.kind != CppAstKind::cast_expression ||
+     expr.children.size() != 2 ||
+     expr.children[0].kind != CppAstKind::type_id) {
+    return false;
+  }
+
+  TypePtr cast_type = expr.children[0].semantic_type;
+  if(!cast_type &&
+     !parse_type_id_node_for_templates(
+         services, scope.require(), expr.children[0], cast_type, true)) {
+    return false;
+  }
+  if(!type_is_integral_or_named_enum_for_template_value(cast_type)) {
+    return false;
+  }
+
+  const NonTypeArgumentStatus operand_status =
+      evaluate_non_type_argument_expression(
+          services, scope, expr.children[1], value, nullptr, cast_type);
+  return operand_status == NT_ARG_EVALUATED;
 }
 
 bool parse_sizeof_pack_count_text(Scope & scope,
@@ -20245,7 +20102,6 @@ bool try_evaluate_integral_text_with_pack_scope(Scope & scope,
   strip_balanced_outer_parens(compact);
   if(parse_simple_integral_constant_text(compact, out) ||
      try_evaluate_static_cast_integral_text(compact, out) ||
-     try_evaluate_cstyle_cast_integral_text(compact, out) ||
      parse_sizeof_pack_count_text(scope, compact, out) ||
 	     lookup_integral_constant_count_text(scope, compact, out)) {
     return true;
@@ -27377,13 +27233,7 @@ bool try_resolve_bound_value_template_argument(
     }
 
     long long literal_value = 0;
-    bool have_literal_value =
-        try_evaluate_target_cstyle_cast_integral_text(
-            name,
-            out.type,
-            service_lookup_text_for_type_argument(services, out.type),
-            literal_value) ||
-        parse_integer_literal_count_text(name, literal_value);
+    bool have_literal_value = parse_integer_literal_count_text(name, literal_value);
     if(!have_literal_value && name == "true") {
       literal_value = 1;
       have_literal_value = true;
@@ -37038,13 +36888,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(SemanticContext & ctx,
   if(try_evaluate_integral_text_with_pack_scope(scope, trimmed, value)) {
     return finish(NT_ARG_EVALUATED);
   }
-  if(try_evaluate_target_cstyle_cast_integral_text(
-         trimmed,
-         target_type,
-         lookup_text_for_type_argument(ctx, target_type),
-         value)) {
-    return finish(NT_ARG_EVALUATED);
-  }
   const auto evaluate_builtin_trait_text =
       [&]() -> NonTypeArgumentStatus
       {
@@ -38411,6 +38254,12 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
     }
     if(status != NT_ARG_EVALUATED &&
        status != NT_ARG_DEPENDENT &&
+       try_evaluate_integral_cast_template_argument(
+           services, scope, expr, value)) {
+      status = NT_ARG_EVALUATED;
+    }
+    if(status != NT_ARG_EVALUATED &&
+       status != NT_ARG_DEPENDENT &&
        expr.kind == CppAstKind::parenthesized_expression &&
        expr.children.size() == 1) {
       const NonTypeArgumentStatus nested_status =
@@ -38910,56 +38759,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_syntax(
       NT_ARG_PARSE_FAILED;
 }
 
-bool parse_non_type_argument_text_expression_syntax(const string & text,
-                                                    TemplateArgumentSyntax & out)
-{
-  out = TemplateArgumentSyntax();
-  const string trimmed = trim_space(text);
-  if(trimmed.empty()) {
-    return false;
-  }
-
-  try {
-    istringstream input(trimmed);
-    PPTokenizer pp_tokens(input.rdbuf());
-    PostTokenizer post_tokens(pp_tokens);
-    RecogTokenizer recog_tokens(post_tokens);
-    vector<RecogToken> tokens;
-    for(;;) {
-      RecogToken token = recog_tokens.get();
-      const bool done = token.is_eof() || token.is_invalid();
-      if(token.is_invalid()) {
-        return false;
-      }
-      tokens.push_back(std::move(token));
-      if(done) {
-        break;
-      }
-    }
-
-    if(tokens.size() <= 1 || !tokens.back().is_eof()) {
-      return false;
-    }
-
-    CppAstParser parser(tokens);
-    if(!parser.parse_template_argument_fragment_syntax(
-           0,
-           tokens.size() - 1,
-           out,
-           CppAstParser::TAF_PARSE_EXPRESSION_ONLY,
-           true) ||
-       !out.expression) {
-      out = TemplateArgumentSyntax();
-      return false;
-    }
-    out.text = trimmed;
-    return true;
-  } catch(const logic_error &) {
-    out = TemplateArgumentSyntax();
-    return false;
-  }
-}
-
 NonTypeArgumentStatus evaluate_non_type_argument_text(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -39018,13 +38817,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(
   if(try_evaluate_integral_text_with_pack_scope(raw_scope, trimmed, value)) {
     return finish(NT_ARG_EVALUATED);
   }
-  if(try_evaluate_target_cstyle_cast_integral_text(
-         trimmed,
-         target_type,
-         service_lookup_text_for_type_argument(services, target_type),
-         value)) {
-    return finish(NT_ARG_EVALUATED);
-  }
   const auto evaluate_builtin_trait_text =
       [&]() -> NonTypeArgumentStatus
       {
@@ -39069,23 +38861,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(
           services, scope, trimmed, value, target_type);
   if(member_value_status != NT_ARG_PARSE_FAILED) {
     return finish(member_value_status);
-  }
-
-  if(target_type && is_bool_type(remove_reference_type(target_type))) {
-    TemplateArgumentSyntax parsed_expression;
-    if(parse_non_type_argument_text_expression_syntax(trimmed, parsed_expression)) {
-      const NonTypeArgumentStatus parsed_status =
-          evaluate_non_type_argument_syntax(
-              services,
-              scope,
-              parsed_expression,
-              value,
-              eval_error,
-              target_type);
-      if(parsed_status != NT_ARG_PARSE_FAILED) {
-        return finish(parsed_status);
-      }
-    }
   }
 
   if(trimmed.find("::") == string::npos &&

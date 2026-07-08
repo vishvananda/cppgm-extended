@@ -1241,147 +1241,6 @@ bool parse_template_argument_type_syntax(
   return false;
 }
 
-bool parse_simple_fundamental_type_text(const std::string & text, TypePtr & out)
-{
-  out.reset();
-  const std::string trimmed = trim_space(text);
-  if(trimmed.empty()) {
-    return false;
-  }
-
-  int signed_count = 0;
-  int unsigned_count = 0;
-  int short_count = 0;
-  int long_count = 0;
-  bool saw_int = false;
-  bool saw_char = false;
-  bool saw_char16 = false;
-  bool saw_char32 = false;
-  bool saw_wchar = false;
-  bool saw_bool = false;
-  bool saw_float = false;
-  bool saw_double = false;
-  bool saw_void = false;
-  bool cv_const = false;
-  bool cv_volatile = false;
-
-  std::istringstream in(trimmed);
-  std::string token;
-  while(in >> token) {
-    if(token == "signed") {
-      ++signed_count;
-    } else if(token == "unsigned") {
-      ++unsigned_count;
-    } else if(token == "short") {
-      ++short_count;
-    } else if(token == "long") {
-      ++long_count;
-    } else if(token == "int") {
-      saw_int = true;
-    } else if(token == "char") {
-      saw_char = true;
-    } else if(token == "char16_t") {
-      saw_char16 = true;
-    } else if(token == "char32_t") {
-      saw_char32 = true;
-    } else if(token == "wchar_t") {
-      saw_wchar = true;
-    } else if(token == "bool") {
-      saw_bool = true;
-    } else if(token == "float") {
-      saw_float = true;
-    } else if(token == "double") {
-      saw_double = true;
-    } else if(token == "void") {
-      saw_void = true;
-    } else if(token == "const") {
-      cv_const = true;
-    } else if(token == "volatile") {
-      cv_volatile = true;
-    } else {
-      return false;
-    }
-  }
-
-  TypePtr base;
-  if(!finalize_fundamental_type_specifiers(signed_count,
-                                           unsigned_count,
-                                           short_count,
-                                           long_count,
-                                           saw_int,
-                                           saw_char,
-                                           saw_char16,
-                                           saw_char32,
-                                           saw_wchar,
-                                           saw_bool,
-                                           saw_float,
-                                           saw_double,
-                                           saw_void,
-                                           base) ||
-     !base) {
-    return false;
-  }
-  out = apply_cv(base, cv_const, cv_volatile);
-  return out != nullptr;
-}
-
-bool parse_simple_integral_value_text(const std::string & text, long long & out)
-{
-  const std::string trimmed = trim_space(text);
-  if(trimmed.empty()) {
-    return false;
-  }
-  if(trimmed == "true") {
-    out = 1;
-    return true;
-  }
-  if(trimmed == "false") {
-    out = 0;
-    return true;
-  }
-  std::size_t index = 0;
-  bool negative = false;
-  if(trimmed[index] == '+' || trimmed[index] == '-') {
-    negative = trimmed[index] == '-';
-    ++index;
-    if(index >= trimmed.size()) {
-      return false;
-    }
-  }
-  int base = 10;
-  if(index + 1 < trimmed.size() &&
-     trimmed[index] == '0' &&
-     (trimmed[index + 1] == 'x' || trimmed[index + 1] == 'X')) {
-    base = 16;
-    index += 2;
-    if(index >= trimmed.size()) {
-      return false;
-    }
-  }
-  unsigned long long value = 0;
-  for(; index < trimmed.size(); ++index) {
-    const unsigned char ch = static_cast<unsigned char>(trimmed[index]);
-    int digit = -1;
-    if(ch >= '0' && ch <= '9') {
-      digit = ch - '0';
-    } else if(base == 16 && ch >= 'a' && ch <= 'f') {
-      digit = 10 + ch - 'a';
-    } else if(base == 16 && ch >= 'A' && ch <= 'F') {
-      digit = 10 + ch - 'A';
-    } else {
-      return false;
-    }
-    if(digit >= base) {
-      return false;
-    }
-    value = value * static_cast<unsigned>(base) + static_cast<unsigned>(digit);
-  }
-  out = negative ?
-      -static_cast<long long>(value) :
-      static_cast<long long>(value);
-  return true;
-}
-
 bool parsed_pattern_type_allows_direct_function_fallback(const TypePtr & pattern_type)
 {
   if(!pattern_type) {
@@ -8287,14 +8146,7 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 	      actual_arg_type =
 	          services.semantic_context->lookup_type(match_scope, actual_arg, true);
 	    }
-	    if(actual_arg_type) {
-	      return true;
-	    }
-	    if(parse_simple_fundamental_type_text(actual_arg, actual_arg_type) &&
-	       actual_arg_type) {
-	      return true;
-	    }
-	    return false;
+	    return actual_arg_type != nullptr;
 	  };
   const auto resolve_pattern_arg_type =
       [&](std::size_t arg_index, const std::string & pattern_arg, TypePtr & pattern_arg_type) -> bool
@@ -8321,14 +8173,7 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       pattern_arg_type =
           services.semantic_context->lookup_type(match_scope, pattern_arg, true);
     }
-    if(pattern_arg_type) {
-      return true;
-    }
-    if(parse_simple_fundamental_type_text(pattern_arg, pattern_arg_type) &&
-       pattern_arg_type) {
-      return true;
-    }
-    return false;
+    return pattern_arg_type != nullptr;
   };
   const auto resolve_actual_non_type_value =
       [&](std::size_t arg_index,
@@ -8343,9 +8188,6 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       value = (*actual_structured_args)[arg_index].value;
       return true;
     }
-	    if(parse_simple_integral_value_text(actual_arg, value)) {
-	      return true;
-	    }
 	    return false;
 	  };
 
@@ -8418,17 +8260,6 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
           actual_value_type = actual_value_arg.type;
           have_actual_value = true;
         }
-      }
-      if(!have_actual_value &&
-         parse_simple_integral_value_text(actual_arg, actual_value)) {
-        if(arg_index > 0) {
-          parse_simple_fundamental_type_text(actual_args[0], actual_value_type);
-        }
-        if(!actual_value_type) {
-          actual_value_type = make_fundamental(
-              (actual_arg == "true" || actual_arg == "false") ? FT_BOOL : FT_INT);
-        }
-        have_actual_value = true;
       }
       if(have_actual_value) {
         long long expected_value = 0;

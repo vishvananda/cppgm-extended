@@ -85,6 +85,33 @@ CATEGORIES = [
             r"\bdeduce(?:-[A-Za-z]+)*-text-shape(?:-[A-Za-z]+)*\b"
         ),
     ),
+    Category(
+        "semantic_template_fragment_reparse",
+        "Template argument syntax recovered by tokenizing semantic text fragments.",
+        re.compile(
+            r"\bparse_(?:type_argument_text_syntax|"
+            r"non_type_argument_text_expression_syntax|"
+            r"repaired_template_argument_syntax)\s*\("
+        ),
+    ),
+    Category(
+        "semantic_text_tokenizer_reparse",
+        "Semantic text fragments routed back through the C++ tokenizer/parser stack.",
+        re.compile(
+            r"\bPPTokenizer\s+pp_tokens\s*\(|"
+            r"\bPostTokenizer\s+post_tokens\s*\(|"
+            r"\bRecogTokenizer\s+recog_tokens\s*\("
+        ),
+    ),
+    Category(
+        "manual_template_argument_text_parse",
+        "Template argument semantics recovered by manually parsing source text.",
+        re.compile(
+            r"\bparse_simple_(?:fundamental_type|integral_value)_text\s*\(|"
+            r"\b(?:split|try_evaluate_target)_cstyle_cast_integral_text\s*\(|"
+            r"\bsplit_top_level_function_type_argument_text\s*\("
+        ),
+    ),
 ]
 
 

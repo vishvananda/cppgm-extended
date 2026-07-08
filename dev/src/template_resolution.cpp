@@ -20,12 +20,8 @@
 #include "callsemantic_internal.h"
 #include "class_template_mangle_info.h"
 #include "cpp_decl_bridge.h"
-#include "cppast_parser.h"
 #include "pack_parameter_analysis.h"
 #include "parser_trace.h"
-#include "posttokenizer.h"
-#include "pptokenizer.h"
-#include "recog_token.h"
 #include "semantic_context.h"
 #include "semantic_conversion.h"
 #include "semantic_errors.h"
@@ -97,83 +93,6 @@ FunctionTypeRefQualifier function_type_ref_qualifier_from_method_ref(
     return FTRQ_NONE;
   }
   return FTRQ_NONE;
-}
-
-bool type_argument_text_has_declarator_surface(const std::string & text)
-{
-  QualifiedName template_name;
-  std::vector<std::string> template_args;
-  if(semantic_utils::split_top_level_template_id_text(text,
-                                                      template_name,
-                                                      template_args) &&
-     !template_args.empty()) {
-    return true;
-  }
-
-  for(std::size_t i = 0; i < text.size(); ++i) {
-    switch(text[i]) {
-    case '*':
-    case '&':
-    case '(':
-    case ')':
-    case '[':
-    case ']':
-      return true;
-    default:
-      break;
-    }
-  }
-  return false;
-}
-
-bool parse_type_argument_text_syntax(const std::string & text,
-                                     TemplateArgumentSyntax & out)
-{
-  out = TemplateArgumentSyntax();
-  const std::string trimmed = semantic_utils::trim_space(text);
-  if(trimmed.empty() || !type_argument_text_has_declarator_surface(trimmed)) {
-    return false;
-  }
-
-  try {
-    std::istringstream input(trimmed);
-    PPTokenizer pp_tokens(input.rdbuf());
-    PostTokenizer post_tokens(pp_tokens);
-    RecogTokenizer recog_tokens(post_tokens);
-    std::vector<RecogToken> tokens;
-    for(;;) {
-      RecogToken token = recog_tokens.get();
-      const bool done = token.is_eof() || token.is_invalid();
-      if(token.is_invalid()) {
-        return false;
-      }
-      tokens.push_back(std::move(token));
-      if(done) {
-        break;
-      }
-    }
-
-    if(tokens.size() <= 1 || !tokens.back().is_eof()) {
-      return false;
-    }
-
-    CppAstParser parser(tokens);
-    if(!parser.parse_template_argument_fragment_syntax(
-           0,
-           tokens.size() - 1,
-           out,
-           CppAstParser::TAF_PARSE_TYPE_ONLY,
-           true) ||
-       !out.type_id) {
-      out = TemplateArgumentSyntax();
-      return false;
-    }
-    out.text = trimmed;
-    return true;
-  } catch(const std::logic_error &) {
-    out = TemplateArgumentSyntax();
-    return false;
-  }
 }
 
 bool resolve_template_argument(SemanticContext & ctx,
@@ -6022,32 +5941,6 @@ bool template_argument_syntax_mentions_template_bound_type_name(
   return syntax.expression && node_mentions_bound(*syntax.expression);
 }
 
-const std::vector<TypePtr> * lookup_direct_bound_type_pack_argument(
-    Scope & scope,
-    const std::string & text)
-{
-  std::string name = strip_elaborated_type_prefix(trim_space(text));
-  std::string stripped_typename;
-  if(strip_leading_typename_argument_text(name, stripped_typename)) {
-    name = stripped_typename;
-  }
-  if(name.empty() ||
-     !is_identifier_text(name)) {
-    return nullptr;
-  }
-  for(Scope * current = &scope; current; current = current->parent) {
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-    std::map<std::string, std::vector<TypePtr> >::const_iterator found =
-        current->named_type_packs.find(name);
-    if(found != current->named_type_packs.end()) {
-      return &found->second;
-    }
-  }
-  return nullptr;
-}
-
 bool text_is_top_level_function_type_argument(const std::string & text)
 {
   const std::string trimmed = trim_space(text);
@@ -6084,79 +5977,6 @@ bool text_is_top_level_function_type_argument(const std::string & text)
          open != 0 &&
          paren_depth == 0 &&
          angle_depth == 0;
-}
-
-bool split_top_level_function_type_argument_text(const std::string & text,
-                                                 std::string & result_text,
-                                                 std::string & parameter_text)
-{
-  result_text.clear();
-  parameter_text.clear();
-  const std::string trimmed = trim_space(text);
-  if(!text_is_top_level_function_type_argument(trimmed)) {
-    return false;
-  }
-
-  int angle_depth = 0;
-  int paren_depth = 0;
-  for(std::size_t i = 0; i < trimmed.size(); ++i) {
-    const char ch = trimmed[i];
-    if(ch == '<') {
-      ++angle_depth;
-      continue;
-    }
-    if(ch == '>' && angle_depth > 0) {
-      --angle_depth;
-      continue;
-    }
-    if(ch == '(' && angle_depth == 0) {
-      if(paren_depth == 0) {
-        result_text = trim_space(trimmed.substr(0, i));
-        parameter_text =
-            trim_space(trimmed.substr(i + 1, trimmed.size() - i - 2));
-        return !result_text.empty();
-      }
-      ++paren_depth;
-      continue;
-    }
-  }
-  return false;
-}
-
-bool resolve_bound_function_type_pack_argument(Scope & scope,
-                                               const std::string & text,
-                                               TypePtr & out)
-{
-  out.reset();
-  std::string result_text;
-  std::string parameter_text;
-  if(!split_top_level_function_type_argument_text(text,
-                                                  result_text,
-                                                  parameter_text)) {
-    return false;
-  }
-  if(parameter_text.size() < 3 ||
-     parameter_text.substr(parameter_text.size() - 3) != "...") {
-    return false;
-  }
-  const std::string pack_text =
-      trim_space(parameter_text.substr(0, parameter_text.size() - 3));
-  if(pack_text.empty()) {
-    return false;
-  }
-
-  TypePtr result_type;
-  if(!lookup_direct_bound_type_argument(scope, result_text, result_type) ||
-     !result_type) {
-    return false;
-  }
-  const std::vector<TypePtr> * pack =
-      lookup_direct_bound_type_pack_argument(scope, pack_text);
-  if(!pack) {
-    return false;
-  }
-  out = make_function(result_type, *pack, false);
-  return out != nullptr;
 }
 
 std::string template_id_text_from_head_and_args(
@@ -11755,8 +11575,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   };
   bool attempted_structured_type_syntax = false;
   bool bound_member_type_failure = false;
-  TemplateArgumentSyntax reparsed_text_type_syntax;
-  bool have_reparsed_text_type_syntax = false;
   const auto try_parse_type_id_syntax =
       [&]() -> void
   {
@@ -11858,16 +11676,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     }
   }
   if(!type && !has_structured_type_syntax) {
-    TypePtr function_type;
-    if(resolve_bound_function_type_pack_argument(raw_argument_scope,
-                                                trimmed,
-                                                function_type) &&
-       function_type) {
-      resolve_type_argument_if_needed(function_type);
-      type = function_type;
-    }
-  }
-  if(!type && !has_structured_type_syntax) {
     TypePtr rewritten_bound_type;
     if(lookup_rewritten_bound_type_argument(raw_argument_scope,
                                             trimmed,
@@ -11913,25 +11721,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
        recovered_template_id) {
       resolve_type_argument_if_needed(recovered_template_id);
       type = recovered_template_id;
-    }
-  }
-  if(!type && !has_structured_type_syntax) {
-    if(parse_type_argument_text_syntax(trimmed, reparsed_text_type_syntax)) {
-      try {
-        template_argument_semantics::parse_type_id_node_for_templates(
-            services,
-            raw_argument_scope,
-            *reparsed_text_type_syntax.type_id,
-            type,
-            true);
-        resolve_type_argument_if_needed(type);
-        if(type) {
-          have_reparsed_text_type_syntax = true;
-          reparsed_text_type_syntax.resolved_type = type;
-        }
-      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
-        type.reset();
-      }
     }
   }
   if(!type) {
@@ -12067,9 +11856,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   }
 
   set_resolved_type_template_argument(type_system, type, trimmed, out);
-  if(!out.source_syntax && have_reparsed_text_type_syntax) {
-    attach_template_argument_source_syntax(&reparsed_text_type_syntax, out);
-  }
   if(syntax && services.witness_context.session != nullptr) {
     template_argument_semantics::
         append_structured_bool_value_dependencies_in_template_argument_syntax(

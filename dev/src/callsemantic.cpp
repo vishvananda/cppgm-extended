@@ -7684,144 +7684,8 @@ private:
       }
     }
 
-    const auto parenthesize_compact_less_template_arguments =
-        [](const string & text) -> string
-        {
-          if(text.find('<') == string::npos || text.empty() || text.back() != '>') {
-            return text;
-          }
-          const size_t open = text.find('<');
-          if(open == string::npos || open + 1 >= text.size()) {
-            return text;
-          }
-          const string body = text.substr(open + 1, text.size() - open - 2);
-          vector<string> parts;
-          size_t start = 0;
-          int paren_depth = 0;
-          int bracket_depth = 0;
-          int brace_depth = 0;
-          for(size_t i = 0; i <= body.size(); ++i) {
-            const char ch = i < body.size() ? body[i] : ',';
-            const bool separator =
-                (i == body.size() || ch == ',') &&
-                paren_depth == 0 &&
-                bracket_depth == 0 &&
-                brace_depth == 0;
-            if(separator) {
-              string arg = trim_space(body.substr(start, i - start));
-              if(arg.find('<') != string::npos &&
-                 arg.find('>') == string::npos &&
-                 !(arg.size() >= 2 && arg.front() == '(' && arg.back() == ')')) {
-                arg = "(" + arg + ")";
-              }
-              parts.push_back(arg);
-              start = i + 1;
-              continue;
-            }
-            switch(ch) {
-            case '(': ++paren_depth; break;
-            case ')': if(paren_depth > 0) { --paren_depth; } break;
-            case '[': ++bracket_depth; break;
-            case ']': if(bracket_depth > 0) { --bracket_depth; } break;
-            case '{': ++brace_depth; break;
-            case '}': if(brace_depth > 0) { --brace_depth; } break;
-            default: break;
-            }
-          }
-          if(parts.empty()) {
-            return text;
-          }
-          string repaired = text.substr(0, open + 1);
-          for(size_t i = 0; i < parts.size(); ++i) {
-            if(i != 0) {
-              repaired += ",";
-            }
-            repaired += parts[i];
-          }
-          repaired += ">";
-          return repaired;
-        };
-    const auto restore_repaired_less_argument_text =
-        [](const string & text) -> string
-        {
-          string trimmed = trim_space(text);
-          if(trimmed.size() < 3 ||
-             trimmed.front() != '(' ||
-             trimmed.back() != ')') {
-            return text;
-          }
-          string inner = trim_space(trimmed.substr(1, trimmed.size() - 2));
-          if(inner.find('<') == string::npos ||
-             inner.find('>') != string::npos) {
-            return text;
-          }
-          string out;
-          out.reserve(inner.size() + 4);
-          for(size_t i = 0; i < inner.size(); ++i) {
-            if(inner[i] == '<') {
-              if(!out.empty() && out.back() != ' ') {
-                out += ' ';
-              }
-              out += '<';
-              if(i + 1 < inner.size() && inner[i + 1] != ' ') {
-                out += ' ';
-              }
-            } else {
-              out += inner[i];
-            }
-          }
-          return trim_space(out);
-        };
-    const auto parse_repaired_template_argument_syntax =
-        [](const string & text, TemplateArgumentSyntax & out) -> bool
-        {
-          out = TemplateArgumentSyntax();
-          const string trimmed = trim_space(text);
-          if(trimmed.empty()) {
-            return false;
-          }
-          try {
-            istringstream input(trimmed);
-            PPTokenizer pp_tokens(input.rdbuf());
-            PostTokenizer post_tokens(pp_tokens);
-            RecogTokenizer recog_tokens(post_tokens);
-            vector<RecogToken> tokens;
-            for(;;) {
-              RecogToken token = recog_tokens.get();
-              const bool done = token.is_eof() || token.is_invalid();
-              if(token.is_invalid()) {
-                return false;
-              }
-              tokens.push_back(std::move(token));
-              if(done) {
-                break;
-              }
-            }
-            if(tokens.size() <= 1 || !tokens.back().is_eof()) {
-              return false;
-            }
-            CppAstParser parser(tokens);
-            if(!parser.parse_template_argument_fragment_syntax(
-                   0,
-                   tokens.size() - 1,
-                   out,
-                   CppAstParser::TAF_PARSE_BOTH,
-                   true)) {
-              out = TemplateArgumentSyntax();
-              return false;
-            }
-            out.text = trimmed;
-            out.source_text = trimmed;
-            return true;
-          } catch(const logic_error &) {
-            out = TemplateArgumentSyntax();
-            return false;
-          }
-        };
-
     QualifiedName template_id;
     vector<string> arg_texts;
-    vector<TemplateArgumentSyntax> repaired_arg_syntax_storage;
     const vector<TemplateArgumentSyntax> * arg_syntaxes = nullptr;
     string template_lookup_name = normalized_name;
     bool parsed_template_id =
@@ -7857,38 +7721,6 @@ private:
           arg_syntaxes = anchor_arg_syntaxes;
           parsed_template_id = true;
         }
-      }
-    }
-    if(!parsed_template_id &&
-       normalized_name.find('<') != string::npos &&
-       !normalized_name.empty() &&
-       normalized_name.back() == '>') {
-      const string repaired_lookup_name =
-          parenthesize_compact_less_template_arguments(normalized_name);
-      if(repaired_lookup_name != normalized_name &&
-         semantic_utils::split_top_level_template_id_text(repaired_lookup_name,
-                                                          template_id,
-                                                          arg_texts)) {
-        template_lookup_name = repaired_lookup_name;
-        for(size_t i = 0; i < arg_texts.size(); ++i) {
-          arg_texts[i] = restore_repaired_less_argument_text(arg_texts[i]);
-        }
-        repaired_arg_syntax_storage.clear();
-        repaired_arg_syntax_storage.reserve(arg_texts.size());
-        bool parsed_repaired_arg_syntaxes = true;
-        for(size_t i = 0; i < arg_texts.size(); ++i) {
-          TemplateArgumentSyntax syntax;
-          if(!parse_repaired_template_argument_syntax(arg_texts[i], syntax)) {
-            parsed_repaired_arg_syntaxes = false;
-            break;
-          }
-          repaired_arg_syntax_storage.push_back(std::move(syntax));
-        }
-        if(parsed_repaired_arg_syntaxes &&
-           repaired_arg_syntax_storage.size() == arg_texts.size()) {
-          arg_syntaxes = &repaired_arg_syntax_storage;
-        }
-        parsed_template_id = true;
       }
     }
     if(parsed_template_id) {
@@ -8066,13 +7898,33 @@ private:
                     *this,
                     [&](template_api::TemplateServices & services)
                     {
-                      return template_argument_semantics::evaluate_non_type_argument_text(
-                          services,
-                          template_api::make_template_environment(scope),
-                          parsed_arg_texts[2],
-                          count,
-                          &eval_error,
-                          value_type);
+                      template_api::TemplateEnvironmentHandle environment =
+                          template_api::make_template_environment(scope);
+                      const TemplateArgumentSyntax * count_syntax =
+                          parsed_arg_syntaxes &&
+                                  parsed_arg_syntaxes->size() > 2 ?
+                              &(*parsed_arg_syntaxes)[2] :
+                              nullptr;
+                      if(count_syntax &&
+                         (count_syntax->expression ||
+                          count_syntax->type_id ||
+                          count_syntax->template_id)) {
+                        return template_argument_semantics::
+                            evaluate_non_type_argument_syntax(
+                                services,
+                                environment,
+                                *count_syntax,
+                                count,
+                                &eval_error,
+                                value_type);
+                      }
+                      return template_argument_semantics::
+                          evaluate_non_type_argument_text(services,
+                                                          environment,
+                                                          parsed_arg_texts[2],
+                                                          count,
+                                                          &eval_error,
+                                                          value_type);
                     });
             if(status != template_argument_semantics::NT_ARG_EVALUATED || count < 0) {
               return false;
@@ -18069,7 +17921,8 @@ private:
     }
     if(direct_template_id_syntax &&
        !direct_template_id_syntax->name.name.empty() &&
-       (unqualified_member_name(direct_template_id_syntax->name.name) ==
+       (lookup_name.find('<') != string::npos ||
+        unqualified_member_name(direct_template_id_syntax->name.name) ==
             lookup_source_name ||
         (!exact_lookup_anchor.identifier.empty() &&
          unqualified_member_name(direct_template_id_syntax->name.name) ==

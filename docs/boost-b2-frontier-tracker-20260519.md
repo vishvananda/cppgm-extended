@@ -79,6 +79,23 @@ rebased Boost frontier branch.
   Boost.Container using-imported same-signature member fix; median instructions
   `275,448,058,735`, RSS `1.12 GiB`, footprint `894.49 MiB`.
 
+## Standard Frontier Process
+
+For each Boost frontier fix:
+
+1. Reduce the Boost failure to the earliest owning PA when practical, and add
+   the focused regression before or alongside the fix.
+2. Fix the typed semantic path. Do not add a fallback that tokenizes, parses, or
+   manually interprets compiler-produced template/type/expression text.
+3. Rebuild `dev/cppgm++` and run the focused owner tests with direct LowIR text
+   compare when the owner surface emits LowIR.
+4. Run `python3 scripts/audit_text_reparse.py`; the Boost frontier is not clean
+   if this audit reports new semantic text reparse debt.
+5. Run `git diff --check`, the relevant strict owner suite, and the focused
+   Boost target/report needed to prove the frontier moved.
+6. Run the performance gate after any change that can affect compile-time hot
+   paths, allocation behavior, memory use, or broad template resolution.
+
 ## Cleanup Notes
 
 - `5ae8f2cc2` adds reducer tests that were recorded in fixed tracker rows but

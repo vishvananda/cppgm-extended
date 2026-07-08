@@ -6176,6 +6176,7 @@ void apply_selected_specialization_member_function_definitions(
           source_binding->definition_suppresses_declaration_abi_tags;
       binding->declaration_abi_tags = source_binding->declaration_abi_tags;
       binding->parameter_syntax_node = source_binding->parameter_syntax_node;
+      binding->declaration_scope = &binding_scope;
       binding->exclude_from_explicit_instantiation =
           binding->exclude_from_explicit_instantiation ||
           source_binding->exclude_from_explicit_instantiation;

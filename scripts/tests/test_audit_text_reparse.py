@@ -50,6 +50,9 @@ class AuditTextReparseTests(unittest.TestCase):
                         "ast_text_rebuild": 0,
                         "source_line_recovery": 0,
                         "template_argument_text_shape_deduction": 0,
+                        "semantic_template_fragment_reparse": 0,
+                        "semantic_text_tokenizer_reparse": 0,
+                        "manual_template_argument_text_parse": 0,
                     }
                 }),
                 encoding="utf-8",
@@ -63,6 +66,52 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("deduce-text-shape-template-mismatch", result.stdout)
             self.assertIn("deduce-template-arg-text-shape-fail", result.stdout)
             self.assertNotIn("template argument spelling diagnostic only", result.stdout)
+
+    def test_semantic_fragment_and_manual_text_reparse_are_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "template_resolution.cpp").write_text(
+                "bool parse_type_argument_text_syntax(const std::string & text);\n"
+                "PPTokenizer pp_tokens(input.rdbuf());\n"
+                "PostTokenizer post_tokens(pp_tokens);\n"
+                "RecogTokenizer recog_tokens(post_tokens);\n"
+                "split_top_level_function_type_argument_text(text, result, params);\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({
+                    "limits": {
+                        "qualified_name_string_parse": 0,
+                        "template_id_string_parse": 0,
+                        "expression_fragment_parse": 0,
+                        "type_fragment_parse": 0,
+                        "semantic_type_text_bridge": 0,
+                        "translation_unit_fragment_parse": 0,
+                        "ast_text_rebuild": 0,
+                        "source_line_recovery": 0,
+                        "template_argument_text_shape_deduction": 0,
+                        "semantic_template_fragment_reparse": 0,
+                        "semantic_text_tokenizer_reparse": 0,
+                        "manual_template_argument_text_parse": 0,
+                    }
+                }),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("semantic_template_fragment_reparse", result.stdout)
+            self.assertIn("parse_type_argument_text_syntax", result.stdout)
+            self.assertIn("semantic_text_tokenizer_reparse", result.stdout)
+            self.assertIn("PPTokenizer pp_tokens", result.stdout)
+            self.assertIn("PostTokenizer post_tokens", result.stdout)
+            self.assertIn("RecogTokenizer recog_tokens", result.stdout)
+            self.assertIn("manual_template_argument_text_parse", result.stdout)
+            self.assertIn("split_top_level_function_type_argument_text", result.stdout)
 
 
 if __name__ == "__main__":

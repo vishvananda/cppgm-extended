@@ -3680,6 +3680,11 @@ void collect_class_reference_special_member(SemanticContext & ctx,
                                             const CppAstNode & node,
                                             MemberAccess access);
 
+void collect_class_reference_method_definition(SemanticContext & ctx,
+                                               ClassInfo & info,
+                                               const CppAstNode & node,
+                                               MemberAccess access);
+
 size_t align_up(size_t value, size_t alignment)
 {
   if(alignment <= 1) {
@@ -9208,6 +9213,8 @@ void populate_class_reference_members(SemanticContext & ctx,
         collect_class_friend_function_definition(ctx, info, child, true);
       } else if(function_definition_is_static_constexpr_member(child)) {
         collect_class_method_definition(ctx, info, child, current_access);
+      } else {
+        collect_class_reference_method_definition(ctx, info, child, current_access);
       }
       continue;
     }
@@ -9290,6 +9297,8 @@ void populate_class_reference_members(SemanticContext & ctx,
               collect_class_friend_function_definition(ctx, info, member, true);
             } else if(function_definition_is_static_constexpr_member(member)) {
               collect_class_method_definition(ctx, info, member, inner_access);
+            } else {
+              collect_class_reference_method_definition(ctx, info, member, inner_access);
             }
             continue;
           }
@@ -10187,6 +10196,68 @@ void collect_class_method_definition(SemanticContext & ctx,
                                node,
                                std::string("member=") + prepared.name);
 }
+
+namespace {
+
+void collect_class_reference_method_definition(SemanticContext & ctx,
+                                               ClassInfo & info,
+                                               const CppAstNode & node,
+                                               MemberAccess access)
+{
+  PreparedClassMemberFunctionDefinition prepared;
+  if(!prepare_class_member_function_definition(ctx, info, node, true, prepared)) {
+    return;
+  }
+
+  std::vector<std::pair<std::string, TypePtr> > params;
+  std::vector<const CppAstNode *> default_args;
+  const CppAstNode * parameter_clause =
+      find_child(*prepared.declarator, CppAstKind::parameter_clause);
+  if(parameter_clause &&
+     !ctx.parse_parameter_clause(
+         *info.member_scope, *parameter_clause, params, &default_args, true)) {
+    return;
+  }
+
+  validate_method_virtual_syntax(prepared.method.syntax);
+  const ClassFunctionOptions method_flags =
+      class_function_options(access,
+                             &prepared.method.syntax,
+                             false,
+                             false,
+                             prepared.is_constexpr_member,
+                             false,
+                             prepared.is_inline_member);
+
+  if(prepared.is_static_member) {
+    FunctionRegistrationRequest request;
+    request.owner_class = &info;
+    request.name = prepared.name;
+    request.declared_type = prepared.declared_type;
+    request.params = params;
+    request.default_arguments = default_args;
+    request.declaration_node = &node;
+    request.function_qualifier = prepared.method.syntax.function_qualifier;
+    request.semantic_flags.access = access;
+    request.semantic_flags.is_constexpr = prepared.is_constexpr_member;
+    request.semantic_flags.is_inline = prepared.is_inline_member;
+    request.is_static_member = true;
+    ctx.register_function_entity(request);
+  } else {
+    register_class_function(ctx,
+                            info,
+                            prepared.name,
+                            prepared.declared_type,
+                            params,
+                            default_args,
+                            nullptr,
+                            nullptr,
+                            method_flags,
+                            &node);
+  }
+}
+
+}  // namespace
 
 void collect_special_member(SemanticContext & ctx,
                             ClassInfo & info,

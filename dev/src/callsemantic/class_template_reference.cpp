@@ -2393,6 +2393,8 @@ public:
           witness::source_capture_enabled(witness_context);
       const bool syntax_backed_source_capture_enabled =
           source_capture_enabled || witness::enabled(witness_context);
+      const bool owner_reference_source_text_enabled =
+          syntax_backed_source_capture_enabled;
       if(use_location.empty() || !resolved_info) {
         return;
       }
@@ -2639,6 +2641,7 @@ public:
           specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION ||
           resolved_info->is_explicit_specialization;
       const bool nested_recovery_is_qualified_member_owner =
+          owner_reference_source_text_enabled &&
           nested_argument_recovery &&
           callbacks.template_id_at_location_is_qualified_member_owner &&
           callbacks.template_id_at_location_is_qualified_member_owner(
@@ -2730,6 +2733,7 @@ public:
           source_location_points_at_identifier(chosen_use_location,
                                                anchor_identifier);
       const bool source_template_id_is_qualified_member_owner =
+          owner_reference_source_text_enabled &&
           callbacks.template_id_at_location_is_qualified_member_owner &&
           callbacks.template_id_at_location_is_qualified_member_owner(
               chosen_use_location);

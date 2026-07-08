@@ -999,7 +999,7 @@ void build_template_argument_syntax_from_range(
                range.second,
                parsed_type_argument,
                CppAstParser::TAF_PARSE_TYPE_ONLY,
-               true)) {
+               false)) {
           parsed_type_argument.text = argument.text;
           parsed_type_argument.has_source_token_start = true;
           parsed_type_argument.source_token_start = argument.source_token_start;
@@ -1155,6 +1155,21 @@ bool build_template_id_syntax_from_range(
     out = cpp_decl::TemplateIdSyntax();
     out.name = build_qualified_name_syntax(head_tokens, head_parsed);
     out.source_location_id = tokens[range.first].location_id;
+    qualified_name_parser::QualifiedNameParseResult original_head_parsed;
+    if(qualified_name_parser::parse_qualified_name(
+           tokens,
+           range.first,
+           lookup,
+           qualified_name_parser::UnqualifiedNameOptions(),
+           original_head_parsed) &&
+       original_head_parsed.end == open &&
+       qualified_name_has_qualifier_template_id(original_head_parsed)) {
+      build_qualifier_template_id_syntaxes(tokens,
+                                           lookup,
+                                           original_head_parsed,
+                                           out.qualifier_template_id_syntaxes,
+                                           parser_context);
+    }
     for(size_t i = 0; i < arg_ranges.size(); ++i) {
       cpp_decl::TemplateArgumentSyntax argument;
       build_template_argument_syntax_from_range(tokens,
@@ -11038,6 +11053,24 @@ void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
       cpp_decl::TemplateIdSyntax template_id;
       template_id.name = head_syntax;
       template_id.source_location_id = tokens[start].location_id;
+      vector<cpp_decl::TemplateIdSyntax> fallback_qualifier_template_ids;
+      qualified_name_parser::QualifiedNameParseResult original_head_parsed;
+      if(qualified_name_parser::parse_qualified_name(
+             tokens,
+             start,
+             lookup,
+             qualified_name_parser::UnqualifiedNameOptions(),
+             original_head_parsed) &&
+         original_head_parsed.end == open &&
+         qualified_name_has_qualifier_template_id(original_head_parsed)) {
+        build_qualifier_template_id_syntaxes(tokens,
+                                             lookup,
+                                             original_head_parsed,
+                                             fallback_qualifier_template_ids,
+                                             this);
+        template_id.qualifier_template_id_syntaxes =
+            fallback_qualifier_template_ids;
+      }
       for(size_t i = 0; i < arg_ranges.size(); ++i) {
         cpp_decl::TemplateArgumentSyntax argument;
         build_template_argument_syntax_from_range(tokens,
@@ -11051,6 +11084,11 @@ void CppAstParser::attach_qualified_name_syntax_from_span(CppAstNode & node,
 
       set_cppast_qualified_name_syntax(node, std::move(head_syntax));
       set_cppast_template_id_syntax(node, std::move(template_id));
+      if(!fallback_qualifier_template_ids.empty()) {
+        set_cppast_qualifier_template_id_syntaxes(
+            node,
+            std::move(fallback_qualifier_template_ids));
+      }
       return;
     }
     return;
