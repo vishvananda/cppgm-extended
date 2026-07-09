@@ -4369,7 +4369,7 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
   const bool structured_qualified_lookup =
       qualified &&
       (qualified->rooted || !qualified->qualifiers.empty()) &&
-      (!node.qualifier_template_id_syntaxes.empty() ||
+      (cppast_has_qualifier_template_id_syntaxes(node) ||
        !node.qualifier_type_syntaxes.empty());
   const ValueBinding * binding =
       structured_qualified_lookup ? nullptr : ctx.lookup_value(scope, node.value);
@@ -4399,7 +4399,7 @@ const ValueBinding * lookup_id_expression_value_binding(SemanticContext & ctx,
     return nullptr;
   }
 
-  if(!node.qualifier_template_id_syntaxes.empty()) {
+  if(cppast_has_qualifier_template_id_syntaxes(node)) {
     Scope * qualifier_scope =
         ctx.resolve_qualified_scope_for_node(scope, *qualified, node, false);
     if(qualifier_scope && qualifier_scope->class_info) {
@@ -4502,7 +4502,7 @@ bool try_analyze_dependent_qualified_id_expression(SemanticContext & ctx,
                                                    const QualifiedName & qualified,
                                                    ExprInfo & out)
 {
-  if(node.qualifier_template_id_syntaxes.empty() &&
+  if(!cppast_has_qualifier_template_id_syntaxes(node) &&
      node.qualifier_type_syntaxes.empty()) {
     return false;
   }
@@ -5012,7 +5012,7 @@ VariableTemplateDecl * lookup_variable_template_id_for_node(
   const QualifiedName * qualified = cppast_qualified_name_syntax(node);
   if(qualified &&
      (qualified->rooted || !qualified->qualifiers.empty()) &&
-     (!node.qualifier_template_id_syntaxes.empty() ||
+     (cppast_has_qualifier_template_id_syntaxes(node) ||
       !node.qualifier_type_syntaxes.empty())) {
     Scope * target = ctx.resolve_qualified_scope_for_node(
         scope, *qualified, node, false);

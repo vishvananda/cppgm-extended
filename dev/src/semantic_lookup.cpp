@@ -5488,7 +5488,7 @@ string qualified_value_qualifier_text(const QualifiedName & qualified_name)
 
 bool node_has_structured_qualifier_syntax(const CppAstNode & node)
 {
-  return !node.qualifier_template_id_syntaxes.empty() ||
+  return cppast_has_qualifier_template_id_syntaxes(node) ||
          !node.qualifier_type_syntaxes.empty();
 }
 

@@ -12204,7 +12204,7 @@ private:
             strip_trailing_top_level_template_arguments(qualified->name);
 
     const bool has_structured_qualifier_syntax =
-        !node.qualifier_template_id_syntaxes.empty() ||
+        cppast_has_qualifier_template_id_syntaxes(node) ||
         !node.qualifier_type_syntaxes.empty();
     if(!has_structured_qualifier_syntax) {
       if(Scope * qualified_scope =
@@ -16036,7 +16036,7 @@ private:
     };
 
     const bool has_structured_qualifier_syntax =
-        !node.qualifier_template_id_syntaxes.empty() ||
+        cppast_has_qualifier_template_id_syntaxes(node) ||
         !node.qualifier_type_syntaxes.empty();
     if(!has_structured_qualifier_syntax) {
       if(Scope * resolved_scope =
@@ -18121,6 +18121,14 @@ private:
       }
       const ScopedTemplateUseLocation direct_use_location_guard(
           direct_use_location);
+      const bool structured_qualified_template_id_type_probe =
+          qualified_lookup &&
+          (qualified_lookup->rooted || !qualified_lookup->qualifiers.empty()) &&
+          (cppast_has_qualifier_template_id_syntaxes(node) ||
+           !node.qualifier_type_syntaxes.empty());
+      if(structured_qualified_template_id_type_probe) {
+        return TypePtr();
+      }
       if(AliasTemplateDecl * alias_template =
              lookup_alias_template(scope, direct_template_id_syntax->name)) {
         TypePtr alias =

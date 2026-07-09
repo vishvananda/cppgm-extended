@@ -815,7 +815,7 @@ Local Boost wrapper state:
 | 55 | `libs/heap/test` | pass | Current-head suite survey after the friend-access fixes passes in 322.5s, updating 69 targets. `d_ary_heap_test` now builds, links, runs, and passes along with the existing priority queue, mutable heap, skew heap, move-only, pairing, fibonacci, and binomial targets. Summary `/tmp/boost-suite-survey-heap-after-friend-access-20260705/summary.md`; log `/tmp/boost-suite-survey-heap-after-friend-access-20260705/libs__heap__test.log`. |
 | 56 | `libs/iterator/test` | pass | Full `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/iterator/test` on 2026-07-06 reports `failed updating 0 target` and only skipped expected-fail dependency targets, matching the row-28 Core convention for a clean suite despite B2's nonzero status. Log `/tmp/boost-iterator-full-after-sizeof-unary-20260706.log`. |
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
-| 57b | `libs/lambda/test//member_pointer_test` | advanced | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 advances past the overloaded `->*` callee failure and now reaches the shared Lambda assignment-conversion frontier; log `/tmp/boost-lambda-member-pointer-after-arrowstar-callee.log`. |
+| 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -5569,3 +5569,29 @@ Perf gate against detached clean baseline `042df3193` passes: instructions
 `-0.16%`, RSS `-1.14%`, footprint `-0.07%`; baseline
 `/tmp/cppgm-perf-baseline-shadowed-result-042df3193-20260709.json`, report
 `/tmp/cppgm-perf-report-shadowed-result-20260709.json`.
+
+2026-07-09 Boost.Lambda qualified template-id owner type-probe frontier: after
+the function-template result shadowing fix, `member_pointer_test` failed while
+evaluating the bool non-type arguments in
+`action_helper<is_pointer<A>::value &&
+detail::member_pointer<plainB>::is_data_member, ...>::template apply<RET>`.
+The real call path had structured syntax for the qualified template-id owner,
+but overload analysis also probed whether the same expression could name a
+type. That type probe fell through to alias/class-template lookup and retried
+the owner from text without the parsed qualifier template-id syntax. The fix
+keeps structured qualifier template-id syntax reachable through the direct
+template-id node and makes qualified template-id type probes fail closed after
+structured lookup fails, instead of rebuilding the owner through text. No
+source-text reparse, fallback resolver, cache, or Boost-specific rule was
+added. Owner: PA23 qualified template-id owners for member-template calls and
+converted bool non-type arguments. New regression:
+`pa23/tests/general/500-qualified-template-id-owner-function-call-probe.t`.
+Validation: clang and `cppgm++` both accept the C++11 reducer; focused PA23
+check passes; PA23 direct-text report passes `392/392`; full direct-text
+`make test-report` passes `3598/3598`; full strict direct-text suite passes;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; focused Boost.Lambda `member_pointer_test` builds, links, runs,
+and passes. Perf gate against detached clean baseline `7518ba6d3` passes:
+instructions `+0.04%`, RSS `+0.77%`, footprint `-0.03%`; baseline
+`/tmp/cppgm-perf-baseline-qualified-owner-probe-7518ba6d-20260709.json`,
+report `/tmp/cppgm-perf-report-qualified-owner-probe-20260709.json`.

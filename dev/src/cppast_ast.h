@@ -533,11 +533,42 @@ inline const cpp_decl::TemplateIdSyntax * cppast_qualifier_template_id_syntax(
     const CppAstNode & node,
     std::size_t qualifier_index)
 {
-  if(qualifier_index >= node.qualifier_template_id_syntaxes.size() ||
-     node.qualifier_template_id_syntaxes[qualifier_index].name.name.empty()) {
-    return nullptr;
+  if(qualifier_index < node.qualifier_template_id_syntaxes.size() &&
+     !node.qualifier_template_id_syntaxes[qualifier_index].name.name.empty()) {
+    return &node.qualifier_template_id_syntaxes[qualifier_index];
   }
-  return &node.qualifier_template_id_syntaxes[qualifier_index];
+  if(node.template_id_syntax &&
+     qualifier_index <
+         node.template_id_syntax->qualifier_template_id_syntaxes.size() &&
+     !node.template_id_syntax
+          ->qualifier_template_id_syntaxes[qualifier_index]
+          .name.name.empty()) {
+    return &node.template_id_syntax
+                ->qualifier_template_id_syntaxes[qualifier_index];
+  }
+  return nullptr;
+}
+
+inline bool cppast_has_qualifier_template_id_syntaxes(const CppAstNode & node)
+{
+  for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(!node.qualifier_template_id_syntaxes[i].name.name.empty()) {
+      return true;
+    }
+  }
+  if(!node.template_id_syntax) {
+    return false;
+  }
+  for(std::size_t i = 0;
+      i < node.template_id_syntax->qualifier_template_id_syntaxes.size();
+      ++i) {
+    if(!node.template_id_syntax
+            ->qualifier_template_id_syntaxes[i]
+            .name.name.empty()) {
+      return true;
+    }
+  }
+  return false;
 }
 
 inline void set_cppast_qualifier_template_id_syntaxes(

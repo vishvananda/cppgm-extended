@@ -1202,7 +1202,7 @@ public:
       return nullptr;
     }
 
-    if(node.qualifier_template_id_syntaxes.empty() &&
+    if(!cppast_has_qualifier_template_id_syntaxes(node) &&
        node.qualifier_type_syntaxes.empty()) {
       return semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
           ctx, scope, qualified, allow_dependent_class_qualifiers);
