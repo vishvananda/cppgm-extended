@@ -5233,3 +5233,34 @@ passes; full strict direct-text suite passes; full direct-text report passes
 ::_get_impl` while lowering `boost::variant2::unsafe_get` at
 `boost/variant2/variant.hpp:437`. Log:
 `/tmp/boost-json-after-constructor-template-braced-array-20260709.log`.
+
+2026-07-09 Boost.Json qualified alias-template member deduction frontier: after
+the constructor-template braced array-bound fix, Boost.Json reached
+`boost::variant2::unsafe_get`, whose member call is
+`v._get_impl(boost::mp11::mp_size_t<I>())`. Lookup found the inherited member
+function templates, but function-template deduction failed because the
+dependent alias pattern carried only an unqualified display spelling
+`mp_size_t<I>` while the typed actual argument had already resolved to
+`boost::mp11::integral_constant<size_t, 0>`. The fix makes dependent
+alias-template parameter recovery use the alias declaration pointer and
+dependent argument syntax already stored on the `TypePtr`, building the
+qualified alias name from the declaration scope before expanding the alias for
+deduction. The legacy parsed-name path remains only as a fallback when no
+typed dependent alias metadata exists; no new source-text reparse, Boost
+special case, fallback resolver, or cache was added. Owner: PA22
+function-template deduction through alias-template parameters. New regression:
+`pa22/tests/general/100-qualified-alias-template-member-deduction.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; the reducer
+passes under `cppgm++`; focused PA22 checks pass with direct LowIR text
+compare; PA22 direct-text report passes `230/230`; PA22 strict direct-text
+passes; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; full strict direct-text suite passes; full
+direct-text report passes `3584/3584`; focused Boost.Json B2 library build
+now passes and updates `libboost_json.a`, log
+`/tmp/boost-json-after-qualified-alias-deduction-20260709.log`. The prior
+named frontier perf baselines were not present on this host, so a clean
+detached worktree at `43fef18e9` was used to record
+`/tmp/cppgm-perf-baseline-clean-head-43fef18e9-qualified-alias-20260709.json`;
+the dirty-tree candidate check passes with instructions `-0.08%`, max RSS
+`-0.60%`, and footprint `+0.04%`, report
+`/tmp/cppgm-perf-report-qualified-alias-member-deduction-20260709.json`.

@@ -15888,71 +15888,93 @@ bool deduce_function_template_arguments_uncached(
               named_type_dependent_alias_template(original_base,
                                                   dependent_alias_template_decl,
                                                   dependent_alias_args);
-          const std::string normalized_text = strip_elaborated_type_prefix(
-              trim_space(type_argument_text_for_deduction(ctx, original_base)));
-          QualifiedName parsed_name;
-          if(template_id_head_name_from_type_text(normalized_text, parsed_name)) {
-            AliasTemplateDecl * alias_decl =
-                ((!parsed_name.rooted && parsed_name.qualifiers.empty()) ?
-                     semantic_lookup::lookup_unqualified_alias_template(
-                         bound_scope, parsed_name.name) :
-                     nullptr);
-            if(!alias_decl) {
-              alias_decl = ctx.lookup_alias_template(bound_scope, parsed_name);
-            }
+          AliasTemplateDecl * alias_decl = nullptr;
+          QualifiedName alias_name;
+          if(have_dependent_alias_args && dependent_alias_template_decl) {
+            alias_decl =
+                static_cast<AliasTemplateDecl *>(dependent_alias_template_decl);
             if(alias_decl) {
-              QualifiedName alias_name;
-              std::vector<std::string> alias_arg_texts;
-              std::vector<TemplateArgumentSyntax> alias_arg_syntaxes;
-              const std::vector<TemplateArgumentSyntax> * alias_arg_syntaxes_ptr =
-                  nullptr;
-              if(!have_dependent_alias_args ||
-                 dependent_alias_template_decl != alias_decl) {
-                continue;
+              alias_name = alias_decl->declaring_scope ?
+                  semantic_lookup::scope_qualified_name_syntax(
+                      *alias_decl->declaring_scope, alias_decl->name) :
+                  QualifiedName();
+              if(!alias_decl->declaring_scope) {
+                alias_name.name = alias_decl->name;
               }
-              alias_arg_texts.reserve(dependent_alias_args.size());
-              alias_arg_syntaxes.reserve(dependent_alias_args.size());
-              for(std::size_t arg_index = 0;
-                  arg_index < dependent_alias_args.size();
-                  ++arg_index) {
-                alias_arg_texts.push_back(dependent_alias_args[arg_index].text);
-                alias_arg_syntaxes.push_back(dependent_alias_args[arg_index].syntax);
+            }
+          }
+          if(!alias_decl) {
+            const std::string normalized_text = strip_elaborated_type_prefix(
+                trim_space(type_argument_text_for_deduction(ctx, original_base)));
+            QualifiedName parsed_name;
+            if(template_id_head_name_from_type_text(normalized_text, parsed_name)) {
+              alias_decl =
+                  ((!parsed_name.rooted && parsed_name.qualifiers.empty()) ?
+                       semantic_lookup::lookup_unqualified_alias_template(
+                           bound_scope, parsed_name.name) :
+                       nullptr);
+              if(!alias_decl) {
+                alias_decl = ctx.lookup_alias_template(bound_scope, parsed_name);
               }
-              alias_arg_syntaxes_ptr = &alias_arg_syntaxes;
-              alias_name = parsed_name;
-              TypePtr expanded_pattern;
-              const auto expand_alias_pattern =
-                  [&](template_api::TemplateServices & services) -> bool
-              {
-                return template_specialization::expand_alias_template_pattern_type(
-                    services,
-                    template_api::make_template_environment(bound_scope),
-                    alias_name,
-                    alias_arg_texts,
-                    expanded_pattern,
-                    alias_arg_syntaxes_ptr,
-                    template_api::make_template_environment(bound_scope),
-                    true);
-              };
-              const bool expanded_alias_pattern =
-                  template_api::with_template_services(ctx, expand_alias_pattern);
-              if(expanded_alias_pattern &&
-                 expanded_pattern &&
-                 !type_equals(expanded_pattern, original_base) &&
-                 deduce_template_argument_impl(ctx,
-                                               decl.parameters,
-                                               expanded_pattern,
-                                               actual,
-                                               temp_deduced_types,
-                                               temp_deduced_values,
-                                               &bound_scope,
-                                               false,
-                                               nullptr,
-                                               deduction_pack_arguments)) {
-                recovered_alias_pattern_deduction = true;
-              } else {
-                continue;
+              if(alias_decl) {
+                if(!have_dependent_alias_args ||
+                   dependent_alias_template_decl != alias_decl) {
+                  continue;
+                }
+                alias_name = parsed_name;
               }
+            }
+          }
+          if(alias_decl && !alias_name.name.empty()) {
+            std::vector<std::string> alias_arg_texts;
+            std::vector<TemplateArgumentSyntax> alias_arg_syntaxes;
+            const std::vector<TemplateArgumentSyntax> * alias_arg_syntaxes_ptr =
+                nullptr;
+            if(!have_dependent_alias_args ||
+               dependent_alias_template_decl != alias_decl) {
+              continue;
+            }
+            alias_arg_texts.reserve(dependent_alias_args.size());
+            alias_arg_syntaxes.reserve(dependent_alias_args.size());
+            for(std::size_t arg_index = 0;
+                arg_index < dependent_alias_args.size();
+                ++arg_index) {
+              alias_arg_texts.push_back(dependent_alias_args[arg_index].text);
+              alias_arg_syntaxes.push_back(dependent_alias_args[arg_index].syntax);
+            }
+            alias_arg_syntaxes_ptr = &alias_arg_syntaxes;
+            TypePtr expanded_pattern;
+            const auto expand_alias_pattern =
+                [&](template_api::TemplateServices & services) -> bool
+            {
+              return template_specialization::expand_alias_template_pattern_type(
+                  services,
+                  template_api::make_template_environment(bound_scope),
+                  alias_name,
+                  alias_arg_texts,
+                  expanded_pattern,
+                  alias_arg_syntaxes_ptr,
+                  template_api::make_template_environment(bound_scope),
+                  true);
+            };
+            const bool expanded_alias_pattern =
+                template_api::with_template_services(ctx, expand_alias_pattern);
+            if(expanded_alias_pattern &&
+               expanded_pattern &&
+               !type_equals(expanded_pattern, original_base) &&
+               deduce_template_argument_impl(ctx,
+                                             decl.parameters,
+                                             expanded_pattern,
+                                             actual,
+                                             temp_deduced_types,
+                                             temp_deduced_values,
+                                             &bound_scope,
+                                             false,
+                                             nullptr,
+                                             deduction_pack_arguments)) {
+              recovered_alias_pattern_deduction = true;
+            } else {
+              continue;
             }
           }
         }
