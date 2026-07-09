@@ -15080,6 +15080,46 @@ private:
     }
   }
 
+  bool attach_type_pack_qualified_owner_syntax(
+      Scope & scope,
+      CppAstNode & node,
+      const map<string, TypePtr> & type_replacements) const
+  {
+    if(!node.qualified_name_syntax ||
+       node.qualified_name_syntax->qualifiers.empty()) {
+      return false;
+    }
+
+    bool changed = false;
+    const vector<string> qualifiers = node.qualified_name_syntax->qualifiers;
+    vector<CppAstNode> qualifier_types(qualifiers.size());
+    for(size_t i = 0; i < node.qualifier_type_syntaxes.size() &&
+           i < qualifier_types.size(); ++i) {
+      qualifier_types[i] = node.qualifier_type_syntaxes[i];
+    }
+
+    for(size_t i = 0; i < qualifiers.size(); ++i) {
+      map<string, TypePtr>::const_iterator replacement =
+          type_replacements.find(qualifiers[i]);
+      if(replacement == type_replacements.end() || !replacement->second) {
+        continue;
+      }
+      const string replacement_text =
+          lookup_reparseable_text_for_type_argument(scope, replacement->second);
+      if(replacement_text.empty()) {
+        continue;
+      }
+      qualifier_types[i] =
+          make_pack_type_id_node(replacement->second, replacement_text);
+      changed = true;
+    }
+
+    if(changed) {
+      node.qualifier_type_syntaxes = qualifier_types;
+    }
+    return changed;
+  }
+
   bool substitute_pack_argument_node_ast(
       Scope & scope,
       const CppAstNode & node,
@@ -15099,9 +15139,12 @@ private:
     }
 
     out = clone_pack_substitution_node(node);
+    const bool structured_qualified_owner =
+        attach_type_pack_qualified_owner_syntax(scope, out, type_replacements);
     bool value_changed = false;
     if(!out.value.empty() &&
-       should_rewrite_pack_substitution_node_value(out.kind)) {
+       should_rewrite_pack_substitution_node_value(out.kind) &&
+       !structured_qualified_owner) {
       for(auto it = type_replacements.begin();
           it != type_replacements.end();
           ++it) {

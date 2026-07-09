@@ -136,6 +136,7 @@ CATEGORIES = [
         "owner_member_text_reparse",
         "Owner/member references recovered from saved source text in semantic code.",
         re.compile(
+            r"\bpattern_mentions_bound_type_pack_value_member\b|"
             r"\b[A-Za-z0-9_]*(?:owner|member|qualified_member)"
             r"[A-Za-z0-9_]*_text_reparse\b|"
             r"\b(?:resolve|lookup|evaluate)_[A-Za-z0-9_]*"

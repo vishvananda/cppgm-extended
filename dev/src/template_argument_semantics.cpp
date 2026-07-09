@@ -40861,33 +40861,6 @@ string mask_sizeof_pack_operands(const string & text)
   return masked;
 }
 
-bool pattern_mentions_bound_type_pack_value_member(
-    const string & pattern,
-    const vector<pair<string, const vector<TypePtr> *> > & type_packs)
-{
-  const string compact = callsemantic_internal::remove_space_chars(pattern);
-  for(size_t i = 0; i < type_packs.size(); ++i) {
-    const string & pack_name = type_packs[i].first;
-    if(pack_name.empty()) {
-      continue;
-    }
-    const string needle = pack_name + "::value";
-    size_t pos = 0;
-    while((pos = compact.find(needle, pos)) != string::npos) {
-      const size_t after = pos + needle.size();
-      const bool before_is_identifier =
-          pos != 0 && is_identifier_char_for_rewrite(compact[pos - 1]);
-      const bool after_is_identifier =
-          after < compact.size() && is_identifier_char_for_rewrite(compact[after]);
-      if(!before_is_identifier && !after_is_identifier) {
-        return true;
-      }
-      pos = after;
-    }
-  }
-  return false;
-}
-
 // Expands a non-trivial type-pack pattern by rebinding every referenced pack as
 // its i-th element in a child scope before resolving the original pattern.
 bool expand_bound_pack_driven_type_pattern(
@@ -40930,10 +40903,6 @@ bool expand_bound_pack_driven_type_pattern(
   }
 
   if(type_packs.empty() && value_packs.empty()) {
-    return false;
-  }
-  if(value_packs.empty() &&
-     pattern_mentions_bound_type_pack_value_member(masked, type_packs)) {
     return false;
   }
 

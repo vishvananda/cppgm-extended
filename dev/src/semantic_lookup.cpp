@@ -5843,8 +5843,9 @@ const ValueBinding * lookup_qualified_value_binding_node(SemanticContext & ctx,
     const size_t final_qualifier_index = qualified.qualifiers.size() - 1;
     if(const CppAstNode * qualifier =
            cppast_qualifier_type_syntax(node, final_qualifier_index)) {
-      TypePtr qualifier_type;
-      if(ctx.parse_decltype_specifier(scope, *qualifier, qualifier_type)) {
+      TypePtr qualifier_type = qualifier->semantic_type;
+      if(qualifier_type ||
+         ctx.parse_decltype_specifier(scope, *qualifier, qualifier_type)) {
         return lookup_value_binding_in_type_scope(ctx, scope, qualified, qualifier_type);
       }
     }

@@ -173,6 +173,27 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("result_owner_member_text_reparse", result.stdout)
             self.assertIn("evaluate_qualified_member_value_from_text", result.stdout)
 
+    def test_pack_owner_member_text_scan_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "template_argument_semantics.cpp").write_text(
+                "bool pattern_mentions_bound_type_pack_value_member();\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({"limits": ZERO_LIMITS}),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("owner_member_text_reparse", result.stdout)
+            self.assertIn("pattern_mentions_bound_type_pack_value_member", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

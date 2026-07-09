@@ -5420,3 +5420,25 @@ in `make_options(L<Bools...>)`, where `Bools::value...` reports
 `unknown id-expression std::__1::integral_constant<bool, false>::value`;
 corrected cppgm++ sample is
 `/tmp/cppgm-basic-parser-after-same-name-conv-cppgm.sample.txt`.
+
+2026-07-09 Boost.Json type-pack qualified static-member expansion frontier:
+after the same-name conversion-function-template fix, `basic_parser.cpp`
+reached `make_options(L<Bools...>)`, where `return make_options(Bools::value...)`
+expanded the type-pack owner into synthetic text such as
+`std::__1::integral_constant<bool, false>::value` and then failed ordinary
+id-expression lookup. The fix keeps the pack expansion typed: when a type-pack
+element appears as a qualified-id owner, callsemantic pack substitution now
+attaches the concrete owner type as qualifier metadata, and structured
+qualified value lookup consumes that carried `semantic_type` directly. The
+stale `Pack::value` spelling scan helper was removed and the text-reparse audit
+now flags that helper name if it is reintroduced. No source-text reparse,
+Boost-specific rule, fallback resolver, or cache was added. Owner: PA22
+variadic pack expansion and qualified static member lookup. New regression:
+`pa22/tests/spec/500-type-pack-qualified-static-member-expansion.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; focused PA22
+check passes; PA22 direct-text report passes `232/232`; full strict direct-text
+suite passes; `python3 scripts/audit_text_reparse.py --strict` reports all
+zero; `python3 -m unittest scripts.tests.test_audit_text_reparse` passes;
+`git diff --check` passes; direct Boost.Json `basic_parser.cpp` compile passes
+with a sample captured at
+`/tmp/cppgm-basic-parser-final-type-pack-static-member.sample.txt`.
