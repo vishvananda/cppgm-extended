@@ -5395,3 +5395,28 @@ next frontier, a `parse_literal` overload failure in
 `boost/json/basic_parser_impl.hpp:839`; samples for the long compile are in
 `/tmp/cppgm-basic-parser-frontier-after-mangle-fix.sample.txt` and
 `/tmp/cppgm-basic-parser-frontier-after-partial-owner.sample.txt`.
+
+2026-07-09 Boost.Json same-name conversion-function-template frontier: the
+`parse_literal` failure reduced to Boost.Core's `boost::core::string_view` to
+`std::string_view` conversion under the local `CPPGM_BOOST_B2_FRONTIER`
+libc++ extension path. The conversion operator template returned
+`std::basic_string_view<Ch2>`, while the source class template was also named
+`basic_string_view` in another namespace. The templated special-member
+collector classified this conversion operator as both a conversion operator
+and a constructor because the conversion target's unqualified template name
+matched the owner class name; function-template instantiation then took the
+constructor branch and never presented a viable conversion function candidate.
+The fix makes conversion-operator syntax dominate constructor/destructor
+classification for templated special members. No source-text reparse,
+Boost-specific rule, fallback resolver, or cache was added. Owner: PA22
+conversion-function-template target-type deduction. New regression:
+`pa22/tests/spec/500-conversion-function-template-same-name-target.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; focused PA22
+check passes; PA22 direct-text report passes `231/231`; full strict
+direct-text suite passes; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes. The direct Boost.Json
+`basic_parser.cpp` compile advances past `parse_literal` to the next frontier
+in `make_options(L<Bools...>)`, where `Bools::value...` reports
+`unknown id-expression std::__1::integral_constant<bool, false>::value`;
+corrected cppgm++ sample is
+`/tmp/cppgm-basic-parser-after-same-name-conv-cppgm.sample.txt`.

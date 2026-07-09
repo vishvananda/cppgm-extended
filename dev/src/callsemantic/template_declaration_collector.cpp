@@ -1532,6 +1532,10 @@ public:
       }
       special_member_is_conversion =
           declaration_has_conversion_operator_type_id(inner);
+      if(special_member_is_conversion) {
+        special_member_is_constructor = false;
+        special_member_is_destructor = false;
+      }
       if(!special_member_is_constructor &&
          !special_member_is_destructor &&
          !special_member_is_conversion) {
