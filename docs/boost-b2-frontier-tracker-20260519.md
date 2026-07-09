@@ -737,7 +737,8 @@ Local Boost wrapper state:
 6. Before implementation changes, confirm the reducer fails on the current
    branch and record the pre-fix diagnostic here.
 7. Fix the compiler in `dev/`, validate the focused regression, the owner PA
-   report, strict LowIR compare when relevant, and the Boost target.
+   report, `python3 scripts/audit_text_reparse.py --strict`, strict LowIR
+   compare when relevant, and the Boost target.
 8. Run the perf gate against the baseline above before committing any compiler
    fix.
 9. Commit each coherent fix with the regression, implementation, and tracker
@@ -809,7 +810,7 @@ Local Boost wrapper state:
 | 51i | `libs/graph/example//canonical_ordering` | pass | Boost.Parameter named-argument construction for Boyer-Myrvold planarity now resolves `lazy_enable_if<Cond, MetaFn>::type` result/member types, ranks the lvalue member assignment overload ahead of the forwarding-reference overload with real call arguments, and recovers empty middle function-parameter packs during `arg_list_factory` reversal. Focused B2 builds, links, runs, and passes: `/tmp/boost-graph-canonical-ordering-after-boost-parameter-20260705.log`. |
 | 52 | `libs/graph_parallel/test` | setup-fail | Current local Boost setup still cannot select the Graph Parallel/MPI/Python alternatives, matching the historical non-compiler setup failure shape. Survey log: `/tmp/boost-suite-survey-post-heap-gap-20260705/libs__graph_parallel__test.log`. |
 | 53 | `libs/hana/test` | pass | Post-Heap gap survey passes in 4.6s; log `/tmp/boost-suite-survey-post-heap-gap-20260705/libs__hana__test.log`. |
-| 54 | `libs/hash2/test` | mixed | Active frontier suite. The current Hash2 work fixes `digest`, `append_pointer`, `append_tuple_like_2`, and `detail_has_tag_invoke`. Fresh full survey after the hidden-friend pointer ADL fix still reports mixed, but the real remaining failed updates are down to `hash_32_64.o` (`unknown function detail::class_template_name<L<T...>>`) and `sha2_cx.o` (duplicate `test<sha2_256, 57>` symbol). The survey detail also includes an expected-fail `append_tag_invoke_4` `do_hash_append` diagnostic, but B2 marks that test passed as expected. Latest survey summary: `/tmp/boost-suite-survey-hash2-after-hidden-friend-pointer-adl-20260706/summary.md`; log: `/tmp/boost-suite-survey-hash2-after-hidden-friend-pointer-adl-20260706/libs__hash2__test.log`. |
+| 54 | `libs/hash2/test` | pass | Current forced B2 replay after the cv-qualified trait-probe fix passes and updates 506 targets: `/tmp/boost-hash2-after-cv-template-arg-20260708.log`. The final cluster was `BOOST_TEST_TRAIT_*((trait<... const>))`, where template arguments such as `is_pair_like<lib::pair<int,E1> const>` needed token-structured template-id syntax preserved through cv-qualified type-id parsing for function-pointer deduction. Earlier Hash2 frontiers closed `digest`, `append_pointer`, `append_tuple_like_2`, `detail_has_tag_invoke`, `sha2_cx`, and `hash_32_64`. |
 | 55 | `libs/heap/test` | pass | Current-head suite survey after the friend-access fixes passes in 322.5s, updating 69 targets. `d_ary_heap_test` now builds, links, runs, and passes along with the existing priority queue, mutable heap, skew heap, move-only, pairing, fibonacci, and binomial targets. Summary `/tmp/boost-suite-survey-heap-after-friend-access-20260705/summary.md`; log `/tmp/boost-suite-survey-heap-after-friend-access-20260705/libs__heap__test.log`. |
 | 56 | `libs/iterator/test` | pass | Full `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/iterator/test` on 2026-07-06 reports `failed updating 0 target` and only skipped expected-fail dependency targets, matching the row-28 Core convention for a clean suite despite B2's nonzero status. Log `/tmp/boost-iterator-full-after-sizeof-unary-20260706.log`. |
 
@@ -3998,6 +3999,34 @@ Perf gate against a clean detached `da2d8e82b` worktree passed:
 instructions `-0.02%`, max RSS `-0.77%`, footprint `+0.04%`; baseline
 `/tmp/cppgm-perf-baseline-da2d8e82b-tt-collision-20260706.json`, report
 `/tmp/cppgm-perf-report-tt-collision-20260706.json`.
+
+2026-07-08 Boost.Hash2 cv-qualified trait-probe frontier: a forced full Hash2
+replay after the template-template collision fix exposed the remaining
+`is_tuple_like`, `is_range`, `is_unordered_range`, and `is_contiguous_range`
+compile failures. Boost.Test expands
+`BOOST_TEST_TRAIT_TRUE((trait<... const>))` to a call through
+`::boost::detail::test_trait_impl(#type, (void(*)type)0, expected)`, so
+function-template deduction needs the type argument syntax attached even when
+the direct template-id is followed by cv qualifiers. The fix stays on typed
+token/AST data: template-argument fragment classification recognizes a
+template-id suffix followed only by cv qualifiers, parser attachment allows a
+single `type_name` plus cv qualifiers in the type specifier sequence, and
+template-argument semantics reads the attached `TemplateIdSyntax` from that
+typed child instead of reparsing text. No source-text reparse, Boost special
+case, fallback resolver, or symbol-spelling change is added. Owner: PA22
+function-template argument deduction/SFINAE. New regression:
+`pa22/tests/general/300-qualified-alias-sfinae-function-pointer-deduction-key.t`.
+Validation: Clang accepts the reducer with `-std=c++11`; `dev/cppgm++` compiles
+the reducer and the previous alias/SFINAE sibling; focused PA22 direct-LowIR
+check passes; PA22 direct-LowIR report passes `227/227`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; direct Boost compiles of `is_tuple_like.cpp`, `is_range.cpp`,
+`is_unordered_range.cpp`, and `is_contiguous_range.cpp` pass; forced full
+Boost.Hash2 B2 replay updates 506 targets and passes:
+`/tmp/boost-hash2-after-cv-template-arg-20260708.log`. Perf gate against clean
+`HEAD` `33e5d4c64` passes: instructions `+0.03%`, RSS `-0.51%`, footprint
+`+0.03%`; baseline `/tmp/cppgm-before-hash2-cv-template-arg-20260708.json`,
+report `/tmp/cppgm-hash2-cv-template-arg-perf-report-20260708.json`.
 
 2026-07-06 Boost.HOF static lambda frontier: direct HOF header and source
 probes exposed three adjacent typed frontend issues before the HOF test harness

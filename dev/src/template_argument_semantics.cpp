@@ -1709,6 +1709,38 @@ const CppAstNode * single_type_name_child(const CppAstNode & type_id)
   return &specifiers.children[0];
 }
 
+const CppAstNode * cv_qualified_type_name_child(const CppAstNode & type_id)
+{
+  if(type_id.kind != CppAstKind::type_id ||
+     type_id.children.empty()) {
+    return nullptr;
+  }
+  const CppAstNode & specifiers = type_id.children[0];
+  if(specifiers.kind != CppAstKind::type_specifier_seq) {
+    return nullptr;
+  }
+  const CppAstNode * type_name = nullptr;
+  for(size_t i = 0; i < specifiers.children.size(); ++i) {
+    const CppAstNode & child = specifiers.children[i];
+    if(child.kind == CppAstKind::type_name) {
+      if(type_name) {
+        return nullptr;
+      }
+      type_name = &child;
+      continue;
+    }
+    if(child.kind != CppAstKind::cv_qualifier) {
+      return nullptr;
+    }
+  }
+  const CppAstNode * declarator =
+      cppast_find_child_kind(type_id, CppAstKind::abstract_declarator);
+  if(declarator && !trim_space(node_text(*declarator)).empty()) {
+    return nullptr;
+  }
+  return type_name;
+}
+
 const CppAstNode * direct_type_name_type_id_child(const CppAstNode & type_id)
 {
   if(type_id.kind != CppAstKind::type_id ||
@@ -14280,7 +14312,7 @@ const TemplateIdSyntax * direct_template_id_syntax_from_type_id_node(
   if(const TemplateIdSyntax * template_id = cppast_template_id_syntax(node)) {
     return template_id;
   }
-  const CppAstNode * type_name = single_type_name_child(node);
+  const CppAstNode * type_name = cv_qualified_type_name_child(node);
   return type_name ? cppast_template_id_syntax(*type_name) : nullptr;
 }
 

@@ -626,6 +626,48 @@ bool template_argument_range_fragment_mode(
     }
     return false;
   };
+  const auto has_template_id_prefix_with_cv_tail = [&]() -> bool
+  {
+    for(size_t open = range.first; open < effective_end; ++open) {
+      if(!tokens.peek(open).is_simple(OP_LT)) {
+        continue;
+      }
+
+      size_t suffix_end = open;
+      vector<pair<size_t, size_t> > arg_ranges;
+      if(!template_angle::parse_template_id_suffix_ranges(tokens,
+                                                          open,
+                                                          lookup,
+                                                          suffix_end,
+                                                          arg_ranges) ||
+         suffix_end >= effective_end) {
+        continue;
+      }
+
+      bool saw_cv = false;
+      size_t tail = suffix_end;
+      while(tail < effective_end && is_cv_qualifier(tokens.peek(tail))) {
+        saw_cv = true;
+        ++tail;
+      }
+      if(!saw_cv || tail != effective_end) {
+        continue;
+      }
+
+      RecogTokenRangeSequence head_tokens(tokens, range.first, open);
+      qualified_name_parser::QualifiedNameParseResult head_parsed;
+      if(qualified_name_parser::parse_qualified_name(
+             head_tokens,
+             0,
+             lookup,
+             qualified_name_parser::UnqualifiedNameOptions(),
+             head_parsed) &&
+         head_parsed.end == open - range.first) {
+        return true;
+      }
+    }
+    return false;
+  };
   const auto has_function_style_type_cast = [&]() -> bool
   {
     size_t pos = range.first;
@@ -676,6 +718,10 @@ bool template_argument_range_fragment_mode(
   }
   if(has_template_id_qualifier()) {
     mode = CppAstParser::TAF_PARSE_BOTH;
+    return true;
+  }
+  if(has_template_id_prefix_with_cv_tail()) {
+    mode = CppAstParser::TAF_PARSE_TYPE_THEN_EXPRESSION;
     return true;
   }
   if(first.is_identifier() &&
@@ -823,12 +869,25 @@ void attach_template_id_syntax_to_direct_type_id(
   }
 
   CppAstNode & specifiers = type_id.children[0];
-  if(specifiers.children.size() != 1 ||
-     specifiers.children[0].kind != CppAstKind::type_name) {
+  CppAstNode * type_name = nullptr;
+  for(size_t i = 0; i < specifiers.children.size(); ++i) {
+    CppAstNode & child = specifiers.children[i];
+    if(child.kind == CppAstKind::type_name) {
+      if(type_name) {
+        return;
+      }
+      type_name = &child;
+      continue;
+    }
+    if(child.kind != CppAstKind::cv_qualifier) {
+      return;
+    }
+  }
+  if(!type_name) {
     return;
   }
 
-  set_cppast_template_id_syntax(specifiers.children[0], template_id);
+  set_cppast_template_id_syntax(*type_name, template_id);
 }
 
 void attach_qualifier_template_id_syntaxes_to_direct_type_id(
@@ -843,12 +902,25 @@ void attach_qualifier_template_id_syntaxes_to_direct_type_id(
   }
 
   CppAstNode & specifiers = type_id.children[0];
-  if(specifiers.children.size() != 1 ||
-     specifiers.children[0].kind != CppAstKind::type_name) {
+  CppAstNode * type_name = nullptr;
+  for(size_t i = 0; i < specifiers.children.size(); ++i) {
+    CppAstNode & child = specifiers.children[i];
+    if(child.kind == CppAstKind::type_name) {
+      if(type_name) {
+        return;
+      }
+      type_name = &child;
+      continue;
+    }
+    if(child.kind != CppAstKind::cv_qualifier) {
+      return;
+    }
+  }
+  if(!type_name) {
     return;
   }
 
-  set_cppast_qualifier_template_id_syntaxes(specifiers.children[0],
+  set_cppast_qualifier_template_id_syntaxes(*type_name,
                                             qualifier_template_ids);
 }
 
