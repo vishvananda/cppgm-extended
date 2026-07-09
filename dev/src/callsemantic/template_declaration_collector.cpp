@@ -539,11 +539,23 @@ public:
                                                           normalized_arg_texts)) {
           throw logic_error("invalid class partial specialization arguments");
         }
+        vector<TemplateArgumentSyntax> normalized_arg_syntaxes =
+            normalized_template_argument_syntaxes(*class_template_id,
+                                                  primary->parameters,
+                                                  normalized_arg_texts);
 
         for(size_t i = 0; i < primary->partial_specializations.size(); ++i) {
           PartialClassTemplateSpecializationDecl & existing =
               primary->partial_specializations[i];
           if(existing.arg_texts != normalized_arg_texts) {
+            continue;
+          }
+          if(!partial_class_specialization_patterns_redeclare_same(
+                 existing,
+                 pattern_scope,
+                 normalized_arg_texts,
+                 normalized_arg_syntaxes,
+                 *primary)) {
             continue;
           }
 
@@ -595,10 +607,7 @@ public:
         partial.class_node = &inner;
         partial.parameters = template_parameters;
         partial.arg_texts = normalized_arg_texts;
-        partial.arg_syntaxes =
-            normalized_template_argument_syntaxes(*class_template_id,
-                                                  primary->parameters,
-                                                  normalized_arg_texts);
+        partial.arg_syntaxes = normalized_arg_syntaxes;
         primary->partial_specializations.push_back(partial);
         if(owner_template_for_member_partial) {
           record_owner_member_class_template_partial_specialization(
@@ -4040,6 +4049,162 @@ private:
     return template_api::template_argument_identity_key(ctx, arguments);
   }
 
+  bool template_argument_semantic_identity_equal(
+      const TemplateArgument & lhs,
+      const TemplateArgument & rhs) const
+  {
+    if(lhs.kind != rhs.kind) {
+      return false;
+    }
+
+    if(lhs.kind == TemplateArgument::TA_TYPE) {
+      return type_equals(lhs.type, rhs.type);
+    }
+
+    if(lhs.kind == TemplateArgument::TA_VALUE) {
+      const bool types_match =
+          (!lhs.type && !rhs.type) ||
+          (lhs.type && rhs.type && type_equals(lhs.type, rhs.type));
+      if(!types_match) {
+        return false;
+      }
+      if(lhs.function_value || rhs.function_value) {
+        return lhs.function_value == rhs.function_value;
+      }
+      if(!lhs.function_internal_symbol.empty() ||
+         !rhs.function_internal_symbol.empty()) {
+        return lhs.function_internal_symbol == rhs.function_internal_symbol;
+      }
+      if(lhs.value_binding || rhs.value_binding) {
+        return lhs.value_binding == rhs.value_binding;
+      }
+      if(lhs.dependent || rhs.dependent) {
+        return lhs.dependent == rhs.dependent && lhs.text == rhs.text;
+      }
+      return lhs.value == rhs.value;
+    }
+
+    const bool owners_match =
+        (!lhs.template_owner_type && !rhs.template_owner_type) ||
+        (lhs.template_owner_type &&
+         rhs.template_owner_type &&
+         type_equals(lhs.template_owner_type, rhs.template_owner_type));
+    if(!owners_match) {
+      return false;
+    }
+    if(lhs.template_decl || rhs.template_decl) {
+      return lhs.template_decl == rhs.template_decl;
+    }
+    if(!lhs.template_entity_scope_prefix.empty() ||
+       !rhs.template_entity_scope_prefix.empty() ||
+       !lhs.template_entity_name.empty() ||
+       !rhs.template_entity_name.empty()) {
+      return lhs.template_entity_scope_prefix == rhs.template_entity_scope_prefix &&
+             lhs.template_entity_name == rhs.template_entity_name;
+    }
+    return lhs.dependent == rhs.dependent && lhs.text == rhs.text;
+  }
+
+  bool template_argument_vectors_semantic_identity_equal(
+      const vector<TemplateArgument> & lhs,
+      const vector<TemplateArgument> & rhs) const
+  {
+    if(lhs.size() != rhs.size()) {
+      return false;
+    }
+    for(size_t i = 0; i < lhs.size(); ++i) {
+      if(!template_argument_semantic_identity_equal(lhs[i], rhs[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  const vector<TemplateArgumentSyntax> * full_template_argument_syntaxes(
+      const vector<TemplateArgumentSyntax> & syntaxes,
+      const vector<string> & texts) const
+  {
+    return syntaxes.size() == texts.size() ? &syntaxes : nullptr;
+  }
+
+  bool resolve_partial_class_specialization_pattern_arguments(
+      const ClassTemplateDecl & primary,
+      Scope & pattern_scope,
+      const vector<string> & arg_texts,
+      const vector<TemplateArgumentSyntax> & arg_syntaxes,
+      vector<TemplateArgument> & out)
+  {
+    return resolve_template_arguments(pattern_scope,
+                                      primary.parameters,
+                                      arg_texts,
+                                      full_template_argument_syntaxes(
+                                          arg_syntaxes,
+                                          arg_texts),
+                                      out,
+                                      primary.declaring_scope);
+  }
+
+  bool partial_class_specialization_patterns_redeclare_same(
+      const PartialClassTemplateSpecializationDecl & existing,
+      Scope & incoming_pattern_scope,
+      const vector<string> & incoming_arg_texts,
+      const vector<TemplateArgumentSyntax> & incoming_arg_syntaxes,
+      const ClassTemplateDecl & primary)
+  {
+    Scope * existing_pattern_scope =
+        existing.pattern_scope ? existing.pattern_scope : existing.declaring_scope;
+    if(!existing_pattern_scope) {
+      return true;
+    }
+
+    vector<TemplateArgument> existing_arguments;
+    vector<TemplateArgument> incoming_arguments;
+    if(!resolve_partial_class_specialization_pattern_arguments(
+           primary,
+           *existing_pattern_scope,
+           existing.arg_texts,
+           existing.arg_syntaxes,
+           existing_arguments) ||
+       !resolve_partial_class_specialization_pattern_arguments(
+           primary,
+           incoming_pattern_scope,
+           incoming_arg_texts,
+           incoming_arg_syntaxes,
+           incoming_arguments)) {
+      return true;
+    }
+
+    return template_argument_vectors_semantic_identity_equal(existing_arguments,
+                                                            incoming_arguments);
+  }
+
+  bool partial_class_specialization_patterns_redeclare_same(
+      const PartialClassTemplateSpecializationDecl & existing,
+      const PartialClassTemplateSpecializationDecl & incoming,
+      const ClassTemplateDecl & primary)
+  {
+    Scope * incoming_pattern_scope =
+        incoming.pattern_scope ? incoming.pattern_scope : incoming.declaring_scope;
+    if(!incoming_pattern_scope) {
+      return true;
+    }
+    return partial_class_specialization_patterns_redeclare_same(
+        existing,
+        *incoming_pattern_scope,
+        incoming.arg_texts,
+        incoming.arg_syntaxes,
+        primary);
+  }
+
+  bool partial_class_specialization_parameter_lists_redeclare_same(
+      const PartialClassTemplateSpecializationDecl & existing,
+      const PartialClassTemplateSpecializationDecl & incoming)
+  {
+    vector<TemplateParameterInfo> merged_parameters = existing.parameters;
+    return merge_template_parameter_redeclarations(merged_parameters,
+                                                   incoming.parameters);
+  }
+
   bool template_arguments_are_dependent(
       const vector<TemplateArgument> & arguments) const
   {
@@ -4457,7 +4622,10 @@ private:
       PartialClassTemplateSpecializationDecl & existing =
           target.partial_specializations[i];
       if(existing.class_node == incoming.class_node ||
-         existing.arg_texts == incoming.arg_texts) {
+         (existing.arg_texts == incoming.arg_texts &&
+          partial_class_specialization_patterns_redeclare_same(existing,
+                                                               incoming,
+                                                               target))) {
         bool changed = false;
         if(!existing.class_node ||
            existing.class_node->kind == CppAstKind::class_forward_declaration) {
@@ -4558,7 +4726,10 @@ private:
     bool found_pending = false;
     for(size_t i = 0; i < pending.size(); ++i) {
       if(pending[i].class_node == partial.class_node ||
-         pending[i].arg_texts == partial.arg_texts) {
+         (pending[i].arg_texts == partial.arg_texts &&
+          partial_class_specialization_parameter_lists_redeclare_same(
+              pending[i],
+              partial))) {
         pending[i] = partial;
         found_pending = true;
         break;

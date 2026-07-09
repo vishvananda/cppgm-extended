@@ -495,6 +495,126 @@ void validate_instantiated_result_template_arguments(SemanticContext & ctx,
   }
 }
 
+bool template_result_argument_refines_same_pattern(
+    SemanticContext & ctx,
+    const TemplateArgument & current,
+    const TemplateArgument & parsed);
+
+bool template_result_argument_vectors_refine_same_pattern(
+    SemanticContext & ctx,
+    const std::vector<TemplateArgument> & current,
+    const std::vector<TemplateArgument> & parsed)
+{
+  if(current.size() != parsed.size()) {
+    return false;
+  }
+  for(std::size_t i = 0; i < current.size(); ++i) {
+    if(!template_result_argument_refines_same_pattern(ctx,
+                                                      current[i],
+                                                      parsed[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool class_template_specialization_results_refine_same_pattern(
+    SemanticContext & ctx,
+    const TypePtr & current,
+    const TypePtr & parsed)
+{
+  TypePtr current_base = strip_top_level_cv(current);
+  TypePtr parsed_base = strip_top_level_cv(parsed);
+  if(!current_base ||
+     !parsed_base ||
+     current_base->kind != Type::TK_NAMED ||
+     parsed_base->kind != Type::TK_NAMED) {
+    return false;
+  }
+
+  std::shared_ptr<const ClassTemplateSpecializationMangleInfo> current_info =
+      named_type_class_template_specialization_mangle_info_const(current_base);
+  std::shared_ptr<const ClassTemplateSpecializationMangleInfo> parsed_info =
+      named_type_class_template_specialization_mangle_info_const(parsed_base);
+  if(!current_info ||
+     !parsed_info ||
+     !current_info->class_template_decl ||
+     current_info->class_template_decl != parsed_info->class_template_decl ||
+     current_info->arguments.empty() ||
+     parsed_info->arguments.empty()) {
+    return false;
+  }
+  if(template_argument_semantics::type_depends_on_template_parameter(ctx,
+                                                                     current_base) ||
+     template_argument_semantics::type_depends_on_template_parameter(ctx,
+                                                                     parsed_base)) {
+    return false;
+  }
+
+  return template_result_argument_vectors_refine_same_pattern(
+      ctx,
+      current_info->arguments,
+      parsed_info->arguments);
+}
+
+bool template_result_argument_refines_same_pattern(
+    SemanticContext & ctx,
+    const TemplateArgument & current,
+    const TemplateArgument & parsed)
+{
+  if(current.kind != parsed.kind) {
+    return false;
+  }
+
+  if(current.kind == TemplateArgument::TA_TYPE) {
+    return type_equals(current.type, parsed.type) ||
+           class_template_specialization_results_refine_same_pattern(
+               ctx,
+               current.type,
+               parsed.type);
+  }
+
+  if(current.kind == TemplateArgument::TA_VALUE) {
+    const bool types_match =
+        (!current.type && !parsed.type) ||
+        (current.type && parsed.type && type_equals(current.type, parsed.type));
+    const bool current_has_expression =
+        current.expression ||
+        (current.source_syntax && current.source_syntax->expression);
+    if(!types_match ||
+       parsed.dependent ||
+       (current.dependent && !current_has_expression)) {
+      return false;
+    }
+    if(current.function_value || parsed.function_value) {
+      return current.function_value == parsed.function_value;
+    }
+    if(!current.function_internal_symbol.empty() ||
+       !parsed.function_internal_symbol.empty()) {
+      return current.function_internal_symbol == parsed.function_internal_symbol;
+    }
+    if(current.value_binding || parsed.value_binding) {
+      return current.value_binding == parsed.value_binding;
+    }
+    return current.value == parsed.value ||
+           current_has_expression;
+  }
+
+  const bool owners_match =
+      (!current.template_owner_type && !parsed.template_owner_type) ||
+      (current.template_owner_type &&
+       parsed.template_owner_type &&
+       type_equals(current.template_owner_type, parsed.template_owner_type));
+  if(!owners_match) {
+    return false;
+  }
+  if(current.template_decl || parsed.template_decl) {
+    return current.template_decl == parsed.template_decl;
+  }
+  return current.template_entity_scope_prefix == parsed.template_entity_scope_prefix &&
+         current.template_entity_name == parsed.template_entity_name;
+}
+
 bool template_arguments_are_dependent_for_instantiation(
     SemanticContext & ctx,
     const std::vector<TemplateArgument> & arguments);
@@ -10608,10 +10728,21 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
              resolved_result) {
             parsed_result = resolved_result;
           }
-          if(!template_argument_semantics::type_depends_on_template_parameter(ctx,
-                                                                              parsed_result) ||
-             template_argument_semantics::type_depends_on_template_parameter(ctx,
-                                                                             result_type)) {
+          const bool parsed_result_dependent =
+              template_argument_semantics::type_depends_on_template_parameter(
+                  ctx,
+                  parsed_result);
+          const bool current_result_dependent =
+              template_argument_semantics::type_depends_on_template_parameter(
+                  ctx,
+                  result_type);
+          if(current_result_dependent ||
+             (!parsed_result_dependent &&
+              (type_equals(result_type, parsed_result) ||
+               class_template_specialization_results_refine_same_pattern(
+                   ctx,
+                   result_type,
+                   parsed_result)))) {
             result_type = parsed_result;
           }
           if(parser_trace::enabled("template.resolve")) {

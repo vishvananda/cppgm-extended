@@ -5783,6 +5783,31 @@ bool lookup_leaf_value_binding(Scope & scope,
       out = binding;
       return true;
     }
+    const bool has_lexical_class =
+        !current->class_info &&
+        current->function &&
+        current->function->lexical_access_class;
+    const bool lexical_only =
+        has_lexical_class &&
+        (!current->function->is_method ||
+         current->function->owner_class != current->function->lexical_access_class);
+    ClassInfo * lexical_class = current->class_info;
+    if(!lexical_class && has_lexical_class) {
+      lexical_class = current->function->lexical_access_class;
+    }
+    if(lexical_class) {
+      semantic_lookup::MemberValueLookupResult member =
+          semantic_lookup::lookup_member_value(*lexical_class, name);
+      if(lexical_only &&
+         member.binding &&
+         member.binding->kind == ValueBinding::VK_FIELD) {
+        member.binding = nullptr;
+      }
+      if(member.binding) {
+        out = member.binding;
+        return true;
+      }
+    }
   }
   out = nullptr;
   return false;
@@ -9756,16 +9781,15 @@ bool materialize_leaf_member_constant_binding(
     out = value_binding_constexpr_value(binding);
     return out.kind != constant_eval::ConstexprValue::CV_INVALID;
   }
-  const bool can_evaluate_full_collection_constant =
+  const bool can_evaluate_collection_constant =
       owner_value_evaluation_incomplete &&
       binding.owner_class &&
-      binding.owner_class->full_member_collection_in_progress &&
-      !binding.owner_class->reference_member_collection_in_progress &&
+      binding.kind != ValueBinding::VK_FIELD &&
       binding.constant_initializer &&
       binding.constant_initializer_scope &&
       !binding.constant_value_in_progress;
   if(owner_value_evaluation_incomplete &&
-     !can_evaluate_full_collection_constant) {
+     !can_evaluate_collection_constant) {
     if(evaluation_incomplete) {
       *evaluation_incomplete = true;
     }
@@ -11805,6 +11829,88 @@ bool evaluate_leaf_scalar_zero_value(const TypePtr & type,
       out);
 }
 
+bool evaluate_leaf_value_initialized_type(const TypePtr & type,
+                                          constant_eval::ConstexprValue & out)
+{
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base) {
+    return false;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    if(!base->has_bound || !base->inner) {
+      return false;
+    }
+    vector<constant_eval::ConstexprValue> elements;
+    elements.reserve(base->bound);
+    for(size_t i = 0; i < base->bound; ++i) {
+      constant_eval::ConstexprValue element;
+      if(!evaluate_leaf_value_initialized_type(base->inner, element)) {
+        return false;
+      }
+      elements.push_back(element);
+    }
+    out = constant_eval::make_array_value(type, elements);
+    return true;
+  }
+
+  return evaluate_leaf_scalar_zero_value(type, out);
+}
+
+bool expand_leaf_initializer_arguments(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const CppAstNode & initializer,
+    vector<const CppAstNode *> & args,
+    vector<CppAstNode> & expanded_storage)
+{
+  args.clear();
+  for(size_t i = 0; i < initializer.children.size(); ++i) {
+    args.push_back(&initializer.children[i]);
+  }
+
+  bool has_pack_expansion = false;
+  for(size_t i = 0; i < args.size(); ++i) {
+    if(!args[i]) {
+      return false;
+    }
+    if(args[i]->kind == CppAstKind::pack_expansion_expression) {
+      has_pack_expansion = true;
+    }
+  }
+  if(!has_pack_expansion) {
+    expanded_storage.clear();
+    return true;
+  }
+  if(!services.semantic_context) {
+    return false;
+  }
+
+  expanded_storage.clear();
+  for(size_t i = 0; i < args.size(); ++i) {
+    const CppAstNode * arg = args[i];
+    if(arg->kind != CppAstKind::pack_expansion_expression) {
+      expanded_storage.push_back(*arg);
+      continue;
+    }
+    vector<CppAstNode> expanded_nodes;
+    if(!services.semantic_context->expand_pack_argument_node(scope,
+                                                             *arg,
+                                                             expanded_nodes)) {
+      return false;
+    }
+    expanded_storage.insert(expanded_storage.end(),
+                            expanded_nodes.begin(),
+                            expanded_nodes.end());
+  }
+
+  args.clear();
+  args.reserve(expanded_storage.size());
+  for(size_t i = 0; i < expanded_storage.size(); ++i) {
+    args.push_back(&expanded_storage[i]);
+  }
+  return true;
+}
+
 bool evaluate_leaf_typed_initializer(template_api::TemplateServices & services,
                                      Scope & scope,
                                      constant_eval::Evaluator & evaluator,
@@ -11832,10 +11938,6 @@ bool evaluate_leaf_typed_initializer(template_api::TemplateServices & services,
     return true;
   }
 
-  if(target_base->kind == Type::TK_ARRAY) {
-    return false;
-  }
-
   template_api::TemplateNamedTypeMetadata info;
   if(service_describe_named_type_metadata(services, target_base, info)) {
     return false;
@@ -11844,6 +11946,86 @@ bool evaluate_leaf_typed_initializer(template_api::TemplateServices & services,
   const CppAstNode * payload = unwrap_initializer_payload(node);
   if(!payload) {
     return false;
+  }
+
+  if(target_base->kind == Type::TK_ARRAY) {
+    if(!target_base->inner) {
+      return false;
+    }
+    if(payload->kind == CppAstKind::paren_initializer ||
+       payload->kind == CppAstKind::paren_argument_list ||
+       payload->kind == CppAstKind::braced_init_list) {
+      vector<const CppAstNode *> args;
+      vector<CppAstNode> expanded_storage;
+      if(!expand_leaf_initializer_arguments(services,
+                                            scope,
+                                            *payload,
+                                            args,
+                                            expanded_storage)) {
+        return false;
+      }
+      const size_t bound =
+          target_base->has_bound ? target_base->bound : args.size();
+      if(args.size() > bound) {
+        return false;
+      }
+
+      vector<constant_eval::ConstexprValue> elements;
+      elements.reserve(bound);
+      for(size_t i = 0; i < args.size(); ++i) {
+        constant_eval::ConstexprValue element;
+        if(!evaluate_leaf_typed_initializer(services,
+                                            scope,
+                                            evaluator,
+                                            *args[i],
+                                            target_base->inner,
+                                            element)) {
+          return false;
+        }
+        elements.push_back(element);
+      }
+      for(size_t i = args.size(); i < bound; ++i) {
+        constant_eval::ConstexprValue element;
+        if(!evaluate_leaf_value_initialized_type(target_base->inner, element)) {
+          return false;
+        }
+        elements.push_back(element);
+      }
+      const TypePtr out_type =
+          target_base->has_bound ?
+              target :
+              make_array(target_base->inner, true, bound);
+      out = constant_eval::make_array_value(out_type, elements);
+      return true;
+    }
+
+    constant_eval::ConstexprValue value;
+    if(!evaluator.eval_expr(*payload, value) ||
+       value.kind != constant_eval::ConstexprValue::CV_ARRAY) {
+      return false;
+    }
+    if(target_base->has_bound &&
+       value.array_elements.size() > target_base->bound) {
+      return false;
+    }
+
+    vector<constant_eval::ConstexprValue> elements = value.array_elements;
+    if(target_base->has_bound) {
+      while(elements.size() < target_base->bound) {
+        constant_eval::ConstexprValue element;
+        if(!evaluate_leaf_value_initialized_type(target_base->inner, element)) {
+          return false;
+        }
+        elements.push_back(element);
+      }
+      out = constant_eval::make_array_value(target, elements);
+      return true;
+    }
+
+    out = constant_eval::make_array_value(
+        make_array(target_base->inner, true, elements.size()),
+        elements);
+    return true;
   }
 
   if(payload->kind == CppAstKind::paren_initializer ||
@@ -13534,6 +13716,14 @@ void collect_bound_pack_size_replacements_in_scope(
         ++found) {
       if(!found->first.empty() && out.count(found->first) == 0) {
         out[found->first] = found->second;
+      }
+    }
+    for(map<string, vector<TypePtr> >::const_iterator found =
+            current->named_type_packs.begin();
+        found != current->named_type_packs.end();
+        ++found) {
+      if(!found->first.empty() && out.count(found->first) == 0) {
+        out[found->first] = found->second.size();
       }
     }
   }
@@ -19611,6 +19801,12 @@ bool lookup_pack_size(Scope & scope, const string & name, size_t & out)
     map<string, size_t>::const_iterator found = current->named_pack_sizes.find(name);
     if(found != current->named_pack_sizes.end()) {
       out = found->second;
+      return true;
+    }
+    map<string, vector<TypePtr> >::const_iterator type_pack =
+        current->named_type_packs.find(name);
+    if(type_pack != current->named_type_packs.end()) {
+      out = type_pack->second.size();
       return true;
     }
   }
