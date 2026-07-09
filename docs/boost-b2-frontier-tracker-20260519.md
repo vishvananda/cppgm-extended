@@ -5152,3 +5152,32 @@ B2 library build advances past `object::table::allocate` to the next frontier,
 `invalid return expression [target class boost::json::value] [expr nullptr]`
 while lowering `boost::json::parse` at `boost/json/impl/parse.ipp:36`. Log:
 `/tmp/boost-json-after-enclosing-class-hints-20260709.log`.
+
+2026-07-09 Boost.Json braced default-argument frontier: after the lazy nested
+member hint fix, Boost.Json first failed returning `nullptr` from
+`boost::json::parse` because the viable `boost::json::value(std::nullptr_t,
+storage_ptr = {})` constructor was rejected while completing the missing
+`storage_ptr` parameter. The same underlying gap then appeared in ordinary
+member-call overload resolution at `parser::reset(storage_ptr = {})`, called as
+`reset()` from `boost/json/impl/parser.ipp:35`. The fix shares typed default
+argument analysis between constructor selection and function-call overload
+resolution: already-parsed braced defaults now use the existing target-aware
+copy-list initialization profile for class, array, and `initializer_list`
+targets, while scalar empty braces use value-initialization. This preserves the
+C++11 rule that explicit constructors are not viable for parameter defaults
+written with `= {}`. No source-text reparse or Boost-specific fallback was
+added. Owner: PA15 overload resolution for constructor and function default
+arguments. New regressions:
+`pa15/tests/general/300-return-nullptr-class-braced-default.t` and
+`pa15/tests/general/300-member-call-braced-default-argument.t`. Validation:
+clang accepts both reducers with `-std=c++11 -x c++`; a host/compiler probe
+confirms explicit constructors remain rejected for `S = {}`; both reducers pass
+focused PA15 checks; PA15 direct-text report passes `182/182`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-text suite passes; full direct-text report passes
+`3581/3581`; focused Boost.Json B2 library build advances past both default
+argument failures to the next frontier, `unsupported braced-init-list
+expression` while lowering `boost::json::detail::parse_number_token` at
+`boost/json/impl/pointer.ipp:180`. Logs:
+`/tmp/boost-json-after-braced-default-20260709.log` and
+`/tmp/boost-json-after-default-braced-call-20260709.log`.

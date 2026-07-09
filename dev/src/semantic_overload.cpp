@@ -10180,6 +10180,50 @@ void append_constructor_template_candidates(
   }
 }
 
+bool analyze_default_argument_for_parameter(SemanticContext & ctx,
+                                            Scope & decl_scope,
+                                            const CppAstNode & payload,
+                                            const TypePtr & param_type,
+                                            ExprInfo & out)
+{
+  if(payload.kind != CppAstKind::braced_init_list) {
+    out = ctx.analyze_expression_for_target(decl_scope, payload, param_type);
+    return true;
+  }
+
+  TypePtr target_base = strip_top_level_cv(remove_reference_type(param_type));
+  const bool target_is_initializer_list =
+      ctx.is_initializer_list_type(target_base, nullptr, nullptr);
+  const bool target_requires_typed_braces =
+      target_is_initializer_list ||
+      (target_base &&
+       (target_base->kind == Type::TK_ARRAY ||
+        ctx.complete_class_type(target_base)));
+  if(target_requires_typed_braces) {
+    const ConstructorSelectionOptions ctor_options =
+        constructor_lifecycle_service::selection_options_for(
+            constructor_lifecycle_service::copy_list_initialization_profile(
+                "default argument copy-list-initialization"));
+    return ctx.try_analyze_target_aware_expression(decl_scope,
+                                                   payload,
+                                                   param_type,
+                                                   out,
+                                                   &ctor_options);
+  }
+
+  if(payload.children.empty()) {
+    out = ctx.make_value_initialized_expr(param_type);
+    return true;
+  }
+  if(payload.children.size() != 1) {
+    return false;
+  }
+  out = ctx.analyze_expression_for_target(decl_scope,
+                                          payload.children[0],
+                                          param_type);
+  return true;
+}
+
 bool append_constructor_default_arguments(
     SemanticContext & ctx,
     Scope & conversion_scope,
@@ -10227,26 +10271,21 @@ bool append_constructor_default_arguments(
       ScopedSuppressedTemplateUseLocation suppressed_use_location;
       const template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause
           suppress_default_argument_function_source_capture;
-      if(payload->kind == CppAstKind::braced_init_list) {
-        if(payload->children.size() != 1) {
-          if(parser_trace::enabled("overload")) {
-            ostringstream trace;
-            trace << "ctor-action-skip class=" << info.qualified_name
-                  << " candidate=" << candidate.name
-                  << " reason=bad-braced-default-shape"
-                  << " index=" << param_index;
-            parser_trace::note("overload", std::string(), trace.str());
-          }
-          candidate_rejection = candidate.name + ": bad braced default shape";
-          return false;
+      if(!analyze_default_argument_for_parameter(ctx,
+                                                 decl_scope,
+                                                 *payload,
+                                                 function_type->params[param_index],
+                                                 arg)) {
+        if(parser_trace::enabled("overload")) {
+          ostringstream trace;
+          trace << "ctor-action-skip class=" << info.qualified_name
+                << " candidate=" << candidate.name
+                << " reason=bad-default-argument"
+                << " index=" << param_index;
+          parser_trace::note("overload", std::string(), trace.str());
         }
-        arg = ctx.analyze_expression_for_target(decl_scope,
-                                                payload->children[0],
-                                                function_type->params[param_index]);
-      } else {
-        arg = ctx.analyze_expression_for_target(decl_scope,
-                                                *payload,
-                                                function_type->params[param_index]);
+        candidate_rejection = candidate.name + ": bad default argument";
+        return false;
       }
     }
     catch(const logic_error &)
@@ -12160,21 +12199,16 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
             ScopedSuppressedTemplateUseLocation suppressed_use_location;
             const template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause
                 suppress_default_argument_function_source_capture;
-            if(payload->kind == CppAstKind::braced_init_list) {
-              if(payload->children.size() != 1) {
-                if(failure_reason) {
-                  *failure_reason = string("unsupported braced default argument for parameter ") +
-                                    to_string(param_index);
-                }
-                return false;
+            if(!analyze_default_argument_for_parameter(ctx,
+                                                       decl_scope,
+                                                       *payload,
+                                                       function_type->params[param_index],
+                                                       arg)) {
+              if(failure_reason) {
+                *failure_reason = string("unsupported default argument for parameter ") +
+                                  to_string(param_index);
               }
-              arg = ctx.analyze_expression_for_target(decl_scope,
-                                                      payload->children[0],
-                                                      function_type->params[param_index]);
-            } else {
-              arg = ctx.analyze_expression_for_target(decl_scope,
-                                                      *payload,
-                                                      function_type->params[param_index]);
+              return false;
             }
           }
           catch(const logic_error & e)
