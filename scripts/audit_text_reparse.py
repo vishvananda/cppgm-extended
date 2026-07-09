@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,6 +26,7 @@ class Category:
     name: str
     description: str
     pattern: re.Pattern[str]
+    diff_only: bool = False
 
 
 CATEGORIES = [
@@ -140,6 +142,19 @@ CATEGORIES = [
             r"(?:owner|member)[A-Za-z0-9_]*_from_text\s*\("
         ),
     ),
+    Category(
+        "added_semantic_text_reparse",
+        "Newly added semantic code that resolves or parses template/type facts from text.",
+        re.compile(
+            r"\b(?:template_api|template_argument_semantics)::"
+            r"(?:resolve_template_template_argument_text|"
+            r"resolve_type_argument_text|parse_type_argument_text)\s*\(|"
+            r"\b(?:resolve|lookup|parse|evaluate)_[A-Za-z0-9_]*"
+            r"(?:template|type|argument|owner|member)[A-Za-z0-9_]*_text\s*\(|"
+            r"\bsemantic_utils::split_top_level_template_id_text\s*\("
+        ),
+        diff_only=True,
+    ),
 ]
 
 
@@ -152,6 +167,69 @@ def iter_source_files(root: Path) -> Iterable[Path]:
             yield path
 
 
+def git_added_lines(root: Path) -> Iterable[tuple[str, int | None, str]]:
+    try:
+        top_result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=Path.cwd(),
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return
+
+    repo_root = Path(top_result.stdout.strip()).resolve()
+    scan_root = root
+    if not scan_root.is_absolute():
+        scan_root = (Path.cwd() / scan_root).resolve()
+    try:
+        root_rel = scan_root.relative_to(repo_root).as_posix()
+    except ValueError:
+        root_rel = root.as_posix()
+
+    hunk_re = re.compile(r"@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+    commands = [
+        ("worktree", ["git", "diff", "--unified=0", "--no-ext-diff", "--", root_rel]),
+        ("index", ["git", "diff", "--cached", "--unified=0", "--no-ext-diff", "--", root_rel]),
+    ]
+    for label, command in commands:
+        try:
+            result = subprocess.run(
+                command,
+                cwd=repo_root,
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            continue
+
+        current_path: str | None = None
+        new_lineno: int | None = None
+        for raw_line in result.stdout.splitlines():
+            if raw_line.startswith("+++ b/"):
+                current_path = raw_line[len("+++ b/"):]
+                new_lineno = None
+                continue
+            match = hunk_re.match(raw_line)
+            if match:
+                new_lineno = int(match.group(1))
+                continue
+            if raw_line.startswith("+") and not raw_line.startswith("+++"):
+                if current_path is not None:
+                    yield (f"{label}:{current_path}", new_lineno, raw_line[1:])
+                if new_lineno is not None:
+                    new_lineno += 1
+                continue
+            if raw_line.startswith("-"):
+                continue
+            if new_lineno is not None:
+                new_lineno += 1
+
+
 def count_sites(root: Path) -> dict[str, list[str]]:
     sites = {category.name: [] for category in CATEGORIES}
     for path in iter_source_files(root):
@@ -162,8 +240,17 @@ def count_sites(root: Path) -> dict[str, list[str]]:
         rel = path.as_posix()
         for lineno, line in enumerate(lines, 1):
             for category in CATEGORIES:
+                if category.diff_only:
+                    continue
                 if category.pattern.search(line):
                     sites[category.name].append(f"{rel}:{lineno}:{line.strip()}")
+    diff_categories = [category for category in CATEGORIES if category.diff_only]
+    if diff_categories:
+        for rel, lineno, line in git_added_lines(root):
+            location = f"{rel}:{lineno if lineno is not None else '?'}:{line.strip()}"
+            for category in diff_categories:
+                if category.pattern.search(line):
+                    sites[category.name].append(location)
     return sites
 
 

@@ -11255,6 +11255,15 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
           okay = false;
           break;
         }
+        if(has_fixed_param &&
+           needs_target_aware_analysis &&
+           effective_arg_nodes[j]->kind == CppAstKind::braced_init_list &&
+           target_base &&
+           target_class &&
+           !ctx.is_initializer_list_type(target_base, nullptr, nullptr) &&
+           rank < CR_USER_DEFINED) {
+          rank = CR_USER_DEFINED;
+        }
         match.ranks.push_back(rank);
         match.call_args.push_back(source_arg);
         match.source_args.push_back(source_arg);

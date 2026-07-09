@@ -6392,6 +6392,39 @@ bool resolve_bound_template_template_id_argument(
     }
     AliasTemplateDecl * alias_template =
         static_cast<AliasTemplateDecl *>(replacement.template_decl);
+    if(replacement.template_owner_type) {
+      std::vector<TemplateArgument> resolved_arguments;
+      if(!template_api::resolve_template_arguments(
+             services,
+             template_api::make_template_environment(scope),
+             alias_template->parameters,
+             expanded_arg_texts,
+             nullptr,
+             resolved_arguments,
+             alias_template->declaring_scope ?
+                 template_api::make_template_environment(*alias_template->declaring_scope) :
+                 template_api::TemplateEnvironmentHandle())) {
+        return false;
+      }
+
+      Scope * owner_member_scope = nullptr;
+      if(service_type_system(services).prepare_named_type_member_scope(
+             template_api::make_template_environment(scope),
+             replacement.template_owner_type,
+             owner_member_scope) &&
+         owner_member_scope) {
+        out = services.semantic_context->instantiate_resolved_alias_template(
+            *alias_template,
+            *owner_member_scope,
+            resolved_arguments,
+            true);
+        template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+            services,
+            template_api::make_template_environment(*owner_member_scope),
+            out);
+        return out != nullptr;
+      }
+    }
     out = services.semantic_context->instantiate_alias_template_with_syntax(
         *alias_template,
         scope,
@@ -12632,6 +12665,9 @@ bool resolve_template_arguments(
       if(i + 1 != parameters.size()) {
         note_cache_failure();
         return false;
+      }
+      if(text_index < i) {
+        break;
       }
       while(text_index < cache_texts.size()) {
         TemplateArgument arg;

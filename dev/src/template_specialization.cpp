@@ -34,6 +34,21 @@ using namespace template_model;
 
 namespace {
 
+int lazy_template_application_depth = 0;
+
+struct ScopedLazyTemplateApplication
+{
+  ScopedLazyTemplateApplication()
+  {
+    ++lazy_template_application_depth;
+  }
+
+  ~ScopedLazyTemplateApplication()
+  {
+    --lazy_template_application_depth;
+  }
+};
+
 struct DeducedState
 {
   std::map<std::string, TypePtr> types;
@@ -64,6 +79,27 @@ bool scope_is_boost_mp11_namespace_or_inline_child(const Scope * scope)
   if(!current ||
      !current->namespace_scope ||
      current->name != "boost") {
+    return false;
+  }
+  for(const Scope * parent = current->parent; parent; parent = parent->parent) {
+    if(parent->namespace_scope &&
+       parent->name != "<global>" &&
+       parent->name != "<unnamed>") {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool scope_is_std_namespace_or_inline_child(const Scope * scope)
+{
+  const Scope * current = scope;
+  while(current && current->namespace_scope && current->inline_namespace) {
+    current = current->parent;
+  }
+  if(!current ||
+     !current->namespace_scope ||
+     current->name != "std") {
     return false;
   }
   for(const Scope * parent = current->parent; parent; parent = parent->parent) {
@@ -4588,6 +4624,7 @@ bool try_expand_alias_template_pattern_structurally(
       return false;
     }
   }
+
   bool dependent_value_evaluation = false;
   const auto value_argument_has_structured_source =
       [](const TemplateArgument & argument) -> bool
@@ -4978,6 +5015,1006 @@ bool try_expand_alias_template_pattern_structurally(
     return true;
   };
   if(try_expand_known_boost_mp11_conditional_alias()) {
+    return true;
+  }
+
+  const auto type_argument_source_syntax =
+      [&](std::size_t argument_index,
+          const TemplateArgument & argument) -> TemplateArgumentSyntax
+  {
+    TemplateArgumentSyntax syntax;
+    if(argument.source_syntax) {
+      syntax = *argument.source_syntax;
+    }
+    if(syntax.text.empty()) {
+      syntax.text = argument_text(argument);
+    }
+    if(argument.kind == TemplateArgument::TA_TYPE && argument.type) {
+      syntax.resolved_type = argument.type;
+    }
+    syntax.dependent = syntax.dependent || argument.dependent;
+    if(arg_syntaxes &&
+       argument_index < arg_syntaxes->size()) {
+      TemplateArgumentSyntax source_syntax = (*arg_syntaxes)[argument_index];
+      if(!syntax.resolved_type && source_syntax.resolved_type) {
+        syntax.resolved_type = source_syntax.resolved_type;
+      }
+      if(syntax.source_text.empty()) {
+        syntax.source_text = source_syntax.source_text;
+      }
+      if(syntax.text.empty()) {
+        syntax.text = source_syntax.text;
+      }
+    }
+    return syntax;
+  };
+  const auto set_lazy_alias_result =
+      [&](const std::string & trace_name,
+          const TypePtr & selected_type) -> bool
+  {
+    TypePtr resolved_type = selected_type;
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        effective_body_scope,
+        resolved_type);
+    if(!resolved_type ||
+       (!allow_dependent_expansion && type_is_dependent(resolved_type))) {
+      return false;
+    }
+    if(expanded_type) {
+      *expanded_type = resolved_type;
+    }
+    expanded_text = type_text(resolved_type);
+    if(expanded_text.empty()) {
+      expanded_text = describe_type(resolved_type);
+    }
+    if(expanded_text.empty()) {
+      return false;
+    }
+    if(!type_is_dependent(resolved_type)) {
+      cache_alias_success(expanded_text, resolved_type);
+    }
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "expand-alias-lazy-" << trace_name
+            << " alias=" << alias_template.name
+            << " type=" << describe_type(resolved_type)
+            << " text=" << expanded_text;
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    return true;
+  };
+  const auto evaluate_lazy_is_same_condition_type =
+      [&](const TypePtr & condition_type,
+          bool & out_value) -> bool
+  {
+    TypePtr base = strip_top_level_cv(condition_type);
+    if(!base) {
+      return false;
+    }
+    template_api::TemplateNamedTypeMetadata metadata;
+    if(!template_api::describe_named_type_metadata(type_system.model,
+                                                   base,
+                                                   metadata) ||
+       !metadata.source_template ||
+       metadata.source_template->name != "is_same" ||
+       !scope_is_std_namespace_or_inline_child(
+           metadata.source_template->declaring_scope) ||
+       metadata.instantiation_arguments.size() != 2 ||
+       metadata.instantiation_arguments[0].kind != TemplateArgument::TA_TYPE ||
+       metadata.instantiation_arguments[1].kind != TemplateArgument::TA_TYPE ||
+       !metadata.instantiation_arguments[0].type ||
+       !metadata.instantiation_arguments[1].type) {
+      return false;
+    }
+    TypePtr lhs = metadata.instantiation_arguments[0].type;
+    TypePtr rhs = metadata.instantiation_arguments[1].type;
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        effective_body_scope,
+        lhs);
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        effective_body_scope,
+        rhs);
+    if(!lhs ||
+       !rhs ||
+       type_is_dependent(lhs) ||
+       type_is_dependent(rhs)) {
+      return false;
+    }
+    out_value = type_equals(lhs, rhs);
+    return true;
+  };
+  const auto evaluate_lazy_known_condition_type =
+      [&](const TypePtr & condition_type,
+          bool & out_value) -> bool
+  {
+    if(evaluate_lazy_is_same_condition_type(condition_type, out_value)) {
+      return true;
+    }
+
+    TypePtr base = strip_top_level_cv(condition_type);
+    if(!base) {
+      return false;
+    }
+    template_api::TemplateNamedTypeMetadata metadata;
+    if(!template_api::describe_named_type_metadata(type_system.model,
+                                                   base,
+                                                   metadata) ||
+       !metadata.source_template ||
+       (metadata.source_template->name != "mp_not" &&
+        metadata.source_template->name != "not_") ||
+       metadata.instantiation_arguments.size() != 1 ||
+       metadata.instantiation_arguments[0].kind != TemplateArgument::TA_TYPE ||
+       !metadata.instantiation_arguments[0].type) {
+      return false;
+    }
+    bool inner_value = false;
+    if(!evaluate_lazy_is_same_condition_type(
+           metadata.instantiation_arguments[0].type,
+           inner_value)) {
+      return false;
+    }
+    out_value = !inner_value;
+    return true;
+  };
+  const auto evaluate_lazy_type_condition_argument =
+      [&](std::size_t argument_index,
+          const TemplateArgument & argument,
+          bool & out_value) -> bool
+  {
+    out_value = false;
+    if(argument.kind != TemplateArgument::TA_TYPE ||
+       !argument.type) {
+      return false;
+    }
+    if(evaluate_lazy_known_condition_type(argument.type, out_value)) {
+      return true;
+    }
+    template_argument_semantics::NonTypeArgumentStatus condition_status =
+        template_argument_semantics::NT_ARG_PARSE_FAILED;
+    const TemplateArgumentSyntax * condition_syntax =
+        arg_syntaxes && argument_index < arg_syntaxes->size() ?
+            &(*arg_syntaxes)[argument_index] :
+        argument.source_syntax ? argument.source_syntax.get() :
+        nullptr;
+    if(condition_syntax) {
+      try {
+        condition_status =
+            template_argument_semantics::evaluate_structured_bool_template_argument(
+                services,
+                effective_body_scope,
+                *condition_syntax,
+                out_value);
+      } catch(const ExplicitSpecializationAfterInstantiationError &) {
+        throw;
+      } catch(const DependentQualifiedTypeMissingTypenameError &) {
+        condition_status = template_argument_semantics::NT_ARG_DEPENDENT;
+      } catch(const TemplateSubstitutionFailure &) {
+        condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+      } catch(const SemanticSoftFailure &) {
+        condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+      } catch(const SemanticDiagnosticError &) {
+        condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+      } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+        condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+      } catch(const std::logic_error &) {
+        condition_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+      }
+    }
+    if(condition_status == template_argument_semantics::NT_ARG_EVALUATED) {
+      return true;
+    }
+
+    TypePtr condition_type = argument.type;
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        effective_body_scope,
+        condition_type);
+    condition_status =
+        template_argument_semantics::evaluate_structured_bool_constant_type(
+            services,
+            effective_body_scope,
+            condition_type,
+            out_value);
+    return condition_status == template_argument_semantics::NT_ARG_EVALUATED;
+  };
+  const auto evaluate_lazy_alias_type_condition =
+      [&](bool & out_value) -> bool
+  {
+    if(arguments.empty()) {
+      out_value = false;
+      return false;
+    }
+    return evaluate_lazy_type_condition_argument(0, arguments[0], out_value);
+  };
+  const auto collect_lazy_template_application_arguments =
+      [&](std::size_t first_argument_index,
+          std::vector<TemplateArgument> & call_arguments,
+          std::vector<std::string> & call_arg_texts,
+          std::vector<TemplateArgumentSyntax> & call_arg_syntaxes) -> bool
+  {
+    call_arguments.clear();
+    call_arg_texts.clear();
+    call_arg_syntaxes.clear();
+    if(first_argument_index > arguments.size()) {
+      return false;
+    }
+    call_arguments.reserve(arguments.size() - first_argument_index);
+    call_arg_texts.reserve(arguments.size() - first_argument_index);
+    call_arg_syntaxes.reserve(arguments.size() - first_argument_index);
+    for(std::size_t i = first_argument_index; i < arguments.size(); ++i) {
+      const TemplateArgument & argument = arguments[i];
+      if(argument.kind != TemplateArgument::TA_TYPE || !argument.type) {
+        return false;
+      }
+      call_arguments.push_back(argument);
+      std::string text = argument_text(argument);
+      if(text.empty()) {
+        text = type_text(argument.type);
+      }
+      call_arg_texts.push_back(text);
+      call_arg_syntaxes.push_back(type_argument_source_syntax(i, argument));
+    }
+    return true;
+  };
+  const auto instantiate_lazy_alias_template_application =
+      [&](AliasTemplateDecl & target_alias,
+          Scope & use_scope,
+          const std::vector<TemplateArgument> & call_arguments,
+          const std::vector<std::string> & call_arg_texts,
+          const std::vector<TemplateArgumentSyntax> & call_arg_syntaxes,
+          TypePtr & out) -> bool
+  {
+    out.reset();
+    if(!template_api::trailing_pack_accepts_argument_count(
+           target_alias.parameters,
+           call_arguments.size())) {
+      return false;
+    }
+
+    std::string nested_expanded_text;
+    TypePtr nested_expanded_type;
+    template_api::TemplateEnvironmentHandle target_match_scope =
+        target_alias.declaring_scope ?
+            template_api::make_template_environment(*target_alias.declaring_scope) :
+            match_scope;
+    if(try_expand_alias_template_pattern_structurally(
+           services,
+           target_match_scope,
+           target_alias,
+           call_arg_texts,
+           &call_arg_syntaxes,
+           template_api::make_template_environment(use_scope),
+           nested_expanded_text,
+           &nested_expanded_type,
+           allow_dependent_expansion,
+           materialize_class_template_targets,
+           substitution_failure) &&
+       nested_expanded_type) {
+      out = nested_expanded_type;
+      return true;
+    }
+
+    if(!services.semantic_context) {
+      return false;
+    }
+    out = services.semantic_context->instantiate_resolved_alias_template(
+        target_alias,
+        use_scope,
+        call_arguments,
+        true);
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        template_api::make_template_environment(use_scope),
+        out);
+    return out != nullptr &&
+           (allow_dependent_expansion || !type_is_dependent(out));
+  };
+  const auto instantiate_lazy_class_template_application =
+      [&](ClassTemplateDecl & target_template,
+          Scope & use_scope,
+          const std::vector<TemplateArgument> & call_arguments,
+          const std::vector<std::string> & call_arg_texts,
+          const std::vector<TemplateArgumentSyntax> & call_arg_syntaxes,
+          TypePtr & out) -> bool
+  {
+    out.reset();
+    if(!template_api::trailing_pack_accepts_argument_count(
+           target_template.parameters,
+           call_arguments.size())) {
+      return false;
+    }
+    Scope & selected_scope =
+        target_template.declaring_scope ?
+            *target_template.declaring_scope :
+            use_scope;
+    template_api::TemplateTypeLookupRequest lookup;
+    lookup.scope = &selected_scope;
+    lookup.allow_class_templates = true;
+    lookup.name.name = target_template.name;
+    lookup.source_use_mode =
+        template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly;
+
+    template_api::TemplateSelectedClassTemplateIdRequest request;
+    request.lookup = lookup;
+    request.argument_scope = &use_scope;
+    request.class_template = &target_template;
+    request.resolved_arguments = call_arguments;
+    request.source_arg_texts = call_arg_texts;
+    request.source_arg_syntaxes = call_arg_syntaxes;
+    if(!type_system.resolve_selected_class_template_id(request, out) || !out) {
+      return false;
+    }
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        template_api::make_template_environment(use_scope),
+        out);
+    return out != nullptr &&
+           (allow_dependent_expansion || !type_is_dependent(out));
+  };
+  const auto apply_lazy_template_template_argument_with_arguments =
+      [&](const TemplateArgument & template_argument,
+          const std::vector<TemplateArgument> & call_arguments,
+          const std::vector<std::string> & call_arg_texts,
+          const std::vector<TemplateArgumentSyntax> & call_arg_syntaxes,
+          TypePtr & out) -> bool
+  {
+    out.reset();
+    if(template_argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+       template_argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) {
+      return false;
+    }
+
+    Scope * use_scope = &effective_body_scope.require();
+    if(template_argument.template_owner_type) {
+      TypePtr owner_type = template_argument.template_owner_type;
+      template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+          services,
+          effective_body_scope,
+          owner_type);
+      if(!owner_type || type_is_dependent(owner_type)) {
+        return false;
+      }
+      Scope * owner_member_scope = nullptr;
+      if(!type_system.prepare_named_type_member_scope(effective_body_scope,
+                                                      owner_type,
+                                                      owner_member_scope) ||
+         !owner_member_scope) {
+        return false;
+      }
+      use_scope = owner_member_scope;
+    }
+
+    try {
+      const ScopedLazyTemplateApplication lazy_application;
+      if(template_argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE &&
+         template_argument.template_decl) {
+        AliasTemplateDecl * target_alias =
+            static_cast<AliasTemplateDecl *>(template_argument.template_decl);
+        return instantiate_lazy_alias_template_application(
+            *target_alias,
+            *use_scope,
+            call_arguments,
+            call_arg_texts,
+            call_arg_syntaxes,
+            out);
+      }
+      if(template_argument.kind == TemplateArgument::TA_CLASS_TEMPLATE &&
+         template_argument.template_decl) {
+        ClassTemplateDecl * target_template =
+            static_cast<ClassTemplateDecl *>(template_argument.template_decl);
+        return instantiate_lazy_class_template_application(
+            *target_template,
+            *use_scope,
+            call_arguments,
+            call_arg_texts,
+            call_arg_syntaxes,
+            out);
+      }
+    } catch(const TemplateSubstitutionFailure &) {
+      out.reset();
+      return false;
+    } catch(const SemanticSoftFailure &) {
+      out.reset();
+      return false;
+    } catch(const SemanticDiagnosticError &) {
+      out.reset();
+      return false;
+    } catch(const semantic_fallback_audit::SemanticFallbackError &) {
+      out.reset();
+      return false;
+    }
+    return false;
+  };
+  const auto apply_lazy_template_template_argument =
+      [&](const TemplateArgument & template_argument,
+          std::size_t first_argument_index,
+          TypePtr & out) -> bool
+  {
+    std::vector<TemplateArgument> call_arguments;
+    std::vector<std::string> call_arg_texts;
+    std::vector<TemplateArgumentSyntax> call_arg_syntaxes;
+    if(!collect_lazy_template_application_arguments(first_argument_index,
+                                                    call_arguments,
+                                                    call_arg_texts,
+                                                    call_arg_syntaxes)) {
+      out.reset();
+      return false;
+    }
+    return apply_lazy_template_template_argument_with_arguments(
+        template_argument,
+        call_arguments,
+        call_arg_texts,
+        call_arg_syntaxes,
+        out);
+  };
+  const auto quote_member_fn_template_argument =
+      [&](const TemplateArgument & quote_argument,
+          TemplateArgument & out) -> bool
+  {
+    out = TemplateArgument();
+    if(quote_argument.kind != TemplateArgument::TA_TYPE ||
+       !quote_argument.type ||
+       !services.semantic_context) {
+      return false;
+    }
+    TypePtr owner_type = quote_argument.type;
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        effective_body_scope,
+        owner_type);
+    if(!owner_type || type_is_dependent(owner_type)) {
+      return false;
+    }
+    Scope * owner_member_scope = nullptr;
+    if(!type_system.prepare_named_type_member_scope(effective_body_scope,
+                                                    owner_type,
+                                                    owner_member_scope) ||
+       !owner_member_scope ||
+       !owner_member_scope->class_info) {
+      return false;
+    }
+    semantic_lookup::MemberAliasTemplateLookupResult alias_lookup =
+        semantic_lookup::lookup_member_alias_template(
+            *services.semantic_context,
+            *owner_member_scope->class_info,
+            "fn");
+    if(!alias_lookup.alias_template) {
+      return false;
+    }
+    out.kind = TemplateArgument::TA_ALIAS_TEMPLATE;
+    out.template_decl = alias_lookup.alias_template;
+    out.template_owner_type = owner_type;
+    out.text = alias_lookup.alias_template->name;
+    template_scope::set_template_argument_entity_identity_from_decl(
+        out,
+        alias_lookup.alias_template);
+    return true;
+  };
+  const auto collect_lazy_defer_wrapper_arguments =
+      [&](std::vector<TemplateArgument> & call_arguments,
+          std::vector<std::string> & call_arg_texts,
+          std::vector<TemplateArgumentSyntax> & call_arg_syntaxes) -> bool
+  {
+    call_arguments.clear();
+    call_arg_texts.clear();
+    call_arg_syntaxes.clear();
+    if(arguments.empty() ||
+       (arguments[0].kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+        arguments[0].kind != TemplateArgument::TA_ALIAS_TEMPLATE)) {
+      return false;
+    }
+    call_arguments.reserve(arguments.size());
+    call_arg_texts.reserve(arguments.size());
+    call_arg_syntaxes.reserve(arguments.size());
+    for(std::size_t i = 0; i < arguments.size(); ++i) {
+      const TemplateArgument & argument = arguments[i];
+      if(i == 0) {
+        if(argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+           argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) {
+          return false;
+        }
+      } else if(argument.kind != TemplateArgument::TA_TYPE || !argument.type) {
+        return false;
+      }
+      call_arguments.push_back(argument);
+      std::string text = argument_text(argument);
+      if(text.empty() && argument.kind == TemplateArgument::TA_TYPE) {
+        text = type_text(argument.type);
+      }
+      call_arg_texts.push_back(text);
+      TemplateArgumentSyntax syntax = type_argument_source_syntax(i, argument);
+      if(syntax.text.empty()) {
+        syntax.text = text;
+      }
+      call_arg_syntaxes.push_back(syntax);
+    }
+    return true;
+  };
+  const auto collect_lazy_list_type_arguments =
+      [&](const TypePtr & list_type,
+          std::vector<TemplateArgument> & call_arguments,
+          std::vector<std::string> & call_arg_texts,
+          std::vector<TemplateArgumentSyntax> & call_arg_syntaxes) -> bool
+  {
+    call_arguments.clear();
+    call_arg_texts.clear();
+    call_arg_syntaxes.clear();
+    TypePtr resolved_list = list_type;
+    template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+        services,
+        effective_body_scope,
+        resolved_list);
+    if(!resolved_list || type_is_dependent(resolved_list)) {
+      return false;
+    }
+    template_api::TemplateNamedTypeMetadata metadata;
+    if(!template_api::describe_named_type_metadata(type_system.model,
+                                                   resolved_list,
+                                                   metadata) ||
+       !metadata.source_template ||
+       (metadata.source_template->name != "mp_list" &&
+        metadata.source_template->name != "list")) {
+      return false;
+    }
+    call_arguments.reserve(metadata.instantiation_arguments.size());
+    call_arg_texts.reserve(metadata.instantiation_arguments.size());
+    call_arg_syntaxes.reserve(metadata.instantiation_arguments.size());
+    for(std::size_t i = 0; i < metadata.instantiation_arguments.size(); ++i) {
+      TemplateArgument argument = metadata.instantiation_arguments[i];
+      if(argument.kind != TemplateArgument::TA_TYPE || !argument.type) {
+        return false;
+      }
+      template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+          services,
+          effective_body_scope,
+          argument.type);
+      if(!argument.type || type_is_dependent(argument.type)) {
+        return false;
+      }
+      if(argument.text.empty()) {
+        argument.text = type_text(argument.type);
+      }
+      call_arguments.push_back(argument);
+      call_arg_texts.push_back(argument_text(argument));
+      call_arg_syntaxes.push_back(type_argument_source_syntax(i, argument));
+    }
+    return true;
+  };
+  const auto collect_lazy_defer_candidate_scopes =
+      [&](std::vector<Scope *> & scopes)
+  {
+    scopes.clear();
+    const auto append_scope =
+        [&](Scope * candidate)
+    {
+      if(candidate &&
+         std::find(scopes.begin(), scopes.end(), candidate) == scopes.end()) {
+        scopes.push_back(candidate);
+      }
+    };
+
+    append_scope(alias_template.declaring_scope);
+    if(alias_template.declaring_scope) {
+      std::map<std::string, Scope *>::iterator found_detail =
+          alias_template.declaring_scope->namespace_bindings.find("detail");
+      if(found_detail != alias_template.declaring_scope->namespace_bindings.end()) {
+        append_scope(found_detail->second);
+      }
+    }
+  };
+  const auto find_lazy_defer_impl_template =
+      [&]() -> ClassTemplateDecl *
+  {
+    std::vector<Scope *> scopes;
+    collect_lazy_defer_candidate_scopes(scopes);
+    static const char * const names[] = {
+      "defer_impl",
+      "mp_defer_impl"
+    };
+    for(std::size_t i = 0; i < scopes.size(); ++i) {
+      for(std::size_t j = 0; j < sizeof(names) / sizeof(names[0]); ++j) {
+        ClassTemplateDecl * found =
+            semantic_lookup::lookup_direct_class_template(*scopes[i], names[j]);
+        if(found) {
+          return found;
+        }
+      }
+    }
+    return nullptr;
+  };
+  const auto find_lazy_defer_no_type =
+      [&]() -> TypePtr
+  {
+    std::vector<Scope *> scopes;
+    collect_lazy_defer_candidate_scopes(scopes);
+    static const char * const names[] = {
+      "no_type",
+      "mp_no_type"
+    };
+    for(std::size_t i = 0; i < scopes.size(); ++i) {
+      for(std::size_t j = 0; j < sizeof(names) / sizeof(names[0]); ++j) {
+        Scope::NamedTypeMap::const_iterator found =
+            scopes[i]->named_types.find(names[j]);
+        if(found != scopes[i]->named_types.end() && found->second) {
+          return found->second;
+        }
+      }
+    }
+    return TypePtr();
+  };
+  const auto find_lazy_named_type =
+      [&](const char * const * names, std::size_t name_count) -> TypePtr
+  {
+    std::vector<Scope *> scopes;
+    collect_lazy_defer_candidate_scopes(scopes);
+    for(std::size_t i = 0; i < scopes.size(); ++i) {
+      for(std::size_t j = 0; j < name_count; ++j) {
+        Scope::NamedTypeMap::const_iterator found =
+            scopes[i]->named_types.find(names[j]);
+        if(found != scopes[i]->named_types.end() && found->second) {
+          return found->second;
+        }
+      }
+    }
+    return TypePtr();
+  };
+  const auto find_lazy_bool_type =
+      [&](bool value) -> TypePtr
+  {
+    static const char * const true_names[] = {
+      "true_",
+      "mp_true"
+    };
+    static const char * const false_names[] = {
+      "false_",
+      "mp_false"
+    };
+    return value ?
+        find_lazy_named_type(true_names,
+                             sizeof(true_names) / sizeof(true_names[0])) :
+        find_lazy_named_type(false_names,
+                             sizeof(false_names) / sizeof(false_names[0]));
+  };
+  const auto try_expand_known_lazy_alias =
+      [&]() -> bool
+  {
+    TemplateArgument quote_fn_target_argument;
+    const auto owner_quote_fn_target_argument =
+        [&]() -> bool
+    {
+      if(alias_template.name != "fn" ||
+         !alias_template.declaring_scope ||
+         !alias_template.declaring_scope->class_info) {
+        return false;
+      }
+      ClassInfo * owner = alias_template.declaring_scope->class_info;
+      if(!owner->source_template ||
+         (owner->source_template->name != "quote" &&
+          owner->source_template->name != "mp_quote") ||
+         owner->instantiation_arguments.empty()) {
+        return false;
+      }
+      const TemplateArgument & argument = owner->instantiation_arguments[0];
+      if(argument.kind != TemplateArgument::TA_CLASS_TEMPLATE &&
+         argument.kind != TemplateArgument::TA_ALIAS_TEMPLATE) {
+        return false;
+      }
+      quote_fn_target_argument = argument;
+      return true;
+    };
+    const bool is_quote_fn = owner_quote_fn_target_argument();
+    const bool is_valid =
+        alias_template.name == "valid" ||
+        alias_template.name == "mp_valid";
+    const bool is_defer =
+        alias_template.name == "defer" ||
+        alias_template.name == "mp_defer";
+    const bool is_apply_q =
+        alias_template.name == "apply_q" ||
+        alias_template.name == "mp_apply_q";
+    const bool is_eval_if =
+        alias_template.name == "eval_if" ||
+        alias_template.name == "mp_eval_if";
+    const bool is_eval_if_not =
+        alias_template.name == "eval_if_not" ||
+        alias_template.name == "mp_eval_if_not";
+    const bool is_eval_or =
+        alias_template.name == "eval_or" ||
+        alias_template.name == "mp_eval_or";
+    const bool is_eval_or_q =
+        alias_template.name == "eval_or_q" ||
+        alias_template.name == "mp_eval_or_q";
+    const bool is_boost_mp11_scope =
+        scope_is_boost_mp11_namespace_or_inline_child(
+            alias_template.declaring_scope);
+    const bool is_to_bool =
+        is_boost_mp11_scope && alias_template.name == "mp_to_bool";
+    const bool is_or =
+        is_boost_mp11_scope && alias_template.name == "mp_or";
+    const bool is_and =
+        is_boost_mp11_scope && alias_template.name == "mp_and";
+    const bool is_all =
+        is_boost_mp11_scope && alias_template.name == "mp_all";
+    const bool is_any =
+        is_boost_mp11_scope && alias_template.name == "mp_any";
+    if(!is_quote_fn &&
+       !is_valid &&
+       !is_defer &&
+       !is_apply_q &&
+       !is_eval_if &&
+       !is_eval_if_not &&
+       !is_eval_or &&
+       !is_eval_or_q &&
+       !is_to_bool &&
+       !is_or &&
+       !is_and &&
+       !is_all &&
+       !is_any) {
+      return false;
+    }
+
+    if(is_to_bool &&
+       alias_template.parameters.size() == 1 &&
+       alias_template.parameters[0].kind == TemplateParameterInfo::TP_TYPE &&
+       arguments.size() == 1) {
+      bool value = false;
+      TypePtr selected_type =
+          evaluate_lazy_type_condition_argument(0, arguments[0], value) ?
+              find_lazy_bool_type(value) :
+              TypePtr();
+      return selected_type &&
+             set_lazy_alias_result("to-bool", selected_type);
+    }
+
+    if((is_or || is_and || is_all || is_any) &&
+       alias_template.parameters.size() == 1 &&
+       alias_template.parameters[0].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[0].parameter_pack) {
+      bool selected_value = is_and || is_all;
+      for(std::size_t i = 0; i < arguments.size(); ++i) {
+        bool value = false;
+        if(!evaluate_lazy_type_condition_argument(i, arguments[i], value)) {
+          return false;
+        }
+        if((is_or || is_any) && value) {
+          selected_value = true;
+          break;
+        }
+        if((is_and || is_all) && !value) {
+          selected_value = false;
+          break;
+        }
+      }
+      TypePtr selected_type = find_lazy_bool_type(selected_value);
+      return selected_type &&
+             set_lazy_alias_result("bool-pack", selected_type);
+    }
+
+    if(is_quote_fn &&
+       alias_template.parameters.size() == 1 &&
+       alias_template.parameters[0].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[0].parameter_pack) {
+      TypePtr applied;
+      if(apply_lazy_template_template_argument(quote_fn_target_argument, 0, applied) &&
+         applied) {
+        return set_lazy_alias_result("quote-fn", applied);
+      }
+      for(std::size_t i = 0; i < arguments.size(); ++i) {
+        if(arguments[i].kind == TemplateArgument::TA_TYPE &&
+           arguments[i].type &&
+           type_is_dependent(arguments[i].type)) {
+          return false;
+        }
+      }
+      std::ostringstream out;
+      out << "invalid quote member alias application for "
+          << alias_template.name;
+      throw_substitution_failure(out.str(),
+                                 std::string(),
+                                 "template-specialization");
+    }
+
+    if(is_valid &&
+       alias_template.parameters.size() == 2 &&
+       arguments.size() >= 1 &&
+       alias_template.parameters[0].kind ==
+           TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+       alias_template.parameters[1].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[1].parameter_pack &&
+       (arguments[0].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        arguments[0].kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+      TypePtr applied;
+      TypePtr selected_type =
+          apply_lazy_template_template_argument(arguments[0], 1, applied) &&
+          applied ?
+              find_lazy_bool_type(true) :
+              find_lazy_bool_type(false);
+      if(!selected_type) {
+        return false;
+      }
+      return set_lazy_alias_result("valid", selected_type);
+    }
+
+    if(is_defer &&
+       alias_template.parameters.size() == 2 &&
+       arguments.size() >= 1 &&
+       alias_template.parameters[0].kind ==
+           TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+       alias_template.parameters[1].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[1].parameter_pack &&
+       (arguments[0].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        arguments[0].kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+      TypePtr applied;
+      if(apply_lazy_template_template_argument(arguments[0], 1, applied) &&
+         applied) {
+        ClassTemplateDecl * defer_impl = find_lazy_defer_impl_template();
+        if(!defer_impl) {
+          return false;
+        }
+        std::vector<TemplateArgument> wrapper_arguments;
+        std::vector<std::string> wrapper_arg_texts;
+        std::vector<TemplateArgumentSyntax> wrapper_arg_syntaxes;
+        if(!collect_lazy_defer_wrapper_arguments(wrapper_arguments,
+                                                 wrapper_arg_texts,
+                                                 wrapper_arg_syntaxes)) {
+          return false;
+        }
+        Scope & wrapper_scope =
+            defer_impl->declaring_scope ?
+                *defer_impl->declaring_scope :
+                effective_body_scope.require();
+        TypePtr wrapper_type;
+        if(!instantiate_lazy_class_template_application(*defer_impl,
+                                                        wrapper_scope,
+                                                        wrapper_arguments,
+                                                        wrapper_arg_texts,
+                                                        wrapper_arg_syntaxes,
+                                                        wrapper_type) ||
+           !wrapper_type) {
+          return false;
+        }
+        return set_lazy_alias_result("defer-template", wrapper_type);
+      }
+
+      TypePtr no_type = find_lazy_defer_no_type();
+      if(!no_type) {
+        return false;
+      }
+      return set_lazy_alias_result("defer-default", no_type);
+    }
+
+    if(is_apply_q &&
+       alias_template.parameters.size() == 2 &&
+       arguments.size() == 2 &&
+       alias_template.parameters[0].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[1].kind == TemplateParameterInfo::TP_TYPE &&
+       arguments[0].kind == TemplateArgument::TA_TYPE &&
+       arguments[0].type &&
+       arguments[1].kind == TemplateArgument::TA_TYPE &&
+       arguments[1].type) {
+      TemplateArgument fn_argument;
+      if(!quote_member_fn_template_argument(arguments[0], fn_argument)) {
+        return false;
+      }
+      std::vector<TemplateArgument> call_arguments;
+      std::vector<std::string> call_arg_texts;
+      std::vector<TemplateArgumentSyntax> call_arg_syntaxes;
+      if(!collect_lazy_list_type_arguments(arguments[1].type,
+                                           call_arguments,
+                                           call_arg_texts,
+                                           call_arg_syntaxes)) {
+        return false;
+      }
+      TypePtr applied;
+      if(!apply_lazy_template_template_argument_with_arguments(
+             fn_argument,
+             call_arguments,
+             call_arg_texts,
+             call_arg_syntaxes,
+             applied) ||
+         !applied) {
+        return false;
+      }
+      return set_lazy_alias_result("apply-q", applied);
+    }
+
+    if((is_eval_if || is_eval_if_not) &&
+       alias_template.parameters.size() == 4 &&
+       arguments.size() >= 3 &&
+       alias_template.parameters[0].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[1].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[2].kind ==
+           TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+       alias_template.parameters[3].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[3].parameter_pack &&
+       arguments[1].kind == TemplateArgument::TA_TYPE &&
+       arguments[1].type &&
+       (arguments[2].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        arguments[2].kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+      bool condition_value = false;
+      if(!evaluate_lazy_alias_type_condition(condition_value)) {
+        return false;
+      }
+      const bool select_type_argument =
+          is_eval_if ? condition_value : !condition_value;
+      if(select_type_argument) {
+        return set_lazy_alias_result("conditional-type", arguments[1].type);
+      }
+      TypePtr applied;
+      if(!apply_lazy_template_template_argument(arguments[2], 3, applied) ||
+         !applied) {
+        return false;
+      }
+      return set_lazy_alias_result("conditional-template", applied);
+    }
+
+    if(is_eval_or &&
+       alias_template.parameters.size() == 3 &&
+       arguments.size() >= 2 &&
+       alias_template.parameters[0].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[1].kind ==
+           TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+       alias_template.parameters[2].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[2].parameter_pack &&
+       arguments[0].kind == TemplateArgument::TA_TYPE &&
+       arguments[0].type &&
+       (arguments[1].kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+        arguments[1].kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+      TypePtr applied;
+      if(apply_lazy_template_template_argument(arguments[1], 2, applied) &&
+         applied) {
+        return set_lazy_alias_result("eval-or-template", applied);
+      }
+      return set_lazy_alias_result("eval-or-default", arguments[0].type);
+    }
+
+    if(is_eval_or_q &&
+       alias_template.parameters.size() == 3 &&
+       arguments.size() >= 2 &&
+       alias_template.parameters[0].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[1].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[2].kind == TemplateParameterInfo::TP_TYPE &&
+       alias_template.parameters[2].parameter_pack &&
+       arguments[0].kind == TemplateArgument::TA_TYPE &&
+       arguments[0].type) {
+      TemplateArgument fn_argument;
+      if(!quote_member_fn_template_argument(arguments[1], fn_argument)) {
+        TypePtr quote_type = arguments[1].type;
+        template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+            services,
+            effective_body_scope,
+            quote_type);
+        if(quote_type && !type_is_dependent(quote_type)) {
+          TypePtr no_type = find_lazy_defer_no_type();
+          if(no_type && type_equals(quote_type, no_type)) {
+            return set_lazy_alias_result("eval-or-q-default", arguments[0].type);
+          }
+          if(lazy_template_application_depth > 0) {
+            return false;
+          }
+          std::ostringstream out;
+          out << "missing quote member alias fn for "
+              << describe_type(quote_type);
+          throw_substitution_failure(out.str(),
+                                     std::string(),
+                                     "template-specialization");
+        }
+        return false;
+      }
+      TypePtr applied;
+      if(apply_lazy_template_template_argument(fn_argument, 2, applied) &&
+         applied) {
+        return set_lazy_alias_result("eval-or-q-template", applied);
+      }
+      return set_lazy_alias_result("eval-or-q-default", arguments[0].type);
+    }
+
+    return false;
+  };
+  if(try_expand_known_lazy_alias()) {
     return true;
   }
 
@@ -5489,6 +6526,66 @@ bool try_expand_alias_template_pattern_structurally(
           }
         } else if(!argument.dependent) {
           return false;
+        }
+      } else if(parameter.kind == TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+        TemplateArgumentSyntax argument_syntax = source_arg.syntax;
+        if(argument_syntax.text.empty()) {
+          argument_syntax.text = argument.text;
+        }
+        template_api::TemplateEnvironmentHandle resolution_scope =
+            source_arg.semantic_scope ?
+                template_api::make_template_environment(*source_arg.semantic_scope) :
+            effective_body_scope.valid() ?
+                effective_body_scope :
+                match_scope;
+        TemplateArgument resolved;
+        bool resolved_template = false;
+        if(!argument_syntax.text.empty() ||
+           argument_syntax.template_id ||
+           argument_syntax.type_id ||
+           argument_syntax.expression) {
+          resolved_template =
+              template_argument_semantics::resolve_template_template_argument_syntax(
+                  services,
+                  resolution_scope,
+                  argument.text.empty() ? argument_syntax.text : argument.text,
+                  argument_syntax,
+                  parameter.template_parameter_count,
+                  false,
+                  resolved);
+        }
+        if(!resolved_template) {
+          if(parser_trace::enabled("template.resolve")) {
+            std::ostringstream trace;
+            trace << "template-template-arg-structured-fail"
+                  << " alias=" << alias_template.name
+                  << " parameter=" << parameter.name
+                  << " source-text=" << source_arg.text
+                  << " arg-text=" << argument.text
+                  << " syntax-text=" << argument_syntax.text
+                  << " has-template-id=" << (argument_syntax.template_id ? "yes" : "no")
+                  << " has-type-id=" << (argument_syntax.type_id ? "yes" : "no")
+                  << " has-expression=" << (argument_syntax.expression ? "yes" : "no");
+            if(argument_syntax.template_id) {
+              trace << " template-name=" << argument_syntax.template_id->name.name;
+            }
+            if(argument_syntax.type_id) {
+              trace << " type-kind=" << static_cast<int>(argument_syntax.type_id->kind)
+                    << " type-value=" << argument_syntax.type_id->value;
+            }
+            if(argument_syntax.expression) {
+              trace << " expr-kind=" << static_cast<int>(argument_syntax.expression->kind)
+                    << " expr-value=" << argument_syntax.expression->value;
+            }
+            parser_trace::note("template.resolve", std::string(), trace.str());
+          }
+          return false;
+        }
+        argument = resolved;
+        argument.source_defaulted = source_arg.source_defaulted;
+        argument.source_syntax.reset(new TemplateArgumentSyntax(argument_syntax));
+        if(argument.text.empty()) {
+          argument.text = trim_space(source_arg.text);
         }
       } else {
         return false;

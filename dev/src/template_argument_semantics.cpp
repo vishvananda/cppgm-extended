@@ -8770,6 +8770,83 @@ bool structured_bool_constant_value_for_class_info(
     return true;
   }
 
+  if(services &&
+     scope.valid() &&
+     info.source_template &&
+     !info.instantiation_arguments.empty()) {
+    vector<TemplateArgument> resolved_arguments = info.instantiation_arguments;
+    bool changed = false;
+    for(size_t i = 0; i < resolved_arguments.size(); ++i) {
+      TemplateArgument & argument = resolved_arguments[i];
+      if(argument.kind != TemplateArgument::TA_TYPE ||
+         !argument.type ||
+         !type_depends_on_template_parameter(type_system, argument.type)) {
+        continue;
+      }
+      TypePtr resolved_type = argument.type;
+      if(!resolve_instantiated_dependent_type_if_needed(*services,
+                                                        scope,
+                                                        resolved_type) ||
+         !resolved_type ||
+         type_equals(resolved_type, argument.type)) {
+        continue;
+      }
+      argument.type = resolved_type;
+      argument.dependent = type_depends_on_template_parameter(type_system,
+                                                              resolved_type);
+      argument.text = lookup_text_for_type_argument(type_system, resolved_type);
+      changed = true;
+    }
+    if(changed &&
+       !template_arguments_are_dependent(
+           resolved_arguments,
+           [&type_system](const TypePtr & candidate)
+           {
+             return type_depends_on_template_parameter(type_system, candidate);
+           })) {
+      Scope & selected_scope =
+          info.source_template->declaring_scope ?
+              *info.source_template->declaring_scope :
+              scope.require();
+      template_api::TemplateTypeLookupRequest lookup;
+      lookup.scope = &selected_scope;
+      lookup.allow_class_templates = true;
+      lookup.name.name = info.source_template->name;
+      lookup.source_use_mode =
+          template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly;
+
+      template_api::TemplateSelectedClassTemplateIdRequest request;
+      request.lookup = lookup;
+      request.argument_scope = &scope.require();
+      request.class_template = info.source_template;
+      request.resolved_arguments = resolved_arguments;
+      request.source_arg_texts.reserve(resolved_arguments.size());
+      for(size_t i = 0; i < resolved_arguments.size(); ++i) {
+        request.source_arg_texts.push_back(
+            template_argument_text(
+                resolved_arguments[i],
+                [&type_system](const TypePtr & type)
+                {
+                  return lookup_text_for_type_argument(type_system, type);
+                }));
+      }
+
+      TypePtr resolved_trait_type;
+      if(type_system.resolve_selected_class_template_id(request,
+                                                        resolved_trait_type) &&
+         resolved_trait_type &&
+         structured_bool_constant_value_for_type(type_system,
+                                                 resolved_trait_type,
+                                                 out,
+                                                 visiting,
+                                                 services,
+                                                 scope,
+                                                 evaluation_incomplete)) {
+        return true;
+      }
+    }
+  }
+
   if(source_is_std_trait && services && scope.valid()) {
     if((standard_constructibility_shorthand_name(template_name) ||
         standard_assignability_shorthand_name(template_name)) &&
@@ -27612,9 +27689,6 @@ bool type_depends_on_template_parameter(template_api::TemplateTypeSystem & type_
                                             info->enclosing_scope->class_info->type)) {
         return true;
       }
-      if(!info->instantiation_arguments.empty()) {
-        return false;
-      }
       if(template_arguments_are_dependent(
              info->instantiation_arguments,
              [&type_system, &type](const TypePtr & argument_type)
@@ -27624,6 +27698,9 @@ bool type_depends_on_template_parameter(template_api::TemplateTypeSystem & type_
                                                          argument_type);
              })) {
         return true;
+      }
+      if(!info->instantiation_arguments.empty()) {
+        return false;
       }
     }
     return false;
@@ -36581,7 +36658,9 @@ NonTypeArgumentStatus evaluate_structured_bool_template_value(
 
   if((syntax.name.name == "_Not" ||
       syntax.name.name == "negation" ||
-      syntax.name.name == "__not_") &&
+      syntax.name.name == "__not_" ||
+      syntax.name.name == "not_" ||
+      syntax.name.name == "mp_not") &&
      syntax.arguments.size() == 1) {
     bool value = false;
     const NonTypeArgumentStatus status =

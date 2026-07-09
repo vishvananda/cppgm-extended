@@ -13881,8 +13881,19 @@ private:
 	                   structural_alias,
 	                   &structural_arg_syntaxes,
 	                   template_api::make_template_environment(*inst_scope),
-	                   false);
+	                   dependent_arguments);
 	             });
+	      if(parser_trace::enabled("template.resolve")) {
+	        std::ostringstream trace;
+	        trace << "parse-instantiated-alias-structural"
+	              << " name=" << decl.name
+	              << " expanded=" << (structural_expanded ? "yes" : "no")
+	              << " alias=" << (structural_alias ? describe_type(structural_alias) : "<none>")
+	              << " dependent-arguments=" << (dependent_arguments ? "yes" : "no")
+	              << " member-alias-needs-scope="
+	              << (member_alias_pattern_needs_instantiated_member_scope ? "yes" : "no");
+	        parser_trace::note("template.resolve", std::string(), trace.str());
+	      }
 	      if(structural_expanded && structural_alias) {
 	        out = refine_instantiated_alias(structural_alias);
 	        return out != nullptr;
