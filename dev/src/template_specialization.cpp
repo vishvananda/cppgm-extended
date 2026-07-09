@@ -481,6 +481,7 @@ const TemplateParameterInfo * type_pattern_template_parameter(
 }
 
 bool deduce_type_pattern_to_state(
+    template_api::TemplateServices & services,
     const std::vector<TemplateParameterInfo> & parameters,
     const TypePtr & pattern,
     const TypePtr & actual,
@@ -509,7 +510,8 @@ bool deduce_type_pattern_to_state(
         apply_cv(actual_cv_inner,
                  actual_const && !pattern_const,
                  actual_volatile && !pattern_volatile);
-    return deduce_type_pattern_to_state(parameters,
+    return deduce_type_pattern_to_state(services,
+                                        parameters,
                                         pattern_cv_inner,
                                         adjusted_actual,
                                         deduced);
@@ -531,6 +533,144 @@ bool deduce_type_pattern_to_state(
     return store_deduced_type(deduced, parameter->name, actual);
   }
 
+  if(pattern_base->kind == Type::TK_NAMED) {
+    std::string template_template_parameter_name;
+    std::size_t template_template_parameter_arity = static_cast<std::size_t>(-1);
+    std::vector<DependentAliasTemplateArgumentSyntax> pattern_arguments;
+    if(named_type_dependent_template_template_parameter(
+           pattern_base,
+           template_template_parameter_name,
+           template_template_parameter_arity,
+           pattern_arguments)) {
+      const TemplateParameterInfo * template_template_parameter =
+          find_template_parameter_by_name(parameters,
+                                          template_template_parameter_name);
+      if(!template_template_parameter) {
+        template_template_parameter =
+            find_template_parameter(parameters,
+                                    template_template_parameter_name);
+      }
+      if(!template_template_parameter ||
+         template_template_parameter->kind !=
+             TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+        return false;
+      }
+
+      TypePtr actual_named = strip_top_level_cv(actual_base);
+      if(!actual_named || actual_named->kind != Type::TK_NAMED) {
+        return false;
+      }
+      template_api::TemplateNamedTypeMetadata actual_metadata;
+      template_api::TemplateTypeSystem & type_system = services.type_system;
+      if(!template_api::describe_named_type_metadata(type_system.model,
+                                                     actual_named,
+                                                     actual_metadata) ||
+         !actual_metadata.source_template) {
+        return false;
+      }
+      if(template_template_parameter->template_parameter_count != 0 &&
+         template_template_parameter->template_parameter_count !=
+             static_cast<std::size_t>(-1) &&
+         template_template_parameter->template_parameter_count !=
+             actual_metadata.source_template->parameters.size()) {
+        return false;
+      }
+      if(template_template_parameter_arity != static_cast<std::size_t>(-1) &&
+         template_template_parameter_arity !=
+             actual_metadata.instantiation_arguments.size()) {
+        return false;
+      }
+      if(pattern_arguments.size() !=
+         actual_metadata.instantiation_arguments.size()) {
+        return false;
+      }
+
+      TemplateArgument actual_template_argument;
+      actual_template_argument.kind = TemplateArgument::TA_CLASS_TEMPLATE;
+      actual_template_argument.template_decl = actual_metadata.source_template;
+      template_scope::set_template_argument_entity_identity_from_decl(
+          actual_template_argument,
+          actual_metadata.source_template);
+      actual_template_argument.text = actual_metadata.source_template->name;
+      if(!store_deduced_template_template_argument(
+             deduced,
+             template_template_parameter->name,
+             actual_template_argument)) {
+        return false;
+      }
+
+      for(std::size_t i = 0; i < pattern_arguments.size(); ++i) {
+        const DependentAliasTemplateArgumentSyntax & pattern_argument =
+            pattern_arguments[i];
+        const TemplateArgument & actual_argument =
+            actual_metadata.instantiation_arguments[i];
+        if(pattern_argument.type &&
+           actual_argument.kind == TemplateArgument::TA_TYPE &&
+           actual_argument.type) {
+          if(!deduce_type_pattern_to_state(services,
+                                           parameters,
+                                           pattern_argument.type,
+                                           actual_argument.type,
+                                           deduced)) {
+            return false;
+          }
+          continue;
+        }
+
+        const std::string pattern_argument_name =
+            semantic_utils::trim_space(pattern_argument.text);
+        const TemplateParameterInfo * argument_parameter =
+            find_template_parameter_by_name(parameters,
+                                            pattern_argument_name);
+        if(!argument_parameter) {
+          argument_parameter =
+              find_template_parameter(parameters, pattern_argument_name);
+        }
+        if(argument_parameter &&
+           argument_parameter->kind == TemplateParameterInfo::TP_TYPE &&
+           actual_argument.kind == TemplateArgument::TA_TYPE &&
+           actual_argument.type) {
+          if(!store_deduced_type(deduced,
+                                 argument_parameter->name,
+                                 actual_argument.type)) {
+            return false;
+          }
+          continue;
+        }
+        if(argument_parameter &&
+           argument_parameter->kind == TemplateParameterInfo::TP_NON_TYPE &&
+           actual_argument.kind == TemplateArgument::TA_VALUE &&
+           !actual_argument.dependent) {
+          TypePtr value_type = actual_argument.type ?
+              actual_argument.type :
+              argument_parameter->value_type;
+          if(!store_deduced_value_argument(deduced,
+                                           argument_parameter->name,
+                                           actual_argument,
+                                           value_type)) {
+            return false;
+          }
+          continue;
+        }
+        if(argument_parameter &&
+           argument_parameter->kind ==
+               TemplateParameterInfo::TP_TEMPLATE_TEMPLATE &&
+           (actual_argument.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+            actual_argument.kind == TemplateArgument::TA_ALIAS_TEMPLATE)) {
+          if(!store_deduced_template_template_argument(
+                 deduced,
+                 argument_parameter->name,
+                 actual_argument)) {
+            return false;
+          }
+          continue;
+        }
+        return false;
+      }
+      return true;
+    }
+  }
+
   if(pattern_base->kind != actual_base->kind) {
     return false;
   }
@@ -546,17 +686,20 @@ bool deduce_type_pattern_to_state(
   case Type::TK_BLOCK_POINTER:
   case Type::TK_LVALUE_REFERENCE:
   case Type::TK_RVALUE_REFERENCE:
-    return deduce_type_pattern_to_state(parameters,
+    return deduce_type_pattern_to_state(services,
+                                        parameters,
                                         pattern_base->inner,
                                         actual_base->inner,
                                         deduced);
 
   case Type::TK_MEMBER_POINTER:
-    return deduce_type_pattern_to_state(parameters,
+    return deduce_type_pattern_to_state(services,
+                                        parameters,
                                         pattern_base->owner,
                                         actual_base->owner,
                                         deduced) &&
-           deduce_type_pattern_to_state(parameters,
+           deduce_type_pattern_to_state(services,
+                                        parameters,
                                         pattern_base->inner,
                                         actual_base->inner,
                                         deduced);
@@ -571,7 +714,8 @@ bool deduce_type_pattern_to_state(
     } else if(actual_base->has_bound || !actual_base->bound_text.empty()) {
       return false;
     }
-    return deduce_type_pattern_to_state(parameters,
+    return deduce_type_pattern_to_state(services,
+                                        parameters,
                                         pattern_base->inner,
                                         actual_base->inner,
                                         deduced);
@@ -582,7 +726,8 @@ bool deduce_type_pattern_to_state(
        pattern_base->function_const != actual_base->function_const ||
        pattern_base->function_volatile != actual_base->function_volatile ||
        pattern_base->function_ref_qualifier != actual_base->function_ref_qualifier ||
-       !deduce_type_pattern_to_state(parameters,
+       !deduce_type_pattern_to_state(services,
+                                     parameters,
                                      pattern_base->inner,
                                      actual_base->inner,
                                      deduced)) {
@@ -597,7 +742,8 @@ bool deduce_type_pattern_to_state(
           return false;
         }
         for(std::size_t i = 0; i < fixed_param_count; ++i) {
-          if(!deduce_type_pattern_to_state(parameters,
+          if(!deduce_type_pattern_to_state(services,
+                                           parameters,
                                            pattern_base->params[i],
                                            actual_base->params[i],
                                            deduced)) {
@@ -616,7 +762,8 @@ bool deduce_type_pattern_to_state(
       return false;
     }
     for(std::size_t i = 0; i < pattern_base->params.size(); ++i) {
-      if(!deduce_type_pattern_to_state(parameters,
+      if(!deduce_type_pattern_to_state(services,
+                                       parameters,
                                        pattern_base->params[i],
                                        actual_base->params[i],
                                        deduced)) {
@@ -641,6 +788,16 @@ bool type_pattern_has_deducible_template_parameter(
   switch(base->kind) {
   case Type::TK_NAMED: {
     if(named_type_is_template_parameter(base)) {
+      return true;
+    }
+    std::string template_template_parameter_name;
+    std::size_t template_template_parameter_arity = static_cast<std::size_t>(-1);
+    std::vector<DependentAliasTemplateArgumentSyntax> template_template_arguments;
+    if(named_type_dependent_template_template_parameter(
+           base,
+           template_template_parameter_name,
+           template_template_parameter_arity,
+           template_template_arguments)) {
       return true;
     }
     if(base->named_dependent_qualified_leading_typename) {
@@ -9577,7 +9734,8 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
             type_pattern_has_deducible_template_parameter(type_system, pattern_arg_type);
         if(pattern_arg_has_deducible_parameter) {
           DeducedState nested_type_deduced = deduced;
-          if(deduce_type_pattern_to_state(partial.parameters,
+          if(deduce_type_pattern_to_state(services,
+                                          partial.parameters,
                                           pattern_arg_type,
                                           actual_arg_type,
                                           nested_type_deduced)) {
@@ -10063,7 +10221,8 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                 true,
                 template_api::make_template_environment(scope),
                 false) ||
-            deduce_type_pattern_to_state(partial.parameters,
+            deduce_type_pattern_to_state(services,
+                                         partial.parameters,
                                          pattern_type,
                                          actual.type,
                                          element_deduced))) {
@@ -10268,7 +10427,8 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                   true,
                   template_api::make_template_environment(scope),
                   false) ||
-              deduce_type_pattern_to_state(partial.parameters,
+              deduce_type_pattern_to_state(services,
+                                           partial.parameters,
                                            deduction_pattern_type,
                                            actual.type,
                                            deduced_copy))) {

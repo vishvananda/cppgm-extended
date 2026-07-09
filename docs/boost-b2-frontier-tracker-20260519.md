@@ -5495,3 +5495,31 @@ pass, leaving the separate `cast_test`, `exception_test`, and
 before-baseline `/tmp/cppgm-perf-baseline-before-partial-metadata-448f5930c.json`
 passes: instructions `+0.18%`, RSS `+1.02%`, footprint `+0.03%`; report
 `/tmp/cppgm-perf-check-partial-metadata-lookup.json`.
+
+2026-07-09 Boost.Lambda nested template-template partial-specialization
+frontier: after the default-elided class-info fix, `libs/lambda/test//cast_test`
+still failed while selecting
+`return_type_N<cast_action<cast_type<T> >, A>` for the actual argument
+`cast_action<static_cast_action<base *> >`. The public type-deduction wrapper
+could deduce nested type parameters, but it had no state channel for the
+template-template parameter head, so the partial-specialization state matcher
+fell through to the primary template and the later `nullary_return_type`
+typedef failed. The fix teaches the state-aware partial-specialization matcher
+to consume typed dependent template-template parameter metadata, store the
+deduced class-template entity, and recursively deduce its structured arguments.
+No source-text reparse, fallback resolver, cache, or Boost-specific rule was
+added. Owner: PA23 class-template partial-specialization matching with
+template-template parameter heads. New regression:
+`pa23/tests/spec/400-template-template-parameter-nested-partial-specialization.t`.
+Validation: clang and `cppgm++` both accept the reduced Lambda cast case;
+focused PA23 check passes; PA23 direct-text report passes `390/390`; full
+strict direct-text suite passes; `python3 scripts/audit_text_reparse.py
+--strict` reports all zero; `git diff --check` passes; focused Boost.Lambda
+`cast_test` passes and updates 4 targets. Full Boost.Lambda rerun now updates
+63 targets and fails 4 compile targets: `exception_test`, `extending_rt_traits`,
+`member_pointer_test`, and `switch_construct`; log
+`/tmp/boost-frontier-lambda-after-template-template-deduction-20260709102556.log`.
+Perf check against isolated before-baseline `9fb837ee4` passes: instructions
+`-0.11%`, RSS `-0.25%`, footprint `-0.03%`; baseline
+`/tmp/cppgm-perf-baseline-template-template-deduction-9fb837ee4.json`, report
+`/tmp/cppgm-perf-report-template-template-deduction-20260709.json`.
