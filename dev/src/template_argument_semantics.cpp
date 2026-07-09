@@ -16108,6 +16108,118 @@ const TemplateParameterInfo * non_type_substitution_parameter_for_argument(
              nullptr;
 }
 
+string direct_non_type_mangle_argument_name(const TemplateArgument & argument)
+{
+  if(argument.kind != TemplateArgument::TA_VALUE) {
+    return string();
+  }
+  const auto try_text =
+      [](string text) -> string
+      {
+        text = trim_space(text);
+        if(text.size() >= 3 && text.substr(text.size() - 3) == "...") {
+          return string();
+        }
+        return is_identifier_text(text) ? text : string();
+      };
+  string name = try_text(argument.text);
+  if(!name.empty()) {
+    return name;
+  }
+  if(argument.source_syntax) {
+    if(argument.source_syntax->pack_expansion) {
+      return string();
+    }
+    name = try_text(argument.source_syntax->text);
+    if(!name.empty()) {
+      return name;
+    }
+  }
+  if(argument.expression &&
+     argument.expression->kind == CppAstKind::id_expression) {
+    name = try_text(argument.expression->value);
+    if(!name.empty()) {
+      return name;
+    }
+  }
+  if(argument.source_syntax &&
+     argument.source_syntax->expression &&
+     argument.source_syntax->expression->kind == CppAstKind::id_expression) {
+    name = try_text(argument.source_syntax->expression->value);
+    if(!name.empty()) {
+      return name;
+    }
+  }
+  return string();
+}
+
+const ValueBinding * lookup_template_bound_value_for_mangle_substitution(
+    Scope * scope,
+    const string & name)
+{
+  if(!scope || name.empty()) {
+    return nullptr;
+  }
+  for(Scope * current = scope; current; current = current->parent) {
+    if(current->template_bound_value_names.count(name) != 0) {
+      map<string, ValueBinding>::const_iterator found = current->values.find(name);
+      if(found != current->values.end()) {
+        return &found->second;
+      }
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+  return nullptr;
+}
+
+bool template_argument_from_bound_value(const ValueBinding & binding,
+                                        const TemplateArgument & source,
+                                        TemplateArgument & out)
+{
+  out = source;
+  out.kind = TemplateArgument::TA_VALUE;
+  out.type = binding.type ? binding.type : source.type;
+  out.function_value = binding.non_type_template_function_value;
+  out.function_internal_symbol = binding.non_type_template_function_internal_symbol;
+  out.value_binding = binding.non_type_template_value_binding ?
+      binding.non_type_template_value_binding :
+      &binding;
+
+  long long integral_value = 0;
+  if(binding.has_constant_value) {
+    integral_value = binding.constant_value;
+  } else if(value_binding_has_constexpr_value(binding) &&
+            constant_eval::constexpr_value_to_integral(
+                value_binding_constexpr_value(binding),
+                integral_value)) {
+    // `integral_value` was filled above.
+  } else if(!binding.non_type_template_argument_text.empty() ||
+            binding.non_type_template_function_value) {
+    out.text = binding.non_type_template_argument_text;
+    out.dependent = binding.dependent_template_value;
+    return !out.text.empty() || binding.non_type_template_function_value;
+  } else {
+    return false;
+  }
+
+  out.value = integral_value;
+  out.dependent = binding.dependent_template_value;
+  out.text = binding.dependent_template_value ?
+      binding.non_type_template_argument_text :
+      string();
+  out.source_syntax.reset(new TemplateArgumentSyntax());
+  out.source_syntax->text = template_model::template_argument_text(
+      out,
+      [](const TypePtr &) { return string(); });
+  out.source_syntax->dependent = out.dependent;
+  out.source_syntax->expression.reset(
+      new CppAstNode(make_substituted_value_expression_node(binding)));
+  out.expression.reset(new CppAstNode(*out.source_syntax->expression));
+  return !out.dependent;
+}
+
 bool substitute_template_argument_for_mangle_info(
     const TemplateArgument & source,
     const vector<TemplateParameterInfo> & parameters,
@@ -16143,15 +16255,20 @@ bool substitute_template_argument_for_mangle_info(
   }
 
   if(source.kind == TemplateArgument::TA_VALUE) {
-	    const TemplateParameterInfo * parameter =
-	        non_type_substitution_parameter_for_argument(parameters, source);
-		    if(const TemplateArgument * replacement =
-		           substitution_argument_for_parameter(parameters, arguments, parameter)) {
-		      if(replacement->kind == TemplateArgument::TA_VALUE) {
-		        out = *replacement;
-		        return true;
-		      }
-		    }
+    const TemplateParameterInfo * parameter =
+        non_type_substitution_parameter_for_argument(parameters, source);
+    if(const TemplateArgument * replacement =
+           substitution_argument_for_parameter(parameters, arguments, parameter)) {
+      if(replacement->kind == TemplateArgument::TA_VALUE) {
+        out = *replacement;
+        return true;
+      }
+    }
+    const string bound_name = direct_non_type_mangle_argument_name(source);
+    if(const ValueBinding * binding =
+           lookup_template_bound_value_for_mangle_substitution(scope, bound_name)) {
+      return template_argument_from_bound_value(*binding, source, out);
+    }
   }
   return false;
 }

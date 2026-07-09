@@ -5363,3 +5363,35 @@ advances past the nothrow-destructible static assert to the next frontier,
 `failed alias template type-id parse for fn` in
 `boost::mp11::mp_bind_front<boost::json::to_bits_t, ...>::fn` while processing
 `basic_parser_test::testParseVectors`.
+
+2026-07-09 Boost.Json MP11 member-alias owner and NTTP metadata frontier: after
+the hosted nothrow-destructible fix, `basic_parser.cpp` reached
+`mp_transform_q<mp_bind_front<to_bits_t, mp_int<4>>, ...>` inside
+`basic_parser_test::testParseVectors`. The first failure was a member alias
+owner-scope bug: `mp_bind_front<F, T...>::fn` expanded with the outer
+template-template parameter named `F` instead of the bound owner argument
+`boost::json::to_bits_t`, which duplicated the bound front argument. After that
+was fixed, the remaining failure was stale class-template specialization
+metadata on a carried `std::integral_constant<unsigned long, 0>` type: its
+visible type was concrete, but the typed mangle arguments still contained the
+source NTTP name `I`, so qualified lookup for `I::value` could not recover the
+class scope. The fix binds member-alias target scopes through the instantiated
+owner's selected partial-specialization binding context and refreshes class
+specialization mangle arguments from scoped template-bound non-type values,
+while explicitly avoiding pack-expanded NTTP arguments. No source-text reparse,
+Boost-specific rule, fallback resolver, or cache was added. Owner: PA23
+alias-template and class-template metadata substitution. New regressions:
+`pa23/tests/spec/400-template-template-member-alias-owner-shadow.t` and
+`pa23/tests/spec/401-class-template-mangle-nttp-scope-value.t`. Validation:
+clang accepts both reducers with `-std=c++11 -x c++`; focused PA23 checks pass
+for both reducers and the existing `500-conditional-alias-index-sequence`
+strict guard; PA23 direct-text report passes `387/387`; PA22 strict direct-text
+passes after the selected-partial owner binding correction; full strict
+direct-text suite passes; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes. The direct Boost.Json
+`basic_parser.cpp` compile advances past the MP11 `to_bits_t` failure to the
+next frontier, a `parse_literal` overload failure in
+`boost::json::basic_parser<...>::parse_literal` at
+`boost/json/basic_parser_impl.hpp:839`; samples for the long compile are in
+`/tmp/cppgm-basic-parser-frontier-after-mangle-fix.sample.txt` and
+`/tmp/cppgm-basic-parser-frontier-after-partial-owner.sample.txt`.

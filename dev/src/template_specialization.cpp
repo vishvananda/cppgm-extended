@@ -6300,6 +6300,40 @@ bool try_expand_alias_template_pattern_structurally(
   bool structural_substitution_failure = false;
   int substitution_depth = 0;
   std::shared_ptr<Scope> alias_target_scope_storage;
+  const auto owner_template_binding_context =
+      [](ClassInfo * owner,
+         const std::vector<TemplateParameterInfo> *& parameters,
+         const std::vector<TemplateArgument> *& arguments) -> bool
+  {
+    parameters = nullptr;
+    arguments = nullptr;
+    if(!owner ||
+       !owner->source_template ||
+       owner->instantiation_arguments.empty()) {
+      return false;
+    }
+    parameters = &owner->source_template->parameters;
+    arguments = &owner->instantiation_arguments;
+    if(owner->has_instantiation_binding_arguments &&
+       !owner->instantiation_binding_arguments.empty()) {
+      arguments = &owner->instantiation_binding_arguments;
+    }
+    if(owner->template_output_node &&
+       owner->source_template->class_node &&
+       owner->template_output_node != owner->source_template->class_node) {
+      for(std::size_t i = 0;
+          i < owner->source_template->partial_specializations.size();
+          ++i) {
+        const PartialClassTemplateSpecializationDecl & partial =
+            owner->source_template->partial_specializations[i];
+        if(partial.class_node == owner->template_output_node) {
+          parameters = &partial.parameters;
+          break;
+        }
+      }
+    }
+    return parameters && arguments;
+  };
   const auto instantiated_alias_owner = [&](Scope & target_scope) -> ClassInfo *
   {
     if(!alias_template.declaring_scope ||
@@ -6307,6 +6341,13 @@ bool try_expand_alias_template_pattern_structurally(
       return nullptr;
     }
     ClassInfo * declared_owner = alias_template.declaring_scope->class_info;
+    const std::vector<TemplateParameterInfo> * owner_parameters = nullptr;
+    const std::vector<TemplateArgument> * owner_arguments = nullptr;
+    if(owner_template_binding_context(declared_owner,
+                                      owner_parameters,
+                                      owner_arguments)) {
+      return declared_owner;
+    }
     const auto matches_declared_owner =
         [&](ClassInfo * info) -> bool
     {
@@ -6359,6 +6400,19 @@ bool try_expand_alias_template_pattern_structurally(
           template_scope::bind_named_type(*alias_target_scope_storage,
                                           owner->name,
                                           owner->type);
+        }
+        const std::vector<TemplateParameterInfo> * owner_parameters = nullptr;
+        const std::vector<TemplateArgument> * owner_arguments = nullptr;
+        if(owner_template_binding_context(owner,
+                                          owner_parameters,
+                                          owner_arguments)) {
+          erase_template_parameter_names(*alias_target_scope_storage,
+                                         *owner_parameters);
+          template_api::bind_template_arguments_into_scope(
+              services,
+              *alias_target_scope_storage,
+              *owner_parameters,
+              *owner_arguments);
         }
       }
       template_api::bind_template_arguments_into_scope(
