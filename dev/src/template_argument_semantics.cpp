@@ -146,12 +146,14 @@ bool resolve_standard_meta_type_argument(
     Scope & argument_scope,
     const TemplateIdSyntax & qualifier_template_id,
     std::size_t index,
-    TypePtr & out);
+    TypePtr & out,
+    const std::vector<Scope *> * argument_scopes = nullptr);
 bool resolve_standard_meta_bool_argument(
     template_api::TemplateServices & services,
     Scope & argument_scope,
     const TemplateIdSyntax & qualifier_template_id,
-    bool & out);
+    bool & out,
+    const std::vector<Scope *> * argument_scopes = nullptr);
 
 const char * standard_type_trait_builtin_name(const string & name);
 bool standard_constructibility_shorthand_name(const string & name);
@@ -1549,7 +1551,8 @@ bool try_resolve_concrete_template_member_type(
     Scope & argument_scope,
     const std::string & member_name,
     const TemplateIdSyntax & qualifier_template_id,
-    TypePtr & out);
+    TypePtr & out,
+    const std::vector<Scope *> * argument_scopes = nullptr);
 TypePtr lookup_concrete_type_in_resolved_scope(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle lexical_scope,
@@ -3639,6 +3642,11 @@ bool try_resolve_concrete_require_alias_template_id(
     const std::vector<std::string> & arg_texts,
     const std::vector<TemplateArgumentSyntax> * arg_syntaxes,
     TypePtr & out);
+
+Scope & standard_meta_argument_scope(
+    Scope & fallback,
+    const std::vector<Scope *> * argument_scopes,
+    std::size_t index);
 
 bool resolve_template_id_syntax_type(template_api::TemplateServices & services,
                                      Scope & scope,
@@ -6413,7 +6421,8 @@ bool try_resolve_concrete_template_member_type(
     Scope & argument_scope,
     const std::string & member_name,
     const TemplateIdSyntax & qualifier_template_id,
-    TypePtr & out)
+    TypePtr & out,
+    const std::vector<Scope *> * argument_scopes)
 {
   out.reset();
   if(member_name.empty() ||
@@ -6421,6 +6430,10 @@ bool try_resolve_concrete_template_member_type(
      qualifier_template_id.arguments.empty()) {
     return false;
   }
+  Scope & effective_argument_scope =
+      standard_meta_argument_scope(argument_scope, argument_scopes, 0);
+  template_api::TemplateEnvironmentHandle effective_argument_env =
+      template_api::make_template_environment(effective_argument_scope);
 
   TypePtr member_type;
   std::vector<TemplateValueDependency> value_dependencies;
@@ -6438,7 +6451,7 @@ bool try_resolve_concrete_template_member_type(
            true,
            std::string(),
            owner_type,
-           template_api::make_template_environment(argument_scope),
+           effective_argument_env,
            template_api::ClassTemplateSourceUseMode::SemanticLookupOnly,
            false) ||
        !owner_type) {
@@ -6448,7 +6461,7 @@ bool try_resolve_concrete_template_member_type(
     TypePtr resolved_owner;
     if(resolve_instantiated_dependent_type(
            services,
-           template_api::make_template_environment(argument_scope),
+           effective_argument_env,
            owner_type,
            resolved_owner) &&
        resolved_owner) {
@@ -6462,7 +6475,7 @@ bool try_resolve_concrete_template_member_type(
     Scope * member_scope = nullptr;
     if(!prepare_concrete_type_member_scope(
            services,
-           template_api::make_template_environment(argument_scope),
+           effective_argument_env,
            owner_type,
            member_scope) ||
        !member_scope) {
@@ -6472,7 +6485,7 @@ bool try_resolve_concrete_template_member_type(
     member_type =
         lookup_concrete_type_in_resolved_scope(
             services,
-            template_api::make_template_environment(argument_scope),
+            effective_argument_env,
             *member_scope,
             member_name,
             true);
@@ -6482,7 +6495,7 @@ bool try_resolve_concrete_template_member_type(
       TypePtr resolved_member;
       if(resolve_instantiated_dependent_type(
              services,
-             template_api::make_template_environment(argument_scope),
+             effective_argument_env,
              member_type,
              resolved_member) &&
          resolved_member) {
@@ -29303,9 +29316,11 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
           static_cast<ClassTemplateDecl *>(class_template_decl);
       if(class_template && class_template->declaring_scope) {
         TemplateIdSyntax template_id;
+        vector<Scope *> argument_scopes;
         template_id.name.name = class_template->name;
         template_id.arguments.reserve(dependent_arguments.size());
         template_id.argument_syntaxes.reserve(dependent_arguments.size());
+        argument_scopes.reserve(dependent_arguments.size());
         for(size_t i = 0; i < dependent_arguments.size(); ++i) {
           const DependentAliasTemplateArgumentSyntax & dependent_argument =
               dependent_arguments[i];
@@ -29322,15 +29337,19 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
           }
           template_id.arguments.push_back(argument_text);
           template_id.argument_syntaxes.push_back(argument_syntax);
+          argument_scopes.push_back(dependent_argument.semantic_scope);
         }
 
         TypePtr standard_member_type;
+        const vector<Scope *> * standard_argument_scopes =
+            argument_scopes.empty() ? nullptr : &argument_scopes;
         switch(try_resolve_standard_meta_member_type(services,
                                                      *class_template->declaring_scope,
                                                      raw_scope,
                                                      "type",
                                                      template_id,
-                                                     standard_member_type)) {
+                                                     standard_member_type,
+                                                     standard_argument_scopes)) {
         case STANDARD_META_MEMBER_RESOLVED:
           out = standard_member_type;
           return DependentNamedTypeResolutionStatus::Resolved;
@@ -29356,7 +29375,8 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
                                                      raw_scope,
                                                      "type",
                                                      template_id,
-                                                     out)) {
+                                                     out,
+                                                     standard_argument_scopes)) {
           return DependentNamedTypeResolutionStatus::Resolved;
         }
       }
@@ -32978,12 +32998,28 @@ bool is_standard_library_variable_template(template_api::TemplateServices & serv
   return lookup_standard_library_variable_template(services, scope, syntax) != nullptr;
 }
 
+Scope & standard_meta_argument_scope(
+    Scope & fallback,
+    const std::vector<Scope *> * argument_scopes,
+    std::size_t index)
+{
+  if(argument_scopes &&
+     index < argument_scopes->size() &&
+     (*argument_scopes)[index]) {
+    return *(*argument_scopes)[index];
+  }
+  return fallback;
+}
+
 bool resolve_standard_meta_bool_argument(
     template_api::TemplateServices & services,
     Scope & argument_scope,
     const TemplateIdSyntax & qualifier_template_id,
-    bool & out)
+    bool & out,
+    const std::vector<Scope *> * argument_scopes)
 {
+  Scope & condition_scope =
+      standard_meta_argument_scope(argument_scope, argument_scopes, 0);
   const TypePtr bool_type = make_fundamental(FT_BOOL);
   long long condition_value = 0;
   NonTypeArgumentStatus condition_status = NT_ARG_PARSE_FAILED;
@@ -32993,7 +33029,7 @@ bool resolve_standard_meta_bool_argument(
     condition_status =
         evaluate_non_type_argument_expression(
             services,
-            template_api::make_template_environment(argument_scope),
+            template_api::make_template_environment(condition_scope),
             *qualifier_template_id.argument_syntaxes[0].expression,
             condition_value,
             &eval_error,
@@ -33005,7 +33041,7 @@ bool resolve_standard_meta_bool_argument(
       condition_status =
           evaluate_non_type_argument_text(
               services,
-              template_api::make_template_environment(argument_scope),
+              template_api::make_template_environment(condition_scope),
               qualifier_template_id.arguments[0],
               condition_value,
               &eval_error,
@@ -33042,7 +33078,8 @@ bool resolve_standard_meta_bool_argument_from_syntax(
     Scope & argument_scope,
     const TemplateIdSyntax & qualifier_template_id,
     bool & out,
-    NonTypeArgumentStatus * status_out = nullptr)
+    NonTypeArgumentStatus * status_out = nullptr,
+    const std::vector<Scope *> * argument_scopes = nullptr)
 {
   if(qualifier_template_id.argument_syntaxes.empty()) {
     if(status_out) {
@@ -33054,8 +33091,10 @@ bool resolve_standard_meta_bool_argument_from_syntax(
   bool condition_value = false;
   NonTypeArgumentStatus condition_status = NT_ARG_PARSE_FAILED;
   try {
+    Scope & condition_scope =
+        standard_meta_argument_scope(argument_scope, argument_scopes, 0);
     template_api::TemplateEnvironmentHandle scope =
-        template_api::make_template_environment(argument_scope);
+        template_api::make_template_environment(condition_scope);
     const TemplateArgumentSyntax & original_condition =
         qualifier_template_id.argument_syntaxes[0];
     {
@@ -33114,12 +33153,15 @@ bool resolve_standard_meta_type_argument(
     Scope & argument_scope,
     const TemplateIdSyntax & qualifier_template_id,
     std::size_t index,
-    TypePtr & out)
+    TypePtr & out,
+    const std::vector<Scope *> * argument_scopes)
 {
   out.reset();
   if(index >= qualifier_template_id.arguments.size()) {
     return false;
   }
+  Scope & effective_scope =
+      standard_meta_argument_scope(argument_scope, argument_scopes, index);
   const TemplateArgumentSyntax * type_syntax =
       qualifier_template_id.argument_syntaxes.size() > index ?
           &qualifier_template_id.argument_syntaxes[index] :
@@ -33128,23 +33170,23 @@ bool resolve_standard_meta_type_argument(
     out = type_syntax->resolved_type;
   } else if(type_syntax && type_syntax->type_id) {
     parse_type_id_node_for_templates(services,
-                                     argument_scope,
+                                     effective_scope,
                                      *type_syntax->type_id,
                                      out,
                                      true);
   } else if(type_syntax && type_syntax->template_id) {
     resolve_template_id_syntax_type(services,
-                                    argument_scope,
+                                    effective_scope,
                                     *type_syntax->template_id,
                                     true,
                                     string(),
                                     out,
-                                    template_api::make_template_environment(argument_scope));
+                                    template_api::make_template_environment(effective_scope));
   }
   if(!out) {
     resolve_type_argument_input(
         services,
-        template_api::make_template_environment(argument_scope),
+        template_api::make_template_environment(effective_scope),
         type_syntax,
         true,
         out);
@@ -33154,7 +33196,7 @@ bool resolve_standard_meta_type_argument(
     return false;
   }
   resolve_instantiated_dependent_type_if_needed(
-      services, template_api::make_template_environment(argument_scope), out);
+      services, template_api::make_template_environment(effective_scope), out);
   return out != nullptr;
 }
 
@@ -33472,7 +33514,8 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
     Scope & argument_scope,
     const std::string & member_name,
     const TemplateIdSyntax & qualifier_template_id,
-    TypePtr & out)
+    TypePtr & out,
+    const std::vector<Scope *> * argument_scopes)
 {
   out.reset();
   if(witness::source_capture_enabled(services.witness_context) ||
@@ -33524,7 +33567,8 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
                                                 argument_scope,
                                                 qualifier_template_id,
                                                 callable_index,
-                                                callable_type)) {
+                                                callable_type,
+                                                argument_scopes)) {
           return STANDARD_META_MEMBER_NOT_APPLICABLE;
         }
         if(!callable_type ||
@@ -33543,7 +33587,8 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
                                                   argument_scope,
                                                   qualifier_template_id,
                                                   i,
-                                                  argument_type)) {
+                                                  argument_type,
+                                                  argument_scopes)) {
             return STANDARD_META_MEMBER_NOT_APPLICABLE;
           }
           if(!argument_type ||
@@ -33585,7 +33630,12 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
   if(is_result_of) {
     TypePtr call_signature;
     if(!resolve_standard_meta_type_argument(
-           services, argument_scope, qualifier_template_id, 0, call_signature)) {
+           services,
+           argument_scope,
+           qualifier_template_id,
+           0,
+           call_signature,
+           argument_scopes)) {
       return STANDARD_META_MEMBER_NOT_APPLICABLE;
     }
     if(!qualifier_template_id.argument_syntaxes.empty() &&
@@ -33639,13 +33689,17 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
                                                           argument_scope,
                                                           qualifier_template_id,
                                                           condition_value,
-                                                          &condition_status);
+                                                          &condition_status,
+                                                          argument_scopes);
       if(!condition_resolved && condition_status == NT_ARG_DEPENDENT) {
         return STANDARD_META_MEMBER_NOT_APPLICABLE;
       }
     } else if(template_argument_syntax_mentions_template_dependency(
                   services,
-                  template_api::make_template_environment(argument_scope),
+                  template_api::make_template_environment(
+                      standard_meta_argument_scope(argument_scope,
+                                                   argument_scopes,
+                                                   0)),
                   condition_syntax,
                   true)) {
       return STANDARD_META_MEMBER_NOT_APPLICABLE;
@@ -33653,7 +33707,11 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
   }
   if(!condition_resolved &&
      !resolve_standard_meta_bool_argument(
-         services, argument_scope, qualifier_template_id, condition_value)) {
+         services,
+         argument_scope,
+         qualifier_template_id,
+         condition_value,
+         argument_scopes)) {
     return STANDARD_META_MEMBER_NOT_APPLICABLE;
   }
 
@@ -33668,7 +33726,12 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
     if(qualifier_template_id.arguments.size() == 1) {
       out = make_fundamental(FT_VOID);
     } else if(!resolve_standard_meta_type_argument(
-                  services, argument_scope, qualifier_template_id, 1, out)) {
+                  services,
+                  argument_scope,
+                  qualifier_template_id,
+                  1,
+                  out,
+                  argument_scopes)) {
       return STANDARD_META_MEMBER_NOT_APPLICABLE;
     }
     if(services.counters) {
@@ -33679,7 +33742,12 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
 
   const std::size_t selected_index = condition_value ? 1 : 2;
   if(!resolve_standard_meta_type_argument(
-         services, argument_scope, qualifier_template_id, selected_index, out)) {
+         services,
+         argument_scope,
+         qualifier_template_id,
+         selected_index,
+         out,
+         argument_scopes)) {
     return STANDARD_META_MEMBER_NOT_APPLICABLE;
   }
   if(services.counters) {

@@ -5071,6 +5071,10 @@ bool try_expand_alias_template_pattern_structurally(
     if(argument_needs_alias_target_scope(argument)) {
       return true;
     }
+    if(argument.kind == TemplateArgument::TA_VALUE &&
+       value_argument_has_structured_source(argument)) {
+      return true;
+    }
     return argument_has_dependent_source_syntax(argument);
   };
   std::function<bool(const TemplateArgumentSyntax &, const std::string &)>
@@ -5258,7 +5262,7 @@ bool try_expand_alias_template_pattern_structurally(
 
   bool structural_substitution_failure = false;
   int substitution_depth = 0;
-  std::unique_ptr<Scope> alias_target_scope_storage;
+  std::shared_ptr<Scope> alias_target_scope_storage;
   const auto instantiated_alias_owner = [&](Scope & target_scope) -> ClassInfo *
   {
     if(!alias_template.declaring_scope ||
@@ -5298,12 +5302,13 @@ bool try_expand_alias_template_pattern_structurally(
   const auto ensure_alias_target_scope = [&]() -> Scope &
   {
     if(!alias_target_scope_storage) {
-      alias_target_scope_storage.reset(
-          new Scope(alias_template.declaring_scope ?
-                        alias_template.declaring_scope :
-                        &match_scope.require(),
-                    "",
-                    false));
+      alias_target_scope_storage =
+          std::shared_ptr<Scope>(
+              new Scope(alias_template.declaring_scope ?
+                            alias_template.declaring_scope :
+                            &match_scope.require(),
+                        "",
+                        false));
       if(alias_template.declaring_scope) {
         template_api::overlay_instantiation_use_scope_bindings(
             *alias_target_scope_storage,
@@ -6586,7 +6591,10 @@ bool try_expand_alias_template_pattern_structurally(
             continue;
           }
           TemplateArgument evaluated_argument;
-          if(try_evaluate_selected_default_value_argument(argument,
+          if((!argument.source_defaulted &&
+              try_evaluate_alias_target_value_argument(argument,
+                                                       evaluated_argument)) ||
+             try_evaluate_selected_default_value_argument(argument,
                                                          evaluated_argument) ||
              try_evaluate_alias_target_value_argument(argument,
                                                      evaluated_argument)) {
@@ -6644,6 +6652,10 @@ bool try_expand_alias_template_pattern_structurally(
           selected_arguments_need_alias_target_scope ?
               ensure_alias_target_scope() :
               match_scope.require();
+      std::shared_ptr<Scope> selected_scope_storage =
+          selected_arguments_need_alias_target_scope ?
+              alias_target_scope_storage :
+              std::shared_ptr<Scope>();
       const auto complete_defaulted_substituted_arguments = [&]() -> bool
       {
         if(template_arguments_fully_bind_parameters(source_template->parameters,
@@ -6716,6 +6728,10 @@ bool try_expand_alias_template_pattern_structurally(
                 argument.expression->source_location_id;
             dependent_argument.syntax.expression.reset(
                 new CppAstNode(*argument.expression));
+          }
+          if(selected_arguments_need_alias_target_scope) {
+            dependent_argument.semantic_scope = &selected_scope;
+            dependent_argument.semantic_scope_storage = selected_scope_storage;
           }
           dependent_argument.syntax.dependent =
               dependent_argument.syntax.dependent || argument.dependent;

@@ -414,7 +414,8 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
     semantic_model::Scope & argument_scope,
     const std::string & member_name,
     const cpp_decl::TemplateIdSyntax & qualifier_template_id,
-    cpp_decl::TypePtr & out);
+    cpp_decl::TypePtr & out,
+    const std::vector<semantic_model::Scope *> * argument_scopes = nullptr);
 
 bool parse_type_id_node_for_templates(template_api::TemplateServices & services,
                                       semantic_model::Scope & scope,

@@ -5264,3 +5264,28 @@ detached worktree at `43fef18e9` was used to record
 the dirty-tree candidate check passes with instructions `-0.08%`, max RSS
 `-0.60%`, and footprint `+0.04%`, report
 `/tmp/cppgm-perf-report-qualified-alias-member-deduction-20260709.json`.
+
+2026-07-09 Boost.Json alias-target non-type expression scope frontier: after
+the qualified alias-template member deduction fix, the Boost.Json library build
+passed, but `libs/json/test/array.cpp` failed in
+`BOOST_TEST(a[2].as_string() == str_)` because
+`detail::string_and_stringlike<T, U>` selected `std::integral_constant` while
+evaluating the alias-body non-type argument in the selected template scope.
+That resolved unqualified `string` as the target namespace's `std::string`
+instead of the alias declaration scope's `boost::json::string`, so the
+`std::enable_if` result type rejected the viable comparison operator. The fix
+marks structured non-type arguments in alias targets as alias-scope-sensitive,
+preserves that scope on carried dependent alias arguments, and evaluates
+non-default structured alias-target value arguments in the alias declaration
+scope before trying selected-template default-argument scope. No source-text
+reparse, Boost-specific rule, fallback resolver, or cache was added. Owner:
+PA23 alias-template SFINAE integration. New regression:
+`pa23/tests/spec/500-alias-template-target-nontype-lexical-scope.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; focused PA23
+check passes; PA23 direct-text report passes `385/385`; full strict direct-text
+suite passes; `python3 scripts/audit_text_reparse.py --strict` reports all
+zero; `git diff --check` passes; full direct-text report passes `3585/3585`.
+The direct Boost.Json `array.cpp` compile advances past the comparison failure
+to a later Boost.MP11 fold frontier in `boost::json::value_from`, reporting
+`failed alias template argument resolution for fn` while completing
+`boost::mp11::detail::mp_defer_impl<mp_fold_Q3<V,F>::fn, ...>`.

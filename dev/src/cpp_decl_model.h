@@ -10,6 +10,10 @@
 
 struct CppAstNode;
 
+namespace semantic_model {
+struct Scope;
+}
+
 namespace cpp_decl {
 
 struct QualifiedName
@@ -56,6 +60,8 @@ struct DependentAliasTemplateArgumentSyntax
   std::string text;
   TypePtr type;
   TemplateArgumentSyntax syntax;
+  semantic_model::Scope * semantic_scope = nullptr;
+  std::shared_ptr<semantic_model::Scope> semantic_scope_storage;
   bool source_defaulted = false;
   bool partial_order_placeholder = false;
 };
