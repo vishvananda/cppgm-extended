@@ -6289,6 +6289,12 @@ vector<TemplateValueDependency> *& active_template_member_value_dependency_colle
   return active;
 }
 
+int & template_member_value_dependency_collection_pause_depth()
+{
+  static thread_local int depth = 0;
+  return depth;
+}
+
 class ScopedTemplateMemberValueDependencyCollection
 {
 public:
@@ -6311,6 +6317,9 @@ private:
 bool collect_template_member_value_dependency_if_active_impl(
     const TemplateValueDependency & dependency)
 {
+  if(template_member_value_dependency_collection_pause_depth() != 0) {
+    return false;
+  }
   vector<TemplateValueDependency> * active =
       active_template_member_value_dependency_collection();
   if(!active) {
@@ -12792,6 +12801,23 @@ bool prepare_structured_bool_dependency_argument_syntax(
 }
 
 }  // namespace
+
+ScopedTemplateMemberValueDependencyCollectionPause::
+ScopedTemplateMemberValueDependencyCollectionPause(bool active)
+  : active_(active)
+{
+  if(active_) {
+    ++template_member_value_dependency_collection_pause_depth();
+  }
+}
+
+ScopedTemplateMemberValueDependencyCollectionPause::
+~ScopedTemplateMemberValueDependencyCollectionPause()
+{
+  if(active_) {
+    --template_member_value_dependency_collection_pause_depth();
+  }
+}
 
 bool collect_template_member_value_dependency_if_active(
     const TemplateValueDependency & dependency)
@@ -28228,10 +28254,17 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
     const TemplateArgument & source_arg = (*source_arguments)[i];
     TemplateArgument resolved_arg;
     bool resolved_current = false;
+    const bool refreshable_source_default =
+        i < class_template->parameters.size() &&
+        class_template->parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE &&
+        source_arg.kind == TemplateArgument::TA_VALUE &&
+        source_arg.source_defaulted &&
+        source_arg.dependent;
     if(i < class_template->parameters.size() &&
        class_template->parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE &&
        source_arg.kind == TemplateArgument::TA_VALUE &&
-       source_arg.dependent) {
+       source_arg.dependent &&
+       !refreshable_source_default) {
       TemplateArgumentSyntax syntax;
       if(i < mangle_info->argument_syntaxes.size()) {
         syntax = mangle_info->argument_syntaxes[i];
@@ -28297,14 +28330,29 @@ bool try_resolve_dependent_class_instantiation_from_mangle_info(
            source_arg,
            resolved_arg,
            changed)) {
-      return false;
+      if(!refreshable_source_default) {
+        return false;
+      }
+      resolved_arg = source_arg;
     }
     resolved_arguments.push_back(resolved_arg);
+    if(refreshable_source_default &&
+       resolved_arguments.back().dependent &&
+       template_resolution::refresh_dependent_defaulted_non_type_template_arguments(
+           services,
+           template_api::make_template_environment(argument_scope),
+           class_template->parameters,
+           resolved_arguments,
+           class_template->declaring_scope ?
+               template_api::make_template_environment(*class_template->declaring_scope) :
+               template_api::TemplateEnvironmentHandle())) {
+      changed = true;
+    }
     if(i < class_template->parameters.size()) {
       bind_resolved_class_template_argument_for_later_parameters(
           argument_scope,
           class_template->parameters[i],
-          resolved_arg);
+          resolved_arguments.back());
     }
   }
 

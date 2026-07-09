@@ -52,6 +52,14 @@ bool resolve_template_arguments(
     template_api::TemplateEnvironmentHandle default_argument_declaring_scope =
         template_api::TemplateEnvironmentHandle());
 
+bool refresh_dependent_defaulted_non_type_template_arguments(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const std::vector<template_model::TemplateParameterInfo> & parameters,
+    std::vector<template_model::TemplateArgument> & arguments,
+    template_api::TemplateEnvironmentHandle default_argument_declaring_scope =
+        template_api::TemplateEnvironmentHandle());
+
 bool trailing_pack_accepts_argument_count(
     const std::vector<template_model::TemplateParameterInfo> & parameters,
     std::size_t argument_count);

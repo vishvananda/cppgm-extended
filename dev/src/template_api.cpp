@@ -3819,6 +3819,36 @@ bool source_type_lookup_is_collecting_owner_template_members(
 	              true).empty();
 }
 
+bool source_location_is_inside_recorded_template_body(
+    const TemplateWitnessContext & ctx,
+    const std::string & location)
+{
+  if(!ctx.session) {
+    return false;
+  }
+  const template_witness_detail::ParsedSourceLocation parsed =
+      template_witness_detail::parse_source_location(
+          normalize_template_witness_source_location(location));
+  if(!parsed.valid) {
+    return false;
+  }
+  for(std::size_t i = 0; i < ctx.session->template_body_ranges.size(); ++i) {
+    const TemplateWitnessSourceRange & range =
+        ctx.session->template_body_ranges[i];
+    if(range.file != parsed.file ||
+       parsed.line < range.begin_line ||
+       parsed.line > range.end_line) {
+      continue;
+    }
+    if(parsed.line == range.begin_line &&
+       parsed.column < range.first_body_column) {
+      continue;
+    }
+    return true;
+  }
+  return false;
+}
+
 bool default_argument_member_value_note_is_speculative(
     SemanticContext & ctx,
     const semantic_model::ValueBinding & binding,
@@ -3843,6 +3873,12 @@ bool default_argument_member_value_note_is_speculative(
 
   if(template_witness_qualified_member_type_lookup_active()) {
     return false;
+  }
+  if(template_witness_source_type_lookup_active() &&
+     binding.name == "value") {
+    return !source_location_is_inside_recorded_template_body(
+        ctx.template_witness_context(),
+        effective_location);
   }
 
   const bool source_line_mentions_member =

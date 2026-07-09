@@ -4441,14 +4441,16 @@ void rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
       TemplateArgumentSyntax dependency_default_syntax = default_syntax;
 
       CppAstNode substituted_default_expression;
-      if(template_argument_semantics::
-             substitute_expression_node_for_template_arguments(
-                 *default_argument_scope,
-                 child,
-                 parameters,
-                 std::vector<TemplateArgument>(arguments.begin(),
-                                               arguments.begin() + i),
-                 substituted_default_expression)) {
+      const bool have_substituted_default_expression =
+          template_argument_semantics::
+              substitute_expression_node_for_template_arguments(
+                  *default_argument_scope,
+                  child,
+                  parameters,
+                  std::vector<TemplateArgument>(arguments.begin(),
+                                                arguments.begin() + i),
+                  substituted_default_expression);
+      if(have_substituted_default_expression) {
         const std::string substituted_default_text =
             default_argument_expression_text(substituted_default_expression);
         dependency_default_syntax =
@@ -4510,6 +4512,134 @@ void rehydrate_cached_defaulted_non_type_argument_witness_dependencies(
                                                argument);
     }
   }
+}
+
+bool refresh_dependent_defaulted_non_type_template_arguments_impl(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const std::vector<TemplateParameterInfo> & parameters,
+    std::vector<TemplateArgument> & arguments,
+    template_api::TemplateEnvironmentHandle default_argument_declaring_scope)
+{
+  if(!scope.valid() || arguments.empty()) {
+    return false;
+  }
+
+  Scope & raw_scope = scope.require();
+  Scope bound_scope(&raw_scope, "", false);
+  std::unique_ptr<Scope> default_argument_overlay;
+  Scope * default_argument_scope = &bound_scope;
+  if(default_argument_declaring_scope.scope &&
+     default_argument_declaring_scope.scope != &raw_scope) {
+    default_argument_overlay.reset(
+        new Scope(default_argument_declaring_scope.scope, "", false));
+    template_scope::overlay_ancestor_scope_bindings(*default_argument_overlay,
+                                                    raw_scope,
+                                                    default_argument_declaring_scope.scope,
+                                                    template_scope::OVERLAY_TEMPLATE_BOUND_ONLY);
+    default_argument_scope = default_argument_overlay.get();
+  }
+
+  bool changed = false;
+  const std::size_t count = std::min(parameters.size(), arguments.size());
+  for(std::size_t i = 0; i < count; ++i) {
+    TemplateArgument & argument = arguments[i];
+    const TemplateParameterInfo & parameter = parameters[i];
+
+    if(argument.source_defaulted &&
+       argument.dependent &&
+       argument.kind == TemplateArgument::TA_VALUE &&
+       parameter.kind == TemplateParameterInfo::TP_NON_TYPE &&
+       !parameter.parameter_pack &&
+       parameter.default_argument &&
+       !parameter.default_argument->children.empty()) {
+      const template_argument_semantics::ScopedDefaultTemplateArgumentEvaluation
+          default_argument_evaluation;
+      const template_api::TemplateEnvironmentHandle default_argument_env =
+          template_api::make_template_environment(*default_argument_scope);
+
+      TypePtr bound_value_type = argument.type;
+      if(!bound_value_type) {
+        (void)try_resolve_non_type_template_parameter_type(
+            services, default_argument_env, parameter, bound_value_type);
+      }
+
+      const CppAstNode & child = parameter.default_argument->children[0];
+      CppAstNode substituted_default_expression;
+      const bool have_substituted_default_expression =
+          template_argument_semantics::
+              substitute_expression_node_for_template_arguments(
+                  *default_argument_scope,
+                  child,
+                  parameters,
+                  std::vector<TemplateArgument>(arguments.begin(),
+                                                arguments.begin() + i),
+                  substituted_default_expression);
+      const CppAstNode & effective_expression =
+          have_substituted_default_expression ? substituted_default_expression :
+                                                child;
+      const std::string default_text =
+          default_argument_expression_text(effective_expression);
+      const TemplateArgumentSyntax default_syntax =
+          make_default_template_argument_syntax(parameter,
+                                                effective_expression,
+                                                default_text);
+
+      if(bound_value_type) {
+        long long value = 0;
+        std::string eval_error;
+        template_argument_semantics::NonTypeArgumentStatus value_status =
+            template_argument_semantics::NT_ARG_EVAL_FAILED;
+        try {
+          const template_api::ScopedTemplateWitnessSourceCapturePause
+              source_capture_pause;
+          const template_api::ScopedTemplateWitnessLifecyclePause lifecycle_pause;
+          const template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause
+              function_call_source_capture_pause;
+          const template_argument_semantics::
+              ScopedTemplateMemberValueDependencyCollectionPause
+                  member_value_dependency_collection_pause;
+          value_status =
+              template_argument_semantics::evaluate_non_type_argument_syntax(
+                  services,
+                  default_argument_env,
+                  default_syntax,
+                  value,
+                  &eval_error,
+                  bound_value_type);
+        } catch(const std::logic_error &) {
+          value_status = template_argument_semantics::NT_ARG_EVAL_FAILED;
+        }
+        if(value_status == template_argument_semantics::NT_ARG_EVALUATED) {
+          argument.value_dependencies.clear();
+          argument.type = bound_value_type;
+          argument.value = value;
+          argument.text = typed_non_type_template_argument_text(
+              service_type_system(services),
+              bound_value_type,
+              value);
+          argument.dependent = false;
+          if(have_substituted_default_expression) {
+            argument.expression.reset(new CppAstNode(substituted_default_expression));
+          }
+          changed = true;
+        }
+      }
+    }
+
+    bind_single_template_argument_into_scope(services,
+                                             bound_scope,
+                                             parameter,
+                                             argument);
+    if(default_argument_scope != &bound_scope) {
+      bind_single_template_argument_into_scope(services,
+                                               *default_argument_scope,
+                                               parameter,
+                                               argument);
+    }
+  }
+
+  return changed;
 }
 
 void note_resolve_template_arguments_fast_cache_entry(
@@ -11103,6 +11233,21 @@ bool resolve_non_type_template_parameter_type(
     TypePtr & out)
 {
   return try_resolve_non_type_template_parameter_type(services, scope, parameter, out);
+}
+
+bool refresh_dependent_defaulted_non_type_template_arguments(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const std::vector<TemplateParameterInfo> & parameters,
+    std::vector<TemplateArgument> & arguments,
+    template_api::TemplateEnvironmentHandle default_argument_declaring_scope)
+{
+  return refresh_dependent_defaulted_non_type_template_arguments_impl(
+      services,
+      scope,
+      parameters,
+      arguments,
+      default_argument_declaring_scope);
 }
 
 bool type_has_dependent_template_owner(const TypePtr & type)

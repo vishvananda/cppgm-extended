@@ -230,6 +230,16 @@ void note_template_value_dependencies_for_witness(
 bool collect_template_member_value_dependency_if_active(
     const template_model::TemplateValueDependency & dependency);
 
+class ScopedTemplateMemberValueDependencyCollectionPause
+{
+public:
+  explicit ScopedTemplateMemberValueDependencyCollectionPause(bool active = true);
+  ~ScopedTemplateMemberValueDependencyCollectionPause();
+
+private:
+  bool active_;
+};
+
 NonTypeArgumentStatus evaluate_non_type_argument_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
