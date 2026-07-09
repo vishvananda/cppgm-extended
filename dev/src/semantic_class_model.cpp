@@ -3726,6 +3726,25 @@ bool build_alignment_expression_from_type_id(const CppAstNode & type_id,
   return true;
 }
 
+void maybe_complete_alignment_operand_type(SemanticContext & ctx,
+                                           const TypePtr & type)
+{
+  if(!type) {
+    return;
+  }
+  TypePtr base = strip_top_level_cv(remove_reference_type(type));
+  if(!base) {
+    return;
+  }
+  if(base->kind == Type::TK_ARRAY) {
+    maybe_complete_alignment_operand_type(ctx, base->inner);
+    return;
+  }
+  if(base->kind == Type::TK_NAMED && !base->named_has_layout) {
+    ctx.complete_class_type(base);
+  }
+}
+
 size_t evaluate_declared_alignment(SemanticContext & ctx,
                                    Scope & scope,
                                    const CppAstNode * node)
@@ -3749,6 +3768,7 @@ size_t evaluate_declared_alignment(SemanticContext & ctx,
     if(syntax && syntax->kind == CppAstKind::type_id) {
       TypePtr alignment_type;
       if(ctx.parse_type_id(scope, *syntax, alignment_type)) {
+        maybe_complete_alignment_operand_type(ctx, alignment_type);
         out = std::max(out, cpp_decl::type_alignment(alignment_type));
         continue;
       }

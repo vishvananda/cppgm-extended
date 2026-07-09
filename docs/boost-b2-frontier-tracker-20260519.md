@@ -5018,3 +5018,25 @@ B2 library build advances past `array::begin` to the next frontier,
 against a temporary pre-fix worktree baseline at `1934b6b0c` passes:
 instructions `+0.15%`, RSS `-1.51%`, footprint `+0.00%`; report
 `/tmp/cppgm-perf-after-out-of-class-member-trailing-20260708.json`.
+
+2026-07-09 Boost.Json alignas named-type completion frontier: after the
+out-of-class trailing-return fix, focused Boost.Json library build advanced to
+`struct alignas(key_value_pair) object::table` in
+`boost/json/impl/object.hpp:40` and failed with `named type alignment
+unavailable` while completing `object::table`. The alignas path already parsed
+the operand as a structured `type-id`, but unlike `alignof(type-id)` it did not
+complete/synchronize a named class operand before asking `type_alignment`.
+The fix completes array element and named class layout for typed
+`alignas(type-id)` operands before querying alignment. No source-text reparse
+or Boost-specific special case was added. Owner: PA15 class layout and alignas
+semantics. New regression:
+`pa15/tests/general/300-alignas-out-of-class-nested-type.t`. Validation: clang
+accepts the reducer with `-std=c++11 -x c++`; the reducer fails before the fix
+with the same `named type alignment unavailable` diagnostic and passes after
+the fix; native reducer exits `0`; PA15 direct-LowIR report passes `178/178`;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; full strict direct-LowIR passes; focused Boost.Json B2
+library build advances past `object::table` to the next frontier,
+`unsupported constexpr class member initializer [class handler] [member
+max_array_size]` while completing
+`boost::json::basic_parser<boost::json::detail::handler>`.
