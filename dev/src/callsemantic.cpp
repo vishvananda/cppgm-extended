@@ -1592,10 +1592,6 @@ private:
     }
     ClassTemplateDecl * decl =
         static_cast<ClassTemplateDecl *>(mangle_info->class_template_decl);
-    if(!decl->explicit_specializations.empty() ||
-       !decl->partial_specializations.empty()) {
-      return nullptr;
-    }
     const std::string key =
         template_instantiation::template_argument_key_for_instantiation(
             *const_cast<Analyzer *>(this),

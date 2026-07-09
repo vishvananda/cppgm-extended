@@ -5465,3 +5465,33 @@ direct-text suite passes; `python3 scripts/audit_text_reparse.py --strict`
 reports all zero; `python3 -m unittest scripts.tests.test_audit_text_reparse`
 passes; `git diff --check` passes; focused Boost.Lambda
 `bind_tests_simple.cpp` direct compile passes.
+
+2026-07-09 Boost.Lambda default-elided partial-specialization class-info
+frontier: after the dependent non-type metadata fix, the Lambda suite reached
+`base class must be complete: T` in `bind_tests_advanced.cpp` for
+`lambda_functor<T> : T`, where `T` was
+`lambda_functor_base<protect_action, tuple<lambda_functor<identity<int const>>>>`.
+The concrete `lambda_functor_base` reference instantiation already existed
+under the typed full key including defaulted `tuple` arguments, but
+`class_info_for_type` refused its structured mangle-info recovery path for any
+class template with partial specializations. The resulting abbreviated named
+key could not find the existing partial-specialization class info. The fix
+allows typed metadata recovery to look up already-created full/reference
+instantiations even when the source class template has partial or explicit
+specializations; it still does not select or create a specialization from
+source text. No source-text reparse, Boost-specific rule, fallback resolver, or
+cache was added. Owner: PA23 class-template partial-specialization
+materialization with defaulted template arguments. New regression:
+`pa23/tests/spec/400-defaulted-template-arg-partial-base-completion.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; focused PA23
+check passes; PA23 direct-text report passes `389/389`; full strict
+direct-text suite passes; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `git diff --check` passes; the Boost-header
+`protect(constant(2))` reducer passes; focused Boost.Lambda
+`bind_tests_advanced` passes; focused rerun of the Lambda base-completion
+cluster moves `ret_test`, `control_structures`, and `operator_tests_simple` to
+pass, leaving the separate `cast_test`, `exception_test`, and
+`switch_construct` frontiers. Perf check against the isolated `448f5930c`
+before-baseline `/tmp/cppgm-perf-baseline-before-partial-metadata-448f5930c.json`
+passes: instructions `+0.18%`, RSS `+1.02%`, footprint `+0.03%`; report
+`/tmp/cppgm-perf-check-partial-metadata-lookup.json`.
