@@ -10028,6 +10028,18 @@ bool exact_constructor_match_may_be_beaten_by_constructor_template(
   return false;
 }
 
+bool constructor_template_pattern_is_initializer_list_candidate(
+    SemanticContext & ctx,
+    const FunctionTemplateDecl & decl)
+{
+  if(decl.params_pattern.empty()) {
+    return false;
+  }
+  TypePtr first_param =
+      strip_top_level_cv(remove_reference_type(decl.params_pattern[0].second));
+  return ctx.is_initializer_list_type(first_param, nullptr, nullptr);
+}
+
 template <typename AppendCandidate>
 void append_constructor_template_candidates(
     SemanticContext & ctx,
@@ -10053,6 +10065,11 @@ void append_constructor_template_candidates(
       continue;
     }
     if(!constructor_templates[i]) {
+      continue;
+    }
+    if(options.initializer_list_only &&
+       !constructor_template_pattern_is_initializer_list_candidate(
+           ctx, *constructor_templates[i])) {
       continue;
     }
     if(!constructor_template_matches_source_args_fast(ctx,
@@ -10162,6 +10179,200 @@ void append_constructor_template_candidates(
       std::ostringstream trace;
       trace << "ctor-instantiated-binding class=" << info.qualified_name
             << " template=" << constructor_templates[i]->name;
+      append_binding_trace_identity(trace, ctx, binding);
+      parser_trace::note("template.resolve",
+                         template_use_or_fallback_location(
+                             candidate_primary_location(ctx, binding)),
+                         trace.str());
+    }
+    if(options.initializer_list_only) {
+      TypePtr binding_type = binding ? strip_top_level_cv(binding->type) : TypePtr();
+      if(!binding_type || binding_type->kind != Type::TK_FUNCTION ||
+         binding_type->params.size() <= 1 ||
+         !ctx.is_initializer_list_type(binding_type->params[1], nullptr, nullptr)) {
+        continue;
+      }
+    }
+    append_candidate(binding);
+  }
+}
+
+template <typename AppendCandidate>
+void append_constructor_template_node_candidates(
+    SemanticContext & ctx,
+    Scope & scope,
+    ClassInfo & info,
+    const vector<const CppAstNode *> & arg_nodes,
+    SharedCallArgumentAnalyzer & argument_analyzer,
+    const ConstructorSelectionOptions & options,
+    const char * trace_label,
+    vector<template_api::TemplateWitnessSourceDrop> & source_drops,
+    AppendCandidate append_candidate)
+{
+  vector<FunctionTemplateDecl *> constructor_templates =
+      collect_constructor_templates(info);
+  const bool has_exact_constructor_template_owner =
+      constructor_template_set_has_exact_owner(constructor_templates, info);
+  for(size_t i = 0; i < constructor_templates.size(); ++i) {
+    FunctionTemplateDecl * constructor_template = constructor_templates[i];
+    if(has_exact_constructor_template_owner &&
+       constructor_template &&
+       constructor_template->declaring_scope &&
+       constructor_template->declaring_scope->class_info &&
+       constructor_template->declaring_scope->class_info != &info) {
+      continue;
+    }
+    if(!constructor_template) {
+      continue;
+    }
+    if(options.initializer_list_only &&
+       !constructor_template_pattern_is_initializer_list_candidate(
+           ctx, *constructor_template)) {
+      continue;
+    }
+    if(!constructor_template_accepts_argument_count_fast(*constructor_template,
+                                                         arg_nodes.size())) {
+      append_template_function_candidate_drop(
+          ctx,
+          constructor_template,
+          constructor_template_argument_count_drop_reason(*constructor_template,
+                                                         arg_nodes.size()),
+          &source_drops);
+      continue;
+    }
+
+    vector<ExprInfo> source_args;
+    source_args.reserve(arg_nodes.size());
+    bool args_ok = true;
+    string arg_error;
+    for(size_t j = 0; j < arg_nodes.size(); ++j) {
+      const TypePtr target =
+          j < constructor_template->params_pattern.size() ?
+              constructor_template->params_pattern[j].second :
+              TypePtr();
+      try
+      {
+        ExprInfo reference_source;
+        if(target && is_reference_type(target)) {
+          if(argument_analyzer.analyze_reference_source(j, reference_source)) {
+            source_args.push_back(reference_source);
+            continue;
+          }
+        }
+        ExprInfo arg;
+        {
+          ScopedCallSemConstructionPath arg_path(
+              "overload.constructor-template.arg-analysis");
+          arg = argument_analyzer.analyze_argument(
+              j,
+              target,
+              should_use_template_deduction_target_aware_argument_analysis(
+                  ctx, *arg_nodes[j], target));
+        }
+        source_args.push_back(arg);
+      }
+      catch(const logic_error & e)
+      {
+        args_ok = false;
+        arg_error = e.what();
+        break;
+      }
+    }
+    if(!args_ok) {
+      if(parser_trace::enabled("template.resolve")) {
+        std::ostringstream trace;
+        trace << "constructor-template name=" << constructor_template->name
+              << " arg-analysis-failed=" << arg_error;
+        parser_trace::note("template.resolve", std::string(), trace.str());
+      }
+      append_template_function_candidate_drop(ctx,
+                                              constructor_template,
+                                              "substitution_failure",
+                                              &source_drops);
+      continue;
+    }
+
+    Scope * constructor_use_scope_base =
+        constructor_template->declaring_scope &&
+                info.member_scope &&
+                !scope_is_within(scope, constructor_template->declaring_scope) ?
+            info.member_scope.get() :
+            &scope;
+    Scope constructor_use_scope(constructor_use_scope_base, "", false);
+    constructor_use_scope.class_info = &info;
+    constructor_use_scope.function = scope.function;
+    if(constructor_use_scope_base != info.member_scope.get()) {
+      semantic_template_function::overlay_instantiation_use_scope_bindings(
+          constructor_use_scope,
+          *info.member_scope,
+          constructor_template->declaring_scope);
+    }
+
+    vector<TemplateArgument> deduced;
+    map<string, size_t> pack_sizes;
+    semantic_template_function::FunctionTemplateDeduction result;
+    const bool deduced_ok =
+        semantic_template_function::deduce_function_template_from_arguments(
+            ctx, *constructor_template, source_args, &constructor_use_scope, result);
+    if(deduced_ok) {
+      deduced.swap(result.arguments);
+      pack_sizes.swap(result.pack_sizes);
+    }
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << trace_label << " class=" << info.qualified_name
+            << " template=" << constructor_template->name
+            << " template_ptr=" << static_cast<void *>(constructor_template)
+            << " template_owner="
+            << (constructor_template->declaring_scope &&
+                        constructor_template->declaring_scope->class_info ?
+                    constructor_template->declaring_scope->class_info->qualified_name :
+                    std::string("<none>"))
+            << " deduced_ok=" << (deduced_ok ? "yes" : "no")
+            << " deduced_count=" << deduced.size();
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    if(!deduced_ok) {
+      append_template_function_candidate_drop(ctx,
+                                              constructor_template,
+                                              function_template_deduction_failure_drop_reason(
+                                                  ctx,
+                                                  *constructor_template,
+                                                  source_args,
+                                                  false),
+                                              &source_drops);
+      continue;
+    }
+
+    FunctionBinding * binding = nullptr;
+    try
+    {
+      const template_api::ScopedTemplateWitnessFunctionCallSourceCapturePause
+          class_source_capture_pause;
+      const std::string instantiation_use_location =
+          constructor_witness_source_location(options, std::string(), source_args);
+      binding = semantic_template_function::acquire_function_template_binding(
+          ctx,
+          *constructor_template,
+          deduced,
+          &constructor_use_scope,
+          &pack_sizes,
+          false,
+          nullptr,
+          instantiation_use_location);
+    }
+    catch(const TemplateSubstitutionFailure &)
+    {
+      append_template_function_candidate_drop(ctx,
+                                              constructor_template,
+                                              "substitution_failure",
+                                              &source_drops);
+      continue;
+    }
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "ctor-instantiated-binding class=" << info.qualified_name
+            << " template=" << constructor_template->name;
       append_binding_trace_identity(trace, ctx, binding);
       parser_trace::note("template.resolve",
                          template_use_or_fallback_location(
@@ -11162,32 +11373,15 @@ FunctionBinding * select_constructor(SemanticContext & ctx,
     }
   }
 
-  vector<ExprInfo> constructor_template_args;
-  bool constructor_template_args_ready = false;
-  bool constructor_template_args_valid = true;
-  if(!constructor_template_args_ready) {
-    constructor_template_args_ready = true;
-    for(size_t j = 0; j < effective_arg_nodes.size(); ++j) {
-      ExprInfo arg;
-      string arg_error;
-      if(!argument_analyzer.analyze_generic_arg(j, arg, arg_error)) {
-        constructor_template_args_valid = false;
-        break;
-      }
-      constructor_template_args.push_back(arg);
-    }
-  }
-  if(constructor_template_args_valid) {
-    append_constructor_template_candidates(ctx,
-                                           scope,
-                                           target_info,
-                                           constructor_template_args,
-                                           options,
-                                           false,
-                                           "ctor-node-candidate",
-                                           state.source_drops,
-                                           append_candidate);
-  }
+  append_constructor_template_node_candidates(ctx,
+                                              scope,
+                                              target_info,
+                                              effective_arg_nodes,
+                                              argument_analyzer,
+                                              options,
+                                              "ctor-node-candidate",
+                                              state.source_drops,
+                                              append_candidate);
 
   if(state.matches.empty()) {
     ostringstream out;

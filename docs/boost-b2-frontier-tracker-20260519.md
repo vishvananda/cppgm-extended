@@ -5204,3 +5204,32 @@ passes; full strict direct-text suite passes; full direct-text report passes
 constructor while lowering `boost::json::operator>>` at
 `boost/json/impl/value.ipp:707`. Log:
 `/tmp/boost-json-after-return-empty-braces-scalar-20260709.log`.
+
+2026-07-09 Boost.Json constructor-template braced array-bound frontier: after
+the scalar `return {};` fix, Boost.Json reached `stream_parser p({}, opts,
+parser_buf)` in `boost/json/impl/value.ipp:707`. The viable constructor is a
+constructor template whose first parameter can be formed from `{}` and whose
+third parameter is `unsigned char (&buffer)[N]`; the AST-node constructor
+template path analyzed all arguments generically before considering a concrete
+template candidate, so the braced first argument failed before array-bound
+deduction could run. The fix adds typed per-template argument analysis for
+constructor-template candidates, using each pattern parameter as the target and
+preserving reference source arguments for template deduction. It also prefilters
+the initializer-list-only constructor probe so non-`std::initializer_list`
+constructor templates are not materialized just to be rejected, preserving
+direct-text stability for existing constructor-template tests. No source-text
+reparse, Boost special case, fallback resolver, or cache was added. Owner:
+PA22 constructor-template deduction and overload resolution. New regression:
+`pa22/tests/spec/100-constructor-template-braced-array-bound-deduction.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; focused PA22
+checks pass for the new reducer and the existing defaulted constructor-template
+pack test that caught the premature materialization; PA22 direct-text report
+passes `229/229`; PA22 strict direct-text passes; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-text suite passes; full direct-text report passes
+`3583/3583`; focused Boost.Json B2 library build advances past the
+`stream_parser` constructor to the next frontier, unknown member function
+`boost::variant2::variant<boost::json::value *, boost::system::error_code>
+::_get_impl` while lowering `boost::variant2::unsafe_get` at
+`boost/variant2/variant.hpp:437`. Log:
+`/tmp/boost-json-after-constructor-template-braced-array-20260709.log`.
