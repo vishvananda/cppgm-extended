@@ -4558,9 +4558,11 @@ bool CppAstParser::parse_enum_specifier(CppAstNode & out)
   }
   apply_leading_declaration_attributes(out, attributes);
 
-  if(peek().is_identifier()) {
-    out.value = peek().source;
-    ++pos;
+  string name;
+  cpp_decl::QualifiedName name_syntax;
+  if(parse_qualified_name_text(name, &name_syntax)) {
+    out.value = name;
+    set_cppast_qualified_name_syntax(out, std::move(name_syntax));
   }
 
   if(!skip_attribute_specifier_seq(&out)) {

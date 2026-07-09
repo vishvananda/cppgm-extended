@@ -10227,7 +10227,6 @@ private:
 
   void collect_enum_declaration(Scope & scope, const CppAstNode & node) override
   {
-    Scope & durable_scope = persistent_enclosing_scope(scope);
     string enum_prefix = "enum";
     if(const CppAstNode * enum_key = find_child_kind(node, CppAstKind::enum_key)) {
       enum_prefix += " ";
@@ -10235,7 +10234,24 @@ private:
     }
     const bool scoped = find_child_kind(node, CppAstKind::enum_key) != nullptr;
 
-    const string enum_name = node.value.empty() ? next_anonymous_enum_name() : node.value;
+    Scope * enum_scope = &scope;
+    string enum_name = node.value.empty() ? next_anonymous_enum_name() : node.value;
+    if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
+      if(qualified->rooted || !qualified->qualifiers.empty()) {
+        enum_scope =
+            semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
+                *this,
+                scope,
+                *qualified,
+                false);
+        if(!enum_scope) {
+          throw logic_error("unknown qualified enum scope");
+        }
+        enum_name = qualified->name;
+      }
+    }
+
+    Scope & durable_scope = persistent_enclosing_scope(*enum_scope);
     TypePtr enum_underlying_type = make_fundamental(FT_INT);
     size_t enum_alignment = 4;
     size_t enum_size = 4;
@@ -10246,7 +10262,8 @@ private:
       enum_alignment = type_alignment(enum_underlying_type);
       enum_size = type_size(enum_underlying_type);
     }
-    TypePtr enum_type = node.value.empty() ? TypePtr() : direct_named_type(scope, node.value);
+    TypePtr enum_type =
+        node.value.empty() ? TypePtr() : direct_named_type(*enum_scope, enum_name);
     if(enum_type) {
       TypePtr base = strip_top_level_cv(enum_type);
       if(!base || base->kind != Type::TK_NAMED) {
@@ -10258,11 +10275,11 @@ private:
                               base ? class_info_for_type(base) : nullptr));
       }
     } else {
-      enum_type = make_enum_type(scope, enum_prefix, enum_name, true,
+      enum_type = make_enum_type(*enum_scope, enum_prefix, enum_name, true,
                                  enum_alignment, enum_size);
       if(!node.value.empty()) {
-        scope.named_types[node.value] = enum_type;
-        durable_scope.named_types[node.value] = enum_type;
+        enum_scope->named_types[enum_name] = enum_type;
+        durable_scope.named_types[enum_name] = enum_type;
       }
     }
     enum_type->named_enum_underlying_type = enum_underlying_type;
@@ -10274,7 +10291,7 @@ private:
       }
     }
 
-    Scope * enumerator_scope = &scope;
+    Scope * enumerator_scope = enum_scope;
     if(scoped && !node.value.empty()) {
       auto found = type_scopes_by_key.find(enum_type->named_key);
       if(found != type_scopes_by_key.end()) {
@@ -10289,14 +10306,14 @@ private:
       type_scopes_by_key[enum_type->named_key] = &durable_scope;
     }
 
-    Scope enum_initializer_scope(&scope, string(), false);
-    enum_initializer_scope.class_info = scope.class_info;
-    enum_initializer_scope.function = scope.function;
-    if(scope.class_info &&
-       scope.class_info->member_scope &&
-       scope.class_info->member_scope.get() != &scope) {
+    Scope enum_initializer_scope(enum_scope, string(), false);
+    enum_initializer_scope.class_info = enum_scope->class_info;
+    enum_initializer_scope.function = enum_scope->function;
+    if(enum_scope->class_info &&
+       enum_scope->class_info->member_scope &&
+       enum_scope->class_info->member_scope.get() != enum_scope) {
       overlay_direct_scope_bindings(enum_initializer_scope,
-                                    *scope.class_info->member_scope);
+                                    *enum_scope->class_info->member_scope);
     }
 
     long long next_value = -1;

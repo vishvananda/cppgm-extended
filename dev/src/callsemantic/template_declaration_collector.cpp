@@ -22,6 +22,7 @@
 #include "semantic_utils.h"
 #include "symbol_linkage.h"
 #include "template_api.h"
+#include "template_argument_semantics.h"
 #include "template_function_signature.h"
 #include "template_model.h"
 #include "template_scope.h"
@@ -3391,11 +3392,14 @@ public:
             const vector<TemplateArgument> & arguments) -> bool
         {
           TypePtr instantiated_type;
+          Scope & substitution_scope =
+              decl.declaring_scope ? *decl.declaring_scope : scope;
           if(!decl.type_pattern ||
-             !template_api::type::substitute_type(decl.type_pattern,
-                                                  decl.parameters,
-                                                  arguments,
-                                                  instantiated_type) ||
+             !template_argument_semantics::substitute_type(substitution_scope,
+                                                           decl.type_pattern,
+                                                           decl.parameters,
+                                                           arguments,
+                                                           instantiated_type) ||
              !instantiated_type) {
             return false;
           }

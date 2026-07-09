@@ -4946,3 +4946,35 @@ Fresh full Iostreams replay with the same zlib-aware config,
 updates 246 targets and passes; log
 `/tmp/boost-iostreams-full-zlib-frontier-after-catch-handler-20260708.log`.
 The next suite-status row after Iostreams is `libs/iterator/test`.
+
+2026-07-08 Boost.Json qualified enum / explicit specialization frontiers:
+fresh `libs/json/test` first failed in `boost/json/impl/serializer.hpp` on
+`enum class writer::state : char { ... };`, then advanced to
+`boost/json/value.hpp` where explicit specializations such as
+`template<> string_view const get<0>(key_value_pair const&)` failed to match a
+primary with trailing result type
+`typename std::conditional<I == 0, string_view const, value const&>::type`.
+The enum fix preserves qualified-name syntax on enum-specifiers and collects a
+qualified enum definition in the resolved class/namespace scope. The
+specialization fix uses scoped type substitution when comparing an explicit
+function specialization against the instantiated primary, so substituted
+non-type argument expressions keep their structured syntax instead of leaving
+stale expression carriers. No source-text reparse, Boost special case, or
+fallback resolver is added. Owners: PA11 scoped enum declarations; PA22
+explicit function-template specialization with dependent result substitution.
+New regressions:
+`pa11/tests/general/200-qualified-member-scoped-enum-definition.t` and
+`pa22/tests/spec/100-explicit-specialization-conditional-result-type.t`.
+Validation: `make -C dev cppgm++ -j8`; both new tests are accepted by clang
+with `-std=c++11` and pass focused PA checks; PA11/PA22 direct report passes
+`278/278`; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; focused direct Boost.Json `src.cpp` compile and
+full B2 both advance to the next shared frontier,
+`auto array::begin() noexcept -> iterator` in `boost/json/impl/array.hpp:330`.
+Full B2 log:
+`/tmp/boost-json-after-enum-explicit-specialization-20260708.log`, status `1`,
+`43` failed updates at that frontier. PA22 strict currently has a pre-existing
+witness-mode compile failure in
+`pa22/tests/spec/500-function-result-default-nontype-scope.t`; the same exact
+`--witness` invocation fails from clean `HEAD` (`e0c6faceb`) in a temporary
+worktree, so it is not introduced by this JSON fix.
