@@ -265,9 +265,9 @@ protected:
       bool prefer_unknown_template_ids = false) const;
   struct SeededClassNameScopes
   {
-    bool template_names = false;
-    bool type_names = false;
-    bool value_names = false;
+    std::size_t template_names = 0;
+    std::size_t type_names = 0;
+    std::size_t value_names = 0;
   };
   struct ClassMemberNameScopes
   {

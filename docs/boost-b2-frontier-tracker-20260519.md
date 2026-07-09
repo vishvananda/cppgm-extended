@@ -5123,3 +5123,32 @@ advances past `unchecked_object::~unchecked_object` to the next frontier,
 lazy function body materialization rejecting `static_assert` while lowering
 `boost::json::object::table::allocate`. Log:
 `/tmp/boost-json-after-lazy-pointer-decl-20260709.log`.
+
+2026-07-09 Boost.Json lazy nested member enclosing-scope frontier: after the
+lazy local pointer-declaration fix, Boost.Json reached
+`boost::json::object::table::allocate`, whose lazily materialized out-of-class
+nested member body begins with
+`BOOST_CORE_STATIC_ASSERT(alignof(key_value_pair) >= alignof(index_t))`. The
+parser already supported block-scope `static_assert` and `alignof(type-id)`,
+but the lazy body snapshot for the relative definition
+`object::table::allocate` inside `namespace boost::json` seeded only the
+immediate nested class member hints, and did not seed the enclosing
+`boost::json::object` class alias scope. The fix extends the existing typed
+class-member name-hint stack to push enclosing class scopes from outer to
+inner, and resolves each relative class hint against the current namespace
+before materializing the lazy body. No source-text reparse or Boost-specific
+case was added. Owner: PA15 nested class member body parsing and LowIR output.
+New regression:
+`pa15/tests/general/300-lazy-nested-class-enclosing-alias-static-assert.t`
+with companion header
+`pa15/tests/general/300-lazy-nested-class-enclosing-alias-static-assert.h`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; the reducer
+fails before the fix with the Boost-shaped `failed to materialize lazy
+function body: expected block-item near KW_STATIC_ASSERT:static_assert`
+diagnostic and passes after the fix; PA15 direct-LowIR report passes
+`180/180`; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; full strict direct-LowIR passes; focused Boost.Json
+B2 library build advances past `object::table::allocate` to the next frontier,
+`invalid return expression [target class boost::json::value] [expr nullptr]`
+while lowering `boost::json::parse` at `boost/json/impl/parse.ipp:36`. Log:
+`/tmp/boost-json-after-enclosing-class-hints-20260709.log`.

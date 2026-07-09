@@ -2424,36 +2424,68 @@ CppAstParser::SeededClassNameScopes CppAstParser::push_class_member_name_hints(
     const string & class_key)
 {
   SeededClassNameScopes seeded;
-  std::unordered_map<string, ClassMemberNameScopes>::const_iterator found =
-      class_member_name_scopes.find(class_key);
-  if(found == class_member_name_scopes.end()) {
-    return seeded;
+  const string current_namespace = current_namespace_path_key();
+  const auto find_scopes =
+      [&](const string & key) -> const ClassMemberNameScopes *
+  {
+    std::unordered_map<string, ClassMemberNameScopes>::const_iterator found =
+        class_member_name_scopes.find(key);
+    if(found != class_member_name_scopes.end()) {
+      return &found->second;
+    }
+    if(!current_namespace.empty()) {
+      const string qualified = current_namespace + "::" + key;
+      found = class_member_name_scopes.find(qualified);
+      if(found != class_member_name_scopes.end()) {
+        return &found->second;
+      }
+    }
+    return nullptr;
+  };
+
+  vector<string> keys;
+  for(string key = class_key; !key.empty();) {
+    keys.push_back(key);
+    const size_t split = key.rfind("::");
+    if(split == string::npos) {
+      break;
+    }
+    key = key.substr(0, split);
   }
 
-  if(!found->second.template_names.empty()) {
-    template_name_scopes.push_back(found->second.template_names);
-    seeded.template_names = true;
-  }
-  if(!found->second.type_names.empty()) {
-    type_name_scopes.push_back(found->second.type_names);
-    seeded.type_names = true;
-  }
-  if(!found->second.value_names.empty()) {
-    value_name_scopes.push_back(found->second.value_names);
-    seeded.value_names = true;
+  for(vector<string>::const_reverse_iterator it = keys.rbegin();
+      it != keys.rend();
+      ++it) {
+    const ClassMemberNameScopes * found = find_scopes(*it);
+    if(!found) {
+      continue;
+    }
+
+    if(!found->template_names.empty()) {
+      template_name_scopes.push_back(found->template_names);
+      ++seeded.template_names;
+    }
+    if(!found->type_names.empty()) {
+      type_name_scopes.push_back(found->type_names);
+      ++seeded.type_names;
+    }
+    if(!found->value_names.empty()) {
+      value_name_scopes.push_back(found->value_names);
+      ++seeded.value_names;
+    }
   }
   return seeded;
 }
 
 void CppAstParser::pop_class_member_name_hints(const SeededClassNameScopes & seeded)
 {
-  if(seeded.value_names) {
+  for(size_t i = 0; i < seeded.value_names; ++i) {
     value_name_scopes.pop_back();
   }
-  if(seeded.type_names) {
+  for(size_t i = 0; i < seeded.type_names; ++i) {
     type_name_scopes.pop_back();
   }
-  if(seeded.template_names) {
+  for(size_t i = 0; i < seeded.template_names; ++i) {
     template_name_scopes.pop_back();
   }
 }
