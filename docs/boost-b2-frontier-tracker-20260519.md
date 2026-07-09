@@ -5181,3 +5181,26 @@ expression` while lowering `boost::json::detail::parse_number_token` at
 `boost/json/impl/pointer.ipp:180`. Logs:
 `/tmp/boost-json-after-braced-default-20260709.log` and
 `/tmp/boost-json-after-default-braced-call-20260709.log`.
+
+2026-07-09 Boost.Json scalar return empty-braces frontier: after the braced
+default-argument fix, Boost.Json reached `return {};` in
+`boost::json::detail::parse_number_token`, returning `std::size_t` from
+`boost/json/impl/pointer.ipp:180`. The target-aware expression path had class,
+array, and `initializer_list` braced initialization support, but fell back to
+generic braced-init-list expression analysis for scalar empty braces, which is
+not an expression. The fix keeps the existing typed target-aware paths for
+non-scalar targets and adds a narrow scalar/non-reference `braced_init_list`
+case that materializes a value-initialized target expression for empty braces.
+No source-text reparse or Boost-specific fallback was added. Owner: PA14
+return-expression lowering for scalar targets. New regression:
+`pa14/tests/general/300-return-empty-braces-scalar.t`. Validation: clang
+accepts the reducer with `-std=c++11 -x c++`; the reducer fails before the fix
+with the Boost-shaped `unsupported braced-init-list expression` diagnostic and
+passes after the fix; PA14 direct-text report passes `71/71`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-text suite passes; full direct-text report passes
+`3582/3582`; focused Boost.Json B2 library build advances past
+`parse_number_token` to the next frontier, no viable `stream_parser`
+constructor while lowering `boost::json::operator>>` at
+`boost/json/impl/value.ipp:707`. Log:
+`/tmp/boost-json-after-return-empty-braces-scalar-20260709.log`.

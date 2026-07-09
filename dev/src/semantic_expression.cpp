@@ -5149,8 +5149,13 @@ ExprInfo analyze_expression_for_target(SemanticContext & ctx,
                                   "target-aware-to-generic-expression",
                                   target_aware_detail);
     }
-    if(!is_reference_type(target) ||
-       !try_analyze_reference_binding_source_expression_impl(ctx, scope, node, expr)) {
+    if(node.kind == CppAstKind::braced_init_list &&
+       node.children.empty() &&
+       target &&
+       !is_reference_type(target)) {
+      expr = ctx.make_value_initialized_expr(target);
+    } else if(!is_reference_type(target) ||
+              !try_analyze_reference_binding_source_expression_impl(ctx, scope, node, expr)) {
       expr = ctx.analyze_expression(scope, node);
     }
   }
