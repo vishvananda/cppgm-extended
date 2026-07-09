@@ -1,0 +1,53 @@
+global @__local_static__digits__arr__tokens16_30 [binding=internal] = {
+  i8 48
+  i8 49
+  i8 50
+  i8 51
+}
+global @__local_static__digits__arr__tokens16_30__guard : i64 [binding=internal] = zero
+
+function @digits() -> ptr [unwind=no, binding=strong, object=_Z6digitsv] {
+  block ^entry:
+    %t1 = load i64 @__local_static__digits__arr__tokens16_30__guard
+    %t2 = cmp ne i64 %t1, 0
+    branch %t2, ^local_static_ready_1, ^local_static_init_2
+
+  block ^local_static_init_2:
+    %t3 = addr @__local_static__digits__arr__tokens16_30
+    store i8 48, %t3
+    %t4 = index i8 %t3, 1
+    store i8 49, %t4
+    %t5 = index i8 %t3, 2
+    store i8 50, %t5
+    %t6 = index i8 %t3, 3
+    store i8 51, %t6
+    store i64 1, @__local_static__digits__arr__tokens16_30__guard
+    jump ^local_static_ready_1
+
+  block ^local_static_ready_1:
+    %t7 = addr @__local_static__digits__arr__tokens16_30
+    return ptr %t7
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = call ptr @digits()
+    %t2 = index i8 [projection=array_element] %t1, 2
+    %t3 = load i8 %t2
+    %t4 = convert sext i32 i8 %t3
+    %t5 = cmp eq i32 %t4, 50
+    branch %t5, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t6 = load i32 $cond__1
+    return i32 %t6
+}

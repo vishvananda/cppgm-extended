@@ -70,7 +70,7 @@ CppAstNode filter_function_declarator(const CppAstNode & declarator)
        filtered.children[i].kind == CppAstKind::trailing_return_type) {
       continue;
     }
-    kept.push_back(filtered.children[i]);
+    kept.push_back(filter_function_declarator(filtered.children[i]));
   }
   filtered.children.swap(kept);
   return filtered;

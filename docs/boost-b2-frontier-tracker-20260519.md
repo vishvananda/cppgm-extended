@@ -5068,3 +5068,29 @@ advances past `handler::max_array_size` to the next frontier,
 to an array, `inline char const (&DIGIT_TABLE() noexcept)[200]`, in
 `boost/json/detail/ryu/detail/digit_table.hpp:36`. Log:
 `/tmp/boost-json-after-constexpr-local-alias-20260709.log`.
+
+2026-07-09 Boost.Json nested function declarator qualifier frontier: after the
+constexpr local-alias fix, Boost.Json advanced to the Ryu digit table helper
+`inline char const (&DIGIT_TABLE() noexcept)[200]`. The typed declarator parser
+already understood nested declarators and array suffixes, but the
+function-declarator filter only removed `function-qualifier` nodes at the
+outer declarator level. In this valid C++11 spelling the actual
+`parameter-clause` and `noexcept` are inside the nested declarator that is then
+followed by the array suffix, so the parser rejected the unfiltered nested
+`noexcept`. The fix makes the existing typed filter recurse through declarator
+children, applies the same behavior to template function signature parsing,
+and makes function-qualifier discovery follow nested declarators so nothrow
+metadata is still wired through the normal function binding path. No source
+text parse or ABI-side special case was added. Owner: PA14 source-to-LowIR
+function declarator lowering. New regression:
+`pa14/tests/general/300-function-noexcept-array-reference-return.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; the reducer
+fails before the fix with the Boost-shaped `unsupported function declarator`
+diagnostic and passes after the fix; native reducer exits `0`; PA14
+direct-LowIR report passes `70/70`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-LowIR passes; focused Boost.Json B2 library build
+advances past `DIGIT_TABLE` to the next frontier, `unknown id-expression
+value`, while lowering `boost::json::detail::unchecked_object::~unchecked_object`
+at `boost/json/impl/object.hpp:556`. Log:
+`/tmp/boost-json-after-array-ref-return-20260709.log`.

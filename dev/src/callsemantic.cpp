@@ -8986,7 +8986,7 @@ private:
          filtered.children[i].kind == CppAstKind::trailing_return_type) {
         continue;
       }
-      kept.push_back(filtered.children[i]);
+      kept.push_back(filtered_function_declarator(filtered.children[i]));
     }
     filtered.children.swap(kept);
     return filtered;

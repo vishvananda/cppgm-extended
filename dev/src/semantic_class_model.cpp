@@ -5172,6 +5172,16 @@ const CppAstNode * declarator_function_qualifier(const CppAstNode & declarator)
       return &declarator.children[i];
     }
   }
+  for(size_t i = 0; i < declarator.children.size(); ++i) {
+    const CppAstNode & child = declarator.children[i];
+    if(child.kind != CppAstKind::nested_declarator || child.children.size() != 1) {
+      continue;
+    }
+    if(const CppAstNode * qualifier =
+           declarator_function_qualifier(child.children[0])) {
+      return qualifier;
+    }
+  }
   return nullptr;
 }
 
