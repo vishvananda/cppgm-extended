@@ -5544,3 +5544,28 @@ passes; focused Boost.Lambda `member_pointer_test` advances past the raw
 pointer-to-member callee failure to the existing Lambda assignment-conversion
 frontier, log
 `/tmp/boost-lambda-member-pointer-after-arrowstar-callee.log`.
+
+2026-07-09 Boost.Lambda function-template result shadowing frontier: after the
+overloaded `->*` callee fix, `operator_tests_simple` and `member_pointer_test`
+failed while instantiating Boost.Lambda assignment operators whose result type
+mentions a function-template parameter named `A` while an outer `class A` is
+also visible. The cached semantic result had already collapsed to the outer
+type, but the stored result AST still represented the function-template
+parameter binding. The fix keeps the existing structured result-pattern
+instantiation path authoritative for this stale nondependent case after the
+parsed result validates, instead of trusting the stale cached type. No
+source-text reparse, fallback resolver, cache, or Boost-specific rule was
+added. Owner: PA22 substituted function-template result types. New regression:
+`pa22/tests/spec/501-function-result-member-template-shadowed-argument.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; the Boost-header
+assignment reducer compiles with clang and `cppgm++`; focused PA22 check passes;
+PA22 direct-text report passes `233/233`; full strict direct-text suite passes;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; focused Boost.Lambda `operator_tests_simple` builds, links,
+and runs under B2; focused `member_pointer_test` advances to the next frontier,
+`failed non-type template argument evaluation:
+boost::is_pointer<A>::value&&detail::member_pointer<plainB>::is_data_member`.
+Perf gate against detached clean baseline `042df3193` passes: instructions
+`-0.16%`, RSS `-1.14%`, footprint `-0.07%`; baseline
+`/tmp/cppgm-perf-baseline-shadowed-result-042df3193-20260709.json`, report
+`/tmp/cppgm-perf-report-shadowed-result-20260709.json`.

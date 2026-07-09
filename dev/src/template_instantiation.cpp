@@ -10424,7 +10424,12 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       }
       const bool source_result_type_was_dependent =
           template_argument_semantics::type_depends_on_template_parameter(ctx, result_type);
-      if(source_result_type_was_dependent) {
+      const bool source_result_mentions_template_parameter =
+          source_decl->result_type_pattern.kind != CppAstKind::invalid &&
+          ast_mentions_template_parameter_name(source_decl->result_type_pattern,
+                                               source_decl->parameters);
+      if(source_result_type_was_dependent ||
+         source_result_mentions_template_parameter) {
         TypePtr substituted;
         if(template_argument_semantics::substitute_type(
                inst_scope, result_type, source_decl->parameters, arguments, substituted)) {
@@ -10557,10 +10562,6 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               "template-instantiation");
         }
       }
-      const bool source_result_mentions_template_parameter =
-          source_decl->result_type_pattern.kind != CppAstKind::invalid &&
-          ast_mentions_template_parameter_name(source_decl->result_type_pattern,
-                                               source_decl->parameters);
       if((result_type_still_dependent ||
           source_result_mentions_template_parameter) &&
          source_decl->result_type_pattern.kind != CppAstKind::invalid) {
@@ -10736,7 +10737,25 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               template_argument_semantics::type_depends_on_template_parameter(
                   ctx,
                   result_type);
+          bool parsed_result_valid_for_stale_source_pattern = false;
+          if(!current_result_dependent &&
+             !parsed_result_dependent &&
+             source_result_mentions_template_parameter &&
+             !source_result_type_was_dependent &&
+             !dependent_template_arguments) {
+            try {
+              validate_instantiated_result_template_arguments(ctx,
+                                                             inst_scope,
+                                                             parsed_result);
+              parsed_result_valid_for_stale_source_pattern = true;
+            } catch(const TemplateSubstitutionFailure &) {
+              throw;
+            } catch(const std::logic_error &) {
+              parsed_result_valid_for_stale_source_pattern = false;
+            }
+          }
           if(current_result_dependent ||
+             parsed_result_valid_for_stale_source_pattern ||
              (!parsed_result_dependent &&
               (type_equals(result_type, parsed_result) ||
                class_template_specialization_results_refine_same_pattern(
