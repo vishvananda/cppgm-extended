@@ -975,6 +975,16 @@ private:
                                           });
       if(request.resolved_arguments[i].kind == template_model::TemplateArgument::TA_TYPE) {
         argument.type = request.resolved_arguments[i].type;
+      } else if(request.resolved_arguments[i].kind ==
+                template_model::TemplateArgument::TA_VALUE) {
+        argument.type = request.resolved_arguments[i].type;
+        argument.function_value = request.resolved_arguments[i].function_value;
+        argument.function_internal_symbol =
+            request.resolved_arguments[i].function_internal_symbol;
+        argument.value_binding = request.resolved_arguments[i].value_binding;
+        argument.value = request.resolved_arguments[i].value;
+        argument.has_non_type_value = true;
+        argument.dependent_value = request.resolved_arguments[i].dependent;
       }
       if(i < request.source_arg_syntaxes.size()) {
         argument.syntax = request.source_arg_syntaxes[i];

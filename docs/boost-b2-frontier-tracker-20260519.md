@@ -5442,3 +5442,26 @@ zero; `python3 -m unittest scripts.tests.test_audit_text_reparse` passes;
 `git diff --check` passes; direct Boost.Json `basic_parser.cpp` compile passes
 with a sample captured at
 `/tmp/cppgm-basic-parser-final-type-pack-static-member.sample.txt`.
+
+2026-07-09 Boost.Lambda dependent class-template non-type metadata frontier:
+after the Boost.Json compile passed, the next Lambda frontier was
+`template-type-resolution-fallback` in generated `bind` overloads, first seen
+in `libs/lambda/test/bind_tests_simple.cpp`. The reduced case was a forward
+class-template-id `action<1, function_action<1, Result> >` matched against the
+partial specialization `lambda_functor_base<action<1, Act>, Args>`. Dependent
+class-template metadata preserved the typed class argument but dropped the
+concrete non-type argument `1`, so structured decomposition of the candidate
+template-id became positionally misaligned and fell back to semantic-only
+resolution. The fix carries typed non-type argument payloads through dependent
+class-template syntax, rebuilds `TA_VALUE` arguments during template-id
+decomposition, and prefers structured dependent/mangle metadata when class-info
+instantiation arguments are incomplete. No source-text reparse, Boost-specific
+rule, fallback resolver, or cache was added. Owner: PA23 class-template
+partial-specialization matching for dependent template-ids. New regression:
+`pa23/tests/spec/400-forward-template-id-nontype-partial-specialization.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; focused PA23
+check passes; PA23 direct-text report passes `388/388`; full strict
+direct-text suite passes; `python3 scripts/audit_text_reparse.py --strict`
+reports all zero; `python3 -m unittest scripts.tests.test_audit_text_reparse`
+passes; `git diff --check` passes; focused Boost.Lambda
+`bind_tests_simple.cpp` direct compile passes.

@@ -11,7 +11,9 @@
 struct CppAstNode;
 
 namespace semantic_model {
+struct FunctionBinding;
 struct Scope;
+struct ValueBinding;
 }
 
 namespace cpp_decl {
@@ -60,8 +62,14 @@ struct DependentAliasTemplateArgumentSyntax
   std::string text;
   TypePtr type;
   TemplateArgumentSyntax syntax;
+  const semantic_model::FunctionBinding * function_value = nullptr;
+  std::string function_internal_symbol;
+  const semantic_model::ValueBinding * value_binding = nullptr;
+  long long value = 0;
   semantic_model::Scope * semantic_scope = nullptr;
   std::shared_ptr<semantic_model::Scope> semantic_scope_storage;
+  bool has_non_type_value = false;
+  bool dependent_value = false;
   bool source_defaulted = false;
   bool partial_order_placeholder = false;
 };

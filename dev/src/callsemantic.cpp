@@ -14347,6 +14347,15 @@ private:
                                       template_argument_text(arguments[i]);
       if(arguments[i].kind == TemplateArgument::TA_TYPE) {
         dependent_argument.type = arguments[i].type;
+      } else if(arguments[i].kind == TemplateArgument::TA_VALUE) {
+        dependent_argument.type = arguments[i].type;
+        dependent_argument.function_value = arguments[i].function_value;
+        dependent_argument.function_internal_symbol =
+            arguments[i].function_internal_symbol;
+        dependent_argument.value_binding = arguments[i].value_binding;
+        dependent_argument.value = arguments[i].value;
+        dependent_argument.has_non_type_value = true;
+        dependent_argument.dependent_value = arguments[i].dependent;
       }
       if(source_arg_syntaxes && i < source_arg_syntaxes->size()) {
         dependent_argument.syntax = (*source_arg_syntaxes)[i];

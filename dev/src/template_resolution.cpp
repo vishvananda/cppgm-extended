@@ -8143,7 +8143,10 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
       have_dependent_class_template &&
       have_info &&
       dependent_class_template_decl == info.source_template &&
-      (!dependent_class_metadata_matches_info_texts() ||
+      ((info.source_template &&
+        !template_arguments_fully_bind_parameters(info.source_template->parameters,
+                                                 info.instantiation_arguments)) ||
+       !dependent_class_metadata_matches_info_texts() ||
        !info_arguments_match_instantiation_texts());
   const bool prefer_parsed_template_id_metadata =
       parsed_template_id &&
@@ -8286,6 +8289,18 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
     };
     out.source_template = info.source_template;
     out.arguments = info.instantiation_arguments;
+    if(info.source_template &&
+       !template_arguments_fully_bind_parameters(info.source_template->parameters,
+                                                out.arguments)) {
+      std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+          named_type_class_template_specialization_mangle_info_const(base);
+      if(mangle_info &&
+         mangle_info->class_template_decl == info.source_template &&
+         template_arguments_fully_bind_parameters(info.source_template->parameters,
+                                                  mangle_info->arguments)) {
+        out.arguments = mangle_info->arguments;
+      }
+    }
     // Do not recover typed arguments by reparsing stored source text here.
     // Deduction can still use the explicit argument text shape below, and
     // forcing text back through template-id lookup loses the structured origin.
@@ -8479,6 +8494,21 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
           arg.text = trim_space(dependent_arg.text);
           arg.dependent =
               service_type_depends_on_template_parameter(services, dependent_arg.type);
+          attach_template_argument_source_syntax(&dependent_arg.syntax, arg);
+          out.arguments.push_back(arg);
+        } else if(parameter &&
+                  parameter->kind == TemplateParameterInfo::TP_NON_TYPE &&
+                  dependent_arg.has_non_type_value) {
+          TemplateArgument arg;
+          arg.kind = TemplateArgument::TA_VALUE;
+          arg.type = dependent_arg.type ? dependent_arg.type : parameter->value_type;
+          arg.text = trim_space(dependent_arg.text);
+          arg.function_value = dependent_arg.function_value;
+          arg.function_internal_symbol = dependent_arg.function_internal_symbol;
+          arg.value_binding = dependent_arg.value_binding;
+          arg.value = dependent_arg.value;
+          arg.dependent = dependent_arg.dependent_value;
+          arg.source_defaulted = dependent_arg.source_defaulted;
           attach_template_argument_source_syntax(&dependent_arg.syntax, arg);
           out.arguments.push_back(arg);
         } else if(parameter &&
