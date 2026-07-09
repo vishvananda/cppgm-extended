@@ -815,6 +815,7 @@ Local Boost wrapper state:
 | 55 | `libs/heap/test` | pass | Current-head suite survey after the friend-access fixes passes in 322.5s, updating 69 targets. `d_ary_heap_test` now builds, links, runs, and passes along with the existing priority queue, mutable heap, skew heap, move-only, pairing, fibonacci, and binomial targets. Summary `/tmp/boost-suite-survey-heap-after-friend-access-20260705/summary.md`; log `/tmp/boost-suite-survey-heap-after-friend-access-20260705/libs__heap__test.log`. |
 | 56 | `libs/iterator/test` | pass | Full `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/iterator/test` on 2026-07-06 reports `failed updating 0 target` and only skipped expected-fail dependency targets, matching the row-28 Core convention for a clean suite despite B2's nonzero status. Log `/tmp/boost-iterator-full-after-sizeof-unary-20260706.log`. |
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
+| 57b | `libs/lambda/test//member_pointer_test` | advanced | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 advances past the overloaded `->*` callee failure and now reaches the shared Lambda assignment-conversion frontier; log `/tmp/boost-lambda-member-pointer-after-arrowstar-callee.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -5524,3 +5525,22 @@ Perf check against isolated before-baseline `9fb837ee4` passes: instructions
 `-0.11%`, RSS `-0.25%`, footprint `-0.03%`; baseline
 `/tmp/cppgm-perf-baseline-template-template-deduction-9fb837ee4.json`, report
 `/tmp/cppgm-perf-report-template-template-deduction-20260709.json`.
+
+2026-07-09 Boost.Lambda overloaded `->*` callee frontier: after
+`extending_rt_traits` passed, the next Lambda replay failed
+`member_pointer_test` while treating `(_1->*&my_struct::x)(obj)` as the
+built-in pointer-to-member call form before overload resolution had a chance to
+select Boost.Lambda's overloaded `operator->*`. The fix lets non-id callees
+resolve through the ordinary callable-object path first, and only uses the
+special built-in pointer-to-member-function call path when that structured
+callee resolution does not produce a callable result or candidates. No
+source-text reparse, fallback resolver, cache, or Boost-specific rule was
+added. Owner: PA15 overloaded operator/call expression analysis. New
+regression: `pa15/tests/general/300-overloaded-arrow-star-callee-call.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; focused PA15
+check passes; PA15 direct-text report passes `183/183`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; focused Boost.Lambda `member_pointer_test` advances past the raw
+pointer-to-member callee failure to the existing Lambda assignment-conversion
+frontier, log
+`/tmp/boost-lambda-member-pointer-after-arrowstar-callee.log`.

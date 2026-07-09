@@ -13016,6 +13016,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         return false;
       };
   const ValueBinding * value_callee = nullptr;
+  bool resolved_non_id_callee_expr = false;
   const CppAstNode * bound_member_pointer_callee = effective_callee_node;
   if(bound_member_pointer_callee->kind == CppAstKind::binary_expression &&
      (node_has_simple_type(*bound_member_pointer_callee, OP_DOTSTAR) ||
@@ -13027,6 +13028,18 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
     ExprInfo object_expr = ctx.analyze_expression(scope, bound_member_pointer_callee->children[0]);
     ExprInfo member_pointer_expr =
         ctx.analyze_expression(scope, bound_member_pointer_callee->children[1]);
+    try {
+      ExprInfo callee_expr = argument_analyzer.analyze_subexpression(callee_node);
+      ExprInfo direct_result;
+      if(resolve_callee_expr_call(callee_expr, direct_result)) {
+        return direct_result;
+      }
+      resolved_non_id_callee_expr = callable_object_call || !candidates.empty();
+    } catch(const logic_error &) {
+      // A built-in pointer-to-member function access is only callable after this
+      // special path supplies the implicit object argument below.
+    }
+    if(!resolved_non_id_callee_expr) {
     TypePtr member_pointer_type =
         strip_top_level_cv(remove_reference_type(member_pointer_expr.type));
     if(!member_pointer_type ||
@@ -13119,6 +13132,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                             result_category,
                             std::move(callee_expr.node),
                             std::move(call_args));
+    }
   }
   if(explicit_member_call) {
     const CppAstNode & member_callee_node = lookup_callee_node;
@@ -13709,7 +13723,7 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
         }
         throw UnknownFunctionError(out.str());
       }
-  } else if(!explicit_member_call) {
+  } else if(!explicit_member_call && !resolved_non_id_callee_expr) {
     ExprInfo callee_expr = argument_analyzer.analyze_subexpression(callee_node);
     ExprInfo direct_result;
     if(resolve_callee_expr_call(callee_expr, direct_result)) {
