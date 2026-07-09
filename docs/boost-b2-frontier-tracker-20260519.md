@@ -5290,3 +5290,49 @@ The direct Boost.Json `array.cpp` compile advances past the comparison failure
 to a later Boost.MP11 fold frontier in `boost::json::value_from`, reporting
 `failed alias template argument resolution for fn` while completing
 `boost::mp11::detail::mp_defer_impl<mp_fold_Q3<V,F>::fn, ...>`.
+
+2026-07-09 Boost.Json MP11 lazy alias fold frontier: after the alias-target
+non-type expression scope fix, `libs/json/test/array.cpp` reached
+`boost::json::value_from`, where `boost::mp11::mp_fold` builds a lazy quoted
+alias through `mp_defer_impl<mp_fold_Q3<V,F>::fn, ...>`. The compiler expanded
+the alias target before preserving the dependent quoted member alias shape, so
+the reducer reported `failed alias template argument resolution for fn` while
+completing the MP11 defer node. The fix keeps lazy alias expansion typed: it
+preserves dependent member alias identity through the selected alias target,
+uses the structured template/dependent argument data already attached to the
+types, and avoids source-text reparsing or a Boost-specific fallback. Owner:
+PA22/PA23 template alias and dependent member alias integration. Validation:
+focused Boost.Json `array.cpp` advanced past the MP11 fold failure to the
+member-call braced-init overload frontier below; PA22 direct-text report passed
+`230/230`; full strict direct-text suite passed; full direct-text report passed
+`3585/3585`; `python3 scripts/audit_text_reparse.py --strict` reported all
+zero, including `added_semantic_text_reparse`; `git diff --check` passed.
+
+2026-07-09 Boost.Json member-call braced initializer-list overload frontier:
+after the MP11 lazy alias fold fix, `libs/json/test/array.cpp` reached
+`array::insert`, where a call of the form `insert(pos, {1, str_})` had viable
+member overloads for `value` and for `std::initializer_list<value_ref>`. The
+ordinary function/member call ranking path used target-aware braced analysis
+for viability but left the non-`std::initializer_list` class conversion ranked
+below user-defined conversion, so it tied the real initializer-list overload
+and reported an ambiguity. Constructor selection already had the typed rank
+adjustment; the fix applies the same narrow adjustment to ordinary
+function/member calls when the source argument is a braced-init-list, the target
+is a non-`std::initializer_list` class, and the computed rank is better than
+user-defined. No source-text reparse, Boost-specific rule, fallback resolver,
+or cache was added. Owner: PA25 `std::initializer_list` interoperation and
+initializer-list overload behavior. New regression:
+`pa25/tests/general/200-member-call-braced-init-prefers-initializer-list.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; focused PA25
+direct-text check passes; PA25 direct-text report passes `63/63`; `make -C dev
+cppgm++ -j8` passes; `python3 scripts/audit_text_reparse.py --strict` reports
+all zero; `git diff --check` passes; full strict direct-text suite passes;
+direct Boost.Json `array.cpp` compile passes. The full `libs/json/test` B2 run
+now advances `array` to a link frontier and reports 45 remaining failed
+compile/link targets across independent clusters (`is_nothrow_destructible`
+traits, MP11 conversion-category folds, duplicate `test_suite::detail::current`
+symbols, string-view constructor ranking, and value/value_from trait
+frontiers). Perf gate against a detached clean baseline at `997bd6749` passes:
+instructions `-0.09%`, max RSS `-0.77%`, footprint `-0.02%`; baseline
+`/tmp/cppgm-perf-baseline-braced-member-rank-20260709.json`, report
+`/tmp/cppgm-perf-report-braced-member-rank-20260709.json`.

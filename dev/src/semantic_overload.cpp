@@ -14002,6 +14002,14 @@ ExprInfo analyze_call_expression(SemanticContext & ctx,
                 candidate_rejections[i] = "argument conversion failed";
                 break;
               }
+              if(needs_target_aware_analysis &&
+                 arg_nodes[j]->kind == CppAstKind::braced_init_list &&
+                 target_base &&
+                 target_class &&
+                 !ctx.is_initializer_list_type(target_base, nullptr, nullptr) &&
+                 rank < CR_USER_DEFINED) {
+                rank = CR_USER_DEFINED;
+              }
             }
           } else {
             string arg_error;
