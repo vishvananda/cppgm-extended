@@ -5094,3 +5094,32 @@ advances past `DIGIT_TABLE` to the next frontier, `unknown id-expression
 value`, while lowering `boost::json::detail::unchecked_object::~unchecked_object`
 at `boost/json/impl/object.hpp:556`. Log:
 `/tmp/boost-json-after-array-ref-return-20260709.log`.
+
+2026-07-09 Boost.Json lazy local pointer declaration frontier: after the
+nested `DIGIT_TABLE` declarator fix, Boost.Json reached
+`boost::json::detail::unchecked_object::~unchecked_object`. The failing source
+line was the local declaration `value* p = data_;` in a lazily materialized
+included-header function body. The lazy body parser had lost the enclosing
+namespace type hint for `boost::json::value`, so it materialized the statement
+as the expression `value * p = data_`; semantic expression analysis then failed
+on `value` as an ordinary id-expression. The fix is a typed AST recovery in
+statement analysis for exactly that ambiguous `T * name = initializer`
+statement shape: it only fires when the left identifier resolves as a type
+(falling back through the function's lexical declaration scope) and no
+unqualified value binding wins lookup, then builds a synthetic
+`simple-declaration` and reuses the existing local declaration analyzer. No
+source-text reparse or Boost-specific rule was added. Owner: PA15 local
+declarations in class member bodies. New regression:
+`pa15/tests/general/300-explicit-destructor-call-enclosing-namespace-type.t`
+with companion header
+`pa15/tests/general/300-explicit-destructor-call-enclosing-namespace-type.h`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; the reducer
+passes LowIR and native execution; focused Boost include repro failed before
+this fix with `unknown id-expression value` and now emits LowIR; PA15
+direct-LowIR report passes `179/179`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-LowIR passes; focused Boost.Json B2 library build
+advances past `unchecked_object::~unchecked_object` to the next frontier,
+lazy function body materialization rejecting `static_assert` while lowering
+`boost::json::object::table::allocate`. Log:
+`/tmp/boost-json-after-lazy-pointer-decl-20260709.log`.

@@ -1079,6 +1079,104 @@ bool try_analyze_ambiguous_local_call_statement(SemanticContext & ctx,
   }
 }
 
+bool node_is_operator(const CppAstNode & node,
+                      ETokenType token_type,
+                      const char * text)
+{
+  return node_has_simple_type(node, token_type) || node.value == text;
+}
+
+bool has_rooted_or_qualified_name_syntax(const CppAstNode & node)
+{
+  const cpp_decl::QualifiedName * qualified = cppast_qualified_name_syntax(node);
+  return qualified && (qualified->rooted || !qualified->qualifiers.empty());
+}
+
+bool try_analyze_ambiguous_pointer_declaration_statement(SemanticContext & ctx,
+                                                         Scope & scope,
+                                                         const CppAstNode & node,
+                                                         DumpNode & out)
+{
+  if(node.kind != CppAstKind::expression_statement ||
+     node.children.size() != 1) {
+    return false;
+  }
+
+  const CppAstNode & assignment = node.children[0];
+  if(assignment.kind != CppAstKind::assignment_expression ||
+     !node_is_operator(assignment, OP_ASS, "=") ||
+     assignment.children.size() != 2) {
+    return false;
+  }
+
+  const CppAstNode & pointer_expr = assignment.children[0];
+  if(pointer_expr.kind != CppAstKind::binary_expression ||
+     !node_is_operator(pointer_expr, OP_STAR, "*") ||
+     pointer_expr.children.size() != 2) {
+    return false;
+  }
+
+  const CppAstNode & type_name_node = pointer_expr.children[0];
+  const CppAstNode & name_node = pointer_expr.children[1];
+  if(type_name_node.kind != CppAstKind::id_expression ||
+     name_node.kind != CppAstKind::id_expression ||
+     has_rooted_or_qualified_name_syntax(type_name_node) ||
+     type_name_node.template_id_syntax ||
+     has_rooted_or_qualified_name_syntax(name_node) ||
+     name_node.template_id_syntax ||
+     !simple_identifier_text(type_name_node.value) ||
+     !simple_identifier_text(name_node.value) ||
+     unqualified_lookup_prefers_expression_binding(scope, type_name_node.value)) {
+    return false;
+  }
+
+  TypePtr resolved_type = ctx.lookup_type(scope, type_name_node.value);
+  if(!resolved_type &&
+     scope.function &&
+     scope.function->declaration_scope) {
+    resolved_type = ctx.lookup_type(*scope.function->declaration_scope,
+                                    type_name_node.value);
+  }
+  if(!resolved_type) {
+    return false;
+  }
+
+  CppAstNode type_specifier;
+  type_specifier.kind = CppAstKind::decl_specifier;
+  type_specifier.value = type_name_node.value;
+  type_specifier.semantic_type = resolved_type;
+  type_specifier.token_start = type_name_node.token_start;
+  type_specifier.token_end = type_name_node.token_end;
+  type_specifier.source_location_id = type_name_node.source_location_id;
+
+  CppAstNode specifiers;
+  specifiers.kind = CppAstKind::decl_specifier_seq;
+  specifiers.children.push_back(type_specifier);
+  specifiers.token_start = type_name_node.token_start;
+  specifiers.token_end = type_name_node.token_end;
+  specifiers.source_location_id = type_name_node.source_location_id;
+
+  CppAstNode ptr = make_ptr_operator_ast_node(OP_STAR, "*");
+  ptr.token_start = pointer_expr.token_start;
+  ptr.token_end = pointer_expr.token_start + 1;
+  ptr.source_location_id = pointer_expr.source_location_id;
+
+  CppAstNode declaration =
+      make_simple_declaration_ast_node(
+          specifiers,
+          make_init_declarator_list_ast_node(
+              make_init_declarator_ast_node(
+                  make_declarator_ast_node(name_node.value, &ptr),
+                  make_initializer_ast_node(assignment.children[1]))));
+  declaration.token_start = node.token_start;
+  declaration.token_end = node.token_end;
+  declaration.source_location_id = node.source_location_id;
+
+  const CppAstNode * owned_declaration = ctx.own_synthetic_ast(std::move(declaration));
+  analyze_simple_declaration_statement(ctx, scope, *owned_declaration, out);
+  return true;
+}
+
 void analyze_exception_declaration(SemanticContext & ctx,
                                    Scope & handler_scope,
                                    const CppAstNode & node,
@@ -2401,6 +2499,9 @@ void analyze_statement_impl(SemanticContext & ctx,
   }
 
   if(node.kind == CppAstKind::expression_statement) {
+    if(try_analyze_ambiguous_pointer_declaration_statement(ctx, scope, node, out)) {
+      return;
+    }
     DumpNode expr_stmt = make_located_dump_node(CallSemKind::expression_statement, node);
     if(!node.children.empty()) {
       ExprInfo expr = ctx.analyze_expression(scope, node.children[0]);
