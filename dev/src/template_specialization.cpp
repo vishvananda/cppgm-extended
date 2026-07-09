@@ -144,6 +144,86 @@ bool non_type_template_argument_values_match(const TemplateArgument & lhs,
   return lhs.value == rhs.value;
 }
 
+bool make_function_non_type_argument_expression(const TemplateArgument & argument,
+                                                CppAstNode & out)
+{
+  if(!argument.function_value) {
+    return false;
+  }
+
+  QualifiedName qualified;
+  if(!semantic_model::function_binding_qualified_name_syntax_for_symbol(
+         *argument.function_value,
+         qualified)) {
+    return false;
+  }
+
+  CppAstNode id;
+  id.kind = CppAstKind::id_expression;
+  id.value = template_api::qualified_name_text(qualified);
+  id.semantic_type = argument.function_value->declared_type ?
+      argument.function_value->declared_type :
+      argument.function_value->type;
+  set_cppast_qualified_name_syntax(id, qualified);
+
+  if(!argument.function_value->is_method) {
+    out = id;
+    return true;
+  }
+
+  CppAstNode unary;
+  unary.kind = CppAstKind::unary_expression;
+  unary.value = "&";
+  unary.has_token = true;
+  unary.token_kind = RT_SIMPLE;
+  unary.simple_type = OP_AMP;
+  unary.semantic_type = argument.type;
+  unary.children.push_back(id);
+  out = unary;
+  return true;
+}
+
+bool function_non_type_argument_syntax_needs_refresh(
+    const TemplateArgument & argument,
+    const TemplateArgumentSyntax & syntax)
+{
+  if(!argument.function_value || !argument.function_value->is_method) {
+    return false;
+  }
+  if(!syntax.expression) {
+    return true;
+  }
+  const CppAstNode & expression = *syntax.expression;
+  return expression.kind != CppAstKind::unary_expression ||
+         !expression.has_token ||
+         expression.simple_type != OP_AMP;
+}
+
+void refresh_function_non_type_argument_syntax(TemplateArgument & argument)
+{
+  if(argument.kind != TemplateArgument::TA_VALUE ||
+     argument.dependent ||
+     !argument.function_value) {
+    return;
+  }
+  if(!argument.source_syntax) {
+    argument.source_syntax.reset(new TemplateArgumentSyntax());
+    argument.source_syntax->text = argument.text;
+  }
+  if(!function_non_type_argument_syntax_needs_refresh(argument,
+                                                      *argument.source_syntax) &&
+     argument.source_syntax->expression) {
+    return;
+  }
+
+  CppAstNode expression;
+  if(!make_function_non_type_argument_expression(argument, expression)) {
+    return;
+  }
+  argument.source_syntax->expression.reset(new CppAstNode(expression));
+  argument.expression.reset(new CppAstNode(expression));
+}
+
 bool store_deduced_value_argument(DeducedState & deduced,
                                   const std::string & parameter_name,
                                   const TemplateArgument & argument,
@@ -152,6 +232,7 @@ bool store_deduced_value_argument(DeducedState & deduced,
   TemplateArgument stored = argument;
   stored.kind = TemplateArgument::TA_VALUE;
   stored.type = value_type;
+  refresh_function_non_type_argument_syntax(stored);
   if(!store_deduced_value(deduced, parameter_name, stored.value)) {
     return false;
   }
@@ -5579,44 +5660,28 @@ bool try_expand_alias_template_pattern_structurally(
           long long value = 0;
           template_argument_semantics::NonTypeArgumentStatus status =
               template_argument_semantics::NT_ARG_PARSE_FAILED;
-          if(source_arg.syntax.expression ||
-             source_arg.syntax.type_id ||
-             source_arg.syntax.template_id) {
+          const bool has_structured_value_syntax =
+              source_arg.syntax.expression ||
+              source_arg.syntax.type_id ||
+              source_arg.syntax.template_id;
+          if(has_structured_value_syntax) {
             status =
                 template_argument_semantics::evaluate_non_type_argument_syntax(
                     services,
                     value_eval_scope,
                     source_arg.syntax,
-                    value,
-                    nullptr,
-                    argument.type);
-          } else {
-            status =
-                template_argument_semantics::evaluate_non_type_argument_text(
-                    services,
-                    value_eval_scope,
-                    argument.text,
                     value,
                     nullptr,
                     argument.type);
           }
           if(status != template_argument_semantics::NT_ARG_EVALUATED &&
-             selected_default_scope) {
+             selected_default_scope &&
+             has_structured_value_syntax) {
             status =
-                source_arg.syntax.expression ||
-                    source_arg.syntax.type_id ||
-                    source_arg.syntax.template_id ?
                 template_argument_semantics::evaluate_non_type_argument_syntax(
                     services,
                     match_scope,
                     source_arg.syntax,
-                    value,
-                    nullptr,
-                    argument.type) :
-                template_argument_semantics::evaluate_non_type_argument_text(
-                    services,
-                    match_scope,
-                    argument.text,
                     value,
                     nullptr,
                     argument.type);
@@ -7262,8 +7327,28 @@ Scope make_partial_match_scope(const std::vector<TemplateParameterInfo> & parame
     const std::string text = argument_found != deduced.value_arguments.end() ?
         argument_found->second.text :
         std::string();
+    FunctionBinding * function_value =
+        argument_found != deduced.value_arguments.end() ?
+            const_cast<FunctionBinding *>(argument_found->second.function_value) :
+            nullptr;
+    const std::string function_internal_symbol =
+        argument_found != deduced.value_arguments.end() ?
+            argument_found->second.function_internal_symbol :
+            std::string();
+    const ValueBinding * value_binding =
+        argument_found != deduced.value_arguments.end() ?
+            argument_found->second.value_binding :
+            nullptr;
     template_scope::bind_non_type_value(
-        eval_scope, entry.first, value_type, entry.second, false, text);
+        eval_scope,
+        entry.first,
+        value_type,
+        entry.second,
+        false,
+        text,
+        function_value,
+        function_internal_symbol,
+        value_binding);
   }
   for(const auto & entry : deduced.value_packs) {
     const TemplateParameterInfo * parameter =
@@ -7957,12 +8042,17 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
               services,
               template_api::make_template_environment(match_scope),
               argument.type);
+          if(!(source_arg.syntax.expression ||
+               source_arg.syntax.type_id ||
+               source_arg.syntax.template_id)) {
+            return false;
+          }
           long long value = 0;
           const template_argument_semantics::NonTypeArgumentStatus status =
-              template_argument_semantics::evaluate_non_type_argument_text(
+              template_argument_semantics::evaluate_non_type_argument_syntax(
                   services,
                   template_api::make_template_environment(match_scope),
-                  argument.text,
+                  source_arg.syntax,
                   value,
                   nullptr,
                   argument.type);
@@ -8181,21 +8271,44 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     }
     return pattern_arg_type != nullptr;
   };
+  const auto resolve_actual_non_type_argument =
+      [&](std::size_t arg_index,
+          const std::string & actual_arg,
+          const TemplateParameterInfo & parameter,
+          TemplateArgument & out) -> bool
+  {
+    (void)actual_arg;
+    if(actual_structured_args &&
+       arg_index < actual_structured_args->size() &&
+       (*actual_structured_args)[arg_index].kind == TemplateArgument::TA_VALUE &&
+       !(*actual_structured_args)[arg_index].dependent) {
+      out = (*actual_structured_args)[arg_index];
+      if(!out.type) {
+        out.type =
+            resolved_non_type_parameter_value_type(services,
+                                                   partial.parameters,
+                                                   *partial.pattern_scope,
+                                                   deduced,
+                                                   parameter);
+      }
+      refresh_function_non_type_argument_syntax(out);
+      return true;
+    }
+    return false;
+  };
   const auto resolve_actual_non_type_value =
       [&](std::size_t arg_index,
           const std::string & actual_arg,
           const TemplateParameterInfo & parameter,
           long long & value) -> bool
   {
-    if(actual_structured_args &&
-       arg_index < actual_structured_args->size() &&
-       (*actual_structured_args)[arg_index].kind == TemplateArgument::TA_VALUE &&
-       !(*actual_structured_args)[arg_index].dependent) {
-      value = (*actual_structured_args)[arg_index].value;
-      return true;
+    TemplateArgument argument;
+    if(!resolve_actual_non_type_argument(arg_index, actual_arg, parameter, argument)) {
+      return false;
     }
-	    return false;
-	  };
+    value = argument.value;
+    return true;
+  };
 
   const TemplateParameterInfo * trailing_pack_parameter = nullptr;
   const DirectTemplateParameterMatch template_name_parameter =
@@ -8362,11 +8475,24 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     }
 
     if(direct_parameter->kind == TemplateParameterInfo::TP_NON_TYPE) {
-      long long value = 0;
-      if(!resolve_actual_non_type_value(arg_index, actual_arg, *direct_parameter, value)) {
+      TemplateArgument value_argument;
+      if(!resolve_actual_non_type_argument(arg_index,
+                                           actual_arg,
+                                           *direct_parameter,
+                                           value_argument)) {
         return false;
       }
-      if(!store_deduced_value(deduced, direct_parameter->name, value)) {
+      TypePtr value_type = value_argument.type ?
+          value_argument.type :
+          resolved_non_type_parameter_value_type(services,
+                                                 partial.parameters,
+                                                 *partial.pattern_scope,
+                                                 deduced,
+                                                 *direct_parameter);
+      if(!store_deduced_value_argument(deduced,
+                                       direct_parameter->name,
+                                       value_argument,
+                                       value_type)) {
         return false;
       }
       continue;

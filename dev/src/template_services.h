@@ -811,6 +811,135 @@ public:
   }
 
 private:
+  static CppAstNode make_concrete_non_type_argument_expression(
+      const template_model::TemplateArgument & argument)
+  {
+    CppAstNode function_expression;
+    if(try_make_function_non_type_argument_expression(argument,
+                                                     function_expression)) {
+      return function_expression;
+    }
+
+    CppAstNode literal;
+    literal.kind = CppAstKind::literal;
+    literal.semantic_type = argument.type;
+
+    if(argument.value >= 0) {
+      literal.value = std::to_string(
+          static_cast<unsigned long long>(argument.value));
+      return literal;
+    }
+
+    unsigned long long magnitude =
+        static_cast<unsigned long long>(-(argument.value + 1)) + 1ULL;
+    literal.value = std::to_string(magnitude);
+
+    CppAstNode unary;
+    unary.kind = CppAstKind::unary_expression;
+    unary.value = "-";
+    unary.has_token = true;
+    unary.token_kind = RT_SIMPLE;
+    unary.simple_type = OP_MINUS;
+    unary.semantic_type = argument.type;
+    unary.children.push_back(literal);
+    return unary;
+  }
+
+  static bool try_make_function_non_type_argument_expression(
+      const template_model::TemplateArgument & argument,
+      CppAstNode & out)
+  {
+    if(!argument.function_value) {
+      return false;
+    }
+
+    cpp_decl::QualifiedName qualified;
+    if(!semantic_model::function_binding_qualified_name_syntax_for_symbol(
+           *argument.function_value,
+           qualified)) {
+      return false;
+    }
+
+    CppAstNode id;
+    id.kind = CppAstKind::id_expression;
+    id.value = qualified_name_text(qualified);
+    id.semantic_type = argument.function_value->declared_type ?
+        argument.function_value->declared_type :
+        argument.function_value->type;
+    set_cppast_qualified_name_syntax(id, qualified);
+
+    if(!argument.function_value->is_method) {
+      out = id;
+      return true;
+    }
+
+    CppAstNode unary;
+    unary.kind = CppAstKind::unary_expression;
+    unary.value = "&";
+    unary.has_token = true;
+    unary.token_kind = RT_SIMPLE;
+    unary.simple_type = OP_AMP;
+    unary.semantic_type = argument.type;
+    unary.children.push_back(id);
+    out = unary;
+    return true;
+  }
+
+  static bool concrete_non_type_argument_expression_needs_refresh(
+      const template_model::TemplateArgument & argument,
+      const cpp_decl::TemplateArgumentSyntax & syntax)
+  {
+    if(!argument.function_value || !argument.function_value->is_method) {
+      return false;
+    }
+    if(!syntax.expression) {
+      return true;
+    }
+    const CppAstNode & expression = *syntax.expression;
+    return expression.kind != CppAstKind::unary_expression ||
+           !expression.has_token ||
+           expression.simple_type != OP_AMP;
+  }
+
+  static void attach_concrete_non_type_argument_expression(
+      const template_model::TemplateArgument & argument,
+      cpp_decl::TemplateArgumentSyntax & syntax)
+  {
+    if(argument.kind != template_model::TemplateArgument::TA_VALUE ||
+       argument.dependent ||
+       (syntax.expression &&
+        !concrete_non_type_argument_expression_needs_refresh(argument, syntax))) {
+      return;
+    }
+    syntax.expression.reset(new CppAstNode(
+        make_concrete_non_type_argument_expression(argument)));
+  }
+
+  static std::vector<cpp_decl::TemplateArgumentSyntax>
+  normalized_class_template_argument_syntaxes(
+      const std::vector<template_model::TemplateArgument> & arguments,
+      const std::vector<cpp_decl::TemplateArgumentSyntax> & source_syntaxes)
+  {
+    std::vector<cpp_decl::TemplateArgumentSyntax> syntaxes(arguments.size());
+    for(std::size_t i = 0; i < arguments.size(); ++i) {
+      if(i < source_syntaxes.size()) {
+        syntaxes[i] = source_syntaxes[i];
+      } else if(arguments[i].source_syntax) {
+        syntaxes[i] = *arguments[i].source_syntax;
+      }
+      if(syntaxes[i].text.empty()) {
+        syntaxes[i].text = arguments[i].text;
+      }
+      if(arguments[i].kind == template_model::TemplateArgument::TA_TYPE &&
+         arguments[i].type &&
+         !syntaxes[i].resolved_type) {
+        syntaxes[i].resolved_type = arguments[i].type;
+      }
+      attach_concrete_non_type_argument_expression(arguments[i], syntaxes[i]);
+    }
+    return syntaxes;
+  }
+
   cpp_decl::TypePtr make_dependent_class_template_type(
       const TemplateSelectedClassTemplateIdRequest & request)
   {
@@ -872,6 +1001,8 @@ private:
         argument.syntax.expression.reset(
             new CppAstNode(*request.resolved_arguments[i].expression));
       }
+      attach_concrete_non_type_argument_expression(request.resolved_arguments[i],
+                                                  argument.syntax);
       argument.source_defaulted = request.resolved_arguments[i].source_defaulted;
       arguments.push_back(argument);
     }
@@ -901,7 +1032,9 @@ private:
     }
     mangle_info->template_parameters = request.class_template->parameters;
     mangle_info->arguments = request.resolved_arguments;
-    mangle_info->argument_syntaxes = request.source_arg_syntaxes;
+    mangle_info->argument_syntaxes =
+        normalized_class_template_argument_syntaxes(request.resolved_arguments,
+                                                   request.source_arg_syntaxes);
     cpp_decl::set_named_type_class_template_specialization_mangle_info(
         type,
         mangle_info);

@@ -90,7 +90,8 @@ For each Boost frontier fix:
 3. Rebuild `dev/cppgm++` and run the focused owner tests with direct LowIR text
    compare when the owner surface emits LowIR.
 4. Run `python3 scripts/audit_text_reparse.py --strict`; the Boost frontier is
-   not clean if this audit reports new semantic text reparse debt.
+   not clean if this audit reports new semantic text reparse debt, including
+   result-argument recovery or owner/member lookup from saved source text.
 5. Run `git diff --check`, the relevant strict owner suite, and the focused
    Boost target/report needed to prove the frontier moved.
 6. Run the performance gate after any change that can affect compile-time hot

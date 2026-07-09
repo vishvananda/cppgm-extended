@@ -205,24 +205,130 @@ bool recover_instantiation_bound_type(SemanticContext & ctx,
       ctx, scope, type, out);
 }
 
-std::string instantiated_result_argument_text(
-    const DependentAliasTemplateArgumentSyntax & argument)
+bool dependent_member_owner_matches_instantiation_owner(
+    SemanticContext & ctx,
+    const TypePtr & owner_type,
+    const ClassInfo & instantiation_owner)
 {
-  std::string text = semantic_utils::trim_space(argument.text);
-  if(text.empty()) {
-    text = semantic_utils::trim_space(argument.syntax.text);
+  TypePtr base_owner = strip_top_level_cv(owner_type);
+  if(!base_owner) {
+    return false;
   }
-  if(text.empty()) {
-    text = semantic_utils::trim_space(argument.syntax.source_text);
+  if(instantiation_owner.type &&
+     type_equals(base_owner, strip_top_level_cv(instantiation_owner.type))) {
+    return true;
   }
-  return text;
+
+  if(ClassInfo * owner_info = ctx.class_info_for_type(base_owner)) {
+    if(owner_info == &instantiation_owner) {
+      return true;
+    }
+    return owner_info->source_template &&
+           owner_info->source_template == instantiation_owner.source_template &&
+           owner_info->instantiation_key == instantiation_owner.instantiation_key;
+  }
+
+  if(std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+         named_type_class_template_specialization_mangle_info_const(base_owner)) {
+    return instantiation_owner.source_template &&
+           mangle_info->class_template_decl == instantiation_owner.source_template;
+  }
+
+  void * class_template_decl = nullptr;
+  std::vector<DependentAliasTemplateArgumentSyntax> ignored_arguments;
+  return instantiation_owner.source_template &&
+         named_type_dependent_class_template(base_owner,
+                                             class_template_decl,
+                                             ignored_arguments) &&
+         class_template_decl == instantiation_owner.source_template;
+}
+
+bool recover_instantiation_owner_member_type(SemanticContext & ctx,
+                                             ClassInfo * instantiation_owner,
+                                             const TypePtr & type,
+                                             TypePtr & out)
+{
+  out.reset();
+  if(!instantiation_owner || !instantiation_owner->member_scope || !type) {
+    return false;
+  }
+
+  TypePtr owner_type;
+  std::vector<std::string> member_path;
+  bool leading_typename = false;
+  std::vector<TemplateIdSyntax> member_template_ids;
+  if(!named_type_dependent_qualified_member(type,
+                                            owner_type,
+                                            member_path,
+                                            leading_typename,
+                                            &member_template_ids) ||
+     member_path.size() != 1 ||
+     !member_template_ids.empty() ||
+     !dependent_member_owner_matches_instantiation_owner(
+         ctx,
+         owner_type,
+         *instantiation_owner)) {
+    return false;
+  }
+
+  const std::string member_name = semantic_utils::trim_space(member_path[0]);
+  if(member_name.empty()) {
+    return false;
+  }
+
+  auto found =
+      instantiation_owner->member_scope->named_types.find(member_name);
+  if(found == instantiation_owner->member_scope->named_types.end() ||
+     !found->second ||
+     found->second.get() == type.get()) {
+    return false;
+  }
+
+  TypePtr member_type = found->second;
+  if(template_argument_semantics::type_depends_on_template_parameter(ctx,
+                                                                    member_type)) {
+    TypePtr resolved;
+    if(recover_instantiation_bound_type(ctx,
+                                        *instantiation_owner->member_scope,
+                                        member_type,
+                                        resolved) &&
+       resolved) {
+      member_type = resolved;
+    }
+  }
+  if(template_argument_semantics::type_depends_on_template_parameter(ctx,
+                                                                    member_type)) {
+    return false;
+  }
+
+  out = member_type;
+  return true;
+}
+
+bool instantiated_result_non_type_argument_is_resolved(
+    const TemplateArgument & argument)
+{
+  return argument.kind == TemplateArgument::TA_VALUE && !argument.dependent;
+}
+
+bool instantiated_result_non_type_argument_is_qualified_member_syntax(
+    const TemplateArgumentSyntax & syntax)
+{
+  if(!syntax.expression ||
+     syntax.expression->kind != CppAstKind::id_expression) {
+    return false;
+  }
+  const QualifiedName * qualified =
+      cppast_qualified_name_syntax(*syntax.expression);
+  return qualified && !qualified->qualifiers.empty();
 }
 
 void validate_instantiated_result_non_type_arguments(
     SemanticContext & ctx,
     Scope & scope,
     const ClassTemplateDecl & class_template,
-    const std::vector<DependentAliasTemplateArgumentSyntax> & arguments)
+    const std::vector<DependentAliasTemplateArgumentSyntax> & arguments,
+    const std::vector<TemplateArgument> * resolved_arguments)
 {
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(i >= class_template.parameters.size()) {
@@ -239,24 +345,39 @@ void validate_instantiated_result_non_type_arguments(
       continue;
     }
 
-    const std::string text = instantiated_result_argument_text(arguments[i]);
-    if(text.empty() &&
-       !arguments[i].syntax.expression &&
-       !arguments[i].syntax.type_id &&
-       !arguments[i].syntax.template_id) {
+    if(resolved_arguments &&
+       i < resolved_arguments->size() &&
+       instantiated_result_non_type_argument_is_resolved(
+           (*resolved_arguments)[i])) {
+      continue;
+    }
+
+    if(!arguments[i].syntax.expression) {
       continue;
     }
 
     long long value = 0;
     std::string eval_error;
-    const template_argument_semantics::NonTypeArgumentStatus status =
-        template_api::with_template_services(
-            ctx,
-            [&](template_api::TemplateServices & services)
-            {
-              if(arguments[i].syntax.expression ||
-                 arguments[i].syntax.type_id ||
-                 arguments[i].syntax.template_id) {
+    const bool qualified_member_syntax =
+        instantiated_result_non_type_argument_is_qualified_member_syntax(
+            arguments[i].syntax);
+    template_argument_semantics::NonTypeArgumentStatus status =
+        template_argument_semantics::NT_ARG_PARSE_FAILED;
+    try {
+      status =
+          template_api::with_template_services(
+              ctx,
+              [&](template_api::TemplateServices & services)
+              {
+                if(qualified_member_syntax) {
+                  return template_argument_semantics::
+                      evaluate_qualified_member_value_argument_syntax(
+                          services,
+                          template_api::make_template_environment(scope),
+                          arguments[i].syntax,
+                          value,
+                          parameter.value_type);
+                }
                 return template_argument_semantics::evaluate_non_type_argument_syntax(
                     services,
                     template_api::make_template_environment(scope),
@@ -264,46 +385,22 @@ void validate_instantiated_result_non_type_arguments(
                     value,
                     &eval_error,
                     parameter.value_type);
-              }
-              return template_argument_semantics::evaluate_non_type_argument_text(
-                  services,
-                  template_api::make_template_environment(scope),
-                  text,
-                  value,
-                  &eval_error,
-                  parameter.value_type);
-            });
-    bool dependency_still_visible = false;
-    if(status == template_argument_semantics::NT_ARG_DEPENDENT &&
-       !text.empty()) {
-      dependency_still_visible =
-          template_api::with_template_services(
-              ctx,
-              [&](template_api::TemplateServices & services)
-              {
-                template_api::TemplateEnvironmentHandle env =
-                    template_api::make_template_environment(scope);
-                return template_argument_semantics::
-                           text_mentions_template_placeholders(services,
-                                                               env,
-                                                               text) ||
-                       template_argument_semantics::
-                           text_mentions_dependent_non_namespace_binding_names(
-                               services,
-                               env,
-                               text);
               });
+    } catch(const std::logic_error & e) {
+      eval_error = e.what();
+      status = template_argument_semantics::NT_ARG_EVAL_FAILED;
     }
     if(status == template_argument_semantics::NT_ARG_EVALUATED ||
-       (status == template_argument_semantics::NT_ARG_DEPENDENT &&
-        dependency_still_visible)) {
+       status == template_argument_semantics::NT_ARG_DEPENDENT) {
       continue;
     }
     std::string detail =
         "failed function template result non-type argument substitution";
-    if(!text.empty()) {
-      detail += ": " + text;
-    }
+    detail += " [template " + class_template.name + "]";
+    detail += " [arg " + std::to_string(i) + "]";
+    detail += " [text " + arguments[i].text + "]";
+    detail += arguments[i].syntax.expression ? " [syntax expression yes]" :
+                                                " [syntax expression no]";
     if(!eval_error.empty()) {
       detail += " [" + eval_error + "]";
     }
@@ -333,10 +430,24 @@ void validate_instantiated_result_template_arguments(SemanticContext & ctx,
        class_template_decl) {
       ClassTemplateDecl * class_template =
           static_cast<ClassTemplateDecl *>(class_template_decl);
+      const std::vector<TemplateArgument> * resolved_arguments = nullptr;
+      std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
+          named_type_class_template_specialization_mangle_info_const(type);
+      if(mangle_info &&
+         mangle_info->class_template_decl == class_template_decl &&
+         mangle_info->arguments.size() == arguments.size()) {
+        resolved_arguments = &mangle_info->arguments;
+      } else if(ClassInfo * info = ctx.class_info_for_type(type)) {
+        if(info->source_template == class_template &&
+           info->instantiation_arguments.size() == arguments.size()) {
+          resolved_arguments = &info->instantiation_arguments;
+        }
+      }
       validate_instantiated_result_non_type_arguments(ctx,
                                                      scope,
                                                      *class_template,
-                                                     arguments);
+                                                     arguments,
+                                                     resolved_arguments);
     }
 
     for(std::size_t i = 0; i < type->named_dependent_class_arguments.size(); ++i) {
@@ -497,6 +608,51 @@ std::string concrete_substituted_value_source_text(
   return std::string();
 }
 
+bool template_argument_needs_function_value_rehydration(
+    const TemplateArgument & argument)
+{
+  return argument.kind == TemplateArgument::TA_VALUE &&
+         !argument.dependent &&
+         !argument.function_internal_symbol.empty();
+}
+
+bool template_arguments_need_function_value_rehydration(
+    const std::vector<TemplateArgument> & arguments)
+{
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(template_argument_needs_function_value_rehydration(arguments[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void rehydrate_template_argument_function_value(SemanticContext & ctx,
+                                                TemplateArgument & argument)
+{
+  if(!template_argument_needs_function_value_rehydration(argument)) {
+    return;
+  }
+
+  FunctionBinding * function =
+      ctx.first_function_by_internal_symbol(argument.function_internal_symbol);
+  argument.function_value = function;
+  if(function && function->symbol.object_symbol.empty()) {
+    ctx.upgrade_function_symbol_linkage(function, function->symbol.linkage);
+  }
+}
+
+std::vector<TemplateArgument> rehydrated_template_argument_function_values(
+    SemanticContext & ctx,
+    const std::vector<TemplateArgument> & arguments)
+{
+  std::vector<TemplateArgument> out = arguments;
+  for(std::size_t i = 0; i < out.size(); ++i) {
+    rehydrate_template_argument_function_value(ctx, out[i]);
+  }
+  return out;
+}
+
 bool substitute_owner_arguments_in_class_template_argument(
     SemanticContext & ctx,
     template_api::TemplateServices & services,
@@ -504,7 +660,131 @@ bool substitute_owner_arguments_in_class_template_argument(
     const std::vector<TemplateParameterInfo> & parameters,
     const std::vector<TemplateArgument> & arguments,
     const TemplateArgument & source,
-    TemplateArgument & out);
+    TemplateArgument & out,
+    Scope * argument_declaring_scope = nullptr,
+    std::set<const Type *> * active_types = nullptr);
+
+void attach_concrete_non_type_argument_expression(
+    const TemplateArgument & argument,
+    TemplateArgumentSyntax & syntax);
+
+bool substitute_owner_value_expression_template_argument(
+    SemanticContext & ctx,
+    template_api::TemplateServices & services,
+    Scope & substitution_scope,
+    Scope & evaluation_scope,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const std::vector<TemplateArgument> & arguments,
+    const TemplateArgument & source,
+    TemplateArgument & out)
+{
+  TemplateArgumentSyntax syntax;
+  if(source.source_syntax) {
+    syntax = *source.source_syntax;
+  } else {
+    syntax.text = source.text;
+  }
+  if(!syntax.expression && source.expression) {
+    syntax.expression.reset(new CppAstNode(*source.expression));
+  }
+  if(!syntax.expression) {
+    if(parser_trace::enabled("template.resolve")) {
+      parser_trace::note("template.resolve",
+                         std::string(),
+                         "owner-value-expression-substitute skip=no-expression text=" +
+                             source.text);
+    }
+    return false;
+  }
+
+  CppAstNode substituted_expression;
+  if(!template_argument_semantics::substitute_expression_node_for_template_arguments(
+         substitution_scope,
+         *syntax.expression,
+         parameters,
+         arguments,
+         substituted_expression)) {
+    if(parser_trace::enabled("template.resolve")) {
+      parser_trace::note("template.resolve",
+                         std::string(),
+                         "owner-value-expression-substitute skip=substitute-failed text=" +
+                             source.text);
+    }
+    return false;
+  }
+
+  TypePtr target_type = source.type;
+  if(target_type) {
+    TypePtr substituted_type;
+    if(template_argument_semantics::substitute_type(substitution_scope,
+                                                    target_type,
+                                                    parameters,
+                                                    arguments,
+                                                    substituted_type) &&
+       substituted_type) {
+      target_type = substituted_type;
+    }
+  }
+
+  TemplateArgumentSyntax eval_syntax = syntax;
+  if(eval_syntax.source_text.empty()) {
+    eval_syntax.source_text = eval_syntax.text;
+  }
+  eval_syntax.expression.reset(new CppAstNode(substituted_expression));
+  const std::string substituted_text = semantic_utils::trim_space(
+      callsemantic_internal::describe_expression_for_diagnostic(
+          substituted_expression));
+  if(!substituted_text.empty()) {
+    eval_syntax.text = substituted_text;
+  }
+
+  long long value = 0;
+  std::string eval_error;
+  const template_argument_semantics::NonTypeArgumentStatus status =
+      template_argument_semantics::evaluate_non_type_argument_syntax(
+          services,
+          template_api::make_template_environment(evaluation_scope),
+          eval_syntax,
+          value,
+          &eval_error,
+          target_type);
+  if(parser_trace::enabled("template.resolve")) {
+    std::ostringstream trace;
+    trace << "owner-value-expression-substitute text=" << source.text
+          << " substituted=" << eval_syntax.text
+          << " status=" << status
+          << " value=" << value
+          << " target=" << describe_type(target_type)
+          << " eval-scope=" << scope_name_for_diagnostic(evaluation_scope);
+    if(!eval_error.empty()) {
+      trace << " error=" << eval_error;
+    }
+    parser_trace::note("template.resolve", std::string(), trace.str());
+  }
+  if(status != template_argument_semantics::NT_ARG_EVALUATED) {
+    return false;
+  }
+
+  out = source;
+  out.type = target_type;
+  out.value = value;
+  out.dependent = false;
+  out.text = template_model::template_argument_text(
+      out,
+      [&ctx](const TypePtr & type)
+      {
+        return instantiation_argument_type_text(ctx, type);
+      });
+  out.source_syntax.reset(new TemplateArgumentSyntax(eval_syntax));
+  out.source_syntax->text = out.text;
+  out.source_syntax->dependent = false;
+  out.source_syntax->expression.reset();
+  attach_concrete_non_type_argument_expression(out, *out.source_syntax);
+  if(out.source_syntax->expression) {
+    out.expression.reset(new CppAstNode(*out.source_syntax->expression));
+  }
+  return true;
+}
 
 bool substitute_owner_arguments_in_class_type(
     SemanticContext & ctx,
@@ -513,24 +793,39 @@ bool substitute_owner_arguments_in_class_type(
     const std::vector<TemplateParameterInfo> & parameters,
     const std::vector<TemplateArgument> & arguments,
     const TypePtr & type,
-    TypePtr & out)
+    TypePtr & out,
+    std::set<const Type *> * active_types = nullptr)
 {
   out.reset();
   if(!type) {
     return false;
   }
+  std::set<const Type *> local_active_types;
+  if(!active_types) {
+    active_types = &local_active_types;
+  }
+  if(!active_types->insert(type.get()).second) {
+    return false;
+  }
+  struct ActiveTypeScope
+  {
+    std::set<const Type *> & active_types;
+    const Type * type;
+    ~ActiveTypeScope() { active_types.erase(type); }
+  } active_type_scope = {*active_types, type.get()};
 
   switch(type->kind) {
   case Type::TK_NAMED:
   {
     TypePtr dependent_qualified_owner;
     std::vector<std::string> dependent_qualified_members;
+    std::vector<TemplateIdSyntax> dependent_qualified_member_template_ids;
     bool dependent_qualified_leading_typename = false;
     if(named_type_dependent_qualified_member(type,
                                              dependent_qualified_owner,
                                              dependent_qualified_members,
                                              dependent_qualified_leading_typename,
-                                             nullptr)) {
+                                             &dependent_qualified_member_template_ids)) {
       TypePtr substituted;
       if(template_argument_semantics::substitute_type(scope,
                                                       type,
@@ -538,7 +833,7 @@ bool substitute_owner_arguments_in_class_type(
                                                       arguments,
                                                       substituted) &&
          substituted &&
-         substituted.get() != type.get()) {
+         !type_equals(substituted, type)) {
         TypePtr resolved;
         if(recover_instantiation_bound_type(ctx, scope, substituted, resolved) &&
            resolved) {
@@ -547,6 +842,40 @@ bool substitute_owner_arguments_in_class_type(
         }
         out = substituted;
         return true;
+      }
+      TypePtr owner_substituted;
+      if(substitute_owner_arguments_in_class_type(ctx,
+                                                  services,
+                                                  scope,
+                                                  parameters,
+                                                  arguments,
+                                                  dependent_qualified_owner,
+                                                  owner_substituted,
+                                                  active_types) &&
+         owner_substituted &&
+         !type_equals(owner_substituted, dependent_qualified_owner)) {
+        TemplateIdSyntax owner_template_id;
+        if(TypePtr base = strip_top_level_cv(type)) {
+          if(base->named_dependent_qualified_owner_template_id) {
+            owner_template_id =
+                *base->named_dependent_qualified_owner_template_id;
+          }
+        }
+        std::string display =
+            dependent_qualified_leading_typename ? "typename " : "";
+        display += reparseable_type_argument_text(owner_substituted);
+        for(std::size_t i = 0; i < dependent_qualified_members.size(); ++i) {
+          display += "::";
+          display += dependent_qualified_members[i];
+        }
+        out = make_dependent_qualified_member_type(
+            display.empty() ? type->named_display : display,
+            owner_substituted,
+            dependent_qualified_members,
+            dependent_qualified_leading_typename,
+            dependent_qualified_member_template_ids,
+            owner_template_id);
+        return out != nullptr;
       }
     }
 
@@ -591,10 +920,25 @@ bool substitute_owner_arguments_in_class_type(
           TemplateArgument source_arg;
           source_arg.kind = TemplateArgument::TA_VALUE;
           source_arg.text = text;
+          if(i < class_template->parameters.size()) {
+            source_arg.type = class_template->parameters[i].value_type;
+          }
+          source_arg.source_syntax.reset(new TemplateArgumentSyntax(source.syntax));
           if(substitute_owner_value_template_argument(parameters,
                                                       arguments,
                                                       source_arg,
-                                                      value_arg)) {
+                                                      value_arg) ||
+             substitute_owner_value_expression_template_argument(
+                 ctx,
+                 services,
+                 scope,
+                 class_template->declaring_scope ?
+                     *class_template->declaring_scope :
+                     scope,
+                 parameters,
+                 arguments,
+                 source_arg,
+                 value_arg)) {
             const std::string source_text =
                 concrete_substituted_value_source_text(value_arg, parameters);
             text = !source_text.empty() ?
@@ -607,7 +951,16 @@ bool substitute_owner_arguments_in_class_type(
                                  ctx,
                                  current_type);
                            });
+            if(value_arg.source_syntax && value_arg.source_syntax->expression) {
+              TemplateArgumentSyntax replacement_syntax = *value_arg.source_syntax;
+              replacement_syntax.text = text;
+              syntax = replacement_syntax;
+            } else if(value_arg.expression && !syntax.expression) {
+              syntax.expression.reset(new CppAstNode(*value_arg.expression));
+            }
             syntax.text = text;
+            syntax.dependent = value_arg.dependent;
+            attach_concrete_non_type_argument_expression(value_arg, syntax);
             changed = true;
           }
         }
@@ -651,6 +1004,12 @@ bool substitute_owner_arguments_in_class_type(
     std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
         named_type_class_template_specialization_mangle_info_const(type);
     if(mangle_info && mangle_info->class_template_decl) {
+      ClassTemplateDecl * class_template =
+          static_cast<ClassTemplateDecl *>(mangle_info->class_template_decl);
+      Scope * argument_scope =
+          class_template->declaring_scope ?
+              class_template->declaring_scope :
+              &scope;
       std::vector<TemplateArgument> resolved_arguments;
       resolved_arguments.reserve(mangle_info->arguments.size());
       bool changed = false;
@@ -663,7 +1022,9 @@ bool substitute_owner_arguments_in_class_type(
                parameters,
                arguments,
                mangle_info->arguments[i],
-               resolved)) {
+               resolved,
+               argument_scope,
+               active_types)) {
           changed = true;
         } else {
           resolved = mangle_info->arguments[i];
@@ -673,8 +1034,6 @@ bool substitute_owner_arguments_in_class_type(
       if(changed &&
          !template_arguments_are_dependent_for_instantiation(ctx,
                                                              resolved_arguments)) {
-        ClassTemplateDecl * class_template =
-            static_cast<ClassTemplateDecl *>(mangle_info->class_template_decl);
         template_api::TemplateTypeLookupRequest lookup;
         lookup.scope = &scope;
         lookup.allow_class_templates = true;
@@ -700,7 +1059,7 @@ bool substitute_owner_arguments_in_class_type(
   {
     TypePtr inner;
     if(!substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, inner)) {
+           ctx, services, scope, parameters, arguments, type->inner, inner, active_types)) {
       return false;
     }
     out = apply_cv(inner, type->cv_const, type->cv_volatile);
@@ -711,7 +1070,7 @@ bool substitute_owner_arguments_in_class_type(
   {
     TypePtr inner;
     if(!substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, inner)) {
+           ctx, services, scope, parameters, arguments, type->inner, inner, active_types)) {
       return false;
     }
     out = make_atomic(inner);
@@ -722,7 +1081,7 @@ bool substitute_owner_arguments_in_class_type(
   {
     TypePtr inner;
     if(!substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, inner)) {
+           ctx, services, scope, parameters, arguments, type->inner, inner, active_types)) {
       return false;
     }
     out = make_pointer(inner);
@@ -733,7 +1092,7 @@ bool substitute_owner_arguments_in_class_type(
   {
     TypePtr inner;
     if(!substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, inner)) {
+           ctx, services, scope, parameters, arguments, type->inner, inner, active_types)) {
       return false;
     }
     out = make_block_pointer(inner);
@@ -744,7 +1103,7 @@ bool substitute_owner_arguments_in_class_type(
   {
     TypePtr inner;
     if(!substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, inner)) {
+           ctx, services, scope, parameters, arguments, type->inner, inner, active_types)) {
       return false;
     }
     out = collapse_substituted_lvalue_reference_type(inner);
@@ -755,7 +1114,7 @@ bool substitute_owner_arguments_in_class_type(
   {
     TypePtr inner;
     if(!substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, inner)) {
+           ctx, services, scope, parameters, arguments, type->inner, inner, active_types)) {
       return false;
     }
     out = collapse_substituted_rvalue_reference_type(inner);
@@ -766,7 +1125,7 @@ bool substitute_owner_arguments_in_class_type(
   {
     TypePtr inner;
     if(!substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, inner)) {
+           ctx, services, scope, parameters, arguments, type->inner, inner, active_types)) {
       return false;
     }
     out = make_array(inner, type->has_bound, type->bound, type->bound_text);
@@ -781,12 +1140,12 @@ bool substitute_owner_arguments_in_class_type(
     TypePtr resolved_inner;
     bool changed = false;
     if(substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->owner, resolved_owner)) {
+           ctx, services, scope, parameters, arguments, type->owner, resolved_owner, active_types)) {
       owner = resolved_owner;
       changed = true;
     }
     if(substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, resolved_inner)) {
+           ctx, services, scope, parameters, arguments, type->inner, resolved_inner, active_types)) {
       inner = resolved_inner;
       changed = true;
     }
@@ -803,7 +1162,7 @@ bool substitute_owner_arguments_in_class_type(
     TypePtr resolved_result;
     bool changed = false;
     if(substitute_owner_arguments_in_class_type(
-           ctx, services, scope, parameters, arguments, type->inner, resolved_result)) {
+           ctx, services, scope, parameters, arguments, type->inner, resolved_result, active_types)) {
       result_type = resolved_result;
       changed = true;
     }
@@ -813,7 +1172,7 @@ bool substitute_owner_arguments_in_class_type(
       TypePtr param = type->params[i];
       TypePtr resolved_param;
       if(substitute_owner_arguments_in_class_type(
-             ctx, services, scope, parameters, arguments, type->params[i], resolved_param)) {
+             ctx, services, scope, parameters, arguments, type->params[i], resolved_param, active_types)) {
         param = resolved_param;
         changed = true;
       }
@@ -846,7 +1205,9 @@ bool substitute_owner_arguments_in_class_template_argument(
     const std::vector<TemplateParameterInfo> & parameters,
     const std::vector<TemplateArgument> & arguments,
     const TemplateArgument & source,
-    TemplateArgument & out)
+    TemplateArgument & out,
+    Scope * argument_declaring_scope,
+    std::set<const Type *> * active_types)
 {
   out = source;
   if(source.kind == TemplateArgument::TA_TYPE && source.type) {
@@ -869,11 +1230,12 @@ bool substitute_owner_arguments_in_class_template_argument(
                                                   parameters,
                                                   arguments,
                                                   substituted,
-                                                  class_substituted) &&
+                                                  class_substituted,
+                                                  active_types) &&
          class_substituted) {
         substituted = class_substituted;
       }
-      if(substituted.get() != source.type.get() ||
+      if(!type_equals(substituted, source.type) ||
          template_argument_semantics::type_depends_on_template_parameter(ctx,
                                                                         source.type) !=
              template_argument_semantics::type_depends_on_template_parameter(ctx,
@@ -889,10 +1251,24 @@ bool substitute_owner_arguments_in_class_template_argument(
     return false;
   }
   if(source.kind == TemplateArgument::TA_VALUE) {
-    return substitute_owner_value_template_argument(parameters,
-                                                   arguments,
-                                                   source,
-                                                   out);
+    if(substitute_owner_value_template_argument(parameters,
+                                                arguments,
+                                                source,
+                                                out)) {
+      return true;
+    }
+    if(!source.dependent) {
+      return false;
+    }
+    return substitute_owner_value_expression_template_argument(
+        ctx,
+        services,
+        scope,
+        argument_declaring_scope ? *argument_declaring_scope : scope,
+        parameters,
+        arguments,
+        source,
+        out);
   }
   return false;
 }
@@ -3745,6 +4121,10 @@ bool template_arguments_are_dependent_for_instantiation(
     SemanticContext & ctx,
     const std::vector<TemplateArgument> & arguments);
 
+void attach_concrete_non_type_argument_expression(
+    const TemplateArgument & argument,
+    TemplateArgumentSyntax & syntax);
+
 std::string template_specialization_name_from_argument_texts(
     const std::string & name,
     const std::vector<std::string> & argument_texts)
@@ -3847,6 +4227,8 @@ void update_class_template_dependent_type_metadata(
       dependent_argument.syntax.expression.reset(
           new CppAstNode(*arguments[i].expression));
     }
+    attach_concrete_non_type_argument_expression(arguments[i],
+                                                dependent_argument.syntax);
     dependent_argument.source_defaulted = arguments[i].source_defaulted;
     dependent_argument_syntaxes.push_back(dependent_argument);
   }
@@ -3907,6 +4289,134 @@ bool template_arguments_contain_forced_structured_mangling(
   return false;
 }
 
+  bool try_make_function_non_type_argument_expression(
+      const TemplateArgument & argument,
+      CppAstNode & out)
+  {
+    if(!argument.function_value) {
+      return false;
+    }
+
+    QualifiedName qualified;
+    if(!semantic_model::function_binding_qualified_name_syntax_for_symbol(
+           *argument.function_value,
+           qualified)) {
+      return false;
+    }
+
+    CppAstNode id;
+    id.kind = CppAstKind::id_expression;
+    id.value = template_api::qualified_name_text(qualified);
+    id.semantic_type = argument.function_value->declared_type ?
+        argument.function_value->declared_type :
+        argument.function_value->type;
+    set_cppast_qualified_name_syntax(id, qualified);
+
+    if(!argument.function_value->is_method) {
+      out = id;
+      return true;
+    }
+
+    CppAstNode unary;
+    unary.kind = CppAstKind::unary_expression;
+    unary.value = "&";
+    unary.has_token = true;
+    unary.token_kind = RT_SIMPLE;
+    unary.simple_type = OP_AMP;
+    unary.semantic_type = argument.type;
+    unary.children.push_back(id);
+    out = unary;
+    return true;
+  }
+
+CppAstNode make_concrete_non_type_argument_expression(
+    const TemplateArgument & argument)
+{
+  CppAstNode function_expression;
+  if(try_make_function_non_type_argument_expression(argument,
+                                                   function_expression)) {
+    return function_expression;
+  }
+
+  CppAstNode literal;
+  literal.kind = CppAstKind::literal;
+  literal.semantic_type = argument.type;
+
+  if(argument.value >= 0) {
+    literal.value = std::to_string(
+        static_cast<unsigned long long>(argument.value));
+    return literal;
+  }
+
+  const unsigned long long magnitude =
+      static_cast<unsigned long long>(-(argument.value + 1)) + 1ULL;
+  literal.value = std::to_string(magnitude);
+
+  CppAstNode unary;
+  unary.kind = CppAstKind::unary_expression;
+  unary.value = "-";
+  unary.has_token = true;
+  unary.token_kind = RT_SIMPLE;
+  unary.simple_type = OP_MINUS;
+  unary.semantic_type = argument.type;
+  unary.children.push_back(literal);
+  return unary;
+}
+
+bool concrete_non_type_argument_expression_needs_refresh(
+    const TemplateArgument & argument,
+    const TemplateArgumentSyntax & syntax)
+{
+  if(!argument.function_value || !argument.function_value->is_method) {
+    return false;
+  }
+  if(!syntax.expression) {
+    return true;
+  }
+  const CppAstNode & expression = *syntax.expression;
+  return expression.kind != CppAstKind::unary_expression ||
+         !expression.has_token ||
+         expression.simple_type != OP_AMP;
+}
+
+void attach_concrete_non_type_argument_expression(
+    const TemplateArgument & argument,
+    TemplateArgumentSyntax & syntax)
+{
+  if(argument.kind != TemplateArgument::TA_VALUE ||
+     argument.dependent ||
+     (syntax.expression &&
+      !concrete_non_type_argument_expression_needs_refresh(argument, syntax))) {
+    return;
+  }
+  syntax.expression.reset(new CppAstNode(
+      make_concrete_non_type_argument_expression(argument)));
+}
+
+std::vector<TemplateArgumentSyntax> normalized_class_template_argument_syntaxes(
+    const std::vector<TemplateArgument> & arguments,
+    const std::vector<TemplateArgumentSyntax> * argument_syntaxes)
+{
+  std::vector<TemplateArgumentSyntax> syntaxes(arguments.size());
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(argument_syntaxes && i < argument_syntaxes->size()) {
+      syntaxes[i] = (*argument_syntaxes)[i];
+    } else if(arguments[i].source_syntax) {
+      syntaxes[i] = *arguments[i].source_syntax;
+    }
+    if(syntaxes[i].text.empty()) {
+      syntaxes[i].text = arguments[i].text;
+    }
+    if(arguments[i].kind == TemplateArgument::TA_TYPE &&
+       arguments[i].type &&
+       !syntaxes[i].resolved_type) {
+      syntaxes[i].resolved_type = arguments[i].type;
+    }
+    attach_concrete_non_type_argument_expression(arguments[i], syntaxes[i]);
+  }
+  return syntaxes;
+}
+
 void update_class_template_specialization_mangle_info(
     ClassInfo & info,
     const std::vector<TemplateArgument> & arguments,
@@ -3950,9 +4460,8 @@ void update_class_template_specialization_mangle_info(
     mangle_info->mangle_arguments = *mangle_arguments;
   }
   mangle_info->arguments = arguments;
-  if(argument_syntaxes) {
-    mangle_info->argument_syntaxes = *argument_syntaxes;
-  }
+  mangle_info->argument_syntaxes =
+      normalized_class_template_argument_syntaxes(arguments, argument_syntaxes);
   if(pack_sizes) {
     mangle_info->pack_sizes = *pack_sizes;
   }
@@ -3981,36 +4490,56 @@ void record_class_template_argument_state(
     const std::vector<TemplateArgument> * mangle_arguments = nullptr,
     const std::map<std::string, std::size_t> * pack_sizes = nullptr)
 {
+  const std::vector<TemplateArgument> normalized_arguments =
+      template_arguments_need_function_value_rehydration(arguments) ?
+          rehydrated_template_argument_function_values(ctx, arguments) :
+          arguments;
+  std::vector<TemplateArgument> normalized_mangle_arguments;
+  const std::vector<TemplateArgument> * effective_mangle_arguments =
+      mangle_arguments;
+  if(mangle_arguments &&
+     template_arguments_need_function_value_rehydration(*mangle_arguments)) {
+    normalized_mangle_arguments =
+        rehydrated_template_argument_function_values(ctx, *mangle_arguments);
+    effective_mangle_arguments = &normalized_mangle_arguments;
+  }
+
   info.instantiation_key = key;
-  info.instantiation_arg_texts = canonical_instantiation_arg_texts_impl(ctx, arguments);
-  info.instantiation_arguments = arguments;
-  info.instantiation_binding_arguments = arguments;
+  info.instantiation_arg_texts =
+      canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
+  info.instantiation_arguments = normalized_arguments;
+  info.instantiation_binding_arguments = normalized_arguments;
   info.instantiation_binding_pack_sizes.clear();
   info.has_instantiation_binding_arguments = true;
   const bool force_structured_mangling =
-      template_arguments_contain_forced_structured_mangling(arguments);
-  clear_class_template_cached_lambda_mangle_metadata(info, arguments);
+      template_arguments_contain_forced_structured_mangling(normalized_arguments);
+  clear_class_template_cached_lambda_mangle_metadata(info, normalized_arguments);
   update_class_template_specialization_mangle_info(
       info,
-      arguments,
+      normalized_arguments,
       force_structured_mangling,
       nullptr,
       mangle_parameters,
-      mangle_arguments,
+      effective_mangle_arguments,
       pack_sizes);
   update_class_template_dependent_type_metadata(
       ctx,
       info,
-      arguments,
-      template_arguments_are_dependent_for_instantiation(ctx, arguments));
+      normalized_arguments,
+      template_arguments_are_dependent_for_instantiation(ctx,
+                                                         normalized_arguments));
 }
 
 void record_class_template_binding_state(
+    SemanticContext & ctx,
     ClassInfo & info,
     const std::vector<TemplateArgument> & arguments,
     const std::map<std::string, std::size_t> * pack_sizes)
 {
-  info.instantiation_binding_arguments = arguments;
+  info.instantiation_binding_arguments =
+      template_arguments_need_function_value_rehydration(arguments) ?
+          rehydrated_template_argument_function_values(ctx, arguments) :
+          arguments;
   if(pack_sizes) {
     info.instantiation_binding_pack_sizes = *pack_sizes;
   } else {
@@ -4046,6 +4575,22 @@ const std::string & function_binding_template_registration_key(
     const FunctionBinding & binding)
 {
   return binding.template_instantiation_key;
+}
+
+std::string function_template_instantiation_cache_key(
+    const FunctionTemplateDecl & source_decl,
+    const std::string & argument_key)
+{
+  std::ostringstream out;
+  out << argument_key
+      << "||decl=" << static_cast<const void *>(&source_decl)
+      << "||node=" << static_cast<const void *>(source_decl.declaration_node)
+      << "||inner=" << static_cast<const void *>(source_decl.inner)
+      << "||type="
+      << (source_decl.type_pattern ?
+              describe_type(source_decl.type_pattern) :
+              std::string("<none>"));
+  return out.str();
 }
 
 void record_function_template_instantiation_cache_entry(
@@ -6770,6 +7315,23 @@ bool record_class_template_instantiation_state(
     const std::vector<TemplateArgument> * dependent_argument_mangle_arguments,
     const std::map<std::string, std::size_t> * dependent_argument_mangle_pack_sizes)
 {
+  const std::vector<TemplateArgument> normalized_arguments =
+      template_arguments_need_function_value_rehydration(arguments) ?
+          rehydrated_template_argument_function_values(ctx, arguments) :
+          arguments;
+  std::vector<TemplateArgument> normalized_mangle_arguments;
+  const std::vector<TemplateArgument> * effective_mangle_arguments =
+      dependent_argument_mangle_arguments;
+  if(dependent_argument_mangle_arguments &&
+     template_arguments_need_function_value_rehydration(
+         *dependent_argument_mangle_arguments)) {
+    normalized_mangle_arguments =
+        rehydrated_template_argument_function_values(
+            ctx,
+            *dependent_argument_mangle_arguments);
+    effective_mangle_arguments = &normalized_mangle_arguments;
+  }
+
   const bool existing_instantiation_metadata =
       !info.instantiation_key.empty() ||
       !info.instantiation_arguments.empty() ||
@@ -6780,7 +7342,7 @@ bool record_class_template_instantiation_state(
   const bool refresh_arguments =
       class_template_instance_arguments_need_refresh(
           info,
-          arguments,
+          normalized_arguments,
           was_dependent,
           dependent_arguments,
           preserve_existing_concrete_instantiation);
@@ -6797,34 +7359,34 @@ bool record_class_template_instantiation_state(
       info.source_template ? info.source_template->specialization_epoch : 0;
   if(refresh_arguments) {
     info.instantiation_arg_texts =
-        canonical_instantiation_arg_texts_impl(ctx, arguments);
-    info.instantiation_arguments = arguments;
-    clear_class_template_cached_lambda_mangle_metadata(info, arguments);
+        canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
+    info.instantiation_arguments = normalized_arguments;
+    clear_class_template_cached_lambda_mangle_metadata(info, normalized_arguments);
   } else if(!info.instantiation_arguments.empty()) {
     merge_template_argument_value_dependencies(info.instantiation_arguments,
-                                               arguments);
+                                               normalized_arguments);
   }
   if(refresh_arguments || !info.has_instantiation_binding_arguments) {
-    record_class_template_binding_state(info, arguments, nullptr);
+    record_class_template_binding_state(ctx, info, normalized_arguments, nullptr);
   }
   if(dependent_argument_texts && !dependent_argument_texts->empty()) {
-    if(info.instantiation_arg_texts.size() < arguments.size()) {
+    if(info.instantiation_arg_texts.size() < normalized_arguments.size()) {
       info.instantiation_arg_texts =
-          canonical_instantiation_arg_texts_impl(ctx, arguments);
+          canonical_instantiation_arg_texts_impl(ctx, normalized_arguments);
     }
     const std::size_t count =
         std::min(std::min(dependent_argument_texts->size(),
                           info.instantiation_arg_texts.size()),
-                 arguments.size());
+                 normalized_arguments.size());
     for(std::size_t i = 0; i < count; ++i) {
       const std::string & source_text = (*dependent_argument_texts)[i];
       info.instantiation_arg_texts[i] =
           dependent_argument_source_text_matches_semantic_argument(
               ctx,
-              arguments[i],
+              normalized_arguments[i],
               source_text) ?
               source_text :
-              canonical_instantiation_arg_text_impl(ctx, arguments[i]);
+              canonical_instantiation_arg_text_impl(ctx, normalized_arguments[i]);
       if(i < info.instantiation_arguments.size() &&
          info.instantiation_arguments[i].kind == TemplateArgument::TA_TYPE &&
          info.instantiation_arguments[i].dependent) {
@@ -6852,7 +7414,7 @@ bool record_class_template_instantiation_state(
       template_arguments_contain_forced_structured_mangling(effective_arguments),
       dependent_argument_syntaxes,
       dependent_argument_mangle_parameters,
-      dependent_argument_mangle_arguments,
+      effective_mangle_arguments,
       dependent_argument_mangle_pack_sizes);
   update_class_template_dependent_type_metadata(
       ctx,
@@ -6889,7 +7451,8 @@ bool refresh_forward_class_template_selection(SemanticContext & ctx,
   ctx.reset_instantiated_class_info(info, info.name, specialization.class_node);
   info.is_explicit_specialization =
       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION;
-  record_class_template_binding_state(info,
+  record_class_template_binding_state(ctx,
+                                      info,
                                       specialization.arguments,
                                       &specialization.pack_sizes);
   if(specialization.binding_scope) {
@@ -7792,15 +8355,24 @@ void bind_template_arguments_into_scope(
     const std::map<std::string, std::size_t> * pack_sizes)
 {
   template_api::TemplateTypeSystem & type_system = service_type_system(services);
+  std::vector<TemplateArgument> normalized_arguments;
+  const std::vector<TemplateArgument> * effective_arguments = &arguments;
+  if(services.semantic_context &&
+     template_arguments_need_function_value_rehydration(arguments)) {
+    normalized_arguments =
+        rehydrated_template_argument_function_values(*services.semantic_context,
+                                                     arguments);
+    effective_arguments = &normalized_arguments;
+  }
   ensure_template_arguments_fully_bind_parameters(
       type_system,
       "bind_template_arguments_into_scope",
       scope.class_info ? scope.class_info->qualified_name : std::string(),
       parameters,
-      arguments);
+      *effective_arguments);
   template_binding::Hooks hooks = template_scope::make_scope_binding_hooks(scope);
   hooks.resolve_non_type_value_type =
-      [&services, &type_system, &scope, &parameters, &arguments](
+      [&services, &type_system, &scope, &parameters, effective_arguments](
           const TemplateParameterInfo & parameter,
           const TemplateArgument &) -> TypePtr
       {
@@ -7811,7 +8383,7 @@ void bind_template_arguments_into_scope(
                bound_value_type)) {
           TypePtr substituted;
           if(template_argument_semantics::substitute_type(
-                 bound_value_type, parameters, arguments, substituted)) {
+                 bound_value_type, parameters, *effective_arguments, substituted)) {
             template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
                 services,
                 template_api::make_template_environment(scope),
@@ -7926,8 +8498,11 @@ void bind_template_arguments_into_scope(
         }
         template_scope::bind_type_pack(scope, name, canonical_pack);
       };
-  template_binding::bind_arguments(parameters, arguments, hooks, pack_sizes);
-  bind_argument_local_named_types(type_system, scope, arguments);
+  template_binding::bind_arguments(parameters,
+                                   *effective_arguments,
+                                   hooks,
+                                   pack_sizes);
+  bind_argument_local_named_types(type_system, scope, *effective_arguments);
 }
 
 struct ClassTemplateBindingContext
@@ -8454,7 +9029,10 @@ ClassInfo * instantiate_selected_class_template(
       selected_partial_mangle_context ? bound_arguments : nullptr,
       selected_partial_mangle_context ? bound_pack_sizes : nullptr);
   info->reentrant_primary_selection = specialization.reentrant_primary;
-  record_class_template_binding_state(*info, *bound_arguments, bound_pack_sizes);
+  record_class_template_binding_state(ctx,
+                                      *info,
+                                      *bound_arguments,
+                                      bound_pack_sizes);
   info->dependent_instantiation = current_arguments_dependent;
   info->is_explicit_specialization =
       specialization.kind == template_api::MS_EXPLICIT_SPECIALIZATION;
@@ -8678,6 +9256,8 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
      instantiation_owner != source_decl_context_owner) {
     key = instantiation_owner->qualified_name + "||" + key;
   }
+  const std::string cache_key =
+      function_template_instantiation_cache_key(*source_decl, key);
   if(instantiation_owner &&
      instantiation_owner->source_template &&
      source_decl &&
@@ -8997,7 +9577,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     }
   };
   std::map<std::string, FunctionBinding *>::iterator found =
-      source_decl->instantiations.find(key);
+      source_decl->instantiations.find(cache_key);
   const std::map<std::string, std::size_t> * effective_pack_sizes = pack_sizes;
   if(!effective_pack_sizes &&
      found != source_decl->instantiations.end() &&
@@ -9021,6 +9601,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
       trace << "function-instantiation-cache-hit name=" << source_decl->name
             << " parsed_name=" << found->second->display_name
             << " key=" << key
+            << " cache_key=" << cache_key
             << " source_template=" << static_cast<void *>(source_decl)
             << " is_ctor=" << (source_decl->is_constructor ? "yes" : "no")
             << " decl_loc=" << function_template_decl_location(ctx, source_decl);
@@ -9254,13 +9835,14 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
 
   ScopedFunctionTemplateInstantiationInProgress instantiation_progress(
       source_decl,
-      key);
+      cache_key);
   if(instantiation_progress.recursive) {
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "function-instantiation-recursive-defer name="
             << source_decl->name
-            << " key=" << key;
+            << " key=" << key
+            << " cache_key=" << cache_key;
       parser_trace::note("template.resolve", std::string(), trace.str());
     }
     throw TemplateSubstitutionFailure(
@@ -9794,27 +10376,63 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
               result_type);
         }
       }
+      if(result_type_still_dependent &&
+         instantiation_owner &&
+         instantiation_owner->member_scope) {
+        TypePtr owner_scope_result;
+        if(recover_instantiation_bound_type(ctx,
+                                            *instantiation_owner->member_scope,
+                                            result_type,
+                                            owner_scope_result) &&
+           owner_scope_result) {
+          result_type = owner_scope_result;
+          result_type_still_dependent =
+              template_argument_semantics::type_depends_on_template_parameter(
+                  ctx,
+                  result_type);
+        }
+      }
+      if(result_type_still_dependent &&
+         instantiation_owner) {
+        TypePtr owner_member_result;
+        if(recover_instantiation_owner_member_type(ctx,
+                                                   instantiation_owner,
+                                                   result_type,
+                                                   owner_member_result) &&
+           owner_member_result) {
+          result_type = owner_member_result;
+          result_type_still_dependent =
+              template_argument_semantics::type_depends_on_template_parameter(
+                  ctx,
+                  result_type);
+        }
+      }
       if(!dependent_template_arguments &&
          source_result_type_was_dependent &&
          !template_argument_semantics::type_depends_on_template_parameter(ctx,
                                                                           result_type)) {
-        TypePtr resolved_result;
         try {
-          if(recover_instantiation_bound_type(ctx,
-                                             inst_scope,
-                                             result_type,
-                                             resolved_result) &&
-             resolved_result) {
-            result_type = resolved_result;
+          TypePtr resolved_result;
+          try {
+            if(recover_instantiation_bound_type(ctx,
+                                               inst_scope,
+                                               result_type,
+                                               resolved_result) &&
+               resolved_result) {
+              result_type = resolved_result;
+            }
+          } catch(const std::logic_error &) {
+            resolved_result.reset();
           }
           validate_instantiated_result_template_arguments(ctx,
                                                          inst_scope,
                                                          result_type);
         } catch(const TemplateSubstitutionFailure &) {
           throw;
-        } catch(const std::logic_error &) {
+        } catch(const std::logic_error & e) {
           throw_substitution_failure(
-              "failed function template result type substitution",
+              std::string("failed function template result type substitution [") +
+                  e.what() + "]",
               std::string(),
               "template-instantiation");
         }
@@ -10206,6 +10824,7 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     trace << "function-instantiation-new name=" << source_decl->name
           << " parsed_name=" << name
           << " key=" << key
+          << " cache_key=" << cache_key
           << " source_template=" << static_cast<void *>(source_decl)
           << " is_ctor=" << (source_decl->is_constructor ? "yes" : "no")
           << " decl_loc=" << function_template_decl_location(ctx, source_decl);
@@ -10273,8 +10892,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
     binding->body = nullptr;
     binding->has_definition = false;
   }
-  source_decl->instantiations[key] = binding;
-  record_function_template_instantiation_cache_entry(*binding, *source_decl, key);
+  source_decl->instantiations[cache_key] = binding;
+  record_function_template_instantiation_cache_entry(*binding,
+                                                     *source_decl,
+                                                     cache_key);
   if((include_body || explicit_specialization) &&
      (binding->has_definition || explicit_specialization)) {
     apply_function_instantiation_intent(

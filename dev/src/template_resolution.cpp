@@ -232,10 +232,15 @@ FunctionBinding * select_non_type_member_function_argument(
     const TypePtr & owner_type,
     const TypePtr & function_type);
 
-bool bind_non_type_function_argument(const TypePtr & target_type,
+bool bind_non_type_function_argument(SemanticContext * semantic_context,
+                                     const TypePtr & target_type,
                                      FunctionBinding * function,
                                      const std::string & text,
                                      TemplateArgument & out);
+
+void attach_template_argument_source_syntax(
+    const TemplateArgumentSyntax * syntax,
+    TemplateArgument & out);
 
 struct ExplicitFunctionTemplateArgumentBindings
 {
@@ -1035,7 +1040,8 @@ bool bind_value_binding_non_type_template_argument(
           !binding.non_type_template_argument_text.empty() ?
               trim_space(binding.non_type_template_argument_text) :
               trim_space(fallback_text);
-      if(bind_non_type_function_argument(target_type,
+      if(bind_non_type_function_argument(services.semantic_context,
+                                         target_type,
                                          function,
                                          argument_text,
                                          out)) {
@@ -1340,7 +1346,8 @@ bool member_function_binding_matches_target(FunctionBinding * binding,
     return false;
   }
 
-  TypePtr member_function_type = binding->declared_type;
+  TypePtr member_function_type =
+      binding->declared_type ? binding->declared_type : binding->type;
   TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
   const FunctionTypeRefQualifier binding_ref_qualifier =
       function_type_ref_qualifier_from_method_ref(binding->ref_qualifier);
@@ -1547,7 +1554,8 @@ bool member_pointer_callable_lookup_has_non_callable_collision(
   return false;
 }
 
-bool bind_non_type_function_argument(const TypePtr & target_type,
+bool bind_non_type_function_argument(SemanticContext * semantic_context,
+                                     const TypePtr & target_type,
                                      FunctionBinding * function,
                                      const std::string & text,
                                      TemplateArgument & out)
@@ -1555,7 +1563,10 @@ bool bind_non_type_function_argument(const TypePtr & target_type,
   if(!function) {
     return false;
   }
-  add_output_requirement(function->output_requirements, ORK_DEFINITION);
+  if(semantic_context && function->symbol.object_symbol.empty()) {
+    semantic_context->upgrade_function_symbol_linkage(function,
+                                                      function->symbol.linkage);
+  }
   out.kind = TemplateArgument::TA_VALUE;
   out.type = target_type;
   out.function_value = function;
@@ -1606,6 +1617,7 @@ bool try_resolve_function_non_type_template_argument_name(
   }
 
   return bind_non_type_function_argument(
+      services.semantic_context,
       target_type,
       select_non_type_function_argument(functions, function_type),
       argument_text,
@@ -1833,18 +1845,25 @@ bool try_resolve_function_non_type_template_argument_syntax(
       return false;
     }
 
-    return bind_non_type_function_argument(
-        target_type,
-        select_non_type_function_argument(functions, function_type),
-        operand->value,
-        out);
+    if(!bind_non_type_function_argument(
+           services.semantic_context,
+           target_type,
+           select_non_type_function_argument(functions, function_type),
+           operand->value,
+           out)) {
+      return false;
+    }
+    attach_template_argument_source_syntax(syntax, out);
+    return true;
   }
   const QualifiedName * qualified = cppast_qualified_name_syntax(*operand);
   if(qualified && (qualified->rooted || !qualified->qualifiers.empty())) {
     TypePtr owner_type;
     TypePtr member_function_type;
+    const bool member_pointer_address =
+        explicit_address || !qualified->qualifiers.empty();
     if(non_type_member_function_target_type(target_type,
-                                            explicit_address,
+                                            member_pointer_address,
                                             owner_type,
                                             member_function_type)) {
       std::vector<FunctionBinding *> functions;
@@ -1869,10 +1888,15 @@ bool try_resolve_function_non_type_template_argument_syntax(
                                                                   owner_type,
                                                                   member_function_type);
           }
-          return bind_non_type_function_argument(target_type,
-                                                 selected,
-                                                 operand->value,
-                                                 out);
+          if(!bind_non_type_function_argument(services.semantic_context,
+                                              target_type,
+                                              selected,
+                                              operand->value,
+                                              out)) {
+            return false;
+          }
+          attach_template_argument_source_syntax(syntax, out);
+          return true;
         }
       } catch(const TemplateSubstitutionFailure &) {
         return false;
@@ -1906,10 +1930,15 @@ bool try_resolve_function_non_type_template_argument_syntax(
                                                            templates,
                                                            function_type);
           }
-          return bind_non_type_function_argument(target_type,
-                                                 selected,
-                                                 operand->value,
-                                                 out);
+          if(!bind_non_type_function_argument(services.semantic_context,
+                                              target_type,
+                                              selected,
+                                              operand->value,
+                                              out)) {
+            return false;
+          }
+          attach_template_argument_source_syntax(syntax, out);
+          return true;
         }
       } catch(const TemplateSubstitutionFailure &) {
         return false;
@@ -2182,7 +2211,8 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
                         strip_top_level_cv(target_base->owner))) {
           continue;
         }
-        TypePtr member_function_type = binding->declared_type;
+        TypePtr member_function_type =
+            binding->declared_type ? binding->declared_type : binding->type;
         TypePtr stripped_function_type = strip_top_level_cv(member_function_type);
         const FunctionTypeRefQualifier binding_ref_qualifier =
             function_type_ref_qualifier_from_method_ref(binding->ref_qualifier);
@@ -2209,7 +2239,11 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
         selected = binding;
       }
       if(selected) {
-        return bind_non_type_function_argument(target_type, selected, trimmed, out);
+        return bind_non_type_function_argument(services.semantic_context,
+                                               target_type,
+                                               selected,
+                                               trimmed,
+                                               out);
       }
     }
   }
@@ -3566,15 +3600,45 @@ bool try_resolve_bound_member_type_argument(
   if(!simple_bound_member_type_argument_syntax(syntax, owner_name, member_name)) {
     return false;
   }
-  auto owner_found =
-      raw_parameter_scope.named_types.find(owner_name);
-  if(owner_found == raw_parameter_scope.named_types.end() ||
-     !owner_found->second) {
+
+  const auto lookup_owner =
+      [&](Scope & scope, TypePtr & owner) -> bool
+  {
+    for(Scope * current = &scope; current; current = current->parent) {
+      auto owner_found = current->named_types.find(owner_name);
+      if(owner_found != current->named_types.end() && owner_found->second) {
+        owner = owner_found->second;
+        return true;
+      }
+      if(current->namespace_scope || current->parent == nullptr) {
+        break;
+      }
+    }
     return false;
+  };
+
+  TypePtr parameter_owner_type;
+  TypePtr argument_owner_type;
+  const bool has_parameter_owner =
+      lookup_owner(raw_parameter_scope, parameter_owner_type);
+  const bool has_argument_owner =
+      lookup_owner(raw_argument_scope, argument_owner_type);
+  if(!has_parameter_owner && !has_argument_owner) {
+    return false;
+  }
+
+  TypePtr owner_type = parameter_owner_type;
+  if(has_argument_owner &&
+     (!has_parameter_owner ||
+      (template_argument_semantics::type_depends_on_template_parameter(
+           type_system, parameter_owner_type) &&
+       !template_argument_semantics::type_depends_on_template_parameter(
+           type_system, argument_owner_type)))) {
+    owner_type = argument_owner_type;
   }
   return try_resolve_member_type_on_known_owner(type_system,
                                                raw_argument_scope,
-                                               owner_found->second,
+                                               owner_type,
                                                member_name,
                                                out,
                                                determinate_failure,
@@ -7978,15 +8042,47 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
           if(found_value == info.member_scope->values.end()) {
             return false;
           }
+          const ValueBinding & binding = found_value->second;
           arg.kind = TemplateArgument::TA_VALUE;
-          arg.type = found_value->second.type;
-          if(found_value->second.has_constant_value) {
-            arg.value = found_value->second.constant_value;
+          arg.type = binding.type;
+          if(binding.non_type_template_function_value ||
+             binding.non_type_template_value_binding) {
+            arg.text =
+                !binding.non_type_template_argument_text.empty() ?
+                    binding.non_type_template_argument_text :
+                    parameter.name;
+            FunctionBinding * function_value =
+                binding.non_type_template_function_value;
+            if(services.semantic_context &&
+               !binding.non_type_template_function_internal_symbol.empty()) {
+              if(FunctionBinding * resolved_function =
+                     services.semantic_context->first_function_by_internal_symbol(
+                         binding.non_type_template_function_internal_symbol)) {
+                function_value = resolved_function;
+              }
+            }
+            arg.function_value = function_value;
+            if(arg.function_value &&
+               services.semantic_context &&
+               arg.function_value->symbol.object_symbol.empty()) {
+              services.semantic_context->upgrade_function_symbol_linkage(
+                  function_value,
+                  arg.function_value->symbol.linkage);
+            }
+            arg.function_internal_symbol =
+                !binding.non_type_template_function_internal_symbol.empty() ?
+                    binding.non_type_template_function_internal_symbol :
+                    arg.function_value ?
+                        arg.function_value->symbol.internal_symbol :
+                        std::string();
+            arg.value_binding = binding.non_type_template_value_binding;
+          } else if(binding.has_constant_value) {
+            arg.value = binding.constant_value;
             arg.text = typed_non_type_template_argument_text(
                 type_system,
-                found_value->second.type,
-                found_value->second.constant_value);
-          } else if(found_value->second.dependent_template_value) {
+                binding.type,
+                binding.constant_value);
+          } else if(binding.dependent_template_value) {
             arg.dependent = true;
             arg.text = parameter.name;
           } else {
@@ -12721,17 +12817,32 @@ bool resolve_template_arguments(
       template_argument_semantics::NonTypeArgumentStatus value_status =
           template_argument_semantics::NT_ARG_EVAL_FAILED;
       std::string eval_error;
+      const auto evaluate_default_syntax =
+          [&](const TemplateArgumentSyntax & candidate)
+              -> template_argument_semantics::NonTypeArgumentStatus
+      {
+        return template_argument_semantics::evaluate_non_type_argument_syntax(
+            services,
+            default_argument_env,
+            candidate,
+            value,
+            &eval_error,
+            bound_value_type);
+      };
       try {
-        value_status =
-            template_argument_semantics::evaluate_non_type_argument_expression(
-                services,
-                default_argument_env,
-                evaluation_default_expression,
-                value,
-                &eval_error,
-                bound_value_type);
+        value_status = evaluate_default_syntax(default_syntax);
       } catch(const std::logic_error & e) {
         eval_error = e.what();
+      }
+      if(value_status != template_argument_semantics::NT_ARG_EVALUATED &&
+         value_status != template_argument_semantics::NT_ARG_DEPENDENT &&
+         have_substituted_default_expression) {
+        eval_error.clear();
+        try {
+          value_status = evaluate_default_syntax(dependency_default_syntax);
+        } catch(const std::logic_error & e) {
+          eval_error = e.what();
+        }
       }
       if(value_status != template_argument_semantics::NT_ARG_EVALUATED) {
         if(value_status != template_argument_semantics::NT_ARG_DEPENDENT &&

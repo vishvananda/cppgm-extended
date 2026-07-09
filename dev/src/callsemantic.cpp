@@ -14184,6 +14184,109 @@ private:
         arguments);
   }
 
+	  static CppAstNode make_concrete_non_type_argument_expression(
+	      const TemplateArgument & argument)
+	  {
+	    CppAstNode function_expression;
+	    if(try_make_function_non_type_argument_expression(argument,
+	                                                     function_expression)) {
+	      return function_expression;
+	    }
+
+	    CppAstNode literal;
+	    literal.kind = CppAstKind::literal;
+	    literal.semantic_type = argument.type;
+
+    if(argument.value >= 0) {
+      literal.value = to_string(static_cast<unsigned long long>(argument.value));
+      return literal;
+    }
+
+    const unsigned long long magnitude =
+        static_cast<unsigned long long>(-(argument.value + 1)) + 1ULL;
+    literal.value = to_string(magnitude);
+
+    CppAstNode unary;
+    unary.kind = CppAstKind::unary_expression;
+    unary.value = "-";
+    unary.has_token = true;
+    unary.token_kind = RT_SIMPLE;
+    unary.simple_type = OP_MINUS;
+    unary.semantic_type = argument.type;
+    unary.children.push_back(literal);
+	    return unary;
+	  }
+
+	  static bool try_make_function_non_type_argument_expression(
+	      const TemplateArgument & argument,
+	      CppAstNode & out)
+	  {
+	    if(!argument.function_value) {
+	      return false;
+	    }
+
+	    QualifiedName qualified;
+	    if(!semantic_model::function_binding_qualified_name_syntax_for_symbol(
+	           *argument.function_value,
+	           qualified)) {
+	      return false;
+	    }
+
+	    CppAstNode id;
+	    id.kind = CppAstKind::id_expression;
+	    id.value = template_api::qualified_name_text(qualified);
+	    id.semantic_type = argument.function_value->declared_type ?
+	        argument.function_value->declared_type :
+	        argument.function_value->type;
+	    set_cppast_qualified_name_syntax(id, qualified);
+
+	    if(!argument.function_value->is_method) {
+	      out = id;
+	      return true;
+	    }
+
+	    CppAstNode unary;
+	    unary.kind = CppAstKind::unary_expression;
+	    unary.value = "&";
+	    unary.has_token = true;
+	    unary.token_kind = RT_SIMPLE;
+	    unary.simple_type = OP_AMP;
+	    unary.semantic_type = argument.type;
+	    unary.children.push_back(id);
+	    out = unary;
+	    return true;
+	  }
+
+	  static bool concrete_non_type_argument_expression_needs_refresh(
+	      const TemplateArgument & argument,
+	      const TemplateArgumentSyntax & syntax)
+	  {
+	    if(!argument.function_value || !argument.function_value->is_method) {
+	      return false;
+	    }
+	    if(!syntax.expression) {
+	      return true;
+	    }
+	    const CppAstNode & expression = *syntax.expression;
+	    return expression.kind != CppAstKind::unary_expression ||
+	           !expression.has_token ||
+	           expression.simple_type != OP_AMP;
+	  }
+
+	  static void attach_concrete_non_type_argument_expression(
+	      const TemplateArgument & argument,
+	      TemplateArgumentSyntax & syntax)
+	  {
+	    if(argument.kind != TemplateArgument::TA_VALUE ||
+	       argument.dependent ||
+	       (syntax.expression &&
+	        !concrete_non_type_argument_expression_needs_refresh(argument, syntax))) {
+	      return;
+	    }
+	    syntax.expression.reset(new CppAstNode(
+        make_concrete_non_type_argument_expression(argument)));
+  }
+
   TypePtr make_dependent_class_template_reference_type(
       ClassTemplateDecl & decl,
       const vector<TemplateArgument> & arguments,
@@ -14244,6 +14347,8 @@ private:
         dependent_argument.syntax.expression.reset(
             new CppAstNode(*arguments[i].expression));
       }
+      attach_concrete_non_type_argument_expression(arguments[i],
+                                                  dependent_argument.syntax);
       dependent_argument.source_defaulted = arguments[i].source_defaulted;
       dependent_arguments.push_back(dependent_argument);
     }
@@ -22654,11 +22759,56 @@ private:
       return symbol_linkage::SL_INTERNAL;
     }
     return symbol_linkage::SL_EXTERNAL;
-  }
+	  }
 
-  void populate_function_symbol_options(
-      symbol_linkage::FunctionSymbolOptions & options,
-      bool has_implicit_object_parameter,
+	  void rehydrate_template_argument_function_values(
+	      vector<TemplateArgument> & arguments)
+	  {
+	    for(size_t i = 0; i < arguments.size(); ++i) {
+	      TemplateArgument & argument = arguments[i];
+	      if(argument.kind != TemplateArgument::TA_VALUE ||
+	         argument.dependent ||
+	         argument.function_internal_symbol.empty()) {
+	        continue;
+	      }
+	      FunctionBinding * function =
+	          first_function_by_internal_symbol(argument.function_internal_symbol);
+	      argument.function_value = function;
+	      if(function && function->symbol.object_symbol.empty()) {
+	        upgrade_function_symbol_linkage(function, function->symbol.linkage);
+	      }
+	    }
+	  }
+
+	  void rehydrate_owner_template_argument_function_values(
+	      const ClassInfo * owner_class)
+	  {
+	    for(const ClassInfo * current = owner_class;
+	        current;
+	        current = current->enclosing_scope ?
+	            current->enclosing_scope->class_info :
+	            nullptr) {
+	      ClassInfo * mutable_current = const_cast<ClassInfo *>(current);
+	      rehydrate_template_argument_function_values(
+	          mutable_current->instantiation_arguments);
+	      if(mutable_current->has_instantiation_binding_arguments) {
+	        rehydrate_template_argument_function_values(
+	            mutable_current->instantiation_binding_arguments);
+	      }
+	      std::shared_ptr<ClassTemplateSpecializationMangleInfo> specialization =
+	          named_type_class_template_specialization_mangle_info(
+	              mutable_current->type);
+	      if(specialization) {
+	        rehydrate_template_argument_function_values(specialization->arguments);
+	        rehydrate_template_argument_function_values(
+	            specialization->mangle_arguments);
+	      }
+	    }
+	  }
+
+	  void populate_function_symbol_options(
+	      symbol_linkage::FunctionSymbolOptions & options,
+	      bool has_implicit_object_parameter,
       bool is_const_method,
       bool is_volatile_method,
       RefQualifier ref_qualifier,
@@ -22679,17 +22829,18 @@ private:
     append_effective_function_abi_tags(options.abi_tags,
                                        declaration_node,
                                        definition_node);
-    options.is_constructor = is_constructor;
-    options.is_destructor = is_destructor;
-    options.lookup_scope = declaration_scope;
-    template_api::apply_function_template_symbol_options(template_identity.decl,
-                                                        template_identity.arguments,
-                                                        template_identity.has_arguments(),
-                                                        owner_class,
-                                                        is_constructor,
-                                                        is_destructor,
-                                                        options);
-  }
+	    options.is_constructor = is_constructor;
+	    options.is_destructor = is_destructor;
+	    options.lookup_scope = declaration_scope;
+	    rehydrate_owner_template_argument_function_values(owner_class);
+	    template_api::apply_function_template_symbol_options(template_identity.decl,
+	                                                        template_identity.arguments,
+	                                                        template_identity.has_arguments(),
+	                                                        owner_class,
+	                                                        is_constructor,
+	                                                        is_destructor,
+	                                                        options);
+	  }
 
   bool function_symbol_qualified_name_syntax(const string & simple_name,
                                              const ClassInfo * owner_class,

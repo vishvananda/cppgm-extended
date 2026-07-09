@@ -7745,7 +7745,8 @@ static bool build_external_member_function_payload(
     return false;
   }
 
-  TypePtr function_type = strip_top_level_cv(binding.declared_type);
+  TypePtr function_type = strip_top_level_cv(
+      binding.declared_type ? binding.declared_type : binding.type);
   if(!function_type || function_type->kind != Type::TK_FUNCTION) {
     return false;
   }
@@ -7951,9 +7952,9 @@ static bool try_build_external_entity_argument_ir_payload(
       payload.symbol = argument.function_value->symbol.object_symbol;
       payload.address_of = is_function_pointer || is_member_function_pointer;
       if(is_member_function_pointer) {
-        build_external_member_function_payload(*argument.function_value,
-                                               mangle_ctx,
-                                               payload);
+        return build_external_member_function_payload(*argument.function_value,
+                                                      mangle_ctx,
+                                                      payload);
       }
       return !payload.symbol.empty();
     }
@@ -7961,14 +7962,14 @@ static bool try_build_external_entity_argument_ir_payload(
 
   if(argument.value_binding && base && base->kind == Type::TK_MEMBER_POINTER) {
     const semantic_model::ValueBinding * binding = argument.value_binding;
-    if(binding->kind == semantic_model::ValueBinding::VK_FIELD &&
-       binding->owner_class &&
-       try_emit_static_member_object_symbol_ir(*binding->owner_class,
-                                               binding->name,
-                                               payload.symbol)) {
+    if(binding->kind == semantic_model::ValueBinding::VK_FIELD) {
       payload.address_of = true;
-      build_external_member_object_payload(*binding, mangle_ctx, payload);
-      return !payload.symbol.empty();
+      if(binding->owner_class) {
+        try_emit_static_member_object_symbol_ir(*binding->owner_class,
+                                                binding->name,
+                                                payload.symbol);
+      }
+      return build_external_member_object_payload(*binding, mangle_ctx, payload);
     }
   }
 

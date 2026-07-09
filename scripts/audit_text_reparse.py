@@ -122,6 +122,24 @@ CATEGORIES = [
             r"\brebound_text\b"
         ),
     ),
+    Category(
+        "function_result_argument_text_reparse",
+        "Function-template result arguments recovered from saved argument text.",
+        re.compile(
+            r"\binstantiated_result_[A-Za-z0-9_]*argument_text\s*\(|"
+            r"\bresult_[A-Za-z0-9_]*argument_text_reparse\b"
+        ),
+    ),
+    Category(
+        "owner_member_text_reparse",
+        "Owner/member references recovered from saved source text in semantic code.",
+        re.compile(
+            r"\b[A-Za-z0-9_]*(?:owner|member|qualified_member)"
+            r"[A-Za-z0-9_]*_text_reparse\b|"
+            r"\b(?:resolve|lookup|evaluate)_[A-Za-z0-9_]*"
+            r"(?:owner|member)[A-Za-z0-9_]*_from_text\s*\("
+        ),
+    ),
 ]
 
 

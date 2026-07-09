@@ -577,7 +577,27 @@ FunctionBinding * first_function_by_internal_symbol(
      found->second.empty()) {
     return nullptr;
   }
-  return found->second.front();
+
+  FunctionBinding * best = nullptr;
+  int best_score = -1;
+  for(std::size_t i = 0; i < found->second.size(); ++i) {
+    FunctionBinding * candidate = found->second[i];
+    if(!candidate || state.live_functions.count(candidate) == 0) {
+      continue;
+    }
+    int score = binding_score(candidate);
+    if(!candidate->name.empty()) {
+      score += 1000;
+    }
+    if(!candidate->symbol.object_symbol.empty()) {
+      score += 100;
+    }
+    if(score > best_score) {
+      best = candidate;
+      best_score = score;
+    }
+  }
+  return best;
 }
 
 bool resolve_dump_callee_binding(

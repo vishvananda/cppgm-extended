@@ -1843,11 +1843,10 @@ std::size_t function_candidate_bucket_key(FunctionBinding * binding)
     hash_combine(seed,
                  inline_namespace_collapsed_scope_name(
                      binding->source_template->declaring_scope));
-    if(binding->is_constructor && binding->type) {
-      // Defaulted constructor-template parameters can be spelled differently
-      // while still producing the same instantiated constructor type.
+    if(binding->type) {
+      // Function-template overloads can share a template-instantiation key while
+      // still producing different callable signatures.
       hash_combine(seed, describe_type(binding->type));
-      return seed;
     }
     hash_combine(seed, binding->template_instantiation_key);
     return seed;
@@ -9223,18 +9222,26 @@ void append_function_template_call_candidates_impl(
           }
         }
       };
+  const auto ensure_template_lookup_reference_members_for_class =
+      [&](ClassInfo * info) -> void
+      {
+        if(!info ||
+           !info->member_scope ||
+           info->reference_members_collected ||
+           info->reference_member_collection_in_progress ||
+           info->full_member_collection_in_progress) {
+          return;
+        }
+        ctx.ensure_class_reference_members(*info);
+      };
   const auto ensure_template_lookup_reference_members =
       [&](Scope * qualified_scope) -> void
       {
-        if(!qualified_scope ||
-           !qualified_scope->class_info ||
-           !qualified_scope->class_info->member_scope ||
-           qualified_scope->class_info->reference_members_collected ||
-           qualified_scope->class_info->reference_member_collection_in_progress ||
-           qualified_scope->class_info->full_member_collection_in_progress) {
+        if(!qualified_scope || !qualified_scope->class_info) {
           return;
         }
-        ctx.ensure_class_reference_members(*qualified_scope->class_info);
+        ensure_template_lookup_reference_members_for_class(
+            qualified_scope->class_info);
       };
   if(use_preselected_member_templates) {
     const vector<FunctionTemplateDecl *> * found =
@@ -9277,6 +9284,12 @@ void append_function_template_call_candidates_impl(
       collect_function_templates(ctx, lookup_scope, qualified_template_name, templates);
     }
   } else {
+    ensure_template_lookup_reference_members_for_class(
+        current_class_scope(lookup_scope));
+    if(FunctionBinding * function = current_function_scope(lookup_scope)) {
+      ensure_template_lookup_reference_members_for_class(
+          function->lexical_access_class);
+    }
     collect_function_templates(ctx, lookup_scope, template_name, templates);
   }
   if(lookup_scope.name != "<adl>") {

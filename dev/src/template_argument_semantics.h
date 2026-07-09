@@ -238,6 +238,13 @@ NonTypeArgumentStatus evaluate_non_type_argument_syntax(
     std::string * eval_error = nullptr,
     const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
 
+NonTypeArgumentStatus evaluate_qualified_member_value_argument_syntax(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const cpp_decl::TemplateArgumentSyntax & syntax,
+    long long & value,
+    const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
+
 bool evaluate_constant_expression_leaf(template_api::TemplateServices & services,
                                        semantic_model::Scope & scope,
                                        const CppAstNode & node,

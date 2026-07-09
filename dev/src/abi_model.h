@@ -2089,25 +2089,35 @@ inline bool emit_external_entity_argument(const std::string & symbol,
                                           std::string & out,
                                           SubstitutionSink * sink)
 {
-  if(symbol.empty()) {
+  if(symbol.empty() && !is_member) {
     return false;
   }
+  const std::size_t begin = out.size();
   if(address_of) {
     out += "Xad";
   }
   out += 'L';
-  if(!is_member ||
-     !emit_external_member_entity_symbol(owner_type,
-                                         member_name,
-                                         parameter_types,
-                                         is_function,
-                                         function_const,
-                                         function_volatile,
-                                         function_lvalue_ref,
-                                         function_rvalue_ref,
-                                         function_variadic,
-                                         out,
-                                         sink)) {
+  if(is_member) {
+    const std::size_t member_begin = out.size();
+    if(!emit_external_member_entity_symbol(owner_type,
+                                           member_name,
+                                           parameter_types,
+                                           is_function,
+                                           function_const,
+                                           function_volatile,
+                                           function_lvalue_ref,
+                                           function_rvalue_ref,
+                                           function_variadic,
+                                           out,
+                                           sink)) {
+      out.resize(member_begin);
+      if(symbol.empty()) {
+        out.resize(begin);
+        return false;
+      }
+      out += symbol;
+    }
+  } else {
     out += symbol;
   }
   out += 'E';
