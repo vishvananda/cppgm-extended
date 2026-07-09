@@ -27517,8 +27517,8 @@ private:
 
     string name;
     TypePtr type;
-    const CppAstNode filtered_declarator = prepared_method.has_method_syntax ?
-        prepared_method.parse_declarator_node() : filtered_function_declarator(*declarator);
+    const CppAstNode filtered_declarator =
+        filtered_function_declarator(prepared_method.parse_declarator_node());
     if(!parse_declarator(*parse_scope,
                          filtered_declarator,
                          base,

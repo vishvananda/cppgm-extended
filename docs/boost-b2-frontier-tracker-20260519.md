@@ -4978,3 +4978,43 @@ witness-mode compile failure in
 `pa22/tests/spec/500-function-result-default-nontype-scope.t`; the same exact
 `--witness` invocation fails from clean `HEAD` (`e0c6faceb`) in a temporary
 worktree, so it is not introduced by this JSON fix.
+
+2026-07-09 PA22 strict witness defaulted-NTTP repair before continuing
+Boost.Json: the pre-existing strict failure in
+`pa22/tests/spec/500-function-result-default-nontype-scope.t` came from cached
+class-template mangle metadata retaining a dependent source-defaulted non-type
+template argument after the surrounding owner arguments became concrete. The
+fix refreshes those defaulted NTTPs from the structured default-expression AST
+during typed mangle metadata materialization, pauses witness dependency
+collection for that semantic-only refresh, and keeps the source-type lookup
+member-value witness filter scoped so template-body default events are still
+emitted. No source-text reparse path was added. Validation: `make -C dev
+cppgm++ -j8`; direct PA22 witness repro passes; PA22 strict direct-LowIR passes
+`153/153`; focused PA23 alias/SFINAE and template-body witness cases pass;
+`python3 scripts/audit_text_reparse.py --strict` reports all zero; `git diff
+--check` passes; full strict direct-LowIR passes. Commit: `1934b6b0c`.
+
+2026-07-09 Boost.Json out-of-class member trailing-return frontier: after the
+strict repair, focused Boost.Json library build still failed at
+`boost/json/impl/array.hpp:330` on the standard C++11 form
+`auto array::begin() noexcept -> iterator`. The namespace/out-of-class
+function-definition collection and LowIR output paths already resolved the
+qualified member owner and parsed the structured trailing return type, but they
+then passed the prepared method declarator to `parse_declarator` with the
+`trailing-return-type` node still attached. The fix applies the same structured
+function-declarator filter to prepared method declarators that free functions
+already used; no text parsing or Boost-specific fallback was added. Owner:
+PA15 class member function definition semantics and LowIR output. New
+regression:
+`pa15/tests/general/300-out-of-class-member-trailing-return.t`. Validation:
+clang accepts the reducer with `-std=c++11 -x c++`; the reducer fails before
+the fix with the Boost-shaped `unsupported function declarator` diagnostic and
+passes after the fix; native reducer exits `0`; PA15 direct-LowIR report passes
+`177/177`; `python3 scripts/audit_text_reparse.py --strict` reports all zero;
+`git diff --check` passes; full strict direct-LowIR passes; focused Boost.Json
+B2 library build advances past `array::begin` to the next frontier,
+`named type alignment unavailable` while completing
+`boost::json::object::table` from `boost/json/impl/object.hpp:40`. Perf gate
+against a temporary pre-fix worktree baseline at `1934b6b0c` passes:
+instructions `+0.15%`, RSS `-1.51%`, footprint `+0.00%`; report
+`/tmp/cppgm-perf-after-out-of-class-member-trailing-20260708.json`.

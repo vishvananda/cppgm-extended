@@ -5385,8 +5385,8 @@ void analyze_function_definition(SemanticContext & ctx,
                                  method_like_definition,
                                  true);
     TypePtr base;
-    const CppAstNode filtered_declarator = method_like_definition ?
-        prepared_method.parse_declarator_node() : ctx.filter_function_declarator(*declarator);
+    const CppAstNode filtered_declarator =
+        ctx.filter_function_declarator(prepared_method.parse_declarator_node());
     if(!specifiers ||
        !ctx.parse_function_definition_base(*parse_scope,
                                           *prepared_method.parse_specifiers_node(),
