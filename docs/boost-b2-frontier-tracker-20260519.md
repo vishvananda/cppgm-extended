@@ -5595,3 +5595,32 @@ and passes. Perf gate against detached clean baseline `7518ba6d3` passes:
 instructions `+0.04%`, RSS `+0.77%`, footprint `-0.03%`; baseline
 `/tmp/cppgm-perf-baseline-qualified-owner-probe-7518ba6d-20260709.json`,
 report `/tmp/cppgm-perf-report-qualified-owner-probe-20260709.json`.
+
+2026-07-09 Boost.Lambda incomplete nested template-id partial-specialization
+frontier: after the qualified template-id owner type-probe fix,
+`libs/lambda/test//exception_test` failed the
+`throws_for_sure_phase2<throw_expr>::value` static assert while matching
+`lambda_functor<lambda_functor_base<action<N, throw_action<ThrowType>>, Args>>`
+against an actual `action<0, throw_action<rethrow_action>>` whose class
+templates are only forward-declared. The partial-specialization matcher parsed
+the nested `lambda_functor_base<...>` argument as a dependent type, then
+returned false when the generic type-pattern helper did not identify a
+deducible parameter, before consulting the already parsed nested template-id
+syntax. The fix lets parsed template-id syntax bypass that early false result
+and reach the structured recursive template-id matcher, which deduces the
+non-type `N`, `ThrowType`, and `Args` without reparsing source text. No
+source-text reparse, fallback resolver, cache, or Boost-specific rule was
+added. Owner: PA23 class-template partial-specialization matching for nested
+incomplete class-template arguments. New regression:
+`pa23/tests/spec/400-incomplete-template-id-nontype-partial-specialization.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; the non-Boost
+reducer and Boost-header Lambda reducers compile with `cppgm++`; PA23
+direct-text suite passes `393/393`; focused Boost.Lambda `exception_test`
+builds, links, runs, and passes under B2; full strict direct-text suite passes;
+full direct-text `make test-report` passes `3599/3599`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `python3 -m unittest
+scripts.tests.test_audit_text_reparse` passes; `git diff --check` passes. Perf
+gate against isolated baseline `2225abbf7` passes: instructions `+0.03%`, RSS
+`+1.22%`, footprint `-0.01%`; baseline
+`/tmp/cppgm-perf-baseline-nested-template-id-partial-2225abbf7.json`, report
+`/tmp/cppgm-perf-report-nested-template-id-partial-20260709.json`.

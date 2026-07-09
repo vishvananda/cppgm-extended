@@ -9690,6 +9690,10 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       if(pattern_arg == actual_arg) {
         continue;
       }
+      const bool pattern_arg_has_template_id_syntax =
+          pattern_arg_syntaxes &&
+          arg_index < pattern_arg_syntaxes->size() &&
+          template_argument_template_id_syntax((*pattern_arg_syntaxes)[arg_index]);
       long long actual_value = 0;
       TypePtr actual_value_type;
       bool have_actual_value = false;
@@ -9743,14 +9747,12 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
             continue;
           }
         }
-        if(!pattern_arg_has_deducible_parameter) {
+        if(!pattern_arg_has_deducible_parameter &&
+           !pattern_arg_has_template_id_syntax) {
           return false;
         }
       }
-      bool pattern_arg_is_template_id =
-          pattern_arg_syntaxes &&
-          arg_index < pattern_arg_syntaxes->size() &&
-          template_argument_template_id_syntax((*pattern_arg_syntaxes)[arg_index]);
+      bool pattern_arg_is_template_id = pattern_arg_has_template_id_syntax;
       if(!pattern_arg_is_template_id) {
         QualifiedName ignored_name;
         std::vector<std::string> ignored_args;
