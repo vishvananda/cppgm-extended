@@ -1058,7 +1058,7 @@ bool is_destructible_type(SemanticContext & ctx, const TypePtr & type)
   if(base->kind != Type::TK_NAMED) {
     return false;
   }
-  ClassInfo * info = ctx.class_info_for_type(base);
+  ClassInfo * info = ctx.complete_class_type(base);
   return info && info->complete;
 }
 
@@ -1084,7 +1084,7 @@ bool is_trivially_destructible_type(SemanticContext & ctx, const TypePtr & type)
   if(base->kind != Type::TK_NAMED) {
     return false;
   }
-  ClassInfo * info = ctx.class_info_for_type(base);
+  ClassInfo * info = ctx.complete_class_type(base);
   if(!info || !info->complete || has_user_declared_destructor(*info)) {
     return false;
   }

@@ -5336,3 +5336,30 @@ frontiers). Perf gate against a detached clean baseline at `997bd6749` passes:
 instructions `-0.09%`, max RSS `-0.77%`, footprint `-0.02%`; baseline
 `/tmp/cppgm-perf-baseline-braced-member-rank-20260709.json`, report
 `/tmp/cppgm-perf-report-braced-member-rank-20260709.json`.
+
+2026-07-09 Boost.Json hosted nothrow-destructible class-template frontier:
+after the member-call braced initializer-list overload fix, the full
+`libs/json/test` run showed `basic_parser.cpp`, `stream_parser.cpp`, and
+`value_stack.cpp` failing libc++ `std::is_nothrow_destructible<T>::value`
+static asserts. A reduced hosted test with `std::is_nothrow_destructible` on a
+class-template specialization with `~T() = default` failed even though clang
+accepts it. libc++ maps this trait through the compiler builtin
+`__is_nothrow_destructible(T)`, and the semantic builtin helper was only
+probing existing class metadata with `class_info_for_type`; class-template
+specializations that had not yet been materialized therefore read as
+non-destructible. The fix makes the semantic destructibility helpers complete
+named class types before answering `__is_destructible`,
+`__is_nothrow_destructible`, and the shared trivially-destructible helper. No
+source-text reparse, hosted-header special case, fallback resolver, or cache was
+added. Owner: PA35 hosted libc++ type-trait interop, with PA34 builtin trait
+coverage. New regression:
+`pa35/tests/compile/600-hosted-nothrow-destructible-template-specialization.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; the reducer
+fails before the fix and passes after it; focused PA35 check passes; PA35
+report passes `87/87`; PA34 report passes `922/922`; full strict direct-text
+suite passes; `python3 scripts/audit_text_reparse.py --strict` reports all
+zero; `git diff --check` passes. Focused Boost.Json `basic_parser.cpp` compile
+advances past the nothrow-destructible static assert to the next frontier,
+`failed alias template type-id parse for fn` in
+`boost::mp11::mp_bind_front<boost::json::to_bits_t, ...>::fn` while processing
+`basic_parser_test::testParseVectors`.
