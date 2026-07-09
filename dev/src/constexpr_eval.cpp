@@ -772,7 +772,8 @@ StatementResult Evaluator::exec_stmt(const CppAstNode & node, const TypePtr & re
 
   if(node.kind == CppAstKind::using_directive ||
      node.kind == CppAstKind::using_declaration ||
-     node.kind == CppAstKind::namespace_alias_definition) {
+     node.kind == CppAstKind::namespace_alias_definition ||
+     node.kind == CppAstKind::alias_declaration) {
     string error;
     if(!hooks_.process_semantic_declaration ||
        !hooks_.process_semantic_declaration(node, error)) {

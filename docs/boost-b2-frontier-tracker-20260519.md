@@ -5040,3 +5040,31 @@ library build advances past `object::table` to the next frontier,
 `unsupported constexpr class member initializer [class handler] [member
 max_array_size]` while completing
 `boost::json::basic_parser<boost::json::detail::handler>`.
+
+2026-07-09 Boost.Json constexpr local alias frontier: the
+`handler::max_array_size = array::max_size()` frontier came from evaluating the
+out-of-class C++11 `constexpr` definition of `array::max_size`, whose function
+body declares a local alias
+`using min = std::integral_constant<std::size_t, ...>;` before returning
+`min::value`. The constexpr statement executor already delegated using
+directives/declarations and namespace aliases through semantic hooks, but did
+not treat block-scope alias declarations as semantic declarations, so the
+typed evaluator could not make `min` visible to the following return
+expression. The fix extends that existing semantic-declaration hook path to
+`alias-declaration`, prepares the alias `type-id` through the normal structured
+alias pipeline, parses it as a type, and binds it in the constexpr evaluation
+scope. No source-text reparse, fallback expression parser, or Boost-specific
+case was added. Owner: PA19 constant evaluation / template constant
+expressions. New regression:
+`pa19/tests/general/100-static-constexpr-member-call-initializer.t`.
+Validation: clang accepts the reducer with `-std=c++11 -x c++`; the reducer
+fails before the fix with the Boost-shaped `unsupported constexpr class member
+initializer` diagnostic and passes after the fix; native reducer exits `0`;
+PA19 direct-LowIR report passes `128/128`; `python3
+scripts/audit_text_reparse.py --strict` reports all zero; `git diff --check`
+passes; full strict direct-LowIR passes; focused Boost.Json B2 library build
+advances past `handler::max_array_size` to the next frontier,
+`unsupported function declarator` for the C++11 function returning a reference
+to an array, `inline char const (&DIGIT_TABLE() noexcept)[200]`, in
+`boost/json/detail/ryu/detail/digit_table.hpp:36`. Log:
+`/tmp/boost-json-after-constexpr-local-alias-20260709.log`.

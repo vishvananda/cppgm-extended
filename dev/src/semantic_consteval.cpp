@@ -17,6 +17,7 @@
 #include "semantic_errors.h"
 #include "semantic_lookup.h"
 #include "semantic_overload.h"
+#include "semantic_scope_mutation.h"
 #include "semantic_template_function.h"
 #include "semantic_trace.h"
 #include "semantic_utils.h"
@@ -2912,6 +2913,26 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
           }
           if(decl.kind == CppAstKind::namespace_alias_definition) {
             semantic_declaration::collect_namespace_alias_definition(ctx, scope, decl);
+            return true;
+          }
+          if(decl.kind == CppAstKind::alias_declaration) {
+            const CppAstNode * type_id = find_child_kind(decl, CppAstKind::type_id);
+            if(!type_id) {
+              error = "alias-declaration missing type-id";
+              return false;
+            }
+            CppAstNode prepared_type_id;
+            if(!semantic_declaration::prepare_alias_type_id(
+                   ctx, scope, decl, true, prepared_type_id)) {
+              error = "unsupported alias-declaration";
+              return false;
+            }
+            TypePtr alias;
+            if(!ctx.parse_type_id(scope, prepared_type_id, alias, true)) {
+              error = "unsupported alias-declaration";
+              return false;
+            }
+            semantic_scope_mutation::bind_named_type(scope, decl.value, alias);
             return true;
           }
         } catch(const std::logic_error & ex) {
