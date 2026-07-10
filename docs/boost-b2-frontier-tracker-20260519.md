@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | The prior LEAF frontiers through `BOOST_LEAF_CHECK_test` are fixed. The next forced replay first stopped in `capture_exception_async_test`: `fn_mp_args_fwd<std::tuple<H...>&>` failed to match because the partial-specialization adapter discarded variadic pack deductions nested below the lvalue-reference wrapper, then instantiated the invalid primary. The adapter now retains the shared structured deduction engine's pack results. Focused `libs/leaf/test//capture_exception_async_test` advances to the independent `context<...>::get` call where `find_in_tuple<slot<T>>(tup_)` sees only a `tuple<>` candidate and rejects the concrete tuple argument; log `/tmp/boost-leaf-capture-exception-async-after-wrapped-pack-deduction-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | The prior LEAF frontiers through `BOOST_LEAF_CHECK_test`, wrapped-pack partial-specialization deduction, and `find_in_tuple` return SFINAE are fixed. The qualified-name parser's value-suppression adapter now applies only to a qualified component head, so the non-type parameter in `enable_if<I < sizeof...(Tp) - 1, T>::type` remains a value while the suffix is parsed and both concrete-tuple overloads participate in substitution. Focused `libs/leaf/test//capture_exception_async_test` advances to the independent call to `handle_error_tuple_<R>`, which is absent from the visible function-template set while instantiating `detail::handle_error_`; log `/tmp/boost-leaf-capture-exception-async-qualified-head-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -5944,3 +5944,38 @@ The isolated performance gate against detached clean `ce4797d10` passes:
 instructions `+0.15%`, RSS `+0.94%`, footprint `-0.03%`; baseline
 `/tmp/cppgm-perf-baseline-wrapped-pack-ce4797d10-20260710.json`, report
 `/tmp/cppgm-perf-report-wrapped-pack-20260710.json`.
+
+2026-07-10 Boost.LEAF qualified return-SFINAE less-than frontier:
+`context<T...>::get` calls `find_in_tuple<slot<T>>(tup_)`. Its two
+concrete-tuple overloads use complementary return conditions based on
+`I == sizeof...(Tp) - 1` and `I < sizeof...(Tp) - 1`. Qualified-name parsing
+temporarily suppresses value-name classification so a qualified component
+head can be parsed as a template-id. That adapter suppressed every identifier
+inside the suffix, not only the head, so it hid the non-type parameter `I` and
+misclassified its `<` operator as a nested template opening. Parsing then
+stopped before `::type`, omitted the structured `enable_if` result metadata,
+and left the less-than overload dependent after concrete substitution.
+
+The qualified component adapter now identifies the component-head token and
+suppresses value classification only for that token. It forwards value,
+template-type, and value-preference lookup for nested template arguments, so
+`I < sizeof...(Tp) - 1` retains its expression AST while the qualified head
+still parses as intended. No source-text reparse, fallback resolver, cache, or
+Boost-specific rule was added.
+
+Owner: PA22 function-template result substitution and SFINAE. New regression:
+`pa22/tests/general/300-dependent-enable-if-return-nontype-less-pack.t`.
+At clean `58346a021`, the no-STL reducer rejects the call after retaining the
+less-than overload's dependent result; Clang accepts it in C++11 mode. On the
+fixed tree the focused reducer and its patched-Clang witness comparison pass;
+the PA22 placement audit reports zero placement and hygiene findings; the
+PA22 direct-text report passes `235/235`; the full strict direct-text suite
+passes; the full direct-text report passes `3609/3609`; the text-reparse audit
+reports all zero, its 7 unit tests pass, and `git diff --check` passes. Focused
+`libs/leaf/test//capture_exception_async_test` advances to the independent
+unknown `handle_error_tuple_<R>` call; log
+`/tmp/boost-leaf-capture-exception-async-qualified-head-20260710.log`. The
+three-run performance gate against an isolated exact `58346a021` build passes:
+instructions `-0.09%`, RSS `+0.12%`, footprint `+0.12%`; baseline
+`/tmp/cppgm-perf-baseline-qualified-head-58346a021-20260710.json`, report
+`/tmp/cppgm-perf-report-qualified-head-20260710.json`.

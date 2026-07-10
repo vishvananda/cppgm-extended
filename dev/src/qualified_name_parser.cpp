@@ -113,9 +113,18 @@ bool ambiguous_value_template_suffix_crosses_logical_operator(
 
 struct QualifiedFinalComponentLookup : NameLookup
 {
-  explicit QualifiedFinalComponentLookup(const NameLookup & inner) :
-    inner(inner)
+  // Qualified lookup may override the component head, but not names in its
+  // arguments.
+  QualifiedFinalComponentLookup(const NameLookup & inner,
+                                const RecogToken * component_head) :
+    inner(inner),
+    component_head(component_head)
   {}
+
+  bool is_component_head(const RecogToken & token) const
+  {
+    return component_head == &token;
+  }
 
   virtual bool is_known_template_name_identifier(const RecogToken & token) const
   {
@@ -128,14 +137,29 @@ struct QualifiedFinalComponentLookup : NameLookup
   }
 
   virtual bool is_known_value_template_parameter_identifier(
-      const RecogToken &) const
+      const RecogToken & token) const
   {
-    return false;
+    return !is_component_head(token) &&
+           inner.is_known_value_template_parameter_identifier(token);
   }
 
-  virtual bool is_known_value_name_identifier(const RecogToken &) const
+  virtual bool is_known_value_name_identifier(const RecogToken & token) const
   {
-    return false;
+    return !is_component_head(token) &&
+           inner.is_known_value_name_identifier(token);
+  }
+
+  virtual bool is_template_type_parameter_identifier(
+      const RecogToken & token) const
+  {
+    return inner.is_template_type_parameter_identifier(token);
+  }
+
+  virtual bool unqualified_identifier_prefers_value_name(
+      const RecogToken & token) const
+  {
+    return !is_component_head(token) &&
+           inner.unqualified_identifier_prefers_value_name(token);
   }
 
   virtual bool prefer_template_id_for_unknown_identifiers() const
@@ -144,6 +168,7 @@ struct QualifiedFinalComponentLookup : NameLookup
   }
 
   const NameLookup & inner;
+  const RecogToken * component_head;
 };
 
 struct QualifiedNameCursor : RecogTokenCursor
@@ -189,14 +214,14 @@ struct QualifiedNameCursor : RecogTokenCursor
       size_t suffix_end = pos;
       std::vector<std::pair<size_t, size_t> > arg_ranges;
       bool parsed_suffix = false;
-      QualifiedFinalComponentLookup value_template_lookup(lookup);
+      const RecogToken & prev = tokens.peek(pos - 1);
+      QualifiedFinalComponentLookup value_template_lookup(lookup, &prev);
       const bool allow_qualified_value_template_id =
           allow_value_template_id || qualified_component;
       const NameLookup & template_suffix_lookup =
           allow_qualified_value_template_id ?
               static_cast<const NameLookup &>(value_template_lookup) :
               lookup;
-      const RecogToken & prev = tokens.peek(pos - 1);
       if(prev.is_identifier()) {
         const bool known_template = lookup.is_known_template_name_identifier(prev);
         const bool known_type = lookup.is_known_type_name_identifier(prev);
@@ -608,7 +633,15 @@ struct QualifiedNameCursor : RecogTokenCursor
     const bool final_component_is_qualified =
         out.rooted || !out.qualifiers.empty();
     if(final_component_is_qualified) {
-      QualifiedFinalComponentLookup final_lookup(lookup);
+      size_t component_head_pos = pos;
+      if(tokens.peek(component_head_pos).is_simple(KW_TEMPLATE) ||
+         tokens.peek(component_head_pos).is_simple(OP_COMPL)) {
+        ++component_head_pos;
+      }
+      const RecogToken * component_head =
+          tokens.peek(component_head_pos).is_identifier() ?
+              &tokens.peek(component_head_pos) : nullptr;
+      QualifiedFinalComponentLookup final_lookup(lookup, component_head);
       QualifiedNameCursor final_parser(tokens, final_lookup, pos);
       if(!final_parser.parse_unqualified_name(options, final_component)) {
         pos = start;

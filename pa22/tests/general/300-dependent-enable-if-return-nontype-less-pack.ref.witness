@@ -1,0 +1,19 @@
+translation-unit
+  class-use at pa22/tests/general/300-dependent-enable-if-return-nontype-less-pack.t:41:3
+    template tuple
+    selected primary
+    bind #1 = <first, second> source=explicit
+  function-call at pa22/tests/general/300-dependent-enable-if-return-nontype-less-pack.t:42:10
+    callee find
+    selected instantiation
+    bind #1 = second source=explicit
+    bind #2 = 0 source=defaulted
+    bind #3 = <first, second> source=deduced
+    drop find reason=substitution_failure
+template-closure-events
+  ensure-definition
+    entity find
+  function-instantiation
+    entity find
+  require-definition
+    entity find
