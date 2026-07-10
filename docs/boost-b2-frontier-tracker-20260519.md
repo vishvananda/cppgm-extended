@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | The `context<>` empty-pack metadata, `result<int&>` forwarding constructor, hidden throw move-constructor output, constructor/conversion ranking, and GNU statement-expression enclosing-return frontiers are fixed. The last failure was in `BOOST_LEAF_CHECK_test`: the GNU `({ ... })` macro body checked a nested `return error_result` against synthetic target `void` rather than `f3`'s declared `result<void>` return type. Statement-expression prefix analysis now uses the enclosing function's structured return type. Focused `libs/leaf/test//BOOST_LEAF_CHECK_test` compiles, links, runs, and passes; log `/tmp/boost-leaf-check-after-statement-expression-return-20260710.log`. The next forced full replay is pending. Previous full replay log: `/tmp/boost-leaf-full-after-throw-constructor-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | The prior LEAF frontiers through `BOOST_LEAF_CHECK_test` are fixed. The next forced replay first stopped in `capture_exception_async_test`: `fn_mp_args_fwd<std::tuple<H...>&>` failed to match because the partial-specialization adapter discarded variadic pack deductions nested below the lvalue-reference wrapper, then instantiated the invalid primary. The adapter now retains the shared structured deduction engine's pack results. Focused `libs/leaf/test//capture_exception_async_test` advances to the independent `context<...>::get` call where `find_in_tuple<slot<T>>(tup_)` sees only a `tuple<>` candidate and rejects the concrete tuple argument; log `/tmp/boost-leaf-capture-exception-async-after-wrapped-pack-deduction-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -5908,3 +5908,39 @@ isolated performance gate against detached clean `37ef0c855` passes:
 instructions `-0.04%`, RSS `-0.05%`, footprint `-0.06%`; baseline
 `/tmp/cppgm-perf-baseline-statement-expression-37ef0c855-20260710.json`, report
 `/tmp/cppgm-perf-report-statement-expression-20260710.json`.
+
+2026-07-10 Boost.LEAF reference-wrapped variadic partial-specialization
+frontier: `fn_mp_args_fwd` has partial specializations for
+`std::tuple<H...>&` and `std::tuple<H...> const&`. The shared type deduction
+engine correctly decomposed the reference and tuple template-id and recorded
+`H` as a pack, but the class partial-specialization adapter requested only
+scalar type/value deductions. It discarded the pack result, rejected the
+partial, and instantiated the primary `fn_mp_args_fwd<H>`, whose
+`fn_mp_args<std::tuple<...>&>` alias is intentionally invalid.
+
+The structured deduction API now exposes its existing pack-argument map. The
+partial-specialization matcher merges type and non-type packs into its normal
+deduced state before candidate selection. This covers packs nested below
+lvalue references, pointers, and the other wrapper shapes already handled by
+the shared deduction engine. No source-text reparse, fallback resolver, cache,
+or Boost-specific rule was added.
+
+Owner: PA21 class partial-specialization deduction and selection. New
+regression:
+`pa21/tests/general/400-variadic-template-pack-under-lvalue-reference-partial.t`.
+At clean `ce4797d10`, the no-STL reducer selects the primary and fails its
+static assertion; Clang accepts it in C++11 mode. The fixed compiler also
+passes a four-case matrix covering an unwrapped pack, a scalar under `&`, and a
+pack under both `&` and `*`. Validation: the new reducer and three neighboring
+partial-specialization controls pass; its strict witness comparison passes;
+the PA21 placement audit passes with `--fail-on-early`; the PA21 report passes
+`201/201`; the full strict direct-text suite passes; the full direct-text
+report passes `3608/3608`; the text-reparse audit reports all zero, its 7 unit
+tests pass, and `git diff --check` passes. Focused
+`libs/leaf/test//capture_exception_async_test` advances to the independent
+`find_in_tuple` concrete-tuple overload frontier; log
+`/tmp/boost-leaf-capture-exception-async-after-wrapped-pack-deduction-20260710.log`.
+The isolated performance gate against detached clean `ce4797d10` passes:
+instructions `+0.15%`, RSS `+0.94%`, footprint `-0.03%`; baseline
+`/tmp/cppgm-perf-baseline-wrapped-pack-ce4797d10-20260710.json`, report
+`/tmp/cppgm-perf-report-wrapped-pack-20260710.json`.

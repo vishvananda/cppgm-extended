@@ -430,6 +430,78 @@ bool store_deduced_value_pack(DeducedState & deduced,
   return true;
 }
 
+bool deduce_type_pattern_with_pack_arguments(
+    template_api::TemplateServices & services,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TypePtr & pattern,
+    const TypePtr & actual,
+    DeducedState & deduced,
+    Scope & deduction_scope,
+    Scope & actual_scope)
+{
+  DeducedState trial = deduced;
+  std::map<std::string, std::vector<TemplateArgument> > pack_arguments;
+  if(!template_resolution::deduce_template_argument(
+         services,
+         parameters,
+         pattern,
+         actual,
+         trial.types,
+         trial.values,
+         pack_arguments,
+         template_api::make_template_environment(deduction_scope),
+         true,
+         template_api::make_template_environment(actual_scope),
+         false)) {
+    return false;
+  }
+
+  for(std::map<std::string, std::vector<TemplateArgument> >::const_iterator it =
+          pack_arguments.begin();
+      it != pack_arguments.end();
+      ++it) {
+    const TemplateParameterInfo * parameter =
+        find_template_parameter_by_name(parameters, it->first);
+    if(!parameter || !parameter->parameter_pack) {
+      return false;
+    }
+    if(parameter->kind == TemplateParameterInfo::TP_TYPE) {
+      std::vector<TypePtr> types;
+      types.reserve(it->second.size());
+      for(std::size_t i = 0; i < it->second.size(); ++i) {
+        if(it->second[i].kind != TemplateArgument::TA_TYPE ||
+           !it->second[i].type) {
+          return false;
+        }
+        types.push_back(it->second[i].type);
+      }
+      if(!store_deduced_type_pack(trial, parameter->name, types)) {
+        return false;
+      }
+      continue;
+    }
+    if(parameter->kind == TemplateParameterInfo::TP_NON_TYPE) {
+      std::vector<long long> values;
+      values.reserve(it->second.size());
+      for(std::size_t i = 0; i < it->second.size(); ++i) {
+        if(it->second[i].kind != TemplateArgument::TA_VALUE ||
+           it->second[i].dependent) {
+          return false;
+        }
+        values.push_back(it->second[i].value);
+      }
+      if(!store_deduced_value_pack(trial, parameter->name, values)) {
+        return false;
+      }
+      continue;
+    }
+    return false;
+  }
+
+  deduced = trial;
+  return true;
+}
+
 bool is_bare_template_parameter_type(const TypePtr & type)
 {
   return type &&
@@ -10371,17 +10443,14 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                services, match_scope, element_syntax, pattern_type, true) &&
            pattern_type &&
            partial_specialization_top_cv_matches(pattern_type, actual.type) &&
-           (template_resolution::deduce_template_argument(
+           (deduce_type_pattern_with_pack_arguments(
                 services,
                 partial.parameters,
                 pattern_type,
                 actual.type,
-                element_deduced.types,
-                element_deduced.values,
-                template_api::make_template_environment(match_scope),
-                true,
-                template_api::make_template_environment(scope),
-                false) ||
+                element_deduced,
+                match_scope,
+                scope) ||
             deduce_type_pattern_to_state(services,
                                          partial.parameters,
                                          pattern_type,
@@ -10585,17 +10654,14 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
               pattern_mentions_placeholders ? placeholder_match_scope : match_scope_copy;
           if(deduction_pattern_type &&
              partial_specialization_top_cv_matches(deduction_pattern_type, actual.type) &&
-             (template_resolution::deduce_template_argument(
+             (deduce_type_pattern_with_pack_arguments(
                   services,
                   partial.parameters,
                   deduction_pattern_type,
                   actual.type,
-                  deduced_copy.types,
-                  deduced_copy.values,
-                  template_api::make_template_environment(deduction_scope),
-                  true,
-                  template_api::make_template_environment(scope),
-                  false) ||
+                  deduced_copy,
+                  deduction_scope,
+                  scope) ||
               deduce_type_pattern_to_state(services,
                                            partial.parameters,
                                            deduction_pattern_type,

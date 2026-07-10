@@ -16054,6 +16054,32 @@ bool deduce_template_argument(
     const TypePtr & actual,
     std::map<std::string, TypePtr> & deduced,
     std::map<std::string, long long> & deduced_values,
+    std::map<std::string, std::vector<TemplateArgument> > & deduced_pack_arguments,
+    template_api::TemplateEnvironmentHandle deduction_scope,
+    bool partial_top_level_cv_deduction,
+    template_api::TemplateEnvironmentHandle actual_lookup_scope,
+    bool allow_actual_base_deduction)
+{
+  return deduce_template_argument_impl(services,
+                                       parameters,
+                                       pattern,
+                                       actual,
+                                       deduced,
+                                       deduced_values,
+                                       deduction_scope.scope,
+                                       partial_top_level_cv_deduction,
+                                       actual_lookup_scope.scope,
+                                       &deduced_pack_arguments,
+                                       allow_actual_base_deduction);
+}
+
+bool deduce_template_argument(
+    template_api::TemplateServices & services,
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TypePtr & pattern,
+    const TypePtr & actual,
+    std::map<std::string, TypePtr> & deduced,
+    std::map<std::string, long long> & deduced_values,
     template_api::TemplateEnvironmentHandle deduction_scope,
     bool partial_top_level_cv_deduction,
     template_api::TemplateEnvironmentHandle actual_lookup_scope,
