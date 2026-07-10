@@ -7851,6 +7851,53 @@ int compare_function_template_trailing_pack_preference(const CandidateMatch & cu
   return 0;
 }
 
+int compare_function_template_empty_trailing_pack_preference(
+    const CandidateMatch & current,
+    const CandidateMatch & best)
+{
+  if(!current.function || !best.function ||
+     !current.function->source_template || !best.function->source_template) {
+    return 0;
+  }
+
+  FunctionTemplateDecl & current_template = *current.function->source_template;
+  FunctionTemplateDecl & best_template = *best.function->source_template;
+  const bool current_has_trailing_pack =
+      current_template.has_trailing_function_parameter_pack ||
+      function_template_has_trailing_parameter_pack_fast(current_template);
+  const bool best_has_trailing_pack =
+      best_template.has_trailing_function_parameter_pack ||
+      function_template_has_trailing_parameter_pack_fast(best_template);
+  if(current_has_trailing_pack == best_has_trailing_pack) {
+    return 0;
+  }
+
+  FunctionTemplateDecl & pack_template =
+      current_has_trailing_pack ? current_template : best_template;
+  const CandidateMatch & pack_match = current_has_trailing_pack ? current : best;
+  if(!function_template_has_generic_trailing_type_pack(pack_template)) {
+    return 0;
+  }
+
+  const size_t pack_fixed = pack_template.params_pattern.size() - 1;
+  if(explicit_function_arg_count_for_template_match(pack_match, pack_template) !=
+     pack_fixed) {
+    return 0;
+  }
+
+  FunctionTemplateDecl & fixed_template =
+      current_has_trailing_pack ? best_template : current_template;
+  const CandidateMatch & fixed_match = current_has_trailing_pack ? best : current;
+  const size_t fixed_count =
+      std::min(fixed_template.params_pattern.size(),
+               explicit_function_arg_count_for_template_match(fixed_match,
+                                                              fixed_template));
+  if(fixed_count != pack_fixed) {
+    return 0;
+  }
+  return current_has_trailing_pack ? 1 : -1;
+}
+
 bool transformed_function_template_parameter_types_for_match(
     FunctionTemplateDecl & decl,
     const CandidateMatch & match,
@@ -8003,6 +8050,8 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
 
   const int trailing_pack_preference =
       compare_function_template_trailing_pack_preference(current, best);
+  const int empty_trailing_pack_preference =
+      compare_function_template_empty_trailing_pack_preference(current, best);
 
   vector<TypePtr> current_transformed_params;
   vector<TypePtr> best_transformed_params;
@@ -8010,7 +8059,8 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
          *current.function->source_template, current, current_transformed_params) ||
      !transformed_function_template_parameter_types_for_match(
          *best.function->source_template, best, best_transformed_params)) {
-    return trailing_pack_preference;
+    return trailing_pack_preference != 0 ? trailing_pack_preference :
+                                           empty_trailing_pack_preference;
   }
 
   const int early_non_type_pack_pattern_preference =
@@ -8049,6 +8099,9 @@ int compare_function_template_partial_order_preference(SemanticContext & ctx,
   }
   if(best_more_specialized && !current_more_specialized) {
     return 1;
+  }
+  if(empty_trailing_pack_preference != 0) {
+    return empty_trailing_pack_preference;
   }
   const int reference_pattern_preference =
       compare_function_template_reference_pattern_preference(current, best);

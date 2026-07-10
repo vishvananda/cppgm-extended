@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | `capture_exception_async_test` now builds, links, runs, and passes after synthesized aggregate construction moves its owned class-valued field parameters, eliminating the deleted `std::future<result<int>>` copy reference. Full `libs/leaf/test` replay updates 374 targets and leaves 29 failures; the next focused cursor is `capture_result_async_test`, where complementary `handle_error_tuple_<R>` return-SFINAE overloads both survive and become ambiguous for concrete `R=int`. Focused pass log `/tmp/boost-leaf-capture-exception-move-aggregate-20260710.log`; full replay `/tmp/boost-leaf-full-after-move-aggregate-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | `capture_result_async_test` and `capture_exception_result_async_test` now build, link, run, and pass after fixed function templates win over otherwise-equivalent templates whose generic trailing type pack consumes no arguments. The prior full `libs/leaf/test` replay updates 374 targets and leaves 29 failures; the next focused cursor is `try_exception_and_result_test`, where `handle_error_` reaches `handler_matches_any_error<fn_mp_args<H>>::value` with a non-fallback tuple handler. Focused cluster log `/tmp/boost-leaf-empty-pack-order-cluster-20260710.log`; prior full replay `/tmp/boost-leaf-full-after-move-aggregate-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -6199,3 +6199,41 @@ focused cursor is `capture_result_async_test`: complementary
 `handle_error_tuple_<R>` return-SFINAE overloads both survive for concrete
 `R=int` and become ambiguous; full log
 `/tmp/boost-leaf-full-after-move-aggregate-20260710.log`.
+
+2026-07-10 Boost.LEAF fixed template versus empty trailing pack frontier:
+`capture_result_async_test` made both `handle_error_tuple_<R>` overloads viable:
+one has the exact four fixed function parameters, while the other has the same
+four parameters followed by `Rest &&...`, with `Rest` deduced empty. Their
+fixed counts tied, and the multi-pack transformed-template comparison could
+not construct a decisive transformed parameter list, so overload resolution
+reported an ambiguity.
+
+Function-template partial ordering now prefers the fixed template when the
+only structural difference is a generic trailing type pack that consumed zero
+call arguments. The preference is deliberately applied only after ordinary
+bidirectional transformed-template ordering ties, or as a fallback when that
+transformation is unavailable. An earlier placement before ordinary ordering
+incorrectly changed PA23 constructor/default-pack selection; the narrowed rule
+preserves that existing specialization result.
+
+Owner: PA22 function-template partial ordering. New regression:
+`pa22/tests/general/100-fixed-over-empty-trailing-pack-index-sequence.t`, with
+a patched-Clang witness. Clean `50845227e` rejects the reducer as ambiguous;
+Clang and the fixed compiler select the fixed overload. The PA22 placement
+audit scans 238 tests with zero placement and hygiene findings; the PA22
+direct-text report passes `238/238`; the full strict direct-text suite passes;
+the full direct-text report passes `3615/3615`; the text-reparse audit reports
+all zero and its 7 unit tests pass; `git diff --check` passes. The three-run
+performance gate against isolated exact `50845227e` passes: instructions
+`-0.01%`, RSS `-1.33%`, footprint `+0.01%`; baseline
+`/tmp/cppgm-perf-baseline-empty-pack-order-50845227e-20260710.json`, report
+`/tmp/cppgm-perf-report-empty-pack-order-20260710.json`.
+
+Focused `libs/leaf/test//capture_result_async_test` and
+`libs/leaf/test//capture_exception_result_async_test` both build, link, run,
+and pass; log `/tmp/boost-leaf-empty-pack-order-cluster-20260710.log`. The
+prior full-suite replay still records 29 failures and has not been rerun for
+this focused fix. The next cursor is `try_exception_and_result_test`, which
+advances to a static assertion in `handle_error_`:
+`handler_matches_any_error<fn_mp_args<H>>::value` is false while recursion is
+processing tuple-expanded handlers.
