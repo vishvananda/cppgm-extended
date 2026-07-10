@@ -3835,10 +3835,21 @@ ExprInfo analyze_statement_expression(SemanticContext & ctx,
 
   const size_t prefix_count =
       result_statement ? body.children.size() - 1 : body.children.size();
+  TypePtr return_type = make_fundamental(FT_VOID);
+  if(FunctionBinding * function = current_function_scope(scope)) {
+    TypePtr function_type = strip_top_level_cv(function->declared_type);
+    if(!function_type || function_type->kind != Type::TK_FUNCTION) {
+      function_type = strip_top_level_cv(function->type);
+    }
+    if(function_type && function_type->kind == Type::TK_FUNCTION &&
+       function_type->inner) {
+      return_type = function_type->inner;
+    }
+  }
   for(size_t i = 0; i < prefix_count; ++i) {
     semantic_statement::analyze_statement(ctx,
                                           body_scope,
-                                          make_fundamental(FT_VOID),
+                                          return_type,
                                           body.children[i],
                                           prefix);
   }

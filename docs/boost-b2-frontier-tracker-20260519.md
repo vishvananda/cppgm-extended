@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | The `context<>` empty-pack metadata, `result<int&>` forwarding constructor, and hidden throw move-constructor output frontiers are fixed. Focused `BOOST_LEAF_AUTO_test` passes. The next forced full replay stopped in `BOOST_LEAF_CHECK_test`: copy-initializing `result<value>` from `error_id` considered both the ordinary `result(error_id)` constructor and `error_id::operator result<value>()`, but failed to prefer the non-template constructor over the conversion-function template specialization. The cross-kind non-template tie-break fix closes that return conversion. Focused `libs/leaf/test//BOOST_LEAF_CHECK_test` now advances to the independent macro path where `f3` diagnoses `error_result` against return target `void`; log `/tmp/boost-leaf-check-after-cross-kind-nontemplate-preference-20260710.log`. Full replay log before the fix: `/tmp/boost-leaf-full-after-throw-constructor-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | The `context<>` empty-pack metadata, `result<int&>` forwarding constructor, hidden throw move-constructor output, constructor/conversion ranking, and GNU statement-expression enclosing-return frontiers are fixed. The last failure was in `BOOST_LEAF_CHECK_test`: the GNU `({ ... })` macro body checked a nested `return error_result` against synthetic target `void` rather than `f3`'s declared `result<void>` return type. Statement-expression prefix analysis now uses the enclosing function's structured return type. Focused `libs/leaf/test//BOOST_LEAF_CHECK_test` compiles, links, runs, and passes; log `/tmp/boost-leaf-check-after-statement-expression-return-20260710.log`. The next forced full replay is pending. Previous full replay log: `/tmp/boost-leaf-full-after-throw-constructor-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -5876,3 +5876,35 @@ The isolated performance gate against detached clean `8dbb679dc` passes:
 instructions `-0.05%`, RSS `+0.29%`, footprint `-0.01%`; baseline
 `/tmp/cppgm-perf-baseline-leaf-conv-rank-8dbb679dc-20260710.json`, report
 `/tmp/cppgm-perf-report-leaf-conv-rank-20260710.json`.
+
+2026-07-10 Boost.LEAF GNU statement-expression enclosing-return frontier:
+`BOOST_LEAF_CHECK` uses a GNU `({ ... })` expression whose prefix contains
+`return std::forward<...>(tmp).error()`. The statement-expression analyzer
+validated every prefix statement with a hard-coded `void` return target, so
+the nested return in `f3` was rejected even though `error_result` can
+copy-initialize the enclosing function's declared `result<void>` return type.
+
+Statement-expression prefix analysis now obtains the current function through
+the semantic scope chain and passes its structured declared return type to the
+ordinary statement analyzer, falling back to the effective function type and
+retaining `void` only when no enclosing function type is available. The return
+therefore uses the same target-aware conversion path as any other return in the
+function. No source-text reparse, fallback resolver, cache, or Boost-specific
+rule was added.
+
+Owner: PA29 GNU statement-expression runtime semantics. New regression:
+`pa29/tests/general/200-runtime-gnu-statement-expression-enclosing-return.t`.
+At clean `37ef0c855`, the no-STL reducer fails with the same `failure`-against-
+`void` return diagnostic; Clang accepts both separate and direct C++11 builds,
+and both programs exit zero with empty stdout. Validation on the fixed tree:
+the new reducer and neighboring class-valued statement-expression control
+pass; the PA29 placement audit passes with `--fail-on-early`; the PA29 report
+passes `73/73`; the full strict direct-text suite passes; the full direct-text
+report passes `3607/3607`; the text-reparse audit reports all zero, its 7 unit
+tests pass, and `git diff --check` passes. Focused
+`libs/leaf/test//BOOST_LEAF_CHECK_test` builds, links, runs, and passes; log
+`/tmp/boost-leaf-check-after-statement-expression-return-20260710.log`. The
+isolated performance gate against detached clean `37ef0c855` passes:
+instructions `-0.04%`, RSS `-0.05%`, footprint `-0.06%`; baseline
+`/tmp/cppgm-perf-baseline-statement-expression-37ef0c855-20260710.json`, report
+`/tmp/cppgm-perf-report-statement-expression-20260710.json`.
