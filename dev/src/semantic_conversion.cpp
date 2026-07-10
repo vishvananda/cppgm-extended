@@ -2779,14 +2779,24 @@ bool try_argument_conversion(SemanticContext & ctx,
             current_better = true;
           } else if(object_qual_pref > 0) {
             best_better = true;
-          } else if((candidates[i].conversion_function->source_template != nullptr) !=
-                    (candidates[best].conversion_function->source_template != nullptr)) {
-            current_better =
-                candidates[i].conversion_function->source_template == nullptr;
-            best_better =
-                candidates[best].conversion_function->source_template == nullptr;
           }
         }
+      }
+    }
+
+    if(!current_better && !best_better) {
+      FunctionBinding * current_function =
+          candidates[i].constructor ? candidates[i].constructor :
+                                      candidates[i].conversion_function;
+      FunctionBinding * best_function =
+          candidates[best].constructor ? candidates[best].constructor :
+                                         candidates[best].conversion_function;
+      if(current_function &&
+         best_function &&
+         (current_function->source_template != nullptr) !=
+             (best_function->source_template != nullptr)) {
+        current_better = current_function->source_template == nullptr;
+        best_better = best_function->source_template == nullptr;
       }
     }
 
