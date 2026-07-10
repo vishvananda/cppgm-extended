@@ -6092,3 +6092,14 @@ the linker. Its next unresolved symbols are a concrete
 `std::future<boost::leaf::result<int>>` copy constructor selected by
 `fut_info`; log
 `/tmp/boost-leaf-capture-exception-async-pack-nttp-expression-20260710.log`.
+
+2026-07-10 PA19 placement-audit cleanup: the preexisting
+`401-defaulted-template-member-call-rematerialization` reducer now uses its
+valid PA19 cluster `400` prefix, and
+`200-function-template-fixed-over-trailing-pack-fallback` moved from PA19 to
+PA22 cluster `100`, which owns its full function-template deduction behavior
+(and is later than its PA21 member-template dependency). Test contents and
+oracles are unchanged. The PA19 audit scans 128 tests and the PA22 audit scans
+237 tests with zero placement and hygiene findings; both focused checks pass;
+their combined direct-text report passes `365/365`; and the full strict
+direct-text suite passes.
