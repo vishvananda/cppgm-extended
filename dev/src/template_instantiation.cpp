@@ -3750,6 +3750,7 @@ void maybe_apply_stored_out_of_class_member_function_template_definition(
     candidate.definition_inner = stored_def.definition_node;
     candidate.definition_specifiers = stored_def.definition_specifiers;
     candidate.definition_declarator = stored_def.definition_declarator;
+    candidate.definition_owner_parameters = stored_def.owner_parameters;
     break;
   }
 }
@@ -5815,6 +5816,15 @@ bool template_parameter_type_shape_matches(
   }
   if(!lhs || !rhs) {
     return lhs == rhs;
+  }
+
+  const bool lhs_has_cv = lhs->kind == Type::TK_CV;
+  const bool rhs_has_cv = rhs->kind == Type::TK_CV;
+  if(lhs_has_cv != rhs_has_cv ||
+     (lhs_has_cv &&
+      (lhs->cv_const != rhs->cv_const ||
+       lhs->cv_volatile != rhs->cv_volatile))) {
+    return false;
   }
 
   std::size_t lhs_index = 0;
@@ -8719,6 +8729,27 @@ void bind_active_owner_instantiation_context(SemanticContext & ctx,
   }
 }
 
+void bind_out_of_class_definition_owner_parameters(
+    SemanticContext & ctx,
+    Scope & scope,
+    const FunctionTemplateDecl & decl,
+    ClassInfo * active_owner)
+{
+  if(!active_owner || decl.definition_owner_parameters.empty()) {
+    return;
+  }
+
+  ClassTemplateBindingContext binding;
+  if(!class_template_binding_context(*active_owner, binding)) {
+    return;
+  }
+  bind_template_arguments_into_scope(ctx,
+                                     scope,
+                                     decl.definition_owner_parameters,
+                                     *binding.arguments,
+                                     binding.pack_sizes);
+}
+
 void bind_declaring_owner_instantiation_context(SemanticContext & ctx,
                                                 Scope & scope,
                                                 const Scope & declaring_scope)
@@ -9831,6 +9862,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                                 refreshed_scope,
                                                 *cache_instantiation_context_scope,
                                                 *instantiation_owner);
+        bind_out_of_class_definition_owner_parameters(ctx,
+                                                      refreshed_scope,
+                                                      *cache_source_decl,
+                                                      instantiation_owner);
       }
       if(use_owner_scope_for_member_template &&
          use_scope != owner_member_instantiation_scope) {
@@ -10053,6 +10088,10 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
                                             inst_scope,
                                             *instantiation_context_scope,
                                             *instantiation_owner);
+    bind_out_of_class_definition_owner_parameters(ctx,
+                                                  inst_scope,
+                                                  *source_decl,
+                                                  instantiation_owner);
   }
   if(parser_trace::enabled("template.resolve")) {
     std::ostringstream trace;

@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | The prior LEAF compile frontiers through the two stacked libc++ `std::__invoke` causes are fixed. Pack expansion now structurally substitutes each value-pack binding into a carried explicit non-type template-argument expression AST, so the two rendered `std::get<Indices+1>` calls instantiate keys `1` and `2` instead of both reusing key `1`. Focused `libs/leaf/test//capture_exception_async_test` compiles and advances to link-time undefined symbols: a `boost::leaf::detail::peek<...>` specialization and the deleted `std::future<result<int>>` copy constructor selected by `fut_info`. Log `/tmp/boost-leaf-capture-exception-async-pack-nttp-expression-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | The prior LEAF compile frontiers and the missing `boost::leaf::detail::peek<...>` link specialization are fixed. Out-of-class member-template definitions now bind their renamed outer parameters to the concrete selected-partial owner arguments, and const/non-const overload definitions remain distinct. Focused `libs/leaf/test//capture_exception_async_test` now has one link frontier: `fut_info` references the deleted `std::future<result<int>>` copy constructor instead of moving the aggregate member. Log `/tmp/boost-leaf-capture-exception-owner-param-cv-signature-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -6103,3 +6103,48 @@ oracles are unchanged. The PA19 audit scans 128 tests and the PA22 audit scans
 237 tests with zero placement and hygiene findings; both focused checks pass;
 their combined direct-text report passes `365/365`; and the full strict
 direct-text suite passes.
+
+2026-07-10 Boost.LEAF out-of-class partial member-template owner-alias
+frontier: `handler_argument_traits_defaults<E, false>` declares paired const
+and non-const static member templates, while their out-of-class definitions
+legally rename the enclosing partial-specialization parameter to `A`. Concrete
+member-template instantiation bound `E` from the selected class partial but did
+not retain the definition's `A` descriptor, so each body emitted a call to
+`peek<typename decay<A>::type>`. The recovery matcher also stripped cv before
+comparing member-template parameter leaves, allowing the const definition to
+attach to the non-const overload once `A` was resolved.
+
+Out-of-class member-template definition records now retain their typed outer
+template parameters. Instantiation binds those descriptors positionally to the
+active owner's recorded specialization arguments and pack sizes. The semantic
+signature matcher also requires equal top-level cv wrappers before matching
+template-parameter indices, keeping `T&` and `T const&` overloads distinct. No
+source-text reparse, fallback resolver, cache, or Boost-specific rule was
+added.
+
+Owner: PA23 integration of class partial specializations, member templates,
+and out-of-class definitions. New regression:
+`pa23/tests/general/400-out-of-class-partial-member-template-owner-parameter-alias.t`.
+Clean `6f687aa16` links the one-overload reduction against
+`peek<decay<A>::type>`; with paired overloads it attaches the const body to the
+non-const result and rejects the return. Clang accepts and runs the reducer.
+The patched-Clang public witness emits unsupported definition-site
+`selected explicit` noise for this partial-owner shape, so the regression uses
+its regular reference and is an intentional strict witness skip, matching
+existing PA23 out-of-class integration coverage.
+
+On the fixed tree the focused reducer passes; the PA23 direct-text report
+passes `397/397`; the full strict direct-text suite passes; the full direct-text
+report passes `3613/3613`; the text-reparse audit reports all zero and its 7
+unit tests pass; `git diff --check` passes. The PA23 placement audit accepts the
+new reducer but reports three preexisting findings in other tests; those remain
+isolated for the requested follow-on audit commit. The three-run performance
+gate against isolated exact `6f687aa16` passes: instructions `+0.10%`, RSS
+`+2.16%`, footprint `+0.08%`; baseline
+`/tmp/cppgm-perf-baseline-owner-param-alias-6f687aa16-20260710.json`, report
+`/tmp/cppgm-perf-report-owner-param-alias-20260710.json`.
+
+Focused `libs/leaf/test//capture_exception_async_test` now emits every concrete
+`peek` specialization and reaches a single link frontier: `fut_info` references
+the deleted `std::future<boost::leaf::result<int>>` copy constructor. Log:
+`/tmp/boost-leaf-capture-exception-owner-param-cv-signature-20260710.log`.

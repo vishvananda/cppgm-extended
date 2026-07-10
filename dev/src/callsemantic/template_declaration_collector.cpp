@@ -1140,6 +1140,8 @@ public:
           }
 
           if(member_template_decl) {
+            member_template_decl->definition_owner_parameters =
+                owner_template_parameters;
             std::vector<OutOfClassMemberFunctionTemplateDefinition> & stored_defs =
                 (matches_partial_owner_template_parameters && owner_partial_decl ?
                      owner_partial_decl->member_function_template_definitions[qualified_member.name] :
@@ -1156,6 +1158,8 @@ public:
                     find_child_kind(inner, CppAstKind::ctor_initializer);
                 stored_defs[stored_index].parameter_aliases_pattern =
                     member_template_decl->parameter_aliases_pattern;
+                stored_defs[stored_index].owner_parameters =
+                    owner_template_parameters;
                 invalidate_out_of_class_definition_caches(*owner_template_decl);
                 return true;
               }
@@ -1169,6 +1173,7 @@ public:
             stored_def.body = find_function_body_node(inner);
             stored_def.ctor_initializer = find_child_kind(inner, CppAstKind::ctor_initializer);
             stored_def.parameter_aliases_pattern = member_template_decl->parameter_aliases_pattern;
+            stored_def.owner_parameters = owner_template_parameters;
             stored_defs.push_back(stored_def);
             invalidate_out_of_class_definition_caches(*owner_template_decl);
               emit_out_of_class_owner_class_use_if_needed(pattern_scope,
@@ -2596,6 +2601,8 @@ public:
                 template_decl->definition_specifiers = specifiers;
                 template_decl->definition_declarator = declarator;
                 template_decl->ctor_initializer = ctor_initializer;
+                template_decl->definition_owner_parameters =
+                    owner_template_parameters;
                 record_definition_parameter_aliases(*template_decl, params);
                 if(template_decl->parameter_declarations_pattern.empty() &&
                    !parameter_declarations_pattern.empty()) {
@@ -2621,6 +2628,8 @@ public:
                       stored_defs[def_index].ctor_initializer = ctor_initializer;
                       stored_defs[def_index].parameter_aliases_pattern =
                           template_decl->parameter_aliases_pattern;
+                      stored_defs[def_index].owner_parameters =
+                          owner_template_parameters;
                       stored = true;
                       break;
                     }
@@ -2635,6 +2644,7 @@ public:
                     stored_def.ctor_initializer = ctor_initializer;
                     stored_def.parameter_aliases_pattern =
                         template_decl->parameter_aliases_pattern;
+                    stored_def.owner_parameters = owner_template_parameters;
                     stored_defs.push_back(stored_def);
                   }
                   invalidate_out_of_class_definition_caches(*owner_template_decl);

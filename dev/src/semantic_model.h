@@ -642,6 +642,7 @@ struct FunctionTemplateDecl
   const CppAstNode * body = nullptr;
   const CppAstNode * ctor_initializer = nullptr;
   std::vector<template_model::TemplateParameterInfo> parameters;
+  std::vector<template_model::TemplateParameterInfo> definition_owner_parameters;
   cpp_decl::TypePtr type_pattern;
   std::vector<std::pair<std::string, cpp_decl::TypePtr> > params_pattern;
   CppAstNode result_type_pattern;
@@ -1023,6 +1024,7 @@ struct OutOfClassMemberFunctionTemplateDefinition
   const CppAstNode * body = nullptr;
   const CppAstNode * ctor_initializer = nullptr;
   std::vector<std::string> parameter_aliases_pattern;
+  std::vector<template_model::TemplateParameterInfo> owner_parameters;
 };
 
 struct PartialClassTemplateSpecializationDecl

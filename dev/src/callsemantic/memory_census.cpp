@@ -773,6 +773,7 @@ void census_function_template(const FunctionTemplateDecl & decl,
                  string_storage_bytes(decl.debug_scope_name) +
                  string_storage_bytes(decl.debug_signature) +
                  vector_storage_bytes(decl.parameters) +
+                 vector_storage_bytes(decl.definition_owner_parameters) +
                  vector_storage_bytes(decl.params_pattern) +
                  vector_storage_bytes(decl.parameter_aliases_pattern) +
                  vector_storage_bytes(decl.default_arguments_pattern) +
@@ -780,6 +781,11 @@ void census_function_template(const FunctionTemplateDecl & decl,
                  map_storage_bytes(decl.instantiations);
   for(size_t i = 0; i < decl.parameters.size(); ++i) {
     bytes += template_parameter_payload_bytes(decl.parameters[i], census, seen_types);
+  }
+  for(size_t i = 0; i < decl.definition_owner_parameters.size(); ++i) {
+    bytes += template_parameter_payload_bytes(decl.definition_owner_parameters[i],
+                                              census,
+                                              seen_types);
   }
   for(size_t i = 0; i < decl.params_pattern.size(); ++i) {
     bytes += string_storage_bytes(decl.params_pattern[i].first);
