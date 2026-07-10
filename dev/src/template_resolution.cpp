@@ -8550,10 +8550,21 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
                                             dependent_alias_args) ?
             static_cast<AliasTemplateDecl *>(dependent_alias_template_decl) :
             nullptr;
+    QualifiedName alias_name = parsed_name;
     AliasTemplateDecl * visible_alias_template = alias_template ?
         template_argument_semantics::lookup_alias_template(
-            services, lookup_scope, qualified_name_text(parsed_name)) :
+            services, lookup_scope, qualified_name_text(alias_name)) :
         nullptr;
+    if(alias_template &&
+       visible_alias_template != alias_template &&
+       alias_template->declaring_scope) {
+      alias_name = semantic_lookup::scope_qualified_name_syntax(
+          *alias_template->declaring_scope,
+          alias_template->name);
+      visible_alias_template =
+          template_argument_semantics::lookup_alias_template(
+              services, lookup_scope, qualified_name_text(alias_name));
+    }
     if(alias_template && visible_alias_template == alias_template) {
       std::vector<std::string> alias_arg_texts;
       std::vector<TemplateArgumentSyntax> alias_arg_syntaxes;
@@ -8572,7 +8583,7 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
       if(template_specialization::expand_alias_template_pattern_type(
              services,
              template_api::make_template_environment(lookup_scope),
-             parsed_name,
+             alias_name,
              alias_arg_texts,
              expanded_type,
              alias_arg_syntaxes_ptr,
