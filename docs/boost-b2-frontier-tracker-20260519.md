@@ -6148,3 +6148,16 @@ Focused `libs/leaf/test//capture_exception_async_test` now emits every concrete
 `peek` specialization and reaches a single link frontier: `fut_info` references
 the deleted `std::future<boost::leaf::result<int>>` copy constructor. Log:
 `/tmp/boost-leaf-capture-exception-owner-param-cv-signature-20260710.log`.
+
+2026-07-10 PA23 placement-audit cleanup: the preexisting
+`401-class-template-mangle-nttp-scope-value` spec test now uses the valid PA23
+cluster `400` prefix. The multiple-inheritance reducer
+`100-qualified-sizeof-overload-static-const-nttp` moved from PA23 to its PA26
+cluster `100` owner, and the member-pointer reducer
+`500-qualified-template-id-owner-function-call-probe` moved to PA26 cluster
+`300`. Test contents and regular oracles are unchanged; both moved witness
+oracles were regenerated from patched Clang at their new source paths. The
+PA23 audit scans 395 tests and the PA26 audit scans 59 tests with zero placement
+and hygiene findings; all three focused checks pass; their combined direct-text
+report passes `454/454`; both moved witness comparisons pass; and the full
+strict direct-text suite passes.
