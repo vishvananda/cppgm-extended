@@ -3731,6 +3731,7 @@ public:
                                            name,
                                            template_parameters,
                                            type,
+                                           result_type_pattern,
                                            special_member_template,
                                            candidate_traits.is_static_member,
                                            candidate_traits.is_const_method,
@@ -4701,7 +4702,10 @@ private:
         adapted.pattern_scope ? adapted.pattern_scope : adapted.declaring_scope;
     if(partial_scope &&
        info->source_template &&
-       !info->instantiation_arguments.empty()) {
+       !info->instantiation_arguments.empty() &&
+       template_model::template_arguments_fully_bind_parameters(
+           info->source_template->parameters,
+           info->instantiation_arguments)) {
       Scope & owner_bound_scope = append_template_scope(*partial_scope);
       owner_bound_scope.class_info = info;
       template_api::binding::bind_template_arguments_into_scope(
@@ -4869,6 +4873,7 @@ private:
       const string & candidate_name,
       const vector<TemplateParameterInfo> & candidate_parameters,
       const TypePtr & candidate_type,
+      const CppAstNode & candidate_result_type_pattern,
       bool candidate_special_member_template,
       bool candidate_is_static_member,
       bool candidate_is_const_method,
@@ -4883,6 +4888,7 @@ private:
         candidate_name,
         candidate_parameters,
         candidate_type,
+        candidate_result_type_pattern,
         candidate_special_member_template,
         candidate_is_static_member,
         candidate_is_const_method,

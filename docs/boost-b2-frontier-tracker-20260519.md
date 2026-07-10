@@ -89,7 +89,10 @@ For each Boost frontier fix:
    manually interprets compiler-produced template/type/expression text.
 3. Rebuild `dev/cppgm++` and run the focused owner tests with direct LowIR text
    compare when the owner surface emits LowIR.
-4. Before committing, run `python3 scripts/audit_text_reparse.py --strict`.
+4. Before committing, run
+   `python3 scripts/audit_text_reparse.py --strict --list-sites`. If the audit
+   script changed, also run
+   `python3 -m unittest scripts.tests.test_audit_text_reparse`.
    The Boost frontier is not clean if this audit reports semantic text reparse
    debt, including newly added template/type text resolver calls,
    result-argument recovery, or owner/member lookup from saved source text.
@@ -738,8 +741,9 @@ Local Boost wrapper state:
 6. Before implementation changes, confirm the reducer fails on the current
    branch and record the pre-fix diagnostic here.
 7. Fix the compiler in `dev/`, validate the focused regression, the owner PA
-   report, `python3 scripts/audit_text_reparse.py --strict`, strict LowIR
-   compare when relevant, and the Boost target.
+   report, `python3 scripts/audit_text_reparse.py --strict --list-sites`,
+   the audit unit test when the audit changed, strict LowIR compare when
+   relevant, and the Boost target.
 8. Run the perf gate against the baseline above before committing any compiler
    fix.
 9. Commit each coherent fix with the regression, implementation, and tracker
@@ -816,6 +820,7 @@ Local Boost wrapper state:
 | 56 | `libs/iterator/test` | pass | Full `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/iterator/test` on 2026-07-06 reports `failed updating 0 target` and only skipped expected-fail dependency targets, matching the row-28 Core convention for a clean suite despite B2's nonzero status. Log `/tmp/boost-iterator-full-after-sizeof-unary-20260706.log`. |
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
+| 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -5624,3 +5629,39 @@ gate against isolated baseline `2225abbf7` passes: instructions `+0.03%`, RSS
 `+1.22%`, footprint `-0.01%`; baseline
 `/tmp/cppgm-perf-baseline-nested-template-id-partial-2225abbf7.json`, report
 `/tmp/cppgm-perf-report-nested-template-id-partial-20260709.json`.
+
+2026-07-10 Boost.Lambda defaulted nested partial-specialization argument
+frontier: after the incomplete nested template-id fix,
+`libs/lambda/test//switch_construct` failed while completing the
+`switch_action<2, TagData0>` / `lambda_functor_base` partial-specialization path
+with `bind_template_arguments_into_scope: param-count 10 arg-count 1`. Removing
+the old template-argument text bridge exposed that the typed path did not yet
+complete defaulted template arguments from the stored default ASTs, and dependent
+class-template arguments were not carrying enough non-type/default metadata for
+later partial-specialization matching and class-info materialization. The fix
+adds typed default completion through `template_resolution`, reuses the typed
+argument-syntax and non-type evaluator paths, propagates value/function binding
+metadata through dependent alias/class arguments, and makes the primary-selection
+cache skip class-template metadata cases that can otherwise reuse stale primary
+class info. The earlier added text bridge was removed, and the text-reparse
+audit now flags newly added `resolve_template_arguments` calls in semantic code.
+No source-text reparse, fallback resolver, cache keyed by rendered template
+text, or Boost-specific rule remains in this fix.
+
+Owner: PA23 class-template partial-specialization matching and defaulted
+template arguments. New regressions:
+`pa23/tests/spec/400-defaulted-nested-class-argument-partial-specialization.t`
+and
+`pa23/tests/spec/400-dependent-nested-nontype-partial-specialization.t`.
+Validation: clang accepts both reducers with `-std=c++11 -x c++`; both reducers
+compile with `cppgm++`; `make -C dev -j12 cppgm++` passes; PA23 direct-text
+report passes `395/395`; PA35 direct-text report passes `87/87`; PA36
+direct-text report passes `74/74`; full strict direct-text suite passes; full
+direct-text `make test-report` passes `3601/3601`; `python3
+scripts/audit_text_reparse.py --strict --list-sites` reports all zero;
+`python3 -m unittest scripts.tests.test_audit_text_reparse` passes 7 tests;
+focused Boost.Lambda `switch_construct` builds, links, runs, and passes under
+B2. Perf gate against isolated baseline `2225abbf7` now compiles but misses the
+instruction threshold narrowly: instructions `+1.06%` versus the `+1.00%`
+tolerance, RSS `+0.06%`, footprint `-0.16%`; baseline
+`/tmp/cppgm-perf-baseline-nested-template-id-partial-2225abbf7.json`.

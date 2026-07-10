@@ -93,6 +93,12 @@ bool resolve_template_template_argument_syntax(
     bool allow_dependent_placeholders,
     template_model::TemplateArgument & out);
 
+bool resolve_type_argument_syntax_type(template_api::TemplateServices & services,
+                                       template_api::TemplateEnvironmentHandle scope,
+                                       const cpp_decl::TemplateArgumentSyntax & syntax,
+                                       bool reference_class_templates_only,
+                                       cpp_decl::TypePtr & out);
+
 bool substitute_type(const cpp_decl::TypePtr & type,
                      const std::vector<template_model::TemplateParameterInfo> & parameters,
                      const std::vector<template_model::TemplateArgument> & arguments,

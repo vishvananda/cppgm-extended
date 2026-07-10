@@ -148,7 +148,8 @@ CATEGORIES = [
         "Newly added semantic code that resolves or parses template/type facts from text.",
         re.compile(
             r"\b(?:template_api|template_argument_semantics)::"
-            r"(?:resolve_template_template_argument_text|"
+            r"(?:resolve_template_arguments|"
+            r"resolve_template_template_argument_text|"
             r"resolve_type_argument_text|parse_type_argument_text)\s*\(|"
             r"\b(?:resolve|lookup|parse|evaluate)_[A-Za-z0-9_]*"
             r"(?:template|type|argument|owner|member)[A-Za-z0-9_]*_text\s*\(|"

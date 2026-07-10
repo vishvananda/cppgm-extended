@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "class_template_mangle_info.h"
+#include "cpp_decl_model.h"
 #include "parser_trace.h"
 #include "template_api.h"
 #include "template_argument_semantics.h"
@@ -308,6 +310,46 @@ void cache_class_specialization_selection(
   entry.selection_key = selection.selection_key;
   entry.kind = static_cast<int>(selection.kind);
   decl.specialization_selection_cache[key] = entry;
+}
+
+bool type_has_class_template_metadata(const cpp_decl::TypePtr & type);
+
+bool template_argument_has_class_template_metadata(const TemplateArgument & argument)
+{
+  if(argument.kind == TemplateArgument::TA_TYPE) {
+    return type_has_class_template_metadata(argument.type);
+  }
+  if(argument.kind == TemplateArgument::TA_VALUE) {
+    return type_has_class_template_metadata(argument.type);
+  }
+  return false;
+}
+
+bool type_has_class_template_metadata(const cpp_decl::TypePtr & type)
+{
+  cpp_decl::TypePtr base = cpp_decl::strip_top_level_cv(type);
+  if(!base || base->kind != cpp_decl::Type::TK_NAMED) {
+    return false;
+  }
+  if(cpp_decl::named_type_class_template_specialization_mangle_info_const(base)) {
+    return true;
+  }
+  void * class_template_decl = nullptr;
+  std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax> arguments;
+  return cpp_decl::named_type_dependent_class_template(base,
+                                                      class_template_decl,
+                                                      arguments);
+}
+
+bool class_primary_selection_cache_safe(
+    const std::vector<TemplateArgument> & arguments)
+{
+  for(std::size_t i = 0; i < arguments.size(); ++i) {
+    if(template_argument_has_class_template_metadata(arguments[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 VariableSpecializationSelection make_primary_variable_selection(
@@ -671,7 +713,8 @@ ClassSpecializationSelection select_class_specialization(
     }
     if(use_selection_cache &&
        !selection_deferred &&
-       !saw_reentrant_primary_selection) {
+       !saw_reentrant_primary_selection &&
+       class_primary_selection_cache_safe(arguments)) {
       cache_class_specialization_selection(decl, key, selection);
     }
     return selection;

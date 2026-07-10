@@ -21,6 +21,7 @@
 #include "template_argument_semantics.h"
 #include "template_binding.h"
 #include "template_metadata.h"
+#include "template_resolution.h"
 #include "template_services.h"
 #include "template_scope.h"
 #include "witness_api.h"
@@ -7970,23 +7971,12 @@ bool try_expand_alias_template_pattern_structurally(
                                                     substituted_arguments)) {
           return true;
         }
-        if(!template_api::trailing_pack_accepts_argument_count(
-               source_template->parameters,
-               substituted_arguments.size())) {
-          return false;
-        }
-        std::vector<std::string> source_texts;
-        source_texts.reserve(substituted_arguments.size());
-        for(std::size_t j = 0; j < substituted_arguments.size(); ++j) {
-          source_texts.push_back(argument_text(substituted_arguments[j]));
-        }
         std::vector<TemplateArgument> completed_arguments;
-        if(!template_api::resolve_template_arguments(
+        if(!template_resolution::complete_template_arguments_with_default_arguments(
                services,
                template_api::make_template_environment(selected_scope),
                source_template->parameters,
-               source_texts,
-               nullptr,
+               substituted_arguments,
                completed_arguments,
                source_template->declaring_scope ?
                    template_api::make_template_environment(
@@ -8014,6 +8004,18 @@ bool try_expand_alias_template_pattern_structurally(
           dependent_argument.text = argument_text(argument);
           if(argument.kind == TemplateArgument::TA_TYPE) {
             dependent_argument.type = argument.type;
+          } else if(argument.kind == TemplateArgument::TA_VALUE) {
+            dependent_argument.type = argument.type;
+            dependent_argument.function_value = argument.function_value;
+            dependent_argument.function_internal_symbol =
+                argument.function_internal_symbol;
+            dependent_argument.value_binding = argument.value_binding;
+            dependent_argument.value = argument.value;
+            dependent_argument.has_non_type_value =
+                !argument.partial_order_placeholder;
+            dependent_argument.dependent_value = argument.dependent;
+            dependent_argument.partial_order_placeholder =
+                argument.partial_order_placeholder;
           }
           if(argument.source_syntax) {
             dependent_argument.syntax = *argument.source_syntax;
@@ -9289,16 +9291,26 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 	    return true;
 	  };
 
-	  if(have_actual_class && actual_class.source_template) {
-	    if(!actual_class.instantiation_arguments.empty()) {
-	      if(decompose_source_template(actual_class.source_template,
-	                                   actual_class.instantiation_arguments)) {
-	        return true;
-	      }
-	    }
-	    if(actual_class.source_template->parameters.empty()) {
-	      if(decompose_actual_type_text()) {
-	        return true;
+		  if(have_actual_class && actual_class.source_template) {
+		    if(!actual_class.instantiation_arguments.empty()) {
+		      if(decompose_source_template(actual_class.source_template,
+		                                   actual_class.instantiation_arguments)) {
+		        return true;
+		      }
+		    }
+        if(actual_mangle_info &&
+           actual_mangle_info->class_template_decl &&
+           !actual_mangle_info->arguments.empty()) {
+          if(decompose_source_template(
+                 static_cast<ClassTemplateDecl *>(
+                     actual_mangle_info->class_template_decl),
+                 actual_mangle_info->arguments)) {
+            return true;
+          }
+        }
+		    if(actual_class.source_template->parameters.empty()) {
+		      if(decompose_actual_type_text()) {
+		        return true;
 	      }
 	      return decompose_source_template(actual_class.source_template,
 	                                       actual_class.instantiation_arguments);
@@ -9428,6 +9440,11 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
   if(!decompose_actual_template_id(actual_name, actual_args, actual_template_name_text)) {
     return false;
   }
+  const std::vector<std::string> * actual_match_args = &actual_args;
+  const std::vector<TemplateArgument> * actual_match_structured_args =
+      actual_structured_args;
+  std::vector<std::string> actual_explicit_args_storage;
+  std::vector<TemplateArgument> actual_explicit_structured_args_storage;
   const auto pattern_template_id_matches =
       [&](const QualifiedName & candidate_name) -> bool
   {
@@ -9551,15 +9568,14 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       return false;
     }
   }
-
   const auto resolve_actual_arg_type =
       [&](std::size_t arg_index, const std::string & actual_arg, TypePtr & actual_arg_type) -> bool
   {
-	    if(actual_structured_args &&
-	       arg_index < actual_structured_args->size() &&
-	       (*actual_structured_args)[arg_index].kind == TemplateArgument::TA_TYPE &&
-	       (*actual_structured_args)[arg_index].type) {
-	      actual_arg_type = (*actual_structured_args)[arg_index].type;
+	    if(actual_match_structured_args &&
+	       arg_index < actual_match_structured_args->size() &&
+	       (*actual_match_structured_args)[arg_index].kind == TemplateArgument::TA_TYPE &&
+	       (*actual_match_structured_args)[arg_index].type) {
+	      actual_arg_type = (*actual_match_structured_args)[arg_index].type;
 	      return true;
 	    }
 	    if(services.semantic_context) {
@@ -9602,11 +9618,11 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
           TemplateArgument & out) -> bool
   {
     (void)actual_arg;
-    if(actual_structured_args &&
-       arg_index < actual_structured_args->size() &&
-       (*actual_structured_args)[arg_index].kind == TemplateArgument::TA_VALUE &&
-       !(*actual_structured_args)[arg_index].dependent) {
-      out = (*actual_structured_args)[arg_index];
+    if(actual_match_structured_args &&
+       arg_index < actual_match_structured_args->size() &&
+       (*actual_match_structured_args)[arg_index].kind == TemplateArgument::TA_VALUE &&
+       !(*actual_match_structured_args)[arg_index].dependent) {
+      out = (*actual_match_structured_args)[arg_index];
       if(!out.type) {
         out.type =
             resolved_non_type_parameter_value_type(services,
@@ -9673,17 +9689,156 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     }
   }
 
+  const auto actual_trailing_argument_matches_default =
+      [&](std::size_t argument_index) -> bool
+  {
+    if(!actual_source_template ||
+       !actual_match_structured_args ||
+       argument_index >= actual_match_structured_args->size()) {
+      return false;
+    }
+    const std::size_t parameter_index =
+        template_parameter_index_for_argument(actual_source_template->parameters,
+                                             argument_index);
+    if(parameter_index >= actual_source_template->parameters.size()) {
+      return false;
+    }
+    const TemplateParameterInfo & parameter =
+        actual_source_template->parameters[parameter_index];
+    if(parameter.parameter_pack ||
+       !parameter.default_argument ||
+       parameter.default_argument->children.empty()) {
+      return false;
+    }
+
+    const TemplateArgument & actual_argument =
+        (*actual_match_structured_args)[argument_index];
+    std::vector<TemplateArgument> prefix_arguments(
+        actual_match_structured_args->begin(),
+        actual_match_structured_args->begin() + argument_index);
+    Scope default_scope(actual_source_template->declaring_scope ?
+                            actual_source_template->declaring_scope :
+                            &match_scope,
+                        std::string(),
+                        false);
+    template_api::bind_template_arguments_into_scope(
+        services,
+        default_scope,
+        actual_source_template->parameters,
+        prefix_arguments);
+
+    const CppAstNode & child = parameter.default_argument->children[0];
+    TemplateArgumentSyntax default_syntax;
+    default_syntax.has_source_token_start = child.token_end > child.token_start;
+    default_syntax.source_token_start = child.token_start;
+    default_syntax.source_location_id = child.source_location_id;
+
+    if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
+      if(actual_argument.kind != TemplateArgument::TA_TYPE ||
+         !actual_argument.type) {
+        return false;
+      }
+      CppAstNode substituted;
+      const CppAstNode * default_node = &child;
+      if(template_argument_semantics::substitute_type_id_node_for_template_arguments(
+             services,
+             default_scope,
+             child,
+             actual_source_template->parameters,
+             prefix_arguments,
+             substituted)) {
+        default_node = &substituted;
+      }
+      default_syntax.type_id.reset(new CppAstNode(*default_node));
+      TypePtr default_type;
+      return parse_template_argument_type_syntax(services,
+                                                 default_scope,
+                                                 &default_syntax,
+                                                 default_type,
+                                                 true) &&
+             default_type &&
+             type_equals(default_type, actual_argument.type);
+    }
+
+    if(parameter.kind == TemplateParameterInfo::TP_NON_TYPE) {
+      if(actual_argument.kind != TemplateArgument::TA_VALUE ||
+         actual_argument.dependent) {
+        return false;
+      }
+      CppAstNode substituted;
+      const CppAstNode * default_node = &child;
+      if(template_argument_semantics::substitute_expression_node_for_template_arguments(
+             default_scope,
+             child,
+             actual_source_template->parameters,
+             prefix_arguments,
+             substituted)) {
+        default_node = &substituted;
+      }
+      default_syntax.expression.reset(new CppAstNode(*default_node));
+      TypePtr value_type = parameter.value_type;
+      TypePtr substituted_value_type;
+      if(value_type &&
+         template_argument_semantics::substitute_type(default_scope,
+                                                      value_type,
+                                                      actual_source_template->parameters,
+                                                      prefix_arguments,
+                                                      substituted_value_type) &&
+         substituted_value_type) {
+        value_type = substituted_value_type;
+      }
+      const template_argument_semantics::ScopedDefaultTemplateArgumentEvaluation
+          default_argument_evaluation;
+      long long default_value = 0;
+      return template_argument_semantics::evaluate_non_type_argument_syntax(
+                 services,
+                 template_api::make_template_environment(default_scope),
+                 default_syntax,
+                 default_value,
+                 nullptr,
+                 value_type) ==
+                 template_argument_semantics::NT_ARG_EVALUATED &&
+             default_value == actual_argument.value;
+    }
+
+    return false;
+  };
+
+  if(!trailing_pack_parameter &&
+     actual_match_structured_args &&
+     actual_match_structured_args->size() == actual_match_args->size() &&
+     pattern_args.size() < actual_match_args->size()) {
+    std::size_t keep = actual_match_args->size();
+    while(keep > pattern_args.size()) {
+      const TemplateArgument & argument =
+          (*actual_match_structured_args)[keep - 1];
+      if(!argument.source_defaulted &&
+         !actual_trailing_argument_matches_default(keep - 1)) {
+        break;
+      }
+      --keep;
+    }
+    if(keep != actual_match_args->size()) {
+      actual_explicit_args_storage.assign(actual_match_args->begin(),
+                                          actual_match_args->begin() + keep);
+      actual_explicit_structured_args_storage.assign(
+          actual_match_structured_args->begin(),
+          actual_match_structured_args->begin() + keep);
+      actual_match_args = &actual_explicit_args_storage;
+      actual_match_structured_args = &actual_explicit_structured_args_storage;
+    }
+  }
 	  if(trailing_pack_parameter) {
-	    if(actual_args.size() < fixed_argument_count) {
+	    if(actual_match_args->size() < fixed_argument_count) {
 	      return false;
 	    }
-	  } else if(pattern_args.size() != actual_args.size()) {
+	  } else if(pattern_args.size() != actual_match_args->size()) {
 	    return false;
 	  }
 
   for(std::size_t arg_index = 0; arg_index < fixed_argument_count; ++arg_index) {
     const std::string pattern_arg = trim_space(pattern_args[arg_index]);
-    const std::string actual_arg = trim_space(actual_args[arg_index]);
+    const std::string actual_arg = trim_space((*actual_match_args)[arg_index]);
     const TemplateParameterInfo * direct_parameter =
         find_direct_template_parameter_from_arg(pattern_arg).parameter;
     if(!direct_parameter) {
@@ -9697,10 +9852,10 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       long long actual_value = 0;
       TypePtr actual_value_type;
       bool have_actual_value = false;
-      if(actual_structured_args &&
-         arg_index < actual_structured_args->size()) {
+      if(actual_match_structured_args &&
+         arg_index < actual_match_structured_args->size()) {
         const TemplateArgument & actual_value_arg =
-            (*actual_structured_args)[arg_index];
+            (*actual_match_structured_args)[arg_index];
         if(actual_value_arg.kind == TemplateArgument::TA_VALUE &&
            !actual_value_arg.dependent) {
           actual_value = actual_value_arg.value;
@@ -9845,11 +10000,11 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     if(trailing_pack_parameter->kind == TemplateParameterInfo::TP_TYPE) {
       std::vector<TypePtr> deduced_pack;
       for(std::size_t arg_index = fixed_argument_count;
-          arg_index < actual_args.size();
+          arg_index < actual_match_args->size();
           ++arg_index) {
         TypePtr actual_arg_type;
         if(!resolve_actual_arg_type(arg_index,
-                                    trim_space(actual_args[arg_index]),
+                                    trim_space((*actual_match_args)[arg_index]),
                                     actual_arg_type)) {
           return false;
         }
@@ -9863,13 +10018,13 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
     } else if(trailing_pack_parameter->kind == TemplateParameterInfo::TP_NON_TYPE) {
       std::vector<long long> deduced_pack;
       for(std::size_t arg_index = fixed_argument_count;
-          arg_index < actual_args.size();
+          arg_index < actual_match_args->size();
           ++arg_index) {
         long long value = 0;
-	        if(!resolve_actual_non_type_value(arg_index,
-	                                          trim_space(actual_args[arg_index]),
-	                                          *trailing_pack_parameter,
-	                                          value)) {
+		        if(!resolve_actual_non_type_value(arg_index,
+		                                          trim_space((*actual_match_args)[arg_index]),
+		                                          *trailing_pack_parameter,
+		                                          value)) {
 	          return false;
 	        }
         deduced_pack.push_back(value);
@@ -10213,12 +10368,13 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                services, match_scope, element_syntax, pattern_type, true) &&
            pattern_type &&
            partial_specialization_top_cv_matches(pattern_type, actual.type) &&
-           (template_api::deduce_template_argument(
+           (template_resolution::deduce_template_argument(
                 services,
                 partial.parameters,
                 pattern_type,
                 actual.type,
                 element_deduced.types,
+                element_deduced.values,
                 template_api::make_template_environment(match_scope),
                 true,
                 template_api::make_template_environment(scope),
@@ -10389,6 +10545,13 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         const bool pattern_is_dependent =
             pattern_type &&
             type_is_dependent(pattern_type);
+        if(!matched_by_type &&
+           !pattern_has_deducible_placeholders &&
+           !actual.text.empty() &&
+           compact_source_template_argument_text(pattern_text) ==
+               compact_source_template_argument_text(actual.text)) {
+          matched_by_type = true;
+        }
         {
           DeducedState deduced_copy = deduced;
           Scope match_scope_copy =
@@ -10419,12 +10582,13 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
               pattern_mentions_placeholders ? placeholder_match_scope : match_scope_copy;
           if(deduction_pattern_type &&
              partial_specialization_top_cv_matches(deduction_pattern_type, actual.type) &&
-             (template_api::deduce_template_argument(
+             (template_resolution::deduce_template_argument(
                   services,
                   partial.parameters,
                   deduction_pattern_type,
                   actual.type,
                   deduced_copy.types,
+                  deduced_copy.values,
                   template_api::make_template_environment(deduction_scope),
                   true,
                   template_api::make_template_environment(scope),

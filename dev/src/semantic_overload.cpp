@@ -9658,13 +9658,15 @@ void append_function_template_call_candidates_impl(
             parser_trace::note("template.resolve", trace_location, trace.str());
           }
           if(!deduced_ok) {
-            append_template_function_candidate_drop(
-                ctx,
-                &candidate_template,
+            const std::string deduction_reason =
                 function_template_deduction_failure_drop_reason(ctx,
                                                                 candidate_template,
                                                                 args,
-                                                                has_explicit_args),
+                                                                has_explicit_args);
+            append_template_function_candidate_drop(
+                ctx,
+                &candidate_template,
+                deduction_reason,
                 &combination_drops);
             return;
           }

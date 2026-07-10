@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -12,6 +13,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "scripts" / "audit_text_reparse.py"
+SPEC = importlib.util.spec_from_file_location("audit_text_reparse", SCRIPT)
+assert SPEC is not None
+AUDIT = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader is not None
+sys.modules[SPEC.name] = AUDIT
+SPEC.loader.exec_module(AUDIT)
 ZERO_LIMITS = {
     "qualified_name_string_parse": 0,
     "template_id_string_parse": 0,
@@ -28,6 +35,7 @@ ZERO_LIMITS = {
     "semantic_nttp_text_rebind": 0,
     "function_result_argument_text_reparse": 0,
     "owner_member_text_reparse": 0,
+    "added_semantic_text_reparse": 0,
 }
 
 
@@ -193,6 +201,22 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("owner_member_text_reparse", result.stdout)
             self.assertIn("pattern_mentions_bound_type_pack_value_member", result.stdout)
+
+    def test_added_resolve_template_arguments_bridge_is_counted(self) -> None:
+        category = next(
+            item for item in AUDIT.CATEGORIES
+            if item.name == "added_semantic_text_reparse"
+        )
+
+        self.assertTrue(category.diff_only)
+        self.assertRegex(
+            "template_api::resolve_template_arguments(",
+            category.pattern,
+        )
+        self.assertRegex(
+            "template_argument_semantics::resolve_template_arguments(",
+            category.pattern,
+        )
 
 
 if __name__ == "__main__":

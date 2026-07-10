@@ -4321,6 +4321,18 @@ void update_class_template_dependent_type_metadata(
                 });
     if(arguments[i].kind == TemplateArgument::TA_TYPE) {
       dependent_argument.type = arguments[i].type;
+    } else if(arguments[i].kind == TemplateArgument::TA_VALUE) {
+      dependent_argument.type = arguments[i].type;
+      dependent_argument.function_value = arguments[i].function_value;
+      dependent_argument.function_internal_symbol =
+          arguments[i].function_internal_symbol;
+      dependent_argument.value_binding = arguments[i].value_binding;
+      dependent_argument.value = arguments[i].value;
+      dependent_argument.has_non_type_value =
+          !arguments[i].partial_order_placeholder;
+      dependent_argument.dependent_value = arguments[i].dependent;
+      dependent_argument.partial_order_placeholder =
+          arguments[i].partial_order_placeholder;
     }
     if(argument_syntaxes && i < argument_syntaxes->size()) {
       dependent_argument.syntax = (*argument_syntaxes)[i];
@@ -8483,6 +8495,19 @@ void bind_template_arguments_into_scope(
         rehydrated_template_argument_function_values(*services.semantic_context,
                                                      arguments);
     effective_arguments = &normalized_arguments;
+  }
+  if(!template_arguments_fully_bind_parameters(parameters, *effective_arguments)) {
+    std::vector<TemplateArgument> completed_arguments;
+    if(template_resolution::complete_template_arguments_with_default_arguments(
+           services,
+           template_api::make_template_environment(scope),
+           parameters,
+           *effective_arguments,
+           completed_arguments,
+           template_api::TemplateEnvironmentHandle())) {
+      normalized_arguments.swap(completed_arguments);
+      effective_arguments = &normalized_arguments;
+    }
   }
   ensure_template_arguments_fully_bind_parameters(
       type_system,

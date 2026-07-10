@@ -208,6 +208,7 @@ struct FunctionTemplateDeclarationPolicy
       const std::vector<template_model::TemplateParameterInfo> &
           candidate_parameters,
       const cpp_decl::TypePtr & candidate_type,
+      const CppAstNode & candidate_result_type_pattern,
       bool candidate_special_member_template,
       bool candidate_is_static_member,
       bool candidate_is_const_method,

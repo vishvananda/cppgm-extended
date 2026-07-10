@@ -3050,6 +3050,296 @@ void store_same_function_template_entity_cache(
   entry.result = result;
 }
 
+bool qualified_name_syntax_equal(const QualifiedName & lhs,
+                                 const QualifiedName & rhs);
+bool template_id_syntax_shape_equal(const TemplateIdSyntax & lhs,
+                                    const TemplateIdSyntax & rhs);
+bool cppast_node_shape_equal(const CppAstNode & lhs,
+                             const CppAstNode & rhs);
+
+bool optional_qualified_name_syntax_equal(
+    const shared_ptr<QualifiedName> & lhs,
+    const shared_ptr<QualifiedName> & rhs)
+{
+  if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
+    return false;
+  }
+  return !lhs || qualified_name_syntax_equal(*lhs, *rhs);
+}
+
+bool optional_template_id_syntax_shape_equal(
+    const shared_ptr<TemplateIdSyntax> & lhs,
+    const shared_ptr<TemplateIdSyntax> & rhs)
+{
+  if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
+    return false;
+  }
+  return !lhs || template_id_syntax_shape_equal(*lhs, *rhs);
+}
+
+bool optional_cppast_node_shape_equal(const shared_ptr<CppAstNode> & lhs,
+                                      const shared_ptr<CppAstNode> & rhs)
+{
+  if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
+    return false;
+  }
+  return !lhs || cppast_node_shape_equal(*lhs, *rhs);
+}
+
+bool qualified_name_syntax_equal(const QualifiedName & lhs,
+                                 const QualifiedName & rhs)
+{
+  return lhs.rooted == rhs.rooted &&
+         lhs.qualifiers == rhs.qualifiers &&
+         lhs.name == rhs.name;
+}
+
+bool template_argument_syntax_shape_equal(
+    const TemplateArgumentSyntax & lhs,
+    const TemplateArgumentSyntax & rhs)
+{
+  return lhs.pack_expansion == rhs.pack_expansion &&
+         lhs.dependent == rhs.dependent &&
+         optional_template_id_syntax_shape_equal(lhs.template_id, rhs.template_id) &&
+         optional_cppast_node_shape_equal(lhs.type_id, rhs.type_id) &&
+         optional_cppast_node_shape_equal(lhs.source_type_id, rhs.source_type_id) &&
+         optional_cppast_node_shape_equal(lhs.expression, rhs.expression) &&
+         type_equals(lhs.resolved_type, rhs.resolved_type);
+}
+
+bool template_id_syntax_shape_equal(const TemplateIdSyntax & lhs,
+                                    const TemplateIdSyntax & rhs)
+{
+  if(!qualified_name_syntax_equal(lhs.name, rhs.name) ||
+     lhs.qualifier_template_id_syntaxes.size() !=
+         rhs.qualifier_template_id_syntaxes.size() ||
+     lhs.arguments.size() != rhs.arguments.size() ||
+     lhs.argument_syntaxes.size() != rhs.argument_syntaxes.size()) {
+    return false;
+  }
+  for(size_t i = 0; i < lhs.qualifier_template_id_syntaxes.size(); ++i) {
+    if(!template_id_syntax_shape_equal(lhs.qualifier_template_id_syntaxes[i],
+                                       rhs.qualifier_template_id_syntaxes[i])) {
+      return false;
+    }
+  }
+  for(size_t i = 0; i < lhs.argument_syntaxes.size(); ++i) {
+    if(!template_argument_syntax_shape_equal(lhs.argument_syntaxes[i],
+                                             rhs.argument_syntaxes[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool cppast_lazy_node_vector_shape_equal(const CppAstLazyVector<CppAstNode> & lhs,
+                                         const CppAstLazyVector<CppAstNode> & rhs)
+{
+  if(lhs.size() != rhs.size()) {
+    return false;
+  }
+  for(size_t i = 0; i < lhs.size(); ++i) {
+    if(!cppast_node_shape_equal(lhs[i], rhs[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool cppast_lazy_template_id_vector_shape_equal(
+    const CppAstLazyVector<TemplateIdSyntax> & lhs,
+    const CppAstLazyVector<TemplateIdSyntax> & rhs)
+{
+  if(lhs.size() != rhs.size()) {
+    return false;
+  }
+  for(size_t i = 0; i < lhs.size(); ++i) {
+    if(!template_id_syntax_shape_equal(lhs[i], rhs[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool cppast_node_vector_shape_equal(const vector<CppAstNode> & lhs,
+                                    const vector<CppAstNode> & rhs)
+{
+  if(lhs.size() != rhs.size()) {
+    return false;
+  }
+  for(size_t i = 0; i < lhs.size(); ++i) {
+    if(!cppast_node_shape_equal(lhs[i], rhs[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool cppast_node_value_shape_equal(const CppAstNode & lhs,
+                                   const CppAstNode & rhs)
+{
+  switch(lhs.kind) {
+  case CppAstKind::type_id:
+  case CppAstKind::decl_specifier:
+  case CppAstKind::decl_specifier_seq:
+  case CppAstKind::type_specifier_seq:
+  case CppAstKind::abstract_declarator:
+  case CppAstKind::declarator:
+  case CppAstKind::nested_declarator:
+    return true;
+  default:
+    return lhs.value == rhs.value;
+  }
+}
+
+bool cppast_node_shape_equal(const CppAstNode & lhs,
+                             const CppAstNode & rhs)
+{
+  return lhs.kind == rhs.kind &&
+         cppast_node_value_shape_equal(lhs, rhs) &&
+         type_equals(lhs.semantic_type, rhs.semantic_type) &&
+         lhs.builtin_type_transform_name == rhs.builtin_type_transform_name &&
+         optional_qualified_name_syntax_equal(lhs.qualified_name_syntax,
+                                              rhs.qualified_name_syntax) &&
+         optional_template_id_syntax_shape_equal(lhs.template_id_syntax,
+                                                rhs.template_id_syntax) &&
+         optional_cppast_node_shape_equal(lhs.conversion_type_id_syntax,
+                                         rhs.conversion_type_id_syntax) &&
+         optional_cppast_node_shape_equal(lhs.base_type_syntax,
+                                         rhs.base_type_syntax) &&
+         cppast_lazy_template_id_vector_shape_equal(
+             lhs.qualifier_template_id_syntaxes,
+             rhs.qualifier_template_id_syntaxes) &&
+         cppast_lazy_node_vector_shape_equal(lhs.qualifier_type_syntaxes,
+                                             rhs.qualifier_type_syntaxes) &&
+         lhs.has_leading_typename == rhs.has_leading_typename &&
+         lhs.has_exception_type_id_syntaxes == rhs.has_exception_type_id_syntaxes &&
+         cppast_lazy_node_vector_shape_equal(lhs.exception_type_id_syntaxes,
+                                             rhs.exception_type_id_syntaxes) &&
+         lhs.has_token == rhs.has_token &&
+         lhs.token_kind == rhs.token_kind &&
+         lhs.simple_type == rhs.simple_type &&
+         cppast_node_vector_shape_equal(lhs.children, rhs.children);
+}
+
+bool template_id_name_is_result_sfinae_discriminator(
+    const QualifiedName & name)
+{
+  return name.name.find("enable_if") != string::npos ||
+         name.name.find("disable_if") != string::npos ||
+         name.name == "void_t" ||
+         name.name == "__void_t";
+}
+
+bool template_id_has_result_sfinae_discriminator(
+    const TemplateIdSyntax & syntax);
+bool cppast_node_has_result_sfinae_discriminator(const CppAstNode & node);
+
+bool optional_cppast_node_has_result_sfinae_discriminator(
+    const shared_ptr<CppAstNode> & node)
+{
+  return node && cppast_node_has_result_sfinae_discriminator(*node);
+}
+
+bool optional_template_id_has_result_sfinae_discriminator(
+    const shared_ptr<TemplateIdSyntax> & syntax)
+{
+  return syntax && template_id_has_result_sfinae_discriminator(*syntax);
+}
+
+bool template_argument_has_result_sfinae_discriminator(
+    const TemplateArgumentSyntax & syntax)
+{
+  return optional_template_id_has_result_sfinae_discriminator(syntax.template_id) ||
+         optional_cppast_node_has_result_sfinae_discriminator(syntax.type_id) ||
+         optional_cppast_node_has_result_sfinae_discriminator(
+             syntax.source_type_id) ||
+         optional_cppast_node_has_result_sfinae_discriminator(syntax.expression);
+}
+
+bool template_id_has_result_sfinae_discriminator(
+    const TemplateIdSyntax & syntax)
+{
+  if(template_id_name_is_result_sfinae_discriminator(syntax.name)) {
+    return true;
+  }
+  for(size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_has_result_sfinae_discriminator(
+           syntax.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(template_argument_has_result_sfinae_discriminator(
+           syntax.argument_syntaxes[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool cppast_node_has_result_sfinae_discriminator(const CppAstNode & node)
+{
+  if(node.kind == CppAstKind::decltype_specifier ||
+     node.kind == CppAstKind::type_trait_expression ||
+     !node.builtin_type_transform_name.empty()) {
+    return true;
+  }
+  if(node.kind == CppAstKind::decl_specifier &&
+     (node.value.compare(0, 8, "decltype") == 0 ||
+      node.value.compare(0, 10, "__decltype") == 0)) {
+    return true;
+  }
+  if(optional_template_id_has_result_sfinae_discriminator(
+         node.template_id_syntax) ||
+     optional_cppast_node_has_result_sfinae_discriminator(
+         node.conversion_type_id_syntax) ||
+     optional_cppast_node_has_result_sfinae_discriminator(node.base_type_syntax)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_has_result_sfinae_discriminator(
+           node.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(cppast_node_has_result_sfinae_discriminator(
+           node.qualifier_type_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+    if(cppast_node_has_result_sfinae_discriminator(
+           node.exception_type_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(cppast_node_has_result_sfinae_discriminator(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool function_template_result_type_patterns_match(
+    const FunctionTemplateDecl * lhs,
+    const FunctionTemplateDecl * rhs)
+{
+  if(!lhs || !rhs ||
+     lhs->result_type_pattern.kind == CppAstKind::invalid ||
+     rhs->result_type_pattern.kind == CppAstKind::invalid) {
+    return true;
+  }
+  if(!cppast_node_has_result_sfinae_discriminator(lhs->result_type_pattern) &&
+     !cppast_node_has_result_sfinae_discriminator(rhs->result_type_pattern)) {
+    return true;
+  }
+  return cppast_node_shape_equal(lhs->result_type_pattern,
+                                 rhs->result_type_pattern);
+}
+
 bool same_inline_namespace_function_template_entity(const FunctionTemplateDecl * lhs,
                                                     const FunctionTemplateDecl * rhs)
 {
@@ -3131,10 +3421,15 @@ bool same_inline_namespace_function_template_entity(const FunctionTemplateDecl *
                                                     rhs->parameters)) {
     return store_result(false);
   }
-  return store_result(same_function_template_entity_type(lhs->type_pattern,
-                                                        lhs->parameters,
-                                                        rhs->type_pattern,
-                                                        rhs->parameters));
+  if(!same_function_template_entity_type(lhs->type_pattern,
+                                         lhs->parameters,
+                                         rhs->type_pattern,
+                                         rhs->parameters)) {
+    return store_result(false);
+  }
+  const bool result_patterns_match =
+      function_template_result_type_patterns_match(lhs, rhs);
+  return store_result(result_patterns_match);
 }
 
 void remove_hidden_using_base_member_function_candidates(

@@ -6192,18 +6192,12 @@ const ClassInfo * structured_bool_integral_constant_info(
     }
   }
   for(size_t i = 0; i < info.bases.size(); ++i) {
-    if(!info.bases[i].type || !info.bases[i].type->type) {
-      continue;
-    }
-    ClassInfo * base_info =
-        template_api::find_named_type_class_info(type_system.model,
-                                                 info.bases[i].type->type);
-    if(!base_info) {
+    if(!info.bases[i].type) {
       continue;
     }
     if(const ClassInfo * found =
            structured_bool_integral_constant_info(type_system,
-                                                  *base_info,
+                                                  *info.bases[i].type,
                                                   value,
                                                   visiting)) {
       return found;
@@ -6792,19 +6786,12 @@ const ClassInfo * structured_bool_direct_value_member_info(
     return &info;
   }
   for(size_t i = 0; i < info.bases.size(); ++i) {
-    if(!info.bases[i].type || !info.bases[i].type->type) {
-      continue;
-    }
-    ClassInfo * base_info =
-        template_api::find_named_type_class_info(
-            service_type_system(services).model,
-            info.bases[i].type->type);
-    if(!base_info) {
+    if(!info.bases[i].type) {
       continue;
     }
     if(const ClassInfo * found =
            structured_bool_direct_value_member_info(services,
-                                                    *base_info,
+                                                    *info.bases[i].type,
                                                     visiting)) {
       return found;
     }
@@ -9014,15 +9001,32 @@ bool structured_bool_constant_value_for_class_info(
   }
 
   for(size_t i = 0; i < info.bases.size(); ++i) {
-    if(info.bases[i].type &&
-       structured_bool_constant_value_for_type(
-           type_system,
-           info.bases[i].type->type,
-           out,
-           visiting,
-           services,
-           scope,
-           evaluation_incomplete)) {
+    ClassInfo * base_info = info.bases[i].type;
+    if(!base_info) {
+      continue;
+    }
+    const TypePtr base_type = strip_top_level_cv(base_info->type);
+    const string visit_key =
+        base_type && !base_type->named_key.empty() ?
+            base_type->named_key :
+            (!base_info->qualified_name.empty() ?
+                 base_info->qualified_name :
+                 describe_type(base_type));
+    if(!visit_key.empty() && !visiting.insert(visit_key).second) {
+      continue;
+    }
+    const bool found = structured_bool_constant_value_for_class_info(
+        type_system,
+        *base_info,
+        out,
+        visiting,
+        services,
+        scope,
+        evaluation_incomplete);
+    if(!visit_key.empty()) {
+      visiting.erase(visit_key);
+    }
+    if(found) {
       return true;
     }
   }
@@ -9716,9 +9720,7 @@ bool lookup_leaf_member_expression_type_in_scope(template_api::TemplateTypeSyste
       continue;
     }
 
-    ClassInfo * base_info = template_api::find_named_type_class_info(
-        type_system.model,
-        member_scope.class_info->bases[i].type->type);
+    ClassInfo * base_info = member_scope.class_info->bases[i].type;
     if(base_info &&
        base_info->member_scope &&
        lookup_leaf_member_expression_type_in_scope(
@@ -9954,9 +9956,7 @@ bool lookup_leaf_member_expression_value_in_scope(
     if(!member_scope.class_info->bases[i].type) {
       continue;
     }
-    ClassInfo * base_info = template_api::find_named_type_class_info(
-        service_type_system(services).model,
-        member_scope.class_info->bases[i].type->type);
+    ClassInfo * base_info = member_scope.class_info->bases[i].type;
     if(!base_info || !base_info->member_scope) {
       continue;
     }
@@ -10000,9 +10000,7 @@ void collect_leaf_member_function_bindings_in_scope(
     if(!member_scope.class_info->bases[i].type) {
       continue;
     }
-    ClassInfo * base_info = template_api::find_named_type_class_info(
-        type_system.model,
-        member_scope.class_info->bases[i].type->type);
+    ClassInfo * base_info = member_scope.class_info->bases[i].type;
     if(!base_info || !base_info->member_scope) {
       continue;
     }
@@ -16008,6 +16006,14 @@ void copy_direct_non_type_argument(
 {
   out = source_argument;
   out.type = replacement.type;
+  out.function_value = replacement.function_value;
+  out.function_internal_symbol = replacement.function_internal_symbol;
+  out.value_binding = replacement.value_binding;
+  out.value = replacement.value;
+  out.has_non_type_value =
+      replacement.kind == TemplateArgument::TA_VALUE &&
+      !replacement.partial_order_placeholder;
+  out.dependent_value = replacement.dependent;
   out.source_defaulted = replacement.source_defaulted;
   out.partial_order_placeholder = replacement.partial_order_placeholder;
   if(replacement.source_syntax) {
@@ -16531,6 +16537,124 @@ void update_substituted_dependent_class_mangle_info(
   }
 }
 
+bool dependent_class_argument_to_mangle_argument(
+    const ClassTemplateDecl & class_template,
+    size_t argument_index,
+    size_t argument_count,
+    const DependentAliasTemplateArgumentSyntax & source,
+    TemplateArgument & out)
+{
+  const size_t parameter_index =
+      template_parameter_index_for_argument_position(class_template.parameters,
+                                                     argument_index,
+                                                     argument_count);
+  if(parameter_index >= class_template.parameters.size()) {
+    return false;
+  }
+  const TemplateParameterInfo & parameter =
+      class_template.parameters[parameter_index];
+
+  out = TemplateArgument();
+  out.text = trim_space(source.text);
+  out.source_syntax.reset(new TemplateArgumentSyntax(source.syntax));
+  out.source_defaulted = source.source_defaulted;
+  out.partial_order_placeholder = source.partial_order_placeholder;
+
+  switch(parameter.kind) {
+  case TemplateParameterInfo::TP_TYPE:
+    if(!source.type) {
+      return false;
+    }
+    out.kind = TemplateArgument::TA_TYPE;
+    out.type = source.type;
+    out.dependent =
+        source.syntax.dependent ||
+        named_type_has_dependent_semantic(source.type) ||
+        named_type_key_contains_dependent_semantic(source.type);
+    if(out.text.empty()) {
+      out.text = trim_space(substituted_dependent_argument_type_text(source.type));
+    }
+    return true;
+
+  case TemplateParameterInfo::TP_NON_TYPE:
+    if(!source.has_non_type_value &&
+       !source.function_value &&
+       source.function_internal_symbol.empty() &&
+       !source.value_binding) {
+      return false;
+    }
+    out.kind = TemplateArgument::TA_VALUE;
+    out.type = source.type ? source.type : parameter.value_type;
+    out.function_value = source.function_value;
+    out.function_internal_symbol = source.function_internal_symbol;
+    out.value_binding = source.value_binding;
+    out.value = source.value;
+    out.dependent = source.dependent_value || source.syntax.dependent;
+    if(source.syntax.expression) {
+      out.expression.reset(new CppAstNode(*source.syntax.expression));
+    }
+    return true;
+
+  default:
+    return false;
+  }
+}
+
+void attach_substituted_dependent_class_mangle_info_from_arguments(
+    const TypePtr & substituted,
+    const ClassTemplateDecl & class_template,
+    const vector<DependentAliasTemplateArgumentSyntax> & substituted_arguments)
+{
+  if(!substituted ||
+     substituted_arguments.empty() ||
+     named_type_class_template_specialization_mangle_info_const(substituted)) {
+    return;
+  }
+
+  vector<TemplateArgument> mangle_arguments;
+  mangle_arguments.reserve(substituted_arguments.size());
+  vector<TemplateArgumentSyntax> argument_syntaxes;
+  argument_syntaxes.reserve(substituted_arguments.size());
+  for(size_t i = 0; i < substituted_arguments.size(); ++i) {
+    TemplateArgument argument;
+    if(!dependent_class_argument_to_mangle_argument(class_template,
+                                                   i,
+                                                   substituted_arguments.size(),
+                                                   substituted_arguments[i],
+                                                   argument)) {
+      return;
+    }
+    argument_syntaxes.push_back(substituted_arguments[i].syntax);
+    mangle_arguments.push_back(argument);
+  }
+  if(!template_arguments_fully_bind_parameters(class_template.parameters,
+                                               mangle_arguments)) {
+    return;
+  }
+
+  shared_ptr<ClassTemplateSpecializationMangleInfo> info(
+      new ClassTemplateSpecializationMangleInfo());
+  info->class_template_decl = const_cast<ClassTemplateDecl *>(&class_template);
+  info->template_name = class_template.name;
+  if(class_template.declaring_scope) {
+    const string qualified =
+        semantic_lookup::scope_qualified_name(*class_template.declaring_scope,
+                                              class_template.name);
+    const string suffix = string("::") + class_template.name;
+    if(qualified.size() > suffix.size() &&
+       qualified.compare(qualified.size() - suffix.size(),
+                         suffix.size(),
+                         suffix) == 0) {
+      info->template_scope_prefix =
+          qualified.substr(0, qualified.size() - suffix.size());
+    }
+  }
+  info->template_parameters = class_template.parameters;
+  info->arguments.swap(mangle_arguments);
+  info->argument_syntaxes.swap(argument_syntaxes);
+  set_named_type_class_template_specialization_mangle_info(substituted, info);
+}
+
 bool substitute_dependent_class_type(const TypePtr & type,
                                      const vector<TemplateParameterInfo> & parameters,
                                      const vector<TemplateArgument> & arguments,
@@ -16648,6 +16772,13 @@ bool substitute_dependent_class_type(const TypePtr & type,
   set_named_type_dependent_class_template(substituted,
                                           class_template_decl,
                                           substituted_arguments);
+  if(ClassTemplateDecl * class_template =
+         static_cast<ClassTemplateDecl *>(class_template_decl)) {
+    attach_substituted_dependent_class_mangle_info_from_arguments(
+        substituted,
+        *class_template,
+        substituted_arguments);
+  }
   update_substituted_dependent_class_mangle_info(substituted,
                                                 type,
                                                 parameters,

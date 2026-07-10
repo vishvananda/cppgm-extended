@@ -1596,17 +1596,65 @@ private:
         template_instantiation::template_argument_key_for_instantiation(
             *const_cast<Analyzer *>(this),
             mangle_info->arguments);
+    const auto materialize_from_mangle_arguments =
+        [&]() -> ClassInfo *
+    {
+      if(template_arguments_are_dependent(mangle_info->arguments) ||
+         !template_model::template_arguments_fully_bind_parameters(
+             decl->parameters,
+             mangle_info->arguments)) {
+        return nullptr;
+      }
+      Scope * use_scope = decl->declaring_scope ? decl->declaring_scope :
+                                                 decl->pattern_scope;
+      if(!use_scope) {
+        return nullptr;
+      }
+      Analyzer * self = const_cast<Analyzer *>(this);
+      const template_api::specialization::ClassSpecializationSelection selection =
+          template_api::specialization::select_class_specialization(
+              *self,
+              *decl,
+              *use_scope,
+              key,
+              mangle_info->arguments);
+      ClassInfo * materialized =
+          self->reference_selected_class_template_instantiation(
+              *decl,
+              *use_scope,
+              mangle_info->arguments,
+              selection,
+              nullptr,
+              template_api::ClassTemplateSourceUseMode::SemanticLookupOnly,
+              nullptr,
+              &key);
+      if(!materialized) {
+        return nullptr;
+      }
+      return materialized;
+    };
     auto found = decl->instantiations.find(key);
     if(found != decl->instantiations.end()) {
       class_info_for_template_metadata_cache_[base->named_key] = found->second;
       return found->second;
     }
     found = decl->reference_instantiations.find(key);
-    if(found == decl->reference_instantiations.end()) {
+    if(found != decl->reference_instantiations.end()) {
+      ClassInfo * refreshed = found->second && !found->second->complete ?
+          materialize_from_mangle_arguments() :
+          nullptr;
+      ClassInfo * result = refreshed ? refreshed : found->second;
+      if(result) {
+        class_info_for_template_metadata_cache_[base->named_key] = result;
+      }
+      return result;
+    }
+    ClassInfo * materialized = materialize_from_mangle_arguments();
+    if(!materialized) {
       return nullptr;
     }
-    class_info_for_template_metadata_cache_[base->named_key] = found->second;
-    return found->second;
+    class_info_for_template_metadata_cache_[base->named_key] = materialized;
+    return materialized;
   }
 
   FunctionBinding * function_binding_for_probe_symbol(const string & symbol) const
@@ -10552,9 +10600,9 @@ private:
             if(!append_arg(argument_list->children[i])) {
               return false;
             }
-          }
-          return true;
-        };
+        }
+        return true;
+      };
 
     TypePtr element_type;
     TypePtr initializer_list_target =
@@ -21968,6 +22016,7 @@ private:
       const string & candidate_name,
       const vector<TemplateParameterInfo> & candidate_parameters,
       const TypePtr & candidate_type,
+      const CppAstNode & candidate_result_type_pattern,
       bool candidate_is_special_member_template,
       bool candidate_is_static_member,
       bool candidate_is_const_method,
@@ -22006,6 +22055,237 @@ private:
         }
       }
       return true;
+    };
+    auto result_type_patterns_match =
+        [](const CppAstNode & lhs, const CppAstNode & rhs) -> bool
+    {
+      if(lhs.kind == CppAstKind::invalid || rhs.kind == CppAstKind::invalid) {
+        return true;
+      }
+      struct DiscriminatorDetector
+      {
+        bool template_id_name_is_sfinae_discriminator(
+            const QualifiedName & name) const
+        {
+          return name.name.find("enable_if") != string::npos ||
+                 name.name.find("disable_if") != string::npos ||
+                 name.name == "void_t" ||
+                 name.name == "__void_t";
+        }
+
+        bool template_id_has_sfinae_discriminator(
+            const TemplateIdSyntax & syntax) const
+        {
+          if(template_id_name_is_sfinae_discriminator(syntax.name)) {
+            return true;
+          }
+          for(size_t i = 0; i < syntax.qualifier_template_id_syntaxes.size(); ++i) {
+            if(template_id_has_sfinae_discriminator(
+                   syntax.qualifier_template_id_syntaxes[i])) {
+              return true;
+            }
+          }
+          for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+            if(template_argument_has_sfinae_discriminator(
+                   syntax.argument_syntaxes[i])) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        bool optional_node_has_sfinae_discriminator(
+            const std::shared_ptr<CppAstNode> & node) const
+        {
+          return node && node_has_sfinae_discriminator(*node);
+        }
+
+        bool optional_template_id_has_sfinae_discriminator(
+            const std::shared_ptr<TemplateIdSyntax> & syntax) const
+        {
+          return syntax && template_id_has_sfinae_discriminator(*syntax);
+        }
+
+        bool template_argument_has_sfinae_discriminator(
+            const TemplateArgumentSyntax & syntax) const
+        {
+          return optional_template_id_has_sfinae_discriminator(
+                     syntax.template_id) ||
+                 optional_node_has_sfinae_discriminator(syntax.type_id) ||
+                 optional_node_has_sfinae_discriminator(syntax.source_type_id) ||
+                 optional_node_has_sfinae_discriminator(syntax.expression);
+        }
+
+        bool node_has_sfinae_discriminator(const CppAstNode & node) const
+        {
+          if(node.kind == CppAstKind::decltype_specifier ||
+             node.kind == CppAstKind::type_trait_expression ||
+             !node.builtin_type_transform_name.empty()) {
+            return true;
+          }
+          if(node.kind == CppAstKind::decl_specifier &&
+             (node.value.compare(0, 8, "decltype") == 0 ||
+              node.value.compare(0, 10, "__decltype") == 0)) {
+            return true;
+          }
+          if(optional_template_id_has_sfinae_discriminator(
+                 node.template_id_syntax) ||
+             optional_node_has_sfinae_discriminator(
+                 node.conversion_type_id_syntax) ||
+             optional_node_has_sfinae_discriminator(node.base_type_syntax)) {
+            return true;
+          }
+          for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+            if(template_id_has_sfinae_discriminator(
+                   node.qualifier_template_id_syntaxes[i])) {
+              return true;
+            }
+          }
+          for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+            if(node_has_sfinae_discriminator(node.qualifier_type_syntaxes[i])) {
+              return true;
+            }
+          }
+          for(size_t i = 0; i < node.exception_type_id_syntaxes.size(); ++i) {
+            if(node_has_sfinae_discriminator(node.exception_type_id_syntaxes[i])) {
+              return true;
+            }
+          }
+          for(size_t i = 0; i < node.children.size(); ++i) {
+            if(node_has_sfinae_discriminator(node.children[i])) {
+              return true;
+            }
+          }
+          return false;
+        }
+      };
+      DiscriminatorDetector detector;
+      if(!detector.node_has_sfinae_discriminator(lhs) &&
+         !detector.node_has_sfinae_discriminator(rhs)) {
+        return true;
+      }
+      const auto qualified_names_equal =
+          [](const QualifiedName & lhs_name, const QualifiedName & rhs_name) -> bool
+      {
+        return lhs_name.rooted == rhs_name.rooted &&
+               lhs_name.qualifiers == rhs_name.qualifiers &&
+               lhs_name.name == rhs_name.name;
+      };
+      struct Comparer
+      {
+        decltype(qualified_names_equal) & qualified_names_equal;
+
+        bool template_argument_syntax_equal(const TemplateArgumentSyntax & lhs,
+                                            const TemplateArgumentSyntax & rhs) const
+        {
+          return lhs.pack_expansion == rhs.pack_expansion &&
+                 lhs.dependent == rhs.dependent &&
+                 optional_template_id_equal(lhs.template_id, rhs.template_id) &&
+                 optional_node_equal(lhs.type_id, rhs.type_id) &&
+                 optional_node_equal(lhs.source_type_id, rhs.source_type_id) &&
+                 optional_node_equal(lhs.expression, rhs.expression) &&
+                 type_equals(lhs.resolved_type, rhs.resolved_type);
+        }
+
+        bool optional_template_id_equal(
+            const std::shared_ptr<TemplateIdSyntax> & lhs,
+            const std::shared_ptr<TemplateIdSyntax> & rhs) const
+        {
+          if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
+            return false;
+          }
+          return !lhs || template_id_equal(*lhs, *rhs);
+        }
+
+        bool optional_node_equal(const std::shared_ptr<CppAstNode> & lhs,
+                                 const std::shared_ptr<CppAstNode> & rhs) const
+        {
+          if(static_cast<bool>(lhs) != static_cast<bool>(rhs)) {
+            return false;
+          }
+          return !lhs || node_equal(*lhs, *rhs);
+        }
+
+        bool template_id_equal(const TemplateIdSyntax & lhs,
+                               const TemplateIdSyntax & rhs) const
+        {
+          if(!qualified_names_equal(lhs.name, rhs.name) ||
+             lhs.qualifier_template_id_syntaxes.size() !=
+                 rhs.qualifier_template_id_syntaxes.size() ||
+             lhs.arguments.size() != rhs.arguments.size() ||
+             lhs.argument_syntaxes.size() != rhs.argument_syntaxes.size()) {
+            return false;
+          }
+          for(size_t i = 0; i < lhs.qualifier_template_id_syntaxes.size(); ++i) {
+            if(!template_id_equal(lhs.qualifier_template_id_syntaxes[i],
+                                  rhs.qualifier_template_id_syntaxes[i])) {
+              return false;
+            }
+          }
+          for(size_t i = 0; i < lhs.argument_syntaxes.size(); ++i) {
+            if(!template_argument_syntax_equal(lhs.argument_syntaxes[i],
+                                               rhs.argument_syntaxes[i])) {
+              return false;
+            }
+          }
+          return true;
+        }
+
+        bool node_value_equal(const CppAstNode & lhs,
+                              const CppAstNode & rhs) const
+        {
+          switch(lhs.kind) {
+          case CppAstKind::type_id:
+          case CppAstKind::decl_specifier:
+          case CppAstKind::decl_specifier_seq:
+          case CppAstKind::type_specifier_seq:
+          case CppAstKind::abstract_declarator:
+          case CppAstKind::declarator:
+          case CppAstKind::nested_declarator:
+            return true;
+          default:
+            return lhs.value == rhs.value;
+          }
+        }
+
+        bool node_equal(const CppAstNode & lhs, const CppAstNode & rhs) const
+        {
+          if(lhs.kind != rhs.kind ||
+             !node_value_equal(lhs, rhs) ||
+             lhs.has_token != rhs.has_token ||
+             lhs.simple_type != rhs.simple_type ||
+             !type_equals(lhs.semantic_type, rhs.semantic_type) ||
+             !optional_template_id_equal(lhs.template_id_syntax,
+                                         rhs.template_id_syntax) ||
+             lhs.qualifier_template_id_syntaxes.size() !=
+                 rhs.qualifier_template_id_syntaxes.size() ||
+             lhs.qualifier_type_syntaxes.size() !=
+                 rhs.qualifier_type_syntaxes.size() ||
+             lhs.children.size() != rhs.children.size()) {
+            return false;
+          }
+          for(size_t i = 0; i < lhs.qualifier_template_id_syntaxes.size(); ++i) {
+            if(!template_id_equal(lhs.qualifier_template_id_syntaxes[i],
+                                  rhs.qualifier_template_id_syntaxes[i])) {
+              return false;
+            }
+          }
+          for(size_t i = 0; i < lhs.qualifier_type_syntaxes.size(); ++i) {
+            if(!node_equal(lhs.qualifier_type_syntaxes[i],
+                           rhs.qualifier_type_syntaxes[i])) {
+              return false;
+            }
+          }
+          for(size_t i = 0; i < lhs.children.size(); ++i) {
+            if(!node_equal(lhs.children[i], rhs.children[i])) {
+              return false;
+            }
+          }
+          return true;
+        }
+      };
+      Comparer comparer{qualified_names_equal};
+      return comparer.node_equal(lhs, rhs);
     };
     auto function_result_types_match =
         [&](const TypePtr & lhs,
@@ -22060,21 +22340,23 @@ private:
         existing.is_destructor ||
         existing.is_conversion_operator;
     if(!allow_special_member_match) {
-      // Function template redeclarations are identified by the template head and
-      // function parameter list. Dependent return-type alias spellings such as
-      // `_Require<...>` vs `enable_if<...>::type` can differ while still naming
-      // the same entity.
+      // Function template redeclarations are identified by the template head,
+      // function parameter list, and return type. Return-type SFINAE overloads
+      // commonly share parameters but are distinct templates.
       if(!function_parameter_lists_match(existing.type_pattern,
                                          existing.parameters,
                                          candidate_type,
                                          candidate_parameters)) {
         return false;
       }
-      if(existing.is_deleted != candidate_is_deleted &&
-         !function_result_types_match(existing.type_pattern,
+      if(!function_result_types_match(existing.type_pattern,
                                       existing.parameters,
                                       candidate_type,
                                       candidate_parameters)) {
+        return false;
+      }
+      if(!result_type_patterns_match(existing.result_type_pattern,
+                                     candidate_result_type_pattern)) {
         return false;
       }
       return true;
@@ -22114,12 +22396,13 @@ private:
          !function_template_entities_match(*pending,
                                            *decl.declaring_scope,
                                            decl_template_scope,
-                                           decl.name,
-                                           decl.parameters,
-                                           decl.type_pattern,
-                                           false,
-                                           decl.is_static_member,
-                                           decl.is_const_method,
+	                                           decl.name,
+	                                           decl.parameters,
+	                                           decl.type_pattern,
+                                           decl.result_type_pattern,
+	                                           false,
+	                                           decl.is_static_member,
+	                                           decl.is_const_method,
                                            decl.is_volatile_method,
                                            decl.ref_qualifier,
                                            decl.is_deleted)) {
@@ -22177,12 +22460,13 @@ private:
           function_template_entities_match(*candidate,
                                            entity_scope,
                                            template_scope,
-                                           name,
-                                           template_parameters,
-                                           type_pattern,
-                                           false,
-                                           is_static_member,
-                                           is_const_method,
+	                                           name,
+	                                           template_parameters,
+	                                           type_pattern,
+                                           CppAstNode(),
+	                                           false,
+	                                           is_static_member,
+	                                           is_const_method,
                                            is_volatile_method,
                                            ref_qualifier,
                                            is_deleted);
@@ -22238,12 +22522,13 @@ private:
          function_template_entities_match(*existing,
                                           entity_scope,
                                           template_scope,
-                                          name,
-                                          template_parameters,
-                                          type_pattern,
-                                          false,
-                                          is_static_member,
-                                          is_const_method,
+	                                          name,
+	                                          template_parameters,
+	                                          type_pattern,
+                                          result_type_pattern,
+	                                          false,
+	                                          is_static_member,
+	                                          is_const_method,
                                           is_volatile_method,
                                           ref_qualifier,
                                           is_deleted)) {
