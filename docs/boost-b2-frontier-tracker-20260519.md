@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | A forced full replay first stopped while instantiating `boost::leaf::context<>`: partial-specialization matching decomposed concrete `mp_list<>` through stale dependent class metadata and incorrectly bound `T=[E]`. The structured empty-pack metadata fix closes that failure. The next compile frontier selected `result(value_no_ref const&)` for a mutable lvalue before considering the better forwarding constructor, then failed to construct `std::__1::reference_wrapper<int>` from `const int`. The cv-adding lvalue-bind shortcut fix closes that failure. Focused `libs/leaf/test//BOOST_LEAF_AUTO_test` now compiles and advances to the independent missing `boost::leaf::detail::exception<boost::leaf::bad_result>` move-constructor symbol at link; log `/tmp/boost-leaf-auto-after-forwarding-lvalue-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | A forced full replay first stopped while instantiating `boost::leaf::context<>`: partial-specialization matching decomposed concrete `mp_list<>` through stale dependent class metadata and incorrectly bound `T=[E]`. The structured empty-pack metadata fix closes that failure. The next compile frontier selected `result(value_no_ref const&)` for a mutable lvalue before considering the better forwarding constructor, then failed to construct `std::__1::reference_wrapper<int>` from `const int`. The cv-adding lvalue-bind shortcut fix closes that failure. The resulting link frontier was an undefined explicitly defined move constructor for `boost::leaf::detail::exception<boost::leaf::bad_result>`: exception-object initialization selected the constructor, but its hidden LowIR call did not seed the definition. The synthetic throw-constructor dependency fix closes that failure. Focused `libs/leaf/test//BOOST_LEAF_AUTO_test` now builds, links, runs, and passes; log `/tmp/boost-leaf-auto-after-throw-constructor-20260710.log`. The suite remains at `frontier` until the next forced full replay. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -5805,3 +5805,37 @@ No test or reference content changed. PA22 and PA26 placement audits now both
 pass with `--fail-on-early`; all four focused direct-text checks pass; the
 combined PA22/PA26 report passes `290/290`; the full strict direct-text suite
 passes; and the full direct-text report remains `3604/3604`.
+
+2026-07-10 Boost.LEAF throw exception-object constructor output frontier:
+`boost::leaf::throw_exception_` throws an xvalue of the class-template
+specialization `detail::exception<bad_result>`. Throw validation selected its
+explicitly defined move constructor, and LowIR lowering emitted the hidden
+exception-object construction call, but selection disabled body instantiation
+and did not add an output-closure edge for that synthetic call. The resulting
+object referenced
+`exception<bad_result>::exception(exception<bad_result>&&)` without defining
+it.
+
+Throw exception-object validation now keeps the lifecycle profile's normal
+body-instantiation policy and records the selected constructor as a synthetic
+output dependency. The existing constructor lifecycle and output-requirement
+services acquire and retain the inline class-template member definition before
+LowIR generation; no source-text reparse, fallback resolver, cache, or
+Boost-specific rule was added.
+
+Owner: PA25 throw-expression exception-object initialization. New regression:
+`pa25/tests/general/100-throw-class-template-move-constructor-definition.t`.
+At clean `c8c4bbaf1`, the no-STL reducer's LowIR contains only a move-constructor
+declaration and native link fails with that constructor undefined; Clang builds
+and runs it in C++11 mode. On the fixed tree the reducer links, runs, and emits
+the constructor definition; the existing inaccessible-destructor control
+passes; the PA25 placement audit passes with `--fail-on-early`; the PA25
+direct-text report passes `64/64`; the full strict direct-text suite passes;
+the full direct-text report passes `3605/3605`; the text-reparse audit reports
+all zero, its 7 unit tests pass, and `git diff --check` passes. Focused
+`libs/leaf/test//BOOST_LEAF_AUTO_test` builds, links, runs, and passes; log
+`/tmp/boost-leaf-auto-after-throw-constructor-20260710.log`. The isolated
+performance gate against detached clean `c8c4bbaf1` passes: instructions
+`-0.10%`, RSS `+0.93%`, footprint `+0.03%`; baseline
+`/tmp/cppgm-perf-baseline-leaf-throw-c8c4bbaf1-20260710.json`, report
+`/tmp/cppgm-perf-report-leaf-throw-20260710.json`.

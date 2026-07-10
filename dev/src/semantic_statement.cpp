@@ -840,7 +840,6 @@ void validate_throw_object_initialization(SemanticContext & ctx,
       constructor_lifecycle_service::selection_options_for(
           constructor_lifecycle_service::non_explicit_construction_profile(
               "throw expression"));
-  ctor_options.instantiate_bodies = false;
   ctor_options.use_location = ctx.source_location_for_node(expr_node);
   try
   {
@@ -850,6 +849,10 @@ void validate_throw_object_initialization(SemanticContext & ctx,
                                                                       source_args,
                                                                       selection,
                                                                       ctor_options);
+    constructor_lifecycle_service::require_selected_constructor(
+        ctx,
+        selection,
+        OutputReason::SyntheticDependency);
   }
   catch(const logic_error & e)
   {
