@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | The prior LEAF frontiers through `BOOST_LEAF_CHECK_test`, wrapped-pack partial-specialization deduction, `find_in_tuple` return SFINAE, and `handle_error_tuple_<R>` alias-parameter deduction are fixed. Dependent alias decomposition now recovers the qualified lookup name from the exact `AliasTemplateDecl` carried by the semantic type when its display spelling has become unqualified, so `leaf_detail_mp11::index_sequence<I...>` expands against the concrete `integer_sequence` argument during function-template deduction. Focused `libs/leaf/test//capture_exception_async_test` advances to the independent unknown `std::__invoke` call inside libc++ `std::__1::__thread_execute`; log `/tmp/boost-leaf-capture-exception-async-qualified-alias-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | The prior LEAF frontiers through `handle_error_tuple_<R>` alias-parameter deduction and the first stacked libc++ `std::__invoke` cause are fixed. A selected class partial specialization now restores its recorded template-argument and pack-size bindings before structurally substituting a member alias containing `__type_pack_element`, so `tuple_element<I, tuple<T...>>::type` resolves each concrete tuple element. Focused `libs/leaf/test//capture_exception_async_test` still reports unknown `std::__invoke`, but direct tracing now reaches the second cause: the rendered second call is `std::get<1+1>`, while its retained expression AST still evaluates the first `Indices` binding and reuses specialization key `1`. Log `/tmp/boost-leaf-capture-exception-async-type-pack-alias-20260710.log`; direct trace `/tmp/cppgm-libcpp-invoke-member-pointer-trace-fixed-get-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -6015,3 +6015,41 @@ three-run performance gate against an isolated exact `ce677bda9` build passes:
 instructions `-0.04%`, RSS `-0.11%`, footprint `+0.03%`; baseline
 `/tmp/cppgm-perf-baseline-qualified-alias-ce677bda9-20260710.json`, report
 `/tmp/cppgm-perf-report-qualified-alias-20260710.json`.
+
+2026-07-10 Boost.LEAF selected-partial member-alias type-pack frontier:
+libc++'s `tuple_element<_Ip, tuple<_Tp...>>::type` is a member alias of a
+selected class partial specialization and expands to
+`__type_pack_element<_Ip, _Tp...>`. The selected `ClassInfo` retained the
+concrete arguments and pack sizes, but its member scope no longer contained
+the `_Tp` pack when the alias was parsed during `std::get<Indices + 1>`
+instantiation. Pack expansion alone therefore left the alias unresolved.
+
+Class member-alias parsing now detects the structured `__type_pack_element`
+template-id, restores the selected specialization's recorded arguments and
+pack sizes into the member scope, and substitutes the stored type-id AST
+through the existing template-argument semantics before parsing it. No
+source-text reparse, fallback resolver, cache, or libc++ spelling rewrite was
+added.
+
+Owner: PA34 hosted compiler-intrinsic compatibility. New regression:
+`pa34/tests/compile/700-type-pack-element-partial-member-alias-pack-call.t`.
+The no-header reducer combines a selected partial member alias, the compiler
+intrinsic, and a pack-expanded `get<I + 1>` call; Clang accepts it while clean
+`83ba7d854` leaves the alias dependent. On the fixed tree the focused reducer
+passes; the PA34 placement audit reports zero placement and hygiene findings;
+the PA34 direct-text report passes `285/285`; the full strict direct-text
+suite passes; the full direct-text report passes `3611/3611`; the text-reparse
+audit reports all zero and its 7 unit tests pass; `git diff --check` passes.
+The three-run performance gate against isolated exact `83ba7d854` passes:
+instructions `+0.13%`, RSS `+1.68%`, footprint `+0.00%`; baseline
+`/tmp/cppgm-perf-baseline-type-pack-alias-83ba7d854-20260710.json`, report
+`/tmp/cppgm-perf-report-type-pack-alias-20260710.json`.
+
+Focused `libs/leaf/test//capture_exception_async_test` retains the external
+unknown `std::__invoke` diagnostic, but its direct trace advances past the
+tuple-element result. The second rendered `std::get<1+1>` call still carries
+an expression AST for the original pack parameter and reuses the first
+expanded value's specialization key `1`; that independent structured
+pack-expanded explicit-NTTP substitution frontier is next. Focused log:
+`/tmp/boost-leaf-capture-exception-async-type-pack-alias-20260710.log`; direct
+trace `/tmp/cppgm-libcpp-invoke-member-pointer-trace-fixed-get-20260710.log`.

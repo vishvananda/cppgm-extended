@@ -3439,6 +3439,65 @@ bool class_alias_type_id_contains_decltype_or_typeof(const CppAstNode & node)
   return false;
 }
 
+bool template_argument_contains_type_pack_element(
+    const TemplateArgumentSyntax & argument);
+
+bool template_id_contains_type_pack_element(const TemplateIdSyntax & syntax)
+{
+  if(syntax.name.name == "__type_pack_element") {
+    return true;
+  }
+  for(size_t i = 0; i < syntax.argument_syntaxes.size(); ++i) {
+    if(template_argument_contains_type_pack_element(
+           syntax.argument_syntaxes[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool class_alias_type_id_contains_type_pack_element(const CppAstNode & node)
+{
+  if((node.template_id_syntax &&
+      template_id_contains_type_pack_element(*node.template_id_syntax)) ||
+     (node.conversion_type_id_syntax &&
+      class_alias_type_id_contains_type_pack_element(
+          *node.conversion_type_id_syntax)) ||
+     (node.base_type_syntax &&
+      class_alias_type_id_contains_type_pack_element(*node.base_type_syntax))) {
+    return true;
+  }
+  for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {
+    if(template_id_contains_type_pack_element(
+           node.qualifier_template_id_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
+    if(class_alias_type_id_contains_type_pack_element(
+           node.qualifier_type_syntaxes[i])) {
+      return true;
+    }
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(class_alias_type_id_contains_type_pack_element(node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool template_argument_contains_type_pack_element(
+    const TemplateArgumentSyntax & argument)
+{
+  return (argument.template_id &&
+          template_id_contains_type_pack_element(*argument.template_id)) ||
+         (argument.type_id &&
+          class_alias_type_id_contains_type_pack_element(*argument.type_id)) ||
+         (argument.expression &&
+          class_alias_type_id_contains_type_pack_element(*argument.expression));
+}
+
 bool class_alias_type_id_text_mentions_decltype_or_typeof(
     const std::string & type_id_text)
 {
@@ -3491,6 +3550,7 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
                                            const std::string & type_id_text,
                                            bool dependent_class)
 {
+  CppAstNode substituted_type_id;
   CppAstNode expanded_type_id;
   const CppAstNode * type_id_for_parse = &type_id;
   if(info.member_scope) {
@@ -3498,7 +3558,35 @@ TypePtr parse_or_defer_class_alias_type_id(SemanticContext & ctx,
         ctx,
         [&](template_api::TemplateServices & services)
         {
-          if(template_argument_semantics::expand_bound_packs_in_type_id_node(
+          const std::vector<template_model::TemplateParameterInfo> * parameters =
+              nullptr;
+          const std::vector<template_model::TemplateArgument> * arguments = nullptr;
+          class_template_member_substitution_bindings(info, parameters, arguments);
+          const bool contains_type_pack_element =
+              class_alias_type_id_contains_type_pack_element(type_id);
+          if(parameters &&
+             arguments &&
+             contains_type_pack_element) {
+            template_api::binding::bind_template_arguments_into_scope(
+                ctx,
+                *info.member_scope,
+                *parameters,
+                *arguments,
+                info.has_instantiation_binding_arguments ?
+                    &info.instantiation_binding_pack_sizes : nullptr);
+          }
+          if(parameters &&
+             arguments &&
+             contains_type_pack_element &&
+             template_argument_semantics::substitute_type_id_node_for_template_arguments(
+                 services,
+                 *info.member_scope,
+                 type_id,
+                 *parameters,
+                 *arguments,
+                 substituted_type_id)) {
+            type_id_for_parse = &substituted_type_id;
+          } else if(template_argument_semantics::expand_bound_packs_in_type_id_node(
                  services,
                  *info.member_scope,
                  type_id,
