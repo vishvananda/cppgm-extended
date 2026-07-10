@@ -818,7 +818,7 @@ Local Boost wrapper state:
 | 54 | `libs/hash2/test` | pass | Current forced B2 replay after the cv-qualified trait-probe fix passes and updates 506 targets: `/tmp/boost-hash2-after-cv-template-arg-20260708.log`. The final cluster was `BOOST_TEST_TRAIT_*((trait<... const>))`, where template arguments such as `is_pair_like<lib::pair<int,E1> const>` needed token-structured template-id syntax preserved through cv-qualified type-id parsing for function-pointer deduction. Earlier Hash2 frontiers closed `digest`, `append_pointer`, `append_tuple_like_2`, `detail_has_tag_invoke`, `sha2_cx`, and `hash_32_64`. |
 | 55 | `libs/heap/test` | pass | Current-head suite survey after the friend-access fixes passes in 322.5s, updating 69 targets. `d_ary_heap_test` now builds, links, runs, and passes along with the existing priority queue, mutable heap, skew heap, move-only, pairing, fibonacci, and binomial targets. Summary `/tmp/boost-suite-survey-heap-after-friend-access-20260705/summary.md`; log `/tmp/boost-suite-survey-heap-after-friend-access-20260705/libs__heap__test.log`. |
 | 56 | `libs/iterator/test` | pass | Full `/usr/local/bin/timeout 1800 env CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ CPPGM_BOOST_B2_FRONTIER=1 JOBS=4 ./run-cppgm-b2.sh -a libs/iterator/test` on 2026-07-06 reports `failed updating 0 target` and only skipped expected-fail dependency targets, matching the row-28 Core convention for a clean suite despite B2's nonzero status. Log `/tmp/boost-iterator-full-after-sizeof-unary-20260706.log`. |
-| 57 | `libs/lambda/test` | frontier | Full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test` on 2026-07-10, after the focused `switch_construct` fix, updates 71 targets and fails only `bind_tests_simple.o` and `bind_tests_simple_f_refs.o`. The next frontier is `ERROR: unknown function boost::detail::addressof` in `boost/core/addressof.hpp:257` while instantiating `boost::addressof<A>`; focused log `/tmp/boost-lambda-bind-tests-simple-addressof-frontier-20260710.log`. |
+| 57 | `libs/lambda/test` | pass | Full `/usr/local/bin/timeout 1200 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test` on 2026-07-10 updates 79 targets with no failures. Both former frontier targets, `bind_tests_simple` and `bind_tests_simple_f_refs`, now build, link, run, and pass after the complementary return-SFINAE function-template identity fix. |
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
@@ -5682,3 +5682,38 @@ function boost::detail::addressof`; the diagnostic shows qualified target
 `qualified_target_function_templates`, so the next investigation should start in
 qualified function-template lookup/instantiation rather than the just-fixed
 defaulted partial-specialization path.
+
+2026-07-10 Boost.Lambda complementary return-SFINAE function-template
+identity frontier: `boost/core/addressof.hpp` declares two `detail::addressof`
+function templates with the same parameter list and complementary return-type
+conditions expressed through `addrof_if<!trait<T>::value, T>::type` and
+`addrof_if<trait<T>::value, T>::type`. The function-template declaration merger
+and lookup dedupe recognized a fixed set of result-SFINAE helper names but did
+not preserve the arbitrary helper's logically negated argument as an identity
+discriminator. It therefore collapsed the pair into one entity; substitution
+removed the false candidate and left the qualified call with no viable
+function. The fix uses the already parsed expression AST to recognize unary
+logical negation in result-template arguments in both declaration identity and
+lookup dedupe. It preserves the complementary overloads without broadly
+splitting unrelated result-type redeclarations. No source-text reparse,
+fallback resolver, cache, or Boost-specific rule was added.
+
+Owner: PA22 function-template result substitution and candidate identity. New
+regression:
+`pa22/tests/spec/300-qualified-function-template-return-sfinae-overloads.t`.
+Validation: clang accepts the C++11 reducer; repeated non-Boost reducer and
+Boost.Core header probes compile with `cppgm++`; the focused PA22 direct-text
+check passes; the PA22 direct-text report passes `234/234`; the full strict
+direct-text suite passes; the full direct-text report passes `3602/3602`;
+`python3 scripts/audit_text_reparse.py --strict
+--list-sites` reports all zero; `git diff --check` passes. The PA placement
+audit cites only five pre-existing tests and does not cite the new reducer.
+Focused B2 replay of both `bind_tests_advanced` and `bind_tests_simple` passes,
+guarding the narrower identity rule against the libc++ `std::get` regression
+seen during reduction. Full `libs/lambda/test` replay with `JOBS=4` updates 79
+targets with no failures, including both `bind_tests_simple` variants. The
+cumulative performance check against baseline `2225abbf7` misses the instruction
+threshold at `+1.33%` versus `+1.00%`, with RSS `+2.01%` and footprint `-0.22%`;
+the immediately preceding Lambda fix already measured `+1.06%` instructions
+against the same older baseline, so this slice contributes approximately
+`+0.27%` to that cumulative comparison.

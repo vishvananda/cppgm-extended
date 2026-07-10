@@ -3250,7 +3250,12 @@ bool optional_template_id_has_result_sfinae_discriminator(
 bool template_argument_has_result_sfinae_discriminator(
     const TemplateArgumentSyntax & syntax)
 {
-  return optional_template_id_has_result_sfinae_discriminator(syntax.template_id) ||
+  const bool has_logical_negation_expression =
+      syntax.expression &&
+      syntax.expression->kind == CppAstKind::unary_expression &&
+      syntax.expression->value == "!";
+  return has_logical_negation_expression ||
+         optional_template_id_has_result_sfinae_discriminator(syntax.template_id) ||
          optional_cppast_node_has_result_sfinae_discriminator(syntax.type_id) ||
          optional_cppast_node_has_result_sfinae_discriminator(
              syntax.source_type_id) ||
