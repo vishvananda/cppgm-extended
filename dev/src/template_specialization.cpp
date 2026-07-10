@@ -9230,8 +9230,9 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 	      if(!source_template) {
 	        return false;
 	      }
-	      if(instantiation_arguments.empty() &&
-	         !source_template->parameters.empty()) {
+	      if(!template_arguments_fully_bind_parameters(
+	             source_template->parameters,
+	             instantiation_arguments)) {
 	        return false;
 	      }
 	      const std::string source_template_name =
@@ -9269,6 +9270,11 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
         out_args.push_back(arg_text);
         actual_dependent_class_arguments.push_back(argument);
 	      }
+	      if(!type_is_dependent(actual_type) &&
+	         template_arguments_are_dependent(actual_dependent_class_arguments,
+	                                          type_is_dependent)) {
+	        return false;
+	      }
 	      actual_source_template = source_template;
 	      actual_structured_args = &actual_dependent_class_arguments;
 	      return true;
@@ -9292,15 +9298,12 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 	  };
 
 		  if(have_actual_class && actual_class.source_template) {
-		    if(!actual_class.instantiation_arguments.empty()) {
-		      if(decompose_source_template(actual_class.source_template,
-		                                   actual_class.instantiation_arguments)) {
-		        return true;
-		      }
+		    if(decompose_source_template(actual_class.source_template,
+		                                 actual_class.instantiation_arguments)) {
+		      return true;
 		    }
         if(actual_mangle_info &&
-           actual_mangle_info->class_template_decl &&
-           !actual_mangle_info->arguments.empty()) {
+           actual_mangle_info->class_template_decl) {
           if(decompose_source_template(
                  static_cast<ClassTemplateDecl *>(
                      actual_mangle_info->class_template_decl),

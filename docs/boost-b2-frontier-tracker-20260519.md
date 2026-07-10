@@ -822,6 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
+| 58 | `libs/leaf/test` | frontier | A forced full replay first stopped while instantiating `boost::leaf::context<>`: partial-specialization matching decomposed concrete `mp_list<>` through stale dependent class metadata and incorrectly bound `T=[E]`. The structured empty-pack metadata fix closes that failure. Focused `libs/leaf/test//BOOST_LEAF_AUTO_test` now advances to the next independent frontier, construction of `std::__1::reference_wrapper<int>` from `const int`; log `/tmp/boost-leaf-auto-after-empty-pack-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -5717,3 +5718,38 @@ threshold at `+1.33%` versus `+1.00%`, with RSS `+2.01%` and footprint `-0.22%`;
 the immediately preceding Lambda fix already measured `+1.06%` instructions
 against the same older baseline, so this slice contributes approximately
 `+0.27%` to that cumulative comparison.
+
+2026-07-10 Boost.LEAF concrete empty-pack specialization metadata frontier:
+the first `libs/leaf/test` failure occurred while instantiating
+`boost::leaf::context<>`. The concrete argument type was already
+`leaf_detail_mp11::mp_list<>`, but `deduce_from_named_template_id_text`
+preferred a stale dependent `ClassInfo` argument vector containing `E` and
+deduced the partial specialization `deduce_e_type_list<L<T...>>` with
+`T=[E]`. Its nested `handler_argument_traits<T>::context_types...` expansion
+therefore remained dependent even though the enclosing `context` bound
+`E=[]`.
+
+The fix resolves structured class-template arguments in the current match
+scope before accepting them for a concrete type, rejects metadata that remains
+dependent, and recognizes an empty argument vector as a full binding for a
+pack-only source template. Concrete empty-pack mangle metadata can therefore
+drive partial-specialization matching without consulting stale dependent
+metadata or reparsing template text. No source-text reparse, fallback resolver,
+cache, or Boost-specific rule was added.
+
+Owner: PA23 class-template partial-specialization matching and alias-template
+integration. New regression:
+`pa23/tests/spec/400-alias-template-empty-nested-pack-member-type.t`.
+The reducer fails at clean `72abcab18` with the same `T -> E` dependent-pack
+shape and is accepted by Clang in C++11 mode. Validation on the fixed tree:
+focused PA22 and PA23 checks pass; the combined PA22/PA23 direct-text report
+passes `630/630`; the full strict direct-text suite passes; the full direct-text
+report passes `3603/3603`; `python3 scripts/audit_text_reparse.py --strict
+--list-sites` reports all zero; its 7 audit unit tests and `git diff --check`
+pass. Focused `libs/leaf/test//BOOST_LEAF_AUTO_test` advances to the independent
+`std::__1::reference_wrapper<int>` constructor frontier; log
+`/tmp/boost-leaf-auto-after-empty-pack-20260710.log`. The isolated performance
+gate against detached clean `72abcab18` passes: instructions `-0.03%`, RSS
+`+0.10%`, footprint `+0.03%`; baseline
+`/tmp/cppgm-perf-baseline-leaf-empty-pack-72abcab18-20260710.json`, report
+`/tmp/cppgm-perf-report-leaf-empty-pack-20260710.json`.
