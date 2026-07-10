@@ -4249,7 +4249,7 @@ matching and template-parameter mention checks, while dependent arguments can
 still use source text when that is the only available shape.  No Boost-specific
 rule or source-text reparsing was added. Owner: PA22 function-template deduction
 through concrete alias-rebind arguments. New regression:
-`pa22/tests/general/501-alias-rebind-forwarding-nondependent-param.t`.
+`pa22/tests/general/500-alias-rebind-forwarding-nondependent-param.t`.
 Validation: `/usr/local/opt/llvm/bin/clang++ -x c++ -std=c++11 -fsyntax-only`
 accepts the PA22 reducer; focused PA19, PA22, and PA35 checks pass; Boost
 interprocess reducers for vector<int>, vector<string>, and the earlier string
@@ -4356,7 +4356,7 @@ validated in a refreshed template-argument scope, and concrete non-type
 template arguments in dependent alias result types are re-evaluated with the
 existing structured non-type evaluator. Owners: PA22 function-template result
 substitution and template argument replay. New regression:
-`pa22/tests/general/500-cached-result-nontype-sfinae-qualified-member.t`.
+`pa26/tests/general/300-cached-result-nontype-sfinae-qualified-member.t`.
 Validation: `/usr/local/opt/llvm/bin/clang++ -std=c++11 -x c++ -fsyntax-only`
 accepts the reducer; focused reducer compiles and runs with `dev/cppgm++`;
 direct Boost-header repro for `boost::intrusive::list` member hooks compiles;
@@ -4444,7 +4444,7 @@ lookup spaces for inherited non-callable collisions before accepting callable
 candidates. No source-text reparse, Boost-specific rule, or parallel ABI symbol
 spelling was added. Owner: PA22 non-type template argument substitution and
 SFINAE for member-function pointers. New regression:
-`pa22/tests/general/300-member-function-pointer-nttp-inherited-type-collision-sfinae.t`.
+`pa26/tests/general/300-member-function-pointer-nttp-inherited-type-collision-sfinae.t`.
 Validation: clang accepts the reducer with `-std=c++11`; focused PA22 check
 passes; `CPPGM_SKIP_DEV_REBUILD=1 make test-pa22` passes `223/223`; PA22
 direct-LowIR report passes `223/223`; strict direct-LowIR checks pass;
@@ -5563,7 +5563,7 @@ instantiation path authoritative for this stale nondependent case after the
 parsed result validates, instead of trusting the stale cached type. No
 source-text reparse, fallback resolver, cache, or Boost-specific rule was
 added. Owner: PA22 substituted function-template result types. New regression:
-`pa22/tests/spec/501-function-result-member-template-shadowed-argument.t`.
+`pa22/tests/spec/500-function-result-member-template-shadowed-argument.t`.
 Validation: clang accepts the reducer with `-std=c++11 -x c++`; the Boost-header
 assignment reducer compiles with clang and `cppgm++`; focused PA22 check passes;
 PA22 direct-text report passes `233/233`; full strict direct-text suite passes;
@@ -5791,3 +5791,17 @@ performance gate against detached clean `26e2053f7` passes: instructions
 `-0.02%`, RSS `-0.10%`, footprint `+0.01%`; baseline
 `/tmp/cppgm-perf-baseline-leaf-forwarding-lvalue-26e2053f7-20260710.json`,
 report `/tmp/cppgm-perf-report-leaf-forwarding-lvalue-20260710.json`.
+
+2026-07-10 PA22 placement-audit cleanup: two PA22 tests used the invalid
+individual `501` prefix and now use their owning `500` cluster:
+`pa22/tests/general/500-alias-rebind-forwarding-nondependent-param.t` and
+`pa22/tests/spec/500-function-result-member-template-shadowed-argument.t`.
+Two other PA22 reducers depended on PA26 member-pointer syntax, with one also
+depending on PA26 multiple inheritance, so their complete test/reference
+artifact sets moved to the PA26 `300` member-pointer cluster:
+`pa26/tests/general/300-cached-result-nontype-sfinae-qualified-member.t` and
+`pa26/tests/general/300-member-function-pointer-nttp-inherited-type-collision-sfinae.t`.
+No test or reference content changed. PA22 and PA26 placement audits now both
+pass with `--fail-on-early`; all four focused direct-text checks pass; the
+combined PA22/PA26 report passes `290/290`; the full strict direct-text suite
+passes; and the full direct-text report remains `3604/3604`.
