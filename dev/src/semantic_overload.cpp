@@ -10019,11 +10019,32 @@ bool exact_constructor_match_may_be_beaten_by_constructor_template(
 {
   for(size_t i = 0; i < match.params.size(); ++i) {
     const ExprInfo & source_arg = source_arg_for_compare(match, i);
-    if(source_arg.category == VC_LVALUE) {
+    TypePtr param_base = strip_top_level_cv(match.params[i]);
+    if(!param_base || param_base->kind != Type::TK_LVALUE_REFERENCE) {
       continue;
     }
-    TypePtr param_base = strip_top_level_cv(match.params[i]);
-    if(param_base && param_base->kind == Type::TK_LVALUE_REFERENCE) {
+    if(source_arg.category != VC_LVALUE) {
+      return true;
+    }
+
+    TypePtr param_unqualified;
+    TypePtr source_unqualified;
+    bool param_const = false;
+    bool param_volatile = false;
+    bool source_const = false;
+    bool source_volatile = false;
+    if(top_level_cv_flags(param_base->inner,
+                          param_unqualified,
+                          param_const,
+                          param_volatile) &&
+       top_level_cv_flags(remove_reference_type(source_arg.type),
+                          source_unqualified,
+                          source_const,
+                          source_volatile) &&
+       type_equals(strip_top_level_cv(param_unqualified),
+                   strip_top_level_cv(source_unqualified)) &&
+       ((param_const && !source_const) ||
+        (param_volatile && !source_volatile))) {
       return true;
     }
   }
