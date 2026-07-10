@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | The prior LEAF compile frontiers and the missing `boost::leaf::detail::peek<...>` link specialization are fixed. Out-of-class member-template definitions now bind their renamed outer parameters to the concrete selected-partial owner arguments, and const/non-const overload definitions remain distinct. Focused `libs/leaf/test//capture_exception_async_test` now has one link frontier: `fut_info` references the deleted `std::future<result<int>>` copy constructor instead of moving the aggregate member. Log `/tmp/boost-leaf-capture-exception-owner-param-cv-signature-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | `capture_exception_async_test` now builds, links, runs, and passes after synthesized aggregate construction moves its owned class-valued field parameters, eliminating the deleted `std::future<result<int>>` copy reference. Full `libs/leaf/test` replay updates 374 targets and leaves 29 failures; the next focused cursor is `capture_result_async_test`, where complementary `handle_error_tuple_<R>` return-SFINAE overloads both survive and become ambiguous for concrete `R=int`. Focused pass log `/tmp/boost-leaf-capture-exception-move-aggregate-20260710.log`; full replay `/tmp/boost-leaf-full-after-move-aggregate-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -6161,3 +6161,41 @@ PA23 audit scans 395 tests and the PA26 audit scans 59 tests with zero placement
 and hygiene findings; all three focused checks pass; their combined direct-text
 report passes `454/454`; both moved witness comparisons pass; and the full
 strict direct-text suite passes.
+
+2026-07-10 Boost.LEAF move-only aggregate member frontier:
+`capture_exception_async_test` returns a `fut_info` aggregate containing a
+move-only `std::future<result<int>>`. The compiler's synthesized aggregate
+constructor takes each field as an owned by-value parameter, but its generated
+body always copy-constructed class-valued fields from those parameters. That
+made `fut_info(int,int,int,future)` reference `future(future const&)`, which is
+deleted, instead of consuming the parameter through `future(future&&)`.
+
+Synthesized aggregate-constructor bodies now initialize both ordinary and
+anonymous-storage class fields through the existing move-construction action.
+That action performs typed constructor overload selection on an xvalue and
+falls back to a viable const-reference copy when no move is available. No
+source-text reparse, fallback resolver, cache, or library special case was
+added.
+
+Owner: PA16 class value semantics and braced temporary materialization. New
+regression: `pa16/tests/general/300-move-only-aggregate-brace-member.t`. Clean
+`cca930473` links the no-header reducer against the deleted
+`move_only(move_only const&)`; Clang accepts and runs it. On the fixed tree the
+focused reducer passes and the linked image references only the move
+constructor; the PA16 placement audit scans 143 tests with zero placement and
+hygiene findings; the PA16 direct-text report passes `143/143`; the full strict
+direct-text suite passes; the full direct-text report passes `3614/3614`; the
+text-reparse audit reports all zero and its 7 unit tests pass; `git diff
+--check` passes. The three-run performance gate against isolated exact
+`cca930473` passes: instructions `-0.22%`, RSS `-0.00%`, footprint `+0.02%`;
+baseline `/tmp/cppgm-perf-baseline-move-aggregate-cca930473-20260710.json`,
+report `/tmp/cppgm-perf-report-move-aggregate-20260710.json`.
+
+Focused `libs/leaf/test//capture_exception_async_test` now builds, links, runs,
+and passes, updating 4 targets; log
+`/tmp/boost-leaf-capture-exception-move-aggregate-20260710.log`. Full
+`libs/leaf/test` replay updates 374 targets and leaves 29 failures. The next
+focused cursor is `capture_result_async_test`: complementary
+`handle_error_tuple_<R>` return-SFINAE overloads both survive for concrete
+`R=int` and become ambiguous; full log
+`/tmp/boost-leaf-full-after-move-aggregate-20260710.log`.

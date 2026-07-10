@@ -4451,7 +4451,7 @@ void append_constructor_generated_statements(SemanticContext & ctx,
               ExprInfo active_expr = ctx.make_field_expr(storage_expr, *input_field);
               ClassInfo * field_class = ctx.class_info_for_type(input_field->type);
               if(field_class) {
-                append_copy_constructor_action(ctx,
+                append_move_constructor_action(ctx,
                                                scope,
                                                *field_class,
                                                ctx.make_address_of_expr(active_expr),
@@ -4474,7 +4474,7 @@ void append_constructor_generated_statements(SemanticContext & ctx,
           }
           ClassInfo * field_class = ctx.class_info_for_type(info.fields[i].type);
           if(field_class) {
-            append_copy_constructor_action(ctx, scope, *field_class,
+            append_move_constructor_action(ctx, scope, *field_class,
                                            ctx.make_address_of_expr(field_expr),
                                            source_expr, function_node);
           } else {
