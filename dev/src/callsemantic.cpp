@@ -15057,6 +15057,16 @@ private:
             make_pack_type_id_node(it->second, replacement)));
         break;
       }
+      if(argument.expression) {
+        CppAstNode substituted_expression;
+        if(substitute_pack_argument_node_ast(scope,
+                                             *argument.expression,
+                                             type_replacements,
+                                             value_replacements,
+                                             substituted_expression)) {
+          argument.expression.reset(new CppAstNode(substituted_expression));
+        }
+      }
       if(argument.template_id) {
         rewrite_template_id_syntax_pack_arguments(*argument.template_id,
                                                   scope,

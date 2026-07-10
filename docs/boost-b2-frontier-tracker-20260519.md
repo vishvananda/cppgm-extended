@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | The prior LEAF frontiers through `handle_error_tuple_<R>` alias-parameter deduction and the first stacked libc++ `std::__invoke` cause are fixed. A selected class partial specialization now restores its recorded template-argument and pack-size bindings before structurally substituting a member alias containing `__type_pack_element`, so `tuple_element<I, tuple<T...>>::type` resolves each concrete tuple element. Focused `libs/leaf/test//capture_exception_async_test` still reports unknown `std::__invoke`, but direct tracing now reaches the second cause: the rendered second call is `std::get<1+1>`, while its retained expression AST still evaluates the first `Indices` binding and reuses specialization key `1`. Log `/tmp/boost-leaf-capture-exception-async-type-pack-alias-20260710.log`; direct trace `/tmp/cppgm-libcpp-invoke-member-pointer-trace-fixed-get-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | The prior LEAF compile frontiers through the two stacked libc++ `std::__invoke` causes are fixed. Pack expansion now structurally substitutes each value-pack binding into a carried explicit non-type template-argument expression AST, so the two rendered `std::get<Indices+1>` calls instantiate keys `1` and `2` instead of both reusing key `1`. Focused `libs/leaf/test//capture_exception_async_test` compiles and advances to link-time undefined symbols: a `boost::leaf::detail::peek<...>` specialization and the deleted `std::future<result<int>>` copy constructor selected by `fut_info`. Log `/tmp/boost-leaf-capture-exception-async-pack-nttp-expression-20260710.log`. Partial full replay log: `/tmp/boost-leaf-full-after-statement-expression-return-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -6053,3 +6053,42 @@ expanded value's specialization key `1`; that independent structured
 pack-expanded explicit-NTTP substitution frontier is next. Focused log:
 `/tmp/boost-leaf-capture-exception-async-type-pack-alias-20260710.log`; direct
 trace `/tmp/cppgm-libcpp-invoke-member-pointer-trace-fixed-get-20260710.log`.
+
+2026-07-10 Boost.LEAF pack-expanded explicit-NTTP expression frontier:
+libc++'s `__thread_execute` expands
+`std::get<Indices + 1>(values)` while invoking a stored member-function pointer
+and object pointer. Pack expansion rewrote the explicit template argument's
+display text for each `Indices` binding, but left its carried expression AST
+unchanged. The second call therefore displayed `std::get<1+1>` while semantic
+evaluation still read the first pack binding, reused specialization key `1`,
+and presented two member-function pointers to `std::__invoke`.
+
+`rewrite_template_id_syntax_pack_arguments` now applies the existing recursive
+structured pack-substitution routine to each carried template-argument
+expression with the same type and value maps used for its other syntax. The
+source spelling remains available while semantic evaluation receives the
+per-expansion AST. No source-text reparse, fallback resolver, cache, or libc++
+special case was added.
+
+Owner: PA19 integral non-type parameter packs and pack-expanded direct calls.
+New regression:
+`pa19/tests/general/200-pack-expanded-explicit-nontype-expression-call.t`.
+Clean `7c729ce9f` collapses `make_tag<I + 1>()...` to two `tag<1>` arguments;
+Clang accepts the reducer, and its patched-Clang witness records distinct
+`tag<1>` and `tag<2>` class uses. On the fixed tree the focused reducer passes;
+the PA19 direct-text report passes `129/129`; the full strict direct-text suite
+passes; the full direct-text report passes `3612/3612`; the text-reparse audit
+reports all zero and its 7 unit tests pass; `git diff --check` passes. The PA19
+placement audit accepts the new reducer but reports three preexisting findings
+in two other tests; those remain isolated for the requested follow-on audit
+commit. The three-run performance gate against isolated exact `7c729ce9f`
+passes: instructions `-0.00%`, RSS `+0.74%`, footprint `-0.02%`; baseline
+`/tmp/cppgm-perf-baseline-pack-nttp-expression-7c729ce9f-20260710.json`, report
+`/tmp/cppgm-perf-report-pack-nttp-expression-20260710.json`.
+
+Focused `libs/leaf/test//capture_exception_async_test` now compiles and reaches
+the linker. Its next unresolved symbols are a concrete
+`boost::leaf::detail::peek<...>` specialization and the deleted
+`std::future<boost::leaf::result<int>>` copy constructor selected by
+`fut_info`; log
+`/tmp/boost-leaf-capture-exception-async-pack-nttp-expression-20260710.log`.
