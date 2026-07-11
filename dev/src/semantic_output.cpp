@@ -5700,10 +5700,17 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
         }
       }
       if(!rebound_value_binding && name.find("::") != string::npos) {
-        QualifiedName qualified_name;
-        if(semantic_utils::split_qualified_name_text(name, qualified_name)) {
+        const CppAstNode * declared_identifier =
+            find_descendant_kind(init_decl.children[0], CppAstKind::identifier);
+        const QualifiedName * qualified_name =
+            declared_identifier ?
+                cppast_qualified_name_syntax(*declared_identifier) :
+                nullptr;
+        if(qualified_name) {
           rebound_value_binding =
-              semantic_lookup::lookup_qualified_value_binding(ctx, scope, qualified_name);
+              semantic_lookup::lookup_qualified_value_binding(ctx,
+                                                              scope,
+                                                              *qualified_name);
         }
       }
 

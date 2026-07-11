@@ -2735,13 +2735,14 @@ constant_eval::Hooks build_hooks(SemanticContext & ctx,
         if(node != nullptr &&
            node->kind == CppAstKind::id_expression &&
            !node->qualifier_template_id_syntaxes.empty()) {
-          QualifiedName structured_lookup_name;
-          if(semantic_utils::split_qualified_name_text(name, structured_lookup_name) &&
-             !structured_lookup_name.qualifiers.empty() &&
-             !structured_lookup_name.name.empty()) {
+          const QualifiedName * structured_lookup_name =
+              cppast_qualified_name_syntax(*node);
+          if(structured_lookup_name &&
+             !structured_lookup_name->qualifiers.empty() &&
+             !structured_lookup_name->name.empty()) {
             lookup_qualifier_template_id =
                 &node->qualifier_template_id_syntaxes.back();
-            lookup_template_member_name = structured_lookup_name.name;
+            lookup_template_member_name = structured_lookup_name->name;
           }
         }
         const bool lookup_is_template_id = lookup_template_id != nullptr;

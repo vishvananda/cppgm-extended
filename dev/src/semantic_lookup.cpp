@@ -1778,12 +1778,19 @@ Scope * lookup_namespace_from_definition_path(Scope & scope,
   if(!scope_can_form_definition_path(definition_scope)) {
     return nullptr;
   }
-  const string qualified_text = scope_qualified_name(definition_scope, name);
   QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(qualified_text, qualified) ||
-     qualified.qualifiers.empty()) {
+  for(Scope * current = &definition_scope; current; current = current->parent) {
+    if((current->namespace_scope || is_named_class_member_scope(current)) &&
+       current->name != "<global>" &&
+       current->name != "<unnamed>") {
+      qualified.qualifiers.push_back(current->name);
+    }
+  }
+  if(qualified.qualifiers.empty()) {
     return nullptr;
   }
+  std::reverse(qualified.qualifiers.begin(), qualified.qualifiers.end());
+  qualified.name = name;
   qualified.rooted = true;
   return lookup_namespace_name(*root_scope(scope), qualified);
 }
@@ -4902,12 +4909,6 @@ void lookup_adl_function_templates_in_scopes(
 Scope * lookup_namespace_name(Scope & scope, const QualifiedName & qualified)
 {
   if(!qualified.rooted && qualified.qualifiers.empty()) {
-    QualifiedName split_name;
-    if(qualified.name.find("::") != string::npos &&
-       semantic_utils::split_qualified_name_text(qualified.name, split_name) &&
-       (split_name.rooted || !split_name.qualifiers.empty())) {
-      return lookup_namespace_name(scope, split_name);
-    }
     return lookup_namespace_from_scope(scope, qualified.name);
   }
 
