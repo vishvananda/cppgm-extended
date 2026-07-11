@@ -1035,6 +1035,7 @@ struct PartialClassTemplateSpecializationDecl
   std::vector<template_model::TemplateParameterInfo> parameters;
   std::vector<std::string> arg_texts;
   std::vector<cpp_decl::TemplateArgumentSyntax> arg_syntaxes;
+  mutable std::vector<cpp_decl::TypePtr> placeholder_arg_type_patterns;
   std::map<std::string, OutOfClassStaticMemberDecl> static_member_definitions;
   std::map<std::string, OutOfClassStaticMemberDecl>
       witness_static_member_definitions;
@@ -1101,6 +1102,7 @@ struct VariableTemplateSpecializationDecl
   std::vector<template_model::TemplateParameterInfo> parameters;
   std::vector<std::string> arg_texts;
   std::vector<cpp_decl::TemplateArgumentSyntax> arg_syntaxes;
+  mutable std::vector<cpp_decl::TypePtr> placeholder_arg_type_patterns;
 };
 
 struct VariableTemplateDecl

@@ -582,6 +582,7 @@ public:
                                                          template_parameters);
           }
           existing.parameters.swap(merged_parameters);
+          existing.placeholder_arg_type_patterns.clear();
           existing.declaring_scope = &scope;
           existing.pattern_scope = &pattern_scope;
           if(!existing.class_node ||
@@ -4645,10 +4646,12 @@ private:
         }
         if(existing.arg_syntaxes.empty() && !incoming.arg_syntaxes.empty()) {
           existing.arg_syntaxes = incoming.arg_syntaxes;
+          existing.placeholder_arg_type_patterns.clear();
           changed = true;
         }
         if(existing.parameters.empty() && !incoming.parameters.empty()) {
           existing.parameters = incoming.parameters;
+          existing.placeholder_arg_type_patterns.clear();
           changed = true;
         }
         if(!existing.declaring_scope && incoming.declaring_scope) {

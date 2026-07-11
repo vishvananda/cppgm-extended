@@ -10829,12 +10829,38 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           const TemplateArgumentSyntax * placeholder_syntax =
               pattern_syntax;
           if(placeholder_syntax) {
-            parse_template_argument_type_syntax(
-                services,
-                placeholder_match_scope,
-                placeholder_syntax,
-                placeholder_pattern_type,
-                true);
+            const bool cache_placeholder_pattern =
+                services.witness_context.session == nullptr &&
+                !parser_trace::enabled("template.resolve");
+            if(cache_placeholder_pattern) {
+              if(partial.placeholder_arg_type_patterns.size() <
+                     partial.arg_syntaxes.size()) {
+                partial.placeholder_arg_type_patterns.resize(
+                    partial.arg_syntaxes.size());
+              }
+              if(i < partial.placeholder_arg_type_patterns.size() &&
+                 partial.placeholder_arg_type_patterns[i]) {
+                placeholder_pattern_type =
+                    partial.placeholder_arg_type_patterns[i];
+              } else if(parse_template_argument_type_syntax(
+                            services,
+                            placeholder_match_scope,
+                            placeholder_syntax,
+                            placeholder_pattern_type,
+                            true) &&
+                        placeholder_pattern_type &&
+                        i < partial.placeholder_arg_type_patterns.size()) {
+                partial.placeholder_arg_type_patterns[i] =
+                    placeholder_pattern_type;
+              }
+            } else {
+              parse_template_argument_type_syntax(
+                  services,
+                  placeholder_match_scope,
+                  placeholder_syntax,
+                  placeholder_pattern_type,
+                  true);
+            }
           }
         }
         const bool pattern_has_deducible_placeholders =
@@ -10843,16 +10869,28 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                                                           placeholder_pattern_type);
         TypePtr pattern_type;
         bool parsed_pattern_type = false;
+        const bool reuse_placeholder_pattern =
+            services.witness_context.session == nullptr &&
+            !parser_trace::enabled("template.resolve");
         if(pattern_syntax &&
-           parse_template_argument_type_syntax(
-               services, match_scope, pattern_syntax, pattern_type, true)) {
+           placeholder_pattern_type &&
+           reuse_placeholder_pattern) {
+          pattern_type = placeholder_pattern_type;
+          template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
+              services,
+              template_api::make_template_environment(match_scope),
+              pattern_type);
+          parsed_pattern_type = static_cast<bool>(pattern_type);
+        } else if(pattern_syntax &&
+                  parse_template_argument_type_syntax(
+                      services, match_scope, pattern_syntax, pattern_type, true)) {
           parsed_pattern_type = true;
-          if(pattern_type &&
-             (!pattern_mentions_placeholders || !pattern_has_deducible_placeholders) &&
-             partial_specialization_top_cv_matches(pattern_type, actual.type) &&
-             type_equals(pattern_type, actual.type)) {
-            matched_by_type = true;
-          }
+        }
+        if(pattern_type &&
+           (!pattern_mentions_placeholders || !pattern_has_deducible_placeholders) &&
+           partial_specialization_top_cv_matches(pattern_type, actual.type) &&
+           type_equals(pattern_type, actual.type)) {
+          matched_by_type = true;
         }
         if(!parsed_pattern_type &&
            pattern_syntax &&

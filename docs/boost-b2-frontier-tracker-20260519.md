@@ -6404,9 +6404,21 @@ and about `91.47B`. Semantic-hotspot instrumentation reports 31,686 queries,
 including 11,127 repeated `resolve_template_arguments` requests and 10,875
 requests while repopulating the same `can_query<executor, continuation_t<0>>`
 instantiation. Ordinary compile mode has no witness session; the repetition is
-driven by `reentrant_primary_selection` bypassing the existing-instantiation
-fast path so the recursive partial selection can be revalidated. Logs:
-`/tmp/pa23-reentrant-normal.time` and `/tmp/pa23-reentrant-hotspot.log`. The
-follow-on compiler performance check against exact `66f0f476c` remains within
-gate: instructions `+0.11%`, RSS `+1.92%`, footprint `-0.00%`; report
-`/tmp/cppgm-perf-report-expanded-text-audit-20260710.json`.
+not witness-specific. The root cause was partial-specialization matching
+parsing the same invariant placeholder argument syntax in both the placeholder
+and deduced scopes on every match. Partial declarations now retain the parsed
+dependent placeholder type and resolve a copy through each deduced scope. This
+does not cache a specialization choice, viability result, or reentrant
+fallback; witness and parser-trace modes retain their original source-capture
+parse sequence.
+
+The reducer now takes `0.91s` and about `5.96B` instructions, a `93.5%`
+instruction reduction. Semantic work also collapses rather than merely getting
+cheaper: expression visits fall from `80,840` to `3,906`, overload candidate
+sets from `3,531` to `431`, and template-argument resolution calls from
+`18,792` to `3,293`. PA23 passes `394/394`; PA22 and PA23 strict witness suites
+pass `156/156` and `338/338`; the full report passes `3618/3618`. The general
+performance gate against `66f0f476c` passes with instructions `-3.17%`, RSS
+`+1.12%`, and footprint `-0.04%`. Logs:
+`/tmp/pa23-reentrant-normal.time`, `/tmp/pa23-reentrant-hotspot.log`, and
+`/tmp/pa23-final-stats.log`.
