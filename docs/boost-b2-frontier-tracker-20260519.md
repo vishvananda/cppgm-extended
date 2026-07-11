@@ -6578,3 +6578,14 @@ template-id and qualifier syntax throughout its AST walk. The final fallback
 that reparsed `TemplateArgumentSyntax::text` or `CppAstNode::value` to repeat
 the same alias lookup is removed. This ratchets the audit from `34` to `33`;
 PA30 passes `78/78` and the full strict suite passes.
+
+The PA23 reentrant-query hotspot follow-up found that template-resolution
+tracing disabled parsed placeholder-pattern memoization, restoring the old
+pathological matcher behavior. The trace-only bypass is removed; witness mode
+still reparses because its dependent lookup and source events are observable
+output. The reducer completes in `0.88s`/`5.93B` instructions normally and
+`1.20s`/`7.71B` with `CPPGM_TRACE=template.resolve`, compared with a trace-mode
+timeout beyond 30 seconds before the fix, and both lanes emit byte-identical
+LowIR. Semantic work confirms the same candidate algorithm in both lanes:
+3,906 expression visits, 431 overload candidate sets, and 848 candidate
+attempts. The full strict suite passes.

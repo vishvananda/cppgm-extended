@@ -10696,8 +10696,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
               pattern_syntax;
           if(placeholder_syntax) {
             const bool cache_placeholder_pattern =
-                services.witness_context.session == nullptr &&
-                !parser_trace::enabled("template.resolve");
+                services.witness_context.session == nullptr;
             if(cache_placeholder_pattern) {
               if(partial.placeholder_arg_type_patterns.size() <
                      partial.arg_syntaxes.size()) {
@@ -10736,8 +10735,7 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         TypePtr pattern_type;
         bool parsed_pattern_type = false;
         const bool reuse_placeholder_pattern =
-            services.witness_context.session == nullptr &&
-            !parser_trace::enabled("template.resolve");
+            services.witness_context.session == nullptr;
         if(pattern_syntax &&
            placeholder_pattern_type &&
            reuse_placeholder_pattern) {
