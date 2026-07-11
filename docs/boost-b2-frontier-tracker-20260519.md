@@ -6540,3 +6540,8 @@ structured owner component name, semantic arguments, and retained per-argument
 syntax. The last symbol-linkage template component text-to-syntax helper,
 including its recursive nested argument parsing, is removed. This ratchets the
 category from `45` to `42`; PA30 and the full strict suite pass.
+
+Final-component structured qualified type lookup now requires the template-id
+syntax retained on the AST node instead of rebuilding it from
+`QualifiedName::name`. This ratchets the category from `42` to `41`; the 1,173
+focused tests and full strict suite pass.

@@ -5613,13 +5613,7 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     current = member_scope;
   }
 
-  TemplateIdSyntax local_final_template_id;
   const TemplateIdSyntax * final_template_id = cppast_template_id_syntax(node);
-  if(!final_template_id &&
-     template_id_syntax_from_component_text(qualified.name,
-                                            local_final_template_id)) {
-    final_template_id = &local_final_template_id;
-  }
   if(final_template_id) {
     TemplateIdSyntax unqualified = *final_template_id;
     unqualified.name.rooted = false;
