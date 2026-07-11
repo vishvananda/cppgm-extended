@@ -6550,3 +6550,8 @@ Qualified type substitution now rebuilds a replacement qualifier template-id
 only from the replacement `Type`'s class-template metadata. The fallback that
 decomposed the rendered replacement component is removed, ratcheting the audit
 from `41` to `40`; focused and strict suites pass.
+
+The replacement-map qualifier fallback now follows the same rule: template-id
+syntax comes from the replacement type's class-template metadata, never its
+rendered component. This ratchets the audit from `40` to `39`; focused and
+strict suites pass.

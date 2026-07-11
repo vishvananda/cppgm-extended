@@ -23440,17 +23440,11 @@ bool substitute_type_pack_expression_node(
               out.qualifier_template_id_syntaxes.mutable_vector().resize(
                   qualifiers.size());
             }
-            string replacement_component = trim_space(replacement_text);
-            if(replacement_component.compare(0, 2, "::") == 0) {
-              replacement_component = trim_space(replacement_component.substr(2));
-            }
             TemplateIdSyntax replacement_template_id;
             if(template_id_syntax_from_class_template_type(
                    it->second,
                    &scope,
-                   replacement_template_id) ||
-               template_id_syntax_from_component_text(replacement_component,
-                                                      replacement_template_id)) {
+                   replacement_template_id)) {
               out.qualifier_template_id_syntaxes[i] = replacement_template_id;
               refresh_qualified_name_qualifier_template_id_texts(out);
             }
