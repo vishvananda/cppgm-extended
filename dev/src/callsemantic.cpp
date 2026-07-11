@@ -7775,8 +7775,8 @@ private:
          anchor->has_argument_list &&
          exact_template_type_lookup_anchor_matches_syntax(*anchor,
                                                           normalized_name) &&
-         semantic_utils::split_qualified_name_text(anchor->identifier,
-                                                   template_id)) {
+         anchor->template_id_syntax_ref) {
+        template_id = anchor->template_id_syntax_ref->name;
         const vector<string> & anchor_arg_texts =
             exact_template_type_lookup_anchor_texts(*anchor);
         const vector<TemplateArgumentSyntax> * anchor_arg_syntaxes =
@@ -7826,8 +7826,8 @@ private:
                                                            normalized_name) ||
           compact_lookup_text(anchor->template_text) ==
               compact_lookup_text(normalized_name)) &&
-         semantic_utils::split_qualified_name_text(anchor->identifier,
-                                                   template_id)) {
+         anchor->template_id_syntax_ref) {
+        template_id = anchor->template_id_syntax_ref->name;
         const vector<string> & anchor_arg_texts =
             exact_template_type_lookup_anchor_texts(*anchor);
         const vector<TemplateArgumentSyntax> * anchor_arg_syntaxes =
