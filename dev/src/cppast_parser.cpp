@@ -5097,6 +5097,17 @@ bool CppAstParser::parse_qualified_special_member_declaration(CppAstNode & out)
   CppAstNode declarator = make_node(CppAstKind::declarator);
   CppAstNode identifier = make_node(CppAstKind::identifier, name);
   set_cppast_qualified_name_syntax(identifier, name_syntax);
+  vector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
+  build_qualifier_template_id_syntaxes(tokens,
+                                       lookup,
+                                       parsed_name,
+                                       qualifier_template_id_syntaxes,
+                                       this);
+  if(!qualifier_template_id_syntaxes.empty()) {
+    set_cppast_qualifier_template_id_syntaxes(
+        identifier,
+        std::move(qualifier_template_id_syntaxes));
+  }
   CppAstNode conversion_type_id;
   if(parsed_name.operator_is_conversion &&
      parse_conversion_operator_type_id(name_start, pos, conversion_type_id)) {
@@ -5240,6 +5251,17 @@ bool CppAstParser::parse_qualified_special_member_definition(CppAstNode & out)
   CppAstNode declarator = make_node(CppAstKind::declarator);
   CppAstNode identifier = make_node(CppAstKind::identifier, name);
   set_cppast_qualified_name_syntax(identifier, name_syntax);
+  vector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
+  build_qualifier_template_id_syntaxes(tokens,
+                                       lookup,
+                                       parsed_name,
+                                       qualifier_template_id_syntaxes,
+                                       this);
+  if(!qualifier_template_id_syntaxes.empty()) {
+    set_cppast_qualifier_template_id_syntaxes(
+        identifier,
+        std::move(qualifier_template_id_syntaxes));
+  }
   CppAstNode conversion_type_id;
   if(parsed_name.operator_is_conversion &&
      parse_conversion_operator_type_id(name_start, pos, conversion_type_id)) {
