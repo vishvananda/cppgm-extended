@@ -6482,3 +6482,8 @@ template-id lookup at the same time exposed 76 focused failures, confirming
 that unanchored internal callers still need to be converted before that
 fallback can be deleted. With that fallback left explicit, PA23 passes
 `394/394` and the full strict suite passes.
+
+`__make_integer_seq` alias expansion now recognizes the builtin and reads its
+three source arguments from the active alias declaration's retained type-id
+syntax instead of decomposing the rendered dependent result type. This
+ratchets the category from `68` to `67`.

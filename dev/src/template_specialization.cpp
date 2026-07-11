@@ -7373,21 +7373,15 @@ bool try_expand_alias_template_pattern_structurally(
         return false;
       }
 
-      std::string candidate_text =
-          candidate_base->named_display.empty() ? candidate_base->named_key :
-                                                  candidate_base->named_display;
-      if(candidate_text.empty()) {
-        candidate_text = describe_type(candidate_base);
-      }
-      QualifiedName builtin_name;
-      std::vector<std::string> builtin_args;
-      if(!semantic_utils::split_top_level_template_id_text(candidate_text,
-                                                           builtin_name,
-                                                           builtin_args) ||
-         builtin_name.name != "__make_integer_seq" ||
-         builtin_args.size() != 3) {
+      const TemplateIdSyntax * builtin_syntax =
+          alias_template.type_id ?
+              cppast_template_id_syntax(*alias_template.type_id) : nullptr;
+      if(!builtin_syntax ||
+         builtin_syntax->name.name != "__make_integer_seq" ||
+         builtin_syntax->arguments.size() != 3) {
         return false;
       }
+      const std::vector<std::string> & builtin_args = builtin_syntax->arguments;
 
       ClassTemplateDecl * sequence_template =
           template_argument_semantics::lookup_class_template(
