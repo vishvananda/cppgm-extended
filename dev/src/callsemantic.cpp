@@ -11997,76 +11997,6 @@ private:
                                                           clear_template_id_occurrence,
                                                           allow_source_template_header_replay);
       }
-      if(syntaxes[i].text.find('<') != std::string::npos) {
-        QualifiedName fallback_template_id;
-        std::vector<std::string> fallback_arg_texts;
-        const bool parsed_fallback_template_id =
-            semantic_utils::split_top_level_template_id_text(
-                syntaxes[i].text,
-                fallback_template_id,
-                fallback_arg_texts);
-        std::string location =
-            template_api::normalize_template_witness_source_location(
-                template_api::template_witness_detail::
-                    source_location_for_location_id(template_witness_context(),
-                                                   syntaxes[i].source_location_id));
-        if(location.empty() && syntaxes[i].has_source_token_start) {
-          location =
-              template_api::normalize_template_witness_source_location(
-                  source_location_for_token_index(syntaxes[i].source_token_start));
-        }
-        if(location.empty() && parsed_fallback_template_id) {
-          const std::string fallback_identifier =
-              unqualified_member_name(fallback_template_id.name);
-          const std::string current_use_location =
-              parser_trace::current_use_location();
-          if(!fallback_identifier.empty() && !current_use_location.empty()) {
-            location =
-                template_api::normalize_template_witness_source_location(
-                    template_api::template_witness_detail::
-                        source_location_for_identifier_token_on_or_after(
-                            template_witness_context(),
-                            current_use_location,
-                            fallback_identifier,
-                            true,
-                            true));
-          }
-        }
-        if(!witness::source_location_capture_enabled(template_witness_context(),
-                                                     location)) {
-          continue;
-        }
-        if(source_location_in_current_template_body_range(location) &&
-           !scope_has_template_placeholders(scope) &&
-           scope_is_inside_source_template_context(scope)) {
-          continue;
-        }
-        if(!skip_exact_template_name.empty()) {
-          if(parsed_fallback_template_id) {
-            const std::string fallback_unqualified =
-                unqualified_member_name(fallback_template_id.name);
-            const std::string skip_unqualified =
-                unqualified_member_name(skip_exact_template_name);
-            if(fallback_template_id.name == skip_exact_template_name ||
-               (!fallback_unqualified.empty() &&
-                fallback_unqualified == skip_unqualified)) {
-              continue;
-            }
-          }
-        }
-        const ScopedTemplateUseLocation use_location_guard(location);
-        try {
-          TypePtr fallback_type =
-              lookup_type_impl(scope,
-                               syntaxes[i].text,
-                               true,
-                               false,
-                               template_api::ClassTemplateSourceUseMode::
-                                   EmitClassUse);
-          (void)fallback_type;
-        } catch(...) {
-        }
-      }
     }
   }
 
@@ -12105,18 +12035,6 @@ private:
           continue;
         }
       }
-      QualifiedName template_id;
-      vector<string> arg_texts;
-      if(!semantic_utils::split_top_level_template_id_text(occurrences[i].text,
-                                                            template_id,
-                                                            arg_texts)) {
-        continue;
-      }
-      AliasTemplateDecl * alias_template =
-          lookup_alias_template_for_source_use(scope, template_id);
-      if(!alias_template) {
-        continue;
-      }
       const TemplateIdSyntax * syntax = nullptr;
       if(source_arg_syntaxes) {
         syntax =
@@ -12125,11 +12043,16 @@ private:
                 *source_arg_syntaxes,
                 occurrences[i].template_name,
                 occurrences[i].location);
-        if(syntax) {
-          arg_texts = template_id_argument_witness_source_texts(*syntax);
-        }
       }
       if(!syntax) {
+        continue;
+      }
+      const QualifiedName & template_id = syntax->name;
+      const vector<string> arg_texts =
+          template_id_argument_witness_source_texts(*syntax);
+      AliasTemplateDecl * alias_template =
+          lookup_alias_template_for_source_use(scope, template_id);
+      if(!alias_template) {
         continue;
       }
       const ScopedTemplateUseLocation use_location_guard(
@@ -17368,8 +17291,6 @@ private:
                                                     identifier,
                                                     '<') &&
              recorded_alias_uses.insert(exact_location).second) {
-            QualifiedName template_id;
-            vector<string> arg_texts;
             const TemplateIdSyntax * syntax =
                 template_id_syntax_for_anchor_at_or_after_location(
                     template_witness_context(),
@@ -17385,17 +17306,12 @@ private:
                 syntax = direct_syntax;
               }
             }
-            bool have_template_id = false;
-            if(syntax) {
+            QualifiedName template_id;
+            vector<string> arg_texts;
+            const bool have_template_id = syntax && !syntax->name.name.empty();
+            if(have_template_id) {
               template_id = syntax->name;
               arg_texts = template_id_argument_witness_source_texts(*syntax);
-              have_template_id = !template_id.name.empty();
-            } else {
-              have_template_id =
-                  semantic_utils::split_top_level_template_id_text(
-                      template_text,
-                      template_id,
-                      arg_texts);
             }
             if(have_template_id) {
               const bool dependent_source_owner =
@@ -17540,31 +17456,20 @@ private:
               for(size_t nested_index = 0;
                   nested_index < nested_occurrences.size();
                   ++nested_index) {
-                QualifiedName nested_template_id;
-                vector<string> nested_arg_texts;
-                if(!semantic_utils::split_top_level_template_id_text(
-                       nested_occurrences[nested_index].text,
-                       nested_template_id,
-                       nested_arg_texts)) {
-                  continue;
-                }
                 const TemplateIdSyntax * nested_syntax =
                     template_id_syntax_for_anchor_at_or_after_location(
                         template_witness_context(),
                         current,
                         nested_occurrences[nested_index].template_name,
                         nested_occurrences[nested_index].location);
-                if(nested_syntax) {
-                  nested_arg_texts =
-                      template_id_argument_witness_source_texts(
-                          *nested_syntax);
+                if(!nested_syntax) {
+                  continue;
                 }
+                const QualifiedName & nested_template_id = nested_syntax->name;
+                vector<string> nested_arg_texts =
+                    template_id_argument_witness_source_texts(*nested_syntax);
                 const bool nested_dependent_source_owner =
-                    nested_syntax ?
-                        template_id_syntax_has_dependent_source_owner(
-                            *nested_syntax) :
-                        qualified_template_name_has_dependent_source_owner(
-                            nested_template_id);
+                    template_id_syntax_has_dependent_source_owner(*nested_syntax);
                 AliasTemplateDecl * nested_alias_template =
                     nested_dependent_source_owner ?
                         nullptr :

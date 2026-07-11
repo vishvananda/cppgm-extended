@@ -6467,3 +6467,9 @@ Out-of-class member specialization bookkeeping now consumes the declarator's
 retained owner `TemplateIdSyntax`, including its argument syntax records,
 instead of decomposing the rendered owner qualifier. This ratchets the
 template-id text-decomposition category from `74` to `73`.
+
+Nested witness traversal now emits class and alias uses only from retained
+template-id syntax. The duplicate fallback that reparsed `TemplateArgumentSyntax`
+text and nested source-occurrence text, including its source-location replay,
+is removed. This ratchets the category from `73` to `69`; the 1,807 focused
+template tests and full strict witness suite pass.
