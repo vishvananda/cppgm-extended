@@ -6527,3 +6527,10 @@ instead of preferring a mismatched rendering, and lexically prefixed qualified
 type ASTs shift the original qualifier syntax into the prefixed component
 vector instead of rebuilding it from text. This ratchets the category from
 `52` to `50`; PA30 and the full strict suite pass.
+
+The direct-text type mangle fallback now handles only simple builtin,
+template-parameter, and qualified identifier spellings. Template-id and
+template-qualified owner reconstruction, including the shared qualifier syntax
+builder, are removed from that fallback; structured AST, semantic type, and
+owner-argument paths remain authoritative. This ratchets the category from
+`50` to `45`; PA30 and the full strict suite pass.

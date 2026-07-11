@@ -1026,8 +1026,6 @@ static bool try_build_template_id_type_ir(
     abi_mangle::Type & out,
     bool expand_alias_templates,
     bool suppress_current_pack_grouping);
-static vector<TemplateIdSyntax> qualifier_template_id_syntaxes_from_text(
-    const QualifiedName & qualified);
 static bool alias_parameter_text_matches(const string & text,
                                          const TemplateParameterInfo & parameter);
 static bool type_id_ast_is_template_type_parameter(
@@ -10076,12 +10074,6 @@ static bool try_build_direct_type_syntax_text_ir(
     return true;
   }
 
-  TemplateIdSyntax template_id;
-  if(template_id_syntax_from_component_text(text, template_id) &&
-     try_build_template_id_type_ir(template_id, mangle_ctx, out)) {
-    return true;
-  }
-
   QualifiedName qualified;
   if(semantic_utils::split_qualified_name_text(text, qualified) &&
      !qualified.qualifiers.empty()) {
@@ -10105,19 +10097,10 @@ static bool try_build_direct_type_syntax_text_ir(
        !prepend_qualified_prefix(effective, lookup_prefix)) {
       return false;
     }
-    vector<TemplateIdSyntax> qualifier_template_id_syntaxes =
-        qualifier_template_id_syntaxes_from_text(effective);
-    bool has_template_qualifier = false;
-    for(size_t i = 0; i < qualifier_template_id_syntaxes.size(); ++i) {
-      if(!qualifier_template_id_syntaxes[i].name.name.empty()) {
-        has_template_qualifier = true;
-        break;
-      }
-    }
-    if(mentions_template_parameter || has_template_qualifier) {
+    if(mentions_template_parameter) {
       abi_mangle::Type owner;
       if(try_build_qualified_owner_type_ir(effective,
-                                           &qualifier_template_id_syntaxes,
+                                           nullptr,
                                            mangle_ctx,
                                            owner)) {
 	        out = abi_mangle::Type::member_named_type(owner,
@@ -10183,31 +10166,6 @@ static bool try_build_resolved_type_argument_text_ir(
   }
 
   return false;
-}
-
-static vector<TemplateIdSyntax> qualifier_template_id_syntaxes_from_text(
-    const QualifiedName & qualified)
-{
-  vector<TemplateIdSyntax> syntaxes;
-  syntaxes.resize(qualified.qualifiers.size());
-  vector<string> leading_qualifiers;
-  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    TemplateIdSyntax syntax;
-    if(template_id_syntax_from_component_text(qualified.qualifiers[i], syntax)) {
-      if(syntax.name.qualifiers.empty()) {
-        syntax.name.qualifiers = leading_qualifiers;
-      }
-      syntaxes[i] = syntax;
-      continue;
-    }
-    const string qualifier = trim_space(qualified.qualifiers[i]);
-    if(!qualifier.empty() &&
-       qualifier.find('<') == string::npos &&
-       qualifier.find('>') == string::npos) {
-      leading_qualifiers.push_back(qualifier);
-    }
-  }
-  return syntaxes;
 }
 
 static bool pack_expansion_text_resolves_to_concrete_owner_pack(
