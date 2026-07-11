@@ -6462,3 +6462,8 @@ substituted member expressions preserve existing qualifier template-id syntax
 instead of rebuilding absent qualifiers from rewritten text. This ratchets the
 category from `77` to `74`; the 1,173 focused default tests and full strict
 suite pass.
+
+Out-of-class member specialization bookkeeping now consumes the declarator's
+retained owner `TemplateIdSyntax`, including its argument syntax records,
+instead of decomposing the rendered owner qualifier. This ratchets the
+template-id text-decomposition category from `74` to `73`.

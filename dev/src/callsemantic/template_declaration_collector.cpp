@@ -1656,10 +1656,12 @@ public:
          qualified_member_syntax &&
          !qualified_member_syntax->qualifiers.empty()) {
         const QualifiedName & qualified_member = *qualified_member_syntax;
-        string owner_template_name;
-        const bool owner_is_template_id =
-            split_unqualified_template_head_text(qualified_member.qualifiers.back(),
-                                                 owner_template_name);
+        const size_t owner_qualifier_index =
+            qualified_member.qualifiers.size() - 1;
+        const TemplateIdSyntax * owner_template_id =
+            cppast_qualifier_template_id_syntax(*function_identifier,
+                                                owner_qualifier_index);
+        const bool owner_is_template_id = owner_template_id != nullptr;
         string owner_name;
         if(qualified_member.rooted) {
           owner_name += "::";
@@ -1670,55 +1672,51 @@ public:
           }
           owner_name += qualified_member.qualifiers[i];
         }
-        if(owner_is_template_id && declarator) {
+        if(owner_template_id && declarator) {
           const bool declarator_has_parameter_clause =
               find_child_kind(*declarator, CppAstKind::parameter_clause) != nullptr;
-          QualifiedName owner_template_id_name;
-          vector<string> owner_arg_texts;
-          if(semantic_utils::split_top_level_template_id_text(
-                 qualified_member.qualifiers.back(),
-                 owner_template_id_name,
-                 owner_arg_texts)) {
-            Scope * owner_lookup_scope = &scope;
-            if(qualified_member.qualifiers.size() > 1 || qualified_member.rooted) {
-              QualifiedName owner_scope_name;
-              owner_scope_name.rooted = qualified_member.rooted;
-              if(qualified_member.qualifiers.size() > 1) {
-                owner_scope_name.qualifiers.assign(
-                    qualified_member.qualifiers.begin(),
-                    qualified_member.qualifiers.end() - 2);
-                owner_scope_name.name =
-                    qualified_member.qualifiers[qualified_member.qualifiers.size() - 2];
-              }
-              owner_lookup_scope =
-                  semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
-                      *this,
-                      scope,
-                      owner_scope_name);
+          Scope * owner_lookup_scope = &scope;
+          if(qualified_member.qualifiers.size() > 1 || qualified_member.rooted) {
+            QualifiedName owner_scope_name;
+            owner_scope_name.rooted = qualified_member.rooted;
+            if(qualified_member.qualifiers.size() > 1) {
+              owner_scope_name.qualifiers.assign(
+                  qualified_member.qualifiers.begin(),
+                  qualified_member.qualifiers.end() - 2);
+              owner_scope_name.name =
+                  qualified_member.qualifiers[qualified_member.qualifiers.size() - 2];
             }
-            ClassTemplateDecl * owner_template =
-                owner_lookup_scope ?
-                    lookup_class_template(*owner_lookup_scope,
-                                          owner_template_id_name.name) :
-                    nullptr;
-            vector<TemplateArgument> owner_arguments;
-            if(owner_template &&
-               resolve_template_arguments(
-                   scope,
-                   owner_template->parameters,
-                   owner_arg_texts,
-                   owner_arguments,
-                   owner_template->declaring_scope)) {
-              if(template_parameters.empty() && declarator_has_parameter_clause) {
-                owner_template->explicit_member_function_specialization_keys.insert(
-                    make_pair(qualified_member.name,
-                              template_argument_key(owner_arguments)));
-              }
-              if(!declarator_has_parameter_clause) {
-                owner_template->explicit_static_member_specialization_keys.insert(
-                    make_pair(qualified_member.name,
-                              template_argument_key(owner_arguments)));
-              }
+            owner_lookup_scope =
+                semantic_lookup::resolve_qualified_scope_for_class_or_namespace(
+                    *this,
+                    scope,
+                    owner_scope_name);
+          }
+          ClassTemplateDecl * owner_template =
+              owner_lookup_scope ?
+                  lookup_class_template(*owner_lookup_scope,
+                                        owner_template_id->name.name) :
+                  nullptr;
+          const vector<string> owner_arg_texts =
+              template_id_argument_texts_preserving_spacing(*owner_template_id);
+          vector<TemplateArgument> owner_arguments;
+          if(owner_template &&
+             resolve_template_arguments(
+                 scope,
+                 owner_template->parameters,
+                 owner_arg_texts,
+                 &owner_template_id->argument_syntaxes,
+                 owner_arguments,
+                 owner_template->declaring_scope)) {
+            if(template_parameters.empty() && declarator_has_parameter_clause) {
+              owner_template->explicit_member_function_specialization_keys.insert(
+                  make_pair(qualified_member.name,
+                            template_argument_key(owner_arguments)));
+            }
+            if(!declarator_has_parameter_clause) {
+              owner_template->explicit_static_member_specialization_keys.insert(
+                  make_pair(qualified_member.name,
+                            template_argument_key(owner_arguments)));
             }
           }
         }
