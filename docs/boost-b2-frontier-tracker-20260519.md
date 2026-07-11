@@ -6437,3 +6437,12 @@ recovery now reads `CppAstNode` template-id syntax instead of splitting
 `node.value`, and partial-match witness replay uses the retained argument
 `TemplateIdSyntax` instead of splitting `arg_texts`. The audit ratchets from
 `95` to `93`, and the full strict witness suite remains clean.
+
+Named template-id partial deduction is now a syntax-only path. Patterns must
+provide retained `TemplateIdSyntax`, and actual types must provide class-template
+metadata or dependent-class arguments; missing structure falls through to the
+existing type-pattern deduction path. The former helper no longer decomposes
+rendered actual types, rendered or alias-expanded patterns, or canonicalized
+type text. This removes 9 audit sites and ratchets the category from `93` to
+`84`. PA21 passes `204/204`, PA23 passes `394/394`, and the full strict witness
+suite remains clean.

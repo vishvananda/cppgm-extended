@@ -1407,14 +1407,12 @@ bool expand_alias_template_pattern_id_impl(template_api::TemplateServices & serv
                                            AliasSubstitutionFailure * substitution_failure = nullptr);
 
 template <typename PartialDecl>
-bool deduce_from_named_template_id_text(template_api::TemplateServices & services,
+bool deduce_from_named_template_id_syntax(template_api::TemplateServices & services,
                                         const PartialDecl & partial,
                                         DeducedState & deduced,
                                         Scope & match_scope,
-                                        const std::string & pattern_text,
                                         const TemplateArgumentSyntax * pattern_syntax,
-                                        const TypePtr & actual_type,
-                                        bool structural_only = false);
+                                        const TypePtr & actual_type);
 
 std::string join_arg_texts(const std::vector<std::string> & items)
 {
@@ -9267,14 +9265,12 @@ int compare_partial_specialization_preference_impl(template_api::TemplateService
 }
 
 template <typename PartialDecl>
-bool deduce_from_named_template_id_text(template_api::TemplateServices & services,
+bool deduce_from_named_template_id_syntax(template_api::TemplateServices & services,
                                         const PartialDecl & partial,
                                         DeducedState & deduced,
                                         Scope & match_scope,
-                                        const std::string & pattern_text,
                                         const TemplateArgumentSyntax * pattern_syntax,
-                                        const TypePtr & actual_type,
-                                        bool structural_only)
+                                        const TypePtr & actual_type)
 {
   template_api::TemplateTypeSystem & type_system = service_type_system(services);
   const auto type_is_dependent =
@@ -9299,7 +9295,6 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
   QualifiedName actual_name;
   std::vector<std::string> actual_args;
   std::string actual_template_name_text;
-  const std::string normalized_pattern = strip_elaborated_type_prefix(trim_space(pattern_text));
   template_api::TemplateNamedTypeMetadata actual_class;
   const bool have_actual_class =
       template_api::describe_named_type_metadata(type_system.model,
@@ -9411,23 +9406,6 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 	      return true;
 	    };
 
-	  const auto decompose_actual_type_text =
-	      [&]() -> bool
-	  {
-	    const std::string actual_type_text =
-	        strip_elaborated_type_prefix(trim_space(type_text(actual_type)));
-	    if(!semantic_utils::split_top_level_template_id_text(actual_type_text,
-	                                                          out_name,
-	                                                          out_args)) {
-	      return false;
-	    }
-	    out_template_name_text =
-	        actual_type_text.substr(0, actual_type_text.find('<'));
-	    actual_source_template = nullptr;
-	    actual_structured_args = nullptr;
-	    return true;
-	  };
-
 		  if(have_actual_class && actual_class.source_template) {
 		    if(decompose_source_template(actual_class.source_template,
 		                                 actual_class.instantiation_arguments)) {
@@ -9442,13 +9420,6 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
             return true;
           }
         }
-		    if(actual_class.source_template->parameters.empty()) {
-		      if(decompose_actual_type_text()) {
-		        return true;
-	      }
-	      return decompose_source_template(actual_class.source_template,
-	                                       actual_class.instantiation_arguments);
-	    }
 	  }
     void * dependent_class_template_decl = nullptr;
     std::vector<DependentAliasTemplateArgumentSyntax> dependent_class_args;
@@ -9564,11 +9535,6 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 	        return true;
 	      }
 	    }
-
-	  if(decompose_actual_type_text()) {
-	    return true;
-	  }
-
     return false;
   };
   if(!decompose_actual_template_id(actual_name, actual_args, actual_template_name_text)) {
@@ -9623,85 +9589,18 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 
     return false;
   };
-  bool pattern_decomposed = false;
-  const auto decompose_template_id_pair =
-      [&](const std::string & candidate_pattern) -> bool
-  {
-    QualifiedName candidate_name;
-    std::vector<std::string> candidate_args;
-    if(!semantic_utils::split_top_level_template_id_text(candidate_pattern,
-                                                         candidate_name,
-                                                         candidate_args)) {
-      return false;
-    }
-    pattern_name = candidate_name;
-    pattern_args = candidate_args;
-    pattern_decomposed = true;
-    return pattern_template_id_matches(pattern_name);
-  };
   const TemplateIdSyntax * parsed_pattern_id =
       pattern_syntax ? template_argument_template_id_syntax(*pattern_syntax) : nullptr;
-  bool parsed_pattern = false;
-  if(parsed_pattern_id) {
-    pattern_name = parsed_pattern_id->name;
-    pattern_args = parsed_pattern_id->arguments;
-    pattern_decomposed = true;
-    parsed_pattern = pattern_template_id_matches(pattern_name);
+  if(!parsed_pattern_id) {
+    return false;
+  }
+  pattern_name = parsed_pattern_id->name;
+  pattern_args = parsed_pattern_id->arguments;
+  if(!pattern_template_id_matches(pattern_name)) {
+    return false;
   }
   const std::vector<TemplateArgumentSyntax> * pattern_arg_syntaxes =
-      parsed_pattern_id ? &parsed_pattern_id->argument_syntaxes : nullptr;
-  if(!parsed_pattern && !decompose_template_id_pair(normalized_pattern)) {
-    std::string expanded_pattern_text;
-    if(pattern_decomposed &&
-       expand_alias_template_pattern_id_impl(
-           services,
-           template_api::make_template_environment(match_scope),
-           normalized_pattern,
-           pattern_name,
-           pattern_args,
-           pattern_syntax,
-           template_api::TemplateEnvironmentHandle(),
-           expanded_pattern_text,
-           true)) {
-      const std::string normalized_expanded_pattern =
-          strip_elaborated_type_prefix(trim_space(expanded_pattern_text));
-      if(decompose_template_id_pair(normalized_expanded_pattern)) {
-        return deduce_from_named_template_id_text(
-            services,
-            partial,
-            deduced,
-            match_scope,
-            normalized_expanded_pattern,
-            nullptr,
-            actual_type);
-      }
-    }
-    if(structural_only) {
-      return false;
-    }
-    TypePtr canonical_pattern_type;
-    if(pattern_syntax) {
-      parse_template_argument_type_syntax(
-          services, match_scope, pattern_syntax, canonical_pattern_type, true);
-    }
-    if(!canonical_pattern_type) {
-      if(pattern_syntax &&
-         (pattern_syntax->type_id || pattern_syntax->template_id)) {
-        return false;
-      }
-      return false;
-    }
-    if(type_is_dependent(canonical_pattern_type)) {
-      return false;
-    }
-    const std::string canonical_pattern =
-        strip_elaborated_type_prefix(
-            trim_space(type_text(canonical_pattern_type)));
-    if(canonical_pattern == normalized_pattern ||
-       !decompose_template_id_pair(canonical_pattern)) {
-      return false;
-    }
-  }
+      &parsed_pattern_id->argument_syntaxes;
   const auto resolve_actual_arg_type =
       [&](std::size_t arg_index, const std::string & actual_arg, TypePtr & actual_arg_type) -> bool
   {
@@ -10067,14 +9966,12 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
             pattern_arg_syntaxes && arg_index < pattern_arg_syntaxes->size() ?
                 &(*pattern_arg_syntaxes)[arg_index] :
                 nullptr;
-        if(deduce_from_named_template_id_text(services,
+        if(deduce_from_named_template_id_syntax(services,
                                               partial,
                                               nested_deduced,
                                               nested_match_scope,
-                                              pattern_arg,
                                               nested_syntax,
-                                              actual_arg_type,
-                                              true)) {
+                                              actual_arg_type)) {
           deduced = nested_deduced;
           continue;
         }
@@ -10234,15 +10131,13 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
           trailing_pack_pattern.has_syntax ?
               &trailing_pack_pattern.element_syntax :
               nullptr;
-      if(!deduce_from_named_template_id_text(
+      if(!deduce_from_named_template_id_syntax(
              services,
              partial,
              element_deduced,
              element_scope,
-             trailing_pack_pattern.element_text,
              element_syntax,
-             actual_arg_type,
-             true)) {
+             actual_arg_type)) {
         return false;
       }
 
@@ -10674,12 +10569,11 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
                                    *partial.pattern_scope,
                                    element_deduced);
       bool matched = false;
-      if(deduce_from_named_template_id_text(
+      if(deduce_from_named_template_id_syntax(
              services,
              partial,
              element_deduced,
              match_scope,
-             trailing_pack_pattern.element_text,
              element_syntax,
              actual.type)) {
         matched = true;
@@ -10915,12 +10809,11 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
           DeducedState deduced_copy = deduced;
           Scope match_scope_copy =
               make_partial_match_scope(partial.parameters, *partial.pattern_scope, deduced_copy);
-          if(deduce_from_named_template_id_text(
+          if(deduce_from_named_template_id_syntax(
                  services,
                  partial,
                  deduced_copy,
                  match_scope_copy,
-                 pattern_text,
                  pattern_syntax,
                  actual.type)) {
             deduced = deduced_copy;
