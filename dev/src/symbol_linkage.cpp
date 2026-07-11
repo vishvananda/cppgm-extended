@@ -958,10 +958,7 @@ private:
 };
 
 static bool try_mangle_builtin_text(const string & trimmed, string & out);
-static bool parse_unary_builtin_type_transform_syntax_text(
-    const string & text,
-    string & builtin_name,
-    string & arg_text);
+static bool is_mangleable_builtin_type_transform_name(const string & name);
 static bool try_mangle_template_argument_syntax_impl(
     const TemplateArgumentSyntax & syntax,
     const TemplateParameterInfo * parameter,
@@ -1033,6 +1030,9 @@ static vector<TemplateIdSyntax> qualifier_template_id_syntaxes_from_text(
     const QualifiedName & qualified);
 static bool alias_parameter_text_matches(const string & text,
                                          const TemplateParameterInfo & parameter);
+static bool type_id_ast_is_template_type_parameter(
+    const CppAstNode & node,
+    const TemplateParameterInfo & parameter);
 
 struct TemplateParameterMangleContext
 {
@@ -4244,17 +4244,16 @@ static bool attach_dependent_builtin_type_transform_argument_for_mangling(
     const vector<TemplateParameterInfo> & parameters,
     const vector<TemplateArgumentSyntax> & arguments)
 {
-  string builtin_name;
-  string builtin_arg_text;
-  if(!parse_unary_builtin_type_transform_syntax_text(node.value,
-                                                     builtin_name,
-                                                     builtin_arg_text)) {
+  const string & builtin_name = node.builtin_type_transform_name;
+  if(!node.base_type_syntax ||
+     !is_mangleable_builtin_type_transform_name(builtin_name)) {
     return false;
   }
 
   const size_t count = std::min(parameters.size(), arguments.size());
   for(size_t i = 0; i < count; ++i) {
-    if(!alias_parameter_text_matches(builtin_arg_text, parameters[i])) {
+    if(!type_id_ast_is_template_type_parameter(*node.base_type_syntax,
+                                               parameters[i])) {
       continue;
     }
     TypePtr arg_type =
@@ -4889,17 +4888,7 @@ static bool substitute_alias_template_arguments_in_text(
     return true;
   }
 
-  string builtin_name;
-  string arg_text;
-  if(!parse_unary_builtin_type_transform_syntax_text(text, builtin_name, arg_text)) {
-    return false;
-  }
-  if(!substitute_alias_template_arguments_in_text(
-         arg_text, parameters, arguments)) {
-    return false;
-  }
-  text = builtin_name + "(" + arg_text + ")";
-  return true;
+  return false;
 }
 
 static bool substitute_alias_template_arguments_in_node(
@@ -5336,14 +5325,13 @@ static bool substitute_dependent_alias_template_arguments_in_node(
                                                      arguments)) {
     return true;
   }
-  string builtin_name;
-  string builtin_arg_text;
-  if(parse_unary_builtin_type_transform_syntax_text(node.value,
-                                                    builtin_name,
-                                                    builtin_arg_text)) {
+  const string & builtin_name = node.builtin_type_transform_name;
+  if(node.base_type_syntax &&
+     is_mangleable_builtin_type_transform_name(builtin_name)) {
     const size_t count = std::min(parameters.size(), arguments.size());
     for(size_t i = 0; i < count; ++i) {
-      if(!alias_parameter_text_matches(builtin_arg_text, parameters[i]) ||
+      if(!type_id_ast_is_template_type_parameter(*node.base_type_syntax,
+                                                 parameters[i]) ||
          ((!arguments[i].type ||
            !type_has_dependent_mangle_state(arguments[i].type)) &&
           !arguments[i].syntax.type_id)) {
@@ -6043,64 +6031,6 @@ static bool type_has_concrete_template_id_spelling_for_mangling(
 static bool is_mangleable_builtin_type_transform_name(const string & name)
 {
   return builtin_type_transforms::is_supported_name(name);
-}
-
-static bool parse_unary_builtin_type_transform_syntax_text(
-    const string & text,
-    string & builtin_name,
-    string & arg_text)
-{
-  builtin_name.clear();
-  arg_text.clear();
-
-  const string trimmed = trim_space(text);
-  if(trimmed.empty() || trimmed[trimmed.size() - 1] != ')') {
-    return false;
-  }
-
-  const size_t open = trimmed.find('(');
-  if(open == string::npos || open == 0) {
-    return false;
-  }
-
-  builtin_name = trim_space(trimmed.substr(0, open));
-  if(!is_mangleable_builtin_type_transform_name(builtin_name)) {
-    return false;
-  }
-  if(!(isalpha(static_cast<unsigned char>(builtin_name[0])) ||
-       builtin_name[0] == '_')) {
-    return false;
-  }
-  for(size_t i = 1; i < builtin_name.size(); ++i) {
-    if(!is_identifier_char(builtin_name[i])) {
-      return false;
-    }
-  }
-
-  int depth = 0;
-  for(size_t i = open; i < trimmed.size(); ++i) {
-    if(trimmed[i] == '(') {
-      ++depth;
-    } else if(trimmed[i] == ')') {
-      --depth;
-      if(depth == 0 && i + 1 != trimmed.size()) {
-        return false;
-      }
-      if(depth < 0) {
-        return false;
-      }
-    }
-  }
-  if(depth != 0) {
-    return false;
-  }
-
-  arg_text = trim_space(trimmed.substr(open + 1,
-                                       trimmed.size() - open - 2));
-  if(arg_text.empty()) {
-    return false;
-  }
-  return true;
 }
 
 static bool builtin_type_transform_ast_name(const CppAstNode & node,

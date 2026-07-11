@@ -6507,3 +6507,11 @@ Concrete alias materialization now identifies template instantiations from
 specialization mangle info. It no longer splits a named type's display spelling
 just to decide whether lookup is applicable. This ratchets the category from
 `65` to `64`; the 1,807 focused tests and full strict suite pass.
+
+Builtin type-transform mangling substitution now uses the parser-retained
+transform name and operand type-id AST. Parameter matching and substitution no
+longer parse `__transform(T)` spellings, and the generic text substitution
+helper no longer recursively recognizes transform calls. This removes five
+audit sites and ratchets the category from `64` to `59`; the full report passes
+`3618/3618` and the full strict suite passes when each is run without competing
+for the PA23 timeout budget.
