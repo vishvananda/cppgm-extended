@@ -22245,7 +22245,7 @@ CppAstNode make_substituted_value_expression_node(const ValueBinding & binding)
   return out;
 }
 
-void refresh_qualified_name_qualifier_template_id_texts(CppAstNode & node);
+void synchronize_qualified_name_template_id_syntax(CppAstNode & node);
 
 bool concrete_non_type_argument_expression_supported(
     const TemplateArgument & argument)
@@ -22634,11 +22634,7 @@ bool substitute_qualified_name_qualifier_type(
     return false;
   }
 
-  QualifiedName source_qualified;
-  const bool have_source_qualified =
-      semantic_utils::split_qualified_name_text(node.value, source_qualified) &&
-      source_qualified.qualifiers.size() == qualified.qualifiers.size() &&
-      source_qualified.name == qualified.name;
+  const QualifiedName source_qualified = qualified;
 
   string replacement_component = trim_space(replacement_text);
   bool replacement_rooted = false;
@@ -22660,9 +22656,7 @@ bool substitute_qualified_name_qualifier_type(
   for(size_t old_i = qualifier_index + 1;
       old_i < qualified.qualifiers.size();
       ++old_i) {
-    new_qualifiers.push_back(have_source_qualified ?
-                                 source_qualified.qualifiers[old_i] :
-                                 qualified.qualifiers[old_i]);
+    new_qualifiers.push_back(source_qualified.qualifiers[old_i]);
   }
 
   vector<TemplateIdSyntax> new_qualifier_template_ids(new_qualifiers.size());
@@ -22713,7 +22707,7 @@ bool substitute_qualified_name_qualifier_type(
   node.qualifier_type_syntaxes = new_qualifier_types;
   node.value = qualified_name_text(qualified);
   if(replacement_template_id_from_type) {
-    refresh_qualified_name_qualifier_template_id_texts(node);
+    synchronize_qualified_name_template_id_syntax(node);
   }
   return true;
 }
@@ -23033,7 +23027,7 @@ bool substitute_type_from_replacement_map(const TypePtr & type,
          changed;
 }
 
-void refresh_qualified_name_qualifier_template_id_texts(CppAstNode & node)
+void synchronize_qualified_name_template_id_syntax(CppAstNode & node)
 {
   if(!node.qualified_name_syntax) {
     return;
@@ -23251,18 +23245,12 @@ bool substitute_type_pack_expression_node(
       out.value = qualified_name_text(*out.qualified_name_syntax);
     }
   }
-  refresh_qualified_name_qualifier_template_id_texts(out);
+  synchronize_qualified_name_template_id_syntax(out);
   for(auto it = type_replacements.begin();
       it != type_replacements.end();
       ++it) {
     bool replaced_qualified_component = false;
     if(out.qualified_name_syntax) {
-      QualifiedName source_qualified;
-      const bool have_source_qualified =
-          semantic_utils::split_qualified_name_text(out.value, source_qualified) &&
-          source_qualified.qualifiers.size() ==
-              out.qualified_name_syntax->qualifiers.size() &&
-          source_qualified.name == out.qualified_name_syntax->name;
       const std::vector<std::string> qualifiers =
           out.qualified_name_syntax->qualifiers;
       for(size_t i = 0; i < qualifiers.size(); ++i) {
@@ -23271,11 +23259,6 @@ bool substitute_type_pack_expression_node(
           if(i != 0) {
             replaced_qualified_component = true;
             break;
-          }
-          if(have_source_qualified &&
-             i < source_qualified.qualifiers.size() &&
-             trim_space(source_qualified.qualifiers[i]) != qualifiers[i]) {
-            continue;
           }
           const string replacement_text = reparseable_type_argument_text(it->second);
           if(!substitute_qualified_name_qualifier_type(scope,
@@ -23298,7 +23281,7 @@ bool substitute_type_pack_expression_node(
                    &scope,
                    replacement_template_id)) {
               out.qualifier_template_id_syntaxes[i] = replacement_template_id;
-              refresh_qualified_name_qualifier_template_id_texts(out);
+              synchronize_qualified_name_template_id_syntax(out);
             }
           }
           replacement_mentions_node = true;
@@ -23492,7 +23475,7 @@ bool substitute_value_pack_expression_node(
         out.qualifier_template_id_syntaxes[i],
         value_replacements);
   }
-  refresh_qualified_name_qualifier_template_id_texts(out);
+  synchronize_qualified_name_template_id_syntax(out);
   for(map<string, ValueBinding>::const_iterator it = value_replacements.begin();
       it != value_replacements.end();
       ++it) {
@@ -23910,7 +23893,7 @@ bool expand_bound_packs_in_expression_node(
     }
   }
   if(changed) {
-    refresh_qualified_name_qualifier_template_id_texts(node);
+    synchronize_qualified_name_template_id_syntax(node);
   }
   for(size_t i = 0; i < node.qualifier_type_syntaxes.size(); ++i) {
     if(expand_bound_packs_in_expression_node(
@@ -40347,7 +40330,7 @@ bool substitute_template_template_names_in_ast_template_ids(
     if(substitute_template_template_parameter_names_in_template_id_arguments(
            node.qualifier_template_id_syntaxes[i],
            template_replacements)) {
-      refresh_qualified_name_qualifier_template_id_texts(node);
+      synchronize_qualified_name_template_id_syntax(node);
       changed = true;
     }
   }
