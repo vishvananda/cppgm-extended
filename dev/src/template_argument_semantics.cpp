@@ -2924,21 +2924,41 @@ bool scope_has_template_template_placeholder(Scope & scope, const string & name)
   return false;
 }
 
-bool try_make_dependent_template_template_parameter_type(
+ClassTemplateDecl * enclosing_source_class_template_for_scope(
+    Scope & scope,
+    const string & name)
+{
+  for(Scope * current_scope = &scope;
+      current_scope;
+      current_scope = current_scope->parent) {
+    ClassInfo * candidate = current_scope->class_info;
+    if(!candidate && current_scope->function) {
+      candidate = current_scope->function->lexical_access_class ?
+          current_scope->function->lexical_access_class :
+          current_scope->function->owner_class;
+    }
+    for(ClassInfo * current = candidate;
+        current;
+        current = current->enclosing_scope ?
+            current->enclosing_scope->class_info :
+            nullptr) {
+      if(current->source_template && current->source_template->name == name) {
+        return current->source_template;
+      }
+    }
+    if(current_scope->namespace_scope || current_scope->parent == nullptr) {
+      break;
+    }
+  }
+  return nullptr;
+}
+
+vector<DependentAliasTemplateArgumentSyntax>
+dependent_arguments_from_template_id_syntax(
     template_api::TemplateServices & services,
     Scope & scope,
-    const TemplateIdSyntax & syntax,
-    const string & lookup_text,
-    TypePtr & out)
+    const TemplateIdSyntax & syntax)
 {
-  out.reset();
-  if(syntax.name.rooted ||
-     !syntax.name.qualifiers.empty() ||
-     syntax.name.name.empty() ||
-     !scope_has_template_template_placeholder(scope, syntax.name.name)) {
-    return false;
-  }
-
   const vector<string> arg_texts = template_id_syntax_argument_texts(syntax);
   vector<DependentAliasTemplateArgumentSyntax> arguments;
   arguments.reserve(arg_texts.size());
@@ -2969,6 +2989,26 @@ bool try_make_dependent_template_template_parameter_type(
     }
     arguments.push_back(argument);
   }
+  return arguments;
+}
+
+bool try_make_dependent_template_template_parameter_type(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TemplateIdSyntax & syntax,
+    const string & lookup_text,
+    TypePtr & out)
+{
+  out.reset();
+  if(syntax.name.rooted ||
+     !syntax.name.qualifiers.empty() ||
+     syntax.name.name.empty() ||
+     !scope_has_template_template_placeholder(scope, syntax.name.name)) {
+    return false;
+  }
+
+  const vector<DependentAliasTemplateArgumentSyntax> arguments =
+      dependent_arguments_from_template_id_syntax(services, scope, syntax);
 
   out = make_semantic_named(lookup_text,
                             Type::NSK_DEPENDENT_TYPE,
@@ -2976,8 +3016,41 @@ bool try_make_dependent_template_template_parameter_type(
                             true);
   set_named_type_dependent_template_template_parameter(out,
                                                        syntax.name.name,
-                                                       arg_texts.size(),
+                                                       arguments.size(),
                                                        arguments);
+  return out != nullptr;
+}
+
+bool try_make_dependent_current_specialization_type(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TemplateIdSyntax & syntax,
+    const string & lookup_text,
+    TypePtr & out)
+{
+  out.reset();
+  if(syntax.name.rooted ||
+     !syntax.name.qualifiers.empty() ||
+     syntax.name.name.empty()) {
+    return false;
+  }
+  ClassTemplateDecl * current_template =
+      enclosing_source_class_template_for_scope(scope, syntax.name.name);
+  if(!current_template) {
+    return false;
+  }
+  const vector<DependentAliasTemplateArgumentSyntax> arguments =
+      dependent_arguments_from_template_id_syntax(services, scope, syntax);
+  if(arguments.size() > current_template->parameters.size()) {
+    return false;
+  }
+  out = make_semantic_named(lookup_text,
+                            Type::NSK_DEPENDENT_TYPE,
+                            lookup_text,
+                            true);
+  set_named_type_dependent_class_template(out,
+                                          current_template,
+                                          arguments);
   return out != nullptr;
 }
 
@@ -3000,18 +3073,6 @@ bool current_specialization_argument_texts_match(
     }
   }
   return true;
-}
-
-bool template_parameter_text_matches_current_specialization_arg(
-    const TemplateParameterInfo & parameter,
-    const string & arg)
-{
-  if(arg == parameter.name) {
-    return true;
-  }
-  return find(parameter.alternate_names.begin(),
-              parameter.alternate_names.end(),
-              arg) != parameter.alternate_names.end();
 }
 
 bool current_specialization_template_name_matches(
@@ -3788,6 +3849,13 @@ bool resolve_template_id_syntax_type(template_api::TemplateServices & services,
   }
 
   if(request_should_defer_unresolved_type_lookup(services, scope, lookup_text)) {
+    if(try_make_dependent_current_specialization_type(services,
+                                                      scope,
+                                                      syntax,
+                                                      lookup_text,
+                                                      out)) {
+      return true;
+    }
     if(try_make_dependent_template_template_parameter_type(services,
                                                            scope,
                                                            syntax,
@@ -5493,12 +5561,19 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
               normalized_lookup_name))) {
         const string qualifier_lookup_text =
             template_id_syntax_lookup_text(*qualifier_template_id);
-        if(!try_make_dependent_qualified_template_id_type(services,
-                                                          scope,
-                                                          *qualifier_template_id,
-                                                          qualifier_lookup_text,
-                                                          reference_class_templates_only,
-                                                          qualifier_type)) {
+        if(!try_make_dependent_current_specialization_type(
+               services,
+               scope,
+               *qualifier_template_id,
+               qualifier_lookup_text,
+               qualifier_type) &&
+           !try_make_dependent_qualified_template_id_type(
+               services,
+               scope,
+               *qualifier_template_id,
+               qualifier_lookup_text,
+               reference_class_templates_only,
+               qualifier_type)) {
           qualifier_type =
               make_semantic_named(qualifier_lookup_text,
                                   Type::NSK_DEPENDENT_TYPE,
@@ -9441,113 +9516,29 @@ TypePtr current_specialization_type_for_dependent_owner(
     return TypePtr();
   }
 
-  const auto owner_text_names_current_specialization = [&]() -> bool
-  {
-    string owner_text = reparseable_type_argument_text(owner_type);
-    if(owner_text.empty()) {
-      owner_text =
-          owner_type && !owner_type->named_display.empty() ?
-              owner_type->named_display :
-              (owner_type ? describe_type(owner_type) : string());
-    }
-    owner_text = normalize_type_lookup_name(trim_space(owner_text));
-    QualifiedName template_name;
-    vector<string> arg_texts;
-    if(!semantic_utils::split_top_level_template_id_text(owner_text,
-                                                         template_name,
-                                                         arg_texts)) {
-      return false;
-    }
-    if(unqualified_member_name(template_name.name) != current->source_template->name ||
-       arg_texts.size() > current->source_template->parameters.size()) {
-      return false;
-    }
-    // Out-of-class nested class definitions can use local template parameter
-    // names that are gone by the time the concrete nested class registers its
-    // functions. In that narrow state, same-arity simple arguments still name
-    // the enclosing current specialization.
-    const bool nested_scope_lost_source_parameter_aliases =
-        scope.class_info &&
-        scope.class_info != current &&
-        !scope.class_info->source_template &&
-        scope.class_info->enclosing_scope &&
-        scope.class_info->enclosing_scope->class_info == current &&
-        scope.template_bound_type_names.empty() &&
-        scope.template_bound_type_pack_names.empty() &&
-        scope.template_bound_value_names.empty() &&
-        scope.template_bound_value_pack_names.empty() &&
-        scope.template_bound_template_names.empty() &&
-        arg_texts.size() == current->source_template->parameters.size() &&
-        current->instantiation_arguments.size() >= arg_texts.size();
-    template_api::TemplateEnvironmentHandle current_scope =
-        template_api::make_template_environment(scope);
-    const auto arg_matches_current_parameter =
-        [&](size_t index,
-            const TemplateParameterInfo & parameter,
-            const string & arg) -> bool
-        {
-          if(template_parameter_text_matches_current_specialization_arg(parameter, arg)) {
-            return true;
-          }
-          if(index >= current->instantiation_arguments.size()) {
-            return false;
-          }
-          if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
-            if(scope.template_bound_type_names.count(arg) == 0 &&
-               scope.template_bound_type_pack_names.count(arg) == 0) {
-              return false;
-            }
-            Scope::NamedTypeMap::const_iterator found =
-                scope.named_types.find(arg);
-            const TemplateArgument & current_argument =
-                current->instantiation_arguments[index];
-            if(found == scope.named_types.end() ||
-               current_argument.kind != TemplateArgument::TA_TYPE ||
-               !found->second ||
-               !current_argument.type) {
-              return false;
-            }
-            TypePtr resolved = found->second;
-            TypePtr substituted;
-            if(resolve_instantiated_dependent_type(services,
-                                                   current_scope,
-                                                   resolved,
-                                                   substituted) &&
-               substituted) {
-              resolved = substituted;
-            }
-            return type_equals(resolved, current_argument.type);
-          }
-          return false;
-        };
-    for(size_t i = 0; i < arg_texts.size(); ++i) {
-      const TemplateParameterInfo & parameter =
-          current->source_template->parameters[i];
-      if(parameter.name.empty()) {
-        return false;
-      }
-      string arg = normalize_type_lookup_name(
-          strip_elaborated_type_prefix(trim_space(arg_texts[i])));
-      const string typename_prefix = "typename ";
-      if(arg.compare(0, typename_prefix.size(), typename_prefix) == 0) {
-        arg = trim_space(arg.substr(typename_prefix.size()));
-      }
-      if(arg_matches_current_parameter(i, parameter, arg)) {
-        continue;
-      }
-      if(nested_scope_lost_source_parameter_aliases &&
-         is_identifier_text(arg)) {
-        continue;
-      }
-      return false;
-    }
-    return true;
-  };
-
-  if(owner_text_names_current_specialization()) {
+  const bool nested_scope_lost_source_parameter_aliases =
+      scope.class_info &&
+      scope.class_info != current &&
+      !scope.class_info->source_template &&
+      scope.class_info->enclosing_scope &&
+      scope.class_info->enclosing_scope->class_info == current &&
+      scope.template_bound_type_names.empty() &&
+      scope.template_bound_type_pack_names.empty() &&
+      scope.template_bound_value_names.empty() &&
+      scope.template_bound_value_pack_names.empty() &&
+      scope.template_bound_template_names.empty();
+  void * dependent_class_template_decl = nullptr;
+  vector<DependentAliasTemplateArgumentSyntax> dependent_class_arguments;
+  if(nested_scope_lost_source_parameter_aliases &&
+     named_type_dependent_class_template(owner_type,
+                                         dependent_class_template_decl,
+                                         dependent_class_arguments) &&
+     dependent_class_template_decl == current->source_template &&
+     dependent_class_arguments.size() ==
+         current->source_template->parameters.size() &&
+     current->instantiation_arguments.size() >= dependent_class_arguments.size()) {
     return current->type;
   }
-
   ClassInfo * owner = class_info_for_named_type(services, owner_type);
   if(!owner ||
      !owner->source_template ||
