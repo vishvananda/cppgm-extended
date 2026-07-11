@@ -4327,44 +4327,6 @@ string template_id_component_lookup_text(const string & text)
   return out;
 }
 
-bool template_id_syntax_from_component_text(const string & text,
-                                            TemplateIdSyntax & out)
-{
-  out = TemplateIdSyntax();
-  QualifiedName name;
-  vector<string> arguments;
-  if(!semantic_utils::split_top_level_template_id_text(
-         template_id_component_lookup_text(text),
-                                                       name,
-                                                       arguments) ||
-     arguments.empty()) {
-    return false;
-  }
-
-  out.name = name;
-  out.arguments = arguments;
-  out.argument_syntaxes.reserve(arguments.size());
-  for(size_t i = 0; i < arguments.size(); ++i) {
-    TemplateArgumentSyntax argument;
-    argument.text = trim_space(arguments[i]);
-    out.argument_syntaxes.push_back(argument);
-  }
-  return true;
-}
-
-bool template_id_syntax_from_qualified_component_text(
-    const QualifiedName & qualified,
-    size_t qualifier_index,
-    TemplateIdSyntax & out)
-{
-  if(qualifier_index >= qualified.qualifiers.size() ||
-     !template_id_syntax_from_component_text(qualified.qualifiers[qualifier_index],
-                                             out)) {
-    return false;
-  }
-  return true;
-}
-
 bool template_id_syntax_matches_qualified_component(
     const TemplateIdSyntax & syntax,
     const string & component)
@@ -4393,22 +4355,6 @@ bool template_id_syntax_matches_qualified_component(
     }
   }
   return false;
-}
-
-bool qualified_component_has_template_id(const string & text)
-{
-  TemplateIdSyntax syntax;
-  return template_id_syntax_from_component_text(text, syntax);
-}
-
-bool qualified_name_has_template_id_component(const QualifiedName & qualified)
-{
-  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    if(qualified_component_has_template_id(qualified.qualifiers[i])) {
-      return true;
-    }
-  }
-  return qualified_component_has_template_id(qualified.name);
 }
 
 ClassTemplateDecl * lookup_direct_or_inline_class_template(Scope & scope,
@@ -5310,8 +5256,7 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
   }
   if(!has_qualifier_template_id_syntax_payload(node) &&
      !has_qualifier_type_syntax(node) &&
-     !has_lone_template_id &&
-     !qualified_name_has_template_id_component(qualified)) {
+     !has_lone_template_id) {
     return StructuredTypeLookupResult::NotApplicable;
   }
 
@@ -5371,13 +5316,6 @@ StructuredTypeLookupResult resolve_qualified_template_type_lookup_node(
     }
     TemplateIdSyntax local_qualifier_template_id;
     const TemplateIdSyntax * lookup_qualifier_template_id = qualifier_template_id;
-    if(!lookup_qualifier_template_id &&
-       template_id_syntax_from_qualified_component_text(
-           qualified,
-           i,
-           local_qualifier_template_id)) {
-      lookup_qualifier_template_id = &local_qualifier_template_id;
-    }
     if(qualifier_template_id) {
       local_qualifier_template_id =
           local_template_id_for_current_scope(*qualifier_template_id);
@@ -25678,14 +25616,6 @@ Scope * resolve_qualified_scope_for_class_or_namespace_node(
                     qualified.qualifiers[i]) ?
             &node.qualifier_template_id_syntaxes[i] :
             nullptr;
-    TemplateIdSyntax local_qualifier_template_id;
-    if(!qualifier_template_id &&
-       template_id_syntax_from_qualified_component_text(
-           qualified,
-           i,
-           local_qualifier_template_id)) {
-      qualifier_template_id = &local_qualifier_template_id;
-    }
     if(!qualifier_template_id &&
        i == 0) {
       if(const TemplateIdSyntax * lone_template_id = cppast_template_id_syntax(node)) {
