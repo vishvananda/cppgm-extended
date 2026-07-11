@@ -6545,3 +6545,8 @@ Final-component structured qualified type lookup now requires the template-id
 syntax retained on the AST node instead of rebuilding it from
 `QualifiedName::name`. This ratchets the category from `42` to `41`; the 1,173
 focused tests and full strict suite pass.
+
+Qualified type substitution now rebuilds a replacement qualifier template-id
+only from the replacement `Type`'s class-template metadata. The fallback that
+decomposed the rendered replacement component is removed, ratcheting the audit
+from `41` to `40`; focused and strict suites pass.

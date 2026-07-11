@@ -22842,9 +22842,7 @@ bool substitute_qualified_name_qualifier_type(
   TemplateIdSyntax replacement_template_id;
   const bool replacement_template_id_from_type =
       template_id_syntax_from_class_template_type(type, &scope, replacement_template_id);
-  if(replacement_template_id_from_type ||
-     template_id_syntax_from_component_text(replacement_component,
-                                            replacement_template_id)) {
+  if(replacement_template_id_from_type) {
     new_qualifier_template_ids[replacement_component_index] =
         replacement_template_id;
   }
