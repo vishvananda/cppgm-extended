@@ -6598,3 +6598,10 @@ component's template name, parameters, and concrete arguments from the
 and destructor symbols without rebuilding template-id syntax from qualifier
 text. PA35 passes `87/87`, PA36 passes `74/74`, and PA37's object roundtrip
 passes `7/7`; the full strict suite and full `3618/3618` report pass.
+
+Direct standard ABI substitution registration now identifies `allocator`,
+`basic_string`, and stream specializations from retained
+`ClassTemplateSpecializationMangleInfo` and structured arguments. The named
+text parser and its text-only `char_traits`/allocator recognizers are removed,
+ratcheting the audit from `33` to `32`; PA30 passes `78/78` and PA35 passes
+`87/87`; the full strict suite and full `3618/3618` report pass.

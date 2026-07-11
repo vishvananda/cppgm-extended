@@ -2555,87 +2555,9 @@ static bool qualify_template_id_syntax_from_lookup(
   return !out.name.empty();
 }
 
-static bool canonical_named_text_equals(const string & text, const string & expected)
-{
-  string canonical_text;
-  return canonicalize_named_substitution_text(text, canonical_text) &&
-         canonical_text == expected;
-}
-
-static bool is_char_type_text(const string & text)
-{
-  return trim_elaborated_type_prefix(text) == "char";
-}
-
-static bool is_std_char_traits_char_text(const string & text)
-{
-  return canonical_named_text_equals(text, "std::char_traits<char>");
-}
-
-static bool is_std_allocator_char_text(const string & text)
-{
-  return canonical_named_text_equals(text, "std::allocator<char>");
-}
-
-static bool template_component_matches_char_stream(const TemplateComponent & component,
-                                                   const string & base_name)
-{
-  return trim_space(component.base_name) == base_name &&
-         component.arg_texts.size() == 2 &&
-         is_char_type_text(component.arg_texts[0]) &&
-         is_std_char_traits_char_text(component.arg_texts[1]);
-}
-
-static bool is_direct_std_standard_substitution_component(const TemplateComponent & component)
-{
-  const string base_name = trim_space(component.base_name);
-  return base_name == "allocator" ||
-         template_component_matches_char_stream(component, "basic_istream") ||
-         (base_name == "istream" && !component.has_template_id) ||
-         template_component_matches_char_stream(component, "basic_ostream") ||
-         (base_name == "ostream" && !component.has_template_id) ||
-         template_component_matches_char_stream(component, "basic_iostream") ||
-         (base_name == "iostream" && !component.has_template_id) ||
-         (base_name == "basic_string" &&
-          component.arg_texts.size() == 3 &&
-          is_char_type_text(component.arg_texts[0]) &&
-          is_std_char_traits_char_text(component.arg_texts[1]) &&
-          is_std_allocator_char_text(component.arg_texts[2]));
-}
-
 static bool direct_std_standard_substitutions_enabled(const TypeMangleContext * mangle_ctx)
 {
   return !mangle_ctx || mangle_ctx->allow_direct_std_standard_substitutions;
-}
-
-static bool direct_std_standard_substitution_component_enabled(
-    const TemplateComponent & component,
-    const TypeMangleContext * mangle_ctx)
-{
-  return trim_space(component.base_name) == "allocator" ||
-         direct_std_standard_substitutions_enabled(mangle_ctx);
-}
-
-static bool named_text_uses_enabled_direct_std_standard_substitution(
-    const string & text,
-    const TypeMangleContext * mangle_ctx)
-{
-  QualifiedName qualified;
-  if(!parse_external_named_text_candidate(text, qualified)) {
-    return false;
-  }
-
-  vector<string> parts = qualified.qualifiers;
-  parts.push_back(qualified.name);
-  if(parts.size() != 2 || canonical_component_text(parts[0]) != "std") {
-    return false;
-  }
-
-  TemplateComponent component;
-  return parse_template_component(parts[1], component) &&
-         !trim_space(component.base_name).empty() &&
-         is_direct_std_standard_substitution_component(component) &&
-         direct_std_standard_substitution_component_enabled(component, mangle_ctx);
 }
 
 static bool canonicalize_named_substitution_text(const string & text, string & out)
@@ -6999,9 +6921,27 @@ static bool named_type_uses_direct_std_standard_substitution(
   if(!type || type->kind != Type::TK_NAMED) {
     return false;
   }
-  return named_text_uses_enabled_direct_std_standard_substitution(
-      preferred_named_type_text(type, mangle_ctx),
-      mangle_ctx);
+  shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
+      named_type_class_template_specialization_mangle_info_const(type);
+  if(!info) {
+    return false;
+  }
+  string canonical_scope;
+  if(!canonicalize_named_substitution_text(info->template_scope_prefix,
+                                           canonical_scope) ||
+     canonical_scope != "std") {
+    return false;
+  }
+  string code;
+  bool substitution_includes_arguments = false;
+  return structured_std_standard_substitution_for_template_component(
+             trim_space(info->template_name),
+             info->arguments,
+             canonical_scope,
+             mangle_ctx,
+             code,
+             substitution_includes_arguments) &&
+         !code.empty();
 }
 
 static void register_direct_std_type_substitution_if_needed(
