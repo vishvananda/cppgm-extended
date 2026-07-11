@@ -716,7 +716,7 @@ bool resolve_elaborated_type_lookup_node(
       template_api::normalize_template_witness_source_location(source_location);
   if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
     request.name = *qualified;
-  } else if(!semantic_utils::split_qualified_name_text(node.value, request.name)) {
+  } else {
     request.name = QualifiedName();
     request.name.name = node.value;
   }
