@@ -30458,31 +30458,6 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
         return DependentNamedTypeResolutionStatus::Resolved;
       }
 
-      QualifiedName alias_template_id;
-      vector<string> alias_arg_texts;
-      if(semantic_utils::split_top_level_template_id_text(
-             concrete_alias_lookup_text,
-             alias_template_id,
-             alias_arg_texts)) {
-        template_api::TemplateTypeLookupRequest alias_request;
-        alias_request.scope = &raw_scope;
-        alias_request.name = alias_template_id;
-        TypePtr alias_resolved;
-        if(try_resolve_alias_template_id_locally(
-               services,
-               scope,
-               alias_request,
-               alias_template_id,
-               alias_arg_texts,
-               nullptr,
-               scope,
-               alias_resolved) &&
-           alias_resolved &&
-           !type_is_dependent(alias_resolved)) {
-          out = alias_resolved;
-          return DependentNamedTypeResolutionStatus::Resolved;
-        }
-      }
     }
   }
   if(is_identifier_text(normalized_text)) {
@@ -30532,31 +30507,6 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
          services, scope, type, resolved_instantiation)) {
     out = resolved_instantiation;
     return DependentNamedTypeResolutionStatus::Resolved;
-  }
-
-  if(normalized_text.find('<') != string::npos &&
-     normalized_text.find("...") != string::npos) {
-    return DependentNamedTypeResolutionStatus::KeepDependent;
-  }
-  if(normalized_text.find('<') != string::npos) {
-    const size_t direct_owner_split =
-        semantic_utils::top_level_scope_split(normalized_text);
-    const string direct_owner_text =
-        direct_owner_split == string::npos ?
-            normalized_text :
-            trim_space(normalized_text.substr(0, direct_owner_split));
-    QualifiedName direct_owner_name;
-    std::vector<string> direct_owner_args;
-    if(semantic_utils::split_top_level_template_id_text(direct_owner_text,
-                                                        direct_owner_name,
-                                                        direct_owner_args)) {
-      for(size_t i = 0; i < direct_owner_args.size(); ++i) {
-        if(direct_owner_args[i].find("::") != string::npos ||
-           direct_owner_args[i].find("...") != string::npos) {
-          return DependentNamedTypeResolutionStatus::KeepDependent;
-        }
-      }
-    }
   }
 
   if(TypePtr direct_member =
