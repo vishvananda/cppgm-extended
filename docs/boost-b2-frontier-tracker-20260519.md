@@ -6487,3 +6487,10 @@ fallback can be deleted. With that fallback left explicit, PA23 passes
 three source arguments from the active alias declaration's retained type-id
 syntax instead of decomposing the rendered dependent result type. This
 ratchets the category from `68` to `67`.
+
+Template-instantiation decomposition now starts from retained class
+specialization metadata, dependent-class arguments, dependent-alias records,
+and specialization mangle syntax. It no longer parses every named type's
+deduction spelling or promotes a text-only named type into an instantiation.
+This ratchets the category from `67` to `66`; the 1,807 focused tests and full
+strict suite pass.

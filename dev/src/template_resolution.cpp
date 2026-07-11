@@ -8032,15 +8032,40 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
     return false;
   }
 
-  const std::string normalized_text = strip_elaborated_type_prefix(
-      trim_space(type_argument_text_for_deduction(type_system, base)));
   QualifiedName parsed_name;
   std::vector<std::string> parsed_arg_texts;
-  const bool parsed_template_id =
-      !normalized_text.empty() &&
-      semantic_utils::split_top_level_template_id_text(normalized_text,
-                                                       parsed_name,
-                                                       parsed_arg_texts);
+  const std::shared_ptr<const ClassTemplateSpecializationMangleInfo>
+      specialization_mangle_info =
+          named_type_class_template_specialization_mangle_info_const(base);
+  ClassTemplateDecl * specialization_template =
+      specialization_mangle_info ?
+          static_cast<ClassTemplateDecl *>(
+              specialization_mangle_info->class_template_decl) : nullptr;
+  const bool parsed_template_id = specialization_template != nullptr;
+  if(specialization_template) {
+    parsed_name = specialization_template->declaring_scope ?
+        semantic_lookup::scope_qualified_name_syntax(
+            *specialization_template->declaring_scope,
+            specialization_template->name) : QualifiedName();
+    if(!specialization_template->declaring_scope) {
+      parsed_name.name = specialization_template->name;
+    }
+    const std::vector<TemplateArgumentSyntax> & syntaxes =
+        specialization_mangle_info->argument_syntaxes;
+    parsed_arg_texts.reserve(syntaxes.size());
+    for(std::size_t i = 0; i < syntaxes.size(); ++i) {
+      parsed_arg_texts.push_back(trim_space(syntaxes[i].text));
+    }
+    if(parsed_arg_texts.empty()) {
+      const std::vector<TemplateArgument> & arguments =
+          specialization_mangle_info->arguments;
+      parsed_arg_texts.reserve(arguments.size());
+      for(std::size_t i = 0; i < arguments.size(); ++i) {
+        parsed_arg_texts.push_back(
+            template_argument_text_for_matching(services, arguments[i]));
+      }
+    }
+  }
 
   template_api::TemplateNamedTypeMetadata info;
   const bool have_info =
@@ -8292,13 +8317,11 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
     if(info.source_template &&
        !template_arguments_fully_bind_parameters(info.source_template->parameters,
                                                 out.arguments)) {
-      std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
-          named_type_class_template_specialization_mangle_info_const(base);
-      if(mangle_info &&
-         mangle_info->class_template_decl == info.source_template &&
+      if(specialization_mangle_info &&
+         specialization_mangle_info->class_template_decl == info.source_template &&
          template_arguments_fully_bind_parameters(info.source_template->parameters,
-                                                  mangle_info->arguments)) {
-        out.arguments = mangle_info->arguments;
+                                                  specialization_mangle_info->arguments)) {
+        out.arguments = specialization_mangle_info->arguments;
       }
     }
     // Do not recover typed arguments by reparsing stored source text here.
@@ -8541,7 +8564,7 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
     }
   }
 
-  if(parsed_template_id && named_type_is_dependent_alias(base)) {
+  if(named_type_is_dependent_alias(base)) {
     void * dependent_alias_template_decl = nullptr;
     std::vector<DependentAliasTemplateArgumentSyntax> dependent_alias_args;
     AliasTemplateDecl * alias_template =
@@ -8550,7 +8573,14 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
                                             dependent_alias_args) ?
             static_cast<AliasTemplateDecl *>(dependent_alias_template_decl) :
             nullptr;
-    QualifiedName alias_name = parsed_name;
+    QualifiedName alias_name =
+        alias_template && alias_template->declaring_scope ?
+            semantic_lookup::scope_qualified_name_syntax(
+                *alias_template->declaring_scope,
+                alias_template->name) : QualifiedName();
+    if(alias_template && !alias_template->declaring_scope) {
+      alias_name.name = alias_template->name;
+    }
     AliasTemplateDecl * visible_alias_template = alias_template ?
         template_argument_semantics::lookup_alias_template(
             services, lookup_scope, qualified_name_text(alias_name)) :
@@ -8603,21 +8633,7 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
       }
     }
   }
-  if(!parsed_template_id) {
-    return false;
-  }
-
-  ClassTemplateDecl * source_template =
-      template_argument_semantics::lookup_class_template(
-          services, lookup_scope, qualified_name_text(parsed_name));
-  if(!source_template) {
-    return false;
-  }
-
-  out.source_template = source_template;
-  out.name = parsed_name;
-  out.argument_texts = parsed_arg_texts;
-  return true;
+  return false;
 }
 
 bool resolve_template_argument_for_deduction(
