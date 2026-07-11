@@ -11167,19 +11167,16 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         if(i >= partial.arg_syntaxes.size()) {
           continue;
         }
-        const std::string pattern_text = trim_space(partial.arg_texts[i]);
-        QualifiedName pattern_name;
-        std::vector<std::string> pattern_args;
-        if(!semantic_utils::split_top_level_template_id_text(pattern_text,
-                                                             pattern_name,
-                                                             pattern_args)) {
+        const TemplateIdSyntax * pattern_id =
+            template_argument_template_id_syntax(partial.arg_syntaxes[i]);
+        if(!pattern_id) {
           continue;
         }
         record_alias_pattern_source_use_from_texts(
             services,
             template_api::make_template_environment(matched_pattern_scope),
-            pattern_name,
-            pattern_args,
+            pattern_id->name,
+            pattern_id->arguments,
             &partial.arg_syntaxes[i]);
       }
     }

@@ -1393,16 +1393,14 @@ bool template_id_value_for_anchor(
     QualifiedName & out_name,
     std::vector<std::string> & out_arg_texts)
 {
-  if(!node.value.empty()) {
-    QualifiedName template_id;
-    std::vector<std::string> arg_texts;
-    if(semantic_utils::split_top_level_template_id_text(node.value,
-                                                        template_id,
-                                                        arg_texts) &&
-       !arg_texts.empty() &&
-       template_id_syntax_matches_identifier_text(qualified_name_syntax_text(template_id),
-                                                  identifier)) {
-      out_name = template_id;
+  if(const TemplateIdSyntax * template_id = cppast_template_id_syntax(node)) {
+    const std::vector<std::string> arg_texts =
+        template_id_argument_texts_preserving_spacing(*template_id);
+    if(!arg_texts.empty() &&
+       template_id_syntax_matches_identifier_text(
+           qualified_name_syntax_text(template_id->name),
+           identifier)) {
+      out_name = template_id->name;
       out_arg_texts = arg_texts;
       return true;
     }

@@ -6431,3 +6431,9 @@ fallbacks are removed and the structured class-instantiation state is now
 authoritative, lowering `semantic_template_id_text_decomposition` from `99` to
 `95`. The default audit passes at the new limit, all 8 audit unit tests pass,
 and the full PA18/PA19/PA21/PA22/PA23 strict witness suite passes.
+
+The next structured-syntax slice removes two more decompositions: source-anchor
+recovery now reads `CppAstNode` template-id syntax instead of splitting
+`node.value`, and partial-match witness replay uses the retained argument
+`TemplateIdSyntax` instead of splitting `arg_texts`. The audit ratchets from
+`95` to `93`, and the full strict witness suite remains clean.
