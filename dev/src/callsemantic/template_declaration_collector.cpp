@@ -98,6 +98,23 @@ bool declaration_has_conversion_operator_type_id(const CppAstNode & node)
   return identifier && cppast_conversion_type_id_syntax(*identifier);
 }
 
+bool qualifier_template_name(const CppAstNode * node,
+                             size_t qualifier_index,
+                             string & out)
+{
+  out.clear();
+  if(!node) {
+    return false;
+  }
+  const TemplateIdSyntax * syntax =
+      cppast_qualifier_template_id_syntax(*node, qualifier_index);
+  if(!syntax) {
+    return false;
+  }
+  out = unqualified_member_name(syntax->name.name);
+  return !out.empty();
+}
+
 bool declarator_is_transparent_parenthesized_name(const CppAstNode & node)
 {
   if(node.kind != CppAstKind::declarator) {
@@ -369,12 +386,13 @@ public:
                   *this, scope, owner_scope_name);
         }
 
+        const size_t owner_qualifier_index =
+            effective_qualified_class_name->qualifiers.size() - 1;
         string owner_template_name;
         if(owner_scope &&
            effective_qualified_class_name->name.find('<') == string::npos &&
-           split_unqualified_template_head_text(
-               effective_qualified_class_name->qualifiers.back(),
-               owner_template_name)) {
+           qualifier_template_name(
+               &inner, owner_qualifier_index, owner_template_name)) {
           ClassTemplateDecl * owner_template =
               lookup_class_template(*owner_scope, owner_template_name);
           if(owner_template) {
@@ -507,6 +525,7 @@ public:
                 scope,
                 pattern_scope,
                 specialization_name,
+                *class_template_id,
                 owner_template_parameters,
                 owner_member_template_name);
         if(specialization_name.rooted || !specialization_name.qualifiers.empty()) {
@@ -1074,9 +1093,9 @@ public:
                 qualifier_index > 0;
                 --qualifier_index) {
               std::string owner_template_name;
-              if(!split_unqualified_template_head_text(
-                     qualified_member.qualifiers[qualifier_index - 1],
-                     owner_template_name)) {
+              if(!qualifier_template_name(declarator_identifier,
+                                          qualifier_index - 1,
+                                          owner_template_name)) {
                 continue;
               }
 
@@ -2427,8 +2446,9 @@ public:
         if(owner && owner->member_scope) {
           string owner_template_name;
           const bool owner_is_template_id =
-              split_unqualified_template_head_text(qualified_member.qualifiers.back(),
-                                                   owner_template_name);
+              qualifier_template_name(function_identifier,
+                                      qualified_member.qualifiers.size() - 1,
+                                      owner_template_name);
           ClassTemplateDecl * owner_template_decl = owner->source_template;
           if(!owner_template_decl &&
              owner->enclosing_scope &&
@@ -2940,9 +2960,9 @@ public:
             --candidate_count) {
           const size_t candidate_index = candidate_count - 1;
           string candidate_template_name;
-          if(!split_unqualified_template_head_text(
-                 static_member_name.qualifiers[candidate_index],
-                 candidate_template_name)) {
+          if(!qualifier_template_name(static_member_identifier,
+                                      candidate_index,
+                                      candidate_template_name)) {
             continue;
           }
 
@@ -3967,8 +3987,9 @@ public:
 
     string owner_template_name;
     const bool owner_is_template_id =
-        split_unqualified_template_head_text(qualified_member->qualifiers.back(),
-                                             owner_template_name);
+        qualifier_template_name(function_identifier,
+                                qualified_member->qualifiers.size() - 1,
+                                owner_template_name);
     ClassTemplateDecl * owner_template_decl = owner->source_template;
     if(!owner_template_decl &&
        owner->enclosing_scope &&
@@ -4773,6 +4794,7 @@ private:
       Scope & scope,
       Scope & pattern_scope,
       const QualifiedName & specialization_name,
+      const TemplateIdSyntax & specialization_syntax,
       const vector<TemplateParameterInfo> & owner_template_parameters,
       string & member_template_name)
   {
@@ -4781,9 +4803,17 @@ private:
       return nullptr;
     }
 
-    string owner_template_name;
-    if(!split_unqualified_template_head_text(specialization_name.qualifiers.back(),
-                                             owner_template_name)) {
+    const size_t owner_qualifier_index = specialization_name.qualifiers.size() - 1;
+    if(owner_qualifier_index >=
+           specialization_syntax.qualifier_template_id_syntaxes.size()) {
+      return nullptr;
+    }
+    const TemplateIdSyntax & owner_template_id =
+        specialization_syntax.qualifier_template_id_syntaxes[
+            owner_qualifier_index];
+    string owner_template_name =
+        unqualified_member_name(owner_template_id.name.name);
+    if(owner_template_name.empty()) {
       return nullptr;
     }
 

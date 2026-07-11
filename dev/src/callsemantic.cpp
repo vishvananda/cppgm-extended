@@ -119,7 +119,6 @@ using callsemantic::SourceLocationTokenView;
 using callsemantic::class_member_body_has_invalid_nondependent_lookup;
 using callsemantic::class_member_redeclares_template_parameter;
 using callsemantic::declarator_declared_identifier;
-using callsemantic::split_unqualified_template_head_text;
 using callsemantic::subtree_alias_redeclares_template_parameter;
 using callsemantic::template_parameter_names;
 

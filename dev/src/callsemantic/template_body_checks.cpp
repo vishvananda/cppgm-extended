@@ -2053,20 +2053,4 @@ bool class_member_redeclares_template_parameter(
   return false;
 }
 
-bool split_unqualified_template_head_text(const std::string & text,
-                                          std::string & base_name)
-{
-  const std::string trimmed = trim_space(text);
-  const std::string stripped =
-      strip_trailing_top_level_template_arguments(trimmed);
-  if(stripped.size() >= trimmed.size() ||
-     stripped.empty() ||
-     trimmed[stripped.size()] != '<' ||
-     !is_identifier_text(stripped)) {
-    return false;
-  }
-  base_name = stripped;
-  return true;
-}
-
 }  // namespace callsemantic
