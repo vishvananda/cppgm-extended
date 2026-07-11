@@ -3895,27 +3895,6 @@ const TemplateParameterInfo * non_type_parameter_pack_for_reference_text(
              nullptr;
 }
 
-void collect_non_type_parameter_pack_references_from_text(
-    const vector<TemplateParameterInfo> & parameters,
-    const std::string & text,
-    std::set<const TemplateParameterInfo *> & out)
-{
-  if(text.empty()) {
-    return;
-  }
-  for(size_t i = 0; i < parameters.size(); ++i) {
-    const TemplateParameterInfo & parameter = parameters[i];
-    if(parameter.kind != TemplateParameterInfo::TP_NON_TYPE ||
-       !parameter.parameter_pack ||
-       parameter.name.empty()) {
-      continue;
-    }
-    if(text.find(parameter.name + "...") != std::string::npos) {
-      out.insert(&parameter);
-    }
-  }
-}
-
 const TemplateParameterInfo * direct_type_parameter_pack_reference(
     const vector<TemplateParameterInfo> & parameters,
     const TypePtr & type)
@@ -4059,14 +4038,6 @@ void collect_non_type_parameter_pack_references(
   switch(base->kind) {
   case Type::TK_NAMED:
   {
-    collect_non_type_parameter_pack_references_from_text(
-        parameters, base->named_semantic_payload, out);
-    collect_non_type_parameter_pack_references_from_text(
-        parameters, base->named_key, out);
-    if(base->named_display != base->named_key) {
-      collect_non_type_parameter_pack_references_from_text(
-          parameters, base->named_display, out);
-    }
     if(shared_ptr<const ClassTemplateSpecializationMangleInfo> info =
            named_type_class_template_specialization_mangle_info_const(base)) {
       for(size_t i = 0; i < info->arguments.size(); ++i) {
