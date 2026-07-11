@@ -3232,7 +3232,7 @@ bool resolve_member_template_owner_type_text(
     template_api::TemplateEnvironmentHandle scope,
     const string & owner_text,
     bool reference_class_templates_only,
-    TypePtr & out)
+  TypePtr & out)
 {
   out.reset();
 
@@ -25664,7 +25664,6 @@ bool lookup_concrete_member_template_value_binding(
      member_arg_texts.empty()) {
     return false;
   }
-
   TypePtr owner_type;
   template_api::TemplateEnvironmentHandle lexical_scope =
       template_api::make_template_environment(scope);
@@ -27848,106 +27847,6 @@ bool pattern_mentions_bound_value_pack(Scope & scope,
   return false;
 }
 
-bool expand_template_id_type_pack_pattern(
-    template_api::TemplateServices & services,
-    Scope & scope,
-    const string & pattern,
-    const vector<pair<string, const vector<TypePtr> *> > & packs,
-    vector<ExpandedTypeArgumentInput> & out)
-{
-  QualifiedName template_name;
-  vector<string> arg_texts;
-  if(!semantic_utils::split_top_level_template_id_text(pattern,
-                                                       template_name,
-                                                       arg_texts) ||
-     arg_texts.empty()) {
-    return false;
-  }
-
-  const size_t pack_size = packs[0].second->size();
-  for(size_t i = 1; i < packs.size(); ++i) {
-    if(packs[i].second->size() != pack_size) {
-      throw_pack_expansion_size_mismatch(pattern);
-    }
-  }
-
-  for(size_t pack_index = 0; pack_index < pack_size; ++pack_index) {
-    TemplateIdSyntax syntax;
-    syntax.name = template_name;
-    syntax.arguments.reserve(arg_texts.size());
-    syntax.argument_syntaxes.reserve(arg_texts.size());
-
-    for(size_t arg_index = 0; arg_index < arg_texts.size(); ++arg_index) {
-      const string arg_pattern = trim_space(arg_texts[arg_index]);
-      string rewritten_arg = arg_pattern;
-      TemplateArgumentSyntax arg_syntax;
-      arg_syntax.text = arg_pattern;
-      bool changed = false;
-      bool resolved_value_arg = false;
-      for(size_t pack = 0; pack < packs.size(); ++pack) {
-        const TypePtr & pack_arg = (*(packs[pack].second))[pack_index];
-        TypePtr resolved_arg;
-        if(!arg_syntax.resolved_type &&
-           apply_type_pack_pattern_to_type(arg_pattern,
-                                           packs[pack].first,
-                                           pack_arg,
-                                           resolved_arg)) {
-          arg_syntax.resolved_type = resolved_arg;
-        }
-        string bool_value_text;
-        if(!arg_syntax.resolved_type &&
-           !resolved_value_arg &&
-           apply_type_pack_bool_member_pattern(services,
-                                               scope,
-                                               arg_pattern,
-                                               packs[pack].first,
-                                               pack_arg,
-                                               bool_value_text)) {
-          rewritten_arg = bool_value_text;
-          resolved_value_arg = true;
-          changed = true;
-          continue;
-        }
-        rewritten_arg =
-            replace_identifier_token_text(rewritten_arg,
-                                          packs[pack].first,
-                                          reparseable_type_argument_text(pack_arg),
-                                          changed);
-      }
-      arg_syntax.text = trim_space(rewritten_arg);
-      syntax.arguments.push_back(arg_syntax.text);
-      syntax.argument_syntaxes.push_back(arg_syntax);
-    }
-
-    TypePtr expanded_type;
-    try {
-      if(!resolve_template_id_syntax_type(
-             services,
-             scope,
-             syntax,
-             true,
-             string(),
-             expanded_type,
-             template_api::make_template_environment(scope),
-             template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly,
-             false) ||
-         !expanded_type) {
-        out.clear();
-        return false;
-      }
-    } catch(const semantic_fallback_audit::SemanticFallbackError &) {
-      out.clear();
-      return false;
-    }
-
-    ExpandedTypeArgumentInput input;
-    input.text = template_pack_pattern_text(syntax.name, syntax.arguments);
-    input.type = expanded_type;
-    out.push_back(input);
-  }
-  return true;
-}
-
 bool expand_bound_type_pack_type_pattern(template_api::TemplateServices & services,
                                          Scope & scope,
                                          const string & pattern,
@@ -27982,7 +27881,7 @@ bool expand_bound_type_pack_type_pattern(template_api::TemplateServices & servic
     out.clear();
   }
 
-  return expand_template_id_type_pack_pattern(services, scope, pattern, packs, out);
+  return false;
 }
 
 string type_argument_lookup_text(template_api::TemplateTypeSystem & type_system,
@@ -31310,54 +31209,6 @@ bool resolve_member_template_template_argument_text(
   }
 
   TypePtr owner_type;
-  QualifiedName owner_template_name;
-  vector<string> owner_args;
-  const bool owner_split =
-      semantic_utils::split_top_level_template_id_text(owner_text,
-                                                       owner_template_name,
-                                                       owner_args);
-  const auto resolve_owner_with_syntaxes =
-      [&](const std::vector<TemplateArgumentSyntax> & arg_syntaxes) -> bool
-  {
-    TemplateIdSyntax owner_syntax;
-    owner_syntax.name = owner_template_name;
-    owner_syntax.arguments = owner_args;
-    owner_syntax.argument_syntaxes = arg_syntaxes;
-    if(ClassTemplateDecl * owner_template =
-           lookup_class_template_impl(
-               services,
-               scope.require(),
-               qualified_name_text_for_structured_lookup(owner_template_name))) {
-      Scope & binding_scope =
-          template_argument_binding_scope_for_class_template(scope.require(),
-                                                             *owner_template);
-      annotate_template_id_type_arguments_from_scope_bindings(binding_scope,
-                                                              *owner_template,
-                                                              owner_syntax);
-    }
-    owner_type.reset();
-    resolve_template_id_syntax_type(
-        services,
-        scope.require(),
-        owner_syntax,
-        true,
-        string(),
-        owner_type,
-        scope,
-        template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly);
-    return owner_type != nullptr;
-  };
-
-  if(owner_split) {
-    if(const std::vector<TemplateArgumentSyntax> * anchor_syntaxes =
-           callsemantic::exact_template_type_lookup_anchor_arg_syntaxes(
-               normalize_type_lookup_name(owner_text),
-               owner_template_name.name)) {
-      if(anchor_syntaxes->size() == owner_args.size()) {
-        resolve_owner_with_syntaxes(*anchor_syntaxes);
-      }
-    }
-  }
   if(!owner_type) {
     resolve_member_template_owner_type_text(services,
                                             scope,
