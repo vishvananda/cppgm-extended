@@ -568,10 +568,10 @@ public:
         }
       }
       if(!has_template_id_qualifier) {
-        const std::string elaborated_name =
-            std::string(elaborated_type_keyword_text(request.elaborated_kind)) +
-            qualified_name_text(request.name);
-        out = ctx_.maybe_introduce_elaborated_type(*request.scope, elaborated_name);
+        out = ctx_.maybe_introduce_elaborated_type(
+            *request.scope,
+            elaborated_type_keyword_text(request.elaborated_kind),
+            request.name);
         if(out && (request.top_const || request.top_volatile)) {
           out = cpp_decl::apply_cv(out, request.top_const, request.top_volatile);
         }

@@ -6282,7 +6282,29 @@ private:
     return member.type;
   }
 
-  TypePtr maybe_introduce_elaborated_class_type(Scope & scope, const string & text)
+  TypePtr introduce_elaborated_class_type(Scope & scope,
+                                          const string & class_kind,
+                                          const QualifiedName & qualified)
+  {
+    Scope * target_scope = nullptr;
+    string class_name;
+    if(!resolve_declared_class_scope_and_name(scope,
+                                              qualified,
+                                              target_scope,
+                                              class_name) ||
+       !target_scope) {
+      return TypePtr();
+    }
+    if(!qualified.rooted && qualified.qualifiers.empty()) {
+      target_scope = &unqualified_elaborated_type_declaration_scope(scope);
+    }
+    return create_class_info(*target_scope, class_kind, class_name)->type;
+  }
+
+  TypePtr maybe_introduce_elaborated_class_type(
+      Scope & scope,
+      const string & text,
+      const QualifiedName * structured_name = nullptr)
   {
     string class_kind;
     string declared_name;
@@ -6291,22 +6313,18 @@ private:
       return TypePtr();
     }
 
-    Scope * target_scope = nullptr;
-    string class_name;
-    QualifiedName qualified;
-    if(!split_qualified_name_text(declared_name, qualified) ||
-       (!qualified.rooted && qualified.qualifiers.empty())) {
-      target_scope = &unqualified_elaborated_type_declaration_scope(scope);
-      class_name = declared_name;
-    } else if(!resolve_declared_class_scope_and_name(scope,
-                                                     qualified,
-                                                     target_scope,
-                                                     class_name) ||
-              !target_scope) {
+    QualifiedName unqualified;
+    if(!structured_name) {
+      if(declared_name.find("::") != string::npos) {
+        return TypePtr();
+      }
+      unqualified.name = declared_name;
+      structured_name = &unqualified;
+    }
+    if(structured_name->name.empty()) {
       return TypePtr();
     }
-
-    return create_class_info(*target_scope, class_kind, class_name)->type;
+    return introduce_elaborated_class_type(scope, class_kind, *structured_name);
   }
 
   ClassInfo * create_instantiated_class_info(
@@ -6946,7 +6964,8 @@ private:
                            bool reference_class_templates_only,
                            bool allow_dependent_class_qualifiers,
                            template_api::ClassTemplateSourceUseMode source_use_mode =
-                               template_api::ClassTemplateSourceUseMode::EmitClassUse)
+                               template_api::ClassTemplateSourceUseMode::EmitClassUse,
+                           const QualifiedName * structured_name = nullptr)
   {
     DIAG_CONTEXT("lookup_type [" + name + "]");
     const string trimmed_name = trim_space(name);
@@ -8776,7 +8795,8 @@ private:
           }
         }
       }
-      TypePtr introduced = maybe_introduce_elaborated_class_type(scope, name);
+      TypePtr introduced =
+          maybe_introduce_elaborated_class_type(scope, name, structured_name);
       if(introduced) {
         return cache_qualified_type_result(introduced);
       }
@@ -8791,7 +8811,8 @@ private:
     if(result) {
       return result;
     }
-    TypePtr introduced = maybe_introduce_elaborated_class_type(scope, name);
+    TypePtr introduced =
+        maybe_introduce_elaborated_class_type(scope, name, structured_name);
     if(introduced) {
       return introduced;
     }
@@ -16340,9 +16361,12 @@ private:
     return lookup_type_impl(scope, name, reference_class_templates_only, false);
   }
 
-  TypePtr maybe_introduce_elaborated_type(Scope & scope, const string & text) override
+  TypePtr maybe_introduce_elaborated_type(
+      Scope & scope,
+      const string & class_kind,
+      const QualifiedName & name) override
   {
-    return maybe_introduce_elaborated_class_type(scope, text);
+    return introduce_elaborated_class_type(scope, class_kind, name);
   }
 
   const ValueBinding * lookup_value(Scope & scope, const string & name) override
@@ -17922,7 +17946,12 @@ private:
        fallback_lookup_is_qualified) {
       return TypePtr();
     }
-    return lookup_type(scope, lookup_name, reference_class_templates_only);
+    return lookup_type_impl(scope,
+                            lookup_name,
+                            reference_class_templates_only,
+                            false,
+                            template_api::ClassTemplateSourceUseMode::EmitClassUse,
+                            qualified_lookup);
   }
 
   AstDeclHooks make_decl_hooks(Scope & scope,
