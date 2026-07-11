@@ -1425,7 +1425,9 @@ public:
     decl.fast_reference_cache[cache_key] = info;
   }
 
-  bool is_fast_template_argument_lookup_text(Scope & scope, const string & text)
+  bool is_fast_template_argument_lookup_text(
+      const string & text,
+      const TemplateArgumentSyntax * syntax)
   {
     const string trimmed = trim_space(text);
     if(trimmed.empty()) {
@@ -1455,7 +1457,6 @@ public:
       return true;
     }
 
-    QualifiedName qualified;
     if(stripped.find('<') == string::npos || stripped[stripped.size() - 1] != '>') {
       return false;
     }
@@ -1466,7 +1467,7 @@ public:
     if(is_identifier_text(template_head)) {
       return true;
     }
-    return split_qualified_name_text(template_head, qualified);
+    return syntax && syntax->template_id && !syntax->template_id->name.name.empty();
   }
 
   bool try_fast_existing_class_template_instantiation(ClassTemplateDecl & decl,
@@ -1513,7 +1514,8 @@ public:
     }
 
     for(size_t i = 0; i < expanded_texts.size(); ++i) {
-      if(!is_fast_template_argument_lookup_text(use_scope, expanded_texts[i])) {
+      if(!is_fast_template_argument_lookup_text(expanded_texts[i],
+                                                expanded_inputs.syntax_for(i))) {
         return false;
       }
       if(arg_syntaxes &&
