@@ -551,12 +551,6 @@ private:
 
   TypePtr lookup_type(Scope & scope, const string & name)
   {
-    QualifiedName qualified;
-    if(semantic_utils::split_qualified_name_text(name, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
-      return lookup_type(scope, qualified);
-    }
-
     return lookup_unqualified_generic<TypePtr>(
         scope, name,
         [this](Scope & target, const string & lookup_name) -> TypePtr
