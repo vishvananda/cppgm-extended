@@ -14177,6 +14177,10 @@ bool argument_live_syntax_mentions_any_substitution_parameter(
   return false;
 }
 
+bool template_id_syntax_from_structured_type(const TypePtr & type,
+                                             Scope * scope,
+                                             TemplateIdSyntax & out);
+
 bool refresh_substituted_member_value_expression(CppAstNode & expression,
                                                  const string & text)
 {
@@ -14213,14 +14217,82 @@ bool refresh_substituted_member_value_expression(CppAstNode & expression,
     return false;
   }
 
+  const vector<TemplateIdSyntax> carried_template_ids =
+      expression.qualifier_template_id_syntaxes.as_vector();
+  const vector<CppAstNode> carried_qualifier_types =
+      expression.qualifier_type_syntaxes.as_vector();
+  vector<TemplateIdSyntax> mapped_template_ids(qualified.qualifiers.size());
+  vector<CppAstNode> mapped_qualifier_types(qualified.qualifiers.size());
+  const auto map_template_id =
+      [&](const TemplateIdSyntax & template_id,
+          const CppAstNode * qualifier_type) -> void
+      {
+        for(size_t nested_index = 0;
+            nested_index <
+                template_id.qualifier_template_id_syntaxes.size();
+            ++nested_index) {
+          const TemplateIdSyntax & nested =
+              template_id.qualifier_template_id_syntaxes[nested_index];
+          for(size_t qualifier_index = 0;
+              qualifier_index < qualified.qualifiers.size();
+              ++qualifier_index) {
+            if(mapped_template_ids[qualifier_index].name.name.empty() &&
+               template_id_syntax_matches_qualified_component(
+                   nested,
+                   qualified.qualifiers[qualifier_index])) {
+              mapped_template_ids[qualifier_index] = nested;
+              break;
+            }
+          }
+        }
+        for(size_t qualifier_index = 0;
+            qualifier_index < qualified.qualifiers.size();
+            ++qualifier_index) {
+          if(template_id_syntax_matches_qualified_component(
+                 template_id,
+                 qualified.qualifiers[qualifier_index])) {
+            mapped_template_ids[qualifier_index] = template_id;
+            if(qualifier_type) {
+              mapped_qualifier_types[qualifier_index] = *qualifier_type;
+            }
+            break;
+          }
+        }
+      };
+  for(size_t i = 0; i < carried_template_ids.size(); ++i) {
+    if(i < carried_qualifier_types.size() &&
+       carried_qualifier_types[i].semantic_type) {
+      TypePtr dependent_owner;
+      vector<string> dependent_members;
+      bool dependent_leading_typename = false;
+      if(named_type_dependent_qualified_member(
+             carried_qualifier_types[i].semantic_type,
+             dependent_owner,
+             dependent_members,
+             dependent_leading_typename,
+             nullptr)) {
+        TemplateIdSyntax owner_template_id;
+        if(template_id_syntax_from_structured_type(dependent_owner,
+                                                   nullptr,
+                                                   owner_template_id)) {
+          CppAstNode owner_type = carried_qualifier_types[i];
+          owner_type.semantic_type = dependent_owner;
+          owner_type.value = reparseable_type_argument_text(dependent_owner);
+          map_template_id(owner_template_id, &owner_type);
+        }
+      }
+    }
+    map_template_id(carried_template_ids[i],
+                    i < carried_qualifier_types.size() ?
+                        &carried_qualifier_types[i] :
+                        nullptr);
+  }
+
   expression.value = trimmed;
   expression.qualified_name_syntax.reset(new QualifiedName(qualified));
   expression.template_id_syntax.reset();
-  if(expression.qualifier_template_id_syntaxes.size() <
-     qualified.qualifiers.size()) {
-    expression.qualifier_template_id_syntaxes.mutable_vector().resize(
-        qualified.qualifiers.size());
-  }
+  expression.qualifier_template_id_syntaxes = mapped_template_ids;
+  expression.qualifier_type_syntaxes = mapped_qualifier_types;
   for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
     TemplateIdSyntax & qualifier_template_id =
         expression.qualifier_template_id_syntaxes.mutable_vector()[i];
@@ -22653,10 +22725,10 @@ bool template_id_syntax_from_class_template_type(const TypePtr & type,
     return false;
   }
 
+  const ClassTemplateDecl * class_template =
+      static_cast<const ClassTemplateDecl *>(info->class_template_decl);
   string template_name = trim_space(info->template_name);
-  if(template_name.empty() && info->class_template_decl) {
-    const ClassTemplateDecl * class_template =
-        static_cast<const ClassTemplateDecl *>(info->class_template_decl);
+  if(template_name.empty() && class_template) {
     template_name = trim_space(class_template->name);
   }
   if(template_name.empty()) {
@@ -22775,7 +22847,124 @@ bool template_id_syntax_from_class_template_type(const TypePtr & type,
     out.arguments.push_back(argument_text);
     out.argument_syntaxes.push_back(syntax);
   }
+  if(class_template &&
+     class_template->declaring_scope &&
+     class_template->declaring_scope->class_info &&
+     class_template->declaring_scope->class_info->type &&
+     class_template->declaring_scope->class_info->type != type) {
+    TemplateIdSyntax owner_template_id;
+    if(template_id_syntax_from_structured_type(
+           class_template->declaring_scope->class_info->type,
+           scope,
+           owner_template_id)) {
+      out.qualifier_template_id_syntaxes =
+          owner_template_id.qualifier_template_id_syntaxes;
+      out.qualifier_template_id_syntaxes.push_back(owner_template_id);
+    }
+  }
   return true;
+}
+
+bool template_id_syntax_from_structured_type(const TypePtr & type,
+                                             Scope * scope,
+                                             TemplateIdSyntax & out)
+{
+  out = TemplateIdSyntax();
+
+  TypePtr dependent_owner;
+  vector<string> dependent_members;
+  vector<TemplateIdSyntax> dependent_member_template_ids;
+  bool dependent_leading_typename = false;
+  if(named_type_dependent_qualified_member(type,
+                                           dependent_owner,
+                                           dependent_members,
+                                           dependent_leading_typename,
+                                           &dependent_member_template_ids) &&
+     dependent_member_template_ids.size() == dependent_members.size() &&
+     !dependent_member_template_ids.empty() &&
+     template_id_syntax_has_payload(dependent_member_template_ids.back())) {
+    out = clone_template_id_for_template_substitution(
+        dependent_member_template_ids.back());
+    TemplateIdSyntax owner_template_id;
+    if(template_id_syntax_from_structured_type(dependent_owner,
+                                               scope,
+                                               owner_template_id)) {
+      out.qualifier_template_id_syntaxes =
+          owner_template_id.qualifier_template_id_syntaxes;
+      out.qualifier_template_id_syntaxes.push_back(owner_template_id);
+    }
+    for(size_t i = 0; i + 1 < dependent_member_template_ids.size(); ++i) {
+      if(template_id_syntax_has_payload(dependent_member_template_ids[i])) {
+        out.qualifier_template_id_syntaxes.push_back(
+            clone_template_id_for_template_substitution(
+                dependent_member_template_ids[i]));
+      }
+    }
+    return true;
+  }
+
+  if(dependent_template_id_syntax_from_type(type, out)) {
+    void * dependent_class_template_decl = nullptr;
+    vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
+    if(named_type_dependent_class_template(type,
+                                           dependent_class_template_decl,
+                                           dependent_arguments)) {
+      const ClassTemplateDecl * dependent_class_template =
+          static_cast<const ClassTemplateDecl *>(dependent_class_template_decl);
+      if(dependent_class_template &&
+         dependent_class_template->declaring_scope &&
+         dependent_class_template->declaring_scope->class_info &&
+         dependent_class_template->declaring_scope->class_info->type &&
+         dependent_class_template->declaring_scope->class_info->type != type) {
+        TemplateIdSyntax owner_template_id;
+        if(template_id_syntax_from_structured_type(
+               dependent_class_template->declaring_scope->class_info->type,
+               scope,
+               owner_template_id)) {
+          out.qualifier_template_id_syntaxes =
+              owner_template_id.qualifier_template_id_syntaxes;
+          out.qualifier_template_id_syntaxes.push_back(owner_template_id);
+        }
+      }
+    }
+    return true;
+  }
+
+  string parameter_name;
+  size_t parameter_arity = static_cast<size_t>(-1);
+  vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
+  if(named_type_dependent_template_template_parameter(type,
+                                                       parameter_name,
+                                                       parameter_arity,
+                                                       dependent_arguments) &&
+     !parameter_name.empty()) {
+    out.name.name = parameter_name;
+    out.arguments.reserve(dependent_arguments.size());
+    out.argument_syntaxes.reserve(dependent_arguments.size());
+    for(size_t i = 0; i < dependent_arguments.size(); ++i) {
+      const DependentAliasTemplateArgumentSyntax & dependent_argument =
+          dependent_arguments[i];
+      string argument_text = trim_space(dependent_argument.text);
+      if(argument_text.empty()) {
+        argument_text = trim_space(dependent_argument.syntax.text);
+      }
+      if(argument_text.empty()) {
+        return false;
+      }
+      TemplateArgumentSyntax argument_syntax =
+          clone_argument_syntax_for_template_substitution(
+              dependent_argument.syntax);
+      argument_syntax.text = argument_text;
+      if(dependent_argument.type) {
+        argument_syntax.resolved_type = dependent_argument.type;
+      }
+      out.arguments.push_back(argument_text);
+      out.argument_syntaxes.push_back(argument_syntax);
+    }
+    return true;
+  }
+
+  return template_id_syntax_from_class_template_type(type, scope, out);
 }
 
 bool substitute_qualified_name_qualifier_type(
@@ -22841,7 +23030,7 @@ bool substitute_qualified_name_qualifier_type(
   }
   TemplateIdSyntax replacement_template_id;
   const bool replacement_template_id_from_type =
-      template_id_syntax_from_class_template_type(type, &scope, replacement_template_id);
+      template_id_syntax_from_structured_type(type, &scope, replacement_template_id);
   if(replacement_template_id_from_type) {
     new_qualifier_template_ids[replacement_component_index] =
         replacement_template_id;
@@ -23214,17 +23403,30 @@ void refresh_qualified_name_qualifier_template_id_texts(CppAstNode & node)
         continue;
       }
       syntax.name.rooted = qualified.rooted;
+      vector<string> internal_qualifiers;
+      if(syntax.name.qualifiers.size() > i) {
+        internal_qualifiers.assign(syntax.name.qualifiers.begin() + i,
+                                   syntax.name.qualifiers.end());
+      }
       syntax.name.qualifiers.assign(qualified.qualifiers.begin(),
                                     qualified.qualifiers.begin() + i);
+      syntax.name.qualifiers.insert(syntax.name.qualifiers.end(),
+                                    internal_qualifiers.begin(),
+                                    internal_qualifiers.end());
     }
   };
   for(size_t i = 0; i < count; ++i) {
     TemplateIdSyntax & syntax = node.qualifier_template_id_syntaxes[i];
     if(syntax.name.name.empty()) {
-      TemplateIdSyntax parsed_syntax;
-      if(template_id_syntax_from_component_text(qualified.qualifiers[i],
-                                                parsed_syntax)) {
-        syntax = parsed_syntax;
+      const CppAstNode * qualifier_type =
+          cppast_qualifier_type_syntax(node, i);
+      TemplateIdSyntax type_syntax;
+      if(qualifier_type && qualifier_type->semantic_type &&
+         template_id_syntax_from_structured_type(
+             qualifier_type->semantic_type,
+             nullptr,
+             type_syntax)) {
+        syntax = type_syntax;
       }
     }
     if(syntax.name.name.empty()) {
@@ -23232,7 +23434,12 @@ void refresh_qualified_name_qualifier_template_id_texts(CppAstNode & node)
     }
     TemplateIdSyntax component = syntax;
     component.name.rooted = false;
-    component.name.qualifiers.clear();
+    if(component.name.qualifiers.size() >= i) {
+      component.name.qualifiers.erase(component.name.qualifiers.begin(),
+                                      component.name.qualifiers.begin() + i);
+    } else {
+      component.name.qualifiers.clear();
+    }
     const string text = template_id_syntax_lookup_text(component);
     if(!text.empty() && text != qualified.qualifiers[i]) {
       qualified.qualifiers[i] = text;
