@@ -6089,16 +6089,13 @@ private:
   }
 
   bool resolve_declared_class_scope_and_name(Scope & scope,
-                                             const string & text,
+                                             const QualifiedName & qualified,
                                              Scope *& target_scope,
                                              string & class_name) override
   {
     target_scope = &scope;
-    class_name = text;
-
-    QualifiedName qualified;
-    if(!split_qualified_name_text(text, qualified) ||
-       (!qualified.rooted && qualified.qualifiers.empty())) {
+    class_name = qualified.name;
+    if(!qualified.rooted && qualified.qualifiers.empty()) {
       return true;
     }
 
@@ -6126,12 +6123,7 @@ private:
 
   ClassInfo * lookup_declared_class_info(Scope & scope, const string & text) override
   {
-    Scope * target_scope = nullptr;
-    string class_name;
-    if(!resolve_declared_class_scope_and_name(scope, text, target_scope, class_name)) {
-      return nullptr;
-    }
-    return class_info_for_type(direct_named_type(*target_scope, class_name));
+    return class_info_for_type(direct_named_type(scope, text));
   }
 
   TypePtr lookup_non_template_type_name(Scope & scope, const string & text) override
@@ -6307,7 +6299,7 @@ private:
       target_scope = &unqualified_elaborated_type_declaration_scope(scope);
       class_name = declared_name;
     } else if(!resolve_declared_class_scope_and_name(scope,
-                                                     declared_name,
+                                                     qualified,
                                                      target_scope,
                                                      class_name) ||
               !target_scope) {

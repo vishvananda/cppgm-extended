@@ -354,7 +354,7 @@ public:
       bool collect_named_forward_declarations,
       PreparedDeclarationSpecifiers & out) = 0;
   virtual bool resolve_declared_class_scope_and_name(semantic_model::Scope & scope,
-                                                     const std::string & text,
+                                                     const cpp_decl::QualifiedName & name,
                                                      semantic_model::Scope *& target_scope,
                                                      std::string & class_name) = 0;
   virtual semantic_model::ClassInfo * create_class_info(semantic_model::Scope & scope,

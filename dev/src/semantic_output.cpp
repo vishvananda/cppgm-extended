@@ -1165,9 +1165,9 @@ bool variable_declaration_is_definition(const CppAstNode & specifiers,
 
 ClassInfo * lookup_declared_class_info(SemanticContext & ctx,
                                        Scope & scope,
-                                       const string & name)
+                                       const CppAstNode & node)
 {
-  TypePtr type = ctx.lookup_type(scope, name);
+  TypePtr type = ctx.lookup_type_node(scope, node, node.value);
   return type ? ctx.class_info_for_type(type) : nullptr;
 }
 
@@ -2738,7 +2738,7 @@ void emit_embedded_class_specifier_output(SemanticContext & ctx,
     if(child.value.empty()) {
       continue;
     }
-    ClassInfo * info = lookup_declared_class_info(ctx, scope, child.value);
+    ClassInfo * info = lookup_declared_class_info(ctx, scope, child);
     if(!info) {
       continue;
     }
@@ -5311,7 +5311,7 @@ void analyze_class_output_from_info_impl(SemanticContext & ctx,
       if(child.value.empty()) {
         continue;
       }
-      ClassInfo * nested = lookup_declared_class_info(ctx, *info.member_scope, child.value);
+      ClassInfo * nested = lookup_declared_class_info(ctx, *info.member_scope, child);
       if(!nested) {
         ostringstream outmsg;
         outmsg << "missing class info";
@@ -5589,7 +5589,7 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
     if(node.value.empty()) {
       throw logic_error("anonymous classes unsupported");
     }
-    ClassInfo * info = lookup_declared_class_info(ctx, scope, node.value);
+    ClassInfo * info = lookup_declared_class_info(ctx, scope, node);
     if(!info) {
       ostringstream outmsg;
       outmsg << "missing class info";

@@ -11200,7 +11200,15 @@ void collect_class_declaration(SemanticContext & ctx,
 
   Scope * target_scope = nullptr;
   std::string class_name;
-  if(!ctx.resolve_declared_class_scope_and_name(scope, node.value, target_scope, class_name)) {
+  const QualifiedName * qualified_name = cppast_qualified_name_syntax(node);
+  QualifiedName generated_unqualified_name;
+  if(!qualified_name && node.value.find("::") == std::string::npos) {
+    generated_unqualified_name.name = node.value;
+    qualified_name = &generated_unqualified_name;
+  }
+  if(!qualified_name ||
+     !ctx.resolve_declared_class_scope_and_name(
+         scope, *qualified_name, target_scope, class_name)) {
     throw std::logic_error("unknown qualified class scope");
   }
 
