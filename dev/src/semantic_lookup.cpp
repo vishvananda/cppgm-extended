@@ -5895,6 +5895,88 @@ CppAstNode make_value_qualifier_type_lookup_node(const CppAstNode & node,
   return out;
 }
 
+TypePtr resolve_qualified_owner_type_node(SemanticContext & ctx,
+                                          Scope & scope,
+                                          const QualifiedName & name,
+                                          const CppAstNode & node)
+{
+  const string owner_name = qualified_value_qualifier_text(name);
+  if(owner_name.empty()) {
+    return TypePtr();
+  }
+  const size_t final_index = name.qualifiers.size() - 1;
+  const TemplateIdSyntax * final_template_id =
+      qualifier_template_id_syntax_for_component(node,
+                                                  final_index,
+                                                  name.qualifiers.back());
+  bool earlier_template_id = false;
+  for(size_t i = 0; i < final_index; ++i) {
+    if(qualifier_template_id_syntax_for_component(node,
+                                                  i,
+                                                  name.qualifiers[i])) {
+      earlier_template_id = true;
+      break;
+    }
+  }
+  if(final_template_id && !earlier_template_id) {
+    Scope * lookup_scope = &scope;
+    if(final_index != 0) {
+      QualifiedName prefix;
+      prefix.rooted = name.rooted;
+      prefix.qualifiers.assign(name.qualifiers.begin(),
+                               name.qualifiers.begin() + final_index - 1);
+      prefix.name = name.qualifiers[final_index - 1];
+      lookup_scope = resolve_qualified_scope_for_class_or_namespace(ctx,
+                                                                   scope,
+                                                                   prefix,
+                                                                   true);
+    } else if(name.rooted) {
+      while(lookup_scope->parent) {
+        lookup_scope = lookup_scope->parent;
+      }
+    }
+    if(lookup_scope) {
+      TemplateIdSyntax local = *final_template_id;
+      local.name.rooted = false;
+      local.name.qualifiers.clear();
+      vector<string> arguments = local.arguments;
+      if(arguments.size() != local.argument_syntaxes.size()) {
+        arguments.clear();
+        arguments.reserve(local.argument_syntaxes.size());
+        for(size_t i = 0; i < local.argument_syntaxes.size(); ++i) {
+          arguments.push_back(local.argument_syntaxes[i].text);
+        }
+      }
+      if(AliasTemplateDecl * alias_template =
+             lookup_alias_template(ctx, *lookup_scope, local.name)) {
+        TypePtr alias = ctx.instantiate_alias_template_with_syntax(
+            *alias_template,
+            scope,
+            arguments,
+            &local.argument_syntaxes,
+            true);
+        if(alias) {
+          return alias;
+        }
+      }
+      if(ClassTemplateDecl * class_template =
+             lookup_class_template(ctx, *lookup_scope, local.name)) {
+        ClassInfo * info = ctx.reference_class_template_instantiation_with_syntax(
+            *class_template,
+            scope,
+            arguments,
+            &local.argument_syntaxes);
+        if(info) {
+          return info->type;
+        }
+      }
+    }
+  }
+  const CppAstNode owner_node =
+      make_value_qualifier_type_lookup_node(node, name, owner_name);
+  return ctx.lookup_type_node(scope, owner_node, owner_name, false);
+}
+
 const ValueBinding * lookup_value_binding_in_type_scope(SemanticContext & ctx,
                                                         Scope & scope,
                                                         const QualifiedName & qualified,

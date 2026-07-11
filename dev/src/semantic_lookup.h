@@ -95,6 +95,11 @@ cpp_decl::TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                                 const std::string & name,
                                                 const std::vector<cpp_decl::TemplateArgumentSyntax> *
                                                     arg_syntaxes = nullptr);
+cpp_decl::TypePtr resolve_qualified_owner_type_node(
+    SemanticContext & ctx,
+    Scope & scope,
+    const cpp_decl::QualifiedName & name,
+    const CppAstNode & node);
 const ValueBinding * lookup_direct_value(Scope & scope, const std::string & name);
 bool same_value_binding_entity(const ValueBinding * lhs, const ValueBinding * rhs);
 bool resolve_qualified_namespace_entity_target(SemanticContext & ctx,

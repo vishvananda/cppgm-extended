@@ -4318,11 +4318,14 @@ bool CppAstParser::parse_using_or_alias_declaration(CppAstNode & out)
   consume_simple(KW_TYPENAME);
   string target;
   cpp_decl::QualifiedName target_syntax;
+  cpp_decl::TemplateIdSyntax target_template_id_syntax;
+  vector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
+  vector<CppAstNode> qualifier_type_syntaxes;
   if(!parse_qualified_name_text(target,
                                 &target_syntax,
-                                nullptr,
-                                nullptr,
-                                nullptr,
+                                &target_template_id_syntax,
+                                &qualifier_template_id_syntaxes,
+                                &qualifier_type_syntaxes,
                                 false,
                                 false,
                                 true)) {
@@ -4347,6 +4350,19 @@ bool CppAstParser::parse_using_or_alias_declaration(CppAstNode & out)
   out.has_using_if_exists = attributes.has_using_if_exists;
   CppAstNode target_node = make_node(CppAstKind::target, target);
   set_cppast_qualified_name_syntax(target_node, std::move(target_syntax));
+  if(!target_template_id_syntax.name.name.empty()) {
+    set_cppast_template_id_syntax(target_node,
+                                  std::move(target_template_id_syntax));
+  }
+  if(!qualifier_template_id_syntaxes.empty()) {
+    set_cppast_qualifier_template_id_syntaxes(
+        target_node,
+        std::move(qualifier_template_id_syntaxes));
+  }
+  if(!qualifier_type_syntaxes.empty()) {
+    set_cppast_qualifier_type_syntaxes(target_node,
+                                       std::move(qualifier_type_syntaxes));
+  }
   out.children.push_back(std::move(target_node));
   set_span(out, start);
   return true;

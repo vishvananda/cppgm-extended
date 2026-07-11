@@ -2329,21 +2329,6 @@ std::string constructor_member_name_for_class(SemanticContext & ctx,
   return normalize_special_member_class_name(ctx, info.name);
 }
 
-std::string qualified_scope_text(const QualifiedName & qualified)
-{
-  std::string out;
-  if(qualified.rooted) {
-    out += "::";
-  }
-  for(std::size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    if(i != 0) {
-      out += "::";
-    }
-    out += qualified.qualifiers[i];
-  }
-  return out;
-}
-
 std::string constructor_lookup_class_name(SemanticContext & ctx,
                                           const std::string & text)
 {
@@ -2414,14 +2399,30 @@ const BaseInfo * find_inherited_constructor_base(SemanticContext & ctx,
     return nullptr;
   }
 
-  TypePtr qualifier_type = ctx.lookup_type(*info.member_scope,
-                                           qualified_scope_text(qualified));
+  const std::string constructor_target_name =
+      normalize_special_member_class_name(ctx, qualified.name);
+  const std::string qualifier_target_name =
+      constructor_lookup_class_name(ctx, qualified.qualifiers.back());
+  if(constructor_target_name != qualifier_target_name) {
+    return nullptr;
+  }
+  if(const BaseInfo * direct =
+         find_inherited_constructor_base_by_name(ctx,
+                                                 info,
+                                                 qualified,
+                                                 constructor_target_name)) {
+    return direct;
+  }
+
+  TypePtr qualifier_type =
+      semantic_lookup::resolve_qualified_owner_type_node(ctx,
+                                                         *info.member_scope,
+                                                         qualified,
+                                                         *target);
   ClassInfo * target_class = ctx.class_info_for_type(qualifier_type);
   if(!target_class) {
     target_class = ctx.complete_class_type(qualifier_type);
   }
-  const std::string constructor_target_name =
-      normalize_special_member_class_name(ctx, qualified.name);
   if(!target_class) {
     return find_inherited_constructor_base_by_name(ctx,
                                                    info,

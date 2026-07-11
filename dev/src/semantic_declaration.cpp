@@ -540,12 +540,17 @@ ClassInfo * lookup_inherited_using_target_class(SemanticContext & ctx,
 
 ClassInfo * lookup_using_target_class(SemanticContext & ctx,
                                       Scope & scope,
-                                      const QualifiedName & qualified)
+                                      const QualifiedName & qualified,
+                                      const CppAstNode & target)
 {
   if(qualified.qualifiers.empty()) {
     return nullptr;
   }
-  TypePtr qualifier_type = ctx.lookup_type(scope, qualified_scope_text(qualified));
+  TypePtr qualifier_type =
+      semantic_lookup::resolve_qualified_owner_type_node(ctx,
+                                                         scope,
+                                                         qualified,
+                                                         target);
   if(ClassInfo * info = class_info_for_using_target_type(ctx, qualifier_type)) {
     return info;
   }
@@ -680,9 +685,13 @@ vector<FunctionBinding *> lookup_conversion_using_target_functions(
 
 vector<FunctionBinding *> lookup_using_target_functions(SemanticContext & ctx,
                                                         Scope & scope,
-                                                        const QualifiedName & qualified)
+                                                        const QualifiedName & qualified,
+                                                        const CppAstNode & target,
+                                                        ClassInfo * known_target_class = nullptr)
 {
-  if(ClassInfo * target_class = lookup_using_target_class(ctx, scope, qualified)) {
+  if(ClassInfo * target_class = known_target_class ?
+         known_target_class :
+         lookup_using_target_class(ctx, scope, qualified, target)) {
     vector<FunctionBinding *> functions =
         semantic_lookup::lookup_visible_member_functions(*target_class,
                                                          qualified.name).functions;
@@ -715,9 +724,13 @@ vector<FunctionBinding *> lookup_using_target_functions(SemanticContext & ctx,
 vector<FunctionTemplateDecl *> lookup_using_target_function_templates(
     SemanticContext & ctx,
     Scope & scope,
-    const QualifiedName & qualified)
+    const QualifiedName & qualified,
+    const CppAstNode & target,
+    ClassInfo * known_target_class = nullptr)
 {
-  if(ClassInfo * target_class = lookup_using_target_class(ctx, scope, qualified)) {
+  if(ClassInfo * target_class = known_target_class ?
+         known_target_class :
+         lookup_using_target_class(ctx, scope, qualified, target)) {
     return semantic_lookup::lookup_visible_member_function_templates(*target_class,
                                                                      qualified.name).templates;
   }
@@ -810,12 +823,23 @@ void collect_using_declaration(SemanticContext & ctx,
   const QualifiedName qualified = *target_name;
   const string target_text = qualified_name_text(qualified);
 
-  TypePtr type = ctx.lookup_type(scope, target_text);
+  TypePtr type;
+  ClassInfo * using_target_class = nullptr;
+  if(!cppast_has_qualifier_template_id_syntaxes(*target) &&
+     target->qualifier_type_syntaxes.empty()) {
+    try {
+      type = ctx.lookup_type_node(scope, *target, target_text);
+    } catch(const TemplateSubstitutionFailure &) {
+      type.reset();
+    }
+  }
   if(!type) {
-    if(ClassInfo * target_class = lookup_using_target_class(ctx, scope, qualified)) {
+    using_target_class =
+        lookup_using_target_class(ctx, scope, qualified, *target);
+    if(using_target_class) {
       const semantic_lookup::MemberTypeLookupResult member_type =
           semantic_lookup::lookup_member_type(ctx,
-                                             *target_class,
+                                             *using_target_class,
                                              qualified.name,
                                              true,
                                              &scope);
@@ -830,33 +854,52 @@ void collect_using_declaration(SemanticContext & ctx,
     return;
   }
 
-  ClassTemplateDecl * class_template = semantic_lookup::lookup_class_template(ctx, scope, qualified);
+  ClassTemplateDecl * class_template = using_target_class ?
+      semantic_lookup::lookup_member_class_template(ctx,
+                                                    *using_target_class,
+                                                    qualified.name)
+          .class_template :
+      semantic_lookup::lookup_class_template(ctx, scope, qualified);
   if(class_template) {
     semantic_scope_mutation::bind_class_template(scope, qualified.name, class_template);
     return;
   }
 
-  AliasTemplateDecl * alias_template = semantic_lookup::lookup_alias_template(ctx, scope, qualified);
+  AliasTemplateDecl * alias_template = using_target_class ?
+      semantic_lookup::lookup_member_alias_template(ctx,
+                                                    *using_target_class,
+                                                    qualified.name)
+          .alias_template :
+      semantic_lookup::lookup_alias_template(ctx, scope, qualified);
   if(alias_template) {
     semantic_scope_mutation::bind_alias_template(scope, qualified.name, alias_template);
     return;
   }
 
   VariableTemplateDecl * variable_template =
-      semantic_lookup::lookup_variable_template(ctx, scope, qualified);
+      using_target_class ?
+          semantic_lookup::lookup_member_variable_template(ctx,
+                                                           *using_target_class,
+                                                           qualified.name)
+              .variable_template :
+          semantic_lookup::lookup_variable_template(ctx, scope, qualified);
   if(variable_template) {
     semantic_scope_mutation::bind_variable_template(scope, qualified.name, variable_template);
     return;
   }
 
-  Scope * target_namespace = semantic_lookup::lookup_namespace_name(scope, qualified);
+  Scope * target_namespace = using_target_class ?
+      nullptr : semantic_lookup::lookup_namespace_name(scope, qualified);
   if(target_namespace) {
     semantic_scope_mutation::bind_namespace(scope, qualified.name, target_namespace);
     return;
   }
 
   const ValueBinding * value =
-      semantic_lookup::lookup_qualified_value_binding(ctx, scope, qualified);
+      semantic_lookup::lookup_qualified_value_binding_node(ctx,
+                                                           scope,
+                                                           qualified,
+                                                           *target);
   if(value) {
     ValueBinding imported = *value;
     if(scope.class_info) {
@@ -866,14 +909,23 @@ void collect_using_declaration(SemanticContext & ctx,
     return;
   }
 
-  vector<FunctionBinding *> functions = lookup_using_target_functions(ctx, scope, qualified);
-  if(functions.empty()) {
+  vector<FunctionBinding *> functions =
+      lookup_using_target_functions(ctx,
+                                    scope,
+                                    qualified,
+                                    *target,
+                                    using_target_class);
+  if(functions.empty() && !using_target_class) {
     functions = ctx.lookup_qualified_functions(scope, qualified);
   }
 
   vector<FunctionTemplateDecl *> function_templates =
-      lookup_using_target_function_templates(ctx, scope, qualified);
-  if(function_templates.empty()) {
+      lookup_using_target_function_templates(ctx,
+                                             scope,
+                                             qualified,
+                                             *target,
+                                             using_target_class);
+  if(function_templates.empty() && !using_target_class) {
     function_templates = ctx.lookup_qualified_function_templates(scope, qualified);
   }
 
