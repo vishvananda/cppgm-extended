@@ -922,8 +922,15 @@ public:
         }
 
         FunctionBinding * binding = nullptr;
-        if(!resolve_out_of_class_named_method_binding(pattern_scope,
-                                                      inner.value,
+        const CppAstNode * conversion_identifier =
+            find_child_kind(*declarator, CppAstKind::identifier);
+        const QualifiedName * conversion_qualified_name =
+            conversion_identifier ?
+                cppast_qualified_name_syntax(*conversion_identifier) :
+                nullptr;
+        if(!conversion_qualified_name ||
+           !resolve_out_of_class_named_method_binding(pattern_scope,
+                                                      *conversion_qualified_name,
                                                       name,
                                                       type,
                                                       syntax.is_const_method,
@@ -3055,7 +3062,7 @@ public:
 
             ValueBinding * out_of_class_static_member = nullptr;
             if(resolve_out_of_class_static_member_binding(pattern_scope,
-                                                         name,
+                                                         static_member_name,
                                                          out_of_class_static_member)) {
                 emit_out_of_class_owner_class_use_if_needed(pattern_scope,
                                                             static_member_name,
@@ -4323,29 +4330,6 @@ private:
         resolution);
   }
 
-  bool resolve_out_of_class_named_method_binding(
-      Scope & scope,
-      const string & qualified_name,
-      const string & member_name,
-      const TypePtr & declared_type,
-      bool is_const_method,
-      bool is_volatile_method,
-      RefQualifier ref_qualifier,
-      FunctionBinding *& out,
-      QualifiedOwnerClassResolution resolution = QualifiedOwnerClassResolution::Complete)
-  {
-    return callbacks.out_of_class_services->resolve_out_of_class_named_method_binding(
-        scope,
-        qualified_name,
-        member_name,
-        declared_type,
-        is_const_method,
-        is_volatile_method,
-        ref_qualifier,
-        out,
-        resolution);
-  }
-
   bool out_of_class_special_member_template_parameters_match(
       Scope & lhs_scope,
       const vector<TemplateParameterInfo> & lhs,
@@ -5011,14 +4995,6 @@ private:
   {
     return callbacks.out_of_class_services->resolve_out_of_class_static_member_binding(
         scope, qualified, out);
-  }
-
-  bool resolve_out_of_class_static_member_binding(Scope & scope,
-                                                  const string & qualified_name,
-                                                  ValueBinding *& out)
-  {
-    return callbacks.out_of_class_services->resolve_out_of_class_static_member_binding(
-        scope, qualified_name, out);
   }
 
   CppAstNode filtered_function_declarator(const CppAstNode & declarator) const

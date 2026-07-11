@@ -24448,33 +24448,6 @@ private:
                                                                  resolution);
   }
 
-  bool resolve_out_of_class_named_method_binding(Scope & scope,
-                                                 const string & qualified_name,
-                                                 const string & member_name,
-                                                 const TypePtr & declared_type,
-                                                 bool is_const_method,
-                                                 bool is_volatile_method,
-                                                 RefQualifier ref_qualifier,
-                                                 FunctionBinding *& out,
-                                                 QualifiedOwnerClassResolution resolution =
-                                                     QualifiedOwnerClassResolution::Complete)
-      override
-  {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return false;
-    }
-    return resolve_out_of_class_named_method_binding(scope,
-                                                     qualified,
-                                                     member_name,
-                                                     declared_type,
-                                                     is_const_method,
-                                                     is_volatile_method,
-                                                     ref_qualifier,
-                                                     out,
-                                                     resolution);
-  }
-
   bool resolve_out_of_class_static_member_binding(Scope & scope,
                                                   const QualifiedName & qualified,
                                                   ValueBinding *& out) override
@@ -24496,17 +24469,6 @@ private:
 
     out = &found->second;
     return true;
-  }
-
-  bool resolve_out_of_class_static_member_binding(Scope & scope,
-                                                  const string & qualified_name,
-                                                  ValueBinding *& out) override
-  {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return false;
-    }
-    return resolve_out_of_class_static_member_binding(scope, qualified, out);
   }
 
   bool resolve_out_of_class_method_binding_with_resolution(
@@ -26659,8 +26621,15 @@ private:
                                                is_c_linkage,
                                                linkage_has_braces);
         ValueBinding * out_of_class_static_member = nullptr;
-        if(resolve_out_of_class_static_member_binding(scope,
-                                                      name,
+        const CppAstNode * declared_identifier =
+            find_descendant_kind(init_decl.children[0], CppAstKind::identifier);
+        const QualifiedName * declared_qualified_name =
+            declared_identifier ?
+                cppast_qualified_name_syntax(*declared_identifier) :
+                nullptr;
+        if(declared_qualified_name &&
+           resolve_out_of_class_static_member_binding(scope,
+                                                      *declared_qualified_name,
                                                       out_of_class_static_member)) {
           emit_out_of_class_owner_class_use_if_needed(scope,
                                                       name,
@@ -27788,22 +27757,14 @@ private:
       const QualifiedName * qualified_name =
           identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
       const bool resolved =
-          qualified_name ?
-              resolve_out_of_class_method_binding(scope,
-                                                  *qualified_name,
-                                                  declared_type,
-                                                  syntax.is_const_method,
-                                                  syntax.is_volatile_method,
-                                                  syntax.ref_qualifier,
-                                                  binding) :
-              resolve_out_of_class_named_method_binding(scope,
-                                                        node.value,
-                                                        name,
-                                                        declared_type,
-                                                        syntax.is_const_method,
-                                                        syntax.is_volatile_method,
-                                                        syntax.ref_qualifier,
-                                                        binding);
+          qualified_name &&
+          resolve_out_of_class_method_binding(scope,
+                                              *qualified_name,
+                                              declared_type,
+                                              syntax.is_const_method,
+                                              syntax.is_volatile_method,
+                                              syntax.ref_qualifier,
+                                              binding);
       if(!resolved) {
         throw logic_error("missing conversion operator binding");
       }
