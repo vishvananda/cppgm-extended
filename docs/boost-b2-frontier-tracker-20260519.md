@@ -6501,3 +6501,9 @@ template-template deduction path that previously rebuilt a pattern
 instantiation from `normalized_pattern`; that spelling fallback is removed.
 The audit ratchets from `66` to `65`, PA21-PA23 pass `1471/1471`, and the full
 strict suite passes.
+
+Concrete alias materialization now identifies template instantiations from
+`ClassInfo`, dependent class/alias/template-parameter metadata, or class
+specialization mangle info. It no longer splits a named type's display spelling
+just to decide whether lookup is applicable. This ratchets the category from
+`65` to `64`; the 1,807 focused tests and full strict suite pass.

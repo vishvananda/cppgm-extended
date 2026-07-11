@@ -13757,11 +13757,25 @@ private:
                                                               lookup_text))) {
         return candidate;
       }
-      QualifiedName ignored_name;
-      std::vector<std::string> ignored_args;
-      if(!semantic_utils::split_top_level_template_id_text(lookup_text,
-                                                            ignored_name,
-                                                            ignored_args)) {
+      void * dependent_class_template = nullptr;
+      std::vector<DependentAliasTemplateArgumentSyntax> dependent_class_arguments;
+      std::string dependent_template_parameter;
+      std::size_t dependent_template_parameter_arity =
+          static_cast<std::size_t>(-1);
+      std::vector<DependentAliasTemplateArgumentSyntax>
+          dependent_template_parameter_arguments;
+      ClassInfo * candidate_class = class_info_for_type(base);
+      if(!(candidate_class && candidate_class->source_template) &&
+         !named_type_dependent_class_template(base,
+                                              dependent_class_template,
+                                              dependent_class_arguments) &&
+         !named_type_is_dependent_alias(base) &&
+         !named_type_dependent_template_template_parameter(
+             base,
+             dependent_template_parameter,
+             dependent_template_parameter_arity,
+             dependent_template_parameter_arguments) &&
+         !named_type_class_template_specialization_mangle_info_const(base)) {
         return candidate;
       }
       const witness::ScopedTemplateWitnessSourceCapturePause
