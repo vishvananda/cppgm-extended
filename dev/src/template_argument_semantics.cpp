@@ -25627,78 +25627,36 @@ ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & 
       });
 }
 
-bool lookup_concrete_member_template_value_binding(
+bool lookup_value_binding_in_resolved_scope(Scope & target,
+                                            const string & member_name,
+                                            const ValueBinding *& out);
+
+bool lookup_concrete_member_template_value_binding_syntax(
     template_api::TemplateServices & services,
     Scope & scope,
-    const string & name,
+    const QualifiedName & qualified,
+    const CppAstNode & node,
     const ValueBinding *& out)
 {
   out = nullptr;
-  const string normalized = normalize_template_template_argument_lookup_text(name);
-  const size_t value_split = semantic_utils::top_level_scope_split(normalized);
-  if(value_split == string::npos) {
-    return false;
-  }
-  const string value_name = trim_space(normalized.substr(value_split + 2));
-  if(value_name != "value") {
+  if(qualified.name != "value" || qualified.qualifiers.empty()) {
     return false;
   }
 
-  const string owner_and_member = trim_space(normalized.substr(0, value_split));
-  const size_t member_split = semantic_utils::top_level_scope_split(owner_and_member);
-  if(member_split == string::npos) {
+  const std::size_t qualifier_index = qualified.qualifiers.size() - 1;
+  const TemplateIdSyntax * member_template_id =
+      cppast_qualifier_template_id_syntax(node, qualifier_index);
+  if(!member_template_id) {
     return false;
   }
-  const string owner_text = trim_space(owner_and_member.substr(0, member_split));
-  const string member_template_text =
-      trim_space(owner_and_member.substr(member_split + 2));
-  if(owner_text.empty() || member_template_text.empty()) {
-    return false;
-  }
-
-  QualifiedName member_template_name;
-  vector<string> member_arg_texts;
-  if(!semantic_utils::split_top_level_template_id_text(member_template_text,
-                                                       member_template_name,
-                                                       member_arg_texts) ||
-     member_arg_texts.empty()) {
-    return false;
-  }
-  TypePtr owner_type;
-  template_api::TemplateEnvironmentHandle lexical_scope =
-      template_api::make_template_environment(scope);
-  if(!resolve_member_template_owner_type_text(services,
-                                              lexical_scope,
-                                              owner_text,
-                                              true,
-                                              owner_type) ||
-     !owner_type) {
-    return false;
-  }
-  resolve_instantiated_dependent_type_if_needed(services, lexical_scope, owner_type);
-  if(!owner_type ||
-     service_type_depends_on_template_parameter(services, owner_type)) {
-    return false;
-  }
-
-  Scope * owner_member_scope = nullptr;
-  if(!prepare_concrete_type_member_scope(services,
-                                         lexical_scope,
-                                         owner_type,
-                                         owner_member_scope) ||
-     !owner_member_scope) {
-    return false;
-  }
-
-  TemplateIdSyntax member_syntax;
-  member_syntax.name = member_template_name;
-  member_syntax.arguments = member_arg_texts;
 
   TypePtr member_type;
+  template_api::TemplateEnvironmentHandle lexical_scope =
+      template_api::make_template_environment(scope);
   if(!resolve_template_id_syntax_type(
          services,
-         *owner_member_scope,
-         member_syntax,
+         scope,
+         *member_template_id,
          true,
          string(),
          member_type,
@@ -25708,7 +25666,9 @@ bool lookup_concrete_member_template_value_binding(
      !member_type) {
     return false;
   }
-  resolve_instantiated_dependent_type_if_needed(services, lexical_scope, member_type);
+  resolve_instantiated_dependent_type_if_needed(services,
+                                                lexical_scope,
+                                                member_type);
   if(!member_type ||
      service_type_depends_on_template_parameter(services, member_type)) {
     return false;
@@ -25722,22 +25682,8 @@ bool lookup_concrete_member_template_value_binding(
      !value_scope) {
     return false;
   }
-
-  map<string, ValueBinding>::const_iterator found =
-      value_scope->values.find(value_name);
-  if(found != value_scope->values.end()) {
-    out = &found->second;
-    return true;
-  }
-  if(value_scope->class_info) {
-    semantic_lookup::MemberValueLookupResult member =
-        semantic_lookup::lookup_member_value(*value_scope->class_info, value_name);
-    if(member.binding) {
-      out = member.binding;
-      return true;
-    }
-  }
-  return false;
+  return lookup_value_binding_in_resolved_scope(
+      *value_scope, qualified.name, out);
 }
 
 bool lookup_leaf_variable_template_binding_in_resolved_scope(
@@ -26019,10 +25965,6 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
   if(!node) {
     return lookup_leaf_qualified_value_binding(services, scope, qualified, out);
   }
-  string lookup_text = template_api::qualified_name_text(qualified);
-  if(lookup_text.empty()) {
-    lookup_text = node_text(*node);
-  }
   if(has_qualifier_type_syntax(*node) &&
      lookup_leaf_qualified_value_binding_via_owner_prefix(
          services, scope, qualified, node, out)) {
@@ -26037,8 +25979,8 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
            services, scope, qualified, node, out)) {
       return true;
     }
-    if(lookup_concrete_member_template_value_binding(
-           services, scope, lookup_text, out)) {
+    if(lookup_concrete_member_template_value_binding_syntax(
+           services, scope, qualified, *node, out)) {
       return true;
     }
     throw;
@@ -26047,8 +25989,8 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
            services, scope, qualified, node, out)) {
       return true;
     }
-    if(lookup_concrete_member_template_value_binding(
-           services, scope, lookup_text, out)) {
+    if(lookup_concrete_member_template_value_binding_syntax(
+           services, scope, qualified, *node, out)) {
       return true;
     }
     throw;
@@ -26058,8 +26000,8 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
            services, scope, qualified, node, out)) {
       return true;
     }
-    return lookup_concrete_member_template_value_binding(
-        services, scope, lookup_text, out);
+    return lookup_concrete_member_template_value_binding_syntax(
+        services, scope, qualified, *node, out);
   }
   if(target->class_info && target->class_info->type) {
     Scope * prepared = nullptr;
@@ -26084,8 +26026,8 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
          services, scope, qualified, node, out)) {
     return true;
   }
-  return lookup_concrete_member_template_value_binding(
-      services, scope, lookup_text, out);
+  return lookup_concrete_member_template_value_binding_syntax(
+      services, scope, qualified, *node, out);
 }
 
 bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & services,
@@ -26093,9 +26035,6 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
                                          const string & name,
                                          const ValueBinding *& out)
 {
-  if(lookup_concrete_member_template_value_binding(services, scope, name, out)) {
-    return true;
-  }
   QualifiedName qualified;
   if(!semantic_utils::split_qualified_name_text(name, qualified)) {
     out = nullptr;
@@ -37073,31 +37012,6 @@ NonTypeArgumentStatus evaluate_structured_template_member_bool_value(
            owner_status == NT_ARG_DEPENDENT) {
           return owner_status;
         }
-      }
-    }
-    const ValueBinding * direct_member_template_value = nullptr;
-    if(lookup_concrete_member_template_value_binding(
-           services,
-           scope.require(),
-           template_api::qualified_name_text(*qualified),
-           direct_member_template_value) &&
-      direct_member_template_value) {
-      constant_eval::ConstexprValue direct_value;
-      bool truthy = false;
-      bool evaluation_incomplete = false;
-      if(materialize_leaf_member_constant_binding(
-             services,
-             *const_cast<ValueBinding *>(direct_member_template_value),
-             direct_value,
-             &evaluation_incomplete) &&
-         constant_eval::constexpr_value_truthy(direct_value, truthy)) {
-        out = truthy;
-        note_non_bool_static_value_dependency_for_witness(
-            services, *direct_member_template_value);
-        return NT_ARG_EVALUATED;
-      }
-      if(evaluation_incomplete) {
-        return NT_ARG_DEPENDENT;
       }
     }
   }
