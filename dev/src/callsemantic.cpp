@@ -24740,18 +24740,6 @@ private:
     return out != nullptr;
   }
 
-  bool resolve_out_of_class_special_member_binding(Scope & scope,
-                                                   const string & qualified_name,
-                                                   const vector<pair<string, TypePtr> > & params,
-                                                   FunctionBinding *& out) override
-  {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return false;
-    }
-    return resolve_out_of_class_special_member_binding(scope, qualified, params, out);
-  }
-
   void emit_out_of_class_owner_class_use_if_needed_impl(
       Scope & scope,
       const string & qualified_name,
@@ -25215,18 +25203,6 @@ private:
       out << " [candidate " << i << " type=" << describe_type(binding->type) << "]";
     }
     return out.str();
-  }
-
-  string describe_out_of_class_special_member_binding_lookup(
-      Scope & scope,
-      const string & qualified_name,
-      const vector<pair<string, TypePtr> > & params) override
-  {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return " [special-member-binding lookup invalid qualified name]";
-    }
-    return describe_out_of_class_special_member_binding_lookup(scope, qualified, params);
   }
 
   bool out_of_class_special_member_template_param_types_match(
@@ -26036,22 +26012,6 @@ private:
     return nullptr;
   }
 
-  FunctionTemplateDecl * resolve_out_of_class_special_member_template(
-      Scope & scope,
-      const string & qualified_name,
-      const vector<TemplateParameterInfo> & template_parameters,
-      const vector<pair<string, TypePtr> > & params) override
-  {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return nullptr;
-    }
-    return resolve_out_of_class_special_member_template(scope,
-                                                        qualified,
-                                                        template_parameters,
-                                                        params);
-  }
-
   FunctionTemplateDecl * resolve_out_of_class_method_template(
       Scope & scope,
       const QualifiedName & qualified,
@@ -26193,22 +26153,6 @@ private:
     }
 
     return out.str();
-  }
-
-  string describe_out_of_class_special_member_template_lookup(
-      Scope & scope,
-      const string & qualified_name,
-      const vector<TemplateParameterInfo> & template_parameters,
-      const vector<pair<string, TypePtr> > & params) override
-  {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return " [special-member-template lookup invalid qualified name]";
-    }
-    return describe_out_of_class_special_member_template_lookup(scope,
-                                                                qualified,
-                                                                template_parameters,
-                                                                params);
   }
 
   string describe_template_parameter_infos(
@@ -27756,7 +27700,12 @@ private:
     }
 
     FunctionBinding * binding = nullptr;
-    if(!resolve_out_of_class_special_member_binding(scope, node.value, params, binding)) {
+    const CppAstNode * identifier = find_child(*declarator, CppAstKind::identifier);
+    const QualifiedName * qualified_name =
+        identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
+    if(!qualified_name ||
+       !resolve_out_of_class_special_member_binding(
+           scope, *qualified_name, params, binding)) {
       throw logic_error("missing special member binding");
     }
     note_out_of_class_definition_binding(node, binding);

@@ -1170,10 +1170,11 @@ public:
             stored_defs.push_back(stored_def);
             invalidate_out_of_class_definition_caches(*owner_template_decl);
               emit_out_of_class_owner_class_use_if_needed(pattern_scope,
-                                                        inner.value,
-                                                        &inner,
-                                                        owner,
-                                                        &owner_template_parameters);
+                                                          qualified_member,
+                                                          inner.value,
+                                                          &inner,
+                                                          owner,
+                                                          &owner_template_parameters);
             return true;
           }
 
@@ -1280,26 +1281,15 @@ public:
                                                : parse_scope->class_info,
                 template_decl->exclude_from_explicit_instantiation,
                 template_decl);
-            if(qualified_special_member) {
-              emit_out_of_class_owner_class_use_if_needed(
-                  pattern_scope,
-                  *qualified_special_member,
-                  inner.value,
-                  &inner,
-                  template_decl->declaring_scope ?
-                      template_decl->declaring_scope->class_info :
-                      parse_scope->class_info,
-                  &owner_template_parameters);
-            } else {
-              emit_out_of_class_owner_class_use_if_needed(
-                  pattern_scope,
-                  inner.value,
-                  &inner,
-                  template_decl->declaring_scope ?
-                      template_decl->declaring_scope->class_info :
-                      parse_scope->class_info,
-                  &owner_template_parameters);
-            }
+            emit_out_of_class_owner_class_use_if_needed(
+                pattern_scope,
+                *qualified_special_member,
+                inner.value,
+                &inner,
+                template_decl->declaring_scope ?
+                    template_decl->declaring_scope->class_info :
+                    parse_scope->class_info,
+                &owner_template_parameters);
           return;
         }
 
@@ -1310,20 +1300,12 @@ public:
                                                         params,
                                                         binding))) {
           if(record_out_of_class_special_member_for_owner_template(nullptr, false, nullptr)) {
-              if(qualified_special_member) {
-                emit_out_of_class_owner_class_use_if_needed(pattern_scope,
-                                                            *qualified_special_member,
-                                                            inner.value,
-                                                            &inner,
-                                                            nullptr,
-                                                            &owner_template_parameters);
-              } else {
-                emit_out_of_class_owner_class_use_if_needed(pattern_scope,
-                                                            inner.value,
-                                                            &inner,
-                                                            nullptr,
-                                                            &owner_template_parameters);
-              }
+              emit_out_of_class_owner_class_use_if_needed(pattern_scope,
+                                                          *qualified_special_member,
+                                                          inner.value,
+                                                          &inner,
+                                                          nullptr,
+                                                          &owner_template_parameters);
             return;
           }
           throw logic_error(string("missing templated special-member binding") +
@@ -1333,20 +1315,13 @@ public:
                                        *qualified_special_member,
                                        effective_template_parameters,
                                        params) :
-                                   describe_out_of_class_special_member_template_lookup(
-                                       pattern_scope,
-                                       inner.value,
-                                       effective_template_parameters,
-                                       params)) +
+                                   string(" [missing qualified-name syntax]")) +
                               (qualified_special_member ?
                                    describe_out_of_class_special_member_binding_lookup(
                                        pattern_scope,
                                        *qualified_special_member,
                                        params) :
-                                   describe_out_of_class_special_member_binding_lookup(
-                                       pattern_scope,
-                                       inner.value,
-                                       params)));
+                                   string(" [missing qualified-name syntax]")));
         }
           if(parser_trace::enabled("template.resolve")) {
             std::ostringstream trace;
@@ -1355,20 +1330,12 @@ public:
                   << (binding->exclude_from_explicit_instantiation ? "yes" : "no");
             parser_trace::note("template.resolve", std::string(), trace.str());
           }
-          if(qualified_special_member) {
-            emit_out_of_class_owner_class_use_if_needed(pattern_scope,
-                                                        *qualified_special_member,
-                                                        inner.value,
-                                                        &inner,
-                                                        binding ? binding->owner_class : nullptr,
-                                                        &owner_template_parameters);
-          } else {
-            emit_out_of_class_owner_class_use_if_needed(pattern_scope,
-                                                        inner.value,
-                                                        &inner,
-                                                        binding ? binding->owner_class : nullptr,
-                                                        &owner_template_parameters);
-          }
+          emit_out_of_class_owner_class_use_if_needed(pattern_scope,
+                                                      *qualified_special_member,
+                                                      inner.value,
+                                                      &inner,
+                                                      binding ? binding->owner_class : nullptr,
+                                                      &owner_template_parameters);
 
           if(inner.kind == CppAstKind::special_member_definition) {
             const CppAstNode * current_body = find_function_body_node(inner);
@@ -4361,16 +4328,6 @@ private:
         scope, qualified, template_parameters, params);
   }
 
-  FunctionTemplateDecl * resolve_out_of_class_special_member_template(
-      Scope & scope,
-      const string & qualified_name,
-      const vector<TemplateParameterInfo> & template_parameters,
-      const vector<pair<string, TypePtr> > & params)
-  {
-    return callbacks.out_of_class_services->resolve_out_of_class_special_member_template(
-        scope, qualified_name, template_parameters, params);
-  }
-
   string describe_template_parameter_infos(
       const vector<TemplateParameterInfo> & parameters) const
   {
@@ -4389,17 +4346,6 @@ private:
         scope, qualified, template_parameters, params);
   }
 
-  string describe_out_of_class_special_member_template_lookup(
-      Scope & scope,
-      const string & qualified_name,
-      const vector<TemplateParameterInfo> & template_parameters,
-      const vector<pair<string, TypePtr> > & params)
-  {
-    return callbacks.out_of_class_services->
-        describe_out_of_class_special_member_template_lookup(
-        scope, qualified_name, template_parameters, params);
-  }
-
   string describe_out_of_class_special_member_binding_lookup(
       Scope & scope,
       const QualifiedName & qualified,
@@ -4408,16 +4354,6 @@ private:
     return callbacks.out_of_class_services->
         describe_out_of_class_special_member_binding_lookup(
         scope, qualified, params);
-  }
-
-  string describe_out_of_class_special_member_binding_lookup(
-      Scope & scope,
-      const string & qualified_name,
-      const vector<pair<string, TypePtr> > & params)
-  {
-    return callbacks.out_of_class_services->
-        describe_out_of_class_special_member_binding_lookup(
-        scope, qualified_name, params);
   }
 
   bool explicit_function_nothrow_specifications_match(
@@ -5471,15 +5407,6 @@ private:
       FunctionBinding *& out)
   {
     return ctx.resolve_out_of_class_special_member_binding(scope, qualified, params, out);
-  }
-
-  bool resolve_out_of_class_special_member_binding(
-      Scope & scope,
-      const string & qualified_name,
-      const vector<pair<string, TypePtr> > & params,
-      FunctionBinding *& out)
-  {
-    return ctx.resolve_out_of_class_special_member_binding(scope, qualified_name, params, out);
   }
 
   bool resolve_out_of_class_method_binding(

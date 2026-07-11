@@ -104,13 +104,6 @@ struct OutOfClassMemberResolutionServices
       const std::vector<template_model::TemplateParameterInfo> &
           template_parameters,
       const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params) = 0;
-  virtual semantic_model::FunctionTemplateDecl *
-  resolve_out_of_class_special_member_template(
-      semantic_model::Scope & scope,
-      const std::string & qualified_name,
-      const std::vector<template_model::TemplateParameterInfo> &
-          template_parameters,
-      const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params) = 0;
   virtual std::string describe_template_parameter_infos(
       const std::vector<template_model::TemplateParameterInfo> & parameters)
       const = 0;
@@ -120,19 +113,9 @@ struct OutOfClassMemberResolutionServices
       const std::vector<template_model::TemplateParameterInfo> &
           template_parameters,
       const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params) = 0;
-  virtual std::string describe_out_of_class_special_member_template_lookup(
-      semantic_model::Scope & scope,
-      const std::string & qualified_name,
-      const std::vector<template_model::TemplateParameterInfo> &
-          template_parameters,
-      const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params) = 0;
   virtual std::string describe_out_of_class_special_member_binding_lookup(
       semantic_model::Scope & scope,
       const cpp_decl::QualifiedName & qualified,
-      const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params) = 0;
-  virtual std::string describe_out_of_class_special_member_binding_lookup(
-      semantic_model::Scope & scope,
-      const std::string & qualified_name,
       const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params) = 0;
   virtual semantic_model::FunctionTemplateDecl *
   resolve_out_of_class_method_template(

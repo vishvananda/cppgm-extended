@@ -661,11 +661,6 @@ public:
       const cpp_decl::QualifiedName & name,
       const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
       semantic_model::FunctionBinding *& out) = 0;
-  virtual bool resolve_out_of_class_special_member_binding(
-      semantic_model::Scope & scope,
-      const std::string & name,
-      const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
-      semantic_model::FunctionBinding *& out) = 0;
   // Record / retrieve the binding an out-of-class member definition node
   // resolved to during collection, so the output phase can reuse it instead of
   // re-resolving the owner class from the qualified-name text.

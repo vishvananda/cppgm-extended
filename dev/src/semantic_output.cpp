@@ -5512,7 +5512,12 @@ void analyze_special_member_definition(SemanticContext & ctx,
   }
 
   FunctionBinding * binding = nullptr;
-  if(!ctx.resolve_out_of_class_special_member_binding(scope, node.value, params, binding)) {
+  const CppAstNode * identifier = find_child(*declarator, CppAstKind::identifier);
+  const QualifiedName * qualified_name =
+      identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
+  if(!qualified_name ||
+     !ctx.resolve_out_of_class_special_member_binding(
+         scope, *qualified_name, params, binding)) {
     throw logic_error("missing special member binding");
   }
   analyze_function_binding_output_impl(ctx, state, scope, *binding, out);
