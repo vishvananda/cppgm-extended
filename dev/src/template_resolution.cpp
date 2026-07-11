@@ -753,6 +753,7 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
                                                   const std::string & text,
                                                   const TypePtr & target_type,
                                                   TemplateArgument & out,
+                                                  bool suppress_qualified_text_lookup,
                                                   const ValueBinding ** out_binding = nullptr);
 
 bool is_identifier_text(const std::string & text);
@@ -1083,24 +1084,6 @@ bool bind_value_binding_non_type_template_argument(
   }
 
   return false;
-}
-
-bool qualified_name_has_template_id_component(const QualifiedName & name)
-{
-  QualifiedName ignored_name;
-  std::vector<std::string> ignored_args;
-  for(std::size_t i = 0; i < name.qualifiers.size(); ++i) {
-    if(semantic_utils::split_top_level_template_id_text(
-           trim_space(name.qualifiers[i]),
-           ignored_name,
-           ignored_args)) {
-      return true;
-    }
-  }
-  return semantic_utils::split_top_level_template_id_text(
-      trim_space(name.name),
-      ignored_name,
-      ignored_args);
 }
 
 // template-boundary-audit: begin semantic_service_access, text_recovery_bridge
@@ -1966,6 +1949,7 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
                                                   const std::string & text,
                                                   const TypePtr & target_type,
                                                   TemplateArgument & out,
+                                                  bool suppress_qualified_text_lookup,
                                                   const ValueBinding ** out_binding)
 {
   if(out_binding) {
@@ -2029,10 +2013,10 @@ bool try_resolve_named_non_type_template_argument(template_api::TemplateServices
     }
   }
   QualifiedName qualified_value_name;
-  if(services.semantic_context &&
+  if(!suppress_qualified_text_lookup &&
+     services.semantic_context &&
      semantic_utils::split_qualified_name_text(trimmed, qualified_value_name) &&
      (qualified_value_name.rooted || !qualified_value_name.qualifiers.empty()) &&
-     !qualified_name_has_template_id_component(qualified_value_name) &&
      compact_source_argument_key(source_text_for_qualified_name(qualified_value_name)) ==
          compact_source_argument_key(trimmed) &&
      !text_mentions_template_dependency(
@@ -7124,6 +7108,10 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
               syntax,
               bound_value_type,
               arg);
+      const bool suppress_qualified_text_lookup =
+          syntax &&
+          syntax->expression &&
+          cppast_has_qualifier_template_id_syntaxes(*syntax->expression);
       const ValueBinding * named_binding = nullptr;
       if(!structured_function_resolved &&
          !try_resolve_named_non_type_template_argument(services,
@@ -7131,6 +7119,7 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
                                                        inputs.texts[i],
                                                        bound_value_type,
                                                        arg,
+                                                       suppress_qualified_text_lookup,
                                                        &named_binding)) {
         if(!allow_expensive_resolution) {
           return FRTA_UNSUPPORTED;
@@ -12173,6 +12162,10 @@ bool resolve_template_argument(template_api::TemplateServices & services,
       bound_value_type = parameter.value_type;
     }
 
+    const bool suppress_qualified_text_lookup =
+        syntax &&
+        syntax->expression;
+
     const auto try_resolve_named_non_type =
         [&](const std::string & candidate_text) -> bool
     {
@@ -12183,6 +12176,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
              candidate_text,
              bound_value_type,
              out,
+             suppress_qualified_text_lookup,
              &named_binding)) {
         return false;
       }
