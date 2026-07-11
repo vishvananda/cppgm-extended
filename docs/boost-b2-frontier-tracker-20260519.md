@@ -6560,3 +6560,8 @@ Qualifier text refresh no longer decomposes each component a second time while
 synchronizing structured qualifier prefixes. The main refresh loop remains the
 single legacy recovery point until its missing carrier is repaired. This
 ratchets the audit from `39` to `38`; focused and strict suites pass.
+
+Template-template argument mangling no longer accepts a nondependent entity
+solely by parsing `TemplateArgument::text` after structured entity identity and
+template-parameter encoding fail. That final text-only entity fallback is
+removed, ratcheting the audit from `38` to `37`; PA30 and strict suites pass.

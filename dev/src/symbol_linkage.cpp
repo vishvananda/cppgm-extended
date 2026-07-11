@@ -7498,39 +7498,6 @@ static bool try_build_template_entity_argument_name_ir(
   return !template_name_substitution.empty();
 }
 
-static bool try_build_template_entity_argument_text_ir(
-    const string & text,
-    vector<abi_mangle::Type::NameComponent> & prefix_components,
-    string & template_name,
-    string & template_name_substitution)
-{
-  QualifiedName qualified;
-  if(!parse_external_named_text_candidate(text, qualified)) {
-    return false;
-  }
-  if(qualified.name.empty()) {
-    return false;
-  }
-  string prefix_text;
-  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    if(i != 0) {
-      prefix_text += "::";
-    }
-    prefix_text += qualified.qualifiers[i];
-  }
-  string canonical_prefix;
-  if(!build_name_prefix_components_ir(prefix_text,
-                                      prefix_components,
-                                      canonical_prefix)) {
-    return false;
-  }
-  template_name = qualified.name;
-  template_name_substitution =
-      append_qualified_component_text(canonical_prefix,
-                                      canonical_component_text(template_name));
-  return !template_name_substitution.empty();
-}
-
 static bool try_emit_static_member_object_symbol_ir(
     const semantic_model::ClassInfo & owner_class,
     const string & member_name,
@@ -15037,19 +15004,6 @@ static bool try_mangle_template_argument_impl(const TemplateArgument & arg,
     }
     if(try_mangle_template_parameter_text(arg.text, mangle_ctx, out, state)) {
       return true;
-    }
-    if(try_build_template_entity_argument_text_ir(arg.text,
-                                                  prefix_components,
-                                                  template_name,
-                                                  template_name_substitution)) {
-      MangleIrSubstitutionSink sink(state);
-	      return abi_mangle::emit_template_argument(
-	          abi_mangle::TemplateArgument::template_entity_arg(
-	              std::move(prefix_components),
-	              std::move(template_name),
-	              std::move(template_name_substitution)),
-          out,
-          &sink);
     }
     return false;
   }
