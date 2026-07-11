@@ -129,6 +129,15 @@ CATEGORIES = [
         ),
     ),
     Category(
+        "semantic_qualified_name_text_reparse",
+        "Qualified-name AST state refreshed from substituted semantic text.",
+        re.compile(
+            r"\brefresh_substituted_member_value_expression\s*\(|"
+            r"\b(?:reparse|recover|refresh)_[A-Za-z0-9_]*qualified"
+            r"[A-Za-z0-9_]*(?:from|with)_text\s*\("
+        ),
+    ),
+    Category(
         "semantic_nttp_text_rebind",
         "Non-type template argument semantics recovered by re-looking up saved text.",
         re.compile(

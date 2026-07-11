@@ -33,6 +33,7 @@ ZERO_LIMITS = {
     "semantic_text_tokenizer_reparse": 0,
     "manual_template_argument_text_parse": 0,
     "semantic_template_id_text_decomposition": 0,
+    "semantic_qualified_name_text_reparse": 0,
     "semantic_nttp_text_rebind": 0,
     "function_result_argument_text_reparse": 0,
     "owner_member_text_reparse": 0,
@@ -183,6 +184,29 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("function_result_argument_text_reparse", result.stdout)
             self.assertIn("instantiated_result_argument_text", result.stdout)
             self.assertIn("result_non_type_argument_text_reparse", result.stdout)
+
+    def test_semantic_qualified_name_text_reparse_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "template_argument_semantics.cpp").write_text(
+                "bool refresh_substituted_member_value_expression();\n"
+                "bool recover_qualified_owner_from_text();\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({"limits": ZERO_LIMITS}),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("semantic_qualified_name_text_reparse", result.stdout)
+            self.assertIn("refresh_substituted_member_value_expression", result.stdout)
+            self.assertIn("recover_qualified_owner_from_text", result.stdout)
 
     def test_owner_member_text_reparse_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
