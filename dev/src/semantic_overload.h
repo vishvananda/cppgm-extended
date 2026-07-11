@@ -56,15 +56,6 @@ bool resolve_member_function_id_for_target(SemanticContext & ctx,
                                            const cpp_decl::TypePtr & target,
                                            semantic_conversion::ExprInfo & out);
 
-void append_function_template_call_candidates(
-    SemanticContext & ctx,
-    semantic_model::Scope & lookup_scope,
-    semantic_model::Scope & argument_scope,
-    const std::string & name,
-    const std::vector<const CppAstNode *> & arg_nodes,
-    std::vector<semantic_model::FunctionBinding *> & out,
-    const CallAnalysisOptions & options = CallAnalysisOptions());
-
 semantic_model::FunctionBinding * select_constructor_from_exprs(
     SemanticContext & ctx,
     semantic_model::Scope & scope,

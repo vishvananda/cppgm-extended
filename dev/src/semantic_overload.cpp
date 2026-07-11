@@ -9214,12 +9214,6 @@ void append_function_template_call_candidates_impl(
       template_name += "::";
     }
     template_name += qualified_template_name.name;
-  } else if(semantic_utils::split_qualified_name_text(name,
-                                                      qualified_template_name) &&
-            (qualified_template_name.rooted ||
-             !qualified_template_name.qualifiers.empty())) {
-    has_qualified_template_name = true;
-    template_name = qualified_name_lookup_text(qualified_template_name);
   }
   if(use_preselected_member_templates && has_qualified_template_name) {
     template_name = qualified_template_name.name;
@@ -10625,25 +10619,6 @@ bool append_constructor_default_arguments(
 }
 
 }  // namespace
-
-void append_function_template_call_candidates(SemanticContext & ctx,
-                                              Scope & lookup_scope,
-                                              Scope & argument_scope,
-                                              const std::string & name,
-                                              const std::vector<const CppAstNode *> & arg_nodes,
-                                              std::vector<FunctionBinding *> & out,
-                                              const CallAnalysisOptions & options)
-{
-  append_function_template_call_candidates_impl(ctx,
-                                                lookup_scope,
-                                                argument_scope,
-                                                name,
-                                                arg_nodes,
-                                                out,
-                                                options,
-                                                nullptr,
-                                                nullptr);
-}
 
 FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
                                                 Scope & scope,

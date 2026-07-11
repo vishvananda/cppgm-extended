@@ -16603,23 +16603,6 @@ private:
                                                              name_node);
   }
 
-  void append_function_template_call_candidates(Scope & lookup_scope,
-                                                Scope & argument_scope,
-                                                const string & name,
-                                                const vector<const CppAstNode *> & arg_nodes,
-                                                vector<FunctionBinding *> & out,
-                                                const semantic_overload::CallAnalysisOptions & options =
-                                                    semantic_overload::CallAnalysisOptions())
-  {
-    semantic_overload::append_function_template_call_candidates(*this,
-                                                                lookup_scope,
-                                                                argument_scope,
-                                                                name,
-                                                                arg_nodes,
-                                                                out,
-                                                                options);
-  }
-
   Scope & append_template_scope(Scope & parent) override
   {
     template_scopes.emplace_back(new Scope(&parent, "", false));
