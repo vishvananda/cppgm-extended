@@ -1558,6 +1558,16 @@ bool parse_template_argument_type_syntax(
      out) {
     return true;
   }
+  if(syntax->source_type_id &&
+     template_argument_semantics::parse_type_id_node_for_templates(
+         services,
+         scope,
+         *syntax->source_type_id,
+         out,
+         reference_class_templates_only) &&
+     out) {
+    return true;
+  }
   if(syntax->template_id &&
      template_argument_semantics::resolve_template_id_syntax_type(
          services,
@@ -1570,21 +1580,19 @@ bool parse_template_argument_type_syntax(
      out) {
     return true;
   }
-  const std::string text = trim_space(syntax->text);
-  if(!text.empty() &&
-     text.find('<') == std::string::npos) {
-    QualifiedName qualified;
-    const std::string lookup_text = strip_elaborated_type_prefix(text);
-    if(semantic_utils::split_qualified_name_text(lookup_text, qualified) &&
-       !qualified.name.empty() &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
-      template_api::TemplateTypeLookupRequest request;
-      request.scope = &scope;
-      request.name = qualified;
-      request.allow_class_templates = reference_class_templates_only;
-      if(service_type_system(services).resolve_direct_type_lookup(request, out) && out) {
-        return true;
-      }
+  const QualifiedName * expression_name =
+      syntax->expression ?
+          cppast_qualified_name_syntax(*syntax->expression) :
+          nullptr;
+  if(expression_name &&
+     !expression_name->name.empty() &&
+     (expression_name->rooted || !expression_name->qualifiers.empty())) {
+    template_api::TemplateTypeLookupRequest request;
+    request.scope = &scope;
+    request.name = *expression_name;
+    request.allow_class_templates = reference_class_templates_only;
+    if(service_type_system(services).resolve_direct_type_lookup(request, out) && out) {
+      return true;
     }
   }
   return false;
