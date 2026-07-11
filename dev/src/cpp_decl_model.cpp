@@ -448,7 +448,8 @@ TypePtr make_semantic_named(const string & display_name,
 TypePtr make_dependent_type_expression_type(const string & display_name,
                                             Type::NamedSemanticKind semantic_kind,
                                             const string & semantic_payload,
-                                            const CppAstNode & expression_node)
+                                            const CppAstNode & expression_node,
+                                            bool formed_with_placeholders)
 {
   TypePtr result =
       make_semantic_named(display_name, semantic_kind, semantic_payload, true);
@@ -457,6 +458,8 @@ TypePtr make_dependent_type_expression_type(const string & display_name,
      (semantic_kind == Type::NSK_DEPENDENT_DECLTYPE ||
       semantic_kind == Type::NSK_DEPENDENT_TYPEOF)) {
     base->named_dependent_type_expression_node.reset(new CppAstNode(expression_node));
+    base->named_dependent_type_expression_formed_with_placeholders =
+        formed_with_placeholders;
   }
   return result;
 }
@@ -622,6 +625,18 @@ const CppAstNode * named_type_dependent_type_expression_node(const TypePtr & typ
     return nullptr;
   }
   return base->named_dependent_type_expression_node.get();
+}
+
+bool named_type_dependent_type_expression_formed_with_placeholders(
+    const TypePtr & type)
+{
+  TypePtr base = named_base(type);
+  if(!base ||
+     (base->named_semantic_kind != Type::NSK_DEPENDENT_DECLTYPE &&
+      base->named_semantic_kind != Type::NSK_DEPENDENT_TYPEOF)) {
+    return false;
+  }
+  return base->named_dependent_type_expression_formed_with_placeholders;
 }
 
 bool named_type_dependent_alias_template(

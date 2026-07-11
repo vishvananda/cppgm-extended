@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | `try_exception_and_result_test` now builds, links, runs, and passes after concrete non-type alias instantiations resolve their substituted target AST instead of reusing structural target metadata from an earlier instantiation. A forced full replay updates 394 targets and leaves 24 failures, clearing `capture_exception_result_async_test`, `capture_result_async_test`, `context_activator_test`, `ctx_remote_handle_all_test`, and `try_exception_and_result_test` from the prior 29-target failure set. The next focused cursor is `context_deduction_test`, where dependent `decltype` return-type analysis fails alias argument resolution for `context_type_from_handlers<H...>`. Focused fixed log `/tmp/boost-leaf-try-exception-result-alias-ast-final-refactor-20260710.log`; full replay `/tmp/boost-leaf-full-after-nontype-alias-20260710.log`; next-cursor log `/tmp/boost-leaf-context-deduction-next-cursor-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | `context_deduction_test` now advances past dependent alias argument resolution for `context_type_from_handlers<H...>`. Retained dependent `decltype` metadata records whether its expression was formed with unresolved placeholders; later resolution defers when the new scope has no binding named by that expression, instead of re-evaluating its AST in an unrelated class-template scope. The target now reaches a separate explicit call lookup failure for `test<info<1>, info<2>>` at line 98. A forced full replay still updates 394 targets and leaves the same 24 failures because the target advances without completing. Focused log `/tmp/boost-leaf-context-deduction-formation-binding-final-20260710.log`; full replay `/tmp/boost-leaf-full-after-dependent-expr-formation-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -6280,3 +6280,43 @@ cursor is `context_deduction_test`, which fails alias template argument
 resolution for `context_type_from_handlers<H...>` while analyzing a dependent
 `decltype` return type; focused log
 `/tmp/boost-leaf-context-deduction-next-cursor-20260710.log`.
+
+2026-07-10 Boost.LEAF dependent expression formation-context frontier:
+`context_deduction_test` retains a dependent `decltype` through
+`std::decay<...>::type` while declaring `expd<H...>`. The retained expression
+contains `context_type_from_handlers<H...>`, but later class-template member
+resolution retried that expression in the `std` scope after the original `H`
+binding was no longer visible. Alias argument resolution then treated `H...`
+as an unbound pack and rejected the function template declaration.
+
+Dependent `decltype` and `typeof` types now record whether their expression was
+formed while unresolved template placeholders were present. When a later
+scope has no non-namespace binding named by that expression, dependent-type
+resolution preserves the type instead of re-evaluating the retained AST in an
+unrelated scope. Concrete member-template instantiation scopes that do carry a
+referenced binding keep the existing resolution path. The change uses the
+stored AST and structured scope bindings; it adds no source-text parser,
+fallback resolver bridge, cache, or library-specific rule.
+
+Owner: PA23 cluster 500 library-shaped template integration. New regression:
+`pa23/tests/general/500-dependent-decltype-expression-formation-scope.t`, with
+a patched-Clang witness. Exact parent `4d6cc0416` rejects the reducer with the
+original `context_type_from_handlers` alias-argument diagnostic; Clang and the
+fixed compiler return `0`. PA23 direct-text validation passes `397/397`; the
+full strict direct-text suite passes, including 338 compared PA23 witnesses
+with 59 intentional skips; and the full direct-text report passes `3617/3617`.
+The PA23 placement scan covers 397 tests and classifies the new reducer as a
+PA23 cluster-500 integration candidate. The strict text-reparse audit reports
+all zero and its 7 unit tests pass; `git diff --check` passes. The three-run
+performance gate against isolated exact `4d6cc0416` passes: instructions
+`+0.04%`, RSS `-0.31%`, footprint `+0.47%`; baseline
+`/tmp/cppgm-perf-baseline-dependent-expr-4d6cc0416-20260710.json`, report
+`/tmp/cppgm-perf-report-dependent-expr-20260710.json`.
+
+Focused `libs/leaf/test//context_deduction_test` advances past the alias
+resolution failure and now reaches an unrelated explicit call lookup failure
+for `test<info<1>, info<2>>` at line 98; focused log
+`/tmp/boost-leaf-context-deduction-formation-binding-final-20260710.log`. The
+forced full LEAF replay updates 394 targets and remains at 24 failures because
+the target advances without completing; full log
+`/tmp/boost-leaf-full-after-dependent-expr-formation-20260710.log`.

@@ -1,0 +1,15 @@
+translation-unit
+  alias-use at pa23/tests/general/500-dependent-decltype-expression-formation-scope.t:63:42
+    template leaf::context_type_from_handlers
+    bind #1 = H... source=explicit
+  function-call at pa23/tests/general/500-dependent-decltype-expression-formation-scope.t:71:10
+    callee expd
+    selected instantiation
+    bind #1 = <int> source=deduced
+template-closure-events
+  ensure-definition
+    entity expd
+  function-instantiation
+    entity expd
+  require-definition
+    entity expd

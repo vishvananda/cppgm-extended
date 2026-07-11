@@ -184,6 +184,7 @@ struct Type
   TypePtr inner;
   TypePtr owner;
   std::shared_ptr<CppAstNode> named_dependent_type_expression_node;
+  bool named_dependent_type_expression_formed_with_placeholders = false;
   void * named_dependent_alias_template_decl = nullptr;
   std::vector<DependentAliasTemplateArgumentSyntax> named_dependent_alias_arguments;
   void * named_dependent_class_template_decl = nullptr;
@@ -221,7 +222,8 @@ TypePtr make_dependent_type_expression_type(
     const std::string & display_name,
     Type::NamedSemanticKind semantic_kind,
     const std::string & semantic_payload,
-    const CppAstNode & expression_node);
+    const CppAstNode & expression_node,
+    bool formed_with_placeholders);
 TypePtr make_dependent_alias_type(
     const std::string & display_name,
     const std::string & semantic_payload,
@@ -246,6 +248,8 @@ bool named_type_key_contains_dependent_semantic(const TypePtr & type);
 bool named_type_key_contains_partial_order_placeholder(const TypePtr & type);
 std::string named_type_semantic_payload(const TypePtr & type);
 const CppAstNode * named_type_dependent_type_expression_node(const TypePtr & type);
+bool named_type_dependent_type_expression_formed_with_placeholders(
+    const TypePtr & type);
 bool named_type_dependent_alias_template(
     const TypePtr & type,
     void *& alias_template_decl,

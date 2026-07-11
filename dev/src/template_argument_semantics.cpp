@@ -30404,6 +30404,12 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
      named_type_is_dependent_typeof(type)) {
     const CppAstNode * expr_node = named_type_dependent_type_expression_node(type);
     if(expr_node) {
+      if(named_type_dependent_type_expression_formed_with_placeholders(type) &&
+         !text_mentions_non_namespace_binding_names(
+             scope,
+             named_type_semantic_payload(type))) {
+        return DependentNamedTypeResolutionStatus::KeepDependent;
+      }
       TypePtr resolved_expr_type;
       if(parse_decltype_or_typeof_node(
              services,
@@ -41049,7 +41055,8 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
           parsed_text.is_typeof ? Type::NSK_DEPENDENT_TYPEOF :
                                   Type::NSK_DEPENDENT_DECLTYPE,
           effective_node->value,
-          *effective_node);
+          *effective_node,
+          scope_has_placeholders);
       return true;
     }
     return false;

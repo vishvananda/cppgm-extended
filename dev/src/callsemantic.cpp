@@ -4260,7 +4260,8 @@ private:
               is_typeof ? Type::NSK_DEPENDENT_TYPEOF :
                           Type::NSK_DEPENDENT_DECLTYPE,
               text,
-              node);
+              node,
+              scope_has_template_placeholders(scope));
         } else {
           out = make_semantic_named(
               text,
