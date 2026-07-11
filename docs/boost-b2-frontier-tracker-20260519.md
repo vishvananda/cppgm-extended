@@ -6446,3 +6446,11 @@ rendered actual types, rendered or alias-expanded patterns, or canonicalized
 type text. This removes 9 audit sites and ratchets the category from `93` to
 `84`. PA21 passes `204/204`, PA23 passes `394/394`, and the full strict witness
 suite remains clean.
+
+Dependent class and alias substitution now derive specialization heads directly
+from their source declarations instead of splitting rendered type keys, display
+names, or alias payloads. Nested alias validation requires retained argument
+syntax, and alias-template resolution builds its qualified name from the
+declaration scope. The adjacent alias template-template dependency check also
+uses only nested syntax. This removes 7 sites and ratchets the category from
+`84` to `77`; PA21, PA23, and the full strict suite pass.

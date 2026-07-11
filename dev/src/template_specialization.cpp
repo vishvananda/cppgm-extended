@@ -3254,8 +3254,6 @@ void accumulate_partial_pattern_specificity(
     return;
   }
 
-  QualifiedName template_name;
-  std::vector<std::string> template_args;
   const TemplateIdSyntax * template_id_syntax =
       syntax && syntax->template_id ? syntax->template_id.get() : nullptr;
   if(!template_id_syntax && syntax && syntax->type_id) {
@@ -3275,6 +3273,8 @@ void accumulate_partial_pattern_specificity(
     return;
   }
 
+  QualifiedName template_name;
+  std::vector<std::string> template_args;
   if(semantic_utils::split_top_level_template_id_text(text,
                                                        template_name,
                                                        template_args)) {
@@ -6434,22 +6434,6 @@ bool try_expand_alias_template_pattern_structurally(
     }
     return false;
   };
-  const auto argument_text_template_id_head_is_parameter =
-      [](const std::string & text,
-         const std::string & parameter_name) -> bool
-  {
-    const std::string trimmed = trim_space(text);
-    if(trimmed == parameter_name) {
-      return true;
-    }
-    QualifiedName name;
-    std::vector<std::string> unused_args;
-    return semantic_utils::split_top_level_template_id_text(trimmed,
-                                                            name,
-                                                            unused_args) &&
-           name.qualifiers.empty() &&
-           name.name == parameter_name;
-  };
   const auto dependent_alias_argument_mentions_template_template_parameter =
       [&](const DependentAliasTemplateArgumentSyntax & argument) -> bool
   {
@@ -6459,13 +6443,7 @@ bool try_expand_alias_template_pattern_structurally(
          parameter.name.empty()) {
         continue;
       }
-      if(syntax_template_id_head_is_parameter(argument.syntax, parameter.name) ||
-         argument_text_template_id_head_is_parameter(argument.text,
-                                                     parameter.name) ||
-         argument_text_template_id_head_is_parameter(argument.syntax.text,
-                                                     parameter.name) ||
-         argument_text_template_id_head_is_parameter(argument.syntax.source_text,
-                                                     parameter.name)) {
+      if(syntax_template_id_head_is_parameter(argument.syntax, parameter.name)) {
         return true;
       }
     }

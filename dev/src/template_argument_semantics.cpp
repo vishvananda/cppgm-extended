@@ -16685,24 +16685,10 @@ bool substitute_dependent_class_type(const TypePtr & type,
   TypePtr substituted(new Type(*type));
   if(ClassTemplateDecl * class_template =
          static_cast<ClassTemplateDecl *>(class_template_decl)) {
-    string specialization_head = class_template->name;
-    QualifiedName existing_name;
-    vector<string> ignored_arguments;
-    if(semantic_utils::split_top_level_template_id_text(type->named_key,
-                                                        existing_name,
-                                                        ignored_arguments)) {
-      const string existing_head = template_api::qualified_name_text(existing_name);
-      if(!existing_head.empty()) {
-        specialization_head = existing_head;
-      }
-    } else if(semantic_utils::split_top_level_template_id_text(type->named_display,
-                                                               existing_name,
-                                                               ignored_arguments)) {
-      const string existing_head = template_api::qualified_name_text(existing_name);
-      if(!existing_head.empty()) {
-        specialization_head = existing_head;
-      }
-    }
+    const string specialization_head = class_template->declaring_scope ?
+        semantic_lookup::scope_qualified_name(*class_template->declaring_scope,
+                                              class_template->name) :
+        class_template->name;
 
     ostringstream specialization_name;
     ostringstream specialization_key_name;
@@ -17335,24 +17321,10 @@ bool substitute_dependent_alias_type(const TypePtr & type,
   string payload = named_type_semantic_payload(type);
   if(AliasTemplateDecl * alias_template =
          static_cast<AliasTemplateDecl *>(alias_template_decl)) {
-    string specialization_head = alias_template->name;
-    QualifiedName existing_name;
-    vector<string> ignored_arguments;
-    if(semantic_utils::split_top_level_template_id_text(payload,
-                                                        existing_name,
-                                                        ignored_arguments)) {
-      const string existing_head = template_api::qualified_name_text(existing_name);
-      if(!existing_head.empty()) {
-        specialization_head = existing_head;
-      }
-    } else if(semantic_utils::split_top_level_template_id_text(display,
-                                                               existing_name,
-                                                               ignored_arguments)) {
-      const string existing_head = template_api::qualified_name_text(existing_name);
-      if(!existing_head.empty()) {
-        specialization_head = existing_head;
-      }
-    }
+    const string specialization_head = alias_template->declaring_scope ?
+        semantic_lookup::scope_qualified_name(*alias_template->declaring_scope,
+                                              alias_template->name) :
+        alias_template->name;
     ostringstream specialization_name;
     specialization_name << specialization_head << "<";
     for(size_t i = 0; i < dependent_arguments.size(); ++i) {
@@ -19157,9 +19129,6 @@ bool try_resolve_alias_template_id_locally(
         nested_template_id = (*arg_syntaxes)[i].template_id->name;
         nested_arg_texts = (*arg_syntaxes)[i].template_id->arguments;
         nested_arg_syntaxes = &(*arg_syntaxes)[i].template_id->argument_syntaxes;
-      } else if(!semantic_utils::split_top_level_template_id_text(
-                    trim_space(arg_texts[i]), nested_template_id, nested_arg_texts)) {
-        nested_arg_texts.clear();
       }
       if(!validated_argument_is_dependent && !nested_arg_texts.empty()) {
         const witness::ScopedTemplateWitnessSourceCapturePause
@@ -30461,12 +30430,12 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
           alias_arg_syntaxes.push_back(dependent_alias_arguments[i].syntax);
         }
 
-        QualifiedName alias_template_id;
-        vector<string> ignored_arg_texts;
-        if(!semantic_utils::split_top_level_template_id_text(
-               named_type_semantic_payload(type),
-               alias_template_id,
-               ignored_arg_texts)) {
+        QualifiedName alias_template_id = alias_template->declaring_scope ?
+            semantic_lookup::scope_qualified_name_syntax(
+                *alias_template->declaring_scope,
+                alias_template->name) :
+            QualifiedName();
+        if(!alias_template->declaring_scope) {
           alias_template_id.name = alias_template->name;
         }
         template_api::TemplateTypeLookupRequest alias_request;
