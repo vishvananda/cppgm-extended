@@ -4937,13 +4937,6 @@ private:
     return false;
   }
 
-  bool try_builtin_type_transform(Scope & scope,
-                                  const string & text,
-                                  TypePtr & out)
-  {
-    return semantic_builtins::try_builtin_type_transform(*this, scope, text, out);
-  }
-
   bool is_named_enum_type(const TypePtr & type) const
   {
     TypePtr base = strip_top_level_cv(type);
@@ -8640,11 +8633,6 @@ private:
             throw_substitution_failure(out.str(), std::string(), "callsemantic");
           }
         }
-    }
-
-    TypePtr builtin_transform;
-    if(try_builtin_type_transform(scope, normalized_name, builtin_transform)) {
-      return builtin_transform;
     }
 
     const vector<TypePtr> * bound_pack = lookup_type_pack(scope, normalized_name);
@@ -18108,6 +18096,7 @@ private:
             unqualified_member_name(qualified_lookup->name) == "type");
     if((qualified_lookup &&
         (qualified_lookup->rooted || !qualified_lookup->qualifiers.empty())) ||
+       !node.builtin_type_transform_name.empty() ||
        !node.qualifier_template_id_syntaxes.empty() ||
        !node.qualifier_type_syntaxes.empty() ||
        (lookup_name.find("::") != string::npos &&

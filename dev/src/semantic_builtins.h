@@ -92,9 +92,4 @@ bool apply_builtin_type_transform(const std::string & name,
 bool apply_builtin_type_transform_kind(builtin_type_transforms::Kind kind,
                                        const cpp_decl::TypePtr & arg_type,
                                        cpp_decl::TypePtr & out);
-bool try_builtin_type_transform(SemanticContext & ctx,
-                                semantic_model::Scope & scope,
-                                const std::string & text,
-                                cpp_decl::TypePtr & out);
-
 }  // namespace semantic_builtins

@@ -968,6 +968,11 @@ StructuredTypeLookupResult resolve_structured_type_lookup_node(
     bool reference_class_templates_only,
     const string & source_location,
     TypePtr & out);
+bool resolve_builtin_type_transform_node_ast(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const CppAstNode & node,
+    TypePtr & type);
 
 TypePtr lookup_shadowing_template_parameter_type(Scope & scope,
                                                  const CppAstNode & node,
@@ -4268,6 +4273,12 @@ StructuredTypeLookupResult resolve_structured_type_lookup_node(
     TypePtr & out)
 {
   out.reset();
+  if(!node.builtin_type_transform_name.empty()) {
+    return resolve_builtin_type_transform_node_ast(
+               services, scope, node, out) && out ?
+        StructuredTypeLookupResult::Resolved :
+        StructuredTypeLookupResult::NoMatch;
+  }
   if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
     if(qualified->rooted || !qualified->qualifiers.empty()) {
       const StructuredTypeLookupResult qualified_result =
