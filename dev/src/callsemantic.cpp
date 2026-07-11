@@ -15820,9 +15820,12 @@ private:
     const bool conversion_function_lookup_name =
         name_has_conversion_function_syntax ||
         (!use_node && is_conversion_function_name(normalized_name));
+    const QualifiedName * retained_name =
+        use_node ? cppast_qualified_name_syntax(*use_node) : nullptr;
     if(!conversion_function_lookup_name &&
-       split_qualified_name_text(normalized_name, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
+       retained_name &&
+       (retained_name->rooted || !retained_name->qualifiers.empty())) {
+      qualified = *retained_name;
       vector<FunctionBinding *> out =
           lookup_qualified_class_or_namespace_generic<vector<FunctionBinding *> >(
           scope, qualified,
