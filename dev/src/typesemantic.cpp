@@ -566,17 +566,6 @@ private:
     return lookup_type_scope_unqualified(scope, qualified.name);
   }
 
-  Scope * lookup_type_scope(Scope & scope, const string & name)
-  {
-    QualifiedName qualified;
-    if(semantic_utils::split_qualified_name_text(name, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
-      return lookup_type_scope(scope, qualified);
-    }
-
-    return lookup_type_scope_unqualified(scope, name);
-  }
-
   bool lookup_constant_unqualified(Scope & scope, const string & name, long long & out)
   {
     ConstantLookupResult result = lookup_unqualified_generic<ConstantLookupResult>(
