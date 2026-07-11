@@ -13574,6 +13574,20 @@ private:
     TypePtr alias;
     const string type_id_text = decl.type_id ? node_text(*decl.type_id) : string();
     const string spaced_type_id_text = decl.type_id ? spaced_node_text(*decl.type_id) : string();
+    bool alias_has_parameter_pack = false;
+    bool alias_has_non_type_parameter = false;
+    bool alias_has_nontype_value_parameter = false;
+    for(size_t i = 0; i < decl.parameters.size(); ++i) {
+      if(decl.parameters[i].parameter_pack) {
+        alias_has_parameter_pack = true;
+      }
+      if(decl.parameters[i].kind != TemplateParameterInfo::TP_TYPE) {
+        alias_has_non_type_parameter = true;
+      }
+      if(decl.parameters[i].kind == TemplateParameterInfo::TP_NON_TYPE) {
+        alias_has_nontype_value_parameter = true;
+      }
+    }
     bool substituted_alias_type_id_attempted = false;
     bool substituted_alias_type_id_available = false;
     CppAstNode substituted_alias_type_id_storage;
@@ -13911,6 +13925,7 @@ private:
 	      alias_name.name = decl.name;
 	      TypePtr structural_alias;
 	      const bool structural_expanded =
+	          !alias_has_nontype_value_parameter &&
 	          !member_alias_pattern_needs_instantiated_member_scope &&
 	          decl.declaring_scope &&
 	          template_api::with_template_services(
@@ -13955,16 +13970,6 @@ private:
 	      out = refine_instantiated_alias(out);
 	      return out != nullptr;
 	    };
-	    bool alias_has_parameter_pack = false;
-	    bool alias_has_non_type_parameter = false;
-	    for(size_t i = 0; i < decl.parameters.size(); ++i) {
-	      if(decl.parameters[i].parameter_pack) {
-	        alias_has_parameter_pack = true;
-	      }
-	      if(decl.parameters[i].kind != TemplateParameterInfo::TP_TYPE) {
-	        alias_has_non_type_parameter = true;
-	      }
-	    }
 	    const bool resolved_alias_pattern_is_dependent =
 	        decl.resolved_type_pattern &&
 	        type_depends_on_template_parameter(decl.resolved_type_pattern);

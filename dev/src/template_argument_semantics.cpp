@@ -18950,6 +18950,14 @@ bool try_resolve_alias_template_id_locally(
              return type_is_dependent(type);
            });
 
+    const bool alias_has_non_type_parameter =
+        std::find_if(alias_template->parameters.begin(),
+                     alias_template->parameters.end(),
+                     [](const TemplateParameterInfo & parameter)
+                     {
+                       return parameter.kind == TemplateParameterInfo::TP_NON_TYPE;
+                     }) != alias_template->parameters.end();
+
     const auto resolve_alias_type_id_ast =
         [&](TypePtr & resolved, bool allow_dependent_result) -> bool
   {
@@ -19359,6 +19367,34 @@ bool try_resolve_alias_template_id_locally(
         } else {
           out = ast_alias;
         }
+      } else {
+        TypePtr structural_alias;
+        const bool structural_ok =
+            resolve_structural_alias_type(structural_alias, false);
+        if(structural_ok) {
+          out = structural_alias;
+        } else {
+          if(alias_template->type_id && alias_template->declaring_scope) {
+            return false;
+          }
+          if(!ensure_expanded_alias()) {
+            if(alias_substitution_failure.active()) {
+              throw_substitution_failure(
+                  string("alias template substitution failed [alias ") +
+                      alias_template->name + "]",
+                  string(),
+                  "template-resolution");
+            }
+            return false;
+          }
+          return false;
+        }
+      }
+    } else if(alias_has_non_type_parameter) {
+      TypePtr ast_alias;
+      const bool ast_ok = resolve_alias_type_id_ast(ast_alias, false);
+      if(ast_ok) {
+        out = ast_alias;
       } else {
         TypePtr structural_alias;
         const bool structural_ok =

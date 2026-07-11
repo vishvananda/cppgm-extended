@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | `capture_result_async_test` and `capture_exception_result_async_test` now build, link, run, and pass after fixed function templates win over otherwise-equivalent templates whose generic trailing type pack consumes no arguments. The prior full `libs/leaf/test` replay updates 374 targets and leaves 29 failures; the next focused cursor is `try_exception_and_result_test`, where `handle_error_` reaches `handler_matches_any_error<fn_mp_args<H>>::value` with a non-fallback tuple handler. Focused cluster log `/tmp/boost-leaf-empty-pack-order-cluster-20260710.log`; prior full replay `/tmp/boost-leaf-full-after-move-aggregate-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | `try_exception_and_result_test` now builds, links, runs, and passes after concrete non-type alias instantiations resolve their substituted target AST instead of reusing structural target metadata from an earlier instantiation. A forced full replay updates 394 targets and leaves 24 failures, clearing `capture_exception_result_async_test`, `capture_result_async_test`, `context_activator_test`, `ctx_remote_handle_all_test`, and `try_exception_and_result_test` from the prior 29-target failure set. The next focused cursor is `context_deduction_test`, where dependent `decltype` return-type analysis fails alias argument resolution for `context_type_from_handlers<H...>`. Focused fixed log `/tmp/boost-leaf-try-exception-result-alias-ast-final-refactor-20260710.log`; full replay `/tmp/boost-leaf-full-after-nontype-alias-20260710.log`; next-cursor log `/tmp/boost-leaf-context-deduction-next-cursor-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -6237,3 +6237,46 @@ this focused fix. The next cursor is `try_exception_and_result_test`, which
 advances to a static assertion in `handle_error_`:
 `handler_matches_any_error<fn_mp_args<H>>::value` is false while recursion is
 processing tuple-expanded handlers.
+
+2026-07-10 Boost.LEAF concrete non-type alias target frontier:
+`try_exception_and_result_test` expands two- and three-element handler tuples
+through `make_index_sequence<N>`. After materializing the two-element alias,
+the structural alias fast paths reused that concrete target metadata for the
+later `N = 3` instantiation. The handler recursion therefore received indices
+`<0, 1>` twice and omitted the fallback handler.
+
+Concrete alias templates with value non-type parameters now resolve the
+currently substituted type-id AST before consulting structural alias metadata.
+The outer `callsemantic` instantiation path skips its structural fast path for
+that shape, and the nested local alias resolver uses the same AST-first order
+with the existing structural path retained as fallback. Type-only aliases keep
+their existing structural-first behavior. No source-text reparse, fallback
+resolver bridge, cache, or library-specific rule was added.
+
+Owner: PA23 cluster 500 alias-template integration. New regression:
+`pa23/tests/general/500-nontype-alias-reinstantiation-structural-state.t`, with
+a patched-Clang witness. Exact parent `e6e0e4575` compiles the reducer but it
+returns `2`; Clang and the fixed compiler return `0`. On the fixed tree the
+focused check passes; the PA23 direct-text report passes `396/396`; the full
+strict direct-text suite passes, including 337 compared PA23 witnesses with 59
+intentional skips; and the full direct-text report passes `3616/3616`.
+The PA23 placement audit scans 396 tests with zero placement and hygiene
+findings. The strict text-reparse audit reports all zero and its 7 unit tests
+pass; `git diff --check` passes. The three-run performance gate against
+isolated exact `e6e0e4575` passes: instructions `+0.47%`, RSS `-0.59%`,
+footprint `-0.03%`; baseline
+`/tmp/cppgm-perf-baseline-nontype-alias-e6e0e4575-20260710.json`, report
+`/tmp/cppgm-perf-report-nontype-alias-20260710.json`.
+
+Focused `libs/leaf/test//try_exception_and_result_test` builds, links, runs,
+and passes; log
+`/tmp/boost-leaf-try-exception-result-alias-ast-final-refactor-20260710.log`.
+The forced full LEAF replay updates 394 targets and reduces the failure set
+from 29 to 24, additionally clearing `capture_exception_result_async_test`,
+`capture_result_async_test`, `context_activator_test`, and
+`ctx_remote_handle_all_test`; full log
+`/tmp/boost-leaf-full-after-nontype-alias-20260710.log`. The next focused
+cursor is `context_deduction_test`, which fails alias template argument
+resolution for `context_type_from_handlers<H...>` while analyzing a dependent
+`decltype` return type; focused log
+`/tmp/boost-leaf-context-deduction-next-cursor-20260710.log`.
