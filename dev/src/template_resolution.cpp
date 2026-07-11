@@ -3780,23 +3780,23 @@ bool simple_qualified_name_components(const QualifiedName & name)
 bool try_resolve_dependent_qualified_member_type_argument(
     template_api::TemplateTypeSystem & type_system,
     Scope & raw_argument_scope,
+    const TemplateArgumentSyntax * syntax,
     const std::string & text,
     TypePtr & out)
 {
   out.reset();
-  std::string lookup_text;
-  const bool leading_typename =
-      strip_leading_typename_argument_text(text, lookup_text);
-
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(lookup_text, qualified) ||
-     !simple_qualified_name_components(qualified)) {
+  const CppAstNode * type_name = nullptr;
+  if(!simple_type_argument_type_name_syntax(syntax, type_name) || !type_name) {
+    return false;
+  }
+  const QualifiedName * qualified = cppast_qualified_name_syntax(*type_name);
+  if(!qualified || !simple_qualified_name_components(*qualified)) {
     return false;
   }
 
   TypePtr owner_type;
   if(!lookup_direct_bound_type_argument(raw_argument_scope,
-                                        qualified.qualifiers[0],
+                                        qualified->qualifiers[0],
                                         owner_type) ||
      !owner_type ||
      !template_argument_semantics::type_depends_on_template_parameter(
@@ -3806,15 +3806,15 @@ bool try_resolve_dependent_qualified_member_type_argument(
   }
 
   std::vector<std::string> member_path;
-  member_path.reserve(qualified.qualifiers.size());
-  for(std::size_t i = 1; i < qualified.qualifiers.size(); ++i) {
-    member_path.push_back(qualified.qualifiers[i]);
+  member_path.reserve(qualified->qualifiers.size());
+  for(std::size_t i = 1; i < qualified->qualifiers.size(); ++i) {
+    member_path.push_back(qualified->qualifiers[i]);
   }
-  member_path.push_back(qualified.name);
+  member_path.push_back(qualified->name);
   out = make_dependent_qualified_member_type(trim_space(text),
                                              owner_type,
                                              member_path,
-                                             leading_typename);
+                                             type_name->has_leading_typename);
   return out != nullptr;
 }
 
@@ -12429,6 +12429,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     TypePtr dependent_member_type;
     if(try_resolve_dependent_qualified_member_type_argument(type_system,
                                                             raw_argument_scope,
+                                                            syntax,
                                                             trimmed,
                                                             dependent_member_type) &&
        dependent_member_type) {
