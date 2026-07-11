@@ -55,6 +55,7 @@ bool resolve_decl_ast_direct_type_lookup(
     template_api::TemplateServices & services,
     Scope & scope,
     const std::string & text,
+    const QualifiedName * qualified_name,
     bool reference_class_templates_only,
     TypePtr & out)
 {
@@ -71,7 +72,9 @@ bool resolve_decl_ast_direct_type_lookup(
   template_api::TemplateTypeLookupRequest request;
   request.scope = &scope;
   request.allow_class_templates = reference_class_templates_only;
-  if(!semantic_utils::split_qualified_name_text(candidate, request.name)) {
+  if(qualified_name) {
+    request.name = *qualified_name;
+  } else {
     if(!callsemantic_internal::is_identifier_text(candidate)) {
       return false;
     }
@@ -618,6 +621,7 @@ TypePtr lookup_decl_ast_type_node(template_api::TemplateServices & services,
   resolve_decl_ast_direct_type_lookup(services,
                                       semantic_scope,
                                       lookup_name,
+                                      cppast_qualified_name_syntax(node),
                                       reference_class_templates_only,
                                       out);
   return out;
@@ -637,6 +641,7 @@ TypePtr lookup_decl_ast_type_name(template_api::TemplateServices & services,
   resolve_decl_ast_direct_type_lookup(services,
                                       semantic_scope,
                                       name,
+                                      nullptr,
                                       reference_class_templates_only,
                                       out);
   return out;
