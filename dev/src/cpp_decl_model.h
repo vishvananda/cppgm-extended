@@ -159,6 +159,8 @@ struct Type
   EFundamentalType fundamental;
   std::string named_display;
   std::string named_key;
+  QualifiedName named_qualified_name_syntax;
+  std::string named_source_name;
   std::shared_ptr<LambdaMangleMetadata> named_lambda_mangle;
   NamedSemanticKind named_semantic_kind;
   std::string named_semantic_payload;

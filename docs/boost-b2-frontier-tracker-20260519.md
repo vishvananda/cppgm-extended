@@ -6565,3 +6565,10 @@ Template-template argument mangling no longer accepts a nondependent entity
 solely by parsing `TemplateArgument::text` after structured entity identity and
 template-parameter encoding fail. That final text-only entity fallback is
 removed, ratcheting the audit from `38` to `37`; PA30 and strict suites pass.
+
+Named class and enum `Type` objects now retain their structured symbol
+`QualifiedName` and source unqualified name at registration. Ordinary named
+type IR, contextual local type IR, and lexical local-name preference consume
+those fields instead of parsing `named_key` or `named_display`. This removes
+three sites and ratchets the audit from `37` to `34`; PA30 passes `78/78`, PA23
+passes `394/394`, and the full strict suite passes.

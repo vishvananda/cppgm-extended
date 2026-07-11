@@ -13535,10 +13535,8 @@ static bool try_build_named_type_ir(const TypePtr & type,
      selected_text.find('>') != string::npos) {
     return false;
   }
-  QualifiedName qualified;
-  if(!parse_external_named_text_candidate(selected_text, qualified) ||
-     qualified.rooted ||
-     qualified.name.empty()) {
+  const QualifiedName & qualified = type->named_qualified_name_syntax;
+  if(qualified.rooted || qualified.name.empty()) {
     return false;
   }
 
@@ -13607,10 +13605,9 @@ static bool try_build_contextual_local_named_type_ir(
     return false;
   }
 
-  QualifiedName qualified;
-  if(parse_external_named_text_candidate(selected, qualified) &&
+  const QualifiedName & qualified = type->named_qualified_name_syntax;
+  if(!qualified.name.empty() &&
      !qualified.rooted &&
-     !qualified.name.empty() &&
      is_identifier_text_for_mangling(qualified.name)) {
     vector<abi_mangle::Type::NameComponent> prefix_components;
     string canonical_prefix;
@@ -14341,9 +14338,8 @@ static bool should_prefer_unqualified_lexical_named_type(const TypePtr & type,
   }
 
   const string display_text = trim_elaborated_type_prefix(type->named_display);
-  QualifiedName display_qualified;
-  if(!parse_external_named_text_candidate(display_text, display_qualified) ||
-     !display_qualified.qualifiers.empty()) {
+  if(type->named_source_name.empty() ||
+     display_text != type->named_source_name) {
     return false;
   }
 

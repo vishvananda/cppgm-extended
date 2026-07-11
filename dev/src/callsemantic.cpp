@@ -3100,7 +3100,11 @@ private:
   {
     string display = enum_prefix + " " + name;
     string key = enum_prefix + " " + scope_qualified_name(scope, name);
-    return make_named(display, key, complete, true, alignment, size);
+    TypePtr type = make_named(display, key, complete, true, alignment, size);
+    type->named_qualified_name_syntax =
+        semantic_lookup::scope_symbol_qualified_name_syntax(scope, name);
+    type->named_source_name = name;
+    return type;
   }
 
   Scope & append_namespace_scope(Scope & parent, const string & name) override
