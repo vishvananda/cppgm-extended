@@ -17915,10 +17915,9 @@ private:
         }
       }
     }
-    QualifiedName fallback_lookup_name;
     const bool fallback_lookup_is_qualified =
-        split_qualified_name_text(lookup_name, fallback_lookup_name) &&
-        (fallback_lookup_name.rooted || !fallback_lookup_name.qualifiers.empty());
+        qualified_lookup &&
+        (qualified_lookup->rooted || !qualified_lookup->qualifiers.empty());
     if(node_has_template_id_qualifier_syntax(node) &&
        fallback_lookup_is_qualified) {
       return TypePtr();
