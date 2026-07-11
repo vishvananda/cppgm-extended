@@ -23211,13 +23211,6 @@ void refresh_qualified_name_qualifier_template_id_texts(CppAstNode & node)
     for(size_t i = 0; i < sync_count; ++i) {
       TemplateIdSyntax & syntax = node.qualifier_template_id_syntaxes[i];
       if(syntax.name.name.empty()) {
-        TemplateIdSyntax parsed_syntax;
-        if(template_id_syntax_from_component_text(qualified.qualifiers[i],
-                                                  parsed_syntax)) {
-          syntax = parsed_syntax;
-        }
-      }
-      if(syntax.name.name.empty()) {
         continue;
       }
       syntax.name.rooted = qualified.rooted;

@@ -6555,3 +6555,8 @@ The replacement-map qualifier fallback now follows the same rule: template-id
 syntax comes from the replacement type's class-template metadata, never its
 rendered component. This ratchets the audit from `40` to `39`; focused and
 strict suites pass.
+
+Qualifier text refresh no longer decomposes each component a second time while
+synchronizing structured qualifier prefixes. The main refresh loop remains the
+single legacy recovery point until its missing carrier is repaired. This
+ratchets the audit from `39` to `38`; focused and strict suites pass.
