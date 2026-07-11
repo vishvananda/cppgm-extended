@@ -4856,17 +4856,6 @@ private:
         scope, qualified, qualified_name, anchor_node, owner_override, canonical_parameters);
   }
 
-  void emit_out_of_class_owner_class_use_if_needed(
-      Scope & scope,
-      const string & qualified_name,
-      const CppAstNode * anchor_node = nullptr,
-      ClassInfo * owner_override = nullptr,
-      const vector<TemplateParameterInfo> * canonical_parameters = nullptr)
-  {
-    callbacks.source_services->emit_out_of_class_owner_class_use_if_needed(
-        scope, qualified_name, anchor_node, owner_override, canonical_parameters);
-  }
-
   FunctionTemplateDecl * resolve_out_of_class_method_template(
       Scope & scope,
       const QualifiedName & qualified,

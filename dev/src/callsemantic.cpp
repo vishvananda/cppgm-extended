@@ -24073,12 +24073,6 @@ private:
     return false;
   }
 
-  bool parse_out_of_class_member_qualified_name(const string & qualified_name,
-                                                QualifiedName & out)
-  {
-    return split_qualified_name_text(qualified_name, out) && !out.qualifiers.empty();
-  }
-
   string qualified_name_syntax_text(const QualifiedName & qualified) const
   {
     string out;
@@ -25139,27 +25133,6 @@ private:
     emit_out_of_class_owner_class_use_if_needed_impl(scope,
                                                      qualified_name,
                                                      &qualified,
-                                                     anchor_node,
-                                                     owner_override,
-                                                     canonical_parameters);
-  }
-
-  void emit_out_of_class_owner_class_use_if_needed(
-      Scope & scope,
-      const string & qualified_name,
-      const CppAstNode * anchor_node = nullptr,
-      ClassInfo * owner_override = nullptr,
-      const vector<TemplateParameterInfo> * canonical_parameters = nullptr)
-      override
-  {
-    QualifiedName qualified;
-    const QualifiedName * qualified_syntax = nullptr;
-    if(parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      qualified_syntax = &qualified;
-    }
-    emit_out_of_class_owner_class_use_if_needed_impl(scope,
-                                                     qualified_name,
-                                                     qualified_syntax,
                                                      anchor_node,
                                                      owner_override,
                                                      canonical_parameters);
@@ -26503,6 +26476,7 @@ private:
                                                       *declared_qualified_name,
                                                       out_of_class_static_member)) {
           emit_out_of_class_owner_class_use_if_needed(scope,
+                                                      *declared_qualified_name,
                                                       name,
                                                       &init_decl.children[0]);
           TypePtr merged = merge_types(out_of_class_static_member->type, type);
@@ -27304,6 +27278,7 @@ private:
     }
 
     emit_out_of_class_owner_class_use_if_needed(scope,
+                                                *function_name_syntax,
                                                 out_of_class_lookup_name,
                                                 &node,
                                                 method_binding->owner_class);
@@ -27577,6 +27552,7 @@ private:
       }
       emit_out_of_class_owner_class_use_if_needed(
           scope,
+          *function_name_syntax,
           semantic_model::function_binding_qualified_name_for_symbol(
               *method_binding),
           declarator,
@@ -27734,7 +27710,8 @@ private:
                                                           witness::SourceUseOwnership::SourceOwned);
       }
     }
-    emit_out_of_class_owner_class_use_if_needed(scope, node.value, &node);
+    emit_out_of_class_owner_class_use_if_needed(
+        scope, *qualified_name, node.value, &node);
     if(!explicit_function_nothrow_specifications_match(
            *binding,
            declarator_function_qualifier(*declarator))) {

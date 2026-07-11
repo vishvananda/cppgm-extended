@@ -55,13 +55,6 @@ struct TemplateDeclarationSourceServices
       semantic_model::ClassInfo * owner_override,
       const std::vector<template_model::TemplateParameterInfo> *
           canonical_parameters) = 0;
-  virtual void emit_out_of_class_owner_class_use_if_needed(
-      semantic_model::Scope & scope,
-      const std::string & qualified_name,
-      const CppAstNode * anchor_node,
-      semantic_model::ClassInfo * owner_override,
-      const std::vector<template_model::TemplateParameterInfo> *
-          canonical_parameters) = 0;
 };
 
 struct OutOfClassMemberResolutionServices
