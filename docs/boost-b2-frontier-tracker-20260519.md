@@ -6422,3 +6422,12 @@ performance gate against `66f0f476c` passes with instructions `-3.17%`, RSS
 `+1.12%`, and footprint `-0.04%`. Logs:
 `/tmp/pa23-reentrant-normal.time`, `/tmp/pa23-reentrant-hotspot.log`, and
 `/tmp/pa23-final-stats.log`.
+
+2026-07-10 structured class-instantiation witness binding ratchet: witness
+binding repair decomposed up to four rendered `ClassInfo` names to recover
+template arguments even though the class model already retains
+`instantiation_arguments` and `instantiation_arg_texts`. The rendered-name
+fallbacks are removed and the structured class-instantiation state is now
+authoritative, lowering `semantic_template_id_text_decomposition` from `99` to
+`95`. The default audit passes at the new limit, all 8 audit unit tests pass,
+and the full PA18/PA19/PA21/PA22/PA23 strict witness suite passes.

@@ -2467,43 +2467,15 @@ public:
             if(!resolved_info) {
               return;
             }
-            QualifiedName resolved_template_name;
-            vector<string> resolved_name_args;
-            semantic_utils::split_top_level_template_id_text(
-                resolved_info->qualified_name,
-                resolved_template_name,
-                resolved_name_args);
-            if(resolved_name_args.empty()) {
-              semantic_utils::split_top_level_template_id_text(
-                  template_api::class_witness_output_qualified_name(
-                      ctx,
-                      *resolved_info),
-                  resolved_template_name,
-                  resolved_name_args);
-            }
-            if(resolved_name_args.empty() && resolved_info->type) {
-              semantic_utils::split_top_level_template_id_text(
-                  resolved_info->type->named_display,
-                  resolved_template_name,
-                  resolved_name_args);
-            }
-            if(resolved_name_args.empty() && resolved_info->type) {
-              semantic_utils::split_top_level_template_id_text(
-                  resolved_info->type->named_key,
-                  resolved_template_name,
-                  resolved_name_args);
-            }
             const std::size_t limit =
                 std::min(bindings.size(),
                          std::max(resolved_info->instantiation_arguments.size(),
-                                  resolved_name_args.size()));
+                                  resolved_info->instantiation_arg_texts.size()));
             for(std::size_t i = 0; i < limit; ++i) {
               if(bindings[i].pack_binding) {
                 continue;
               }
               std::string resolved_arg =
-                  i < resolved_name_args.size() ?
-                      resolved_name_args[i] :
                   i < resolved_info->instantiation_arg_texts.size() ?
                       resolved_info->instantiation_arg_texts[i] :
                       std::string();
