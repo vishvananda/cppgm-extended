@@ -347,7 +347,8 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("support.lambda", (rx(r"(?<!operator)\[[^]\n]*\]\s*\([^)]*\)\s*(?:mutable\s*)?(?:noexcept\s*)?(?:->|\{)"),)),
     FeatureRule("support.lambda.capture", ()),
     FeatureRule("support.lambda.capture.ref_this", ()),
-    FeatureRule("support.range_for", (rx(r"\bfor\s*\([^:;()]+:[^)]*\)"),)),
+    FeatureRule("support.range_for",
+                (rx(r"\bfor\s*\([^;()]*?(?<!:):(?!:)[^;()]*\)"),)),
     FeatureRule("support.decltype", (rx(r"\bdecltype\s*\("),)),
     FeatureRule("support.auto",
                 (rx(r"\bauto\s+(?:[*&]\s*)?[A-Za-z_][A-Za-z0-9_]*\s*(?:=|;|,|\[)|"

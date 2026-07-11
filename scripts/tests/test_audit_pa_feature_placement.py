@@ -159,6 +159,12 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
                     ),
                 ],
             )
+    def test_range_for_ignores_scope_qualified_ordinary_for_loop(self) -> None:
+        ordinary = "for (std::size_t i = 0u; i < size; ++i) {}"
+        range_for = "for (std::size_t value : values) {}"
+
+        self.assertNotIn("support.range_for", audit.detect_features(ordinary))
+        self.assertIn("support.range_for", audit.detect_features(range_for))
 
     def test_lowir_eh_review_reports_hidden_source_to_lowir_output(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:

@@ -1742,8 +1742,8 @@ declaration in the enclosing namespace, matching the later namespace-scope
 definition. The fix changes elaborated forward-type introduction to skip
 class member scopes for unqualified names and declare in the nearest enclosing
 namespace/block scope, while leaving ordinary class definitions unchanged.
-Owner: `pa23:500` template argument elaborated type scope. New regression:
-`pa23/tests/general/500-elaborated-template-argument-enclosing-scope.t`.
+Owner: `pa18:100` basic type-template argument lookup. Regression:
+`pa18/tests/general/100-elaborated-template-argument-enclosing-scope.t`.
 Pre-fix evidence: the compile-time reducer selected
 `independent_end_xpression=1` for `decltype(*boost::xpressive::_s)` and direct
 `boost::proto::matches<terminal, NotHasAction>` failed with an incomplete
@@ -3715,9 +3715,9 @@ before climbing into namespace using-directive lookup. The same investigation
 also tightened source-use replay bookkeeping by including the template-argument
 key in the dependent source-drop cache and allowing concrete replay for neutral
 source-template locations. No Boost special case, source rewrite, or text
-fallback is added. Owner: PA18:100 class-template current-instantiation lookup
+fallback is added. Owner: PA18:300 dependent current-instantiation lookup
 and template-id type arguments. New regression:
-`pa18/tests/general/100-current-class-template-id-using-directive-template-arg.t`.
+`pa18/tests/general/300-current-class-template-id-using-directive-template-arg.t`.
 Pre-fix evidence: the no-STL reducer failed with `failed class template
 instantiation: sink<iterator_property_map<RandomAccessIterator,IndexMap>,int>`;
 the Boost-header reducer failed through `boost::has_key_type<pmap_t>::value`;
@@ -4214,8 +4214,9 @@ No source-text reparsing, Boost-specific lookup rule, or parallel object-symbol
 spelling was added. The selected `FunctionBinding` continues to emit through
 `semantic_output` into `symbol_linkage::make_function_symbol_identity`, which
 routes object names through the typed `abi_mangle` backend; the placeholder
-argument is semantic-only and never owns an emitted symbol. New regression:
-`pa18/tests/general/300-using-directive-overloaded-function-template-arg.t`.
+argument is semantic-only and never owns an emitted symbol. Owner: PA22:300
+SFINAE/substitution integration. Regression:
+`pa22/tests/general/300-using-directive-overloaded-function-template-arg.t`.
 The PA23 direct-text ref
 `500-constructor-template-default-constraint-previous-param.ref` was refreshed
 for the now-preserved dependent constructor-template parameter symbol; clang's
@@ -5517,9 +5518,9 @@ typedef failed. The fix teaches the state-aware partial-specialization matcher
 to consume typed dependent template-template parameter metadata, store the
 deduced class-template entity, and recursively deduce its structured arguments.
 No source-text reparse, fallback resolver, cache, or Boost-specific rule was
-added. Owner: PA23 class-template partial-specialization matching with
-template-template parameter heads. New regression:
-`pa23/tests/spec/400-template-template-parameter-nested-partial-specialization.t`.
+added. Owner: PA21 class-template partial-specialization matching with
+template-template parameter heads. Regression:
+`pa21/tests/spec/200-template-template-parameter-nested-partial-specialization.t`.
 Validation: clang and `cppgm++` both accept the reduced Lambda cast case;
 focused PA23 check passes; PA23 direct-text report passes `390/390`; full
 strict direct-text suite passes; `python3 scripts/audit_text_reparse.py
@@ -6320,3 +6321,30 @@ for `test<info<1>, info<2>>` at line 98; focused log
 forced full LEAF replay updates 394 targets and remains at 24 failures because
 the target advances without completing; full log
 `/tmp/boost-leaf-full-after-dependent-expr-formation-20260710.log`.
+
+2026-07-10 PA18-PA26 placement-audit cleanup: the PA23 template-placement
+review queue identified three preexisting basic-owner candidates. The
+elaborated type-template argument lookup reducer moved from PA23 cluster 500
+to `pa18/tests/general/100-elaborated-template-argument-enclosing-scope.t`.
+The concrete-type partial-specialization shadowing reducer moved to
+`pa21/tests/spec/100-partial-specialization-concrete-type-shadows-parameter-name.t`,
+and the nested template-template partial-specialization reducer moved to
+`pa21/tests/spec/200-template-template-parameter-nested-partial-specialization.t`.
+Each move includes its existing LowIR and exit/stdout refs; no compiler or
+reference content changed. Focused checks pass in the destination PAs. Fresh
+PA18 and PA21 template-placement scans classify the moved tests in their
+owning basic buckets, while the PA23 scan reports zero remaining basic-owner
+candidates and no enforced placement failure. The PA18 fail-on-early scan then
+exposed six older enforced findings: the current-class lookup reducer was
+renumbered from cluster 100 to PA18 cluster 300; three member-pointer NTTP
+reducers moved to PA26 cluster 300; and the overloaded function-template
+argument/SFINAE reducer moved to PA22 cluster 300. The remaining finding was an
+audit false positive: the range-for detector treated the `::` in
+`for (std::size_t i = ...; ...; ...)` as a range delimiter. Its regex now
+requires a single colon and rejects semicolon-bearing loop headers, with a unit
+test covering ordinary and range-based forms. Destination focused checks,
+the affected direct-text reports (`1106/1106`), and the supported PA18/PA21/
+PA22/PA23 strict witness suites pass. PA26 has no `test-strict` target; its two
+moved witness files were regenerated directly with patched Clang. Fresh PA18,
+PA21, PA22, PA23, and PA26 fail-on-early scans all pass with zero enforced
+placement findings.
