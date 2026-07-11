@@ -5430,15 +5430,16 @@ void analyze_function_definition(SemanticContext & ctx,
   FunctionBinding * binding =
       ctx.find_exact_function(*function_definition_scope, function_definition_name, type);
   if((!binding || !binding->has_definition) &&
-     !ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
+     (!function_name_syntax ||
+      !ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
           scope,
-          name,
+          *function_name_syntax,
           function_identifier,
           type,
           declarator_is_const_method(*declarator),
           declarator_is_volatile_method(*declarator),
           declarator_ref_qualifier(*declarator),
-          binding)) {
+          binding))) {
     throw logic_error("missing function binding");
   }
   if(!should_emit_free_function_definition(ctx, *binding)) {
@@ -5487,21 +5488,14 @@ void analyze_special_member_definition(SemanticContext & ctx,
     const QualifiedName * qualified_name =
         identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
     const bool resolved =
-        qualified_name ?
-            ctx.resolve_out_of_class_method_binding(scope,
-                                                    *qualified_name,
-                                                    declared_type,
-                                                    syntax.is_const_method,
-                                                    syntax.is_volatile_method,
-                                                    syntax.ref_qualifier,
-                                                    binding) :
-            ctx.resolve_out_of_class_method_binding(scope,
-                                                    node.value,
-                                                    declared_type,
-                                                    syntax.is_const_method,
-                                                    syntax.is_volatile_method,
-                                                    syntax.ref_qualifier,
-                                                    binding);
+        qualified_name &&
+        ctx.resolve_out_of_class_method_binding(scope,
+                                                *qualified_name,
+                                                declared_type,
+                                                syntax.is_const_method,
+                                                syntax.is_volatile_method,
+                                                syntax.ref_qualifier,
+                                                binding);
     if(!resolved) {
       throw logic_error("missing conversion operator binding");
     }
@@ -5723,16 +5717,14 @@ void analyze_declaration_output_impl(SemanticContext & ctx,
           FunctionBinding * method_binding = nullptr;
           const CppAstNode * function_identifier =
               find_descendant_kind(init_decl.children[0], CppAstKind::identifier);
-          string out_of_class_lookup_name = name;
-          if(function_identifier &&
-             function_identifier->value.find("::") != string::npos &&
-             function_identifier->value.find("operator") != string::npos &&
-             out_of_class_lookup_name.find("operator") == string::npos) {
-            out_of_class_lookup_name = function_identifier->value;
-          }
-          if(ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
+          const QualifiedName * function_name_syntax =
+              function_identifier ?
+                  cppast_qualified_name_syntax(*function_identifier) :
+                  nullptr;
+          if(function_name_syntax &&
+             ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
                  scope,
-                 out_of_class_lookup_name,
+                 *function_name_syntax,
                  function_identifier,
                  type,
                  declarator_is_const_method(init_decl.children[0]),

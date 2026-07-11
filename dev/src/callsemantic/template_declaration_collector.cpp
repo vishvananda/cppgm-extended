@@ -4959,21 +4959,6 @@ private:
         scope, qualified, declared_type, is_const_method, is_volatile_method, ref_qualifier, out, resolution);
   }
 
-  bool resolve_out_of_class_method_binding_with_resolution(
-      Scope & scope,
-      const string & qualified_name,
-      const TypePtr & declared_type,
-      bool is_const_method,
-      bool is_volatile_method,
-      RefQualifier ref_qualifier,
-      FunctionBinding *& out,
-      QualifiedOwnerClassResolution resolution)
-  {
-    return callbacks.out_of_class_services->
-        resolve_out_of_class_method_binding_with_resolution(
-        scope, qualified_name, declared_type, is_const_method, is_volatile_method, ref_qualifier, out, resolution);
-  }
-
   bool resolve_out_of_class_static_member_binding(Scope & scope,
                                                   const QualifiedName & qualified,
                                                   ValueBinding *& out)

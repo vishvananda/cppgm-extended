@@ -24511,33 +24511,9 @@ private:
         QualifiedOwnerClassResolution::Complete);
   }
 
-  bool resolve_out_of_class_method_binding_with_resolution(
-      Scope & scope,
-      const string & qualified_name,
-      const TypePtr & declared_type,
-      bool is_const_method,
-      bool is_volatile_method,
-      RefQualifier ref_qualifier,
-      FunctionBinding *& out,
-      QualifiedOwnerClassResolution resolution) override
-  {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return false;
-    }
-    return resolve_out_of_class_method_binding_with_resolution(scope,
-                                                               qualified,
-                                                               declared_type,
-                                                               is_const_method,
-                                                               is_volatile_method,
-                                                               ref_qualifier,
-                                                               out,
-                                                               resolution);
-  }
-
   bool resolve_out_of_class_method_binding_from_declarator_syntax_with_resolution(
       Scope & scope,
-      const string & qualified_name,
+      const QualifiedName & qualified,
       const CppAstNode * function_identifier,
       const TypePtr & declared_type,
       bool is_const_method,
@@ -24547,10 +24523,6 @@ private:
       QualifiedOwnerClassResolution resolution =
           QualifiedOwnerClassResolution::Complete)
   {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return false;
-    }
     return resolve_out_of_class_named_method_binding_with_syntax(scope,
                                                                  qualified,
                                                                  qualified.name,
@@ -24565,7 +24537,7 @@ private:
 
   bool resolve_out_of_class_method_binding_from_declarator_syntax(
       Scope & scope,
-      const string & qualified_name,
+      const QualifiedName & qualified,
       const CppAstNode * function_identifier,
       const TypePtr & declared_type,
       bool is_const_method,
@@ -24575,27 +24547,8 @@ private:
   {
     return resolve_out_of_class_method_binding_from_declarator_syntax_with_resolution(
         scope,
-        qualified_name,
+        qualified,
         function_identifier,
-        declared_type,
-        is_const_method,
-        is_volatile_method,
-        ref_qualifier,
-        out,
-        QualifiedOwnerClassResolution::Complete);
-  }
-
-  bool resolve_out_of_class_method_binding(Scope & scope,
-                                           const string & qualified_name,
-                                           const TypePtr & declared_type,
-                                           bool is_const_method,
-                                           bool is_volatile_method,
-                                           RefQualifier ref_qualifier,
-                                           FunctionBinding *& out) override
-  {
-    return resolve_out_of_class_method_binding_with_resolution(
-        scope,
-        qualified_name,
         declared_type,
         is_const_method,
         is_volatile_method,
@@ -27382,6 +27335,8 @@ private:
 
     const CppAstNode * function_identifier =
         find_descendant_kind(declarator, CppAstKind::identifier);
+    const QualifiedName * function_name_syntax =
+        function_identifier ? cppast_qualified_name_syntax(*function_identifier) : nullptr;
     string out_of_class_lookup_name = parsed_name;
     if(function_identifier &&
        function_identifier->value.find("::") != string::npos &&
@@ -27391,9 +27346,10 @@ private:
     }
 
     FunctionBinding * method_binding = nullptr;
-    if(!resolve_out_of_class_method_binding_from_declarator_syntax(
+    if(!function_name_syntax ||
+       !resolve_out_of_class_method_binding_from_declarator_syntax_with_resolution(
            scope,
-           out_of_class_lookup_name,
+           *function_name_syntax,
            function_identifier,
            type,
            declarator_is_const_method(declarator),
@@ -27556,9 +27512,10 @@ private:
     }
 
     FunctionBinding * method_binding = nullptr;
-    if(resolve_out_of_class_method_binding_from_declarator_syntax(
+    if(function_name_syntax &&
+       resolve_out_of_class_method_binding_from_declarator_syntax_with_resolution(
            scope,
-           out_of_class_lookup_name,
+           *function_name_syntax,
            function_identifier,
            type,
            declarator_is_const_method(*declarator),

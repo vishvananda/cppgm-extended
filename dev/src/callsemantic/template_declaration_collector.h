@@ -153,15 +153,6 @@ struct OutOfClassMemberResolutionServices
       semantic_model::RefQualifier ref_qualifier,
       semantic_model::FunctionBinding *& out,
       QualifiedOwnerClassResolution resolution) = 0;
-  virtual bool resolve_out_of_class_method_binding_with_resolution(
-      semantic_model::Scope & scope,
-      const std::string & qualified_name,
-      const cpp_decl::TypePtr & declared_type,
-      bool is_const_method,
-      bool is_volatile_method,
-      semantic_model::RefQualifier ref_qualifier,
-      semantic_model::FunctionBinding *& out,
-      QualifiedOwnerClassResolution resolution) = 0;
   virtual bool resolve_out_of_class_static_member_binding(
       semantic_model::Scope & scope,
       const cpp_decl::QualifiedName & qualified,
