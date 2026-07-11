@@ -164,6 +164,19 @@ const CppAstNode * find_child_kind(const CppAstNode & node, CppAstKind kind)
   return find_child(node, kind);
 }
 
+const CppAstNode * find_descendant_kind(const CppAstNode & node, CppAstKind kind)
+{
+  if(node.kind == kind) {
+    return &node;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(const CppAstNode * found = find_descendant_kind(node.children[i], kind)) {
+      return found;
+    }
+  }
+  return nullptr;
+}
+
 void indent(ostringstream & out, size_t depth)
 {
   for(size_t i = 0; i < depth; ++i) {
@@ -610,12 +623,6 @@ private:
 
   bool lookup_constant_value(Scope & scope, const string & name, long long & out)
   {
-    QualifiedName qualified;
-    if(semantic_utils::split_qualified_name_text(name, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
-      return lookup_constant_value(scope, qualified, out);
-    }
-
     return lookup_constant_unqualified(scope, name, out);
   }
 
@@ -675,12 +682,6 @@ private:
 
   TypePtr lookup_value_type(Scope & scope, const string & name)
   {
-    QualifiedName qualified;
-    if(semantic_utils::split_qualified_name_text(name, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
-      return lookup_value_type(scope, qualified);
-    }
-
     const Binding *binding = lookup_value_binding_unqualified(scope, name);
     return binding ? binding->type : TypePtr();
   }
@@ -711,18 +712,33 @@ private:
   constant_eval::Hooks hooks;
   hooks.lookup_external_value =
         [&scope, this](const string & name,
-                       const CppAstNode *,
+                       const CppAstNode * node,
                        constant_eval::ConstexprValue & value)
         {
           long long raw = 0;
-          if(!lookup_constant_value(scope, name, raw)) {
+          const QualifiedName * qualified =
+              node ? cppast_qualified_name_syntax(*node) : nullptr;
+          const bool found =
+              qualified && (qualified->rooted || !qualified->qualifiers.empty()) ?
+                  lookup_constant_value(scope, *qualified, raw) :
+                  lookup_constant_value(scope, name, raw);
+          if(!found) {
             return false;
           }
-          value = constant_eval::make_integral_value(raw, lookup_value_type(scope, name));
+          TypePtr value_type =
+              qualified && (qualified->rooted || !qualified->qualifiers.empty()) ?
+                  lookup_value_type(scope, *qualified) :
+                  lookup_value_type(scope, name);
+          value = constant_eval::make_integral_value(raw, value_type);
           return true;
         };
     hooks.lookup_type = [this, &scope](const string & name) {
       return lookup_type(scope, name);
+    };
+    hooks.lookup_type_node = [this, &scope](const CppAstNode & node) {
+      const QualifiedName * qualified = cppast_qualified_name_syntax(node);
+      return qualified && (qualified->rooted || !qualified->qualifiers.empty()) ?
+          lookup_type(scope, *qualified) : lookup_type(scope, node.value);
     };
     hooks.parse_type_id = [this, &scope](const CppAstNode & type_id, TypePtr & type) {
       return parse_type_id(scope, type_id, type);
@@ -733,7 +749,10 @@ private:
           if(expr.kind != CppAstKind::id_expression) {
             return false;
           }
-          TypePtr type = lookup_type(scope, expr.value);
+          const QualifiedName * qualified = cppast_qualified_name_syntax(expr);
+          TypePtr type =
+              qualified && (qualified->rooted || !qualified->qualifiers.empty()) ?
+                  lookup_type(scope, *qualified) : lookup_type(scope, expr.value);
           if(!type) {
             return false;
           }
@@ -754,9 +773,10 @@ private:
   }
 
   bool parse_decltype_specifier(Scope & scope,
-                                const string & text,
+                                const CppAstNode & node,
                                 TypePtr & out)
   {
+    const string & text = node.value;
     const string decltype_prefix = "decltype(";
     const string decltype_gnu_prefix = "__decltype(";
     const string decltype_gnu_alt_prefix = "__decltype__(";
@@ -802,15 +822,24 @@ private:
       return false;
     }
 
+    const CppAstNode * operand = find_descendant_kind(node, CppAstKind::id_expression);
+    const QualifiedName * qualified_operand =
+        operand ? cppast_qualified_name_syntax(*operand) : nullptr;
+    const bool has_qualified_operand =
+        qualified_operand &&
+        (qualified_operand->rooted || !qualified_operand->qualifiers.empty());
+
     if(is_typeof) {
-      TypePtr alias = lookup_type(scope, inner);
+      TypePtr alias = has_qualified_operand ?
+          lookup_type(scope, *qualified_operand) : lookup_type(scope, inner);
       if(alias) {
         out = alias;
         return true;
       }
     }
 
-    TypePtr value_type = lookup_value_type(scope, inner);
+    TypePtr value_type = has_qualified_operand ?
+        lookup_value_type(scope, *qualified_operand) : lookup_value_type(scope, inner);
     if(!value_type) {
       return false;
     }
@@ -835,8 +864,13 @@ private:
     hooks.lookup_type = [this, &scope](const string & name) {
       return lookup_type(scope, name);
     };
+    hooks.lookup_type_node = [this, &scope](const CppAstNode & node) {
+      const QualifiedName * qualified = cppast_qualified_name_syntax(node);
+      return qualified && (qualified->rooted || !qualified->qualifiers.empty()) ?
+          lookup_type(scope, *qualified) : lookup_type(scope, node.value);
+    };
     hooks.parse_decltype_specifier = [this, &scope](const CppAstNode & node, TypePtr & out) {
-      return parse_decltype_specifier(scope, node.value, out);
+      return parse_decltype_specifier(scope, node, out);
     };
     hooks.evaluate_constant_expression = [this, &scope](const CppAstNode & node, long long & out) {
       return evaluate_constant_expression(scope, node, out);
