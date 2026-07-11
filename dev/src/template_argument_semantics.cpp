@@ -40355,27 +40355,6 @@ bool evaluate_declval_expression_type_category_text(
     }
   }
 
-  QualifiedName template_name;
-  vector<string> template_args;
-  if(arg_infos.empty() &&
-     semantic_utils::split_top_level_template_id_text(
-         trim_space(callee_text), template_name, template_args) &&
-	     template_args.size() == 1 &&
-	     unqualified_member_name(template_name.name) == "declval") {
-	    TypePtr declared_type;
-	    if(!services.semantic_context) {
-	      return false;
-	    }
-	    declared_type =
-	        services.semantic_context->lookup_type(scope, template_args[0], true);
-	    if(!declared_type) {
-	      return false;
-	    }
-    out = collapse_rvalue_reference_type(make_rvalue_reference_raw(declared_type));
-    return out != nullptr &&
-           semantic_conversion::result_value_category_for_function_result(out, category);
-  }
-
   string object_text;
   string member_name;
   bool arrow = false;
