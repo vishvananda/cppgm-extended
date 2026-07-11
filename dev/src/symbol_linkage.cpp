@@ -2555,51 +2555,6 @@ static bool qualify_template_id_syntax_from_lookup(
   return !out.name.empty();
 }
 
-static const semantic_model::AliasTemplateDecl * lookup_alias_template_for_named_text(
-    const string & text,
-    const TypeMangleContext * mangle_ctx,
-    TemplateComponent & component)
-{
-  if(!mangle_ctx || !mangle_ctx->lookup_scope) {
-    return nullptr;
-  }
-
-  const string qualified_text =
-      qualify_named_text_with_lexical_scope(text, mangle_ctx);
-  QualifiedName qualified;
-  if(!parse_external_named_text_candidate(qualified_text, qualified) ||
-     qualified.name.empty() ||
-     !parse_template_component(qualified.name, component) ||
-     component.base_name.empty() ||
-     !component.has_template_id) {
-    return nullptr;
-  }
-
-  const string base_name = trim_space(component.base_name);
-  if(qualified.qualifiers.empty()) {
-    for(const semantic_model::Scope * scope = mangle_ctx->lookup_scope;
-        scope;
-        scope = scope->parent) {
-      if(const semantic_model::AliasTemplateDecl * found =
-             find_unqualified_alias_template_in_mangle_scope(*scope, base_name)) {
-        return found;
-      }
-    }
-    return nullptr;
-  }
-
-  const semantic_model::Scope * scope = root_scope(mangle_ctx->lookup_scope);
-  for(size_t i = 0; scope && i < qualified.qualifiers.size(); ++i) {
-    map<string, semantic_model::Scope *>::const_iterator found =
-        scope->namespace_bindings.find(qualified.qualifiers[i]);
-    scope = found == scope->namespace_bindings.end() ? nullptr : found->second;
-  }
-  if(!scope) {
-    return nullptr;
-  }
-  return find_unqualified_alias_template_in_mangle_scope(*scope, base_name);
-}
-
 static bool canonical_named_text_equals(const string & text, const string & expected)
 {
   string canonical_text;
@@ -4460,12 +4415,6 @@ static bool template_argument_syntax_has_dependent_alias_template_id(
       return true;
     }
   }
-  if(!syntax.text.empty()) {
-    TemplateComponent component;
-    if(lookup_alias_template_for_named_text(syntax.text, mangle_ctx, component)) {
-      return true;
-    }
-  }
   return false;
 }
 
@@ -4588,10 +4537,6 @@ static bool type_ast_references_alias_template(const CppAstNode & node,
   if(node.template_id_syntax &&
      lookup_alias_template_for_template_id_syntax(*node.template_id_syntax,
                                                   mangle_ctx)) {
-    return true;
-  }
-  TemplateComponent component;
-  if(lookup_alias_template_for_named_text(node.value, mangle_ctx, component)) {
     return true;
   }
   for(size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {

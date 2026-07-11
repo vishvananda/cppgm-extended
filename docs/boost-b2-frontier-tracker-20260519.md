@@ -6572,3 +6572,9 @@ type IR, contextual local type IR, and lexical local-name preference consume
 those fields instead of parsing `named_key` or `named_display`. This removes
 three sites and ratchets the audit from `37` to `34`; PA30 passes `78/78`, PA23
 passes `394/394`, and the full strict suite passes.
+
+Alias dependency classification in symbol mangling now relies on retained
+template-id and qualifier syntax throughout its AST walk. The final fallback
+that reparsed `TemplateArgumentSyntax::text` or `CppAstNode::value` to repeat
+the same alias lookup is removed. This ratchets the audit from `34` to `33`;
+PA30 passes `78/78` and the full strict suite passes.
