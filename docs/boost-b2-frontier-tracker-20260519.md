@@ -6611,3 +6611,9 @@ Local and anonymous named-type mangling now qualifies only a retained
 with the explicit lexical scope. The generic named-text qualification parser
 and its declarations are removed, ratcheting the audit from `32` to `28`;
 PA30 passes `78/78`; the full strict suite and full `3618/3618` report pass.
+
+Partial-specialization repeated-parameter and specificity analysis now use
+nested `TemplateArgumentSyntax` exclusively. Their recursive raw-text
+template-id fallbacks are removed, ratcheting the audit from `28` to `26`; the
+full strict suite, including the dependent-bool substitution control, and the
+full `3618/3618` report pass.

@@ -2882,21 +2882,6 @@ void collect_repeated_template_parameter_occurrences(
     return;
   }
 
-  QualifiedName template_name;
-  std::vector<std::string> template_args;
-  if(!semantic_utils::split_top_level_template_id_text(text,
-                                                       template_name,
-                                                       template_args)) {
-    return;
-  }
-  for(std::size_t i = 0; i < template_args.size(); ++i) {
-    collect_repeated_template_parameter_occurrences(
-        parameters,
-        template_args[i],
-        nullptr,
-        path + "/" + std::to_string(i),
-        out);
-  }
 }
 
 void collect_repeated_template_parameter_occurrences_from_template_id(
@@ -3269,18 +3254,6 @@ void accumulate_partial_pattern_specificity(
                                              template_id_syntax->arguments[i],
                                              child_syntax,
                                              out);
-    }
-    return;
-  }
-
-  QualifiedName template_name;
-  std::vector<std::string> template_args;
-  if(semantic_utils::split_top_level_template_id_text(text,
-                                                       template_name,
-                                                       template_args)) {
-    ++out.fixed_components;
-    for(std::size_t i = 0; i < template_args.size(); ++i) {
-      accumulate_partial_pattern_specificity(parameters, template_args[i], nullptr, out);
     }
     return;
   }
