@@ -12,13 +12,13 @@
     "ast_text_rebuild": 0,
     "source_line_recovery": 0,
     "template_argument_text_shape_deduction": 0,
-    "semantic_template_fragment_reparse": 0,
+    "semantic_template_fragment_reparse": 3,
     "semantic_text_tokenizer_reparse": 0,
     "manual_template_argument_text_parse": 0,
-    "semantic_template_id_text_decomposition": 1,
-    "semantic_qualified_name_text_reparse": 0,
+    "semantic_template_id_text_decomposition": 30,
+    "semantic_qualified_name_text_reparse": 100,
     "semantic_nttp_text_rebind": 0,
     "function_result_argument_text_reparse": 0,
-    "owner_member_text_reparse": 0
+    "owner_member_text_reparse": 6
   }
 }

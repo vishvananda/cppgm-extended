@@ -94,7 +94,8 @@ CATEGORIES = [
         re.compile(
             r"\bparse_(?:type_argument_text_syntax|"
             r"non_type_argument_text_expression_syntax|"
-            r"repaired_template_argument_syntax)\s*\("
+            r"repaired_template_argument_syntax|"
+            r"dependent_type_expr_text)\s*\("
         ),
     ),
     Category(
@@ -125,7 +126,10 @@ CATEGORIES = [
             r"\bqualifier_template_id_syntaxes_from_text\s*\(|"
             r"\bcollect_enable_if_condition_dependency_from_type_text\s*\(|"
             r"\bparse_external_named_text_candidate\s*\(|"
-            r"\bparse_unary_builtin_type_transform_syntax_text\s*\("
+            r"\bparse_unary_builtin_type_transform_syntax_text\s*\(|"
+            r"\btemplate_lookup_fragment_(?:text|identifier)\s*\(|"
+            r"\bsplit_unqualified_template_head_text\s*\(|"
+            r"\bparse_(?:unary|angle)_type_transform_text\s*\("
         ),
     ),
     Category(
@@ -133,6 +137,9 @@ CATEGORIES = [
         "Qualified-name AST state refreshed from substituted semantic text.",
         re.compile(
             r"\brefresh_substituted_member_value_expression\s*\(|"
+            r"\bparse_out_of_class_member_qualified_name\s*\(|"
+            r"\brefresh_qualified_name_qualifier_template_id_texts\s*\(|"
+            r"\b(?:semantic_utils::)?split_qualified_name_text\s*\(|"
             r"\b(?:reparse|recover|refresh)_[A-Za-z0-9_]*qualified"
             r"[A-Za-z0-9_]*(?:from|with)_text\s*\("
         ),
@@ -160,6 +167,8 @@ CATEGORIES = [
         "Owner/member references recovered from saved source text in semantic code.",
         re.compile(
             r"\bpattern_mentions_bound_type_pack_value_member\b|"
+            r"\bsplit_top_level_member_expression_text\s*\(|"
+            r"\bcollect_non_type_parameter_pack_references_from_text\s*\(|"
             r"\b[A-Za-z0-9_]*(?:owner|member|qualified_member)"
             r"[A-Za-z0-9_]*_text_reparse\b|"
             r"\b(?:resolve|lookup|evaluate)_[A-Za-z0-9_]*"

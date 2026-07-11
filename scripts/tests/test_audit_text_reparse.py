@@ -86,6 +86,7 @@ class AuditTextReparseTests(unittest.TestCase):
             src.mkdir(parents=True)
             (src / "template_resolution.cpp").write_text(
                 "bool parse_type_argument_text_syntax(const std::string & text);\n"
+                "bool parse_dependent_type_expr_text(const std::string & text);\n"
                 "PPTokenizer pp_tokens(input.rdbuf());\n"
                 "PostTokenizer post_tokens(pp_tokens);\n"
                 "RecogTokenizer recog_tokens(post_tokens);\n"
@@ -103,6 +104,7 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertIn("semantic_template_fragment_reparse", result.stdout)
             self.assertIn("parse_type_argument_text_syntax", result.stdout)
+            self.assertIn("parse_dependent_type_expr_text", result.stdout)
             self.assertIn("semantic_text_tokenizer_reparse", result.stdout)
             self.assertIn("PPTokenizer pp_tokens", result.stdout)
             self.assertIn("PostTokenizer post_tokens", result.stdout)
@@ -145,7 +147,11 @@ class AuditTextReparseTests(unittest.TestCase):
             (src / "template_specialization.cpp").write_text(
                 "semantic_utils::split_top_level_template_id_text(text, name, args);\n"
                 "deduce_from_named_template_id_text(services, partial, state);\n"
-                "template_id_syntax_from_component_text(text, syntax);\n",
+                "template_id_syntax_from_component_text(text, syntax);\n"
+                "template_lookup_fragment_text(lookup_name);\n"
+                "template_lookup_fragment_identifier(fragment);\n"
+                "split_unqualified_template_head_text(text, head);\n"
+                "parse_angle_type_transform_text(text, name, args);\n",
                 encoding="utf-8",
             )
             baseline = root / "baseline.json"
@@ -161,6 +167,9 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("split_top_level_template_id_text", result.stdout)
             self.assertIn("deduce_from_named_template_id_text", result.stdout)
             self.assertIn("template_id_syntax_from_component_text", result.stdout)
+            self.assertIn("template_lookup_fragment_text", result.stdout)
+            self.assertIn("split_unqualified_template_head_text", result.stdout)
+            self.assertIn("parse_angle_type_transform_text", result.stdout)
 
     def test_function_result_argument_text_reparse_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
@@ -192,7 +201,10 @@ class AuditTextReparseTests(unittest.TestCase):
             src.mkdir(parents=True)
             (src / "template_argument_semantics.cpp").write_text(
                 "bool refresh_substituted_member_value_expression();\n"
-                "bool recover_qualified_owner_from_text();\n",
+                "bool recover_qualified_owner_from_text();\n"
+                "bool parse_out_of_class_member_qualified_name();\n"
+                "void refresh_qualified_name_qualifier_template_id_texts();\n"
+                "semantic_utils::split_qualified_name_text(text, name);\n",
                 encoding="utf-8",
             )
             baseline = root / "baseline.json"
@@ -207,6 +219,9 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("semantic_qualified_name_text_reparse", result.stdout)
             self.assertIn("refresh_substituted_member_value_expression", result.stdout)
             self.assertIn("recover_qualified_owner_from_text", result.stdout)
+            self.assertIn("parse_out_of_class_member_qualified_name", result.stdout)
+            self.assertIn("refresh_qualified_name_qualifier_template_id_texts", result.stdout)
+            self.assertIn("split_qualified_name_text", result.stdout)
 
     def test_owner_member_text_reparse_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
@@ -215,7 +230,9 @@ class AuditTextReparseTests(unittest.TestCase):
             src.mkdir(parents=True)
             (src / "template_instantiation.cpp").write_text(
                 "bool result_owner_member_text_reparse = true;\n"
-                "bool evaluate_qualified_member_value_from_text();\n",
+                "bool evaluate_qualified_member_value_from_text();\n"
+                "bool split_top_level_member_expression_text();\n"
+                "void collect_non_type_parameter_pack_references_from_text();\n",
                 encoding="utf-8",
             )
             baseline = root / "baseline.json"
@@ -230,6 +247,8 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("owner_member_text_reparse", result.stdout)
             self.assertIn("result_owner_member_text_reparse", result.stdout)
             self.assertIn("evaluate_qualified_member_value_from_text", result.stdout)
+            self.assertIn("split_top_level_member_expression_text", result.stdout)
+            self.assertIn("collect_non_type_parameter_pack_references_from_text", result.stdout)
 
     def test_pack_owner_member_text_scan_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
