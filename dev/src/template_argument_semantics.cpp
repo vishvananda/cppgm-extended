@@ -889,16 +889,6 @@ bool try_resolve_class_template_id_locally(
     template_api::TemplateEnvironmentHandle argument_scope,
     TypePtr & out);
 
-bool is_decltype_or_typeof_text(const string & text)
-{
-  const string trimmed = semantic_utils::trim_space(text);
-  return (trimmed.size() >= 10 && trimmed.compare(0, 9, "decltype(") == 0) ||
-         (trimmed.size() >= 12 && trimmed.compare(0, 11, "__decltype(") == 0) ||
-         (trimmed.size() >= 14 && trimmed.compare(0, 13, "__decltype__(") == 0) ||
-         (trimmed.size() >= 10 && trimmed.compare(0, 9, "__typeof(") == 0) ||
-         (trimmed.size() >= 12 && trimmed.compare(0, 11, "__typeof__(") == 0);
-}
-
 }  // namespace
 
 namespace {
@@ -20643,75 +20633,6 @@ string qualified_name_text(const QualifiedName & qualified)
   return out;
 }
 
-struct DependentTypeExprText
-{
-  bool is_typeof = false;
-  bool operand_was_parenthesized = false;
-  size_t inner_offset = 0;
-  string inner;
-};
-
-bool parse_dependent_type_expr_text(const string & text,
-                                    DependentTypeExprText & out)
-{
-  out = DependentTypeExprText();
-
-  const string decltype_prefix = "decltype(";
-  const string decltype_gnu_prefix = "__decltype(";
-  const string decltype_gnu_alt_prefix = "__decltype__(";
-  const string typeof_prefix = "__typeof(";
-  const string typeof_alt_prefix = "__typeof__(";
-
-  size_t prefix_size = 0;
-  if(text.size() >= decltype_prefix.size() + 1 &&
-     text.compare(0, decltype_prefix.size(), decltype_prefix) == 0 &&
-     text[text.size() - 1] == ')') {
-    prefix_size = decltype_prefix.size();
-  } else if(text.size() >= decltype_gnu_prefix.size() + 1 &&
-            text.compare(0, decltype_gnu_prefix.size(), decltype_gnu_prefix) == 0 &&
-            text[text.size() - 1] == ')') {
-    prefix_size = decltype_gnu_prefix.size();
-  } else if(text.size() >= decltype_gnu_alt_prefix.size() + 1 &&
-            text.compare(0, decltype_gnu_alt_prefix.size(), decltype_gnu_alt_prefix) == 0 &&
-            text[text.size() - 1] == ')') {
-    prefix_size = decltype_gnu_alt_prefix.size();
-  } else if(text.size() >= typeof_prefix.size() + 1 &&
-            text.compare(0, typeof_prefix.size(), typeof_prefix) == 0 &&
-            text[text.size() - 1] == ')') {
-    prefix_size = typeof_prefix.size();
-    out.is_typeof = true;
-  } else if(text.size() >= typeof_alt_prefix.size() + 1 &&
-            text.compare(0, typeof_alt_prefix.size(), typeof_alt_prefix) == 0 &&
-            text[text.size() - 1] == ')') {
-    prefix_size = typeof_alt_prefix.size();
-    out.is_typeof = true;
-  } else {
-    return false;
-  }
-
-  const string raw_inner = text.substr(prefix_size, text.size() - prefix_size - 1);
-  size_t leading = 0;
-  while(leading < raw_inner.size() &&
-        std::isspace(static_cast<unsigned char>(raw_inner[leading]))) {
-    ++leading;
-  }
-  out.inner_offset = prefix_size + leading;
-  out.inner = trim_space(raw_inner);
-  if(!out.is_typeof && is_wrapped_in_balanced_parens(out.inner)) {
-    out.operand_was_parenthesized = true;
-    const string parenthesized = out.inner.substr(1, out.inner.size() - 2);
-    size_t parenthesized_leading = 0;
-    while(parenthesized_leading < parenthesized.size() &&
-          std::isspace(static_cast<unsigned char>(
-              parenthesized[parenthesized_leading]))) {
-      ++parenthesized_leading;
-    }
-    out.inner_offset += 1 + parenthesized_leading;
-    out.inner = trim_space(parenthesized);
-  }
-  return !out.inner.empty();
-}
-
 vector<string> split_comma_list(const string & text)
 {
   vector<string> out;
@@ -30114,16 +30035,6 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
       }
       return DependentNamedTypeResolutionStatus::KeepDependent;
     }
-    const string payload = trim_space(named_type_semantic_payload(type));
-    if(!payload.empty()) {
-      TypePtr resolved_expr_type;
-      if(parse_decltype_or_typeof_text(services, raw_scope, payload, resolved_expr_type) &&
-         resolved_expr_type &&
-         !type_is_dependent(resolved_expr_type)) {
-        out = resolved_expr_type;
-        return DependentNamedTypeResolutionStatus::Resolved;
-      }
-    }
     return DependentNamedTypeResolutionStatus::KeepDependent;
   }
   switch(resolve_dependent_builtin_type_transform(services, scope, type, out)) {
@@ -37989,6 +37900,62 @@ static bool ast_subtree_text_mentions_bound_template_dependency(
   return false;
 }
 
+static bool ast_subtree_mentions_template_placeholder_name(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & node)
+{
+  const string text = dependency_check_text_for_ast_value(node);
+  if(!text.empty() &&
+     text_mentions_template_placeholders(services, scope, text)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_subtree_mentions_template_placeholder_name(
+           services, scope, node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool ast_subtree_mentions_non_namespace_binding_name(
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & node)
+{
+  const string text = dependency_check_text_for_ast_value(node);
+  if(!text.empty() && text_mentions_non_namespace_binding_names(scope, text)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_subtree_mentions_non_namespace_binding_name(scope,
+                                                       node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool ast_subtree_mentions_dependent_non_namespace_binding_name(
+    template_api::TemplateServices & services,
+    template_api::TemplateEnvironmentHandle scope,
+    const CppAstNode & node)
+{
+  const string text = dependency_check_text_for_ast_value(node);
+  if(!text.empty() &&
+     text_mentions_dependent_non_namespace_binding_names(
+         services, scope, text)) {
+    return true;
+  }
+  for(size_t i = 0; i < node.children.size(); ++i) {
+    if(ast_subtree_mentions_dependent_non_namespace_binding_name(
+           services, scope, node.children[i])) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static bool type_id_ast_mentions_template_dependency(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -40215,112 +40182,6 @@ bool evaluate_declval_expression_type_text(template_api::TemplateServices & serv
       services, scope, text, out, category);
 }
 
-bool parse_decltype_or_typeof_text(template_api::TemplateServices & services,
-                                   Scope & scope,
-                                   const string & text,
-                                   TypePtr & out)
-{
-  out.reset();
-  if(!is_decltype_or_typeof_text(text)) {
-    return false;
-  }
-
-  DependentTypeExprText parsed_text;
-  if(!parse_dependent_type_expr_text(text, parsed_text)) {
-    return false;
-  }
-
-  template_api::TemplateEnvironmentHandle env =
-      template_api::make_template_environment(scope);
-  const bool mentions_template_placeholders =
-      text_mentions_template_placeholders(services, env, parsed_text.inner);
-  const bool mentions_dependent_names =
-      text_mentions_dependent_non_namespace_binding_names(
-          services, env, parsed_text.inner);
-  const bool mentions_bound_names =
-      text_mentions_non_namespace_binding_names(env, parsed_text.inner);
-  const bool scope_has_placeholders =
-      scope_has_template_placeholders(services, env);
-
-  string inner = parsed_text.inner;
-  const auto comma_prefix_mentions_template_dependency =
-      [&]() -> bool
-  {
-    if(!has_top_level_comma(inner)) {
-      return false;
-    }
-    const vector<string> parts = split_comma_list(inner);
-    for(size_t i = 0; i + 1 < parts.size(); ++i) {
-      if(text_mentions_template_placeholders(services, env, parts[i]) ||
-         text_mentions_dependent_non_namespace_binding_names(
-             services, env, parts[i]) ||
-         unresolved_identifier_argument_may_depend_on_template_context(
-             services, env, parts[i]) ||
-         (scope_has_placeholders &&
-          text_mentions_non_namespace_binding_names(env, parts[i]))) {
-        return true;
-      }
-    }
-    return false;
-  }();
-
-  const auto dependent_fallback =
-      [&]() -> bool
-  {
-    out.reset();
-    const bool unresolved_template_dependency =
-        mentions_template_placeholders ||
-        mentions_dependent_names ||
-        (scope_has_placeholders && !mentions_bound_names);
-    if(unresolved_template_dependency ||
-       (comma_prefix_mentions_template_dependency &&
-        (mentions_template_placeholders ||
-         mentions_dependent_names ||
-         scope_has_placeholders))) {
-      out = make_semantic_named(
-          text,
-          parsed_text.is_typeof ? Type::NSK_DEPENDENT_TYPEOF :
-                                  Type::NSK_DEPENDENT_DECLTYPE,
-          text,
-          true);
-      return true;
-    }
-    return false;
-  };
-
-  if(parsed_text.is_typeof) {
-    if(services.semantic_context) {
-      out = services.semantic_context->lookup_type(scope, inner, true);
-    }
-    if(out &&
-       !service_type_depends_on_template_parameter(services, out)) {
-      return true;
-    }
-    out.reset();
-  }
-
-  const vector<string> rewritten_exprs =
-      rewrite_decltype_expression_pack_texts(services, scope, inner);
-  if(rewritten_exprs.size() != 1) {
-    return dependent_fallback();
-  }
-  if(!parsed_text.is_typeof &&
-     evaluate_declval_expression_type_text(
-         services, scope, rewritten_exprs[0], out) &&
-     out &&
-     !service_type_depends_on_template_parameter(services, out)) {
-    if(comma_prefix_mentions_template_dependency) {
-      if(dependent_fallback()) {
-        return true;
-      }
-    }
-    return true;
-  }
-  out.reset();
-
-  return dependent_fallback();
-}
-
 bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
                                    Scope & scope,
                                    const CppAstNode & node,
@@ -40328,13 +40189,7 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
 {
   out.reset();
   if((node.kind != CppAstKind::decltype_specifier &&
-      node.kind != CppAstKind::decl_specifier) ||
-     !is_decltype_or_typeof_text(node.value)) {
-    return false;
-  }
-
-  DependentTypeExprText parsed_text;
-  if(!parse_dependent_type_expr_text(node.value, parsed_text)) {
+      node.kind != CppAstKind::decl_specifier)) {
     return false;
   }
   CppAstNode rebased_node;
@@ -40347,42 +40202,28 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
     effective_node = &rebased_node;
   }
 
+  const CppAstNode * operand = decltype_or_typeof_operand_node(*effective_node);
+  if(!operand) {
+    return false;
+  }
+  const bool is_typeof = effective_node->is_typeof_specifier;
+  const bool operand_was_parenthesized =
+      !is_typeof && operand->kind == CppAstKind::parenthesized_expression;
+
   template_api::TemplateEnvironmentHandle env =
       template_api::make_template_environment(scope);
   const bool mentions_template_placeholders =
-      text_mentions_template_placeholders(services, env, parsed_text.inner);
+      ast_subtree_mentions_template_placeholder_name(services, env, *operand);
   const bool mentions_dependent_names =
-      text_mentions_dependent_non_namespace_binding_names(
-          services, env, parsed_text.inner);
+      ast_subtree_mentions_dependent_non_namespace_binding_name(
+          services, env, *operand);
   const bool mentions_bound_names =
-      text_mentions_non_namespace_binding_names(env, parsed_text.inner);
+      ast_subtree_mentions_non_namespace_binding_name(env, *operand);
   const bool scope_has_placeholders =
       scope_has_template_placeholders(services, env);
 
-  string inner = parsed_text.inner;
-  const CppAstNode * operand = decltype_or_typeof_operand_node(*effective_node);
   const bool comma_prefix_mentions_template_dependency =
-      (operand && comma_prefix_ast_mentions_template_dependency(
-                      services, env, *operand)) ||
-      [&]() -> bool
-  {
-    if(!has_top_level_comma(inner)) {
-      return false;
-    }
-    const vector<string> parts = split_comma_list(inner);
-    for(size_t i = 0; i + 1 < parts.size(); ++i) {
-      if(text_mentions_template_placeholders(services, env, parts[i]) ||
-         text_mentions_dependent_non_namespace_binding_names(
-             services, env, parts[i]) ||
-         unresolved_identifier_argument_may_depend_on_template_context(
-             services, env, parts[i]) ||
-         (scope_has_placeholders &&
-          text_mentions_non_namespace_binding_names(env, parts[i]))) {
-        return true;
-      }
-    }
-    return false;
-  }();
+      comma_prefix_ast_mentions_template_dependency(services, env, *operand);
 
   const auto dependent_fallback =
       [&](bool force = false) -> bool
@@ -40400,8 +40241,8 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
          scope_has_placeholders))) {
       out = make_dependent_type_expression_type(
           effective_node->value,
-          parsed_text.is_typeof ? Type::NSK_DEPENDENT_TYPEOF :
-                                  Type::NSK_DEPENDENT_DECLTYPE,
+          is_typeof ? Type::NSK_DEPENDENT_TYPEOF :
+                      Type::NSK_DEPENDENT_DECLTYPE,
           effective_node->value,
           *effective_node,
           scope_has_placeholders);
@@ -40410,27 +40251,15 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
     return false;
   };
 
-  if(parsed_text.is_typeof) {
-    if(operand && operand->kind == CppAstKind::type_id) {
+  if(is_typeof) {
+    if(operand->kind == CppAstKind::type_id) {
       if(parse_type_id_node_for_templates(services, scope, *operand, out, false) && out) {
-        return true;
-      }
-    } else if(!operand) {
-      if(services.semantic_context) {
-        out = services.semantic_context->lookup_type(scope, inner, false);
-      }
-      if(out) {
         return true;
       }
     }
   }
 
-  if(!operand || operand->kind == CppAstKind::type_id) {
-    const vector<string> rewritten_exprs =
-        rewrite_decltype_expression_pack_texts(services, scope, inner);
-    if(rewritten_exprs.size() != 1) {
-      return dependent_fallback();
-    }
+  if(operand->kind == CppAstKind::type_id) {
     return dependent_fallback();
   }
 
@@ -40471,18 +40300,18 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
 
   const string base_use_location =
       template_public_use_location_or(services.witness_context, string());
-  size_t use_offset = parsed_text.inner_offset;
+  size_t use_offset = 0;
   const string call_callee = first_call_callee_name(*request_expr);
   if(!call_callee.empty()) {
     const size_t callee_offset =
-        find_identifier_occurrence(node.value, call_callee, parsed_text.inner_offset);
+        find_identifier_occurrence(node.value, call_callee, 0);
     if(callee_offset != string::npos) {
       use_offset = callee_offset;
     }
   }
   if(expr.kind == CppAstKind::new_expression) {
     const size_t placement_declval_offset =
-        find_identifier_occurrence(node.value, "declval", parsed_text.inner_offset);
+        find_identifier_occurrence(node.value, "declval", 0);
     if(placement_declval_offset != string::npos) {
       use_offset = placement_declval_offset;
     }
@@ -40498,9 +40327,9 @@ bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
 
   template_api::TemplateDependentTypeExprRequest request;
   request.scope = &scope;
-  request.kind = parsed_text.is_typeof ? template_api::TDTEK_TYPEOF_EXPR :
-                                         template_api::TDTEK_DECLTYPE;
-  request.operand_was_parenthesized = parsed_text.operand_was_parenthesized;
+  request.kind = is_typeof ? template_api::TDTEK_TYPEOF_EXPR :
+                             template_api::TDTEK_DECLTYPE;
+  request.operand_was_parenthesized = operand_was_parenthesized;
   request.use_location = !token_use_location.empty() ?
       token_use_location :
       source_location_with_text_offset(base_use_location, node.value, use_offset);

@@ -423,6 +423,7 @@ struct CppAstNode
   CppAstLazyVector<CppAstNode> alignment_specifier_nodes;
   bool is_final_specifier = false;
   bool uses_assignment_form = false;
+  bool is_typeof_specifier = false;
   bool has_token = false;
   ERecogTokenKind token_kind = RT_EOF;
   ETokenType simple_type = static_cast<ETokenType>(0);

@@ -5784,6 +5784,7 @@ bool CppAstParser::parse_type_specifier_seq(CppAstNode & out)
       }
       CppAstNode decltype_spec =
           make_node(CppAstKind::decltype_specifier, token_span_text_spaced(decltype_start, pos));
+      decltype_spec.is_typeof_specifier = is_typeof;
       CppAstNode operand;
       if(parse_decltype_or_typeof_operand_node(decltype_start, pos, is_typeof, operand)) {
         decltype_spec.children.push_back(std::move(operand));
@@ -5914,6 +5915,7 @@ bool CppAstParser::parse_decl_specifier_seq(CppAstNode & out)
       }
       CppAstNode decltype_spec =
           make_node(CppAstKind::decl_specifier, token_span_text_spaced(decltype_start, pos));
+      decltype_spec.is_typeof_specifier = is_typeof;
       CppAstNode operand;
       if(parse_decltype_or_typeof_operand_node(decltype_start, pos, is_typeof, operand)) {
         decltype_spec.children.push_back(std::move(operand));
@@ -7127,6 +7129,7 @@ bool CppAstParser::parse_base_specifier(CppAstNode & out)
     CppAstNode type_spec =
         make_node(CppAstKind::decltype_specifier,
                   token_span_text_spaced(name_start, pos));
+    type_spec.is_typeof_specifier = is_typeof;
     type_spec.token_start = name_start;
     type_spec.token_end = pos;
     type_spec.source_location_id = tokens[name_start].location_id;
@@ -11086,6 +11089,8 @@ bool CppAstParser::parse_qualified_name_text(string & out,
       CppAstNode qualifier =
           make_node(CppAstKind::decltype_specifier,
                     token_span_text_spaced(qualifier_start, qualifier_end));
+      qualifier.is_typeof_specifier =
+          is_gnu_typeof_token(tokens.peek(qualifier_start));
       qualifier.token_start = qualifier_start;
       qualifier.token_end = qualifier_end;
       qualifier.source_location_id = tokens[qualifier_start].location_id;

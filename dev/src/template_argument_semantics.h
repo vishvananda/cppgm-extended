@@ -385,11 +385,6 @@ bool try_resolve_type_pack_element_template_id(
     const std::vector<cpp_decl::TemplateArgumentSyntax> * arg_syntaxes,
     cpp_decl::TypePtr & out);
 
-bool parse_decltype_or_typeof_text(template_api::TemplateServices & services,
-                                   semantic_model::Scope & scope,
-                                   const std::string & text,
-                                   cpp_decl::TypePtr & out);
-
 bool parse_decltype_or_typeof_node(template_api::TemplateServices & services,
                                    semantic_model::Scope & scope,
                                    const CppAstNode & node,
