@@ -12804,31 +12804,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     type = make_deferred_dependent_type_argument(trimmed);
   }
 
-  // A well-formed template-id whose base names a known class or alias template
-  // but that still resolves to no type is a substitution failure, not a missing
-  // structured-handling text fallback. The canonical case is libstdc++'s detector
-  // idiom expanding enable_if_t<bool(Trait::value)> to enable_if_t<false>, where
-  // enable_if<false>::type does not exist: that must behave like the structured
-  // failure above (return false so the enclosing substitution treats it as a
-  // SFINAE failure) rather than tripping the hard text-fallback audit.
-  if(!type) {
-    QualifiedName failed_template_name;
-    std::vector<std::string> failed_template_arg_texts;
-    if(semantic_utils::split_top_level_template_id_text(trimmed,
-                                                        failed_template_name,
-                                                        failed_template_arg_texts) &&
-       !failed_template_arg_texts.empty()) {
-      const std::string failed_base_name =
-          template_api::qualified_name_text(failed_template_name);
-      if(template_argument_semantics::lookup_class_template(
-             services, raw_argument_scope, failed_base_name) ||
-         template_argument_semantics::lookup_alias_template(
-             services, raw_argument_scope, failed_base_name)) {
-        return false;
-      }
-    }
-  }
-
   resolve_type_argument_if_needed(type);
   if(type &&
      template_argument_semantics::type_depends_on_template_parameter(type_system, type)) {
