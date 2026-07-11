@@ -834,46 +834,6 @@ bool identifier_token_match_at(const std::string & line,
   return left_ok && right_ok;
 }
 
-std::string template_lookup_fragment_text(const std::string & lookup_name)
-{
-  const std::string trimmed = trim_space(lookup_name);
-  if(trimmed.empty()) {
-    return std::string();
-  }
-  if(trimmed.find('<') != std::string::npos &&
-     trimmed.back() == '>') {
-    return trimmed;
-  }
-
-  std::string remaining = trimmed;
-  while(!remaining.empty()) {
-    const std::string component = trim_space(unqualified_member_name(remaining));
-    const std::string stripped =
-        strip_trailing_top_level_template_arguments(component);
-    if(stripped != component && !stripped.empty()) {
-      return component;
-    }
-    const std::size_t split = semantic_utils::top_level_scope_split(remaining);
-    if(split == std::string::npos) {
-      break;
-    }
-    remaining = trim_space(remaining.substr(0, split));
-  }
-  return std::string();
-}
-
-std::string template_lookup_fragment_identifier(
-    const std::string & template_fragment)
-{
-  if(template_fragment.empty()) {
-    return std::string();
-  }
-  const std::string without_args =
-      strip_trailing_top_level_template_arguments(trim_space(template_fragment));
-  const std::string identifier = unqualified_member_name(without_args);
-  return !identifier.empty() ? identifier : without_args;
-}
-
 bool node_has_template_id_qualifier_syntax(const CppAstNode & node)
 {
   for(std::size_t i = 0; i < node.qualifier_template_id_syntaxes.size(); ++i) {

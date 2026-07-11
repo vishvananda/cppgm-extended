@@ -131,9 +131,6 @@ private:
 };
 
 std::string compact_lookup_text(const std::string & text);
-std::string template_lookup_fragment_text(const std::string & lookup_name);
-std::string template_lookup_fragment_identifier(
-    const std::string & template_fragment);
 bool node_has_template_id_qualifier_syntax(const CppAstNode & node);
 const ExactTemplateTypeLookupAnchor * current_exact_template_type_lookup_anchor();
 extern thread_local std::set<std::pair<std::string, std::string> >
