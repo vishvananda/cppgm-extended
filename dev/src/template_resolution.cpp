@@ -8564,6 +8564,27 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
     }
   }
 
+  std::string dependent_template_parameter_name;
+  std::size_t dependent_template_parameter_arity = static_cast<std::size_t>(-1);
+  std::vector<DependentAliasTemplateArgumentSyntax>
+      dependent_template_parameter_arguments;
+  if(named_type_dependent_template_template_parameter(
+         base,
+         dependent_template_parameter_name,
+         dependent_template_parameter_arity,
+         dependent_template_parameter_arguments)) {
+    out.name.name = dependent_template_parameter_name;
+    out.argument_texts.clear();
+    out.argument_texts.reserve(dependent_template_parameter_arguments.size());
+    for(std::size_t i = 0;
+        i < dependent_template_parameter_arguments.size();
+        ++i) {
+      out.argument_texts.push_back(
+          trim_space(dependent_template_parameter_arguments[i].text));
+    }
+    return !out.name.name.empty();
+  }
+
   if(named_type_is_dependent_alias(base)) {
     void * dependent_alias_template_decl = nullptr;
     std::vector<DependentAliasTemplateArgumentSyntax> dependent_alias_args;
@@ -14938,12 +14959,6 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
         return false;
       };
       Scope & actual_parse_scope = actual_lookup_scope ? *actual_lookup_scope : *deduction_scope;
-      QualifiedName pattern_text_template_name;
-      std::vector<std::string> pattern_text_template_args;
-      const bool pattern_text_is_template_id =
-          semantic_utils::split_top_level_template_id_text(normalized_pattern,
-                                                           pattern_text_template_name,
-                                                           pattern_text_template_args);
       DecomposedTemplateInstantiation pattern_instantiation;
       DecomposedTemplateInstantiation actual_instantiation;
       const bool pattern_decomposed =
@@ -14952,12 +14967,7 @@ bool deduce_template_argument_impl(DeductionContext & ctx,
       const bool actual_decomposed =
           decompose_template_instantiation(
               ctx, actual_parse_scope, actual_base, actual_instantiation);
-      if(!pattern_decomposed && pattern_text_is_template_id) {
-        pattern_instantiation.name = pattern_text_template_name;
-        pattern_instantiation.argument_texts = pattern_text_template_args;
-      }
-      const bool pattern_template_id_available =
-          pattern_decomposed || pattern_text_is_template_id;
+      const bool pattern_template_id_available = pattern_decomposed;
       const TemplateParameterInfo * pattern_template_template_parameter = nullptr;
       if(pattern_template_id_available) {
         const std::string pattern_template_name =
