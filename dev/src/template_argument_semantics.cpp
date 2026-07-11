@@ -13239,12 +13239,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(
     long long & value,
     string * eval_error = nullptr,
     const TypePtr & target_type = TypePtr());
-NonTypeArgumentStatus evaluate_template_member_value_text(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const string & text,
-    long long & value,
-    const TypePtr & target_type);
 string lookup_text_for_non_type_template_argument(
     template_api::TemplateTypeSystem & type_system,
     const TypePtr & type,
@@ -33049,44 +33043,6 @@ bool evaluate_builtin_type_trait(template_api::TemplateServices & services,
           service_evaluate_semantic_builtin_type_trait(services, request, out));
 }
 
-bool build_template_member_value_syntax(const string & text,
-                                        TemplateIdSyntax & qualifier_template_id,
-                                        string & member_name,
-                                        string & display_name)
-{
-  const string trimmed = trim_space(text);
-  const size_t split = semantic_utils::top_level_scope_split(trimmed);
-  if(split == string::npos) {
-    return false;
-  }
-
-  const string owner_text = trim_space(trimmed.substr(0, split));
-  member_name = trim_space(trimmed.substr(split + 2));
-  if(owner_text.empty() ||
-     member_name.empty() ||
-     member_name.find("::") != string::npos) {
-    return false;
-  }
-
-  vector<string> arg_texts;
-  if(!semantic_utils::split_top_level_template_id_text(
-         owner_text, qualifier_template_id.name, arg_texts) ||
-     arg_texts.empty()) {
-    return false;
-  }
-
-  qualifier_template_id.arguments = arg_texts;
-  qualifier_template_id.argument_syntaxes.clear();
-  qualifier_template_id.argument_syntaxes.reserve(arg_texts.size());
-  for(size_t i = 0; i < arg_texts.size(); ++i) {
-    TemplateArgumentSyntax syntax;
-    syntax.text = trim_space(arg_texts[i]);
-    qualifier_template_id.argument_syntaxes.push_back(syntax);
-  }
-  display_name = owner_text + "::" + member_name;
-  return true;
-}
-
 static bool expression_ast_mentions_template_dependency(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -38031,68 +37987,6 @@ NonTypeArgumentStatus evaluate_structured_bool_expression(
       NT_ARG_PARSE_FAILED;
 }
 
-NonTypeArgumentStatus evaluate_template_member_value_text(
-    SemanticContext & ctx,
-    Scope & scope,
-    const string & text,
-    long long & value,
-    const TypePtr & target_type)
-{
-  TemplateIdSyntax qualifier_template_id;
-  string member_name;
-  string display_name;
-  if(!build_template_member_value_syntax(text,
-                                         qualifier_template_id,
-                                         member_name,
-                                         display_name)) {
-    return NT_ARG_PARSE_FAILED;
-  }
-
-  constant_eval::ConstexprValue constexpr_value;
-  if(!ctx.lookup_constant_template_member_value(scope,
-                                                qualifier_template_id,
-                                                member_name,
-                                                display_name,
-                                                constexpr_value)) {
-    return NT_ARG_EVAL_FAILED;
-  }
-  return constexpr_value_to_template_argument_integral(
-             target_type, constexpr_value, value) ?
-             NT_ARG_EVALUATED :
-             NT_ARG_EVAL_FAILED;
-}
-
-void note_template_member_value_text_witness_if_needed(
-    template_api::TemplateServices & services,
-    Scope & scope,
-    const string & text,
-    const TypePtr & target_type)
-{
-  if(!services.semantic_context ||
-     !witness::source_capture_enabled(services.witness_context)) {
-    return;
-  }
-
-  long long ignored_value = 0;
-  try {
-    if(default_template_argument_evaluation_active()) {
-      const witness::ScopedTemplateWitnessSourceCapturePause pause;
-      (void)evaluate_template_member_value_text(*services.semantic_context,
-                                                scope,
-                                                text,
-                                                ignored_value,
-                                                target_type);
-      return;
-    }
-    (void)evaluate_template_member_value_text(*services.semantic_context,
-                                              scope,
-                                              text,
-                                              ignored_value,
-                                              target_type);
-  } catch(const std::exception &) {
-  }
-}
-
 void note_template_member_value_syntax_witness_if_needed(
     template_api::TemplateServices & services,
     Scope & scope,
@@ -38149,59 +38043,6 @@ void note_template_member_value_expression_witness_if_needed(
         services, scope.require(), *qualifier_template_id, qualified->name);
     return;
   }
-}
-
-NonTypeArgumentStatus evaluate_template_member_value_text(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const string & text,
-    long long & value,
-    const TypePtr & target_type)
-{
-  Scope & raw_scope = scope.require();
-  if(!services.semantic_context) {
-    return NT_ARG_PARSE_FAILED;
-  }
-
-  TemplateIdSyntax qualifier_template_id;
-  string member_name;
-  string display_name;
-  if(!build_template_member_value_syntax(text,
-                                         qualifier_template_id,
-                                         member_name,
-                                         display_name)) {
-    return NT_ARG_PARSE_FAILED;
-  }
-
-  constant_eval::ConstexprValue constexpr_value;
-  if(!services.semantic_context->lookup_constant_template_member_value(
-         raw_scope,
-         qualifier_template_id,
-         member_name,
-         display_name,
-         constexpr_value)) {
-    return NT_ARG_EVAL_FAILED;
-  }
-  if(!constexpr_value_to_template_argument_integral(
-         target_type, constexpr_value, value)) {
-    return NT_ARG_EVAL_FAILED;
-  }
-  note_template_member_value_text_witness_if_needed(
-      services, raw_scope, text, target_type);
-  if(is_structured_bool_result_member_name(member_name)) {
-    TypePtr owner_type;
-    if(resolve_template_id_syntax_type(services,
-                                       raw_scope,
-                                       qualifier_template_id,
-                                       false,
-                                       string(),
-                                       owner_type,
-                                       scope) &&
-       owner_type) {
-      note_structured_bool_value_member_if_needed(services, scope, owner_type);
-    }
-  }
-  return NT_ARG_EVALUATED;
 }
 
 NonTypeArgumentStatus evaluate_template_member_value_expression(
@@ -38377,22 +38218,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(SemanticContext & ctx,
           }
         });
     return finish(builtin_status);
-  }
-
-  const NonTypeArgumentStatus member_value_status =
-      template_api::with_template_services(
-          ctx,
-          [&](template_api::TemplateServices & services)
-          {
-            return evaluate_template_member_value_text(
-                services,
-                template_api::make_template_environment(scope),
-                trimmed,
-                value,
-                target_type);
-          });
-  if(member_value_status != NT_ARG_PARSE_FAILED) {
-    return finish(member_value_status);
   }
 
   (void)ctx;
@@ -39648,29 +39473,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_expression(
     }
     if(status != NT_ARG_EVALUATED &&
        status != NT_ARG_DEPENDENT &&
-       expr.kind == CppAstKind::id_expression) {
-      const string expr_text =
-          trim_space(callsemantic_internal::describe_expression_for_diagnostic(expr));
-      if(expr_text.find("::") != string::npos) {
-        const NonTypeArgumentStatus member_status =
-            evaluate_template_member_value_text(
-                services,
-                scope,
-                expr_text,
-                value,
-                effective_target_type);
-        if(member_status == NT_ARG_EVALUATED ||
-           member_status == NT_ARG_DEPENDENT) {
-          if(member_status == NT_ARG_EVALUATED) {
-            note_template_member_value_expression_witness_if_needed(
-                services, scope, expr);
-          }
-          status = member_status;
-        }
-      }
-    }
-    if(status != NT_ARG_EVALUATED &&
-       status != NT_ARG_DEPENDENT &&
        expr.kind == CppAstKind::id_expression &&
        !scope_has_template_placeholders(services, scope) &&
        callsemantic::scope_is_inside_source_template_context(raw_scope) &&
@@ -40308,13 +40110,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(
           }
         });
     return finish(builtin_status);
-  }
-
-  const NonTypeArgumentStatus member_value_status =
-      evaluate_template_member_value_text(
-          services, scope, trimmed, value, target_type);
-  if(member_value_status != NT_ARG_PARSE_FAILED) {
-    return finish(member_value_status);
   }
 
   if(trimmed.find("::") == string::npos &&
