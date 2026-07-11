@@ -2303,11 +2303,7 @@ static string named_substitution_key(const string & canonical_text)
 }
 
 static bool canonicalize_named_substitution_text(const string & text, string & out);
-static bool parse_external_named_text_candidate(const string & text,
-                                                QualifiedName & qualified);
 static bool lexical_scope_supports_local_component_emission(const string & text);
-static string qualify_named_text_with_lexical_scope(const string & text,
-                                                    const TypeMangleContext * mangle_ctx);
 static string preferred_named_type_text(const TypePtr & type,
                                         const TypeMangleContext * mangle_ctx);
 static bool syntax_name_matches_template_parameter(
@@ -2731,22 +2727,6 @@ static bool structured_std_standard_substitution_for_template_component(
     return true;
   }
   return false;
-}
-
-static string qualify_named_text_with_lexical_scope(const string & text,
-                                                    const TypeMangleContext * mangle_ctx)
-{
-  const string stripped = trim_elaborated_type_prefix(text);
-  if(stripped.empty() || !mangle_ctx || mangle_ctx->lexical_scope.empty() ||
-     !lexical_scope_supports_local_component_emission(mangle_ctx->lexical_scope)) {
-    return stripped;
-  }
-
-  QualifiedName qualified;
-  if(!parse_external_named_text_candidate(stripped, qualified) || !qualified.qualifiers.empty()) {
-    return stripped;
-  }
-  return append_qualified_component_text(mangle_ctx->lexical_scope, stripped);
 }
 
 static bool lexical_scope_supports_local_component_emission(const string & text)
@@ -13798,36 +13778,11 @@ static bool build_type_substitution_key_impl(const TypePtr & type,
                                              const TypeMangleContext * mangle_ctx,
                                              string & out,
                                              bool allow_fundamental_atom);
-static bool parse_external_named_text_candidate(const string & text,
-                                                QualifiedName & qualified);
 static string preferred_named_type_text(const TypePtr & type,
                                         const TypeMangleContext * mangle_ctx);
 static bool should_prefer_unqualified_lexical_named_type(
     const TypePtr & type,
     const TypeMangleContext * mangle_ctx);
-
-static bool parse_external_named_text_candidate(const string & text,
-                                                QualifiedName & qualified)
-{
-  qualified = QualifiedName();
-  string stripped = strip_elaborated_type_prefix(trim_space(text));
-  const string typename_prefix = "typename ";
-  if(stripped.compare(0, typename_prefix.size(), typename_prefix) == 0) {
-    stripped.erase(0, typename_prefix.size());
-    stripped = trim_space(stripped);
-  }
-  const string template_marker = "::template ";
-  size_t pos = 0;
-  while((pos = stripped.find(template_marker, pos)) != string::npos) {
-    stripped.erase(pos + 2, template_marker.size() - 2);
-    pos += 2;
-  }
-  return !stripped.empty() &&
-         text_uses_only_simple_mangleable_chars(stripped) &&
-         semantic_utils::split_qualified_name_text(stripped, qualified) &&
-         !qualified.rooted &&
-         !qualified.name.empty();
-}
 
 static bool build_array_bound_text_key(const string & bound_text,
                                        string & out)
@@ -14235,8 +14190,9 @@ static bool should_prefer_unqualified_lexical_named_type(const TypePtr & type,
 
   string canonical_scoped_text;
   string canonical_key_text;
-  return canonicalize_named_substitution_text(qualify_named_text_with_lexical_scope(display_text,
-                                                                                    mangle_ctx),
+  const string scoped_display_text =
+      append_qualified_component_text(mangle_ctx->lexical_scope, display_text);
+  return canonicalize_named_substitution_text(scoped_display_text,
                                               canonical_scoped_text) &&
          canonicalize_named_substitution_text(key_text, canonical_key_text) &&
          canonical_scoped_text == canonical_key_text;
@@ -14952,11 +14908,16 @@ static string preferred_named_type_text(const TypePtr & type,
   const string display_text = trim_elaborated_type_prefix(type->named_display);
   const string key_text = trim_elaborated_type_prefix(type->named_key);
   string selected_text = display_text;
-  if(!should_prefer_unqualified_lexical_named_type(type, mangle_ctx) &&
+  const bool prefer_lexical_name =
+      should_prefer_unqualified_lexical_named_type(type, mangle_ctx);
+  if(!prefer_lexical_name &&
      named_type_should_prefer_key_for_mangling(*type, display_text, key_text)) {
     selected_text = key_text;
   }
-  selected_text = qualify_named_text_with_lexical_scope(selected_text, mangle_ctx);
+  if(prefer_lexical_name) {
+    selected_text =
+        append_qualified_component_text(mangle_ctx->lexical_scope, display_text);
+  }
 
   string canonical_text;
   if(canonicalize_named_substitution_text(selected_text, canonical_text) &&

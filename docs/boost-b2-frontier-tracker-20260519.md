@@ -6605,3 +6605,9 @@ Direct standard ABI substitution registration now identifies `allocator`,
 text parser and its text-only `char_traits`/allocator recognizers are removed,
 ratcheting the audit from `33` to `32`; PA30 passes `78/78` and PA35 passes
 `87/87`; the full strict suite and full `3618/3618` report pass.
+
+Local and anonymous named-type mangling now qualifies only a retained
+`named_source_name` that matches the type's display identity, then prefixes it
+with the explicit lexical scope. The generic named-text qualification parser
+and its declarations are removed, ratcheting the audit from `32` to `28`;
+PA30 passes `78/78`; the full strict suite and full `3618/3618` report pass.
