@@ -7953,12 +7953,52 @@ private:
           if(parsed_template_id.name == "__make_integer_seq" &&
              parsed_arg_texts.size() == 3) {
             const string sequence_template_text = trim_space(parsed_arg_texts[0]);
-            QualifiedName sequence_template_name;
+            const TemplateArgumentSyntax * sequence_argument_syntax =
+                parsed_arg_syntaxes && !parsed_arg_syntaxes->empty() ?
+                    &(*parsed_arg_syntaxes)[0] : nullptr;
+            const QualifiedName * sequence_template_name = nullptr;
+            const auto retained_name_from_node =
+                [](const CppAstNode & node) -> const QualifiedName *
+                {
+                  if(const QualifiedName * direct =
+                         cppast_qualified_name_syntax(node)) {
+                    return direct;
+                  }
+                  const CppAstKind named_kinds[] = {
+                      CppAstKind::type_name,
+                      CppAstKind::id_expression,
+                      CppAstKind::decl_specifier,
+                  };
+                  for(size_t i = 0; i < sizeof(named_kinds) / sizeof(named_kinds[0]); ++i) {
+                    const CppAstNode * named =
+                        find_descendant_kind(node, named_kinds[i]);
+                    if(named) {
+                      if(const QualifiedName * retained =
+                             cppast_qualified_name_syntax(*named)) {
+                        return retained;
+                      }
+                    }
+                  }
+                  return nullptr;
+                };
+            if(sequence_argument_syntax) {
+              if(sequence_argument_syntax->template_id) {
+                sequence_template_name =
+                    &sequence_argument_syntax->template_id->name;
+              } else if(sequence_argument_syntax->expression) {
+                sequence_template_name = retained_name_from_node(
+                    *sequence_argument_syntax->expression);
+              } else if(sequence_argument_syntax->type_id) {
+                sequence_template_name = retained_name_from_node(
+                    *sequence_argument_syntax->type_id);
+              } else if(sequence_argument_syntax->source_type_id) {
+                sequence_template_name = retained_name_from_node(
+                    *sequence_argument_syntax->source_type_id);
+              }
+            }
             ClassTemplateDecl * sequence_template = nullptr;
-            if(!sequence_template_text.empty() &&
-               semantic_utils::split_qualified_name_text(sequence_template_text,
-                                                         sequence_template_name)) {
-              sequence_template = lookup_class_template(scope, sequence_template_name);
+            if(!sequence_template_text.empty() && sequence_template_name) {
+              sequence_template = lookup_class_template(scope, *sequence_template_name);
             }
             if(!sequence_template) {
               return false;
