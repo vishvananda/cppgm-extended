@@ -4756,17 +4756,6 @@ static bool replacement_syntax_qualified_name(
         if(replacement_text.empty()) {
           return false;
         }
-        TemplateIdSyntax parsed_template_id;
-        if(template_id_syntax_from_component_text(replacement_text,
-                                                  parsed_template_id)) {
-          out = parsed_template_id.name;
-          if(template_id) {
-            parsed_template_id.name.qualifiers.clear();
-            *template_id = parsed_template_id;
-          }
-          return !out.name.empty();
-        }
-
         if(semantic_utils::split_qualified_name_text(replacement_text, out)) {
           return !out.name.empty();
         }
@@ -4777,12 +4766,6 @@ static bool replacement_syntax_qualified_name(
   if(replacement.template_id && !replacement.template_id->name.name.empty()) {
     TemplateIdSyntax cloned =
         clone_template_id_syntax_for_mangling(*replacement.template_id);
-    if(!replacement_text.empty() &&
-       remove_space_chars(replacement_text) !=
-           remove_space_chars(template_id_syntax_key_text(cloned)) &&
-       try_replacement_text()) {
-      return true;
-    }
     out = cloned.name;
     if(template_id) {
       cloned.name.qualifiers.clear();
@@ -11468,10 +11451,18 @@ static bool try_build_type_specifier_seq_ast_ir(const CppAstNode & node,
         vector<TemplateIdSyntax> qualifier_template_id_syntaxes;
         const vector<TemplateIdSyntax> * qualifier_template_id_syntaxes_ptr =
             &node.qualifier_template_id_syntaxes.as_vector();
-        if(applied_lexical_prefix ||
-           !qualified_node_has_template_id_qualifier_syntax(node)) {
-          qualifier_template_id_syntaxes =
-              qualifier_template_id_syntaxes_from_text(effective);
+        if(applied_lexical_prefix) {
+          qualifier_template_id_syntaxes.resize(effective.qualifiers.size());
+          const size_t prefix_count =
+              effective.qualifiers.size() - qualified->qualifiers.size();
+          for(size_t i = 0;
+              i < node.qualifier_template_id_syntaxes.size();
+              ++i) {
+            if(i + prefix_count < qualifier_template_id_syntaxes.size()) {
+              qualifier_template_id_syntaxes[i + prefix_count] =
+                  node.qualifier_template_id_syntaxes[i];
+            }
+          }
           qualifier_template_id_syntaxes_ptr = &qualifier_template_id_syntaxes;
         }
         abi_mangle::Type current;

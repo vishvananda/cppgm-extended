@@ -6521,3 +6521,9 @@ syntax and child AST nodes only. The duplicate `node.value` passes and their
 recursive top-level/qualified template-id decomposition helper are removed,
 ratcheting the category from `59` to `52`. PA30's 78 ABI cases and the full
 strict suite pass.
+
+Alias replacement mangling now trusts a retained replacement `TemplateIdSyntax`
+instead of preferring a mismatched rendering, and lexically prefixed qualified
+type ASTs shift the original qualifier syntax into the prefixed component
+vector instead of rebuilding it from text. This ratchets the category from
+`52` to `50`; PA30 and the full strict suite pass.
