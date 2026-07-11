@@ -144,17 +144,6 @@ struct OutOfClassMemberResolutionServices
       bool is_const_method,
       bool is_volatile_method,
       semantic_model::RefQualifier ref_qualifier) = 0;
-  virtual semantic_model::FunctionTemplateDecl *
-  resolve_out_of_class_method_template(
-      semantic_model::Scope & scope,
-      const std::string & qualified_name,
-      const std::string & member_name,
-      const std::vector<template_model::TemplateParameterInfo> &
-          template_parameters,
-      const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
-      bool is_const_method,
-      bool is_volatile_method,
-      semantic_model::RefQualifier ref_qualifier) = 0;
   virtual bool resolve_out_of_class_method_binding_with_resolution(
       semantic_model::Scope & scope,
       const cpp_decl::QualifiedName & qualified,

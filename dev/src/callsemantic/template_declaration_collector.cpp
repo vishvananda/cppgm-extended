@@ -887,12 +887,17 @@ public:
                                                                       &syntax)) {
           throw logic_error("unsupported templated conversion-operator signature");
         }
+        const CppAstNode * conversion_identifier =
+            find_child_kind(*declarator, CppAstKind::identifier);
+        const QualifiedName * conversion_qualified_name =
+            conversion_identifier ?
+                cppast_qualified_name_syntax(*conversion_identifier) :
+                nullptr;
 
-        if(!template_parameters.empty()) {
+        if(!template_parameters.empty() && conversion_qualified_name) {
           FunctionTemplateDecl * template_decl =
               resolve_out_of_class_method_template(pattern_scope,
-                                                   inner.value,
-                                                   name,
+                                                   *conversion_qualified_name,
                                                    effective_template_parameters,
                                                    params,
                                                    syntax.is_const_method,
@@ -922,12 +927,6 @@ public:
         }
 
         FunctionBinding * binding = nullptr;
-        const CppAstNode * conversion_identifier =
-            find_child_kind(*declarator, CppAstKind::identifier);
-        const QualifiedName * conversion_qualified_name =
-            conversion_identifier ?
-                cppast_qualified_name_syntax(*conversion_identifier) :
-                nullptr;
         if(!conversion_qualified_name ||
            !resolve_out_of_class_named_method_binding(pattern_scope,
                                                       *conversion_qualified_name,
@@ -4943,20 +4942,6 @@ private:
   {
     return callbacks.out_of_class_services->resolve_out_of_class_method_template(
         scope, qualified, template_parameters, params, is_const_method, is_volatile_method, ref_qualifier);
-  }
-
-  FunctionTemplateDecl * resolve_out_of_class_method_template(
-      Scope & scope,
-      const string & qualified_name,
-      const string & member_name,
-      const vector<TemplateParameterInfo> & template_parameters,
-      const vector<pair<string, TypePtr> > & params,
-      bool is_const_method,
-      bool is_volatile_method,
-      RefQualifier ref_qualifier)
-  {
-    return callbacks.out_of_class_services->resolve_out_of_class_method_template(
-        scope, qualified_name, member_name, template_parameters, params, is_const_method, is_volatile_method, ref_qualifier);
   }
 
   bool resolve_out_of_class_method_binding_with_resolution(

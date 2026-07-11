@@ -26193,32 +26193,6 @@ private:
     return nullptr;
   }
 
-  FunctionTemplateDecl * resolve_out_of_class_method_template(
-      Scope & scope,
-      const string & qualified_name,
-      const string & member_name,
-      const vector<TemplateParameterInfo> & template_parameters,
-      const vector<pair<string, TypePtr> > & params,
-      bool is_const_method,
-      bool is_volatile_method,
-      RefQualifier ref_qualifier) override
-  {
-    QualifiedName qualified;
-    if(!parse_out_of_class_member_qualified_name(qualified_name, qualified)) {
-      return nullptr;
-    }
-    if(!member_name.empty() && member_name != qualified.name) {
-      qualified.name = member_name;
-    }
-    return resolve_out_of_class_method_template(scope,
-                                                qualified,
-                                                template_parameters,
-                                                params,
-                                                is_const_method,
-                                                is_volatile_method,
-                                                ref_qualifier);
-  }
-
   string describe_out_of_class_special_member_template_lookup(
       Scope & scope,
       const QualifiedName & qualified,
