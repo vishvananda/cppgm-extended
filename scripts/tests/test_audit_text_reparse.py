@@ -32,6 +32,7 @@ ZERO_LIMITS = {
     "semantic_template_fragment_reparse": 0,
     "semantic_text_tokenizer_reparse": 0,
     "manual_template_argument_text_parse": 0,
+    "semantic_template_id_text_decomposition": 0,
     "semantic_nttp_text_rebind": 0,
     "function_result_argument_text_reparse": 0,
     "owner_member_text_reparse": 0,
@@ -134,6 +135,31 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("ctx.lookup_value", result.stdout)
             self.assertIn("ctx.lookup_functions", result.stdout)
             self.assertIn("rebound_text", result.stdout)
+
+    def test_legacy_template_id_text_decomposition_is_counted(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:
+            root = Path(temp_dir)
+            src = root / "dev" / "src"
+            src.mkdir(parents=True)
+            (src / "template_specialization.cpp").write_text(
+                "semantic_utils::split_top_level_template_id_text(text, name, args);\n"
+                "deduce_from_named_template_id_text(services, partial, state);\n"
+                "template_id_syntax_from_component_text(text, syntax);\n",
+                encoding="utf-8",
+            )
+            baseline = root / "baseline.json"
+            baseline.write_text(
+                json.dumps({"limits": ZERO_LIMITS}),
+                encoding="utf-8",
+            )
+
+            result = self.run_script(src, "--baseline", str(baseline), "--list-sites")
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("semantic_template_id_text_decomposition", result.stdout)
+            self.assertIn("split_top_level_template_id_text", result.stdout)
+            self.assertIn("deduce_from_named_template_id_text", result.stdout)
+            self.assertIn("template_id_syntax_from_component_text", result.stdout)
 
     def test_function_result_argument_text_reparse_is_counted(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-text-reparse-audit.") as temp_dir:

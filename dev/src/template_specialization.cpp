@@ -10056,16 +10056,7 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
           return false;
         }
       }
-      bool pattern_arg_is_template_id = pattern_arg_has_template_id_syntax;
-      if(!pattern_arg_is_template_id) {
-        QualifiedName ignored_name;
-        std::vector<std::string> ignored_args;
-        pattern_arg_is_template_id =
-            semantic_utils::split_top_level_template_id_text(pattern_arg,
-                                                             ignored_name,
-                                                             ignored_args);
-      }
-      if(pattern_arg_is_template_id &&
+      if(pattern_arg_has_template_id_syntax &&
          resolve_actual_arg_type(arg_index, actual_arg, actual_arg_type)) {
         DeducedState nested_deduced = deduced;
         Scope nested_match_scope =

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Audit semantic text reparse debt.
 
-The audit is intentionally a ratchet: current debt can stay temporarily, but
-new debt should not be introduced while structured carriers replace it.
+The default audit is a ratchet: current legacy debt can stay temporarily, but
+new debt must not be introduced while structured carriers replace it. Strict
+mode requires every category to reach zero.
 """
 
 from __future__ import annotations
@@ -112,6 +113,19 @@ CATEGORIES = [
             r"\bparse_simple_(?:fundamental_type|integral_value)_text\s*\(|"
             r"\b(?:split|try_evaluate_target)_cstyle_cast_integral_text\s*\(|"
             r"\bsplit_top_level_function_type_argument_text\s*\("
+        ),
+    ),
+    Category(
+        "semantic_template_id_text_decomposition",
+        "Template-id structure or dependencies recovered from semantic text.",
+        re.compile(
+            r"\bsemantic_utils::split_top_level_template_id_text\s*\(|"
+            r"\bdeduce_from_named_template_id_text\s*\(|"
+            r"\btemplate_id_syntax_from_component_text\s*\(|"
+            r"\bqualifier_template_id_syntaxes_from_text\s*\(|"
+            r"\bcollect_enable_if_condition_dependency_from_type_text\s*\(|"
+            r"\bparse_external_named_text_candidate\s*\(|"
+            r"\bparse_unary_builtin_type_transform_syntax_text\s*\("
         ),
     ),
     Category(

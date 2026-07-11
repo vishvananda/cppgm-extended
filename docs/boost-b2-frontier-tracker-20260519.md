@@ -6385,3 +6385,28 @@ of the expected LEAF condition type; focused log
 forced full LEAF replay updates 394 targets and remains at 24 failures while
 preserving the same advanced cursor; full log
 `/tmp/boost-leaf-full-after-structured-nested-pack-20260710.log`.
+
+2026-07-10 text-reparse audit expansion and PA23 hotspot follow-up: the audit's
+previous zero-count categories did not include the shared top-level template-id
+splitter or several older semantic helpers that recover template-id structure
+and dependencies from stored text. A new permanent
+`semantic_template_id_text_decomposition` category finds 100 existing sites.
+The redundant nested-pattern splitter in partial-specialization matching was
+removed now that original `TemplateArgumentSyntax` is authoritative, lowering
+the checked-in ratchet baseline to 99. Default audit mode passes at that limit;
+strict mode now correctly fails until the remaining legacy debt is removed.
+
+The preexisting PA23 cluster-500 reducer
+`500-reentrant-static-query-callable-enable-if-cache.t` is also a real compiler
+hotspot, not an intentionally large stress workload. Clang compiles it in
+`0.31s` and about `2.00B` retired instructions, while `cppgm++` takes `12.12s`
+and about `91.47B`. Semantic-hotspot instrumentation reports 31,686 queries,
+including 11,127 repeated `resolve_template_arguments` requests and 10,875
+requests while repopulating the same `can_query<executor, continuation_t<0>>`
+instantiation. Ordinary compile mode has no witness session; the repetition is
+driven by `reentrant_primary_selection` bypassing the existing-instantiation
+fast path so the recursive partial selection can be revalidated. Logs:
+`/tmp/pa23-reentrant-normal.time` and `/tmp/pa23-reentrant-hotspot.log`. The
+follow-on compiler performance check against exact `66f0f476c` remains within
+gate: instructions `+0.11%`, RSS `+1.92%`, footprint `-0.00%`; report
+`/tmp/cppgm-perf-report-expanded-text-audit-20260710.json`.
