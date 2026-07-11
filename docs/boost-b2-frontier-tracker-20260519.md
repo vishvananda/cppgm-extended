@@ -6454,3 +6454,11 @@ syntax, and alias-template resolution builds its qualified name from the
 declaration scope. The adjacent alias template-template dependency check also
 uses only nested syntax. This removes 7 sites and ratchets the category from
 `84` to `77`; PA21, PA23, and the full strict suite pass.
+
+Dependent template-id syntax reconstruction now uses the carried class or
+alias declaration and its structured argument records, non-template classes no
+longer synthesize current-specialization arguments from `ClassInfo::name`, and
+substituted member expressions preserve existing qualifier template-id syntax
+instead of rebuilding absent qualifiers from rewritten text. This ratchets the
+category from `77` to `74`; the 1,173 focused default tests and full strict
+suite pass.
