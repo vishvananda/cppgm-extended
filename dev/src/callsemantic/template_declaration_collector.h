@@ -68,9 +68,6 @@ struct OutOfClassMemberResolutionServices
 {
   virtual ~OutOfClassMemberResolutionServices() {}
 
-  virtual bool parse_out_of_class_member_qualified_name(
-      const std::string & qualified_name,
-      cpp_decl::QualifiedName & out) = 0;
   virtual semantic_model::ClassInfo * resolve_out_of_class_owner_class(
       semantic_model::Scope & scope,
       const cpp_decl::QualifiedName & qualified,

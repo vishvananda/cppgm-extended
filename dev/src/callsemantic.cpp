@@ -24074,7 +24074,7 @@ private:
   }
 
   bool parse_out_of_class_member_qualified_name(const string & qualified_name,
-                                                QualifiedName & out) override
+                                                QualifiedName & out)
   {
     return split_qualified_name_text(qualified_name, out) && !out.qualifiers.empty();
   }

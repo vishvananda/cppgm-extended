@@ -57,7 +57,6 @@ using template_model::TemplateArgument;
 using cpp_decl::TemplateArgumentSyntax;
 using template_model::TemplateParameterInfo;
 using semantic_utils::strip_trailing_top_level_template_arguments;
-using semantic_utils::split_qualified_name_text;
 using semantic_utils::trim_space;
 using semantic_utils::unqualified_member_name;
 
@@ -351,21 +350,7 @@ public:
         return found->second.class_node;
       };
       const QualifiedName * qualified_class_name = cppast_qualified_name_syntax(inner);
-      QualifiedName flattened_qualified_class_name;
       const QualifiedName * effective_qualified_class_name = qualified_class_name;
-      if(qualified_class_name && qualified_class_name->qualifiers.empty()) {
-        if(split_qualified_name_text(qualified_class_name->name,
-                                     flattened_qualified_class_name) &&
-           !flattened_qualified_class_name.qualifiers.empty()) {
-          effective_qualified_class_name = &flattened_qualified_class_name;
-        }
-      } else if(!qualified_class_name) {
-        if(split_qualified_name_text(inner.value,
-                                     flattened_qualified_class_name) &&
-           !flattened_qualified_class_name.qualifiers.empty()) {
-          effective_qualified_class_name = &flattened_qualified_class_name;
-        }
-      }
       if(effective_qualified_class_name &&
          !effective_qualified_class_name->qualifiers.empty()) {
         Scope * owner_scope = &scope;
@@ -430,13 +415,6 @@ public:
           throw logic_error("unsupported class explicit specialization");
         }
         specialization_name = class_template_id->name;
-        if(specialization_name.qualifiers.empty()) {
-          QualifiedName split_name;
-          if(split_qualified_name_text(specialization_name.name, split_name) &&
-             !split_name.qualifiers.empty()) {
-            specialization_name = split_name;
-          }
-        }
         arg_texts = template_id_argument_texts_preserving_spacing(*class_template_id);
         ClassTemplateDecl * primary =
             specialization_name.rooted || !specialization_name.qualifiers.empty() ?
@@ -510,13 +488,6 @@ public:
 
       if(class_template_id) {
         specialization_name = class_template_id->name;
-        if(specialization_name.qualifiers.empty()) {
-          QualifiedName split_name;
-          if(split_qualified_name_text(specialization_name.name, split_name) &&
-             !split_name.qualifiers.empty()) {
-            specialization_name = split_name;
-          }
-        }
         arg_texts = template_id_argument_texts_preserving_spacing(*class_template_id);
         Scope * primary_scope = &scope;
         string owner_member_template_name;
@@ -1047,21 +1018,17 @@ public:
           throw logic_error(out.str());
         }
 
-      QualifiedName parsed_special_member;
       const QualifiedName * qualified_special_member =
-          parse_out_of_class_member_qualified_name(inner.value, parsed_special_member) ?
-              &parsed_special_member :
-              nullptr;
-      QualifiedName declarator_qualified_special_member;
+          cppast_qualified_name_syntax(inner);
       const CppAstNode * declarator_identifier =
           declarator ? find_child_kind(*declarator, CppAstKind::identifier) : nullptr;
-      if(declarator_identifier &&
-         declarator_identifier->value.find("::") != string::npos &&
-         declarator_identifier->value.find("operator") != string::npos &&
-         split_qualified_name_text(declarator_identifier->value,
-                                   declarator_qualified_special_member) &&
-         !declarator_qualified_special_member.qualifiers.empty()) {
-        qualified_special_member = &declarator_qualified_special_member;
+      if(const QualifiedName * declarator_qualified_special_member =
+             declarator_identifier ?
+                 cppast_qualified_name_syntax(*declarator_identifier) :
+                 nullptr) {
+        if(!declarator_qualified_special_member->qualifiers.empty()) {
+          qualified_special_member = declarator_qualified_special_member;
+        }
       }
 
         auto record_out_of_class_special_member_for_owner_template =
@@ -1659,18 +1626,6 @@ public:
       }
       const QualifiedName * qualified_member_syntax =
           function_identifier ? cppast_qualified_name_syntax(*function_identifier) : nullptr;
-      QualifiedName text_qualified_member_syntax;
-      if(function_identifier &&
-         function_identifier->value.find("::") != string::npos &&
-         split_qualified_name_text(function_identifier->value,
-                                   text_qualified_member_syntax) &&
-         !text_qualified_member_syntax.qualifiers.empty() &&
-         (!qualified_member_syntax ||
-          qualified_member_syntax->qualifiers.empty() ||
-          (function_identifier->value.find("operator") != string::npos &&
-           qualified_member_syntax->name != text_qualified_member_syntax.name))) {
-        qualified_member_syntax = &text_qualified_member_syntax;
-      }
       if(function_identifier &&
          qualified_member_syntax &&
          !qualified_member_syntax->qualifiers.empty()) {
@@ -2412,18 +2367,6 @@ public:
           find_descendant_kind(*declarator, CppAstKind::identifier);
       const QualifiedName * qualified_member_syntax =
           function_identifier ? cppast_qualified_name_syntax(*function_identifier) : nullptr;
-      QualifiedName text_qualified_member_syntax;
-      if(function_identifier &&
-         function_identifier->value.find("::") != string::npos &&
-         split_qualified_name_text(function_identifier->value,
-                                   text_qualified_member_syntax) &&
-         !text_qualified_member_syntax.qualifiers.empty() &&
-         (!qualified_member_syntax ||
-          qualified_member_syntax->qualifiers.empty() ||
-          (function_identifier->value.find("operator") != string::npos &&
-           qualified_member_syntax->name != text_qualified_member_syntax.name))) {
-        qualified_member_syntax = &text_qualified_member_syntax;
-      }
       if(qualified_member_syntax &&
          !qualified_member_syntax->qualifiers.empty()) {
         const QualifiedName & qualified_member = *qualified_member_syntax;
@@ -2938,16 +2881,6 @@ public:
           static_member_identifier ?
               cppast_qualified_name_syntax(*static_member_identifier) :
               nullptr;
-      QualifiedName text_static_member_name_syntax;
-      if(static_member_identifier &&
-         static_member_identifier->value.find("::") != string::npos &&
-         split_qualified_name_text(static_member_identifier->value,
-                                   text_static_member_name_syntax) &&
-         !text_static_member_name_syntax.qualifiers.empty() &&
-         (!static_member_name_syntax ||
-          static_member_name_syntax->qualifiers.empty())) {
-        static_member_name_syntax = &text_static_member_name_syntax;
-      }
       if(static_member_name_syntax &&
          !static_member_name_syntax->qualifiers.empty()) {
         const QualifiedName & static_member_name = *static_member_name_syntax;
@@ -4240,13 +4173,6 @@ private:
       const vector<TemplateArgument> & arguments) const
   {
     return template_api::template_arguments_are_dependent(ctx, arguments);
-  }
-
-  bool parse_out_of_class_member_qualified_name(const string & qualified_name,
-                                                QualifiedName & out)
-  {
-    return callbacks.out_of_class_services->parse_out_of_class_member_qualified_name(
-        qualified_name, out);
   }
 
   ClassInfo * resolve_out_of_class_owner_class(
