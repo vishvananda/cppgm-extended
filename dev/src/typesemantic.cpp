@@ -485,12 +485,6 @@ private:
   Scope * lookup_namespace_name(Scope & scope, const QualifiedName & qualified)
   {
     if(!qualified.rooted && qualified.qualifiers.empty()) {
-      QualifiedName split_name;
-      if(qualified.name.find("::") != string::npos &&
-         semantic_utils::split_qualified_name_text(qualified.name, split_name) &&
-         (split_name.rooted || !split_name.qualifiers.empty())) {
-        return lookup_namespace_name(scope, split_name);
-      }
       return lookup_namespace_unqualified(scope, qualified.name);
     }
 
