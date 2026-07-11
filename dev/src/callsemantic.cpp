@@ -6668,6 +6668,7 @@ private:
                   anchor.identifier = syntax.name.name;
                 }
                 anchor.compact_key = compact_lookup_text(anchor.template_text);
+                anchor.template_id_syntax_ref = &syntax;
                 anchor.arg_texts_ref = &syntax.arguments;
                 anchor.arg_syntaxes_ref = &syntax.argument_syntaxes;
                 anchor.has_argument_list = true;
@@ -8656,22 +8657,20 @@ private:
         return TypePtr();
       }
       const vector<TemplateArgumentSyntax> * qualified_member_arg_syntaxes = nullptr;
-      {
-        QualifiedName member_template_id;
-        vector<string> member_arg_texts;
-        if(qualified.name.find('<') != string::npos &&
-           semantic_utils::split_top_level_template_id_text(qualified.name,
-                                                            member_template_id,
-                                                            member_arg_texts)) {
+      if(const ExactTemplateTypeLookupAnchor * anchor =
+             current_exact_template_type_lookup_anchor()) {
+        if(anchor->template_id_syntax_ref) {
+          const string & member_template_name =
+              anchor->template_id_syntax_ref->name.name;
           qualified_member_arg_syntaxes =
               exact_template_type_lookup_anchor_arg_syntaxes(
                   normalized_name,
-                  member_template_id.name);
+                  member_template_name);
           if(!qualified_member_arg_syntaxes) {
             qualified_member_arg_syntaxes =
                 exact_template_type_lookup_anchor_arg_syntaxes(
                     qualified.name,
-                    member_template_id.name);
+                    member_template_name);
           }
         }
       }
@@ -12245,6 +12244,7 @@ private:
           }
           qualifier_anchor.compact_key =
               compact_lookup_text(qualifier_anchor.template_text);
+          qualifier_anchor.template_id_syntax_ref = qualifier_template_id;
           qualifier_anchor.arg_texts_ref = &qualifier_template_id->arguments;
           qualifier_anchor.arg_syntaxes_ref =
               &qualifier_template_id->argument_syntaxes;
@@ -16069,6 +16069,7 @@ private:
           }
           qualifier_anchor.compact_key =
               compact_lookup_text(qualifier_anchor.template_text);
+          qualifier_anchor.template_id_syntax_ref = qualifier_template_id;
           qualifier_anchor.arg_texts_ref = &qualifier_template_id->arguments;
           qualifier_anchor.arg_syntaxes_ref =
               &qualifier_template_id->argument_syntaxes;
@@ -17986,6 +17987,7 @@ private:
         template_id_syntax = first_template_id_syntax_in_subtree(node);
       }
       if(template_id_syntax) {
+        exact_lookup_anchor.template_id_syntax_ref = template_id_syntax;
         exact_lookup_anchor.arg_texts_ref = &template_id_syntax->arguments;
         exact_lookup_anchor.arg_syntaxes_ref =
             &template_id_syntax->argument_syntaxes;

@@ -97,6 +97,7 @@ struct ExactTemplateTypeLookupAnchor
   std::string compact_key;
   std::vector<std::string> arg_texts;
   std::vector<cpp_decl::TemplateArgumentSyntax> arg_syntaxes;
+  const cpp_decl::TemplateIdSyntax * template_id_syntax_ref = nullptr;
   const std::vector<std::string> * arg_texts_ref = nullptr;
   const std::vector<cpp_decl::TemplateArgumentSyntax> * arg_syntaxes_ref = nullptr;
   bool has_argument_list = false;

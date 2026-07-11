@@ -3159,6 +3159,7 @@ callsemantic::ExactTemplateTypeLookupAnchor build_owner_lookup_anchor(
     anchor.identifier = ts.name.name;
   }
   anchor.compact_key = callsemantic::compact_lookup_text(anchor.template_text);
+  anchor.template_id_syntax_ref = &ts;
   anchor.arg_texts_ref = &ts.arguments;
   anchor.arg_syntaxes_ref = &ts.argument_syntaxes;
   anchor.has_argument_list = true;

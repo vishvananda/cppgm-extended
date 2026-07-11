@@ -6473,3 +6473,12 @@ template-id syntax. The duplicate fallback that reparsed `TemplateArgumentSyntax
 text and nested source-occurrence text, including its source-location replay,
 is removed. This ratchets the category from `73` to `69`; the 1,807 focused
 template tests and full strict witness suite pass.
+
+Exact type-lookup anchors now carry the complete retained `TemplateIdSyntax`,
+not only parallel argument vectors. Qualified member-template lookup consumes
+that syntax directly instead of decomposing the rendered member component,
+ratcheting the category from `69` to `68`. Removing the central string-only
+template-id lookup at the same time exposed 76 focused failures, confirming
+that unanchored internal callers still need to be converted before that
+fallback can be deleted. With that fallback left explicit, PA23 passes
+`394/394` and the full strict suite passes.
