@@ -822,7 +822,7 @@ Local Boost wrapper state:
 | 57a | `libs/lambda/test//extending_rt_traits` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//extending_rt_traits` on 2026-07-08 builds, links, runs, and passes. The fix keeps same-spelling class partial-specialization patterns distinct using resolved template arguments, keeps function-template result reparsing from overwriting a typed substituted result with a less-specific parsed pattern, and lets strict constexpr NTTP evaluation materialize current-class static constexpr arrays through typed member lookup and pack expansion. |
 | 57b | `libs/lambda/test//member_pointer_test` | pass | Focused `/usr/local/bin/timeout 600 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//member_pointer_test` on 2026-07-09 now builds, links, runs, and passes. The remaining bool NTTP frontier was a structured qualified template-id owner being retried by a type probe without its parsed qualifier syntax. Earlier same-target fixes closed the overloaded `->*` callee and function-template result shadowing frontiers. |
 | 57c | `libs/lambda/test//switch_construct` | pass | Focused `/usr/local/bin/timeout 300 env JOBS=4 CPPGM_BOOST_B2_FRONTIER=1 CPPGM_B2_CXX=/Users/vishvananda/cppgm-extended/dev/cppgm++ CPPGM_B2_HOST_CC=/usr/local/opt/llvm/bin/clang CPPGM_B2_HOST_CXX=/usr/local/opt/llvm/bin/clang++ ./run-cppgm-b2.sh -a libs/lambda/test//switch_construct` on 2026-07-10 builds, links, runs, and passes, updating 4 targets. The frontier was defaulted nested class-template and non-type partial-specialization metadata for `switch_action` / `lambda_functor_base`; the fix completes defaults from typed stored ASTs, preserves dependent class-template argument metadata, and keeps the primary-selection cache from reusing stale primary class info. |
-| 58 | `libs/leaf/test` | frontier | `context_deduction_test` now advances past dependent alias argument resolution for `context_type_from_handlers<H...>`. Retained dependent `decltype` metadata records whether its expression was formed with unresolved placeholders; later resolution defers when the new scope has no binding named by that expression, instead of re-evaluating its AST in an unrelated class-template scope. The target now reaches a separate explicit call lookup failure for `test<info<1>, info<2>>` at line 98. A forced full replay still updates 394 targets and leaves the same 24 failures because the target advances without completing. Focused log `/tmp/boost-leaf-context-deduction-formation-binding-final-20260710.log`; full replay `/tmp/boost-leaf-full-after-dependent-expr-formation-20260710.log`. |
+| 58 | `libs/leaf/test` | frontier | `context_deduction_test` now advances through nested template-id pack deduction for `unwrap<tuple<S<E>...>>`. The parser retains the `S<E>` element template-id while first parsing the pack-expansion argument, and partial-specialization matching expands it from structured syntax. The target now reaches a later incorrect deduction in `test`, where `T` becomes `std::error_code` instead of the expected LEAF condition type and the assertion at line 42 fails. Focused log `/tmp/boost-leaf-context-deduction-structured-nested-pack-20260710.log`. |
 
 - 2026-07-06 Iterator cursor advance: `zip_iterator_test_std_tuple` and
   `zip_iterator_test2_std_tuple` needed class-template partial ordering to let
@@ -6348,3 +6348,40 @@ PA22/PA23 strict witness suites pass. PA26 has no `test-strict` target; its two
 moved witness files were regenerated directly with patched Clang. Fresh PA18,
 PA21, PA22, PA23, and PA26 fail-on-early scans all pass with zero enforced
 placement findings.
+
+2026-07-10 Boost.LEAF nested template-id pack-expansion frontier:
+`context_deduction_test` reached the class partial specialization
+`unwrap<tuple<S<E>...>>`, but the matcher only supported a direct trailing
+parameter pack such as `E...`. The nested `S<E>...` pattern consequently did
+not match multiple tuple elements.
+
+Template-argument parsing now recognizes the element range before a trailing
+ellipsis and retains its `TemplateIdSyntax` on the original
+`TemplateArgumentSyntax`. Partial-specialization matching uses that retained
+template-id head and recursively collected parameter ASTs to match each actual
+argument and assemble the deduced packs. The new path does not tokenize or
+split stored source text; the older text-first partial-specialization matcher
+remains separate legacy debt for the expanded text-reparse audit.
+
+Owner: PA21 cluster 200 template-template parameters and class partial
+specialization. New regression:
+`pa21/tests/general/200-partial-specialization-nested-template-id-pack-expansion.t`.
+Exact parent `66f0f476c` rejects the two-element reducer, while Clang and the
+fixed compiler accept it. PA21 direct-text validation passes `204/204`; the
+full strict direct-text suite passes with zero failures; and the full
+direct-text report passes `3618/3618`. The PA21 placement scan reports no early
+placement violation. The strict text-reparse audit reports all zero under its
+current categories and its 7 unit tests pass; `git diff --check` passes. The
+three-run performance gate against exact `66f0f476c` passes: instructions
+`+0.22%`, RSS `-0.16%`, footprint `-0.06%`; baseline
+`/tmp/cppgm-perf-baseline-nested-template-pack-66f0f476c-20260710.json`, report
+`/tmp/cppgm-perf-report-structured-nested-template-pack-20260710.json`.
+
+Focused `libs/leaf/test//context_deduction_test` advances past the explicit
+`test<info<1>, info<2>>` lookup and nested partial-specialization failure. It
+now reaches the later assertion at line 42 with `T=[std::error_code]` instead
+of the expected LEAF condition type; focused log
+`/tmp/boost-leaf-context-deduction-structured-nested-pack-20260710.log`. The
+forced full LEAF replay updates 394 targets and remains at 24 failures while
+preserving the same advanced cursor; full log
+`/tmp/boost-leaf-full-after-structured-nested-pack-20260710.log`.

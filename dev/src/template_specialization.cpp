@@ -2587,6 +2587,65 @@ const TemplateIdSyntax * template_argument_template_id_syntax(
   return nullptr;
 }
 
+void collect_pack_parameters_from_template_id_syntax(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TemplateIdSyntax & template_id,
+    std::vector<const TemplateParameterInfo *> & out)
+{
+  for(std::size_t i = 0; i < template_id.argument_syntaxes.size(); ++i) {
+    const TemplateArgumentSyntax & argument = template_id.argument_syntaxes[i];
+    std::string parameter_name;
+    if(direct_template_parameter_name_from_syntax(argument, parameter_name)) {
+      const TemplateParameterInfo * parameter =
+          find_template_parameter_by_name(parameters, parameter_name);
+      if(parameter &&
+         parameter->parameter_pack &&
+         !template_parameter_ptr_in_vector(out, parameter)) {
+        out.push_back(parameter);
+      }
+    }
+
+    if(const TemplateIdSyntax * nested =
+           template_argument_template_id_syntax(argument)) {
+      collect_pack_parameters_from_template_id_syntax(parameters, *nested, out);
+    }
+  }
+}
+
+ArgumentPackExpansionPattern structured_argument_pack_expansion_pattern(
+    const std::vector<TemplateParameterInfo> & parameters,
+    const TemplateArgumentSyntax * syntax)
+{
+  ArgumentPackExpansionPattern out;
+  if(!syntax || !syntax->pack_expansion || !syntax->template_id) {
+    return out;
+  }
+
+  const TemplateIdSyntax & template_id = *syntax->template_id;
+  const TemplateParameterInfo * head_parameter =
+      !template_id.name.rooted && template_id.name.qualifiers.empty() ?
+          find_template_parameter_by_name(parameters, template_id.name.name) :
+          nullptr;
+  if(!head_parameter ||
+     head_parameter->kind != TemplateParameterInfo::TP_TEMPLATE_TEMPLATE) {
+    return out;
+  }
+
+  collect_pack_parameters_from_template_id_syntax(parameters,
+                                                  template_id,
+                                                  out.pack_parameters);
+  if(out.pack_parameters.empty()) {
+    return ArgumentPackExpansionPattern();
+  }
+
+  out.active = true;
+  out.has_syntax = true;
+  out.element_syntax = *syntax;
+  out.element_syntax.pack_expansion = false;
+  out.element_text = syntax->text;
+  return out;
+}
+
 bool template_argument_syntax_is_pack_expansion(
     const TemplateIdSyntax & syntax,
     std::size_t index)
@@ -9726,6 +9785,7 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
   };
 
   const TemplateParameterInfo * trailing_pack_parameter = nullptr;
+  ArgumentPackExpansionPattern trailing_pack_pattern;
   const DirectTemplateParameterMatch template_name_parameter =
       find_direct_template_parameter_from_arg(pattern_name.name);
   if(template_name_parameter.parameter &&
@@ -9761,6 +9821,19 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
        trailing_match.parameter->parameter_pack) {
       trailing_pack_parameter = trailing_match.parameter;
       fixed_argument_count = pattern_args.size() - 1;
+    }
+    if(!trailing_pack_parameter) {
+      const TemplateArgumentSyntax * trailing_syntax =
+          pattern_arg_syntaxes &&
+                  pattern_arg_syntaxes->size() >= pattern_args.size() ?
+              &pattern_arg_syntaxes->back() :
+              nullptr;
+      trailing_pack_pattern =
+          structured_argument_pack_expansion_pattern(partial.parameters,
+                                                     trailing_syntax);
+      if(trailing_pack_pattern.active) {
+        fixed_argument_count = pattern_args.size() - 1;
+      }
     }
   }
 
@@ -9880,6 +9953,7 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
   };
 
   if(!trailing_pack_parameter &&
+     !trailing_pack_pattern.active &&
      actual_match_structured_args &&
      actual_match_structured_args->size() == actual_match_args->size() &&
      pattern_args.size() < actual_match_args->size()) {
@@ -9903,7 +9977,7 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
       actual_match_structured_args = &actual_explicit_structured_args_storage;
     }
   }
-	  if(trailing_pack_parameter) {
+	  if(trailing_pack_parameter || trailing_pack_pattern.active) {
 	    if(actual_match_args->size() < fixed_argument_count) {
 	      return false;
 	    }
@@ -10111,6 +10185,190 @@ bool deduce_from_named_template_id_text(template_api::TemplateServices & service
 	      }
     } else {
       return false;
+    }
+  }
+
+  if(trailing_pack_pattern.active) {
+    const auto is_expanded_pack_name =
+        [&](const std::string & name) -> bool
+    {
+      for(std::size_t i = 0;
+          i < trailing_pack_pattern.pack_parameters.size();
+          ++i) {
+        const TemplateParameterInfo * parameter =
+            trailing_pack_pattern.pack_parameters[i];
+        if(parameter && parameter->name == name) {
+          return true;
+        }
+      }
+      return false;
+    };
+    std::map<std::string, std::vector<TypePtr> > expanded_types;
+    std::map<std::string, std::vector<long long> > expanded_values;
+
+    for(std::size_t arg_index = fixed_argument_count;
+        arg_index < actual_match_args->size();
+        ++arg_index) {
+      TypePtr actual_arg_type;
+      if(!resolve_actual_arg_type(arg_index,
+                                  trim_space((*actual_match_args)[arg_index]),
+                                  actual_arg_type)) {
+        return false;
+      }
+
+      DeducedState element_deduced = deduced;
+      for(std::size_t i = 0;
+          i < trailing_pack_pattern.pack_parameters.size();
+          ++i) {
+        const TemplateParameterInfo * parameter =
+            trailing_pack_pattern.pack_parameters[i];
+        if(!parameter) {
+          continue;
+        }
+        element_deduced.types.erase(parameter->name);
+        element_deduced.type_packs.erase(parameter->name);
+        element_deduced.values.erase(parameter->name);
+        element_deduced.value_arguments.erase(parameter->name);
+        element_deduced.value_packs.erase(parameter->name);
+        element_deduced.class_templates.erase(parameter->name);
+        element_deduced.alias_templates.erase(parameter->name);
+        element_deduced.template_template_arguments.erase(parameter->name);
+      }
+
+      Scope element_scope =
+          make_partial_match_scope(partial.parameters,
+                                   *partial.pattern_scope,
+                                   element_deduced);
+      const TemplateArgumentSyntax * element_syntax =
+          trailing_pack_pattern.has_syntax ?
+              &trailing_pack_pattern.element_syntax :
+              nullptr;
+      if(!deduce_from_named_template_id_text(
+             services,
+             partial,
+             element_deduced,
+             element_scope,
+             trailing_pack_pattern.element_text,
+             element_syntax,
+             actual_arg_type,
+             true)) {
+        return false;
+      }
+
+      for(std::size_t i = 0;
+          i < trailing_pack_pattern.pack_parameters.size();
+          ++i) {
+        const TemplateParameterInfo * parameter =
+            trailing_pack_pattern.pack_parameters[i];
+        if(!parameter) {
+          continue;
+        }
+        bool captured = false;
+        if(parameter->kind == TemplateParameterInfo::TP_TYPE) {
+          std::map<std::string, TypePtr>::const_iterator single =
+              element_deduced.types.find(parameter->name);
+          if(single != element_deduced.types.end()) {
+            expanded_types[parameter->name].push_back(single->second);
+            captured = true;
+          }
+          std::map<std::string, std::vector<TypePtr> >::const_iterator pack =
+              element_deduced.type_packs.find(parameter->name);
+          if(pack != element_deduced.type_packs.end()) {
+            expanded_types[parameter->name].insert(
+                expanded_types[parameter->name].end(),
+                pack->second.begin(),
+                pack->second.end());
+            captured = captured || !pack->second.empty();
+          }
+        } else if(parameter->kind == TemplateParameterInfo::TP_NON_TYPE) {
+          std::map<std::string, long long>::const_iterator single =
+              element_deduced.values.find(parameter->name);
+          if(single != element_deduced.values.end()) {
+            expanded_values[parameter->name].push_back(single->second);
+            captured = true;
+          }
+          std::map<std::string, std::vector<long long> >::const_iterator pack =
+              element_deduced.value_packs.find(parameter->name);
+          if(pack != element_deduced.value_packs.end()) {
+            expanded_values[parameter->name].insert(
+                expanded_values[parameter->name].end(),
+                pack->second.begin(),
+                pack->second.end());
+            captured = captured || !pack->second.empty();
+          }
+        } else {
+          return false;
+        }
+        if(!captured) {
+          return false;
+        }
+      }
+
+      for(std::map<std::string, TypePtr>::const_iterator it =
+              element_deduced.types.begin();
+          it != element_deduced.types.end();
+          ++it) {
+        if(!is_expanded_pack_name(it->first) &&
+           !store_deduced_type(deduced, it->first, it->second)) {
+          return false;
+        }
+      }
+      for(std::map<std::string, long long>::const_iterator it =
+              element_deduced.values.begin();
+          it != element_deduced.values.end();
+          ++it) {
+        if(is_expanded_pack_name(it->first)) {
+          continue;
+        }
+        std::map<std::string, TemplateArgument>::const_iterator argument =
+            element_deduced.value_arguments.find(it->first);
+        if(argument != element_deduced.value_arguments.end()) {
+          if(!store_deduced_value_argument(deduced,
+                                           it->first,
+                                           argument->second,
+                                           argument->second.type)) {
+            return false;
+          }
+        } else if(!store_deduced_value(deduced, it->first, it->second)) {
+          return false;
+        }
+      }
+      for(std::map<std::string, TemplateArgument>::const_iterator it =
+              element_deduced.template_template_arguments.begin();
+          it != element_deduced.template_template_arguments.end();
+          ++it) {
+        if(!is_expanded_pack_name(it->first) &&
+           !store_deduced_template_template_argument(deduced,
+                                                     it->first,
+                                                     it->second)) {
+          return false;
+        }
+      }
+    }
+
+    for(std::size_t i = 0;
+        i < trailing_pack_pattern.pack_parameters.size();
+        ++i) {
+      const TemplateParameterInfo * parameter =
+          trailing_pack_pattern.pack_parameters[i];
+      if(!parameter) {
+        continue;
+      }
+      if(parameter->kind == TemplateParameterInfo::TP_TYPE) {
+        if(!store_deduced_type_pack(deduced,
+                                    parameter->name,
+                                    expanded_types[parameter->name])) {
+          return false;
+        }
+      } else if(parameter->kind == TemplateParameterInfo::TP_NON_TYPE) {
+        if(!store_deduced_value_pack(deduced,
+                                     parameter->name,
+                                     expanded_values[parameter->name])) {
+          return false;
+        }
+      } else {
+        return false;
+      }
     }
   }
 

@@ -1019,10 +1019,16 @@ void build_template_argument_syntax_from_range(
   argument.text =
       template_angle::token_span_text_spaced(tokens, range.first, range.second);
 
+  std::pair<std::size_t, std::size_t> template_id_range = range;
+  if(template_id_range.second > template_id_range.first &&
+     tokens.peek(template_id_range.second - 1).is_simple(OP_DOTS)) {
+    --template_id_range.second;
+  }
+
   cpp_decl::TemplateIdSyntax nested_template_id;
   if(build_template_id_syntax_from_range(tokens,
                                          lookup,
-                                         range,
+                                         template_id_range,
                                          nested_template_id,
                                          parser_context)) {
     argument.template_id.reset(
@@ -1052,7 +1058,7 @@ void build_template_argument_syntax_from_range(
     argument.expression.reset(
         new CppAstNode(
             make_template_id_expression_syntax_from_range(tokens,
-                                                          range,
+                                                          template_id_range,
                                                           argument.template_id,
                                                           qualifier_template_ids,
                                                           argument.text)));
