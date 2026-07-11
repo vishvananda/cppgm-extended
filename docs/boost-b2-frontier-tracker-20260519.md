@@ -6534,3 +6534,9 @@ template-qualified owner reconstruction, including the shared qualifier syntax
 builder, are removed from that fallback; structured AST, semantic type, and
 owner-argument paths remain authoritative. This ratchets the category from
 `50` to `45`; PA30 and the full strict suite pass.
+
+Function owner qualifier mangling now constructs `TemplateIdSyntax` from the
+structured owner component name, semantic arguments, and retained per-argument
+syntax. The last symbol-linkage template component text-to-syntax helper,
+including its recursive nested argument parsing, is removed. This ratchets the
+category from `45` to `42`; PA30 and the full strict suite pass.

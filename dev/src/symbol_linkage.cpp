@@ -4705,39 +4705,6 @@ static bool alias_parameter_text_matches(const string & text,
   return template_parameter_identifier_matches(parameter, text);
 }
 
-static bool template_id_syntax_from_component_text(const string & text,
-                                                   TemplateIdSyntax & out)
-{
-  TemplateComponent component;
-  if(!parse_template_component(text, component) || !component.has_template_id) {
-    return false;
-  }
-  QualifiedName name;
-  if(semantic_utils::split_qualified_name_text(component.base_name, name)) {
-    out.name = name;
-  } else {
-    out.name = QualifiedName();
-    out.name.name = trim_space(component.base_name);
-  }
-  out.arguments = component.arg_texts;
-  out.argument_syntaxes.clear();
-  out.argument_syntaxes.reserve(component.arg_texts.size());
-  for(size_t i = 0; i < component.arg_texts.size(); ++i) {
-    TemplateArgumentSyntax argument;
-    argument.text = trim_space(component.arg_texts[i]);
-    if(argument.text.size() >= 3 &&
-       argument.text.compare(argument.text.size() - 3, 3, "...") == 0) {
-      argument.pack_expansion = true;
-    }
-    TemplateIdSyntax nested_template_id;
-    if(template_id_syntax_from_component_text(argument.text, nested_template_id)) {
-      argument.template_id.reset(new TemplateIdSyntax(nested_template_id));
-    }
-    out.argument_syntaxes.push_back(argument);
-  }
-  return true;
-}
-
 static bool replacement_syntax_qualified_name(
     const TemplateArgumentSyntax & replacement,
     QualifiedName & out,
@@ -16140,7 +16107,28 @@ static bool try_build_function_qualifier_component_ir(
      component.has_template_id &&
      !component.base_name.empty()) {
     TemplateIdSyntax template_id;
-    if(template_id_syntax_from_component_text(part, template_id)) {
+    const string structured_template_name = owner_component ?
+        owner_component->template_name :
+        (component_matches_owner_template ? options.owner_template_name : string());
+    if(!structured_template_name.empty() && structured_arguments) {
+      template_id.name.name = structured_template_name;
+      template_id.arguments.reserve(structured_arguments->size());
+      template_id.argument_syntaxes.reserve(structured_arguments->size());
+      for(size_t i = 0; i < structured_arguments->size(); ++i) {
+        const TemplateArgument & argument = (*structured_arguments)[i];
+        TemplateArgumentSyntax syntax = argument.source_syntax ?
+            clone_template_argument_syntax_for_mangling(*argument.source_syntax) :
+            TemplateArgumentSyntax();
+        if(syntax.text.empty()) {
+          syntax.text = !argument.text.empty() ? argument.text :
+              (argument.kind == TemplateArgument::TA_TYPE && argument.type ?
+                   template_argument_type_text(argument.type) :
+                   argument.kind == TemplateArgument::TA_VALUE ?
+                       to_string(argument.value) : string());
+        }
+        template_id.arguments.push_back(syntax.text);
+        template_id.argument_syntaxes.push_back(std::move(syntax));
+      }
       vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
       dependent_arguments.reserve(template_id.argument_syntaxes.size());
       for(size_t i = 0; i < template_id.argument_syntaxes.size(); ++i) {
