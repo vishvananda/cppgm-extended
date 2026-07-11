@@ -15925,6 +15925,24 @@ static bool try_build_function_qualifier_component_ir(
   if(owner_component) {
     component_matches_owner_template = true;
   }
+  const semantic_model::ClassInfo * lexical_owner = nullptr;
+  for(const semantic_model::Scope * current = options.lookup_scope;
+      current && !lexical_owner;
+      current = current->parent) {
+    lexical_owner = current->class_info;
+  }
+  const bool component_matches_lexical_owner_template =
+      !owner_component &&
+      is_last_qualifier &&
+      has_parsed_component &&
+      lexical_owner &&
+      lexical_owner->source_template &&
+      trim_space(component.base_name) == lexical_owner->source_template->name;
+  if(component_matches_lexical_owner_template) {
+    component_matches_owner_template = true;
+    structured_parameters = &lexical_owner->source_template->parameters;
+    structured_arguments = &lexical_owner->instantiation_arguments;
+  }
   owner_component_ctx.owner_template_parameters = structured_parameters;
   owner_component_ctx.owner_template_arguments = structured_arguments;
   TemplateParameterMangleContext owner_component_template_parameter_ctx;
@@ -16004,7 +16022,9 @@ static bool try_build_function_qualifier_component_ir(
     TemplateIdSyntax template_id;
     const string structured_template_name = owner_component ?
         owner_component->template_name :
-        (component_matches_owner_template ? options.owner_template_name : string());
+        (component_matches_lexical_owner_template ?
+             lexical_owner->source_template->name :
+             (component_matches_owner_template ? options.owner_template_name : string()));
     if(!structured_template_name.empty() && structured_arguments) {
       template_id.name.name = structured_template_name;
       template_id.arguments.reserve(structured_arguments->size());

@@ -6589,3 +6589,12 @@ timeout beyond 30 seconds before the fix, and both lanes emit byte-identical
 LowIR. Semantic work confirms the same candidate algorithm in both lanes:
 3,906 expression visits, 431 overload candidate sets, and 848 candidate
 attempts. The full strict suite passes.
+
+The full report after the mangling ratchets exposed an early hosted
+special-member path where `FunctionSymbolOptions` did not yet carry owner
+template arguments. The qualifier builder now obtains the final owner
+component's template name, parameters, and concrete arguments from the
+`lookup_scope`'s instantiated `ClassInfo`. This restores weak libc++ constructor
+and destructor symbols without rebuilding template-id syntax from qualifier
+text. PA35 passes `87/87`, PA36 passes `74/74`, and PA37's object roundtrip
+passes `7/7`; the full strict suite and full `3618/3618` report pass.
