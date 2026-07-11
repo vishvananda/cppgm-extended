@@ -6515,3 +6515,9 @@ helper no longer recursively recognizes transform calls. This removes five
 audit sites and ratchets the category from `64` to `59`; the full report passes
 `3618/3618` and the full strict suite passes when each is run without competing
 for the PA23 timeout budget.
+
+Enable-if result dependency classification now walks retained template-id
+syntax and child AST nodes only. The duplicate `node.value` passes and their
+recursive top-level/qualified template-id decomposition helper are removed,
+ratcheting the category from `59` to `52`. PA30's 78 ABI cases and the full
+strict suite pass.

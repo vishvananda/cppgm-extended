@@ -5813,21 +5813,11 @@ static void collect_enable_if_condition_dependency(
                                                                    mangle_ctx);
 }
 
-static void collect_enable_if_condition_dependency_from_type_text(
-    const string & raw_text,
-    const TypeMangleContext * mangle_ctx,
-    EnableIfConditionDependency & out);
-
 static void collect_enable_if_condition_dependency(
     const CppAstNode & node,
     const TypeMangleContext * mangle_ctx,
     EnableIfConditionDependency & out)
 {
-  if(!node.value.empty()) {
-    collect_enable_if_condition_dependency_from_type_text(node.value,
-                                                          mangle_ctx,
-                                                          out);
-  }
   if(node.template_id_syntax) {
     collect_enable_if_condition_dependency(*node.template_id_syntax,
                                            mangle_ctx,
@@ -5840,40 +5830,6 @@ static void collect_enable_if_condition_dependency(
   }
   for(size_t i = 0; i < node.children.size(); ++i) {
     collect_enable_if_condition_dependency(node.children[i], mangle_ctx, out);
-  }
-}
-
-static void collect_enable_if_condition_dependency_from_type_text(
-    const string & raw_text,
-    const TypeMangleContext * mangle_ctx,
-    EnableIfConditionDependency & out)
-{
-  const string text = mangle_ir_type_text_base(raw_text);
-  if(text.empty()) {
-    return;
-  }
-
-  TemplateIdSyntax template_id;
-  if(template_id_syntax_from_component_text(text, template_id)) {
-    collect_enable_if_condition_dependency(template_id, mangle_ctx, out);
-    return;
-  }
-
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(text, qualified)) {
-    return;
-  }
-  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    TemplateIdSyntax qualifier_template_id;
-    if(template_id_syntax_from_component_text(qualified.qualifiers[i],
-                                              qualifier_template_id)) {
-      collect_enable_if_condition_dependency(qualifier_template_id,
-                                             mangle_ctx,
-                                             out);
-    }
-  }
-  if(template_id_syntax_from_component_text(qualified.name, template_id)) {
-    collect_enable_if_condition_dependency(template_id, mangle_ctx, out);
   }
 }
 
@@ -17864,10 +17820,6 @@ static bool try_emit_itanium_function_symbol_ir(
         collect_enable_if_condition_dependency(*options.result_type_pattern,
                                                &mangle_ctx,
                                                direct_enable_if_result_dependency);
-        collect_enable_if_condition_dependency_from_type_text(
-            options.result_type_pattern->value,
-            &mangle_ctx,
-            direct_enable_if_result_dependency);
       }
       EnableIfConditionDependency alias_enable_if_result_dependency;
       const bool result_references_alias_template =
