@@ -1478,26 +1478,23 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
                                             Scope & lookup_scope,
                                             const string & name,
                                             const vector<TemplateArgumentSyntax> *
-                                                arg_syntaxes)
+                                                arg_syntaxes,
+                                            const TemplateIdSyntax *
+                                                template_id_syntax)
 {
   const string normalized_name = ctx.normalize_type_lookup_name(name);
 
-  const string template_head =
+  const string normalized_template_head =
       semantic_utils::strip_trailing_top_level_template_arguments(normalized_name);
-  if(template_head != normalized_name && is_simple_identifier_text(template_head)) {
-    QualifiedName template_id_name;
-    vector<string> template_id_args;
-    const bool parsed_template_id =
-        semantic_utils::split_top_level_template_id_text(normalized_name,
-                                                         template_id_name,
-                                                         template_id_args) &&
-        !template_id_name.rooted &&
-        template_id_name.qualifiers.empty() &&
-        template_id_name.name == template_head;
+  if(template_id_syntax &&
+     normalized_template_head != normalized_name &&
+     normalized_template_head == template_id_syntax->name.name &&
+     is_simple_identifier_text(template_id_syntax->name.name)) {
+    const string & template_head = template_id_syntax->name.name;
+    const vector<string> & template_id_args = template_id_syntax->arguments;
     map<string, AliasTemplateDecl *>::iterator alias_template =
         scope.alias_templates.find(template_head);
-    if(parsed_template_id &&
-       alias_template != scope.alias_templates.end() &&
+    if(alias_template != scope.alias_templates.end() &&
        alias_template->second) {
       TypePtr type =
           ctx.instantiate_alias_template_with_syntax(*alias_template->second,
@@ -1512,8 +1509,7 @@ TypePtr resolve_direct_type_qualifier_local(SemanticContext & ctx,
 
     map<string, ClassTemplateDecl *>::iterator class_template =
         scope.class_templates.find(template_head);
-    if(parsed_template_id &&
-       class_template != scope.class_templates.end() &&
+    if(class_template != scope.class_templates.end() &&
        class_template->second) {
       ClassInfo * info =
           ctx.reference_class_template_instantiation_with_syntax(
@@ -1597,26 +1593,31 @@ TypePtr resolve_direct_type_qualifier_impl(SemanticContext & ctx,
                                            Scope & lookup_scope,
                                            const string & name,
                                            const vector<TemplateArgumentSyntax> *
-                                               arg_syntaxes)
+                                               arg_syntaxes,
+                                           const TemplateIdSyntax *
+                                               template_id_syntax)
 {
   TypePtr direct =
       resolve_direct_type_qualifier_local(ctx,
                                           scope,
                                           lookup_scope,
                                           name,
-                                          arg_syntaxes);
+                                          arg_syntaxes,
+                                          template_id_syntax);
   if(direct) {
     return direct;
   }
   return lookup_inline_namespace_children<TypePtr>(
       scope,
-      [&ctx, &lookup_scope, &name, arg_syntaxes](Scope & child) -> TypePtr
+      [&ctx, &lookup_scope, &name, arg_syntaxes, template_id_syntax](
+          Scope & child) -> TypePtr
       {
         return resolve_direct_type_qualifier_local(ctx,
                                                    child,
                                                    lookup_scope,
                                                    name,
-                                                   arg_syntaxes);
+                                                   arg_syntaxes,
+                                                   template_id_syntax);
       },
       [](const TypePtr & type) -> bool
       {
@@ -1646,6 +1647,7 @@ TypePtr lookup_type_from_using_directives_in_scope(SemanticContext & ctx,
                                                   target,
                                                   lookup_scope,
                                                   lookup_name,
+                                                  nullptr,
                                                   nullptr);
       },
       [](const TypePtr & type) -> bool
@@ -1664,7 +1666,12 @@ TypePtr resolve_type_qualifier_in_qualified_scope(SemanticContext & ctx,
                                                   const string & name)
 {
   TypePtr direct =
-      resolve_direct_type_qualifier_impl(ctx, scope, lookup_scope, name, nullptr);
+      resolve_direct_type_qualifier_impl(ctx,
+                                         scope,
+                                         lookup_scope,
+                                         name,
+                                         nullptr,
+                                         nullptr);
   TypePtr imported =
       lookup_type_from_using_directives_in_scope(ctx, scope, lookup_scope, name);
   if(direct && imported && !type_equals(direct, imported)) {
@@ -2034,13 +2041,15 @@ TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                       Scope & lookup_scope,
                                       const string & name,
                                       const vector<TemplateArgumentSyntax> *
-                                          arg_syntaxes)
+                                          arg_syntaxes,
+                                      const TemplateIdSyntax * template_id_syntax)
 {
   return resolve_direct_type_qualifier_impl(ctx,
                                             scope,
                                             lookup_scope,
                                             name,
-                                            arg_syntaxes);
+                                            arg_syntaxes,
+                                            template_id_syntax);
 }
 
 bool resolve_qualified_namespace_entity_target(SemanticContext & ctx,

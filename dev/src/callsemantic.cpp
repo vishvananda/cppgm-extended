@@ -6507,6 +6507,36 @@ private:
           return source_location_tokens()
               .template_id_at_location_is_conversion_operator_result(location);
         };
+    callbacks.template_id_syntax_at_location =
+        [this](const std::string & location,
+               const std::string & identifier) -> const TemplateIdSyntax * {
+          const TemplateIdSyntax * syntax =
+              template_id_syntax_for_anchor_at_or_after_location(
+              template_witness_context(),
+              ast,
+              identifier,
+              location);
+          if(!syntax) {
+            return nullptr;
+          }
+          const callsemantic::ParsedSourceLocation target =
+              callsemantic::parse_source_location(
+                  template_api::normalize_template_witness_source_location(
+                      location));
+          const callsemantic::ParsedSourceLocation source =
+              callsemantic::parse_source_location(
+                  template_api::normalize_template_witness_source_location(
+                      template_api::template_witness_detail::
+                          source_location_for_location_id(
+                              template_witness_context(),
+                              syntax->source_location_id)));
+          return target.valid &&
+                         source.valid &&
+                         target.file == source.file &&
+                         target.line == source.line ?
+                     syntax :
+                     nullptr;
+        };
     callbacks.peek_token =
         [this](std::size_t index) -> const RecogToken & {
           return token_sequence->peek(index);
@@ -8661,9 +8691,12 @@ private:
         return TypePtr();
       }
       const vector<TemplateArgumentSyntax> * qualified_member_arg_syntaxes = nullptr;
+      const TemplateIdSyntax * qualified_member_template_id_syntax = nullptr;
       if(const ExactTemplateTypeLookupAnchor * anchor =
              current_exact_template_type_lookup_anchor()) {
         if(anchor->template_id_syntax_ref) {
+          qualified_member_template_id_syntax =
+              anchor->template_id_syntax_ref;
           const string & member_template_name =
               anchor->template_id_syntax_ref->name.name;
           qualified_member_arg_syntaxes =
@@ -8683,7 +8716,8 @@ private:
                                                          *current,
                                                          scope,
                                                          qualified.name,
-                                                         qualified_member_arg_syntaxes);
+                                                         qualified_member_arg_syntaxes,
+                                                         qualified_member_template_id_syntax);
       if(trace_node_traits_pointer_lookup) {
         std::ostringstream trace;
         trace << "qualified-lookup-direct name=" << normalized_name
@@ -8754,7 +8788,8 @@ private:
                                                                *current,
                                                                scope,
                                                                qualified.name,
-                                                               qualified_member_arg_syntaxes);
+                                                               qualified_member_arg_syntaxes,
+                                                               qualified_member_template_id_syntax);
             if(direct_qualified) {
               note_resolved_alias_class_use(direct_qualified, nullptr);
               return cache_qualified_type_result(direct_qualified);

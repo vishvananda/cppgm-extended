@@ -1753,167 +1753,50 @@ public:
     return true;
   }
 
-  std::string source_member_template_owner_text_at_location(
-      const std::string & use_location,
-      const std::string & template_identifier) const
-  {
-    if(!witness::enabled(template_witness_context())) {
-      return std::string();
-    }
-    std::size_t name_token = 0;
-    if(use_location.empty() ||
-       template_identifier.empty() ||
-       !token_index_for_source_location(use_location,
-                                        template_identifier,
-                                        name_token)) {
-      return std::string();
-    }
-    std::size_t separator_token = name_token;
-    if(separator_token > 0 &&
-       peek_token(separator_token - 1).source == "template") {
-      --separator_token;
-    }
-    if(separator_token == 0 ||
-       peek_token(separator_token - 1).source != "::") {
-      return std::string();
-    }
-    const std::size_t owner_end = separator_token - 1;
-    if(owner_end == 0) {
-      return std::string();
-    }
-
-    const ParsedSourceLocation parsed_use =
-        parse_source_location(
-            template_api::normalize_template_witness_source_location(
-                use_location));
-    if(!parsed_use.valid) {
-      return std::string();
-    }
-
-    std::size_t owner_begin = owner_end;
-    int angle_depth = 0;
-    int paren_depth = 0;
-    int bracket_depth = 0;
-    while(owner_begin > 0) {
-      const RecogToken & token = peek_token(owner_begin - 1);
-      const ParsedSourceLocation parsed_token =
-          parse_source_location(
-              template_api::normalize_template_witness_source_location(
-                  source_location_for_token_index(owner_begin - 1)));
-      if(!parsed_token.valid ||
-         parsed_token.file != parsed_use.file) {
-        break;
-      }
-      const std::string & source = token.source;
-      if(angle_depth == 0 &&
-         paren_depth == 0 &&
-         bracket_depth == 0 &&
-         (source == ";" || source == "{" || source == "}" ||
-          source == "," || source == "=" || source == "?" ||
-          source == ":" || source == "[" || source == "]")) {
-        break;
-      }
-      if(source == ">>") {
-        angle_depth += 2;
-      } else if(source == ">") {
-        ++angle_depth;
-      } else if(source == "<" && angle_depth > 0) {
-        --angle_depth;
-      } else if(source == ")" && angle_depth > 0) {
-        ++paren_depth;
-      } else if(source == "(" && paren_depth > 0) {
-        --paren_depth;
-      } else if(source == "]" && angle_depth > 0) {
-        ++bracket_depth;
-      } else if(source == "[" && bracket_depth > 0) {
-        --bracket_depth;
-      } else if(angle_depth == 0 &&
-                paren_depth == 0 &&
-                bracket_depth == 0 &&
-                (source == "(" || source == ")")) {
-        break;
-      }
-      --owner_begin;
-    }
-    if(owner_end > owner_begin) {
-      const std::string & owner_last = peek_token(owner_end - 1).source;
-      if(owner_last == ">" || owner_last == ">>") {
-        int template_depth = 0;
-        std::size_t owner_open = owner_end;
-        for(std::size_t i = owner_end; i > owner_begin; --i) {
-          const std::string & source = peek_token(i - 1).source;
-          if(source == ">>") {
-            template_depth += 2;
-          } else if(source == ">") {
-            ++template_depth;
-          } else if(source == "<" && template_depth > 0) {
-            --template_depth;
-            if(template_depth == 0) {
-              owner_open = i - 1;
-              break;
-            }
-          }
-        }
-        if(owner_open < owner_end) {
-          std::size_t name_begin = owner_open;
-          while(name_begin > owner_begin) {
-            const RecogToken & previous = peek_token(name_begin - 1);
-            if(previous.source == "::" || previous.is_identifier()) {
-              --name_begin;
-              continue;
-            }
-            break;
-          }
-          owner_begin = name_begin;
-        }
-      }
-    }
-    return trim_space(compact_token_range_lookup_text(owner_begin, owner_end));
-  }
-
-  ClassInfo * source_member_template_owner_class_at_location(
+  ClassInfo * source_member_template_owner_class_from_syntax(
       Scope & use_scope,
       const std::string & use_location,
       const std::string & template_identifier)
   {
-    if(!witness::enabled(template_witness_context())) {
+    const auto resolve_owner =
+        [&](Scope & lookup_scope,
+            const TemplateIdSyntax & syntax,
+            const std::string & template_text) -> ClassInfo *
+        {
+          if(syntax.name.qualifiers.empty() ||
+             unqualified_member_name(syntax.name.name) != template_identifier) {
+            return nullptr;
+          }
+          CppAstNode node;
+          node.kind = CppAstKind::type_name;
+          node.value = template_text;
+          set_cppast_qualified_name_syntax(node, syntax.name);
+          set_cppast_qualifier_template_id_syntaxes(
+              node,
+              syntax.qualifier_template_id_syntaxes);
+
+          const witness::ScopedTemplateWitnessSourceCapturePause source_pause;
+          TypePtr owner_type =
+              semantic_lookup::resolve_qualified_owner_type_node(ctx,
+                                                                 lookup_scope,
+                                                                 syntax.name,
+                                                                 node);
+          ClassInfo * owner = ctx.class_info_for_type(owner_type);
+          if(!owner) {
+            owner = ctx.complete_class_type(owner_type);
+          }
+          return owner;
+        };
+
+    if(!callbacks.template_id_syntax_at_location) {
       return nullptr;
     }
-    const std::string owner_text =
-        source_member_template_owner_text_at_location(use_location,
-                                                     template_identifier);
-    QualifiedName owner_name;
-    std::vector<std::string> owner_args;
-    if(owner_text.empty() ||
-       !semantic_utils::split_top_level_template_id_text(owner_text,
-                                                         owner_name,
-                                                         owner_args) ||
-       owner_name.name.empty()) {
-      return nullptr;
-    }
-    for(std::size_t i = 0; i < owner_args.size(); ++i) {
-      const std::string & arg = owner_args[i];
-      if(arg.find('*') != std::string::npos ||
-         arg.find('&') != std::string::npos) {
-        return nullptr;
-      }
-    }
-    ClassTemplateDecl * owner_template = lookup_class_template(use_scope,
-                                                               owner_name);
-    if(!owner_template) {
-      return nullptr;
-    }
-    try {
-      const witness::ScopedTemplateWitnessSourceCapturePause source_pause;
-      return reference_class_template_instantiation_with_syntax(
-          *owner_template,
-          use_scope,
-          owner_args,
-          nullptr,
-          template_api::ClassTemplateSourceUseMode::SemanticLookupOnly);
-    } catch(const std::exception &) {
-      return nullptr;
-    }
+    const TemplateIdSyntax * source_syntax =
+        callbacks.template_id_syntax_at_location(use_location,
+                                                 template_identifier);
+    return source_syntax ?
+        resolve_owner(use_scope, *source_syntax, std::string()) :
+        nullptr;
   }
 
   std::string source_template_name_location_on_use_line(
@@ -3046,10 +2929,9 @@ public:
          resolved_info->enclosing_scope &&
          resolved_info->enclosing_scope->class_info) {
         ClassInfo * source_owner =
-            source_member_template_owner_class_at_location(
-                use_scope,
-                chosen_use_location,
-                anchor_identifier);
+            source_member_template_owner_class_from_syntax(use_scope,
+                                                           chosen_use_location,
+                                                           anchor_identifier);
         if(source_owner &&
            !semantic_lookup::is_same_or_derived(
                source_owner,
@@ -3057,7 +2939,11 @@ public:
           if(parser_trace::enabled("template.resolve")) {
             parser_trace::note("template.resolve",
                                chosen_use_location,
-                               "class-use-source-drop reason=member-template-owner-replay");
+                               "class-use-source-drop reason=member-template-owner source=" +
+                                   source_owner->qualified_name +
+                                   " selected=" +
+                                   resolved_info->enclosing_scope->class_info
+                                       ->qualified_name);
           }
           return;
         }

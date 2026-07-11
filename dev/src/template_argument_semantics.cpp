@@ -3235,74 +3235,8 @@ bool resolve_member_template_owner_type_text(
   TypePtr & out)
 {
   out.reset();
-
-  QualifiedName owner_template_name;
-  vector<string> owner_args;
-  const bool owner_split =
-      semantic_utils::split_top_level_template_id_text(owner_text,
-                                                       owner_template_name,
-                                                       owner_args);
-
-  const auto resolve_owner_syntax_structurally =
-      [&](const std::vector<TemplateArgumentSyntax> & arg_syntaxes) -> bool
-  {
-    TemplateIdSyntax owner_syntax;
-    owner_syntax.name = owner_template_name;
-    owner_syntax.arguments = owner_args;
-    owner_syntax.argument_syntaxes = arg_syntaxes;
-    if(ClassTemplateDecl * owner_template =
-           lookup_class_template_impl(
-               services,
-               scope.require(),
-               qualified_name_text_for_structured_lookup(owner_template_name))) {
-      Scope & binding_scope =
-          template_argument_binding_scope_for_class_template(scope.require(),
-                                                             *owner_template);
-      annotate_template_id_type_arguments_from_scope_bindings(binding_scope,
-                                                              *owner_template,
-                                                              owner_syntax);
-    }
-    return resolve_template_id_syntax_type(
-               services,
-               scope.require(),
-               owner_syntax,
-               reference_class_templates_only,
-               string(),
-               out,
-               scope,
-               template_api::ClassTemplateSourceUseMode::NestedArgumentsOnly) &&
-           out;
-  };
-
-  if(owner_split) {
-    if(const std::vector<TemplateArgumentSyntax> * anchor_syntaxes =
-           callsemantic::exact_template_type_lookup_anchor_arg_syntaxes(
-               normalize_type_lookup_name(owner_text),
-               owner_template_name.name)) {
-      if(anchor_syntaxes->size() == owner_args.size() &&
-         resolve_owner_syntax_structurally(*anchor_syntaxes)) {
-        return true;
-      }
-      out.reset();
-    }
-    bool simple_owner_arguments = true;
-    for(size_t i = 0; i < owner_args.size(); ++i) {
-      if(owner_args[i].find("::") != string::npos ||
-         owner_args[i].find("...") != string::npos) {
-        simple_owner_arguments = false;
-        break;
-      }
-    }
-    if(simple_owner_arguments) {
-      std::vector<TemplateArgumentSyntax> empty_syntaxes;
-      if(resolve_owner_syntax_structurally(empty_syntaxes)) {
-        return true;
-      }
-      out.reset();
-    }
-  }
-
-  if(owner_split) {
+  if(owner_text.find('<') != string::npos ||
+     owner_text.find('>') != string::npos) {
     return false;
   }
 

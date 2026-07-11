@@ -32,6 +32,9 @@ struct ClassTemplateReferenceCallbacks
       template_id_at_location_is_qualified_member_owner;
   std::function<bool(const std::string &)>
       template_id_at_location_is_conversion_operator_result;
+  std::function<const cpp_decl::TemplateIdSyntax *(
+      const std::string &,
+      const std::string &)> template_id_syntax_at_location;
   std::function<const RecogToken &(std::size_t)> peek_token;
   std::function<void(semantic_model::ClassTemplateDecl &,
                      const template_api::ClassSpecializationSelection &)>

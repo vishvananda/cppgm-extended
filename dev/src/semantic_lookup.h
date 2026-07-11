@@ -94,7 +94,9 @@ cpp_decl::TypePtr resolve_direct_type_qualifier(SemanticContext & ctx,
                                                 Scope & lookup_scope,
                                                 const std::string & name,
                                                 const std::vector<cpp_decl::TemplateArgumentSyntax> *
-                                                    arg_syntaxes = nullptr);
+                                                    arg_syntaxes = nullptr,
+                                                const cpp_decl::TemplateIdSyntax *
+                                                    template_id_syntax = nullptr);
 cpp_decl::TypePtr resolve_qualified_owner_type_node(
     SemanticContext & ctx,
     Scope & scope,
