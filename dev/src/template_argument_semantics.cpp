@@ -412,10 +412,6 @@ void annotate_template_id_type_arguments_from_scope_bindings(
     Scope & scope,
     const ClassTemplateDecl & class_template,
     TemplateIdSyntax & syntax);
-bool annotate_template_id_type_arguments_from_matching_scope_bindings(
-    Scope & scope,
-    const ClassTemplateDecl & class_template,
-    TemplateIdSyntax & syntax);
 Scope & template_argument_binding_scope_for_class_template(
     Scope & scope,
     const ClassTemplateDecl & class_template);
@@ -3644,28 +3640,14 @@ bool resolve_template_id_syntax_type(template_api::TemplateServices & services,
 
   if(ClassTemplateDecl * class_template =
          lookup_class_template_impl(services, scope, syntax.name)) {
-    const vector<string> * effective_arg_texts = &arg_texts;
-    const vector<TemplateArgumentSyntax> * effective_arg_syntaxes =
-        &syntax.argument_syntaxes;
-    TemplateIdSyntax annotated_syntax;
-    vector<string> annotated_arg_texts;
-    annotated_syntax = syntax;
-    if(annotate_template_id_type_arguments_from_matching_scope_bindings(
-           scope,
-           *class_template,
-           annotated_syntax)) {
-      annotated_arg_texts = template_id_syntax_argument_texts(annotated_syntax);
-      effective_arg_texts = &annotated_arg_texts;
-      effective_arg_syntaxes = &annotated_syntax.argument_syntaxes;
-    }
     if(try_resolve_class_template_id_locally(
            services,
            template_api::make_template_environment(scope),
            request,
            lookup_text,
            class_template,
-           *effective_arg_texts,
-           effective_arg_syntaxes,
+           arg_texts,
+           &syntax.argument_syntaxes,
            effective_argument_scope,
            out)) {
       return true;
@@ -29690,124 +29672,6 @@ void annotate_template_id_type_arguments_from_scope_bindings(
     }
     ++arg_index;
   }
-}
-
-bool template_argument_text_matches_type_binding(const string & text,
-                                                 const TypePtr & type)
-{
-  const string normalized_text =
-      normalize_type_lookup_name(strip_elaborated_type_prefix(trim_space(text)));
-  if(normalized_text.empty() ||
-     !type ||
-     type_contains_partial_order_artifact(type)) {
-    return false;
-  }
-
-  const string reparseable =
-      normalize_type_lookup_name(strip_elaborated_type_prefix(
-          trim_space(reparseable_type_argument_text(type))));
-  if(!reparseable.empty() &&
-     normalized_type_lookup_text_matches(normalized_text, reparseable)) {
-    return true;
-  }
-
-  const string canonical =
-      normalize_type_lookup_name(strip_elaborated_type_prefix(
-          trim_space(template_argument_type_text(type))));
-  return !canonical.empty() &&
-         normalized_type_lookup_text_matches(normalized_text, canonical);
-}
-
-bool annotate_template_id_type_arguments_from_matching_scope_bindings(
-    Scope & scope,
-    const ClassTemplateDecl & class_template,
-    TemplateIdSyntax & syntax)
-{
-  for(Scope * current = &scope; current; current = current->parent) {
-    for(set<string>::const_iterator it = current->template_bound_type_names.begin();
-        it != current->template_bound_type_names.end();
-        ++it) {
-      auto found = current->named_types.find(*it);
-      if(found != current->named_types.end() &&
-         found->second &&
-         type_contains_partial_order_artifact(found->second)) {
-        return false;
-      }
-    }
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-  }
-
-  const vector<string> arg_texts = template_id_syntax_argument_texts(syntax);
-  if(arg_texts.empty()) {
-    return false;
-  }
-  if(syntax.argument_syntaxes.size() != arg_texts.size()) {
-    syntax.argument_syntaxes.clear();
-    syntax.argument_syntaxes.reserve(arg_texts.size());
-    for(size_t i = 0; i < arg_texts.size(); ++i) {
-      TemplateArgumentSyntax argument;
-      argument.text = arg_texts[i];
-      syntax.argument_syntaxes.push_back(argument);
-    }
-  }
-
-  bool changed = false;
-  size_t arg_index = 0;
-  for(size_t i = 0; i < class_template.parameters.size(); ++i) {
-    const TemplateParameterInfo & parameter = class_template.parameters[i];
-    if(parameter.parameter_pack) {
-      const size_t trailing_non_pack =
-          remaining_non_pack_template_parameter_count(class_template.parameters,
-                                                      i + 1);
-      if(arg_texts.size() < arg_index + trailing_non_pack) {
-        return changed;
-      }
-      const size_t pack_count =
-          arg_texts.size() - arg_index - trailing_non_pack;
-      if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
-        const vector<TypePtr> * pack = lookup_type_pack(scope, parameter.name);
-        size_t pack_offset = 0;
-        if(pack && pack->size() > pack_count) {
-          pack_offset = pack->size() - pack_count;
-        }
-        if(pack && pack->size() >= pack_count) {
-          for(size_t j = 0; j < pack_count; ++j) {
-            const size_t current_arg = arg_index + j;
-            const TypePtr & type = (*pack)[pack_offset + j];
-            if(type &&
-               template_argument_text_matches_type_binding(arg_texts[current_arg],
-                                                           type)) {
-              annotate_type_template_argument_syntax(
-                  syntax.argument_syntaxes[current_arg],
-                  type);
-              changed = true;
-            }
-          }
-        }
-      }
-      arg_index += pack_count;
-      continue;
-    }
-
-    if(arg_index >= arg_texts.size()) {
-      return changed;
-    }
-    if(parameter.kind == TemplateParameterInfo::TP_TYPE) {
-      TypePtr type = lookup_exact_bound_type_name(scope, parameter.name);
-      const string argument_text = trim_space(arg_texts[arg_index]);
-      if(type &&
-         (template_argument_text_matches_type_binding(argument_text, type) ||
-          argument_text == parameter.name)) {
-        annotate_type_template_argument_syntax(syntax.argument_syntaxes[arg_index],
-                                               type);
-        changed = true;
-      }
-    }
-    ++arg_index;
-  }
-  return changed;
 }
 
 Scope & template_argument_binding_scope_for_class_template(
