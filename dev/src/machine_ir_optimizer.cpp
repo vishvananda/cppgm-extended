@@ -261,6 +261,17 @@ void collect_instruction_effects(const mir::Instruction & inst,
       return;
 
     case mir::Instruction::MI_FMOV:
+      note_write_operand(inst.operands[0], defs);
+      note_address_operand(inst.operands[0], uses);
+      note_read_operand(inst.operands[1], uses);
+      if(inst.type == "f80") {
+        // Native f80 stores use these registers to address globals and clear
+        // the six ABI padding bytes after the x87 payload.
+        defs.regs.insert(XR_RAX);
+        defs.regs.insert(XR_R11);
+      }
+      return;
+
     case mir::Instruction::MI_FNEG:
       note_write_operand(inst.operands[0], defs);
       note_address_operand(inst.operands[0], uses);
