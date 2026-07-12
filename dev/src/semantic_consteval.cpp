@@ -22,6 +22,8 @@
 #include "semantic_trace.h"
 #include "semantic_utils.h"
 #include "template_api.h"
+#include "template_argument_semantics.h"
+#include "template_services.h"
 #include "template_witness.h"
 #include "witness_api.h"
 
@@ -2462,8 +2464,17 @@ bool evaluate_constexpr_value_member_conversion(SemanticContext & ctx,
       callee_type = ctx.lookup_type(scope, callee_text, true);
     }
     if(callee_type) {
-      found_member_value =
-          ctx.lookup_constant_value(scope, callee_text + "::value", member_value);
+      found_member_value = template_api::with_template_services(
+          ctx,
+          [&](template_api::TemplateServices & services)
+          {
+            return template_argument_semantics::lookup_type_member_constant_value(
+                services,
+                template_api::make_template_environment(scope),
+                callee_type,
+                "value",
+                member_value);
+          });
     }
   }
   if(!found_member_value ||
