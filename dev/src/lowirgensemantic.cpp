@@ -9206,7 +9206,8 @@ private:
     const bool constructor_base_entry_call =
         constructor_callee_symbol.find("__base_entry") != string::npos;
     const string direct_object_result_type = lowir_direct_object_type(function_result_type);
-    if(is_indirect_value_type(node.semantic_type) &&
+    if(!is_reference_type(function_result_type) &&
+       is_indirect_value_type(node.semantic_type) &&
        direct_object_result_type.empty()) {
       ostringstream out;
       out << "indirect return value requires materialization context in PA16 LowIR";
@@ -11409,11 +11410,20 @@ private:
       return emit_new_expression_value(node);
     }
 
+    TypePtr call_function_type;
+    const bool call_returns_reference =
+        node.kind == CallSemKind::call_expression &&
+        !node.children.empty() &&
+        resolve_callable_function_type(node.children[0].semantic_type,
+                                       call_function_type) &&
+        call_function_type &&
+        is_reference_type(call_function_type->inner);
     const TypePtr indirect_result_object_type =
         node.kind == CallSemKind::call_expression ?
             indirect_call_result_object_type(node) :
             TypePtr();
     if(node.kind == CallSemKind::call_expression &&
+       !call_returns_reference &&
        (is_complete_class_value_type(node.semantic_type) ||
         indirect_result_object_type ||
         is_constructor_materialization_call(node))) {
@@ -13257,6 +13267,18 @@ private:
         return emit_temp_assignment("ptr", string("load ptr ") + field_storage);
       }
       return field_storage;
+    }
+
+    TypePtr call_function_type;
+    const bool call_returns_reference =
+        node.kind == CallSemKind::call_expression &&
+        !node.children.empty() &&
+        resolve_callable_function_type(node.children[0].semantic_type,
+                                       call_function_type) &&
+        call_function_type &&
+        is_reference_type(call_function_type->inner);
+    if(call_returns_reference) {
+      return emit_call_expression_raw(node);
     }
 
     const TypePtr indirect_result_object_type =
