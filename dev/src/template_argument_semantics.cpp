@@ -28196,29 +28196,26 @@ TypePtr resolve_bound_dependent_qualified_owner(
     return TypePtr();
   }
 
-  string owner_text = reparseable_type_argument_text(owner_type);
-  if(owner_text.empty()) {
-    owner_text =
-        owner_type->named_display.empty() ? describe_type(owner_type) :
-                                           owner_type->named_display;
+  TypePtr named_owner = strip_top_level_cv(owner_type);
+  string owner_name;
+  if(named_type_is_template_parameter(named_owner)) {
+    owner_name = trim_space(named_type_semantic_payload(named_owner));
   }
-  owner_text = normalize_type_lookup_name(trim_space(owner_text));
-  string stripped_typename_text;
-  if(strip_leading_typename_text(owner_text, stripped_typename_text)) {
-    owner_text = normalize_type_lookup_name(trim_space(stripped_typename_text));
+  if(owner_name.empty() &&
+     !named_owner->named_qualified_name_syntax.rooted &&
+     named_owner->named_qualified_name_syntax.qualifiers.empty()) {
+    owner_name = trim_space(named_owner->named_qualified_name_syntax.name);
   }
-  owner_text =
-      normalize_type_lookup_name(strip_elaborated_type_prefix(trim_space(owner_text)));
-  if(!is_identifier_text(owner_text)) {
+  if(!is_identifier_text(owner_name)) {
     return TypePtr();
   }
 
-  TypePtr bound = lookup_exact_bound_type_name(scope.require(), owner_text);
+  TypePtr bound = lookup_exact_bound_type_name(scope.require(), owner_name);
   if(!bound ||
      service_type_depends_on_template_parameter(services, bound)) {
     template_api::TemplateTypeLookupRequest request;
     request.scope = &scope.require();
-    request.name.name = owner_text;
+    request.name.name = owner_name;
     request.allow_class_templates = true;
     TypePtr direct;
     if(service_resolve_direct_type_lookup(services, request, direct) && direct) {
