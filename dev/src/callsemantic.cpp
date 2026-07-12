@@ -17736,14 +17736,20 @@ private:
           template_api::normalize_template_witness_source_location(
               template_public_use_location_or(string()));
     }
-    string lookup_source_name =
-        unqualified_member_name(
-            strip_trailing_top_level_template_arguments(lookup_name));
-    if(lookup_source_name.empty()) {
-      lookup_source_name = lookup_name;
-    }
     const TemplateIdSyntax * direct_template_id_syntax =
         cppast_template_id_syntax(node);
+    const string effective_lookup_name =
+        direct_template_id_syntax ?
+            template_id_syntax_text_preserving_spacing(
+                *direct_template_id_syntax) :
+            lookup_name;
+    string lookup_source_name =
+        unqualified_member_name(
+            strip_trailing_top_level_template_arguments(
+                effective_lookup_name));
+    if(lookup_source_name.empty()) {
+      lookup_source_name = effective_lookup_name;
+    }
     string node_use_location;
     bool node_use_location_from_direct_template_id = false;
     if(source_use_locations_active) {
@@ -17905,8 +17911,8 @@ private:
        !node.builtin_type_transform_name.empty() ||
        !node.qualifier_template_id_syntaxes.empty() ||
        !node.qualifier_type_syntaxes.empty() ||
-       (lookup_name.find("::") != string::npos &&
-        lookup_name.find('<') != string::npos)) {
+       (effective_lookup_name.find("::") != string::npos &&
+        effective_lookup_name.find('<') != string::npos)) {
       TypePtr structured_type =
           template_api::with_template_services(
               *this,
@@ -17916,7 +17922,7 @@ private:
                     services,
                     scope,
                     node,
-                    lookup_name,
+                    effective_lookup_name,
                     reference_class_templates_only,
                     effective_use_location);
               });
@@ -17926,7 +17932,7 @@ private:
     }
     if(direct_template_id_syntax &&
        !direct_template_id_syntax->name.name.empty() &&
-       (lookup_name.find('<') != string::npos ||
+       (effective_lookup_name.find('<') != string::npos ||
         unqualified_member_name(direct_template_id_syntax->name.name) ==
             lookup_source_name ||
         (!exact_lookup_anchor.identifier.empty() &&
@@ -18009,7 +18015,7 @@ private:
                     services,
                     scope,
                     node,
-                    lookup_name,
+                    effective_lookup_name,
                     reference_class_templates_only,
                     effective_use_location);
               });
@@ -18036,7 +18042,7 @@ private:
       return TypePtr();
     }
     return lookup_type_impl(scope,
-                            lookup_name,
+                            effective_lookup_name,
                             reference_class_templates_only,
                             false,
                             template_api::ClassTemplateSourceUseMode::EmitClassUse,
