@@ -2763,34 +2763,12 @@ static bool lexical_scope_supports_local_component_emission(const string & text)
          text.find("__local_") != string::npos;
 }
 
-static bool qualified_text_without_last_component(const string & text,
-                                                  string & out)
-{
-  out.clear();
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(text, qualified) ||
-     qualified.rooted ||
-     qualified.name.empty()) {
-    return false;
-  }
-  for(size_t i = 0; i < qualified.qualifiers.size(); ++i) {
-    if(qualified.qualifiers[i].empty()) {
-      return false;
-    }
-    if(!out.empty()) {
-      out += "::";
-    }
-    out += qualified.qualifiers[i];
-  }
-  return true;
-}
-
 static bool qualified_type_text_lexical_lookup_prefix(
     const QualifiedName & qualified,
     const TypeMangleContext * mangle_ctx,
-    string & out)
+    QualifiedName & out)
 {
-  out.clear();
+  out = QualifiedName();
   if(!mangle_ctx ||
      !mangle_ctx->lookup_scope ||
      mangle_ctx->lexical_scope.empty() ||
@@ -2814,25 +2792,30 @@ static bool qualified_type_text_lexical_lookup_prefix(
     map<string, semantic_model::Scope *>::const_iterator ns_found =
         scope->namespace_bindings.find(first);
     if(ns_found != scope->namespace_bindings.end() && ns_found->second) {
-      string full_scope;
-      if(!scope_prefix_text_for_template_decl(ns_found->second, full_scope) ||
-         !qualified_text_without_last_component(full_scope, out)) {
+      QualifiedName full_scope;
+      if(!scope_prefix_syntax_for_template_decl(ns_found->second, full_scope) ||
+         full_scope.qualifiers.empty()) {
         return false;
       }
-      return !out.empty();
+      out.rooted = full_scope.rooted;
+      out.qualifiers.assign(full_scope.qualifiers.begin(),
+                            full_scope.qualifiers.end() - 1);
+      out.name = full_scope.qualifiers.back();
+      return true;
     }
 
     if(scope->named_types.find(first) != scope->named_types.end() ||
        scope->class_templates.find(first) != scope->class_templates.end() ||
        scope->alias_templates.find(first) != scope->alias_templates.end()) {
-      return scope_prefix_text_for_template_decl(scope, out) && !out.empty();
+      return scope_prefix_syntax_for_template_decl(scope, out) &&
+             !out.name.empty();
     }
   }
 
   if(lexical_scope_supports_local_component_emission(mangle_ctx->lexical_scope) &&
      lexical_scope_supports_local_component_emission(first)) {
-    out = mangle_ctx->lexical_scope;
-    return true;
+    out = mangle_ctx->lexical_scope_syntax;
+    return !out.name.empty();
   }
   return false;
 }
@@ -9574,12 +9557,9 @@ static bool simple_mangle_type_component(const string & raw, string & out)
 }
 
 static bool prepend_qualified_prefix(QualifiedName & name,
-                                     const string & prefix_text)
+                                     const QualifiedName & prefix)
 {
-  QualifiedName prefix;
-  if(!semantic_utils::split_qualified_name_text(prefix_text, prefix) ||
-     prefix.rooted ||
-     prefix.name.empty()) {
+  if(prefix.rooted || prefix.name.empty()) {
     return false;
   }
   vector<string> qualifiers = prefix.qualifiers;
@@ -9610,7 +9590,7 @@ static bool try_build_qualified_named_type_syntax_ir(
     if(syntax_name_matches_template_parameter(first_qualifier, mangle_ctx)) {
       return false;
     }
-    string lookup_prefix;
+    QualifiedName lookup_prefix;
     if(qualified_type_text_lexical_lookup_prefix(effective,
                                                  mangle_ctx,
                                                  lookup_prefix) &&
@@ -9974,7 +9954,7 @@ static bool try_build_direct_type_syntax_text_ir(
     const string first_qualifier =
         semantic_utils::strip_trailing_top_level_template_arguments(
             trim_space(effective.qualifiers[0]));
-    string lookup_prefix;
+    QualifiedName lookup_prefix;
     if(!syntax_name_matches_template_parameter(first_qualifier, mangle_ctx) &&
        qualified_type_text_lexical_lookup_prefix(effective,
                                                  mangle_ctx,
@@ -10190,17 +10170,10 @@ static bool try_build_lexically_prefixed_qualified_type_ast_ir(
     return false;
   }
 
-  string lookup_prefix;
+  QualifiedName lookup_prefix;
   if(!qualified_type_text_lexical_lookup_prefix(qualified,
                                                 mangle_ctx,
                                                 lookup_prefix)) {
-    return false;
-  }
-
-  QualifiedName lexical;
-  if(!semantic_utils::split_qualified_name_text(lookup_prefix, lexical) ||
-     lexical.rooted ||
-     lexical.name.empty()) {
     return false;
   }
 
@@ -11284,7 +11257,7 @@ static bool try_build_type_specifier_seq_ast_ir(const CppAstNode & node,
         const string first_qualifier =
             semantic_utils::strip_trailing_top_level_template_arguments(
                 trim_space(effective.qualifiers[0]));
-        string lookup_prefix;
+        QualifiedName lookup_prefix;
         bool applied_lexical_prefix = false;
         if(!syntax_name_matches_template_parameter(first_qualifier, mangle_ctx) &&
            qualified_type_text_lexical_lookup_prefix(effective,
