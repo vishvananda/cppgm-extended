@@ -208,6 +208,10 @@ CATEGORIES = [
             r"\bresolve_member_template_owner_type_text\s*\(|"
             r"\blookup_rewritten_bound_type_argument\s*\(|"
             r"\btemplate_argument_text_matches_type_binding\s*\(|"
+            r"\b(?:deduce_array_bound_texts_from_actual_type|"
+            r"top_level_array_bound_texts|"
+            r"lookup_bound_template_template_argument_by_canonical_text|"
+            r"parse_simple_identifier_pack_expansion_text)\s*\(|"
             r"\bannotate_template_id_type_arguments_"
             r"from_matching_scope_bindings\s*\("
         ),

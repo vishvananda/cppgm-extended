@@ -267,6 +267,10 @@ class AuditTextReparseTests(unittest.TestCase):
                 "resolve_member_template_owner_type_text(scope, text, result);\n"
                 "lookup_rewritten_bound_type_argument(scope, text, result);\n"
                 "template_argument_text_matches_type_binding(text, type);\n"
+                "deduce_array_bound_texts_from_actual_type(parameters, text, pattern, actual);\n"
+                "top_level_array_bound_texts(pattern_text);\n"
+                "lookup_bound_template_template_argument_by_canonical_text(scope, text);\n"
+                "parse_simple_identifier_pack_expansion_text(text, name, expanded);\n"
                 "annotate_template_id_type_arguments_from_matching_scope_bindings(\n"
                 "    scope, decl, syntax);\n",
                 encoding="utf-8",
@@ -288,6 +292,13 @@ class AuditTextReparseTests(unittest.TestCase):
             self.assertIn("resolve_member_template_owner_type_text", result.stdout)
             self.assertIn("lookup_rewritten_bound_type_argument", result.stdout)
             self.assertIn("template_argument_text_matches_type_binding", result.stdout)
+            self.assertIn("deduce_array_bound_texts_from_actual_type", result.stdout)
+            self.assertIn("top_level_array_bound_texts", result.stdout)
+            self.assertIn(
+                "lookup_bound_template_template_argument_by_canonical_text",
+                result.stdout,
+            )
+            self.assertIn("parse_simple_identifier_pack_expansion_text", result.stdout)
             self.assertIn(
                 "annotate_template_id_type_arguments_from_matching_scope_bindings",
                 result.stdout,

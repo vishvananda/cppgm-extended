@@ -3362,90 +3362,13 @@ bool is_simple_identifier_text(const std::string & text)
   return true;
 }
 
-std::vector<std::string> top_level_array_bound_texts(const std::string & text)
-{
-  std::vector<std::string> out;
-  int angle_depth = 0;
-  int paren_depth = 0;
-  int brace_depth = 0;
-  int bracket_depth = 0;
-  for(std::size_t i = 0; i < text.size(); ++i) {
-    const char ch = text[i];
-    if(ch == '<') {
-      ++angle_depth;
-      continue;
-    }
-    if(ch == '>') {
-      if(angle_depth > 0) {
-        --angle_depth;
-      }
-      continue;
-    }
-    if(ch == '(') {
-      ++paren_depth;
-      continue;
-    }
-    if(ch == ')') {
-      if(paren_depth > 0) {
-        --paren_depth;
-      }
-      continue;
-    }
-    if(ch == '{') {
-      ++brace_depth;
-      continue;
-    }
-    if(ch == '}') {
-      if(brace_depth > 0) {
-        --brace_depth;
-      }
-      continue;
-    }
-    if(ch == '[') {
-      if(angle_depth == 0 && paren_depth == 0 && brace_depth == 0 &&
-         bracket_depth == 0) {
-        const std::size_t bound_start = i + 1;
-        ++bracket_depth;
-        while(i + 1 < text.size() && bracket_depth > 0) {
-          ++i;
-          if(text[i] == '[') {
-            ++bracket_depth;
-          } else if(text[i] == ']') {
-            --bracket_depth;
-          }
-        }
-        if(bracket_depth == 0) {
-          out.push_back(trim_space(text.substr(bound_start, i - bound_start)));
-        }
-        continue;
-      }
-      ++bracket_depth;
-      continue;
-    }
-    if(ch == ']') {
-      if(bracket_depth > 0) {
-        --bracket_depth;
-      }
-      continue;
-    }
-  }
-  return out;
-}
-
-bool deduce_array_bound_texts_from_actual_type(
+bool deduce_array_bounds_from_actual_type(
     const std::vector<TemplateParameterInfo> & parameters,
-    const std::string & pattern_text,
     const TypePtr & pattern_type,
     const TypePtr & actual_type,
     DeducedState & deduced)
 {
-  const std::vector<std::string> bound_texts =
-      top_level_array_bound_texts(pattern_text);
-  if(bound_texts.empty()) {
-    return true;
-  }
-
-  std::vector<TypePtr> actual_array_types;
+  std::vector<std::pair<std::string, TypePtr> > array_matches;
   std::function<void(const TypePtr &, const TypePtr &)> collect_array_matches =
       [&](const TypePtr & raw_pattern, const TypePtr & raw_actual)
   {
@@ -3455,7 +3378,8 @@ bool deduce_array_bound_texts_from_actual_type(
       return;
     }
     if(pattern->kind == Type::TK_ARRAY) {
-      actual_array_types.push_back(actual);
+      array_matches.push_back(
+          std::make_pair(pattern->bound_text, actual));
       if(actual->kind == Type::TK_ARRAY) {
         collect_array_matches(pattern->inner, actual->inner);
       }
@@ -3493,8 +3417,8 @@ bool deduce_array_bound_texts_from_actual_type(
   };
   collect_array_matches(pattern_type, actual_type);
 
-  for(std::size_t i = 0; i < bound_texts.size(); ++i) {
-    const std::string bound_text = trim_space(bound_texts[i]);
+  for(std::size_t i = 0; i < array_matches.size(); ++i) {
+    const std::string bound_text = trim_space(array_matches[i].first);
     if(!is_simple_identifier_text(bound_text)) {
       continue;
     }
@@ -3507,10 +3431,7 @@ bool deduce_array_bound_texts_from_actual_type(
       continue;
     }
 
-    if(i >= actual_array_types.size()) {
-      return false;
-    }
-    const TypePtr & actual_array = actual_array_types[i];
+    const TypePtr & actual_array = array_matches[i].second;
     if(!actual_array ||
        actual_array->kind != Type::TK_ARRAY ||
        !actual_array->has_bound ||
@@ -10792,8 +10713,8 @@ bool match_partial_specialization_impl(template_api::TemplateServices & services
         if(!matched_by_type) {
           return false;
         }
-        if(!deduce_array_bound_texts_from_actual_type(
-               partial.parameters, pattern_text, pattern_type, actual.type, deduced)) {
+        if(!deduce_array_bounds_from_actual_type(
+               partial.parameters, pattern_type, actual.type, deduced)) {
           return false;
         }
         if(!direct_parameter || direct_parameter->kind != TemplateParameterInfo::TP_TYPE) {

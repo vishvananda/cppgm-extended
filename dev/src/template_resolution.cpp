@@ -4937,30 +4937,56 @@ bool is_identifier_text(const std::string & text)
   return true;
 }
 
-bool parse_simple_identifier_pack_expansion_text(const std::string & text,
-                                                 std::string & name,
-                                                 bool & pack_expansion)
+bool direct_identifier_argument_syntax(const TemplateArgumentSyntax * syntax,
+                                       std::string & name,
+                                       bool & pack_expansion)
 {
-  std::string trimmed = trim_space(text);
-  pack_expansion = false;
-  if(trimmed.size() > 3 && trimmed.substr(trimmed.size() - 3) == "...") {
-    pack_expansion = true;
-    trimmed = trim_space(trimmed.substr(0, trimmed.size() - 3));
-  }
-  if(!is_identifier_text(trimmed)) {
+  name.clear();
+  pack_expansion = syntax && syntax->pack_expansion;
+  if(!syntax) {
     return false;
   }
-  name = trimmed;
-  return true;
+
+  const CppAstNode * expression = syntax->expression.get();
+  if(expression &&
+     expression->kind == CppAstKind::pack_expansion_expression &&
+     expression->children.size() == 1) {
+    pack_expansion = true;
+    expression = &expression->children[0];
+  }
+  if(expression && expression->kind == CppAstKind::id_expression) {
+    name = trim_space(expression->value);
+    return is_identifier_text(name);
+  }
+
+  if(syntax->type_id && syntax->type_id->kind == CppAstKind::type_id) {
+    const CppAstNode * specifiers =
+        cppast_find_child_kind(*syntax->type_id, CppAstKind::type_specifier_seq);
+    if(specifiers &&
+       specifiers->children.size() == 1 &&
+       specifiers->children[0].kind == CppAstKind::type_name) {
+      name = trim_space(specifiers->children[0].value);
+      if(is_identifier_text(name)) {
+        return true;
+      }
+    }
+  }
+
+  TypePtr resolved = strip_top_level_cv(syntax->resolved_type);
+  if(resolved && resolved->kind == Type::TK_NAMED) {
+    name = trim_space(resolved->named_source_name);
+    return is_identifier_text(name);
+  }
+  return false;
 }
 
 bool unbound_template_type_pack_expansion_argument(Scope & scope,
-                                                  const std::string & text,
-                                                  std::string & pack_name)
+                                                   const TemplateArgumentSyntax * syntax,
+                                                   std::string & pack_name)
 {
   pack_name.clear();
   bool pack_expansion = false;
-  if(!parse_simple_identifier_pack_expansion_text(text, pack_name, pack_expansion) ||
+  if(!direct_identifier_argument_syntax(syntax, pack_name, pack_expansion) ||
      !pack_expansion) {
     return false;
   }
@@ -4980,11 +5006,11 @@ bool unbound_template_type_pack_expansion_argument(Scope & scope,
 }
 
 bool simple_non_type_argument_names_type_placeholder(Scope & scope,
-                                                     const std::string & text)
+                                                     const TemplateArgumentSyntax * syntax)
 {
   std::string name;
   bool pack_expansion = false;
-  if(!parse_simple_identifier_pack_expansion_text(text, name, pack_expansion)) {
+  if(!direct_identifier_argument_syntax(syntax, name, pack_expansion)) {
     return false;
   }
 
@@ -11752,7 +11778,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
     }
     if(value_status != template_api::NT_ARG_EVALUATED &&
        simple_non_type_argument_names_type_placeholder(raw_argument_scope,
-                                                       selected_text)) {
+                                                       syntax)) {
       std::ostringstream detail;
       detail << "template argument for non-type template parameter must be an expression: "
              << selected_text;
@@ -11875,7 +11901,7 @@ bool resolve_template_argument(template_api::TemplateServices & services,
   if(parameter.kind == TemplateParameterInfo::TP_TYPE &&
      parameter.parameter_pack &&
      unbound_template_type_pack_expansion_argument(raw_argument_scope,
-                                                   trimmed,
+                                                   syntax,
                                                    unbound_pack_name)) {
     out.kind = TemplateArgument::TA_TYPE;
     out.type = make_named(unbound_pack_name,

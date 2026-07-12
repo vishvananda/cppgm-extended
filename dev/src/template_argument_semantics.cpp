@@ -29569,60 +29569,6 @@ bool lookup_bound_template_template_argument(Scope & scope,
   return false;
 }
 
-bool lookup_bound_template_template_argument_by_canonical_text(
-    Scope & scope,
-    const string & name,
-    size_t expected_parameter_count,
-    bool allow_dependent_placeholders,
-    TemplateArgument & out)
-{
-  const string key = compact_source_argument_key(name);
-  if(key.empty()) {
-    return false;
-  }
-  for(Scope * current = &scope; current; current = current->parent) {
-    for(map<string, TemplateArgument>::const_iterator it =
-            current->template_bound_template_arguments.begin();
-        it != current->template_bound_template_arguments.end();
-        ++it) {
-      const TemplateArgument & argument = it->second;
-      if(argument.dependent && !allow_dependent_placeholders) {
-        continue;
-      }
-      if(!template_template_argument_matches_parameter_count(
-             argument, expected_parameter_count)) {
-        continue;
-      }
-      const string argument_key = compact_source_argument_key(argument.text);
-      if(argument_key != key) {
-        const string replacement =
-            template_template_argument_replacement_text(argument);
-        if(compact_source_argument_key(replacement) != key) {
-          continue;
-        }
-      }
-      out = argument;
-      note_template_trace_if_enabled(
-          [&](ostringstream & trace)
-          {
-            trace << "template-template-arg text=" << name
-                  << " resolved=bound-canonical-"
-                  << (out.kind == TemplateArgument::TA_CLASS_TEMPLATE ?
-                          "class-template" :
-                          "alias-template");
-            if(!out.text.empty()) {
-              trace << " canonical=" << out.text;
-            }
-          });
-      return true;
-    }
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-  }
-  return false;
-}
-
 size_t remaining_non_pack_template_parameter_count(
     const vector<TemplateParameterInfo> & parameters,
     size_t start_index)
