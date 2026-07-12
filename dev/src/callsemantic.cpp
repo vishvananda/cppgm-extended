@@ -7115,13 +7115,22 @@ private:
         if(owner_text.empty()) {
           continue;
         }
+        QualifiedName owner_name;
+        owner_name.rooted = qualified_name.rooted;
+        for(size_t i = 0; i + 1 < owner_count; ++i) {
+          owner_name.qualifiers.push_back(
+              qualified_component_text(qualified_name, i));
+        }
+        owner_name.name =
+            qualified_component_text(qualified_name, owner_count - 1);
 
         TypePtr owner_type = lookup_type_impl(scope,
                                               owner_text,
                                               true,
                                               false,
                                               template_api::ClassTemplateSourceUseMode::
-                                                  NestedArgumentsOnly);
+                                                  NestedArgumentsOnly,
+                                              &owner_name);
         if(!owner_type ||
            !type_depends_on_template_parameter(owner_type)) {
           continue;
@@ -7478,7 +7487,9 @@ private:
           lookup_type_impl(scope,
                            cv_core_name,
                            reference_class_templates_only,
-                           allow_dependent_class_qualifiers);
+                           allow_dependent_class_qualifiers,
+                           template_api::ClassTemplateSourceUseMode::EmitClassUse,
+                           structured_name);
       if(cv_base) {
         return apply_cv(cv_base, top_const, top_volatile);
       }
@@ -8691,9 +8702,24 @@ private:
       return (*bound_pack)[0];
     }
 
-    QualifiedName qualified;
-    if(split_qualified_name_text(normalized_name, qualified) &&
-       (qualified.rooted || !qualified.qualifiers.empty())) {
+    QualifiedName reparsed_qualified_name;
+    const QualifiedName * retained_qualified_name =
+        structured_name &&
+                (structured_name->rooted ||
+                 !structured_name->qualifiers.empty()) ?
+            structured_name :
+        parsed_template_id &&
+                (template_id.rooted || !template_id.qualifiers.empty()) ?
+            &template_id :
+            nullptr;
+    if(!retained_qualified_name &&
+       split_qualified_name_text(normalized_name, reparsed_qualified_name) &&
+       (reparsed_qualified_name.rooted ||
+        !reparsed_qualified_name.qualifiers.empty())) {
+      retained_qualified_name = &reparsed_qualified_name;
+    }
+    if(retained_qualified_name) {
+      const QualifiedName & qualified = *retained_qualified_name;
       const bool trace_node_traits_pointer_lookup =
           parser_trace::enabled("template.resolve") &&
           (normalized_name.find("__node_traits::pointer") != string::npos ||
