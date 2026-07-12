@@ -64,8 +64,20 @@ ExactTemplateTypeLookupAnchor retained_template_type_lookup_anchor(
     const CppAstNode * node)
 {
   ExactTemplateTypeLookupAnchor anchor;
-  const TemplateIdSyntax * syntax =
-      node ? first_template_id_syntax_in_subtree(*node) : nullptr;
+  const TemplateIdSyntax * syntax = nullptr;
+  if(node) {
+    for(std::size_t i = 0;
+        i < node->qualifier_template_id_syntaxes.size();
+        ++i) {
+      if(!node->qualifier_template_id_syntaxes[i].name.name.empty()) {
+        syntax = &node->qualifier_template_id_syntaxes[i];
+        break;
+      }
+    }
+  }
+  if(!syntax && node) {
+    syntax = first_template_id_syntax_in_subtree(*node);
+  }
   if(!syntax || syntax->name.name.empty()) {
     return anchor;
   }
