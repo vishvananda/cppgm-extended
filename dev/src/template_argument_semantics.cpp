@@ -2716,14 +2716,13 @@ bool add_alias_value_owner_argument_syntax_reference(
   if(!use_scope || !syntax || !syntax->template_id) {
     return false;
   }
-  const std::string template_name =
-      template_api::qualified_name_text(syntax->template_id->name);
   ClassTemplateDecl * class_template =
-      lookup_class_template_impl(services, *use_scope, template_name);
+      lookup_class_template_impl(services,
+                                 *use_scope,
+                                 syntax->template_id->name);
   if(!class_template) {
-    const std::string unqualified =
-        semantic_utils::unqualified_member_name(template_name);
-    if(unqualified != template_name) {
+    const std::string & unqualified = syntax->template_id->name.name;
+    if(!syntax->template_id->name.qualifiers.empty()) {
       class_template =
           lookup_class_template_impl(services, *use_scope, unqualified);
     }
@@ -4519,7 +4518,7 @@ bool try_resolve_standard_char_traits_member_type(
       lookup_class_template_impl(
           services,
           scope,
-          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+          qualifier_template_id.name);
   if(!decl ||
      decl->name != qualifier_template_id.name.name ||
      !char_traits_declaring_scope_is_std(decl->declaring_scope)) {
@@ -4549,7 +4548,7 @@ bool try_resolve_lazy_enable_if_member_type(
       lookup_class_template_impl(
           services,
           lookup_scope,
-          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+          qualifier_template_id.name);
   if(!decl || decl->name != qualifier_template_id.name.name) {
     return false;
   }
@@ -4817,7 +4816,7 @@ bool try_resolve_boost_enable_if_member_type(
       lookup_class_template_impl(
           services,
           lookup_scope,
-          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+          qualifier_template_id.name);
   if(!decl ||
      decl->name != qualifier_template_id.name.name ||
      !scope_is_boost_namespace_or_inline_child(decl->declaring_scope)) {
@@ -5060,7 +5059,7 @@ bool try_resolve_boost_mpl_meta_member_type(
       lookup_class_template_impl(
           services,
           lookup_scope,
-          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+          qualifier_template_id.name);
   if(!decl ||
      decl->name != template_name ||
      !scope_is_boost_mpl_namespace_or_inline_child(decl->declaring_scope)) {
@@ -5132,7 +5131,7 @@ bool try_resolve_boost_iostreams_select_member_type(
       lookup_class_template_impl(
           services,
           lookup_scope,
-          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+          qualifier_template_id.name);
   if(!decl ||
      decl->name != qualifier_template_id.name.name ||
      !scope_is_boost_iostreams_namespace_or_inline_child(decl->declaring_scope)) {
@@ -7354,8 +7353,7 @@ bool resolve_concrete_class_template_id_syntax_type(
   ClassTemplateDecl * class_template =
       lookup_class_template(services,
                             scope.require(),
-                            qualified_name_text_for_structured_lookup(
-                                syntax.name));
+                            syntax.name);
   if(!class_template) {
     return false;
   }
@@ -25389,32 +25387,12 @@ DeclT * lookup_direct_or_inline_namespace_template(Scope & scope,
   return nullptr;
 }
 
-ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices & services,
+ClassTemplateDecl * lookup_class_template_impl(template_api::TemplateServices &,
                                                Scope & scope,
                                                const string & name)
 {
-  const auto lookup_in_direct_or_inline_scope =
-      [](Scope & target, const string & lookup_name) -> ClassTemplateDecl *
-  {
-    return lookup_direct_or_inline_namespace_template<ClassTemplateDecl>(
-        target,
-        lookup_name,
-        [](Scope & direct_scope, const string & direct_name) -> ClassTemplateDecl *
-        {
-          return semantic_lookup::lookup_direct_class_template(direct_scope,
-                                                               direct_name);
-        });
-  };
-
-  QualifiedName qualified;
-  if(semantic_utils::split_qualified_name_text(name, qualified) &&
-     (qualified.rooted || !qualified.qualifiers.empty())) {
-    Scope * target =
-        resolve_qualified_scope_for_class_or_namespace_impl(services, scope, qualified, false);
-    if(!target) {
-      return nullptr;
-    }
-    return lookup_in_direct_or_inline_scope(*target, qualified.name);
+  if(name.find("::") != string::npos) {
+    return nullptr;
   }
 
   return semantic_lookup::lookup_unqualified_class_template(scope, name);
@@ -26005,32 +25983,12 @@ bool lookup_leaf_qualified_function_templates(template_api::TemplateServices & s
   return !out.empty();
 }
 
-AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices & services,
+AliasTemplateDecl * lookup_alias_template_impl(template_api::TemplateServices &,
                                                Scope & scope,
                                                const string & name)
 {
-  const auto lookup_in_direct_or_inline_scope =
-      [](Scope & target, const string & lookup_name) -> AliasTemplateDecl *
-  {
-    return lookup_direct_or_inline_namespace_template<AliasTemplateDecl>(
-        target,
-        lookup_name,
-        [](Scope & direct_scope, const string & direct_name) -> AliasTemplateDecl *
-        {
-          return semantic_lookup::lookup_direct_alias_template(direct_scope,
-                                                              direct_name);
-        });
-  };
-
-  QualifiedName qualified;
-  if(semantic_utils::split_qualified_name_text(name, qualified) &&
-     (qualified.rooted || !qualified.qualifiers.empty())) {
-    Scope * target =
-        resolve_qualified_scope_for_class_or_namespace_impl(services, scope, qualified, false);
-    if(!target) {
-      return nullptr;
-    }
-    return lookup_in_direct_or_inline_scope(*target, qualified.name);
+  if(name.find("::") != string::npos) {
+    return nullptr;
   }
 
   return semantic_lookup::lookup_unqualified_alias_template(scope, name);
@@ -33004,7 +32962,7 @@ bool is_standard_library_class_template(template_api::TemplateServices & service
       lookup_class_template_impl(
           services,
           scope,
-          qualified_name_text_for_structured_lookup(syntax.name));
+          syntax.name);
   return decl &&
          decl->name == syntax.name.name &&
          scope_is_std_namespace_or_inline_child(decl->declaring_scope);
@@ -33306,7 +33264,7 @@ bool try_resolve_concrete_enable_if_alias_template_id(
       lookup_alias_template_impl(
           services,
           raw_scope,
-          qualified_name_text_for_structured_lookup(template_id));
+          template_id);
   if(!alias_decl ||
      alias_decl->name != template_id.name ||
      alias_decl->parameters.empty() ||
@@ -33470,7 +33428,7 @@ bool try_resolve_concrete_require_alias_template_id(
       lookup_alias_template_impl(
           services,
           raw_scope,
-          qualified_name_text_for_structured_lookup(template_id));
+          template_id);
   if(!alias_decl ||
      alias_decl->name != template_id.name ||
      !scope_is_std_namespace_or_inline_child(alias_decl->declaring_scope)) {
@@ -33635,7 +33593,7 @@ StandardMetaMemberTypeResolution try_resolve_standard_meta_member_type(
       lookup_class_template_impl(
           services,
           scope,
-          qualified_name_text_for_structured_lookup(qualifier_template_id.name));
+          qualifier_template_id.name);
   if(!decl ||
      decl->name != qualifier_template_id.name.name ||
      !scope_is_std_namespace_or_inline_child(decl->declaring_scope)) {
@@ -35584,7 +35542,7 @@ bool libcpp_iterator_category_trait_is_standard_alias(
       lookup_alias_template_impl(
           services,
           scope,
-          qualified_name_text_for_structured_lookup(syntax.name));
+          syntax.name);
   return alias_decl &&
          alias_decl->name == syntax.name.name &&
          scope_is_std_namespace_or_inline_child(alias_decl->declaring_scope);
@@ -35714,7 +35672,7 @@ NonTypeArgumentStatus evaluate_libcpp_check_hash_requirements_template_value(
       lookup_alias_template_impl(
           services,
           scope.require(),
-          qualified_name_text_for_structured_lookup(syntax.name));
+          syntax.name);
   if(!alias_decl ||
      alias_decl->name != syntax.name.name ||
      !scope_is_std_namespace_or_inline_child(alias_decl->declaring_scope)) {
@@ -36484,7 +36442,7 @@ NonTypeArgumentStatus evaluate_boost_mp11_empty_template_value(
       lookup_alias_template_impl(
           services,
           raw_scope,
-          qualified_name_text_for_structured_lookup(syntax.name));
+          syntax.name);
   if(!alias_decl ||
      alias_decl->name != syntax.name.name ||
      !scope_is_boost_mp11_namespace_or_inline_child(alias_decl->declaring_scope)) {

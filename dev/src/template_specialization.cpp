@@ -7097,10 +7097,11 @@ bool try_expand_alias_template_pattern_structurally(
         } else {
           TemplateArgument resolved;
           if(argument.text.empty() ||
-             !template_api::resolve_template_template_argument_text(
+             !template_argument_semantics::resolve_template_template_argument_syntax(
                  services,
                  match_scope,
                  argument.text,
+                 source_arg.syntax,
                  static_cast<std::size_t>(-1),
                  false,
                  resolved)) {
@@ -9247,7 +9248,6 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
   std::vector<std::string> pattern_args;
   QualifiedName actual_name;
   std::vector<std::string> actual_args;
-  std::string actual_template_name_text;
   template_api::TemplateNamedTypeMetadata actual_class;
   const bool have_actual_class =
       template_api::describe_named_type_metadata(type_system.model,
@@ -9295,12 +9295,10 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
   };
   const auto decompose_actual_template_id =
       [&](QualifiedName & out_name,
-          std::vector<std::string> & out_args,
-          std::string & out_template_name_text) -> bool
+          std::vector<std::string> & out_args) -> bool
   {
     out_name = QualifiedName();
     out_args.clear();
-    out_template_name_text.clear();
 
     const auto decompose_source_template =
         [&](ClassTemplateDecl * source_template,
@@ -9314,11 +9312,6 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
 	             instantiation_arguments)) {
 	        return false;
 	      }
-	      const std::string source_template_name =
-	          source_template->declaring_scope ?
-              semantic_lookup::scope_qualified_name(*source_template->declaring_scope,
-                                                    source_template->name) :
-              source_template->name;
       out_name = source_template->declaring_scope ?
           semantic_lookup::scope_qualified_name_syntax(
               *source_template->declaring_scope,
@@ -9327,7 +9320,6 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
       if(!source_template->declaring_scope) {
         out_name.name = source_template->name;
       }
-      out_template_name_text = source_template_name;
       out_args.reserve(instantiation_arguments.size());
       actual_dependent_class_arguments.clear();
       actual_dependent_class_arguments.reserve(instantiation_arguments.size());
@@ -9458,10 +9450,11 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
         } else {
           TemplateArgument resolved;
           if(argument.text.empty() ||
-             !template_api::resolve_template_template_argument_text(
+             !template_argument_semantics::resolve_template_template_argument_syntax(
                  services,
                  template_api::make_template_environment(match_scope),
                  argument.text,
+                 source_arg.syntax,
                  static_cast<std::size_t>(-1),
                  false,
                  resolved)) {
@@ -9490,7 +9483,7 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
 	    }
     return false;
   };
-  if(!decompose_actual_template_id(actual_name, actual_args, actual_template_name_text)) {
+  if(!decompose_actual_template_id(actual_name, actual_args)) {
     return false;
   }
   const std::vector<std::string> * actual_match_args = &actual_args;
@@ -9650,14 +9643,23 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
           *template_name_parameter.parameter,
           actual_source_template,
           nullptr);
-    } else if(!template_api::resolve_template_template_argument_text(
-                  services,
-                  template_api::make_template_environment(match_scope),
-                  actual_template_name_text,
-                  static_cast<std::size_t>(-1),
-                  false,
-                  resolved)) {
-      return false;
+    } else {
+      AliasTemplateDecl * actual_alias_template =
+          template_argument_semantics::lookup_alias_template(services,
+                                                             match_scope,
+                                                             actual_name);
+      ClassTemplateDecl * actual_class_template = actual_alias_template ?
+          nullptr :
+          template_argument_semantics::lookup_class_template(services,
+                                                             match_scope,
+                                                             actual_name);
+      if(!actual_alias_template && !actual_class_template) {
+        return false;
+      }
+      resolved = make_deduced_template_template_argument(
+          *template_name_parameter.parameter,
+          actual_class_template,
+          actual_alias_template);
     }
     if(!deduce_template_template_parameter_from_argument(
            deduced, template_name_parameter.parameter->name, resolved)) {
@@ -9971,13 +9973,40 @@ bool deduce_from_named_template_id_syntax(template_api::TemplateServices & servi
     }
 
     TemplateArgument resolved;
-    if(template_api::resolve_template_template_argument_text(
-           services,
-           template_api::make_template_environment(match_scope),
-           actual_arg,
-           static_cast<std::size_t>(-1),
-           false,
-           resolved) &&
+    bool resolved_template_argument = false;
+    if(actual_match_structured_args &&
+       arg_index < actual_match_structured_args->size()) {
+      const TemplateArgument & structured =
+          (*actual_match_structured_args)[arg_index];
+      if((structured.kind == TemplateArgument::TA_CLASS_TEMPLATE ||
+          structured.kind == TemplateArgument::TA_ALIAS_TEMPLATE) &&
+         structured.template_decl) {
+        resolved = structured;
+        resolved_template_argument = true;
+      } else if(structured.source_syntax) {
+        resolved_template_argument =
+            template_argument_semantics::resolve_template_template_argument_syntax(
+                services,
+                template_api::make_template_environment(match_scope),
+                actual_arg,
+                *structured.source_syntax,
+                static_cast<std::size_t>(-1),
+                false,
+                resolved);
+      }
+    }
+    if(!resolved_template_argument &&
+       actual_arg.find("::") == std::string::npos) {
+      resolved_template_argument =
+          template_api::resolve_template_template_argument_text(
+              services,
+              template_api::make_template_environment(match_scope),
+              actual_arg,
+              static_cast<std::size_t>(-1),
+              false,
+              resolved);
+    }
+    if(resolved_template_argument &&
        deduce_template_template_parameter_from_argument(
            deduced, direct_parameter->name, resolved)) {
       continue;
