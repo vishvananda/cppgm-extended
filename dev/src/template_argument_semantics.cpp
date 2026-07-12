@@ -20072,31 +20072,6 @@ TypePtr lookup_exact_local_type_name_impl(template_api::TemplateServices & servi
 
 bool strip_leading_typename_text(const string & text, string & stripped);
 
-bool parse_sizeof_pack_text(const string & text, string & pack_name)
-{
-  pack_name.clear();
-  const string trimmed = trim_space(text);
-  const string prefix = "sizeof...(";
-  if(trimmed.size() <= prefix.size() ||
-     trimmed.compare(0, prefix.size(), prefix) != 0 ||
-     trimmed[trimmed.size() - 1] != ')') {
-    return false;
-  }
-  const string inner = trim_space(trimmed.substr(prefix.size(),
-                                                 trimmed.size() - prefix.size() - 1));
-  if(inner.empty()) {
-    return false;
-  }
-  for(size_t i = 0; i < inner.size(); ++i) {
-    const char ch = inner[i];
-    if(!(std::isalnum(static_cast<unsigned char>(ch)) || ch == '_')) {
-      return false;
-    }
-  }
-  pack_name = inner;
-  return true;
-}
-
 bool parse_integer_literal_count_text(const string & text, long long & out)
 {
   const string trimmed = trim_space(text);
@@ -20445,206 +20420,6 @@ bool try_evaluate_integral_cast_template_argument(
       evaluate_non_type_argument_expression(
           services, scope, expr.children[1], value, nullptr, cast_type);
   return operand_status == NT_ARG_EVALUATED;
-}
-
-bool parse_sizeof_pack_count_text(Scope & scope,
-                                  const string & text,
-                                  long long & out)
-{
-  string pack_name;
-  size_t pack_size = 0;
-  if(!parse_sizeof_pack_text(text, pack_name) ||
-     !lookup_pack_size(scope, pack_name, pack_size)) {
-    return false;
-  }
-  out = static_cast<long long>(pack_size);
-  return true;
-}
-
-bool lookup_integral_constant_count_text(Scope & scope,
-                                         const string & text,
-                                         long long & out)
-{
-  const string name = trim_space(text);
-  if(!is_identifier_text(name)) {
-    return false;
-  }
-  for(Scope * current = &scope; current; current = current->parent) {
-    map<string, ValueBinding>::const_iterator found = current->values.find(name);
-    if(found == current->values.end()) {
-      continue;
-    }
-    const ValueBinding & binding = found->second;
-    if(binding.dependent_template_value) {
-      return false;
-    }
-    if(binding.has_constant_value) {
-      out = binding.constant_value;
-      return true;
-    }
-    if(value_binding_has_constexpr_value(binding) &&
-       constant_eval::constexpr_value_to_integral(
-           value_binding_constexpr_value(binding),
-           out)) {
-      return true;
-    }
-    return false;
-  }
-  return false;
-}
-
-bool find_top_level_binary_operator_text(const string & text,
-                                         const string & operators,
-                                         size_t & out)
-{
-  int paren_depth = 0;
-  int angle_depth = 0;
-  for(size_t i = text.size(); i > 0; --i) {
-    const size_t pos = i - 1;
-    const char ch = text[pos];
-    if(ch == ')') {
-      ++paren_depth;
-      continue;
-    }
-    if(ch == '(') {
-      --paren_depth;
-      continue;
-    }
-    if(ch == '>') {
-      ++angle_depth;
-      continue;
-    }
-    if(ch == '<') {
-      --angle_depth;
-      continue;
-    }
-    if(paren_depth != 0 || angle_depth != 0 ||
-       operators.find(ch) == string::npos) {
-      continue;
-    }
-    if((ch == '+' || ch == '-') &&
-       (pos == 0 ||
-        string("+-*/%<>=!&|^?:,(").find(text[pos - 1]) != string::npos)) {
-      continue;
-    }
-    out = pos;
-    return true;
-  }
-  return false;
-}
-
-bool find_top_level_binary_operator_token_text(const string & text,
-                                               const vector<string> & operators,
-                                               size_t & out,
-                                               string & op)
-{
-  int paren_depth = 0;
-  int angle_depth = 0;
-  for(size_t i = text.size(); i > 0; --i) {
-    const size_t pos = i - 1;
-    const char ch = text[pos];
-    if(ch == ')') {
-      ++paren_depth;
-      continue;
-    }
-    if(ch == '(') {
-      --paren_depth;
-      continue;
-    }
-    if(ch == '>' && (pos == 0 || text[pos - 1] != '=')) {
-      ++angle_depth;
-      continue;
-    }
-    if(ch == '<' &&
-       (pos + 1 >= text.size() || text[pos + 1] != '=')) {
-      --angle_depth;
-      continue;
-    }
-    if(paren_depth != 0 || angle_depth != 0) {
-      continue;
-    }
-    for(size_t j = 0; j < operators.size(); ++j) {
-      const string & candidate = operators[j];
-      if(candidate.empty() ||
-         pos + candidate.size() > text.size() ||
-         text.compare(pos, candidate.size(), candidate) != 0) {
-        continue;
-      }
-      out = pos;
-      op = candidate;
-      return true;
-    }
-  }
-  return false;
-}
-
-bool try_evaluate_integral_text_with_pack_scope(Scope & scope,
-                                                const string & text,
-                                                long long & out)
-{
-  string compact = compact_expression_text(text);
-  strip_balanced_outer_parens(compact);
-  if(parse_simple_integral_constant_text(compact, out) ||
-     try_evaluate_static_cast_integral_text(compact, out) ||
-     parse_sizeof_pack_count_text(scope, compact, out) ||
-	     lookup_integral_constant_count_text(scope, compact, out)) {
-    return true;
-  }
-
-  size_t op = string::npos;
-  string op_text;
-  const vector<string> logical_ops = {"||", "&&"};
-  if(find_top_level_binary_operator_token_text(compact, logical_ops, op, op_text)) {
-    long long lhs = 0;
-    long long rhs = 0;
-    if(!try_evaluate_integral_text_with_pack_scope(scope, compact.substr(0, op), lhs) ||
-       !try_evaluate_integral_text_with_pack_scope(
-           scope, compact.substr(op + op_text.size()), rhs)) {
-      return false;
-    }
-    out = op_text == "||" ? (lhs != 0 || rhs != 0) : (lhs != 0 && rhs != 0);
-    return true;
-  }
-  const vector<string> equality_ops = {"==", "!="};
-  if(find_top_level_binary_operator_token_text(compact, equality_ops, op, op_text)) {
-    long long lhs = 0;
-    long long rhs = 0;
-    if(!try_evaluate_integral_text_with_pack_scope(scope, compact.substr(0, op), lhs) ||
-       !try_evaluate_integral_text_with_pack_scope(
-           scope, compact.substr(op + op_text.size()), rhs)) {
-      return false;
-    }
-    out = op_text == "==" ? (lhs == rhs) : (lhs != rhs);
-    return true;
-  }
-  if(find_top_level_binary_operator_text(compact, "+-", op)) {
-    long long lhs = 0;
-    long long rhs = 0;
-    if(!try_evaluate_integral_text_with_pack_scope(scope, compact.substr(0, op), lhs) ||
-       !try_evaluate_integral_text_with_pack_scope(scope, compact.substr(op + 1), rhs)) {
-      return false;
-    }
-    out = compact[op] == '+' ? lhs + rhs : lhs - rhs;
-    return true;
-  }
-  if(find_top_level_binary_operator_text(compact, "*/%", op)) {
-    long long lhs = 0;
-    long long rhs = 0;
-    if(!try_evaluate_integral_text_with_pack_scope(scope, compact.substr(0, op), lhs) ||
-       !try_evaluate_integral_text_with_pack_scope(scope, compact.substr(op + 1), rhs) ||
-       rhs == 0) {
-      return false;
-    }
-    if(compact[op] == '*') {
-      out = lhs * rhs;
-    } else if(compact[op] == '/') {
-      out = lhs / rhs;
-    } else {
-      out = lhs % rhs;
-    }
-    return true;
-  }
-  return false;
 }
 
 bool strip_leading_typename_text(const string & text, string & stripped)
@@ -37519,14 +37294,8 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(SemanticContext & ctx,
     if(try_evaluate_integral_text(pack_element, value)) {
       return finish(NT_ARG_EVALUATED);
     }
-    if(try_evaluate_integral_text_with_pack_scope(scope, pack_element, value)) {
-      return finish(NT_ARG_EVALUATED);
-    }
   }
   if(try_evaluate_integral_text(trimmed, value)) {
-    return finish(NT_ARG_EVALUATED);
-  }
-  if(try_evaluate_integral_text_with_pack_scope(scope, trimmed, value)) {
     return finish(NT_ARG_EVALUATED);
   }
   const auto evaluate_builtin_trait_text =
@@ -39452,14 +39221,8 @@ NonTypeArgumentStatus evaluate_non_type_argument_text(
     if(try_evaluate_integral_text(pack_element, value)) {
       return finish(NT_ARG_EVALUATED);
     }
-    if(try_evaluate_integral_text_with_pack_scope(raw_scope, pack_element, value)) {
-      return finish(NT_ARG_EVALUATED);
-    }
   }
   if(try_evaluate_integral_text(trimmed, value)) {
-    return finish(NT_ARG_EVALUATED);
-  }
-  if(try_evaluate_integral_text_with_pack_scope(raw_scope, trimmed, value)) {
     return finish(NT_ARG_EVALUATED);
   }
   const auto evaluate_builtin_trait_text =
