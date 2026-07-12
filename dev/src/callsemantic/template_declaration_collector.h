@@ -134,6 +134,7 @@ struct OutOfClassMemberResolutionServices
   virtual bool resolve_out_of_class_static_member_binding(
       semantic_model::Scope & scope,
       const cpp_decl::QualifiedName & qualified,
+      const CppAstNode * identifier,
       semantic_model::ValueBinding *& out) = 0;
 };
 

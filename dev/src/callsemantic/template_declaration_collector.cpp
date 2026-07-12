@@ -4264,6 +4264,23 @@ private:
       return nullptr;
     }
 
+    TypePtr structured_owner_type =
+        semantic_lookup::resolve_qualified_owner_type_node(
+            ctx,
+            scope,
+            qualified_member,
+            *function_identifier);
+    ClassInfo * structured_owner =
+        resolution == QualifiedOwnerClassResolution::ReferenceMembers ?
+            class_info_for_type(structured_owner_type) :
+            ctx.complete_class_type(structured_owner_type);
+    if(structured_owner) {
+      if(resolution == QualifiedOwnerClassResolution::ReferenceMembers) {
+        ctx.ensure_class_reference_members(*structured_owner);
+      }
+      return structured_owner;
+    }
+
     Scope * owner_lookup_scope = &scope;
     if(qualified_member.rooted || qualified_member.qualifiers.size() > 1) {
       QualifiedName owner_scope_name;
@@ -4989,7 +5006,7 @@ private:
         retained_template_type_lookup_anchor(function_identifier);
     const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return callbacks.out_of_class_services->resolve_out_of_class_static_member_binding(
-        scope, qualified, out);
+        scope, qualified, function_identifier, out);
   }
 
   CppAstNode filtered_function_declarator(const CppAstNode & declarator) const
@@ -5502,7 +5519,12 @@ private:
     const ExactTemplateTypeLookupAnchor anchor =
         retained_template_type_lookup_anchor(function_identifier);
     const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
-    return ctx.resolve_out_of_class_special_member_binding(scope, qualified, params, out);
+    return ctx.resolve_out_of_class_special_member_binding(
+        scope,
+        qualified,
+        params,
+        function_identifier,
+        out);
   }
 
   bool resolve_out_of_class_method_binding(

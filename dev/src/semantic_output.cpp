@@ -5517,7 +5517,7 @@ void analyze_special_member_definition(SemanticContext & ctx,
       identifier ? cppast_qualified_name_syntax(*identifier) : nullptr;
   if(!qualified_name ||
      !ctx.resolve_out_of_class_special_member_binding(
-         scope, *qualified_name, params, binding)) {
+         scope, *qualified_name, params, identifier, binding)) {
     throw logic_error("missing special member binding");
   }
   analyze_function_binding_output_impl(ctx, state, scope, *binding, out);

@@ -3418,6 +3418,11 @@ void apply_stored_out_of_class_member_function_abi_metadata_map(
                 ctx.resolve_out_of_class_special_member_binding(binding_scope,
                                                                 effective_qualified_name_syntax,
                                                                 effective_params,
+                                                                stored.declarator ?
+                                                                    find_child_kind(
+                                                                        *stored.declarator,
+                                                                        CppAstKind::identifier) :
+                                                                    nullptr,
                                                                 binding) :
                 (declared_type &&
                  ctx.resolve_out_of_class_method_binding_from_declarator_syntax(
@@ -3601,6 +3606,11 @@ void apply_stored_out_of_class_member_function_definitions_map(
                 ctx.resolve_out_of_class_special_member_binding(binding_scope,
                                                                 effective_qualified_name_syntax,
                                                                 effective_params,
+                                                                stored.declarator ?
+                                                                    find_child_kind(
+                                                                        *stored.declarator,
+                                                                        CppAstKind::identifier) :
+                                                                    nullptr,
                                                                 binding) :
                 (declared_type &&
                  ctx.resolve_out_of_class_method_binding_from_declarator_syntax(

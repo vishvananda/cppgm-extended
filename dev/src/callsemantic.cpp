@@ -24285,13 +24285,75 @@ private:
       return nullptr;
     }
 
+    const CppAstNode * owner_identifier = function_identifier;
+    if(!cppast_qualified_name_syntax(*owner_identifier)) {
+      const CppAstNode * nested_identifier =
+          find_descendant_kind(*function_identifier, CppAstKind::identifier);
+      if(nested_identifier && cppast_qualified_name_syntax(*nested_identifier)) {
+        owner_identifier = nested_identifier;
+      }
+    }
+
+    Scope * structured_owner_scope =
+        resolve_qualified_scope_for_node(scope,
+                                         qualified,
+                                         *owner_identifier,
+                                         true);
+    ClassInfo * dependent_owner =
+        structured_owner_scope ? structured_owner_scope->class_info : nullptr;
+    bool owner_chain_is_dependent = false;
+    for(ClassInfo * current = dependent_owner;
+        current;
+        current = current->enclosing_scope ?
+                      current->enclosing_scope->class_info : nullptr) {
+      if(current->dependent_instantiation) {
+        owner_chain_is_dependent = true;
+        break;
+      }
+    }
+    bool owner_remains_dependent = owner_chain_is_dependent;
+    if(dependent_owner && owner_chain_is_dependent && dependent_owner->type) {
+      TypePtr resolved_owner_type;
+      if(resolve_instantiated_dependent_type(scope,
+                                             dependent_owner->type,
+                                             resolved_owner_type) &&
+         resolved_owner_type &&
+         !type_depends_on_template_parameter(resolved_owner_type)) {
+        owner_remains_dependent = false;
+      }
+    }
+    if(dependent_owner && owner_remains_dependent) {
+      if(dependent_owner->member_scope &&
+         !dependent_owner->reference_member_collection_in_progress) {
+        ensure_class_reference_members(*dependent_owner);
+      }
+      return dependent_owner;
+    }
+
+    TypePtr structured_owner_type =
+        semantic_lookup::resolve_qualified_owner_type_node(
+            *this,
+            scope,
+            qualified,
+            *owner_identifier);
+    ClassInfo * structured_owner =
+        resolution == QualifiedOwnerClassResolution::ReferenceMembers ?
+            class_info_for_type(structured_owner_type) :
+            complete_class_type(structured_owner_type);
+    if(structured_owner) {
+      if(resolution == QualifiedOwnerClassResolution::ReferenceMembers) {
+        ensure_class_reference_members(*structured_owner);
+      }
+      return structured_owner;
+    }
+
     const size_t owner_qualifier_index = qualified.qualifiers.size() - 1;
     const TemplateIdSyntax * owner_template_id =
-        cppast_qualifier_template_id_syntax(*function_identifier,
+        cppast_qualifier_template_id_syntax(*owner_identifier,
                                             owner_qualifier_index);
     if(!owner_template_id) {
       owner_template_id = template_id_syntax_for_anchor(
-          *function_identifier,
+          *owner_identifier,
           strip_trailing_top_level_template_arguments(
               qualified.qualifiers[owner_qualifier_index]));
     }
@@ -24596,9 +24658,17 @@ private:
 
   bool resolve_out_of_class_static_member_binding(Scope & scope,
                                                   const QualifiedName & qualified,
+                                                  const CppAstNode * identifier,
                                                   ValueBinding *& out) override
   {
-    ClassInfo * info = resolve_out_of_class_owner_class(scope, qualified);
+    ClassInfo * info =
+        resolve_out_of_class_owner_class_from_template_id_syntax(
+            scope,
+            qualified,
+            identifier);
+    if(!info) {
+      info = resolve_out_of_class_owner_class(scope, qualified);
+    }
     if(!info) {
       return false;
     }
@@ -24921,10 +24991,11 @@ private:
       Scope & scope,
       const QualifiedName & qualified,
       const vector<pair<string, TypePtr> > & params,
+      const CppAstNode * function_identifier,
       FunctionBinding *& out) override
   {
     return resolve_out_of_class_special_member_binding_with_syntax(
-        scope, qualified, params, out, nullptr);
+        scope, qualified, params, out, function_identifier);
   }
 
   void emit_out_of_class_owner_class_use_if_needed_impl(
@@ -26688,6 +26759,7 @@ private:
         if(declared_qualified_name &&
            resolve_out_of_class_static_member_binding(scope,
                                                       *declared_qualified_name,
+                                                      declared_identifier,
                                                       out_of_class_static_member)) {
           emit_out_of_class_owner_class_use_if_needed(scope,
                                                       *declared_qualified_name,

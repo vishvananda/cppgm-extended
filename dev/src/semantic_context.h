@@ -665,6 +665,7 @@ public:
       semantic_model::Scope & scope,
       const cpp_decl::QualifiedName & name,
       const std::vector<std::pair<std::string, cpp_decl::TypePtr> > & params,
+      const CppAstNode * function_identifier,
       semantic_model::FunctionBinding *& out) = 0;
   // Record / retrieve the binding an out-of-class member definition node
   // resolved to during collection, so the output phase can reuse it instead of
