@@ -28768,9 +28768,6 @@ bool try_resolve_carried_dependent_class_type_arguments(
     vector<TemplateArgument> & out)
 {
   out.clear();
-  if(dependent_arguments.empty()) {
-    return false;
-  }
   size_t pack_index = class_template.parameters.size();
   for(size_t i = 0; i < class_template.parameters.size(); ++i) {
     if(class_template.parameters[i].parameter_pack) {
@@ -28948,9 +28945,6 @@ bool try_resolve_dependent_class_instantiation_from_carried_syntax(
     TypePtr & out)
 {
   out.reset();
-  if(named_type_class_template_specialization_mangle_info_const(type)) {
-    return false;
-  }
   void * class_template_decl = nullptr;
   vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
   if(!named_type_dependent_class_template(type,
@@ -28961,6 +28955,12 @@ bool try_resolve_dependent_class_instantiation_from_carried_syntax(
   ClassTemplateDecl * class_template =
       static_cast<ClassTemplateDecl *>(class_template_decl);
   if(!class_template) {
+    return false;
+  }
+  if(named_type_class_template_specialization_mangle_info_const(type) &&
+     !(dependent_arguments.empty() &&
+       template_arguments_fully_bind_parameters(
+           class_template->parameters, vector<TemplateArgument>()))) {
     return false;
   }
 

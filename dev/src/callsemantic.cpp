@@ -13935,6 +13935,15 @@ private:
          !named_type_class_template_specialization_mangle_info_const(base)) {
         return candidate;
       }
+      TypePtr structured_resolved;
+      if(resolve_instantiated_dependent_type(*inst_scope,
+                                             candidate,
+                                             structured_resolved) &&
+         structured_resolved &&
+         structured_resolved.get() != candidate.get() &&
+         !type_depends_on_template_parameter(structured_resolved)) {
+        return restore_cv(structured_resolved);
+      }
       const witness::ScopedTemplateWitnessSourceCapturePause
           source_capture_pause;
       const witness::ScopedTemplateWitnessFunctionCallSourceCapturePause
