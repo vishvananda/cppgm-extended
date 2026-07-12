@@ -1050,6 +1050,7 @@ struct TypeMangleContext
   vector<size_t> suppressed_owner_template_argument_indices;
   const vector<FunctionParameterMangleInfo> * function_parameters = nullptr;
   string lexical_scope;
+  QualifiedName lexical_scope_syntax;
   const semantic_model::Scope * lookup_scope = nullptr;
   bool allow_direct_std_standard_substitutions = true;
   bool suppress_template_argument_pack_grouping = false;
@@ -2467,11 +2468,9 @@ static const semantic_model::ClassTemplateDecl * lookup_class_template_for_templ
         return found;
       }
     }
-    if(!mangle_ctx->lexical_scope.empty()) {
-      QualifiedName lexical;
-      if(semantic_utils::split_qualified_name_text(mangle_ctx->lexical_scope, lexical) &&
-         !lexical.rooted &&
-         !lexical.name.empty()) {
+    if(!mangle_ctx->lexical_scope_syntax.name.empty()) {
+      const QualifiedName & lexical = mangle_ctx->lexical_scope_syntax;
+      if(!lexical.rooted) {
         const semantic_model::Scope * scope = root_scope(mangle_ctx->lookup_scope);
         vector<string> parts = lexical.qualifiers;
         parts.push_back(lexical.name);
@@ -4219,11 +4218,9 @@ static const semantic_model::AliasTemplateDecl * lookup_alias_template_for_templ
         return found;
       }
     }
-    if(!mangle_ctx->lexical_scope.empty()) {
-      QualifiedName lexical;
-      if(semantic_utils::split_qualified_name_text(mangle_ctx->lexical_scope, lexical) &&
-         !lexical.rooted &&
-         !lexical.name.empty()) {
+    if(!mangle_ctx->lexical_scope_syntax.name.empty()) {
+      const QualifiedName & lexical = mangle_ctx->lexical_scope_syntax;
+      if(!lexical.rooted) {
         const semantic_model::Scope * scope = root_scope(mangle_ctx->lookup_scope);
         vector<string> parts = lexical.qualifiers;
         parts.push_back(lexical.name);
@@ -15432,6 +15429,25 @@ static string function_type_lexical_scope(const QualifiedName & qualified,
   return qualified_prefix_text(qualified, count);
 }
 
+static QualifiedName function_type_lexical_scope_syntax(
+    const QualifiedName & qualified,
+    const FunctionSymbolOptions & options)
+{
+  size_t count = qualified.qualifiers.size();
+  if(options.is_member_function && count > 0) {
+    --count;
+  }
+  QualifiedName out;
+  out.rooted = qualified.rooted;
+  if(count == 0) {
+    return out;
+  }
+  out.qualifiers.assign(qualified.qualifiers.begin(),
+                        qualified.qualifiers.begin() + count - 1);
+  out.name = qualified.qualifiers[count - 1];
+  return out;
+}
+
 static string compact_operator_name(const string & text)
 {
   return remove_space_chars(text);
@@ -15762,6 +15778,8 @@ static void initialize_function_template_argument_mangle_context(
   template_argument_mangle_ctx.lookup_scope = options.lookup_scope;
   template_argument_mangle_ctx.lexical_scope =
       function_type_lexical_scope(qualified, options);
+  template_argument_mangle_ctx.lexical_scope_syntax =
+      function_type_lexical_scope_syntax(qualified, options);
   template_argument_mangle_ctx.suppress_template_argument_pack_grouping =
       options.suppress_template_argument_pack_grouping;
   template_argument_mangle_ctx.template_argument_pack_sizes =
@@ -16511,6 +16529,8 @@ static bool try_mangle_local_class_member_name_prefix_ir(
       TypeMangleContext mangle_ctx;
       mangle_ctx.lexical_scope = function_type_lexical_scope(qualified,
                                                              options);
+      mangle_ctx.lexical_scope_syntax =
+          function_type_lexical_scope_syntax(qualified, options);
       mangle_ctx.lookup_scope = options.lookup_scope;
       mangle_ctx.owner_template_parameters = options.owner_template_parameters;
       mangle_ctx.owner_template_arguments = options.owner_template_arguments;
@@ -16692,6 +16712,8 @@ static bool try_mangle_conversion_operator_name_prefix_ir(
 
   TypeMangleContext mangle_ctx;
   mangle_ctx.lexical_scope = function_type_lexical_scope(qualified, options);
+  mangle_ctx.lexical_scope_syntax =
+      function_type_lexical_scope_syntax(qualified, options);
   mangle_ctx.lookup_scope = options.lookup_scope;
   mangle_ctx.owner_template_parameters = options.owner_template_parameters;
   mangle_ctx.owner_template_arguments = options.owner_template_arguments;
@@ -17066,6 +17088,8 @@ static bool build_itanium_context_function_type_mangle_context(
     bool & owner_template_only_pattern)
 {
   mangle_ctx.lexical_scope = function_type_lexical_scope(qualified, options);
+  mangle_ctx.lexical_scope_syntax =
+      function_type_lexical_scope_syntax(qualified, options);
   mangle_ctx.lookup_scope = options.lookup_scope;
   mangle_ctx.owner_template_parameters = options.owner_template_parameters;
   mangle_ctx.owner_template_arguments = options.owner_template_arguments;
@@ -17491,6 +17515,8 @@ static bool try_emit_itanium_function_symbol_ir(
 
   TypeMangleContext mangle_ctx;
   mangle_ctx.lexical_scope = function_type_lexical_scope(qualified, options);
+  mangle_ctx.lexical_scope_syntax =
+      function_type_lexical_scope_syntax(qualified, options);
   mangle_ctx.lookup_scope = options.lookup_scope;
   mangle_ctx.owner_template_parameters = options.owner_template_parameters;
   mangle_ctx.owner_template_arguments = options.owner_template_arguments;
