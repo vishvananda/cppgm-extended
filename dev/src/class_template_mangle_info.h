@@ -12,6 +12,7 @@ namespace cpp_decl {
 struct ClassTemplateSpecializationMangleInfo
 {
   void * class_template_decl = nullptr;
+  QualifiedName template_name_syntax;
   std::string template_scope_prefix;
   std::string template_name;
   std::vector<template_model::TemplateParameterInfo> template_parameters;

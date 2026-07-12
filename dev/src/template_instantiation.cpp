@@ -4569,6 +4569,11 @@ void update_class_template_specialization_mangle_info(
   std::shared_ptr<ClassTemplateSpecializationMangleInfo> mangle_info(
       new ClassTemplateSpecializationMangleInfo());
   mangle_info->class_template_decl = info.source_template;
+  mangle_info->template_name_syntax = info.symbol_qualified_name_syntax;
+  if(mangle_info->template_name_syntax.name.empty() && info.type) {
+    mangle_info->template_name_syntax = info.type->named_qualified_name_syntax;
+  }
+  mangle_info->template_name_syntax.name = info.source_template->name;
   mangle_info->template_name = info.source_template->name;
   if(info.source_template->declaring_scope) {
     const std::string qualified =

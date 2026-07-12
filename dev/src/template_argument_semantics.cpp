@@ -16395,6 +16395,8 @@ void attach_substituted_dependent_class_mangle_info_from_arguments(
   shared_ptr<ClassTemplateSpecializationMangleInfo> info(
       new ClassTemplateSpecializationMangleInfo());
   info->class_template_decl = const_cast<ClassTemplateDecl *>(&class_template);
+  info->template_name_syntax = substituted->named_qualified_name_syntax;
+  info->template_name_syntax.name = class_template.name;
   info->template_name = class_template.name;
   if(class_template.declaring_scope) {
     const string qualified =
@@ -22374,20 +22376,8 @@ bool template_id_syntax_from_class_template_type(const TypePtr & type,
     return false;
   }
 
-  string qualified_template_name = template_name;
-  const string scope_prefix = trim_space(info->template_scope_prefix);
-  if(!scope_prefix.empty()) {
-    qualified_template_name =
-        scope_prefix +
-        (scope_prefix.size() >= 2 &&
-                 scope_prefix.compare(scope_prefix.size() - 2, 2, "::") == 0 ?
-             string() :
-             string("::")) +
-        template_name;
-  }
-
-  QualifiedName name;
-  if(!semantic_utils::split_qualified_name_text(qualified_template_name, name)) {
+  QualifiedName name = info->template_name_syntax;
+  if(name.name.empty()) {
     name.name = template_name;
   }
 
