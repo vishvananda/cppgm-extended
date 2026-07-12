@@ -28686,9 +28686,13 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   if(!semantically_dependent) {
     return DependentNamedTypeResolutionStatus::Fallback;
   }
-  DependentNamedTypeResolutionGuard recursion_guard(
-      &raw_scope,
-      key + "\n" + text);
+  string recursion_key = key;
+  if(recursion_key.empty()) {
+    ostringstream identity;
+    identity << "type@" << type.get();
+    recursion_key = identity.str();
+  }
+  DependentNamedTypeResolutionGuard recursion_guard(&raw_scope, recursion_key);
   if(!recursion_guard.active) {
     return DependentNamedTypeResolutionStatus::KeepDependent;
   }
