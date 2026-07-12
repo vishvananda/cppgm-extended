@@ -5929,113 +5929,6 @@ bool scope_is_inside_source_template_class_instantiation(Scope & scope)
   return false;
 }
 
-bool lookup_rewritten_bound_type_argument(Scope & scope,
-                                          const std::string & text,
-                                          TypePtr & out)
-{
-  out.reset();
-  std::string name = strip_elaborated_type_prefix(trim_space(text));
-  std::string stripped_typename;
-  if(strip_leading_typename_argument_text(name, stripped_typename)) {
-    name = stripped_typename;
-  }
-  if(name.empty()) {
-    return false;
-  }
-
-  const auto type_argument_text_matches =
-      [&](const TypePtr & type, const std::string & target) -> bool
-  {
-    if(!type) {
-      return false;
-    }
-    const std::string rendered =
-        strip_elaborated_type_prefix(
-            trim_space(reparseable_type_argument_text(type)));
-    return !rendered.empty() &&
-           template_argument_semantics::normalized_type_lookup_text_matches(
-               rendered, target);
-  };
-  const auto syntax_text_matches =
-      [&](const TemplateArgumentSyntax * syntax, const std::string & target) -> bool
-  {
-    if(!syntax) {
-      return false;
-    }
-    const std::string syntax_text =
-        strip_elaborated_type_prefix(
-            trim_space(!syntax->source_text.empty() ?
-                           syntax->source_text :
-                           syntax->text));
-    return !syntax_text.empty() &&
-           template_argument_semantics::normalized_type_lookup_text_matches(
-               syntax_text, target);
-  };
-  const auto find_class_template_argument_type =
-      [&](const TypePtr & bound_type, TypePtr & found_type) -> bool
-  {
-    std::shared_ptr<const ClassTemplateSpecializationMangleInfo> mangle_info =
-        named_type_class_template_specialization_mangle_info_const(bound_type);
-    if(!mangle_info) {
-      return false;
-    }
-    for(std::size_t i = 0; i < mangle_info->arguments.size(); ++i) {
-      const TemplateArgument & argument = mangle_info->arguments[i];
-      if(argument.kind != TemplateArgument::TA_TYPE || !argument.type) {
-        continue;
-      }
-      const TemplateArgumentSyntax * syntax =
-          i < mangle_info->argument_syntaxes.size() ?
-              &mangle_info->argument_syntaxes[i] :
-              argument.source_syntax.get();
-      if(syntax_text_matches(syntax, name) ||
-         type_argument_text_matches(argument.type, name)) {
-        found_type = argument.type;
-        return true;
-      }
-    }
-    return false;
-  };
-
-  for(Scope * current = &scope; current; current = current->parent) {
-    if(current->namespace_scope || current->parent == nullptr) {
-      break;
-    }
-    for(std::set<std::string>::const_iterator it =
-            current->template_bound_type_names.begin();
-        it != current->template_bound_type_names.end();
-        ++it) {
-      auto found =
-          current->named_types.find(*it);
-      if(found == current->named_types.end() || !found->second) {
-        continue;
-      }
-      if(trim_space(reparseable_type_argument_text(found->second)) == name) {
-        out = found->second;
-        return true;
-      }
-      if(find_class_template_argument_type(found->second, out)) {
-        return true;
-      }
-    }
-    for(std::map<std::string, std::vector<TypePtr> >::const_iterator pack =
-            current->named_type_packs.begin();
-        pack != current->named_type_packs.end();
-        ++pack) {
-      for(std::size_t i = 0; i < pack->second.size(); ++i) {
-        if(type_argument_text_matches(pack->second[i], name)) {
-          out = pack->second[i];
-          return true;
-        }
-        if(find_class_template_argument_type(pack->second[i], out)) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
 const QualifiedName * qualified_name_syntax_in_type_argument(
     const CppAstNode & node)
 {
@@ -12168,16 +12061,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
        bound_template_id_type) {
       resolve_type_argument_if_needed(bound_template_id_type);
       type = bound_template_id_type;
-    }
-  }
-  if(!type && !has_structured_type_syntax) {
-    TypePtr rewritten_bound_type;
-    if(lookup_rewritten_bound_type_argument(raw_argument_scope,
-                                            trimmed,
-                                            rewritten_bound_type) &&
-       rewritten_bound_type) {
-      resolve_type_argument_if_needed(rewritten_bound_type);
-      type = rewritten_bound_type;
     }
   }
   if(!type && !has_structured_type_syntax) {
