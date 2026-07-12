@@ -1803,15 +1803,12 @@ bool qualified_name_for_resolved_type_annotation(const TypePtr & type,
   TypePtr base = strip_top_level_cv(remove_reference_type(type));
   if(!base ||
      base->kind != Type::TK_NAMED ||
-     named_type_has_function_local_marker(base)) {
+     named_type_has_function_local_marker(base) ||
+     base->named_qualified_name_syntax.qualifiers.empty()) {
     return false;
   }
-  std::string text =
-      !base->named_display.empty() ? base->named_display : base->named_key;
-  text = strip_elaborated_type_prefix(trim_space(text));
-  return !text.empty() &&
-         semantic_utils::split_qualified_name_text(text, out) &&
-         !out.qualifiers.empty();
+  out = base->named_qualified_name_syntax;
+  return true;
 }
 
 void compress_qualified_type_owner_for_mangling(QualifiedName & qualified)
