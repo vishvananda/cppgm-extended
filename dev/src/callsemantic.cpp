@@ -14592,25 +14592,6 @@ private:
           return found->second;
         }
       }
-      for(auto it = current->named_types.begin();
-          it != current->named_types.end();
-          ++it) {
-        if(!is_function_local_type(it->second)) {
-          continue;
-        }
-        const string reparseable = trim_space(reparseable_type_argument_text(it->second));
-        for(size_t i = 0; i < candidate_names.size(); ++i) {
-          if(reparseable != candidate_names[i]) {
-            continue;
-          }
-          auto parent_found =
-              current->parent->named_types.find(it->first);
-          if(parent_found == current->parent->named_types.end() ||
-             !type_equals(it->second, parent_found->second)) {
-            return it->second;
-          }
-        }
-      }
     }
     return TypePtr();
   }
