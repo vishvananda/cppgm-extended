@@ -3428,33 +3428,23 @@ ClassInfo * canonicalize_constructor_target(SemanticContext & ctx,
     return &info;
   }
 
-  TypePtr rebound;
-  try
-  {
-    rebound = ctx.lookup_type(scope, info.qualified_name, true);
-  }
-  catch(const logic_error &)
-  {
-    rebound.reset();
-  }
-  if(!rebound) {
-    try
-    {
-      rebound = ctx.lookup_type(scope, info.name, true);
-    }
-    catch(const logic_error &)
-    {
-      rebound.reset();
-    }
-  }
-  ClassInfo * rebound_info = ctx.class_info_for_type(rebound);
-  if(!rebound_info || rebound_info == &info || rebound_info->name != info.name) {
+  const vector<TemplateArgument> & arguments =
+      info.has_instantiation_binding_arguments ?
+          info.instantiation_binding_arguments :
+          info.instantiation_arguments;
+  if(arguments.empty() && !info.source_template->parameters.empty()) {
     return &info;
   }
-  if(rebound_info->source_template != info.source_template) {
-    return &info;
+  const string key =
+      template_api::template_argument_identity_key(ctx, arguments);
+  auto found = info.source_template->instantiations.find(key);
+  if(found != info.source_template->instantiations.end() && found->second) {
+    return found->second;
   }
-  return rebound_info;
+  found = info.source_template->reference_instantiations.find(key);
+  return found != info.source_template->reference_instantiations.end() &&
+         found->second ?
+      found->second : &info;
 }
 
 ClassInfo * complete_constructor_target_if_ready(SemanticContext & ctx,
