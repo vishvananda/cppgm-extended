@@ -26899,7 +26899,8 @@ private:
       vector<string> arg_texts = target_template_id->arguments;
 
       ClassTemplateDecl * primary =
-          semantic_lookup::lookup_class_template(*this, scope, specialization_name);
+          semantic_lookup::lookup_class_template_node(
+              *this, scope, specialization_name, target);
       if(!primary) {
         if(parser_trace::enabled("template.resolve")) {
           parser_trace::note("template.resolve",
@@ -27083,10 +27084,14 @@ private:
         instantiation_identifier ?
             cppast_template_id_syntax(*instantiation_identifier) :
             nullptr;
-    Scope * parse_scope =
-        semantic_lookup::resolve_qualified_variable_parse_scope(*this,
-                                                                scope,
-                                                                init_decl.children[0]);
+    Scope * parse_scope = nullptr;
+    {
+      const witness::ScopedTemplateWitnessSourceCapturePause
+          source_capture_pause;
+      parse_scope =
+          semantic_lookup::resolve_qualified_variable_parse_scope(
+              *this, scope, init_decl.children[0]);
+    }
     if(!parse_variable_declaration_type(*parse_scope,
                                         resolved_specifiers,
                                         init_decl.children[0],
@@ -27112,16 +27117,12 @@ private:
       arg_texts = instantiation_template_id_syntax->arguments;
     }
 
-    vector<FunctionTemplateDecl *> templates =
-        has_explicit_template_id ?
-            ((specialization_name.rooted || !specialization_name.qualifiers.empty()) ?
-                 lookup_function_templates(scope, specialization_name) :
-                 lookup_function_templates(scope, specialization_name.name)) :
-            ((instantiation_name_syntax &&
-              (instantiation_name_syntax->rooted ||
-               !instantiation_name_syntax->qualifiers.empty())) ?
-                 lookup_function_templates(scope, *instantiation_name_syntax) :
-                 lookup_function_templates(scope, name));
+    vector<FunctionTemplateDecl *> templates = instantiation_identifier ?
+        lookup_function_templates_node(
+            scope,
+            *instantiation_identifier,
+            has_explicit_template_id ? specialization_name.name : name) :
+        lookup_function_templates(scope, name);
     const auto find_member_function_of_class_template_instantiation =
         [&]() -> FunctionBinding *
     {

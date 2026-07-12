@@ -2099,16 +2099,10 @@ Scope * resolve_qualified_variable_parse_scope(SemanticContext & ctx,
     return &scope;
   }
 
-  Scope * declaration_scope = &scope;
-  string declaration_name = identifier->value;
-  if(!resolve_qualified_namespace_entity_target(ctx,
-                                                scope,
-                                                *identifier_name,
-                                                declaration_scope,
-                                                declaration_name)) {
-    return &scope;
-  }
-  return declaration_scope;
+  Scope * declaration_scope =
+      ctx.resolve_qualified_scope_for_node(
+          scope, *identifier_name, *identifier, true);
+  return declaration_scope ? declaration_scope : &scope;
 }
 
 Scope * resolve_direct_namespace_local(Scope & scope, const string & name)
