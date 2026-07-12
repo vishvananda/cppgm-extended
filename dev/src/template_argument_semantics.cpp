@@ -5736,10 +5736,6 @@ bool lookup_leaf_value_binding(Scope & scope,
 
 bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & services,
                                          Scope & scope,
-                                         const string & name,
-                                         const ValueBinding *& out);
-bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & services,
-                                         Scope & scope,
                                          const QualifiedName & qualified,
                                          const ValueBinding *& out);
 bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & services,
@@ -9137,8 +9133,7 @@ bool lookup_leaf_constant_value(Scope & scope,
             services, scope, scope, variable_template_name, *node, binding);
       }
     }
-    if(!binding &&
-       !lookup_leaf_qualified_value_binding(services, scope, name, binding)) {
+    if(!binding) {
       return false;
     }
   }
@@ -9177,10 +9172,37 @@ bool lookup_leaf_constant_value(Scope & scope,
 
 bool lookup_leaf_constant_value(Scope & scope,
                                 template_api::TemplateServices & services,
-                                const string & name,
+                                const QualifiedName & name,
                                 constant_eval::ConstexprValue & out)
 {
-  return lookup_leaf_constant_value(scope, services, name, nullptr, out);
+  const ValueBinding * binding = nullptr;
+  if(!lookup_leaf_qualified_value_binding(services, scope, name, binding) ||
+     !binding ||
+     value_binding_owner_has_reentrant_primary_selection(*binding)) {
+    return false;
+  }
+  if(binding->has_constant_value) {
+    if(services.semantic_context) {
+      template_api::note_template_member_value_instantiation_if_needed(
+          *services.semantic_context,
+          *binding);
+    }
+    out = constant_eval::make_integral_value(
+        binding->constant_value,
+        binding->type ? binding->type : make_fundamental(FT_INT));
+    return true;
+  }
+  if(value_binding_has_constexpr_value(*binding)) {
+    if(services.semantic_context) {
+      template_api::note_template_member_value_instantiation_if_needed(
+          *services.semantic_context,
+          *binding);
+    }
+    out = value_binding_constexpr_value(*binding);
+    return out.kind != constant_eval::ConstexprValue::CV_INVALID;
+  }
+  return materialize_leaf_member_constant_binding(
+      services, *const_cast<ValueBinding *>(binding), out);
 }
 
 bool type_carries_dependent_class_template_metadata(const TypePtr & type)
@@ -12456,7 +12478,19 @@ bool evaluate_leaf_special_expression(template_api::TemplateServices & services,
       if(template_id) {
         return false;
       }
-      if(lookup_leaf_constant_value(scope, services, callee->value + "::value", value)) {
+      QualifiedName value_name;
+      if(const QualifiedName * callee_name =
+             cppast_qualified_name_syntax(*callee)) {
+        value_name = *callee_name;
+      } else {
+        value_name.name = callee->value;
+      }
+      if(!value_name.name.empty()) {
+        value_name.qualifiers.push_back(value_name.name);
+        value_name.name = "value";
+      }
+      if(!value_name.qualifiers.empty() &&
+         lookup_leaf_constant_value(scope, services, value_name, value)) {
         return true;
       }
 	    }
@@ -25826,19 +25860,6 @@ bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & servic
   }
   return lookup_concrete_member_template_value_binding_syntax(
       services, scope, qualified, *node, out);
-}
-
-bool lookup_leaf_qualified_value_binding(template_api::TemplateServices & services,
-                                         Scope & scope,
-                                         const string & name,
-                                         const ValueBinding *& out)
-{
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(name, qualified)) {
-    out = nullptr;
-    return false;
-  }
-  return lookup_leaf_qualified_value_binding(services, scope, qualified, out);
 }
 
 bool lookup_leaf_qualified_function_bindings(template_api::TemplateServices & services,
