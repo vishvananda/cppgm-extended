@@ -5389,12 +5389,10 @@ TypePtr lookup_type_for_deduction(template_api::TemplateServices & services,
   template_api::TemplateTypeLookupRequest request;
   request.scope = &scope;
   request.allow_class_templates = allow_class_templates;
-  if(!semantic_utils::split_qualified_name_text(lookup_text, request.name)) {
-    if(!is_identifier_text(lookup_text)) {
-      return out;
-    }
-    request.name.name = lookup_text;
+  if(!is_identifier_text(lookup_text)) {
+    return out;
   }
+  request.name.name = lookup_text;
   service_type_system(services).resolve_direct_type_lookup(request, out);
   return out;
 }
