@@ -4588,19 +4588,6 @@ static bool replacement_syntax_qualified_name(
   }
   const string replacement_text =
       trim_space(alias_template_argument_replacement_text(replacement));
-  const auto try_replacement_text =
-      [&]() -> bool
-      {
-        if(replacement_text.empty()) {
-          return false;
-        }
-        if(semantic_utils::split_qualified_name_text(replacement_text, out)) {
-          return !out.name.empty();
-        }
-        out = QualifiedName();
-        out.name = replacement_text;
-        return !out.name.empty();
-      };
   if(replacement.template_id && !replacement.template_id->name.name.empty()) {
     TemplateIdSyntax cloned =
         clone_template_id_syntax_for_mangling(*replacement.template_id);
@@ -4611,8 +4598,48 @@ static bool replacement_syntax_qualified_name(
     }
     return !out.name.empty();
   }
-
-  return try_replacement_text();
+  const function<const QualifiedName *(const CppAstNode &)> find_qualified =
+      [&](const CppAstNode & node) -> const QualifiedName *
+      {
+        if(const QualifiedName * qualified = cppast_qualified_name_syntax(node)) {
+          if(!qualified->name.empty()) {
+            return qualified;
+          }
+        }
+        for(size_t i = 0; i < node.children.size(); ++i) {
+          if(const QualifiedName * qualified = find_qualified(node.children[i])) {
+            return qualified;
+          }
+        }
+        return nullptr;
+      };
+  const QualifiedName * qualified = nullptr;
+  if(replacement.type_id) {
+    qualified = find_qualified(*replacement.type_id);
+  }
+  if(!qualified && replacement.source_type_id) {
+    qualified = find_qualified(*replacement.source_type_id);
+  }
+  if(!qualified && replacement.expression) {
+    qualified = find_qualified(*replacement.expression);
+  }
+  if(qualified) {
+    out = *qualified;
+    return true;
+  }
+  TypePtr resolved = strip_top_level_cv(replacement.resolved_type);
+  if(resolved &&
+     resolved->kind == Type::TK_NAMED &&
+     !resolved->named_qualified_name_syntax.name.empty()) {
+    out = resolved->named_qualified_name_syntax;
+    return true;
+  }
+  if(replacement_text.empty() || replacement_text.find("::") != string::npos) {
+    return false;
+  }
+  out = QualifiedName();
+  out.name = replacement_text;
+  return true;
 }
 
 template <typename ArgumentSyntax>
