@@ -6525,8 +6525,8 @@ void append_member_value_binding_dependency(
   dependency.entity =
       class_symbol_or_output_name_for_witness(*owner) + "::" + member_name;
   dependency.decl_location = decl_location;
-  dependency.value_binding = &binding;
-  dependency.value_owner_class = owner;
+  dependency.value_scope = binding.declaration_scope;
+  dependency.value_name = member_name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(&binding) ||
       template_api::class_has_template_identity(owner);
@@ -6588,8 +6588,9 @@ void append_structured_bool_integral_constant_dependency(
       class_symbol_or_output_name_for_witness(*integral_constant) +
       "::" + kStructuredBoolResultMemberName;
   dependency.decl_location = decl_location;
-  dependency.value_binding = member.binding;
-  dependency.value_owner_class = integral_constant;
+  dependency.value_scope =
+      member.binding ? member.binding->declaration_scope : nullptr;
+  dependency.value_name = kStructuredBoolResultMemberName;
   dependency.entity_has_template_identity =
       template_api::class_has_template_identity(integral_constant);
   append_template_value_dependency(out, dependency);
@@ -6828,8 +6829,8 @@ void append_static_member_value_dependency_for_type(
       class_symbol_or_output_name_for_witness(*dependency_owner) + "::" +
       member.binding->name;
   dependency.decl_location = decl_location;
-  dependency.value_binding = member.binding;
-  dependency.value_owner_class = dependency_owner;
+  dependency.value_scope = member.binding->declaration_scope;
+  dependency.value_name = member.binding->name;
   dependency.entity_has_template_identity =
       template_api::value_or_owner_has_template_identity(member.binding) ||
       template_api::class_has_template_identity(dependency_owner);
@@ -7713,12 +7714,14 @@ void note_template_value_dependency_for_witness(
     (void)collect_template_member_value_dependency_if_active_impl(dependency);
     return;
   }
-  if(dependency.value_binding) {
-    dependency.value_binding->witness_member_value_instantiation_noted = true;
-  }
   std::string trigger_entity = dependency.entity;
-  if(dependency.value_binding && !dependency.value_binding->name.empty()) {
-    trigger_entity = unqualified_member_name(dependency.value_binding->name);
+  if(dependency.value_scope && !dependency.value_name.empty()) {
+    std::map<std::string, ValueBinding>::iterator current =
+        dependency.value_scope->values.find(dependency.value_name);
+    if(current != dependency.value_scope->values.end()) {
+      current->second.witness_member_value_instantiation_noted = true;
+    }
+    trigger_entity = dependency.value_name;
   }
   const ScopedTemplateValueDependencyLifecycleResume lifecycle_resume;
   const witness::ScopedTemplateWitnessEntryContext entry_context(

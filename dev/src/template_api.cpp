@@ -4000,10 +4000,8 @@ void note_template_member_value_instantiation_if_needed(
     template_model::TemplateValueDependency dependency;
     dependency.entity = entity;
     dependency.decl_location = decl_location;
-    dependency.value_binding = &binding;
-    dependency.value_owner_class =
-        binding.owner_class ? binding.owner_class :
-        (binding.declaration_scope ? binding.declaration_scope->class_info : nullptr);
+    dependency.value_scope = binding.declaration_scope;
+    dependency.value_name = binding.name;
     dependency.entity_has_template_identity =
         value_or_owner_has_template_identity(&binding);
     dependency.public_use_location =
