@@ -3063,7 +3063,7 @@ bool try_parse_builtin_type_trait_call_arg(SemanticContext & ctx,
     return ctx.parse_type_id(scope, arg, type, true);
   }
   if(arg.kind == CppAstKind::id_expression) {
-    type = ctx.lookup_type(scope, arg.value, true);
+    type = ctx.lookup_type_node(scope, arg, arg.value, true);
     if(!type && !scope_has_template_placeholders(ctx, scope)) {
       std::ostringstream out;
       out << "failed builtin type trait id-expression lookup: " << arg.value;
@@ -3082,7 +3082,7 @@ bool try_parse_builtin_type_trait_call_arg(SemanticContext & ctx,
     return false;
   }
 
-  type = ctx.lookup_type(scope, trim_space(arg_text), true);
+  type = ctx.lookup_type_node(scope, arg, trim_space(arg_text), true);
   if(type) {
     return true;
   }
