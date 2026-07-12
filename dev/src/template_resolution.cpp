@@ -208,7 +208,7 @@ bool try_resolve_non_type_template_parameter_type(
 TypePtr adjusted_non_type_template_parameter_type_for_resolution(
     const TypePtr & type);
 
-bool try_reparse_non_type_template_parameter_type(
+bool try_resolve_non_type_template_parameter_type_from_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const TemplateParameterInfo & parameter,
@@ -10815,7 +10815,7 @@ TypePtr adjusted_non_type_template_parameter_type_for_resolution(const TypePtr &
   return type;
 }
 
-bool try_reparse_non_type_template_parameter_type(
+bool try_resolve_non_type_template_parameter_type_from_syntax(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
     const TemplateParameterInfo & parameter,
@@ -10844,7 +10844,7 @@ bool try_reparse_non_type_template_parameter_type(
     return false;
   }
 
-  TypePtr reparsed = base;
+  TypePtr resolved_type = base;
   if(parameter.non_type_declarator) {
     std::string ignored_name;
     if(!template_decl_ast::parse_declarator(services,
@@ -10853,9 +10853,9 @@ bool try_reparse_non_type_template_parameter_type(
                                             *parameter.non_type_declarator,
                                             base,
                                             ignored_name,
-                                            reparsed,
+                                            resolved_type,
                                             true) ||
-       !reparsed) {
+       !resolved_type) {
       return false;
     }
   } else if(parameter.non_type_abstract_declarator) {
@@ -10865,23 +10865,24 @@ bool try_reparse_non_type_template_parameter_type(
            raw_scope,
            *parameter.non_type_abstract_declarator,
            base,
-           reparsed,
+           resolved_type,
            true) ||
-       !reparsed) {
+       !resolved_type) {
       return false;
     }
   }
 
-  reparsed = adjusted_non_type_template_parameter_type_for_resolution(reparsed);
+  resolved_type =
+      adjusted_non_type_template_parameter_type_for_resolution(resolved_type);
   template_argument_semantics::resolve_instantiated_dependent_type_if_needed(
-      services, scope, reparsed);
-  if(!reparsed ||
+      services, scope, resolved_type);
+  if(!resolved_type ||
      template_argument_semantics::type_depends_on_template_parameter(
-         service_type_system(services), reparsed)) {
+         service_type_system(services), resolved_type)) {
     return false;
   }
 
-  out = reparsed;
+  out = resolved_type;
   return true;
 }
 
@@ -10906,7 +10907,7 @@ bool try_resolve_non_type_template_parameter_type(
         resolved = true;
       }
       if(!resolved) {
-        if(try_reparse_non_type_template_parameter_type(
+        if(try_resolve_non_type_template_parameter_type_from_syntax(
                services, scope, parameter, out)) {
           resolved = true;
         } else {
