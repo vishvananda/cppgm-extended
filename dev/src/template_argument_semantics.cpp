@@ -39953,24 +39953,6 @@ vector<ExpandedTypeArgumentInput> expand_bound_type_pack_arguments(
         continue;
       }
     }
-    const string integer_pack_prefix = "__integer_pack(";
-    if(text.size() > integer_pack_prefix.size() + 4 &&
-       text.compare(0, integer_pack_prefix.size(), integer_pack_prefix) == 0 &&
-       text.substr(text.size() - 4) == ")...") {
-      const string count_text =
-          trim_space(text.substr(integer_pack_prefix.size(),
-                                 text.size() - integer_pack_prefix.size() - 4));
-      long long count = 0;
-      if(try_evaluate_integral_text_with_pack_scope(scope, count_text, count) &&
-         count >= 0) {
-        for(long long value = 0; value < count; ++value) {
-          ExpandedTypeArgumentInput input;
-          input.text = to_string(value);
-          out.push_back(input);
-        }
-        continue;
-      }
-    }
     ExpandedTypeArgumentInput input;
     input.text = texts[i];
     out.push_back(input);
