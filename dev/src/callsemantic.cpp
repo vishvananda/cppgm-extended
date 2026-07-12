@@ -100,7 +100,6 @@ using template_model::template_arguments_are_dependent;
 using template_model::find_template_parameter_by_name;
 using semantic_utils::has_top_level_comma;
 using semantic_utils::is_wrapped_in_balanced_parens;
-using semantic_utils::split_qualified_name_text;
 using semantic_utils::strip_elaborated_type_prefix;
 using semantic_utils::strip_trailing_top_level_template_arguments;
 using semantic_utils::trim_space;

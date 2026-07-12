@@ -42,7 +42,6 @@ using namespace cpp_decl;
 using namespace semantic_model;
 using template_model::TemplateArgument;
 using template_model::TemplateParameterInfo;
-using semantic_utils::split_qualified_name_text;
 using semantic_utils::strip_elaborated_type_prefix;
 using semantic_utils::strip_trailing_top_level_template_arguments;
 using semantic_utils::trim_space;
