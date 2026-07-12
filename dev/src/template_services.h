@@ -1025,6 +1025,10 @@ private:
     mangle_info->class_template_decl = request.class_template;
     mangle_info->template_name = request.class_template->name;
     if(request.class_template->declaring_scope) {
+      mangle_info->template_name_syntax =
+          semantic_lookup::scope_qualified_name_syntax(
+              *request.class_template->declaring_scope,
+              request.class_template->name);
       const std::string qualified =
           semantic_lookup::scope_qualified_name(
               *request.class_template->declaring_scope,

@@ -2290,7 +2290,6 @@ static string named_substitution_key(const string & canonical_text)
   return string("name:") + canonical_component_text(stripped);
 }
 
-static bool canonicalize_named_substitution_text(const string & text, string & out);
 static bool lexical_scope_supports_local_component_emission(const string & text);
 static string preferred_named_type_text(const TypePtr & type,
                                         const TypeMangleContext * mangle_ctx);
@@ -2571,43 +2570,6 @@ static bool direct_std_standard_substitutions_enabled(const TypeMangleContext * 
   return !mangle_ctx || mangle_ctx->allow_direct_std_standard_substitutions;
 }
 
-static bool canonicalize_named_substitution_text(const string & text, string & out)
-{
-  static thread_local array<StringMemoEntry, 4096> cache;
-  string cached;
-  if(lookup_string_memo(cache, text, cached)) {
-    out = cached;
-    return !out.empty();
-  }
-
-  const string stripped = trim_elaborated_type_prefix(text);
-  if(stripped.empty()) {
-    out.clear();
-    store_string_memo(cache, text, out);
-    return false;
-  }
-
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(stripped, qualified) ||
-     qualified.rooted ||
-     qualified.name.empty()) {
-    out = stripped;
-    store_string_memo(cache, text, out);
-    return true;
-  }
-
-  vector<string> parts = qualified.qualifiers;
-  parts.push_back(qualified.name);
-  vector<string> canonical_parts;
-  canonical_parts.reserve(parts.size());
-  for(size_t i = 0; i < parts.size(); ++i) {
-    canonical_parts.push_back(canonical_component_text(parts[i]));
-  }
-  out = join_canonical_qualified_parts(canonical_parts, canonical_parts.size());
-  store_string_memo(cache, text, out);
-  return !out.empty();
-}
-
 static bool template_argument_is_char_type(const TemplateArgument & argument)
 {
   if(argument.kind != TemplateArgument::TA_TYPE) {
@@ -2629,10 +2591,9 @@ static bool type_is_std_class_template_specialization(
     return false;
   }
 
-  string canonical_scope;
-  if(!canonicalize_named_substitution_text(info->template_scope_prefix,
-                                           canonical_scope) ||
-     canonical_scope != "std" ||
+  if(info->template_name_syntax.rooted ||
+     info->template_name_syntax.qualifiers.size() != 1 ||
+     info->template_name_syntax.qualifiers[0] != "std" ||
      trim_space(info->template_name) != template_name ||
      info->arguments.size() != argument_count) {
     return false;
@@ -6913,12 +6874,12 @@ static bool named_type_uses_direct_std_standard_substitution(
   if(!info) {
     return false;
   }
-  string canonical_scope;
-  if(!canonicalize_named_substitution_text(info->template_scope_prefix,
-                                           canonical_scope) ||
-     canonical_scope != "std") {
+  if(info->template_name_syntax.rooted ||
+     info->template_name_syntax.qualifiers.size() != 1 ||
+     info->template_name_syntax.qualifiers[0] != "std") {
     return false;
   }
+  const string canonical_scope = "std";
   string code;
   bool substitution_includes_arguments = false;
   return structured_std_standard_substitution_for_template_component(
@@ -14173,14 +14134,18 @@ static bool should_prefer_unqualified_lexical_named_type(const TypePtr & type,
     return false;
   }
 
-  string canonical_scoped_text;
-  string canonical_key_text;
-  const string scoped_display_text =
-      append_qualified_component_text(mangle_ctx->lexical_scope, display_text);
-  return canonicalize_named_substitution_text(scoped_display_text,
-                                              canonical_scoped_text) &&
-         canonicalize_named_substitution_text(key_text, canonical_key_text) &&
-         canonical_scoped_text == canonical_key_text;
+  QualifiedName lexical_name = mangle_ctx->lexical_scope_syntax;
+  if(lexical_name.name.empty()) {
+    lexical_name.name = type->named_source_name;
+  } else {
+    lexical_name.qualifiers.push_back(lexical_name.name);
+    lexical_name.name = type->named_source_name;
+  }
+  const QualifiedName & type_name = type->named_qualified_name_syntax;
+  return !type_name.name.empty() &&
+         type_name.rooted == lexical_name.rooted &&
+         type_name.qualifiers == lexical_name.qualifiers &&
+         type_name.name == lexical_name.name;
 }
 
 static bool try_emit_type_encoding_ir(const TypePtr & type,
@@ -14904,10 +14869,19 @@ static string preferred_named_type_text(const TypePtr & type,
         append_qualified_component_text(mangle_ctx->lexical_scope, display_text);
   }
 
-  string canonical_text;
-  if(canonicalize_named_substitution_text(selected_text, canonical_text) &&
-     !canonical_text.empty()) {
-    return canonical_text;
+  QualifiedName selected_syntax;
+  if(prefer_lexical_name) {
+    selected_syntax = mangle_ctx->lexical_scope_syntax;
+    if(!selected_syntax.name.empty()) {
+      selected_syntax.qualifiers.push_back(selected_syntax.name);
+    }
+    selected_syntax.name = type->named_source_name;
+  } else if(selected_text == key_text &&
+            !type->named_qualified_name_syntax.name.empty()) {
+    selected_syntax = type->named_qualified_name_syntax;
+  }
+  if(!selected_syntax.name.empty()) {
+    return qualified_name_syntax_key_text(selected_syntax);
   }
   return selected_text;
 }
@@ -15180,11 +15154,7 @@ static bool build_class_template_specialization_structural_key(
   }
   const TypeMangleContext * key_ctx = mangle_ctx;
 
-  string canonical_scope;
-  if(!canonicalize_named_substitution_text(info->template_scope_prefix,
-                                           canonical_scope)) {
-    canonical_scope = trim_space(info->template_scope_prefix);
-  }
+  const string canonical_scope = trim_space(info->template_scope_prefix);
   const string template_name = trim_space(info->template_name);
   if(template_name.empty()) {
     return false;

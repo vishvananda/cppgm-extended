@@ -16450,6 +16450,12 @@ void attach_substituted_dependent_class_mangle_info_from_arguments(
       new ClassTemplateSpecializationMangleInfo());
   info->class_template_decl = const_cast<ClassTemplateDecl *>(&class_template);
   info->template_name_syntax = substituted->named_qualified_name_syntax;
+  if(info->template_name_syntax.name.empty() && class_template.declaring_scope) {
+    info->template_name_syntax =
+        semantic_lookup::scope_qualified_name_syntax(
+            *class_template.declaring_scope,
+            class_template.name);
+  }
   info->template_name_syntax.name = class_template.name;
   info->template_name = class_template.name;
   if(class_template.declaring_scope) {
