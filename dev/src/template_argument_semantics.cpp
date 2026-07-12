@@ -20311,19 +20311,6 @@ bool expression_is_integral_zero_template_argument(
     template_api::TemplateEnvironmentHandle scope,
     const CppAstNode & expr)
 {
-  long long text_value = 0;
-  const string described =
-      trim_space(callsemantic_internal::describe_expression_for_diagnostic(expr));
-  if(!described.empty() &&
-     try_evaluate_integral_text(described, text_value)) {
-    return text_value == 0;
-  }
-  const string source_text = trim_space(node_text(expr));
-  if(!source_text.empty() &&
-     try_evaluate_integral_text(source_text, text_value)) {
-    return text_value == 0;
-  }
-
   long long evaluated_value = 0;
   try {
     const NonTypeArgumentStatus status =
