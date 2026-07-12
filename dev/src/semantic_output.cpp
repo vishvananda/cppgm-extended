@@ -494,7 +494,7 @@ void trace_class_output_decision(const char * phase,
         << (template_api::class_is_explicit_specialization(&info) ? "yes" : "no")
         << " emit_definition=" << (emit_definition ? "yes" : "no")
         << " should_emit_definition=" << (should_emit_definition ? "yes" : "no");
-  if(binding) {
+  if(binding && binding->is_constructor && binding->is_aggregate_constructor) {
     const bool definition_required =
         has_output_requirement(binding->output_requirements, ORK_DEFINITION);
     trace << " binding=" << binding->name
@@ -1476,6 +1476,8 @@ bool special_member_constructor_can_use_host_object_symbol(SemanticContext & ctx
   if(!binding.owner_class ||
      !binding.is_constructor ||
      binding.symbol.object_symbol.empty() ||
+     template_api::function_binding_excluded_from_explicit_instantiation(
+         binding) ||
      ctx.emit_all_source_function_definitions()) {
     return false;
   }
@@ -2274,10 +2276,17 @@ void collect_required_call_argument_materialization_support(SemanticContext & ct
 
   const size_t param_count =
       binding_params ? binding_params->size() : indirect_param_types.size();
-  const size_t count = min(arg_count, param_count);
+  size_t param_offset = 0;
+  if(binding) {
+    const size_t explicit_offset = binding_explicit_parameter_offset(*binding);
+    if(explicit_offset != 0 && arg_count + explicit_offset == param_count) {
+      param_offset = explicit_offset;
+    }
+  }
+  const size_t count = min(arg_count, param_count - param_offset);
   for(size_t i = 0; i < count; ++i) {
     const TypePtr & param_type =
-        binding_params ? (*binding_params)[i].second : indirect_param_types[i];
+        binding_params ? (*binding_params)[i + param_offset].second : indirect_param_types[i];
     collect_required_storage_value_to_target_support(ctx,
                                                      param_type,
                                                      node.children[i + 1],
@@ -5336,6 +5345,14 @@ void analyze_class_output_from_info_impl(SemanticContext & ctx,
   for(map<string, vector<FunctionBinding *> >::iterator it = info.methods.begin();
       it != info.methods.end(); ++it) {
     for(size_t i = 0; i < it->second.size(); ++i) {
+      const bool should_emit_required_definition =
+          !it->second[i]->is_deleted &&
+          has_output_requirement(it->second[i]->output_requirements,
+                                 ORK_DEFINITION) &&
+          semantic_template_output_policy::
+              should_emit_instantiated_class_method_definition(
+                  class_output_readiness_for_info(),
+                  *it->second[i]);
       const bool should_emit_synthesized =
           it->second[i]->synthesized &&
           !it->second[i]->is_deleted &&
@@ -5346,7 +5363,9 @@ void analyze_class_output_from_info_impl(SemanticContext & ctx,
               class_output_readiness_for_info(),
               *it->second[i]);
       if(!emitted.count(it->second[i]) &&
-         (should_emit_synthesized || should_emit_defaulted)) {
+         (should_emit_required_definition ||
+          should_emit_synthesized ||
+          should_emit_defaulted)) {
         analyze_function_binding_output_impl(ctx, state, *info.member_scope, *it->second[i], out);
       }
     }
