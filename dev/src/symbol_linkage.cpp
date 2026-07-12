@@ -9910,50 +9910,6 @@ static bool try_build_direct_type_syntax_text_ir(
     return true;
   }
 
-  QualifiedName qualified;
-  if(semantic_utils::split_qualified_name_text(text, qualified) &&
-     !qualified.qualifiers.empty()) {
-    const bool mentions_template_parameter =
-        text_mentions_template_mangle_parameter(text, mangle_ctx);
-    TypePtr lookup_type = mentions_template_parameter ?
-        TypePtr() :
-        lookup_qualified_named_type_for_mangling(qualified, mangle_ctx);
-    if(lookup_type && try_build_type_ir(lookup_type, mangle_ctx, out)) {
-      return true;
-    }
-    QualifiedName effective = qualified;
-    const string first_qualifier =
-        semantic_utils::strip_trailing_top_level_template_arguments(
-            trim_space(effective.qualifiers[0]));
-    QualifiedName lookup_prefix;
-    if(!syntax_name_matches_template_parameter(first_qualifier, mangle_ctx) &&
-       qualified_type_text_lexical_lookup_prefix(effective,
-                                                 mangle_ctx,
-                                                 lookup_prefix) &&
-       !prepend_qualified_prefix(effective, lookup_prefix)) {
-      return false;
-    }
-    if(mentions_template_parameter) {
-      abi_mangle::Type owner;
-      if(try_build_qualified_owner_type_ir(effective,
-                                           nullptr,
-                                           mangle_ctx,
-                                           owner)) {
-	        out = abi_mangle::Type::member_named_type(owner,
-	                                                   effective.name,
-	                                                   string());
-        attach_member_type_ir_substitution(out, text);
-        return true;
-      }
-    }
-    if(try_build_qualified_named_type_syntax_ir(qualified,
-                                               mangle_ctx,
-                                               true,
-                                               out)) {
-      return true;
-    }
-  }
-
   if(is_identifier_text_for_mangling(text) &&
      text.find("__local_") == string::npos &&
      text.find("(anonymous namespace)") == string::npos) {
@@ -11367,6 +11323,8 @@ static bool try_build_template_argument_syntax_ir(
     const TypeMangleContext * mangle_ctx,
     abi_mangle::Type::ClassTemplateArgument & out)
 {
+  const bool known_type_parameter =
+      parameter && parameter->kind == TemplateParameterInfo::TP_TYPE;
   const bool known_non_type_parameter =
       parameter && parameter->kind == TemplateParameterInfo::TP_NON_TYPE;
   const bool unknown_expression_argument =
@@ -11374,6 +11332,16 @@ static bool try_build_template_argument_syntax_ir(
       !syntax.type_id &&
       !syntax.resolved_type &&
       !syntax.template_id;
+  if(known_type_parameter && syntax.expression) {
+    abi_mangle::Type type;
+    if(try_build_type_specifier_seq_ast_ir(*syntax.expression,
+                                           mangle_ctx,
+                                           type)) {
+      wrap_pack_expansion_type_ir_if_needed(syntax.pack_expansion, type);
+      out = abi_mangle::Type::ClassTemplateArgument::type_arg(std::move(type));
+      return true;
+    }
+  }
   if(known_non_type_parameter &&
      syntax.expression &&
      try_build_literal_non_type_template_argument_ir(syntax.expression->value,
