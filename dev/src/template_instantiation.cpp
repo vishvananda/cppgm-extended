@@ -6520,11 +6520,11 @@ ValueBinding * direct_static_member_definition_binding(ClassInfo & info,
 
 ValueBinding * static_member_definition_binding_for_key(SemanticContext & ctx,
                                                         ClassInfo & info,
+                                                        const OutOfClassStaticMemberDecl & definition,
                                                         const std::string & member_key)
 {
-  QualifiedName qualified;
-  if(!semantic_utils::split_qualified_name_text(member_key, qualified) ||
-     qualified.qualifiers.empty()) {
+  const QualifiedName & qualified = definition.qualified_name_syntax;
+  if(qualified.name.empty() || qualified.qualifiers.empty()) {
     return direct_static_member_definition_binding(info, member_key);
   }
 
@@ -6597,7 +6597,10 @@ void apply_out_of_class_static_member_definitions(SemanticContext & ctx,
       it != static_member_definitions.end();
       ++it) {
     ValueBinding * member =
-        static_member_definition_binding_for_key(ctx, info, it->first);
+        static_member_definition_binding_for_key(ctx,
+                                                 info,
+                                                 it->second,
+                                                 it->first);
     if(parser_trace::enabled("template.resolve")) {
       std::ostringstream trace;
       trace << "apply-out-of-class-static-member class=" << info.qualified_name
@@ -7766,7 +7769,10 @@ bool apply_out_of_class_static_member_definitions_to_reference(
       it != static_member_definitions.end();
       ++it) {
     ValueBinding * member =
-        static_member_definition_binding_for_key(ctx, info, it->first);
+        static_member_definition_binding_for_key(ctx,
+                                                 info,
+                                                 it->second,
+                                                 it->first);
     if(!member) {
       continue;
     }

@@ -2998,6 +2998,12 @@ public:
                     owner_template->static_member_definitions;
             OutOfClassStaticMemberDecl & stored =
                 static_defs[member_definition_key];
+            stored.qualified_name_syntax = QualifiedName();
+            stored.qualified_name_syntax.qualifiers.assign(
+                static_member_name.qualifiers.begin() +
+                    owner_template_qualifier_index + 1,
+                static_member_name.qualifiers.end());
+            stored.qualified_name_syntax.name = static_member_name.name;
             if(has_storage_definition &&
                stored.has_storage_definition &&
                stored.declarator &&

@@ -979,6 +979,7 @@ struct OutOfClassStaticMemberDecl
 {
   Scope * declaring_scope = nullptr;
   Scope * pattern_scope = nullptr;
+  cpp_decl::QualifiedName qualified_name_syntax;
   const CppAstNode * node = nullptr;
   const CppAstNode * specifiers = nullptr;
   const CppAstNode * declarator = nullptr;
