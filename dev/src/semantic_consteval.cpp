@@ -546,7 +546,10 @@ void note_constexpr_value_member_conversion_operator(SemanticContext & ctx,
   TypePtr source_type;
   {
     const witness::ScopedTemplateWitnessSourceCapturePause source_capture_pause;
-    source_type = ctx.lookup_type_node(scope, callee, callee_text, true);
+    source_type = callee.semantic_type;
+    if(!source_type) {
+      source_type = ctx.lookup_type_node(scope, callee, callee_text, true);
+    }
     if(!source_type) {
       source_type = ctx.lookup_type(scope, callee_text, true);
     }
@@ -2457,7 +2460,10 @@ bool evaluate_constexpr_value_member_conversion(SemanticContext & ctx,
                                                   member_value);
   }
   if(!found_member_value) {
-    TypePtr callee_type = ctx.lookup_type_node(scope, *callee, callee_text, true);
+    TypePtr callee_type = callee->semantic_type;
+    if(!callee_type) {
+      callee_type = ctx.lookup_type_node(scope, *callee, callee_text, true);
+    }
     if(!callee_type &&
        callee->qualifier_template_id_syntaxes.empty() &&
        callee->qualifier_type_syntaxes.empty()) {
