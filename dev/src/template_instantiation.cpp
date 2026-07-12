@@ -8267,39 +8267,23 @@ void overlay_instantiation_local_named_types(
         continue;
       }
       ClassInfo * info = ctx.class_info_for_type(named.second);
-      const std::string local_lookup_name = semantic_utils::strip_elaborated_type_prefix(
-          semantic_utils::trim_space(reparseable_type_argument_text(named.second)));
       const bool function_local_info =
           info &&
-          ((info->enclosing_scope && info->enclosing_scope->function != nullptr) ||
-           local_lookup_name.find("__local_") != std::string::npos);
-      const bool mentions_local_name =
-          mentions_bound_name ||
-          (!local_lookup_name.empty() &&
-           argument_refs.mentions(local_lookup_name));
+          info->enclosing_scope &&
+          info->enclosing_scope->function != nullptr;
       if(!named.second ||
          !info ||
          !function_local_info ||
-         !mentions_local_name) {
+         !mentions_bound_name) {
         continue;
       }
-      std::vector<std::string> alias_names;
-      if(!name.empty()) {
-        alias_names.push_back(name);
+      if((excluded_names && excluded_names->count(name) != 0) ||
+         copied_names.count(name) != 0 ||
+         target.named_types.count(name) != 0) {
+        continue;
       }
-      if(!local_lookup_name.empty() && local_lookup_name != name) {
-        alias_names.push_back(local_lookup_name);
-      }
-      for(std::size_t i = 0; i < alias_names.size(); ++i) {
-        const std::string & alias_name = alias_names[i];
-        if((excluded_names && excluded_names->count(alias_name) != 0) ||
-           copied_names.count(alias_name) != 0 ||
-           target.named_types.count(alias_name) != 0) {
-          continue;
-        }
-        template_scope::bind_named_type(target, alias_name, named.second);
-        copied_names.insert(alias_name);
-      }
+      template_scope::bind_named_type(target, name, named.second);
+      copied_names.insert(name);
     }
   }
 }
@@ -8427,20 +8411,14 @@ void collect_argument_local_named_types(template_api::TemplateTypeSystem & type_
     if(!info || !info->type) {
       return;
     }
-    const std::string lookup_name = semantic_utils::strip_elaborated_type_prefix(
-        semantic_utils::trim_space(reparseable_type_argument_text(info->type)));
     const bool function_local_info =
-        (info->enclosing_scope && info->enclosing_scope->function != nullptr) ||
-        lookup_name.find("__local_") != std::string::npos;
+        info->enclosing_scope &&
+        info->enclosing_scope->function != nullptr;
     const std::string seen_key =
-        !type->named_key.empty() ? type->named_key :
-        semantic_utils::trim_space(reparseable_type_argument_text(info->type));
+        !type->named_key.empty() ? type->named_key : info->name;
     if(function_local_info && seen.insert(seen_key).second) {
       if(!info->name.empty()) {
         out.push_back(std::make_pair(info->name, info->type));
-      }
-      if(!lookup_name.empty() && lookup_name != info->name) {
-        out.push_back(std::make_pair(lookup_name, info->type));
       }
     }
     for(std::size_t i = 0; i < info->instantiation_arguments.size(); ++i) {
