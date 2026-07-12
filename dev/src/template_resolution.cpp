@@ -6697,20 +6697,6 @@ FastResolveTemplateArgumentsStatus try_resolve_simple_template_arguments_fast(
           }
         }
         if(!structured_named_resolved &&
-           status == template_api::NT_ARG_PARSE_FAILED) {
-          try {
-            status = template_api::evaluate_non_type_argument_text(
-                services,
-                argument_scope,
-                inputs.texts[i],
-                value,
-                &eval_error,
-                bound_value_type);
-          } catch(const std::logic_error &) {
-            status = template_api::NT_ARG_PARSE_FAILED;
-          }
-        }
-        if(!structured_named_resolved &&
            status != template_api::NT_ARG_EVALUATED &&
            status != template_api::NT_ARG_DEPENDENT) {
           if(template_argument_syntax_can_retain_carried_non_type_dependency(
@@ -11860,36 +11846,6 @@ bool resolve_template_argument(template_api::TemplateServices & services,
                 original_value,
                 &original_eval_error,
                 bound_value_type));
-      } else {
-        original_status =
-            template_api::evaluate_non_type_argument_text(
-                services,
-                argument_scope,
-                trimmed,
-                original_value,
-                &original_eval_error,
-                bound_value_type);
-      }
-      if(can_evaluate_original_syntax &&
-         original_status == template_api::NT_ARG_PARSE_FAILED) {
-        if(syntax->expression || syntax->template_id || !syntax->type_id) {
-          long long original_text_value = 0;
-          std::string original_text_eval_error;
-          const template_api::NonTypeArgumentStatus original_text_status =
-              template_api::evaluate_non_type_argument_text(
-                  services,
-                  argument_scope,
-                  trimmed,
-                  original_text_value,
-                  &original_text_eval_error,
-                  bound_value_type);
-          if(original_text_status == template_api::NT_ARG_EVALUATED ||
-             original_text_status == template_api::NT_ARG_DEPENDENT) {
-            original_status = original_text_status;
-            original_value = original_text_value;
-            original_eval_error = original_text_eval_error;
-          }
-        }
       }
       if(original_status == template_api::NT_ARG_EVALUATED ||
          original_status == template_api::NT_ARG_DEPENDENT ||
@@ -11903,28 +11859,10 @@ bool resolve_template_argument(template_api::TemplateServices & services,
                 rewritten :
                 trimmed;
       } else {
-        long long rewritten_value = 0;
-        std::string rewritten_eval_error;
-        const template_api::NonTypeArgumentStatus rewritten_status =
-            template_api::evaluate_non_type_argument_text(
-                services,
-                argument_scope,
-                rewritten,
-                rewritten_value,
-                &rewritten_eval_error,
-                bound_value_type);
-        if(rewritten_status == template_api::NT_ARG_EVALUATED ||
-           rewritten_status == template_api::NT_ARG_DEPENDENT) {
-          value_status = rewritten_status;
-          value = rewritten_value;
-          eval_error = rewritten_eval_error;
-          selected_text = rewritten;
-        } else {
-          value_status = original_status;
-          value = original_value;
-          eval_error = original_eval_error;
-          selected_text = trimmed;
-        }
+        value_status = original_status;
+        value = original_value;
+        eval_error = original_eval_error;
+        selected_text = trimmed;
       }
     }
     if(value_status != template_api::NT_ARG_EVALUATED &&

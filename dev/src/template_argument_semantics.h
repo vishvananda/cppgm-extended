@@ -152,14 +152,6 @@ bool resolve_instantiated_dependent_type_if_needed(
     template_api::TemplateEnvironmentHandle scope,
     cpp_decl::TypePtr & type);
 
-NonTypeArgumentStatus evaluate_non_type_argument_text(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const std::string & text,
-    long long & value,
-    std::string * eval_error = nullptr,
-    const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
-
 NonTypeArgumentStatus evaluate_non_type_argument_expression(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,

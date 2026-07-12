@@ -15,22 +15,6 @@ bool resolve_template_template_argument_text(
     bool allow_dependent_placeholders,
     template_model::TemplateArgument & out);
 
-NonTypeArgumentStatus evaluate_non_type_argument_text(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & text,
-    long long & value,
-    std::string * eval_error = nullptr,
-    const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
-
-NonTypeArgumentStatus evaluate_non_type_argument_text(
-    TemplateServices & services,
-    TemplateEnvironmentHandle scope,
-    const std::string & text,
-    long long & value,
-    std::string * eval_error = nullptr,
-    const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
-
 NonTypeArgumentStatus evaluate_non_type_argument_expression(
     TemplateServices & services,
     TemplateEnvironmentHandle scope,

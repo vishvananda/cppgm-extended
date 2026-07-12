@@ -90,14 +90,6 @@ bool resolve_instantiated_dependent_type(SemanticContext & ctx,
                                          const cpp_decl::TypePtr & type,
                                          cpp_decl::TypePtr & out);
 
-NonTypeArgumentStatus evaluate_non_type_argument_text(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & text,
-    long long & value,
-    std::string * eval_error = nullptr,
-    const cpp_decl::TypePtr & target_type = cpp_decl::TypePtr());
-
 // template-boundary-audit: end text_recovery_bridge
 
 }  // namespace template_argument_semantics
@@ -5528,32 +5520,6 @@ bool resolve_template_template_argument_text(
 {
   return template_argument_semantics::resolve_template_template_argument_text(
       services, scope, text, expected_parameter_count, allow_dependent_placeholders, out);
-}
-
-NonTypeArgumentStatus evaluate_non_type_argument_text(
-    SemanticContext & ctx,
-    semantic_model::Scope & scope,
-    const std::string & text,
-    long long & value,
-    std::string * eval_error,
-    const cpp_decl::TypePtr & target_type)
-{
-  return to_api_non_type_argument_status(
-      template_argument_semantics::evaluate_non_type_argument_text(
-          ctx, scope, text, value, eval_error, target_type));
-}
-
-NonTypeArgumentStatus evaluate_non_type_argument_text(
-    TemplateServices & services,
-    TemplateEnvironmentHandle scope,
-    const std::string & text,
-    long long & value,
-    std::string * eval_error,
-    const cpp_decl::TypePtr & target_type)
-{
-  return to_api_non_type_argument_status(
-      template_argument_semantics::evaluate_non_type_argument_text(
-          services, scope, text, value, eval_error, target_type));
 }
 
 NonTypeArgumentStatus evaluate_non_type_argument_expression(

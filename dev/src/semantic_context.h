@@ -431,10 +431,6 @@ public:
   virtual bool expand_pack_argument_node(semantic_model::Scope & scope,
                                          const CppAstNode & node,
                                          std::vector<CppAstNode> & out) = 0;
-  virtual bool try_parse_builtin_type_trait_text(semantic_model::Scope & scope,
-                                                 const std::string & text,
-                                                 std::string & builtin_name,
-                                                 std::vector<cpp_decl::TypePtr> & builtin_types) = 0;
   virtual bool evaluate_builtin_type_trait(semantic_model::Scope & scope,
                                            const std::string & name,
                                            const cpp_decl::TypePtr & type,

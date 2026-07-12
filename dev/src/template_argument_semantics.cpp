@@ -9944,12 +9944,6 @@ bool lookup_leaf_operand_type(template_api::TemplateServices & services,
                               const CppAstNode & expr,
                               TypePtr & out);
 TypePtr collapse_rvalue_reference_type(const TypePtr & inner);
-bool try_parse_builtin_type_trait_text(template_api::TemplateServices & services,
-                                       Scope & scope,
-                                       const string & text,
-                                       string & trait_name,
-                                       vector<TypePtr> & types);
-
 bool binding_supports_leaf_call_shape(FunctionBinding & binding,
                                       size_t explicit_arg_count)
 {
@@ -13186,13 +13180,6 @@ bool resolve_instantiated_dependent_type(SemanticContext & ctx,
                                          Scope & scope,
                                          const TypePtr & type,
                                          TypePtr & out);
-NonTypeArgumentStatus evaluate_non_type_argument_text(
-    SemanticContext & ctx,
-    Scope & scope,
-    const string & text,
-    long long & value,
-    string * eval_error = nullptr,
-    const TypePtr & target_type = TypePtr());
 string lookup_text_for_non_type_template_argument(
     template_api::TemplateTypeSystem & type_system,
     const TypePtr & type,
@@ -19880,107 +19867,6 @@ bool is_simple_dependent_argument_text(const string & text)
   return true;
 }
 
-bool try_parse_builtin_type_trait_text(template_api::TemplateServices & services,
-                                       Scope & scope,
-                                       const string & text,
-                                       string & trait_name,
-                                       vector<TypePtr> & types)
-{
-  trait_name.clear();
-  types.clear();
-
-  const string trimmed = trim_space(text);
-  const size_t lparen = trimmed.find('(');
-  if(lparen == string::npos || lparen == 0 || trimmed.empty() || trimmed.back() != ')') {
-    return false;
-  }
-
-  trait_name = trim_space(trimmed.substr(0, lparen));
-  if(!semantic_builtins::is_supported_builtin_type_trait_name(trait_name)) {
-    trait_name.clear();
-    return false;
-  }
-
-  string args_text = trimmed.substr(lparen + 1, trimmed.size() - lparen - 2);
-  vector<string> arg_texts;
-  if(args_text.empty()) {
-    return true;
-  }
-
-  string current;
-  int angle_depth = 0;
-  int paren_depth = 0;
-  int square_depth = 0;
-  for(size_t i = 0; i < args_text.size(); ++i) {
-    const char c = args_text[i];
-    if(c == '<') {
-      ++angle_depth;
-    } else if(c == '>') {
-      if(angle_depth == 0) {
-        return false;
-      }
-      --angle_depth;
-    } else if(c == '(') {
-      ++paren_depth;
-    } else if(c == ')') {
-      if(paren_depth == 0) {
-        return false;
-      }
-      --paren_depth;
-    } else if(c == '[') {
-      ++square_depth;
-    } else if(c == ']') {
-      if(square_depth == 0) {
-        return false;
-      }
-      --square_depth;
-    }
-
-    if(c == ',' && angle_depth == 0 && paren_depth == 0 && square_depth == 0) {
-      if(current.empty()) {
-        return false;
-      }
-      arg_texts.push_back(current);
-      current.clear();
-      continue;
-    }
-    current += c;
-  }
-
-  if(angle_depth != 0 || paren_depth != 0 || square_depth != 0 || current.empty()) {
-    return false;
-  }
-  arg_texts.push_back(current);
-
-  const auto resolve_trait_arg_type =
-      [&](const string & raw_text, TypePtr & out) -> bool
-      {
-        out.reset();
-        const string trimmed_arg = trim_space(raw_text);
-        if(callsemantic_internal::has_invalid_top_level_qualified_owner_syntax(trimmed_arg)) {
-          return false;
-        }
-        if(!services.semantic_context) {
-          return false;
-        }
-        out = services.semantic_context->lookup_type(scope, trimmed_arg, true);
-        return out != nullptr;
-      };
-
-  const vector<ExpandedTypeArgumentInput> expanded_args =
-      expand_bound_type_pack_arguments(services, scope, arg_texts);
-  for(size_t i = 0; i < expanded_args.size(); ++i) {
-    TypePtr type = expanded_args[i].type;
-    if(!type) {
-      if(!resolve_trait_arg_type(expanded_args[i].text, type)) {
-        return false;
-      }
-    }
-    types.push_back(type);
-  }
-  return true;
-}
-
 TypePtr lookup_exact_local_type_name_impl(template_api::TemplateServices & services,
                                           Scope & scope,
                                           const string & name)
@@ -20093,206 +19979,6 @@ bool parse_integer_literal_count_text(const string & text, long long & out)
   }
   out = static_cast<long long>(value);
   return true;
-}
-
-string compact_expression_text(const string & text)
-{
-  string out;
-  out.reserve(text.size());
-  for(size_t i = 0; i < text.size(); ++i) {
-    if(!std::isspace(static_cast<unsigned char>(text[i]))) {
-      out.push_back(text[i]);
-    }
-  }
-  return out;
-}
-
-  bool parse_simple_signed_integer_text(const string & text, long long & out)
-  {
-    if(text.empty()) {
-      return false;
-    }
-  size_t pos = 0;
-  int sign = 1;
-  if(text[pos] == '+') {
-    ++pos;
-  } else if(text[pos] == '-') {
-    sign = -1;
-    ++pos;
-  }
-    if(pos >= text.size() ||
-       !std::isdigit(static_cast<unsigned char>(text[pos]))) {
-      return false;
-    }
-    unsigned long long value = 0;
-    string ud_suffix;
-    try {
-      const EFundamentalType type = classify_int(text.substr(pos), value, ud_suffix);
-      if(type == FT_VOID || !ud_suffix.empty()) {
-        return false;
-      }
-    } catch(const logic_error &) {
-      return false;
-    }
-    if(sign < 0) {
-      if(value > static_cast<unsigned long long>(std::numeric_limits<long long>::max()) + 1ULL) {
-        return false;
-      }
-      if(value == static_cast<unsigned long long>(std::numeric_limits<long long>::max()) + 1ULL) {
-        out = std::numeric_limits<long long>::min();
-      } else {
-        out = -static_cast<long long>(value);
-      }
-  } else {
-    if(value > static_cast<unsigned long long>(std::numeric_limits<long long>::max())) {
-      return false;
-    }
-    out = static_cast<long long>(value);
-  }
-  return true;
-}
-
-bool strip_balanced_outer_parens(string & text)
-{
-  bool stripped = false;
-  while(text.size() >= 2 && text.front() == '(' && text.back() == ')') {
-    int depth = 0;
-    bool wraps = true;
-    for(size_t i = 0; i < text.size(); ++i) {
-      if(text[i] == '(') {
-        ++depth;
-      } else if(text[i] == ')') {
-        --depth;
-        if(depth == 0 && i + 1 != text.size()) {
-          wraps = false;
-          break;
-        }
-        if(depth < 0) {
-          wraps = false;
-          break;
-        }
-      }
-    }
-    if(!wraps || depth != 0) {
-      break;
-    }
-    text = text.substr(1, text.size() - 2);
-    stripped = true;
-  }
-  return stripped;
-}
-
-bool try_evaluate_static_cast_integral_text(const string & text, long long & out)
-{
-  const string compact = compact_expression_text(text);
-  const string prefix = "static_cast<";
-  if(compact.compare(0, prefix.size(), prefix) != 0) {
-    return false;
-  }
-  size_t depth = 0;
-  size_t close_angle = string::npos;
-  for(size_t i = prefix.size(); i < compact.size(); ++i) {
-    if(compact[i] == '<') {
-      ++depth;
-    } else if(compact[i] == '>') {
-      if(depth == 0) {
-        close_angle = i;
-        break;
-      }
-      --depth;
-    }
-  }
-  if(close_angle == string::npos ||
-     close_angle + 2 > compact.size() ||
-     compact[close_angle + 1] != '(' ||
-     compact.back() != ')') {
-    return false;
-  }
-
-  string operand = compact.substr(close_angle + 2,
-                                  compact.size() - close_angle - 3);
-  strip_balanced_outer_parens(operand);
-  if(parse_simple_signed_integer_text(operand, out)) {
-    return true;
-  }
-
-  if(!operand.empty() && operand[0] == '(') {
-    int paren_depth = 0;
-    for(size_t i = 0; i < operand.size(); ++i) {
-      if(operand[i] == '(') {
-        ++paren_depth;
-      } else if(operand[i] == ')') {
-        --paren_depth;
-        if(paren_depth == 0) {
-          string suffix = operand.substr(i + 1);
-          strip_balanced_outer_parens(suffix);
-          return parse_simple_signed_integer_text(suffix, out);
-        }
-      }
-    }
-  }
-  return false;
-}
-
-bool parse_simple_integral_constant_text(string text, long long & out)
-{
-  strip_balanced_outer_parens(text);
-  if(text == "true") {
-    out = 1;
-    return true;
-  }
-  if(text == "false") {
-    out = 0;
-    return true;
-  }
-  return parse_simple_signed_integer_text(text, out);
-}
-
-size_t find_top_level_comma_text(const string & text)
-{
-  int paren_depth = 0;
-  int angle_depth = 0;
-  for(size_t i = 0; i < text.size(); ++i) {
-    if(text[i] == '(') {
-      ++paren_depth;
-    } else if(text[i] == ')') {
-      --paren_depth;
-    } else if(text[i] == '<') {
-      ++angle_depth;
-    } else if(text[i] == '>') {
-      --angle_depth;
-    } else if(text[i] == ',' && paren_depth == 0 && angle_depth == 0) {
-      return i;
-    }
-  }
-  return string::npos;
-}
-
-bool is_void_discard_expression_text(string text)
-{
-  strip_balanced_outer_parens(text);
-  return text.compare(0, 6, "(void)") == 0 ||
-         text.compare(0, 18, "static_cast<void>(") == 0;
-}
-
-bool try_evaluate_integral_text(const string & text, long long & out)
-{
-  string compact = compact_expression_text(text);
-  strip_balanced_outer_parens(compact);
-  if(parse_simple_integral_constant_text(compact, out) ||
-     try_evaluate_static_cast_integral_text(compact, out)) {
-    return true;
-  }
-
-  const size_t comma = find_top_level_comma_text(compact);
-  if(comma == string::npos) {
-    return false;
-  }
-  const string lhs = compact.substr(0, comma);
-  if(!is_void_discard_expression_text(lhs)) {
-    return false;
-  }
-  return try_evaluate_integral_text(compact.substr(comma + 1), out);
 }
 
 bool is_nullable_template_value_type(const TypePtr & type)
@@ -26090,13 +25776,16 @@ bool try_resolve_type_pack_element_template_id(
   }
 
   long long selected_index = -1;
+  if(!arg_syntaxes || arg_syntaxes->empty()) {
+    return false;
+  }
   bool index_resolved = false;
   try {
     index_resolved =
-        evaluate_non_type_argument_text(services,
-                                        scope,
-                                        arg_texts[0],
-                                        selected_index) == NT_ARG_EVALUATED;
+        evaluate_non_type_argument_syntax(services,
+                                          scope,
+                                          (*arg_syntaxes)[0],
+                                          selected_index) == NT_ARG_EVALUATED;
   } catch(const logic_error &) {
     index_resolved = false;
   }
@@ -32329,33 +32018,15 @@ bool resolve_standard_meta_bool_argument(
   long long condition_value = 0;
   NonTypeArgumentStatus condition_status = NT_ARG_PARSE_FAILED;
   std::string eval_error;
-  if(!qualifier_template_id.argument_syntaxes.empty() &&
-     qualifier_template_id.argument_syntaxes[0].expression) {
+  if(!qualifier_template_id.argument_syntaxes.empty()) {
     condition_status =
-        evaluate_non_type_argument_expression(
+        evaluate_non_type_argument_syntax(
             services,
             template_api::make_template_environment(condition_scope),
-            *qualifier_template_id.argument_syntaxes[0].expression,
+            qualifier_template_id.argument_syntaxes[0],
             condition_value,
             &eval_error,
             bool_type);
-  }
-  if(condition_status == NT_ARG_PARSE_FAILED ||
-     condition_status == NT_ARG_EVAL_FAILED) {
-    try {
-      condition_status =
-          evaluate_non_type_argument_text(
-              services,
-              template_api::make_template_environment(condition_scope),
-              qualifier_template_id.arguments[0],
-              condition_value,
-              &eval_error,
-              bool_type);
-    } catch(const ExplicitSpecializationAfterInstantiationError &) {
-      throw;
-    } catch(const std::logic_error &) {
-      condition_status = NT_ARG_PARSE_FAILED;
-    }
   }
   if(condition_status != NT_ARG_EVALUATED) {
     return false;
@@ -37012,102 +36683,6 @@ NonTypeArgumentStatus evaluate_qualified_member_value_argument_syntax(
       target_type);
 }
 
-NonTypeArgumentStatus evaluate_non_type_argument_text(SemanticContext & ctx,
-                                                      Scope & scope,
-                                                      const string & text,
-                                                      long long & value,
-                                                      string * eval_error,
-                                                      const TypePtr & target_type)
-{
-  string trimmed = trim_space(text);
-  // libstdc++'s __or_fn/__and_fn SFINAE wrap the condition as !bool(B::value)
-  // or bool(B::value). Fold those wrappers so the inner member value drives
-  // evaluation and dependency tracking (a dependent operand stays dependent
-  // instead of reaching the throw below).
-  bool negate = false;
-  bool bool_cast = false;
-  for(;;) {
-    if(!trimmed.empty() && trimmed[0] == '!') {
-      negate = !negate;
-      trimmed = trim_space(trimmed.substr(1));
-      continue;
-    }
-    if(trimmed.size() > 6 &&
-       trimmed.compare(0, 5, "bool(") == 0 &&
-       trimmed[trimmed.size() - 1] == ')') {
-      bool_cast = true;
-      trimmed = trim_space(trimmed.substr(5, trimmed.size() - 6));
-      continue;
-    }
-    break;
-  }
-  const auto finish = [&](NonTypeArgumentStatus status) -> NonTypeArgumentStatus
-  {
-    if(status == NT_ARG_EVALUATED) {
-      if(bool_cast) {
-        value = value != 0 ? 1 : 0;
-      }
-      if(negate) {
-        value = value != 0 ? 0 : 1;
-      }
-    }
-    return status;
-  };
-  if(trimmed.size() >= 3 && trimmed.substr(trimmed.size() - 3) == "...") {
-    const string pack_element =
-        trim_space(trimmed.substr(0, trimmed.size() - 3));
-    if(try_evaluate_integral_text(pack_element, value)) {
-      return finish(NT_ARG_EVALUATED);
-    }
-  }
-  if(try_evaluate_integral_text(trimmed, value)) {
-    return finish(NT_ARG_EVALUATED);
-  }
-  const auto evaluate_builtin_trait_text =
-      [&]() -> NonTypeArgumentStatus
-      {
-        string builtin_name;
-        vector<TypePtr> builtin_types;
-        if(!ctx.try_parse_builtin_type_trait_text(scope, trimmed, builtin_name, builtin_types)) {
-          return NT_ARG_PARSE_FAILED;
-        }
-
-        for(size_t i = 0; i < builtin_types.size(); ++i) {
-          if(template_argument_semantics::type_depends_on_template_parameter(ctx, builtin_types[i])) {
-            return NT_ARG_DEPENDENT;
-          }
-        }
-
-        return evaluate_builtin_type_trait(ctx, scope, builtin_name, builtin_types, value) ?
-                   NT_ARG_EVALUATED :
-                   NT_ARG_PARSE_FAILED;
-      };
-
-  const NonTypeArgumentStatus builtin_status = evaluate_builtin_trait_text();
-  if(builtin_status != NT_ARG_PARSE_FAILED) {
-    note_template_trace_if_enabled(
-        [&](ostringstream & trace)
-        {
-          trace << "non-type-arg text=" << trimmed
-                << " result="
-                << (builtin_status == NT_ARG_DEPENDENT ? "dependent-builtin-trait" :
-                    builtin_status == NT_ARG_EVALUATED ? "evaluated" :
-                    "parse-failed");
-          if(builtin_status == NT_ARG_EVALUATED) {
-            trace << " value=" << value;
-          }
-        });
-    return finish(builtin_status);
-  }
-
-  (void)ctx;
-  (void)scope;
-  (void)value;
-  (void)eval_error;
-  (void)target_type;
-  throw logic_error("legacy non-type template argument text evaluation: " + trimmed);
-}
-
 static bool expression_ast_mentions_template_dependency(
     template_api::TemplateServices & services,
     template_api::TemplateEnvironmentHandle scope,
@@ -38936,106 +38511,6 @@ NonTypeArgumentStatus evaluate_non_type_argument_syntax(
   return effective_syntax->dependent || effective_syntax->pack_expansion ?
       NT_ARG_DEPENDENT :
       NT_ARG_PARSE_FAILED;
-}
-
-NonTypeArgumentStatus evaluate_non_type_argument_text(
-    template_api::TemplateServices & services,
-    template_api::TemplateEnvironmentHandle scope,
-    const string & text,
-    long long & value,
-    string * eval_error,
-    const TypePtr & target_type)
-{
-  Scope & raw_scope = scope.require();
-  string trimmed = trim_space(text);
-  // Fold libstdc++'s !bool(B::value)/bool(B::value) SFINAE wrappers so the inner
-  // member value drives evaluation and dependency tracking (a dependent operand
-  // stays dependent instead of reaching the throw below).
-  bool negate = false;
-  bool bool_cast = false;
-  for(;;) {
-    if(!trimmed.empty() && trimmed[0] == '!') {
-      negate = !negate;
-      trimmed = trim_space(trimmed.substr(1));
-      continue;
-    }
-    if(trimmed.size() > 6 &&
-       trimmed.compare(0, 5, "bool(") == 0 &&
-       trimmed[trimmed.size() - 1] == ')') {
-      bool_cast = true;
-      trimmed = trim_space(trimmed.substr(5, trimmed.size() - 6));
-      continue;
-    }
-    break;
-  }
-  const auto finish = [&](NonTypeArgumentStatus status) -> NonTypeArgumentStatus
-  {
-    if(status == NT_ARG_EVALUATED) {
-      if(bool_cast) {
-        value = value != 0 ? 1 : 0;
-      }
-      if(negate) {
-        value = value != 0 ? 0 : 1;
-      }
-    }
-    return status;
-  };
-  if(trimmed.size() >= 3 && trimmed.substr(trimmed.size() - 3) == "...") {
-    const string pack_element =
-        trim_space(trimmed.substr(0, trimmed.size() - 3));
-    if(try_evaluate_integral_text(pack_element, value)) {
-      return finish(NT_ARG_EVALUATED);
-    }
-  }
-  if(try_evaluate_integral_text(trimmed, value)) {
-    return finish(NT_ARG_EVALUATED);
-  }
-  const auto evaluate_builtin_trait_text =
-      [&]() -> NonTypeArgumentStatus
-      {
-        string builtin_name;
-        vector<TypePtr> builtin_types;
-        if(!try_parse_builtin_type_trait_text(
-               services, raw_scope, trimmed, builtin_name, builtin_types)) {
-          return NT_ARG_PARSE_FAILED;
-        }
-
-        for(size_t i = 0; i < builtin_types.size(); ++i) {
-          if(service_type_depends_on_template_parameter(services, builtin_types[i])) {
-            return NT_ARG_DEPENDENT;
-          }
-        }
-
-        return evaluate_builtin_type_trait(
-                   services, raw_scope, builtin_name, builtin_types, value) ?
-                   NT_ARG_EVALUATED :
-                   NT_ARG_PARSE_FAILED;
-      };
-
-  const NonTypeArgumentStatus builtin_status = evaluate_builtin_trait_text();
-  if(builtin_status != NT_ARG_PARSE_FAILED) {
-    note_template_trace_if_enabled(
-        [&](ostringstream & trace)
-        {
-          trace << "non-type-arg text=" << trimmed
-                << " result="
-                << (builtin_status == NT_ARG_DEPENDENT ? "dependent-builtin-trait" :
-                    builtin_status == NT_ARG_EVALUATED ? "evaluated" :
-                    "parse-failed");
-          if(builtin_status == NT_ARG_EVALUATED) {
-            trace << " value=" << value;
-          }
-        });
-    return finish(builtin_status);
-  }
-
-  if(trimmed.find("::") == string::npos &&
-     scope_contains_template_context_for_unresolved_identifier(services, scope) &&
-     !callsemantic_internal::collect_identifier_tokens(trimmed).names.empty()) {
-    return finish(NT_ARG_DEPENDENT);
-  }
-
-  throw logic_error("legacy non-type template argument text evaluation: " + trimmed);
 }
 
 bool evaluate_constant_expression_leaf(template_api::TemplateServices & services,

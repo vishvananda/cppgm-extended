@@ -5752,15 +5752,6 @@ private:
         *this, scope, node, trait_name, types);
   }
 
-  bool try_parse_builtin_type_trait_text(Scope & scope,
-                                         const string & text,
-                                         string & trait_name,
-                                         vector<TypePtr> & types) override
-  {
-    return semantic_builtins::try_parse_builtin_type_trait_text(
-        *this, scope, text, trait_name, types);
-  }
-
   TypePtr direct_named_type(Scope & scope, const string & name)
   {
     auto found = scope.named_types.find(name);
@@ -7966,26 +7957,15 @@ private:
                                   parsed_arg_syntaxes->size() > 2 ?
                               &(*parsed_arg_syntaxes)[2] :
                               nullptr;
-                      if(count_syntax &&
-                         (count_syntax->expression ||
-                          count_syntax->type_id ||
-                          count_syntax->template_id)) {
-                        return template_argument_semantics::
-                            evaluate_non_type_argument_syntax(
-                                services,
-                                environment,
-                                *count_syntax,
-                                count,
-                                &eval_error,
-                                value_type);
-                      }
-                      return template_argument_semantics::
-                          evaluate_non_type_argument_text(services,
-                                                          environment,
-                                                          parsed_arg_texts[2],
-                                                          count,
-                                                          &eval_error,
-                                                          value_type);
+                      return count_syntax ?
+                          template_argument_semantics::evaluate_non_type_argument_syntax(
+                              services,
+                              environment,
+                              *count_syntax,
+                              count,
+                              &eval_error,
+                              value_type) :
+                          template_argument_semantics::NT_ARG_PARSE_FAILED;
                     });
             if(status != template_argument_semantics::NT_ARG_EVALUATED || count < 0) {
               return false;

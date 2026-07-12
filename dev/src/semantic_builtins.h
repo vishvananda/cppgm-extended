@@ -80,12 +80,6 @@ bool try_parse_builtin_type_trait_expression(SemanticContext & ctx,
                                              const CppAstNode & node,
                                              std::string & trait_name,
                                              std::vector<cpp_decl::TypePtr> & types);
-bool try_parse_builtin_type_trait_text(SemanticContext & ctx,
-                                       semantic_model::Scope & scope,
-                                       const std::string & text,
-                                       std::string & trait_name,
-                                       std::vector<cpp_decl::TypePtr> & types);
-
 bool apply_builtin_type_transform(const std::string & name,
                                   const cpp_decl::TypePtr & arg_type,
                                   cpp_decl::TypePtr & out);

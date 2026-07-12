@@ -7399,12 +7399,15 @@ bool try_expand_alias_template_pattern_structurally(
         }
         count = arguments[index].value;
       } else {
+        if(builtin_syntax->argument_syntaxes.size() <= 2) {
+          return false;
+        }
         std::string eval_error;
         const template_argument_semantics::NonTypeArgumentStatus status =
-            template_argument_semantics::evaluate_non_type_argument_text(
+            template_argument_semantics::evaluate_non_type_argument_syntax(
                 services,
                 effective_body_scope,
-                count_text,
+                builtin_syntax->argument_syntaxes[2],
                 count,
                 &eval_error,
                 value_type);
