@@ -51,7 +51,7 @@ function @ns__tuple_ns__marker__ns__marker___tuple(%this : ptr) -> void [unwind=
     store ptr %this, $this
     return void
 }
-function @box_int___box__ov3(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN3boxIiEC1IN2ns5tupleEEENS3_IiNS2_6markerEEE] {
+function @box_int___box__ov3(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN3boxIiEC1IN2ns5tupleEEET_IiNS2_6markerEE] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -62,7 +62,7 @@ function @box_int___box__ov3(%this : ptr, %__param1 : obj<1x1>) -> void [binding
     store i32 1, %t2
     return void
 }
-function @box_int___box__ov4(%this : ptr, %__param1 : obj<1x1>, %__param2 : obj<1x1>, %__param3 : obj<1x1>) -> void [binding=weak, object=_ZN3boxIiEC1IN2ns5tupleEEE3tagNS3_IiNS2_6markerEEENS3_IS5_S5_EE] {
+function @box_int___box__ov4(%this : ptr, %__param1 : obj<1x1>, %__param2 : obj<1x1>, %__param3 : obj<1x1>) -> void [binding=weak, object=_ZN3boxIiEC1IN2ns5tupleEEE3tagT_IiNS2_6markerEES5_IS6_S6_E] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : obj<1x1>
@@ -84,6 +84,6 @@ function @tag__tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3tag
 }
 alias object _ZN2ns5tupleIiNS_6markerEEC2Ev = @ns__tuple_int__ns__marker___tuple
 alias object _ZN2ns5tupleINS_6markerES1_EC2Ev = @ns__tuple_ns__marker__ns__marker___tuple
-alias object _ZN3boxIiEC2IN2ns5tupleEEENS3_IiNS2_6markerEEE = @box_int___box__ov3
-alias object _ZN3boxIiEC2IN2ns5tupleEEE3tagNS3_IiNS2_6markerEEENS3_IS5_S5_EE = @box_int___box__ov4
+alias object _ZN3boxIiEC2IN2ns5tupleEEET_IiNS2_6markerEE = @box_int___box__ov3
+alias object _ZN3boxIiEC2IN2ns5tupleEEE3tagT_IiNS2_6markerEES5_IS6_S6_E = @box_int___box__ov4
 alias object _ZN3tagC2Ev = @tag__tag

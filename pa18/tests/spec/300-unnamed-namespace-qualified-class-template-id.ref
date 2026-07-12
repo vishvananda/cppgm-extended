@@ -1,4 +1,4 @@
-global @outer__detail___GLOBAL__N_1__holder_int___value : i32 [binding=weak, object=_ZN5outer6detail6holderIiE5valueE] = 4
+global @outer__detail___GLOBAL__N_1__holder_int___value : i32 [binding=weak, object=_ZN5outer6detail12_GLOBAL__N_16holderIiE5valueE] = 4
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

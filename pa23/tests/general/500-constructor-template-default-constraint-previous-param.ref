@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @mutable_buffer__mutable_buffer__ov5(%t2, %t3, $argobj__1, $argobj__2, $argobj__3)
     return i32 0
 }
-function @mutable_buffer__mutable_buffer__ov5(%this : ptr, %span : ptr [pass=reference], %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : obj<1x1>) -> void [binding=weak, object=_ZN14mutable_bufferC1I4spancLm1EEERKT_IT0_6ExtentEN9enable_ifIXntsr4meta8is_constIS3_EE5valueEXsr4metaE20defaulted_constraintEE4typeES9_N4meta20defaulted_constraintE] {
+function @mutable_buffer__mutable_buffer__ov5(%this : ptr, %span : ptr [pass=reference], %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : obj<1x1>) -> void [binding=weak, object=_ZN14mutable_bufferC1I4spancLm1EEERKT_IT0_6ExtentEN9enable_ifIXntsr4meta8is_constIS3_EE5valueEXsr4metaE20defaulted_constraintEE4typeES9_S9_] {
   slot $this : ptr
   slot $span : ptr
   slot $__param2 : obj<1x1>
@@ -37,5 +37,5 @@ function @meta__defaulted_constraint__defaulted_constraint(%this : ptr) -> void 
     store ptr %this, $this
     return void
 }
-alias object _ZN14mutable_bufferC2I4spancLm1EEERKT_IT0_6ExtentEN9enable_ifIXntsr4meta8is_constIS3_EE5valueEXsr4metaE20defaulted_constraintEE4typeES9_N4meta20defaulted_constraintE = @mutable_buffer__mutable_buffer__ov5
+alias object _ZN14mutable_bufferC2I4spancLm1EEERKT_IT0_6ExtentEN9enable_ifIXntsr4meta8is_constIS3_EE5valueEXsr4metaE20defaulted_constraintEE4typeES9_S9_ = @mutable_buffer__mutable_buffer__ov5
 alias object _ZN4meta20defaulted_constraintC2Ev = @meta__defaulted_constraint__defaulted_constraint

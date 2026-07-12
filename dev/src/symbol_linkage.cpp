@@ -6403,6 +6403,8 @@ static const CppAstNode * template_parameter_default_payload(
 static string non_type_template_parameter_decl_specifier_text(
     const TemplateParameterInfo & parameter);
 static bool type_has_dependent_mangle_state(const TypePtr & type);
+static bool type_has_structured_dependent_qualified_member(
+    const TypePtr & type);
 
 static bool build_type_id_ir_from_ast(
     const CppAstNode & type_id,
@@ -6410,6 +6412,10 @@ static bool build_type_id_ir_from_ast(
     const TypeMangleContext * mangle_ctx,
     abi_mangle::Type & out)
 {
+  if(type_has_structured_dependent_qualified_member(actual_type) &&
+     try_build_type_ir(actual_type, mangle_ctx, out)) {
+    return true;
+  }
   if(!try_build_actual_owner_template_reference_type_id_ast_ir(
          type_id, actual_type, mangle_ctx, out) &&
      !try_build_type_id_ast_ir(type_id, mangle_ctx, out)) {
@@ -8557,7 +8563,8 @@ static bool try_build_dependent_type_template_argument_ir(
      !argument.type ||
      argument.source_defaulted ||
      (type_has_dependent_mangle_state(argument.type) &&
-      type_template_argument_requires_syntax_ir(argument.type))) {
+      type_template_argument_requires_syntax_ir(argument.type) &&
+      !type_has_structured_dependent_qualified_member(argument.type))) {
     return false;
   }
 
@@ -13476,6 +13483,9 @@ static bool try_build_type_ir(const TypePtr & type,
   if(try_build_itanium_abi_lambda_closure_type_ir(type, mangle_ctx, out)) {
     return true;
   }
+  if(try_build_dependent_qualified_member_type_ir(type, mangle_ctx, out)) {
+    return true;
+  }
   if(try_build_dependent_alias_type_ir(type, mangle_ctx, out)) {
     return true;
   }
@@ -13493,9 +13503,6 @@ static bool try_build_type_ir(const TypePtr & type,
     return true;
   }
   if(try_build_dependent_class_template_type_ir(type, mangle_ctx, out)) {
-    return true;
-  }
-  if(try_build_dependent_qualified_member_type_ir(type, mangle_ctx, out)) {
     return true;
   }
   if(try_build_class_template_specialization_type_ir(type, mangle_ctx, out)) {
@@ -14321,6 +14328,18 @@ static bool type_has_dependent_mangle_state(const TypePtr & type)
     return true;
   }
 
+  if(type->kind == Type::TK_NAMED) {
+    shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
+        named_type_class_template_specialization_mangle_info_const(type);
+    if(specialization &&
+       (template_arguments_have_dependent_mangle_state(
+            specialization->arguments) ||
+        template_arguments_have_dependent_mangle_state(
+            specialization->mangle_arguments))) {
+      return true;
+    }
+  }
+
   if(type_has_dependent_mangle_state(type->owner) ||
      type_has_dependent_mangle_state(type->inner)) {
     return true;
@@ -14421,6 +14440,25 @@ static bool type_has_structured_dependent_qualified_member(const TypePtr & type)
                                              leading_typename)) {
       (void)leading_typename;
       return true;
+    }
+
+    shared_ptr<const ClassTemplateSpecializationMangleInfo> specialization =
+        named_type_class_template_specialization_mangle_info_const(type);
+    if(specialization) {
+      const vector<TemplateArgument> * argument_sets[] = {
+          &specialization->arguments,
+          &specialization->mangle_arguments,
+      };
+      for(size_t set_index = 0; set_index < 2; ++set_index) {
+        const vector<TemplateArgument> & arguments = *argument_sets[set_index];
+        for(size_t i = 0; i < arguments.size(); ++i) {
+          if(type_has_structured_dependent_qualified_member(arguments[i].type) ||
+             type_has_structured_dependent_qualified_member(
+                 arguments[i].template_owner_type)) {
+            return true;
+          }
+        }
+      }
     }
   }
 
@@ -17520,7 +17558,7 @@ static bool try_emit_itanium_function_symbol_ir(
         }
         mangled_return = build_and_emit_type_id_ir_from_ast(
             *options.result_type_pattern,
-            actual_function_type->inner,
+            hybrid_return_type,
             &result_ctx,
             state,
             candidate,

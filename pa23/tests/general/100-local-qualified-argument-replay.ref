@@ -139,7 +139,7 @@ function @replay_access__increment__ov2(%f : ptr [pass=reference]) -> void [bind
     call void @replay_outer_int___inner_int_const_____member(%t1)
     return void
 }
-function @proto__right(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR9plus_leafEELi2EEEEES8_RT_] {
+function @proto__right(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR9plus_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
   slot $e : ptr
 
   block ^entry:
@@ -149,7 +149,7 @@ function @proto__right(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_
     %t3 = load ptr %t2
     return ptr %t3
 }
-function @proto__right__ov2(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR10deref_leafEELi2EEEEES8_RT_] {
+function @proto__right__ov2(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR10deref_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
   slot $e : ptr
 
   block ^entry:
