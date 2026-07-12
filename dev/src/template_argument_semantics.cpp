@@ -20032,7 +20032,11 @@ TemplateArgumentSyntax clone_argument_syntax_for_template_substitution(
 
 CppAstNode clone_expression_node_for_template_substitution(const CppAstNode & source)
 {
-  CppAstNode out = source;
+  CppAstNode out;
+  out.kind = source.kind;
+  out.value = source.value;
+  out.semantic_type = source.semantic_type;
+  out.builtin_type_transform_name = source.builtin_type_transform_name;
   if(source.qualified_name_syntax) {
     out.qualified_name_syntax.reset(new QualifiedName(*source.qualified_name_syntax));
   }
@@ -20045,7 +20049,7 @@ CppAstNode clone_expression_node_for_template_substitution(const CppAstNode & so
         clone_expression_node_for_template_substitution(
             *source.conversion_type_id_syntax)));
   }
-  out.qualifier_template_id_syntaxes.clear();
+  out.base_type_syntax = source.base_type_syntax;
   out.qualifier_template_id_syntaxes.reserve(
       source.qualifier_template_id_syntaxes.size());
   for(size_t i = 0; i < source.qualifier_template_id_syntaxes.size(); ++i) {
@@ -20060,21 +20064,38 @@ CppAstNode clone_expression_node_for_template_substitution(const CppAstNode & so
         clone_expression_node_for_template_substitution(
             source.qualifier_type_syntaxes[i]));
   }
-  out.exception_type_id_syntaxes.clear();
+  out.has_leading_typename = source.has_leading_typename;
+  out.has_exception_type_id_syntaxes = source.has_exception_type_id_syntaxes;
   out.exception_type_id_syntaxes.reserve(source.exception_type_id_syntaxes.size());
   for(size_t i = 0; i < source.exception_type_id_syntaxes.size(); ++i) {
     out.exception_type_id_syntaxes.push_back(
         clone_expression_node_for_template_substitution(
             source.exception_type_id_syntaxes[i]));
   }
-  out.alignment_specifier_nodes.clear();
+  out.linkage_has_braces = source.linkage_has_braces;
+  out.has_no_unique_address = source.has_no_unique_address;
+  out.has_using_if_exists = source.has_using_if_exists;
+  out.has_exclude_from_explicit_instantiation =
+      source.has_exclude_from_explicit_instantiation;
+  out.asm_label = source.asm_label;
+  out.abi_tags = source.abi_tags;
+  out.alignment_specifiers = source.alignment_specifiers;
   out.alignment_specifier_nodes.reserve(source.alignment_specifier_nodes.size());
   for(size_t i = 0; i < source.alignment_specifier_nodes.size(); ++i) {
     out.alignment_specifier_nodes.push_back(
         clone_expression_node_for_template_substitution(
             source.alignment_specifier_nodes[i]));
   }
-  out.children.clear();
+  out.is_final_specifier = source.is_final_specifier;
+  out.uses_assignment_form = source.uses_assignment_form;
+  out.is_typeof_specifier = source.is_typeof_specifier;
+  out.has_token = source.has_token;
+  out.token_kind = source.token_kind;
+  out.simple_type = source.simple_type;
+  out.token_start = source.token_start;
+  out.token_end = source.token_end;
+  out.source_location_id = source.source_location_id;
+  out.name_lookup_snapshot = source.name_lookup_snapshot;
   out.children.reserve(source.children.size());
   for(size_t i = 0; i < source.children.size(); ++i) {
     out.children.push_back(
