@@ -28134,14 +28134,73 @@ DependentNamedTypeResolutionStatus resolve_dependent_builtin_type_transform(
                DependentNamedTypeResolutionStatus::KeepDependent;
 }
 
-bool mentions_local_dependent_type_placeholder(template_api::TemplateServices & services,
-                                               Scope & scope,
-                                               const string & text)
+bool structured_type_mentions_local_dependent_placeholder(
+    template_api::TemplateServices & services,
+    Scope & scope,
+    const TypePtr & type)
 {
   const auto type_is_dependent =
       [&services](const TypePtr & type) -> bool
       {
         return service_type_depends_on_template_parameter(services, type);
+      };
+  function<bool(const TypePtr &, const string &, const TypePtr &, int)> mentions;
+  mentions =
+      [&](const TypePtr & candidate,
+          const string & name,
+          const TypePtr & identity,
+          int depth) -> bool
+      {
+        if(depth > 32) {
+          return false;
+        }
+        TypePtr named = strip_top_level_cv(candidate);
+        if(!named || named->kind != Type::TK_NAMED || name.empty()) {
+          return false;
+        }
+        if(identity && type_equals(named, strip_top_level_cv(identity))) {
+          return true;
+        }
+        if(named_type_is_template_parameter(named) &&
+           trim_space(named_type_semantic_payload(named)) == name) {
+          return true;
+        }
+        const QualifiedName & qualified = named->named_qualified_name_syntax;
+        if(qualified.name == name ||
+           find(qualified.qualifiers.begin(), qualified.qualifiers.end(), name) !=
+               qualified.qualifiers.end()) {
+          return true;
+        }
+        const auto arguments_mention =
+            [&](const vector<DependentAliasTemplateArgumentSyntax> & arguments) -> bool
+            {
+              for(size_t i = 0; i < arguments.size(); ++i) {
+                if(argument_syntax_mentions_identifier(arguments[i].syntax, name) ||
+                   mentions(arguments[i].type, name, identity, depth + 1) ||
+                   mentions(arguments[i].syntax.resolved_type,
+                            name,
+                            identity,
+                            depth + 1)) {
+                  return true;
+                }
+              }
+              return false;
+            };
+        if(arguments_mention(named->named_dependent_class_arguments) ||
+           arguments_mention(named->named_dependent_alias_arguments) ||
+           arguments_mention(
+               named->named_dependent_template_template_arguments)) {
+          return true;
+        }
+        if(mentions(named->named_dependent_qualified_owner,
+                    name,
+                    identity,
+                    depth + 1)) {
+          return true;
+        }
+        const CppAstNode * expression =
+            named_type_dependent_type_expression_node(named);
+        return expression && expression_node_mentions_identifier(*expression, name);
       };
   for(Scope * current = &scope; current; current = current->parent) {
     if(current->namespace_scope || current->parent == nullptr) {
@@ -28152,7 +28211,7 @@ bool mentions_local_dependent_type_placeholder(template_api::TemplateServices & 
       if(found == current->named_types.end() ||
          !found->second ||
          !type_is_dependent(found->second) ||
-         !callsemantic_internal::contains_identifier_token(text, name)) {
+         !mentions(type, name, found->second, 0)) {
         continue;
       }
       return true;
@@ -28161,7 +28220,7 @@ bool mentions_local_dependent_type_placeholder(template_api::TemplateServices & 
       map<string, vector<TypePtr> >::const_iterator found =
           current->named_type_packs.find(pack_name);
       if(found == current->named_type_packs.end() ||
-         !callsemantic_internal::contains_identifier_token(text, pack_name)) {
+         !mentions(type, pack_name, TypePtr(), 0)) {
         continue;
       }
       for(size_t i = 0; i < found->second.size(); ++i) {
@@ -28172,7 +28231,7 @@ bool mentions_local_dependent_type_placeholder(template_api::TemplateServices & 
       }
     }
     for(const auto & name : current->template_bound_value_names) {
-      if(!callsemantic_internal::contains_identifier_token(text, name)) {
+      if(!mentions(type, name, TypePtr(), 0)) {
         continue;
       }
       map<string, ValueBinding>::const_iterator found =
@@ -28702,7 +28761,8 @@ DependentNamedTypeResolutionStatus resolve_dependent_named_type_locally(
   }
 
   const bool keep_local_type_placeholders_dependent =
-      mentions_local_dependent_type_placeholder(services, raw_scope, text);
+      structured_type_mentions_local_dependent_placeholder(
+          services, raw_scope, type);
   const string normalized_text = normalize_type_lookup_name(text);
   const auto normalize_bound_type_lookup_name =
       [](const string & raw) -> string
