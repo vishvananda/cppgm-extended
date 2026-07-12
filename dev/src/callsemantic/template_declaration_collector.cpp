@@ -60,6 +60,28 @@ using semantic_utils::strip_trailing_top_level_template_arguments;
 using semantic_utils::trim_space;
 using semantic_utils::unqualified_member_name;
 
+ExactTemplateTypeLookupAnchor retained_template_type_lookup_anchor(
+    const CppAstNode * node)
+{
+  ExactTemplateTypeLookupAnchor anchor;
+  const TemplateIdSyntax * syntax =
+      node ? first_template_id_syntax_in_subtree(*node) : nullptr;
+  if(!syntax || syntax->name.name.empty()) {
+    return anchor;
+  }
+  anchor.template_text = template_id_syntax_text_preserving_spacing(*syntax);
+  anchor.identifier = unqualified_member_name(syntax->name.name);
+  if(anchor.identifier.empty()) {
+    anchor.identifier = syntax->name.name;
+  }
+  anchor.compact_key = compact_lookup_text(anchor.template_text);
+  anchor.template_id_syntax_ref = syntax;
+  anchor.arg_texts_ref = &syntax->arguments;
+  anchor.arg_syntaxes_ref = &syntax->argument_syntaxes;
+  anchor.has_argument_list = true;
+  return anchor;
+}
+
 const CppAstNode * function_parameter_clause_in_declarator(const CppAstNode & node)
 {
   const CppAstNode * found = nullptr;
@@ -936,7 +958,8 @@ public:
                                                       syntax.is_const_method,
                                                       syntax.is_volatile_method,
                                                       syntax.ref_qualifier,
-                                                      binding)) {
+                                                      binding,
+                                                      conversion_identifier)) {
           throw logic_error("missing templated conversion-operator binding");
         }
 
@@ -1229,7 +1252,8 @@ public:
                   resolve_out_of_class_special_member_template(pattern_scope,
                                                                *qualified_special_member,
                                                                effective_template_parameters,
-                                                               params) :
+                                                               params,
+                                                               declarator_identifier) :
                   nullptr;
         if(template_decl) {
           if(parser_trace::enabled("template.resolve")) {
@@ -1299,6 +1323,7 @@ public:
              resolve_out_of_class_special_member_binding(pattern_scope,
                                                         *qualified_special_member,
                                                         params,
+                                                        declarator_identifier,
                                                         binding))) {
           if(record_out_of_class_special_member_for_owner_template(nullptr, false, nullptr)) {
               emit_out_of_class_owner_class_use_if_needed(pattern_scope,
@@ -1400,6 +1425,7 @@ public:
            resolve_out_of_class_special_member_binding(pattern_scope,
                                                       *qualified_special_member,
                                                       params,
+                                                      declarator_identifier,
                                                       binding))) {
         throw logic_error("missing templated special-member binding");
       }
@@ -1724,6 +1750,7 @@ public:
                owner_is_template_id &&
                resolve_out_of_class_static_member_binding(scope,
                                                           qualified_member,
+                                                          function_identifier,
                                                           static_binding)) {
               emit_out_of_class_owner_class_use_if_needed(scope,
                                                           qualified_member,
@@ -1799,6 +1826,7 @@ public:
                    prepared_owner_method.syntax.is_volatile_method,
                    prepared_owner_method.syntax.ref_qualifier,
                    binding,
+                   function_identifier,
                    inner.kind == CppAstKind::function_definition ?
                        QualifiedOwnerClassResolution::Complete :
                        QualifiedOwnerClassResolution::ReferenceMembers)) {
@@ -2506,6 +2534,7 @@ public:
                              prepared_owner_method.syntax.is_volatile_method,
                              prepared_owner_method.syntax.ref_qualifier,
                              resolved_member_declaration,
+                             function_identifier,
                              QualifiedOwnerClassResolution::ReferenceMembers) &&
                          resolved_member_declaration &&
                          resolved_member_declaration->exclude_from_explicit_instantiation;
@@ -2735,6 +2764,7 @@ public:
                      prepared_owner_method.syntax.is_volatile_method,
                      prepared_owner_method.syntax.ref_qualifier,
                      binding,
+                     function_identifier,
                      body ?
                          QualifiedOwnerClassResolution::Complete :
                          QualifiedOwnerClassResolution::ReferenceMembers)) {
@@ -3037,6 +3067,11 @@ public:
             ValueBinding * out_of_class_static_member = nullptr;
             if(resolve_out_of_class_static_member_binding(pattern_scope,
                                                          static_member_name,
+                                                         declarator ?
+                                                             find_descendant_kind(
+                                                                 *declarator,
+                                                                 CppAstKind::identifier) :
+                                                             nullptr,
                                                          out_of_class_static_member)) {
                 emit_out_of_class_owner_class_use_if_needed(pattern_scope,
                                                             static_member_name,
@@ -4290,8 +4325,12 @@ private:
       bool is_volatile_method,
       RefQualifier ref_qualifier,
       FunctionBinding *& out,
+      const CppAstNode * function_identifier,
       QualifiedOwnerClassResolution resolution = QualifiedOwnerClassResolution::Complete)
   {
+    const ExactTemplateTypeLookupAnchor anchor =
+        retained_template_type_lookup_anchor(function_identifier);
+    const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return callbacks.out_of_class_services->resolve_out_of_class_named_method_binding(
         scope,
         qualified,
@@ -4330,8 +4369,12 @@ private:
       Scope & scope,
       const QualifiedName & qualified,
       const vector<TemplateParameterInfo> & template_parameters,
-      const vector<pair<string, TypePtr> > & params)
+      const vector<pair<string, TypePtr> > & params,
+      const CppAstNode * function_identifier)
   {
+    const ExactTemplateTypeLookupAnchor anchor =
+        retained_template_type_lookup_anchor(function_identifier);
+    const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return callbacks.out_of_class_services->resolve_out_of_class_special_member_template(
         scope, qualified, template_parameters, params);
   }
@@ -4893,8 +4936,12 @@ private:
       bool is_volatile_method,
       RefQualifier ref_qualifier,
       FunctionBinding *& out,
+      const CppAstNode * function_identifier,
       QualifiedOwnerClassResolution resolution)
   {
+    const ExactTemplateTypeLookupAnchor anchor =
+        retained_template_type_lookup_anchor(function_identifier);
+    const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return callbacks.out_of_class_services->
         resolve_out_of_class_method_binding_with_resolution(
         scope, qualified, declared_type, is_const_method, is_volatile_method, ref_qualifier, out, resolution);
@@ -4902,8 +4949,12 @@ private:
 
   bool resolve_out_of_class_static_member_binding(Scope & scope,
                                                   const QualifiedName & qualified,
+                                                  const CppAstNode * function_identifier,
                                                   ValueBinding *& out)
   {
+    const ExactTemplateTypeLookupAnchor anchor =
+        retained_template_type_lookup_anchor(function_identifier);
+    const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return callbacks.out_of_class_services->resolve_out_of_class_static_member_binding(
         scope, qualified, out);
   }
@@ -5402,6 +5453,9 @@ private:
   Scope * resolve_qualified_function_parse_scope(Scope & scope,
                                                  const CppAstNode & declarator)
   {
+    const ExactTemplateTypeLookupAnchor anchor =
+        retained_template_type_lookup_anchor(&declarator);
+    const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return ctx.resolve_qualified_function_parse_scope(scope, declarator);
   }
 
@@ -5409,8 +5463,12 @@ private:
       Scope & scope,
       const QualifiedName & qualified,
       const vector<pair<string, TypePtr> > & params,
+      const CppAstNode * function_identifier,
       FunctionBinding *& out)
   {
+    const ExactTemplateTypeLookupAnchor anchor =
+        retained_template_type_lookup_anchor(function_identifier);
+    const ScopedExactTemplateTypeLookupAnchor anchor_guard(anchor);
     return ctx.resolve_out_of_class_special_member_binding(scope, qualified, params, out);
   }
 
