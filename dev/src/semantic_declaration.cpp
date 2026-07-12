@@ -111,7 +111,13 @@ bool evaluate_known_static_member_constant(SemanticContext & ctx,
     return false;
   }
 
-  TypePtr qualifier_type = ctx.lookup_type(scope, qualifier_type_text, false);
+  const CppAstNode qualifier_node =
+      semantic_lookup::make_value_qualifier_type_lookup_node(
+          expr,
+          *qualified,
+          qualifier_type_text);
+  TypePtr qualifier_type =
+      ctx.lookup_type_node(scope, qualifier_node, qualifier_type_text, false);
   if(qualifier_type && ctx.type_depends_on_template_parameter(qualifier_type)) {
     return false;
   }
