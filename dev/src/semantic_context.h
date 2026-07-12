@@ -182,6 +182,9 @@ public:
   virtual cpp_decl::TypePtr lookup_non_template_type_name(
       semantic_model::Scope & scope,
       const std::string & text) = 0;
+  virtual cpp_decl::TypePtr lookup_non_template_type_name(
+      semantic_model::Scope & scope,
+      const cpp_decl::QualifiedName & name) = 0;
   virtual cpp_decl::TypePtr maybe_introduce_elaborated_type(
       semantic_model::Scope & scope,
       const std::string & class_kind,

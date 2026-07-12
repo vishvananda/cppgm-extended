@@ -3007,6 +3007,29 @@ ClassInfo * lookup_declared_owner_class_via_leaf_type_lookup(SemanticContext & c
   return type ? ctx.class_info_for_type(type) : nullptr;
 }
 
+ClassInfo * lookup_declared_owner_class_via_leaf_type_lookup(
+    SemanticContext & ctx,
+    Scope & scope,
+    const QualifiedName & name)
+{
+  TypePtr type = ctx.lookup_non_template_type_name(scope, name);
+  return type ? ctx.class_info_for_type(type) : nullptr;
+}
+
+QualifiedName class_info_qualified_name_syntax(const ClassInfo & info)
+{
+  if(!info.symbol_qualified_name_syntax.name.empty()) {
+    return info.symbol_qualified_name_syntax;
+  }
+  TypePtr type = strip_top_level_cv(info.type);
+  if(type && type->kind == Type::TK_NAMED) {
+    return type->named_qualified_name_syntax;
+  }
+  QualifiedName name;
+  name.name = info.name;
+  return name;
+}
+
 ClassInfo * class_template_dependent_reference_source_owner(
     const std::map<std::string, ClassInfo *> & instantiations,
     ClassTemplateDecl & decl)
@@ -6181,8 +6204,13 @@ ClassInfo * source_owner_class_for_instantiation(SemanticContext & ctx,
     if(lookup_scope &&
        lookup_node &&
        !lookup_node->value.empty()) {
-      partial_info = lookup_declared_owner_class_via_leaf_type_lookup(
-          ctx, *lookup_scope, lookup_node->value);
+      const QualifiedName * lookup_name =
+          cppast_qualified_name_syntax(*lookup_node);
+      partial_info = lookup_name ?
+          lookup_declared_owner_class_via_leaf_type_lookup(
+              ctx, *lookup_scope, *lookup_name) :
+          lookup_declared_owner_class_via_leaf_type_lookup(
+              ctx, *lookup_scope, lookup_node->value);
       if(parser_trace::enabled("template.resolve")) {
         std::ostringstream trace;
         trace << "source-owner-partial class=" << info.qualified_name
@@ -8339,7 +8367,9 @@ ClassInfo * current_instantiation_owner_for_scope(SemanticContext & ctx,
 
   ClassInfo * current_instantiation =
       lookup_declared_owner_class_via_leaf_type_lookup(
-          ctx, use_scope, declared_owner->qualified_name);
+          ctx,
+          use_scope,
+          class_info_qualified_name_syntax(*declared_owner));
   if(!current_instantiation) {
     current_instantiation = lookup_declared_owner_class_via_leaf_type_lookup(
         ctx, use_scope, declared_owner->name);
@@ -9370,7 +9400,9 @@ FunctionBinding * instantiate_function_template(SemanticContext & ctx,
 
     ClassInfo * current_instantiation =
         lookup_declared_owner_class_via_leaf_type_lookup(
-            ctx, *scope, declared_owner->qualified_name);
+            ctx,
+            *scope,
+            class_info_qualified_name_syntax(*declared_owner));
     if(!current_instantiation) {
       current_instantiation = lookup_declared_owner_class_via_leaf_type_lookup(
           ctx, *scope, declared_owner->name);

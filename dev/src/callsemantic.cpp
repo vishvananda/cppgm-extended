@@ -6239,10 +6239,17 @@ private:
       return lookup_unqualified_type();
     }
 
-    QualifiedName qualified;
-    if(!split_qualified_name_text(normalized_name, qualified) ||
-       (!qualified.rooted && qualified.qualifiers.empty())) {
+    return TypePtr();
+  }
+
+  TypePtr lookup_non_template_type_name(Scope & scope,
+                                        const QualifiedName & qualified) override
+  {
+    if(qualified.name.empty()) {
       return TypePtr();
+    }
+    if(!qualified.rooted && qualified.qualifiers.empty()) {
+      return lookup_non_template_type_name(scope, qualified.name);
     }
 
     Scope * current =
