@@ -2264,43 +2264,30 @@ static string join_canonical_qualified_parts(const vector<string> & parts, size_
   return out;
 }
 
+static string named_substitution_key(const QualifiedName & qualified)
+{
+  if(qualified.rooted || qualified.name.empty()) {
+    return string();
+  }
+  vector<string> parts = qualified.qualifiers;
+  parts.push_back(qualified.name);
+  vector<string> canonical_parts;
+  canonical_parts.reserve(parts.size());
+  for(size_t i = 0; i < parts.size(); ++i) {
+    canonical_parts.push_back(canonical_component_text(parts[i]));
+  }
+  return string("name:") +
+         join_canonical_qualified_parts(canonical_parts,
+                                        canonical_parts.size());
+}
+
 static string named_substitution_key(const string & canonical_text)
 {
-  static thread_local array<StringMemoEntry, 4096> cache;
-  string cached;
-  if(lookup_string_memo(cache, canonical_text, cached)) {
-    return cached;
-  }
-
   const string stripped = trim_elaborated_type_prefix(canonical_text);
-  if(stripped.empty()) {
-    string empty;
-    store_string_memo(cache, canonical_text, empty);
-    return empty;
+  if(stripped.empty() || stripped.find("::") != string::npos) {
+    return string();
   }
-
-  string out;
-  QualifiedName qualified;
-  if(semantic_utils::split_qualified_name_text(stripped, qualified) &&
-     !qualified.rooted &&
-     !qualified.name.empty()) {
-    vector<string> parts = qualified.qualifiers;
-    parts.push_back(qualified.name);
-    vector<string> canonical_parts;
-    canonical_parts.reserve(parts.size());
-    for(size_t i = 0; i < parts.size(); ++i) {
-      canonical_parts.push_back(canonical_component_text(parts[i]));
-    }
-    out = string("name:") +
-          join_canonical_qualified_parts(canonical_parts,
-                                         canonical_parts.size());
-    store_string_memo(cache, canonical_text, out);
-    return out;
-  }
-
-  out = string("name:") + canonical_component_text(stripped);
-  store_string_memo(cache, canonical_text, out);
-  return out;
+  return string("name:") + canonical_component_text(stripped);
 }
 
 static bool canonicalize_named_substitution_text(const string & text, string & out);
@@ -3884,22 +3871,6 @@ static string template_id_syntax_key_text(const TemplateIdSyntax & syntax)
   }
   out += '>';
   return out;
-}
-
-static string qualified_template_id_syntax_key_text(
-    const TemplateIdSyntax & syntax,
-    const QualifiedName & qualified)
-{
-  QualifiedName template_name = syntax.name;
-  template_name.rooted = qualified.rooted;
-  template_name.qualifiers = qualified.qualifiers;
-  template_name.name = strip_leading_template_disambiguator(syntax.name.name);
-  string text = qualified_name_syntax_key_text(template_name);
-  const string final_text = template_id_syntax_key_text(syntax);
-  const size_t last_sep = text.rfind("::");
-  return last_sep == string::npos ?
-             final_text :
-             text.substr(0, last_sep + 2) + final_text;
 }
 
 static TemplateArgumentSyntax clone_template_argument_syntax_for_mangling(
@@ -6008,30 +5979,30 @@ static bool build_type_name_ast_substitution_key(const CppAstNode & node,
     }
   }
   if(final_template_id) {
-    string text;
+    QualifiedName key_name;
     if(qualified && !qualified->qualifiers.empty()) {
-      QualifiedName template_name = final_template_id->name;
-      template_name.rooted = qualified->rooted;
-      template_name.qualifiers = qualified->qualifiers;
-      template_name.name =
-          strip_leading_template_disambiguator(final_template_id->name.name);
-      text = qualified_template_id_syntax_key_text(*final_template_id, template_name);
+      key_name.rooted = qualified->rooted;
+      key_name.qualifiers = qualified->qualifiers;
     } else {
       QualifiedName lookup_qualified;
-      text = qualify_template_id_syntax_from_lookup(
-                 *final_template_id, mangle_ctx, lookup_qualified) ?
-                 qualified_template_id_syntax_key_text(*final_template_id,
-                                                       lookup_qualified) :
-                 template_id_syntax_key_text(*final_template_id);
+      if(qualify_template_id_syntax_from_lookup(
+             *final_template_id, mangle_ctx, lookup_qualified)) {
+        key_name.rooted = lookup_qualified.rooted;
+        key_name.qualifiers = lookup_qualified.qualifiers;
+      }
     }
-    out = named_substitution_key(text);
+    TemplateIdSyntax component = *final_template_id;
+    component.name.rooted = false;
+    component.name.qualifiers.clear();
+    key_name.name = template_id_syntax_key_text(component);
+    out = named_substitution_key(key_name);
     return !out.empty();
   }
   if(qualified) {
     if(qualified->qualifiers.empty()) {
       return false;
     }
-    out = named_substitution_key(qualified_name_syntax_key_text(*qualified));
+    out = named_substitution_key(*qualified);
     return !out.empty();
   }
   return false;
@@ -15211,7 +15182,9 @@ static bool build_type_substitution_key_impl(const TypePtr & type,
         }
       }
     }
-    out = named_substitution_key(preferred_named_type_text(type, mangle_ctx));
+    out = !type->named_qualified_name_syntax.name.empty() ?
+        named_substitution_key(type->named_qualified_name_syntax) :
+        named_substitution_key(preferred_named_type_text(type, mangle_ctx));
     return !out.empty();
   }
 
